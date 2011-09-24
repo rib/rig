@@ -1,0 +1,16 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+majorversion=@RIG_MAJOR_VERSION@
+minorversion=@RIG_MINOR_VERSION@
+microversion=@RIG_MICRO_VERSION@
+apiversion=@RIG_MAJOR_VERSION@.@RIG_MINOR_VERSION@
+
+Name: Rig
+Description: UI Test Rig Utilities
+Version: @VERSION@
+Libs: -L${libdir} -lrig
+Cflags: -I${includedir}/rig
+Requires: @RIG_PKG_REQUIRES@
+
