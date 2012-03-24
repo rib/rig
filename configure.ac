@@ -625,8 +625,29 @@ AC_SUBST([HAVE_GLES2])
 
 if test "x$GL_LIBRARY_DIRECTLY_LINKED" = "xyes"; then
    AC_DEFINE([HAVE_DIRECTLY_LINKED_GL_LIBRARY], [1],
-             [Defined if the GL library shouldn't be dlopened])
+             [Defined if the GL library should not be dlopened])
 fi
+
+AC_ARG_ENABLE(
+  [cogl-gles2],
+  [AC_HELP_STRING([--enable-cogl-gles2=@<:@no/yes@:>@],
+                  [Enable libcogl-gles2 frontend api for OpenGL-ES 2.0 @<:@default=auto@:>@])],
+  [],
+  [
+    AS_IF([test "x$HAVE_GLES2" = "x1"],
+          [enable_cogl_gles2=yes],
+          [enable_cogl_gles2=no])
+  ]
+)
+AS_IF([test "x$enable_cogl_gles2" = "xyes"],
+      [
+        AS_IF([test "x$HAVE_GLES2" != "x1"],
+              [
+                AC_MSG_ERROR([libcogl-gles2 is currently only supported on systems with a native GLES 2.0 library])
+              ])
+      ])
+AM_CONDITIONAL([BUILD_COGL_GLES2], [test "x$enable_cogl_gles2" = "xyes"])
+
 
 dnl         ========================================================
 dnl         Check window system integration libraries...
@@ -1144,6 +1165,8 @@ cogl/cogl.rc
 cogl-pango/Makefile
 cogl-pango/cogl-pango2.pc
 cogl-pango/cogl-pango.rc
+cogl-gles2/Makefile
+cogl-gles2/cogl-gles2-experimental.pc
 doc/Makefile
 doc/reference/Makefile
 doc/reference/cogl2/Makefile
@@ -1187,6 +1210,7 @@ fi
 if test "x$SUPPORT_SDL" = "xyes"; then
 echo "        Support GLES under SDL: ${SUPPORT_SDL_GLES}"
 fi
+echo "        Build libcogl-gles2 GLES 2.0 frontend api: ${BUILD_COGL_GLES2}"
 echo "        Image backend: ${COGL_IMAGE_BACKEND}"
 echo "        Cogl Pango: ${enable_cogl_pango}"
 echo "        Profiling: ${enable_profile}"
