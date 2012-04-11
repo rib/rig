@@ -1,4 +1,3 @@
-#define COGL_ENABLE_EXPERIMENTAL_2_0_API
 #include <cogl/cogl.h>
 #include <stdlib.h>
 
@@ -9,8 +8,8 @@
 
 static gboolean cogl_test_is_verbose;
 
-CoglContext *ctx;
-CoglFramebuffer *fb;
+CoglContext *test_ctx;
+CoglFramebuffer *test_fb;
 
 void
 test_utils_init (TestFlags flags)
@@ -45,11 +44,11 @@ test_utils_init (TestFlags flags)
 
   g_setenv ("COGL_X11_SYNC", "1", 0);
 
-  ctx = cogl_context_new (NULL, &error);
-  if (!ctx)
+  test_ctx = cogl_context_new (NULL, &error);
+  if (!test_ctx)
     g_critical ("Failed to create a CoglContext: %s", error->message);
 
-  display = cogl_context_get_display (ctx);
+  display = cogl_context_get_display (test_ctx);
   renderer = cogl_display_get_renderer (display);
 
   if (flags & TEST_REQUIREMENT_GL &&
@@ -59,19 +58,19 @@ test_utils_init (TestFlags flags)
     }
 
   if (flags & TEST_REQUIREMENT_NPOT &&
-      !cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_NPOT))
+      !cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_NPOT))
     {
       missing_requirement = TRUE;
     }
 
   if (flags & TEST_REQUIREMENT_TEXTURE_3D &&
-      !cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_3D))
+      !cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_3D))
     {
       missing_requirement = TRUE;
     }
 
   if (flags & TEST_REQUIREMENT_POINT_SPRITE &&
-      !cogl_has_feature (ctx, COGL_FEATURE_ID_POINT_SPRITE))
+      !cogl_has_feature (test_ctx, COGL_FEATURE_ID_POINT_SPRITE))
     {
       missing_requirement = TRUE;
     }
@@ -83,13 +82,13 @@ test_utils_init (TestFlags flags)
 
   if (getenv  ("COGL_TEST_ONSCREEN"))
     {
-      onscreen = cogl_onscreen_new (ctx, 640, 480);
-      fb = COGL_FRAMEBUFFER (onscreen);
+      onscreen = cogl_onscreen_new (test_ctx, 640, 480);
+      test_fb = COGL_FRAMEBUFFER (onscreen);
     }
   else
     {
       CoglHandle offscreen;
-      CoglHandle tex = cogl_texture_2d_new_with_size (ctx,
+      CoglHandle tex = cogl_texture_2d_new_with_size (test_ctx,
                                                       FB_WIDTH, FB_HEIGHT,
                                                       COGL_PIXEL_FORMAT_ANY,
                                                       &error);
@@ -97,16 +96,16 @@ test_utils_init (TestFlags flags)
         g_critical ("Failed to allocate texture: %s", error->message);
 
       offscreen = cogl_offscreen_new_to_texture (tex);
-      fb = COGL_FRAMEBUFFER (offscreen);
+      test_fb = COGL_FRAMEBUFFER (offscreen);
     }
 
-  if (!cogl_framebuffer_allocate (fb, &error))
+  if (!cogl_framebuffer_allocate (test_fb, &error))
     g_critical ("Failed to allocate framebuffer: %s", error->message);
 
   if (onscreen)
     cogl_onscreen_show (onscreen);
 
-  cogl_framebuffer_clear4f (fb,
+  cogl_framebuffer_clear4f (test_fb,
                             COGL_BUFFER_BIT_COLOR |
                             COGL_BUFFER_BIT_DEPTH |
                             COGL_BUFFER_BIT_STENCIL,
@@ -119,11 +118,11 @@ test_utils_init (TestFlags flags)
 void
 test_utils_fini (void)
 {
-  if (fb)
-    cogl_object_unref (fb);
+  if (test_fb)
+    cogl_object_unref (test_fb);
 
-  if (ctx)
-    cogl_object_unref (ctx);
+  if (test_ctx)
+    cogl_object_unref (test_ctx);
 }
 
 static gboolean

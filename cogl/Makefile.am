@@ -38,22 +38,12 @@ BUILT_SOURCES += cogl-defines.h
 DISTCLEANFILES += cogl-defines.h
 EXTRA_DIST += cogl-defines.h.in
 
-# Note: The cogl-1.0/cogl-gl-1.0 files are essentially for
-# compatability only.  I'm not really sure who could possibly be using
-# them so we may decide to remove them entirely at some point.
-pc_files = \
-	cogl-1.0.pc \
-	cogl-gl-1.0.pc
-
-pc_files += cogl-$(COGL_API_VERSION)-experimental.pc
-
-cogl-gl-1.0.pc: cogl-1.0.pc
-	$(QUIET_GEN)cp -f $< $(@F)
+pc_files = cogl2.pc
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = $(pc_files)
 
-EXTRA_DIST += cogl-1.0.pc.in cogl-$(COGL_API_VERSION)-experimental.pc.in
+EXTRA_DIST += cogl2.pc.in
 DISTCLEANFILES += $(pc_files)
 
 # public 1.x api headers
@@ -112,7 +102,6 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-depth-state.h 		\
 	$(srcdir)/cogl-buffer.h 		\
 	$(srcdir)/cogl-pixel-buffer.h		\
-	$(srcdir)/cogl2-experimental.h		\
 	$(srcdir)/cogl2-compatibility.h		\
 	$(NULL)
 
@@ -464,22 +453,26 @@ glib_enum_c = cogl-enum-types.c
 glib_enum_headers = $(cogl_1_public_h)
 include $(top_srcdir)/build/autotools/Makefile.am.enums
 
-lib_LTLIBRARIES += libcogl.la
+#XXX should we specify a libdir sub-directory now so that
+#for the next major version of Cogl we don't need to change
+#the library name to safely allow parallel installability?
+#E.g. libdir=$(libdir)/
+lib_LTLIBRARIES += libcogl2.la
 
-libcogl_la_LIBADD = -lm $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
+libcogl2_la_LIBADD = -lm $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 if SUPPORT_GLX
-libcogl_la_LIBADD += -ldl
+libcogl2_la_LIBADD += -ldl
 endif
 # XXX: The aim is to eventually get rid of all private API exports
 # for cogl-pango.
-libcogl_la_LDFLAGS = \
+libcogl2_la_LDFLAGS = \
 	-no-undefined \
 	-version-info @COGL_LT_CURRENT@:@COGL_LT_REVISION@:@COGL_LT_AGE@ \
 	-export-dynamic \
 	-export-symbols-regex "^(cogl|_cogl_debug_flags|_cogl_atlas_new|_cogl_atlas_add_reorganize_callback|_cogl_atlas_reserve_space|_cogl_callback|_cogl_util_get_eye_planes_for_screen_poly|_cogl_atlas_texture_remove_reorganize_callback|_cogl_atlas_texture_add_reorganize_callback|_cogl_texture_foreach_sub_texture_in_region|_cogl_atlas_texture_new_with_size|_cogl_profile_trace_message|_cogl_context_get_default).*"
 
-libcogl_la_SOURCES = $(cogl_sources_c)
-nodist_libcogl_la_SOURCES = $(BUILT_SOURCES)
+libcogl2_la_SOURCES = $(cogl_sources_c)
+nodist_libcogl2_la_SOURCES = $(BUILT_SOURCES)
 
 # Cogl installed headers
 cogl_headers = \
@@ -488,7 +481,7 @@ cogl_headers = \
 	$(srcdir)/cogl-pango.h \
 	$(NULL)
 
-coglincludedir = $(includedir)/cogl/cogl
+coglincludedir = $(includedir)/cogl2/cogl
 coglinclude_HEADERS = $(cogl_headers) $(cogl_experimental_h)
 nodist_coglinclude_HEADERS = cogl-defines.h cogl-enum-types.h
 
@@ -582,18 +575,18 @@ DISTCLEANFILES += ../build/win32/vs9/cogl.vcproj ../build/win32/vs10/cogl.vcxpro
 INTROSPECTION_GIRS =
 
 if HAVE_INTROSPECTION
-Cogl-1.0.gir: libcogl.la Makefile
+Cogl-2.0.gir: libcogl2.la Makefile
 
-Cogl_1_0_gir_NAMESPACE = Cogl
-Cogl_1_0_gir_VERSION = 1.0
-Cogl_1_0_gir_LIBS = libcogl.la
-Cogl_1_0_gir_FILES = $(cogl_1_public_h) cogl-enum-types.h
-Cogl_1_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API
-Cogl_1_0_gir_INCLUDES = GL-1.0 GObject-2.0
-Cogl_1_0_gir_EXPORT_PACKAGES = cogl-1.0
-Cogl_1_0_gir_SCANNERFLAGS = --warn-all --c-include='cogl/cogl.h'
+Cogl_2_0_gir_NAMESPACE = Cogl
+Cogl_2_0_gir_VERSION = 2.0
+Cogl_2_0_gir_LIBS = libcogl2.la
+Cogl_2_0_gir_FILES = $(cogl_1_public_h) cogl-enum-types.h
+Cogl_2_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API
+Cogl_2_0_gir_INCLUDES = GL-1.0 GObject-2.0
+Cogl_2_0_gir_EXPORT_PACKAGES = cogl-2.0
+Cogl_2_0_gir_SCANNERFLAGS = --warn-all --c-include='cogl/cogl.h'
 
-INTROSPECTION_GIRS += Cogl-1.0.gir
+INTROSPECTION_GIRS += Cogl-2.0.gir
 
 girdir = $(datadir)/gir-1.0
 gir_DATA = $(INTROSPECTION_GIRS)

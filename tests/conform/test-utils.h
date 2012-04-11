@@ -16,8 +16,8 @@ typedef enum _TestFlags
   TEST_REQUIREMENT_POINT_SPRITE = 1<<4
 } TestFlags;
 
-extern CoglContext *ctx;
-extern CoglFramebuffer *fb;
+extern CoglContext *test_ctx;
+extern CoglFramebuffer *test_fb;
 
 void
 test_utils_init (TestFlags flags);

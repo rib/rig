@@ -32,7 +32,7 @@ check_quadrant (TestState *state,
   width -= 4;
   height -= 4;
 
-  test_utils_check_region (fb, x, y, width, height, expected_rgba);
+  test_utils_check_region (test_fb, x, y, width, height, expected_rgba);
 }
 
 static void
@@ -40,16 +40,18 @@ test_paint (TestState *state)
 {
   CoglTexture2D *tex_2d;
   CoglTexture *tex;
-  CoglOffscreen *offscreen;
+  CoglFramebuffer *offscreen;
+  CoglPipeline *color;
+  CoglPipeline *textured;
 
-  tex_2d = cogl_texture_2d_new_with_size (ctx,
+  tex_2d = cogl_texture_2d_new_with_size (test_ctx,
                                           state->fb_width,
                                           state->fb_height,
                                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                           NULL);
   tex = COGL_TEXTURE (tex_2d);
 
-  offscreen = cogl_offscreen_new_to_texture (tex);
+  offscreen = COGL_FRAMEBUFFER (cogl_offscreen_new_to_texture (tex));
 
   /* Set a scale and translate transform on the window framebuffer
    * before switching to the offscreen framebuffer so we can verify it
@@ -61,41 +63,39 @@ test_paint (TestState *state)
    * quarter of the window size and slide it to the top right of the
    * window.
    */
-  cogl_push_matrix ();
-  cogl_translate (0.5, 0.5, 0);
-  cogl_scale (-0.5, 0.5, 1);
+  cogl_framebuffer_push_matrix (test_fb);
+  cogl_framebuffer_translate (test_fb, 0.5, 0.5, 0);
+  cogl_framebuffer_scale (test_fb, -0.5, 0.5, 1);
 
-  cogl_push_framebuffer (COGL_FRAMEBUFFER (offscreen));
+  /* Use something other than the identity matrix for the modelview so we can
+   * verify it gets restored when we switch back to test_fb */
+  cogl_framebuffer_scale (offscreen, 2, 2, 1);
 
-  /* Cogl should release the last reference when we call cogl_pop_framebuffer()
-   */
-  cogl_object_unref (offscreen);
-
-  /* Setup something other than the identity matrix for the modelview so we can
-   * verify it gets restored when we call cogl_pop_framebuffer () */
-  cogl_scale (2, 2, 1);
+  color = cogl_pipeline_new (test_ctx);
 
   /* red, top left */
-  cogl_set_source_color4ub (0xff, 0x00, 0x00, 0xff);
-  cogl_rectangle (-0.5, 0.5, 0, 0);
+  cogl_pipeline_set_color4f (color, 1, 0, 0, 1);
+  cogl_framebuffer_draw_rectangle (offscreen, color, -0.5, 0.5, 0, 0);
   /* green, top right */
-  cogl_set_source_color4ub (0x00, 0xff, 0x00, 0xff);
-  cogl_rectangle (0, 0.5, 0.5, 0);
+  cogl_pipeline_set_color4f (color, 0, 1, 0, 1);
+  cogl_framebuffer_draw_rectangle (offscreen, color, 0, 0.5, 0.5, 0);
   /* blue, bottom left */
-  cogl_set_source_color4ub (0x00, 0x00, 0xff, 0xff);
-  cogl_rectangle (-0.5, 0, 0, -0.5);
+  cogl_pipeline_set_color4f (color, 0, 0, 1, 1);
+  cogl_framebuffer_draw_rectangle (offscreen, color, -0.5, 0, 0, -0.5);
   /* white, bottom right */
-  cogl_set_source_color4ub (0xff, 0xff, 0xff, 0xff);
-  cogl_rectangle (0, 0, 0.5, -0.5);
+  cogl_pipeline_set_color4f (color, 1, 1, 1, 1);
+  cogl_framebuffer_draw_rectangle (offscreen, color, 0, 0, 0.5, -0.5);
 
-  cogl_pop_framebuffer ();
+  cogl_object_unref (offscreen);
 
-  cogl_set_source_texture (tex);
-  cogl_rectangle (-1, 1, 1, -1);
+  textured = cogl_pipeline_new (test_ctx);
+  cogl_pipeline_set_layer_texture (textured, 0, tex);
+  cogl_framebuffer_draw_rectangle (test_fb, textured, -1, 1, 1, -1);
+  cogl_object_unref (textured);
 
   cogl_object_unref (tex_2d);
 
-  cogl_pop_matrix ();
+  cogl_framebuffer_pop_matrix (test_fb);
 
   /* NB: The texture is drawn flipped horizontally and scaled to fit in the
    * top right corner of the window. */
@@ -115,35 +115,38 @@ test_flush (TestState *state)
 {
   CoglTexture2D *tex_2d;
   CoglTexture *tex;
-  CoglOffscreen *offscreen;
-  CoglColor clear_color;
+  CoglFramebuffer *offscreen;
   int i;
 
   for (i = 0; i < 3; i++)
     {
+      CoglPipeline *red;
+
       /* This tests that rendering to a framebuffer and then reading back
          the contents of the texture will automatically flush the
          journal */
 
-      tex_2d = cogl_texture_2d_new_with_size (ctx,
+      tex_2d = cogl_texture_2d_new_with_size (test_ctx,
                                               16, 16, /* width/height */
                                               COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                               NULL);
       tex = COGL_TEXTURE (tex_2d);
 
-      offscreen = cogl_offscreen_new_to_texture (tex);
+      offscreen = COGL_FRAMEBUFFER (cogl_offscreen_new_to_texture (tex));
 
-      cogl_push_framebuffer (COGL_FRAMEBUFFER (offscreen));
+      cogl_framebuffer_clear4f (offscreen, COGL_BUFFER_BIT_COLOR,
+                                0, 0, 0, 1);
 
-      cogl_color_init_from_4ub (&clear_color, 0, 0, 0, 255);
-      cogl_clear (&clear_color, COGL_BUFFER_BIT_COLOR);
-
-      cogl_set_source_color4ub (255, 0, 0, 255);
-      cogl_rectangle (-1, -1, 1, 1);
+      red = cogl_pipeline_new (test_ctx);
+      cogl_pipeline_set_color4f (red, 1, 0, 0, 1);
+      cogl_framebuffer_draw_rectangle (offscreen,
+                                       red,
+                                       -1, -1, 1, 1);
+      cogl_object_unref (red);
 
       if (i == 0)
         /* First time check using read pixels on the offscreen */
-        test_utils_check_region (COGL_FRAMEBUFFER (offscreen),
+        test_utils_check_region (offscreen,
                                  1, 1, 15, 15, 0xff0000ff);
       else if (i == 1)
         {
@@ -162,14 +165,16 @@ test_flush (TestState *state)
                                         0xff0000ff);
         }
 
-      cogl_pop_framebuffer ();
-
       if (i == 2)
         {
+          CoglPipeline *textured = cogl_pipeline_new (test_ctx);
+          cogl_pipeline_set_layer_texture (textured, 0, tex);
           /* Third time try drawing the texture to the screen */
-          cogl_set_source_texture (tex);
-          cogl_rectangle (-1, -1, 1, 1);
-          test_utils_check_region (fb,
+          cogl_framebuffer_draw_rectangle (test_fb,
+                                           textured,
+                                           -1, -1, 1, 1);
+          cogl_object_unref (textured);
+          test_utils_check_region (test_fb,
                                    2, 2, /* x/y */
                                    state->fb_width - 4,
                                    state->fb_height - 4,
@@ -186,15 +191,11 @@ test_offscreen (void)
 {
   TestState state;
 
-  state.fb_width = cogl_framebuffer_get_width (fb);
-  state.fb_height = cogl_framebuffer_get_height (fb);
+  state.fb_width = cogl_framebuffer_get_width (test_fb);
+  state.fb_height = cogl_framebuffer_get_height (test_fb);
 
-  /* XXX: we have to push/pop a framebuffer since this test currently
-   * uses the legacy cogl_rectangle() api. */
-  cogl_push_framebuffer (fb);
   test_paint (&state);
   test_flush (&state);
-  cogl_pop_framebuffer ();
 
   if (cogl_test_verbose ())
     g_print ("OK\n");

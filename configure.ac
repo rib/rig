@@ -3,30 +3,24 @@ AC_PREREQ(2.59)
 dnl ================================================================
 dnl XXX: If you are making a release then you need to check these
 dnl sections:
-dnl » API versions (Only the 1.x version needs to change)
+dnl » API versions
 dnl   (the pretty numbers that the users see)
 dnl
 dnl » Interface version details for libtool
 dnl   (the shared library versioning information)
 dnl
 dnl » Source code release status
-dnl   (mark the source code as being part of a "release" or from "git")
+dnl   (mark the source code as being part of a "snapshot", "release"
+dnl    or from "git")
 dnl ================================================================
 
 dnl ================================================================
 dnl API versions (i.e. the pretty numbers that users see)
 dnl ================================================================
-m4_define([cogl_major_version], [2])
-m4_define([cogl_minor_version], [0])
-m4_define([cogl_micro_version], [0])
-m4_define([cogl_version],
-          [cogl_major_version.cogl_minor_version.cogl_micro_version])
-
-dnl Since the core Cogl library has to also maintain support for the
-dnl Cogl 1.x API for Clutter then we track the 1.x version separately.
-m4_define([cogl_1_minor_version], [10])
-m4_define([cogl_1_micro_version], [1])
-m4_define([cogl_1_version], [1.cogl_1_minor_version.cogl_1_micro_version])
+m4_define([cogl_major_version], [1])
+m4_define([cogl_minor_version], [99])
+m4_define([cogl_micro_version], [1])
+m4_define([cogl_version], [cogl_major_version.cogl_minor_version.cogl_micro_version])
 
 dnl ================================================================
 dnl Interface version details for libtool
@@ -55,9 +49,9 @@ dnl ================================================================
 #
 #  5. If any interfaces have been removed since the last public release,
 #     then set AGE to 0.
-m4_define([cogl_lt_current], 10)
+m4_define([cogl_lt_current], 0)
 m4_define([cogl_lt_revision], 0)
-m4_define([cogl_lt_age], 1)
+m4_define([cogl_lt_age], 0)
 # We do also tell libtool the pretty version:
 m4_define([cogl_lt_release], [cogl_version])
 
@@ -72,7 +66,7 @@ dnl ================================================================
 # updating the version number in advance of a release.
 m4_define([cogl_release_status], [git])
 
-AC_INIT(cogl, [cogl_1_version])
+AC_INIT(cogl, [cogl_version])
 AC_CONFIG_SRCDIR(cogl/cogl.h)
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/autotools])
@@ -121,10 +115,6 @@ AC_SUBST([COGL_MICRO_VERSION],[cogl_micro_version])
 AC_SUBST([COGL_VERSION],[cogl_version])
 AC_SUBST([COGL_API_VERSION],[cogl_major_version.0])
 AC_SUBST([COGL_API_VERSION_AM],[$COGL_MAJOR_VERSION\_0])
-
-AC_SUBST([COGL_1_MINOR_VERSION],[cogl_1_minor_version])
-AC_SUBST([COGL_1_MICRO_VERSION],[cogl_1_micro_version])
-AC_SUBST([COGL_1_VERSION],[cogl_1_version])
 
 
 dnl ================================================================
@@ -1117,20 +1107,16 @@ build/win32/Makefile
 build/win32/vs9/Makefile
 build/win32/vs10/Makefile
 cogl/Makefile
-cogl/cogl-1.0.pc
-cogl/cogl-2.0-experimental.pc
+cogl/cogl2.pc
 cogl/cogl-defines.h
 cogl/cogl.rc
 cogl-pango/Makefile
-cogl-pango/cogl-pango-1.0.pc
-cogl-pango/cogl-pango-2.0-experimental.pc
+cogl-pango/cogl-pango2.pc
 cogl-pango/cogl-pango.rc
 doc/Makefile
 doc/reference/Makefile
-doc/reference/cogl/Makefile
-doc/reference/cogl/cogl-docs.xml
-doc/reference/cogl-2.0-experimental/Makefile
-doc/reference/cogl-2.0-experimental/cogl-2.0-experimental-docs.xml
+doc/reference/cogl2/Makefile
+doc/reference/cogl2/cogl2-docs.xml
 examples/Makefile
 tests/Makefile
 tests/conform/Makefile
@@ -1144,7 +1130,7 @@ dnl ================================================================
 dnl Dah Da!
 dnl ================================================================
 echo ""
-echo "Cogl - $COGL_1_VERSION/$COGL_VERSION (${COGL_RELEASE_STATUS})"
+echo "Cogl - $COGL_VERSION (${COGL_RELEASE_STATUS})"
 
 # Global flags
 echo ""

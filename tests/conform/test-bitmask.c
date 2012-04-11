@@ -9,6 +9,11 @@
    within Cogl. Cogl doesn't export the symbols for this data type so
    we just directly include the source instead */
 
+/* we undef these to avoid them being redefined by config.h when
+ * including cogl-bitmask.c */
+#undef COGL_ENABLE_EXPERIMENTAL_2_0_API
+#undef COGL_ENABLE_EXPERIMENTAL_API
+
 #include <cogl/cogl-bitmask.h>
 #include <cogl/cogl-bitmask.c>
 #define _COGL_IN_TEST_BITMASK

@@ -29,10 +29,14 @@
 
 #define __COGL_H_INSIDE__
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_2_0_API
+#ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
+#define COGL_ENABLE_EXPERIMENTAL_2_0_API
+#endif
+
+/* TODO: Most of our currently "experimental" api should now just be
+ * considered part of the 2.0 api */
 #ifndef COGL_ENABLE_EXPERIMENTAL_API
 #define COGL_ENABLE_EXPERIMENTAL_API
-#endif
 #endif
 
 /* We currently keep gtype integration delimited in case we eventually

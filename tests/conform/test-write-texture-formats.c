@@ -1,4 +1,4 @@
-#include <cogl/cogl2-experimental.h>
+#include <cogl/cogl.h>
 #include <stdarg.h>
 
 #include "test-utils.h"
@@ -31,12 +31,11 @@ test_color (CoglTexture *texture,
 }
 
 static void
-test_write_byte (CoglContext *context,
-                 CoglPixelFormat format,
+test_write_byte (CoglPixelFormat format,
                  guint8 byte,
                  guint32 expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (context, 0);
+  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   cogl_texture_set_region (texture,
                            0, 0, /* src_x / src_y */
@@ -53,12 +52,11 @@ test_write_byte (CoglContext *context,
 }
 
 static void
-test_write_short (CoglContext *context,
-                  CoglPixelFormat format,
+test_write_short (CoglPixelFormat format,
                   guint16 value,
                   guint32 expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (context, 0);
+  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   cogl_texture_set_region (texture,
                            0, 0, /* src_x / src_y */
@@ -75,12 +73,11 @@ test_write_short (CoglContext *context,
 }
 
 static void
-test_write_bytes (CoglContext *context,
-                  CoglPixelFormat format,
+test_write_bytes (CoglPixelFormat format,
                   guint32 value,
                   guint32 expected_pixel)
 {
-  CoglTexture *texture = test_utils_create_color_texture (context, 0);
+  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   value = GUINT32_TO_BE (value);
 
@@ -99,8 +96,7 @@ test_write_bytes (CoglContext *context,
 }
 
 static void
-test_write_int (CoglContext *context,
-                CoglPixelFormat format,
+test_write_int (CoglPixelFormat format,
                 guint32 expected_pixel,
                 ...)
 {
@@ -108,7 +104,7 @@ test_write_int (CoglContext *context,
   int bits;
   guint32 tex_data = 0;
   int bits_sum = 0;
-  CoglTexture *texture = test_utils_create_color_texture (context, 0);
+  CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   va_start (ap, expected_pixel);
 
@@ -141,43 +137,39 @@ test_write_int (CoglContext *context,
 void
 test_write_texture_formats (void)
 {
-  test_write_byte (ctx, COGL_PIXEL_FORMAT_A_8, 0x34, 0x00000034);
+  test_write_byte (COGL_PIXEL_FORMAT_A_8, 0x34, 0x00000034);
 #if 0
   /* I'm not sure what's the right value to put here because Nvidia
      and Mesa seem to behave differently so one of them must be
      wrong. */
-  test_write_byte (ctx, COGL_PIXEL_FORMAT_G_8, 0x34, 0x340000ff);
+  test_write_byte (test_ctx, COGL_PIXEL_FORMAT_G_8, 0x34, 0x340000ff);
 #endif
 
-  test_write_short (ctx, COGL_PIXEL_FORMAT_RGB_565, 0x0843, 0x080819ff);
-  test_write_short (ctx, COGL_PIXEL_FORMAT_RGBA_4444_PRE, 0x1234, 0x11223344);
-  test_write_short (ctx, COGL_PIXEL_FORMAT_RGBA_5551_PRE, 0x0887, 0x081019ff);
+  test_write_short (COGL_PIXEL_FORMAT_RGB_565, 0x0843, 0x080819ff);
+  test_write_short (COGL_PIXEL_FORMAT_RGBA_4444_PRE, 0x1234, 0x11223344);
+  test_write_short (COGL_PIXEL_FORMAT_RGBA_5551_PRE, 0x0887, 0x081019ff);
 
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_RGB_888, 0x123456ff, 0x123456ff);
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_BGR_888, 0x563412ff, 0x123456ff);
+  test_write_bytes (COGL_PIXEL_FORMAT_RGB_888, 0x123456ff, 0x123456ff);
+  test_write_bytes (COGL_PIXEL_FORMAT_BGR_888, 0x563412ff, 0x123456ff);
 
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_RGBA_8888_PRE,
-                    0x12345678, 0x12345678);
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_BGRA_8888_PRE,
-                    0x56341278, 0x12345678);
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_ARGB_8888_PRE,
-                    0x78123456, 0x12345678);
-  test_write_bytes (ctx, COGL_PIXEL_FORMAT_ABGR_8888_PRE,
-                    0x78563412, 0x12345678);
+  test_write_bytes (COGL_PIXEL_FORMAT_RGBA_8888_PRE, 0x12345678, 0x12345678);
+  test_write_bytes (COGL_PIXEL_FORMAT_BGRA_8888_PRE, 0x56341278, 0x12345678);
+  test_write_bytes (COGL_PIXEL_FORMAT_ARGB_8888_PRE, 0x78123456, 0x12345678);
+  test_write_bytes (COGL_PIXEL_FORMAT_ABGR_8888_PRE, 0x78563412, 0x12345678);
 
-  test_write_int (ctx, COGL_PIXEL_FORMAT_RGBA_1010102_PRE,
+  test_write_int (COGL_PIXEL_FORMAT_RGBA_1010102_PRE,
                   0x123456ff,
                   10, 0x12, 10, 0x34, 10, 0x56, 2, 0xff,
                   -1);
-  test_write_int (ctx, COGL_PIXEL_FORMAT_BGRA_1010102_PRE,
+  test_write_int (COGL_PIXEL_FORMAT_BGRA_1010102_PRE,
                   0x123456ff,
                   10, 0x56, 10, 0x34, 10, 0x12, 2, 0xff,
                   -1);
-  test_write_int (ctx, COGL_PIXEL_FORMAT_ARGB_2101010_PRE,
+  test_write_int (COGL_PIXEL_FORMAT_ARGB_2101010_PRE,
                   0x123456ff,
                   2, 0xff, 10, 0x12, 10, 0x34, 10, 0x56,
                   -1);
-  test_write_int (ctx, COGL_PIXEL_FORMAT_ABGR_2101010_PRE,
+  test_write_int (COGL_PIXEL_FORMAT_ABGR_2101010_PRE,
                   0x123456ff,
                   2, 0xff, 10, 0x56, 10, 0x34, 10, 0x12,
                   -1);

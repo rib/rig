@@ -21,7 +21,7 @@
 
 typedef struct _TestState
 {
-  CoglContext *ctx;
+  int padding;
 } TestState;
 
 
@@ -52,7 +52,6 @@ test_blend (TestState *state,
   guint8 Ba = MASK_ALPHA (blend_constant);
   CoglColor blend_const_color;
 
-  CoglHandle material;
   CoglPipeline *pipeline;
   gboolean status;
   GError *error = NULL;
@@ -60,21 +59,22 @@ test_blend (TestState *state,
   int x_off;
 
   /* First write out the destination color without any blending... */
-  pipeline = cogl_pipeline_new (ctx);
+  pipeline = cogl_pipeline_new (test_ctx);
   cogl_pipeline_set_color4ub (pipeline, Dr, Dg, Db, Da);
   cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-  cogl_set_source (pipeline);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
+  cogl_framebuffer_draw_rectangle (test_fb,
+                                   pipeline,
+                                   x * QUAD_WIDTH,
+                                   y * QUAD_WIDTH,
+                                   x * QUAD_WIDTH + QUAD_WIDTH,
+                                   y * QUAD_WIDTH + QUAD_WIDTH);
   cogl_object_unref (pipeline);
 
   /*
    * Now blend a rectangle over our well defined destination:
    */
 
-  pipeline = cogl_pipeline_new (ctx);
+  pipeline = cogl_pipeline_new (test_ctx);
   cogl_pipeline_set_color4ub (pipeline, Sr, Sg, Sb, Sa);
 
   status = cogl_pipeline_set_blend (pipeline, blend_string, &error);
@@ -94,11 +94,12 @@ test_blend (TestState *state,
   cogl_color_init_from_4ub (&blend_const_color, Br, Bg, Bb, Ba);
   cogl_pipeline_set_blend_constant (pipeline, &blend_const_color);
 
-  cogl_set_source (pipeline);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
+  cogl_framebuffer_draw_rectangle (test_fb,
+                                   pipeline,
+                                   x * QUAD_WIDTH,
+                                   y * QUAD_WIDTH,
+                                   x * QUAD_WIDTH + QUAD_WIDTH,
+                                   y * QUAD_WIDTH + QUAD_WIDTH);
   cogl_object_unref (pipeline);
 
   /* See what we got... */
@@ -118,60 +119,7 @@ test_blend (TestState *state,
         g_print ("  blend constant = UNUSED\n");
     }
 
-  test_utils_check_pixel (fb, x_off, y_off, expected_result);
-
-
-  /*
-   * Test with legacy API
-   */
-
-  /* Clear previous work */
-  cogl_set_source_color4ub (0, 0, 0, 0xff);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
-
-  /* First write out the destination color without any blending... */
-  material = cogl_material_new ();
-  cogl_material_set_color4ub (material, Dr, Dg, Db, Da);
-  cogl_material_set_blend (material, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-  cogl_set_source (material);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_handle_unref (material);
-
-  /*
-   * Now blend a rectangle over our well defined destination:
-   */
-
-  material = cogl_material_new ();
-  cogl_material_set_color4ub (material, Sr, Sg, Sb, Sa);
-
-  status = cogl_material_set_blend (material, blend_string, &error);
-  if (!status)
-    {
-      /* This is a failure as it must be equivalent to the new API */
-      g_warning ("Error setting blend string %s: %s",
-		 blend_string, error->message);
-      g_assert_not_reached ();
-    }
-
-  cogl_color_init_from_4ub (&blend_const_color, Br, Bg, Bb, Ba);
-  cogl_material_set_blend_constant (material, &blend_const_color);
-
-  cogl_set_source (material);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
-  cogl_handle_unref (material);
-
-  /* See what we got... */
-
-  test_utils_check_pixel (fb, x_off, y_off, expected_result);
+  test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
 }
 
 static CoglTexture *
@@ -228,7 +176,7 @@ test_tex_combine (TestState *state,
   guint8 Ca = MASK_ALPHA (combine_constant);
   CoglColor combine_const_color;
 
-  CoglHandle material;
+  CoglPipeline *pipeline;
   gboolean status;
   GError *error = NULL;
   int y_off;
@@ -238,17 +186,17 @@ test_tex_combine (TestState *state,
   tex0 = make_texture (tex0_color);
   tex1 = make_texture (tex1_color);
 
-  material = cogl_material_new ();
+  pipeline = cogl_pipeline_new (test_ctx);
 
-  cogl_material_set_color4ub (material, 0x80, 0x80, 0x80, 0x80);
-  cogl_material_set_blend (material, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+  cogl_pipeline_set_color4ub (pipeline, 0x80, 0x80, 0x80, 0x80);
+  cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
 
-  cogl_material_set_layer (material, 0, tex0);
-  cogl_material_set_layer_combine (material, 0,
+  cogl_pipeline_set_layer_texture (pipeline, 0, tex0);
+  cogl_pipeline_set_layer_combine (pipeline, 0,
                                    "RGBA = REPLACE (TEXTURE)", NULL);
 
-  cogl_material_set_layer (material, 1, tex1);
-  status = cogl_material_set_layer_combine (material, 1,
+  cogl_pipeline_set_layer_texture (pipeline, 1, tex1);
+  status = cogl_pipeline_set_layer_combine (pipeline, 1,
                                             combine_string, &error);
   if (!status)
     {
@@ -259,15 +207,15 @@ test_tex_combine (TestState *state,
     }
 
   cogl_color_init_from_4ub (&combine_const_color, Cr, Cg, Cb, Ca);
-  cogl_material_set_layer_combine_constant (material, 1, &combine_const_color);
+  cogl_pipeline_set_layer_combine_constant (pipeline, 1, &combine_const_color);
 
-  cogl_set_source (material);
-  cogl_rectangle (x * QUAD_WIDTH,
-                  y * QUAD_WIDTH,
-                  x * QUAD_WIDTH + QUAD_WIDTH,
-                  y * QUAD_WIDTH + QUAD_WIDTH);
-
-  cogl_handle_unref (material);
+  cogl_framebuffer_draw_rectangle (test_fb,
+                                   pipeline,
+                                   x * QUAD_WIDTH,
+                                   y * QUAD_WIDTH,
+                                   x * QUAD_WIDTH + QUAD_WIDTH,
+                                   y * QUAD_WIDTH + QUAD_WIDTH);
+  cogl_object_unref (pipeline);
   cogl_object_unref (tex0);
   cogl_object_unref (tex1);
 
@@ -288,7 +236,7 @@ test_tex_combine (TestState *state,
         g_print ("  combine constant = UNUSED\n");
     }
 
-  test_utils_check_pixel (fb, x_off, y_off, expected_result);
+  test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
 }
 
 static void
@@ -350,7 +298,7 @@ paint (TestState *state)
                     "A = MODULATE (PREVIOUS, TEXTURE)", /* tex combine */
                     0xffffff20); /* expected */
 
-  /* XXX: we are assuming test_tex_combine creates a material with
+  /* XXX: we are assuming test_tex_combine creates a pipeline with
    * a color of 0x80808080 (i.e. the "PRIMARY" color) */
   test_tex_combine (state, 7, 0, /* position */
                     0xffffff80, /* texture 0 color (alpha = 0.5) */
@@ -412,17 +360,13 @@ test_blend_strings (void)
 {
   TestState state;
 
-  cogl_framebuffer_orthographic (fb, 0, 0,
-                                 cogl_framebuffer_get_width (fb),
-                                 cogl_framebuffer_get_height (fb),
+  cogl_framebuffer_orthographic (test_fb, 0, 0,
+                                 cogl_framebuffer_get_width (test_fb),
+                                 cogl_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
-  /* XXX: we have to push/pop a framebuffer since this test currently
-   * uses the legacy cogl_rectangle() api. */
-  cogl_push_framebuffer (fb);
   paint (&state);
-  cogl_pop_framebuffer ();
 
   if (cogl_test_verbose ())
     g_print ("OK\n");

@@ -3,11 +3,11 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 apiversion=@COGL_API_VERSION@
-requires=@COGL_PKG_REQUIRES@
+requires=@COGL_PKG_REQUIRES@ cogl2
 
-Name: Cogl
+Name: CoglPango2
 Description: An object oriented GL/GLES Abstraction/Utility Layer
 Version: @COGL_VERSION@
-Libs: -L${libdir} -lcogl
-Cflags: -I${includedir}/cogl
+Libs: -L${libdir} -lcoglpango2
+Cflags: -I${includedir}/cogl2
 Requires: ${requires}

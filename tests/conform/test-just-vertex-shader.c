@@ -25,90 +25,17 @@ create_dummy_texture (void)
 }
 
 static void
-paint_legacy (TestState *state)
-{
-  CoglHandle material = cogl_material_new ();
-  CoglTexture *tex;
-  CoglColor color;
-  GError *error = NULL;
-  CoglHandle shader, program;
-
-  cogl_color_init_from_4ub (&color, 0, 0, 0, 255);
-  cogl_clear (&color, COGL_BUFFER_BIT_COLOR);
-
-  /* Set the primary vertex color as red */
-  cogl_color_set_from_4ub (&color, 0xff, 0x00, 0x00, 0xff);
-  cogl_material_set_color (material, &color);
-
-  /* Override the vertex color in the texture environment with a
-     constant green color provided by a texture */
-  tex = create_dummy_texture ();
-  cogl_material_set_layer (material, 0, tex);
-  cogl_object_unref (tex);
-  if (!cogl_material_set_layer_combine (material, 0,
-                                        "RGBA=REPLACE(TEXTURE)",
-                                        &error))
-    {
-      g_warning ("Error setting layer combine: %s", error->message);
-      g_assert_not_reached ();
-    }
-
-  /* Set up a dummy vertex shader that does nothing but the usual
-     fixed function transform */
-  shader = cogl_create_shader (COGL_SHADER_TYPE_VERTEX);
-  cogl_shader_source (shader,
-                      "void\n"
-                      "main ()\n"
-                      "{\n"
-                      "  cogl_position_out = "
-                      "cogl_modelview_projection_matrix * "
-                      "cogl_position_in;\n"
-                      "  cogl_color_out = cogl_color_in;\n"
-                      "  cogl_tex_coord_out[0] = cogl_tex_coord_in;\n"
-                      "}\n");
-  cogl_shader_compile (shader);
-  if (!cogl_shader_is_compiled (shader))
-    {
-      char *log = cogl_shader_get_info_log (shader);
-      g_warning ("Shader compilation failed:\n%s", log);
-      g_free (log);
-      g_assert_not_reached ();
-    }
-
-  program = cogl_create_program ();
-  cogl_program_attach_shader (program, shader);
-  cogl_program_link (program);
-
-  cogl_handle_unref (shader);
-
-  /* Draw something using the material */
-  cogl_set_source (material);
-  cogl_rectangle (0, 0, 50, 50);
-
-  /* Draw it again using the program. It should look exactly the same */
-  cogl_program_use (program);
-  cogl_rectangle (50, 0, 100, 50);
-  cogl_program_use (COGL_INVALID_HANDLE);
-
-  cogl_handle_unref (material);
-  cogl_handle_unref (program);
-}
-
-static void
 paint (TestState *state)
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (ctx);
+  CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
   CoglTexture *tex;
-  CoglColor color;
   GError *error = NULL;
-  CoglHandle shader, program;
+  CoglSnippet *snippet;
 
-  cogl_color_init_from_4ub (&color, 0, 0, 0, 255);
-  cogl_clear (&color, COGL_BUFFER_BIT_COLOR);
+  cogl_framebuffer_clear4f (test_fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
   /* Set the primary vertex color as red */
-  cogl_color_set_from_4ub (&color, 0xff, 0x00, 0x00, 0xff);
-  cogl_pipeline_set_color (pipeline, &color);
+  cogl_pipeline_set_color4f (pipeline, 1, 0, 0, 1);
 
   /* Override the vertex color in the texture environment with a
      constant green color provided by a texture */
@@ -124,43 +51,25 @@ paint (TestState *state)
     }
 
   /* Set up a dummy vertex shader that does nothing but the usual
-     fixed function transform */
-  shader = cogl_create_shader (COGL_SHADER_TYPE_VERTEX);
-  cogl_shader_source (shader,
-                      "void\n"
-                      "main ()\n"
-                      "{\n"
-                      "  cogl_position_out = "
-                      "cogl_modelview_projection_matrix * "
-                      "cogl_position_in;\n"
-                      "  cogl_color_out = cogl_color_in;\n"
-                      "  cogl_tex_coord_out[0] = cogl_tex_coord_in;\n"
-                      "}\n");
-  cogl_shader_compile (shader);
-  if (!cogl_shader_is_compiled (shader))
-    {
-      char *log = cogl_shader_get_info_log (shader);
-      g_warning ("Shader compilation failed:\n%s", log);
-      g_free (log);
-      g_assert_not_reached ();
-    }
+     modelview-projection transform */
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+                              NULL, /* no declarations */
+                              NULL); /* no "post" code */
+  cogl_snippet_set_replace (snippet,
+                            "  cogl_position_out = "
+                            "cogl_modelview_projection_matrix * "
+                            "cogl_position_in;\n"
+                            "  cogl_color_out = cogl_color_in;\n"
+                            "  cogl_tex_coord_out[0] = cogl_tex_coord_in;\n");
 
-  program = cogl_create_program ();
-  cogl_program_attach_shader (program, shader);
-  cogl_program_link (program);
+  /* Draw something without the snippet */
+  cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 50, 50);
 
-  cogl_handle_unref (shader);
+  /* Draw it again using the snippet. It should look exactly the same */
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
 
-  /* Draw something without the program */
-  cogl_set_source (pipeline);
-  cogl_rectangle (0, 0, 50, 50);
-
-  /* Draw it again using the program. It should look exactly the same */
-  cogl_pipeline_set_user_program (pipeline, program);
-  cogl_handle_unref (program);
-
-  cogl_rectangle (50, 0, 100, 50);
-  cogl_pipeline_set_user_program (pipeline, COGL_INVALID_HANDLE);
+  cogl_framebuffer_draw_rectangle (test_fb, pipeline, 50, 0, 100, 50);
 
   cogl_object_unref (pipeline);
 }
@@ -179,27 +88,18 @@ test_just_vertex_shader (void)
 {
   TestState state;
 
-  cogl_framebuffer_orthographic (fb,
+  cogl_framebuffer_orthographic (test_fb,
                                  0, 0,
-                                 cogl_framebuffer_get_width (fb),
-                                 cogl_framebuffer_get_height (fb),
+                                 cogl_framebuffer_get_width (test_fb),
+                                 cogl_framebuffer_get_height (test_fb),
                                  -1,
                                  100);
 
-  /* If shaders aren't supported then we can't run the test */
-  if (cogl_features_available (COGL_FEATURE_SHADERS_GLSL))
+  /* If GLSL isn't supported then we can't run the test */
+  if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_GLSL))
     {
-      /* XXX: we have to push/pop a framebuffer since this test currently
-       * uses the legacy cogl_rectangle() api. */
-      cogl_push_framebuffer (fb);
-
-      paint_legacy (&state);
-      validate_result (fb);
-
       paint (&state);
-      validate_result (fb);
-
-      cogl_pop_framebuffer ();
+      validate_result (test_fb);
 
       if (cogl_test_verbose ())
         g_print ("OK\n");

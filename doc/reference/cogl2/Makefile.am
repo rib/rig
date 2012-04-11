@@ -9,7 +9,7 @@ AUTOMAKE_OPTIONS = 1.6
 # of using the various options.
 
 # The name of the module, e.g. 'glib'.
-DOC_MODULE=cogl
+DOC_MODULE=cogl2
 
 # The top-level SGML file. You can change this if you want to.
 DOC_MAIN_SGML_FILE=$(DOC_MODULE)-docs.xml
@@ -46,7 +46,8 @@ FIXXREF_OPTIONS=\
 # e.g. CFILE_GLOB=$(top_srcdir)/gtk/*.c
 HFILE_GLOB=\
 	$(top_srcdir)/cogl/*.h \
-	$(top_builddir)/cogl/*.h
+	$(top_builddir)/cogl/*.h \
+	$(top_srcdir)/cogl/winsys/*.h
 CFILE_GLOB=$(top_srcdir)/cogl/*.c
 
 # Header files to ignore when scanning.
@@ -61,11 +62,13 @@ IGNORE_HFILES=\
 	cogl-framebuffer-private.h		\
 	cogl-onscreen-private.h			\
 	cogl-gtype-private.h			\
-	cogl-index-buffer-private.h		\
+	cogl-index-array-private.h		\
 	cogl-indices-private.h			\
 	cogl-journal-private.h			\
+	cogl-material-compat.h			\
 	cogl-matrix-private.h			\
 	cogl-object-private.h			\
+	cogl-path.h				\
 	cogl-path-private.h			\
 	cogl-depth-state-private.h		\
 	cogl-pipeline-fragend-arbfp-private.h	\
@@ -78,18 +81,22 @@ IGNORE_HFILES=\
 	cogl-pipeline-progend-glsl-private.h	\
 	cogl-pipeline-vertend-fixed-private.h	\
 	cogl-pipeline-vertend-glsl-private.h	\
-	cogl-pixel-buffer-private.h		\
+	cogl-pixel-array-private.h		\
 	cogl-primitive-private.h		\
 	cogl-primitives-private.h		\
 	cogl-private.h				\
 	cogl-program-private.h			\
+	cogl-program.h				\
 	cogl-shader-private.h			\
+	cogl-shader.h				\
+	cogl-snippet-private.h			\
 	cogl-sub-texture-private.h		\
 	cogl-texture-2d-private.h		\
 	cogl-texture-2d-sliced-private.h	\
 	cogl-texture-3d-private.h		\
 	cogl-texture-private.h			\
 	cogl-texture-rectangle-private.h	\
+	cogl-vertex-buffer.h			\
 	cogl-vertex-array-private.h		\
 	cogl-vertex-attribute-private.h		\
 	cogl-vertex-buffer-private.h		\
@@ -106,8 +113,7 @@ IGNORE_HFILES=\
 	cogl-profile.h				\
 	cogl-util.h 				\
 	driver 					\
-	tesselator				\
-	winsys
+	tesselator
 
 EXTRA_HFILES=
 
@@ -138,7 +144,7 @@ expand_content_files = \
 # e.g. GTKDOC_LIBS=$(top_builddir)/gtk/$(gtktargetlib)
 
 INCLUDES=-I$(top_srcdir) -I$(top_builddir)/cogl -DCOGL_ENABLE_EXPERIMENTAL_API $(COGL_DEP_CFLAGS)
-GTKDOC_LIBS=$(top_builddir)/cogl/libcogl.la $(COGL_DEP_LIBS)
+GTKDOC_LIBS=$(top_builddir)/cogl/libcogl2.la $(COGL_DEP_LIBS)
 
 # This includes the standard gtk-doc make rules, copied by gtkdocize.
 if BUILD_GTK_DOC

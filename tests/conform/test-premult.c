@@ -46,7 +46,7 @@ make_texture (guint32 color,
   CoglTexture2D *tex_2d;
   guchar *tex_data = gen_tex_data (color);
 
-  tex_2d = cogl_texture_2d_new_from_data (ctx,
+  tex_2d = cogl_texture_2d_new_from_data (test_ctx,
                                           QUAD_WIDTH,
                                           QUAD_WIDTH,
                                           src_format,
@@ -79,59 +79,40 @@ set_region (CoglTexture *tex,
 
 static void
 check_texture (CoglPipeline *pipeline,
-	       CoglHandle material,
 	       int x,
 	       int y,
 	       CoglTexture *tex,
 	       guint32 expected_result)
 {
-  /* Legacy */
-  cogl_push_framebuffer (fb);
-  cogl_material_set_layer (material, 0, tex);
-  cogl_set_source (material);
-  cogl_rectangle (x * QUAD_WIDTH,
-		  y * QUAD_WIDTH,
-		  x * QUAD_WIDTH + QUAD_WIDTH,
-		  y * QUAD_WIDTH + QUAD_WIDTH);
-  test_utils_check_pixel (fb, x * QUAD_WIDTH + QUAD_WIDTH / 2, y * QUAD_WIDTH + QUAD_WIDTH / 2, expected_result);
-  cogl_pop_framebuffer ();
-
-  /* New API */
   cogl_pipeline_set_layer_texture (pipeline, 0, COGL_TEXTURE (tex));
-  cogl_framebuffer_draw_rectangle (fb, pipeline,
+  cogl_framebuffer_draw_rectangle (test_fb, pipeline,
 				   x * QUAD_WIDTH,
 				   y * QUAD_WIDTH,
 				   x * QUAD_WIDTH + QUAD_WIDTH,
 				   y * QUAD_WIDTH + QUAD_WIDTH);
-  test_utils_check_pixel (fb, x * QUAD_WIDTH + QUAD_WIDTH / 2, y * QUAD_WIDTH + QUAD_WIDTH / 2, expected_result);
+  test_utils_check_pixel (test_fb,
+                          x * QUAD_WIDTH + QUAD_WIDTH / 2,
+                          y * QUAD_WIDTH + QUAD_WIDTH / 2,
+                          expected_result);
 }
 
 void
 test_premult (void)
 {
   CoglPipeline *pipeline;
-  CoglHandle material;
   CoglTexture *tex;
 
-  cogl_framebuffer_orthographic (fb, 0, 0,
-				 cogl_framebuffer_get_width (fb),
-				 cogl_framebuffer_get_height (fb),
+  cogl_framebuffer_orthographic (test_fb, 0, 0,
+				 cogl_framebuffer_get_width (test_fb),
+				 cogl_framebuffer_get_height (test_fb),
 				 -1,
 				 100);
 
-  cogl_framebuffer_clear4f (fb,
+  cogl_framebuffer_clear4f (test_fb,
                             COGL_BUFFER_BIT_COLOR,
                             1.0f, 1.0f, 1.0f, 1.0f);
 
-  /* Legacy */
-  material = cogl_material_new ();
-  cogl_material_set_blend (material,
-                           "RGBA = ADD (SRC_COLOR, 0)", NULL);
-  cogl_material_set_layer_combine (material, 0,
-                                   "RGBA = REPLACE (TEXTURE)", NULL);
-
-  /* New API */
-  pipeline = cogl_pipeline_new (ctx);
+  pipeline = cogl_pipeline_new (test_ctx);
   cogl_pipeline_set_blend (pipeline,
                            "RGBA = ADD (SRC_COLOR, 0)", NULL);
   cogl_pipeline_set_layer_combine (pipeline, 0,
@@ -145,7 +126,7 @@ test_premult (void)
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
                       COGL_PIXEL_FORMAT_RGBA_8888); /* internal format */
-  check_texture (pipeline, material, 0, 0, /* position */
+  check_texture (pipeline, 0, 0, /* position */
 		 tex,
 		 0xff00ff80); /* expected */
 
@@ -158,7 +139,7 @@ test_premult (void)
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE); /* internal format */
-  check_texture (pipeline, material, 1, 0, /* position */
+  check_texture (pipeline, 1, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 
@@ -172,7 +153,7 @@ test_premult (void)
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
                       COGL_PIXEL_FORMAT_ANY); /* internal format */
-  check_texture (pipeline, material, 2, 0, /* position */
+  check_texture (pipeline, 2, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 
@@ -186,7 +167,7 @@ test_premult (void)
   tex = make_texture (0x80008080,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE); /* internal format */
-  check_texture (pipeline, material, 3, 0, /* position */
+  check_texture (pipeline, 3, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 
@@ -199,7 +180,7 @@ test_premult (void)
   tex = make_texture (0x80008080,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
                       COGL_PIXEL_FORMAT_RGBA_8888); /* internal format */
-  check_texture (pipeline, material, 4, 0, /* position */
+  check_texture (pipeline, 4, 0, /* position */
 		 tex,
 		 0xff00ff80); /* expected */
 
@@ -213,7 +194,7 @@ test_premult (void)
   tex = make_texture (0x80008080,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
                       COGL_PIXEL_FORMAT_ANY); /* internal format */
-  check_texture (pipeline, material, 5, 0, /* position */
+  check_texture (pipeline, 5, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 
@@ -230,7 +211,7 @@ test_premult (void)
   if (cogl_test_verbose ())
     g_print ("set_region (0xff00ff80, RGBA_8888)\n");
   set_region (tex, 0xff00ff80, COGL_PIXEL_FORMAT_RGBA_8888);
-  check_texture (pipeline, material, 6, 0, /* position */
+  check_texture (pipeline, 6, 0, /* position */
 		 tex,
 		 0xff00ff80); /* expected */
 
@@ -246,7 +227,7 @@ test_premult (void)
   if (cogl_test_verbose ())
     g_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
   set_region (tex, 0x80008080, COGL_PIXEL_FORMAT_RGBA_8888_PRE);
-  check_texture (pipeline, material, 7, 0, /* position */
+  check_texture (pipeline, 7, 0, /* position */
 		 tex,
 		 0xff00ff80); /* expected */
 
@@ -261,7 +242,7 @@ test_premult (void)
   if (cogl_test_verbose ())
     g_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
   set_region (tex, 0x80008080, COGL_PIXEL_FORMAT_RGBA_8888_PRE);
-  check_texture (pipeline, material, 8, 0, /* position */
+  check_texture (pipeline, 8, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 
@@ -279,7 +260,7 @@ test_premult (void)
   if (cogl_test_verbose ())
     g_print ("set_region (0xff00ff80, RGBA_8888)\n");
   set_region (tex, 0xff00ff80, COGL_PIXEL_FORMAT_RGBA_8888);
-  check_texture (pipeline, material, 9, 0, /* position */
+  check_texture (pipeline, 9, 0, /* position */
 		 tex,
 		 0x80008080); /* expected */
 

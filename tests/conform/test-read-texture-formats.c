@@ -1,4 +1,4 @@
-#include <cogl/cogl2-experimental.h>
+#include <cogl/cogl.h>
 #include <stdarg.h>
 
 #include "test-utils.h"
@@ -146,7 +146,7 @@ test_read_texture_formats (void)
 {
   CoglTexture2D *tex_2d;
 
-  tex_2d = cogl_texture_2d_new_from_data (ctx,
+  tex_2d = cogl_texture_2d_new_from_data (test_ctx,
                                           1, 1, /* width / height */
                                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,

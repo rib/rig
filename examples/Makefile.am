@@ -5,18 +5,17 @@ INCLUDES = \
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
-	$(COGL_EXTRA_CFLAGS) \
-	-DCOGL_ENABLE_EXPERIMENTAL_2_0_API
+	$(COGL_EXTRA_CFLAGS)
 
 if INSTALL_EXAMPLES
-AM_CFLAGS += -DCOGL_EXAMPLES_DATA=\""$(pkgdatadir)/examples-data/"\"
+AM_CFLAGS += -DCOGL_EXAMPLES_DATA=\""$(pkgdatadir)/2.0/examples-data/"\"
 else
 AM_CFLAGS += -DCOGL_EXAMPLES_DATA=\""$(abs_top_srcdir)/examples/"\"
 endif
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl.la
+	$(top_builddir)/cogl/libcogl2.la
 
 programs = cogl-hello cogl-info cogl-msaa
 examples_datadir = $(pkgdatadir)/examples-data
@@ -32,7 +31,7 @@ cogl_msaa_LDADD = $(common_ldadd)
 if BUILD_COGL_PANGO
 programs += cogl-crate
 cogl_crate_SOURCES = cogl-crate.c
-cogl_crate_LDADD = $(common_ldadd) $(COGL_PANGO_DEP_LIBS) $(top_builddir)/cogl-pango/libcogl-pango.la
+cogl_crate_LDADD = $(common_ldadd) $(COGL_PANGO_DEP_LIBS) $(top_builddir)/cogl-pango/libcogl-pango2.la
 cogl_crate_CFLAGS = $(AM_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 examples_data_DATA += crate.jpg
 endif
@@ -46,9 +45,9 @@ cogl_x11_tfp_LDADD = $(common_ldadd)
 endif
 
 if SUPPORT_WAYLAND_EGL_SERVER
-programs += cogland
-cogland_SOURCES = cogland.c
-cogland_LDADD = $(common_ldadd)
+programs += cogland2
+cogland2_SOURCES = cogland.c
+cogland2_LDADD = $(common_ldadd)
 endif
 
 if SUPPORT_SDL
