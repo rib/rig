@@ -98,8 +98,6 @@ copy ..\..\..\cogl\cogl-fixed.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-glib-source.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
-copy ..\..\..\cogl\cogl-material-compat.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
-
 copy ..\..\..\cogl\cogl-pipeline.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-vector.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl

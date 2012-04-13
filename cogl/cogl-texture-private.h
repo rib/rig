@@ -145,7 +145,7 @@ typedef enum _CoglTextureChangeFlags
 {
   /* Whenever the internals of a texture are changed such that the
    * underlying GL textures that represent the CoglTexture change then
-   * we notify cogl-material.c via
+   * we notify cogl-pipeline.c via
    * _cogl_pipeline_texture_pre_change_notify
    */
   COGL_TEXTURE_CHANGE_GL_TEXTURES

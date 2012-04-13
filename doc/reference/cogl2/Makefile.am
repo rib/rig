@@ -65,7 +65,6 @@ IGNORE_HFILES=\
 	cogl-index-array-private.h		\
 	cogl-indices-private.h			\
 	cogl-journal-private.h			\
-	cogl-material-compat.h			\
 	cogl-matrix-private.h			\
 	cogl-object-private.h			\
 	cogl-path.h				\

@@ -127,7 +127,6 @@ copy ..\..\..\cogl\cogl-depth-state.h $(OutDir)\include\cogl-$(CoglApiVersion)\c
 copy ..\..\..\cogl\cogl-euler.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-fixed.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-glib-source.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
-copy ..\..\..\cogl\cogl-material-compat.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-pipeline.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-quaternion.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-vector.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
