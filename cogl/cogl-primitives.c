@@ -32,7 +32,6 @@
 #include "cogl-texture-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-opengl-private.h"
-#include "cogl-vertex-buffer-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-attribute-private.h"
 #include "cogl-private.h"

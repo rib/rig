@@ -67,7 +67,6 @@
 #ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
 #include <cogl/cogl-path.h>
 #include <cogl/cogl-clip-state.h>
-#include <cogl/cogl-vertex-buffer.h>
 #include <cogl/cogl-enum-types.h>
 #include <cogl/cogl-material-compat.h>
 #include <cogl/cogl-shader.h>

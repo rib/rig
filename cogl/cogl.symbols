@@ -323,7 +323,7 @@ cogl_is_index_buffer
 cogl_is_indices_array
 #endif
 cogl_is_material
-cogl_is_offscreen 
+cogl_is_offscreen
 cogl_is_path
 cogl_is_pipeline
 cogl_is_pixel_buffer_EXP
@@ -784,25 +784,6 @@ cogl_vector3_multiply_scalar
 cogl_vector3_normalize
 cogl_vector3_subtract
 
-cogl_vertex_buffer_add
-cogl_vertex_buffer_delete
-cogl_vertex_buffer_disable
-cogl_vertex_buffer_draw
-cogl_vertex_buffer_draw_elements
-cogl_vertex_buffer_enable
-cogl_vertex_buffer_get_n_vertices
-cogl_vertex_buffer_indices_get_for_quads
-cogl_vertex_buffer_indices_get_type
-cogl_vertex_buffer_indices_new
-cogl_vertex_buffer_new
-#ifndef COGL_DISABLE_DEPRECATED
-cogl_vertex_buffer_ref
-#endif
-cogl_vertex_buffer_submit
-#ifndef COGL_DISABLE_DEPRECATED
-cogl_vertex_buffer_unref
-#endif
-
 cogl_vertices_mode_get_type
 
 #ifdef COGL_DISABLE_DEPRECATED
@@ -848,7 +829,7 @@ cogl_x11_onscreen_get_visual_xid
 cogl_x11_onscreen_set_foreign_window_xid
 #endif
 
-#ifndef COGL_NO_EXPORT_UNDERSCORE 
+#ifndef COGL_NO_EXPORT_UNDERSCORE
 /* probably these should not be exported at all, but anyways, for now... */
 /* eventually, this section should disappear (or cogl, cogl-pango, clutter et al */
 /* will link without the following) */

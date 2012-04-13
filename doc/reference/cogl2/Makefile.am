@@ -96,10 +96,8 @@ IGNORE_HFILES=\
 	cogl-texture-3d-private.h		\
 	cogl-texture-private.h			\
 	cogl-texture-rectangle-private.h	\
-	cogl-vertex-buffer.h			\
 	cogl-vertex-array-private.h		\
 	cogl-vertex-attribute-private.h		\
-	cogl-vertex-buffer-private.h		\
 	cogl-blend-string.h 			\
 	cogl-clip-stack.h 			\
 	cogl-debug.h 				\

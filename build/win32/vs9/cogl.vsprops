@@ -151,7 +151,6 @@ copy ..\..\..\cogl\cogl-texture-rectangle.h $(OutDir)\include\cogl-$(CoglApiVers
 copy ..\..\..\cogl\cogl-meta-texture.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-texture-3d.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-types.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
-copy ..\..\..\cogl\cogl-vertex-buffer.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-index-buffer.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-indices.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;
 copy ..\..\..\cogl\cogl-attribute.h $(OutDir)\include\cogl-$(CoglApiVersion)\cogl&#x0D;&#x0A;

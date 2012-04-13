@@ -60,7 +60,6 @@ cogl_1_public_h = \
 	$(srcdir)/cogl-shader.h 		\
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
-	$(srcdir)/cogl-vertex-buffer.h 		\
 	$(srcdir)/cogl-clutter.h       		\
 	$(srcdir)/cogl.h			\
 	$(NULL)
@@ -221,8 +220,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-buffer.c				\
 	$(srcdir)/cogl-pixel-buffer-private.h		\
 	$(srcdir)/cogl-pixel-buffer.c			\
-	$(srcdir)/cogl-vertex-buffer-private.h 		\
-	$(srcdir)/cogl-vertex-buffer.c			\
 	$(srcdir)/cogl-index-buffer-private.h		\
 	$(srcdir)/cogl-index-buffer.c			\
 	$(srcdir)/cogl-attribute-buffer-private.h	\

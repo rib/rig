@@ -330,7 +330,7 @@ typedef enum { /*< prefix=COGL_PIXEL_FORMAT >*/
  * @COGL_FEATURE_PBOS: PBO support
  * @COGL_FEATURE_UNSIGNED_INT_INDICES: Set if
  *     %COGL_INDICES_TYPE_UNSIGNED_INT is supported in
- *     cogl_vertex_buffer_indices_new().
+ *     cogl_indices_new().
  * @COGL_FEATURE_DEPTH_RANGE: cogl_material_set_depth_range() support
  * @COGL_FEATURE_TEXTURE_NPOT_BASIC: The hardware supports non power
  *     of two textures, but you also need to check the
