@@ -29,7 +29,6 @@
 
 #include "cogl-util.h"
 #include "cogl-color.h"
-#include "cogl-fixed.h"
 #include "cogl-color-private.h"
 
 CoglColor *

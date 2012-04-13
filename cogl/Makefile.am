@@ -51,7 +51,6 @@ cogl_1_public_h = \
 	$(srcdir)/cogl1-context.h 		\
 	$(srcdir)/cogl-bitmap.h 		\
 	$(srcdir)/cogl-color.h 			\
-	$(srcdir)/cogl-fixed.h 			\
 	$(srcdir)/cogl-material-compat.h 	\
 	$(srcdir)/cogl-matrix.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
@@ -216,7 +215,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl2-compatibility.c			\
 	$(srcdir)/cogl-feature-private.h                \
 	$(srcdir)/cogl-feature-private.c                \
-	$(srcdir)/cogl-fixed.c		    		\
 	$(srcdir)/cogl-color-private.h    		\
 	$(srcdir)/cogl-color.c				\
 	$(srcdir)/cogl-buffer-private.h 		\

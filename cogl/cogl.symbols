@@ -199,16 +199,6 @@ cogl_euler_init_from_quaternion
 
 cogl_features_available
 cogl_feature_flags_get_type
-cogl_fixed_atan
-cogl_fixed_atan2
-cogl_fixed_cos
-cogl_fixed_get_type
-cogl_fixed_log2
-cogl_fixed_pow
-cogl_fixed_pow2
-cogl_fixed_sin
-cogl_fixed_sqrt
-cogl_fixed_tan
 
 cogl_fog_mode_get_type
 

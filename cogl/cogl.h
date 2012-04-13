@@ -69,7 +69,6 @@
 #include <cogl/cogl-clip-state.h>
 #include <cogl/cogl-vertex-buffer.h>
 #include <cogl/cogl-enum-types.h>
-#include <cogl/cogl-fixed.h>
 #include <cogl/cogl-material-compat.h>
 #include <cogl/cogl-shader.h>
 #endif
