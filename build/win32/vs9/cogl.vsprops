@@ -28,7 +28,7 @@
 	/>
 	<UserMacro
 		Name="CoglApiVersion"
-		Value="1.0"
+		Value="2.0"
 	/>
 	<UserMacro
 		Name="BaseBuildDefines"
@@ -203,7 +203,7 @@ copy ..\..\..\tests\data\valgrind.suppressions $(OutDir)\share\cogl-$(CoglApiVer
 	/>
 	<UserMacro
 		Name="CoglSeparateVS9DllSuffix"
-		Value="-1-vs9"
+		Value="-2-vs9"
 	/>
 	<!-- Change these two to GlibLibtoolCompatibleDllPrefix and
 	GlibLibtoolCompatibleDllSuffix if that is what you want -->

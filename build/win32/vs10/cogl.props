@@ -3,7 +3,7 @@
   <PropertyGroup Label="UserMacros">
     <GlibEtcInstallRoot>..\..\..\..\vs10\$(Platform)</GlibEtcInstallRoot>
 	<GlibMkEnumsPath>..\..\..\vs10\$(Platform)</GlibMkEnumsPath>
-    <CoglApiVersion>1.0</CoglApiVersion>
+    <CoglApiVersion>2.0</CoglApiVersion>
     <BaseBuildDefines>_WIN32_WINNT=0x0500;COGL_ENABLE_DEBUG</BaseBuildDefines>
     <LibBuildDefines>HAVE_CONFIG_H;CLUTTER_COMPILATION;$(BaseBuildDefines)</LibBuildDefines>
     <ReleaseLibBuildDefines>$(LibBuildDefines);G_DISABLE_CHECKS;G_DISABLE_CAST_CHECKS</ReleaseLibBuildDefines>
@@ -199,7 +199,7 @@ copy ..\..\..\cogl\cogl2-experimental.h $(CopyDir)\include\cogl-$(CoglApiVersion
     <CoglLibtoolCompatibleDllPrefix>lib</CoglLibtoolCompatibleDllPrefix>
     <CoglLibtoolCompatibleDllSuffix>-$(CoglApiVersion)-0</CoglLibtoolCompatibleDllSuffix>
     <CoglSeparateVS10DllPrefix />
-    <CoglSeparateVS10DllSuffix>-1-vs10</CoglSeparateVS10DllSuffix>
+    <CoglSeparateVS10DllSuffix>-2-vs10</CoglSeparateVS10DllSuffix>
     <CoglDllPrefix>$(CoglSeparateVS10DllPrefix)</CoglDllPrefix>
     <CoglDllSuffix>$(CoglSeparateVS10DllSuffix)</CoglDllSuffix>
   </PropertyGroup>
