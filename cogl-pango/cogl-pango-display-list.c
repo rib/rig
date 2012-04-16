@@ -440,6 +440,8 @@ _cogl_pango_display_list_render (CoglPangoDisplayList *dl,
             float points[8];
             CoglPath *path;
 
+            _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+
             points[0] =  node->d.trapezoid.x_11;
             points[1] =  node->d.trapezoid.y_1;
             points[2] =  node->d.trapezoid.x_12;
@@ -449,7 +451,7 @@ _cogl_pango_display_list_render (CoglPangoDisplayList *dl,
             points[6] =  node->d.trapezoid.x_21;
             points[7] =  node->d.trapezoid.y_1;
 
-            path = cogl_path_new ();
+            path = cogl_path_new (ctx);
             cogl_path_polygon (path, points, 4);
             cogl_path_fill (path);
             cogl_object_unref (path);

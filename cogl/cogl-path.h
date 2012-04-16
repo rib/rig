@@ -29,6 +29,7 @@
 #define __COGL_PATH_H__
 
 #include <cogl/cogl-types.h>
+#include <cogl/cogl-context.h>
 
 G_BEGIN_DECLS
 
@@ -57,6 +58,7 @@ typedef struct _CoglPath CoglPath;
 
 /**
  * cogl_path_new:
+ * @context: A #CoglContext pointer
  *
  * Creates a new, empty path object. The default fill rule is
  * %COGL_PATH_FILL_RULE_EVEN_ODD.
@@ -67,7 +69,7 @@ typedef struct _CoglPath CoglPath;
  * Since: 2.0
  */
 CoglPath *
-cogl_path_new (void);
+cogl_path_new (CoglContext *context);
 
 /**
  * cogl_path_copy:
