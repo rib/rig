@@ -34,6 +34,44 @@
 
 G_BEGIN_DECLS
 
+/**
+ * CoglBool:
+ *
+ * A boolean data type used throughout the Cogl C api. This should be
+ * used in conjunction with the %TRUE and %FALSE macro defines for
+ * setting and testing boolean values.
+ *
+ * Since: 2.0
+ * Stability: stable
+ */
+typedef int CoglBool;
+
+/**
+ * TRUE:
+ *
+ * A constant to be used with #CoglBool types to indicate a boolean in
+ * the "true" state.
+ *
+ * Since: 2.0
+ * Stability: stable
+ */
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+/**
+ * TRUE:
+ *
+ * A constant to be used with #CoglBool types to indicate a boolean in
+ * the "false" state.
+ *
+ * Since: 2.0
+ * Stability: stable
+ */
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 /* Some structures are meant to be opaque but they have public
    definitions because we want the size to be public so they can be
    allocated on the stack. This macro is used to ensure that users
@@ -104,7 +142,7 @@ typedef struct _CoglEuler CoglEuler;
  *
  * Since: 1.0
  */
-typedef gint32 CoglAngle;
+typedef int32_t CoglAngle;
 
 typedef struct _CoglColor               CoglColor;
 typedef struct _CoglTextureVertex       CoglTextureVertex;
@@ -368,17 +406,17 @@ typedef enum
 struct _CoglColor
 {
   /*< private >*/
-  guint8 COGL_PRIVATE (red);
-  guint8 COGL_PRIVATE (green);
-  guint8 COGL_PRIVATE (blue);
+  uint8_t COGL_PRIVATE (red);
+  uint8_t COGL_PRIVATE (green);
+  uint8_t COGL_PRIVATE (blue);
 
-  guint8 COGL_PRIVATE (alpha);
+  uint8_t COGL_PRIVATE (alpha);
 
   /* padding in case we want to change to floats at
    * some point */
-  guint32 COGL_PRIVATE (padding0);
-  guint32 COGL_PRIVATE (padding1);
-  guint32 COGL_PRIVATE (padding2);
+  uint32_t COGL_PRIVATE (padding0);
+  uint32_t COGL_PRIVATE (padding1);
+  uint32_t COGL_PRIVATE (padding2);
 };
 COGL_STRUCT_SIZE_ASSERT (CoglColor, 16);
 

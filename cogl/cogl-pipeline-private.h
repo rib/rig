@@ -342,7 +342,7 @@ typedef struct
 
 typedef struct
 {
-  gboolean        enabled;
+  CoglBool        enabled;
   CoglColor       color;
   CoglFogMode     mode;
   float           density;
@@ -548,15 +548,15 @@ struct _CoglPipeline
 
 typedef struct _CoglPipelineFragend
 {
-  gboolean (*start) (CoglPipeline *pipeline,
+  CoglBool (*start) (CoglPipeline *pipeline,
                      int n_layers,
                      unsigned long pipelines_difference,
                      int n_tex_coord_attribs);
-  gboolean (*add_layer) (CoglPipeline *pipeline,
+  CoglBool (*add_layer) (CoglPipeline *pipeline,
                          CoglPipelineLayer *layer,
                          unsigned long layers_difference);
-  gboolean (*passthrough) (CoglPipeline *pipeline);
-  gboolean (*end) (CoglPipeline *pipeline,
+  CoglBool (*passthrough) (CoglPipeline *pipeline);
+  CoglBool (*end) (CoglPipeline *pipeline,
                    unsigned long pipelines_difference);
 
   void (*pipeline_pre_change_notify) (CoglPipeline *pipeline,
@@ -570,14 +570,14 @@ typedef struct _CoglPipelineFragend
 
 typedef struct _CoglPipelineVertend
 {
-  gboolean (*start) (CoglPipeline *pipeline,
+  CoglBool (*start) (CoglPipeline *pipeline,
                      int n_layers,
                      unsigned long pipelines_difference,
                      int n_tex_coord_attribs);
-  gboolean (*add_layer) (CoglPipeline *pipeline,
+  CoglBool (*add_layer) (CoglPipeline *pipeline,
                          CoglPipelineLayer *layer,
                          unsigned long layers_difference);
-  gboolean (*end) (CoglPipeline *pipeline,
+  CoglBool (*end) (CoglPipeline *pipeline,
                    unsigned long pipelines_difference);
 
   void (*pipeline_pre_change_notify) (CoglPipeline *pipeline,
@@ -639,7 +639,7 @@ _cogl_pipeline_get_authority (CoglPipeline *pipeline,
   return authority;
 }
 
-typedef gboolean (*CoglPipelineStateComparitor) (CoglPipeline *authority0,
+typedef CoglBool (*CoglPipelineStateComparitor) (CoglPipeline *authority0,
                                                  CoglPipeline *authority1);
 
 void
@@ -652,7 +652,7 @@ void
 _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
                                   CoglPipelineState change,
                                   const CoglColor  *new_color,
-                                  gboolean          from_layer_change);
+                                  CoglBool          from_layer_change);
 
 void
 _cogl_pipeline_prune_redundant_ancestry (CoglPipeline *pipeline);
@@ -673,7 +673,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
 #define _cogl_pipeline_get_layer(p, l) \
   _cogl_pipeline_get_layer_with_flags (p, l, 0)
 
-gboolean
+CoglBool
 _cogl_is_pipeline_layer (void *object);
 
 void
@@ -691,7 +691,7 @@ _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
  * able to fill your geometry according to a given Cogl pipeline.
  */
 
-gboolean
+CoglBool
 _cogl_pipeline_get_real_blend_enabled (CoglPipeline *pipeline);
 
 /*
@@ -706,11 +706,11 @@ _cogl_pipeline_pre_paint_for_layer (CoglPipeline *pipeline,
 /*
  * CoglPipelineFlushFlag:
  * @COGL_PIPELINE_FLUSH_FALLBACK_MASK: The fallback_layers member is set to
- *      a guint32 mask of the layers that can't be supported with the user
+ *      a uint32_t mask of the layers that can't be supported with the user
  *      supplied texture and need to be replaced with fallback textures. (1 =
  *      fallback, and the least significant bit = layer 0)
  * @COGL_PIPELINE_FLUSH_DISABLE_MASK: The disable_layers member is set to
- *      a guint32 mask of the layers that you want to completly disable
+ *      a uint32_t mask of the layers that you want to completly disable
  *      texturing for (1 = fallback, and the least significant bit = layer 0)
  * @COGL_PIPELINE_FLUSH_LAYER0_OVERRIDE: The layer0_override_texture member is
  *      set to a GLuint OpenGL texture name to override the texture used for
@@ -735,11 +735,11 @@ typedef enum _CoglPipelineFlushFlag
  */
 typedef struct _CoglPipelineFlushOptions
 {
-  CoglPipelineFlushFlag         flags;
+  CoglPipelineFlushFlag flags;
 
-  guint32                       fallback_layers;
-  guint32                       disable_layers;
-  CoglTexture                  *layer0_override_texture;
+  uint32_t fallback_layers;
+  uint32_t disable_layers;
+  CoglTexture *layer0_override_texture;
 } CoglPipelineFlushOptions;
 
 void
@@ -885,7 +885,7 @@ _cogl_pipeline_get_parent (CoglPipeline *pipeline);
 
 void
 _cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
-                             guint8       *color);
+                             uint8_t       *color);
 
 /* XXX: At some point it could be good for this to accept a mask of
  * the state groups we are interested in comparing since we can
@@ -895,7 +895,7 @@ unsigned long
 _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
                                     CoglPipeline *pipeline1);
 
-gboolean
+CoglBool
 _cogl_pipeline_equal (CoglPipeline *pipeline0,
                       CoglPipeline *pipeline1,
                       unsigned long differences,
@@ -935,7 +935,7 @@ void
 _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
                                   CoglPipelineBlendEnable enable);
 
-gboolean
+CoglBool
 _cogl_pipeline_get_fog_enabled (CoglPipeline *pipeline);
 
 void
@@ -952,12 +952,12 @@ _cogl_pipeline_get_authority (CoglPipeline *pipeline,
 void
 _cogl_pipeline_add_layer_difference (CoglPipeline *pipeline,
                                      CoglPipelineLayer *layer,
-                                     gboolean inc_n_layers);
+                                     CoglBool inc_n_layers);
 
 void
 _cogl_pipeline_remove_layer_difference (CoglPipeline *pipeline,
                                         CoglPipelineLayer *layer,
-                                        gboolean dec_n_layers);
+                                        CoglBool dec_n_layers);
 
 CoglPipeline *
 _cogl_pipeline_find_equivalent_parent (CoglPipeline *pipeline,
@@ -980,7 +980,7 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n);
 const GList *
 _cogl_pipeline_get_layers (CoglPipeline *pipeline);
 
-typedef gboolean (*CoglPipelineInternalLayerCallback) (CoglPipelineLayer *layer,
+typedef CoglBool (*CoglPipelineInternalLayerCallback) (CoglPipelineLayer *layer,
                                                        void *user_data);
 
 void
@@ -988,7 +988,7 @@ _cogl_pipeline_foreach_layer_internal (CoglPipeline *pipeline,
                                        CoglPipelineInternalLayerCallback callback,
                                        void *user_data);
 
-gboolean
+CoglBool
 _cogl_pipeline_need_texture_combine_separate
                                     (CoglPipelineLayer *combine_authority);
 

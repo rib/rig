@@ -25,7 +25,7 @@ typedef struct _TestState
 
 static void
 validate_part (CoglFramebuffer *framebuffer,
-               int xnum, int ynum, gboolean shown)
+               int xnum, int ynum, CoglBool shown)
 {
   test_utils_check_region (framebuffer,
                            xnum * TEXTURE_RENDER_SIZE + TEST_INSET,
@@ -120,7 +120,7 @@ validate_result (CoglFramebuffer *framebuffer, int y_offset)
 
   for (draw_num = 0; draw_num < 8; draw_num++)
     {
-      gboolean cull_front, cull_back;
+      CoglBool cull_front, cull_back;
       CoglPipelineCullFaceMode cull_mode;
 
       cull_mode = CULL_FACE_MODE (draw_num);
@@ -150,7 +150,7 @@ validate_result (CoglFramebuffer *framebuffer, int y_offset)
 
       if (FRONT_WINDING (draw_num) == COGL_WINDING_CLOCKWISE)
         {
-          gboolean tmp = cull_front;
+          CoglBool tmp = cull_front;
           cull_front = cull_back;
           cull_back = tmp;
         }

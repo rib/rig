@@ -149,7 +149,7 @@ dirty_shader_state (CoglPipeline *pipeline)
                              NULL);
 }
 
-static gboolean
+static CoglBool
 _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
                                     int n_layers,
                                     unsigned long pipelines_difference,
@@ -415,7 +415,7 @@ setup_arg (CoglPipeline *pipeline,
 
         if (other_layer == NULL)
           {
-            static gboolean warning_seen = FALSE;
+            static CoglBool warning_seen = FALSE;
             if (!warning_seen)
               {
                 g_warning ("The application is trying to use a texture "
@@ -484,7 +484,7 @@ setup_arg (CoglPipeline *pipeline,
     }
 }
 
-static gboolean
+static CoglBool
 fragend_arbfp_args_equal (CoglPipelineFragendARBfpArg *arg0,
                           CoglPipelineFragendARBfpArg *arg1)
 {
@@ -682,7 +682,7 @@ append_masked_combine (CoglPipeline *arbfp_authority,
                    n_args);
 }
 
-static gboolean
+static CoglBool
 _cogl_pipeline_fragend_arbfp_add_layer (CoglPipeline *pipeline,
                                         CoglPipelineLayer *layer,
                                         unsigned long layers_difference)
@@ -766,7 +766,7 @@ _cogl_pipeline_fragend_arbfp_add_layer (CoglPipeline *pipeline,
   return TRUE;
 }
 
-static gboolean
+static CoglBool
 _cogl_pipeline_fragend_arbfp_passthrough (CoglPipeline *pipeline)
 {
   CoglPipelineShaderState *shader_state = get_shader_state (pipeline);
@@ -782,11 +782,11 @@ _cogl_pipeline_fragend_arbfp_passthrough (CoglPipeline *pipeline)
 typedef struct _UpdateConstantsState
 {
   int unit;
-  gboolean update_all;
+  CoglBool update_all;
   CoglPipelineShaderState *shader_state;
 } UpdateConstantsState;
 
-static gboolean
+static CoglBool
 update_constants_cb (CoglPipeline *pipeline,
                      int layer_index,
                      void *user_data)
@@ -812,7 +812,7 @@ update_constants_cb (CoglPipeline *pipeline,
   return TRUE;
 }
 
-static gboolean
+static CoglBool
 _cogl_pipeline_fragend_arbfp_end (CoglPipeline *pipeline,
                                   unsigned long pipelines_difference)
 {
