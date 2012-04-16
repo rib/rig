@@ -750,19 +750,6 @@ cogl_clip_push_rectangle (float x0,
                           float x1,
                           float y1);
 
-/**
- * cogl_clip_push_from_path_preserve:
- *
- * Sets a new clipping area using the current path. The current path
- * is then cleared. The clipping area is intersected with the previous
- * clipping area. To restore the previous clipping area, call
- * cogl_clip_pop().
- *
- * Since: 1.0
- */
-void
-cogl_clip_push_from_path_preserve (void);
-
 #ifdef COGL_ENABLE_EXPERIMENTAL_2_0_API
 /**
  * cogl_clip_push_primitive:

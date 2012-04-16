@@ -85,26 +85,6 @@ cogl_clip_push (float x_offset,
 }
 
 void
-cogl_clip_push_from_path_preserve (void)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-  cogl_framebuffer_push_path_clip (cogl_get_draw_framebuffer (),
-                                   ctx->current_path);
-}
-
-#undef cogl_clip_push_from_path
-void
-cogl_clip_push_from_path (void)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  cogl_clip_push_from_path_preserve ();
-
-  cogl_object_unref (ctx->current_path);
-  ctx->current_path = cogl2_path_new ();
-}
-
-void
 cogl_clip_push_primitive (CoglPrimitive *primitive,
                           float bounds_x1,
                           float bounds_y1,

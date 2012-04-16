@@ -4,28 +4,25 @@
 /* (this may be subject to change!) */
 #endif
 
-/* cogl2_clip_push_from_path is only for 1.10.x*/
-cogl2_clip_push_from_path
-
-cogl2_path_arc
-cogl2_path_close
-cogl2_path_curve_to
-cogl2_path_ellipse
-cogl2_path_fill
-cogl2_path_get_fill_rule
-cogl2_path_line
-cogl2_path_line_to
-cogl2_path_move_to
-cogl2_path_new
-cogl2_path_polygon
-cogl2_path_polyline
-cogl2_path_rectangle
-cogl2_path_rel_curve_to
-cogl2_path_rel_line_to
-cogl2_path_rel_move_to
-cogl2_path_round_rectangle
-cogl2_path_set_fill_rule
-cogl2_path_stroke
+cogl_path_arc
+cogl_path_close
+cogl_path_curve_to
+cogl_path_ellipse
+cogl_path_fill
+cogl_path_get_fill_rule
+cogl_path_line
+cogl_path_line_to
+cogl_path_move_to
+cogl_path_new
+cogl_path_polygon
+cogl_path_polyline
+cogl_path_rectangle
+cogl_path_rel_curve_to
+cogl_path_rel_line_to
+cogl_path_rel_move_to
+cogl_path_round_rectangle
+cogl_path_set_fill_rule
+cogl_path_stroke
 
 #ifdef COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT
 cogl_android_set_native_window_EXP
@@ -93,8 +90,6 @@ cogl_clip_pop
 cogl_clip_push
 #endif
 
-cogl_clip_push_from_path
-cogl_clip_push_from_path_preserve
 cogl_clip_push_rectangle
 
 cogl_clip_push_window_rect
@@ -402,30 +397,6 @@ cogl_onscreen_template_set_samples_per_pixel
 cogl_onscreen_template_set_swap_throttled
 
 cogl_ortho
-
-cogl_path_arc
-cogl_path_close
-cogl_path_copy
-cogl_path_curve_to
-cogl_path_ellipse
-cogl_path_fill
-cogl_path_fill_preserve		/* this is COGL 1.0 API */
-cogl_path_fill_rule_get_type
-cogl_path_get_fill_rule
-cogl_path_line
-cogl_path_line_to
-cogl_path_move_to
-cogl_path_new
-cogl_path_polygon
-cogl_path_polyline
-cogl_path_rectangle
-cogl_path_rel_curve_to
-cogl_path_rel_line_to
-cogl_path_rel_move_to
-cogl_path_round_rectangle
-cogl_path_set_fill_rule
-cogl_path_stroke
-cogl_path_stroke_preserve	/* this is COGL 1.0 API */
 
 cogl_perspective
 

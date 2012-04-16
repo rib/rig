@@ -60,12 +60,12 @@
 #include <cogl/cogl-primitives.h>
 #include <cogl/cogl-texture.h>
 #include <cogl/cogl-types.h>
+#include <cogl/cogl-path.h>
 
 /*
  * 1.x only api...
  */
 #ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
-#include <cogl/cogl-path.h>
 #include <cogl/cogl-clip-state.h>
 #include <cogl/cogl-enum-types.h>
 #include <cogl/cogl-shader.h>
@@ -120,13 +120,6 @@
 #endif
 #ifdef COGL_HAS_SDL_SUPPORT
 #include <cogl/cogl-sdl.h>
-#endif
-
-/*
- * 2.0 only api...
- */
-#ifdef COGL_ENABLE_EXPERIMENTAL_2_0_API
-#include <cogl/cogl2-path.h>
 #endif
 
 /*

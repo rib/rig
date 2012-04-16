@@ -24,7 +24,7 @@
 #ifndef __COGL_CLIP_STACK_H
 #define __COGL_CLIP_STACK_H
 
-#include "cogl2-path.h"
+#include "cogl-path.h"
 #include "cogl-matrix.h"
 #include "cogl-primitive.h"
 #include "cogl-framebuffer.h"

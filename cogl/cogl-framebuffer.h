@@ -34,12 +34,7 @@
 #include <windows.h>
 #endif /* COGL_HAS_WIN32_SUPPORT */
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_2_0_API
-#include <cogl/cogl2-path.h>
-#else
 #include <cogl/cogl-path.h>
-#endif
-
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-indices.h>
 #include <cogl/cogl-bitmap.h>

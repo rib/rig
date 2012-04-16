@@ -54,8 +54,6 @@ cogl_1_public_h = \
 	$(srcdir)/cogl-matrix.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
 	$(srcdir)/cogl-primitives.h 		\
-	$(srcdir)/cogl-path.h 			\
-	$(srcdir)/cogl-path-functions.h         \
 	$(srcdir)/cogl-shader.h 		\
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
@@ -76,7 +74,7 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-pipeline-state.h 	\
 	$(srcdir)/cogl-pipeline-layer-state.h 	\
 	$(srcdir)/cogl-snippet.h		\
-	$(srcdir)/cogl2-path.h 			\
+	$(srcdir)/cogl-path.h 			\
 	$(srcdir)/cogl-index-buffer.h 		\
 	$(srcdir)/cogl-attribute-buffer.h 	\
 	$(srcdir)/cogl-indices.h 		\
@@ -199,10 +197,7 @@ cogl_sources_c = \
 	$(srcdir)/cogl-primitives.h 			\
 	$(srcdir)/cogl-primitives.c 			\
 	$(srcdir)/cogl-path-private.h 			\
-	$(srcdir)/cogl-path.h 				\
 	$(srcdir)/cogl-path.c 				\
-	$(srcdir)/cogl2-path.h 				\
-	$(srcdir)/cogl2-path.c 				\
 	$(srcdir)/cogl-bitmap-pixbuf.c 			\
 	$(srcdir)/cogl-clip-stack.h 			\
 	$(srcdir)/cogl-clip-stack.c			\

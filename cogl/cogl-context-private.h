@@ -178,7 +178,6 @@ struct _CoglContext
   CoglFramebuffer  *current_read_buffer;
 
   /* Primitives */
-  CoglPath         *current_path;
   CoglPipeline     *stencil_pipeline;
 
   /* Pre-generated VBOs containing indices to generate GL_TRIANGLES
