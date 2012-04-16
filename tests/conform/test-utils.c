@@ -87,15 +87,15 @@ test_utils_init (TestFlags flags)
     }
   else
     {
-      CoglHandle offscreen;
-      CoglHandle tex = cogl_texture_2d_new_with_size (test_ctx,
-                                                      FB_WIDTH, FB_HEIGHT,
-                                                      COGL_PIXEL_FORMAT_ANY,
-                                                      &error);
+      CoglOffscreen *offscreen;
+      CoglTexture2D *tex = cogl_texture_2d_new_with_size (test_ctx,
+                                                          FB_WIDTH, FB_HEIGHT,
+                                                          COGL_PIXEL_FORMAT_ANY,
+                                                          &error);
       if (!tex)
         g_critical ("Failed to allocate texture: %s", error->message);
 
-      offscreen = cogl_offscreen_new_to_texture (tex);
+      offscreen = cogl_offscreen_new_to_texture (COGL_TEXTURE (tex));
       test_fb = COGL_FRAMEBUFFER (offscreen);
     }
 

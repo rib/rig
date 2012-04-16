@@ -962,25 +962,6 @@ cogl_pop_framebuffer (void);
 #ifndef COGL_DISABLE_DEPRECATED
 
 /**
- * cogl_set_draw_buffer:
- * @target: A #CoglBufferTarget that specifies what kind of framebuffer you
- *          are setting as the render target.
- * @offscreen: If you are setting a framebuffer of type COGL_OFFSCREEN_BUFFER
- *             then this is a CoglHandle for the offscreen buffer.
- *
- * Redirects all subsequent drawing to the specified framebuffer. This
- * can either be an offscreen buffer created with
- * cogl_offscreen_new_to_texture () or you can revert to your original
- * on screen window buffer.
- *
- * Deprecated: 1.2: The target argument was redundant since we could look at
- *    the type of CoglHandle given instead.
- */
-void
-cogl_set_draw_buffer (CoglBufferTarget target,
-                      CoglHandle offscreen) G_GNUC_DEPRECATED;
-
-/**
  * cogl_push_draw_buffer:
  *
  * Save cogl_set_draw_buffer() state.

@@ -43,19 +43,6 @@
 #define GL_FUNC_ADD 0x8006
 #endif
 
-CoglPipeline *
-_cogl_pipeline_get_user_program (CoglPipeline *pipeline)
-{
-  CoglPipeline *authority;
-
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), NULL);
-
-  authority =
-    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_USER_SHADER);
-
-  return authority->big_state->user_program;
-}
-
 gboolean
 _cogl_pipeline_color_equal (CoglPipeline *authority0,
                             CoglPipeline *authority1)
@@ -229,14 +216,6 @@ _cogl_pipeline_cull_face_state_equal (CoglPipeline *authority0,
 
   return (cull_face_state0->mode == cull_face_state1->mode &&
           cull_face_state0->front_winding == cull_face_state1->front_winding);
-}
-
-gboolean
-_cogl_pipeline_user_shader_equal (CoglPipeline *authority0,
-                                  CoglPipeline *authority1)
-{
-  return (authority0->big_state->user_program ==
-          authority1->big_state->user_program);
 }
 
 typedef struct
@@ -1080,84 +1059,6 @@ cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
 #endif
 }
 
-CoglHandle
-cogl_pipeline_get_user_program (CoglPipeline *pipeline)
-{
-  CoglPipeline *authority;
-
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), COGL_INVALID_HANDLE);
-
-  authority =
-    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_USER_SHADER);
-
-  return authority->big_state->user_program;
-}
-
-/* XXX: for now we don't mind if the program has vertex shaders
- * attached but if we ever make a similar API public we should only
- * allow attaching of programs containing fragment shaders. Eventually
- * we will have a CoglPipeline abstraction to also cover vertex
- * processing.
- */
-void
-cogl_pipeline_set_user_program (CoglPipeline *pipeline,
-                                CoglHandle program)
-{
-  CoglPipelineState state = COGL_PIPELINE_STATE_USER_SHADER;
-  CoglPipeline *authority;
-
-  _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
-
-  authority = _cogl_pipeline_get_authority (pipeline, state);
-
-  if (authority->big_state->user_program == program)
-    return;
-
-  /* - Flush journal primitives referencing the current state.
-   * - Make sure the pipeline has no dependants so it may be modified.
-   * - If the pipeline isn't currently an authority for the state being
-   *   changed, then initialize that state from the current authority.
-   */
-  _cogl_pipeline_pre_change_notify (pipeline, state, NULL, FALSE);
-
-  if (program != COGL_INVALID_HANDLE)
-    {
-      _cogl_pipeline_set_fragend (pipeline, COGL_PIPELINE_FRAGEND_DEFAULT);
-      _cogl_pipeline_set_vertend (pipeline, COGL_PIPELINE_VERTEND_DEFAULT);
-    }
-
-  /* If we are the current authority see if we can revert to one of our
-   * ancestors being the authority */
-  if (pipeline == authority &&
-      _cogl_pipeline_get_parent (authority) != NULL)
-    {
-      CoglPipeline *parent = _cogl_pipeline_get_parent (authority);
-      CoglPipeline *old_authority =
-        _cogl_pipeline_get_authority (parent, state);
-
-      if (old_authority->big_state->user_program == program)
-        pipeline->differences &= ~state;
-    }
-  else if (pipeline != authority)
-    {
-      /* If we weren't previously the authority on this state then we
-       * need to extended our differences mask and so it's possible
-       * that some of our ancestry will now become redundant, so we
-       * aim to reparent ourselves if that's true... */
-      pipeline->differences |= state;
-      _cogl_pipeline_prune_redundant_ancestry (pipeline);
-    }
-
-  if (program != COGL_INVALID_HANDLE)
-    cogl_handle_ref (program);
-  if (authority == pipeline &&
-      pipeline->big_state->user_program != COGL_INVALID_HANDLE)
-    cogl_handle_unref (pipeline->big_state->user_program);
-  pipeline->big_state->user_program = program;
-
-  _cogl_pipeline_update_blend_enable (pipeline, state);
-}
-
 gboolean
 cogl_pipeline_set_depth_state (CoglPipeline *pipeline,
                                const CoglDepthState *depth_state,
@@ -1704,6 +1605,58 @@ _cogl_pipeline_has_fragment_snippets (CoglPipeline *pipeline)
   return found_fragment_snippet;
 }
 
+static gboolean
+check_maybe_has_custom_texture_transform  (CoglPipelineLayer *layer,
+                                           void *user_data)
+{
+  gboolean *maybe_has_custom_texture_transform = user_data;
+  unsigned long matrix_state = COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
+  unsigned long frag_state = COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS;
+  unsigned long vert_state = COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS;
+  CoglPipelineLayer *matrix_authority;
+  CoglPipelineLayer *frag_authority;
+  CoglPipelineLayer *vert_authority;
+
+  matrix_authority = _cogl_pipeline_layer_get_authority (layer, matrix_state);
+  if (!_cogl_pipeline_layer_get_parent (matrix_authority))
+    {
+      *maybe_has_custom_texture_transform = TRUE;
+      return FALSE;
+    }
+
+  frag_authority = _cogl_pipeline_layer_get_authority (layer, frag_state);
+  if (!COGL_LIST_EMPTY (&frag_authority->big_state->fragment_snippets))
+    {
+      *maybe_has_custom_texture_transform = TRUE;
+      return FALSE;
+    }
+
+  vert_authority = _cogl_pipeline_layer_get_authority (layer, vert_state);
+  if (!COGL_LIST_EMPTY (&vert_authority->big_state->vertex_snippets))
+    {
+      *maybe_has_custom_texture_transform = TRUE;
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
+gboolean
+_cogl_pipeline_maybe_has_custom_texture_transform (CoglPipeline *pipeline)
+{
+  gboolean maybe_has_custom_texture_transform = FALSE;
+
+  if (_cogl_pipeline_has_non_layer_fragment_snippets (pipeline))
+    return TRUE;
+
+  _cogl_pipeline_foreach_layer_internal (
+                                       pipeline,
+                                       check_maybe_has_custom_texture_transform,
+                                       &maybe_has_custom_texture_transform);
+
+  return maybe_has_custom_texture_transform;
+}
+
 void
 _cogl_pipeline_hash_color_state (CoglPipeline *authority,
                                  CoglPipelineHashState *state)
@@ -1801,15 +1754,6 @@ _cogl_pipeline_hash_blend_state (CoglPipeline *authority,
                                    sizeof (blend_state->blend_dst_factor_rgb));
 
   state->hash = hash;
-}
-
-void
-_cogl_pipeline_hash_user_shader_state (CoglPipeline *authority,
-                                       CoglPipelineHashState *state)
-{
-  CoglHandle user_program = authority->big_state->user_program;
-  state->hash = _cogl_util_one_at_a_time_hash (state->hash, &user_program,
-                                               sizeof (user_program));
 }
 
 void

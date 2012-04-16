@@ -207,8 +207,6 @@ _cogl_pipeline_init_default_pipeline (void)
   blend_state->blend_src_factor_rgb = GL_ONE;
   blend_state->blend_dst_factor_rgb = GL_ONE_MINUS_SRC_ALPHA;
 
-  big_state->user_program = COGL_INVALID_HANDLE;
-
   cogl_depth_state_init (&big_state->depth_state);
 
   big_state->point_size = 1.0f;
@@ -452,10 +450,6 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
   g_assert (COGL_LIST_EMPTY (&COGL_NODE (pipeline)->children));
 
   _cogl_pipeline_unparent (COGL_NODE (pipeline));
-
-  if (pipeline->differences & COGL_PIPELINE_STATE_USER_SHADER &&
-      pipeline->big_state->user_program)
-    cogl_handle_unref (pipeline->big_state->user_program);
 
   if (pipeline->differences & COGL_PIPELINE_STATE_UNIFORMS)
     {
@@ -744,17 +738,6 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline    *pipeline,
         return TRUE;
     }
 
-  if (changes & COGL_PIPELINE_STATE_USER_SHADER)
-    {
-      /* We can't make any assumptions about the alpha channel if the user
-       * is using an unknown fragment shader.
-       *
-       * TODO: check that it isn't just a vertex shader!
-       */
-      if (_cogl_pipeline_get_user_program (pipeline) != COGL_INVALID_HANDLE)
-        return TRUE;
-    }
-
   if (changes & COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS)
     {
       if (!_cogl_pipeline_has_non_layer_fragment_snippets (pipeline))
@@ -919,15 +902,6 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
               sizeof (CoglPipelineBlendState));
     }
 
-  if (differences & COGL_PIPELINE_STATE_USER_SHADER)
-    {
-      if (src->big_state->user_program)
-        big_state->user_program =
-          cogl_handle_ref (src->big_state->user_program);
-      else
-        big_state->user_program = COGL_INVALID_HANDLE;
-    }
-
   if (differences & COGL_PIPELINE_STATE_DEPTH)
     {
       memcpy (&big_state->depth_state,
@@ -1027,7 +1001,6 @@ _cogl_pipeline_init_multi_property_sparse_state (CoglPipeline *pipeline,
     case COGL_PIPELINE_STATE_ALPHA_FUNC:
     case COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE:
     case COGL_PIPELINE_STATE_POINT_SIZE:
-    case COGL_PIPELINE_STATE_USER_SHADER:
     case COGL_PIPELINE_STATE_REAL_BLEND_ENABLE:
       g_return_if_reached ();
 
@@ -1906,7 +1879,7 @@ fallback_layer_cb (CoglPipelineLayer *layer, void *user_data)
 typedef struct
 {
   CoglPipeline *pipeline;
-  CoglHandle texture;
+  CoglTexture *texture;
 } CoglPipelineOverrideLayerState;
 
 static gboolean
@@ -2251,11 +2224,6 @@ _cogl_pipeline_equal (CoglPipeline *pipeline0,
                                                      authorities1[bit]))
             goto done;
           break;
-        case COGL_PIPELINE_STATE_USER_SHADER_INDEX:
-          if (!_cogl_pipeline_user_shader_equal (authorities0[bit],
-                                                 authorities1[bit]))
-            goto done;
-          break;
         case COGL_PIPELINE_STATE_UNIFORMS_INDEX:
           if (!_cogl_pipeline_uniforms_state_equal (authorities0[bit],
                                                     authorities1[bit]))
@@ -2522,12 +2490,6 @@ _cogl_pipeline_apply_legacy_state (CoglPipeline *pipeline)
    * the cogl_pipeline API instead.
    */
 
-  /* A program explicitly set on the pipeline has higher precedence than
-   * one associated with the context using cogl_program_use() */
-  if (ctx->current_program &&
-      cogl_pipeline_get_user_program (pipeline) == COGL_INVALID_HANDLE)
-    cogl_pipeline_set_user_program (pipeline, ctx->current_program);
-
   if (ctx->legacy_depth_test_enabled)
     {
       CoglDepthState depth_state;
@@ -2683,8 +2645,6 @@ _cogl_pipeline_init_state_hash_functions (void)
     _cogl_pipeline_hash_alpha_func_reference_state;
   state_hash_functions[COGL_PIPELINE_STATE_BLEND_INDEX] =
     _cogl_pipeline_hash_blend_state;
-  state_hash_functions[COGL_PIPELINE_STATE_USER_SHADER_INDEX] =
-    _cogl_pipeline_hash_user_shader_state;
   state_hash_functions[COGL_PIPELINE_STATE_DEPTH_INDEX] =
     _cogl_pipeline_hash_depth_state;
   state_hash_functions[COGL_PIPELINE_STATE_FOG_INDEX] =
@@ -2704,7 +2664,7 @@ _cogl_pipeline_init_state_hash_functions (void)
 
   {
   /* So we get a big error if we forget to update this code! */
-  _COGL_STATIC_ASSERT (COGL_PIPELINE_STATE_SPARSE_COUNT == 16,
+  _COGL_STATIC_ASSERT (COGL_PIPELINE_STATE_SPARSE_COUNT == 15,
                        "Make sure to install a hash function for "
                        "newly added pipeline state and update assert "
                        "in _cogl_pipeline_init_state_hash_functions");
@@ -2897,7 +2857,6 @@ CoglPipelineState
 _cogl_pipeline_get_state_for_fragment_codegen (CoglContext *context)
 {
   CoglPipelineState state = (COGL_PIPELINE_STATE_LAYERS |
-                             COGL_PIPELINE_STATE_USER_SHADER |
                              COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS);
 
   if (context->driver == COGL_DRIVER_GLES2)

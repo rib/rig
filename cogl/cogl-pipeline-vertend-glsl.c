@@ -39,10 +39,10 @@
 
 #include "cogl-internal.h"
 #include "cogl-context-private.h"
-#include "cogl-handle.h"
-#include "cogl-program-private.h"
+#include "cogl-object-private.h"
 #include "cogl-pipeline-vertend-glsl-private.h"
 #include "cogl-pipeline-state-private.h"
+#include "cogl-glsl-shader-private.h"
 
 const CoglPipelineVertend _cogl_pipeline_glsl_vertend;
 
@@ -52,12 +52,6 @@ typedef struct
 
   GLuint gl_shader;
   GString *header, *source;
-
-  /* Age of the user program that was current when the shader was
-     generated. We need to keep track of this because if the user
-     program changes then we may need to redecide whether to generate
-     a shader at all */
-  unsigned int user_program_age;
 
   /* The number of tex coord attributes that the shader was generated
      for. If this changes on GLES2 then we need to regenerate the
@@ -157,20 +151,10 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
 {
   CoglPipelineShaderState *shader_state;
   CoglPipeline *template_pipeline = NULL;
-  CoglProgram *user_program;
 
   _COGL_GET_CONTEXT (ctx, FALSE);
 
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-    return FALSE;
-
-  user_program = cogl_pipeline_get_user_program (pipeline);
-
-  /* If the user program has a vertex shader that isn't GLSL then the
-     appropriate vertend for that language should handle it */
-  if (user_program &&
-      _cogl_program_has_vertex_shader (user_program) &&
-      _cogl_program_get_language (user_program) != COGL_SHADER_LANGUAGE_GLSL)
     return FALSE;
 
   /* Now lookup our glsl backend private state (allocating if
@@ -229,15 +213,11 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
   if (shader_state->gl_shader)
     {
       /* If we already have a valid GLSL shader then we don't need to
-         generate a new one. However if there's a user program and it
-         has changed since the last link then we do need a new
-         shader. If the number of tex coord attribs changes on GLES2
-         then we need to regenerate the shader with a different boiler
-         plate */
-      if ((user_program == NULL ||
-           shader_state->user_program_age == user_program->age)
-          && (ctx->driver != COGL_DRIVER_GLES2 ||
-              shader_state->n_tex_coord_attribs == n_tex_coord_attribs))
+         generate a new one. However if the number of tex coord
+         attribs changes on GLES2 then we need to regenerate the
+         shader with a different boiler plate */
+      if (ctx->driver != COGL_DRIVER_GLES2 ||
+          shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
         return TRUE;
 
       /* We need to recreate the shader so destroy the existing one */
@@ -246,19 +226,9 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
     }
 
   /* If we make it here then we have a shader_state struct without a gl_shader
-     either because this is the first time we've encountered it or
-     because the user program has changed */
-
-  if (user_program)
-    shader_state->user_program_age = user_program->age;
+     because this is the first time we've encountered it */
 
   shader_state->n_tex_coord_attribs = n_tex_coord_attribs;
-
-  /* If the user program contains a vertex shader then we don't need
-     to generate one */
-  if (user_program &&
-      _cogl_program_has_vertex_shader (user_program))
-    return TRUE;
 
   /* We reuse two grow-only GStrings for code-gen. One string
      contains the uniform and attribute declarations while the
@@ -472,11 +442,12 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
       lengths[1] = shader_state->source->len;
       source_strings[1] = shader_state->source->str;
 
-      _cogl_shader_set_source_with_boilerplate (shader, GL_VERTEX_SHADER,
-                                                shader_state
-                                                ->n_tex_coord_attribs,
-                                                2, /* count */
-                                                source_strings, lengths);
+      _cogl_glsl_shader_set_source_with_boilerplate (ctx,
+                                                     shader, GL_VERTEX_SHADER,
+                                                     shader_state
+                                                     ->n_tex_coord_attribs,
+                                                     2, /* count */
+                                                     source_strings, lengths);
 
       GE( ctx, glCompileShader (shader) );
       GE( ctx, glGetShaderiv (shader, GL_COMPILE_STATUS, &compile_status) );

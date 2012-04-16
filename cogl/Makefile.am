@@ -54,7 +54,6 @@ cogl_1_public_h = \
 	$(srcdir)/cogl-matrix.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
 	$(srcdir)/cogl-primitives.h 		\
-	$(srcdir)/cogl-shader.h 		\
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
 	$(srcdir)/cogl-clutter.h       		\
@@ -245,6 +244,9 @@ cogl_sources_c = \
 	$(srcdir)/cogl-pipeline-debug.c			\
 	$(srcdir)/cogl-pipeline-opengl.c		\
 	$(srcdir)/cogl-pipeline-opengl-private.h	\
+	$(srcdir)/cogl-glsl-shader.c			\
+	$(srcdir)/cogl-glsl-shader-private.h		\
+	$(srcdir)/cogl-glsl-shader-boilerplate.h	\
 	$(srcdir)/cogl-pipeline-fragend-glsl.c		\
 	$(srcdir)/cogl-pipeline-fragend-glsl-private.h	\
 	$(srcdir)/cogl-pipeline-fragend-arbfp.c		\
@@ -263,8 +265,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-pipeline-snippet.c		\
 	$(srcdir)/cogl-pipeline-cache.h			\
 	$(srcdir)/cogl-pipeline-cache.c			\
-	$(srcdir)/cogl-program.c			\
-	$(srcdir)/cogl-program-private.h		\
 	$(srcdir)/cogl-sampler-cache.c			\
 	$(srcdir)/cogl-sampler-cache-private.h		\
 	$(srcdir)/cogl-blend-string.c			\
@@ -306,9 +306,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-flags.h				\
 	$(srcdir)/cogl-bitmask.h                        \
 	$(srcdir)/cogl-bitmask.c                        \
-	$(srcdir)/cogl-shader-boilerplate.h		\
-	$(srcdir)/cogl-shader-private.h			\
-	$(srcdir)/cogl-shader.c                        	\
 	$(srcdir)/cogl-gtype-private.h                  \
 	$(srcdir)/cogl-point-in-poly-private.h       	\
 	$(srcdir)/cogl-point-in-poly.c       		\

@@ -290,10 +290,6 @@ cogl_glib_source_new
 /* cogl_gtype_matrix_get_type */ /* Not Implemented */
 #endif
 
-cogl_handle_get_type
-cogl_handle_ref
-cogl_handle_unref
-
 cogl_has_feature
 cogl_has_features
 
@@ -428,7 +424,6 @@ cogl_pipeline_get_point_size
 cogl_pipeline_get_shininess
 cogl_pipeline_get_specular
 cogl_pipeline_get_uniform_location
-cogl_pipeline_get_user_program
 cogl_pipeline_new
 cogl_pipeline_set_alpha_test_function
 cogl_pipeline_set_ambient
@@ -464,7 +459,6 @@ cogl_pipeline_set_uniform_int
 cogl_pipeline_set_uniform_matrix
 cogl_pipeline_set_uniform_1f
 cogl_pipeline_set_uniform_1i
-cogl_pipeline_set_user_program
 
 cogl_pixel_buffer_new_EXP
 #if 0

@@ -39,14 +39,13 @@
 
 #include "cogl-internal.h"
 #include "cogl-context-private.h"
-#include "cogl-handle.h"
+#include "cogl-object-private.h"
 
 #include "cogl-texture-private.h"
 #include "cogl-blend-string.h"
 #include "cogl-journal-private.h"
 #include "cogl-color-private.h"
 #include "cogl-profile.h"
-#include "cogl-program-private.h"
 
 #include <glib.h>
 #include <glib/gprintf.h>
@@ -72,16 +71,11 @@ typedef struct
 {
   int ref_count;
 
-  CoglHandle user_program;
   /* XXX: only valid during codegen */
   GString *source;
   GLuint gl_program;
   UnitState *unit_state;
   int next_constant_id;
-
-  /* Age of the program the last time the uniforms were flushed. This
-     is used to detect when we need to flush all of the uniforms */
-  unsigned int user_program_age;
 
   /* We need to track the last pipeline that an ARBfp program was used
    * with so know if we need to update any program.local parameters. */
@@ -164,7 +158,6 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   CoglPipelineShaderState *shader_state;
   CoglPipeline *authority;
   CoglPipeline *template_pipeline = NULL;
-  CoglHandle user_program;
 
   _COGL_GET_CONTEXT (ctx, FALSE);
 
@@ -181,21 +174,6 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   /* Fragment snippets are only supported in the GLSL fragend */
   if (_cogl_pipeline_has_fragment_snippets (pipeline))
     return FALSE;
-
-  user_program = cogl_pipeline_get_user_program (pipeline);
-  if (user_program != COGL_INVALID_HANDLE)
-    {
-      /* If the program doesn't have a fragment shader then some other
-         vertend will handle the vertex shader state and we still need
-         to generate a fragment program */
-      if (!_cogl_program_has_fragment_shader (user_program))
-        user_program = COGL_INVALID_HANDLE;
-      /* If the user program does have a fragment shader then we can
-         only handle it if it's in ARBfp */
-      else if (_cogl_program_get_language (user_program) !=
-               COGL_SHADER_LANGUAGE_ARBFP)
-        return FALSE;
-    }
 
   /* Now lookup our ARBfp backend private state */
   shader_state = get_shader_state (pipeline);
@@ -250,21 +228,17 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
     {
       shader_state = shader_state_new (n_layers);
 
-      shader_state->user_program = user_program;
-      if (user_program == COGL_INVALID_HANDLE)
-        {
-          /* We reuse a single grow-only GString for code-gen */
-          g_string_set_size (ctx->codegen_source_buffer, 0);
-          shader_state->source = ctx->codegen_source_buffer;
-          g_string_append (shader_state->source,
-                           "!!ARBfp1.0\n"
-                           "TEMP output;\n"
-                           "TEMP tmp0, tmp1, tmp2, tmp3, tmp4;\n"
-                           "PARAM half = {.5, .5, .5, .5};\n"
-                           "PARAM one = {1, 1, 1, 1};\n"
-                           "PARAM two = {2, 2, 2, 2};\n"
-                           "PARAM minus_one = {-1, -1, -1, -1};\n");
-        }
+      /* We reuse a single grow-only GString for code-gen */
+      g_string_set_size (ctx->codegen_source_buffer, 0);
+      shader_state->source = ctx->codegen_source_buffer;
+      g_string_append (shader_state->source,
+                       "!!ARBfp1.0\n"
+                       "TEMP output;\n"
+                       "TEMP tmp0, tmp1, tmp2, tmp3, tmp4;\n"
+                       "PARAM half = {.5, .5, .5, .5};\n"
+                       "PARAM one = {1, 1, 1, 1};\n"
+                       "PARAM two = {2, 2, 2, 2};\n"
+                       "PARAM minus_one = {-1, -1, -1, -1};\n");
     }
 
   set_shader_state (pipeline, shader_state);
@@ -844,6 +818,7 @@ _cogl_pipeline_fragend_arbfp_end (CoglPipeline *pipeline,
 {
   CoglPipelineShaderState *shader_state = get_shader_state (pipeline);
   GLuint gl_program;
+  UpdateConstantsState state;
 
   _COGL_GET_CONTEXT (ctx, FALSE);
 
@@ -886,47 +861,20 @@ _cogl_pipeline_fragend_arbfp_end (CoglPipeline *pipeline,
       shader_state->source = NULL;
     }
 
-  if (shader_state->user_program != COGL_INVALID_HANDLE)
-    {
-      /* An arbfp program should contain exactly one shader which we
-         can use directly */
-      CoglProgram *program = shader_state->user_program;
-      CoglShader *shader = program->attached_shaders->data;
-
-      gl_program = shader->gl_handle;
-    }
-  else
-    gl_program = shader_state->gl_program;
+  gl_program = shader_state->gl_program;
 
   GE (ctx, glBindProgram (GL_FRAGMENT_PROGRAM_ARB, gl_program));
   _cogl_use_fragment_program (0, COGL_PIPELINE_PROGRAM_TYPE_ARBFP);
 
-  if (shader_state->user_program == COGL_INVALID_HANDLE)
-    {
-      UpdateConstantsState state;
-      state.unit = 0;
-      state.shader_state = shader_state;
-      /* If this arbfp program was last used with a different pipeline
-       * then we need to ensure we update all program.local params */
-      state.update_all =
-        pipeline != shader_state->last_used_for_pipeline;
-      cogl_pipeline_foreach_layer (pipeline,
-                                   update_constants_cb,
-                                   &state);
-    }
-  else
-    {
-      CoglProgram *program = shader_state->user_program;
-      gboolean program_changed;
-
-      /* If the shader has changed since it was last flushed then we
-         need to update all uniforms */
-      program_changed = program->age != shader_state->user_program_age;
-
-      _cogl_program_flush_uniforms (program, gl_program, program_changed);
-
-      shader_state->user_program_age = program->age;
-    }
+  state.unit = 0;
+  state.shader_state = shader_state;
+  /* If this arbfp program was last used with a different pipeline
+   * then we need to ensure we update all program.local params */
+  state.update_all =
+    pipeline != shader_state->last_used_for_pipeline;
+  cogl_pipeline_foreach_layer (pipeline,
+                               update_constants_cb,
+                               &state);
 
   /* We need to track what pipeline used this arbfp program last since
    * we will need to update program.local params when switching

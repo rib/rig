@@ -31,6 +31,7 @@
 #include "cogl-journal-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-pipeline-private.h"
+#include "cogl-pipeline-state-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-profile.h"
@@ -853,7 +854,6 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
 {
   CoglPipeline *pipeline = journal_entry->pipeline;
   CoglClipStack *clip_entry;
-  int layer_num;
 
   clip_bounds_out->x_1 = -G_MAXFLOAT;
   clip_bounds_out->y_1 = -G_MAXFLOAT;
@@ -864,18 +864,11 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
      entries using the same pipeline as the previous entry */
   if (prev_journal_entry == NULL || pipeline != prev_journal_entry->pipeline)
     {
-      /* If the pipeline has a user program then we can't reliably modify
-         the texture coordinates */
-      if (cogl_pipeline_get_user_program (pipeline))
+      /* If there is a custom texture transform; either due to custom shader
+       * snippets or a custom texture matrix then we can't reliably modify the
+       * texture coordinates. */
+      if (_cogl_pipeline_maybe_has_custom_texture_transform (pipeline))
         return FALSE;
-
-      /* If any of the pipeline layers have a texture matrix then we can't
-         reliably modify the texture coordinates */
-      for (layer_num = cogl_pipeline_get_n_layers (pipeline) - 1;
-           layer_num >= 0;
-           layer_num--)
-        if (_cogl_pipeline_layer_has_user_matrix (pipeline, layer_num))
-          return FALSE;
     }
 
   /* Now we need to verify that each clip entry's matrix is just a
@@ -1596,7 +1589,7 @@ _cogl_journal_log_quad (CoglJournal  *journal,
   entry->clip_stack = _cogl_clip_stack_ref (clip_stack);
 
   if (G_UNLIKELY (final_pipeline != pipeline))
-    cogl_handle_unref (final_pipeline);
+    cogl_object_unref (final_pipeline);
 
   cogl_framebuffer_get_modelview_matrix (framebuffer,
                                          &entry->model_view);

@@ -28,8 +28,8 @@
 #ifndef __COGL_PIPELINE_STATE_PRIVATE_H
 #define __COGL_PIPELINE_STATE_PRIVATE_H
 
-CoglPipeline *
-_cogl_pipeline_get_user_program (CoglPipeline *pipeline);
+gboolean
+_cogl_pipeline_maybe_has_custom_texture_transform (CoglPipeline *pipeline);
 
 gboolean
 _cogl_pipeline_has_vertex_snippets (CoglPipeline *pipeline);

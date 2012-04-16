@@ -55,51 +55,10 @@ typedef struct { \
         } _ ## TYPE ## SizeCheck
 
 /**
- * CoglHandle:
- *
- * Type used for storing references to cogl objects, the CoglHandle is
- * a fully opaque type without any public data members.
- */
-typedef gpointer CoglHandle;
-
-/**
- * COGL_INVALID_HANDLE:
- *
- * A COGL handle that is not valid, used for unitialized handles as well as
- * error conditions.
- */
-#define COGL_INVALID_HANDLE NULL
-
-#define COGL_TYPE_HANDLE        (cogl_handle_get_type ())
-GType
-cogl_handle_get_type (void) G_GNUC_CONST;
-
-/**
- * cogl_handle_ref:
- * @handle: a #CoglHandle
- *
- * Increases the reference count of @handle by 1
- *
- * Return value: (transfer none): the handle, with its reference count increased
- */
-CoglHandle
-cogl_handle_ref (CoglHandle handle);
-
-/**
- * cogl_handle_unref:
- * @handle: a #CoglHandle
- *
- * Drecreases the reference count of @handle by 1; if the reference
- * count reaches 0, the resources allocated by @handle will be freed
- */
-void
-cogl_handle_unref (CoglHandle handle);
-
-/**
  * cogl_object_ref: (skip)
  * @object: a #CoglObject
  *
- * Increases the reference count of @handle by 1
+ * Increases the reference count of @object by 1
  *
  * Returns: the @object, with its reference count increased
  */

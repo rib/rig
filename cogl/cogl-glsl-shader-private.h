@@ -3,7 +3,7 @@
  *
  * An object oriented GL/GLES Abstraction/Utility Layer
  *
- * Copyright (C) 2010 Intel Corporation.
+ * Copyright (C) 2012 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,18 +18,18 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
- *
- *
  */
 
-/* This file is just kept for compatability while we eradicate
- * CoglHandle
- */
+#ifndef _COGL_GLSL_SHADER_PRIVATE_H_
+#define _COGL_GLSL_SHADER_PRIVATE_H_
 
-#ifndef __COGL_HANDLE_H
-#define __COGL_HANDLE_H
+void
+_cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
+                                               GLuint shader_gl_handle,
+                                               GLenum shader_gl_type,
+                                               int n_tex_coord_attribs,
+                                               GLsizei count_in,
+                                               const char **strings_in,
+                                               const GLint *lengths_in);
 
-#include "cogl-object-private.h"
-
-#endif /* __COGL_HANDLE_H */
-
+#endif /* _COGL_GLSL_SHADER_PRIVATE_H_ */

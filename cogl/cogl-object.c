@@ -45,12 +45,6 @@ cogl_object_ref (void *object)
   return object;
 }
 
-CoglHandle
-cogl_handle_ref (CoglHandle handle)
-{
-  return cogl_object_ref (handle);
-}
-
 void
 _cogl_object_default_unref (void *object)
 {
@@ -102,27 +96,6 @@ cogl_object_unref (void *obj)
 {
   void (* unref_func) (void *) = ((CoglObject *) obj)->klass->virt_unref;
   unref_func (obj);
-}
-
-void
-cogl_handle_unref (CoglHandle handle)
-{
-  cogl_object_unref (handle);
-}
-
-GType
-cogl_handle_get_type (void)
-{
-  static GType our_type = 0;
-
-  /* XXX: We are keeping the "CoglHandle" name for now incase it would
-   * break bindings to change to "CoglObject" */
-  if (G_UNLIKELY (our_type == 0))
-    our_type = g_boxed_type_register_static (g_intern_static_string ("CoglHandle"),
-                                             (GBoxedCopyFunc) cogl_object_ref,
-                                             (GBoxedFreeFunc) cogl_object_unref);
-
-  return our_type;
 }
 
 /* XXX: Unlike for cogl_object_get_user_data this code will return

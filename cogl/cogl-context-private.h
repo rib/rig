@@ -171,7 +171,7 @@ struct _CoglContext
 
   /* Framebuffers */
   GSList           *framebuffer_stack;
-  CoglHandle        window_buffer;
+  CoglFramebuffer  *window_buffer;
   unsigned long     current_draw_buffer_state_flushed;
   unsigned long     current_draw_buffer_changes;
   CoglFramebuffer  *current_draw_buffer;
@@ -182,9 +182,9 @@ struct _CoglContext
 
   /* Pre-generated VBOs containing indices to generate GL_TRIANGLES
      out of a vertex array of quads */
-  CoglHandle        quad_buffer_indices_byte;
+  CoglIndices      *quad_buffer_indices_byte;
   unsigned int      quad_buffer_indices_len;
-  CoglHandle        quad_buffer_indices;
+  CoglIndices      *quad_buffer_indices;
 
   CoglIndices      *rectangle_byte_indices;
   CoglIndices      *rectangle_short_indices;
@@ -209,9 +209,6 @@ struct _CoglContext
   GLint             max_texture_units;
   GLint             max_texture_image_units;
   GLint             max_activateable_texture_units;
-
-  /* Fragment processing programs */
-  CoglHandle              current_program;
 
   CoglPipelineProgramType current_fragment_program_type;
   CoglPipelineProgramType current_vertex_program_type;

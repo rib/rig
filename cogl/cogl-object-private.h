@@ -32,10 +32,6 @@
 #include "cogl-object.h"
 #include "cogl-debug.h"
 
-/* For compatability until all components have been converted */
-typedef struct _CoglObjectClass CoglHandleClass;
-typedef struct _CoglObject      CoglHandleObject;
-
 /* XXX: sadly we didn't fully consider when we copied the cairo API
  * for _set_user_data that the callback doesn't get a pointer to the
  * instance which is desired in most cases. This means you tend to end
@@ -90,23 +86,23 @@ struct _CoglObject
 #ifdef COGL_OBJECT_DEBUG
 
 #define _COGL_OBJECT_DEBUG_NEW(type_name, obj)                          \
-  COGL_NOTE (HANDLE, "COGL " G_STRINGIFY (type_name) " NEW   %p %i",    \
+  COGL_NOTE (OBJECT, "COGL " G_STRINGIFY (type_name) " NEW   %p %i",    \
              (obj), (obj)->ref_count)
 
 #define _COGL_OBJECT_DEBUG_REF(type_name, object)       G_STMT_START {  \
   CoglObject *__obj = (CoglObject *)object;                             \
-  COGL_NOTE (HANDLE, "COGL %s REF %p %i",                               \
+  COGL_NOTE (OBJECT, "COGL %s REF %p %i",                               \
              (__obj)->klass->name,                                      \
              (__obj), (__obj)->ref_count);              } G_STMT_END
 
 #define _COGL_OBJECT_DEBUG_UNREF(type_name, object)     G_STMT_START {  \
   CoglObject *__obj = (CoglObject *)object;                             \
-  COGL_NOTE (HANDLE, "COGL %s UNREF %p %i",                             \
+  COGL_NOTE (OBJECT, "COGL %s UNREF %p %i",                             \
              (__obj)->klass->name,                                      \
              (__obj), (__obj)->ref_count - 1);          } G_STMT_END
 
 #define COGL_OBJECT_DEBUG_FREE(obj)                                     \
-  COGL_NOTE (HANDLE, "COGL %s FREE %p",                                 \
+  COGL_NOTE (OBJECT, "COGL %s FREE %p",                                 \
              (obj)->klass->name, (obj))
 
 #else /* !COGL_OBJECT_DEBUG */
@@ -117,12 +113,6 @@ struct _CoglObject
 #define COGL_OBJECT_DEBUG_FREE(obj)
 
 #endif /* COGL_OBJECT_DEBUG */
-
-/* For temporary compatability */
-#define _COGL_HANDLE_DEBUG_NEW _COGL_OBJECT_DEBUG_NEW
-#define _COGL_HANDLE_DEBUG_REF _COGL_OBJECT_DEBUG_REF
-#define _COGL_HANDLE_DEBUG_UNREF _COGL_OBJECT_DEBUG_UNREF
-#define COGL_HANDLE_DEBUG_FREE COGL_OBJECT_DEBUG_FREE
 
 #define COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)  \
                                                                         \
@@ -214,69 +204,11 @@ _cogl_is_##type_name (void *object)                                     \
   return obj->klass == &_cogl_##type_name##_class;                      \
 }
 
-#define COGL_OBJECT_DEFINE_DEPRECATED_REF_COUNTING(type_name)   \
-                                                                \
-void * G_GNUC_DEPRECATED                                        \
-cogl_##type_name##_ref (void *object)                           \
-{                                                               \
-  if (!cogl_is_##type_name (object))                            \
-    return NULL;                                                \
-                                                                \
-  _COGL_OBJECT_DEBUG_REF (TypeName, object);                    \
-                                                                \
-  cogl_handle_ref (object);                                     \
-                                                                \
-  return object;                                                \
-}                                                               \
-                                                                \
-void G_GNUC_DEPRECATED                                          \
-cogl_##type_name##_unref (void *object)                         \
-{                                                               \
-  if (!cogl_is_##type_name (object))                            \
-    {                                                           \
-      g_warning (G_STRINGIFY (cogl_##type_name##_unref)         \
-                 ": Ignoring unref of Cogl handle "             \
-                 "due to type mismatch");                       \
-      return;                                                   \
-    }                                                           \
-                                                                \
-  _COGL_OBJECT_DEBUG_UNREF (TypeName, object);                  \
-                                                                \
-  cogl_handle_unref (object);                                   \
-}
-
 #define COGL_OBJECT_DEFINE(TypeName, type_name)                 \
   COGL_OBJECT_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
 
 #define COGL_OBJECT_INTERNAL_DEFINE(TypeName, type_name)         \
   COGL_OBJECT_INTERNAL_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
-
-/* For temporary compatability */
-#define COGL_HANDLE_INTERNAL_DEFINE_WITH_CODE(TypeName, type_name, code) \
-                                                                         \
-COGL_OBJECT_INTERNAL_DEFINE_WITH_CODE (TypeName, type_name, code)        \
-                                                                         \
-static Cogl##TypeName *                                                  \
-_cogl_##type_name##_handle_new (CoglHandle handle)                       \
-{                                                                        \
-  return _cogl_##type_name##_object_new (handle);                        \
-}
-
-#define COGL_HANDLE_DEFINE_WITH_CODE(TypeName, type_name, code)          \
-                                                                         \
-COGL_OBJECT_DEFINE_WITH_CODE (TypeName, type_name, code)                 \
-                                                                         \
-static Cogl##TypeName *                                                  \
-_cogl_##type_name##_handle_new (CoglHandle handle)                       \
-{                                                                        \
-  return _cogl_##type_name##_object_new (handle);                        \
-}
-
-#define COGL_HANDLE_INTERNAL_DEFINE(TypeName, type_name)        \
-  COGL_HANDLE_INTERNAL_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
-
-#define COGL_HANDLE_DEFINE(TypeName, type_name)                 \
-  COGL_HANDLE_DEFINE_WITH_CODE (TypeName, type_name, (void) 0)
 
 void
 _cogl_object_set_user_data (CoglObject *object,

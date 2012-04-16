@@ -68,7 +68,6 @@
 #ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
 #include <cogl/cogl-clip-state.h>
 #include <cogl/cogl-enum-types.h>
-#include <cogl/cogl-shader.h>
 #endif
 
 /*

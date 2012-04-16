@@ -41,8 +41,7 @@
 
 #include "cogl-internal.h"
 #include "cogl-context-private.h"
-#include "cogl-handle.h"
-#include "cogl-program-private.h"
+#include "cogl-object-private.h"
 #include "cogl-pipeline-fragend-glsl-private.h"
 #include "cogl-pipeline-vertend-glsl-private.h"
 #include "cogl-pipeline-cache.h"
@@ -99,10 +98,6 @@ typedef struct _UnitState
 typedef struct
 {
   unsigned int ref_count;
-
-  /* Age that the user program had last time we generated a GL
-     program. If it's different then we need to relink the program */
-  unsigned int user_program_age;
 
   GLuint program;
 
@@ -654,7 +649,6 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
   GLuint gl_program;
   gboolean program_changed = FALSE;
   UpdateUniformsState state;
-  CoglProgram *user_program;
   CoglPipeline *template_pipeline = NULL;
 
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
@@ -666,8 +660,6 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
     return;
 
   program_state = get_program_state (pipeline);
-
-  user_program = cogl_pipeline_get_user_program (pipeline);
 
   if (program_state == NULL)
     {
@@ -722,16 +714,11 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
         }
     }
 
-  /* If the program has changed since the last link then we do
-   * need to relink
-   *
-   * Also if the number of texture coordinate attributes in use has
+  /* If the number of texture coordinate attributes in use has
    * changed, then delete the program so we can prepend a new
    * _cogl_tex_coord[] varying array declaration. */
-  if ((program_state->program && user_program &&
-       user_program->age != program_state->user_program_age) ||
-      (ctx->driver == COGL_DRIVER_GLES2 &&
-       n_tex_coord_attribs != program_state->n_tex_coord_attribs))
+  if (ctx->driver == COGL_DRIVER_GLES2 &&
+      n_tex_coord_attribs != program_state->n_tex_coord_attribs)
     {
       GE( ctx, glDeleteProgram (program_state->program) );
       program_state->program = 0;
@@ -740,27 +727,8 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
   if (program_state->program == 0)
     {
       GLuint backend_shader;
-      GSList *l;
 
       GE_RET( program_state->program, ctx, glCreateProgram () );
-
-      /* Attach all of the shader from the user program */
-      if (user_program)
-        {
-          for (l = user_program->attached_shaders; l; l = l->next)
-            {
-              CoglShader *shader = l->data;
-
-              _cogl_shader_compile_real (shader, n_tex_coord_attribs);
-
-              g_assert (shader->language == COGL_SHADER_LANGUAGE_GLSL);
-
-              GE( ctx, glAttachShader (program_state->program,
-                                       shader->gl_handle) );
-            }
-
-          program_state->user_program_age = user_program->age;
-        }
 
       /* Attach any shaders from the GLSL backends */
       if (pipeline->fragend == COGL_PIPELINE_FRAGEND_GLSL &&
@@ -846,11 +814,6 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
                                               program_state,
                                               gl_program,
                                               program_changed);
-
-  if (user_program)
-    _cogl_program_flush_uniforms (user_program,
-                                  gl_program,
-                                  program_changed);
 
   /* We need to track the last pipeline that the program was used with
    * so know if we need to update all of the uniforms */
