@@ -99,7 +99,6 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-depth-state.h 		\
 	$(srcdir)/cogl-buffer.h 		\
 	$(srcdir)/cogl-pixel-buffer.h		\
-	$(srcdir)/cogl2-compatibility.h		\
 	$(NULL)
 
 # driver sources
@@ -210,7 +209,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-clip-state-private.h		\
 	$(srcdir)/cogl-clip-state.h			\
 	$(srcdir)/cogl-clip-state.c			\
-	$(srcdir)/cogl2-compatibility.c			\
 	$(srcdir)/cogl-feature-private.h                \
 	$(srcdir)/cogl-feature-private.c                \
 	$(srcdir)/cogl-color-private.h    		\
