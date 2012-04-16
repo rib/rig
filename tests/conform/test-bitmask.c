@@ -14,9 +14,9 @@
 #undef COGL_ENABLE_EXPERIMENTAL_2_0_API
 #undef COGL_ENABLE_EXPERIMENTAL_API
 
+#define _COGL_IN_TEST_BITMASK
 #include <cogl/cogl-bitmask.h>
 #include <cogl/cogl-bitmask.c>
-#define _COGL_IN_TEST_BITMASK
 #include <cogl/cogl-util.c>
 
 typedef struct
