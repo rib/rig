@@ -137,54 +137,6 @@ cogl_clear (const CoglColor *color, unsigned long buffers)
   cogl_framebuffer_clear (cogl_get_draw_framebuffer (), buffers, color);
 }
 
-/* XXX: This API has been deprecated */
-void
-cogl_set_depth_test_enabled (CoglBool setting)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  if (ctx->legacy_depth_test_enabled == setting)
-    return;
-
-  ctx->legacy_depth_test_enabled = setting;
-  if (ctx->legacy_depth_test_enabled)
-    ctx->legacy_state_set++;
-  else
-    ctx->legacy_state_set--;
-}
-
-/* XXX: This API has been deprecated */
-CoglBool
-cogl_get_depth_test_enabled (void)
-{
-  _COGL_GET_CONTEXT (ctx, FALSE);
-  return ctx->legacy_depth_test_enabled;
-}
-
-void
-cogl_set_backface_culling_enabled (CoglBool setting)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  if (ctx->legacy_backface_culling_enabled == setting)
-    return;
-
-  ctx->legacy_backface_culling_enabled = setting;
-
-  if (ctx->legacy_backface_culling_enabled)
-    ctx->legacy_state_set++;
-  else
-    ctx->legacy_state_set--;
-}
-
-CoglBool
-cogl_get_backface_culling_enabled (void)
-{
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  return ctx->legacy_backface_culling_enabled;
-}
-
 void
 cogl_set_source_color (const CoglColor *color)
 {
@@ -320,37 +272,6 @@ cogl_get_bitmasks (int *red,
 
   if (alpha)
     *alpha = cogl_framebuffer_get_alpha_bits (framebuffer);
-}
-
-void
-cogl_set_fog (const CoglColor *fog_color,
-              CoglFogMode      mode,
-              float            density,
-              float            z_near,
-              float            z_far)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  if (ctx->legacy_fog_state.enabled == FALSE)
-    ctx->legacy_state_set++;
-
-  ctx->legacy_fog_state.enabled = TRUE;
-  ctx->legacy_fog_state.color = *fog_color;
-  ctx->legacy_fog_state.mode = mode;
-  ctx->legacy_fog_state.density = density;
-  ctx->legacy_fog_state.z_near = z_near;
-  ctx->legacy_fog_state.z_far = z_far;
-}
-
-void
-cogl_disable_fog (void)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  if (ctx->legacy_fog_state.enabled == TRUE)
-    ctx->legacy_state_set--;
-
-  ctx->legacy_fog_state.enabled = FALSE;
 }
 
 void
@@ -568,45 +489,13 @@ typedef struct _CoglSourceState
 {
   CoglPipeline *pipeline;
   int push_count;
-  /* If this is TRUE then the pipeline will be copied and the legacy
-     state will be applied whenever the pipeline is used. This is
-     necessary because some internal Cogl code expects to be able to
-     push a temporary pipeline to put GL into a known state. For that
-     to work it also needs to prevent applying the legacy state */
-  CoglBool enable_legacy;
 } CoglSourceState;
-
-static void
-_push_source_real (CoglPipeline *pipeline, CoglBool enable_legacy)
-{
-  CoglSourceState *top = g_slice_new (CoglSourceState);
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  top->pipeline = cogl_object_ref (pipeline);
-  top->enable_legacy = enable_legacy;
-  top->push_count = 1;
-
-  ctx->source_stack = g_list_prepend (ctx->source_stack, top);
-}
 
 /* FIXME: This should take a context pointer for Cogl 2.0 Technically
  * we could make it so we can retrieve a context reference from the
  * pipeline, but this would not by symmetric with cogl_pop_source. */
 void
-cogl_push_source (void *material_or_pipeline)
-{
-  CoglPipeline *pipeline = COGL_PIPELINE (material_or_pipeline);
-
-  _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
-
-  _cogl_push_source (pipeline, TRUE);
-}
-
-/* This internal version of cogl_push_source is the same except it
-   never applies the legacy state. Some parts of Cogl use this
-   internally to set a temporary pipeline with a known state */
-void
-_cogl_push_source (CoglPipeline *pipeline, CoglBool enable_legacy)
+cogl_push_source (CoglPipeline *pipeline)
 {
   CoglSourceState *top;
 
@@ -614,19 +503,17 @@ _cogl_push_source (CoglPipeline *pipeline, CoglBool enable_legacy)
 
   _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
 
-  if (ctx->source_stack)
-    {
-      top = ctx->source_stack->data;
-      if (top->pipeline == pipeline && top->enable_legacy == enable_legacy)
-        {
-          top->push_count++;
-          return;
-        }
-      else
-        _push_source_real (pipeline, enable_legacy);
-    }
+  if (ctx->source_stack &&
+      (top = ctx->source_stack->data)->pipeline == pipeline)
+    top->push_count++;
   else
-    _push_source_real (pipeline, enable_legacy);
+    {
+      top = g_slice_new (CoglSourceState);
+      top->pipeline = cogl_object_ref (pipeline);
+      top->push_count = 1;
+
+      ctx->source_stack = g_list_prepend (ctx->source_stack, top);
+    }
 }
 
 /* FIXME: This needs to take a context pointer for Cogl 2.0 */
@@ -664,19 +551,6 @@ cogl_get_source (void)
   return top->pipeline;
 }
 
-CoglBool
-_cogl_get_enable_legacy_state (void)
-{
-  CoglSourceState *top;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  _COGL_RETURN_VAL_IF_FAIL (ctx->source_stack, FALSE);
-
-  top = ctx->source_stack->data;
-  return top->enable_legacy;
-}
-
 void
 cogl_set_source (void *material_or_pipeline)
 {
@@ -689,7 +563,7 @@ cogl_set_source (void *material_or_pipeline)
   _COGL_RETURN_IF_FAIL (ctx->source_stack);
 
   top = ctx->source_stack->data;
-  if (top->pipeline == pipeline && top->enable_legacy)
+  if (top->pipeline == pipeline)
     return;
 
   if (top->push_count == 1)
@@ -699,7 +573,6 @@ cogl_set_source (void *material_or_pipeline)
       cogl_object_ref (pipeline);
       cogl_object_unref (top->pipeline);
       top->pipeline = pipeline;
-      top->enable_legacy = TRUE;
     }
   else
     {

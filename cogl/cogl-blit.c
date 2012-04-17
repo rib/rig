@@ -97,7 +97,7 @@ _cogl_blit_texture_render_begin (CoglBlitData *data)
 
   cogl_pipeline_set_layer_texture (pipeline, 0, data->src_tex);
 
-  _cogl_push_source (pipeline, FALSE);
+  cogl_push_source (pipeline);
 
   return TRUE;
 }

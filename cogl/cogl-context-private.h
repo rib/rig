@@ -100,8 +100,6 @@ struct _CoglContext
   CoglBitmask       enable_custom_attributes_tmp;
   CoglBitmask       changed_bits_tmp;
 
-  CoglBool          legacy_backface_culling_enabled;
-
   /* A few handy matrix constants */
   CoglMatrix        identity_matrix;
   CoglMatrix        y_flip_matrix;
@@ -122,8 +120,6 @@ struct _CoglContext
   GArray           *texture_units;
   int               active_texture_unit;
 
-  CoglPipelineFogState legacy_fog_state;
-
   /* Pipelines */
   CoglPipeline     *opaque_color_pipeline; /* used for set_source_color */
   CoglPipeline     *blended_color_pipeline; /* used for set_source_color */
@@ -131,8 +127,6 @@ struct _CoglContext
   GString          *codegen_header_buffer;
   GString          *codegen_source_buffer;
   GList            *source_stack;
-
-  int               legacy_state_set;
 
   CoglPipelineCache *pipeline_cache;
 
@@ -164,8 +158,6 @@ struct _CoglContext
   CoglBool              depth_writing_enabled_cache;
   float                 depth_range_near_cache;
   float                 depth_range_far_cache;
-
-  CoglBool              legacy_depth_test_enabled;
 
   CoglBuffer       *current_buffer[COGL_BUFFER_BIND_TARGET_COUNT];
 

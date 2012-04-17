@@ -630,8 +630,7 @@ _cogl_framebuffer_draw_multitextured_rectangles (
                                         CoglFramebuffer *framebuffer,
                                         CoglPipeline *pipeline,
                                         CoglMultiTexturedRect *rects,
-                                        int n_rects,
-                                        CoglBool disable_legacy_state)
+                                        int n_rects)
 {
   CoglContext *ctx = framebuffer->context;
   CoglPipeline *original_pipeline;
@@ -654,18 +653,6 @@ _cogl_framebuffer_draw_multitextured_rectangles (
 
   if (state.override_source)
     pipeline = state.override_source;
-
-  if (!disable_legacy_state)
-    {
-      if (G_UNLIKELY (ctx->legacy_state_set) &&
-          _cogl_get_enable_legacy_state ())
-        {
-          /* If we haven't already made a pipeline copy */
-          if (pipeline == original_pipeline)
-            pipeline = cogl_pipeline_copy (pipeline);
-          _cogl_pipeline_apply_legacy_state (pipeline);
-        }
-    }
 
   /*
    * Emit geometry for each of the rectangles...
@@ -729,8 +716,7 @@ _cogl_rectangles_with_multitexture_coords (
   _cogl_framebuffer_draw_multitextured_rectangles (cogl_get_draw_framebuffer (),
                                                    cogl_get_source (),
                                                    rects,
-                                                   n_rects,
-                                                   FALSE);
+                                                   n_rects);
 }
 
 void
@@ -892,8 +878,7 @@ _cogl_rectangle_immediate (CoglFramebuffer *framebuffer,
                                      1,
                                      COGL_DRAW_SKIP_JOURNAL_FLUSH |
                                      COGL_DRAW_SKIP_PIPELINE_VALIDATION |
-                                     COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH |
-                                     COGL_DRAW_SKIP_LEGACY_STATE);
+                                     COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 
 
   cogl_object_unref (attributes[0]);
@@ -1113,14 +1098,6 @@ cogl_polygon (const CoglTextureVertex *vertices,
                         v,
                         ctx->polygon_vertices->len * sizeof (float));
 
-  /* XXX: although this may seem redundant, we need to do this since
-   * cogl_polygon() can be used with legacy state and its the source stack
-   * which track whether legacy state is enabled.
-   *
-   * (We only have a CoglDrawFlag to disable legacy state not one
-   *  to enable it) */
-  cogl_push_source (pipeline);
-
   _cogl_framebuffer_draw_attributes (cogl_get_draw_framebuffer (),
                                      pipeline,
                                      COGL_VERTICES_MODE_TRIANGLE_FAN,
@@ -1128,8 +1105,6 @@ cogl_polygon (const CoglTextureVertex *vertices,
                                      attributes,
                                      n_attributes,
                                      0 /* no draw flags */);
-
-  cogl_pop_source ();
 
   if (pipeline != validate_state.original_pipeline)
     cogl_object_unref (pipeline);

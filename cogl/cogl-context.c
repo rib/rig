@@ -274,8 +274,6 @@ cogl_context_new (CoglDisplay *display,
   context->current_clip_stack_valid = FALSE;
   context->current_clip_stack = NULL;
 
-  context->legacy_backface_culling_enabled = FALSE;
-
   cogl_matrix_init_identity (&context->identity_matrix);
   cogl_matrix_init_identity (&context->y_flip_matrix);
   cogl_matrix_scale (&context->y_flip_matrix, 1, -1, 1);
@@ -290,16 +288,12 @@ cogl_context_new (CoglDisplay *display,
   context->active_texture_unit = 1;
   GE (context, glActiveTexture (GL_TEXTURE1));
 
-  context->legacy_fog_state.enabled = FALSE;
-
   context->opaque_color_pipeline = cogl_pipeline_new (context);
   context->blended_color_pipeline = cogl_pipeline_new (context);
   context->texture_pipeline = cogl_pipeline_new (context);
   context->codegen_header_buffer = g_string_new ("");
   context->codegen_source_buffer = g_string_new ("");
   context->source_stack = NULL;
-
-  context->legacy_state_set = 0;
 
   context->default_gl_texture_2d_tex = NULL;
   context->default_gl_texture_3d_tex = NULL;
@@ -346,8 +340,6 @@ cogl_context_new (CoglDisplay *display,
   context->depth_writing_enabled_cache = TRUE;
   context->depth_range_near_cache = 0;
   context->depth_range_far_cache = 1;
-
-  context->legacy_depth_test_enabled = FALSE;
 
   context->pipeline_cache = cogl_pipeline_cache_new ();
 

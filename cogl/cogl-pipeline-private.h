@@ -922,9 +922,6 @@ void
 _cogl_pipeline_texture_storage_change_notify (CoglTexture *texture);
 
 void
-_cogl_pipeline_apply_legacy_state (CoglPipeline *pipeline);
-
-void
 _cogl_pipeline_apply_overrides (CoglPipeline *pipeline,
                                 CoglPipelineFlushOptions *options);
 

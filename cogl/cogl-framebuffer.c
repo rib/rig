@@ -3106,8 +3106,7 @@ draw_wireframe (CoglContext *ctx,
                                            n_attributes,
                                            COGL_DRAW_SKIP_JOURNAL_FLUSH |
                                            COGL_DRAW_SKIP_PIPELINE_VALIDATION |
-                                           COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH |
-                                           COGL_DRAW_SKIP_LEGACY_STATE);
+                                           COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
   COGL_DEBUG_SET_FLAG (COGL_DEBUG_WIREFRAME);
 
   cogl_object_unref (wire_indices);
@@ -3159,7 +3158,7 @@ cogl_framebuffer_draw_attributes (CoglFramebuffer *framebuffer,
                                      first_vertex,
                                      n_vertices,
                                      attributes, n_attributes,
-                                     COGL_DRAW_SKIP_LEGACY_STATE);
+                                     0 /* flags */);
 }
 
 void
@@ -3192,7 +3191,7 @@ cogl_framebuffer_vdraw_attributes (CoglFramebuffer *framebuffer,
                                      pipeline,
                                      mode, first_vertex, n_vertices,
                                      attributes, n_attributes,
-                                     COGL_DRAW_SKIP_LEGACY_STATE);
+                                     0 /* flags */);
 }
 
 static size_t
@@ -3282,7 +3281,7 @@ cogl_framebuffer_draw_indexed_attributes (CoglFramebuffer *framebuffer,
                                              mode, first_vertex,
                                              n_vertices, indices,
                                              attributes, n_attributes,
-                                             COGL_DRAW_SKIP_LEGACY_STATE);
+                                             0 /* flags */);
 }
 
 void
@@ -3320,7 +3319,7 @@ cogl_framebuffer_vdraw_indexed_attributes (CoglFramebuffer *framebuffer,
                                              indices,
                                              attributes,
                                              n_attributes,
-                                             COGL_DRAW_SKIP_LEGACY_STATE);
+                                             0 /* flags */);
 }
 
 void
@@ -3356,7 +3355,7 @@ cogl_framebuffer_draw_primitive (CoglFramebuffer *framebuffer,
                                  CoglPrimitive *primitive)
 {
   _cogl_framebuffer_draw_primitive (framebuffer, pipeline, primitive,
-                                    COGL_DRAW_SKIP_LEGACY_STATE);
+                                    0 /* flags */);
 }
 
 void
@@ -3382,8 +3381,7 @@ cogl_framebuffer_draw_rectangle (CoglFramebuffer *framebuffer,
   _cogl_framebuffer_draw_multitextured_rectangles (framebuffer,
                                                    pipeline,
                                                    &rect,
-                                                   1,
-                                                   TRUE);
+                                                   1);
 }
 
 void
@@ -3414,8 +3412,7 @@ cogl_framebuffer_draw_textured_rectangle (CoglFramebuffer *framebuffer,
   _cogl_framebuffer_draw_multitextured_rectangles (framebuffer,
                                                    pipeline,
                                                    &rect,
-                                                   1,
-                                                   TRUE);
+                                                   1);
 }
 
 void
@@ -3443,8 +3440,7 @@ cogl_framebuffer_draw_multitextured_rectangle (CoglFramebuffer *framebuffer,
   _cogl_framebuffer_draw_multitextured_rectangles (framebuffer,
                                                    pipeline,
                                                    &rect,
-                                                   1,
-                                                   TRUE);
+                                                   1);
 }
 
 void
@@ -3473,8 +3469,7 @@ cogl_framebuffer_draw_rectangles (CoglFramebuffer *framebuffer,
   _cogl_framebuffer_draw_multitextured_rectangles (framebuffer,
                                                    pipeline,
                                                    rects,
-                                                   n_rectangles,
-                                                   TRUE);
+                                                   n_rectangles);
 }
 
 void
@@ -3503,6 +3498,5 @@ cogl_framebuffer_draw_textured_rectangles (CoglFramebuffer *framebuffer,
   _cogl_framebuffer_draw_multitextured_rectangles (framebuffer,
                                                    pipeline,
                                                    rects,
-                                                   n_rectangles,
-                                                   TRUE);
+                                                   n_rectangles);
 }

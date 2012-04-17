@@ -418,8 +418,7 @@ paint_primitive_silhouette (void *user_data)
                                     user_data,
                                     COGL_DRAW_SKIP_JOURNAL_FLUSH |
                                     COGL_DRAW_SKIP_PIPELINE_VALIDATION |
-                                    COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH |
-                                    COGL_DRAW_SKIP_LEGACY_STATE);
+                                    COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 }
 
 static void

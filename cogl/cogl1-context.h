@@ -380,100 +380,6 @@ void
 cogl_get_viewport (float v[4]);
 
 /**
- * cogl_set_depth_test_enabled:
- * @setting: %TRUE to enable depth testing or %FALSE to disable.
- *
- * Sets whether depth testing is enabled. If it is disabled then the
- * order that actors are layered on the screen depends solely on the
- * order specified using clutter_actor_raise() and
- * clutter_actor_lower(), otherwise it will also take into account the
- * actor's depth. Depth testing is disabled by default.
- *
- * Deprecated: 1.4: Use cogl_material_set_depth_test_enabled()
- * instead.
- */
-void
-cogl_set_depth_test_enabled (CoglBool setting);
-
-/**
- * cogl_get_depth_test_enabled:
- *
- * Queries if depth testing has been enabled via cogl_set_depth_test_enable()
- *
- * Return value: %TRUE if depth testing is enabled, and %FALSE otherwise
- *
- * Deprecated: 1.4: Use cogl_material_get_depth_test_enabled()
- * instead.
- */
-CoglBool
-cogl_get_depth_test_enabled (void);
-
-/**
- * cogl_set_backface_culling_enabled:
- * @setting: %TRUE to enable backface culling or %FALSE to disable.
- *
- * Sets whether textures positioned so that their backface is showing
- * should be hidden. This can be used to efficiently draw two-sided
- * textures or fully closed cubes without enabling depth testing. This
- * only affects calls to the cogl_rectangle* family of functions and
- * cogl_vertex_buffer_draw*. Backface culling is disabled by default.
- */
-void
-cogl_set_backface_culling_enabled (CoglBool setting);
-
-/**
- * cogl_get_backface_culling_enabled:
- *
- * Queries if backface culling has been enabled via
- * cogl_set_backface_culling_enabled()
- *
- * Return value: %TRUE if backface culling is enabled, and %FALSE otherwise
- */
-CoglBool
-cogl_get_backface_culling_enabled (void);
-
-/**
- * cogl_set_fog:
- * @fog_color: The color of the fog
- * @mode: A #CoglFogMode that determines the equation used to calculate the
- *   fogging blend factor.
- * @density: Used by %COGL_FOG_MODE_EXPONENTIAL and by
- *   %COGL_FOG_MODE_EXPONENTIAL_SQUARED equations.
- * @z_near: Position along Z axis where no fogging should be applied
- * @z_far: Position along Z axis where full fogging should be applied
- *
- * Enables fogging. Fogging causes vertices that are further away from the eye
- * to be rendered with a different color. The color is determined according to
- * the chosen fog mode; at it's simplest the color is linearly interpolated so
- * that vertices at @z_near are drawn fully with their original color and
- * vertices at @z_far are drawn fully with @fog_color. Fogging will remain
- * enabled until you call cogl_disable_fog().
- *
- * <note>The fogging functions only work correctly when primitives use
- * unmultiplied alpha colors. By default Cogl will premultiply textures
- * and cogl_set_source_color() will premultiply colors, so unless you
- * explicitly load your textures requesting an unmultiplied internal format
- * and use cogl_material_set_color() you can only use fogging with fully
- * opaque primitives. This might improve in the future when we can depend
- * on fragment shaders.</note>
- */
-void
-cogl_set_fog (const CoglColor *fog_color,
-              CoglFogMode mode,
-              float density,
-              float z_near,
-              float z_far);
-
-/**
- * cogl_disable_fog:
- *
- * This function disables fogging, so primitives drawn afterwards will not be
- * blended with any previously set fog color.
- */
-void
-cogl_disable_fog (void);
-
-/**
  * cogl_clear:
  * @color: Background color to clear to
  * @buffers: A mask of #CoglBufferBit<!-- -->'s identifying which auxiliary
@@ -521,21 +427,21 @@ cogl_get_source (void);
 
 /**
  * cogl_push_source:
- * @material: A #CoglMaterial
+ * @material: A #CoglPipeline
  *
- * Pushes the given @material to the top of the source stack. The
- * material at the top of this stack defines the GPU state used to
+ * Pushes the given @pipeline to the top of the source stack. The
+ * pipeline at the top of this stack defines the GPU state used to
  * process later primitives as defined by cogl_set_source().
  *
  * Since: 1.6
  */
 void
-cogl_push_source (void *material);
+cogl_push_source (CoglPipeline *pipeline);
 
 /**
  * cogl_pop_source:
  *
- * Removes the material at the top of the source stack. The material
+ * Removes the pipeline at the top of the source stack. The pipeline
  * at the top of this stack defines the GPU state used to process
  * later primitives as defined by cogl_set_source().
  *

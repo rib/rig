@@ -168,8 +168,6 @@ cogl_depth_state_set_range
 cogl_depth_state_set_write_enabled
 cogl_depth_test_function_get_type
 
-cogl_disable_fog
-
 cogl_display_get_renderer
 cogl_display_new
 cogl_display_setup
@@ -266,9 +264,7 @@ cogl_gdl_display_set_plane
 
 cogl_frustum
 
-cogl_get_backface_culling_enabled
 cogl_get_bitmasks
-cogl_get_depth_test_enabled
 cogl_get_draw_framebuffer
 cogl_get_features
 cogl_get_modelview_matrix
@@ -576,12 +572,9 @@ cogl_rotate
 
 cogl_scale
 
-cogl_set_backface_culling_enabled
-cogl_set_depth_test_enabled
 #ifndef COGL_DISABLE_DEPRECATED
 cogl_set_draw_buffer
 #endif
-cogl_set_fog
 cogl_set_framebuffer
 cogl_set_modelview_matrix
 cogl_set_path	/* this is COGL 1.0 API */

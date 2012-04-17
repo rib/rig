@@ -885,7 +885,7 @@ _cogl_texture_draw_and_read (CoglTexture *texture,
                                NULL);
     }
 
-  _cogl_push_source (ctx->texture_download_pipeline, FALSE);
+  cogl_push_source (ctx->texture_download_pipeline);
 
   cogl_pipeline_set_layer_texture (ctx->texture_download_pipeline, 0, texture);
 

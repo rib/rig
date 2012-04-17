@@ -52,8 +52,7 @@ _cogl_framebuffer_draw_multitextured_rectangles (
                                         CoglFramebuffer *framebuffer,
                                         CoglPipeline *pipeline,
                                         CoglMultiTexturedRect *rects,
-                                        int n_rects,
-                                        CoglBool disable_legacy_state);
+                                        int n_rects);
 
 G_END_DECLS
 

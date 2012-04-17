@@ -39,12 +39,6 @@ _cogl_clear (const CoglColor *color, unsigned long buffers);
 void
 _cogl_init (void);
 
-void
-_cogl_push_source (CoglPipeline *pipeline, CoglBool enable_legacy);
-
-CoglBool
-_cogl_get_enable_legacy_state (void);
-
 /*
  * _cogl_pixel_format_get_bytes_per_pixel:
  * @format: a #CoglPixelFormat

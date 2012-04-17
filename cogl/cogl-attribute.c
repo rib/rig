@@ -661,19 +661,6 @@ _cogl_flush_attributes_state (CoglFramebuffer *framebuffer,
        */
     }
 
-  if (G_UNLIKELY (!(flags & COGL_DRAW_SKIP_LEGACY_STATE)) &&
-      G_UNLIKELY (ctx->legacy_state_set) &&
-      _cogl_get_enable_legacy_state ())
-    {
-      /* If we haven't already created a derived pipeline... */
-      if (!copy)
-        {
-          copy = cogl_pipeline_copy (pipeline);
-          pipeline = copy;
-        }
-      _cogl_pipeline_apply_legacy_state (pipeline);
-    }
-
   _cogl_pipeline_flush_gl_state (pipeline, skip_gl_color, n_tex_coord_attribs);
 
   _cogl_bitmask_clear_all (&ctx->enable_builtin_attributes_tmp);

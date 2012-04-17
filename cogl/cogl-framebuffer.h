@@ -989,10 +989,6 @@ cogl_framebuffer_clear4f (CoglFramebuffer *framebuffer,
  * a GPU such as #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D
  * are associated with layers of the given @pipeline.
  *
- * <note>This api doesn't support any of the legacy global state options such
- * as cogl_set_depth_test_enabled(), cogl_set_backface_culling_enabled() or
- * cogl_program_use()</note>
- *
  * Stability: unstable
  * Since: 1.10
  */
@@ -1068,10 +1064,6 @@ cogl_framebuffer_vdraw_attributes (CoglFramebuffer *framebuffer,
  * a GPU such as #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D
  * are associated with layers of the given @pipeline.
  *
- * <note>This api doesn't support any of the legacy global state options such
- * as cogl_set_depth_test_enabled(), cogl_set_backface_culling_enabled() or
- * cogl_program_use()</note>
- *
  * Stability: unstable
  * Since: 1.10
  */
@@ -1130,10 +1122,6 @@ cogl_framebuffer_draw_attributes (CoglFramebuffer *framebuffer,
  * ensure that only low-level textures that can be directly sampled by
  * a GPU such as #CoglTexture2D, #CoglTextureRectangle or
  * #CoglTexture3D are associated with layers of the given @pipeline.
- *
- * <note>This api doesn't support any of the legacy global state
- * options such as cogl_set_depth_test_enabled(),
- * cogl_set_backface_culling_enabled() or cogl_program_use()</note>
  *
  * Stability: unstable
  * Since: 1.10
@@ -1195,10 +1183,6 @@ cogl_framebuffer_vdraw_indexed_attributes (CoglFramebuffer *framebuffer,
  * ensure that only low-level textures that can be directly sampled by
  * a GPU such as #CoglTexture2D, #CoglTextureRectangle or
  * #CoglTexture3D are associated with layers of the given @pipeline.
- *
- * <note>This api doesn't support any of the legacy global state
- * options such as cogl_set_depth_test_enabled(),
- * cogl_set_backface_culling_enabled() or cogl_program_use()</note>
  *
  * Stability: unstable
  * Since: 1.10

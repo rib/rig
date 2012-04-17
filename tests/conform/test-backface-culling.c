@@ -39,8 +39,8 @@ validate_part (CoglFramebuffer *framebuffer,
    to test all of the combinations of both winding orders and all four
    culling modes */
 
-#define FRONT_WINDING(draw_num)    (((draw_num) & 0x01) >> 1)
-#define CULL_FACE_MODE(draw_num)   (((draw_num) & 0x06) >> 2)
+#define FRONT_WINDING(draw_num)    ((draw_num) & 0x01)
+#define CULL_FACE_MODE(draw_num)   (((draw_num) & 0x06) >> 1)
 
 static void
 paint_test_backface_culling (TestState *state,
@@ -66,9 +66,9 @@ paint_test_backface_culling (TestState *state,
                                    COGL_PIPELINE_FILTER_NEAREST,
                                    COGL_PIPELINE_FILTER_NEAREST);
 
-  /* Render the scene sixteen times to test all of the combinations of
-     cull face mode, legacy state and winding orders */
-  for (draw_num = 0; draw_num < 16; draw_num++)
+  /* Render the scene eight times to test all of the combinations of
+     cull face mode and winding orders */
+  for (draw_num = 0; draw_num < 8; draw_num++)
     {
       float x1 = 0, x2, y1 = 0, y2 = (float)(TEXTURE_RENDER_SIZE);
       CoglTextureVertex verts[4];
