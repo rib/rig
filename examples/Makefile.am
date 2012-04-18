@@ -17,14 +17,18 @@ common_ldadd = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcogl2.la
 
-programs = cogl-hello cogl-info cogl-msaa
+programs = cogl-info
+
+cogl_info_SOURCES = cogl-info.c
+cogl_info_LDADD = $(common_ldadd)
+
+if USE_GLIB
+programs += cogl-hello cogl-msaa
 examples_datadir = $(pkgdatadir)/examples-data
 examples_data_DATA =
 
 cogl_hello_SOURCES = cogl-hello.c
 cogl_hello_LDADD = $(common_ldadd)
-cogl_info_SOURCES = cogl-info.c
-cogl_info_LDADD = $(common_ldadd)
 cogl_msaa_SOURCES = cogl-msaa.c
 cogl_msaa_LDADD = $(common_ldadd)
 
@@ -55,6 +59,8 @@ programs += cogl-sdl-hello
 cogl_sdl_hello_SOURCES = cogl-sdl-hello.c
 cogl_sdl_hello_LDADD = $(common_ldadd)
 endif
+
+endif #USE_GLIB
 
 if INSTALL_EXAMPLES
 bin_PROGRAMS = $(programs)

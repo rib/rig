@@ -39,12 +39,6 @@
 #define COGL_ENABLE_EXPERIMENTAL_API
 #endif
 
-/* We currently keep gtype integration delimited in case we eventually
- * want to split it out into a separate utility library when Cogl
- * becomes a standalone project. (like cairo-gobject.so)
- */
-#define _COGL_SUPPORTS_GTYPE_INTEGRATION
-
 /*
  * API common to the 1.x and 2.0 api...
  */

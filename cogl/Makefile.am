@@ -430,11 +430,13 @@ endif
 
 EXTRA_DIST += stb_image.c
 
+if USE_GLIB
 # glib-mkenums rules
 glib_enum_h = cogl-enum-types.h
 glib_enum_c = cogl-enum-types.c
 glib_enum_headers = $(cogl_1_public_h)
 include $(top_srcdir)/build/autotools/Makefile.am.enums
+endif
 
 #XXX should we specify a libdir sub-directory now so that
 #for the next major version of Cogl we don't need to change
@@ -466,7 +468,10 @@ cogl_headers = \
 
 coglincludedir = $(includedir)/cogl2/cogl
 coglinclude_HEADERS = $(cogl_headers) $(cogl_experimental_h)
-nodist_coglinclude_HEADERS = cogl-defines.h cogl-enum-types.h
+nodist_coglinclude_HEADERS = cogl-defines.h
+if USE_GLIB
+nodist_coglinclude_HEADERS += cogl-enum-types.h
+endif
 
 dist-hook: ../build/win32/vs9/cogl.vcproj ../build/win32/vs10/cogl.vcxproj ../build/win32/vs10/cogl.vcxproj.filters ../build/win32/gen-enums.bat
 

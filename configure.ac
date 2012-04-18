@@ -398,6 +398,7 @@ AM_CONDITIONAL([USE_GLIB], [test "x$enable_glib" = "xyes"])
 AS_IF([test "x$enable_glib" = "xyes"],
       [
         COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GLIB_SUPPORT"
+        COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_GTYPE_SUPPORT"
       ],
       [
         EXPERIMENTAL_CONFIG=yes
