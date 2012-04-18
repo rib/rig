@@ -15,15 +15,12 @@ typedef struct _TestState
 } TestState;
 
 static void
-draw_path_at (CoglPath *path, int x, int y)
+draw_path_at (CoglPath *path, CoglPipeline *pipeline, int x, int y)
 {
   cogl_framebuffer_push_matrix (test_fb);
   cogl_framebuffer_translate (test_fb, x * BLOCK_SIZE, y * BLOCK_SIZE, 0.0f);
 
-  /* FIXME: we need some cogl_framebuffer_fill_path() api */
-  cogl_push_framebuffer (test_fb);
-  cogl_path_fill (path);
-  cogl_pop_framebuffer ();
+  cogl_framebuffer_fill_path (test_fb, pipeline, path);
 
   cogl_framebuffer_pop_matrix (test_fb);
 }
@@ -83,19 +80,19 @@ paint (TestState *state)
   cogl_path_rectangle (path_a,
                        BLOCK_SIZE / 2, BLOCK_SIZE / 2,
                        BLOCK_SIZE * 3 / 4, BLOCK_SIZE);
-  draw_path_at (path_a, 0, 0);
+  draw_path_at (path_a, white, 0, 0);
 
   /* Create another path filling the whole block */
   path_b = cogl_path_new (test_ctx);
   cogl_path_rectangle (path_b, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
-  draw_path_at (path_b, 1, 0);
+  draw_path_at (path_b, white, 1, 0);
 
   /* Draw the first path again */
-  draw_path_at (path_a, 2, 0);
+  draw_path_at (path_a, white, 2, 0);
 
   /* Draw a copy of path a */
   path_c = cogl_path_copy (path_a);
-  draw_path_at (path_c, 3, 0);
+  draw_path_at (path_c, white, 3, 0);
 
   /* Add another rectangle to path a. We'll use line_to's instead of
      cogl_rectangle so that we don't create another sub-path because
@@ -104,10 +101,10 @@ paint (TestState *state)
   cogl_path_line_to (path_a, 0, 0);
   cogl_path_line_to (path_a, BLOCK_SIZE / 2, 0);
   cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
-  draw_path_at (path_a, 4, 0);
+  draw_path_at (path_a, white, 4, 0);
 
   /* Draw the copy again. It should not have changed */
-  draw_path_at (path_c, 5, 0);
+  draw_path_at (path_c, white, 5, 0);
 
   /* Add another rectangle to path c. It will be added in two halves,
      one as an extension of the previous path and the other as a new
@@ -118,10 +115,10 @@ paint (TestState *state)
   cogl_path_line_to (path_c, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
   cogl_path_rectangle (path_c,
                        BLOCK_SIZE * 3 / 4, 0, BLOCK_SIZE, BLOCK_SIZE / 2);
-  draw_path_at (path_c, 6, 0);
+  draw_path_at (path_c, white, 6, 0);
 
   /* Draw the original path again. It should not have changed */
-  draw_path_at (path_a, 7, 0);
+  draw_path_at (path_a, white, 7, 0);
 
   cogl_object_unref (path_a);
   cogl_object_unref (path_b);
@@ -135,7 +132,7 @@ paint (TestState *state)
   cogl_path_line_to (path_a, BLOCK_SIZE / 2, BLOCK_SIZE / 2);
   cogl_path_line_to (path_a, BLOCK_SIZE / 2, 0);
   cogl_path_close (path_a);
-  draw_path_at (path_a, 8, 0);
+  draw_path_at (path_a, white, 8, 0);
   cogl_object_unref (path_a);
 
   /* Draw two sub paths. Where the paths intersect it should be
@@ -144,7 +141,7 @@ paint (TestState *state)
   cogl_path_rectangle (path_a, 0, 0, BLOCK_SIZE, BLOCK_SIZE);
   cogl_path_rectangle (path_a,
                        BLOCK_SIZE / 2, BLOCK_SIZE / 2, BLOCK_SIZE, BLOCK_SIZE);
-  draw_path_at (path_a, 9, 0);
+  draw_path_at (path_a, white, 9, 0);
   cogl_object_unref (path_a);
 
   /* Draw a clockwise outer path */
@@ -167,11 +164,11 @@ paint (TestState *state)
   cogl_path_line_to (path_a, BLOCK_SIZE, 0);
   cogl_path_close (path_a);
   /* Retain the path for the next test */
-  draw_path_at (path_a, 10, 0);
+  draw_path_at (path_a, white, 10, 0);
 
   /* Draw the same path again with the other fill rule */
   cogl_path_set_fill_rule (path_a, COGL_PATH_FILL_RULE_NON_ZERO);
-  draw_path_at (path_a, 11, 0);
+  draw_path_at (path_a, white, 11, 0);
 
   cogl_object_unref (path_a);
 }

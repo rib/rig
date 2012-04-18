@@ -430,10 +430,8 @@ typedef enum {
  * @fill_rule: The new fill rule.
  *
  * Sets the fill rule of the current path to @fill_rule. This will
- * affect how the path is filled when cogl_path_fill() is later
- * called. Note that the fill rule state is attached to the path so
- * calling cogl_get_path() will preserve the fill rule and calling
- * cogl_path_new() will reset the fill rule back to the default.
+ * affect how the path is filled when cogl_framebuffer_fill_path() is
+ * later called.
  *
  * Since: 2.0
  */
@@ -451,37 +449,6 @@ cogl_path_set_fill_rule (CoglPath *path, CoglPathFillRule fill_rule);
  */
 CoglPathFillRule
 cogl_path_get_fill_rule (CoglPath *path);
-
-/**
- * cogl_path_fill:
- *
- * Fills the interior of the constructed shape using the current
- * drawing color.
- *
- * The interior of the shape is determined using the fill rule of the
- * path. See %CoglPathFillRule for details.
- *
- * <note>The result of referencing sliced textures in your current
- * pipeline when filling a path are undefined. You should pass
- * the %COGL_TEXTURE_NO_SLICING flag when loading any texture you will
- * use while filling a path.</note>
- *
- * Since: 2.0
- */
-void
-cogl_path_fill (CoglPath *path);
-
-/**
- * cogl_path_stroke:
- *
- * Strokes the constructed shape using the current drawing color and a
- * width of 1 pixel (regardless of the current transformation
- * matrix).
- *
- * Since: 2.0
- */
-void
-cogl_path_stroke (CoglPath *path);
 
 G_END_DECLS
 
