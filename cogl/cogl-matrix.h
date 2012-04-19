@@ -699,7 +699,7 @@ cogl_matrix_is_identity (const CoglMatrix *matrix);
 void
 cogl_matrix_transpose (CoglMatrix *matrix);
 
-#ifdef _COGL_SUPPORTS_GTYPE_INTEGRATION
+#ifdef COGL_HAS_GTYPE_SUPPORT
 
 #define COGL_GTYPE_TYPE_MATRIX (cogl_gtype_matrix_get_type ())
 
@@ -713,7 +713,7 @@ cogl_matrix_transpose (CoglMatrix *matrix);
 GType
 cogl_gtype_matrix_get_type (void);
 
-#endif /* _COGL_SUPPORTS_GTYPE_INTEGRATION */
+#endif /* COGL_HAS_GTYPE_SUPPORT */
 
 G_END_DECLS
 

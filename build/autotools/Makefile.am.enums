@@ -34,6 +34,7 @@ EXTRA_DIST += $(enum_tmpl_h) $(enum_tmpl_c)
 
 stamp-enum-types: $(glib_enum_headers) $(enum_tmpl_h)
 	$(AM_V_GEN)$(GLIB_MKENUMS) \
+	  	--symbol-prefix cogl_gtype \
 		--template $(enum_tmpl_h) \
 	$(glib_enum_headers) > xgen-eh \
 	&& (cmp -s xgen-eh $(glib_enum_h) || cp -f xgen-eh $(glib_enum_h)) \
