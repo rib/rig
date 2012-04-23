@@ -96,6 +96,7 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-depth-state.h 		\
 	$(srcdir)/cogl-buffer.h 		\
 	$(srcdir)/cogl-pixel-buffer.h		\
+	$(srcdir)/cogl-version.h		\
 	$(NULL)
 
 # driver sources

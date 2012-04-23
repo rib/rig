@@ -55,6 +55,7 @@
 #include <cogl/cogl-texture.h>
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-path.h>
+#include <cogl/cogl-version.h>
 
 /*
  * 1.x only api...
