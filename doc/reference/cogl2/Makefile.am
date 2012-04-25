@@ -102,7 +102,6 @@ IGNORE_HFILES=\
 	cogl-debug.h 				\
 	cogl-defines.h 				\
 	cogl-deprecated.h 			\
-	cogl-handle.h 				\
 	cogl-internal.h 			\
 	cogl-matrix-mesa.h 			\
 	cogl-matrix-stack.h 			\
