@@ -576,7 +576,7 @@ Cogl_2_0_gir_LIBS = libcogl2.la
 Cogl_2_0_gir_FILES = $(cogl_1_public_h) cogl-enum-types.h
 Cogl_2_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API
 Cogl_2_0_gir_INCLUDES = GL-1.0 GObject-2.0
-Cogl_2_0_gir_EXPORT_PACKAGES = cogl-2.0
+Cogl_2_0_gir_EXPORT_PACKAGES = cogl2
 Cogl_2_0_gir_SCANNERFLAGS = --warn-all --c-include='cogl/cogl.h'
 
 INTROSPECTION_GIRS += Cogl-2.0.gir

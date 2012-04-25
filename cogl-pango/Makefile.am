@@ -107,7 +107,7 @@ CoglPango_2_0_gir_LIBS = $(top_builddir)/cogl/libcogl2.la libcogl-pango2.la
 CoglPango_2_0_gir_FILES = $(source_h) $(source_c)
 CoglPango_2_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 CoglPango_2_0_gir_INCLUDES = Pango-1.0 PangoCairo-1.0
-CoglPango_2_0_gir_EXPORT_PACKAGES = cogl-pango-2.0
+CoglPango_2_0_gir_EXPORT_PACKAGES = cogl-pango2
 CoglPango_2_0_gir_SCANNERFLAGS = \
 	--warn-all \
 	--identifier-prefix=CoglPango \
