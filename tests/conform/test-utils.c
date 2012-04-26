@@ -75,6 +75,12 @@ test_utils_init (TestFlags flags)
       missing_requirement = TRUE;
     }
 
+  if (flags & TEST_REQUIREMENT_GLES2_CONTEXT &&
+      !cogl_has_feature (test_ctx, COGL_FEATURE_ID_GLES2_CONTEXT))
+    {
+      missing_requirement = TRUE;
+    }
+
   if (flags & TEST_KNOWN_FAILURE)
     {
       missing_requirement = TRUE;
