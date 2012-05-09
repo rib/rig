@@ -227,12 +227,14 @@ _cogl_bitmap_new_shared (CoglBitmap              *shared_bmp,
 }
 
 CoglBitmap *
-cogl_bitmap_new_from_file (const char  *filename,
-                           GError     **error)
+cogl_bitmap_new_from_file (CoglContext *ctx,
+                           const char *filename,
+                           GError **error)
 {
+  _COGL_RETURN_VAL_IF_FAIL (filename != NULL, NULL);
   _COGL_RETURN_VAL_IF_FAIL (error == NULL || *error == NULL, NULL);
 
-  return _cogl_bitmap_from_file (filename, error);
+  return _cogl_bitmap_from_file (ctx, filename, error);
 }
 
 CoglBitmap *
@@ -292,6 +294,22 @@ cogl_bitmap_new_with_size (CoglContext *context,
 
   return bitmap;
 }
+
+#ifdef COGL_HAS_ANDROID_SUPPORT
+CoglBitmap *
+cogl_android_bitmap_new_from_asset (CoglContext *ctx,
+                                    AAssetManager *manager,
+                                    const char *filename,
+                                    GError **error)
+{
+  _COGL_RETURN_VAL_IF_FAIL (ctx != NULL, NULL);
+  _COGL_RETURN_VAL_IF_FAIL (manager != NULL, NULL);
+  _COGL_RETURN_VAL_IF_FAIL (filename != NULL, NULL);
+  _COGL_RETURN_VAL_IF_FAIL (error == NULL || *error == NULL, NULL);
+
+  return _cogl_android_bitmap_new_from_asset (ctx, manager, filename, error);
+}
+#endif
 
 CoglPixelFormat
 cogl_bitmap_get_format (CoglBitmap *bitmap)
