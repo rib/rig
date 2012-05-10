@@ -291,7 +291,6 @@ cogl_context_new (CoglDisplay *display,
   context->texture_pipeline = cogl_pipeline_new (context);
   context->codegen_header_buffer = g_string_new ("");
   context->codegen_source_buffer = g_string_new ("");
-  context->source_stack = NULL;
 
   context->default_gl_texture_2d_tex = NULL;
   context->default_gl_texture_3d_tex = NULL;
@@ -419,8 +418,6 @@ cogl_context_new (CoglDisplay *display,
                                             NULL);
 
   cogl_object_unref (default_texture_bitmap);
-
-  cogl_push_source (context->opaque_color_pipeline);
 
   context->atlases = NULL;
   g_hook_list_init (&context->atlas_reorganize_callbacks, sizeof (GHook));

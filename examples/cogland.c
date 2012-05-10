@@ -477,15 +477,10 @@ cogland_compositor_create_output (CoglandCompositor *compositor,
     g_error ("Failed to allocate framebuffer: %s\n", error->message);
 
   cogl_onscreen_show (output->onscreen);
-#if 0
-  cogl_framebuffer_set_viewport (fb, x, y, width, height);
-#else
-  cogl_push_framebuffer (fb);
-  cogl_set_viewport (-x, -y,
-                     compositor->virtual_width,
-                     compositor->virtual_height);
-  cogl_pop_framebuffer ();
-#endif
+  cogl_framebuffer_set_viewport (fb,
+                                 -x, -y,
+                                 compositor->virtual_width,
+                                 compositor->virtual_height);
 
   mode = g_slice_new0 (CoglandMode);
   mode->flags = 0;
@@ -510,8 +505,6 @@ paint_cb (void *user_data)
       CoglFramebuffer *fb = COGL_FRAMEBUFFER (output->onscreen);
       GList *l2;
 
-      cogl_push_framebuffer (fb);
-
       cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
 
       cogl_framebuffer_draw_primitive (fb, compositor->triangle_pipeline,
@@ -524,13 +517,15 @@ paint_cb (void *user_data)
           if (surface->buffer)
             {
               CoglTexture2D *texture = surface->buffer->texture;
-              cogl_set_source_texture (COGL_TEXTURE (texture));
-              cogl_rectangle (-1, 1, 1, -1);
+              CoglPipeline *pipeline =
+                cogl_pipeline_new (compositor->cogl_context);
+              cogl_pipeline_set_layer_texture (pipeline, 0,
+                                               COGL_TEXTURE (texture));
+              cogl_framebuffer_draw_rectangle (fb, pipeline, -1, 1, 1, -1);
+              cogl_object_unref (pipeline);
             }
         }
       cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
-
-      cogl_pop_framebuffer ();
     }
 
   while (!g_queue_is_empty (&compositor->frame_callbacks))

@@ -692,7 +692,7 @@ void
 test_snippets (void)
 {
   /* If shaders aren't supported then we can't run the test */
-  if (cogl_features_available (COGL_FEATURE_SHADERS_GLSL))
+  if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_GLSL))
     {
       TestState state;
 
