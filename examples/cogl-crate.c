@@ -121,12 +121,13 @@ paint (Data *data)
 
   /* And finally render our Pango layouts... */
 
-  cogl_pango_render_layout (data->hello_label,
-                            (data->framebuffer_width / 2) -
-                            (data->hello_label_width / 2),
-                            (data->framebuffer_height / 2) -
-                            (data->hello_label_height / 2),
-                            &white, 0);
+  cogl_pango_show_layout (fb,
+                          data->hello_label,
+                          (data->framebuffer_width / 2) -
+                          (data->hello_label_width / 2),
+                          (data->framebuffer_height / 2) -
+                          (data->hello_label_height / 2),
+                          &white);
 }
 
 static void
@@ -243,11 +244,12 @@ main (int argc, char **argv)
 
   /* Setup a Pango font map and context */
 
-  data.pango_font_map = COGL_PANGO_FONT_MAP (cogl_pango_font_map_new());
+  data.pango_font_map = COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (ctx));
 
   cogl_pango_font_map_set_use_mipmapping (data.pango_font_map, TRUE);
 
-  data.pango_context = cogl_pango_font_map_create_context (data.pango_font_map);
+  data.pango_context =
+    pango_font_map_create_context (PANGO_FONT_MAP (data.pango_font_map));
 
   data.pango_font_desc = pango_font_description_new ();
   pango_font_description_set_family (data.pango_font_desc, "Sans");
