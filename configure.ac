@@ -1137,6 +1137,8 @@ build/win32/vs10/Makefile
 cogl/Makefile
 cogl/cogl2.pc
 cogl/cogl-defines.h
+cogl/cogl-defines.h.win32
+cogl/cogl-defines.h.win32_SDL
 cogl/cogl-gl-header.h
 cogl/cogl.rc
 cogl-pango/Makefile
