@@ -3229,7 +3229,8 @@ draw_wireframe (CoglContext *ctx,
                 int n_vertices,
                 CoglAttribute **attributes,
                 int n_attributes,
-                CoglIndices *indices)
+                CoglIndices *indices,
+                CoglDrawFlags flags)
 {
   CoglIndices *wire_indices;
   CoglPipeline *wire_pipeline;
@@ -3278,7 +3279,7 @@ draw_wireframe (CoglContext *ctx,
     }
 
   /* temporarily disable the wireframe to avoid recursion! */
-  COGL_DEBUG_CLEAR_FLAG (COGL_DEBUG_WIREFRAME);
+  flags |= COGL_DRAW_SKIP_DEBUG_WIREFRAME;
   _cogl_framebuffer_draw_indexed_attributes (
                                            framebuffer,
                                            wire_pipeline,
@@ -3288,10 +3289,7 @@ draw_wireframe (CoglContext *ctx,
                                            wire_indices,
                                            attributes,
                                            n_attributes,
-                                           COGL_DRAW_SKIP_JOURNAL_FLUSH |
-                                           COGL_DRAW_SKIP_PIPELINE_VALIDATION |
-                                           COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
-  COGL_DEBUG_SET_FLAG (COGL_DEBUG_WIREFRAME);
+                                           flags);
 
   cogl_object_unref (wire_indices);
 }
@@ -3311,11 +3309,13 @@ _cogl_framebuffer_draw_attributes (CoglFramebuffer *framebuffer,
                                    CoglDrawFlags flags)
 {
 #ifdef COGL_ENABLE_DEBUG
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME)))
+  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
+                  (flags & COGL_DRAW_SKIP_DEBUG_WIREFRAME) == 0))
     draw_wireframe (framebuffer->context,
                     framebuffer, pipeline,
                     mode, first_vertex, n_vertices,
-                    attributes, n_attributes, NULL);
+                    attributes, n_attributes, NULL,
+                    flags);
   else
 #endif
     {
@@ -3405,11 +3405,13 @@ _cogl_framebuffer_draw_indexed_attributes (CoglFramebuffer *framebuffer,
                                            CoglDrawFlags flags)
 {
 #ifdef COGL_ENABLE_DEBUG
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME)))
+  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
+                  (flags & COGL_DRAW_SKIP_DEBUG_WIREFRAME) == 0))
     draw_wireframe (framebuffer->context,
                     framebuffer, pipeline,
                     mode, first_vertex, n_vertices,
-                    attributes, n_attributes, indices);
+                    attributes, n_attributes, indices,
+                    flags);
   else
 #endif
     {
