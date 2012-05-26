@@ -222,6 +222,29 @@ cogl_wayland_onscreen_resize (CoglOnscreen *onscreen,
                               int           offset_y);
 #endif /* COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT */
 
+#if defined (COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT)
+/**
+ * cogl_android_onscreen_update_size:
+ * @onscreen: A #CoglOnscreen framebuffer
+ * @width: The desired width of the framebuffer
+ * @height: The desired height of the framebuffer
+ *
+ * Allows applications to notify Cogl when an Android window has been
+ * resized. Android applications get notified by the window system if
+ * an onscreen window has been resized and since Cogl is not hooked
+ * into these events directly the application needs to inform Cogl
+ * when the framebuffer size has changed.
+ *
+ * Since: 1.12
+ * Stability: unstable
+ */
+void
+cogl_android_onscreen_update_size (CoglOnscreen *onscreen,
+                                   int width,
+                                   int height);
+#endif /* COGL_HAS_EGL_PLATFORM_ANDROID_SUPPORT */
+
+
 /**
  * cogl_onscreen_set_swap_throttled:
  * @onscreen: A #CoglOncsreen framebuffer

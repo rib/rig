@@ -212,6 +212,15 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   return TRUE;
 }
 
+void
+cogl_android_onscreen_update_size (CoglOnscreen *onscreen,
+                                   int width,
+                                   int height)
+{
+  CoglFramebuffer *fb = COGL_FRAMEBUFFER (onscreen);
+  _cogl_framebuffer_winsys_update_size (fb, width, height);
+}
+
 static const CoglWinsysEGLVtable
 _cogl_winsys_egl_vtable =
   {
