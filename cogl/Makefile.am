@@ -485,7 +485,6 @@ nodist_libcogl2_la_SOURCES = $(BUILT_SOURCES)
 # Cogl installed headers
 cogl_headers = \
 	$(cogl_1_public_h) \
-	$(srcdir)/cogl-deprecated.h \
 	$(srcdir)/cogl-pango.h \
 	$(NULL)
 

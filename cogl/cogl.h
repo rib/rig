@@ -116,11 +116,6 @@
 #include <cogl/cogl-sdl.h>
 #endif
 
-/*
- * API deprecations
- */
-#include <cogl/cogl-deprecated.h>
-
 /**
  * SECTION:cogl
  * @short_description: General purpose API
