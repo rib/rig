@@ -200,7 +200,7 @@ main (int argc, char **argv)
 
   /* Initialize some convenient constants */
   cogl_matrix_init_identity (&identity);
-  cogl_color_set_from_4ub (&white, 0xff, 0xff, 0xff, 0xff);
+  cogl_color_init_from_4ub (&white, 0xff, 0xff, 0xff, 0xff);
 
   /* rectangle indices allow the GPU to interpret a list of quads (the
    * faces of our cube) as a list of triangles.
