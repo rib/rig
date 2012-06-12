@@ -1,3 +1,3 @@
-SUBDIRS = rig data po
+SUBDIRS = rig data
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
