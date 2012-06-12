@@ -6,7 +6,7 @@ test -z "$srcdir" && srcdir=.
 
 PKG_NAME=rig
 
-(test -f $srcdir/configure.in \
+(test -f $srcdir/configure.ac \
   && test -f $srcdir/autogen.sh \
   && test -d $srcdir/$PKG_NAME \
   && test -f $srcdir/$PKG_NAME/$PKG_NAME.c) || {
