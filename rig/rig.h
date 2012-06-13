@@ -24,6 +24,10 @@ typedef struct _RigContext RigContext;
 #include "rig-timeline.h"
 #include "rig-display-list.h"
 
+/* entity/components system */
+#include "rig-entity.h"
+#include "rig-components.h"
+
 /* PRIVATE */
 void
 _rig_init (void);
