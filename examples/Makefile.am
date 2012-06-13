@@ -18,7 +18,7 @@ common_ldadd = \
 	$(RIG_DEP_LIBS) \
 	$(top_builddir)/rig/librig.la
 
-noinst_PROGRAMS = handset-rig
+noinst_PROGRAMS = entities
 
-handset_rig_SOURCES = handset-rig.c
-handset_rig_LDADD = $(common_ldadd)
+entities_SOURCES = entities.c
+entities_LDADD = $(common_ldadd)
