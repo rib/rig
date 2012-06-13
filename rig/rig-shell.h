@@ -245,5 +245,9 @@ rig_slider_set_length (RigSlider *slider,
 void
 rig_slider_set_progress (RigSlider *slider,
                          float progress);
+void
+rig_shell_set_input_callback (RigShell *shell,
+                              RigInputCallback callback,
+                              void *user_data);
 
 #endif /* _RIG_SHELL_H_ */
