@@ -13,6 +13,7 @@
 
 typedef struct _RigContext RigContext;
 
+#include "rig-global.h"
 #include "rig-type.h"
 #include "rig-object.h"
 #include "rig-property.h"

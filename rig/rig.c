@@ -283,6 +283,12 @@ _rig_context_free (void *object)
 
   g_hash_table_destroy (ctx->texture_cache);
 
+  if (rig_cogl_context == ctx->cogl_context)
+    {
+      cogl_object_unref (rig_cogl_context);
+      rig_cogl_context = NULL;
+    }
+
   cogl_object_unref (ctx->cogl_context);
 
   g_slice_free (RigContext, ctx);
@@ -385,6 +391,10 @@ rig_context_new (RigShell *shell)
       g_free (context);
       return NULL;
     }
+
+  /* We set up the first created RigContext as a global default context */
+  if (rig_cogl_context == NULL)
+    rig_cogl_context = cogl_object_ref (context->cogl_context);
 
   context->texture_cache =
     g_hash_table_new_full (g_str_hash, g_str_equal,

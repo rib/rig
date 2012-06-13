@@ -14,7 +14,8 @@ source_h = \
     rig-bitmask.h \
     rig-shell.h \
     rig-keysyms.h \
-    rig-stack.h
+    rig-stack.h \
+    rig-global.h
 
 librig_la_SOURCES = \
     rig-type.c \
