@@ -103,21 +103,21 @@ void
 rig_light_set_ambient (RigLight  *light,
                        CoglColor *ambient)
 {
-  cogl_color_init_from_color (&light->ambient, ambient);
+  light->ambient = *ambient;
 }
 
 void
 rig_light_set_diffuse (RigLight  *light,
                        CoglColor *diffuse)
 {
-  cogl_color_init_from_color (&light->diffuse, diffuse);
+  light->diffuse = *diffuse;
 }
 
 void
 rig_light_set_specular (RigLight  *light,
                         CoglColor *specular)
 {
-  cogl_color_init_from_color (&light->specular, specular);
+  light->specular = *specular;
 }
 
 void
