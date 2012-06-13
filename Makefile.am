@@ -1,3 +1,3 @@
-SUBDIRS = rig data examples editor
+SUBDIRS = rig data examples
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
