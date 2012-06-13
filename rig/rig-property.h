@@ -3,6 +3,8 @@
 
 #include <sys/types.h>
 
+#include <cogl/cogl.h>
+
 #include "rig-stack.h"
 
 typedef struct _RigPropertyContext
@@ -14,6 +16,7 @@ typedef enum _RigPropertyType
 {
   RIG_PROPERTY_TYPE_FLOAT = 1,
   RIG_PROPERTY_TYPE_DOUBLE,
+  RIG_PROPERTY_TYPE_QUATERNION,
   RIG_PROPERTY_TYPE_UNKNOWN,
 } RigPropertyType;
 
@@ -339,7 +342,7 @@ rig_property_set_ ## CTYPE (RigPropertyContext *ctx, \
  \
   if (property->spec->setter) \
     { \
-      CTYPE (*setter) (RigProperty *, CTYPE) = property->spec->setter; \
+      void (*setter) (RigProperty *, CTYPE) = property->spec->setter; \
       setter (property->object, value); \
     } \
   else \
@@ -370,6 +373,47 @@ rig_property_get_ ## CTYPE (RigProperty *property) \
 
 DECLARE_STANDARD_GETTER_SETTER(double, DOUBLE)
 
+static inline void
+rig_property_set_quaternion (RigPropertyContext *ctx,
+                             RigProperty *property,
+                             const CoglQuaternion *value)
+{
+  CoglQuaternion *data =
+    (CoglQuaternion *)((uint8_t *)property->object +
+                       property->spec->data_offset);
+
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_QUATERNION);
+
+  if (property->spec->setter)
+    {
+      void (*setter) (RigProperty *, const CoglQuaternion *) = property->spec->setter;
+      setter (property->object, value);
+    }
+  else
+    {
+      *data = *value;
+      if (property->dependants)
+        rig_property_dirty (ctx, property);
+    }
+}
+
+static inline const CoglQuaternion *
+rig_property_get_quaternion (RigProperty *property)
+{
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_QUATERNION, 0);
+
+  if (property->spec->getter)
+    {
+      CoglQuaternion *(*getter) (RigProperty *property) = property->spec->getter;
+      return getter (property);
+    }
+  else
+    {
+      CoglQuaternion *data = (CoglQuaternion *)((uint8_t *)property->object +
+                               property->spec->data_offset);
+      return data;
+    }
+}
 
 #if 0
 
