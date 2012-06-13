@@ -119,3 +119,18 @@ rig_light_set_specular (RigLight  *light,
 {
   cogl_color_init_from_color (&light->specular, specular);
 }
+
+void
+rig_light_add_pipeline (RigLight     *light,
+                        CoglPipeline *pipeline)
+{
+  /* XXX: right now the light can only update the uniforms of one pipeline */
+  if (light->pipeline)
+    {
+      cogl_object_unref (light->pipeline);
+      light->pipeline = NULL;
+    }
+
+  if (pipeline)
+    light->pipeline = cogl_object_ref (pipeline);
+}

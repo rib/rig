@@ -55,5 +55,7 @@ void            rig_light_set_diffuse   (RigLight  *light,
                                          CoglColor *diffuse);
 void            rig_light_set_specular  (RigLight  *light,
                                          CoglColor *specular);
+void            rig_light_add_pipeline  (RigLight     *light,
+                                         CoglPipeline *pipeline);
 
 #endif /* __RIG_LIGHT_H__ */
