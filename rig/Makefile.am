@@ -2,6 +2,15 @@
 lib_LTLIBRARIES = librig.la
 
 source_h = \
+    components/rig-animation-clip.h \
+    components/rig-camcorder.h \
+    components/rig-light.h \
+    components/rig-mesh-renderer.h \
+    mash-data.h \
+    mash-data-loader.h \
+    mash-ply-loader.h \
+    rig-entity.h \
+    rig-components.h \
     rig-type.h \
     rig-object.h \
     rig-property.h \
@@ -18,6 +27,16 @@ source_h = \
     rig-global.h
 
 librig_la_SOURCES = \
+    components/rig-animation-clip.c \
+    components/rig-camcorder.c \
+    components/rig-light.c \
+    components/rig-mesh-renderer.c \
+    mash-data.c \
+    mash-data-loader.c \
+    mash-ply-loader.c \
+    rply.c \
+    rply.h \
+    rig-entity.c \
     rig-type.c \
     rig-object.c \
     rig-property.c \
