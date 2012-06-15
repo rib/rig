@@ -232,10 +232,44 @@ create_ply_primitive (const gchar *filename)
 }
 
 static void
+rig_mesh_get_normal_matrix (const CoglMatrix *matrix,
+                            float *normal_matrix)
+{
+  CoglMatrix inverse_matrix;
+
+  /* Invert the matrix */
+  cogl_matrix_get_inverse (matrix, &inverse_matrix);
+
+  /* Transpose it while converting it to 3x3 */
+  normal_matrix[0] = inverse_matrix.xx;
+  normal_matrix[1] = inverse_matrix.xy;
+  normal_matrix[2] = inverse_matrix.xz;
+
+  normal_matrix[3] = inverse_matrix.yx;
+  normal_matrix[4] = inverse_matrix.yy;
+  normal_matrix[5] = inverse_matrix.yz;
+
+  normal_matrix[6] = inverse_matrix.zx;
+  normal_matrix[7] = inverse_matrix.zy;
+  normal_matrix[8] = inverse_matrix.zz;
+}
+
+static void
 rig_mesh_renderer_draw (RigComponent    *component,
                         CoglFramebuffer *fb)
 {
   RigMeshRenderer *renderer = RIG_MESH_RENDERER (component);
+  CoglMatrix modelview_matrix;
+  float normal_matrix[9];
+
+  cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
+  rig_mesh_get_normal_matrix (&modelview_matrix, normal_matrix);
+  cogl_pipeline_set_uniform_matrix (renderer->pipeline,
+                                    renderer->normal_matrix_uniform,
+                                    3, /* dimensions */
+                                    1, /* count */
+                                    FALSE, /* don't transpose again */
+                                    normal_matrix);
 
   if (renderer->primitive)
     {
@@ -274,7 +308,8 @@ rig_mesh_renderer_new_from_file (const char   *file,
 
   renderer = rig_mesh_renderer_new ();
   renderer->mesh_data = create_ply_primitive (file);
-  renderer->pipeline = cogl_object_ref (pipeline);
+
+  rig_mesh_renderer_set_pipeline (renderer, pipeline);
 
   return RIG_COMPONENT (renderer);
 }
@@ -294,7 +329,7 @@ rig_mesh_renderer_new_from_template (const char   *name,
   else
     g_assert_not_reached ();
 
-  renderer->pipeline = cogl_object_ref (pipeline);
+  rig_mesh_renderer_set_pipeline (renderer, pipeline);
 
   return RIG_COMPONENT (renderer);
 }
@@ -325,5 +360,10 @@ rig_mesh_renderer_set_pipeline (RigMeshRenderer *renderer,
     }
 
   if (pipeline)
-    renderer->pipeline = cogl_object_ref (pipeline);
+    {
+      renderer->pipeline = cogl_object_ref (pipeline);
+      renderer->normal_matrix_uniform =
+        cogl_pipeline_get_uniform_location (renderer->pipeline,
+                                            "normal_matrix");
+    }
 }

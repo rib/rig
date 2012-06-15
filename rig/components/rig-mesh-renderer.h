@@ -37,6 +37,7 @@ struct _RigMeshRenderer
   CoglPrimitive *primitive;
   MashData *mesh_data;
   CoglPipeline *pipeline;
+  int normal_matrix_uniform;
 };
 
 RigComponent *  rig_mesh_renderer_new_from_file     (const char   *file,
