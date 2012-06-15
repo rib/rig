@@ -1,11 +1,14 @@
 
 lib_LTLIBRARIES = librig.la
 
-source_h = \
+components_source_h = \
     components/rig-animation-clip.h \
     components/rig-camcorder.h \
     components/rig-light.h \
-    components/rig-mesh-renderer.h \
+    components/rig-mesh-renderer.h
+
+source_h = \
+    $(components_source_h) \
     mash-data.h \
     mash-data-loader.h \
     mash-ply-loader.h \
@@ -80,6 +83,9 @@ librig_la_CPPFLAGS = \
 
 rig_headersdir =  $(includedir)/rig
 rig_headers_DATA = $(source_h)
+
+rig_components_headersdir =  $(includedir)/rig/components
+rig_components_headers_DATA = $(components_source_h)
 
 pc_files = rig.pc
 pkgconfigdir = $(libdir)/pkgconfig
