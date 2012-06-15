@@ -47,6 +47,8 @@ _rig_property_destroy_binding (RigProperty *property)
         }
 
       g_slice_free (RigPropertyBinding, binding);
+
+      property->binding = NULL;
     }
 }
 
