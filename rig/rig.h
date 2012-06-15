@@ -174,6 +174,10 @@ rig_transform_translate (RigTransform *transform,
                          float z);
 
 void
+rig_transform_quaternion_rotate (RigTransform *transform,
+                                 const CoglQuaternion *quaternion);
+
+void
 rig_transform_scale (RigTransform *transform,
                      float x,
                      float y,
