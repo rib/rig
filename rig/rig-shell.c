@@ -803,6 +803,9 @@ rig_button_state_for_sdl_state (SDL_Event *event,
     rig_state |= RIG_BUTTON_STATE_2;
   if (sdl_state & SDL_BUTTON(3))
     rig_state |= RIG_BUTTON_STATE_3;
+
+#if SDL_MAJOR_VERSION < 2
+
   if ((event->type == SDL_MOUSEBUTTONUP ||
        event->type == SDL_MOUSEBUTTONDOWN) &&
       event->button.button == SDL_BUTTON_WHEELUP)
@@ -811,6 +814,18 @@ rig_button_state_for_sdl_state (SDL_Event *event,
        event->type == SDL_MOUSEBUTTONDOWN) &&
       event->button.button == SDL_BUTTON_WHEELDOWN)
     rig_state |= RIG_BUTTON_STATE_WHEELDOWN;
+
+#else /* SDL_MAJOR_VERSION < 2 */
+
+  if (event->type == SDL_MOUSEWHEEL)
+    {
+      if (event->wheel.y < 0)
+        rig_state |= RIG_BUTTON_STATE_WHEELUP;
+      else if (event->wheel.y > 0)
+        rig_state |= RIG_BUTTON_STATE_WHEELDOWN;
+    }
+
+#endif /* SDL_MAJOR_VERSION < 2 */
 
   return rig_state;
 }
@@ -891,8 +906,13 @@ static RigModifierState
 rig_sdl_get_modifier_state (void)
 {
   RigModifierState rig_state = 0;
+#if SDL_MAJOR_VERSION < 2
+  SDLMod mod;
+#else
+  SDL_Keymod mod;
+#endif
 
-  SDLMod mod = SDL_GetModState ();
+  mod = SDL_GetModState ();
 
   if (mod & KMOD_LSHIFT)
     rig_state |= RIG_MODIFIER_LEFT_SHIFT_ON;
@@ -906,14 +926,16 @@ rig_sdl_get_modifier_state (void)
     rig_state |= RIG_MODIFIER_LEFT_ALT_ON;
   if (mod & KMOD_RALT)
     rig_state |= RIG_MODIFIER_RIGHT_ALT_ON;
-  if (mod & KMOD_LMETA)
-    rig_state |= RIG_MODIFIER_LEFT_META_ON;
-  if (mod & KMOD_RMETA)
-    rig_state |= RIG_MODIFIER_RIGHT_META_ON;
   if (mod & KMOD_NUM)
     rig_state |= RIG_MODIFIER_NUM_LOCK_ON;
   if (mod & KMOD_CAPS)
     rig_state |= RIG_MODIFIER_CAPS_LOCK_ON;
+#if SDL_MAJOR_VERSION < 2
+  if (mod & KMOD_LMETA)
+    rig_state |= RIG_MODIFIER_LEFT_META_ON;
+  if (mod & KMOD_RMETA)
+    rig_state |= RIG_MODIFIER_RIGHT_META_ON;
+#endif /* SDL_MAJOR_VERSION < 2 */
 
   return rig_state;
 }
@@ -1321,7 +1343,7 @@ _rig_shell_associate_context (RigShell *shell,
 void
 _rig_shell_init (RigShell *shell)
 {
-#ifdef USE_SDL
+#if defined(USE_SDL) && SDL_MAJOR_VERSION < 2
   SDL_EnableUNICODE (1);
 #endif
 }
@@ -1395,9 +1417,24 @@ sdl_handle_event (RigShell *shell, SDL_Event *event)
 {
   switch (event->type)
     {
+#if SDL_MAJOR_VERSION < 2
     case SDL_VIDEOEXPOSE:
       shell->redraw_queued = TRUE;
       break;
+#else /* SDL_MAJOR_VERSION < 2 */
+    case SDL_WINDOWEVENT:
+      switch (event->window.event)
+        {
+        case SDL_WINDOWEVENT_EXPOSED:
+          shell->redraw_queued = TRUE;
+          break;
+
+        case SDL_WINDOWEVENT_CLOSE:
+          shell->quit = TRUE;
+          break;
+        }
+      break;
+#endif /* SDL_MAJOR_VERSION < 2 */
 
     case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:

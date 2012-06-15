@@ -7,7 +7,13 @@
 
 #include <stdint.h>
 
+#if SDL_MAJOR_VERSION >= 2
+typedef SDL_Keycode RigSDLKeycode;
+#else
+typedef SDLKey RigSDLKeycode;
+#endif
+
 int32_t
-_rig_keysym_from_sdl_keysym (SDLKey sdl_keysym);
+_rig_keysym_from_sdl_keysym (RigSDLKeycode sdl_keysym);
 
 #endif /* _RIG_SDL_KEYSYMS_H_ */

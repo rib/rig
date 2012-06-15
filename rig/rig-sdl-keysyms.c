@@ -3,7 +3,7 @@
 #include <glib.h>
 
 int32_t
-_rig_keysym_from_sdl_keysym (SDLKey sdl_keysym)
+_rig_keysym_from_sdl_keysym (RigSDLKeycode sdl_keysym)
 {
   switch (sdl_keysym)
     {
@@ -86,6 +86,7 @@ _rig_keysym_from_sdl_keysym (SDLKey sdl_keysym)
     case SDLK_DELETE: return RIG_KEY_Delete;
 
     /* International keyboard keysyms */
+#if SDL_MAJOR_VERSION < 2
     case SDLK_WORLD_0:
     case SDLK_WORLD_1:
     case SDLK_WORLD_2:
@@ -183,18 +184,25 @@ _rig_keysym_from_sdl_keysym (SDLKey sdl_keysym)
     case SDLK_WORLD_94:
     case SDLK_WORLD_95:
       return sdl_keysym;
+#endif /* SDL_MAJOR_VERSION < 2 */
 
     /* Number Pad keysyms */
-    case SDLK_KP0: return RIG_KEY_KP_0;
-    case SDLK_KP1: return RIG_KEY_KP_1;
-    case SDLK_KP2: return RIG_KEY_KP_2;
-    case SDLK_KP3: return RIG_KEY_KP_3;
-    case SDLK_KP4: return RIG_KEY_KP_4;
-    case SDLK_KP5: return RIG_KEY_KP_5;
-    case SDLK_KP6: return RIG_KEY_KP_6;
-    case SDLK_KP7: return RIG_KEY_KP_7;
-    case SDLK_KP8: return RIG_KEY_KP_8;
-    case SDLK_KP9: return RIG_KEY_KP_9;
+#if SDL_MAJOR_VERSION >= 2
+#define KEYPAD_KEYSYM(digit) SDLK_KP_ ## digit
+#else
+#define KEYPAD_KEYSYM(digit) SDLK_KP ## digit
+#endif
+    case KEYPAD_KEYSYM(0): return RIG_KEY_KP_0;
+    case KEYPAD_KEYSYM(1): return RIG_KEY_KP_1;
+    case KEYPAD_KEYSYM(2): return RIG_KEY_KP_2;
+    case KEYPAD_KEYSYM(3): return RIG_KEY_KP_3;
+    case KEYPAD_KEYSYM(4): return RIG_KEY_KP_4;
+    case KEYPAD_KEYSYM(5): return RIG_KEY_KP_5;
+    case KEYPAD_KEYSYM(6): return RIG_KEY_KP_6;
+    case KEYPAD_KEYSYM(7): return RIG_KEY_KP_7;
+    case KEYPAD_KEYSYM(8): return RIG_KEY_KP_8;
+    case KEYPAD_KEYSYM(9): return RIG_KEY_KP_9;
+#undef KEYPAD_KEYSYM
     case SDLK_KP_PERIOD: return RIG_KEY_KP_Decimal;
     case SDLK_KP_DIVIDE: return RIG_KEY_KP_Divide;
     case SDLK_KP_MULTIPLY: return RIG_KEY_KP_Multiply;
@@ -232,31 +240,37 @@ _rig_keysym_from_sdl_keysym (SDLKey sdl_keysym)
     case SDLK_F15: return RIG_KEY_F15;
 
     /* Modifier keysyms */
-    case SDLK_NUMLOCK: return RIG_KEY_Num_Lock;
     case SDLK_CAPSLOCK: return RIG_KEY_Caps_Lock;
-    case SDLK_SCROLLOCK: return RIG_KEY_Scroll_Lock;
     case SDLK_RSHIFT: return RIG_KEY_Shift_R;
     case SDLK_LSHIFT: return RIG_KEY_Shift_L;
     case SDLK_RCTRL: return RIG_KEY_Control_R;
     case SDLK_LCTRL: return RIG_KEY_Control_L;
     case SDLK_RALT: return RIG_KEY_Alt_R;
     case SDLK_LALT: return RIG_KEY_Alt_L;
+    case SDLK_MODE: return RIG_KEY_Mode_switch;
+#if SDL_MAJOR_VERSION < 2
+    case SDLK_NUMLOCK: return RIG_KEY_Num_Lock;
     case SDLK_RMETA: return RIG_KEY_Meta_R;
     case SDLK_LMETA: return RIG_KEY_Meta_L;
-    case SDLK_LSUPER: return RIG_KEY_Super_R;
-    case SDLK_RSUPER: return RIG_KEY_Super_L;
-    case SDLK_MODE: return RIG_KEY_Mode_switch;
+    case SDLK_LSUPER: return RIG_KEY_Super_L;
+    case SDLK_RSUPER: return RIG_KEY_Super_R;
     case SDLK_COMPOSE: return RIG_KEY_Multi_key;
+    case SDLK_SCROLLOCK: return RIG_KEY_Scroll_Lock;
+#else /* SDL_MAJOR_VERSION < 2 */
+    case SDLK_SCROLLLOCK: return RIG_KEY_Scroll_Lock;
+#endif /* SDL_MAJOR_VERSION < 2 */
 
     /* Miscellaneous keysyms */
     case SDLK_HELP: return RIG_KEY_Help;
-    case SDLK_PRINT: return RIG_KEY_Print;
     case SDLK_SYSREQ: return RIG_KEY_Sys_Req;
-    case SDLK_BREAK: return RIG_KEY_Break;
     case SDLK_MENU: return RIG_KEY_Menu;
     case SDLK_POWER: return RIG_KEY_PowerOff;
-    case SDLK_EURO: return RIG_KEY_EuroSign;
     case SDLK_UNDO: return RIG_KEY_Undo;
+#if SDL_MAJOR_VERSION < 2
+    case SDLK_PRINT: return RIG_KEY_Print;
+    case SDLK_BREAK: return RIG_KEY_Break;
+    case SDLK_EURO: return RIG_KEY_EuroSign;
+#endif /* SDL_MAJOR_VERSION < 2 */
     }
 
   g_warn_if_reached ();
