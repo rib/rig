@@ -23,6 +23,8 @@ typedef struct _RigContext RigContext;
 #include "rig-stack.h"
 #include "rig-timeline.h"
 #include "rig-display-list.h"
+#include "rig-arcball.h"
+#include "rig-util.h"
 
 /* entity/components system */
 #include "rig-entity.h"
