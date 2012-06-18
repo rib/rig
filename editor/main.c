@@ -130,10 +130,11 @@ create_diffuse_specular_material (void)
 
       /* definitions */
       "uniform mat4 light_shadow_matrix;\n"
+      "uniform mat3 normal_matrix;\n"
       "varying vec3 normal_direction, eye_direction;\n"
       "varying vec4 shadow_coords;\n",
 
-      "normal_direction = normalize(gl_NormalMatrix * cogl_normal_in);\n"
+      "normal_direction = normalize(normal_matrix * cogl_normal_in);\n"
       "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
 
       "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n" 
