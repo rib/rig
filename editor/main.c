@@ -618,7 +618,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
             data->saved_rotation = *rig_entity_get_rotation (&data->pivot);
             cogl_quaternion_init_identity (&data->arcball.q_drag);
 
-            rig_arcball_mouse_down (&data->arcball, x, 600 - y);
+            rig_arcball_mouse_down (&data->arcball, x, data->fb_height - y);
 
             data->button_down = TRUE;
 
@@ -675,7 +675,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
             if (!data->button_down)
               break;
 
-            rig_arcball_mouse_motion (&data->arcball, x, 600 - y);
+            rig_arcball_mouse_motion (&data->arcball, x, data->fb_height - y);
 
             cogl_quaternion_multiply (&new_rotation,
                                       &data->arcball.q_drag,
