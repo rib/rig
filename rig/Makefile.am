@@ -23,6 +23,7 @@ source_h = \
     rig-timeline.h \
     rig-display-list.h \
     rig.h \
+    rig-arcball.h \
     rig-bitmask.h \
     rig-shell.h \
     rig-keysyms.h \
@@ -45,6 +46,7 @@ librig_la_SOURCES = \
     rig-property.c \
     rig-interfaces.c \
     rig.c \
+    rig-arcball.c \
     rig-transform-private.h \
     rig-camera-private.h \
     rig-volume.c \
