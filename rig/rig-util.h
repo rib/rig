@@ -68,6 +68,14 @@ rig_util_fully_transform_vertices (const CoglMatrix *modelview,
                                     int n_vertices);
 
 void
+rig_util_create_pick_ray (const float       viewport[4],
+                          const CoglMatrix *inverse_projection,
+                          const CoglMatrix *camera_transform,
+                          float             screen_pos[2],
+                          float             ray_position[3],    /* out */
+                          float             ray_direction[3]);  /* out */
+
+void
 rig_util_print_quaternion (const char           *prefix,
                            const CoglQuaternion *quaternion);
 

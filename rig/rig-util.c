@@ -90,3 +90,58 @@ rig_util_print_quaternion (const char           *prefix,
   g_print ("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n", prefix, axis[0],
            axis[1], axis[2], angle);
 }
+
+void
+rig_util_create_pick_ray (const float       viewport[4],
+                          const CoglMatrix *inverse_projection,
+                          const CoglMatrix *camera_transform,
+                          float             screen_pos[2],
+                          float             ray_position[3],  /* out */
+                          float             ray_direction[3]) /* out */
+{
+  CoglMatrix inverse_transform;
+  float view_x, view_y;
+  float projected_points[6], unprojected_points[8];
+
+  /* Get the mouse position before the viewport transformation */
+  view_x = (screen_pos[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
+  view_y = ((viewport[3] - 1 + viewport[1] - screen_pos[1]) * 2.0f /
+            viewport[3] - 1.0f);
+
+  /* The main drawing code is doing P x C¯¹ (P is the Projection matrix
+   * and C is the Camera transform. To inverse that transformation we need
+   * to apply C x P¯¹ to the points */
+  cogl_matrix_multiply (&inverse_transform,
+                        camera_transform, inverse_projection);
+
+  /* unproject the point at both the near plane and the far plane */
+  projected_points[0] = view_x;
+  projected_points[1] = view_y;
+  projected_points[2] = 0.0f;
+  projected_points[3] = view_x;
+  projected_points[4] = view_y;
+  projected_points[5] = 1.0f;
+  cogl_matrix_project_points (&inverse_transform,
+                              3, /* num components for input */
+                              sizeof (float) * 3, /* input stride */
+                              projected_points,
+                              sizeof (float) * 4, /* output stride */
+                              unprojected_points,
+                              2 /* n_points */);
+  unprojected_points[0] /= unprojected_points[3];
+  unprojected_points[1] /= unprojected_points[3];
+  unprojected_points[2] /= unprojected_points[3];
+  unprojected_points[4] /= unprojected_points[7];
+  unprojected_points[5] /= unprojected_points[7];
+  unprojected_points[6] /= unprojected_points[7];
+
+  ray_position[0] = unprojected_points[0];
+  ray_position[1] = unprojected_points[1];
+  ray_position[2] = unprojected_points[2];
+
+  ray_direction[0] = unprojected_points[4] - unprojected_points[0];
+  ray_direction[1] = unprojected_points[5] - unprojected_points[1];
+  ray_direction[2] = unprojected_points[6] - unprojected_points[2];
+
+  cogl_vector3_normalize (ray_direction);
+}
