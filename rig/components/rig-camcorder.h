@@ -67,8 +67,10 @@ void              rig_camcorder_set_viewport          (RigCamcorder *camcorder,
                                                        float         viewport[4]);
 void	          rig_camcorder_set_near_plane        (RigCamcorder *camcorder,
                                                        float         z_near);
+float	          rig_camcorder_get_near_plane        (RigCamcorder *camcorder);
 void	          rig_camcorder_set_far_plane         (RigCamcorder *camcorder,
                                                        float         z_far);
+float	          rig_camcorder_get_far_plane         (RigCamcorder *camcorder);
 RigProjection     rig_camcorder_get_projection        (RigCamcorder *camcorder);
 void	          rig_camcorder_set_projection        (RigCamcorder *camcorder,
                                                        RigProjection projection);

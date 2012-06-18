@@ -223,12 +223,24 @@ rig_camcorder_set_near_plane (RigCamcorder *camcorder,
   CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
 }
 
+float
+rig_camcorder_get_near_plane (RigCamcorder *camcorder)
+{
+  return camcorder->z_near;
+}
+
 void
 rig_camcorder_set_far_plane (RigCamcorder *camcorder,
                              float         z_far)
 {
   camcorder->z_far = z_far;
   CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+}
+
+float
+rig_camcorder_get_far_plane (RigCamcorder *camcorder)
+{
+  return camcorder->z_far;
 }
 
 CoglFramebuffer *
