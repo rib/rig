@@ -17,6 +17,8 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdbool.h>
+
 #include "rig-global.h"
 #include "rig-camcorder.h"
 
@@ -135,7 +137,15 @@ rig_camcorder_draw (RigComponent    *component,
 
   if (camcorder->fb == fb)
     {
-      /* we are responsible for that fb, let's clear it */
+      /* we are responsible for drawing in that fb, let's clear our viewport */
+
+      /* this is a no-op if the viewport stays the same on the framebuffer */
+      cogl_framebuffer_set_viewport (fb,
+                                     camcorder->viewport[0],
+                                     camcorder->viewport[1],
+                                     camcorder->viewport[2],
+                                     camcorder->viewport[3]);
+
       r = cogl_color_get_red_float (&camcorder->background_color);
       g = cogl_color_get_green_float (&camcorder->background_color);
       b = cogl_color_get_blue_float (&camcorder->background_color);
@@ -238,7 +248,20 @@ rig_camcorder_set_framebuffer (RigCamcorder    *camcorder,
     }
 
   if (fb)
-    camcorder->fb = cogl_object_ref (fb);
+    {
+      float w, h;
+
+      camcorder->fb = cogl_object_ref (fb);
+
+      /* the viewport defaults to be the whole framebuffer */
+      w = cogl_framebuffer_get_width (fb);
+      h = cogl_framebuffer_get_height (fb);
+
+      camcorder->viewport[0] = 0;
+      camcorder->viewport[1] = 0;
+      camcorder->viewport[2] = w;
+      camcorder->viewport[3] = h;
+    }
 }
 
 RigProjection
@@ -281,4 +304,17 @@ rig_camcorder_set_background_color (RigCamcorder *camcorder,
                                     CoglColor    *color)
 {
   camcorder->background_color = *color;
+}
+
+float *
+rig_camcorder_get_viewport (RigCamcorder *camcorder)
+{
+  return camcorder->viewport;
+}
+
+void
+rig_camcorder_set_viewport (RigCamcorder *camcorder,
+                            float         viewport[4])
+{
+  memcpy (camcorder->viewport, viewport, sizeof (float) * 4);
 }

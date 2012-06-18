@@ -50,6 +50,7 @@ struct _RigCamcorder
   RigComponent component;
   uint32_t flags;
   CoglFramebuffer *fb;		/* framebuffer to draw to */
+  float viewport[4];            /* view port of the camera in fb */
   CoglColor background_color;	/* clear color */
   float fov;                    /* perspective */
   float size;                   /* orthographic */
@@ -61,6 +62,9 @@ void              rig_camcorder_free		      (RigCamcorder *camcorder);
 CoglFramebuffer * rig_camcorder_get_framebuffer       (RigCamcorder *camcorder);
 void              rig_camcorder_set_framebuffer       (RigCamcorder    *camcorder,
                                                        CoglFramebuffer *fb);
+float *           rig_camcorder_get_viewport          (RigCamcorder *camcorder);
+void              rig_camcorder_set_viewport          (RigCamcorder *camcorder,
+                                                       float         viewport[4]);
 void	          rig_camcorder_set_near_plane        (RigCamcorder *camcorder,
                                                        float         z_near);
 void	          rig_camcorder_set_far_plane         (RigCamcorder *camcorder,
