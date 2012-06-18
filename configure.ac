@@ -295,5 +295,6 @@ rig/Makefile
 rig/rig.pc
 examples/Makefile
 data/Makefile
+editor/Makefile
 )
 

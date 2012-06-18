@@ -43,3 +43,4 @@ stamp-marshal
 xmldocs.make
 
 /examples/entities
+/editor/rig-editor
