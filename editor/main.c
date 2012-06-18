@@ -516,7 +516,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
         y = rig_motion_event_get_y (event);
 
         if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
-            state == RIG_BUTTON_STATE_1)
+            state == RIG_BUTTON_STATE_2)
           {
             data->saved_rotation = *rig_entity_get_rotation (&data->pivot);
             cogl_quaternion_init_identity (&data->arcball.q_drag);
@@ -532,7 +532,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
             data->button_down = FALSE;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
-                 state == RIG_BUTTON_STATE_1)
+                 state == RIG_BUTTON_STATE_2)
           {
             CoglQuaternion new_rotation;
 
