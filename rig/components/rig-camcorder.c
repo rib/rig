@@ -190,6 +190,7 @@ rig_camcorder_new (void)
   RigCamcorder *camcorder;
 
   camcorder = g_slice_new0 (RigCamcorder);
+  camcorder->component.type = RIG_COMPONENT_TYPE_CAMCORDER;
   camcorder->component.update = rig_camcorder_update;
   camcorder->component.draw = rig_camcorder_draw;
 
