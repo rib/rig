@@ -23,6 +23,8 @@
 #ifndef _RIG_UTIL_H_
 #define _RIG_UTIL_H_
 
+#include <cogl/cogl.h>
+
 /* This is a replacement for the nearbyint function which always
  * rounds to the nearest integer. nearbyint is apparently a C99
  * function so it might not always be available but also it seems in
@@ -64,5 +66,9 @@ rig_util_fully_transform_vertices (const CoglMatrix *modelview,
                                     const float *vertices3_in,
                                     float *vertices3_out,
                                     int n_vertices);
+
+void
+rig_util_print_quaternion (const char           *prefix,
+                           const CoglQuaternion *quaternion);
 
 #endif /* _RIG_UTIL_H_ */

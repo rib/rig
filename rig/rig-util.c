@@ -78,3 +78,15 @@ rig_util_fully_transform_vertices (const CoglMatrix *modelview,
     }
 }
 
+void
+rig_util_print_quaternion (const char           *prefix,
+                           const CoglQuaternion *quaternion)
+{
+  float axis[3], angle;
+
+  cogl_quaternion_get_rotation_axis (quaternion, axis);
+  angle = cogl_quaternion_get_rotation_angle (quaternion);
+
+  g_print ("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n", prefix, axis[0],
+           axis[1], axis[2], angle);
+}
