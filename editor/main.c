@@ -54,6 +54,11 @@ typedef struct
   RigEntity pivot;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
+
+  /* picking ray */
+  CoglPipeline *picking_ray_color;
+  CoglPrimitive *picking_ray;
+
 } Data;
 
 /* in micro seconds  */
@@ -61,6 +66,20 @@ static int64_t
 get_current_time (Data *data)
 {
   return (int64_t) (g_timer_elapsed (data->timer, NULL) * 1e6);
+}
+
+static CoglPipeline *
+create_color_pipeline (float r, float g, float b)
+{
+  static CoglPipeline *template = NULL, *new_pipeline;
+
+  if (G_UNLIKELY (template == NULL))
+    template = cogl_pipeline_new (rig_cogl_context);
+
+  new_pipeline = cogl_pipeline_copy (template);
+  cogl_pipeline_set_color4f (new_pipeline, r, g, b, 1.0f);
+
+  return new_pipeline;
 }
 
 static CoglPipeline *
@@ -79,7 +98,6 @@ create_texture_pipeline (CoglTexture *texture)
 
   return new_pipeline;
 }
-
 
 static void
 compute_light_shadow_matrix (Data       *data,
@@ -402,6 +420,9 @@ test_init (RigShell *shell, void *user_data)
 
     rig_entity_init (&data->pivot);
     rig_arcball_init (&data->arcball, w / 2, h / 2, sqrtf (w * w + h * h) / 2);
+
+    /* picking ray */
+    data->picking_ray_color = create_color_pipeline (1.f, 0.f, 0.f);
   }
 
   /* timer for the world time */
@@ -479,6 +500,13 @@ test_paint (RigShell *shell, void *user_data)
   /* draw entities */
   draw_entities (data, data->fb, data->main_camera, FALSE /* shadow pass */);
 
+  if (data->picking_ray)
+    {
+      cogl_framebuffer_draw_primitive (data->fb,
+                                       data->picking_ray_color,
+                                       data->picking_ray);
+    }
+
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (data->fb, data->shadow_color_tex,
                                    -2, 1, -4, 3);
@@ -496,6 +524,75 @@ static void
 test_fini (RigShell *shell, void *user_data)
 {
 
+}
+
+static CoglPrimitive *
+create_line_primitive (float a[3], float b[3])
+{
+  CoglVertexP3 data[2];
+  CoglAttributeBuffer *attribute_buffer;
+  CoglAttribute *attributes[1];
+  CoglPrimitive *primitive;
+
+  data[0].x = a[0];
+  data[0].y = a[1];
+  data[0].z = a[2];
+  data[1].x = b[0];
+  data[1].y = b[1];
+  data[1].z = b[2];
+
+  attribute_buffer = cogl_attribute_buffer_new (rig_cogl_context,
+                                                2 * sizeof (CoglVertexP3),
+                                                data);
+
+  attributes[0] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_position_in",
+                                      sizeof (CoglVertexP3),
+                                      offsetof (CoglVertexP3, x),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+
+  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_LINES,
+                                                  2, attributes, 1);
+
+  cogl_object_unref (attribute_buffer);
+  cogl_object_unref (attributes[0]);
+
+  return primitive;
+}
+
+static CoglPrimitive *
+create_picking_ray (Data            *data,
+                    CoglFramebuffer *fb,
+                    float            ray_position[3],
+                    float            ray_direction[3],
+                    float            length)
+{
+  CoglPrimitive *line;
+  CoglMatrix *pivot_transform, pivot_inverse;
+  float points[6];
+
+  points[0] = ray_position[0];
+  points[1] = ray_position[1];
+  points[2] = ray_position[2];
+  points[3] = ray_position[0] + length * ray_direction[0];
+  points[4] = ray_position[1] + length * ray_direction[1];
+  points[5] = ray_position[2] + length * ray_direction[2];
+
+  pivot_transform = rig_entity_get_transform (&data->pivot);
+  cogl_matrix_get_inverse (pivot_transform, &pivot_inverse);
+
+  cogl_matrix_transform_points (&pivot_inverse,
+                                3, /* num components for input */
+                                sizeof (float) * 3, /* input stride */
+                                points,
+                                sizeof (float) * 3, /* output stride */
+                                points,
+                                2 /* n_points */);
+
+  line = create_line_primitive (points, points + 3);
+
+  return line;
 }
 
 static RigInputEventStatus
@@ -526,6 +623,45 @@ test_input_handler (RigInputEvent *event, void *user_data)
             data->button_down = TRUE;
 
             return RIG_INPUT_EVENT_STATUS_HANDLED;
+          }
+        else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
+                 state == RIG_BUTTON_STATE_1)
+          {
+            /* pick */
+            RigComponent *camera;
+            float *viewport, ray_position[3], ray_direction[3], screen_pos[2],
+                  z_far, z_near;
+            CoglMatrix *camera_transform, projection, inverse_projection;
+
+            camera = rig_entity_get_component (data->main_camera,
+                                               RIG_COMPONENT_TYPE_CAMCORDER);
+            viewport = rig_camcorder_get_viewport (RIG_CAMCORDER (camera));
+            z_near = rig_camcorder_get_near_plane (RIG_CAMCORDER (camera));
+            z_far = rig_camcorder_get_far_plane (RIG_CAMCORDER (camera));
+
+            cogl_framebuffer_get_projection_matrix (data->fb,
+                                                    &projection);
+            cogl_matrix_get_inverse (&projection, &inverse_projection);
+
+            camera_transform = rig_entity_get_transform (data->main_camera);
+
+            screen_pos[0] = x;
+            screen_pos[1] = y;
+
+            rig_util_create_pick_ray (viewport,
+                                      &inverse_projection,
+                                      camera_transform,
+                                      screen_pos,
+                                      ray_position,
+                                      ray_direction);
+
+            if (data->picking_ray)
+              cogl_object_unref (data->picking_ray);
+            data->picking_ray = create_picking_ray (data,
+                                                    data->fb,
+                                                    ray_position,
+                                                    ray_direction,
+                                                    z_far - z_near);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
           {
