@@ -79,4 +79,10 @@ void
 rig_util_print_quaternion (const char           *prefix,
                            const CoglQuaternion *quaternion);
 
+void
+rig_util_transform_normal (const CoglMatrix *matrix,
+                           float            *x,
+                           float            *y,
+                           float            *z);
+
 #endif /* _RIG_UTIL_H_ */

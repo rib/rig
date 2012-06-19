@@ -145,3 +145,16 @@ rig_util_create_pick_ray (const float       viewport[4],
 
   cogl_vector3_normalize (ray_direction);
 }
+
+void
+rig_util_transform_normal (const CoglMatrix *matrix,
+                           float            *x,
+                           float            *y,
+                           float            *z)
+{
+  float _x = *x, _y = *y, _z = *z;
+
+  *x = matrix->xx * _x + matrix->xy * _y + matrix->xz * _z;
+  *y = matrix->yx * _x + matrix->yy * _y + matrix->yz * _z;
+  *z = matrix->zx * _x + matrix->zy * _y + matrix->zz * _z;
+}

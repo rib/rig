@@ -561,6 +561,38 @@ create_line_primitive (float a[3], float b[3])
   return primitive;
 }
 
+static void
+transform_ray (CoglMatrix *transform,
+               bool        inverse_transform,
+               float       ray_origin[3],
+               float       ray_direction[3])
+{
+  CoglMatrix inverse, normal_matrix, *m;
+
+  m = transform;
+  if (inverse_transform)
+    {
+      cogl_matrix_get_inverse (transform, &inverse);
+      m = &inverse;
+    }
+
+  cogl_matrix_transform_points (m,
+                                3, /* num components for input */
+                                sizeof (float) * 3, /* input stride */
+                                ray_origin,
+                                sizeof (float) * 3, /* output stride */
+                                ray_origin,
+                                1 /* n_points */);
+
+  cogl_matrix_get_inverse (m, &normal_matrix);
+  cogl_matrix_transpose (&normal_matrix);
+
+  rig_util_transform_normal (&normal_matrix,
+                             &ray_direction[0],
+                             &ray_direction[1],
+                             &ray_direction[2]);
+}
+
 static CoglPrimitive *
 create_picking_ray (Data            *data,
                     CoglFramebuffer *fb,
@@ -569,7 +601,6 @@ create_picking_ray (Data            *data,
                     float            length)
 {
   CoglPrimitive *line;
-  CoglMatrix *pivot_transform, pivot_inverse;
   float points[6];
 
   points[0] = ray_position[0];
@@ -578,17 +609,6 @@ create_picking_ray (Data            *data,
   points[3] = ray_position[0] + length * ray_direction[0];
   points[4] = ray_position[1] + length * ray_direction[1];
   points[5] = ray_position[2] + length * ray_direction[2];
-
-  pivot_transform = rig_entity_get_transform (&data->pivot);
-  cogl_matrix_get_inverse (pivot_transform, &pivot_inverse);
-
-  cogl_matrix_transform_points (&pivot_inverse,
-                                3, /* num components for input */
-                                sizeof (float) * 3, /* input stride */
-                                points,
-                                sizeof (float) * 3, /* output stride */
-                                points,
-                                2 /* n_points */);
 
   line = create_line_primitive (points, points + 3);
 
@@ -654,6 +674,12 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                       screen_pos,
                                       ray_position,
                                       ray_direction);
+
+            /* nullify the effect of the pivot */
+            transform_ray (rig_entity_get_transform (&data->pivot),
+                           TRUE, /* inverse the transform */
+                           ray_position,
+                           ray_direction);
 
             if (data->picking_ray)
               cogl_object_unref (data->picking_ray);
