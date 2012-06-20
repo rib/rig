@@ -688,7 +688,8 @@ rig_motion_event_get_action (RigInputEvent *event)
 }
 
 RigButtonState
-rig_button_state_for_sdl_state (uint8_t sdl_state)
+rig_button_state_for_sdl_state (SDL_Event *event,
+                                uint8_t    sdl_state)
 {
   RigButtonState rig_state = 0;
   if (sdl_state & SDL_BUTTON(1))
@@ -697,10 +698,14 @@ rig_button_state_for_sdl_state (uint8_t sdl_state)
     rig_state |= RIG_BUTTON_STATE_2;
   if (sdl_state & SDL_BUTTON(3))
     rig_state |= RIG_BUTTON_STATE_3;
-  if (sdl_state & SDL_BUTTON(4))
-    rig_state |= RIG_BUTTON_STATE_4;
-  if (sdl_state & SDL_BUTTON(5))
-    rig_state |= RIG_BUTTON_STATE_5;
+  if ((event->type == SDL_MOUSEBUTTONUP ||
+       event->type == SDL_MOUSEBUTTONDOWN) &&
+      event->button.button == SDL_BUTTON_WHEELUP)
+    rig_state |= RIG_BUTTON_STATE_WHEELUP;
+  if ((event->type == SDL_MOUSEBUTTONUP ||
+       event->type == SDL_MOUSEBUTTONDOWN) &&
+      event->button.button == SDL_BUTTON_WHEELDOWN)
+    rig_state |= RIG_BUTTON_STATE_WHEELDOWN;
 
   return rig_state;
 }
@@ -711,9 +716,10 @@ rig_motion_event_get_button_state (RigInputEvent *event)
 #ifdef __ANDROID__
   return 0;
 #elif defined (USE_SDL)
-  //SDL_Event *sdl_event = event->native;
+  SDL_Event *sdl_event = event->native;
 
-  return rig_button_state_for_sdl_state (SDL_GetMouseState (NULL, NULL));
+  return rig_button_state_for_sdl_state (sdl_event,
+                                         SDL_GetMouseState (NULL, NULL));
 #if 0
   /* FIXME: we need access to the RigContext here so that
    * we can statefully track the changes to the button
@@ -735,9 +741,9 @@ rig_motion_event_get_button_state (RigInputEvent *event)
         case 3:
           return RIG_BUTTON_STATE_3;
         case 4:
-          return RIG_BUTTON_STATE_4;
+          return RIG_BUTTON_STATE_WHEELUP;
         case 5:
-          return RIG_BUTTON_STATE_5;
+          return RIG_BUTTON_STATE_WHEELDOWN;
         default:
           g_warning ("Out of range SDL button number");
           return 0;

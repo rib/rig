@@ -75,11 +75,11 @@ typedef enum _RigMotionEventAction
 
 typedef enum _RigButtonState
 {
-  RIG_BUTTON_STATE_1 = 1<<0,
-  RIG_BUTTON_STATE_2 = 1<<1,
-  RIG_BUTTON_STATE_3 = 1<<2,
-  RIG_BUTTON_STATE_4 = 1<<3,
-  RIG_BUTTON_STATE_5 = 1<<4
+  RIG_BUTTON_STATE_1         = 1<<0,
+  RIG_BUTTON_STATE_2         = 1<<1,
+  RIG_BUTTON_STATE_3         = 1<<2,
+  RIG_BUTTON_STATE_WHEELUP   = 1<<3,
+  RIG_BUTTON_STATE_WHEELDOWN = 1<<4
 } RigButtonState;
 
 typedef enum _RigModifierState
