@@ -219,17 +219,42 @@ typedef struct _RigNineSlice
 
 } RigNineSlice;
 
+typedef enum _ButtonState
+{
+  BUTTON_STATE_NORMAL,
+  BUTTON_STATE_HOVER,
+  BUTTON_STATE_ACTIVE,
+  BUTTON_STATE_ACTIVE_CANCEL,
+  BUTTON_STATE_DISABLED
+} ButtonState;
+
 struct _RigButton
 {
   RigObjectProps _parent;
   int ref_count;
 
+  RigContext *ctx;
+
+  ButtonState state;
+
   PangoLayout *label;
   int label_width;
   int label_height;
 
-  RigNineSlice *background;
+  float width;
+  float height;
+
+  RigNineSlice *background_normal;
+  RigNineSlice *background_hover;
+  RigNineSlice *background_active;
+  RigNineSlice *background_disabled;
+
   CoglColor text_color;
+
+  RigInputRegion *input_region;
+
+  void (*on_click) (RigButton *button, void *user_data);
+  void *on_click_data;
 
   RigSimpleWidgetProps simple_widget;
 
@@ -916,15 +941,16 @@ primitive_new_textured_rectangle (RigContext *ctx,
                                   vertices);
 }
 
-RigNineSlice *
-rig_nine_slice_new (RigContext *ctx,
-                    CoglTexture *texture,
-                    float top,
-                    float right,
-                    float bottom,
-                    float left,
-                    float width,
-                    float height)
+static RigNineSlice *
+_rig_nine_slice_new_full (RigContext *ctx,
+                          CoglTexture *texture,
+                          float top,
+                          float right,
+                          float bottom,
+                          float left,
+                          float width,
+                          float height,
+                          CoglPrimitive *shared_prim)
 {
   RigNineSlice *nine_slice = g_slice_new (RigNineSlice);
 
@@ -954,6 +980,10 @@ rig_nine_slice_new (RigContext *ctx,
         primitive_new_textured_rectangle (ctx,
                                           0, 0, width, height,
                                           0, 0, 1, 1);
+    }
+  else if (shared_prim)
+    {
+      nine_slice->primitive = cogl_object_ref (shared_prim);
     }
   else
     {
@@ -1030,6 +1060,22 @@ rig_nine_slice_new (RigContext *ctx,
     }
 
   return nine_slice;
+}
+
+RigNineSlice *
+rig_nine_slice_new (RigContext *ctx,
+                    CoglTexture *texture,
+                    float top,
+                    float right,
+                    float bottom,
+                    float left,
+                    float width,
+                    float height)
+{
+  return _rig_nine_slice_new_full (ctx, texture,
+                                   top, right, bottom, left,
+                                   width, height,
+                                   NULL);
 }
 
 static void
@@ -1385,7 +1431,10 @@ _rig_button_free (void *object)
 {
   RigButton *button = object;
 
-  rig_ref_countable_unref (button->background);
+  rig_ref_countable_unref (button->background_normal);
+  rig_ref_countable_unref (button->background_hover);
+  rig_ref_countable_unref (button->background_active);
+  rig_ref_countable_unref (button->background_disabled);
 
   g_object_unref (button->label);
 
@@ -1411,9 +1460,26 @@ _rig_button_paint (RigObject *object,
   RigButton *button = RIG_BUTTON (object);
   RigCamera *camera = paint_ctx->camera;
   RigPaintableVTable *bg_paintable =
-    rig_object_get_vtable (button->background, RIG_INTERFACE_ID_PAINTABLE);
+    rig_object_get_vtable (button->background_normal, RIG_INTERFACE_ID_PAINTABLE);
 
-  bg_paintable->paint (RIG_OBJECT (button->background), paint_ctx);
+  switch (button->state)
+    {
+    case BUTTON_STATE_NORMAL:
+      bg_paintable->paint (RIG_OBJECT (button->background_normal), paint_ctx);
+      break;
+    case BUTTON_STATE_HOVER:
+      bg_paintable->paint (RIG_OBJECT (button->background_hover), paint_ctx);
+      break;
+    case BUTTON_STATE_ACTIVE:
+      bg_paintable->paint (RIG_OBJECT (button->background_active), paint_ctx);
+      break;
+    case BUTTON_STATE_ACTIVE_CANCEL:
+      bg_paintable->paint (RIG_OBJECT (button->background_active), paint_ctx);
+      break;
+    case BUTTON_STATE_DISABLED:
+      bg_paintable->paint (RIG_OBJECT (button->background_disabled), paint_ctx);
+      break;
+    }
 
   cogl_pango_show_layout (camera->fb,
                           button->label,
@@ -1453,12 +1519,170 @@ _rig_button_init_type (void)
                           &_rig_button_simple_widget_vtable);
 }
 
+void
+rig_camera_unproject_coord (RigCamera *camera,
+                            const CoglMatrix *modelview,
+                            const CoglMatrix *inverse_modelview,
+                            float object_coord_z,
+                            float *x,
+                            float *y)
+{
+  const CoglMatrix *projection = rig_camera_get_projection (camera);
+  const CoglMatrix *inverse_projection =
+    rig_camera_get_inverse_projection (camera);
+  //float z;
+  float ndc_x, ndc_y, ndc_z, ndc_w;
+  float eye_x, eye_y, eye_z, eye_w;
+  const float *viewport = rig_camera_get_viewport (camera);
+
+  /* Convert item z into NDC z */
+  {
+    //float x = 0, y = 0, z = 0, w = 1;
+    float z = 0, w = 1;
+    float tmp_x, tmp_y, tmp_z;
+    const CoglMatrix *m = modelview;
+
+    tmp_x = m->xw;
+    tmp_y = m->yw;
+    tmp_z = m->zw;
+
+    m = projection;
+    z = m->zx * tmp_x + m->zy * tmp_y + m->zz * tmp_z + m->zw;
+    w = m->wx * tmp_x + m->wy * tmp_y + m->wz * tmp_z + m->ww;
+
+    ndc_z = z / w;
+  }
+
+  /* Undo the Viewport transform, putting us in Normalized Device Coords */
+  ndc_x = (*x - viewport[0]) * 2.0f / viewport[2] - 1.0f;
+  ndc_y = ((viewport[3] - 1 + viewport[1] - *y) * 2.0f / viewport[3] - 1.0f);
+
+  /* Undo the Projection, putting us in Eye Coords. */
+  ndc_w = 1;
+  cogl_matrix_transform_point (inverse_projection,
+                               &ndc_x, &ndc_y, &ndc_z, &ndc_w);
+  eye_x = ndc_x / ndc_w;
+  eye_y = ndc_y / ndc_w;
+  eye_z = ndc_z / ndc_w;
+  eye_w = 1;
+
+  /* Undo the Modelview transform, putting us in Object Coords */
+  cogl_matrix_transform_point (inverse_modelview,
+                               &eye_x,
+                               &eye_y,
+                               &eye_z,
+                               &eye_w);
+
+  *x = eye_x;
+  *y = eye_y;
+  //*z = eye_z;
+}
+
+typedef struct _ButtonGrabState
+{
+  RigCamera *camera;
+  RigButton *button;
+  CoglMatrix transform;
+  CoglMatrix inverse_transform;
+} ButtonGrabState;
+
+static RigInputEventStatus
+_rig_button_grab_input_cb (RigInputEvent *event,
+                           void *user_data)
+{
+  ButtonGrabState *state = user_data;
+  RigButton *button = state->button;
+
+  if(rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      RigShell *shell = button->ctx->shell;
+      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
+        {
+          rig_shell_ungrab_input (shell);
+
+          if (button->on_click)
+            button->on_click (button, button->on_click_data);
+
+          g_print ("Button click\n");
+
+          g_slice_free (ButtonGrabState, state);
+
+          button->state = BUTTON_STATE_NORMAL;
+          rig_shell_queue_redraw (button->ctx->shell);
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+      else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
+        {
+          float x = rig_motion_event_get_x (event);
+          float y = rig_motion_event_get_y (event);
+          RigCamera *camera = state->camera;
+
+          rig_camera_unproject_coord (camera,
+                                      &state->transform,
+                                      &state->inverse_transform,
+                                      0,
+                                      &x,
+                                      &y);
+
+          if (x < 0 || x > button->width ||
+              y < 0 || y > button->height)
+            button->state = BUTTON_STATE_ACTIVE_CANCEL;
+          else
+            button->state = BUTTON_STATE_ACTIVE;
+
+          rig_shell_queue_redraw (button->ctx->shell);
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static RigInputEventStatus
+_rig_button_input_cb (RigInputRegion *region,
+                      RigInputEvent *event,
+                      void *user_data)
+{
+  RigButton *button = user_data;
+
+  g_print ("Button input\n");
+
+  if(rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION &&
+     rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
+    {
+      RigShell *shell = button->ctx->shell;
+      ButtonGrabState *state = g_slice_new (ButtonGrabState);
+
+      state->button = button;
+      state->camera = rig_input_event_get_camera (event);
+      rig_graphable_get_transform (button, &state->transform);
+      cogl_matrix_get_inverse (&state->transform,
+                               &state->inverse_transform);
+
+      rig_shell_grab_input (shell, _rig_button_grab_input_cb, state);
+      //button->grab_x = rig_motion_event_get_x (event);
+      //button->grab_y = rig_motion_event_get_y (event);
+
+      button->state = BUTTON_STATE_ACTIVE;
+      rig_shell_queue_redraw (button->ctx->shell);
+
+      return RIG_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 RigButton *
 rig_button_new (RigContext *ctx,
                 const char *label)
 {
   RigButton *button = g_slice_new0 (RigButton);
-  CoglTexture *texture;
+  CoglTexture *normal_texture;
+  CoglTexture *hover_texture;
+  CoglTexture *active_texture;
+  CoglTexture *disabled_texture;
   GError *error = NULL;
   PangoRectangle label_size;
 
@@ -1469,10 +1693,44 @@ rig_button_new (RigContext *ctx,
   rig_graphable_init (RIG_OBJECT (button));
   rig_paintable_init (RIG_OBJECT (button));
 
-  texture = rig_load_texture (ctx, RIG_DATA_DIR "button.png", &error);
-  if (!texture)
+  button->ctx = ctx;
+
+  button->state = BUTTON_STATE_NORMAL;
+
+  button->on_click = NULL;
+  button->on_click_data = NULL;
+
+  normal_texture = rig_load_texture (ctx, RIG_DATA_DIR "button.png", &error);
+  if (!normal_texture)
     {
       g_warning ("Failed to load button texture: %s", error->message);
+      g_error_free (error);
+    }
+
+  hover_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-hover.png", &error);
+  if (!hover_texture)
+    {
+      cogl_object_unref (normal_texture);
+      g_warning ("Failed to load button-hover texture: %s", error->message);
+      g_error_free (error);
+    }
+
+  active_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-active.png", &error);
+  if (!active_texture)
+    {
+      cogl_object_unref (normal_texture);
+      cogl_object_unref (hover_texture);
+      g_warning ("Failed to load button-active texture: %s", error->message);
+      g_error_free (error);
+    }
+
+  disabled_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-disabled.png", &error);
+  if (!disabled_texture)
+    {
+      cogl_object_unref (normal_texture);
+      cogl_object_unref (hover_texture);
+      cogl_object_unref (active_texture);
+      g_warning ("Failed to load button-disabled texture: %s", error->message);
       g_error_free (error);
     }
 
@@ -1484,13 +1742,56 @@ rig_button_new (RigContext *ctx,
   button->label_width = PANGO_PIXELS (label_size.width);
   button->label_height = PANGO_PIXELS (label_size.height);
 
-  button->background = rig_nine_slice_new (ctx, texture, 11, 5, 13, 5,
-                                           button->label_width + 10,
-                                           button->label_height + 23);
+  button->width = button->label_width + 10;
+  button->height = button->label_height + 23;
+
+  button->background_normal =
+    rig_nine_slice_new (ctx, normal_texture, 11, 5, 13, 5,
+                        button->width,
+                        button->height);
+
+  button->background_hover =
+    _rig_nine_slice_new_full (ctx, hover_texture, 11, 5, 13, 5,
+                              button->width,
+                              button->height,
+                              button->background_normal->primitive);
+
+  button->background_active =
+    _rig_nine_slice_new_full (ctx, active_texture, 11, 5, 13, 5,
+                              button->width,
+                              button->height,
+                              button->background_normal->primitive);
+
+  button->background_disabled =
+    _rig_nine_slice_new_full (ctx, disabled_texture, 11, 5, 13, 5,
+                              button->width,
+                              button->height,
+                              button->background_normal->primitive);
 
   cogl_color_init_from_4f (&button->text_color, 0, 0, 0, 1);
 
+  button->input_region =
+    rig_input_region_new_rectangle (0, 0, button->width, button->height,
+                                    _rig_button_input_cb,
+                                    button);
+
+  rig_input_region_set_graphable (button->input_region, button);
+  rig_graphable_add_child (button, button->input_region);
+
   return button;
+}
+
+typedef void (*RigButtonClickCallback) (RigButton *button, void *user_data);
+
+void
+rig_button_set_on_click_callback (RigButton *button,
+                                  RigButtonClickCallback callback,
+                                  void *user_data)
+{
+  g_return_if_fail (button->on_click == NULL || callback == NULL);
+
+  button->on_click = callback;
+  button->on_click_data = user_data;
 }
 
 /*

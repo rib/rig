@@ -260,6 +260,14 @@ RigButton *
 rig_button_new (RigContext *ctx,
                 const char *label);
 
+typedef void (*RigButtonClickCallback) (RigButton *button, void *user_data);
+
+void
+rig_button_set_on_click_callback (RigButton *button,
+                                  RigButtonClickCallback callback,
+                                  void *user_data);
+
 CoglTexture *
 _rig_load_texture (RigContext *ctx, const char *filename, GError **error);
+
 #endif /* _RIG_H_ */
