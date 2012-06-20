@@ -158,3 +158,137 @@ rig_util_transform_normal (const CoglMatrix *matrix,
   *y = matrix->yx * _x + matrix->yy * _y + matrix->yz * _z;
   *z = matrix->zx * _x + matrix->zy * _y + matrix->zz * _z;
 }
+
+/*
+ * From "Fast, Minimum Storage Ray/Triangle Intersection",
+ * http://www.cs.virginia.edu/~gfx/Courses/2003/ImageSynthesis/papers/Acceleration/Fast%20MinimumStorage%20RayTriangle%20Intersection.pdf
+ */
+
+#define EPSILON 0.00001
+
+static void
+cross (float dest[3], float v1[3], float v2[3])
+{
+  dest[0] = v1[1] * v2[2] - v1[2] * v2[1];
+  dest[1] = v1[2] * v2[0] - v1[0] * v2[2];
+  dest[2] = v1[0] * v2[1] - v1[1] * v2[0];
+}
+
+static float
+dot (float v1[3], float v2[3])
+{
+  return v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+}
+
+static void
+sub (float dest[3], float v1[3], float v2[3])
+{
+  dest[0] = v1[0] - v2[0];
+  dest[1] = v1[1] - v2[1];
+  dest[2] = v1[2] - v2[2];
+}
+
+bool
+rig_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
+                             float ray_origin[3], float ray_direction[3],
+                             float *u, float *v, float *t)
+{
+  float edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+  float det, inv_det;
+
+  /* find vectors for the two edges sharing v0 */
+  sub (edge1, v1, v0);
+  sub (edge2, v2, v0);
+
+  /* begin calculating determinant, also used to calculate u */
+  cross (pvec, ray_direction, edge2);
+
+  /* if determinant is near zero, ray lies in the triangle's plane */
+  det = dot (edge1, pvec);
+
+  if (det > -EPSILON && det < EPSILON)
+    return FALSE;
+
+  inv_det = 1.0f / det;
+
+  /* calculate the distance from v0, to ray_origin */
+  sub (tvec, ray_origin, v0);
+
+  /* calculate U and test bounds */
+  *u = dot (tvec, pvec) * inv_det;
+  if (*u < 0.f || *u > 1.f)
+    return FALSE;
+
+  /* prepare to test V */
+  cross (qvec, tvec, edge1);
+
+  /* calculate V and test bounds */
+  *v = dot (ray_direction, qvec) * inv_det;
+  if (*v < 0.f || *u + *v > 1.f)
+    return FALSE;
+
+  /* calculate t, ray intersects triangle */
+  *t = dot (edge2, qvec) * inv_det;
+
+  return TRUE;
+}
+
+typedef struct _Point3f
+{
+  float x;
+  float y;
+  float z;
+} Point3f;
+
+bool
+rig_util_intersect_mesh (const void       *vertices,
+                         int               n_points,
+                         size_t            stride,
+                         float             ray_origin[3],
+                         float             ray_direction[3],
+                         int              *index,
+                         float            *t_out)
+{
+  uint8_t *points;
+  int i;
+  float u, v, t, min_t = G_MAXFLOAT;
+  bool hit, found = FALSE;
+
+  g_return_val_if_fail (n_points % 3 == 0, FALSE);
+  g_return_val_if_fail (stride > sizeof (Point3f), FALSE);
+
+  points = (uint8_t *) vertices;
+  for (i = 0; i < n_points / 3; i++, points += stride * 3)
+    {
+      float *v0, *v1, *v2;
+
+      v0 = (float *) points;
+      v1 = (float *) (points + stride);
+      v2 = (float *) (points + 2 * stride);
+
+      hit = rig_util_intersect_triangle (v0, v1, v2,
+                                         ray_origin, ray_direction,
+                                         &u, &v, &t);
+
+      /* found a closer triangle. t > 0 means that we don't want results
+       * behind the ray origin */
+      if (hit && t > 0 && t < min_t)
+        {
+          min_t = t;
+          found = TRUE;
+
+          if (index)
+            *index = i;
+        }
+    }
+
+  if (found)
+    {
+      if (t_out)
+        *t_out = min_t;
+
+      return TRUE;
+    }
+
+  return FALSE;
+}

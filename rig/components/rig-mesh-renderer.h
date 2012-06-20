@@ -36,6 +36,9 @@ struct _RigMeshRenderer
   RigComponent component;
   CoglPrimitive *primitive;
   MashData *mesh_data;
+  uint8_t *vertex_data;
+  int      n_vertices;
+  size_t   stride;
   CoglPipeline *pipeline;
   int normal_matrix_uniform;
 };
@@ -49,5 +52,8 @@ void            rig_mesh_renderer_free              (RigMeshRenderer *renderer);
 
 void            rig_mesh_renderer_set_pipeline      (RigMeshRenderer *renderer,
                                                      CoglPipeline    *pipeline);
+uint8_t *       rig_mesh_renderer_get_vertex_data   (RigMeshRenderer *renderer,
+                                                     size_t          *stride);
+int             rig_mesh_renderer_get_n_vertices    (RigMeshRenderer *renderer);
 
 #endif /* __RIG_MESH_RENDERER_H__ */

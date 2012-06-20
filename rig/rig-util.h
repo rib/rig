@@ -23,6 +23,8 @@
 #ifndef _RIG_UTIL_H_
 #define _RIG_UTIL_H_
 
+#include <stdbool.h>
+
 #include <cogl/cogl.h>
 
 /* This is a replacement for the nearbyint function which always
@@ -85,4 +87,16 @@ rig_util_transform_normal (const CoglMatrix *matrix,
                            float            *y,
                            float            *z);
 
+bool
+rig_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
+                             float ray_origin[3], float ray_direction[3],
+                             float *u, float *v, float *t);
+bool
+rig_util_intersect_mesh (const void       *vertices,
+                         int               n_points,
+                         size_t            stride,
+                         float             ray_origin[3],
+                         float             ray_direction[3],
+                         int              *index,
+                         float            *t_out);
 #endif /* _RIG_UTIL_H_ */

@@ -615,6 +615,81 @@ create_picking_ray (Data            *data,
   return line;
 }
 
+static RigEntity *
+pick (Data  *data,
+      float  ray_origin[3],
+      float  ray_direction[3])
+{
+  RigEntity *entity, *selected_entity = NULL;
+  RigComponent *mesh;
+  uint8_t *vertex_data;
+  int n_vertices;
+  size_t stride;
+  int index;
+  int i;
+  float distance, min_distance = G_MAXFLOAT;
+  bool hit;
+  float transformed_ray_origin[3];
+  float transformed_ray_direction[3];
+  static const char *names[2] = { "plane", "cube" }, *name;
+
+  for (i = 0; i < 2; i++)
+    {
+      entity = &data->entities[USER_ENTITY + i];
+
+      /* transform the ray into the model space */
+      memcpy (transformed_ray_origin, ray_origin, 3 * sizeof (float));
+      memcpy (transformed_ray_direction, ray_direction, 3 * sizeof (float));
+      transform_ray (rig_entity_get_transform (entity),
+                     TRUE, /* inverse of the transform */
+                     transformed_ray_origin,
+                     transformed_ray_direction);
+
+      /* intersect the transformed ray with the mesh data */
+      mesh = rig_entity_get_component (entity,
+                                       RIG_COMPONENT_TYPE_MESH_RENDERER);
+      vertex_data =
+        rig_mesh_renderer_get_vertex_data (RIG_MESH_RENDERER (mesh), &stride);
+      n_vertices = rig_mesh_renderer_get_n_vertices (RIG_MESH_RENDERER (mesh));
+
+      hit = rig_util_intersect_mesh (vertex_data,
+                                     n_vertices,
+                                     stride,
+                                     transformed_ray_origin,
+                                     transformed_ray_direction,
+                                     &index,
+                                     &distance);
+
+      /* to compare intersection distances we need to re-transform it back
+       * to the world space, */
+      cogl_vector3_normalize (transformed_ray_direction);
+      transformed_ray_direction[0] *= distance;
+      transformed_ray_direction[1] *= distance;
+      transformed_ray_direction[2] *= distance;
+
+      rig_util_transform_normal (rig_entity_get_transform (entity),
+                                 &transformed_ray_direction[0],
+                                 &transformed_ray_direction[1],
+                                 &transformed_ray_direction[2]);
+      distance = cogl_vector3_magnitude (transformed_ray_direction);
+
+      if (hit && distance < min_distance)
+        {
+          min_distance = distance;
+          selected_entity = entity;
+          name = names[i];
+        }
+    }
+
+  if (selected_entity)
+    {
+      g_message ("Hit the %s, triangle #%d, distance %.2f",
+                 name, index, distance);
+    }
+
+  return selected_entity;
+}
+
 static RigInputEventStatus
 test_input_handler (RigInputEvent *event, void *user_data)
 {
@@ -688,6 +763,8 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                                     ray_position,
                                                     ray_direction,
                                                     z_far - z_near);
+
+            pick (data, ray_position, ray_direction);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
           {

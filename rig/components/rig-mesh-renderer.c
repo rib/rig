@@ -323,9 +323,19 @@ rig_mesh_renderer_new_from_template (const char   *name,
   renderer = rig_mesh_renderer_new ();
 
   if (g_strcmp0 (name, "plane") == 0)
-    renderer->primitive = create_plane_primitive ();
+    {
+      renderer->primitive = create_plane_primitive ();
+      renderer->vertex_data = (uint8_t *) plane_vertices;
+      renderer->n_vertices = G_N_ELEMENTS (plane_vertices);
+      renderer->stride = sizeof (Vertex);
+    }
   else if (g_strcmp0 (name, "cube") == 0)
-    renderer->primitive = create_cube_primitive ();
+    {
+      renderer->primitive = create_cube_primitive ();
+      renderer->vertex_data = (uint8_t *) cube_vertices;
+      renderer->n_vertices = G_N_ELEMENTS (cube_vertices);
+      renderer->stride = sizeof (Vertex);
+    }
   else
     g_assert_not_reached ();
 
@@ -366,4 +376,20 @@ rig_mesh_renderer_set_pipeline (RigMeshRenderer *renderer,
         cogl_pipeline_get_uniform_location (renderer->pipeline,
                                             "normal_matrix");
     }
+}
+
+uint8_t *
+rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
+                                   size_t          *stride)
+{
+  if (stride)
+    *stride = renderer->stride;
+
+  return renderer->vertex_data;
+}
+
+int
+rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer)
+{
+  return renderer->n_vertices;
 }
