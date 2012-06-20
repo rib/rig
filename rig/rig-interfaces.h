@@ -121,6 +121,9 @@ void
 rig_graphable_remove_child (RigObject *parent, RigObject *child);
 
 void
+rig_graphable_remove_all_children (RigObject *parent);
+
+void
 rig_graphable_get_transform (RigObject *graphable,
                              CoglMatrix *transform);
 

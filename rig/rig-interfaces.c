@@ -106,6 +106,17 @@ rig_graphable_remove_child (RigObject *parent, RigObject *child)
   child_props->parent = NULL;
 }
 
+void
+rig_graphable_remove_all_children (RigObject *parent)
+{
+  RigGraphableProps *parent_props =
+    rig_object_get_properties (parent, RIG_INTERFACE_ID_GRAPHABLE);
+  RigObject *child;
+
+  while ((child = g_queue_pop_tail (&parent_props->children)))
+    rig_graphable_remove_child (parent, child);
+}
+
 static void
 _rig_graphable_traverse_breadth (RigObject *graphable,
                                  RigTraverseCallback callback,
