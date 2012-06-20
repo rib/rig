@@ -1794,6 +1794,197 @@ rig_button_set_on_click_callback (RigButton *button,
   button->on_click_data = user_data;
 }
 
+typedef struct _RigUIViewport
+{
+  RigObjectProps _parent;
+
+  int ref_count;
+
+  RigGraphableProps graphable;
+
+  float width;
+  float height;
+
+  float doc_x;
+  float doc_y;
+  float doc_scale_x;
+  float doc_scale_y;
+
+  CoglMatrix doc_matrix;
+
+} RigUIViewport;
+
+static void
+_rig_ui_viewport_free (void *object)
+{
+  g_slice_free (RigUIViewport, object);
+}
+
+static RigRefCountableVTable _rig_ui_viewport_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_ui_viewport_free
+};
+
+static RigGraphableVTable _rig_ui_viewport_graphable_vtable = {
+  NULL, /* child_removed */
+  NULL, /* child_added */
+  NULL, /* parent_changed */
+};
+
+static RigTransformableVTable _rig_ui_viewport_transformable_vtable = {
+  rig_ui_viewport_get_doc_matrix
+};
+
+RigType rig_ui_viewport_type;
+
+static void
+_rig_ui_viewport_init_type (void)
+{
+  rig_type_init (&rig_ui_viewport_type);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigUIViewport, ref_count),
+                          &_rig_ui_viewport_ref_countable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigUIViewport, graphable),
+                          &_rig_ui_viewport_graphable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_TRANSFORMABLE,
+                          0,
+                          &_rig_ui_viewport_transformable_vtable);
+}
+
+static void
+_rig_ui_viewport_update_doc_matrix (RigUIViewport *ui_viewport)
+{
+  cogl_matrix_init_identity (&ui_viewport->doc_matrix);
+  cogl_matrix_translate (&ui_viewport->doc_matrix,
+                         ui_viewport->doc_x,
+                         ui_viewport->doc_y,
+                         0);
+  cogl_matrix_scale (&ui_viewport->doc_matrix,
+                     ui_viewport->doc_scale_x,
+                     ui_viewport->doc_scale_y,
+                     0);
+}
+
+RigUIViewport *
+rig_ui_viewport_new (RigContext *ctx,
+                     float width,
+                     float height,
+                     ...)
+{
+  RigUIViewport *ui_viewport = g_slice_new0 (RigUIViewport);
+  va_list ap;
+  RigObject *object;
+
+  rig_object_init (RIG_OBJECT (ui_viewport), &rig_ui_viewport_type);
+
+  ui_viewport->ref_count = 1;
+
+  rig_graphable_init (RIG_OBJECT (ui_viewport));
+
+  ui_viewport->width = width;
+  ui_viewport->height = height;
+  ui_viewport->doc_x = 0;
+  ui_viewport->doc_y = 0;
+  ui_viewport->doc_scale_x = 1;
+  ui_viewport->doc_scale_y = 1;
+
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+
+  va_start (ap, height);
+  while ((object = va_arg (ap, RigObject *)))
+    rig_graphable_add_child (RIG_OBJECT (ui_viewport), object);
+  va_end (ap);
+
+  return ui_viewport;
+}
+
+void
+rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width)
+{
+  ui_viewport->width = width;
+}
+
+void
+rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height)
+{
+  ui_viewport->height = height;
+}
+
+void
+rig_ui_viewport_set_doc_x (RigUIViewport *ui_viewport, float doc_x)
+{
+  ui_viewport->doc_x = doc_x;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_y (RigUIViewport *ui_viewport, float doc_y)
+{
+  ui_viewport->doc_y = doc_y;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_scale_x (RigUIViewport *ui_viewport, float doc_scale_x)
+{
+  ui_viewport->doc_scale_x = doc_scale_x;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_scale_y (RigUIViewport *ui_viewport, float doc_scale_y)
+{
+  ui_viewport->doc_scale_y = doc_scale_y;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+float
+rig_ui_viewport_get_width (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->width;
+}
+
+float
+rig_ui_viewport_get_height (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->height;
+}
+
+float
+rig_ui_viewport_get_doc_x (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_x;
+}
+
+float
+rig_ui_viewport_get_doc_y (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_y;
+}
+
+float
+rig_ui_viewport_get_doc_scale_x (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_scale_x;
+}
+
+float
+rig_ui_viewport_get_doc_scale_y (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_scale_y;
+}
+
+const CoglMatrix *
+rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport)
+{
+  return &ui_viewport->doc_matrix;
+}
+
 /*
  * TODO:
  *
@@ -1868,6 +2059,7 @@ _rig_init (void)
       _rig_graph_init_type ();
       _rig_transform_init_type ();
       _rig_timeline_init_type ();
+      _rig_ui_viewport_init_type ();
 
       g_once_init_leave (&init_status, 1);
     }

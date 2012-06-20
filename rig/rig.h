@@ -251,6 +251,56 @@ rig_rectangle_set_width (RigRectangle *rectangle, float width);
 void
 rig_rectangle_set_height (RigRectangle *rectangle, float height);
 
+typedef struct _RigUIViewport RigUIViewport;
+#define RIG_UI_VIEWPORT(X) ((RigUIViewport *)X)
+
+extern RigType rig_ui_viewport_type;
+
+RigUIViewport *
+rig_ui_viewport_new (RigContext *ctx,
+                     float width,
+                     float height,
+                     ...);
+
+void
+rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width);
+
+void
+rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height);
+
+void
+rig_ui_viewport_set_doc_x (RigUIViewport *ui_viewport, float doc_x);
+
+void
+rig_ui_viewport_set_doc_y (RigUIViewport *ui_viewport, float doc_y);
+
+void
+rig_ui_viewport_set_doc_scale_x (RigUIViewport *ui_viewport, float doc_scale_x);
+
+void
+rig_ui_viewport_set_doc_scale_y (RigUIViewport *ui_viewport, float doc_scale_y);
+
+float
+rig_ui_viewport_get_width (RigUIViewport *ui_viewport);
+
+float
+rig_ui_viewport_get_height (RigUIViewport *ui_viewport);
+
+float
+rig_ui_viewport_get_doc_x (RigUIViewport *ui_viewport);
+
+float
+rig_ui_viewport_get_doc_y (RigUIViewport *ui_viewport);
+
+float
+rig_ui_viewport_get_doc_scale_x (RigUIViewport *ui_viewport);
+
+float
+rig_ui_viewport_get_doc_scale_y (RigUIViewport *ui_viewport);
+
+const CoglMatrix *
+rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport);
+
 typedef struct _RigButton RigButton;
 #define RIG_BUTTON(X) ((RigButton *)X)
 
