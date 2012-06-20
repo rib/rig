@@ -17,6 +17,7 @@ typedef enum _RigInterfaceID
   RIG_INTERFACE_ID_INTROSPECTABLE,
   RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
   RIG_INTERFACE_ID_PAINTABLE,
+  RIG_INTERFACE_ID_TRANSFORMABLE,
 } RigInterfaceID;
 
 /* An interface defines an offset into an instance for some arbitrary

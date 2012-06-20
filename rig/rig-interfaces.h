@@ -177,4 +177,12 @@ rig_simple_introspectable_foreach_property (RigObject *object,
                                             RigIntrospectablePropertyCallback callback,
                                             void *user_data);
 
+typedef struct RigTransformableVTable
+{
+  const CoglMatrix *(*get_matrix) (RigObject *object);
+} RigTransformableVTable;
+
+const CoglMatrix *
+rig_transformable_get_matrix (RigObject *object);
+
 #endif /* _RIG_INTERFACES_H_ */

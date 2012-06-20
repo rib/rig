@@ -520,6 +520,10 @@ static RigGraphableVTable _rig_camera_graphable_vtable = {
   _rig_camera_graphable_parent_changed
 };
 
+static RigTransformableVTable _rig_camera_transformable_vtable = {
+  rig_camera_get_view_transform
+};
+
 RigType rig_camera_type;
 
 static void
@@ -534,6 +538,10 @@ _rig_camera_init_type (void)
                            RIG_INTERFACE_ID_GRAPHABLE,
                            offsetof (RigCamera, graphable),
                            &_rig_camera_graphable_vtable);
+  rig_type_add_interface (&rig_camera_type,
+                           RIG_INTERFACE_ID_TRANSFORMABLE,
+                           0,
+                           &_rig_camera_transformable_vtable);
 }
 
 RigCamera *
@@ -1153,6 +1161,10 @@ static RigGraphableVTable _rig_transform_graphable_vtable = {
   _rig_transform_graphable_parent_changed
 };
 
+static RigTransformableVTable _rig_transform_transformable_vtable = {
+  rig_transform_get_matrix
+};
+
 RigType rig_transform_type;
 
 static void
@@ -1167,6 +1179,10 @@ _rig_transform_init_type (void)
                            RIG_INTERFACE_ID_GRAPHABLE,
                            offsetof (RigTransform, graphable),
                            &_rig_transform_graphable_vtable);
+  rig_type_add_interface (&rig_transform_type,
+                           RIG_INTERFACE_ID_TRANSFORMABLE,
+                           0,
+                           &_rig_transform_transformable_vtable);
 }
 
 RigTransform *

@@ -460,4 +460,11 @@ rig_simple_introspectable_foreach_property (RigObject *object,
     }
 }
 
+const CoglMatrix *
+rig_transformable_get_matrix (RigObject *object)
+{
+  RigTransformableVTable *transformable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_TRANSFORMABLE);
 
+  return transformable->get_matrix (object);
+}
