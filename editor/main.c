@@ -769,10 +769,6 @@ test_input_handler (RigInputEvent *event, void *user_data)
 
             status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
-        else if (action == RIG_MOTION_EVENT_ACTION_UP)
-          {
-            data->button_down = FALSE;
-          }
         else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
                  state == RIG_BUTTON_STATE_2)
           {
@@ -791,6 +787,27 @@ test_input_handler (RigInputEvent *event, void *user_data)
 
             status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
+        else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
+                 state == RIG_BUTTON_STATE_WHEELUP)
+          {
+            float scale;
+
+            scale = rig_entity_get_scale (&data->pivot);
+            rig_entity_set_scale (&data->pivot, scale / .9f);
+          }
+        else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
+                 state == RIG_BUTTON_STATE_WHEELDOWN)
+          {
+            float scale;
+
+            scale = rig_entity_get_scale (&data->pivot);
+            rig_entity_set_scale (&data->pivot, scale * .9f);
+          }
+        else if (action == RIG_MOTION_EVENT_ACTION_UP)
+          {
+            data->button_down = FALSE;
+          }
+
       }
     break;
 
