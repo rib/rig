@@ -886,9 +886,10 @@ camera_pick_region_cb (RigObject *object,
                        int depth,
                        void *user_data)
 {
+  CameraPickState *state = user_data;
+
   if (rig_object_get_type (object) == &rig_input_region_type)
     {
-      CameraPickState *state = user_data;
       RigInputRegion *region = (RigInputRegion *)object;
 
       //g_print ("cam pick: cap=%p region=%p\n", state->camera, object);
@@ -899,6 +900,30 @@ camera_pick_region_cb (RigObject *object,
               RIG_INPUT_EVENT_STATUS_HANDLED)
             return RIG_TRAVERSE_VISIT_BREAK;
         }
+    }
+  else if (rig_object_get_type (object) == &rig_ui_viewport_type)
+    {
+      RigUIViewport *ui_viewport = RIG_UI_VIEWPORT (object);
+      CoglMatrix transform;
+      RigShapeRectange rect;
+      float poly[16];
+
+      rig_graphable_get_transform (object, &transform);
+
+      rect.x0 = 0;
+      rect.x0 = 0;
+      rect.x1 = rig_ui_viewport_get_width (ui_viewport);
+      rect.y1 = rig_ui_viewport_get_height (ui_viewport);
+
+      rect_to_screen_polygon (&rect,
+                              &transform,
+                              &state->camera->projection,
+                              state->camera->viewport,
+                              poly);
+
+      if (!point_in_screen_poly (state->x, state->y,
+                                 poly, sizeof (float) * 4, 4))
+        return RIG_TRAVERSE_VISIT_SKIP_CHILDREN;
     }
 
   return RIG_TRAVERSE_VISIT_CONTINUE;
