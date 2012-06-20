@@ -80,7 +80,7 @@ librig_la_CFLAGS = \
 librig_la_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_srcdir)/rig \
-    -DRIG_DATA_DIR=\""$(datadir)"\"
+    -DRIG_DATA_DIR=\""$(datadir)/"\"
 
 
 rig_headersdir =  $(includedir)/rig
