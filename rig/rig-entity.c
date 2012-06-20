@@ -26,6 +26,8 @@ void rig_entity_init (RigEntity *entity)
   entity->position.y = 0.0f;
   entity->position.z = 0.0f;
 
+  entity->scale = 1.0f;
+
   cogl_quaternion_init_identity (&entity->rotation);
   cogl_matrix_init_identity (&entity->transform);
   entity->components = g_ptr_array_new ();
@@ -95,6 +97,20 @@ void rig_entity_set_rotation (RigEntity      *entity,
   entity_set_dirty (entity);
 }
 
+float
+rig_entity_get_scale (RigEntity *entity)
+{
+  return entity->scale;
+}
+
+void
+rig_entity_set_scale (RigEntity *entity,
+                      float      scale)
+{
+  entity->scale = scale;
+  entity_set_dirty (entity);
+}
+
 CoglMatrix *
 rig_entity_get_transform (RigEntity *entity)
 {
@@ -109,6 +125,8 @@ rig_entity_get_transform (RigEntity *entity)
                                 entity->position.z);
   cogl_matrix_init_from_quaternion (&rotation, &entity->rotation);
   cogl_matrix_multiply (&entity->transform, &entity->transform, &rotation);
+  cogl_matrix_scale (&entity->transform,
+                     entity->scale, entity->scale, entity->scale);
 
   entity_clear_dirty (entity);
 

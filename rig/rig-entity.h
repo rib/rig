@@ -76,6 +76,7 @@ struct _entity
   uint32_t flags;
   struct { float x, y, z; } position;
   CoglQuaternion rotation;
+  float scale;                          /* uniform scaling only */
   CoglMatrix transform;
   GPtrArray *components;
 };
@@ -95,6 +96,9 @@ void              rig_entity_set_position     (RigEntity *entity,
 CoglQuaternion *  rig_entity_get_rotation     (RigEntity *entity);
 void              rig_entity_set_rotation     (RigEntity *entity,
                                                CoglQuaternion *rotation);
+float             rig_entity_get_scale        (RigEntity *entity);
+void              rig_entity_set_scale        (RigEntity *entity,
+                                               float      scale);
 CoglMatrix *      rig_entity_get_transform    (RigEntity *entity);
 void              rig_entity_add_component    (RigEntity    *entity,
                                                RigComponent *component);
