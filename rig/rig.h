@@ -52,6 +52,9 @@ typedef struct _RigPaintableVtable
 void
 rig_paintable_init (RigObject *object);
 
+void
+rig_paintable_paint (RigObject *object, RigPaintContext *paint_ctx);
+
 /* TODO Make internals private */
 struct _RigContext
 {

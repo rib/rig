@@ -832,6 +832,14 @@ rig_paintable_init (RigObject *object)
 #endif
 }
 
+void
+rig_paintable_paint (RigObject *object, RigPaintContext *paint_ctx)
+{
+  RigPaintableVTable *paintable = rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
+
+  paintable->paint (object, paint_ctx);
+}
+
 static void
 _rig_nine_slice_free (void *object)
 {
