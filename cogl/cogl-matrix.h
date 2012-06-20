@@ -743,6 +743,17 @@ cogl_matrix_is_identity (const CoglMatrix *matrix);
 void
 cogl_matrix_transpose (CoglMatrix *matrix);
 
+/**
+ * cogl_debug_matrix_print:
+ * @matrix: A #CoglMatrix
+ *
+ * Prints the contents of a #CoglMatrix to stdout.
+ *
+ * Since: 2.0
+ */
+void
+cogl_debug_matrix_print (const CoglMatrix *matrix);
+
 #ifdef COGL_HAS_GTYPE_SUPPORT
 
 #define COGL_GTYPE_TYPE_MATRIX (cogl_gtype_matrix_get_type ())
