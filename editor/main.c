@@ -696,6 +696,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
   Data *data = user_data;
   RigMotionEventAction action;
   RigButtonState state;
+  RigInputEventStatus status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
   float x, y;
 
   switch (rig_input_event_get_type (event))
@@ -717,7 +718,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
 
             data->button_down = TRUE;
 
-            return RIG_INPUT_EVENT_STATUS_HANDLED;
+            status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
                  state == RIG_BUTTON_STATE_1)
@@ -765,6 +766,8 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                                     z_far - z_near);
 
             pick (data, ray_position, ray_direction);
+
+            status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
           {
@@ -786,10 +789,8 @@ test_input_handler (RigInputEvent *event, void *user_data)
 
             rig_entity_set_rotation (&data->pivot, &new_rotation);
 
-            return RIG_INPUT_EVENT_STATUS_HANDLED;
-         }
-
-
+            status = RIG_INPUT_EVENT_STATUS_HANDLED;
+          }
       }
     break;
 
@@ -797,7 +798,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
         break;
     }
 
-  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+  return status;
 }
 
 int
