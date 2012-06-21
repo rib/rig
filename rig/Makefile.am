@@ -28,7 +28,8 @@ source_h = \
     rig-shell.h \
     rig-keysyms.h \
     rig-stack.h \
-    rig-global.h
+    rig-global.h \
+    rig-util.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -60,7 +61,6 @@ librig_la_SOURCES = \
     rig-stack.c \
     rig-stack.h \
     rig-queue.h \
-    rig-util.h \
     rig-util.c \
     rig-timeline.c \
     rig-display-list.c \
