@@ -130,7 +130,7 @@ static Vertex cube_vertices[] =
 #define pos_c   -100.0f, 0.0f,  100.0f
 #define pos_d    100.0f, 0.0f,  100.0f
 
-#define norm     1.0f,  1.0f, 1.0f
+#define norm     0.0f,  1.0f, 0.0f
 
 static Vertex plane_vertices[] =
 {
