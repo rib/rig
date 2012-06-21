@@ -485,64 +485,10 @@ RigRefCountableVTable _rig_camera_ref_countable = {
   _rig_camera_free
 };
 
-#if 0
-static RigTraverseVisitFlags
-_rig_widget_set_camera_cb (RigObject *object,
-                           int depth,
-                           void *user_data)
-{
-  if (rig_object_is (object, RIG_INTERFACE_ID_SIMPLE_WIDGET))
-    {
-      RigSimpleWidgetVTable *widget_vtable =
-        rig_object_get_vtable (object, RIG_INTERFACE_ID_SIMPLE_WIDGET);
-      if (widget_vtable->set_camera)
-        widget_vtable->set_camera (object, user_data);
-    }
-
-  return RIG_TRAVERSE_VISIT_CONTINUE;
-}
-#endif
-
-static void
-_rig_camera_graphable_child_removed (RigObject *self,
-                                    RigObject *child)
-{
-#if 0
-  rig_graphable_traverse (child,
-                          RIG_TRAVERSE_DEPTH_FIRST,
-                          _rig_widget_set_camera_cb,
-                          NULL, /* after callback */
-                          NULL);
-#endif
-}
-
-static void
-_rig_camera_graphable_child_added (RigObject *self,
-                                  RigObject *child)
-
-{
-#if 0
-  RigCamera *camera = RIG_CAMERA (self);
-  rig_graphable_traverse (child,
-                          RIG_TRAVERSE_DEPTH_FIRST,
-                          _rig_widget_set_camera_cb,
-                          NULL, /* after callback */
-                          camera);
-#endif
-}
-
-static void
-_rig_camera_graphable_parent_changed (RigObject *self,
-                                      RigObject *old_parent,
-                                      RigObject *new_parent)
-{
- /* nop */
-}
-
 static RigGraphableVTable _rig_camera_graphable_vtable = {
-  _rig_camera_graphable_child_removed,
-  _rig_camera_graphable_child_added,
-  _rig_camera_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static RigTransformableVTable _rig_camera_transformable_vtable = {
@@ -859,34 +805,10 @@ RigRefCountableVTable _rig_nine_slice_ref_countable_vtable = {
   _rig_nine_slice_free
 };
 
-static void
-_rig_nine_slice_graphable_child_removed (RigObject *self,
-                                         RigObject *child)
-{
-  /* You can't add children to a button currently */
-  g_warn_if_reached ();
-}
-
-static void
-_rig_nine_slice_graphable_child_added (RigObject *self,
-                                       RigObject *child)
-{
-  /* You can't add children to a button currently */
-  g_warn_if_reached ();
-}
-
-static void
-_rig_nine_slice_graphable_parent_changed (RigObject *self,
-                                          RigObject *old_parent,
-                                          RigObject *new_parent)
-{
-  /* nop */
-}
-
 static RigGraphableVTable _rig_nine_slice_graphable_vtable = {
-  _rig_nine_slice_graphable_child_removed,
-  _rig_nine_slice_graphable_child_added,
-  _rig_nine_slice_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static void
@@ -1104,32 +1026,10 @@ RigRefCountableVTable _rig_graph_ref_countable_vtable = {
   _rig_graph_free
 };
 
-static void
-_rig_graph_graphable_child_removed (RigObject *self,
-                                    RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_graph_graphable_child_added (RigObject *self,
-                                  RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_graph_graphable_parent_changed (RigObject *self,
-                                     RigObject *old_parent,
-                                     RigObject *new_parent)
-{
-  /* nop */
-}
-
 RigGraphableVTable _rig_graph_graphable_vtable = {
-  _rig_graph_graphable_child_removed,
-  _rig_graph_graphable_child_added,
-  _rig_graph_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 RigType rig_graph_type;
@@ -1187,32 +1087,10 @@ RigRefCountableVTable _rig_transform_ref_countable_vtable = {
   _rig_transform_free
 };
 
-static void
-_rig_transform_graphable_child_removed (RigObject *self,
-                                    RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_transform_graphable_child_added (RigObject *self,
-                                  RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_transform_graphable_parent_changed (RigObject *self,
-                                     RigObject *old_parent,
-                                     RigObject *new_parent)
-{
-  /* nop */
-}
-
 static RigGraphableVTable _rig_transform_graphable_vtable = {
-  _rig_transform_graphable_child_removed,
-  _rig_transform_graphable_child_added,
-  _rig_transform_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static RigTransformableVTable _rig_transform_transformable_vtable = {
@@ -1343,9 +1221,9 @@ static RigRefCountableVTable _rig_rectangle_ref_countable_vtable = {
 };
 
 static RigGraphableVTable _rig_rectangle_graphable_vtable = {
-  rig_simple_widget_graphable_child_removed_warn,
-  rig_simple_widget_graphable_child_added_warn,
-  rig_simple_widget_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static void
@@ -1456,9 +1334,9 @@ RigRefCountableVTable _rig_button_ref_countable_vtable = {
 };
 
 static RigGraphableVTable _rig_button_graphable_vtable = {
-  rig_simple_widget_graphable_child_removed_warn,
-  rig_simple_widget_graphable_child_added_warn,
-  rig_simple_widget_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static void

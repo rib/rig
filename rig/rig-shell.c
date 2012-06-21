@@ -436,32 +436,10 @@ static RigRefCountableVTable _rig_input_region_ref_countable_vtable = {
   _rig_input_region_free
 };
 
-static void
-_rig_input_region_graphable_child_removed (RigObject *self,
-                                           RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_input_region_graphable_child_added (RigObject *self,
-                                         RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_input_region_graphable_parent_changed (RigObject *self,
-                                            RigObject *old_parent,
-                                            RigObject *new_parent)
-{
-  /* nop */
-}
-
 static RigGraphableVTable _rig_input_region_graphable_vtable = {
-  _rig_input_region_graphable_child_removed,
-  _rig_input_region_graphable_child_added,
-  _rig_input_region_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 RigType rig_input_region_type;
@@ -1442,9 +1420,9 @@ static RigPaintableVTable _rig_scroll_bar_paintable_vtable = {
 };
 
 RigGraphableVTable _rig_scroll_bar_graphable_vtable = {
-  rig_simple_widget_graphable_child_removed_warn,
-  rig_simple_widget_graphable_child_added_warn,
-  rig_simple_widget_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 #if 0
@@ -1684,24 +1662,10 @@ RigRefCountableVTable _rig_slider_ref_countable_vtable = {
   _rig_slider_free
 };
 
-static void
-_rig_slider_graphable_child_removed (RigObject *self,
-                                    RigObject *child)
-{
-  /* nop */
-}
-
-static void
-_rig_slider_graphable_child_added (RigObject *self,
-                                  RigObject *child)
-{
-  /* nop */
-}
-
 static RigGraphableVTable _rig_slider_graphable_vtable = {
-  _rig_slider_graphable_child_removed,
-  _rig_slider_graphable_child_added,
-  rig_simple_widget_graphable_parent_changed
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
 };
 
 static void
