@@ -44,6 +44,8 @@ typedef struct _RigPaintContext
   RigCamera *camera;
 } RigPaintContext;
 
+#define RIG_PAINT_CONTEXT(X) ((RigPaintContext *)X)
+
 typedef struct _RigPaintableVtable
 {
   void (*paint) (RigObject *object, RigPaintContext *paint_ctx);
