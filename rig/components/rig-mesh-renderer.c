@@ -117,39 +117,6 @@ static Vertex cube_vertices[] =
 #undef norm_top
 #undef norm_bottom
 
-static CoglPrimitive *
-create_cube_primitive (void)
-{
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[2];
-  CoglPrimitive *primitive;
-
-  attribute_buffer = cogl_attribute_buffer_new (rig_cogl_context,
-                                                sizeof (cube_vertices),
-                                                cube_vertices);
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (Vertex),
-                                      offsetof (Vertex, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_normal_in",
-                                      sizeof (Vertex),
-                                      offsetof (Vertex, n_x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  cogl_object_unref (attribute_buffer);
-
-  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
-                                                  G_N_ELEMENTS (cube_vertices),
-                                                  attributes, 2);
-  cogl_object_unref (attributes[0]);
-  cogl_object_unref (attributes[1]);
-
-  return primitive;
-}
-
 /*
  *        b +--------+ a
  *         /        /
@@ -183,15 +150,17 @@ static Vertex plane_vertices[] =
 #undef norm
 
 static CoglPrimitive *
-create_plane_primitive (void)
+create_primitive_from_vertex_data (RigMeshRenderer *renderer,
+                                   Vertex          *data,
+                                   int              n_vertices)
 {
   CoglAttributeBuffer *attribute_buffer;
   CoglAttribute *attributes[2];
   CoglPrimitive *primitive;
 
   attribute_buffer = cogl_attribute_buffer_new (rig_cogl_context,
-                                                sizeof (plane_vertices),
-                                                plane_vertices);
+                                                n_vertices * sizeof (Vertex),
+                                                data);
   attributes[0] = cogl_attribute_new (attribute_buffer,
                                       "cogl_position_in",
                                       sizeof (Vertex),
@@ -207,10 +176,16 @@ create_plane_primitive (void)
   cogl_object_unref (attribute_buffer);
 
   primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
-                                                  G_N_ELEMENTS (plane_vertices),
+                                                  n_vertices,
                                                   attributes, 2);
   cogl_object_unref (attributes[0]);
   cogl_object_unref (attributes[1]);
+
+  /* update the renderer states */
+  renderer->primitive = primitive;
+  renderer->vertex_data = (uint8_t *) data;
+  renderer->n_vertices = n_vertices;
+  renderer->stride = sizeof (Vertex);
 
   return primitive;
 }
@@ -324,17 +299,15 @@ rig_mesh_renderer_new_from_template (const char   *name,
 
   if (g_strcmp0 (name, "plane") == 0)
     {
-      renderer->primitive = create_plane_primitive ();
-      renderer->vertex_data = (uint8_t *) plane_vertices;
-      renderer->n_vertices = G_N_ELEMENTS (plane_vertices);
-      renderer->stride = sizeof (Vertex);
+      create_primitive_from_vertex_data (renderer,
+                                         plane_vertices,
+                                         G_N_ELEMENTS (plane_vertices));
     }
   else if (g_strcmp0 (name, "cube") == 0)
     {
-      renderer->primitive = create_cube_primitive ();
-      renderer->vertex_data = (uint8_t *) cube_vertices;
-      renderer->n_vertices = G_N_ELEMENTS (cube_vertices);
-      renderer->stride = sizeof (Vertex);
+      create_primitive_from_vertex_data (renderer,
+                                         cube_vertices,
+                                         G_N_ELEMENTS (cube_vertices));
     }
   else
     g_assert_not_reached ();
