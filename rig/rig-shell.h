@@ -23,6 +23,17 @@ rig_shell_new (RigShellInitCallback init,
                RigShellPaintCallback paint,
                void *user_data);
 
+/* XXX: Basically just a hack for now to effectively relate input events to
+ * a CoglFramebuffer and so we have a way to consistently associate a
+ * RigCamera with all input events.
+ *
+ * The camera should provide an orthographic projection into input device
+ * coordinates and it's assume to be automatically updated according to
+ * window resizes.
+ */
+void
+rig_shell_set_window_camera (RigShell *shell, RigCamera *window_camera);
+
 #ifdef __ANDROID__
 RigShell *
 rig_android_shell_new (struct android_app* application,
@@ -117,8 +128,6 @@ typedef struct _RigInputEvent RigInputEvent;
 typedef RigInputEventStatus (*RigInputCallback) (RigInputEvent *event,
                                                  void *user_data);
 
-typedef struct _RigInputEvent RigInputEvent;
-
 void
 rig_shell_grab_input (RigShell *shell,
                       RigInputCallback callback,
@@ -129,6 +138,9 @@ rig_shell_ungrab_input (RigShell *shell);
 
 void
 rig_shell_queue_redraw (RigShell *shell);
+
+RigCamera *
+rig_input_event_get_camera (RigInputEvent *event);
 
 RigInputEventType
 rig_input_event_get_type (RigInputEvent *event);

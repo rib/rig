@@ -38,6 +38,9 @@ struct _RigShell
   void *input_data;
   GList *input_cameras;
 
+  /* Use to handle input events in window coordinates */
+  RigCamera *window_camera;
+
   GList *input_regions;
   RigInputCallback grab_cb;
   void *grab_data;
@@ -156,6 +159,7 @@ _rig_shell_fini (RigShell *shell)
 struct _RigInputEvent
 {
   void *native;
+  RigCamera *camera;
   const CoglMatrix *input_transform;
 };
 
@@ -573,6 +577,12 @@ rig_shell_remove_input_camera (RigShell *shell,
   shell->input_cameras = g_list_remove (shell->input_cameras, camera);
 }
 
+RigCamera *
+rig_input_event_get_camera (RigInputEvent *event)
+{
+  return event->camera;
+}
+
 RigInputEventType
 rig_input_event_get_type (RigInputEvent *event)
 {
@@ -935,6 +945,8 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
   RigInputEventStatus status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
   GList *l;
 
+  event->camera = shell->window_camera;
+
   if (shell->input_cb)
     status = shell->input_cb (event, shell->input_data);
 
@@ -957,6 +969,8 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
             return status;
         }
 #endif
+
+      event->camera = camera;
 
       event->input_transform = &camera->input_transform;
 
@@ -1149,6 +1163,12 @@ _rig_shell_init (RigShell *shell)
 #ifndef __ANDROID__
   shell->init_cb (shell, shell->user_data);
 #endif
+}
+
+void
+rig_shell_set_window_camera (RigShell *shell, RigCamera *window_camera)
+{
+  shell->window_camera = window_camera;
 }
 
 #ifdef __ANDROID__
