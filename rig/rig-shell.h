@@ -210,13 +210,6 @@ typedef struct _RigScrollBar RigScrollBar;
 
 RigType rig_scroll_bar_type;
 
-typedef enum _RigAxis
-{
-  RIG_AXIS_X,
-  RIG_AXIS_Y,
-  RIG_AXIS_Z
-} RigAxis;
-
 RigScrollBar *
 rig_scroll_bar_new (RigContext *ctx,
                     RigAxis axis,

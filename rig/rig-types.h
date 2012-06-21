@@ -28,4 +28,11 @@ typedef enum _RigCullResult
   RIG_CULL_RESULT_PARTIAL
 } RigCullResult;
 
+typedef enum _RigAxis
+{
+  RIG_AXIS_X,
+  RIG_AXIS_Y,
+  RIG_AXIS_Z
+} RigAxis;
+
 #endif /* _RIG_TYPES_H_ */
