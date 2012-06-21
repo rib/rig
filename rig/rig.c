@@ -706,6 +706,65 @@ rig_camera_transform_window_coordinate (RigCamera *camera,
     return TRUE;
 }
 
+void
+rig_camera_unproject_coord (RigCamera *camera,
+                            const CoglMatrix *modelview,
+                            const CoglMatrix *inverse_modelview,
+                            float object_coord_z,
+                            float *x,
+                            float *y)
+{
+  const CoglMatrix *projection = rig_camera_get_projection (camera);
+  const CoglMatrix *inverse_projection =
+    rig_camera_get_inverse_projection (camera);
+  //float z;
+  float ndc_x, ndc_y, ndc_z, ndc_w;
+  float eye_x, eye_y, eye_z, eye_w;
+  const float *viewport = rig_camera_get_viewport (camera);
+
+  /* Convert item z into NDC z */
+  {
+    //float x = 0, y = 0, z = 0, w = 1;
+    float z = 0, w = 1;
+    float tmp_x, tmp_y, tmp_z;
+    const CoglMatrix *m = modelview;
+
+    tmp_x = m->xw;
+    tmp_y = m->yw;
+    tmp_z = m->zw;
+
+    m = projection;
+    z = m->zx * tmp_x + m->zy * tmp_y + m->zz * tmp_z + m->zw;
+    w = m->wx * tmp_x + m->wy * tmp_y + m->wz * tmp_z + m->ww;
+
+    ndc_z = z / w;
+  }
+
+  /* Undo the Viewport transform, putting us in Normalized Device Coords */
+  ndc_x = (*x - viewport[0]) * 2.0f / viewport[2] - 1.0f;
+  ndc_y = ((viewport[3] - 1 + viewport[1] - *y) * 2.0f / viewport[3] - 1.0f);
+
+  /* Undo the Projection, putting us in Eye Coords. */
+  ndc_w = 1;
+  cogl_matrix_transform_point (inverse_projection,
+                               &ndc_x, &ndc_y, &ndc_z, &ndc_w);
+  eye_x = ndc_x / ndc_w;
+  eye_y = ndc_y / ndc_w;
+  eye_z = ndc_z / ndc_w;
+  eye_w = 1;
+
+  /* Undo the Modelview transform, putting us in Object Coords */
+  cogl_matrix_transform_point (inverse_modelview,
+                               &eye_x,
+                               &eye_y,
+                               &eye_z,
+                               &eye_w);
+
+  *x = eye_x;
+  *y = eye_y;
+  //*z = eye_z;
+}
+
 typedef struct _CameraFlushState
 {
   RigCamera *current_camera;
@@ -1403,65 +1462,6 @@ _rig_button_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_WIDGET,
                           offsetof (RigButton, simple_widget),
                           &_rig_button_simple_widget_vtable);
-}
-
-void
-rig_camera_unproject_coord (RigCamera *camera,
-                            const CoglMatrix *modelview,
-                            const CoglMatrix *inverse_modelview,
-                            float object_coord_z,
-                            float *x,
-                            float *y)
-{
-  const CoglMatrix *projection = rig_camera_get_projection (camera);
-  const CoglMatrix *inverse_projection =
-    rig_camera_get_inverse_projection (camera);
-  //float z;
-  float ndc_x, ndc_y, ndc_z, ndc_w;
-  float eye_x, eye_y, eye_z, eye_w;
-  const float *viewport = rig_camera_get_viewport (camera);
-
-  /* Convert item z into NDC z */
-  {
-    //float x = 0, y = 0, z = 0, w = 1;
-    float z = 0, w = 1;
-    float tmp_x, tmp_y, tmp_z;
-    const CoglMatrix *m = modelview;
-
-    tmp_x = m->xw;
-    tmp_y = m->yw;
-    tmp_z = m->zw;
-
-    m = projection;
-    z = m->zx * tmp_x + m->zy * tmp_y + m->zz * tmp_z + m->zw;
-    w = m->wx * tmp_x + m->wy * tmp_y + m->wz * tmp_z + m->ww;
-
-    ndc_z = z / w;
-  }
-
-  /* Undo the Viewport transform, putting us in Normalized Device Coords */
-  ndc_x = (*x - viewport[0]) * 2.0f / viewport[2] - 1.0f;
-  ndc_y = ((viewport[3] - 1 + viewport[1] - *y) * 2.0f / viewport[3] - 1.0f);
-
-  /* Undo the Projection, putting us in Eye Coords. */
-  ndc_w = 1;
-  cogl_matrix_transform_point (inverse_projection,
-                               &ndc_x, &ndc_y, &ndc_z, &ndc_w);
-  eye_x = ndc_x / ndc_w;
-  eye_y = ndc_y / ndc_w;
-  eye_z = ndc_z / ndc_w;
-  eye_w = 1;
-
-  /* Undo the Modelview transform, putting us in Object Coords */
-  cogl_matrix_transform_point (inverse_modelview,
-                               &eye_x,
-                               &eye_y,
-                               &eye_z,
-                               &eye_w);
-
-  *x = eye_x;
-  *y = eye_y;
-  //*z = eye_z;
 }
 
 typedef struct _ButtonGrabState

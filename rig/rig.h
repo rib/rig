@@ -150,6 +150,14 @@ rig_camera_transform_window_coordinate (RigCamera *camera,
                                         float *x,
                                         float *y);
 
+void
+rig_camera_unproject_coord (RigCamera *camera,
+                            const CoglMatrix *modelview,
+                            const CoglMatrix *inverse_modelview,
+                            float object_coord_z,
+                            float *x,
+                            float *y);
+
 #if 0
 /* PRIVATE */
 RigInputEventStatus
