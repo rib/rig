@@ -107,8 +107,8 @@ rig_graphable_remove_child (RigObject *child)
 
   parent_props = rig_object_get_properties (parent, RIG_INTERFACE_ID_GRAPHABLE);
 
-  if (g_queue_remove (&parent_props->children, child))
-    rig_ref_countable_unref (child);
+  g_queue_remove (&parent_props->children, child);
+  rig_ref_countable_unref (child);
   child_props->parent = NULL;
 }
 
