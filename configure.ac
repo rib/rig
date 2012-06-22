@@ -263,9 +263,11 @@ dnl Add the build flags for android_native_app_glue
 AS_IF([test "x$have_android" = "xyes"],
       [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
                             [android/native_app_glue],
-                            [android_native_app_glue])]
-      CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS")
-
+                            [android_native_app_glue])
+      ANDROID_CHECK_MODULE([GLIB_ANDROID],
+                           [glib-android],
+                           [glib-android])
+      CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS $GLIB_ANDROID_CFLAGS"])
 
 dnl ================================================================
 dnl GObject-Introspection check
