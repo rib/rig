@@ -29,7 +29,9 @@ source_h = \
     rig-keysyms.h \
     rig-stack.h \
     rig-global.h \
-    rig-util.h
+    rig-util.h \
+    rig-text-buffer.h \
+    rig-text.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -64,6 +66,8 @@ librig_la_SOURCES = \
     rig-util.c \
     rig-timeline.c \
     rig-display-list.c \
+    rig-text-buffer.c \
+    rig-text.c \
     $(source_h)
 
 librig_la_LIBADD = \

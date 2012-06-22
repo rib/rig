@@ -96,26 +96,26 @@ typedef enum _RigButtonState
 typedef enum _RigModifierState
 {
   RIG_MODIFIER_LEFT_ALT_ON = 1<<0,
-  RIG_MODIFIER_RigHT_ALT_ON = 1<<1,
+  RIG_MODIFIER_RIGHT_ALT_ON = 1<<1,
 
   RIG_MODIFIER_LEFT_SHIFT_ON = 1<<2,
-  RIG_MODIFIER_RigHT_SHIFT_ON = 1<<3,
+  RIG_MODIFIER_RIGHT_SHIFT_ON = 1<<3,
 
   RIG_MODIFIER_LEFT_CTRL_ON = 1<<4,
-  RIG_MODIFIER_RigHT_CTRL_ON = 1<<5,
+  RIG_MODIFIER_RIGHT_CTRL_ON = 1<<5,
 
   RIG_MODIFIER_LEFT_META_ON = 1<<6,
-  RIG_MODIFIER_RigHT_META_ON = 1<<7,
+  RIG_MODIFIER_RIGHT_META_ON = 1<<7,
 
   RIG_MODIFIER_NUM_LOCK_ON = 1<<8,
   RIG_MODIFIER_CAPS_LOCK_ON = 1<<9
 
 } RigModifierState;
 
-#define RIG_MODIFIER_ALT_ON (RIG_MODIFIER_LEFT_ALT_ON|RIG_MODIFIER_RigHT_ALT_ON)
-#define RIG_MODIFIER_SHIFT_ON (RIG_MODIFIER_LEFT_SHIFT_ON|RIG_MODIFIER_RigHT_SHIFT_ON)
-#define RIG_MODIFIER_CTRL_ON (RIG_MODIFIER_LEFT_CTRL_ON|RIG_MODIFIER_RigHT_CTRL_ON)
-#define RIG_MODIFIER_META_ON (RIG_MODIFIER_LEFT_META_ON|RIG_MODIFIER_RigHT_META_ON)
+#define RIG_MODIFIER_ALT_ON (RIG_MODIFIER_LEFT_ALT_ON|RIG_MODIFIER_RIGHT_ALT_ON)
+#define RIG_MODIFIER_SHIFT_ON (RIG_MODIFIER_LEFT_SHIFT_ON|RIG_MODIFIER_RIGHT_SHIFT_ON)
+#define RIG_MODIFIER_CTRL_ON (RIG_MODIFIER_LEFT_CTRL_ON|RIG_MODIFIER_RIGHT_CTRL_ON)
+#define RIG_MODIFIER_META_ON (RIG_MODIFIER_LEFT_META_ON|RIG_MODIFIER_RIGHT_META_ON)
 
 typedef enum _RigInputEventStatus
 {
@@ -137,6 +137,12 @@ void
 rig_shell_ungrab_input (RigShell *shell);
 
 void
+rig_shell_grab_key_focus (RigShell *shell,
+                          RigInputCallback callback,
+                          GDestroyNotify ungrab_callback,
+                          void *user_data);
+
+void
 rig_shell_queue_redraw (RigShell *shell);
 
 RigCamera *
@@ -150,6 +156,12 @@ rig_key_event_get_action (RigInputEvent *event);
 
 int32_t
 rig_key_event_get_keysym (RigInputEvent *event);
+
+uint32_t
+rig_key_event_get_unicode (RigInputEvent *event);
+
+RigModifierState
+rig_key_event_get_modifier_state (RigInputEvent *event);
 
 RigMotionEventAction
 rig_motion_event_get_action (RigInputEvent *event);

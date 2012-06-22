@@ -16,6 +16,14 @@ typedef struct _RigBox
   float x1, y1, x2, y2;
 } RigBox;
 
+typedef struct _RigRectangleInt
+{
+  int x;
+  int y;
+  int width;
+  int height;
+} RigRectangleInt;
+
 typedef struct _RigVector3
 {
   float x, y, z;
@@ -34,5 +42,10 @@ typedef enum _RigAxis
   RIG_AXIS_Y,
   RIG_AXIS_Z
 } RigAxis;
+
+typedef struct _RigColor
+{
+  float red, green, blue, alpha;
+} RigColor;
 
 #endif /* _RIG_TYPES_H_ */

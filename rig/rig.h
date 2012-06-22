@@ -25,10 +25,18 @@ typedef struct _RigContext RigContext;
 #include "rig-display-list.h"
 #include "rig-arcball.h"
 #include "rig-util.h"
+#include "rig-text-buffer.h"
+#include "rig-text.h"
 
 /* entity/components system */
 #include "rig-entity.h"
 #include "rig-components.h"
+
+#define RIG_UINT32_RED_AS_FLOAT(COLOR)   (((COLOR & 0xff000000) >> 24) / 255.0)
+#define RIG_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
+#define RIG_UINT32_BLUE_AS_FLOAT(COLOR)  (((COLOR & 0xff00) >> 8) / 255.0)
+#define RIG_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
+
 
 /* PRIVATE */
 void
@@ -57,6 +65,8 @@ rig_paintable_init (RigObject *object);
 void
 rig_paintable_paint (RigObject *object, RigPaintContext *paint_ctx);
 
+typedef struct _RigSettings RigSettings;
+
 /* TODO Make internals private */
 struct _RigContext
 {
@@ -64,6 +74,8 @@ struct _RigContext
   int ref_count;
 
   RigShell *shell;
+
+  RigSettings *settings;
 
   CoglContext *cogl_context;
 
@@ -88,6 +100,25 @@ rig_context_new (RigShell *shell /* optional */);
 
 void
 rig_context_init (RigContext *context);
+
+typedef void (*RigSettingsChangedCallback) (RigSettings *settings,
+                                            void *user_data);
+
+void
+rig_settings_add_changed_callback (RigSettings *settings,
+                                   RigSettingsChangedCallback callback,
+                                   GDestroyNotify destroy_notify,
+                                   void *user_data);
+
+void
+rig_settings_remove_changed_callback (RigSettings *settings,
+                                      RigSettingsChangedCallback callback);
+
+unsigned int
+rig_settings_get_password_hint_time (RigSettings *settings);
+
+char *
+rig_settings_get_font_name (RigSettings *settings);
 
 CoglTexture *
 rig_load_texture (RigContext *ctx, const char *filename, GError **error);
@@ -323,15 +354,6 @@ rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport);
 RigObject *
 rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport);
 
-typedef struct _RigText RigText;
-#define RIG_TEXT(X) ((RigText *)X)
-
-extern RigType rig_text_type;
-
-RigText *
-rig_text_new (RigContext *ctx,
-              const char *text);
-
 typedef struct _RigButton RigButton;
 #define RIG_BUTTON(X) ((RigButton *)X)
 
@@ -379,5 +401,8 @@ rig_toggle_get_enabled_property (RigToggle *toggle);
 
 CoglTexture *
 _rig_load_texture (RigContext *ctx, const char *filename, GError **error);
+
+void
+rig_color_init_from_uint32 (RigColor *color, uint32_t value);
 
 #endif /* _RIG_H_ */

@@ -6,6 +6,8 @@
 #include <cogl/cogl.h>
 
 #include "rig-stack.h"
+#include "rig-types.h"
+#include "rig-object.h"
 
 typedef struct _RigPropertyContext
 {
@@ -17,8 +19,13 @@ typedef enum _RigPropertyType
   RIG_PROPERTY_TYPE_FLOAT = 1,
   RIG_PROPERTY_TYPE_DOUBLE,
   RIG_PROPERTY_TYPE_INTEGER,
+  RIG_PROPERTY_TYPE_UINT32,
   RIG_PROPERTY_TYPE_BOOLEAN,
+  RIG_PROPERTY_TYPE_TEXT,
   RIG_PROPERTY_TYPE_QUATERNION,
+  RIG_PROPERTY_TYPE_COLOR,
+  RIG_PROPERTY_TYPE_OBJECT,
+  RIG_PROPERTY_TYPE_POINTER,
   RIG_PROPERTY_TYPE_UNKNOWN,
 } RigPropertyType;
 
@@ -26,6 +33,36 @@ typedef struct _RigProperty RigProperty;
 
 typedef void (*RigPropertyUpdateCallback) (RigProperty *property,
                                            void *user_data);
+
+typedef union _RigPropertyDefault
+{
+  int integer;
+  CoglBool boolean;
+  const void *pointer;
+} RigPropertyDefault;
+
+typedef struct _RigPropertyValidationInteger
+{
+  int min;
+  int max;
+} RigPropertyValidationInteger;
+
+typedef struct _RigPropertyValidationObject
+{
+  RigType *type;
+} RigPropertyValidationObject;
+
+typedef union _RigPropertyValidation
+{
+  RigPropertyValidationInteger integer;
+  RigPropertyValidationObject object;
+} RigPropertyValidation;
+
+typedef enum _RigPropertyFlags
+{
+  RIG_PROPERTY_FLAG_READWRITE = 1<<0,
+  RIG_PROPERTY_FLAG_READABLE = 1<<1
+} RigPropertyFlags;
 
 typedef struct _RigPropertySpec
 {
@@ -47,6 +84,13 @@ typedef struct _RigPropertySpec
    * also be left as NULL. */
   void *getter;
   void *setter;
+
+  const char *nick;
+  const char *blurb;
+  RigPropertyFlags flags;
+  RigPropertyDefault default_value;
+  RigPropertyValidation validation;
+
   unsigned int type:16;
   unsigned int is_ui_property:1;
 } RigPropertySpec;
@@ -285,49 +329,6 @@ void
 rig_property_dirty (RigPropertyContext *ctx,
                     RigProperty *property);
 
-static inline void
-rig_property_set_float (RigPropertyContext *ctx, RigProperty *property, float value)
-{
-  float *data = (float *)((uint8_t *)property->object +
-                          property->spec->data_offset);
-
-  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_FLOAT);
-
-  if (property->spec->getter == NULL && *data == value)
-    return;
-
-  if (property->spec->setter)
-    {
-      float (*setter) (RigProperty *, float) = property->spec->setter;
-      setter (property->object, value);
-    }
-  else
-    {
-      *data = value;
-      if (property->dependants)
-        rig_property_dirty (ctx, property);
-    }
-}
-
-static inline float
-rig_property_get_float (RigProperty *property)
-{
-  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_FLOAT, 0);
-
-  if (property->spec->getter)
-    {
-      float (*getter) (RigProperty *property) = property->spec->getter;
-      return getter (property);
-    }
-  else
-    {
-      float *data = (float *)((uint8_t *)property->object +
-                               property->spec->data_offset);
-      return *data;
-    }
-}
-
-
 #define DECLARE_STANDARD_GETTER_SETTER(SUFFIX, CTYPE, TYPE) \
 static inline void \
 rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
@@ -373,11 +374,13 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
     } \
 }
 
+DECLARE_STANDARD_GETTER_SETTER(float, float, FLOAT)
 DECLARE_STANDARD_GETTER_SETTER(double, double, DOUBLE)
-
-DECLARE_STANDARD_GETTER_SETTER(int, int, INTEGER)
-
+DECLARE_STANDARD_GETTER_SETTER(integer, int, INTEGER)
+DECLARE_STANDARD_GETTER_SETTER(uint32, uint32_t, UINT32)
 DECLARE_STANDARD_GETTER_SETTER(boolean, CoglBool, BOOLEAN)
+DECLARE_STANDARD_GETTER_SETTER(object, RigObject *, OBJECT)
+DECLARE_STANDARD_GETTER_SETTER(pointer, void *, POINTER)
 
 
 static inline void
@@ -419,6 +422,91 @@ rig_property_get_quaternion (RigProperty *property)
       CoglQuaternion *data = (CoglQuaternion *)((uint8_t *)property->object +
                                property->spec->data_offset);
       return data;
+    }
+}
+
+static inline void
+rig_property_set_color (RigPropertyContext *ctx,
+                        RigProperty *property,
+                        const RigColor *value)
+{
+  RigColor *data =
+    (RigColor *)((uint8_t *)property->object +
+                       property->spec->data_offset);
+
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_COLOR);
+
+  if (property->spec->setter)
+    {
+      void (*setter) (RigProperty *, const RigColor *) = property->spec->setter;
+      setter (property->object, value);
+    }
+  else
+    {
+      *data = *value;
+      if (property->dependants)
+        rig_property_dirty (ctx, property);
+    }
+}
+
+static inline const RigColor *
+rig_property_get_color (RigProperty *property)
+{
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_COLOR, 0);
+
+  if (property->spec->getter)
+    {
+      RigColor *(*getter) (RigProperty *property) = property->spec->getter;
+      return getter (property);
+    }
+  else
+    {
+      RigColor *data = (RigColor *)((uint8_t *)property->object +
+                               property->spec->data_offset);
+      return data;
+    }
+}
+
+static inline void
+rig_property_set_text (RigPropertyContext *ctx,
+                       RigProperty *property,
+                       const char *value)
+{
+  char **data =
+    (char **)(uint8_t *)property->object + property->spec->data_offset;
+
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_TEXT);
+
+  if (property->spec->setter)
+    {
+      void (*setter) (RigProperty *, const char *) = property->spec->setter;
+      setter (property->object, value);
+    }
+  else
+    {
+      if (*data)
+        g_free (*data);
+      *data = g_strdup (value);
+      if (property->dependants)
+        rig_property_dirty (ctx, property);
+    }
+}
+
+static inline const char *
+rig_property_get_text (RigProperty *property)
+{
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_TEXT, 0);
+
+  if (property->spec->getter)
+    {
+      const char *(*getter) (RigProperty *property) = property->spec->getter;
+      return getter (property);
+    }
+  else
+    {
+      const char **data = (const char **)((uint8_t *)property->object +
+                                          property->spec->data_offset);
+      return *data;
     }
 }
 

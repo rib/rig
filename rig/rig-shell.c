@@ -45,6 +45,10 @@ struct _RigShell
   RigInputCallback grab_cb;
   void *grab_data;
 
+  RigInputCallback keyboard_focus_cb;
+  void *keyboard_focus_data;
+  GDestroyNotify keyboard_ungrab_cb;
+
   CoglBool redraw_queued;
 };
 
@@ -609,6 +613,19 @@ rig_key_event_get_keysym (RigInputEvent *event)
 #endif
 }
 
+uint32_t
+rig_key_event_get_unicode (RigInputEvent *event)
+{
+#ifdef __ANDROID__
+#elif defined (USE_SDL)
+  SDL_Event *sdl_event = event->native;
+
+  return sdl_event->key.keysym.unicode;
+#else
+#error "Unknown input system"
+#endif
+}
+
 RigKeyEventAction
 rig_key_event_get_action (RigInputEvent *event)
 {
@@ -768,6 +785,52 @@ rig_modifier_state_for_android_meta (int32_t meta)
 }
 #endif
 
+#ifdef USE_SDL
+static RigModifierState
+rig_sdl_get_modifier_state (void)
+{
+  SDLMod mod = SDL_GetModState ();
+  RigModifierState rig_state = 0;
+
+  if (mod & KMOD_LSHIFT)
+    rig_state |= RIG_MODIFIER_LEFT_SHIFT_ON;
+  if (mod & KMOD_RSHIFT)
+    rig_state |= RIG_MODIFIER_RIGHT_SHIFT_ON;
+  if (mod & KMOD_LCTRL)
+    rig_state |= RIG_MODIFIER_LEFT_CTRL_ON;
+  if (mod & KMOD_RCTRL)
+    rig_state |= RIG_MODIFIER_RIGHT_CTRL_ON;
+  if (mod & KMOD_LALT)
+    rig_state |= RIG_MODIFIER_LEFT_ALT_ON;
+  if (mod & KMOD_RALT)
+    rig_state |= RIG_MODIFIER_RIGHT_ALT_ON;
+  if (mod & KMOD_LMETA)
+    rig_state |= RIG_MODIFIER_LEFT_META_ON;
+  if (mod & KMOD_RMETA)
+    rig_state |= RIG_MODIFIER_RIGHT_META_ON;
+  if (mod & KMOD_NUM)
+    rig_state |= RIG_MODIFIER_NUM_LOCK_ON;
+  if (mod & KMOD_CAPS)
+    rig_state |= RIG_MODIFIER_CAPS_LOCK_ON;
+
+  return rig_state;
+}
+#endif
+
+RigModifierState
+rig_key_event_get_modifier_state (RigInputEvent *event)
+{
+ #ifdef __ANDROID__
+  int32_t meta = AKeyEvent_getMetaState (event->native);
+  return rig_modifier_state_for_android_meta (meta);
+#elif defined (USE_SDL)
+  return rig_sdl_get_modifier_state ();
+#else
+#error "Unknown input system"
+  return 0;
+#endif
+}
+
 RigModifierState
 rig_motion_event_get_modifier_state (RigInputEvent *event)
 {
@@ -775,33 +838,11 @@ rig_motion_event_get_modifier_state (RigInputEvent *event)
   int32_t meta = AMotionEvent_getMetaState (event->native);
   return rig_modifier_state_for_android_meta (meta);
 #elif defined (USE_SDL)
-  SDLMod mod = SDL_GetModState ();
-  RigModifierState rig_state = 0;
-
-  if (mod & KMOD_LSHIFT)
-    rig_state |= RIG_MODIFIER_LEFT_SHIFT_ON;
-  if (mod & KMOD_RSHIFT)
-    rig_state |= RIG_MODIFIER_RigHT_SHIFT_ON;
-  if (mod & KMOD_LCTRL)
-    rig_state |= RIG_MODIFIER_LEFT_CTRL_ON;
-  if (mod & KMOD_RCTRL)
-    rig_state |= RIG_MODIFIER_RigHT_CTRL_ON;
-  if (mod & KMOD_LALT)
-    rig_state |= RIG_MODIFIER_LEFT_ALT_ON;
-  if (mod & KMOD_RALT)
-    rig_state |= RIG_MODIFIER_RigHT_ALT_ON;
-  if (mod & KMOD_LMETA)
-    rig_state |= RIG_MODIFIER_LEFT_META_ON;
-  if (mod & KMOD_RMETA)
-    rig_state |= RIG_MODIFIER_RigHT_META_ON;
-  if (mod & KMOD_NUM)
-    rig_state |= RIG_MODIFIER_NUM_LOCK_ON;
-  if (mod & KMOD_CAPS)
-    rig_state |= RIG_MODIFIER_CAPS_LOCK_ON;
+  return rig_sdl_get_modifier_state ();
 #else
 #error "Unknown input system"
+  return 0;
 #endif
-  return rig_state;
 }
 
 static void
@@ -927,13 +968,22 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
   event->camera = shell->window_camera;
 
   if (shell->input_cb)
-    status = shell->input_cb (event, shell->input_data);
-
-  if (status == RIG_INPUT_EVENT_STATUS_HANDLED)
-    return status;
+    {
+      status = shell->input_cb (event, shell->input_data);
+      if (status == RIG_INPUT_EVENT_STATUS_HANDLED)
+        return status;
+    }
 
   if (shell->grab_cb)
     return shell->grab_cb (event, shell->grab_data);
+
+  if (shell->keyboard_focus_cb &&
+      rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_KEY)
+    {
+      status = shell->keyboard_focus_cb (event, shell->keyboard_focus_data);
+      if (status == RIG_INPUT_EVENT_STATUS_HANDLED)
+        return status;
+    }
 
   for (l = shell->input_cameras; l; l = l->next)
     {
@@ -1142,6 +1192,10 @@ _rig_shell_init (RigShell *shell)
 #ifndef __ANDROID__
   shell->init_cb (shell, shell->user_data);
 #endif
+
+#ifdef USE_SDL
+  SDL_EnableUNICODE (1);
+#endif
 }
 
 void
@@ -1167,6 +1221,24 @@ rig_android_shell_new (struct android_app* application,
 }
 
 #endif
+
+void
+rig_shell_grab_key_focus (RigShell *shell,
+                          RigInputCallback callback,
+                          GDestroyNotify ungrab_callback,
+                          void *user_data)
+{
+  if (shell->keyboard_focus_cb == callback &&
+      shell->keyboard_focus_data == user_data)
+    return;
+
+  if (shell->keyboard_ungrab_cb)
+    shell->keyboard_ungrab_cb (shell->keyboard_focus_data);
+
+  shell->keyboard_focus_cb = callback;
+  shell->keyboard_focus_data = user_data;
+  shell->keyboard_ungrab_cb = ungrab_callback;
+}
 
 static CoglBool
 _rig_shell_paint (RigShell *shell)

@@ -388,6 +388,97 @@ static uint8_t _rig_nine_slice_indices_data[] = {
     8,12,13, 8,13,9, 9,13,14, 9,14,10, 10,14,15, 10,15,11
 };
 
+typedef struct _SettingsChangedCallbackState
+{
+  RigSettingsChangedCallback callback;
+  GDestroyNotify destroy_notify;
+  void *user_data;
+} SettingsChangedCallbackState;
+
+typedef struct _RigSettings
+{
+  GList *changed_callbacks;
+} RigSettings;
+
+static void
+_rig_settings_free (RigSettings *settings)
+{
+  GList *l;
+
+  for (l = settings->changed_callbacks; l; l = l->next)
+    g_slice_free (SettingsChangedCallbackState, l->data);
+  g_list_free (settings->changed_callbacks);
+}
+
+RigSettings *
+rig_settings_new (void)
+{
+  return g_slice_new0 (RigSettings);
+}
+
+void
+rig_settings_add_changed_callback (RigSettings *settings,
+                                   RigSettingsChangedCallback callback,
+                                   GDestroyNotify destroy_notify,
+                                   void *user_data)
+{
+  GList *l;
+  SettingsChangedCallbackState *state;
+
+  for (l = settings->changed_callbacks; l; l = l->next)
+    {
+      state = l->data;
+
+      if (state->callback == callback)
+        {
+          state->user_data = user_data;
+          state->destroy_notify = destroy_notify;
+          return;
+        }
+    }
+
+  state = g_slice_new (SettingsChangedCallbackState);
+  state->callback = callback;
+  state->destroy_notify = destroy_notify;
+  state->user_data = user_data;
+
+  settings->changed_callbacks = g_list_prepend (settings->changed_callbacks,
+                                                state);
+}
+
+void
+rig_settings_remove_changed_callback (RigSettings *settings,
+                                      RigSettingsChangedCallback callback)
+{
+  GList *l;
+
+  for (l = settings->changed_callbacks; l; l = l->next)
+    {
+      SettingsChangedCallbackState *state = l->data;
+
+      if (state->callback == callback)
+        {
+          settings->changed_callbacks =
+            g_list_delete_link (settings->changed_callbacks, l);
+          g_slice_free (SettingsChangedCallbackState, state);
+          return;
+        }
+    }
+}
+
+/* FIXME HACK */
+unsigned int
+rig_settings_get_password_hint_time (RigSettings *settings)
+{
+  return 10;
+}
+
+char *
+rig_settings_get_font_name (RigSettings *settings)
+{
+  return g_strdup ("Sans 12");
+}
+
 static void
 _rig_context_free (void *object)
 {
@@ -408,6 +499,8 @@ _rig_context_free (void *object)
     }
 
   cogl_object_unref (ctx->cogl_context);
+
+  _rig_settings_free (ctx->settings);
 
   g_slice_free (RigContext, ctx);
 }
@@ -513,6 +606,8 @@ rig_context_new (RigShell *shell)
   /* We set up the first created RigContext as a global default context */
   if (rig_cogl_context == NULL)
     rig_cogl_context = cogl_object_ref (context->cogl_context);
+
+  context->settings = rig_settings_new ();
 
   context->texture_cache =
     g_hash_table_new_full (g_str_hash, g_str_equal,
@@ -1663,11 +1758,6 @@ _rig_toggle_input_cb (RigInputRegion *region,
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-#define RIG_UINT32_RED_AS_FLOAT(COLOR)   (((COLOR & 0xff000000) >> 24) / 255.0)
-#define RIG_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
-#define RIG_UINT32_BLUE_AS_FLOAT(COLOR)  (((COLOR & 0xff00) >> 8) / 255.0)
-#define RIG_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
-
 static void
 _rig_toggle_update_colours (RigToggle *toggle)
 {
@@ -1908,7 +1998,7 @@ _rig_ui_viewport_update_doc_matrix (RigUIViewport *ui_viewport)
   rig_transform_scale (ui_viewport->doc_transform,
                        ui_viewport->doc_scale_x,
                        ui_viewport->doc_scale_y,
-                       0);
+                       1);
 }
 
 static RigInputEventStatus
@@ -2138,7 +2228,7 @@ rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport)
   return ui_viewport->doc_transform;
 }
 
-
+#if 0
 static void
 _rig_text_free (void *object)
 {
@@ -2253,6 +2343,7 @@ rig_text_new (RigContext *ctx,
 
   return text;
 }
+#endif
 
 static void
 _rig_button_free (void *object)
@@ -2427,8 +2518,13 @@ _rig_button_input_cb (RigInputRegion *region,
       state->button = button;
       state->camera = rig_input_event_get_camera (event);
       rig_graphable_get_transform (button, &state->transform);
-      cogl_matrix_get_inverse (&state->transform,
-                               &state->inverse_transform);
+      if (!cogl_matrix_get_inverse (&state->transform,
+                                    &state->inverse_transform))
+        {
+          g_warning ("Failed to calculate inverse of button transform\n");
+          g_slice_free (ButtonGrabState, state);
+          return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+        }
 
       rig_shell_grab_input (shell, _rig_button_grab_input_cb, state);
       //button->grab_x = rig_motion_event_get_x (event);
@@ -2634,6 +2730,7 @@ _rig_init (void)
       _rig_camera_init_type ();
       _rig_nine_slice_init_type ();
       _rig_rectangle_init_type ();
+      _rig_text_buffer_init_type ();
       _rig_text_init_type ();
       _rig_button_init_type ();
       _rig_toggle_init_type ();
@@ -2646,4 +2743,11 @@ _rig_init (void)
     }
 }
 
-
+void
+rig_color_init_from_uint32 (RigColor *color, uint32_t value)
+{
+  color->red = RIG_UINT32_RED_AS_FLOAT (value);
+  color->green = RIG_UINT32_GREEN_AS_FLOAT (value);
+  color->blue = RIG_UINT32_BLUE_AS_FLOAT (value);
+  color->alpha = RIG_UINT32_ALPHA_AS_FLOAT (value);
+}
