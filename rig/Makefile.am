@@ -57,7 +57,6 @@ librig_la_SOURCES = \
     rig-volume.c \
     rig-volume-private.h \
     rig-planes.c \
-    rig-sdl-keysyms.c \
     rig-shell.c \
     rig-bitmask.h \
     rig-bitmask.c \
@@ -72,6 +71,11 @@ librig_la_SOURCES = \
     rig-text.c \
     rig-geometry.c \
     $(source_h)
+
+if !HAVE_ANDROID
+librig_la_SOURCES += \
+    rig-sdl-keysyms.c
+endif
 
 librig_la_LIBADD = \
     @RIG_DEP_LIBS@ \

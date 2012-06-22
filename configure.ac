@@ -257,6 +257,8 @@ AC_PROG_INSTALL
 
 dnl Check whether we are building for Android
 AC_CHECK_DECL([__ANDROID__], [have_android=yes], [have_android=no])
+AM_CONDITIONAL([HAVE_ANDROID], [test "x$have_android" = "xyes"])
+
 dnl Add the build flags for android_native_app_glue
 AS_IF([test "x$have_android" = "xyes"],
       [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
