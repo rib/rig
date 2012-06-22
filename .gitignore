@@ -22,6 +22,7 @@
 !/build/autotools/as-compiler-flag.m4
 !/build/autotools/as-linguas.m4
 !/build/autotools/introspection.m4
+!/build/autotools/android.m4
 INSTALL
 Makefile
 Makefile.in

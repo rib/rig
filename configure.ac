@@ -255,6 +255,15 @@ dnl ================================================================
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 AC_PROG_INSTALL
 
+dnl Check whether we are building for Android
+AC_CHECK_DECL([__ANDROID__], [have_android=yes], [have_android=no])
+dnl Add the build flags for android_native_app_glue
+AS_IF([test "x$have_android" = "xyes"],
+      [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
+                            [android/native_app_glue],
+                            [android_native_app_glue])]
+      CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS")
+
 
 dnl ================================================================
 dnl GObject-Introspection check
