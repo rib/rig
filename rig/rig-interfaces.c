@@ -95,12 +95,18 @@ rig_graphable_add_child (RigObject *parent, RigObject *child)
 }
 
 void
-rig_graphable_remove_child (RigObject *parent, RigObject *child)
+rig_graphable_remove_child (RigObject *child)
 {
-  RigGraphableProps *parent_props =
-    rig_object_get_properties (parent, RIG_INTERFACE_ID_GRAPHABLE);
   RigGraphableProps *child_props =
     rig_object_get_properties (child, RIG_INTERFACE_ID_GRAPHABLE);
+  RigObject *parent = child_props->parent;
+  RigGraphableProps *parent_props;
+
+  if (!parent)
+    return;
+
+  parent_props = rig_object_get_properties (parent, RIG_INTERFACE_ID_GRAPHABLE);
+
   if (g_queue_remove (&parent_props->children, child))
     rig_ref_countable_unref (child);
   child_props->parent = NULL;
@@ -114,7 +120,16 @@ rig_graphable_remove_all_children (RigObject *parent)
   RigObject *child;
 
   while ((child = g_queue_pop_tail (&parent_props->children)))
-    rig_graphable_remove_child (parent, child);
+    rig_graphable_remove_child (child);
+}
+
+RigObject *
+rig_graphable_get_parent (RigObject *child)
+{
+  RigGraphableProps *child_props =
+    rig_object_get_properties (child, RIG_INTERFACE_ID_GRAPHABLE);
+
+  return child_props->parent;
 }
 
 static void
@@ -312,13 +327,15 @@ rig_graphable_get_transform (RigObject *graphable,
   do {
     RigGraphableProps *graphable_priv;
 
-    if (rig_object_get_type (node) == &rig_transform_type)
-      transform_nodes[i++] = node;
-    else if (rig_object_get_type (node) == &rig_camera_type)
+
+    if (rig_object_get_type (node) == &rig_camera_type)
       {
         camera = RIG_CAMERA (node);
         break;
       }
+
+    if (rig_object_is (node, RIG_INTERFACE_ID_TRANSFORMABLE))
+      transform_nodes[i++] = node;
 
     graphable_priv =
       rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
@@ -348,9 +365,11 @@ rig_graphable_get_transform (RigObject *graphable,
 
   for (i--; i >= 0; i--)
     {
-      RigTransform *transform = RIG_TRANSFORM (transform_nodes[i]);
-      cogl_matrix_multiply (transform_matrix,
-                            transform_matrix, &transform->matrix);
+      const CoglMatrix *matrix = rig_transformable_get_matrix (transform_nodes[i]);
+      //RigTransform *transform = RIG_TRANSFORM (transform_nodes[i]);
+      //cogl_matrix_multiply (transform_matrix,
+      //                      transform_matrix, &transform->matrix);
+      cogl_matrix_multiply (transform_matrix, transform_matrix, matrix);
     }
 }
 

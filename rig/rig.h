@@ -146,6 +146,12 @@ rig_camera_remove_input_region (RigCamera *camera,
                                 RigInputRegion *region);
 
 CoglBool
+rig_camera_pick_input_region (RigCamera *camera,
+                              RigInputRegion *region,
+                              float x,
+                              float y);
+
+CoglBool
 rig_camera_transform_window_coordinate (RigCamera *camera,
                                         float *x,
                                         float *y);
@@ -314,6 +320,18 @@ rig_ui_viewport_get_doc_scale_y (RigUIViewport *ui_viewport);
 const CoglMatrix *
 rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport);
 
+RigObject *
+rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport);
+
+typedef struct _RigText RigText;
+#define RIG_TEXT(X) ((RigText *)X)
+
+extern RigType rig_text_type;
+
+RigText *
+rig_text_new (RigContext *ctx,
+              const char *text);
+
 typedef struct _RigButton RigButton;
 #define RIG_BUTTON(X) ((RigButton *)X)
 
@@ -329,6 +347,35 @@ void
 rig_button_set_on_click_callback (RigButton *button,
                                   RigButtonClickCallback callback,
                                   void *user_data);
+
+typedef struct _RigToggle RigToggle;
+#define RIG_TOGGLE(X) ((RigToggle *)X)
+
+extern RigType rig_toggle_type;
+
+RigToggle *
+rig_toggle_new (RigContext *ctx,
+                const char *label);
+
+typedef void (*RigToggleCallback) (RigToggle *toggle,
+                                   CoglBool value,
+                                   void *user_data);
+
+void
+rig_toggle_set_on_toggle_callback (RigToggle *toggle,
+                                   RigToggleCallback callback,
+                                   void *user_data);
+
+void
+rig_toggle_set_enabled (RigToggle *toggle,
+                        CoglBool enabled);
+
+void
+rig_toggle_set_state (RigToggle *toggle,
+                      CoglBool state);
+
+RigProperty *
+rig_toggle_get_enabled_property (RigToggle *toggle);
 
 CoglTexture *
 _rig_load_texture (RigContext *ctx, const char *filename, GError **error);

@@ -118,10 +118,13 @@ void
 rig_graphable_add_child (RigObject *parent, RigObject *child);
 
 void
-rig_graphable_remove_child (RigObject *parent, RigObject *child);
+rig_graphable_remove_child (RigObject *child);
 
 void
 rig_graphable_remove_all_children (RigObject *parent);
+
+RigObject *
+rig_graphable_get_parent (RigObject *child);
 
 void
 rig_graphable_get_transform (RigObject *graphable,

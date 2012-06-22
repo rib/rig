@@ -262,6 +262,99 @@ struct _RigButton
   RigPaintableProps paintable;
 };
 
+struct _RigText
+{
+  RigObjectProps _parent;
+  int ref_count;
+
+  RigContext *ctx;
+
+  CoglBool enabled;
+  CoglBool editable;
+
+  PangoLayout *text;
+  int text_width;
+  int text_height;
+
+  float width;
+  float height;
+
+  CoglColor text_color;
+
+  RigInputRegion *input_region;
+
+  RigGraphableProps graphable;
+  RigPaintableProps paintable;
+};
+
+#define RIG_TOGGLE_BOX_WIDTH 15
+
+enum {
+  RIG_TOGGLE_PROP_STATE,
+  RIG_TOGGLE_PROP_ENABLED,
+  RIG_TOGGLE_N_PROPS
+};
+
+struct _RigToggle
+{
+  RigObjectProps _parent;
+  int ref_count;
+
+  RigContext *ctx;
+
+  CoglBool state;
+  CoglBool enabled;
+
+  /* While we have the input grabbed we want to reflect what
+   * the state will be when the mouse button is released
+   * without actually changing the state... */
+  CoglBool tentative_set;
+
+  /* FIXME: we don't need a separate tick for every toggle! */
+  PangoLayout *tick;
+
+  PangoLayout *label;
+  int label_width;
+  int label_height;
+
+  float width;
+  float height;
+
+  /* FIXME: we should be able to share border/box pipelines
+   * between different toggle boxes. */
+  CoglPipeline *pipeline_border;
+  CoglPipeline *pipeline_box;
+
+  CoglColor text_color;
+
+  RigInputRegion *input_region;
+
+  void (*on_toggle) (RigToggle *button, CoglBool value, void *user_data);
+  void *on_toggle_data;
+
+  RigGraphableProps graphable;
+  RigPaintableProps paintable;
+
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[RIG_TOGGLE_N_PROPS];
+};
+
+static RigPropertySpec _rig_toggle_prop_specs[] = {
+  {
+    .name = "state",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RigToggle, state),
+    .setter = rig_toggle_set_state
+  },
+  {
+    .name = "enabled",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RigToggle, state),
+    .setter = rig_toggle_set_enabled
+  },
+  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+};
+
 struct _RigRectangle
 {
   RigObjectProps _parent;
@@ -1071,10 +1164,8 @@ static void
 _rig_graph_free (void *object)
 {
   RigGraph *graph = RIG_GRAPH (object);
-  GList *l;
 
-  for (l = graph->graphable.children.head; l; l = l->next)
-    rig_graphable_remove_child (object, l->data);
+  rig_graphable_remove_all_children (graph);
 
   g_slice_free (RigGraph, object);
 }
@@ -1132,10 +1223,8 @@ static void
 _rig_transform_free (void *object)
 {
   RigTransform *transform = RIG_TRANSFORM (object);
-  GList *l;
 
-  for (l = transform->graphable.children.head; l; l = l->next)
-    rig_graphable_remove_child (object, l->data);
+  rig_graphable_remove_all_children (transform);
 
   g_slice_free (RigTransform, object);
 }
@@ -1369,6 +1458,800 @@ void
 rig_rectangle_set_height (RigRectangle *rectangle, float height)
 {
   rectangle->height = height;
+}
+
+static void
+_rig_toggle_free (void *object)
+{
+  RigToggle *toggle = object;
+
+  g_object_unref (toggle->tick);
+  g_object_unref (toggle->label);
+
+  cogl_object_unref (toggle->pipeline_border);
+  cogl_object_unref (toggle->pipeline_box);
+
+  rig_simple_introspectable_destroy (toggle);
+
+  g_slice_free (RigToggle, object);
+}
+
+RigRefCountableVTable _rig_toggle_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_toggle_free
+};
+
+static RigGraphableVTable _rig_toggle_graphable_vtable = {
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
+};
+
+static void
+_rig_toggle_paint (RigObject *object,
+                   RigPaintContext *paint_ctx)
+{
+  RigToggle *toggle = RIG_TOGGLE (object);
+  RigCamera *camera = paint_ctx->camera;
+  CoglFramebuffer *fb = camera->fb;
+  int box_y;
+
+  /* FIXME: This is a fairly lame way of drawing a check box! */
+
+  box_y = (toggle->label_height / 2.0) - (RIG_TOGGLE_BOX_WIDTH / 2.0);
+
+
+  cogl_framebuffer_draw_rectangle (fb,
+                                   toggle->pipeline_border,
+                                   0, box_y,
+                                   RIG_TOGGLE_BOX_WIDTH,
+                                   box_y + RIG_TOGGLE_BOX_WIDTH);
+
+  cogl_framebuffer_draw_rectangle (fb,
+                                   toggle->pipeline_box,
+                                   1, box_y + 1,
+                                   RIG_TOGGLE_BOX_WIDTH - 2,
+                                   box_y + RIG_TOGGLE_BOX_WIDTH - 2);
+
+  if (toggle->state || toggle->tentative_set)
+    cogl_pango_show_layout (camera->fb,
+                            toggle->tick,
+                            0, 0,
+                            &toggle->text_color);
+
+  cogl_pango_show_layout (camera->fb,
+                          toggle->label,
+                          RIG_TOGGLE_BOX_WIDTH + 5, 0,
+                          &toggle->text_color);
+}
+
+static RigPaintableVTable _rig_toggle_paintable_vtable = {
+  _rig_toggle_paint
+};
+
+static RigIntrospectableVTable _rig_toggle_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
+
+RigSimpleWidgetVTable _rig_toggle_simple_widget_vtable = {
+ 0
+};
+
+RigType rig_toggle_type;
+
+static void
+_rig_toggle_init_type (void)
+{
+  rig_type_init (&rig_toggle_type);
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigToggle, ref_count),
+                          &_rig_toggle_ref_countable_vtable);
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigToggle, graphable),
+                          &_rig_toggle_graphable_vtable);
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_PAINTABLE,
+                          offsetof (RigToggle, paintable),
+                          &_rig_toggle_paintable_vtable);
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_toggle_introspectable_vtable);
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigToggle, introspectable),
+                          NULL); /* no implied vtable */
+}
+
+typedef struct _ToggleGrabState
+{
+  RigCamera *camera;
+  RigInputRegion *region;
+  RigToggle *toggle;
+} ToggleGrabState;
+
+static RigInputEventStatus
+_rig_toggle_grab_input_cb (RigInputEvent *event,
+                           void *user_data)
+{
+  ToggleGrabState *state = user_data;
+  RigToggle *toggle = state->toggle;
+
+  if(rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      RigShell *shell = toggle->ctx->shell;
+      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
+        {
+          float x = rig_motion_event_get_x (event);
+          float y = rig_motion_event_get_y (event);
+
+          rig_shell_ungrab_input (shell);
+
+          if (rig_camera_pick_input_region (state->camera,
+                                            state->region,
+                                            x, y))
+            {
+              toggle->state = !toggle->state;
+
+              if (toggle->on_toggle)
+                toggle->on_toggle (toggle, toggle->state, toggle->on_toggle_data);
+
+              g_print ("Toggle click\n");
+
+              g_slice_free (ToggleGrabState, state);
+
+              rig_shell_queue_redraw (toggle->ctx->shell);
+
+              toggle->tentative_set = FALSE;
+            }
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+      else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
+        {
+          float x = rig_motion_event_get_x (event);
+          float y = rig_motion_event_get_y (event);
+
+         if (rig_camera_pick_input_region (state->camera,
+                                           state->region,
+                                           x, y))
+           toggle->tentative_set = TRUE;
+         else
+           toggle->tentative_set = FALSE;
+
+          rig_shell_queue_redraw (toggle->ctx->shell);
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static RigInputEventStatus
+_rig_toggle_input_cb (RigInputRegion *region,
+                      RigInputEvent *event,
+                      void *user_data)
+{
+  RigToggle *toggle = user_data;
+
+  g_print ("Toggle input\n");
+
+  if(rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION &&
+     rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
+    {
+      RigShell *shell = toggle->ctx->shell;
+      ToggleGrabState *state = g_slice_new (ToggleGrabState);
+
+      state->toggle = toggle;
+      state->camera = rig_input_event_get_camera (event);
+      state->region = region;
+
+      rig_shell_grab_input (shell, _rig_toggle_grab_input_cb, state);
+
+      toggle->tentative_set = TRUE;
+
+      rig_shell_queue_redraw (toggle->ctx->shell);
+
+      return RIG_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+#define RIG_UINT32_RED_AS_FLOAT(COLOR)   (((COLOR & 0xff000000) >> 24) / 255.0)
+#define RIG_UINT32_GREEN_AS_FLOAT(COLOR) (((COLOR & 0xff0000) >> 16) / 255.0)
+#define RIG_UINT32_BLUE_AS_FLOAT(COLOR)  (((COLOR & 0xff00) >> 8) / 255.0)
+#define RIG_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
+
+static void
+_rig_toggle_update_colours (RigToggle *toggle)
+{
+  uint32_t colors[2][2][3] =
+    {
+        /* Disabled */
+        {
+            /* Unset */
+            {
+                0x000000ff, /* border */
+                0xffffffff, /* box */
+                0x000000ff /* text*/
+            },
+            /* Set */
+            {
+                0x000000ff, /* border */
+                0xffffffff, /* box */
+                0x000000ff /* text*/
+            },
+
+        },
+        /* Enabled */
+        {
+            /* Unset */
+            {
+                0x000000ff, /* border */
+                0xffffffff, /* box */
+                0x000000ff /* text*/
+            },
+            /* Set */
+            {
+                0x000000ff, /* border */
+                0xffffffff, /* box */
+                0x000000ff /* text*/
+            },
+        }
+    };
+
+  uint32_t border, box, text;
+
+  border = colors[toggle->enabled][toggle->state][0];
+  box = colors[toggle->enabled][toggle->state][1];
+  text = colors[toggle->enabled][toggle->state][2];
+
+  cogl_pipeline_set_color4f (toggle->pipeline_border,
+                             RIG_UINT32_RED_AS_FLOAT (border),
+                             RIG_UINT32_GREEN_AS_FLOAT (border),
+                             RIG_UINT32_BLUE_AS_FLOAT (border),
+                             RIG_UINT32_ALPHA_AS_FLOAT (border));
+  cogl_pipeline_set_color4f (toggle->pipeline_box,
+                             RIG_UINT32_RED_AS_FLOAT (box),
+                             RIG_UINT32_GREEN_AS_FLOAT (box),
+                             RIG_UINT32_BLUE_AS_FLOAT (box),
+                             RIG_UINT32_ALPHA_AS_FLOAT (box));
+  cogl_color_init_from_4f (&toggle->text_color,
+                           RIG_UINT32_RED_AS_FLOAT (text),
+                           RIG_UINT32_GREEN_AS_FLOAT (text),
+                           RIG_UINT32_BLUE_AS_FLOAT (text),
+                           RIG_UINT32_ALPHA_AS_FLOAT (text));
+}
+
+RigToggle *
+rig_toggle_new (RigContext *ctx,
+                const char *label)
+{
+  RigToggle *toggle = g_slice_new0 (RigToggle);
+  PangoRectangle label_size;
+
+  rig_object_init (RIG_OBJECT (toggle), &rig_toggle_type);
+
+  toggle->ref_count = 1;
+
+  rig_graphable_init (toggle);
+  rig_paintable_init (toggle);
+
+  rig_simple_introspectable_init (toggle,
+                                  _rig_toggle_prop_specs,
+                                  toggle->properties);
+
+  toggle->ctx = ctx;
+
+  toggle->state = TRUE;
+  toggle->enabled = TRUE;
+
+  toggle->on_toggle = NULL;
+  toggle->on_toggle_data = NULL;
+
+  toggle->tick = pango_layout_new (ctx->pango_context);
+  pango_layout_set_font_description (toggle->tick, ctx->pango_font_desc);
+  pango_layout_set_text (toggle->tick, "✔", -1);
+
+  toggle->label = pango_layout_new (ctx->pango_context);
+  pango_layout_set_font_description (toggle->label, ctx->pango_font_desc);
+  pango_layout_set_text (toggle->label, label, -1);
+
+  pango_layout_get_extents (toggle->label, NULL, &label_size);
+  toggle->label_width = PANGO_PIXELS (label_size.width);
+  toggle->label_height = PANGO_PIXELS (label_size.height);
+
+  toggle->width = toggle->label_width + 10 + RIG_TOGGLE_BOX_WIDTH;
+  toggle->height = toggle->label_height + 23;
+
+  toggle->pipeline_border = cogl_pipeline_new (ctx->cogl_context);
+  toggle->pipeline_box = cogl_pipeline_new (ctx->cogl_context);
+
+  _rig_toggle_update_colours (toggle);
+
+  toggle->input_region =
+    rig_input_region_new_rectangle (0, 0,
+                                    RIG_TOGGLE_BOX_WIDTH,
+                                    RIG_TOGGLE_BOX_WIDTH,
+                                    _rig_toggle_input_cb,
+                                    toggle);
+
+  rig_input_region_set_graphable (toggle->input_region, toggle);
+  rig_graphable_add_child (toggle, toggle->input_region);
+
+  return toggle;
+}
+
+void
+rig_toggle_set_on_toggle_callback (RigToggle *toggle,
+                                   RigToggleCallback callback,
+                                   void *user_data)
+{
+  g_return_if_fail (toggle->on_toggle == NULL || callback == NULL);
+
+  toggle->on_toggle = callback;
+  toggle->on_toggle_data = user_data;
+}
+
+void
+rig_toggle_set_enabled (RigToggle *toggle,
+                        CoglBool enabled)
+{
+  if (toggle->enabled == enabled)
+    return;
+
+  toggle->enabled = enabled;
+  rig_property_dirty (&toggle->ctx->property_ctx,
+                      &toggle->properties[RIG_TOGGLE_PROP_ENABLED]);
+  rig_shell_queue_redraw (toggle->ctx->shell);
+}
+
+void
+rig_toggle_set_state (RigToggle *toggle,
+                      CoglBool state)
+{
+  if (toggle->state == state)
+    return;
+
+  toggle->state = state;
+  rig_property_dirty (&toggle->ctx->property_ctx,
+                      &toggle->properties[RIG_TOGGLE_PROP_STATE]);
+  rig_shell_queue_redraw (toggle->ctx->shell);
+}
+
+RigProperty *
+rig_toggle_get_enabled_property (RigToggle *toggle)
+{
+  return &toggle->properties[RIG_TOGGLE_PROP_STATE];
+}
+
+typedef struct _RigUIViewport
+{
+  RigObjectProps _parent;
+
+  RigContext *ctx;
+
+  int ref_count;
+
+  RigGraphableProps graphable;
+
+  float width;
+  float height;
+
+  float doc_x;
+  float doc_y;
+  float doc_scale_x;
+  float doc_scale_y;
+
+  RigTransform *doc_transform;
+
+  RigInputRegion *input_region;
+  float grab_x;
+  float grab_y;
+  float grab_doc_x;
+  float grab_doc_y;
+
+} RigUIViewport;
+
+static void
+_rig_ui_viewport_free (void *object)
+{
+  RigUIViewport *ui_viewport = object;
+
+  rig_ref_countable_simple_unref (ui_viewport->input_region);
+
+  g_slice_free (RigUIViewport, object);
+}
+
+static RigRefCountableVTable _rig_ui_viewport_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_ui_viewport_free
+};
+
+static RigGraphableVTable _rig_ui_viewport_graphable_vtable = {
+  NULL, /* child_removed */
+  NULL, /* child_added */
+  NULL, /* parent_changed */
+};
+
+RigType rig_ui_viewport_type;
+
+static void
+_rig_ui_viewport_init_type (void)
+{
+  rig_type_init (&rig_ui_viewport_type);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigUIViewport, ref_count),
+                          &_rig_ui_viewport_ref_countable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigUIViewport, graphable),
+                          &_rig_ui_viewport_graphable_vtable);
+}
+
+static void
+_rig_ui_viewport_update_doc_matrix (RigUIViewport *ui_viewport)
+{
+  rig_transform_init_identity (ui_viewport->doc_transform);
+  rig_transform_translate (ui_viewport->doc_transform,
+                           ui_viewport->doc_x,
+                           ui_viewport->doc_y,
+                           0);
+  rig_transform_scale (ui_viewport->doc_transform,
+                       ui_viewport->doc_scale_x,
+                       ui_viewport->doc_scale_y,
+                       0);
+}
+
+static RigInputEventStatus
+ui_viewport_grab_input_cb (RigInputEvent *event, void *user_data)
+{
+  RigUIViewport *ui_viewport = user_data;
+
+  if (rig_input_event_get_type (event) != RIG_INPUT_EVENT_TYPE_MOTION)
+    return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+
+  if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
+    {
+      RigButtonState state = rig_motion_event_get_button_state (event);
+
+      if (state & RIG_BUTTON_STATE_2)
+        {
+          float x = rig_motion_event_get_x (event);
+          float y = rig_motion_event_get_y (event);
+          float dx = x - ui_viewport->grab_x;
+          float dy = y - ui_viewport->grab_y;
+          float x_scale = rig_ui_viewport_get_doc_scale_x (ui_viewport);
+          float y_scale = rig_ui_viewport_get_doc_scale_y (ui_viewport);
+          float inv_x_scale = 1.0 / x_scale;
+          float inv_y_scale = 1.0 / y_scale;
+
+          rig_ui_viewport_set_doc_x (ui_viewport,
+                                     ui_viewport->grab_doc_x + (dx * inv_x_scale));
+          rig_ui_viewport_set_doc_y (ui_viewport,
+                                     ui_viewport->grab_doc_y + (dy * inv_y_scale));
+
+          rig_shell_queue_redraw (ui_viewport->ctx->shell);
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+  else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
+    {
+      rig_shell_ungrab_input (ui_viewport->ctx->shell);
+      return RIG_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+static RigInputEventStatus
+_rig_ui_viewport_input_cb (RigInputRegion *region,
+                           RigInputEvent *event,
+                           void *user_data)
+{
+  RigUIViewport *ui_viewport = user_data;
+
+  g_print ("viewport input\n");
+  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      switch (rig_motion_event_get_action (event))
+        {
+        case RIG_MOTION_EVENT_ACTION_DOWN:
+          {
+            RigButtonState state = rig_motion_event_get_button_state (event);
+
+            if (state & RIG_BUTTON_STATE_2)
+              {
+                ui_viewport->grab_x = rig_motion_event_get_x (event);
+                ui_viewport->grab_y = rig_motion_event_get_y (event);
+
+                ui_viewport->grab_doc_x = rig_ui_viewport_get_doc_x (ui_viewport);
+                ui_viewport->grab_doc_y = rig_ui_viewport_get_doc_y (ui_viewport);
+
+                /* TODO: Add rig_shell_implicit_grab_input() that handles releasing
+                 * the grab for you */
+                g_print ("viewport input grab\n");
+                rig_shell_grab_input (ui_viewport->ctx->shell,
+                                      ui_viewport_grab_input_cb, ui_viewport);
+                return RIG_INPUT_EVENT_STATUS_HANDLED;
+              }
+          }
+	default:
+	  break;
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+RigUIViewport *
+rig_ui_viewport_new (RigContext *ctx,
+                     float width,
+                     float height,
+                     ...)
+{
+  RigUIViewport *ui_viewport = g_slice_new0 (RigUIViewport);
+  va_list ap;
+  RigObject *object;
+
+  rig_object_init (RIG_OBJECT (ui_viewport), &rig_ui_viewport_type);
+
+  ui_viewport->ctx = ctx;
+
+  ui_viewport->ref_count = 1;
+
+  rig_graphable_init (RIG_OBJECT (ui_viewport));
+
+  ui_viewport->width = width;
+  ui_viewport->height = height;
+  ui_viewport->doc_x = 0;
+  ui_viewport->doc_y = 0;
+  ui_viewport->doc_scale_x = 1;
+  ui_viewport->doc_scale_y = 1;
+
+  ui_viewport->doc_transform = rig_transform_new (ctx, NULL);
+  rig_graphable_add_child (ui_viewport, ui_viewport->doc_transform);
+
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+
+  ui_viewport->input_region =
+    rig_input_region_new_rectangle (0, 0,
+                                    ui_viewport->width,
+                                    ui_viewport->height,
+                                    _rig_ui_viewport_input_cb,
+                                    ui_viewport);
+
+  rig_input_region_set_graphable (ui_viewport->input_region, ui_viewport);
+  rig_graphable_add_child (ui_viewport, ui_viewport->input_region);
+
+  va_start (ap, height);
+  while ((object = va_arg (ap, RigObject *)))
+    rig_graphable_add_child (RIG_OBJECT (ui_viewport), object);
+  va_end (ap);
+
+  return ui_viewport;
+}
+
+void
+rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width)
+{
+  ui_viewport->width = width;
+
+  rig_input_region_set_rectangle (ui_viewport->input_region,
+                                  0, 0,
+                                  ui_viewport->width,
+                                  ui_viewport->height);
+}
+
+void
+rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height)
+{
+  ui_viewport->height = height;
+
+  rig_input_region_set_rectangle (ui_viewport->input_region,
+                                  0, 0,
+                                  ui_viewport->width,
+                                  ui_viewport->height);
+}
+
+void
+rig_ui_viewport_set_doc_x (RigUIViewport *ui_viewport, float doc_x)
+{
+  ui_viewport->doc_x = doc_x;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_y (RigUIViewport *ui_viewport, float doc_y)
+{
+  g_print ("ui_viewport doc_y = %f\n", doc_y);
+  ui_viewport->doc_y = doc_y;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_scale_x (RigUIViewport *ui_viewport, float doc_scale_x)
+{
+  ui_viewport->doc_scale_x = doc_scale_x;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+void
+rig_ui_viewport_set_doc_scale_y (RigUIViewport *ui_viewport, float doc_scale_y)
+{
+  ui_viewport->doc_scale_y = doc_scale_y;
+  _rig_ui_viewport_update_doc_matrix (ui_viewport);
+}
+
+float
+rig_ui_viewport_get_width (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->width;
+}
+
+float
+rig_ui_viewport_get_height (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->height;
+}
+
+float
+rig_ui_viewport_get_doc_x (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_x;
+}
+
+float
+rig_ui_viewport_get_doc_y (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_y;
+}
+
+float
+rig_ui_viewport_get_doc_scale_x (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_scale_x;
+}
+
+float
+rig_ui_viewport_get_doc_scale_y (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_scale_y;
+}
+
+const CoglMatrix *
+rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport)
+{
+  return rig_transform_get_matrix (ui_viewport->doc_transform);
+}
+
+RigObject *
+rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->doc_transform;
+}
+
+
+static void
+_rig_text_free (void *object)
+{
+  RigText *text = object;
+
+  g_object_unref (text->text);
+
+  g_slice_free (RigText, object);
+}
+
+RigRefCountableVTable _rig_text_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_text_free
+};
+
+static RigGraphableVTable _rig_text_graphable_vtable = {
+  NULL, /* child remove */
+  NULL, /* child add */
+  NULL /* parent changed */
+};
+
+static void
+_rig_text_paint (RigObject *object,
+                 RigPaintContext *paint_ctx)
+{
+  RigText *text = RIG_TEXT (object);
+  RigCamera *camera = paint_ctx->camera;
+
+  cogl_pango_show_layout (camera->fb,
+                          text->text,
+                          0, 0,
+                          &text->text_color);
+}
+
+static RigPaintableVTable _rig_text_paintable_vtable = {
+  _rig_text_paint
+};
+
+RigSimpleWidgetVTable _rig_text_simple_widget_vtable = {
+ 0
+};
+
+RigType rig_text_type;
+
+static void
+_rig_text_init_type (void)
+{
+  rig_type_init (&rig_text_type);
+  rig_type_add_interface (&rig_text_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigText, ref_count),
+                          &_rig_text_ref_countable_vtable);
+  rig_type_add_interface (&rig_text_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigText, graphable),
+                          &_rig_text_graphable_vtable);
+  rig_type_add_interface (&rig_text_type,
+                          RIG_INTERFACE_ID_PAINTABLE,
+                          offsetof (RigText, paintable),
+                          &_rig_text_paintable_vtable);
+}
+
+static RigInputEventStatus
+_rig_text_input_cb (RigInputRegion *region,
+                      RigInputEvent *event,
+                      void *user_data)
+{
+  //RigText *text = user_data;
+
+  g_print ("Text input\n");
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+RigText *
+rig_text_new (RigContext *ctx,
+              const char *text_str)
+{
+  RigText *text = g_slice_new0 (RigText);
+  PangoRectangle text_size;
+
+  rig_object_init (RIG_OBJECT (text), &rig_text_type);
+
+  text->ref_count = 1;
+
+  rig_graphable_init (RIG_OBJECT (text));
+  rig_paintable_init (RIG_OBJECT (text));
+
+  text->ctx = ctx;
+
+  text->text = pango_layout_new (ctx->pango_context);
+  pango_layout_set_font_description (text->text, ctx->pango_font_desc);
+  pango_layout_set_text (text->text, text_str, -1);
+
+  pango_layout_get_extents (text->text, NULL, &text_size);
+  text->text_width = PANGO_PIXELS (text_size.width);
+  text->text_height = PANGO_PIXELS (text_size.height);
+
+  text->width = text->text_width + 10;
+  text->height = text->text_height + 23;
+
+  cogl_color_init_from_4f (&text->text_color, 0, 0, 0, 1);
+
+  text->input_region =
+    rig_input_region_new_rectangle (0, 0, text->width, text->height,
+                                    _rig_text_input_cb,
+                                    text);
+
+  rig_input_region_set_graphable (text->input_region, text);
+  rig_graphable_add_child (text, text->input_region);
+
+  return text;
 }
 
 static void
@@ -1680,196 +2563,6 @@ rig_button_set_on_click_callback (RigButton *button,
   button->on_click_data = user_data;
 }
 
-typedef struct _RigUIViewport
-{
-  RigObjectProps _parent;
-
-  int ref_count;
-
-  RigGraphableProps graphable;
-
-  float width;
-  float height;
-
-  float doc_x;
-  float doc_y;
-  float doc_scale_x;
-  float doc_scale_y;
-
-  CoglMatrix doc_matrix;
-
-} RigUIViewport;
-
-static void
-_rig_ui_viewport_free (void *object)
-{
-  g_slice_free (RigUIViewport, object);
-}
-
-static RigRefCountableVTable _rig_ui_viewport_ref_countable_vtable = {
-  rig_ref_countable_simple_ref,
-  rig_ref_countable_simple_unref,
-  _rig_ui_viewport_free
-};
-
-static RigGraphableVTable _rig_ui_viewport_graphable_vtable = {
-  NULL, /* child_removed */
-  NULL, /* child_added */
-  NULL, /* parent_changed */
-};
-
-static RigTransformableVTable _rig_ui_viewport_transformable_vtable = {
-  rig_ui_viewport_get_doc_matrix
-};
-
-RigType rig_ui_viewport_type;
-
-static void
-_rig_ui_viewport_init_type (void)
-{
-  rig_type_init (&rig_ui_viewport_type);
-  rig_type_add_interface (&rig_ui_viewport_type,
-                          RIG_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigUIViewport, ref_count),
-                          &_rig_ui_viewport_ref_countable_vtable);
-  rig_type_add_interface (&rig_ui_viewport_type,
-                          RIG_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RigUIViewport, graphable),
-                          &_rig_ui_viewport_graphable_vtable);
-  rig_type_add_interface (&rig_ui_viewport_type,
-                          RIG_INTERFACE_ID_TRANSFORMABLE,
-                          0,
-                          &_rig_ui_viewport_transformable_vtable);
-}
-
-static void
-_rig_ui_viewport_update_doc_matrix (RigUIViewport *ui_viewport)
-{
-  cogl_matrix_init_identity (&ui_viewport->doc_matrix);
-  cogl_matrix_translate (&ui_viewport->doc_matrix,
-                         ui_viewport->doc_x,
-                         ui_viewport->doc_y,
-                         0);
-  cogl_matrix_scale (&ui_viewport->doc_matrix,
-                     ui_viewport->doc_scale_x,
-                     ui_viewport->doc_scale_y,
-                     0);
-}
-
-RigUIViewport *
-rig_ui_viewport_new (RigContext *ctx,
-                     float width,
-                     float height,
-                     ...)
-{
-  RigUIViewport *ui_viewport = g_slice_new0 (RigUIViewport);
-  va_list ap;
-  RigObject *object;
-
-  rig_object_init (RIG_OBJECT (ui_viewport), &rig_ui_viewport_type);
-
-  ui_viewport->ref_count = 1;
-
-  rig_graphable_init (RIG_OBJECT (ui_viewport));
-
-  ui_viewport->width = width;
-  ui_viewport->height = height;
-  ui_viewport->doc_x = 0;
-  ui_viewport->doc_y = 0;
-  ui_viewport->doc_scale_x = 1;
-  ui_viewport->doc_scale_y = 1;
-
-  _rig_ui_viewport_update_doc_matrix (ui_viewport);
-
-  va_start (ap, height);
-  while ((object = va_arg (ap, RigObject *)))
-    rig_graphable_add_child (RIG_OBJECT (ui_viewport), object);
-  va_end (ap);
-
-  return ui_viewport;
-}
-
-void
-rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width)
-{
-  ui_viewport->width = width;
-}
-
-void
-rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height)
-{
-  ui_viewport->height = height;
-}
-
-void
-rig_ui_viewport_set_doc_x (RigUIViewport *ui_viewport, float doc_x)
-{
-  ui_viewport->doc_x = doc_x;
-  _rig_ui_viewport_update_doc_matrix (ui_viewport);
-}
-
-void
-rig_ui_viewport_set_doc_y (RigUIViewport *ui_viewport, float doc_y)
-{
-  ui_viewport->doc_y = doc_y;
-  _rig_ui_viewport_update_doc_matrix (ui_viewport);
-}
-
-void
-rig_ui_viewport_set_doc_scale_x (RigUIViewport *ui_viewport, float doc_scale_x)
-{
-  ui_viewport->doc_scale_x = doc_scale_x;
-  _rig_ui_viewport_update_doc_matrix (ui_viewport);
-}
-
-void
-rig_ui_viewport_set_doc_scale_y (RigUIViewport *ui_viewport, float doc_scale_y)
-{
-  ui_viewport->doc_scale_y = doc_scale_y;
-  _rig_ui_viewport_update_doc_matrix (ui_viewport);
-}
-
-float
-rig_ui_viewport_get_width (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->width;
-}
-
-float
-rig_ui_viewport_get_height (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->height;
-}
-
-float
-rig_ui_viewport_get_doc_x (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->doc_x;
-}
-
-float
-rig_ui_viewport_get_doc_y (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->doc_y;
-}
-
-float
-rig_ui_viewport_get_doc_scale_x (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->doc_scale_x;
-}
-
-float
-rig_ui_viewport_get_doc_scale_y (RigUIViewport *ui_viewport)
-{
-  return ui_viewport->doc_scale_y;
-}
-
-const CoglMatrix *
-rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport)
-{
-  return &ui_viewport->doc_matrix;
-}
 
 /*
  * TODO:
@@ -1941,7 +2634,9 @@ _rig_init (void)
       _rig_camera_init_type ();
       _rig_nine_slice_init_type ();
       _rig_rectangle_init_type ();
+      _rig_text_init_type ();
       _rig_button_init_type ();
+      _rig_toggle_init_type ();
       _rig_graph_init_type ();
       _rig_transform_init_type ();
       _rig_timeline_init_type ();

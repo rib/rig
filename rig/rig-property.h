@@ -16,6 +16,8 @@ typedef enum _RigPropertyType
 {
   RIG_PROPERTY_TYPE_FLOAT = 1,
   RIG_PROPERTY_TYPE_DOUBLE,
+  RIG_PROPERTY_TYPE_INTEGER,
+  RIG_PROPERTY_TYPE_BOOLEAN,
   RIG_PROPERTY_TYPE_QUATERNION,
   RIG_PROPERTY_TYPE_UNKNOWN,
 } RigPropertyType;
@@ -124,7 +126,7 @@ flibble_free (void *object)
 {
   /* SNIP */
 
-  rig_simple_introspectable_destroy_properties (flibble);
+  rig_simple_introspectable_destroy (flibble);
 
   /* SNIP */
 }
@@ -136,9 +138,9 @@ flibble_new (void)
 {
   /* SNIP */
 
-  rig_simple_introspectable_init_properties (flibble,
-                                             flibble_prop_specs,
-                                             flibble->properties);
+  rig_simple_introspectable_init (flibble,
+                                  flibble_prop_specs,
+                                  flibble->properties);
 
   /* SNIP */
 }
@@ -326,11 +328,11 @@ rig_property_get_float (RigProperty *property)
 }
 
 
-#define DECLARE_STANDARD_GETTER_SETTER(CTYPE, TYPE) \
+#define DECLARE_STANDARD_GETTER_SETTER(SUFFIX, CTYPE, TYPE) \
 static inline void \
-rig_property_set_ ## CTYPE (RigPropertyContext *ctx, \
-                            RigProperty *property, \
-                            CTYPE value) \
+rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
+                             RigProperty *property, \
+                             CTYPE value) \
 { \
   CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
                           property->spec->data_offset); \
@@ -354,7 +356,7 @@ rig_property_set_ ## CTYPE (RigPropertyContext *ctx, \
 } \
  \
 static inline CTYPE \
-rig_property_get_ ## CTYPE (RigProperty *property) \
+rig_property_get_ ## SUFFIX (RigProperty *property) \
 { \
   g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE, 0); \
  \
@@ -371,7 +373,12 @@ rig_property_get_ ## CTYPE (RigProperty *property) \
     } \
 }
 
-DECLARE_STANDARD_GETTER_SETTER(double, DOUBLE)
+DECLARE_STANDARD_GETTER_SETTER(double, double, DOUBLE)
+
+DECLARE_STANDARD_GETTER_SETTER(int, int, INTEGER)
+
+DECLARE_STANDARD_GETTER_SETTER(boolean, CoglBool, BOOLEAN)
+
 
 static inline void
 rig_property_set_quaternion (RigPropertyContext *ctx,

@@ -324,7 +324,7 @@ point_in_screen_poly (float point_x,
   return c;
 }
 
-static CoglBool
+CoglBool
 rig_camera_pick_input_region (RigCamera *camera,
                               RigInputRegion *region,
                               float x,
@@ -895,8 +895,9 @@ camera_pick_region_cb (RigObject *object,
       CoglMatrix transform;
       RigShapeRectange rect;
       float poly[16];
+      RigObject *parent = rig_graphable_get_parent (object);
 
-      rig_graphable_get_transform (object, &transform);
+      rig_graphable_get_transform (parent, &transform);
 
       rect.x0 = 0;
       rect.x0 = 0;
@@ -1645,7 +1646,7 @@ _rig_slider_free (void *object)
 
   rig_ref_countable_simple_unref (slider->input_region);
 
-  rig_graphable_remove_child (slider, slider->handle_transform);
+  rig_graphable_remove_child (slider->handle_transform);
 
   rig_ref_countable_simple_unref (slider->handle_transform);
   rig_ref_countable_simple_unref (slider->handle);
