@@ -10,7 +10,7 @@ enum {
   RIG_TIMELINE_N_PROPS
 };
 
-typedef struct _RigTimeline
+struct _RigTimeline
 {
   RigObjectProps _parent;
 
@@ -30,8 +30,7 @@ typedef struct _RigTimeline
 
   RigSimpleIntrospectableProps introspectable;
   RigProperty properties[RIG_TIMELINE_N_PROPS];
-
-} RigTimeline;
+};
 
 static RigPropertySpec _rig_timeline_prop_specs[] = {
   {

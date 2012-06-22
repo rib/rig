@@ -200,7 +200,7 @@ struct _RigGraph
   RigGraphableProps graphable;
 };
 
-typedef struct _RigNineSlice
+struct _RigNineSlice
 {
   RigObjectProps _parent;
   int ref_count;
@@ -221,7 +221,7 @@ typedef struct _RigNineSlice
   RigGraphableProps graphable;
   RigPaintableProps paintable;
 
-} RigNineSlice;
+};
 
 typedef enum _ButtonState
 {
@@ -399,10 +399,10 @@ typedef struct _SettingsChangedCallbackState
   void *user_data;
 } SettingsChangedCallbackState;
 
-typedef struct _RigSettings
+struct _RigSettings
 {
   GList *changed_callbacks;
-} RigSettings;
+};
 
 static void
 _rig_settings_free (RigSettings *settings)
@@ -1956,7 +1956,7 @@ rig_toggle_get_enabled_property (RigToggle *toggle)
   return &toggle->properties[RIG_TOGGLE_PROP_STATE];
 }
 
-typedef struct _RigUIViewport
+struct _RigUIViewport
 {
   RigObjectProps _parent;
 
@@ -1982,7 +1982,7 @@ typedef struct _RigUIViewport
   float grab_doc_x;
   float grab_doc_y;
 
-} RigUIViewport;
+};
 
 static void
 _rig_ui_viewport_free (void *object)
@@ -2683,8 +2683,6 @@ rig_button_new (RigContext *ctx,
 
   return button;
 }
-
-typedef void (*RigButtonClickCallback) (RigButton *button, void *user_data);
 
 void
 rig_button_set_on_click_callback (RigButton *button,
