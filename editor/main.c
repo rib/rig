@@ -59,6 +59,9 @@ typedef struct
   CoglPipeline *picking_ray_color;
   CoglPrimitive *picking_ray;
 
+  /* debug features */
+  bool debug_pick_ray;
+
 } Data;
 
 /* in micro seconds  */
@@ -500,7 +503,7 @@ test_paint (RigShell *shell, void *user_data)
   /* draw entities */
   draw_entities (data, data->fb, data->main_camera, FALSE /* shadow pass */);
 
-  if (data->picking_ray)
+  if (data->debug_pick_ray && data->picking_ray)
     {
       cogl_framebuffer_draw_primitive (data->fb,
                                        data->picking_ray_color,
