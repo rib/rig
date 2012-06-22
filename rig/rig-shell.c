@@ -793,7 +793,8 @@ rig_motion_event_get_action (RigInputEvent *event)
 #endif
 }
 
-RigButtonState
+#ifdef USE_SDL
+static RigButtonState
 rig_button_state_for_sdl_state (SDL_Event *event,
                                 uint8_t    sdl_state)
 {
@@ -815,6 +816,7 @@ rig_button_state_for_sdl_state (SDL_Event *event,
 
   return rig_state;
 }
+#endif /* USE_SDL */
 
 RigButtonState
 rig_motion_event_get_button_state (RigInputEvent *event)
@@ -872,15 +874,15 @@ rig_modifier_state_for_android_meta (int32_t meta)
 {
   RigModifierState rig_state = 0;
 
-  if (meta & AMETA_LEFT_ALT_ON)
+  if (meta & AMETA_ALT_LEFT_ON)
     rig_state |= RIG_MODIFIER_LEFT_ALT_ON;
-  if (meta & AMETA_RigHT_ALT_ON)
-    rig_state |= RIG_MODIFIER_RigHT_ALT_ON;
+  if (meta & AMETA_ALT_RIGHT_ON)
+    rig_state |= RIG_MODIFIER_RIGHT_ALT_ON;
 
-  if (meta & AMETA_LEFT_SHIFT_ON)
+  if (meta & AMETA_SHIFT_LEFT_ON)
     rig_state |= RIG_MODIFIER_LEFT_SHIFT_ON;
-  if (meta & AMETA_RigHT_SHIFT_ON)
-    rig_state |= RIG_MODIFIER_RigHT_SHIFT_ON;
+  if (meta & AMETA_SHIFT_RIGHT_ON)
+    rig_state |= RIG_MODIFIER_RIGHT_SHIFT_ON;
 
   return rig_state;
 }
@@ -891,7 +893,6 @@ static RigModifierState
 rig_sdl_get_modifier_state (void)
 {
   SDLMod mod = SDL_GetModState ();
-  RigModifierState rig_state = 0;
 
   if (mod & KMOD_LSHIFT)
     rig_state |= RIG_MODIFIER_LEFT_SHIFT_ON;
@@ -1179,7 +1180,7 @@ static int32_t
 android_handle_input (struct android_app* app, AInputEvent *event)
 {
   RigInputEvent rig_event;
-  RigShell *shell = (Data *)app->userData;
+  RigShell *shell = (RigShell *)app->userData;
 
   rig_event.native = event;
   rig_event.input_transform = NULL;
@@ -1207,7 +1208,7 @@ static void
 android_handle_cmd (struct android_app *app,
                     int32_t cmd)
 {
-  Data *shell = (Data *) app->userData;
+  RigShell *shell = (RigShell *) app->userData;
 
   switch (cmd)
     {
@@ -1346,6 +1347,7 @@ rig_android_shell_new (struct android_app* application,
 {
   RigShell *shell = rig_shell_new (init, fini, paint, user_data);
 
+  shell->app = application;
   application->userData = shell;
   application->onAppCmd = android_handle_cmd;
   application->onInputEvent = android_handle_input;
@@ -1484,7 +1486,7 @@ rig_shell_main (RigShell *shell)
 
           if (shell->app->destroyRequested != 0)
             {
-              flip_fini (shell);
+              _rig_shell_fini (shell);
               return;
             }
 
@@ -1492,7 +1494,7 @@ rig_shell_main (RigShell *shell)
             source->process (shell->app, source);
         }
 
-      shell->redraw_queued = paint (shell);
+      shell->redraw_queued = _rig_shell_paint (shell);
     }
 
 #elif defined(USE_SDL)
