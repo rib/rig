@@ -30,8 +30,7 @@ typedef enum
 {
   RIG_CAMCORDER_FLAG_NONE             = 0,
   RIG_CAMCORDER_FLAG_ORTHOGRAPHIC     = 1 << 0,
-  RIG_CAMCORDER_FLAG_VIEW_DIRTY       = 1 << 1,
-  RIG_CAMCORDER_FLAG_PROJECTION_DIRTY = 1 << 2,
+  RIG_CAMCORDER_FLAG_PROJECTION_DIRTY = 1 << 1,
 } RigCamcorderFlag;
 
 typedef enum
