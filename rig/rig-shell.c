@@ -157,8 +157,6 @@ rig_shell_get_context (RigShell *shell)
 static void
 _rig_shell_fini (RigShell *shell)
 {
-  shell->fini_cb (shell, shell->user_data);
-
   rig_ref_countable_simple_unref (shell->rig_ctx);
 }
 
@@ -1321,10 +1319,6 @@ _rig_shell_associate_context (RigShell *shell,
 void
 _rig_shell_init (RigShell *shell)
 {
-#ifndef __ANDROID__
-  shell->init_cb (shell, shell->user_data);
-#endif
-
 #ifdef USE_SDL
   SDL_EnableUNICODE (1);
 #endif
@@ -1486,7 +1480,7 @@ rig_shell_main (RigShell *shell)
 
           if (shell->app->destroyRequested != 0)
             {
-              _rig_shell_fini (shell);
+              shell->fini_cb (shell, shell->user_data);
               return;
             }
 
@@ -1498,6 +1492,8 @@ rig_shell_main (RigShell *shell)
     }
 
 #elif defined(USE_SDL)
+
+  shell->init_cb (shell, shell->user_data);
 
   shell->quit = FALSE;
   shell->redraw_queued = TRUE;
@@ -1524,9 +1520,13 @@ rig_shell_main (RigShell *shell)
       shell->redraw_queued = _rig_shell_paint (shell);
     }
 
+  shell->fini_cb (shell, shell->user_data);
+
 #elif defined (USE_GLIB)
   GSource *cogl_source;
   GMainLoop *loop;
+
+  shell->init_cb (shell, shell->user_data);
 
   cogl_source = cogl_glib_source_new (shell->ctx, G_PRIORITY_DEFAULT);
 
@@ -1540,6 +1540,8 @@ rig_shell_main (RigShell *shell)
 
   loop = g_main_loop_new (NULL, TRUE);
   g_main_loop_run (loop);
+
+  shell->fini_cb (shell, shell->user_data);
 
 #else
 

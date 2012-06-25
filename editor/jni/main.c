@@ -616,6 +616,10 @@ test_init (RigShell *shell, void *user_data)
   CoglColor color;
   float vector3[3];
 
+  data->ctx = rig_context_new (data->shell);
+
+  rig_context_init (data->ctx);
+
   data->fb_width = 800;
   data->fb_height = 600;
   onscreen = cogl_onscreen_new (data->ctx->cogl_context,
@@ -1221,10 +1225,6 @@ android_main (struct android_app *application)
                                       test_paint,
                                       &data);
 
-  data.ctx = rig_context_new (data.shell);
-
-  rig_context_init (data.ctx);
-
   rig_shell_set_input_callback (data.shell, test_input_handler, &data);
 
   rig_shell_main (data.shell);
@@ -1240,10 +1240,6 @@ main (int argc, char **argv)
   memset (&data, 0, sizeof (Data));
 
   data.shell = rig_shell_new (test_init, test_fini, test_paint, &data);
-
-  data.ctx = rig_context_new (data.shell);
-
-  rig_context_init (data.ctx);
 
   rig_shell_set_input_callback (data.shell, test_input_handler, &data);
 
