@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <math.h>
 
-#include <rig/rig.h>
+#include <rig.h>
 
 #define USER_ENTITY 2
 #define N_ENTITIES  4
@@ -1201,6 +1201,37 @@ test_input_handler (RigInputEvent *event, void *user_data)
   return status;
 }
 
+#ifdef __ANDROID__
+
+void
+android_main (struct android_app *application)
+{
+  Data data;
+
+  /* Make sure glue isn't stripped */
+  app_dummy ();
+
+  g_android_init ();
+
+  memset (&data, 0, sizeof (Data));
+
+  data.shell = rig_android_shell_new (application,
+                                      test_init,
+                                      test_fini,
+                                      test_paint,
+                                      &data);
+
+  data.ctx = rig_context_new (data.shell);
+
+  rig_context_init (data.ctx);
+
+  rig_shell_set_input_callback (data.shell, test_input_handler, &data);
+
+  rig_shell_main (data.shell);
+}
+
+#else
+
 int
 main (int argc, char **argv)
 {
@@ -1220,3 +1251,5 @@ main (int argc, char **argv)
 
   return 0;
 }
+
+#endif

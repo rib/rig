@@ -20,5 +20,5 @@ common_ldadd = \
 
 bin_PROGRAMS = rig-editor
 
-rig_editor_SOURCES = main.c
+rig_editor_SOURCES = jni/main.c
 rig_editor_LDADD = $(common_ldadd)
