@@ -40,13 +40,13 @@ rig_camcorder_update (RigComponent *component,
 
       if (CAMCORDER_HAS_FLAG (camcorder, ORTHOGRAPHIC))
         {
-          cogl_framebuffer_orthographic (camcorder->fb,
-                                         camcorder->size,
-                                         camcorder->size,
-                                         -camcorder->size,
-                                         -camcorder->size,
-                                         camcorder->z_near,
-                                         camcorder->z_far);
+          cogl_matrix_orthographic (&camcorder->projection,
+                                    camcorder->right,
+                                    camcorder->top,
+                                    camcorder->left,
+                                    camcorder->bottom,
+                                    camcorder->z_near,
+                                    camcorder->z_far);
         }
       else /* perspective */
         {
@@ -55,11 +55,11 @@ rig_camcorder_update (RigComponent *component,
           aspect_ratio = (float) cogl_framebuffer_get_width (camcorder->fb) /
                          cogl_framebuffer_get_height (camcorder->fb);
 
-          cogl_framebuffer_perspective (camcorder->fb,
-                                        camcorder->fov,
-                                        aspect_ratio,
-                                        camcorder->z_near,
-                                        camcorder->z_far);
+          cogl_matrix_perspective (&camcorder->projection,
+                                   camcorder->fov,
+                                   aspect_ratio,
+                                   camcorder->z_near,
+                                   camcorder->z_far);
         }
     }
 }
@@ -137,7 +137,7 @@ rig_camcorder_draw (RigComponent    *component,
 
   if (camcorder->fb == fb)
     {
-      /* we are responsible for drawing in that fb, let's clear our viewport */
+      /* we are responsible for drawing in that fb, let's set up the camera */
 
       /* this is a no-op if the viewport stays the same on the framebuffer */
       cogl_framebuffer_set_viewport (fb,
@@ -146,14 +146,20 @@ rig_camcorder_draw (RigComponent    *component,
                                      camcorder->viewport[2],
                                      camcorder->viewport[3]);
 
-      r = cogl_color_get_red_float (&camcorder->background_color);
-      g = cogl_color_get_green_float (&camcorder->background_color);
-      b = cogl_color_get_blue_float (&camcorder->background_color);
+      cogl_framebuffer_set_projection_matrix (fb, &camcorder->projection);
 
-      cogl_framebuffer_clear4f (camcorder->fb,
-                                COGL_BUFFER_BIT_COLOR |
-                                COGL_BUFFER_BIT_DEPTH | COGL_BUFFER_BIT_STENCIL,
-                                r, g, b, 1);
+      if (CAMCORDER_HAS_FLAG (camcorder, CLEAR_FB))
+        {
+          r = cogl_color_get_red_float (&camcorder->background_color);
+          g = cogl_color_get_green_float (&camcorder->background_color);
+          b = cogl_color_get_blue_float (&camcorder->background_color);
+
+          cogl_framebuffer_clear4f (camcorder->fb,
+                                    COGL_BUFFER_BIT_COLOR |
+                                    COGL_BUFFER_BIT_DEPTH |
+                                    COGL_BUFFER_BIT_STENCIL,
+                                    r, g, b, 1);
+        }
     }
   else
     {
@@ -171,11 +177,10 @@ rig_camcorder_draw (RigComponent    *component,
           { 1,  1, 1, 1,                 .3, .3, .3, .3             },
           {-1,  1, 1, 1,                 .3, .3, .3, .3             }
       };
-      CoglMatrix projection, projection_inv;
+      CoglMatrix projection_inv;
       int i;
 
-      cogl_framebuffer_get_projection_matrix (camcorder->fb, &projection);
-      cogl_matrix_get_inverse (&projection, &projection_inv);
+      cogl_matrix_get_inverse (&camcorder->projection, &projection_inv);
 
       for (i = 0; i < 8; i++)
         {
@@ -204,7 +209,9 @@ rig_camcorder_new (void)
   camcorder->component.update = rig_camcorder_update;
   camcorder->component.draw = rig_camcorder_draw;
 
+  cogl_matrix_init_identity (&camcorder->projection);
   CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+  CAMCORDER_SET_FLAG (camcorder, CLEAR_FB);
 
   return RIG_COMPONENT (camcorder);
 }
@@ -213,6 +220,16 @@ void
 rig_camcorder_free (RigCamcorder *camcorder)
 {
   g_slice_free (RigCamcorder, camcorder);
+}
+
+void
+rig_camcorder_set_clear (RigCamcorder *camcorder,
+                         bool          clear)
+{
+  if (clear)
+    CAMCORDER_SET_FLAG (camcorder, CLEAR_FB);
+  else
+    CAMCORDER_CLEAR_FLAG (camcorder, CLEAR_FB);
 }
 
 void
@@ -277,7 +294,7 @@ rig_camcorder_set_framebuffer (RigCamcorder    *camcorder,
 }
 
 RigProjection
-rig_camcorder_get_projection (RigCamcorder *camcorder)
+rig_camcorder_get_projection_mode (RigCamcorder *camcorder)
 {
   if (CAMCORDER_HAS_FLAG (camcorder, ORTHOGRAPHIC))
     return RIG_PROJECTION_ORTHOGRAPHIC;
@@ -286,8 +303,8 @@ rig_camcorder_get_projection (RigCamcorder *camcorder)
 }
 
 void
-rig_camcorder_set_projection (RigCamcorder  *camcorder,
-                              RigProjection  projection)
+rig_camcorder_set_projection_mode (RigCamcorder  *camcorder,
+                                   RigProjection  projection)
 {
   if (projection == RIG_PROJECTION_ORTHOGRAPHIC)
     CAMCORDER_SET_FLAG (camcorder, ORTHOGRAPHIC);
@@ -305,9 +322,15 @@ rig_camcorder_set_field_of_view (RigCamcorder *camcorder,
 
 void
 rig_camcorder_set_size_of_view (RigCamcorder *camcorder,
-                                float         sov)
+                                float         right,
+                                float         top,
+                                float         left,
+                                float         bottom)
 {
-  camcorder->size = sov;
+  camcorder->right = right;
+  camcorder->top = top;
+  camcorder->left = left;
+  camcorder->bottom = bottom;
   CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
 }
 
@@ -329,4 +352,10 @@ rig_camcorder_set_viewport (RigCamcorder *camcorder,
                             float         viewport[4])
 {
   memcpy (camcorder->viewport, viewport, sizeof (float) * 4);
+}
+
+CoglMatrix *
+rig_camcorder_get_projection (RigCamcorder *camcorder)
+{
+  return &camcorder->projection;
 }

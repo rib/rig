@@ -331,8 +331,9 @@ test_init (RigShell *shell, void *user_data)
   rig_camcorder_set_background_color (RIG_CAMCORDER (component), &color);
   rig_camcorder_set_framebuffer (RIG_CAMCORDER (component),
                              COGL_FRAMEBUFFER (data->shadow_fb));
-  rig_camcorder_set_projection (RIG_CAMCORDER (component), RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 3);
+  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
+                                     RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 6, 6, -6, -6);
   rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
   rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 20.f);
 

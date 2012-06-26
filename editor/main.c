@@ -374,8 +374,9 @@ test_init (RigShell *shell, void *user_data)
   rig_camcorder_set_background_color (RIG_CAMCORDER (component), &color);
   rig_camcorder_set_framebuffer (RIG_CAMCORDER (component),
                              COGL_FRAMEBUFFER (data->shadow_fb));
-  rig_camcorder_set_projection (RIG_CAMCORDER (component), RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 5);
+  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
+                                     RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 5, 5, -5, -5);
   rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
   rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 20.f);
 
@@ -730,17 +731,17 @@ test_input_handler (RigInputEvent *event, void *user_data)
             RigComponent *camera;
             float *viewport, ray_position[3], ray_direction[3], screen_pos[2],
                   z_far, z_near;
-            CoglMatrix *camera_transform, projection, inverse_projection;
+            CoglMatrix *camera_transform, *projection, inverse_projection;
 
             camera = rig_entity_get_component (data->main_camera,
                                                RIG_COMPONENT_TYPE_CAMCORDER);
             viewport = rig_camcorder_get_viewport (RIG_CAMCORDER (camera));
             z_near = rig_camcorder_get_near_plane (RIG_CAMCORDER (camera));
             z_far = rig_camcorder_get_far_plane (RIG_CAMCORDER (camera));
+            projection =
+              rig_camcorder_get_projection (RIG_CAMCORDER (camera));
 
-            cogl_framebuffer_get_projection_matrix (data->fb,
-                                                    &projection);
-            cogl_matrix_get_inverse (&projection, &inverse_projection);
+            cogl_matrix_get_inverse (projection, &inverse_projection);
 
             camera_transform = rig_entity_get_transform (data->main_camera);
 

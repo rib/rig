@@ -31,6 +31,7 @@ typedef enum
   RIG_CAMCORDER_FLAG_NONE             = 0,
   RIG_CAMCORDER_FLAG_ORTHOGRAPHIC     = 1 << 0,
   RIG_CAMCORDER_FLAG_PROJECTION_DIRTY = 1 << 1,
+  RIG_CAMCORDER_FLAG_CLEAR_FB         = 1 << 2
 } RigCamcorderFlag;
 
 typedef enum
@@ -48,11 +49,12 @@ struct _RigCamcorder
 {
   RigComponent component;
   uint32_t flags;
-  CoglFramebuffer *fb;		/* framebuffer to draw to */
-  float viewport[4];            /* view port of the camera in fb */
-  CoglColor background_color;	/* clear color */
-  float fov;                    /* perspective */
-  float size;                   /* orthographic */
+  CoglFramebuffer *fb;		  /* framebuffer to draw to */
+  CoglMatrix projection;          /* projection */
+  float viewport[4];              /* view port of the camera in fb */
+  CoglColor background_color;	  /* clear color */
+  float fov;                      /* perspective */
+  float right, top, left, bottom; /* orthographic */
   float z_near, z_far;
 };
 
@@ -61,6 +63,8 @@ void              rig_camcorder_free		      (RigCamcorder *camcorder);
 CoglFramebuffer * rig_camcorder_get_framebuffer       (RigCamcorder *camcorder);
 void              rig_camcorder_set_framebuffer       (RigCamcorder    *camcorder,
                                                        CoglFramebuffer *fb);
+void              rig_camcorder_set_clear             (RigCamcorder *camcorder,
+                                                       bool          clear);
 float *           rig_camcorder_get_viewport          (RigCamcorder *camcorder);
 void              rig_camcorder_set_viewport          (RigCamcorder *camcorder,
                                                        float         viewport[4]);
@@ -70,13 +74,17 @@ float	          rig_camcorder_get_near_plane        (RigCamcorder *camcorder);
 void	          rig_camcorder_set_far_plane         (RigCamcorder *camcorder,
                                                        float         z_far);
 float	          rig_camcorder_get_far_plane         (RigCamcorder *camcorder);
-RigProjection     rig_camcorder_get_projection        (RigCamcorder *camcorder);
-void	          rig_camcorder_set_projection        (RigCamcorder *camcorder,
+RigProjection     rig_camcorder_get_projection_mode   (RigCamcorder *camcorder);
+void	          rig_camcorder_set_projection_mode   (RigCamcorder *camcorder,
                                                        RigProjection projection);
 void	          rig_camcorder_set_field_of_view     (RigCamcorder *camcorder,
                                                        float         fov);
 void              rig_camcorder_set_size_of_view      (RigCamcorder *camcorder,
-                                                       float         sov);
+                                                       float         right,
+                                                       float         top,
+                                                       float         left,
+                                                       float         bottom);
+CoglMatrix *      rig_camcorder_get_projection        (RigCamcorder *camcorder);
 void	          rig_camcorder_set_background_color  (RigCamcorder *camcorder,
                                                        CoglColor    *color);
 
