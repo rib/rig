@@ -91,6 +91,8 @@ void              rig_entity_set_y            (RigEntity *entity,
 float             rig_entity_get_z            (RigEntity *entity);
 void              rig_entity_set_z            (RigEntity *entity,
                                                float      z);
+void              rig_entity_get_position     (RigEntity *entity,
+                                               float      position[3]);
 void              rig_entity_set_position     (RigEntity *entity,
                                                float      position[3]);
 CoglQuaternion *  rig_entity_get_rotation     (RigEntity *entity);

@@ -75,6 +75,15 @@ rig_entity_set_z (RigEntity *entity,
   entity_set_dirty (entity);
 }
 
+void
+rig_entity_get_position (RigEntity *entity,
+                         float      position[3])
+{
+  position[0] = entity->position.x;
+  position[1] = entity->position.y;
+  position[2] = entity->position.z;
+}
+
 void rig_entity_set_position (RigEntity *entity,
                               float      position[3])
 {
