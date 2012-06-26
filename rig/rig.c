@@ -1403,6 +1403,15 @@ rig_transform_quaternion_rotate (RigTransform *transform,
 }
 
 void
+rig_transform_rotate (RigTransform *transform,
+                      float angle,
+                      float x,
+                      float y,
+                      float z)
+{
+  cogl_matrix_rotate (&transform->matrix, angle, x, y, z);
+}
+void
 rig_transform_scale (RigTransform *transform,
                      float x,
                      float y,
