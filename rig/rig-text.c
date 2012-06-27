@@ -2303,7 +2303,11 @@ rig_text_motion_grab (RigInputEvent *event,
   g_print ("Grab\n");
   if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
     {
-      rig_graphable_get_transform (text, &transform);
+      const CoglMatrix *view = rig_camera_get_view_transform (camera);
+
+      transform = *view;
+      rig_graphable_apply_transform (text, &transform);
+
       if (!cogl_matrix_get_inverse (&transform,
                                     &inverse_transform))
         {
@@ -2514,6 +2518,7 @@ rig_text_button_press (RigText *text,
   int index_;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
+  RigCamera *camera;
 
   g_print ("RigText Button Press!\n");
   /* we'll steal keyfocus if we need it */
@@ -2542,13 +2547,14 @@ rig_text_button_press (RigText *text,
   x = rig_motion_event_get_x (event);
   y = rig_motion_event_get_y (event);
 
-  rig_graphable_get_transform (text, &transform);
+  camera = rig_input_event_get_camera (event);
+
+  rig_graphable_get_transform (text, camera, &transform);
   if (cogl_matrix_get_inverse (&transform,
                                &inverse_transform))
     {
       int offset;
       const char *text_str;
-      RigCamera *camera = rig_input_event_get_camera (event);
 
       rig_camera_unproject_coord (camera,
                                   &transform,
@@ -3142,7 +3148,7 @@ rig_text_new_full (RigContext *ctx,
                                     rig_text_input_region_cb,
                                     text);
 
-  rig_input_region_set_graphable (text->input_region, text);
+  //rig_input_region_set_graphable (text->input_region, text);
   rig_graphable_add_child (text, text->input_region);
 
   update_size (text);

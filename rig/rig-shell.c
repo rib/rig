@@ -109,7 +109,6 @@ typedef struct _RigInputTransformMatrix
 typedef struct _RigInputTransformGraphable
 {
   RigInputTransformType type;
-  RigObject *graphable;
 } RigInputTransformGraphable;
 
 typedef union _RigInputTransform
@@ -125,12 +124,12 @@ struct _RigInputRegion
 
   int ref_count;
 
-  /* PRIVATE */
-  RigInputTransform transform;
-
   RigShape shape;
 
   RigGraphableProps graphable;
+
+  CoglBool has_transform;
+  CoglMatrix transform;
 
   RigInputRegionCallback callback;
   void *user_data;
@@ -335,30 +334,25 @@ rig_camera_pick_input_region (RigCamera *camera,
                               float y)
 {
   CoglMatrix matrix;
-  CoglMatrix *modelview;
+  const CoglMatrix *modelview = NULL;
   float poly[16];
+  RigObject *parent = rig_graphable_get_parent (region);
+  const CoglMatrix *view = rig_camera_get_view_transform (camera);
 
-  switch (region->transform.any.type)
+  if (parent)
     {
-    case RIG_INPUT_TRANSFORM_TYPE_GRAPHABLE:
-      rig_graphable_get_transform (region->transform.graphable.graphable, &matrix);
-      modelview = &matrix;
-      break;
-    case RIG_INPUT_TRANSFORM_TYPE_MATRIX:
-      if (region->transform.matrix.matrix)
-        {
-          cogl_matrix_multiply (&matrix,
-                                region->transform.matrix.matrix,
-                                &camera->view);
-          modelview = &matrix;
-        }
-      else
-        modelview = &camera->view;
-      break;
-    case RIG_INPUT_TRANSFORM_TYPE_NONE:
-      cogl_matrix_init_identity (&matrix);
+      RigObject *parent = rig_graphable_get_parent (region);
+      matrix = *view;
+      rig_graphable_apply_transform (parent, &matrix);
       modelview = &matrix;
     }
+  else if (region->has_transform)
+    {
+      cogl_matrix_multiply (&matrix, &region->transform, view);
+      modelview = &matrix;
+    }
+  else
+    modelview = view;
 
   switch (region->shape.any.type)
     {
@@ -422,6 +416,7 @@ _rig_input_region_free (void *object)
 {
   RigInputRegion *region = object;
 
+#if 0
   switch (region->transform.any.type)
     {
     case RIG_INPUT_TRANSFORM_TYPE_GRAPHABLE:
@@ -430,6 +425,7 @@ _rig_input_region_free (void *object)
     default:
       break;
     }
+#endif
 
   g_slice_free (RigInputRegion, region);
 }
@@ -478,8 +474,9 @@ rig_input_region_new_rectangle (float x0,
 
   rig_graphable_init (RIG_OBJECT (region));
 
-  region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_MATRIX;
-  region->transform.matrix.matrix = NULL;
+  //region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_MATRIX;
+  //region->transform.matrix.matrix = NULL;
+  region->has_transform = FALSE;
 
   region->shape.any.type = RIG_SHAPE_TYPE_RECTANGLE;
   region->shape.rectangle.x0 = x0;
@@ -506,6 +503,7 @@ rig_input_region_set_rectangle (RigInputRegion *region,
   region->shape.rectangle.y1 = y1;
 }
 
+#if 0
 void
 rig_input_region_set_graphable (RigInputRegion *region,
                                 RigObject *graphable)
@@ -513,13 +511,20 @@ rig_input_region_set_graphable (RigInputRegion *region,
   region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_GRAPHABLE;
   region->transform.graphable.graphable = rig_ref_countable_simple_ref (graphable);
 }
+#endif
 
 void
 rig_input_region_set_transform (RigInputRegion *region,
                                 CoglMatrix *matrix)
 {
-  region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_MATRIX;
-  region->transform.matrix.matrix = matrix;
+  if (cogl_matrix_is_identity (matrix))
+    {
+      region->has_transform = FALSE;
+      return;
+    }
+
+  region->transform = *matrix;
+  region->has_transform = TRUE;
 }
 
 void
@@ -545,18 +550,69 @@ rig_shell_set_input_callback (RigShell *shell,
   shell->input_data = user_data;
 }
 
+typedef struct _InputCamera
+{
+  RigCamera *camera;
+  RigObject *scenegraph;
+} InputCamera;
+
 void
 rig_shell_add_input_camera (RigShell *shell,
-                            RigCamera *camera)
+                            RigCamera *camera,
+                            RigObject *scenegraph)
 {
-  shell->input_cameras = g_list_prepend (shell->input_cameras, camera);
+  InputCamera *input_camera = g_slice_new (InputCamera);
+
+  input_camera->camera = rig_ref_countable_ref (camera);
+
+  if (scenegraph)
+    input_camera->scenegraph = rig_ref_countable_ref (scenegraph);
+  else
+    input_camera->scenegraph = NULL;
+
+  shell->input_cameras = g_list_prepend (shell->input_cameras, input_camera);
+}
+
+static void
+input_camera_free (InputCamera *input_camera)
+{
+  rig_ref_countable_unref (input_camera->camera);
+  if (input_camera->scenegraph)
+    rig_ref_countable_unref (input_camera->scenegraph);
+  g_slice_free (InputCamera, input_camera);
 }
 
 void
 rig_shell_remove_input_camera (RigShell *shell,
-                               RigCamera *camera)
+                               RigCamera *camera,
+                               RigObject *scenegraph)
 {
-  shell->input_cameras = g_list_remove (shell->input_cameras, camera);
+  GList *l;
+
+  for (l = shell->input_cameras; l; l = l->next)
+    {
+      InputCamera *input_camera = l->data;
+      if (input_camera->camera == camera &&
+          input_camera->scenegraph == scenegraph)
+        {
+          input_camera_free (input_camera);
+          shell->input_cameras = g_list_delete_link (shell->input_cameras, l);
+          return;
+        }
+    }
+
+  g_warning ("Failed to find input camera to remove from shell");
+}
+
+static void
+_rig_shell_remove_all_input_cameras (RigShell *shell)
+{
+  GList *l;
+
+  for (l = shell->input_cameras; l; l = l->next)
+    input_camera_free (l->data);
+  g_list_free (shell->input_cameras);
+  shell->input_cameras = NULL;
 }
 
 RigCamera *
@@ -937,8 +993,10 @@ camera_pick_region_cb (RigObject *object,
       RigShapeRectange rect;
       float poly[16];
       RigObject *parent = rig_graphable_get_parent (object);
+      const CoglMatrix *view = rig_camera_get_view_transform (state->camera);
 
-      rig_graphable_get_transform (parent, &transform);
+      transform = *view;
+      rig_graphable_apply_transform (parent, &transform);
 
       rect.x0 = 0;
       rect.x0 = 0;
@@ -987,7 +1045,9 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
 
   for (l = shell->input_cameras; l; l = l->next)
     {
-      RigCamera *camera = l->data;
+      InputCamera *input_camera = l->data;
+      RigCamera *camera = input_camera->camera;
+      RigObject *scenegraph = input_camera->scenegraph;
       GList *l2;
 
 #if 0
@@ -1022,16 +1082,19 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
                 }
             }
 
-          state.camera = camera;
-          state.event = event;
-          state.x = x;
-          state.y = y;
+          if (scenegraph)
+            {
+              state.camera = camera;
+              state.event = event;
+              state.x = x;
+              state.y = y;
 
-          rig_graphable_traverse (RIG_OBJECT (camera),
-                                  RIG_TRAVERSE_DEPTH_FIRST,
-                                  camera_pick_region_cb,
-                                  NULL,
-                                  &state);
+              rig_graphable_traverse (scenegraph,
+                                      RIG_TRAVERSE_DEPTH_FIRST,
+                                      camera_pick_region_cb,
+                                      NULL,
+                                      &state);
+            }
         }
     }
 
@@ -1121,6 +1184,8 @@ _rig_shell_free (void *object)
   for (l = shell->input_regions; l; l = l->next)
     rig_ref_countable_unref (l->data);
   g_list_free (shell->input_regions);
+
+  _rig_shell_remove_all_input_cameras (shell);
 
   _rig_shell_fini (shell);
 
@@ -1626,10 +1691,9 @@ rig_scroll_bar_new (RigContext *ctx,
     rig_input_region_new_rectangle (0, 0, width, height,
                                     _rig_scroll_bar_input_cb,
                                     scroll_bar);
-  rig_input_region_set_graphable (scroll_bar->input_region,
-                                  RIG_OBJECT (scroll_bar));
-  rig_graphable_add_child (RIG_OBJECT (scroll_bar),
-                           RIG_OBJECT (scroll_bar->input_region));
+  //rig_input_region_set_graphable (scroll_bar->input_region,
+  //                                scroll_bar);
+  rig_graphable_add_child (scroll_bar, scroll_bar->input_region);
 
   handle_size = (viewport_length / virtual_length) * length;
   handle_size = MAX (20, handle_size);
@@ -1945,7 +2009,7 @@ rig_slider_new (RigContext *ctx,
                                     _rig_slider_input_cb,
                                     slider);
 
-  rig_input_region_set_graphable (slider->input_region, slider->handle);
+  //rig_input_region_set_graphable (slider->input_region, slider->handle);
   rig_graphable_add_child (slider, slider->input_region);
 
   rig_simple_introspectable_init (slider,

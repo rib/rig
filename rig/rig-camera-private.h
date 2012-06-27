@@ -19,11 +19,17 @@ struct _RigCamera
   RigContext *ctx;
 
   float viewport[4];
+
   CoglMatrix projection;
   CoglMatrix inverse_projection;
-  CoglBool inverse_cached;
+  CoglBool inverse_projection_cached;
+
   CoglMatrix view;
+  CoglMatrix inverse_view;
+  CoglBool inverse_view_cached;
+
   CoglFramebuffer *fb;
+
   int age;
 
   RigGraphableProps graphable;

@@ -279,6 +279,7 @@ rig_graphable_paint (RigObject *root,
 }
 #endif
 
+#if 0
 RigCamera *
 rig_graphable_find_camera (RigObject *object)
 {
@@ -297,18 +298,19 @@ rig_graphable_find_camera (RigObject *object)
 
   return NULL;
 }
+#endif
 
 void
-rig_graphable_get_transform (RigObject *graphable,
-                             CoglMatrix *transform_matrix)
+rig_graphable_apply_transform (RigObject *graphable,
+                               CoglMatrix *transform_matrix)
 {
   int depth = 0;
   RigObject **transform_nodes;
   RigObject *node = graphable;
-  RigCamera *camera;
+  //RigCamera *camera;
   int i;
 
-  cogl_matrix_init_identity (transform_matrix);
+  //cogl_matrix_init_identity (transform_matrix);
 
   do {
     RigGraphableProps *graphable_priv =
@@ -321,18 +323,19 @@ rig_graphable_get_transform (RigObject *graphable,
 
   transform_nodes = g_alloca (sizeof (RigObject *) * depth);
 
-  camera = NULL;
+  //camera = NULL;
   node = graphable;
   i = 0;
   do {
     RigGraphableProps *graphable_priv;
 
-
+#if 0
     if (rig_object_get_type (node) == &rig_camera_type)
       {
         camera = RIG_CAMERA (node);
         break;
       }
+#endif
 
     if (rig_object_is (node, RIG_INTERFACE_ID_TRANSFORMABLE))
       transform_nodes[i++] = node;
@@ -342,6 +345,7 @@ rig_graphable_get_transform (RigObject *graphable,
     node = graphable_priv->parent;
   } while (node);
 
+#if 0
   /* FIXME: we also need to take the camera->view transform into
    * account.
    *
@@ -362,6 +366,7 @@ rig_graphable_get_transform (RigObject *graphable,
 
   if (camera)
     cogl_matrix_multiply (transform_matrix, transform_matrix, &camera->view);
+#endif
 
   for (i--; i >= 0; i--)
     {
@@ -371,6 +376,16 @@ rig_graphable_get_transform (RigObject *graphable,
       //                      transform_matrix, &transform->matrix);
       cogl_matrix_multiply (transform_matrix, transform_matrix, matrix);
     }
+}
+
+void
+rig_graphable_get_transform (RigObject *graphable,
+                             RigCamera *camera,
+                             CoglMatrix *transform)
+{
+  const CoglMatrix *view = rig_camera_get_view_transform (camera);
+  *transform = *view;
+  rig_graphable_apply_transform (graphable, transform);
 }
 
 RigProperty *

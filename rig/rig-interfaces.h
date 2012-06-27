@@ -57,8 +57,10 @@ typedef struct _RigGraphableProps
   GQueue children;
 } RigGraphableProps;
 
+#if 0
 RigCamera *
 rig_graphable_find_camera (RigObject *object);
+#endif
 
 /* RigTraverseFlags:
  * RIG_TRAVERSE_DEPTH_FIRST: Traverse the graph in
@@ -127,9 +129,13 @@ RigObject *
 rig_graphable_get_parent (RigObject *child);
 
 void
-rig_graphable_get_transform (RigObject *graphable,
-                             CoglMatrix *transform);
+rig_graphable_apply_transform (RigObject *graphable,
+                               CoglMatrix *transform);
 
+void
+rig_graphable_get_transform (RigObject *graphable,
+                             RigCamera *camera,
+                             CoglMatrix *transform);
 
 /*
  *

@@ -59,11 +59,13 @@ rig_shell_main (RigShell *shell);
 
 void
 rig_shell_add_input_camera (RigShell *shell,
-                            RigCamera *camera);
+                            RigCamera *camera,
+                            RigObject *scenegraph);
 
 void
 rig_shell_remove_input_camera (RigShell *shell,
-                               RigCamera *camera);
+                               RigCamera *camera,
+                               RigObject *scenegraph);
 
 typedef enum _RigInputEventType
 {
@@ -198,9 +200,11 @@ void
 rig_input_region_set_transform (RigInputRegion *region,
                                 CoglMatrix *matrix);
 
+#if 0
 void
 rig_input_region_set_graphable (RigInputRegion *region,
                                 RigObject *graphable);
+#endif
 
 void
 rig_input_region_set_rectangle (RigInputRegion *region,

@@ -621,6 +621,8 @@ rig_context_new (RigShell *shell)
                       sizeof (_rig_nine_slice_indices_data) /
                       sizeof (_rig_nine_slice_indices_data[0]));
 
+  cogl_matrix_init_identity (&context->identity_matrix);
+
   context->pango_font_map =
     COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (context->cogl_context));
 
@@ -673,6 +675,7 @@ RigRefCountableVTable _rig_camera_ref_countable = {
   _rig_camera_free
 };
 
+#if 0
 static RigGraphableVTable _rig_camera_graphable_vtable = {
   NULL, /* child remove */
   NULL, /* child add */
@@ -682,6 +685,7 @@ static RigGraphableVTable _rig_camera_graphable_vtable = {
 static RigTransformableVTable _rig_camera_transformable_vtable = {
   rig_camera_get_view_transform
 };
+#endif
 
 RigType rig_camera_type;
 
@@ -693,6 +697,7 @@ _rig_camera_init_type (void)
                            RIG_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RigCamera, ref_count),
                            &_rig_camera_ref_countable);
+#if 0
   rig_type_add_interface (&rig_camera_type,
                            RIG_INTERFACE_ID_GRAPHABLE,
                            offsetof (RigCamera, graphable),
@@ -701,6 +706,7 @@ _rig_camera_init_type (void)
                            RIG_INTERFACE_ID_TRANSFORMABLE,
                            0,
                            &_rig_camera_transformable_vtable);
+#endif
 }
 
 RigCamera *
@@ -716,7 +722,7 @@ rig_camera_new (RigContext *ctx, CoglFramebuffer *framebuffer)
 
   camera->ref_count = 1;
 
-  rig_graphable_init (RIG_OBJECT (camera));
+  //rig_graphable_init (RIG_OBJECT (camera));
 
   cogl_matrix_init_identity (&camera->projection);
   cogl_matrix_orthographic (&camera->projection,
@@ -777,9 +783,9 @@ rig_camera_set_projection (RigCamera *camera,
                            const CoglMatrix *projection)
 {
   camera->projection = *projection;
-  cogl_framebuffer_set_projection_matrix (camera->fb,
-                                          &camera->projection);
-  camera->inverse_cached = FALSE;
+  //cogl_framebuffer_set_projection_matrix (camera->fb,
+  //                                        &camera->projection);
+  camera->inverse_projection_cached = FALSE;
 }
 
 const CoglMatrix *
@@ -791,14 +797,14 @@ rig_camera_get_projection (RigCamera *camera)
 const CoglMatrix *
 rig_camera_get_inverse_projection (RigCamera *camera)
 {
-  if (camera->inverse_cached)
+  if (camera->inverse_projection_cached)
     return &camera->inverse_projection;
 
   if (!cogl_matrix_get_inverse (&camera->projection,
                                 &camera->inverse_projection))
     return NULL;
 
-  camera->inverse_cached = TRUE;
+  camera->inverse_projection_cached = TRUE;
   return &camera->inverse_projection;
 }
 
@@ -808,17 +814,33 @@ rig_camera_set_view_transform (RigCamera *camera,
 {
   camera->view = *view;
 
+  camera->inverse_view_cached = FALSE;
+
   /* XXX: we have no way to assert that we are at the bottom of the
    * matrix stack at this point, so this might do bad things...
    */
-  cogl_framebuffer_set_modelview_matrix (camera->fb,
-                                         &camera->view);
+  //cogl_framebuffer_set_modelview_matrix (camera->fb,
+  //                                       &camera->view);
 }
 
 const CoglMatrix *
 rig_camera_get_view_transform (RigCamera *camera)
 {
   return &camera->view;
+}
+
+const CoglMatrix *
+rig_camera_get_inverse_view_transform (RigCamera *camera)
+{
+  if (camera->inverse_view_cached)
+    return &camera->inverse_view;
+
+  if (!cogl_matrix_get_inverse (&camera->view,
+                                &camera->inverse_view))
+    return NULL;
+
+  camera->inverse_view_cached = TRUE;
+  return &camera->inverse_view;
 }
 
 void
@@ -1881,7 +1903,7 @@ rig_toggle_new (RigContext *ctx,
                                     _rig_toggle_input_cb,
                                     toggle);
 
-  rig_input_region_set_graphable (toggle->input_region, toggle);
+  //rig_input_region_set_graphable (toggle->input_region, toggle);
   rig_graphable_add_child (toggle, toggle->input_region);
 
   return toggle;
@@ -2127,7 +2149,7 @@ rig_ui_viewport_new (RigContext *ctx,
                                     _rig_ui_viewport_input_cb,
                                     ui_viewport);
 
-  rig_input_region_set_graphable (ui_viewport->input_region, ui_viewport);
+  //rig_input_region_set_graphable (ui_viewport->input_region, ui_viewport);
   rig_graphable_add_child (ui_viewport, ui_viewport->input_region);
 
   va_start (ap, height);
@@ -2347,7 +2369,7 @@ rig_text_new (RigContext *ctx,
                                     _rig_text_input_cb,
                                     text);
 
-  rig_input_region_set_graphable (text->input_region, text);
+  //rig_input_region_set_graphable (text->input_region, text);
   rig_graphable_add_child (text, text->input_region);
 
   return text;
@@ -2523,10 +2545,13 @@ _rig_button_input_cb (RigInputRegion *region,
     {
       RigShell *shell = button->ctx->shell;
       ButtonGrabState *state = g_slice_new (ButtonGrabState);
+      const CoglMatrix *view;
 
       state->button = button;
       state->camera = rig_input_event_get_camera (event);
-      rig_graphable_get_transform (button, &state->transform);
+      view = rig_camera_get_view_transform (state->camera);
+      state->transform = *view;
+      rig_graphable_apply_transform (button, &state->transform);
       if (!cogl_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
@@ -2649,7 +2674,7 @@ rig_button_new (RigContext *ctx,
                                     _rig_button_input_cb,
                                     button);
 
-  rig_input_region_set_graphable (button->input_region, button);
+  //rig_input_region_set_graphable (button->input_region, button);
   rig_graphable_add_child (button, button->input_region);
 
   return button;

@@ -79,6 +79,8 @@ struct _RigContext
 
   CoglContext *cogl_context;
 
+  CoglMatrix identity_matrix;
+
   GHashTable *texture_cache;
 
   CoglIndices *nine_slice_indices;
