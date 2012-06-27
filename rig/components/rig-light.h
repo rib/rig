@@ -35,17 +35,26 @@ struct _RigLight
   CoglPipeline *pipeline; /* pipeline where to update the light uniforms */
 };
 
-RigComponent *  rig_light_new           (void);
+RigComponent *
+rig_light_new (void);
 
-void            rig_light_free          (RigLight *light);
+void
+rig_light_free (RigLight *light);
 
-void            rig_light_set_ambient   (RigLight  *light,
-                                         CoglColor *ambient);
-void            rig_light_set_diffuse   (RigLight  *light,
-                                         CoglColor *diffuse);
-void            rig_light_set_specular  (RigLight  *light,
-                                         CoglColor *specular);
-void            rig_light_add_pipeline  (RigLight     *light,
-                                         CoglPipeline *pipeline);
+void
+rig_light_set_ambient (RigLight *light,
+                       CoglColor *ambient);
+
+void
+rig_light_set_diffuse (RigLight *light,
+                       CoglColor *diffuse);
+
+void
+rig_light_set_specular (RigLight *light,
+                        CoglColor *specular);
+
+void
+rig_light_add_pipeline (RigLight *light,
+                        CoglPipeline *pipeline);
 
 #endif /* __RIG_LIGHT_H__ */

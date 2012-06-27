@@ -76,49 +76,88 @@ rig_entity_get_cast_shadow (RigEntity *entity)
   return entity->cast_shadow;
 }
 
-void              rig_entity_init             (RigEntity *entity);
-float             rig_entity_get_x            (RigEntity *entity);
-void              rig_entity_set_x            (RigEntity *entity,
-                                               float      x);
-float             rig_entity_get_y            (RigEntity *entity);
-void              rig_entity_set_y            (RigEntity *entity,
-                                               float      y);
-float             rig_entity_get_z            (RigEntity *entity);
-void              rig_entity_set_z            (RigEntity *entity,
-                                               float      z);
-void              rig_entity_get_position     (RigEntity *entity,
-                                               float      position[3]);
-void              rig_entity_set_position     (RigEntity *entity,
-                                               float      position[3]);
-CoglQuaternion *  rig_entity_get_rotation     (RigEntity *entity);
-void              rig_entity_set_rotation     (RigEntity *entity,
-                                               CoglQuaternion *rotation);
-float             rig_entity_get_scale        (RigEntity *entity);
-void              rig_entity_set_scale        (RigEntity *entity,
-                                               float      scale);
-CoglMatrix *      rig_entity_get_transform    (RigEntity *entity);
-void              rig_entity_add_component    (RigEntity    *entity,
-                                               RigComponent *component);
-void              rig_entity_update           (RigEntity  *entity,
-                                               int64_t     time);
-void              rig_entity_draw             (RigEntity       *entity,
-                                               CoglFramebuffer *fb);
-void              rig_entity_translate        (RigEntity *entity,
-                                               float      tx,
-                                               float      tz,
-                                               float      ty);
-void              rig_entity_rotate_x_axis    (RigEntity *entity,
-                                               float      x_angle);
-void              rig_entity_rotate_y_axis    (RigEntity *entity,
-                                               float      y_angle);
-void              rig_entity_rotate_z_axis    (RigEntity *entity,
-                                               float      z_angle);
+void
+rig_entity_init (RigEntity *entity);
 
-CoglPipeline *    rig_entity_get_pipeline     (RigEntity *entity);
-RigComponent *    rig_entity_get_component    (RigEntity        *entity,
-                                               RigComponentType  type);
+float
+rig_entity_get_x (RigEntity *entity);
 
-void              rig_entity_set_cast_shadow  (RigEntity *entity,
-                                               gboolean   cast_shadow);
+void
+rig_entity_set_x (RigEntity *entity,
+                  float x);
+
+float
+rig_entity_get_y (RigEntity *entity);
+
+void
+rig_entity_set_y (RigEntity *entity,
+                  float y);
+
+float
+rig_entity_get_z (RigEntity *entity);
+
+void
+rig_entity_set_z (RigEntity *entity,
+                  float z);
+
+void
+rig_entity_get_position (RigEntity *entity,
+                         float position[3]);
+
+void
+rig_entity_set_position (RigEntity *entity,
+                         float position[3]);
+
+CoglQuaternion *
+rig_entity_get_rotation (RigEntity *entity);
+
+void
+rig_entity_set_rotation (RigEntity *entity,
+                         CoglQuaternion *rotation);
+
+float
+rig_entity_get_scale (RigEntity *entity);
+
+void
+rig_entity_set_scale (RigEntity *entity,
+                      float scale);
+
+CoglMatrix *
+rig_entity_get_transform (RigEntity *entity);
+
+void
+rig_entity_add_component (RigEntity *entity,
+                          RigComponent *component);
+void
+rig_entity_update (RigEntity *entity,
+                   int64_t time);
+void
+rig_entity_draw (RigEntity *entity,
+                 CoglFramebuffer *fb);
+void
+rig_entity_translate (RigEntity *entity,
+                      float tx,
+                      float tz,
+                      float ty);
+void
+rig_entity_rotate_x_axis (RigEntity *entity,
+                          float x_angle);
+void
+rig_entity_rotate_y_axis (RigEntity *entity,
+                          float y_angle);
+void
+rig_entity_rotate_z_axis (RigEntity *entity,
+                          float z_angle);
+
+CoglPipeline *
+rig_entity_get_pipeline (RigEntity *entity);
+
+RigComponent *
+rig_entity_get_component (RigEntity *entity,
+                          RigComponentType type);
+
+void
+rig_entity_set_cast_shadow (RigEntity *entity,
+                            gboolean cast_shadow);
 
 #endif /* __RIG_ENTITY_H__ */

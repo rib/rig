@@ -50,22 +50,31 @@ struct _AnimationClip
   unsigned int started:1;
 };
 
-RigComponent *	rig_animation_clip_new            (int32_t duration);
+RigComponent *
+rig_animation_clip_new (int32_t duration);
 
-void		rig_animation_clip_free           (RigAnimationClip *clip);
+void
+rig_animation_clip_free (RigAnimationClip *clip);
 
-void		rig_animation_clip_add_float      (RigAnimationClip *clip,
-						   void          *object,
-						   FloatGetter    getter,
-						   FloatSetter    setter,
-						   float          end_value);
-void		rig_animation_clip_add_quaternion (RigAnimationClip    *clip,
-						   void             *object,
-						   QuaternionGetter  getter,
-						   QuaternionSetter  setter,
-						   CoglQuaternion   *end_value);
-void		rig_animation_clip_start          (RigAnimationClip *clip,
-						   int64_t           start_time);
-void		rig_animation_clip_stop           (RigAnimationClip *clip);
+void
+rig_animation_clip_add_float (RigAnimationClip *clip,
+                              void *object,
+                              FloatGetter getter,
+                              FloatSetter setter,
+                              float end_value);
+
+void
+rig_animation_clip_add_quaternion (RigAnimationClip *clip,
+                                   void *object,
+                                   QuaternionGetter getter,
+                                   QuaternionSetter setter,
+                                   CoglQuaternion *end_value);
+
+void
+rig_animation_clip_start (RigAnimationClip *clip,
+                          int64_t start_time);
+
+void
+rig_animation_clip_stop (RigAnimationClip *clip);
 
 #endif /* __RIG_ANIMATION_CLIP_H__ */
