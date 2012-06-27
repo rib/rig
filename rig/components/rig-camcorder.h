@@ -28,27 +28,14 @@ typedef struct _RigCamcorder RigCamcorder;
 
 typedef enum
 {
-  RIG_CAMCORDER_FLAG_NONE             = 0,
-  RIG_CAMCORDER_FLAG_ORTHOGRAPHIC     = 1 << 0,
-  RIG_CAMCORDER_FLAG_PROJECTION_DIRTY = 1 << 1,
-  RIG_CAMCORDER_FLAG_CLEAR_FB         = 1 << 2
-} RigCamcorderFlag;
-
-typedef enum
-{
   RIG_PROJECTION_PERSPECTIVE,
   RIG_PROJECTION_ORTHOGRAPHIC
 } RigProjection;
 
 
-#define CAMCORDER_HAS_FLAG(camcorder,flag)  ((camcorder)->flags & RIG_CAMCORDER_FLAG_##flag)
-#define CAMCORDER_SET_FLAG(camcorder,flag)  ((camcorder)->flags |= RIG_CAMCORDER_FLAG_##flag)
-#define CAMCORDER_CLEAR_FLAG(camcorder,flag)((camcorder)->flags &= ~(RIG_CAMCORDER_FLAG_##flag))
-
 struct _RigCamcorder
 {
   RigComponent component;
-  uint32_t flags;
   CoglFramebuffer *fb;		  /* framebuffer to draw to */
   CoglMatrix projection;          /* projection */
   float viewport[4];              /* view port of the camera in fb */
@@ -56,6 +43,9 @@ struct _RigCamcorder
   float fov;                      /* perspective */
   float right, top, left, bottom; /* orthographic */
   float z_near, z_far;
+  unsigned int orthographic:1;
+  unsigned int projection_dirty;
+  unsigned int clear_fb:1;
 };
 
 RigComponent *    rig_camcorder_new                   (void);

@@ -34,11 +34,11 @@ rig_camcorder_update (RigComponent *component,
 {
   RigCamcorder *camcorder = RIG_CAMCORDER (component);
 
-  if (CAMCORDER_HAS_FLAG (camcorder, PROJECTION_DIRTY))
+  if (camcorder->projection_dirty)
     {
-      CAMCORDER_CLEAR_FLAG (camcorder, PROJECTION_DIRTY);
+      camcorder->projection_dirty = FALSE;
 
-      if (CAMCORDER_HAS_FLAG (camcorder, ORTHOGRAPHIC))
+      if (camcorder->orthographic)
         {
           cogl_matrix_orthographic (&camcorder->projection,
                                     camcorder->right,
@@ -148,7 +148,7 @@ rig_camcorder_draw (RigComponent    *component,
 
       cogl_framebuffer_set_projection_matrix (fb, &camcorder->projection);
 
-      if (CAMCORDER_HAS_FLAG (camcorder, CLEAR_FB))
+      if (camcorder->clear_fb)
         {
           r = cogl_color_get_red_float (&camcorder->background_color);
           g = cogl_color_get_green_float (&camcorder->background_color);
@@ -210,8 +210,8 @@ rig_camcorder_new (void)
   camcorder->component.draw = rig_camcorder_draw;
 
   cogl_matrix_init_identity (&camcorder->projection);
-  CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
-  CAMCORDER_SET_FLAG (camcorder, CLEAR_FB);
+  camcorder->projection_dirty = TRUE;
+  camcorder->clear_fb = TRUE;
 
   return RIG_COMPONENT (camcorder);
 }
@@ -227,9 +227,9 @@ rig_camcorder_set_clear (RigCamcorder *camcorder,
                          bool          clear)
 {
   if (clear)
-    CAMCORDER_SET_FLAG (camcorder, CLEAR_FB);
+    camcorder->clear_fb = TRUE;
   else
-    CAMCORDER_CLEAR_FLAG (camcorder, CLEAR_FB);
+    camcorder->clear_fb = FALSE;
 }
 
 void
@@ -237,7 +237,7 @@ rig_camcorder_set_near_plane (RigCamcorder *camcorder,
                               float         z_near)
 {
   camcorder->z_near = z_near;
-  CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+  camcorder->projection_dirty = TRUE;
 }
 
 float
@@ -251,7 +251,7 @@ rig_camcorder_set_far_plane (RigCamcorder *camcorder,
                              float         z_far)
 {
   camcorder->z_far = z_far;
-  CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+  camcorder->projection_dirty = TRUE;
 }
 
 float
@@ -296,7 +296,7 @@ rig_camcorder_set_framebuffer (RigCamcorder    *camcorder,
 RigProjection
 rig_camcorder_get_projection_mode (RigCamcorder *camcorder)
 {
-  if (CAMCORDER_HAS_FLAG (camcorder, ORTHOGRAPHIC))
+  if (camcorder->orthographic)
     return RIG_PROJECTION_ORTHOGRAPHIC;
   else
     return RIG_PROJECTION_PERSPECTIVE;
@@ -307,9 +307,9 @@ rig_camcorder_set_projection_mode (RigCamcorder  *camcorder,
                                    RigProjection  projection)
 {
   if (projection == RIG_PROJECTION_ORTHOGRAPHIC)
-    CAMCORDER_SET_FLAG (camcorder, ORTHOGRAPHIC);
+    camcorder->orthographic = TRUE;
   else
-    CAMCORDER_CLEAR_FLAG (camcorder, ORTHOGRAPHIC);
+    camcorder->orthographic = FALSE;
 }
 
 void
@@ -317,7 +317,7 @@ rig_camcorder_set_field_of_view (RigCamcorder *camcorder,
                                  float         fov)
 {
   camcorder->fov = fov;
-  CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+  camcorder->projection_dirty = TRUE;
 }
 
 void
@@ -331,7 +331,7 @@ rig_camcorder_set_size_of_view (RigCamcorder *camcorder,
   camcorder->top = top;
   camcorder->left = left;
   camcorder->bottom = bottom;
-  CAMCORDER_SET_FLAG (camcorder, PROJECTION_DIRTY);
+  camcorder->projection_dirty = TRUE;
 }
 
 void

@@ -26,19 +26,9 @@ typedef struct _RigLight RigLight;
 
 #define RIG_LIGHT(p) ((RigLight *)(p))
 
-#define LIGHT_HAS_FLAG(clip,flag)    \
-    ((clip)->flags & LIGHT_FLAG_##flag)
-
-#define LIGHT_SET_FLAG(clip,flag)    \
-    ((clip)->flags |= LIGHT_FLAG_##flag)
-
-#define LIGHT_CLEAR_FLAG(clip,flag)  \
-    ((clip)->flags &= ~(LIGHT_FLAG_##flag))
-
 struct _RigLight
 {
   RigComponent component;
-  uint32_t flags;
   CoglColor ambient;
   CoglColor diffuse;
   CoglColor specular;

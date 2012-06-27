@@ -40,37 +40,14 @@ typedef void (*QuaternionSetter) (void *object, CoglQuaternion *quaternion);
 
 typedef struct _AnimationClip RigAnimationClip;
 
-typedef enum
-{
-  RIG_ANIMATION_CLIP_FLAG_NONE    = 0,
-  RIG_ANIMATION_CLIP_FLAG_STARTED = 1 << 0
-} RigAnimationClipFlag;
-
-#define ANIMATION_CLIP_HAS_FLAG(clip,flag)    \
-    ((clip)->flags & RIG_ANIMATION_CLIP_FLAG_##flag)
-
-#define ANIMATION_CLIP_SET_FLAG(clip,flag)    \
-    ((clip)->flags |= RIG_ANIMATION_CLIP_FLAG_##flag)
-
-#define ANIMATION_CLIP_CLEAR_FLAG(clip,flag)  \
-    ((clip)->flags &= ~(RIG_ANIMATION_CLIP_FLAG_##flag))
-
-/* STARTED flag */
-#define animation_clip_has_started(clip)      \
-    (ANIMATION_CLIP_HAS_FLAG (clip, STARTED))
-#define animation_clip_set_started(clip)      \
-    (ANIMATION_CLIP_SET_FLAG (clip, STARTED))
-#define animation_clip_clear_started(clip)    \
-    (ANIMATION_CLIP_CLEAR_FLAG (clip, STARTED))
-
 struct _AnimationClip
 {
   RigComponent component;
-  uint32_t flags;
   int64_t duration;   /* micro seconds */
   int64_t start_time; /* micro seconds */
   GArray *float_animation_data;
   GArray *quaternion_animation_data;
+  unsigned int started:1;
 };
 
 RigComponent *	rig_animation_clip_new            (int32_t duration);

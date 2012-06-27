@@ -55,31 +55,26 @@ typedef enum
   RIG_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
 } RigEntityFlag;
 
-#define ENTITY_HAS_FLAG(entity,flag)    ((entity)->flags & RIG_ENTITY_FLAG_##flag)
-#define ENTITY_SET_FLAG(entity,flag)    ((entity)->flags |= RIG_ENTITY_FLAG_##flag)
-#define ENTITY_CLEAR_FLAG(entity,flag)  ((entity)->flags &= ~(RIG_ENTITY_FLAG_##flag))
-
-/* DIRTY */
-#define entity_is_dirty(entity)         (ENTITY_HAS_FLAG (entity, DIRTY))
-#define entity_set_dirty(entity)        (ENTITY_SET_FLAG (entity, DIRTY))
-#define entity_clear_dirty(entity)      (ENTITY_CLEAR_FLAG (entity, DIRTY))
-
-/* CAST_SHADOW */
-#define entity_cast_shadow(entity)      (ENTITY_HAS_FLAG (entity, CAST_SHADOW))
-
 /* FIXME:
  *  - directly store the position in the transform matrix?
  */
 struct _entity
 {
   /* private fields */
-  uint32_t flags;
   struct { float x, y, z; } position;
   CoglQuaternion rotation;
   float scale;                          /* uniform scaling only */
   CoglMatrix transform;
   GPtrArray *components;
+  unsigned int dirty:1;
+  unsigned int cast_shadow:1;
 };
+
+static inline CoglBool
+rig_entity_get_cast_shadow (RigEntity *entity)
+{
+  return entity->cast_shadow;
+}
 
 void              rig_entity_init             (RigEntity *entity);
 float             rig_entity_get_x            (RigEntity *entity);

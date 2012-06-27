@@ -49,12 +49,12 @@ rig_animation_clip_update (RigComponent *component,
   float progress;
   int i;
 
-  if (!animation_clip_has_started (clip))
+  if (!clip->started)
     return;
 
   if (time >= (clip->start_time + clip->duration))
     {
-      animation_clip_clear_started (clip);
+      clip->started = FALSE;
       return;
     }
 
@@ -204,10 +204,10 @@ rig_animation_clip_start (RigAnimationClip *clip,
       return;
     }
 
-  if (animation_clip_has_started (clip))
+  if (clip->started)
     return;
 
   clip->start_time = start_time;
 
-  animation_clip_set_started (clip);
+  clip->started = TRUE;
 }

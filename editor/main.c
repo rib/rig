@@ -241,7 +241,7 @@ draw_entities (Data            *data,
 
       entity = &data->entities[i];
 
-      if (shadow_pass && !entity_cast_shadow (entity))
+      if (shadow_pass && !rig_entity_get_cast_shadow (entity))
         continue;
 
       cogl_framebuffer_push_matrix (fb);

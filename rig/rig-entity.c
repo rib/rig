@@ -44,7 +44,7 @@ rig_entity_set_x (RigEntity *entity,
                  float   x)
 {
   entity->position.x = x;
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 float
@@ -58,7 +58,7 @@ rig_entity_set_y (RigEntity *entity,
                   float      y)
 {
   entity->position.y = y;
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 float
@@ -72,7 +72,7 @@ rig_entity_set_z (RigEntity *entity,
                   float      z)
 {
   entity->position.z = z;
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 void
@@ -90,7 +90,7 @@ void rig_entity_set_position (RigEntity *entity,
   entity->position.x = position[0];
   entity->position.y = position[1];
   entity->position.z = position[2];
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 CoglQuaternion *
@@ -103,7 +103,7 @@ void rig_entity_set_rotation (RigEntity      *entity,
                               CoglQuaternion *rotation)
 {
   cogl_quaternion_init_from_quaternion (&entity->rotation, rotation);
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 float
@@ -117,7 +117,7 @@ rig_entity_set_scale (RigEntity *entity,
                       float      scale)
 {
   entity->scale = scale;
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 CoglMatrix *
@@ -125,7 +125,7 @@ rig_entity_get_transform (RigEntity *entity)
 {
   CoglMatrix rotation;
 
-  if (!entity_is_dirty (entity))
+  if (!entity->dirty)
     return &entity->transform;
 
   cogl_matrix_init_translation (&entity->transform,
@@ -137,7 +137,7 @@ rig_entity_get_transform (RigEntity *entity)
   cogl_matrix_scale (&entity->transform,
                      entity->scale, entity->scale, entity->scale);
 
-  entity_clear_dirty (entity);
+  entity->dirty = FALSE;
 
   return &entity->transform;
 }
@@ -190,7 +190,7 @@ rig_entity_translate (RigEntity *entity,
   entity->position.y += ty;
   entity->position.z += tz;
 
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 void
@@ -205,7 +205,7 @@ rig_entity_rotate_x_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, current, &x_rotation);
   cogl_quaternion_free (current);
 
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 void
@@ -220,7 +220,7 @@ rig_entity_rotate_y_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, current, &y_rotation);
   cogl_quaternion_free (current);
 
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 void
@@ -235,7 +235,7 @@ rig_entity_rotate_z_axis (RigEntity *entity,
   cogl_quaternion_multiply (&entity->rotation, current, &z_rotation);
   cogl_quaternion_free (current);
 
-  entity_set_dirty (entity);
+  entity->dirty = TRUE;
 }
 
 CoglPipeline *
@@ -258,9 +258,9 @@ void rig_entity_set_cast_shadow (RigEntity *entity,
                                  gboolean   cast_shadow)
 {
   if (cast_shadow)
-    ENTITY_SET_FLAG (entity, CAST_SHADOW);
+    entity->cast_shadow = TRUE;
   else
-    ENTITY_CLEAR_FLAG (entity, CAST_SHADOW);
+    entity->cast_shadow = FALSE;
 }
 
 RigComponent *
