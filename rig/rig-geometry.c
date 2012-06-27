@@ -27,9 +27,11 @@
 #include "rig.h"
 
 CoglAttribute *
-rig_create_circle (CoglContext *ctx, int subdivisions)
+rig_create_circle (RigContext *ctx,
+                   int subdivisions,
+                   int *n_verts_ret)
 {
-  int n_verts = subdivisions + 1;
+  int n_verts = subdivisions + 2;
   struct CircleVert {
       float x, y;
   } *verts;
@@ -37,19 +39,25 @@ rig_create_circle (CoglContext *ctx, int subdivisions)
   int i;
   CoglAttributeBuffer *attribute_buffer;
   CoglAttribute *attribute;
+  float angle_division = 2.0f * (float)G_PI * (1.0f/(float)subdivisions);
 
   verts = alloca (buffer_size);
 
   verts[0].x = 0;
   verts[0].y = 0;
-  for (i = 1; i < n_verts; i++)
+  for (i = 0; i < subdivisions; i++)
     {
-      float angle =
-        2.0f * (float)G_PI * (1.0f/(float)subdivisions) * (float)i;
-      verts[i].x = sinf (angle);
-      verts[i].y = cosf (angle);
+      float angle = angle_division * i;
+      verts[i + 1].x = sinf (angle);
+      verts[i + 1].y = cosf (angle);
     }
-  attribute_buffer = cogl_attribute_buffer_new (ctx, buffer_size, verts);
+  verts[n_verts - 1].x = sinf (0);
+  verts[n_verts - 1].y = cosf (0);
+
+  *n_verts_ret = n_verts;
+
+  attribute_buffer =
+    cogl_attribute_buffer_new (ctx->cogl_context, buffer_size, verts);
 
   attribute = cogl_attribute_new (attribute_buffer,
                                   "cogl_position_in",
@@ -72,6 +80,7 @@ rig_create_circle_texture (RigContext *ctx,
   CoglPipeline *white_pipeline;
   int half_size = radius_texels + padding_texels;
   int size = half_size * 2;
+  int n_verts;
 
   tex2d = cogl_texture_2d_new_with_size (ctx->cogl_context,
                                          size, size,
@@ -80,7 +89,7 @@ rig_create_circle_texture (RigContext *ctx,
   offscreen = cogl_offscreen_new_to_texture (COGL_TEXTURE (tex2d));
   fb = COGL_FRAMEBUFFER (offscreen);
 
-  circle = rig_create_circle (ctx->cogl_context, 360);
+  circle = rig_create_circle (ctx, 360, &n_verts);
 
   cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
@@ -97,7 +106,7 @@ rig_create_circle_texture (RigContext *ctx,
                                     white_pipeline,
                                     COGL_VERTICES_MODE_TRIANGLE_FAN,
                                     0, /* first vertex */
-                                    361, /* n_vertices */
+                                    n_verts, /* n_vertices */
                                     &circle,
                                     1); /* n_attributes */
 
