@@ -28,6 +28,23 @@
 typedef struct
 {
   RigShell *shell;
+  RigEntity *selected_entity;
+  RigEntity rotation_tool;
+  RigEntity rotation_tool_handle;
+  RigInputRegion *rotation_circle;
+  RigArcball arcball;
+  CoglQuaternion saved_rotation;
+  bool button_down;
+  RigEntity *camera;
+  RigCamcorder *camcorder;  /* camcorder component of the camera above */
+  float position[3];    /* transformed position of the selected entity */
+  float screen_pos[2];
+  float scale;
+} RigTool;
+
+typedef struct
+{
+  RigShell *shell;
   RigContext *ctx;
 
   CoglFramebuffer *fb;
@@ -37,6 +54,7 @@ typedef struct
   RigEntity entities[N_ENTITIES];
   RigEntity *main_camera;
   RigEntity *light;
+  RigEntity ui_camera;
 
   /* shadow mapping */
   CoglOffscreen *shadow_fb;
@@ -54,6 +72,8 @@ typedef struct
   RigEntity pivot;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
+  RigEntity *selected_entity;
+  RigTool tool;
 
   /* picking ray */
   CoglPipeline *picking_ray_color;
@@ -64,12 +84,9 @@ typedef struct
 
 } Data;
 
-/* in micro seconds  */
-static int64_t
-get_current_time (Data *data)
-{
-  return (int64_t) (g_timer_elapsed (data->timer, NULL) * 1e6);
-}
+/*
+ * Materials
+ */
 
 static CoglPipeline *
 create_color_pipeline (float r, float g, float b)
@@ -100,6 +117,337 @@ create_texture_pipeline (CoglTexture *texture)
   cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
 
   return new_pipeline;
+}
+
+/*
+ * RigTool
+ */
+
+static RigInputEventStatus
+on_rotation_tool_clicked (RigInputRegion *region,
+                          RigInputEvent *event,
+                          void *user_data)
+{
+  RigTool *tool = user_data;
+  RigMotionEventAction action;
+  RigButtonState state;
+  RigInputEventStatus status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
+  RigEntity *entity;
+  float x, y;
+
+  entity = tool->selected_entity;
+
+  switch (rig_input_event_get_type (event))
+    {
+      case RIG_INPUT_EVENT_TYPE_MOTION:
+      {
+        action = rig_motion_event_get_action (event);
+        state = rig_motion_event_get_button_state (event);
+        x = rig_motion_event_get_x (event);
+        y = rig_motion_event_get_y (event);
+
+        y = -y + 2 * (tool->screen_pos[1]);
+
+        if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
+            state == RIG_BUTTON_STATE_1)
+          {
+            rig_input_region_set_circle (tool->rotation_circle,
+                                         tool->screen_pos[0],
+                                         tool->screen_pos[1],
+                                         128);
+
+
+            rig_arcball_init (&tool->arcball,
+                              tool->screen_pos[0],
+                              tool->screen_pos[1],
+                              128);
+
+            tool->saved_rotation = *rig_entity_get_rotation (entity);
+            cogl_quaternion_init_identity (&tool->arcball.q_drag);
+
+            rig_arcball_mouse_down (&tool->arcball, x, y);
+
+            tool->button_down = TRUE;
+
+            status = RIG_INPUT_EVENT_STATUS_HANDLED;
+          }
+        else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
+                 state == RIG_BUTTON_STATE_1)
+          {
+            CoglQuaternion new_rotation;
+
+            if (!tool->button_down)
+              break;
+
+            rig_arcball_mouse_motion (&tool->arcball, x, y);
+
+            cogl_quaternion_multiply (&new_rotation,
+                                      &tool->arcball.q_drag,
+                                      &tool->saved_rotation);
+
+            rig_entity_set_rotation (entity, &new_rotation);
+
+            status = RIG_INPUT_EVENT_STATUS_HANDLED;
+          }
+        else if (action == RIG_MOTION_EVENT_ACTION_UP)
+          {
+            tool->button_down = FALSE;
+
+            rig_input_region_set_circle (tool->rotation_circle, x, y, 64);
+          }
+
+      }
+      case RIG_INPUT_EVENT_TYPE_KEY:
+        break;
+    }
+
+  return status;
+}
+
+static void
+rig_tool_init (RigTool *tool,
+               RigShell *shell)
+{
+  RigComponent *component;
+  CoglPipeline *pipeline;
+
+  tool->shell = shell;
+
+  /* rotation tool */
+  rig_entity_init (&tool->rotation_tool);
+
+  pipeline = create_color_pipeline (1.f, 1.f, 1.f);
+  component = rig_mesh_renderer_new_from_template ("rotation-tool",
+                                                   pipeline);
+  cogl_object_unref (pipeline);
+
+  rig_entity_add_component (&tool->rotation_tool, component);
+
+  /* rotation tool handle circle */
+  rig_entity_init (&tool->rotation_tool_handle);
+  component = rig_mesh_renderer_new_from_template ("circle", pipeline);
+  rig_entity_add_component (&tool->rotation_tool_handle, component);
+
+  tool->rotation_circle =
+    rig_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
+}
+
+static void
+rig_tool_set_camera (RigTool *tool,
+                     RigEntity *camera)
+{
+  tool->camera = camera;
+}
+
+void
+get_modelview_matrix (Data       *data,
+                      RigEntity  *camera,
+                      RigEntity  *entity,
+                      CoglMatrix *modelview)
+{
+  CoglMatrix camera_inverse;
+
+  cogl_matrix_get_inverse (rig_entity_get_transform (camera),
+                           &camera_inverse);
+  cogl_matrix_multiply (modelview,
+                        &camera_inverse,
+                        rig_entity_get_transform (&data->pivot));
+  cogl_matrix_multiply (modelview,
+                        modelview,
+                        rig_entity_get_transform (entity));
+}
+
+/* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
+ * to Cogl window/framebuffer coordinates (ranging from 0 to buffer-size) with
+ * (0,0) being top left. */
+#define VIEWPORT_TRANSFORM_X(x, vp_origin_x, vp_width) \
+    (  ( ((x) + 1.0) * ((vp_width) / 2.0) ) + (vp_origin_x)  )
+/* Note: for Y we first flip all coordinates around the X axis while in
+ * normalized device coodinates */
+#define VIEWPORT_TRANSFORM_Y(y, vp_origin_y, vp_height) \
+    (  ( ((-(y)) + 1.0) * ((vp_height) / 2.0) ) + (vp_origin_y)  )
+
+/* to call every time the selected entity changes or when the one already
+ * selected changes transform. As we have now way to be notified if the
+ * transform of an entity has change (yet!) this is called every frame
+ * before drawing the tool */
+static void
+rig_tool_update (RigTool *tool,
+                 Data *data, /* for now, until we have a way to get the
+                                global transform of an entity instead of
+                                having to do it by hand (camera, pivot,
+                                entity) */
+                 RigEntity *selected_entity)
+{
+    RigComponent *camera;
+    CoglMatrix transform, *projection;
+    float scale_thingy[4], screen_space[4], *viewport, x, y;
+
+    if (selected_entity == NULL)
+      {
+        tool->selected_entity = NULL;
+
+        /* remove the input region when no entity is selected */
+        rig_shell_remove_input_region (tool->shell, tool->rotation_circle);
+
+        return;
+      }
+
+    /* transform the selected entity up to the projection */
+    get_modelview_matrix (data,
+                          tool->camera,
+                          selected_entity,
+                          &transform);
+
+    tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
+
+    cogl_matrix_transform_points (&transform,
+                                  3, /* num components for input */
+                                  sizeof (float) * 3, /* input stride */
+                                  tool->position,
+                                  sizeof (float) * 3, /* output stride */
+                                  tool->position,
+                                  1 /* n_points */);
+
+    camera = rig_entity_get_component (tool->camera,
+                                       RIG_COMPONENT_TYPE_CAMCORDER);
+    projection = rig_camcorder_get_projection (RIG_CAMCORDER (camera));
+
+    scale_thingy[0] = 1.f;
+    scale_thingy[1] = 0.f;
+    scale_thingy[2] = tool->position[2];
+
+    cogl_matrix_project_points (projection,
+                                3, /* num components for input */
+                                sizeof (float) * 3, /* input stride */
+                                scale_thingy,
+                                sizeof (float) * 4, /* output stride */
+                                scale_thingy,
+                                1 /* n_points */);
+    scale_thingy[0] /= scale_thingy[3];
+
+    tool->scale = 1. / scale_thingy[0];
+
+    /* update the input region, need project the transformed point and do
+     * the viewport transform */
+    screen_space[0] = tool->position[0];
+    screen_space[1] = tool->position[1];
+    screen_space[2] = tool->position[2];
+    cogl_matrix_project_points (projection,
+                                3, /* num components for input */
+                                sizeof (float) * 3, /* input stride */
+                                screen_space,
+                                sizeof (float) * 4, /* output stride */
+                                screen_space,
+                                1 /* n_points */);
+
+    /* perspective divide */
+    screen_space[0] /= screen_space[3];
+    screen_space[1] /= screen_space[3];
+
+    /* apply viewport transform */
+    viewport = rig_camcorder_get_viewport (RIG_CAMCORDER (camera));
+    x = VIEWPORT_TRANSFORM_X (screen_space[0], viewport[0], viewport[2]);
+    y = VIEWPORT_TRANSFORM_Y (screen_space[1], viewport[1], viewport[3]);
+
+    tool->screen_pos[0] = x;
+    tool->screen_pos[1] = y;
+
+    if (!tool->button_down)
+      rig_input_region_set_circle (tool->rotation_circle, x, y, 64);
+
+    if (tool->selected_entity != selected_entity)
+      {
+        /* If we go from a "no entity selected" state to a "entity selected"
+         * one, we set-up the input region */
+        if (tool->selected_entity == NULL)
+            rig_shell_add_input_region (tool->shell, tool->rotation_circle);
+
+        tool->selected_entity = selected_entity;
+      }
+
+    /* save the camcorder component for other functions to use */
+    tool->camcorder = RIG_CAMCORDER (camera);
+}
+
+static float
+rig_tool_get_scale_for_length (RigTool *tool,
+                               float    length)
+{
+  return length * tool->scale;
+}
+
+static void
+get_rotation (Data       *data,
+              RigEntity  *camera,
+              RigEntity  *entity,
+              CoglMatrix *rotation)
+{
+  CoglMatrix tmp, camera_inverse;
+
+  cogl_matrix_init_from_quaternion (&tmp,
+                                    rig_entity_get_rotation (camera));
+  cogl_matrix_get_inverse (&tmp, &camera_inverse);
+
+  cogl_matrix_init_from_quaternion (&tmp,
+                                    rig_entity_get_rotation (&data->pivot));
+  cogl_matrix_multiply (rotation, &camera_inverse, &tmp);
+
+  cogl_matrix_init_from_quaternion (&tmp,
+                                    rig_entity_get_rotation (entity));
+  cogl_matrix_multiply (rotation, rotation, &tmp);
+}
+
+static void
+rig_tool_draw (RigTool *tool,
+               Data *data, /* same story as _update() */
+               CoglFramebuffer *fb)
+{
+  CoglMatrix rotation;
+  float scale, aspect_ratio;
+
+  float fb_width, fb_height;
+
+  get_rotation (data,
+                tool->camera,
+                tool->selected_entity,
+                &rotation);
+
+  /* we change the projection matrix to clip at -position[2] to clip the
+   * half sphere that is away from the camera */
+  fb_width = cogl_framebuffer_get_width (fb);
+  fb_height = cogl_framebuffer_get_height (fb);
+  aspect_ratio = fb_width / fb_height;
+
+  cogl_framebuffer_perspective (fb,
+                                tool->camcorder->fov,
+                                aspect_ratio,
+                                tool->camcorder->z_near,
+                                -tool->position[2]);
+
+  scale = rig_tool_get_scale_for_length (tool, 128 / fb_width);
+
+  /* draw the tool */
+  cogl_framebuffer_identity_matrix (fb);
+  cogl_framebuffer_translate (fb,
+                              tool->position[0],
+                              tool->position[1],
+                              tool->position[2]);
+  cogl_framebuffer_scale (fb, scale, scale, scale);
+  cogl_framebuffer_push_matrix (fb);
+  cogl_framebuffer_transform (fb, &rotation);
+  rig_entity_draw (&tool->rotation_tool, fb);
+  cogl_framebuffer_pop_matrix (fb);
+  rig_entity_draw (&tool->rotation_tool_handle, fb);
+  cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
+  rig_entity_draw (&tool->rotation_tool_handle, fb);
+}
+
+/* in micro seconds  */
+static int64_t
+get_current_time (Data *data)
+{
+  return (int64_t) (g_timer_elapsed (data->timer, NULL) * 1e6);
 }
 
 static void
@@ -427,7 +775,27 @@ test_init (RigShell *shell, void *user_data)
 
     /* picking ray */
     data->picking_ray_color = create_color_pipeline (1.f, 0.f, 0.f);
+
   }
+
+  /* UI layer camera */
+  rig_entity_init (&data->ui_camera);
+
+  component = rig_camcorder_new ();
+  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component), data->fb);
+  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
+                                     RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 0, 0,
+                                  data->fb_width, data->fb_height);
+  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), -64.f);
+  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 64.f);
+  rig_camcorder_set_clear (RIG_CAMCORDER (component), FALSE);
+
+  rig_entity_add_component (&data->ui_camera, component);
+
+  /* tool */
+  rig_tool_init (&data->tool, data->shell);
+  rig_tool_set_camera (&data->tool, data->main_camera);
 
   /* timer for the world time */
   data->timer = g_timer_new ();
@@ -454,6 +822,7 @@ test_paint (RigShell *shell, void *user_data)
 
       rig_entity_update (entity, time);
     }
+  rig_entity_update (&data->ui_camera, time);
 
   /*
    * render the shadow map
@@ -499,8 +868,6 @@ test_paint (RigShell *shell, void *user_data)
    * render the scene
    */
 
-  cogl_framebuffer_push_matrix (data->fb);
-
   /* draw entities */
   draw_entities (data, data->fb, data->main_camera, FALSE /* shadow pass */);
 
@@ -511,13 +878,23 @@ test_paint (RigShell *shell, void *user_data)
                                        data->picking_ray);
     }
 
+  /* camera¯1 * pivot is left over after draw_entities() */
+  if (data->selected_entity)
+    {
+      rig_tool_update (&data->tool, data, data->selected_entity);
+      rig_tool_draw (&data->tool, data, data->fb);
+    }
+
+
+  /* The UI layer is drawn using an orthographic projection */
+  rig_entity_draw (&data->ui_camera, data->fb);
+  cogl_framebuffer_identity_matrix (data->fb);
+
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (data->fb, data->shadow_color_tex,
-                                   -2, 1, -4, 3);
+                                   128, 128, 0, 0);
   cogl_framebuffer_draw_rectangle (data->fb, data->shadow_map_tex,
-                                   -2, -1, -4, 1);
-
-  cogl_framebuffer_pop_matrix (data->fb);
+                                   128, 256, 0, 128);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
@@ -769,9 +1146,11 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                                     ray_direction,
                                                     z_far - z_near);
 
-            pick (data, ray_position, ray_direction);
+            data->selected_entity = pick (data, ray_position, ray_direction);
+            if (data->selected_entity == NULL)
+              rig_tool_update (&data->tool, data, NULL);
 
-            status = RIG_INPUT_EVENT_STATUS_HANDLED;
+            //status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
                  state == RIG_BUTTON_STATE_2)

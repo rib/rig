@@ -1085,6 +1085,27 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
         return status;
     }
 
+  /* XXX: remove this when the rotation tool works with RigCamera */
+  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      float x = rig_motion_event_get_x (event);
+      float y = rig_motion_event_get_y (event);
+
+      for (l = shell->input_regions; l; l = l->next)
+        {
+          RigInputRegion *region = l->data;
+
+          if (rig_camera_pick_input_region (NULL, region, x, y))
+            {
+              status = region->callback (region, event, region->user_data);
+
+              if (status == RIG_INPUT_EVENT_STATUS_HANDLED)
+                return status;
+            }
+        }
+    }
+
+
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
