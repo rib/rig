@@ -292,3 +292,13 @@ rig_util_intersect_mesh (const void       *vertices,
 
   return FALSE;
 }
+
+unsigned int
+rig_util_one_at_a_time_mix (unsigned int hash)
+{
+  hash += ( hash << 3 );
+  hash ^= ( hash >> 11 );
+  hash += ( hash << 15 );
+
+  return hash;
+}

@@ -99,4 +99,32 @@ rig_util_intersect_mesh (const void       *vertices,
                          float             ray_direction[3],
                          int              *index,
                          float            *t_out);
+
+/* Split Bob Jenkins' One-at-a-Time hash
+ *
+ * This uses the One-at-a-Time hash algorithm designed by Bob Jenkins
+ * but the mixing step is split out so the function can be used in a
+ * more incremental fashion.
+ */
+static inline unsigned int
+rig_util_one_at_a_time_hash (unsigned int hash,
+                             const void *key,
+                             size_t bytes)
+{
+  const unsigned char *p = key;
+  int i;
+
+  for (i = 0; i < bytes; i++)
+    {
+      hash += p[i];
+      hash += (hash << 10);
+      hash ^= (hash >> 6);
+    }
+
+  return hash;
+}
+
+unsigned int
+rig_util_one_at_a_time_mix (unsigned int hash);
+
 #endif /* _RIG_UTIL_H_ */
