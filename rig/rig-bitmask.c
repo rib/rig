@@ -42,6 +42,22 @@ G_STATIC_ASSERT (sizeof (unsigned long) <= sizeof (void *));
   (1UL << BIT_INDEX (bit_num))
 
 gboolean
+set_bit_cb (int bit,
+            void *user_data)
+{
+  RigBitmask *b = user_data;
+  _rig_bitmask_set (b, bit, TRUE);
+  return TRUE;
+}
+
+void
+_rig_bitmask_init_from_bitmask (RigBitmask *bitmask,
+                                const RigBitmask *src)
+{
+  _rig_bitmask_foreach (src, set_bit_cb, bitmask);
+}
+
+gboolean
 _rig_bitmask_get_from_array (const RigBitmask *bitmask,
                              unsigned int bit_num)
 {
@@ -256,30 +272,33 @@ _rig_bitmask_foreach (const RigBitmask *bitmask,
     }
 }
 
+typedef struct _EqualState
+{
+  const RigBitmask *b;
+  gboolean equal;
+} EqualState;
+
+gboolean
+check_bit_cb (int bit,
+              void *user_data)
+{
+  EqualState *state = user_data;
+
+  if (!_rig_bitmask_get (state->b, bit))
+    {
+      state->equal = FALSE;
+      return FALSE;
+    }
+  return TRUE;
+}
+
 gboolean
 _rig_bitmask_equal (const RigBitmask *a,
                     const RigBitmask *b)
 {
-  if (_rig_bitmask_has_array (a))
-    {
-      GArray *array_a;
-      GArray *array_b;
-
-      if (!_rig_bitmask_has_array (b))
-        return FALSE;
-
-      array_a = (GArray *)*a;
-      array_b = (GArray *)*b;
-
-      if (array_a->len != array_b->len)
-        return FALSE;
-
-      return memcmp (array_a->data,
-                     array_b->data,
-                     sizeof (unsigned long) * array_a->len) == 0;
-    }
-  else
-    return _rig_bitmask_to_bits (a) == _rig_bitmask_to_bits (b);
+  EqualState state = { b, TRUE };
+  _rig_bitmask_foreach (a, check_bit_cb, &state);
+  return state.equal;
 }
 
 void

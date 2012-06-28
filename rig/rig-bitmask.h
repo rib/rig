@@ -84,6 +84,11 @@ typedef struct _RigBitmaskImaginaryType *RigBitmask;
 #define _rig_bitmask_init(bitmask) \
   G_STMT_START { *(bitmask) = _rig_bitmask_from_bits (0); } G_STMT_END
 
+
+void
+_rig_bitmask_init_from_bitmask (RigBitmask *bitmask,
+                                const RigBitmask *src);
+
 gboolean
 _rig_bitmask_get_from_array (const RigBitmask *bitmask,
                               unsigned int bit_num);
