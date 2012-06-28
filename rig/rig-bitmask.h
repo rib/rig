@@ -153,6 +153,18 @@ _rig_bitmask_foreach (const RigBitmask *bitmask,
                       void *user_data);
 
 /*
+ * _rig_bitmask_equal:
+ * @a: The first #RigBitmask to compare
+ * @b: The second #RigBitmask to compare
+ *
+ * Returns %TRUE if the bitmask @a is equal to bitmask @b else returns
+ * %FALSE.
+ */
+gboolean
+_rig_bitmask_equal (const RigBitmask *a,
+                    const RigBitmask *b);
+
+/*
  * _rig_bitmask_get:
  * @bitmask: A pointer to a bitmask
  * @bit_num: A bit number

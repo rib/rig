@@ -256,6 +256,32 @@ _rig_bitmask_foreach (const RigBitmask *bitmask,
     }
 }
 
+gboolean
+_rig_bitmask_equal (const RigBitmask *a,
+                    const RigBitmask *b)
+{
+  if (_rig_bitmask_has_array (a))
+    {
+      GArray *array_a;
+      GArray *array_b;
+
+      if (!_rig_bitmask_has_array (b))
+        return FALSE;
+
+      array_a = (GArray *)*a;
+      array_b = (GArray *)*b;
+
+      if (array_a->len != array_b->len)
+        return FALSE;
+
+      return memcmp (array_a->data,
+                     array_b->data,
+                     sizeof (unsigned long) * array_a->len) == 0;
+    }
+  else
+    return _rig_bitmask_to_bits (a) == _rig_bitmask_to_bits (b);
+}
+
 void
 _rig_bitmask_set_flags_array (const RigBitmask *bitmask,
                               unsigned long *flags)
