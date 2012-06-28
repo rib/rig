@@ -390,11 +390,14 @@ rig_camera_pick_input_region (RigCamera *camera,
         float b;
         float c2;
 
-        /* Note the circle hit regions are billboarded, such that only the center
-         * point is transformed but the raius of the circle stays constant.
-         */
+        /* Note the circle hit regions are billboarded, such that only the
+         * center point is transformed but the raius of the circle stays
+         * constant. */
 
-        cogl_matrix_transform_point (modelview, &center_x, &center_y, &z, &w);
+        /* XXX: This is a hack to use input regions in the tool example */
+        if (camera)
+          cogl_matrix_transform_point (modelview,
+                                       &center_x, &center_y, &z, &w);
 
         a = x - center_x;
         b = y - center_y;
@@ -458,13 +461,9 @@ _rig_input_region_init_type (void)
                           &_rig_input_region_graphable_vtable);
 }
 
-RigInputRegion *
-rig_input_region_new_rectangle (float x0,
-                                float y0,
-                                float x1,
-                                float y1,
-                                RigInputRegionCallback callback,
-                                void *user_data)
+static RigInputRegion *
+rig_input_region_new_common (RigInputRegionCallback  callback,
+                             void                   *user_data)
 {
   RigInputRegion *region = g_slice_new0 (RigInputRegion);
 
@@ -474,19 +473,50 @@ rig_input_region_new_rectangle (float x0,
 
   rig_graphable_init (RIG_OBJECT (region));
 
-  //region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_MATRIX;
-  //region->transform.matrix.matrix = NULL;
-  region->has_transform = FALSE;
-
-  region->shape.any.type = RIG_SHAPE_TYPE_RECTANGLE;
-  region->shape.rectangle.x0 = x0;
-  region->shape.rectangle.y0 = y0;
-  region->shape.rectangle.x1 = x1;
-  region->shape.rectangle.y1 = y1;
   region->callback = callback;
   region->user_data = user_data;
 
   return region;
+}
+
+RigInputRegion *
+rig_input_region_new_rectangle (float x0,
+                                float y0,
+                                float x1,
+                                float y1,
+                                RigInputRegionCallback callback,
+                                void *user_data)
+{
+  RigInputRegion *region;
+
+  region = rig_input_region_new_common (callback, user_data);
+
+  //region->transform.any.type = RIG_INPUT_TRANSFORM_TYPE_MATRIX;
+  //region->transform.matrix.matrix = NULL;
+  region->has_transform = FALSE;
+
+  rig_input_region_set_rectangle (region, x0, y0, x1, y1);
+
+  return region;
+}
+
+RigInputRegion *
+rig_input_region_new_circle (float x0,
+                             float y0,
+                             float radius,
+                             RigInputRegionCallback callback,
+                             void *user_data)
+{
+  RigInputRegion *region;
+
+  region = rig_input_region_new_common (callback, user_data);
+
+  region->has_transform = FALSE;
+
+  rig_input_region_set_circle (region, x0, y0, radius);
+
+  return region;
+
 }
 
 void
@@ -501,6 +531,18 @@ rig_input_region_set_rectangle (RigInputRegion *region,
   region->shape.rectangle.y0 = y0;
   region->shape.rectangle.x1 = x1;
   region->shape.rectangle.y1 = y1;
+}
+
+void
+rig_input_region_set_circle (RigInputRegion *region,
+                             float x,
+                             float y,
+                             float radius)
+{
+  region->shape.any.type = RIG_SHAPE_TYPE_CIRCLE;
+  region->shape.circle.x = x;
+  region->shape.circle.y = y;
+  region->shape.circle.r_squared = radius * radius;
 }
 
 #if 0

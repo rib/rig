@@ -196,6 +196,14 @@ rig_input_region_new_rectangle (float x0,
                                 float y1,
                                 RigInputRegionCallback callback,
                                 void *user_data);
+
+RigInputRegion *
+rig_input_region_new_circle (float x,
+                             float y,
+                             float radius,
+                             RigInputRegionCallback callback,
+                             void *user_data);
+
 void
 rig_input_region_set_transform (RigInputRegion *region,
                                 CoglMatrix *matrix);
@@ -212,6 +220,12 @@ rig_input_region_set_rectangle (RigInputRegion *region,
                                 float y0,
                                 float x1,
                                 float y1);
+
+void
+rig_input_region_set_circle (RigInputRegion *region,
+                             float x0,
+                             float y0,
+                             float radius);
 
 void
 rig_shell_add_input_region (RigShell *shell,
