@@ -27,6 +27,12 @@
 
 #include "rig-text.h"
 
+/* This is only defined since GLib 2.31.0. The documentation says that
+ * it is available since 2.28 but that is a lie. */
+#ifndef G_SOURCE_REMOVE
+#define G_SOURCE_REMOVE FALSE
+#endif
+
 #define RIG_NOTE(type,...)         G_STMT_START { } G_STMT_END
 
 #ifdef __COUNTER__
