@@ -28,4 +28,54 @@ void
 rig_particle_engine_set_time (RigParticleEngine *engine,
                               int32_t msecs);
 
+/**
+ * rig_particle_engine_add_color:
+ * @engine: A pointer to the particle engine
+ * @color: A color to add as 4 bytes representing RGBA
+ *
+ * Adds a color to the selection of colors that will be initially
+ * chosen for a particle. The colors will be selected randomly and
+ * distributed evenly for each new particle.
+ */
+void
+rig_particle_engine_add_color (RigParticleEngine *engine,
+                               const uint8_t color[4]);
+
+/**
+ * rig_particle_engine_remove_color:
+ * @engine: A pointer to the particle engine
+ * @color: A color to remove as 4 bytes representing RGBA
+ *
+ * Removes a color from the selection of colors that will be initially
+ * chosen for a particle.
+ */
+void
+rig_particle_engine_remove_color (RigParticleEngine *engine,
+                                  const uint8_t color[4]);
+
+/**
+ * rig_particle_engine_add_texture:
+ * @engine: A pointer to the particle engine
+ * @texture: A texture
+ *
+ * Adds a texture to the selection of colors that will be initially
+ * chosen for a particle. The textures will be selected randomly and
+ * distributed evenly for each new particle.
+ */
+void
+rig_particle_engine_add_texture (RigParticleEngine *engine,
+                                 CoglTexture *texture);
+
+/**
+ * rig_particle_engine_remove_color:
+ * @engine: A pointer to the particle engine
+ * @texture: A texture to remove
+ *
+ * Removes a texture from the selection of textures that will be
+ * initially chosen for a particle.
+ */
+void
+rig_particle_engine_remove_texture (RigParticleEngine *engine,
+                                    CoglTexture *texture);
+
 #endif /* _RIG_PARTICLE_ENGINE_H_ */

@@ -22,7 +22,10 @@ common_ldadd = \
 	$(RIG_DEP_LIBS) \
 	$(top_builddir)/rig/librig.la
 
-noinst_PROGRAMS = entities
+noinst_PROGRAMS = entities particle-engine
 
 entities_SOURCES = entities.c
 entities_LDADD = $(common_ldadd)
+
+particle_engine_SOURCES = particle-engine.c
+particle_engine_LDADD = $(common_ldadd)

@@ -44,4 +44,5 @@ stamp-marshal
 xmldocs.make
 
 /examples/entities
+/examples/particle-engine
 /editor/rig-editor

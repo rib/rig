@@ -78,19 +78,6 @@ G_BEGIN_DECLS
        ~RIG_FLAGS_GET_MASK (flag));            \
   } G_STMT_END
 
-#define RIG_FLAGS_SET_ALL(array, n_values, value)                       \
-  G_STMT_START {                                                        \
-    if (value)                                                          \
-      {                                                                 \
-        int _n_longs = RIG_FLAGS_N_LONGS_FOR_SIZE (n_values);           \
-        unsigned long _mask = RIG_FLAGS_GET_MASK ((n_values) - 1);      \
-        memset ((array), 0xff, (_n_longs - 1) * sizeof (unsigned long)); \
-        array[_n_longs - 1] = _mask | (_mask - 1);                      \
-      }                                                                 \
-    else                                                                \
-      memset ((array), 0x00, _n_longs * sizeof (unsigned long));        \
-  } G_STMT_END
-
 /* Macros to help iterate an array of flags. It should be used like
  * this:
  *
