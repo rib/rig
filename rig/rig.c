@@ -25,6 +25,11 @@
 
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
+
+/* FIXME: we should have a config.h where things like USE_SDL would
+ * be defined instead of defining that in rig.h */
+#include "rig.h"
+
 #include "rig-bitmask.h"
 #include "rig-global.h"
 #include "rig-context.h"
@@ -2774,6 +2779,7 @@ _rig_init (void)
       _rig_transform_init_type ();
       _rig_timeline_init_type ();
       _rig_ui_viewport_init_type ();
+      _rig_entity_init_type ();
 
       g_once_init_leave (&init_status, 1);
     }

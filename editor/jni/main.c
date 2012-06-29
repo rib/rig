@@ -23,14 +23,13 @@
 #include <rig.h>
 
 #define USER_ENTITY 2
-#define N_ENTITIES  4
 
 typedef struct
 {
   RigShell *shell;
   RigEntity *selected_entity;
-  RigEntity rotation_tool;
-  RigEntity rotation_tool_handle;
+  RigEntity *rotation_tool;
+  RigEntity *rotation_tool_handle;
   RigInputRegion *rotation_circle;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
@@ -51,10 +50,13 @@ typedef struct
   float fb_width, fb_height;
   GTimer *timer;
 
-  RigEntity entities[N_ENTITIES];
   RigEntity *main_camera;
   RigEntity *light;
-  RigEntity ui_camera;
+  RigEntity *ui_camera;
+  RigEntity *plane;
+  RigEntity *cube;
+  GList *entities;
+  GList *pickables;
 
   /* shadow mapping */
   CoglOffscreen *shadow_fb;
@@ -69,7 +71,7 @@ typedef struct
 
   /* editor state */
   bool button_down;
-  RigEntity pivot;
+  RigEntity *pivot;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
   RigEntity *selected_entity;
@@ -206,27 +208,27 @@ on_rotation_tool_clicked (RigInputRegion *region,
 
 static void
 rig_tool_init (RigTool *tool,
-               RigShell *shell)
+               Data *data)
 {
   RigComponent *component;
   CoglPipeline *pipeline;
 
-  tool->shell = shell;
+  tool->shell = data->shell;
 
   /* rotation tool */
-  rig_entity_init (&tool->rotation_tool);
+  tool->rotation_tool = rig_entity_new (data->ctx);
 
   pipeline = create_color_pipeline (1.f, 1.f, 1.f);
   component = rig_mesh_renderer_new_from_template ("rotation-tool",
                                                    pipeline);
   cogl_object_unref (pipeline);
 
-  rig_entity_add_component (&tool->rotation_tool, component);
+  rig_entity_add_component (tool->rotation_tool, component);
 
   /* rotation tool handle circle */
-  rig_entity_init (&tool->rotation_tool_handle);
+  tool->rotation_tool_handle = rig_entity_new (data->ctx);
   component = rig_mesh_renderer_new_from_template ("circle", pipeline);
-  rig_entity_add_component (&tool->rotation_tool_handle, component);
+  rig_entity_add_component (tool->rotation_tool_handle, component);
 
   tool->rotation_circle =
     rig_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
@@ -251,7 +253,7 @@ get_modelview_matrix (Data       *data,
                            &camera_inverse);
   cogl_matrix_multiply (modelview,
                         &camera_inverse,
-                        rig_entity_get_transform (&data->pivot));
+                        rig_entity_get_transform (data->pivot));
   cogl_matrix_multiply (modelview,
                         modelview,
                         rig_entity_get_transform (entity));
@@ -390,7 +392,7 @@ get_rotation (Data       *data,
   cogl_matrix_get_inverse (&tmp, &camera_inverse);
 
   cogl_matrix_init_from_quaternion (&tmp,
-                                    rig_entity_get_rotation (&data->pivot));
+                                    rig_entity_get_rotation (data->pivot));
   cogl_matrix_multiply (rotation, &camera_inverse, &tmp);
 
   cogl_matrix_init_from_quaternion (&tmp,
@@ -436,11 +438,11 @@ rig_tool_draw (RigTool *tool,
   cogl_framebuffer_scale (fb, scale, scale, scale);
   cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_transform (fb, &rotation);
-  rig_entity_draw (&tool->rotation_tool, fb);
+  rig_entity_draw (tool->rotation_tool, fb);
   cogl_framebuffer_pop_matrix (fb);
-  rig_entity_draw (&tool->rotation_tool_handle, fb);
+  rig_entity_draw (tool->rotation_tool_handle, fb);
   cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
-  rig_entity_draw (&tool->rotation_tool_handle, fb);
+  rig_entity_draw (tool->rotation_tool_handle, fb);
 }
 
 /* in micro seconds  */
@@ -466,8 +468,8 @@ compute_light_shadow_matrix (Data       *data,
   };
 
   main_camera = rig_entity_get_transform (data->main_camera);
-  pivot = rig_entity_get_transform (&data->pivot);
-  cogl_matrix_get_inverse (rig_entity_get_transform (&data->pivot),
+  pivot = rig_entity_get_transform (data->pivot);
+  cogl_matrix_get_inverse (rig_entity_get_transform (data->pivot),
                            &pivot_inverse);
   cogl_matrix_multiply (&light_transform, pivot,
                         rig_entity_get_transform (light));
@@ -565,11 +567,11 @@ draw_entities (Data            *data,
                gboolean         shadow_pass)
 {
   CoglMatrix *transform, inverse, *pivot;
-  int i;
+  GList *l;
 
   transform = rig_entity_get_transform (camera);
   cogl_matrix_get_inverse (transform, &inverse);
-  pivot = rig_entity_get_transform (&data->pivot);
+  pivot = rig_entity_get_transform (data->pivot);
   if (shadow_pass)
     {
       cogl_framebuffer_identity_matrix (fb);
@@ -583,11 +585,9 @@ draw_entities (Data            *data,
     }
   rig_entity_draw (camera, fb);
 
-  for (i = 1; i < N_ENTITIES; i++)
+  for (l = data->entities; l; l = l->next)
     {
-      RigEntity *entity;
-
-      entity = &data->entities[i];
+      RigEntity *entity = l->data;
 
       if (shadow_pass && !rig_entity_get_cast_shadow (entity))
         continue;
@@ -679,8 +679,8 @@ test_init (RigShell *shell, void *user_data)
    */
 
   /* camera */
-  data->main_camera = &data->entities[0];
-  rig_entity_init (data->main_camera);
+  data->main_camera = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->main_camera);
 
   vector3[0] = 0.f;
   vector3[1] = 2.f;
@@ -697,8 +697,8 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->main_camera, component);
 
   /* light */
-  data->light = &data->entities[1];
-  rig_entity_init (data->light);
+  data->light = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->light);
 
   vector3[0] = 1.0f;
   vector3[1] = 8.0f;
@@ -736,20 +736,24 @@ test_init (RigShell *shell, void *user_data)
 
 
   /* plane */
-  rig_entity_init (&data->entities[USER_ENTITY]);
-  rig_entity_set_cast_shadow (&data->entities[USER_ENTITY], FALSE);
-  rig_entity_set_y (&data->entities[USER_ENTITY], -1.5f);
+  data->plane = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->plane);
+  data->pickables = g_list_prepend (data->pickables, data->plane);
+  rig_entity_set_cast_shadow (data->plane, FALSE);
+  rig_entity_set_y (data->plane, -1.5f);
 
   component = rig_mesh_renderer_new_from_template ("plane", root_pipeline);
 
-  rig_entity_add_component (&data->entities[USER_ENTITY], component);
+  rig_entity_add_component (data->plane, component);
 
   /* a second, more interesting, entity */
-  rig_entity_init (&data->entities[USER_ENTITY + 1]);
-  rig_entity_set_cast_shadow (&data->entities[USER_ENTITY + 1], TRUE);
-  rig_entity_set_y (&data->entities[USER_ENTITY + 1], .5);
-  rig_entity_set_z (&data->entities[USER_ENTITY + 1], 1);
-  rig_entity_rotate_y_axis (&data->entities[USER_ENTITY + 1], 10);
+  data->cube = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->cube);
+  data->pickables = g_list_prepend (data->pickables, data->cube);
+  rig_entity_set_cast_shadow (data->cube, TRUE);
+  rig_entity_set_y (data->cube, .5);
+  rig_entity_set_z (data->cube, 1);
+  rig_entity_rotate_y_axis (data->cube, 10);
 
   pipeline = cogl_pipeline_copy (root_pipeline);
   cogl_pipeline_set_color4f (pipeline, 0.6f, 0.6f, 0.6f, 1.0f);
@@ -757,7 +761,7 @@ test_init (RigShell *shell, void *user_data)
   component = rig_mesh_renderer_new_from_template ("cube", pipeline);
   cogl_object_unref (pipeline);
 
-  rig_entity_add_component (&data->entities[USER_ENTITY + 1], component);
+  rig_entity_add_component (data->cube, component);
 
   /* create the pipelines to display the shadow color and depth textures */
   data->shadow_color_tex =
@@ -774,7 +778,7 @@ test_init (RigShell *shell, void *user_data)
     w = cogl_framebuffer_get_width (data->fb);
     h = cogl_framebuffer_get_height (data->fb);
 
-    rig_entity_init (&data->pivot);
+    data->pivot = rig_entity_new (data->ctx);
     rig_arcball_init (&data->arcball, w / 2, h / 2, sqrtf (w * w + h * h) / 2);
 
     /* picking ray */
@@ -783,7 +787,7 @@ test_init (RigShell *shell, void *user_data)
   }
 
   /* UI layer camera */
-  rig_entity_init (&data->ui_camera);
+  data->ui_camera = rig_entity_new (data->ctx);
 
   component = rig_camcorder_new ();
   rig_camcorder_set_framebuffer (RIG_CAMCORDER (component), data->fb);
@@ -795,11 +799,17 @@ test_init (RigShell *shell, void *user_data)
   rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 64.f);
   rig_camcorder_set_clear (RIG_CAMCORDER (component), FALSE);
 
-  rig_entity_add_component (&data->ui_camera, component);
+  rig_entity_add_component (data->ui_camera, component);
 
   /* tool */
-  rig_tool_init (&data->tool, data->shell);
+  rig_tool_init (&data->tool, data);
   rig_tool_set_camera (&data->tool, data->main_camera);
+
+  /* We draw/pick the entities in the order they are listed and so
+   * that matches the order we created the entities we now reverse the
+   * list... */
+  data->entities = g_list_reverse (data->entities);
+  data->pickables = g_list_reverse (data->pickables);
 
   /* timer for the world time */
   data->timer = g_timer_new ();
@@ -810,9 +820,9 @@ static CoglBool
 test_paint (RigShell *shell, void *user_data)
 {
   Data *data = user_data;
-  int i;
   int64_t time; /* micro seconds */
   CoglFramebuffer *shadow_fb;
+  GList *l;
 
   /*
    * update entities
@@ -820,13 +830,13 @@ test_paint (RigShell *shell, void *user_data)
 
   time = get_current_time (data);
 
-  for (i = 0; i < N_ENTITIES; i++)
+  for (l = data->entities; l; l = l->next)
     {
-      RigEntity *entity = &data->entities[i];
+      RigEntity *entity = l->data;
 
       rig_entity_update (entity, time);
     }
-  rig_entity_update (&data->ui_camera, time);
+  rig_entity_update (data->ui_camera, time);
 
   /*
    * render the shadow map
@@ -847,7 +857,7 @@ test_paint (RigShell *shell, void *user_data)
                                  &light_projection,
                                  data->light);
 
-    pipeline = rig_entity_get_pipeline (&data->entities[USER_ENTITY]);
+    pipeline = rig_entity_get_pipeline (data->plane);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -856,7 +866,7 @@ test_paint (RigShell *shell, void *user_data)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = rig_entity_get_pipeline (&data->entities[USER_ENTITY + 1]);
+    pipeline = rig_entity_get_pipeline (data->cube);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -891,7 +901,7 @@ test_paint (RigShell *shell, void *user_data)
 
 
   /* The UI layer is drawn using an orthographic projection */
-  rig_entity_draw (&data->ui_camera, data->fb);
+  rig_entity_draw (data->ui_camera, data->fb);
   cogl_framebuffer_identity_matrix (data->fb);
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
@@ -1017,10 +1027,11 @@ pick (Data  *data,
   float transformed_ray_origin[3];
   float transformed_ray_direction[3];
   static const char *names[2] = { "plane", "cube" }, *name;
+  GList *l;
 
-  for (i = 0; i < 2; i++)
+  for (l = data->pickables, i = 0; l; l = l->next, i++)
     {
-      entity = &data->entities[USER_ENTITY + i];
+      entity = l->data;
 
       /* transform the ray into the model space */
       memcpy (transformed_ray_origin, ray_origin, 3 * sizeof (float));
@@ -1096,7 +1107,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
         if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
             state == RIG_BUTTON_STATE_2)
           {
-            data->saved_rotation = *rig_entity_get_rotation (&data->pivot);
+            data->saved_rotation = *rig_entity_get_rotation (data->pivot);
             cogl_quaternion_init_identity (&data->arcball.q_drag);
 
             rig_arcball_mouse_down (&data->arcball, x, data->fb_height - y);
@@ -1137,7 +1148,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                       ray_direction);
 
             /* nullify the effect of the pivot */
-            transform_ray (rig_entity_get_transform (&data->pivot),
+            transform_ray (rig_entity_get_transform (data->pivot),
                            TRUE, /* inverse the transform */
                            ray_position,
                            ray_direction);
@@ -1170,7 +1181,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                       &data->arcball.q_drag,
                                       &data->saved_rotation);
 
-            rig_entity_set_rotation (&data->pivot, &new_rotation);
+            rig_entity_set_rotation (data->pivot, &new_rotation);
 
             status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
@@ -1179,16 +1190,16 @@ test_input_handler (RigInputEvent *event, void *user_data)
           {
             float scale;
 
-            scale = rig_entity_get_scale (&data->pivot);
-            rig_entity_set_scale (&data->pivot, scale / .9f);
+            scale = rig_entity_get_scale (data->pivot);
+            rig_entity_set_scale (data->pivot, scale / .9f);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
                  state == RIG_BUTTON_STATE_WHEELDOWN)
           {
             float scale;
 
-            scale = rig_entity_get_scale (&data->pivot);
-            rig_entity_set_scale (&data->pivot, scale * .9f);
+            scale = rig_entity_get_scale (data->pivot);
+            rig_entity_set_scale (data->pivot, scale * .9f);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
           {

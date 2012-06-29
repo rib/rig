@@ -29,10 +29,12 @@
 #include "rig-interfaces.h"
 #include "rig-context.h"
 
-#define RIG_COMPONENT(p) ((RigComponent *)(p))
+#define RIG_COMPONENT(X) ((RigComponent *)(X))
+typedef struct _RigComponent RigComponent;
 
-typedef struct _component RigComponent;
-typedef struct _entity    RigEntity;
+#define RIG_ENTITY(X) ((RigEntity *)X)
+typedef struct _RigEntity RigEntity;
+extern RigType rig_entity_type;
 
 typedef enum
 {
@@ -44,7 +46,7 @@ typedef enum
   RIG_N_COMPNONENTS
 } RigComponentType;
 
-struct _component
+struct _RigComponent
 {
   RigComponentType type;
   RigEntity *entity;     /* back pointer to the entity the component belongs to */
@@ -63,8 +65,14 @@ typedef enum
 /* FIXME:
  *  - directly store the position in the transform matrix?
  */
-struct _entity
+struct _RigEntity
 {
+  RigObjectProps _parent;
+
+  int ref_count;
+
+  RigGraphableProps graphable;
+
   /* private fields */
   struct { float x, y, z; } position;
   CoglQuaternion rotation;
@@ -75,14 +83,17 @@ struct _entity
   unsigned int cast_shadow:1;
 };
 
+void
+_rig_entity_init_type (void);
+
 static inline CoglBool
 rig_entity_get_cast_shadow (RigEntity *entity)
 {
   return entity->cast_shadow;
 }
 
-void
-rig_entity_init (RigEntity *entity);
+RigEntity *
+rig_entity_new (RigContext *ctx);
 
 float
 rig_entity_get_x (RigEntity *entity);

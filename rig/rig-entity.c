@@ -19,9 +19,56 @@
 
 #include "components/rig-mesh-renderer.h"
 #include "rig-entity.h"
+#include "rig.h"
 
-void rig_entity_init (RigEntity *entity)
+static void
+_rig_entity_free (void *object)
 {
+  RigEntity *entity = object;
+
+  g_ptr_array_free (entity->components, TRUE);
+
+  g_slice_free (RigEntity, entity);
+}
+
+static RigRefCountableVTable _rig_entity_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_entity_free
+};
+
+static RigGraphableVTable _rig_entity_graphable_vtable = {
+  NULL, /* child_removed */
+  NULL, /* child_added */
+  NULL, /* parent_changed */
+};
+
+RigType rig_entity_type;
+
+void
+_rig_entity_init_type (void)
+{
+  rig_type_init (&rig_entity_type);
+  rig_type_add_interface (&rig_entity_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigEntity, ref_count),
+                          &_rig_entity_ref_countable_vtable);
+  rig_type_add_interface (&rig_entity_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigEntity, graphable),
+                          &_rig_entity_graphable_vtable);
+}
+
+RigEntity *
+rig_entity_new (RigContext *ctx)
+{
+  RigEntity *entity = g_slice_new0 (RigEntity);
+
+  rig_object_init (&entity->_parent, &rig_entity_type);
+  rig_graphable_init (entity);
+
+  entity->ref_count = 1;
+
   entity->position.x = 0.0f;
   entity->position.y = 0.0f;
   entity->position.z = 0.0f;
@@ -31,6 +78,8 @@ void rig_entity_init (RigEntity *entity)
   cogl_quaternion_init_identity (&entity->rotation);
   cogl_matrix_init_identity (&entity->transform);
   entity->components = g_ptr_array_new ();
+
+  return entity;
 }
 
 float

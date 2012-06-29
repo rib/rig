@@ -21,8 +21,6 @@
 
 #include <rig/rig.h>
 
-#define USER_ENTITY 2
-#define N_ENTITIES  4
 
 typedef struct
 {
@@ -32,9 +30,11 @@ typedef struct
   CoglFramebuffer *fb;
   GTimer *timer;
 
-  RigEntity entities[N_ENTITIES];
   RigEntity *main_camera;
   RigEntity *light;
+  RigEntity *plane;
+  RigEntity *cube;
+  GList *entities;
 
   /* shadow mapping */
   CoglOffscreen *shadow_fb;
@@ -180,7 +180,7 @@ draw_entities (Data            *data,
                gboolean         shadow_pass)
 {
   CoglMatrix *transform, inverse;
-  int i;
+  GList *l;
 
   transform = rig_entity_get_transform (camera);
   cogl_matrix_get_inverse (transform, &inverse);
@@ -196,11 +196,9 @@ draw_entities (Data            *data,
     }
   rig_entity_draw (camera, fb);
 
-  for (i = 1; i < N_ENTITIES; i++)
+  for (l = data->entities; l; l = l->next)
     {
-      RigEntity *entity;
-
-      entity = &data->entities[i];
+      RigEntity *entity = l->data;
 
       if (shadow_pass && !rig_entity_get_cast_shadow (entity))
         continue;
@@ -284,8 +282,8 @@ test_init (RigShell *shell, void *user_data)
    */
 
   /* camera */
-  data->main_camera = &data->entities[0];
-  rig_entity_init (data->main_camera);
+  data->main_camera = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->main_camera);
 
   vector3[0] = 0.f;
   vector3[1] = 2.f;
@@ -302,8 +300,8 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->main_camera, component);
 
   /* light */
-  data->light = &data->entities[1];
-  rig_entity_init (data->light);
+  data->light = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->light);
 
   vector3[0] = 1.0f;
   vector3[1] = 8.0f;
@@ -341,20 +339,22 @@ test_init (RigShell *shell, void *user_data)
 
 
   /* plane */
-  rig_entity_init (&data->entities[USER_ENTITY]);
-  rig_entity_set_cast_shadow (&data->entities[USER_ENTITY], FALSE);
-  rig_entity_set_y (&data->entities[USER_ENTITY], -1.5f);
+  data->plane = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->plane);
+  rig_entity_set_cast_shadow (data->plane, FALSE);
+  rig_entity_set_y (data->plane, -1.5f);
 
   component = rig_mesh_renderer_new_from_template ("plane", root_pipeline);
 
-  rig_entity_add_component (&data->entities[USER_ENTITY], component);
+  rig_entity_add_component (data->plane, component);
 
   /* a second, more interesting, entity */
-  rig_entity_init (&data->entities[USER_ENTITY + 1]);
-  rig_entity_set_cast_shadow (&data->entities[USER_ENTITY + 1], TRUE);
-  rig_entity_set_y (&data->entities[USER_ENTITY + 1], .5);
-  rig_entity_set_z (&data->entities[USER_ENTITY + 1], 1);
-  rig_entity_rotate_y_axis (&data->entities[USER_ENTITY + 1], 10);
+  data->cube = rig_entity_new (data->ctx);
+  data->entities = g_list_prepend (data->entities, data->cube);
+  rig_entity_set_cast_shadow (data->cube, TRUE);
+  rig_entity_set_y (data->cube, .5);
+  rig_entity_set_z (data->cube, 1);
+  rig_entity_rotate_y_axis (data->cube, 10);
 
   pipeline = cogl_pipeline_copy (root_pipeline);
   cogl_pipeline_set_color4f (pipeline, 0.6f, 0.6f, 0.6f, 1.0f);
@@ -362,7 +362,12 @@ test_init (RigShell *shell, void *user_data)
   component = rig_mesh_renderer_new_from_template ("cube", pipeline);
   cogl_object_unref (pipeline);
 
-  rig_entity_add_component (&data->entities[USER_ENTITY + 1], component);
+  rig_entity_add_component (data->cube, component);
+
+  /* We draw the entities in the order they are listed and so that
+   * matches the order we created the entities we now reverse the
+   * list... */
+  data->entities = g_list_reverse (data->entities);
 
   /* create the pipelines to display the shadow color and depth textures */
   data->shadow_color_tex =
@@ -380,9 +385,9 @@ static CoglBool
 test_paint (RigShell *shell, void *user_data)
 {
   Data *data = user_data;
-  int i;
   int64_t time; /* micro seconds */
   CoglFramebuffer *shadow_fb;
+  GList *l;
 
   /*
    * update entities
@@ -390,9 +395,9 @@ test_paint (RigShell *shell, void *user_data)
 
   time = get_current_time (data);
 
-  for (i = 0; i < N_ENTITIES; i++)
+  for (l = data->entities; l; l = l->next)
     {
-      RigEntity *entity = &data->entities[i];
+      RigEntity *entity = l->data;
 
       rig_entity_update (entity, time);
     }
@@ -419,7 +424,7 @@ test_paint (RigShell *shell, void *user_data)
                                  &light_view,
                                  rig_entity_get_transform (data->main_camera));
 
-    pipeline = rig_entity_get_pipeline (&data->entities[USER_ENTITY]);
+    pipeline = rig_entity_get_pipeline (data->plane);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -428,7 +433,7 @@ test_paint (RigShell *shell, void *user_data)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = rig_entity_get_pipeline (&data->entities[USER_ENTITY + 1]);
+    pipeline = rig_entity_get_pipeline (data->cube);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -465,7 +470,24 @@ test_paint (RigShell *shell, void *user_data)
 static void
 test_fini (RigShell *shell, void *user_data)
 {
+  Data *data = user_data;
+  GList *l;
 
+  for (l = data->entities; l; l = l->next)
+    rig_ref_countable_simple_unref (l->data);
+  g_list_free (data->entities);
+
+  cogl_object_unref (data->shadow_color);
+  cogl_object_unref (data->shadow_map);
+  cogl_object_unref (data->shadow_fb);
+  
+  cogl_object_unref (data->shadow_map_tex);
+  cogl_object_unref (data->shadow_color_tex);
+  cogl_object_unref (data->diffuse_specular);
+
+  cogl_object_unref (data->fb);
+
+  g_timer_destroy (data->timer);
 }
 
 int
