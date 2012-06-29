@@ -32,7 +32,8 @@ source_h = \
     rig-util.h \
     rig-text-buffer.h \
     rig-text.h \
-    rig-geometry.h
+    rig-geometry.h \
+    rig-context.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
