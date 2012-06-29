@@ -1,7 +1,6 @@
 #ifndef _RIG_SHELL_H_
 #define _RIG_SHELL_H_
 
-#include "rig.h"
 #include "rig-keysyms.h"
 #include "rig-types.h"
 

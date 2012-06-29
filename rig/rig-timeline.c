@@ -1,6 +1,7 @@
 #include <cogl/cogl.h>
 
-#include "rig.h"
+#include "rig-context.h"
+#include "rig-interfaces.h"
 #include "rig-timeline.h"
 
 enum {

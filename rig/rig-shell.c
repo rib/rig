@@ -3,7 +3,10 @@
 
 #include <cogl/cogl.h>
 
+/* FIXME: we should have a config.h where things like USE_SDL would
+ * be defined instead of defining that in rig.h */
 #include "rig.h"
+
 #include "rig-camera-private.h"
 #include "rig-transform-private.h"
 #include "rig-shell.h"

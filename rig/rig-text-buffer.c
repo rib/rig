@@ -19,7 +19,9 @@
  * Author: Stef Walter <stefw@collabora.co.uk>
  */
 
-#include "rig.h"
+#include "rig-context.h"
+#include "rig-property.h"
+#include "rig-interfaces.h"
 #include "rig-text-buffer.h"
 
 #include <string.h>

@@ -24,6 +24,11 @@
 
 #include <cogl/cogl.h>
 
+#include "rig-type.h"
+#include "rig-object.h"
+#include "rig-interfaces.h"
+#include "rig-context.h"
+
 #define RIG_COMPONENT(p) ((RigComponent *)(p))
 
 typedef struct _component RigComponent;

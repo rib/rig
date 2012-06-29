@@ -24,7 +24,7 @@
 
 #include <cogl/cogl.h>
 
-#include "rig.h"
+#include "rig-context.h"
 
 CoglAttribute *
 rig_create_circle (RigContext *ctx,

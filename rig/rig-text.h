@@ -25,8 +25,9 @@
 #ifndef __RIG_TEXT_H__
 #define __RIG_TEXT_H__
 
-#include "rig.h"
 #include "rig-types.h"
+#include "rig-context.h"
+#include "rig-interfaces.h"
 #include "rig-text-buffer.h"
 
 #include <pango/pango.h>

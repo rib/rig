@@ -7,7 +7,7 @@
 
 #include "rig-object.h"
 #include "rig-interfaces.h"
-#include "rig.h"
+#include "rig-context.h"
 
 /* TODO: Make internals private */
 struct _RigCamera

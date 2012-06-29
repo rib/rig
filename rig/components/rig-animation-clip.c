@@ -18,6 +18,7 @@
  */
 
 #include "rig-animation-clip.h"
+#include "rig-context.h"
 
 typedef struct
 {

@@ -26,8 +26,14 @@
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
 #include "rig-bitmask.h"
+#include "rig-global.h"
+#include "rig-context.h"
 #include "rig-camera-private.h"
 #include "rig-transform-private.h"
+#include "rig-text.h"
+#include "rig-timeline.h"
+#include "rig-text-buffer.h"
+#include "rig-entity.h"
 
 /*
  * Overall issues to keep in mind for a useful and efficient UI scenegraph:
@@ -130,8 +136,6 @@
  * associated with the graph too.
  *
  */
-
-#include "rig.h"
 
 /* Requirements for batching:
  * - Want to be able to insert commands around children. E.g. for a transform
