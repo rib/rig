@@ -102,7 +102,7 @@ test_init (RigShell *shell,
 
       if (texture)
         {
-          rig_particle_engine_add_texture (data->engine, texture);
+          rig_particle_engine_set_texture (data->engine, texture);
           cogl_object_unref (texture);
         }
       else
@@ -119,6 +119,8 @@ test_paint (RigShell *shell,
 {
   RigPaintContext paint_context;
   Data *data = user_data;
+
+  rig_camera_flush (data->camera);
 
   cogl_framebuffer_clear4f (data->fb,
                             COGL_BUFFER_BIT_COLOR,

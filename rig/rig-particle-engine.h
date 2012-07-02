@@ -53,29 +53,8 @@ void
 rig_particle_engine_remove_color (RigParticleEngine *engine,
                                   const uint8_t color[4]);
 
-/**
- * rig_particle_engine_add_texture:
- * @engine: A pointer to the particle engine
- * @texture: A texture
- *
- * Adds a texture to the selection of colors that will be initially
- * chosen for a particle. The textures will be selected randomly and
- * distributed evenly for each new particle.
- */
 void
-rig_particle_engine_add_texture (RigParticleEngine *engine,
+rig_particle_engine_set_texture (RigParticleEngine *engine,
                                  CoglTexture *texture);
-
-/**
- * rig_particle_engine_remove_color:
- * @engine: A pointer to the particle engine
- * @texture: A texture to remove
- *
- * Removes a texture from the selection of textures that will be
- * initially chosen for a particle.
- */
-void
-rig_particle_engine_remove_texture (RigParticleEngine *engine,
-                                    CoglTexture *texture);
 
 #endif /* _RIG_PARTICLE_ENGINE_H_ */
