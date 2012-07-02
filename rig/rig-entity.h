@@ -42,18 +42,24 @@ typedef enum
   RIG_COMPONENT_TYPE_CAMCORDER,
   RIG_COMPONENT_TYPE_LIGHT,
   RIG_COMPONENT_TYPE_MESH_RENDERER,
+  RIG_COMPONENT_TYPE_MATERIAL,
 
   RIG_N_COMPNONENTS
 } RigComponentType;
 
-struct _RigComponent
+typedef struct _RigComponentableProps
 {
   RigComponentType type;
-  RigEntity *entity;     /* back pointer to the entity the component belongs to */
-  void (*start)   (RigComponent *component);
-  void (*update)  (RigComponent *component, int64_t time);
-  void (*draw)    (RigComponent *component, CoglFramebuffer *fb);
-};
+  RigEntity *entity; /* back pointer to the entity the component belongs to */
+} RigComponentableProps;
+
+typedef struct _RigComponentableVTable
+{
+  void (*start)   (RigObject *component);
+  void (*update)  (RigObject *component, int64_t time);
+  void (*draw)    (RigObject *component, CoglFramebuffer *fb);
+
+} RigComponentableVTable;
 
 typedef enum
 {
@@ -78,7 +84,9 @@ struct _RigEntity
   CoglQuaternion rotation;
   float scale;                          /* uniform scaling only */
   CoglMatrix transform;
+
   GPtrArray *components;
+
   unsigned int dirty:1;
   unsigned int cast_shadow:1;
 };
@@ -143,7 +151,7 @@ rig_entity_get_transform (RigEntity *entity);
 
 void
 rig_entity_add_component (RigEntity *entity,
-                          RigComponent *component);
+                          RigObject *component);
 void
 rig_entity_update (RigEntity *entity,
                    int64_t time);
@@ -165,10 +173,7 @@ void
 rig_entity_rotate_z_axis (RigEntity *entity,
                           float z_angle);
 
-CoglPipeline *
-rig_entity_get_pipeline (RigEntity *entity);
-
-RigComponent *
+RigObject *
 rig_entity_get_component (RigEntity *entity,
                           RigComponentType type);
 

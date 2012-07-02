@@ -37,12 +37,13 @@ typedef CoglQuaternion * (*QuaternionGetter) (void *object);
 typedef void (*QuaternionSetter) (void *object, CoglQuaternion *quaternion);
 
 #define RIG_ANIMATION_CLIP(p) ((RigAnimationClip *)(p))
-
 typedef struct _AnimationClip RigAnimationClip;
+extern RigType rig_animation_clip_type;
 
 struct _AnimationClip
 {
-  RigComponent component;
+  RigObjectProps _parent;
+  RigComponentableProps component;
   int64_t duration;   /* micro seconds */
   int64_t start_time; /* micro seconds */
   GArray *float_animation_data;
@@ -50,7 +51,10 @@ struct _AnimationClip
   unsigned int started:1;
 };
 
-RigComponent *
+void
+_rig_animation_clip_init_type (void);
+
+RigAnimationClip *
 rig_animation_clip_new (int32_t duration);
 
 void

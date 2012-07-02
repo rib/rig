@@ -29,10 +29,10 @@ typedef struct
 } RigVertex4C4;
 
 static void
-rig_camcorder_update (RigComponent *component,
-                      int64_t       time)
+rig_camcorder_update (RigObject *object,
+                      int64_t time)
 {
-  RigCamcorder *camcorder = RIG_CAMCORDER (component);
+  RigCamcorder *camcorder = object;
 
   if (camcorder->projection_dirty)
     {
@@ -129,10 +129,10 @@ draw_frustum (RigCamcorder    *camcorder,
 }
 
 static void
-rig_camcorder_draw (RigComponent    *component,
+rig_camcorder_draw (RigObject *object,
                     CoglFramebuffer *fb)
 {
-  RigCamcorder *camcorder = RIG_CAMCORDER (component);
+  RigCamcorder *camcorder = object;
   float r, g, b;
 
   if (camcorder->fb == fb)
@@ -199,21 +199,38 @@ rig_camcorder_draw (RigComponent    *component,
     }
 }
 
-RigComponent *
+RigType rig_camcorder_type;
+
+static RigComponentableVTable _rig_camcorder_componentable_vtable = {
+  .update = rig_camcorder_update,
+  .draw = rig_camcorder_draw
+};
+
+void
+_rig_camcorder_init_type (void)
+{
+  rig_type_init (&rig_camcorder_type);
+  rig_type_add_interface (&rig_camcorder_type,
+                           RIG_INTERFACE_ID_COMPONENTABLE,
+                           offsetof (RigCamcorder, component),
+                           &_rig_camcorder_componentable_vtable);
+}
+
+RigCamcorder *
 rig_camcorder_new (void)
 {
   RigCamcorder *camcorder;
 
   camcorder = g_slice_new0 (RigCamcorder);
+  rig_object_init (&camcorder->_parent, &rig_camcorder_type);
+
   camcorder->component.type = RIG_COMPONENT_TYPE_CAMCORDER;
-  camcorder->component.update = rig_camcorder_update;
-  camcorder->component.draw = rig_camcorder_draw;
 
   cogl_matrix_init_identity (&camcorder->projection);
   camcorder->projection_dirty = TRUE;
   camcorder->clear_fb = TRUE;
 
-  return RIG_COMPONENT (camcorder);
+  return camcorder;
 }
 
 void

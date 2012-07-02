@@ -28,14 +28,18 @@ typedef struct _RigLight RigLight;
 
 struct _RigLight
 {
-  RigComponent component;
+  RigObjectProps _parent;
+  RigComponentableProps component;
   CoglColor ambient;
   CoglColor diffuse;
   CoglColor specular;
   CoglPipeline *pipeline; /* pipeline where to update the light uniforms */
 };
 
-RigComponent *
+void
+_rig_light_init_type (void);
+
+RigLight *
 rig_light_new (void);
 
 void

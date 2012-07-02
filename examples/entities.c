@@ -121,7 +121,7 @@ create_diffuse_specular_material (void)
       "normal_direction = normalize(normal_matrix * cogl_normal_in);\n"
       "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
 
-      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n" 
+      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n"
       "                cogl_position_in;\n"
   );
 
@@ -221,7 +221,7 @@ test_init (RigShell *shell, void *user_data)
   CoglOnscreen *onscreen;
   CoglTexture2D *color_buffer;
   GError *error = NULL;
-  RigComponent *component;
+  RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;
   CoglColor color;
@@ -344,8 +344,9 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.5f);
 
-  component = rig_mesh_renderer_new_from_template ("plane", root_pipeline);
-
+  component = rig_mesh_renderer_new_from_template ("plane");
+  rig_entity_add_component (data->plane, component);
+  component = rig_material_new_with_pipeline (data->ctx, root_pipeline);
   rig_entity_add_component (data->plane, component);
 
   /* a second, more interesting, entity */
@@ -356,12 +357,13 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_z (data->cube, 1);
   rig_entity_rotate_y_axis (data->cube, 10);
 
+  component = rig_mesh_renderer_new_from_template ("cube");
+  rig_entity_add_component (data->cube, component);
+
   pipeline = cogl_pipeline_copy (root_pipeline);
   cogl_pipeline_set_color4f (pipeline, 0.6f, 0.6f, 0.6f, 1.0f);
-
-  component = rig_mesh_renderer_new_from_template ("cube", pipeline);
+  component = rig_material_new_with_pipeline (data->ctx, pipeline);
   cogl_object_unref (pipeline);
-
   rig_entity_add_component (data->cube, component);
 
   /* We draw the entities in the order they are listed and so that
@@ -413,6 +415,7 @@ test_paint (RigShell *shell, void *user_data)
     CoglMatrix light_shadow_matrix, light_projection, *light_transform,
                light_view;
     CoglPipeline *pipeline;
+    RigMaterial *material;
 
     int location;
 
@@ -424,7 +427,8 @@ test_paint (RigShell *shell, void *user_data)
                                  &light_view,
                                  rig_entity_get_transform (data->main_camera));
 
-    pipeline = rig_entity_get_pipeline (data->plane);
+    material = rig_entity_get_component (data->plane, RIG_COMPONENT_TYPE_MATERIAL);
+    pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -433,7 +437,8 @@ test_paint (RigShell *shell, void *user_data)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = rig_entity_get_pipeline (data->cube);
+    material = rig_entity_get_component (data->cube, RIG_COMPONENT_TYPE_MATERIAL);
+    pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -480,7 +485,7 @@ test_fini (RigShell *shell, void *user_data)
   cogl_object_unref (data->shadow_color);
   cogl_object_unref (data->shadow_map);
   cogl_object_unref (data->shadow_fb);
-  
+
   cogl_object_unref (data->shadow_map_tex);
   cogl_object_unref (data->shadow_color_tex);
   cogl_object_unref (data->diffuse_specular);

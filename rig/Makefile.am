@@ -5,7 +5,8 @@ components_source_h = \
     components/rig-animation-clip.h \
     components/rig-camcorder.h \
     components/rig-light.h \
-    components/rig-mesh-renderer.h
+    components/rig-mesh-renderer.h \
+    components/rig-material.h
 
 source_h = \
     $(components_source_h) \
@@ -40,6 +41,7 @@ librig_la_SOURCES = \
     components/rig-camcorder.c \
     components/rig-light.c \
     components/rig-mesh-renderer.c \
+    components/rig-material.c \
     mash-data.c \
     mash-data-loader.c \
     mash-ply-loader.c \

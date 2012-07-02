@@ -21,6 +21,7 @@
 
 #include "rig-global.h"
 #include "rig-types.h"
+#include "components/rig-material.h"
 
 #include "rig-mesh-renderer.h"
 
@@ -388,16 +389,37 @@ rig_mesh_get_normal_matrix (const CoglMatrix *matrix,
 }
 
 static void
-rig_mesh_renderer_draw (RigComponent    *component,
+rig_mesh_renderer_draw (RigObject *object,
                         CoglFramebuffer *fb)
 {
-  RigMeshRenderer *renderer = RIG_MESH_RENDERER (component);
+  RigMeshRenderer *renderer = object;
+  RigComponentableProps *component =
+    rig_object_get_properties (object, RIG_INTERFACE_ID_COMPONENTABLE);
   CoglMatrix modelview_matrix;
   float normal_matrix[9];
+  RigMaterial *material =
+    rig_entity_get_component (component->entity, RIG_COMPONENT_TYPE_MATERIAL);
+  CoglPipeline *pipeline;
+
+  /* FIXME: We could create a default material component in this case */
+  if (!material)
+    {
+      g_warning ("Can't paint mesh without a material component");
+      return;
+    }
+
+  pipeline = rig_material_get_pipeline (material);
+
+  if (G_UNLIKELY (renderer->pipeline_cache != pipeline))
+    {
+      renderer->normal_matrix_uniform =
+        cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
+      renderer->pipeline_cache = pipeline;
+    }
 
   cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
   rig_mesh_get_normal_matrix (&modelview_matrix, normal_matrix);
-  cogl_pipeline_set_uniform_matrix (renderer->pipeline,
+  cogl_pipeline_set_uniform_matrix (pipeline,
                                     renderer->normal_matrix_uniform,
                                     3, /* dimensions */
                                     1, /* count */
@@ -407,7 +429,7 @@ rig_mesh_renderer_draw (RigComponent    *component,
   if (renderer->primitive)
     {
       cogl_framebuffer_draw_primitive (fb,
-                                       renderer->pipeline,
+                                       pipeline,
                                        renderer->primitive);
     }
   else if (renderer->mesh_data)
@@ -416,9 +438,25 @@ rig_mesh_renderer_draw (RigComponent    *component,
 
       primitive = mash_data_get_primitive (renderer->mesh_data);
       cogl_framebuffer_draw_primitive (fb,
-                                       renderer->pipeline,
+                                       pipeline,
                                        primitive);
     }
+}
+
+RigType rig_mesh_renderer_type;
+
+static RigComponentableVTable _rig_mesh_renderer_componentable_vtable = {
+  .draw = rig_mesh_renderer_draw
+};
+
+void
+_rig_mesh_renderer_init_type (void)
+{
+  rig_type_init (&rig_mesh_renderer_type);
+  rig_type_add_interface (&rig_mesh_renderer_type,
+                          RIG_INTERFACE_ID_COMPONENTABLE,
+                          offsetof (RigMeshRenderer, component),
+                          &_rig_mesh_renderer_componentable_vtable);
 }
 
 static RigMeshRenderer *
@@ -427,29 +465,25 @@ rig_mesh_renderer_new (void)
   RigMeshRenderer *renderer;
 
   renderer = g_slice_new0 (RigMeshRenderer);
+  rig_object_init (&renderer->_parent, &rig_mesh_renderer_type);
   renderer->component.type = RIG_COMPONENT_TYPE_MESH_RENDERER;
-  renderer->component.draw = rig_mesh_renderer_draw;
 
   return renderer;
 }
 
-RigComponent *
-rig_mesh_renderer_new_from_file (const char   *file,
-                                 CoglPipeline *pipeline)
+RigMeshRenderer *
+rig_mesh_renderer_new_from_file (const char *file)
 {
   RigMeshRenderer *renderer;
 
   renderer = rig_mesh_renderer_new ();
   renderer->mesh_data = create_ply_primitive (file);
 
-  rig_mesh_renderer_set_pipeline (renderer, pipeline);
-
-  return RIG_COMPONENT (renderer);
+  return renderer;
 }
 
-RigComponent *
-rig_mesh_renderer_new_from_template (const char   *name,
-                                     CoglPipeline *pipeline)
+RigMeshRenderer *
+rig_mesh_renderer_new_from_template (const char *name)
 {
   RigMeshRenderer *renderer;
 
@@ -478,16 +512,11 @@ rig_mesh_renderer_new_from_template (const char   *name,
   else
     g_assert_not_reached ();
 
-  rig_mesh_renderer_set_pipeline (renderer, pipeline);
-
-  return RIG_COMPONENT (renderer);
+  return renderer;
 }
 
 void rig_mesh_renderer_free (RigMeshRenderer *renderer)
 {
-  if (renderer->pipeline)
-    cogl_object_unref (renderer->pipeline);
-
   if (renderer->primitive)
     cogl_object_unref (renderer->primitive);
 
@@ -495,26 +524,6 @@ void rig_mesh_renderer_free (RigMeshRenderer *renderer)
     g_object_unref (renderer->mesh_data);
 
   g_slice_free (RigMeshRenderer, renderer);
-}
-
-
-void
-rig_mesh_renderer_set_pipeline (RigMeshRenderer *renderer,
-                                CoglPipeline    *pipeline)
-{
-  if (renderer->pipeline)
-    {
-      cogl_object_unref (renderer->pipeline);
-      renderer->pipeline = NULL;
-    }
-
-  if (pipeline)
-    {
-      renderer->pipeline = cogl_object_ref (pipeline);
-      renderer->normal_matrix_uniform =
-        cogl_pipeline_get_uniform_location (renderer->pipeline,
-                                            "normal_matrix");
-    }
 }
 
 uint8_t *

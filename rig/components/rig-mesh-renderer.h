@@ -28,30 +28,30 @@
 #include "mash-data-loader.h"
 
 #define RIG_MESH_RENDERER(p) ((RigMeshRenderer *)(p))
-
 typedef struct _RigMeshRenderer RigMeshRenderer;
+extern RigType rig_mesh_renderer_type;
 
 struct _RigMeshRenderer
 {
-  RigComponent component;
+  RigObjectProps _parent;
+  RigComponentableProps component;
   CoglPrimitive *primitive;
   MashData *mesh_data;
   uint8_t *vertex_data;
   int      n_vertices;
   size_t   stride;
-  CoglPipeline *pipeline;
+  CoglPipeline *pipeline_cache;
   int normal_matrix_uniform;
 };
 
-RigComponent *  rig_mesh_renderer_new_from_file     (const char   *file,
-                                                     CoglPipeline *pipeline);
-RigComponent *  rig_mesh_renderer_new_from_template (const char   *name,
-                                                     CoglPipeline *pipeline);
+void
+_rig_mesh_renderer_init_type (void);
+
+RigMeshRenderer *rig_mesh_renderer_new_from_file     (const char   *file);
+RigMeshRenderer *rig_mesh_renderer_new_from_template (const char   *name);
 
 void            rig_mesh_renderer_free              (RigMeshRenderer *renderer);
 
-void            rig_mesh_renderer_set_pipeline      (RigMeshRenderer *renderer,
-                                                     CoglPipeline    *pipeline);
 uint8_t *       rig_mesh_renderer_get_vertex_data   (RigMeshRenderer *renderer,
                                                      size_t          *stride);
 int             rig_mesh_renderer_get_n_vertices    (RigMeshRenderer *renderer);

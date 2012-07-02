@@ -23,8 +23,8 @@
 #include "rig-entity.h"
 
 typedef struct _RigCamcorder RigCamcorder;
-
 #define RIG_CAMCORDER(p) ((RigCamcorder *)(p))
+extern RigType rig_camcorder_type;
 
 typedef enum
 {
@@ -35,7 +35,10 @@ typedef enum
 
 struct _RigCamcorder
 {
-  RigComponent component;
+  RigObjectProps _parent;
+
+  RigComponentableProps component;
+
   CoglFramebuffer *fb;		  /* framebuffer to draw to */
   CoglMatrix projection;          /* projection */
   float viewport[4];              /* view port of the camera in fb */
@@ -48,7 +51,10 @@ struct _RigCamcorder
   unsigned int clear_fb:1;
 };
 
-RigComponent *
+void
+_rig_camcorder_init_type (void);
+
+RigCamcorder *
 rig_camcorder_new (void);
 
 void

@@ -210,7 +210,7 @@ static void
 rig_tool_init (RigTool *tool,
                Data *data)
 {
-  RigComponent *component;
+  RigObject *component;
   CoglPipeline *pipeline;
 
   tool->shell = data->shell;
@@ -219,16 +219,19 @@ rig_tool_init (RigTool *tool,
   tool->rotation_tool = rig_entity_new (data->ctx);
 
   pipeline = create_color_pipeline (1.f, 1.f, 1.f);
-  component = rig_mesh_renderer_new_from_template ("rotation-tool",
-                                                   pipeline);
-  cogl_object_unref (pipeline);
-
+  component = rig_mesh_renderer_new_from_template ("rotation-tool");
+  rig_entity_add_component (tool->rotation_tool, component);
+  component = rig_material_new_with_pipeline (data->ctx, pipeline);
   rig_entity_add_component (tool->rotation_tool, component);
 
   /* rotation tool handle circle */
   tool->rotation_tool_handle = rig_entity_new (data->ctx);
-  component = rig_mesh_renderer_new_from_template ("circle", pipeline);
+  component = rig_mesh_renderer_new_from_template ("circle");
   rig_entity_add_component (tool->rotation_tool_handle, component);
+  component = rig_material_new_with_pipeline (data->ctx, pipeline);
+  rig_entity_add_component (tool->rotation_tool_handle, component);
+
+  cogl_object_unref (pipeline);
 
   tool->rotation_circle =
     rig_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
@@ -610,7 +613,7 @@ test_init (RigShell *shell, void *user_data)
   CoglOnscreen *onscreen;
   CoglTexture2D *color_buffer;
   GError *error = NULL;
-  RigComponent *component;
+  RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;
   CoglColor color;
@@ -743,9 +746,11 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.5f);
 
-  component = rig_mesh_renderer_new_from_template ("plane", root_pipeline);
-
+  component = rig_mesh_renderer_new_from_template ("plane");
   rig_entity_add_component (data->plane, component);
+  component = rig_material_new_with_pipeline (data->ctx, root_pipeline);
+  rig_entity_add_component (data->plane, component);
+
 
   /* 5 cubes */
   pipeline = cogl_pipeline_copy (root_pipeline);
@@ -763,9 +768,10 @@ test_init (RigShell *shell, void *user_data)
       rig_entity_set_z (data->cubes[i], 1);
       rig_entity_rotate_y_axis (data->cubes[i], 10);
 
-      component = rig_mesh_renderer_new_from_template ("cube", pipeline);
+      component = rig_mesh_renderer_new_from_template ("cube");
+      rig_entity_add_component (data->cubes[i], component);
+      component = rig_material_new_with_pipeline (data->ctx, pipeline);
       cogl_object_unref (pipeline);
-
       rig_entity_add_component (data->cubes[i], component);
     }
 
@@ -854,6 +860,7 @@ test_paint (RigShell *shell, void *user_data)
   {
     CoglMatrix light_shadow_matrix, light_projection;
     CoglPipeline *pipeline;
+    RigMaterial *material;
 
     int location;
 
@@ -863,7 +870,8 @@ test_paint (RigShell *shell, void *user_data)
                                  &light_projection,
                                  data->light);
 
-    pipeline = rig_entity_get_pipeline (data->plane);
+    material = rig_entity_get_component (data->plane, RIG_COMPONENT_TYPE_MATERIAL);
+    pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -872,7 +880,8 @@ test_paint (RigShell *shell, void *user_data)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = rig_entity_get_pipeline (data->cubes[0]);
+    material = rig_entity_get_component (data->cubes[0], RIG_COMPONENT_TYPE_MATERIAL);
+    pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,

@@ -39,6 +39,7 @@
 #include "rig-timeline.h"
 #include "rig-text-buffer.h"
 #include "rig-entity.h"
+#include "rig-components.h"
 
 /*
  * Overall issues to keep in mind for a useful and efficient UI scenegraph:
@@ -2780,6 +2781,13 @@ _rig_init (void)
       _rig_timeline_init_type ();
       _rig_ui_viewport_init_type ();
       _rig_entity_init_type ();
+
+      /* components */
+      _rig_animation_clip_init_type ();
+      _rig_camcorder_init_type ();
+      _rig_light_init_type ();
+      _rig_mesh_renderer_init_type ();
+      _rig_material_init_type ();
 
       g_once_init_leave (&init_status, 1);
     }

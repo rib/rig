@@ -192,11 +192,13 @@ rig_entity_get_transform (RigEntity *entity)
 }
 
 void
-rig_entity_add_component (RigEntity    *entity,
-                          RigComponent *component)
+rig_entity_add_component (RigEntity *entity,
+                          RigObject *object)
 {
+  RigComponentableProps *component =
+    rig_object_get_properties (object, RIG_INTERFACE_ID_COMPONENTABLE);
   component->entity = entity;
-  g_ptr_array_add (entity->components, component);
+  g_ptr_array_add (entity->components, object);
 }
 
 void
@@ -207,10 +209,12 @@ rig_entity_update (RigEntity *entity,
 
   for (i = 0; i < entity->components->len; i++)
     {
-      RigComponent *component = g_ptr_array_index (entity->components, i);
+      RigObject *component = g_ptr_array_index (entity->components, i);
+      RigComponentableVTable *componentable =
+        rig_object_get_vtable (component, RIG_INTERFACE_ID_COMPONENTABLE);
 
-      if (component->update)
-        component->update(component, time);
+      if (componentable->update)
+        componentable->update(component, time);
     }
 }
 
@@ -222,10 +226,12 @@ rig_entity_draw (RigEntity       *entity,
 
   for (i = 0; i < entity->components->len; i++)
     {
-      RigComponent *component = g_ptr_array_index (entity->components, i);
+      RigObject *component = g_ptr_array_index (entity->components, i);
+      RigComponentableVTable *componentable =
+        rig_object_get_vtable (component, RIG_INTERFACE_ID_COMPONENTABLE);
 
-      if (component->draw)
-        component->draw(component, fb);
+      if (componentable->draw)
+        componentable->draw(component, fb);
     }
 }
 
@@ -287,24 +293,8 @@ rig_entity_rotate_z_axis (RigEntity *entity,
   entity->dirty = TRUE;
 }
 
-CoglPipeline *
-rig_entity_get_pipeline (RigEntity *entity)
-{
-  int i;
-
-  for (i = 0; i < entity->components->len; i++)
-    {
-      RigComponent *component = g_ptr_array_index (entity->components, i);
-
-      if (component->type == RIG_COMPONENT_TYPE_MESH_RENDERER)
-        return RIG_MESH_RENDERER (component)->pipeline;
-    }
-
-    return NULL;
-}
-
 void rig_entity_set_cast_shadow (RigEntity *entity,
-                                 gboolean   cast_shadow)
+                                 gboolean cast_shadow)
 {
   if (cast_shadow)
     entity->cast_shadow = TRUE;
@@ -312,19 +302,21 @@ void rig_entity_set_cast_shadow (RigEntity *entity,
     entity->cast_shadow = FALSE;
 }
 
-RigComponent *
-rig_entity_get_component (RigEntity        *entity,
-                          RigComponentType  type)
+RigObject *
+rig_entity_get_component (RigEntity *entity,
+                          RigComponentType type)
 {
   int i;
 
   for (i = 0; i < entity->components->len; i++)
     {
-      RigComponent *component = g_ptr_array_index (entity->components, i);
+      RigObject *component = g_ptr_array_index (entity->components, i);
+      RigComponentableProps *component_props =
+        rig_object_get_properties (component, RIG_INTERFACE_ID_COMPONENTABLE);
 
-      if (component->type == type)
+      if (component_props->type == type)
         return component;
     }
 
-    return NULL;
+  return NULL;
 }

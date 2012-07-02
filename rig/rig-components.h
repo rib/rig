@@ -24,5 +24,6 @@
 #include "components/rig-camcorder.h"
 #include "components/rig-light.h"
 #include "components/rig-mesh-renderer.h"
+#include "components/rig-material.h"
 
 #endif /* __RIG_COMPONENTS_H__ */

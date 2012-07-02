@@ -33,10 +33,12 @@ get_color_array (CoglColor *color)
 }
 
 static void
-rig_light_update (RigComponent *component,
-                  int64_t       time)
+rig_light_update (RigObject *object,
+                  int64_t time)
 {
-  RigLight *light = RIG_LIGHT (component);
+  RigLight *light = object;
+  RigComponentableProps *component =
+    rig_object_get_properties (object, RIG_INTERFACE_ID_COMPONENTABLE);
   float norm_direction[3];
   int location;
 
@@ -78,19 +80,35 @@ rig_light_update (RigComponent *component,
 
 }
 
-RigComponent *
+RigType rig_light_type;
+
+static RigComponentableVTable _rig_light_componentable_vtable = {
+  .update = rig_light_update
+};
+
+void
+_rig_light_init_type (void)
+{
+  rig_type_init (&rig_light_type);
+  rig_type_add_interface (&rig_light_type,
+                           RIG_INTERFACE_ID_COMPONENTABLE,
+                           offsetof (RigLight, component),
+                           &_rig_light_componentable_vtable);
+}
+
+RigLight *
 rig_light_new (void)
 {
   RigLight *light;
 
   light = g_slice_new0 (RigLight);
+  rig_object_init (&light->_parent, &rig_light_type);
   light->component.type = RIG_COMPONENT_TYPE_LIGHT;
-  light->component.update = rig_light_update;
   cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
 
-  return RIG_COMPONENT (light);
+  return light;
 }
 
 void

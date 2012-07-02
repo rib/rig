@@ -43,10 +43,10 @@ easing_linear (float progress)
 }
 
 static void
-rig_animation_clip_update (RigComponent *component,
-			   int64_t       time)
+rig_animation_clip_update (RigObject *object,
+			   int64_t time)
 {
-  RigAnimationClip *clip = RIG_ANIMATION_CLIP (component);
+  RigAnimationClip *clip = object;
   float progress;
   int i;
 
@@ -102,21 +102,39 @@ rig_animation_clip_update (RigComponent *component,
     }
 }
 
+RigType rig_animation_clip_type;
+
+static RigComponentableVTable _rig_animation_clip_componentable_vtable = {
+  .update = rig_animation_clip_update
+};
+
+void
+_rig_animation_clip_init_type (void)
+{
+  rig_type_init (&rig_animation_clip_type);
+  rig_type_add_interface (&rig_animation_clip_type,
+                           RIG_INTERFACE_ID_COMPONENTABLE,
+                           offsetof (RigAnimationClip, component),
+                           &_rig_animation_clip_componentable_vtable);
+}
+
 /*
  * duration is given in ms in the API, but internally all computations are done
  * in micro seconds
  */
-RigComponent *
+RigAnimationClip *
 rig_animation_clip_new (int32_t duration)
 {
-  RigAnimationClip *renderer;
+  RigAnimationClip *clip;
 
-  renderer = g_slice_new0 (RigAnimationClip);
-  renderer->component.type = RIG_COMPONENT_TYPE_ANIMATION_CLIP;
-  renderer->component.update = rig_animation_clip_update;
-  renderer->duration = duration * 1000;
+  clip = g_slice_new0 (RigAnimationClip);
 
-  return RIG_COMPONENT (renderer);
+  rig_object_init (&clip->_parent, &rig_animation_clip_type);
+
+  clip->component.type = RIG_COMPONENT_TYPE_ANIMATION_CLIP;
+  clip->duration = duration * 1000;
+
+  return clip;
 }
 
 void
