@@ -22,8 +22,6 @@
 
 #include <rig.h>
 
-#define USER_ENTITY 2
-
 typedef struct
 {
   RigShell *shell;
