@@ -890,6 +890,8 @@ rig_modifier_state_for_android_meta (int32_t meta)
 static RigModifierState
 rig_sdl_get_modifier_state (void)
 {
+  RigModifierState rig_state = 0;
+
   SDLMod mod = SDL_GetModState ();
 
   if (mod & KMOD_LSHIFT)
