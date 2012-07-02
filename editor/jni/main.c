@@ -22,6 +22,8 @@
 
 #include <rig.h>
 
+#define N_CUBES 10
+
 typedef struct
 {
   RigShell *shell;
@@ -52,7 +54,7 @@ typedef struct
   RigEntity *light;
   RigEntity *ui_camera;
   RigEntity *plane;
-  RigEntity *cube;
+  RigEntity *cubes[N_CUBES];
   GList *entities;
   GList *pickables;
 
@@ -613,6 +615,7 @@ test_init (RigShell *shell, void *user_data)
   CoglSnippet *snippet;
   CoglColor color;
   float vector3[3];
+  int i;
 
   data->ctx = rig_context_new (data->shell);
 
@@ -698,7 +701,7 @@ test_init (RigShell *shell, void *user_data)
   data->light = rig_entity_new (data->ctx);
   data->entities = g_list_prepend (data->entities, data->light);
 
-  vector3[0] = 1.0f;
+  vector3[0] = 12.0f;
   vector3[1] = 8.0f;
   vector3[2] = -2.0f;
   rig_entity_set_position (data->light, vector3);
@@ -726,7 +729,7 @@ test_init (RigShell *shell, void *user_data)
                              COGL_FRAMEBUFFER (data->shadow_fb));
   rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
                                      RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 5, 5, -5, -5);
+  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 15, 5, -15, -5);
   rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
   rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 20.f);
 
@@ -744,22 +747,27 @@ test_init (RigShell *shell, void *user_data)
 
   rig_entity_add_component (data->plane, component);
 
-  /* a second, more interesting, entity */
-  data->cube = rig_entity_new (data->ctx);
-  data->entities = g_list_prepend (data->entities, data->cube);
-  data->pickables = g_list_prepend (data->pickables, data->cube);
-  rig_entity_set_cast_shadow (data->cube, TRUE);
-  rig_entity_set_y (data->cube, .5);
-  rig_entity_set_z (data->cube, 1);
-  rig_entity_rotate_y_axis (data->cube, 10);
-
+  /* 5 cubes */
   pipeline = cogl_pipeline_copy (root_pipeline);
   cogl_pipeline_set_color4f (pipeline, 0.6f, 0.6f, 0.6f, 1.0f);
+  for (i = 0; i < N_CUBES; i++)
+    {
 
-  component = rig_mesh_renderer_new_from_template ("cube", pipeline);
-  cogl_object_unref (pipeline);
+      data->cubes[i] = rig_entity_new (data->ctx);
+      data->entities = g_list_prepend (data->entities, data->cubes[i]);
+      data->pickables = g_list_prepend (data->pickables, data->cubes[i]);
 
-  rig_entity_add_component (data->cube, component);
+      rig_entity_set_cast_shadow (data->cubes[i], TRUE);
+      rig_entity_set_x (data->cubes[i], i * 2.5f);
+      rig_entity_set_y (data->cubes[i], .5);
+      rig_entity_set_z (data->cubes[i], 1);
+      rig_entity_rotate_y_axis (data->cubes[i], 10);
+
+      component = rig_mesh_renderer_new_from_template ("cube", pipeline);
+      cogl_object_unref (pipeline);
+
+      rig_entity_add_component (data->cubes[i], component);
+    }
 
   /* create the pipelines to display the shadow color and depth textures */
   data->shadow_color_tex =
@@ -864,7 +872,7 @@ test_paint (RigShell *shell, void *user_data)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = rig_entity_get_pipeline (data->cube);
+    pipeline = rig_entity_get_pipeline (data->cubes[0]);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -1024,7 +1032,9 @@ pick (Data  *data,
   bool hit;
   float transformed_ray_origin[3];
   float transformed_ray_direction[3];
-  static const char *names[2] = { "plane", "cube" }, *name;
+  static const char *names[11] = { "plane", "cube0", "cube1", "cube2",
+                                  "cube3", "cube4", "cube5", "cube6",
+                                  "cube7", "cube8", "cube9"}, *name;
   GList *l;
 
   for (l = data->pickables, i = 0; l; l = l->next, i++)
