@@ -416,6 +416,8 @@ struct _RigSettings
   GList *changed_callbacks;
 };
 
+static CoglUserDataKey fb_camera_key;
+
 static void
 _rig_settings_free (RigSettings *settings)
 {
@@ -798,6 +800,7 @@ typedef struct _CameraFlushState
 {
   RigCamera *current_camera;
   unsigned int transform_age;
+  CoglBool in_frame;
 } CameraFlushState;
 
 static void
@@ -810,7 +813,6 @@ free_camera_flush_state (void *user_data)
 static void
 _rig_camera_flush_transforms (RigCamera *camera)
 {
-  static CoglUserDataKey fb_camera_key;
   const CoglMatrix *projection;
   CoglFramebuffer *fb = camera->fb;
   CameraFlushState *state =
@@ -818,6 +820,7 @@ _rig_camera_flush_transforms (RigCamera *camera)
   if (!state)
     {
       state = g_slice_new (CameraFlushState);
+      state->in_frame = FALSE;
       cogl_object_set_user_data (COGL_OBJECT (fb),
                                  &fb_camera_key,
                                  state,
@@ -825,7 +828,16 @@ _rig_camera_flush_transforms (RigCamera *camera)
     }
   else if (state->current_camera == camera &&
            camera->transform_age == state->transform_age)
-    return;
+    {
+      state->in_frame = TRUE;
+      return;
+    }
+
+  if (state->in_frame)
+    {
+      g_warning ("Un-balanced rig_camera_flush/_end calls: "
+                 "repeat _flush() calls before _end()");
+    }
 
   cogl_framebuffer_set_viewport (fb,
                                  camera->viewport[0],
@@ -836,11 +848,11 @@ _rig_camera_flush_transforms (RigCamera *camera)
   projection = rig_camera_get_projection (camera);
   cogl_framebuffer_set_projection_matrix (fb, projection);
 
-  cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_set_modelview_matrix (fb, &camera->view);
 
   state->current_camera = camera;
   state->transform_age = camera->transform_age;
+  state->in_frame = TRUE;
 }
 
 void
@@ -919,7 +931,7 @@ rig_camera_new (RigContext *ctx, CoglFramebuffer *framebuffer)
   camera->component.type = RIG_COMPONENT_TYPE_CAMCORDER;
 
   rig_camera_set_background_color4f (camera, 0, 0, 0, 1);
-  camera->clear_fb = FALSE;
+  camera->clear_fb = TRUE;
 
   //rig_graphable_init (RIG_OBJECT (camera));
 
@@ -978,6 +990,17 @@ CoglFramebuffer *
 rig_camera_get_framebuffer (RigCamera *camera)
 {
   return camera->fb;
+}
+
+void
+rig_camera_set_framebuffer (RigCamera *camera,
+                            CoglFramebuffer *framebuffer)
+{
+  if (camera->fb == framebuffer)
+    return;
+
+  cogl_object_unref (camera->fb);
+  camera->fb = cogl_object_ref (camera->fb);
 }
 
 void
@@ -1111,6 +1134,12 @@ rig_camera_set_field_of_view (RigCamera *camera,
       camera->projection_age++;
       camera->transform_age++;
     }
+}
+
+float
+rig_camera_get_field_of_view (RigCamera *camera)
+{
+  return camera->fov;
 }
 
 void
@@ -1327,7 +1356,15 @@ void
 rig_camera_end_frame (RigCamera *camera)
 {
   double elapsed;
-
+  CameraFlushState *state =
+    cogl_object_get_user_data (COGL_OBJECT (camera->fb), &fb_camera_key);
+  if (state)
+    {
+      if (state->in_frame != TRUE)
+        g_warning ("Un-balanced rig_camera_flush/end frame calls. "
+                   "_end before _flush");
+      state->in_frame = FALSE;
+    }
   camera->frame++;
 
   elapsed = g_timer_elapsed (camera->timer, NULL);

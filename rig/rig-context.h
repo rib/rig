@@ -125,6 +125,10 @@ CoglFramebuffer *
 rig_camera_get_framebuffer (RigCamera *camera);
 
 void
+rig_camera_set_framebuffer (RigCamera *camera,
+                            CoglFramebuffer *framebuffer);
+
+void
 rig_camera_set_viewport (RigCamera *camera,
                          float x,
                          float y,
@@ -162,6 +166,9 @@ void
 rig_camera_set_field_of_view (RigCamera *camera,
                               float fov);
 
+float
+rig_camera_get_field_of_view (RigCamera *camera);
+
 void
 rig_camera_set_orthographic_coordinates (RigCamera *camera,
                                          float x1,
@@ -178,6 +185,9 @@ rig_camera_set_view_transform (RigCamera *camera,
 
 const CoglMatrix *
 rig_camera_get_view_transform (RigCamera *camera);
+
+const CoglMatrix *
+rig_camera_get_inverse_view_transform (RigCamera *camera);
 
 void
 rig_camera_set_input_transform (RigCamera *camera,

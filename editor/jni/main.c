@@ -35,7 +35,7 @@ typedef struct
   CoglQuaternion saved_rotation;
   bool button_down;
   RigEntity *camera;
-  RigCamcorder *camcorder;  /* camcorder component of the camera above */
+  RigCamera *camera_component; /* cameracomponent of the camera above */
   float position[3];    /* transformed position of the selected entity */
   float screen_pos[2];
   float scale;
@@ -57,8 +57,10 @@ typedef struct
 
   /* scene */
   RigEntity *main_camera;
+  RigCamera *main_camera_component;
   RigEntity *light;
   RigEntity *ui_camera;
+  RigCamera *ui_camera_component;
   RigEntity *plane;
   RigEntity *cubes[N_CUBES];
   GList *entities;
@@ -68,6 +70,7 @@ typedef struct
   CoglOffscreen *shadow_fb;
   CoglTexture2D *shadow_color;
   CoglTexture   *shadow_map;
+  RigCamera     *shadow_map_camera;
 
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
@@ -298,8 +301,10 @@ rig_tool_update (RigTool *tool,
                  RigEntity *selected_entity)
 {
     RigComponent *camera;
-    CoglMatrix transform, *projection;
-    float scale_thingy[4], screen_space[4], *viewport, x, y;
+    CoglMatrix transform;
+    const CoglMatrix *projection;
+    float scale_thingy[4], screen_space[4], x, y;
+    const float *viewport;
 
     if (selected_entity == NULL)
       {
@@ -329,7 +334,7 @@ rig_tool_update (RigTool *tool,
 
     camera = rig_entity_get_component (tool->camera,
                                        RIG_COMPONENT_TYPE_CAMCORDER);
-    projection = rig_camcorder_get_projection (RIG_CAMCORDER (camera));
+    projection = rig_camera_get_projection (RIG_CAMERA (camera));
 
     scale_thingy[0] = 1.f;
     scale_thingy[1] = 0.f;
@@ -364,7 +369,7 @@ rig_tool_update (RigTool *tool,
     screen_space[1] /= screen_space[3];
 
     /* apply viewport transform */
-    viewport = rig_camcorder_get_viewport (RIG_CAMCORDER (camera));
+    viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
     x = VIEWPORT_TRANSFORM_X (screen_space[0], viewport[0], viewport[2]);
     y = VIEWPORT_TRANSFORM_Y (screen_space[1], viewport[1], viewport[3]);
 
@@ -384,8 +389,8 @@ rig_tool_update (RigTool *tool,
         tool->selected_entity = selected_entity;
       }
 
-    /* save the camcorder component for other functions to use */
-    tool->camcorder = RIG_CAMCORDER (camera);
+    /* save the camera component for other functions to use */
+    tool->camera_component = RIG_CAMERA (camera);
 }
 
 static float
@@ -423,6 +428,7 @@ rig_tool_draw (RigTool *tool,
 {
   CoglMatrix rotation;
   float scale, aspect_ratio;
+  CoglMatrix saved_projection;
 
   float fb_width, fb_height;
 
@@ -437,15 +443,17 @@ rig_tool_draw (RigTool *tool,
   fb_height = cogl_framebuffer_get_height (fb);
   aspect_ratio = fb_width / fb_height;
 
+  cogl_framebuffer_get_projection_matrix (fb, &saved_projection);
   cogl_framebuffer_perspective (fb,
-                                tool->camcorder->fov,
+                                rig_camera_get_field_of_view (tool->camera_component),
                                 aspect_ratio,
-                                tool->camcorder->z_near,
+                                rig_camera_get_near_plane (tool->camera_component),
                                 -tool->position[2]);
 
   scale = rig_tool_get_scale_for_length (tool, 128 / fb_width);
 
   /* draw the tool */
+  cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_identity_matrix (fb);
   cogl_framebuffer_translate (fb,
                               tool->position[0],
@@ -459,6 +467,9 @@ rig_tool_draw (RigTool *tool,
   rig_entity_draw (tool->rotation_tool_handle, fb);
   cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
   rig_entity_draw (tool->rotation_tool_handle, fb);
+  cogl_framebuffer_pop_matrix (fb);
+
+  cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
 }
 
 /* in micro seconds  */
@@ -524,7 +535,7 @@ create_diffuse_specular_material (void)
       "normal_direction = normalize(normal_matrix * cogl_normal_in);\n"
       "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
 
-      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n" 
+      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n"
       "                cogl_position_in;\n"
   );
 
@@ -599,6 +610,11 @@ draw_entities (Data            *data,
   transform = rig_entity_get_transform (camera);
   cogl_matrix_get_inverse (transform, &inverse);
   pivot = rig_entity_get_transform (data->pivot);
+
+  rig_entity_draw (camera, fb);
+
+  cogl_framebuffer_push_matrix (fb);
+
   if (shadow_pass)
     {
       cogl_framebuffer_identity_matrix (fb);
@@ -610,7 +626,6 @@ draw_entities (Data            *data,
       cogl_framebuffer_set_modelview_matrix (fb, &inverse);
       cogl_framebuffer_transform (fb, pivot);
     }
-  rig_entity_draw (camera, fb);
 
   for (l = data->entities; l; l = l->next)
     {
@@ -628,6 +643,15 @@ draw_entities (Data            *data,
 
       cogl_framebuffer_pop_matrix (fb);
     }
+
+  /* XXX: Note we don't pop the matrix stack here since we want to
+   * allow additional things to be drawn using the same transform.
+   * This means it's the callers responsibility for now to pop the
+   * modelview matrix after using this function.
+   *
+   * At some point we should probably factor out the camera flushing
+   * from this function so we can avoid this asymmetry.
+   */
 }
 
 static void
@@ -734,12 +758,14 @@ test_init (RigShell *shell, void *user_data)
   vector3[2] = 10.f;
   rig_entity_set_position (data->main_camera, vector3);
 
-  component = rig_camcorder_new ();
+  component = rig_camera_new (data->ctx, data->fb);
+  data->main_camera_component = component;
 
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component), data->fb);
-  rig_camcorder_set_field_of_view (RIG_CAMCORDER (component), 60.f);
-  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
-  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 100.f);
+  rig_camera_set_projection_mode (RIG_CAMERA (component),
+                                  RIG_PROJECTION_PERSPECTIVE);
+  rig_camera_set_field_of_view (RIG_CAMERA (component), 60.f);
+  rig_camera_set_near_plane (RIG_CAMERA (component), 1.1f);
+  rig_camera_set_far_plane (RIG_CAMERA (component), 100.f);
 
   rig_entity_add_component (data->main_camera, component);
 
@@ -767,17 +793,16 @@ test_init (RigShell *shell, void *user_data)
 
   rig_entity_add_component (data->light, component);
 
-  component = rig_camcorder_new ();
+  component = rig_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
+  data->shadow_map_camera = component;
 
-  cogl_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
-  rig_camcorder_set_background_color (RIG_CAMCORDER (component), &color);
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component),
-                             COGL_FRAMEBUFFER (data->shadow_fb));
-  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
-                                     RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 15, 5, -15, -5);
-  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
-  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 20.f);
+  rig_camera_set_background_color4f (RIG_CAMERA (component), 0.f, .3f, 0.f, 1.f);
+  rig_camera_set_projection_mode (RIG_CAMERA (component),
+                                  RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camera_set_orthographic_coordinates (RIG_CAMERA (component),
+                                           15, 5, -15, -5);
+  rig_camera_set_near_plane (RIG_CAMERA (component), 1.1f);
+  rig_camera_set_far_plane (RIG_CAMERA (component), 20.f);
 
   rig_entity_add_component (data->light, component);
 
@@ -844,15 +869,18 @@ test_init (RigShell *shell, void *user_data)
   /* UI layer camera */
   data->ui_camera = rig_entity_new (data->ctx);
 
-  component = rig_camcorder_new ();
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component), data->fb);
-  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
-                                     RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 0, 0,
-                                  data->fb_width, data->fb_height);
-  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), -64.f);
-  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 64.f);
-  rig_camcorder_set_clear (RIG_CAMCORDER (component), FALSE);
+  component = rig_camera_new (data->ctx, data->fb);
+  data->ui_camera_component = component;
+  rig_camera_set_projection_mode (RIG_CAMERA (component),
+                                  RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camera_set_orthographic_coordinates (RIG_CAMERA (component),
+                                           0,
+                                           0,
+                                           data->fb_width,
+                                           data->fb_height);
+  rig_camera_set_near_plane (RIG_CAMERA (component), -64.f);
+  rig_camera_set_far_plane (RIG_CAMERA (component), 64.f);
+  rig_camera_set_clear (RIG_CAMERA (component), FALSE);
 
   rig_entity_add_component (data->ui_camera, component);
 
@@ -940,6 +968,16 @@ test_paint (RigShell *shell, void *user_data)
 
   draw_entities (data, shadow_fb, data->light, TRUE /* shadow pass */);
 
+  /* XXX: Big hack!
+   *
+   * draw_entities() leaves it's view transform pushed so we can draw
+   * more things using the same transform before popping it.
+   */
+  cogl_framebuffer_pop_matrix (shadow_fb);
+
+  /* XXX: Somewhat asymmetric and hacky for now... */
+  rig_camera_end_frame (data->shadow_map_camera);
+
   /*
    * render the scene
    */
@@ -952,7 +990,7 @@ test_paint (RigShell *shell, void *user_data)
 
   camera = rig_entity_get_component (data->main_camera,
                                      RIG_COMPONENT_TYPE_CAMCORDER);
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (camera), draw_fb);
+  rig_camera_set_framebuffer (RIG_CAMERA (camera), draw_fb);
 
   /* draw entities */
   draw_entities (data, draw_fb, data->main_camera, FALSE);
@@ -964,6 +1002,13 @@ test_paint (RigShell *shell, void *user_data)
                                        data->picking_ray);
     }
 
+  /* XXX: Big hack!
+   *
+   * draw_entities() leaves it's view transform pushed so we can draw
+   * more things using the same transform before popping it.
+   */
+  cogl_framebuffer_pop_matrix (draw_fb);
+
   /* camera¯1 * pivot is left over after draw_entities() */
   if (data->edit && data->selected_entity)
     {
@@ -971,8 +1016,12 @@ test_paint (RigShell *shell, void *user_data)
       rig_tool_draw (&data->tool, data, data->fb);
     }
 
+  /* XXX: Somewhat asymmetric and hacky for now... */
+  rig_camera_end_frame (data->main_camera_component);
+
   /* The UI layer is drawn using an orthographic projection */
   rig_entity_draw (data->ui_camera, data->fb);
+  cogl_framebuffer_push_matrix (data->fb);
   cogl_framebuffer_identity_matrix (data->fb);
 
   /* draw the postprocess framebuffer to the real onscreen with the
@@ -991,6 +1040,11 @@ test_paint (RigShell *shell, void *user_data)
       cogl_framebuffer_draw_rectangle (data->fb, data->shadow_map_tex,
                                        128, 256, 0, 128);
     }
+
+  cogl_framebuffer_pop_matrix (data->fb);
+
+  /* XXX: Somewhat asymmetric and hacky for now... */
+  rig_camera_end_frame (data->ui_camera_component);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
@@ -1205,19 +1259,19 @@ test_input_handler (RigInputEvent *event, void *user_data)
           {
             /* pick */
             RigComponent *camera;
-            float *viewport, ray_position[3], ray_direction[3], screen_pos[2],
+            float ray_position[3], ray_direction[3], screen_pos[2],
                   z_far, z_near;
-            CoglMatrix *camera_transform, *projection, inverse_projection;
+            const float *viewport;
+            CoglMatrix *camera_transform;
+            const CoglMatrix *inverse_projection;
 
             camera = rig_entity_get_component (data->main_camera,
                                                RIG_COMPONENT_TYPE_CAMCORDER);
-            viewport = rig_camcorder_get_viewport (RIG_CAMCORDER (camera));
-            z_near = rig_camcorder_get_near_plane (RIG_CAMCORDER (camera));
-            z_far = rig_camcorder_get_far_plane (RIG_CAMCORDER (camera));
-            projection =
-              rig_camcorder_get_projection (RIG_CAMCORDER (camera));
-
-            cogl_matrix_get_inverse (projection, &inverse_projection);
+            viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
+            z_near = rig_camera_get_near_plane (RIG_CAMERA (camera));
+            z_far = rig_camera_get_far_plane (RIG_CAMERA (camera));
+            inverse_projection =
+              rig_camera_get_inverse_projection (RIG_CAMERA (camera));
 
             camera_transform = rig_entity_get_transform (data->main_camera);
 
@@ -1225,7 +1279,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
             screen_pos[1] = y;
 
             rig_util_create_pick_ray (viewport,
-                                      &inverse_projection,
+                                      inverse_projection,
                                       camera_transform,
                                       screen_pos,
                                       ray_position,

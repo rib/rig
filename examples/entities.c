@@ -31,6 +31,7 @@ typedef struct
   GTimer *timer;
 
   RigEntity *main_camera;
+  RigCamera *main_camera_component;
   RigEntity *light;
   RigEntity *plane;
   RigEntity *cube;
@@ -40,6 +41,7 @@ typedef struct
   CoglOffscreen *shadow_fb;
   CoglTexture2D *shadow_color;
   CoglTexture   *shadow_map;
+  RigCamera     *shadow_map_camera;
 
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
@@ -184,6 +186,11 @@ draw_entities (Data            *data,
 
   transform = rig_entity_get_transform (camera);
   cogl_matrix_get_inverse (transform, &inverse);
+
+  rig_entity_draw (camera, fb);
+
+  cogl_framebuffer_push_matrix (fb);
+
   if (shadow_pass)
     {
       cogl_framebuffer_identity_matrix (fb);
@@ -194,7 +201,6 @@ draw_entities (Data            *data,
     {
       cogl_framebuffer_set_modelview_matrix (fb, &inverse);
     }
-  rig_entity_draw (camera, fb);
 
   for (l = data->entities; l; l = l->next)
     {
@@ -212,6 +218,15 @@ draw_entities (Data            *data,
 
       cogl_framebuffer_pop_matrix (fb);
     }
+
+  /* XXX: Note we don't pop the matrix stack here since we want to
+   * allow additional things to be drawn using the same transform.
+   * This means it's the callers responsibility for now to pop the
+   * modelview matrix after using this function.
+   *
+   * At some point we should probably factor out the camera flushing
+   * from this function so we can avoid this asymmetry.
+   */
 }
 
 static void
@@ -290,12 +305,14 @@ test_init (RigShell *shell, void *user_data)
   vector3[2] = 10.f;
   rig_entity_set_position (data->main_camera, vector3);
 
-  component = rig_camcorder_new ();
+  component = rig_camera_new (data->ctx, data->fb);
+  data->main_camera_component = component;
 
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component), data->fb);
-  rig_camcorder_set_field_of_view (RIG_CAMCORDER (component), 60.f);
-  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
-  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 100.f);
+  rig_camera_set_projection_mode (RIG_CAMERA (component),
+                                  RIG_PROJECTION_PERSPECTIVE);
+  rig_camera_set_field_of_view (RIG_CAMERA (component), 60.f);
+  rig_camera_set_near_plane (RIG_CAMERA (component), 1.1f);
+  rig_camera_set_far_plane (RIG_CAMERA (component), 100.f);
 
   rig_entity_add_component (data->main_camera, component);
 
@@ -323,17 +340,16 @@ test_init (RigShell *shell, void *user_data)
 
   rig_entity_add_component (data->light, component);
 
-  component = rig_camcorder_new ();
+  component = rig_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
+  data->shadow_map_camera = component;
 
   cogl_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
-  rig_camcorder_set_background_color (RIG_CAMCORDER (component), &color);
-  rig_camcorder_set_framebuffer (RIG_CAMCORDER (component),
-                             COGL_FRAMEBUFFER (data->shadow_fb));
-  rig_camcorder_set_projection_mode (RIG_CAMCORDER (component),
-                                     RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camcorder_set_size_of_view (RIG_CAMCORDER (component), 6, 6, -6, -6);
-  rig_camcorder_set_near_plane (RIG_CAMCORDER (component), 1.1f);
-  rig_camcorder_set_far_plane (RIG_CAMCORDER (component), 20.f);
+  rig_camera_set_background_color4f (RIG_CAMERA (component), 0.f, .3f, 0.f, 1.f);
+  rig_camera_set_projection_mode (RIG_CAMERA (component),
+                                  RIG_PROJECTION_ORTHOGRAPHIC);
+  rig_camera_set_orthographic_coordinates (RIG_CAMERA (component), -6, 6, 6, -6);
+  rig_camera_set_near_plane (RIG_CAMERA (component), 1.1f);
+  rig_camera_set_far_plane (RIG_CAMERA (component), 20.f);
 
   rig_entity_add_component (data->light, component);
 
@@ -450,11 +466,21 @@ test_paint (RigShell *shell, void *user_data)
 
   draw_entities (data, shadow_fb, data->light, TRUE /* shadow pass */);
 
+  /* XXX: Big hack!
+   *
+   * draw_entities() leaves it's view transform pushed so we can draw
+   * more things using the same transform before popping it. (See
+   * below where we render the shadow maps for debugging after drawing
+   * the entities)...
+   */
+  cogl_framebuffer_pop_matrix (shadow_fb);
+
+  /* XXX: Somewhat asymmetric and hacky for now... */
+  rig_camera_end_frame (data->shadow_map_camera);
+
   /*
    * render the scene
    */
-
-  cogl_framebuffer_push_matrix (data->fb);
 
   /* draw entities */
   draw_entities (data, data->fb, data->main_camera, FALSE /* shadow pass */);
@@ -465,7 +491,16 @@ test_paint (RigShell *shell, void *user_data)
   cogl_framebuffer_draw_rectangle (data->fb, data->shadow_map_tex,
                                    -2, -1, -4, 1);
 
+  /* XXX: Big hack!
+   *
+   * draw_entities() leaves it's view transform pushed so we can draw
+   * the shadow map textures using the same transform, but we need
+   * to make sure we pop the transform when we are done...
+   */
   cogl_framebuffer_pop_matrix (data->fb);
+
+  /* XXX: Somewhat asymmetric and hacky for now... */
+  rig_camera_end_frame (data->main_camera_component);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
