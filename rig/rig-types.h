@@ -11,6 +11,12 @@ typedef struct _RigTransform RigTransform;
 #define RIG_TRANSFORM(X) ((RigTransform *)X)
 RigType rig_transform_type;
 
+typedef enum
+{
+  RIG_PROJECTION_PERSPECTIVE,
+  RIG_PROJECTION_ORTHOGRAPHIC
+} RigProjection;
+
 typedef struct _RigBox
 {
   float x1, y1, x2, y2;

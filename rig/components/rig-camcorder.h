@@ -26,13 +26,6 @@ typedef struct _RigCamcorder RigCamcorder;
 #define RIG_CAMCORDER(p) ((RigCamcorder *)(p))
 extern RigType rig_camcorder_type;
 
-typedef enum
-{
-  RIG_PROJECTION_PERSPECTIVE,
-  RIG_PROJECTION_ORTHOGRAPHIC
-} RigProjection;
-
-
 struct _RigCamcorder
 {
   RigObjectProps _parent;

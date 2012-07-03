@@ -110,6 +110,17 @@ typedef void (*RigCameraPaintCallback) (RigCamera *camera, void *user_data);
 RigCamera *
 rig_camera_new (RigContext *ctx, CoglFramebuffer *framebuffer);
 
+void
+rig_camera_set_background_color4f (RigCamera *camera,
+                                   float red,
+                                   float green,
+                                   float blue,
+                                   float alpha);
+
+void
+rig_camera_set_clear (RigCamera *camera,
+                      CoglBool clear);
+
 CoglFramebuffer *
 rig_camera_get_framebuffer (RigCamera *camera);
 
@@ -123,12 +134,40 @@ rig_camera_set_viewport (RigCamera *camera,
 const float *
 rig_camera_get_viewport (RigCamera *camera);
 
-void
-rig_camera_set_projection (RigCamera *camera,
-                           const CoglMatrix *projection);
-
 const CoglMatrix *
 rig_camera_get_projection (RigCamera *camera);
+
+void
+rig_camera_set_near_plane (RigCamera *camera,
+                           float near);
+
+float
+rig_camera_get_near_plane (RigCamera *camera);
+
+void
+rig_camera_set_far_plane (RigCamera *camera,
+                          float far);
+
+float
+rig_camera_get_far_plane (RigCamera *camera);
+
+RigProjection
+rig_camera_get_projection_mode (RigCamera *camera);
+
+void
+rig_camera_set_projection_mode (RigCamera *camera,
+                                RigProjection projection);
+
+void
+rig_camera_set_field_of_view (RigCamera *camera,
+                              float fov);
+
+void
+rig_camera_set_orthographic_coordinates (RigCamera *camera,
+                                         float x1,
+                                         float y1,
+                                         float x2,
+                                         float y2);
 
 const CoglMatrix *
 rig_camera_get_inverse_projection (RigCamera *camera);

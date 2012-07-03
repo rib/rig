@@ -8,29 +8,46 @@
 #include "rig-object.h"
 #include "rig-interfaces.h"
 #include "rig-context.h"
+#include "rig-entity.h"
 
 /* TODO: Make internals private */
 struct _RigCamera
 {
   RigObjectProps _parent;
 
+  RigComponentableProps component;
+
   int ref_count;
 
   RigContext *ctx;
 
+  CoglColor bg_color;
+  CoglBool clear_fb;
+
   float viewport[4];
 
+  float near, far;
+
+  float fov; /* perspective */
+
+  float x1, y1, x2, y2; /* orthographic */
+
   CoglMatrix projection;
+  unsigned int projection_age;
+  unsigned int projection_cache_age;
+
   CoglMatrix inverse_projection;
-  CoglBool inverse_projection_cached;
+  unsigned int inverse_projection_age;
 
   CoglMatrix view;
+  unsigned int view_age;
+
   CoglMatrix inverse_view;
-  CoglBool inverse_view_cached;
+  unsigned int inverse_view_age;
+
+  unsigned int transform_age;
 
   CoglFramebuffer *fb;
-
-  int age;
 
   RigGraphableProps graphable;
 
@@ -41,6 +58,8 @@ struct _RigCamera
 
   int frame;
   GTimer *timer;
+
+  unsigned int orthographic:1;
 };
 
 #endif /* _RIG_CAMERA_PRIVATE_H_ */
