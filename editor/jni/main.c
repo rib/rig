@@ -50,6 +50,12 @@ typedef struct
   float fb_width, fb_height;
   GTimer *timer;
 
+  /* postprocessing */
+  CoglFramebuffer *postprocess;
+  CoglTexture2D *postprocess_color;
+  CoglPipeline *pp_pipeline;
+
+  /* scene */
   RigEntity *main_camera;
   RigEntity *light;
   RigEntity *ui_camera;
@@ -76,6 +82,10 @@ typedef struct
   CoglQuaternion saved_rotation;
   RigEntity *selected_entity;
   RigTool tool;
+  bool edit;      /* in edit mode, we can temper with the entities. When edit
+                     is turned off, we'll do the full render (including post
+                     processing) as post-processing does interact well with
+                     drawing the tools */
 
   /* picking ray */
   CoglPipeline *picking_ray_color;
@@ -198,7 +208,9 @@ on_rotation_tool_clicked (RigInputRegion *region,
             rig_input_region_set_circle (tool->rotation_circle, x, y, 64);
           }
 
+        break;
       }
+
       case RIG_INPUT_EVENT_TYPE_KEY:
         break;
     }
@@ -563,6 +575,17 @@ create_diffuse_specular_material (void)
   return pipeline;
 }
 
+static CoglPipeline *
+create_pp_pipeline (CoglTexture *texture)
+{
+  CoglPipeline *new_pipeline;
+
+  new_pipeline = cogl_pipeline_new (rig_cogl_context);
+  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
+
+  return new_pipeline;
+}
+
 static void
 draw_entities (Data            *data,
                CoglFramebuffer *fb,
@@ -632,6 +655,25 @@ test_init (RigShell *shell, void *user_data)
   data->fb = COGL_FRAMEBUFFER (onscreen);
 
   cogl_onscreen_show (onscreen);
+
+  /*
+   * Offscreen render for post-processing
+   */
+  color_buffer = cogl_texture_2d_new_with_size (rig_cogl_context,
+                                                data->fb_width,
+                                                data->fb_height,
+                                                COGL_PIXEL_FORMAT_RGBA_8888,
+                                                &error);
+  if (error)
+    g_critical ("could not create texture: %s", error->message);
+
+  data->postprocess = COGL_FRAMEBUFFER (
+    cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer)));
+
+  data->postprocess_color = color_buffer;
+
+  /* postprocessing pipeline */
+  data->pp_pipeline = create_pp_pipeline (COGL_TEXTURE (color_buffer));
 
   /*
    * Shadow mapping
@@ -817,6 +859,9 @@ test_init (RigShell *shell, void *user_data)
   rig_tool_init (&data->tool, data);
   rig_tool_set_camera (&data->tool, data->main_camera);
 
+  /* we default to edit mode */
+  data->edit = TRUE;
+
   /* We draw/pick the entities in the order they are listed and so
    * that matches the order we created the entities we now reverse the
    * list... */
@@ -833,7 +878,8 @@ test_paint (RigShell *shell, void *user_data)
 {
   Data *data = user_data;
   int64_t time; /* micro seconds */
-  CoglFramebuffer *shadow_fb;
+  CoglFramebuffer *shadow_fb, *draw_fb;
+  RigComponent *camera;
   GList *l;
 
   /*
@@ -897,27 +943,44 @@ test_paint (RigShell *shell, void *user_data)
    * render the scene
    */
 
+  /* post processing or not? */
+  if (data->edit)
+    draw_fb = data->fb;
+  else
+    draw_fb = data->postprocess;
+
+  camera = rig_entity_get_component (data->main_camera,
+                                     RIG_COMPONENT_TYPE_CAMCORDER);
+  rig_camcorder_set_framebuffer (RIG_CAMCORDER (camera), draw_fb);
+
   /* draw entities */
-  draw_entities (data, data->fb, data->main_camera, FALSE /* shadow pass */);
+  draw_entities (data, draw_fb, data->main_camera, FALSE);
 
   if (data->debug_pick_ray && data->picking_ray)
     {
-      cogl_framebuffer_draw_primitive (data->fb,
+      cogl_framebuffer_draw_primitive (draw_fb,
                                        data->picking_ray_color,
                                        data->picking_ray);
     }
 
   /* camera¯1 * pivot is left over after draw_entities() */
-  if (data->selected_entity)
+  if (data->edit && data->selected_entity)
     {
       rig_tool_update (&data->tool, data, data->selected_entity);
       rig_tool_draw (&data->tool, data, data->fb);
     }
 
-
   /* The UI layer is drawn using an orthographic projection */
   rig_entity_draw (data->ui_camera, data->fb);
   cogl_framebuffer_identity_matrix (data->fb);
+
+  /* draw the postprocess framebuffer to the real onscreen with the
+   * postprocess pipeline */
+  if (!data->edit)
+    {
+      cogl_framebuffer_draw_rectangle (data->fb, data->pp_pipeline,
+                                       0, 0, data->fb_width, data->fb_height);
+    }
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (data->fb, data->shadow_color_tex,
@@ -1223,6 +1286,29 @@ test_input_handler (RigInputEvent *event, void *user_data)
             data->button_down = FALSE;
           }
 
+      break;
+      }
+
+      case RIG_INPUT_EVENT_TYPE_KEY:
+      {
+        RigKeyEventAction action;
+        int32_t key;
+
+        key = rig_key_event_get_keysym (event);
+        action = rig_key_event_get_action (event);
+
+        switch (key)
+          {
+          case RIG_KEY_p:
+            if (action == RIG_KEY_EVENT_ACTION_UP)
+              {
+                data->edit = !data->edit;
+                status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
+              }
+            break;
+          default:
+            break;
+          }
       }
     break;
 
