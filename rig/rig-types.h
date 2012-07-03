@@ -3,6 +3,14 @@
 
 #include "rig-type.h"
 
+typedef struct _RigContext RigContext;
+#define RIG_CONTEXT(X) ((RigContext *)X)
+extern RigType rig_context_type;
+
+typedef struct _RigShell RigShell;
+extern RigType rig_shell_type;
+#define RIG_SHELL(X) ((RigShell *)X)
+
 typedef struct _RigCamera RigCamera;
 #define RIG_CAMERA(X) ((RigCamera *)X)
 extern RigType rig_camera_type;

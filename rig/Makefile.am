@@ -3,6 +3,7 @@ lib_LTLIBRARIES = librig.la
 
 components_source_h = \
     components/rig-animation-clip.h \
+    components/rig-camera.h \
     components/rig-light.h \
     components/rig-mesh-renderer.h \
     components/rig-material.h
@@ -37,6 +38,7 @@ source_h = \
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
+    components/rig-camera.c \
     components/rig-light.c \
     components/rig-mesh-renderer.c \
     components/rig-material.c \

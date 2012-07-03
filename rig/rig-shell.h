@@ -8,13 +8,9 @@
 #include <android_native_app_glue.h>
 #endif
 
-typedef struct _RigShell RigShell;
-
 typedef void (*RigShellInitCallback) (RigShell *shell, void *user_data);
 typedef void (*RigShellFiniCallback) (RigShell *shell, void *user_data);
 typedef CoglBool (*RigShellPaintCallback) (RigShell *shell, void *user_data);
-
-RigType rig_shell_type;
 
 RigShell *
 rig_shell_new (RigShellInitCallback init,
