@@ -333,7 +333,7 @@ rig_tool_update (RigTool *tool,
                                   1 /* n_points */);
 
     camera = rig_entity_get_component (tool->camera,
-                                       RIG_COMPONENT_TYPE_CAMCORDER);
+                                       RIG_COMPONENT_TYPE_CAMERA);
     projection = rig_camera_get_projection (RIG_CAMERA (camera));
 
     scale_thingy[0] = 1.f;
@@ -989,7 +989,7 @@ test_paint (RigShell *shell, void *user_data)
     draw_fb = data->postprocess;
 
   camera = rig_entity_get_component (data->main_camera,
-                                     RIG_COMPONENT_TYPE_CAMCORDER);
+                                     RIG_COMPONENT_TYPE_CAMERA);
   rig_camera_set_framebuffer (RIG_CAMERA (camera), draw_fb);
 
   /* draw entities */
@@ -1266,7 +1266,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
             const CoglMatrix *inverse_projection;
 
             camera = rig_entity_get_component (data->main_camera,
-                                               RIG_COMPONENT_TYPE_CAMCORDER);
+                                               RIG_COMPONENT_TYPE_CAMERA);
             viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
             z_near = rig_camera_get_near_plane (RIG_CAMERA (camera));
             z_far = rig_camera_get_far_plane (RIG_CAMERA (camera));

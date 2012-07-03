@@ -21,7 +21,6 @@
 #define __RIG_COMPONENTS_H__
 
 #include "components/rig-animation-clip.h"
-#include "components/rig-camcorder.h"
 #include "components/rig-light.h"
 #include "components/rig-mesh-renderer.h"
 #include "components/rig-material.h"

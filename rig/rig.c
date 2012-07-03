@@ -928,7 +928,7 @@ rig_camera_new (RigContext *ctx, CoglFramebuffer *framebuffer)
 
   camera->ref_count = 1;
 
-  camera->component.type = RIG_COMPONENT_TYPE_CAMCORDER;
+  camera->component.type = RIG_COMPONENT_TYPE_CAMERA;
 
   rig_camera_set_background_color4f (camera, 0, 0, 0, 1);
   camera->clear_fb = TRUE;
@@ -3114,7 +3114,6 @@ _rig_init (void)
 
       /* components */
       _rig_animation_clip_init_type ();
-      _rig_camcorder_init_type ();
       _rig_light_init_type ();
       _rig_mesh_renderer_init_type ();
       _rig_material_init_type ();
