@@ -93,6 +93,7 @@ typedef struct
 
   /* debug features */
   bool debug_pick_ray;
+  bool debug_shadows;
 
 } Data;
 
@@ -983,10 +984,13 @@ test_paint (RigShell *shell, void *user_data)
     }
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
-  cogl_framebuffer_draw_rectangle (data->fb, data->shadow_color_tex,
-                                   128, 128, 0, 0);
-  cogl_framebuffer_draw_rectangle (data->fb, data->shadow_map_tex,
-                                   128, 256, 0, 128);
+  if (data->debug_shadows)
+    {
+      cogl_framebuffer_draw_rectangle (data->fb, data->shadow_color_tex,
+                                       128, 128, 0, 0);
+      cogl_framebuffer_draw_rectangle (data->fb, data->shadow_map_tex,
+                                       128, 256, 0, 128);
+    }
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
