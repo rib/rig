@@ -43,6 +43,11 @@ static RigGraphableVTable _rig_entity_graphable_vtable = {
   NULL, /* parent_changed */
 };
 
+static RigTransformableVTable _rig_entity_transformable_vtable = {
+  rig_entity_get_transform
+};
+
+
 RigType rig_entity_type;
 
 void
@@ -57,6 +62,10 @@ _rig_entity_init_type (void)
                           RIG_INTERFACE_ID_GRAPHABLE,
                           offsetof (RigEntity, graphable),
                           &_rig_entity_graphable_vtable);
+  rig_type_add_interface (&rig_entity_type,
+                          RIG_INTERFACE_ID_TRANSFORMABLE,
+                          0,
+                          &_rig_entity_transformable_vtable);
 }
 
 RigEntity *
