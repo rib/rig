@@ -212,13 +212,23 @@ _rig_particle_engine_get_next_particle_time (RigParticleEngine *engine,
 }
 
 static void
+_rig_particle_engine_get_initial_position (RigParticleEngine *engine,
+                                           float position[3])
+{
+  /* TODO: make the initial position configurable with some randomness */
+  position[0] = g_rand_double_range (engine->rand, -4.0f, 4.0f);
+  position[1] = g_rand_double_range (engine->rand, -4.0f, 4.0f);
+  position[2] = 0.0f;
+}
+
+static void
 _rig_particle_engine_get_initial_velocity (RigParticleEngine *engine,
                                            float velocity[3])
 {
   /* TODO: make the initial velocity configurable with some randomness */
   velocity[0] = g_rand_double_range (engine->rand, -20.0f, 20.0f);
-  velocity[1] = g_rand_double_range (engine->rand, -10.0f, 30.0f);
-  velocity[2] = g_rand_double_range (engine->rand, -10.0f, 10.0f);
+  velocity[1] = g_rand_double_range (engine->rand, -30.0f, 10.0f);
+  velocity[2] = 0.0f;
 }
 
 static void
@@ -247,8 +257,8 @@ static void
 _rig_particle_engine_initialise_particle (RigParticleEngine *engine,
                                           RigParticleEngineParticle *particle)
 {
-  memset (particle->initial_position, 0, sizeof (float) * 3);
-
+  _rig_particle_engine_get_initial_position (engine,
+                                             particle->initial_position);
   _rig_particle_engine_get_initial_velocity (engine,
                                              particle->initial_velocity);
   _rig_particle_engine_get_initial_color (engine, &particle->initial_color);
@@ -287,34 +297,12 @@ _rig_particle_engine_create_new_particles (RigParticleEngine *engine)
 }
 
 static void
-_rig_particle_engine_get_force (RigParticleEngine *engine,
-                                float force[3])
-{
-  /* TODO: add some customization. This could maybe have an array of
-   * forces. The forces could be virtual objects with an interface to
-   * get the current force based on the time. This function could then
-   * accumulate all of these into a single force to apply to particles
-   * for this time slice. That would allow for gravity and things like
-   * a wind force that would vary direction over time */
-
-  /* The force is a misnomer because the unit is actually just treated
-   * as the acceltation to apply to the object. Maybe I can excuse
-   * this if I pretend the particles all have a constant mass of 1. */
-
-  /* The 'force' is measured in position units per second per second */
-
-  force[0] = 0.0f;
-  force[1] = -10.0f;
-  force[2] = 0.0f;
-}
-
-static void
 _rig_particle_engine_calculate_color (RigParticleEngine *engine,
                                       const RigParticleEngineParticle *particle,
                                       float t,
                                       RigParticleEngineColor *color)
 {
-  memcpy (color, &particle->initial_color, sizeof (particle->initial_color));
+  *color = particle->initial_color;
 }
 
 static void
@@ -324,7 +312,7 @@ _rig_particle_engine_calculate_position (RigParticleEngine *engine,
                                          float t,
                                          float position[3])
 {
-  static const float acceleration[3] = { 0.0f, -10.0f, 0.0f };
+  static const float acceleration[3] = { 0.0f, 50.0f, 0.0f };
   float elapsed_time = particle->max_age * t / 1000.0f;
   float half_elapsed_time2 = elapsed_time * elapsed_time * 0.5f;
   int i;
@@ -351,14 +339,12 @@ _rig_particle_engine_calculate_point_size (RigParticleEngine *engine,
 static void
 _rig_particle_engine_update (RigParticleEngine *engine)
 {
-  float force[3];
   int particle_num;
   RigParticleEngineVertex *data;
   RigParticleEngineVertex *v;
 
   _rig_particle_engine_create_resources (engine);
   _rig_particle_engine_create_new_particles (engine);
-  _rig_particle_engine_get_force (engine, force);
 
   v = data = cogl_buffer_map (COGL_BUFFER (engine->attribute_buffer),
                               COGL_BUFFER_ACCESS_WRITE,
@@ -383,7 +369,6 @@ _rig_particle_engine_update (RigParticleEngine *engine)
         }
       else
         {
-          /* The opacity fades linearly over the lifetime of the particle */
           float t = particle_age / (float) particle->max_age;
 
           _rig_particle_engine_calculate_color (engine,

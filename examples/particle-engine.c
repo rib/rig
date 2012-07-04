@@ -41,9 +41,6 @@ create_camera (RigContext *ctx,
 
   cogl_matrix_init_identity (&matrix);
 
-  rig_camera_set_projection (camera, &matrix);
-
-  cogl_matrix_scale (&matrix, 1.0f / 20.0f,  1.0f / 20.0f,  1.0f / 20.0f);
   rig_camera_set_view_transform (camera, &matrix);
 
   return camera;
@@ -126,11 +123,20 @@ test_paint (RigShell *shell,
                             COGL_BUFFER_BIT_COLOR,
                             0.0f, 0.0f, 0.0f, 1.0f);
 
+  cogl_framebuffer_push_matrix (data->fb);
+  cogl_framebuffer_translate (data->fb,
+                              cogl_framebuffer_get_width (data->fb) / 2.0f,
+                              cogl_framebuffer_get_height (data->fb) / 2.0f,
+                              0.0f);
+  cogl_framebuffer_scale (data->fb, 10.0f, 10.0f, 10.0f);
+
   rig_particle_engine_set_time (data->engine,
                                 g_get_monotonic_time () / 1000);
 
   paint_context.camera = data->camera;
   rig_paintable_paint (data->engine, &paint_context);
+
+  cogl_framebuffer_pop_matrix (data->fb);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
