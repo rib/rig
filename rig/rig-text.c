@@ -2560,7 +2560,7 @@ rig_text_button_press (RigText *text,
 
   camera = rig_input_event_get_camera (event);
 
-  rig_graphable_get_transform (text, camera, &transform);
+  rig_graphable_get_modelview (text, camera, &transform);
   if (cogl_matrix_get_inverse (&transform,
                                &inverse_transform))
     {

@@ -380,6 +380,14 @@ rig_graphable_apply_transform (RigObject *graphable,
 
 void
 rig_graphable_get_transform (RigObject *graphable,
+                             CoglMatrix *transform)
+{
+  cogl_matrix_init_identity (transform);
+  rig_graphable_apply_transform (graphable, transform);
+}
+
+void
+rig_graphable_get_modelview (RigObject *graphable,
                              RigCamera *camera,
                              CoglMatrix *transform)
 {
