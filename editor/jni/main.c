@@ -43,6 +43,44 @@ typedef struct _RigTool
 
 typedef struct
 {
+  CoglTexture *source;
+  unsigned int scale_factor_x, scale_factor_y;
+  CoglTexture *destination;
+  unsigned int destination_width, destination_height;
+  CoglFramebuffer *fb;
+  RigCamera *camera;
+  CoglPipeline *pipeline;
+} RigDownsample;
+
+typedef struct
+{
+  CoglTexture *source;
+  unsigned int width, height;
+
+  RigCamera *x_pass_camera;
+  CoglFramebuffer *x_pass_fb;
+  CoglTexture *x_pass;
+  CoglPipeline *x_pass_pipeline;
+
+  RigCamera *y_pass_camera;
+  CoglFramebuffer *y_pass_fb;
+  CoglTexture *y_pass;
+  CoglTexture *destination;
+  CoglPipeline *y_pass_pipeline;
+} RigGaussianBlur;
+
+typedef struct
+{
+  CoglTexture *source;
+  CoglFramebuffer *source_fb;
+
+  CoglTexture *blurred_texture;
+
+  CoglPipeline *pipeline;
+} RigDepthOfField;
+
+typedef struct
+{
   RigShell *shell;
   RigContext *ctx;
 
@@ -53,7 +91,9 @@ typedef struct
   /* postprocessing */
   CoglFramebuffer *postprocess;
   CoglTexture2D *postprocess_color;
-  CoglPipeline *pp_pipeline;
+  RigDownsample down;
+  RigGaussianBlur blur;
+  RigDepthOfField dof;
 
   /* scene */
   RigGraph *scene;
@@ -523,6 +563,440 @@ rig_tool_draw (RigTool *tool,
   cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
 }
 
+/*
+ * RigDownsample
+ */
+
+static void
+rig_downsample_init (RigDownsample *down,
+                     RigContext *ctx,
+                     CoglTexture *source,
+                     unsigned int scale_factor_x,
+                     unsigned int scale_factor_y)
+{
+  CoglPixelFormat format;
+  CoglTexture2D *texture_2d;
+  CoglOffscreen *offscreen;
+  unsigned int src_w, src_h;
+  GError *error = NULL;
+
+  /* validation */
+  src_w = cogl_texture_get_width (source);
+  src_h = cogl_texture_get_height (source);
+
+  if (src_w % scale_factor_x != 0)
+    {
+      g_warning ("downsample: the width of the texture (%d) is not a "
+                 "multiple of the scale factor (%d)", src_w, scale_factor_x);
+    }
+  if (src_h % scale_factor_y != 0)
+    {
+      g_warning ("downsample: the height of the texture (%d) is not a "
+                 "multiple of the scale factor (%d)", src_h, scale_factor_y);
+    }
+
+  /* init */
+  down->source = cogl_object_ref (source);
+  down->scale_factor_x = scale_factor_x;
+  down->scale_factor_y = scale_factor_y;
+
+  /* create the destination texture up front */
+  down->destination_width = src_w / scale_factor_x;
+  down->destination_height = src_h / scale_factor_y;
+  format = cogl_texture_get_format (source);
+
+  texture_2d = cogl_texture_2d_new_with_size (rig_cogl_context,
+                                              down->destination_width,
+                                              down->destination_height,
+                                              format,
+                                              &error);
+  if (error)
+    {
+      g_warning ("downsample: could not create destination texture: %s",
+                 error->message);
+    }
+  down->destination = COGL_TEXTURE (texture_2d);
+
+  /* create the FBO to render the downsampled texture */
+  offscreen = cogl_offscreen_new_to_texture (down->destination);
+  down->fb = COGL_FRAMEBUFFER (offscreen);
+
+  /* create the camera that will setup the scene for the render */
+  down->camera = rig_camera_new (ctx, down->fb);
+  rig_camera_set_near_plane (down->camera, -1.f);
+  rig_camera_set_far_plane (down->camera, 1.f);
+
+  /* and finally the pipeline to draw the source into the destination
+   * texture */
+  down->pipeline = rig_util_create_texture_pipeline (source);
+}
+
+#if 0
+static void
+rig_downsample_fini (RigDownsample *down)
+{
+  cogl_object_unref (down->source);
+  cogl_object_unref (down->destination);
+  cogl_object_unref (down->fb);
+  cogl_object_unref (down->pipeline);
+  /* XXX: free the camera */
+}
+#endif
+
+static void
+rig_downsample_render (RigDownsample *down)
+{
+  rig_camera_draw (down->camera, down->fb);
+
+  cogl_framebuffer_draw_rectangle (down->fb,
+                                   down->pipeline,
+                                   0,
+                                   0,
+                                   down->destination_width,
+                                   down->destination_height);
+
+  rig_camera_end_frame (down->camera);
+}
+
+/*
+ * RigGaussianBlur
+ *
+ * What would make sense if you want to animate the bluriness is to give
+ * sigma to _init() and compute the number of taps based on that (as
+ * discussed with Neil)
+ *
+ * Being lazy and having already written the code with th number of taps
+ * as input, I'll stick with the number of taps, let's say it's because you
+ * get a good idea of the performance of the shader this way.
+ */
+
+static float
+gaussian (float sigma, float x)
+{
+  return 1 / (sigma * sqrtf (2 * G_PI)) *
+              powf (G_E, - (x * x)/(2 * sigma * sigma));
+}
+
+/* http://theinstructionlimit.com/gaussian-blur-revisited-part-two */
+static float
+n_taps_to_sigma (int n_taps)
+{
+  static const float sigma[7] = {1.35, 1.55, 1.8, 2.18, 2.49, 2.85, 3.66};
+
+  return sigma[n_taps / 2 - 2];
+}
+
+static CoglPipeline *
+create_1d_gaussian_blur_pipeline (RigGaussianBlur *blur,
+                                  RigContext *ctx,
+                                  int n_taps)
+{
+  static GHashTable *pipeline_cache = NULL;
+  CoglPipeline *pipeline;
+  CoglSnippet *snippet;
+  GString *shader;
+  int i;
+
+  /* initialize the pipeline cache. The shaders are only dependent on the
+   * number of taps, not the sigma, so we cache the corresponding pipelines
+   * in a hash table 'n_taps' => 'pipeline' */
+  if (G_UNLIKELY (pipeline_cache == NULL))
+    {
+      pipeline_cache =
+        g_hash_table_new_full (g_direct_hash,
+                               g_direct_equal,
+                               NULL, /* key destroy notify */
+                               (GDestroyNotify) cogl_object_unref);
+    }
+
+  pipeline = g_hash_table_lookup (pipeline_cache, GINT_TO_POINTER (n_taps));
+  if (pipeline)
+    return pipeline;
+
+  shader = g_string_new (NULL);
+
+  g_string_append_printf (shader,
+                          "uniform vec2 pixel_step;\n"
+                          "uniform float factors[%i];\n",
+                          n_taps);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
+                              shader->str,
+                              NULL /* post */);
+
+  g_string_set_size (shader, 0);
+
+  pipeline = cogl_pipeline_new (ctx->cogl_context);
+  cogl_pipeline_set_layer_null_texture (pipeline,
+                                        0, /* layer_num */
+                                        COGL_TEXTURE_TYPE_2D);
+  cogl_pipeline_set_layer_wrap_mode (pipeline,
+                                     0, /* layer_num */
+                                     COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+  cogl_pipeline_set_layer_filters (pipeline,
+                                   0, /* layer_num */
+                                   COGL_PIPELINE_FILTER_NEAREST,
+                                   COGL_PIPELINE_FILTER_NEAREST);
+
+  for (i = 0; i < n_taps; i++)
+    {
+      g_string_append (shader, "cogl_texel ");
+
+      if (i == 0)
+        g_string_append (shader, "=");
+      else
+        g_string_append (shader, "+=");
+
+      g_string_append_printf (shader,
+                              " texture2D (cogl_sampler, "
+                              "cogl_tex_coord.st");
+      if (i != (n_taps - 1) / 2)
+        g_string_append_printf (shader,
+                                " + pixel_step * %f",
+                                (float) (i - ((n_taps - 1) / 2)));
+      g_string_append_printf (shader,
+                              ") * factors[%i];\n",
+                              i);
+    }
+
+  cogl_snippet_set_replace (snippet, shader->str);
+
+  g_string_free (shader, TRUE);
+
+  cogl_pipeline_add_layer_snippet (pipeline, 0, snippet);
+
+  cogl_object_unref (snippet);
+
+  g_hash_table_insert (pipeline_cache, GINT_TO_POINTER (n_taps), pipeline);
+
+  return pipeline;
+}
+
+static void
+rig_gaussian_blur_update_x_pass_pipeline_texture (RigGaussianBlur *blur)
+{
+  float pixel_step[2];
+  int pixel_step_location;
+
+  /* our input in the source texture */
+  cogl_pipeline_set_layer_texture (blur->x_pass_pipeline,
+                                   0, /* layer_num */
+                                   blur->source);
+
+  pixel_step[0] = 1.0f / blur->width;
+  pixel_step[1] = 0.0f;
+  pixel_step_location =
+    cogl_pipeline_get_uniform_location (blur->x_pass_pipeline, "pixel_step");
+  g_assert (pixel_step_location);
+  cogl_pipeline_set_uniform_float (blur->x_pass_pipeline,
+                                   pixel_step_location,
+                                   2, /* n_components */
+                                   1, /* count */
+                                   pixel_step);
+}
+
+static void
+rig_gaussian_blur_update_y_pass_pipeline_texture (RigGaussianBlur *blur)
+{
+  float pixel_step[2];
+  int pixel_step_location;
+
+  /* our input in the result of the x pass */
+  cogl_pipeline_set_layer_texture (blur->y_pass_pipeline,
+                                   0, /* layer_num */
+                                   blur->x_pass);
+
+  pixel_step[0] = 0.0f;
+  pixel_step[1] = 1.0f / blur->height;
+  pixel_step_location =
+    cogl_pipeline_get_uniform_location (blur->y_pass_pipeline, "pixel_step");
+  g_assert (pixel_step_location);
+  cogl_pipeline_set_uniform_float (blur->y_pass_pipeline,
+                                   pixel_step_location,
+                                   2, /* n_components */
+                                   1, /* count */
+                                   pixel_step);
+}
+
+static void
+rig_gaussian_blur_update_factors (RigGaussianBlur *blur,
+                                  int n_taps)
+{
+  int i, radius;
+  float *factors, sigma;
+  int location;
+
+  radius = n_taps / 2; /* which is (n_taps - 1) / 2 as well */
+
+  factors = g_alloca (n_taps * sizeof (float));
+  sigma = n_taps_to_sigma (n_taps);
+
+  for (i = -radius; i <= radius; i++)
+    {
+      factors[i + radius] = gaussian (sigma, i);
+    }
+
+  /* FIXME: normalize */
+  location = cogl_pipeline_get_uniform_location (blur->x_pass_pipeline,
+                                                 "factors");
+  cogl_pipeline_set_uniform_float (blur->x_pass_pipeline,
+                                   location,
+                                   1 /* n_components */,
+                                   n_taps /* count */,
+                                   factors);
+
+  location = cogl_pipeline_get_uniform_location (blur->y_pass_pipeline,
+                                                 "factors");
+  cogl_pipeline_set_uniform_float (blur->y_pass_pipeline,
+                                   location,
+                                   1 /* n_components */,
+                                   n_taps /* count */,
+                                   factors);
+}
+
+static void
+rig_gaussian_blur_init (RigGaussianBlur *blur,
+                        RigContext *ctx,
+                        CoglTexture *source,
+                        int n_taps)
+{
+  unsigned int src_w, src_h;
+  CoglTexture2D *texture_2d;
+  CoglPixelFormat format;
+  CoglOffscreen *offscreen;
+  CoglPipeline *base_pipeline;
+  GError *error = NULL;
+
+  /* validation */
+  if (n_taps < 5 || n_taps > 17 || n_taps % 2 == 0 )
+    {
+      g_critical ("blur: the numbers of taps must belong to the {5, 7, 9, "
+                  "11, 13, 14, 17, 19} set");
+      g_assert_not_reached ();
+      return;
+    }
+
+  /* init */
+  blur->source = cogl_object_ref (source);
+
+  /* create the first FBO to render the x pass */
+  src_w = cogl_texture_get_width (source);
+  src_h = cogl_texture_get_height (source);
+  format = cogl_texture_get_format (source);
+  texture_2d = cogl_texture_2d_new_with_size (rig_cogl_context,
+                                              src_w,
+                                              src_h,
+                                              format,
+                                              &error);
+  if (error)
+    {
+      g_warning ("blur: could not create x pass texture: %s",
+                 error->message);
+    }
+  blur->x_pass = COGL_TEXTURE (texture_2d);
+  blur->width = src_w;
+  blur->height = src_h;
+
+  offscreen = cogl_offscreen_new_to_texture (blur->x_pass);
+  blur->x_pass_fb = COGL_FRAMEBUFFER (offscreen);
+
+  /* create the second FBO (final destination) to render the y pass */
+  texture_2d = cogl_texture_2d_new_with_size (rig_cogl_context,
+                                              src_w,
+                                              src_h,
+                                              format,
+                                              &error);
+  if (error)
+    {
+      g_warning ("blur: could not create destination texture: %s",
+                 error->message);
+    }
+  blur->destination = COGL_TEXTURE (texture_2d);
+  blur->y_pass = blur->destination;
+
+  offscreen = cogl_offscreen_new_to_texture (blur->destination);
+  blur->y_pass_fb = COGL_FRAMEBUFFER (offscreen);
+
+  /* create the camera that will setup the scene for the render */
+  blur->x_pass_camera = rig_camera_new (ctx, blur->x_pass_fb);
+  blur->y_pass_camera = rig_camera_new (ctx, blur->y_pass_fb);
+
+  base_pipeline = create_1d_gaussian_blur_pipeline (blur, ctx, n_taps);
+
+  blur->x_pass_pipeline = cogl_pipeline_copy (base_pipeline);
+  rig_gaussian_blur_update_x_pass_pipeline_texture (blur);
+  blur->y_pass_pipeline = cogl_pipeline_copy (base_pipeline);
+  rig_gaussian_blur_update_y_pass_pipeline_texture (blur);
+
+  rig_gaussian_blur_update_factors (blur, n_taps);
+}
+
+static void
+rig_gaussian_blur_render (RigGaussianBlur *blur)
+{
+  /* x pass */
+  rig_camera_draw (blur->x_pass_camera, blur->x_pass_fb);
+
+  cogl_framebuffer_draw_rectangle (blur->x_pass_fb,
+                                   blur->x_pass_pipeline,
+                                   0,
+                                   0,
+                                   blur->width,
+                                   blur->height);
+
+  rig_camera_end_frame (blur->x_pass_camera);
+
+  /* y pass */
+  rig_camera_draw (blur->y_pass_camera, blur->y_pass_fb);
+
+  cogl_framebuffer_draw_rectangle (blur->y_pass_fb,
+                                   blur->y_pass_pipeline,
+                                   0,
+                                   0,
+                                   blur->width,
+                                   blur->height);
+
+  rig_camera_end_frame (blur->y_pass_camera);
+}
+
+/*
+ * RigDepthOfField
+ *
+ * FIXME: Put the whole DoF logic in there
+ */
+
+static void
+rig_depth_of_field_init (RigDepthOfField *dof,
+                         RigContext *ctx,
+                         CoglTexture *source,
+                         CoglTexture *blurred)
+{
+  CoglPipeline *pipeline;
+  CoglSnippet *snippet;
+
+  dof->source = cogl_object_ref (source);
+  dof->blurred_texture = cogl_object_ref (blurred);
+
+  pipeline = cogl_pipeline_new (ctx->cogl_context);
+  dof->pipeline = pipeline;
+
+  cogl_pipeline_set_layer_texture (pipeline, 0, source);
+  cogl_pipeline_set_layer_texture (pipeline, 1, blurred);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              NULL, /* definitions */
+                              NULL  /* post */);
+
+  cogl_snippet_set_replace (snippet,
+      "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord_in[0].st);\n"
+      "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord_in[1].st);\n"
+      "cogl_color_out = mix (cogl_texel0, cogl_texel1, cogl_texel0.a);\n"
+      "cogl_color_out.a = 1.0;\n");
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+}
+
 /* in micro seconds  */
 static int64_t
 get_current_time (Data *data)
@@ -584,7 +1058,7 @@ create_diffuse_specular_material (void)
 
       "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n"
       "                cogl_position_in;\n"
-  );
+);
 
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
@@ -634,15 +1108,83 @@ create_diffuse_specular_material (void)
   return pipeline;
 }
 
-static CoglPipeline *
-create_pp_pipeline (CoglTexture *texture)
+/* This adds the Depth of Field bits to the main pipeline used for rendering
+ * the scene. The goal here is to store some idea of how blurry the final
+ * pixel should be in the alpha component of the rendered texture, blurriness
+ * base on the distance of the vertex to the focal plane in */
+static void
+add_dof_snippet (CoglPipeline *pipeline)
 {
-  CoglPipeline *new_pipeline;
+  CoglSnippet *snippet;
 
-  new_pipeline = cogl_pipeline_new (rig_cogl_context);
-  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
-  return new_pipeline;
+      /* definitions */
+      "uniform float dof_focal_length;\n"
+      "uniform float dof_focal_distance;\n"
+      "uniform mat4  dof_camera;\n"
+
+      "varying float dof_blur;\n",
+
+      /* compute the amount of bluriness we want */
+      "vec4 world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+      "dof_blur = clamp (abs (world_pos.z - dof_focal_length) /\n"
+      "                  dof_focal_distance, 0.0, 1.0);\n"
+  );
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+
+/* This was used to debug the focal distance and bluriness amout in the DoF
+ * effect: */
+#if 0
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+      "varying vec4 world_pos;\n"
+      "varying float dof_blur;",
+
+     "cogl_color_out = vec4(dof_blur,0,0,1);\n"
+     "if (abs (world_pos.z + 20.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
+  );
+#endif
+
+  /* store the bluriness in the alpha channel */
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+      "varying float dof_blur;",
+
+      "cogl_color_out.a = dof_blur;\n"
+  );
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+}
+
+static void
+set_focal_parameters (CoglPipeline *pipeline,
+                      float         focal_length,
+                      float         focal_distance)
+{
+  int location;
+  float length;
+
+  /* I want to have the focal length as positive when it's in front of the
+   * camera (it seems more natural, but as, in OpenGL, the camera is facing
+   * the negative Ys, the actual value to give to the shader has to be
+   * negated */
+  length = -focal_length;
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "dof_focal_length");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   1 /* n_components */, 1 /* count */,
+                                   &length);
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "dof_focal_distance");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   1 /* n_components */, 1 /* count */,
+                                   &focal_distance);
 }
 
 static void
@@ -715,9 +1257,6 @@ test_init (RigShell *shell, void *user_data)
 
   data->postprocess_color = color_buffer;
 
-  /* postprocessing pipeline */
-  data->pp_pipeline = create_pp_pipeline (COGL_TEXTURE (color_buffer));
-
   /*
    * Shadow mapping
    */
@@ -764,6 +1303,22 @@ test_init (RigShell *shell, void *user_data)
   cogl_object_unref (snippet);
 
   /*
+   * Depth of Field
+   */
+
+  add_dof_snippet (root_pipeline);
+  set_focal_parameters (root_pipeline, 20.f, 15.0f);
+  rig_downsample_init (&data->down,
+                       data->ctx,
+                       COGL_TEXTURE (data->postprocess_color),
+                       4, 4);
+  rig_gaussian_blur_init (&data->blur, data->ctx, data->down.destination, 7);
+  rig_depth_of_field_init (&data->dof,
+                           data->ctx,
+                           COGL_TEXTURE (data->postprocess_color),
+                           data->blur.destination);
+
+  /*
    * Setup CoglObjects to render our plane and cube
    */
 
@@ -771,7 +1326,7 @@ test_init (RigShell *shell, void *user_data)
 
   /* camera */
   data->main_camera = rig_entity_new (data->ctx);
-  data->entities = g_list_prepend (data->entities, data->main_camera);
+  //data->entities = g_list_prepend (data->entities, data->main_camera);
 
   data->main_camera_z = 20.f;
   vector3[0] = 0.f;
@@ -836,7 +1391,7 @@ test_init (RigShell *shell, void *user_data)
   data->entities = g_list_prepend (data->entities, data->plane);
   data->pickables = g_list_prepend (data->pickables, data->plane);
   rig_entity_set_cast_shadow (data->plane, FALSE);
-  rig_entity_set_y (data->plane, -1.5f);
+  rig_entity_set_y (data->plane, -1.f);
 
   component = rig_mesh_renderer_new_from_template ("plane");
   rig_entity_add_component (data->plane, component);
@@ -857,9 +1412,11 @@ test_init (RigShell *shell, void *user_data)
 
       rig_entity_set_cast_shadow (data->cubes[i], TRUE);
       rig_entity_set_x (data->cubes[i], i * 2.5f);
+#if 0
       rig_entity_set_y (data->cubes[i], .5);
       rig_entity_set_z (data->cubes[i], 1);
       rig_entity_rotate_y_axis (data->cubes[i], 10);
+#endif
 
       component = rig_mesh_renderer_new_from_template ("cube");
       rig_entity_add_component (data->cubes[i], component);
@@ -983,12 +1540,12 @@ test_paint (RigShell *shell, void *user_data)
 
   shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
 
-  /* update the light matrix uniform */
+  /* update uniforms in materials */
   {
     CoglMatrix light_shadow_matrix, light_projection;
     CoglPipeline *pipeline;
     RigMaterial *material;
-
+    const float *light_matrix;
     int location;
 
     cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
@@ -996,8 +1553,11 @@ test_paint (RigShell *shell, void *user_data)
                                  &light_shadow_matrix,
                                  &light_projection,
                                  data->light);
+    light_matrix = cogl_matrix_get_array (&light_shadow_matrix);
 
-    material = rig_entity_get_component (data->plane, RIG_COMPONENT_TYPE_MATERIAL);
+    /* plane material */
+    material = rig_entity_get_component (data->plane,
+                                         RIG_COMPONENT_TYPE_MATERIAL);
     pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
@@ -1005,9 +1565,11 @@ test_paint (RigShell *shell, void *user_data)
                                       location,
                                       4, 1,
                                       FALSE,
-                                      cogl_matrix_get_array (&light_shadow_matrix));
+                                      light_matrix);
 
-    material = rig_entity_get_component (data->cubes[0], RIG_COMPONENT_TYPE_MATERIAL);
+    /* cubes material */
+    material = rig_entity_get_component (data->cubes[0],
+                                         RIG_COMPONENT_TYPE_MATERIAL);
     pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
@@ -1015,7 +1577,7 @@ test_paint (RigShell *shell, void *user_data)
                                       location,
                                       4, 1,
                                       FALSE,
-                                      cogl_matrix_get_array (&light_shadow_matrix));
+                                      light_matrix);
   }
 
   rig_camera_flush (data->shadow_map_camera);
@@ -1051,7 +1613,7 @@ test_paint (RigShell *shell, void *user_data)
   if (data->edit && data->selected_entity)
     {
       rig_tool_update (data->tool, data->selected_entity);
-      rig_tool_draw (data->tool, data, data->fb);
+      rig_tool_draw (data->tool, data, draw_fb);
     }
 
   rig_camera_end_frame (data->main_camera_component);
@@ -1066,7 +1628,10 @@ test_paint (RigShell *shell, void *user_data)
    * postprocess pipeline */
   if (!data->edit)
     {
-      cogl_framebuffer_draw_rectangle (data->fb, data->pp_pipeline,
+      rig_downsample_render (&data->down);
+      rig_gaussian_blur_render (&data->blur);
+
+      cogl_framebuffer_draw_rectangle (data->fb, data->dof.pipeline,
                                        0, 0, data->fb_width, data->fb_height);
     }
 
