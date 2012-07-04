@@ -50,6 +50,7 @@ typedef struct
 typedef struct
 {
   float position[3];
+  float point_size;
   RigParticleEngineColor color;
 } RigParticleEngineVertex;
 
@@ -119,7 +120,7 @@ _rig_particle_engine_create_pipeline (RigParticleEngine *engine)
                                                            NULL /* error */);
     }
 
-  cogl_pipeline_set_point_size (pipeline, engine->point_size);
+  cogl_pipeline_set_per_vertex_point_size (pipeline, TRUE, NULL);
 
   return pipeline;
 }
@@ -129,7 +130,7 @@ _rig_particle_engine_create_resources (RigParticleEngine *engine)
 {
   if (engine->pipeline == NULL)
     {
-      CoglAttribute *attributes[2];
+      CoglAttribute *attributes[3];
       int i;
 
       engine->pipeline = _rig_particle_engine_create_pipeline (engine);
@@ -178,13 +179,22 @@ _rig_particle_engine_create_resources (RigParticleEngine *engine)
                             4, /* n_components */
                             COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
+      attributes[2] =
+        cogl_attribute_new (engine->attribute_buffer,
+                            "cogl_point_size_in",
+                            sizeof (RigParticleEngineVertex),
+                            G_STRUCT_OFFSET (RigParticleEngineVertex,
+                                             point_size),
+                            1, /* n_components */
+                            COGL_ATTRIBUTE_TYPE_FLOAT);
+
       engine->primitive =
         cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_POINTS,
                                             engine->max_particles,
                                             attributes,
-                                            2 /* n_attributes */);
+                                            G_N_ELEMENTS (attributes));
 
-      for (i = 0; i < 2; i++)
+      for (i = 0; i < G_N_ELEMENTS (attributes); i++)
         cogl_object_unref (attributes[i]);
 
       engine->last_update_time = engine->current_time;
@@ -304,10 +314,7 @@ _rig_particle_engine_calculate_color (RigParticleEngine *engine,
                                       float t,
                                       RigParticleEngineColor *color)
 {
-  color->r = particle->initial_color.r * t;
-  color->g = particle->initial_color.g * t;
-  color->b = particle->initial_color.b * t;
-  color->a = particle->initial_color.a * t;
+  memcpy (color, &particle->initial_color, sizeof (particle->initial_color));
 }
 
 static void
@@ -317,7 +324,7 @@ _rig_particle_engine_calculate_position (RigParticleEngine *engine,
                                          float t,
                                          float position[3])
 {
-  static const float acceleration[3] = { 0.0f, 10.0f, 0.0f };
+  static const float acceleration[3] = { 0.0f, -10.0f, 0.0f };
   float elapsed_time = particle->max_age * t / 1000.0f;
   float half_elapsed_time2 = elapsed_time * elapsed_time * 0.5f;
   int i;
@@ -330,6 +337,15 @@ _rig_particle_engine_calculate_position (RigParticleEngine *engine,
                      particle->initial_velocity[i] * elapsed_time +
                      acceleration[i] * half_elapsed_time2);
     }
+}
+
+static float
+_rig_particle_engine_calculate_point_size (RigParticleEngine *engine,
+                                           const RigParticleEngineParticle *
+                                             particle,
+                                           float t)
+{
+  return 16.0f * (1.0f - t);
 }
 
 static void
@@ -379,6 +395,12 @@ _rig_particle_engine_update (RigParticleEngine *engine)
                                                    particle,
                                                    t,
                                                    v->position);
+          v->point_size =
+            _rig_particle_engine_calculate_point_size (engine,
+                                                       particle,
+                                                       t);
+
+          v++;
         }
     }
   RIG_FLAGS_FOREACH_END;
