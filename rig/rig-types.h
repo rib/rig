@@ -19,11 +19,28 @@ typedef struct _RigTransform RigTransform;
 #define RIG_TRANSFORM(X) ((RigTransform *)X)
 RigType rig_transform_type;
 
+typedef struct _RigUIEnumValue
+{
+  int value;
+  const char *nick;
+  const char *blurb;
+} RigUIEnumValue;
+
+typedef struct _RigUIEnum
+{
+  const char *nick;
+  const char *blurb;
+  RigUIEnumValue values[];
+} RigUIEnum;
+
 typedef enum
 {
   RIG_PROJECTION_PERSPECTIVE,
   RIG_PROJECTION_ORTHOGRAPHIC
 } RigProjection;
+
+/* XXX: Update this in rig.c if RigProjection is changed! */
+extern RigUIEnum _rig_projection_ui_enum;
 
 typedef struct _RigBox
 {

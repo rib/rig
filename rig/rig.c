@@ -398,6 +398,15 @@ static uint8_t _rig_nine_slice_indices_data[] = {
     8,12,13, 8,13,9, 9,13,14, 9,14,10, 10,14,15, 10,15,11
 };
 
+RigUIEnum _rig_projection_ui_enum = {
+  .nick = "Projection",
+  .values = {
+    { RIG_PROJECTION_PERSPECTIVE, "Perspective", "Perspective Projection" },
+    { RIG_PROJECTION_ORTHOGRAPHIC, "Orthographic", "Orthographic Projection" },
+    { 0 }
+  }
+};
+
 typedef struct _SettingsChangedCallbackState
 {
   RigSettingsChangedCallback callback;

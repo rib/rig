@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "rig-text.h"
+#include "components/rig-camera.h"
 
 /* This is only defined since GLib 2.31.0. The documentation says that
  * it is available since 2.28 but that is a lie. */
@@ -440,9 +441,10 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .setter = rig_text_set_cursor_size,
     .nick = "Cursor Size",
     .blurb = "The width of the cursor, in pixels",
-    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
     .default_value = { .integer = DEFAULT_CURSOR_SIZE },
-    .validation = { .integer = { .min = -1, .max = INT_MAX}}
+    .validation = { .int_range = { .min = -1, .max = INT_MAX}}
   },
 
   /**
@@ -457,9 +459,10 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .setter = rig_text_set_cursor_position,
     .nick = "Cursor Position",
     .blurb = "The cursor position",
-    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
     .default_value = { .integer = -1 },
-    .validation = { .integer = { .min = -1, .max = INT_MAX}}
+    .validation = { .int_range = { .min = -1, .max = INT_MAX}}
   },
 
   /**
@@ -474,9 +477,10 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .setter = rig_text_set_selection_bound,
     .nick = "Selection-bound",
     .blurb = "The cursor position of the other end of the selection",
-    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
     .default_value = { .integer = -1 },
-    .validation = { .integer = { .min = -1, .max = INT_MAX}}
+    .validation = { .int_range = { .min = -1, .max = INT_MAX}}
   },
 
   /**
@@ -658,8 +662,9 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .setter = rig_text_set_max_length,
     .nick = "Max Length",
     .blurb = "Maximum length of the text inside the actor",
-    .flags = RIG_PROPERTY_FLAG_READWRITE,
-    .validation = { .integer = { .min = -1, .max = INT_MAX}}
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
+    .validation = { .int_range = { .min = -1, .max = INT_MAX}}
   },
 
   /**

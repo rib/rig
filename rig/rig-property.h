@@ -19,6 +19,7 @@ typedef enum _RigPropertyType
   RIG_PROPERTY_TYPE_FLOAT = 1,
   RIG_PROPERTY_TYPE_DOUBLE,
   RIG_PROPERTY_TYPE_INTEGER,
+  RIG_PROPERTY_TYPE_ENUM,
   RIG_PROPERTY_TYPE_UINT32,
   RIG_PROPERTY_TYPE_BOOLEAN,
   RIG_PROPERTY_TYPE_TEXT,
@@ -47,6 +48,12 @@ typedef struct _RigPropertyValidationInteger
   int max;
 } RigPropertyValidationInteger;
 
+typedef struct _RigPropertyValidationFloat
+{
+  float min;
+  float max;
+} RigPropertyValidationFloat;
+
 typedef struct _RigPropertyValidationObject
 {
   RigType *type;
@@ -54,14 +61,17 @@ typedef struct _RigPropertyValidationObject
 
 typedef union _RigPropertyValidation
 {
-  RigPropertyValidationInteger integer;
+  RigPropertyValidationInteger int_range;
+  RigPropertyValidationInteger float_range;
   RigPropertyValidationObject object;
+  const RigUIEnum *ui_enum;
 } RigPropertyValidation;
 
 typedef enum _RigPropertyFlags
 {
   RIG_PROPERTY_FLAG_READWRITE = 1<<0,
-  RIG_PROPERTY_FLAG_READABLE = 1<<1
+  RIG_PROPERTY_FLAG_READABLE = 1<<1,
+  RIG_PROPERTY_FLAG_VALIDATE = 1<<2,
 } RigPropertyFlags;
 
 typedef struct _RigPropertySpec
@@ -377,6 +387,7 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
 DECLARE_STANDARD_GETTER_SETTER(float, float, FLOAT)
 DECLARE_STANDARD_GETTER_SETTER(double, double, DOUBLE)
 DECLARE_STANDARD_GETTER_SETTER(integer, int, INTEGER)
+DECLARE_STANDARD_GETTER_SETTER(enum, int, ENUM)
 DECLARE_STANDARD_GETTER_SETTER(uint32, uint32_t, UINT32)
 DECLARE_STANDARD_GETTER_SETTER(boolean, CoglBool, BOOLEAN)
 DECLARE_STANDARD_GETTER_SETTER(object, RigObject *, OBJECT)

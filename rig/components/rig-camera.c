@@ -35,6 +35,57 @@ typedef struct
 
 static CoglUserDataKey fb_camera_key;
 
+static RigPropertySpec _rig_camera_prop_specs[] = {
+  {
+    .name = "mode",
+    .nick = "Mode",
+    .type = RIG_PROPERTY_TYPE_ENUM,
+    .getter = rig_camera_get_projection_mode,
+    .setter = rig_camera_set_projection_mode,
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
+    .validation = { .ui_enum = &_rig_projection_ui_enum }
+  },
+  {
+    .name = "fov",
+    .nick = "Field Of View",
+    .type = RIG_PROPERTY_TYPE_INTEGER,
+    .getter = rig_camera_get_field_of_view,
+    .setter = rig_camera_set_field_of_view,
+    .flags = RIG_PROPERTY_FLAG_READWRITE |
+      RIG_PROPERTY_FLAG_VALIDATE,
+    .validation = { .int_range = { .min = 1, .max = 135}}
+  },
+  {
+    .name = "near",
+    .nick = "Near Plane",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_camera_get_near_plane,
+    .setter = rig_camera_set_near_plane,
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "far",
+    .nick = "Far Plane",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_camera_get_far_plane,
+    .setter = rig_camera_set_far_plane,
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "background_color",
+    .nick = "Background Color",
+    .type = RIG_PROPERTY_TYPE_COLOR,
+    .getter = rig_camera_get_background_color,
+    .setter = rig_camera_set_background_color,
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  /* FIXME: Figure out how to expose the orthographic coordinates as
+   * properties? */
+  { 0 }
+};
+
+
 static void
 _rig_camera_free (void *object)
 {
@@ -251,6 +302,12 @@ static RigComponentableVTable _rig_camera_componentable_vtable = {
   .draw = rig_camera_draw
 };
 
+static RigIntrospectableVTable _rig_camera_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
+
+
 RigType rig_camera_type;
 
 void
@@ -265,6 +322,14 @@ _rig_camera_init_type (void)
                            RIG_INTERFACE_ID_COMPONENTABLE,
                            offsetof (RigCamera, component),
                            &_rig_camera_componentable_vtable);
+  rig_type_add_interface (&rig_camera_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_camera_introspectable_vtable);
+  rig_type_add_interface (&rig_camera_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigCamera, introspectable),
+                          NULL); /* no implied vtable */
 
 #if 0
   rig_type_add_interface (&rig_camera_type,
@@ -325,6 +390,10 @@ rig_camera_new (RigContext *ctx, CoglFramebuffer *framebuffer)
   camera->timer = g_timer_new ();
   g_timer_start (camera->timer);
 
+  rig_simple_introspectable_init (camera,
+                                  _rig_camera_prop_specs,
+                                  camera->properties);
+
   return camera;
 }
 
@@ -337,6 +406,24 @@ rig_camera_set_background_color4f (RigCamera *camera,
 {
   cogl_color_init_from_4f (&camera->bg_color,
                            red, green, blue, alpha);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
+}
+
+void
+rig_camera_set_background_color (RigCamera *camera,
+                                 const CoglColor *color)
+{
+  camera->bg_color = *color;
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_BG_COLOR]);
+}
+
+void
+rig_camera_get_background_color (RigCamera *camera,
+                                 CoglColor *color)
+{
+  *color = camera->bg_color;
 }
 
 void
@@ -430,7 +517,12 @@ void
 rig_camera_set_near_plane (RigCamera *camera,
                            float near)
 {
+  if (camera->near == near)
+    return;
+
   camera->near = near;
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_NEAR]);
   camera->projection_age++;
   camera->transform_age++;
 }
@@ -445,7 +537,12 @@ void
 rig_camera_set_far_plane (RigCamera *camera,
                           float far)
 {
+  if (camera->far == far)
+    return;
+
   camera->far = far;
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_FAR]);
   camera->projection_age++;
   camera->transform_age++;
 }
@@ -479,6 +576,8 @@ rig_camera_set_projection_mode (RigCamera  *camera,
   if (orthographic != camera->orthographic)
     {
       camera->orthographic = orthographic;
+      rig_property_dirty (&camera->ctx->property_ctx,
+                          &camera->properties[RIG_CAMERA_PROP_MODE]);
       camera->projection_age++;
       camera->transform_age++;
     }
@@ -492,6 +591,8 @@ rig_camera_set_field_of_view (RigCamera *camera,
     return;
 
   camera->fov = fov;
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_FOV]);
   if (!camera->orthographic)
     {
       camera->projection_age++;

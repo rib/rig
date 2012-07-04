@@ -10,6 +10,15 @@
 #include "rig-context.h"
 #include "rig-entity.h"
 
+enum {
+  RIG_CAMERA_PROP_MODE,
+  RIG_CAMERA_PROP_FOV,
+  RIG_CAMERA_PROP_NEAR,
+  RIG_CAMERA_PROP_FAR,
+  RIG_CAMERA_PROP_BG_COLOR,
+  RIG_CAMERA_N_PROPS
+};
+
 /* TODO: Make internals private */
 struct _RigCamera
 {
@@ -58,6 +67,9 @@ struct _RigCamera
 
   int frame;
   GTimer *timer;
+
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[RIG_CAMERA_N_PROPS];
 
   unsigned int orthographic:1;
 };

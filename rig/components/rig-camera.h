@@ -42,6 +42,14 @@ rig_camera_set_background_color4f (RigCamera *camera,
                                    float alpha);
 
 void
+rig_camera_set_background_color (RigCamera *camera,
+                                 const CoglColor *color);
+
+void
+rig_camera_get_background_color (RigCamera *camera,
+                                 CoglColor *color);
+
+void
 rig_camera_set_clear (RigCamera *camera,
                       CoglBool clear);
 
