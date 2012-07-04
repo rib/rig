@@ -1,8 +1,8 @@
 #include "rig-object.h"
 #include "rig-interfaces.h"
 #include "rig-transform-private.h"
-#include "rig-camera-private.h"
 #include "rig-property.h"
+#include "components/rig-camera.h"
 
 void *
 rig_ref_countable_simple_ref (void *object)
