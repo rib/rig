@@ -56,6 +56,7 @@ typedef struct
   CoglPipeline *pp_pipeline;
 
   /* scene */
+  RigGraph *scene;
   RigEntity *main_camera;
   RigCamera *main_camera_component;
   RigEntity *light;
@@ -266,12 +267,13 @@ get_modelview_matrix (Data       *data,
                       RigEntity  *entity,
                       CoglMatrix *modelview)
 {
-  CoglMatrix camera_inverse;
+  const CoglMatrix *view;
+  RigCamera *camera_component =
+    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
+  view = rig_camera_get_view_transform (camera_component);
 
-  cogl_matrix_get_inverse (rig_entity_get_transform (camera),
-                           &camera_inverse);
   cogl_matrix_multiply (modelview,
-                        &camera_inverse,
+                        view,
                         rig_entity_get_transform (data->pivot));
   cogl_matrix_multiply (modelview,
                         modelview,
@@ -749,6 +751,8 @@ test_init (RigShell *shell, void *user_data)
    * Setup CoglObjects to render our plane and cube
    */
 
+  data->scene = rig_graph_new (data->ctx, NULL);
+
   /* camera */
   data->main_camera = rig_entity_new (data->ctx);
   data->entities = g_list_prepend (data->entities, data->main_camera);
@@ -768,6 +772,8 @@ test_init (RigShell *shell, void *user_data)
   rig_camera_set_far_plane (RIG_CAMERA (component), 100.f);
 
   rig_entity_add_component (data->main_camera, component);
+
+  rig_graphable_add_child (data->scene, data->main_camera);
 
   /* light */
   data->light = rig_entity_new (data->ctx);
@@ -806,6 +812,7 @@ test_init (RigShell *shell, void *user_data)
 
   rig_entity_add_component (data->light, component);
 
+  rig_graphable_add_child (data->scene, data->light);
 
   /* plane */
   data->plane = rig_entity_new (data->ctx);
@@ -819,6 +826,7 @@ test_init (RigShell *shell, void *user_data)
   component = rig_material_new_with_pipeline (data->ctx, root_pipeline);
   rig_entity_add_component (data->plane, component);
 
+  rig_graphable_add_child (data->scene, data->plane);
 
   /* 5 cubes */
   pipeline = cogl_pipeline_copy (root_pipeline);
@@ -841,6 +849,8 @@ test_init (RigShell *shell, void *user_data)
       component = rig_material_new_with_pipeline (data->ctx, pipeline);
       cogl_object_unref (pipeline);
       rig_entity_add_component (data->cubes[i], component);
+
+      rig_graphable_add_child (data->scene, data->cubes[i]);
     }
 
   /* create the pipelines to display the shadow color and depth textures */
@@ -902,6 +912,19 @@ test_init (RigShell *shell, void *user_data)
   g_timer_start (data->timer);
 }
 
+static void
+camera_update_view (RigEntity *camera)
+{
+  RigCamera *camera_component =
+    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
+  CoglMatrix transform;
+  CoglMatrix view;
+
+  rig_graphable_get_transform (camera, &transform);
+  cogl_matrix_get_inverse (&transform, &view);
+  rig_camera_set_view_transform (camera_component, &view);
+}
+
 static CoglBool
 test_paint (RigShell *shell, void *user_data)
 {
@@ -916,6 +939,8 @@ test_paint (RigShell *shell, void *user_data)
    */
 
   time = get_current_time (data);
+
+  camera_update_view (data->main_camera);
 
   for (l = data->entities; l; l = l->next)
     {
