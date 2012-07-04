@@ -1013,9 +1013,7 @@ test_paint (RigShell *shell, void *user_data)
   else
     draw_fb = data->postprocess;
 
-  camera = rig_entity_get_component (data->main_camera,
-                                     RIG_COMPONENT_TYPE_CAMERA);
-  rig_camera_set_framebuffer (RIG_CAMERA (camera), draw_fb);
+  rig_camera_set_framebuffer (data->main_camera_component, draw_fb);
 
   /* draw entities */
   draw_entities (data, draw_fb, data->main_camera, FALSE);

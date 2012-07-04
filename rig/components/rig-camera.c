@@ -450,7 +450,7 @@ rig_camera_set_framebuffer (RigCamera *camera,
     return;
 
   cogl_object_unref (camera->fb);
-  camera->fb = cogl_object_ref (camera->fb);
+  camera->fb = cogl_object_ref (framebuffer);
 }
 
 void
