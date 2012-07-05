@@ -119,23 +119,6 @@ create_color_pipeline (float r, float g, float b)
   return new_pipeline;
 }
 
-static CoglPipeline *
-create_texture_pipeline (CoglTexture *texture)
-{
-  static CoglPipeline *template = NULL, *new_pipeline;
-
-  if (G_UNLIKELY (template == NULL))
-    {
-      template = cogl_pipeline_new (rig_cogl_context);
-      cogl_pipeline_set_layer_null_texture (template, 0, COGL_TEXTURE_TYPE_2D);
-    }
-
-  new_pipeline = cogl_pipeline_copy (template);
-  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
-
-  return new_pipeline;
-}
-
 void
 rig_entity_apply_rotations (RigObject *entity,
                             CoglQuaternion *rotations)
@@ -889,9 +872,9 @@ test_init (RigShell *shell, void *user_data)
 
   /* create the pipelines to display the shadow color and depth textures */
   data->shadow_color_tex =
-      create_texture_pipeline (COGL_TEXTURE (data->shadow_color));
+      rig_util_create_texture_pipeline (COGL_TEXTURE (data->shadow_color));
   data->shadow_map_tex =
-      create_texture_pipeline (COGL_TEXTURE (data->shadow_map));
+      rig_util_create_texture_pipeline (COGL_TEXTURE (data->shadow_map));
 
   cogl_object_unref (root_pipeline);
 

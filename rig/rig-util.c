@@ -2,6 +2,7 @@
 #include <glib.h>
 #include <cogl/cogl.h>
 
+#include "rig-global.h"
 #include "rig-util.h"
 
 /* Help macros to scale from OpenGL <-1,1> coordinates system to
@@ -301,4 +302,23 @@ rig_util_one_at_a_time_mix (unsigned int hash)
   hash += ( hash << 15 );
 
   return hash;
+}
+
+CoglPipeline *
+rig_util_create_texture_pipeline (CoglTexture *texture)
+{
+  static CoglPipeline *template = NULL, *new_pipeline;
+
+  if (G_UNLIKELY (template == NULL))
+    {
+      template = cogl_pipeline_new (rig_cogl_context);
+      cogl_pipeline_set_layer_null_texture (template,
+					    0,
+					    COGL_TEXTURE_TYPE_2D);
+    }
+
+  new_pipeline = cogl_pipeline_copy (template);
+  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
+
+  return new_pipeline;
 }

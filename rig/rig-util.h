@@ -127,4 +127,7 @@ rig_util_one_at_a_time_hash (unsigned int hash,
 unsigned int
 rig_util_one_at_a_time_mix (unsigned int hash);
 
+CoglPipeline *
+rig_util_create_texture_pipeline (CoglTexture *texture);
+
 #endif /* _RIG_UTIL_H_ */
