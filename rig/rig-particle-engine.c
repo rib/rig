@@ -216,8 +216,8 @@ _rig_particle_engine_get_initial_position (RigParticleEngine *engine,
                                            float position[3])
 {
   /* TODO: make the initial position configurable with some randomness */
-  position[0] = g_rand_double_range (engine->rand, -4.0f, 4.0f);
-  position[1] = g_rand_double_range (engine->rand, -4.0f, 4.0f);
+  position[0] = g_rand_double_range (engine->rand, -40.0f, 40.0f);
+  position[1] = g_rand_double_range (engine->rand, -40.0f, 40.0f);
   position[2] = 0.0f;
 }
 
@@ -226,8 +226,8 @@ _rig_particle_engine_get_initial_velocity (RigParticleEngine *engine,
                                            float velocity[3])
 {
   /* TODO: make the initial velocity configurable with some randomness */
-  velocity[0] = g_rand_double_range (engine->rand, -20.0f, 20.0f);
-  velocity[1] = g_rand_double_range (engine->rand, -30.0f, 10.0f);
+  velocity[0] = g_rand_double_range (engine->rand, -200.0f, 200.0f);
+  velocity[1] = g_rand_double_range (engine->rand, -300.0f, 100.0f);
   velocity[2] = 0.0f;
 }
 
@@ -312,7 +312,7 @@ _rig_particle_engine_calculate_position (RigParticleEngine *engine,
                                          float t,
                                          float position[3])
 {
-  static const float acceleration[3] = { 0.0f, 50.0f, 0.0f };
+  static const float acceleration[3] = { 0.0f, 500.0f, 0.0f };
   float elapsed_time = particle->max_age * t / 1000.0f;
   float half_elapsed_time2 = elapsed_time * elapsed_time * 0.5f;
   int i;

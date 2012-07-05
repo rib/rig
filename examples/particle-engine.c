@@ -128,7 +128,6 @@ test_paint (RigShell *shell,
                               cogl_framebuffer_get_width (data->fb) / 2.0f,
                               cogl_framebuffer_get_height (data->fb) / 2.0f,
                               0.0f);
-  cogl_framebuffer_scale (data->fb, 10.0f, 10.0f, 10.0f);
 
   rig_particle_engine_set_time (data->engine,
                                 g_get_monotonic_time () / 1000);
