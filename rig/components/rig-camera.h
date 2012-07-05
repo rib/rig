@@ -108,6 +108,10 @@ rig_camera_set_orthographic_coordinates (RigCamera *camera,
                                          float x2,
                                          float y2);
 
+void
+rig_camera_draw (RigObject *object,
+                 CoglFramebuffer *fb);
+
 const CoglMatrix *
 rig_camera_get_inverse_projection (RigCamera *camera);
 
