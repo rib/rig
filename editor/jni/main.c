@@ -24,7 +24,7 @@
 
 #define N_CUBES 10
 
-typedef struct
+typedef struct _RigTool
 {
   RigShell *shell;
   RigEntity *selected_entity;
@@ -59,6 +59,7 @@ typedef struct
   RigGraph *scene;
   RigEntity *main_camera;
   RigCamera *main_camera_component;
+  float main_camera_z;
   RigEntity *light;
   RigEntity *ui_camera;
   RigCamera *ui_camera_component;
@@ -81,11 +82,10 @@ typedef struct
 
   /* editor state */
   bool button_down;
-  RigEntity *pivot;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
   RigEntity *selected_entity;
-  RigTool tool;
+  RigTool *tool;
   bool edit;      /* in edit mode, we can temper with the entities. When edit
                      is turned off, we'll do the full render (including post
                      processing) as post-processing does interact well with
@@ -136,6 +136,66 @@ create_texture_pipeline (CoglTexture *texture)
   return new_pipeline;
 }
 
+void
+rig_entity_apply_rotations (RigObject *entity,
+                            CoglQuaternion *rotations)
+{
+  int depth = 0;
+  RigObject **entity_nodes;
+  RigObject *node = entity;
+  int i;
+
+  do {
+    RigGraphableProps *graphable_priv =
+      rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
+
+    depth++;
+
+    node = graphable_priv->parent;
+  } while (node);
+
+  entity_nodes = g_alloca (sizeof (RigObject *) * depth);
+
+  node = entity;
+  i = 0;
+  do {
+    RigGraphableProps *graphable_priv;
+    RigObjectProps *obj = node;
+
+    if (obj->type == &rig_entity_type)
+      entity_nodes[i++] = node;
+
+    graphable_priv =
+      rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
+    node = graphable_priv->parent;
+  } while (node);
+
+  for (i--; i >= 0; i--)
+    {
+      const CoglQuaternion *rotation = rig_entity_get_rotation (entity_nodes[i]);
+      cogl_quaternion_multiply (rotations, rotations, rotation);
+    }
+}
+
+void
+rig_entity_get_rotations (RigObject *entity,
+                          CoglQuaternion *rotation)
+{
+  cogl_quaternion_init_identity (rotation);
+  rig_entity_apply_rotations (entity, rotation);
+}
+
+void
+rig_entity_get_view_rotations (RigObject *entity,
+                               RigObject *camera_entity,
+                               CoglQuaternion *rotation)
+{
+  rig_entity_get_rotations (camera_entity, rotation);
+  cogl_quaternion_invert (rotation);
+
+  rig_entity_apply_rotations (entity, rotation);
+}
+
 /*
  * RigTool
  */
@@ -179,7 +239,8 @@ on_rotation_tool_clicked (RigInputRegion *region,
                               tool->screen_pos[1],
                               128);
 
-            tool->saved_rotation = *rig_entity_get_rotation (entity);
+            rig_entity_get_view_rotations (entity, tool->camera, &tool->saved_rotation);
+
             cogl_quaternion_init_identity (&tool->arcball.q_drag);
 
             rig_arcball_mouse_down (&tool->arcball, x, y);
@@ -191,16 +252,37 @@ on_rotation_tool_clicked (RigInputRegion *region,
         else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
                  state == RIG_BUTTON_STATE_1)
           {
+            CoglQuaternion camera_rotation;
             CoglQuaternion new_rotation;
+            RigEntity *parent;
+            CoglQuaternion parent_inverse;
 
             if (!tool->button_down)
               break;
 
             rig_arcball_mouse_motion (&tool->arcball, x, y);
 
-            cogl_quaternion_multiply (&new_rotation,
+            cogl_quaternion_multiply (&camera_rotation,
                                       &tool->arcball.q_drag,
                                       &tool->saved_rotation);
+
+            /* XXX: We have calculated the combined rotation in camera
+             * space, we now need to separate out the rotation of the
+             * entity itself.
+             *
+             * We rotate by the inverse of the parent's view transform
+             * so we are left with just the entity's rotation.
+             */
+            parent = rig_graphable_get_parent (entity);
+
+            rig_entity_get_view_rotations (parent,
+                                           tool->camera,
+                                           &parent_inverse);
+            cogl_quaternion_invert (&parent_inverse);
+
+            cogl_quaternion_multiply (&new_rotation,
+                                      &parent_inverse,
+                                      &camera_rotation);
 
             rig_entity_set_rotation (entity, &new_rotation);
 
@@ -223,12 +305,14 @@ on_rotation_tool_clicked (RigInputRegion *region,
   return status;
 }
 
-static void
-rig_tool_init (RigTool *tool,
-               Data *data)
+static RigTool *
+rig_tool_new (Data *data)
 {
+  RigTool *tool;
   RigObject *component;
   CoglPipeline *pipeline;
+
+  tool = g_slice_new0 (RigTool);
 
   tool->shell = data->shell;
 
@@ -252,6 +336,8 @@ rig_tool_init (RigTool *tool,
 
   tool->rotation_circle =
     rig_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
+
+  return tool;
 }
 
 static void
@@ -262,19 +348,14 @@ rig_tool_set_camera (RigTool *tool,
 }
 
 void
-get_modelview_matrix (Data       *data,
-                      RigEntity  *camera,
+get_modelview_matrix (RigEntity  *camera,
                       RigEntity  *entity,
                       CoglMatrix *modelview)
 {
-  const CoglMatrix *view;
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
-  view = rig_camera_get_view_transform (camera_component);
+  *modelview = *rig_camera_get_view_transform (camera_component);
 
-  cogl_matrix_multiply (modelview,
-                        view,
-                        rig_entity_get_transform (data->pivot));
   cogl_matrix_multiply (modelview,
                         modelview,
                         rig_entity_get_transform (entity));
@@ -296,10 +377,6 @@ get_modelview_matrix (Data       *data,
  * before drawing the tool */
 static void
 rig_tool_update (RigTool *tool,
-                 Data *data, /* for now, until we have a way to get the
-                                global transform of an entity instead of
-                                having to do it by hand (camera, pivot,
-                                entity) */
                  RigEntity *selected_entity)
 {
     RigComponent *camera;
@@ -319,8 +396,7 @@ rig_tool_update (RigTool *tool,
       }
 
     /* transform the selected entity up to the projection */
-    get_modelview_matrix (data,
-                          tool->camera,
+    get_modelview_matrix (tool->camera,
                           selected_entity,
                           &transform);
 
@@ -408,19 +484,9 @@ get_rotation (Data       *data,
               RigEntity  *entity,
               CoglMatrix *rotation)
 {
-  CoglMatrix tmp, camera_inverse;
-
-  cogl_matrix_init_from_quaternion (&tmp,
-                                    rig_entity_get_rotation (camera));
-  cogl_matrix_get_inverse (&tmp, &camera_inverse);
-
-  cogl_matrix_init_from_quaternion (&tmp,
-                                    rig_entity_get_rotation (data->pivot));
-  cogl_matrix_multiply (rotation, &camera_inverse, &tmp);
-
-  cogl_matrix_init_from_quaternion (&tmp,
-                                    rig_entity_get_rotation (entity));
-  cogl_matrix_multiply (rotation, rotation, &tmp);
+  CoglQuaternion q;
+  rig_entity_get_view_rotations (entity, camera, &q);
+  cogl_matrix_init_from_quaternion (rotation, &q);
 }
 
 static void
@@ -487,7 +553,7 @@ compute_light_shadow_matrix (Data       *data,
                              CoglMatrix *light_projection,
                              RigEntity  *light)
 {
-  CoglMatrix *main_camera, *pivot, pivot_inverse, light_transform, light_view;
+  CoglMatrix *main_camera, *light_transform, light_view;
   /* Move the unit data from [-1,1] to [0,1], column major order */
   float bias[16] = {
     .5f, .0f, .0f, .0f,
@@ -497,12 +563,8 @@ compute_light_shadow_matrix (Data       *data,
   };
 
   main_camera = rig_entity_get_transform (data->main_camera);
-  pivot = rig_entity_get_transform (data->pivot);
-  cogl_matrix_get_inverse (rig_entity_get_transform (data->pivot),
-                           &pivot_inverse);
-  cogl_matrix_multiply (&light_transform, pivot,
-                        rig_entity_get_transform (light));
-  cogl_matrix_get_inverse (&light_transform, &light_view);
+  light_transform = rig_entity_get_transform (light);
+  cogl_matrix_get_inverse (light_transform, &light_view);
 
   cogl_matrix_init_from_array (light_matrix, bias);
   cogl_matrix_multiply (light_matrix, light_matrix, light_projection);
@@ -606,12 +668,12 @@ draw_entities (Data            *data,
                RigEntity       *camera,
                gboolean         shadow_pass)
 {
-  CoglMatrix *transform, inverse, *pivot;
+  RigCamera *camera_component =
+    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
+  const CoglMatrix *view;
   GList *l;
 
-  transform = rig_entity_get_transform (camera);
-  cogl_matrix_get_inverse (transform, &inverse);
-  pivot = rig_entity_get_transform (data->pivot);
+  view = rig_camera_get_view_transform (camera_component);
 
   rig_entity_draw (camera, fb);
 
@@ -621,17 +683,15 @@ draw_entities (Data            *data,
     {
       cogl_framebuffer_identity_matrix (fb);
       cogl_framebuffer_scale (fb, 1, -1, 1);
-      cogl_framebuffer_transform (fb, &inverse);
+      cogl_framebuffer_transform (fb, view);
     }
   else
-    {
-      cogl_framebuffer_set_modelview_matrix (fb, &inverse);
-      cogl_framebuffer_transform (fb, pivot);
-    }
+    cogl_framebuffer_set_modelview_matrix (fb, view);
 
   for (l = data->entities; l; l = l->next)
     {
       RigEntity *entity = l->data;
+      const CoglMatrix *transform;
 
       if (shadow_pass && !rig_entity_get_cast_shadow (entity))
         continue;
@@ -757,9 +817,10 @@ test_init (RigShell *shell, void *user_data)
   data->main_camera = rig_entity_new (data->ctx);
   data->entities = g_list_prepend (data->entities, data->main_camera);
 
+  data->main_camera_z = 20.f;
   vector3[0] = 0.f;
-  vector3[1] = 2.f;
-  vector3[2] = 10.f;
+  vector3[1] = 0.f;
+  vector3[2] = data->main_camera_z;
   rig_entity_set_position (data->main_camera, vector3);
 
   component = rig_camera_new (data->ctx, data->fb);
@@ -868,7 +929,6 @@ test_init (RigShell *shell, void *user_data)
     w = cogl_framebuffer_get_width (data->fb);
     h = cogl_framebuffer_get_height (data->fb);
 
-    data->pivot = rig_entity_new (data->ctx);
     rig_arcball_init (&data->arcball, w / 2, h / 2, sqrtf (w * w + h * h) / 2);
 
     /* picking ray */
@@ -895,8 +955,8 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->ui_camera, component);
 
   /* tool */
-  rig_tool_init (&data->tool, data);
-  rig_tool_set_camera (&data->tool, data->main_camera);
+  data->tool = rig_tool_new (data);
+  rig_tool_set_camera (data->tool, data->main_camera);
 
   /* we default to edit mode */
   data->edit = TRUE;
@@ -941,6 +1001,8 @@ test_paint (RigShell *shell, void *user_data)
   time = get_current_time (data);
 
   camera_update_view (data->main_camera);
+  camera_update_view (data->light);
+  camera_update_view (data->ui_camera);
 
   for (l = data->entities; l; l = l->next)
     {
@@ -1032,11 +1094,10 @@ test_paint (RigShell *shell, void *user_data)
    */
   cogl_framebuffer_pop_matrix (draw_fb);
 
-  /* camera¯1 * pivot is left over after draw_entities() */
   if (data->edit && data->selected_entity)
     {
-      rig_tool_update (&data->tool, data, data->selected_entity);
-      rig_tool_draw (&data->tool, data, data->fb);
+      rig_tool_update (data->tool, data->selected_entity);
+      rig_tool_draw (data->tool, data, data->fb);
     }
 
   /* XXX: Somewhat asymmetric and hacky for now... */
@@ -1247,6 +1308,22 @@ pick (Data  *data,
   return selected_entity;
 }
 
+static void
+update_camera_position (Data *data)
+{
+  /* Calculate where the origin currently is from the camera's
+   * point of view. Then we can fixup the camera's position
+   * so this matches the real position of the origin. */
+  float relative_origin[3] = { 0, 0, -data->main_camera_z };
+  rig_entity_get_transformed_position (data->main_camera,
+                                       relative_origin);
+
+  rig_entity_translate (data->main_camera,
+                        -relative_origin[0],
+                        -relative_origin[1],
+                        -relative_origin[2]);
+}
+
 static RigInputEventStatus
 test_input_handler (RigInputEvent *event, void *user_data)
 {
@@ -1268,10 +1345,11 @@ test_input_handler (RigInputEvent *event, void *user_data)
         if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
             state == RIG_BUTTON_STATE_2)
           {
-            data->saved_rotation = *rig_entity_get_rotation (data->pivot);
+            data->saved_rotation = *rig_entity_get_rotation (data->main_camera);
+
             cogl_quaternion_init_identity (&data->arcball.q_drag);
 
-            rig_arcball_mouse_down (&data->arcball, x, data->fb_height - y);
+            rig_arcball_mouse_down (&data->arcball, data->fb_width - x, y);
 
             data->button_down = TRUE;
 
@@ -1308,12 +1386,6 @@ test_input_handler (RigInputEvent *event, void *user_data)
                                       ray_position,
                                       ray_direction);
 
-            /* nullify the effect of the pivot */
-            transform_ray (rig_entity_get_transform (data->pivot),
-                           TRUE, /* inverse the transform */
-                           ray_position,
-                           ray_direction);
-
             if (data->picking_ray)
               cogl_object_unref (data->picking_ray);
             data->picking_ray = create_picking_ray (data,
@@ -1324,7 +1396,7 @@ test_input_handler (RigInputEvent *event, void *user_data)
 
             data->selected_entity = pick (data, ray_position, ray_direction);
             if (data->selected_entity == NULL)
-              rig_tool_update (&data->tool, data, NULL);
+              rig_tool_update (data->tool, NULL);
 
             //status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
@@ -1336,31 +1408,39 @@ test_input_handler (RigInputEvent *event, void *user_data)
             if (!data->button_down)
               break;
 
-            rig_arcball_mouse_motion (&data->arcball, x, data->fb_height - y);
+            rig_arcball_mouse_motion (&data->arcball, data->fb_width - x, y);
 
             cogl_quaternion_multiply (&new_rotation,
-                                      &data->arcball.q_drag,
-                                      &data->saved_rotation);
+                                      &data->saved_rotation,
+                                      &data->arcball.q_drag);
 
-            rig_entity_set_rotation (data->pivot, &new_rotation);
+            rig_entity_set_rotation (data->main_camera, &new_rotation);
+
+            /* XXX: The remaining problem is calculating the new
+             * position for the camera!
+             *
+             * If we transform the point (0, 0, camera_z) by the
+             * camera's transform we can find where the origin is
+             * relative to the camera, and then find out how far that
+             * point is from the true origin so we know how to
+             * translate the camera.
+             */
+            update_camera_position (data);
 
             status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
                  state == RIG_BUTTON_STATE_WHEELUP)
           {
-            float scale;
-
-            scale = rig_entity_get_scale (data->pivot);
-            rig_entity_set_scale (data->pivot, scale / .9f);
+            data->main_camera_z += 5;
+            update_camera_position (data);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
                  state == RIG_BUTTON_STATE_WHEELDOWN)
           {
-            float scale;
-
-            scale = rig_entity_get_scale (data->pivot);
-            rig_entity_set_scale (data->pivot, scale * .9f);
+            if (data->main_camera_z >= 5)
+              data->main_camera_z -= 5;
+            update_camera_position (data);
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
           {
@@ -1387,6 +1467,16 @@ test_input_handler (RigInputEvent *event, void *user_data)
                 status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
               }
             break;
+          case RIG_KEY_minus:
+            data->main_camera_z += 5;
+            update_camera_position (data);
+            break;
+          case RIG_KEY_equal:
+            if (data->main_camera_z >= 5)
+              data->main_camera_z -= 5;
+            update_camera_position (data);
+            break;
+
           default:
             break;
           }
