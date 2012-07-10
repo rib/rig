@@ -34,9 +34,9 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS) $(MAINTAINER_CFLAGS)
 
-BUILT_SOURCES += cogl-defines.h cogl-gl-header.h
-DISTCLEANFILES += cogl-defines.h cogl-gl-header.h
-EXTRA_DIST += cogl-defines.h.in cogl-gl-header.h.in
+BUILT_SOURCES += cogl-defines.h cogl-egl-defines.h cogl-gl-header.h
+DISTCLEANFILES += cogl-defines.h cogl-egl-defines.h cogl-gl-header.h
+EXTRA_DIST += cogl-defines.h.in cogl-egl-defines.h.in cogl-gl-header.h.in
 
 pc_files = cogl2.pc
 
@@ -99,6 +99,9 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-buffer.h 		\
 	$(srcdir)/cogl-pixel-buffer.h		\
 	$(srcdir)/cogl-version.h		\
+	$(NULL)
+
+cogl_nodist_experimental_h = \
 	$(NULL)
 
 cogl_gl_prototypes_h = \
@@ -431,6 +434,11 @@ cogl_sources_c += \
 	$(srcdir)/winsys/cogl-winsys-egl-android-private.h
 endif
 if SUPPORT_EGL
+cogl_experimental_h += \
+       $(srcdir)/cogl-egl.h
+cogl_nodist_experimental_h += \
+       $(builddir)/cogl-egl-defines.h
+
 cogl_sources_c += \
        $(srcdir)/winsys/cogl-winsys-egl.c \
        $(srcdir)/winsys/cogl-winsys-egl-feature-functions.h \
@@ -490,7 +498,7 @@ cogl_headers = \
 
 coglincludedir = $(includedir)/cogl2/cogl
 coglinclude_HEADERS = $(cogl_headers) $(cogl_experimental_h)
-nodist_coglinclude_HEADERS = cogl-defines.h
+nodist_coglinclude_HEADERS = $(cogl_nodist_experimental_h) cogl-defines.h
 if USE_GLIB
 nodist_coglinclude_HEADERS += cogl-enum-types.h
 endif
