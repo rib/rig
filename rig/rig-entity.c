@@ -151,6 +151,22 @@ void rig_entity_set_position (RigEntity *entity,
   entity->dirty = TRUE;
 }
 
+void
+rig_entity_get_transformed_position (RigEntity *entity,
+                                     float position[3])
+{
+  CoglMatrix transform;
+  float w = 1;
+
+  rig_graphable_get_transform (entity, &transform);
+
+  cogl_matrix_transform_point (&transform,
+                               &position[0],
+                               &position[1],
+                               &position[2],
+                               &w);
+}
+
 CoglQuaternion *
 rig_entity_get_rotation (RigEntity *entity)
 {
