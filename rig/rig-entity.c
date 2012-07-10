@@ -247,8 +247,8 @@ rig_entity_draw (RigEntity       *entity,
 void
 rig_entity_translate (RigEntity *entity,
                       float      tx,
-                      float      tz,
-                      float      ty)
+                      float      ty,
+                      float      tz)
 {
   entity->position.x += tx;
   entity->position.y += ty;
