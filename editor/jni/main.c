@@ -668,25 +668,7 @@ draw_entities (Data            *data,
                RigEntity       *camera,
                gboolean         shadow_pass)
 {
-  RigCamera *camera_component =
-    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
-  const CoglMatrix *view;
   GList *l;
-
-  view = rig_camera_get_view_transform (camera_component);
-
-  rig_entity_draw (camera, fb);
-
-  cogl_framebuffer_push_matrix (fb);
-
-  if (shadow_pass)
-    {
-      cogl_framebuffer_identity_matrix (fb);
-      cogl_framebuffer_scale (fb, 1, -1, 1);
-      cogl_framebuffer_transform (fb, view);
-    }
-  else
-    cogl_framebuffer_set_modelview_matrix (fb, view);
 
   for (l = data->entities; l; l = l->next)
     {
@@ -705,15 +687,6 @@ draw_entities (Data            *data,
 
       cogl_framebuffer_pop_matrix (fb);
     }
-
-  /* XXX: Note we don't pop the matrix stack here since we want to
-   * allow additional things to be drawn using the same transform.
-   * This means it's the callers responsibility for now to pop the
-   * modelview matrix after using this function.
-   *
-   * At some point we should probably factor out the camera flushing
-   * from this function so we can avoid this asymmetry.
-   */
 }
 
 static void
@@ -973,7 +946,7 @@ test_init (RigShell *shell, void *user_data)
 }
 
 static void
-camera_update_view (RigEntity *camera)
+camera_update_view (RigEntity *camera, CoglBool shadow_map)
 {
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
@@ -982,7 +955,17 @@ camera_update_view (RigEntity *camera)
 
   rig_graphable_get_transform (camera, &transform);
   cogl_matrix_get_inverse (&transform, &view);
-  rig_camera_set_view_transform (camera_component, &view);
+
+  if (shadow_map)
+    {
+      CoglMatrix flipped_view;
+      cogl_matrix_init_identity (&flipped_view);
+      cogl_matrix_scale (&flipped_view, 1, -1, 1);
+      cogl_matrix_multiply (&flipped_view, &flipped_view, &view);
+      rig_camera_set_view_transform (camera_component, &flipped_view);
+    }
+  else
+    rig_camera_set_view_transform (camera_component, &view);
 }
 
 static CoglBool
@@ -991,7 +974,6 @@ test_paint (RigShell *shell, void *user_data)
   Data *data = user_data;
   int64_t time; /* micro seconds */
   CoglFramebuffer *shadow_fb, *draw_fb;
-  RigComponent *camera;
   GList *l;
 
   /*
@@ -1000,9 +982,9 @@ test_paint (RigShell *shell, void *user_data)
 
   time = get_current_time (data);
 
-  camera_update_view (data->main_camera);
-  camera_update_view (data->light);
-  camera_update_view (data->ui_camera);
+  camera_update_view (data->main_camera, FALSE);
+  camera_update_view (data->light, TRUE);
+  camera_update_view (data->ui_camera, FALSE);
 
   for (l = data->entities; l; l = l->next)
     {
@@ -1053,16 +1035,10 @@ test_paint (RigShell *shell, void *user_data)
                                       cogl_matrix_get_array (&light_shadow_matrix));
   }
 
+  rig_camera_flush (data->shadow_map_camera);
+
   draw_entities (data, shadow_fb, data->light, TRUE /* shadow pass */);
 
-  /* XXX: Big hack!
-   *
-   * draw_entities() leaves it's view transform pushed so we can draw
-   * more things using the same transform before popping it.
-   */
-  cogl_framebuffer_pop_matrix (shadow_fb);
-
-  /* XXX: Somewhat asymmetric and hacky for now... */
   rig_camera_end_frame (data->shadow_map_camera);
 
   /*
@@ -1077,6 +1053,8 @@ test_paint (RigShell *shell, void *user_data)
 
   rig_camera_set_framebuffer (data->main_camera_component, draw_fb);
 
+  rig_camera_flush (data->main_camera_component);
+
   /* draw entities */
   draw_entities (data, draw_fb, data->main_camera, FALSE);
 
@@ -1087,24 +1065,17 @@ test_paint (RigShell *shell, void *user_data)
                                        data->picking_ray);
     }
 
-  /* XXX: Big hack!
-   *
-   * draw_entities() leaves it's view transform pushed so we can draw
-   * more things using the same transform before popping it.
-   */
-  cogl_framebuffer_pop_matrix (draw_fb);
-
   if (data->edit && data->selected_entity)
     {
       rig_tool_update (data->tool, data->selected_entity);
       rig_tool_draw (data->tool, data, data->fb);
     }
 
-  /* XXX: Somewhat asymmetric and hacky for now... */
   rig_camera_end_frame (data->main_camera_component);
 
   /* The UI layer is drawn using an orthographic projection */
-  rig_entity_draw (data->ui_camera, data->fb);
+  rig_camera_flush (data->ui_camera_component);
+
   cogl_framebuffer_push_matrix (data->fb);
   cogl_framebuffer_identity_matrix (data->fb);
 
@@ -1127,7 +1098,6 @@ test_paint (RigShell *shell, void *user_data)
 
   cogl_framebuffer_pop_matrix (data->fb);
 
-  /* XXX: Somewhat asymmetric and hacky for now... */
   rig_camera_end_frame (data->ui_camera_component);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
