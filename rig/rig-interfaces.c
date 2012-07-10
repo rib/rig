@@ -307,10 +307,7 @@ rig_graphable_apply_transform (RigObject *graphable,
   int depth = 0;
   RigObject **transform_nodes;
   RigObject *node = graphable;
-  //RigCamera *camera;
   int i;
-
-  //cogl_matrix_init_identity (transform_matrix);
 
   do {
     RigGraphableProps *graphable_priv =
@@ -323,19 +320,10 @@ rig_graphable_apply_transform (RigObject *graphable,
 
   transform_nodes = g_alloca (sizeof (RigObject *) * depth);
 
-  //camera = NULL;
   node = graphable;
   i = 0;
   do {
     RigGraphableProps *graphable_priv;
-
-#if 0
-    if (rig_object_get_type (node) == &rig_camera_type)
-      {
-        camera = RIG_CAMERA (node);
-        break;
-      }
-#endif
 
     if (rig_object_is (node, RIG_INTERFACE_ID_TRANSFORMABLE))
       transform_nodes[i++] = node;
@@ -345,35 +333,9 @@ rig_graphable_apply_transform (RigObject *graphable,
     node = graphable_priv->parent;
   } while (node);
 
-#if 0
-  /* FIXME: we also need to take the camera->view transform into
-   * account.
-   *
-   * XXX: This highlights that it's awkward that we have to recognize
-   * camera nodes as an alternative kind of transform node.
-   * XXX: This highlights that it would be awkward for camera nodes
-   * to internally use a RigTransform child to represent the view
-   * transform, because rig_graphable_add_child would not give the
-   * camera code an opportunity to parent "children" under the
-   * transform. Also even if we had a mechanism for this how would
-   * it work for rig_graphable_remove_child()...?
-   *
-   * In general composite components seem like they are awkward to
-   * manage with the current scenegraph model.
-   * - The idea of meta-components could perhaps be introduced maybe
-   *   to the graphable interface, so that rig
-   */
-
-  if (camera)
-    cogl_matrix_multiply (transform_matrix, transform_matrix, &camera->view);
-#endif
-
   for (i--; i >= 0; i--)
     {
       const CoglMatrix *matrix = rig_transformable_get_matrix (transform_nodes[i]);
-      //RigTransform *transform = RIG_TRANSFORM (transform_nodes[i]);
-      //cogl_matrix_multiply (transform_matrix,
-      //                      transform_matrix, &transform->matrix);
       cogl_matrix_multiply (transform_matrix, transform_matrix, matrix);
     }
 }
