@@ -77,6 +77,8 @@ struct _RigEntity
 
   int ref_count;
 
+  uint32_t id;
+
   RigGraphableProps graphable;
 
   /* private fields */
@@ -101,7 +103,11 @@ rig_entity_get_cast_shadow (RigEntity *entity)
 }
 
 RigEntity *
-rig_entity_new (RigContext *ctx);
+rig_entity_new (RigContext *ctx,
+                uint32_t id);
+
+uint32_t
+rig_entity_get_id (RigEntity *entity);
 
 float
 rig_entity_get_x (RigEntity *entity);

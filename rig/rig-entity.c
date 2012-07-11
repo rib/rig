@@ -69,7 +69,8 @@ _rig_entity_init_type (void)
 }
 
 RigEntity *
-rig_entity_new (RigContext *ctx)
+rig_entity_new (RigContext *ctx,
+                uint32_t id)
 {
   RigEntity *entity = g_slice_new0 (RigEntity);
 
@@ -78,6 +79,7 @@ rig_entity_new (RigContext *ctx)
 
   entity->ref_count = 1;
 
+  entity->id = id;
   entity->position.x = 0.0f;
   entity->position.y = 0.0f;
   entity->position.z = 0.0f;
@@ -89,6 +91,12 @@ rig_entity_new (RigContext *ctx)
   entity->components = g_ptr_array_new ();
 
   return entity;
+}
+
+uint32_t
+rig_entity_get_id (RigEntity *entity)
+{
+  return entity->id;
 }
 
 float

@@ -30,6 +30,8 @@ typedef struct
   CoglFramebuffer *fb;
   GTimer *timer;
 
+  uint32_t next_entity_id;
+
   RigEntity *main_camera;
   RigCamera *main_camera_component;
   RigEntity *light;
@@ -297,7 +299,7 @@ test_init (RigShell *shell, void *user_data)
    */
 
   /* camera */
-  data->main_camera = rig_entity_new (data->ctx);
+  data->main_camera = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->main_camera);
 
   vector3[0] = 0.f;
@@ -317,7 +319,7 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->main_camera, component);
 
   /* light */
-  data->light = rig_entity_new (data->ctx);
+  data->light = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->light);
 
   vector3[0] = 1.0f;
@@ -355,7 +357,7 @@ test_init (RigShell *shell, void *user_data)
 
 
   /* plane */
-  data->plane = rig_entity_new (data->ctx);
+  data->plane = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->plane);
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.5f);
@@ -366,7 +368,7 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->plane, component);
 
   /* a second, more interesting, entity */
-  data->cube = rig_entity_new (data->ctx);
+  data->cube = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->cube);
   rig_entity_set_cast_shadow (data->cube, TRUE);
   rig_entity_set_y (data->cube, .5);

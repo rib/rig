@@ -88,6 +88,8 @@ typedef struct
   float fb_width, fb_height;
   GTimer *timer;
 
+  uint32_t next_entity_id;
+
   /* postprocessing */
   CoglFramebuffer *postprocess;
   CoglTexture2D *postprocess_color;
@@ -340,7 +342,7 @@ rig_tool_new (Data *data)
   tool->shell = data->shell;
 
   /* rotation tool */
-  tool->rotation_tool = rig_entity_new (data->ctx);
+  tool->rotation_tool = rig_entity_new (data->ctx, data->next_entity_id++);
 
   pipeline = create_color_pipeline (1.f, 1.f, 1.f);
   component = rig_mesh_renderer_new_from_template ("rotation-tool");
@@ -349,7 +351,7 @@ rig_tool_new (Data *data)
   rig_entity_add_component (tool->rotation_tool, component);
 
   /* rotation tool handle circle */
-  tool->rotation_tool_handle = rig_entity_new (data->ctx);
+  tool->rotation_tool_handle = rig_entity_new (data->ctx, data->next_entity_id++);
   component = rig_mesh_renderer_new_from_template ("circle");
   rig_entity_add_component (tool->rotation_tool_handle, component);
   component = rig_material_new_with_pipeline (data->ctx, pipeline);
@@ -1325,7 +1327,7 @@ test_init (RigShell *shell, void *user_data)
   data->scene = rig_graph_new (data->ctx, NULL);
 
   /* camera */
-  data->main_camera = rig_entity_new (data->ctx);
+  data->main_camera = rig_entity_new (data->ctx, data->next_entity_id++);
   //data->entities = g_list_prepend (data->entities, data->main_camera);
 
   data->main_camera_z = 20.f;
@@ -1348,7 +1350,7 @@ test_init (RigShell *shell, void *user_data)
   rig_graphable_add_child (data->scene, data->main_camera);
 
   /* light */
-  data->light = rig_entity_new (data->ctx);
+  data->light = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->light);
 
   vector3[0] = 12.0f;
@@ -1387,7 +1389,7 @@ test_init (RigShell *shell, void *user_data)
   rig_graphable_add_child (data->scene, data->light);
 
   /* plane */
-  data->plane = rig_entity_new (data->ctx);
+  data->plane = rig_entity_new (data->ctx, data->next_entity_id++);
   data->entities = g_list_prepend (data->entities, data->plane);
   data->pickables = g_list_prepend (data->pickables, data->plane);
   rig_entity_set_cast_shadow (data->plane, FALSE);
@@ -1406,7 +1408,7 @@ test_init (RigShell *shell, void *user_data)
   for (i = 0; i < N_CUBES; i++)
     {
 
-      data->cubes[i] = rig_entity_new (data->ctx);
+      data->cubes[i] = rig_entity_new (data->ctx, data->next_entity_id++);
       data->entities = g_list_prepend (data->entities, data->cubes[i]);
       data->pickables = g_list_prepend (data->pickables, data->cubes[i]);
 
@@ -1450,7 +1452,7 @@ test_init (RigShell *shell, void *user_data)
   }
 
   /* UI layer camera */
-  data->ui_camera = rig_entity_new (data->ctx);
+  data->ui_camera = rig_entity_new (data->ctx, data->next_entity_id++);
 
   component = rig_camera_new (data->ctx, data->fb);
   data->ui_camera_component = component;
