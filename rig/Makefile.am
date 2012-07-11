@@ -6,7 +6,8 @@ components_source_h = \
     components/rig-camera.h \
     components/rig-light.h \
     components/rig-mesh-renderer.h \
-    components/rig-material.h
+    components/rig-material.h \
+    components/rig-diamond.h
 
 source_h = \
     $(components_source_h) \
@@ -42,6 +43,7 @@ librig_la_SOURCES = \
     components/rig-light.c \
     components/rig-mesh-renderer.c \
     components/rig-material.c \
+    components/rig-diamond.c \
     mash-data.c \
     mash-data-loader.c \
     mash-ply-loader.c \

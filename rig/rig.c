@@ -40,6 +40,7 @@
 #include "rig-text-buffer.h"
 #include "rig-entity.h"
 #include "rig-components.h"
+#include "rig-geometry.h"
 
 /*
  * Overall issues to keep in mind for a useful and efficient UI scenegraph:
@@ -197,6 +198,15 @@
  *        branches of the display list.
  *
  */
+
+/*
+ * Note: The size and padding for this circle texture have been carefully
+ * chosen so it has a power of two size and we have enough padding to scale
+ * down the circle to a size of 2 pixels and still have a 1 texel transparent
+ * border which we rely on for anti-aliasing.
+ */
+#define CIRCLE_TEX_RADIUS 16
+#define CIRCLE_TEX_PADDING 16
 
 struct _RigGraph
 {
@@ -392,7 +402,7 @@ typedef struct _RigTextureCacheEntry
 
 static CoglUserDataKey texture_cache_key;
 
-static uint8_t _rig_nine_slice_indices_data[] = {
+uint8_t _rig_nine_slice_indices_data[] = {
     0,4,5,   0,5,1,  1,5,6,   1,6,2,   2,6,7,    2,7,3,
     4,8,9,   4,9,5,  5,9,10,  5,10,6,  6,10,11,  6,11,7,
     8,12,13, 8,13,9, 9,13,14, 9,14,10, 10,14,15, 10,15,11
@@ -639,6 +649,11 @@ rig_context_new (RigShell *shell)
                       _rig_nine_slice_indices_data,
                       sizeof (_rig_nine_slice_indices_data) /
                       sizeof (_rig_nine_slice_indices_data[0]));
+
+  context->circle_texture =
+    rig_create_circle_texture (context,
+                               CIRCLE_TEX_RADIUS /* radius */,
+                               CIRCLE_TEX_PADDING /* padding */);
 
   cogl_matrix_init_identity (&context->identity_matrix);
 
@@ -2412,6 +2427,8 @@ _rig_init (void)
       _rig_light_init_type ();
       _rig_mesh_renderer_init_type ();
       _rig_material_init_type ();
+      _rig_diamond_init_type ();
+      _rig_diamond_slice_init_type ();
 
       g_once_init_leave (&init_status, 1);
     }

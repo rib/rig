@@ -16,6 +16,9 @@
 #define RIG_UINT32_BLUE_AS_FLOAT(COLOR)  (((COLOR & 0xff00) >> 8) / 255.0)
 #define RIG_UINT32_ALPHA_AS_FLOAT(COLOR) ((COLOR & 0xff) / 255.0)
 
+
+extern uint8_t _rig_nine_slice_indices_data[54];
+
 /* PRIVATE */
 void
 _rig_init (void);
@@ -62,6 +65,8 @@ struct _RigContext
   GHashTable *texture_cache;
 
   CoglIndices *nine_slice_indices;
+
+  CoglTexture *circle_texture;
 
   CoglPangoFontMap *pango_font_map;
   PangoContext *pango_context;
