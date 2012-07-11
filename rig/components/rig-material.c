@@ -140,6 +140,20 @@ rig_material_new (RigContext *ctx)
   return material;
 }
 
+RigMaterial *
+rig_material_new_with_texture (RigContext *ctx,
+                               CoglTexture *texture)
+{
+  CoglPipeline *pipeline = cogl_pipeline_new (ctx->cogl_context);
+  RigMaterial *material;
+
+  cogl_pipeline_set_layer_texture (pipeline, 0, texture);
+  material = rig_material_new_with_pipeline (ctx, pipeline);
+
+  cogl_object_unref (pipeline);
+  return material;
+}
+
 CoglPipeline *
 rig_material_get_pipeline (RigMaterial *material)
 {

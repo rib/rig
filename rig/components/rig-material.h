@@ -40,6 +40,10 @@ RigMaterial *
 rig_material_new (RigContext *ctx);
 
 RigMaterial *
+rig_material_new_with_texture (RigContext *ctx,
+                               CoglTexture *texture);
+
+RigMaterial *
 rig_material_new_with_pipeline (RigContext *ctx,
                                 CoglPipeline *pipeline);
 
