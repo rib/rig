@@ -24,6 +24,8 @@
 #include <cogl/cogl.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
+#include <errno.h>
 
 #include "rig.h"
 #include "rig-number-slider.h"
@@ -38,6 +40,8 @@
   (RIG_NUMBER_SLIDER_CORNER_HEIGHT /            \
    (RIG_NUMBER_SLIDER_ARROW_HEIGHT +            \
     RIG_NUMBER_SLIDER_CORNER_HEIGHT * 2.0f))
+
+#define RIG_NUMBER_SLIDER_FONT_SIZE 10
 
 enum {
   RIG_NUMBER_SLIDER_PROP_VALUE,
@@ -68,6 +72,8 @@ struct _RigNumberSlider
   float value;
   float step;
 
+  PangoFontDescription *font_description;
+
   PangoLayout *actual_layout;
   PangoRectangle actual_logical_rect;
   PangoRectangle actual_ink_rect;
@@ -94,6 +100,15 @@ struct _RigNumberSlider
   float button_x, button_y;
   /* The original value when the button was pressed */
   float button_value;
+
+  /* The text control that will be displayed if the user directly
+   * clicks on the button. This will be NULL while it is not displayed
+   * and it will be immediately destroyed once the editing has
+   * finished */
+  RigText *text;
+  /* The transform for the text. This has the same lifetime as the
+   * text control */
+  RigTransform *text_transform;
 };
 
 /* Some of the pipelines are cached and attached to the CoglContext so
@@ -106,6 +121,9 @@ typedef struct
 } RigNumberSliderContextData;
 
 RigType rig_number_slider_type;
+
+static void
+rig_number_slider_remove_text (RigNumberSlider *slider);
 
 static RigPropertySpec
 _rig_number_slider_prop_specs[] =
@@ -260,9 +278,29 @@ rig_number_slider_clear_layout (RigNumberSlider *slider)
 }
 
 static void
+rig_number_slider_commit_text (RigNumberSlider *slider)
+{
+  if (slider->text)
+    {
+      const char *text = rig_text_get_text (slider->text);
+      double value;
+
+      errno = 0;
+      value = strtod (text, NULL);
+
+      if (errno == 0)
+        rig_number_slider_set_value (slider, value);
+
+      rig_number_slider_remove_text (slider);
+    }
+}
+
+static void
 _rig_number_slider_free (void *object)
 {
   RigNumberSlider *slider = object;
+
+  rig_number_slider_remove_text (slider);
 
   rig_ref_countable_unref (slider->context);
   cogl_object_unref (slider->bg_pipeline);
@@ -276,6 +314,8 @@ _rig_number_slider_free (void *object)
   rig_ref_countable_unref (slider->input_region);
 
   rig_simple_introspectable_destroy (slider);
+
+  pango_font_description_free (slider->font_description);
 
   g_slice_free (RigNumberSlider, slider);
 }
@@ -292,16 +332,24 @@ typedef struct
   float s1, t1, s2, t2;
 } RigNumberSliderRectangle;
 
+static PangoFontDescription *
+rig_number_slider_create_font_description (void)
+{
+  PangoFontDescription *font_description = pango_font_description_new ();
+
+  pango_font_description_set_family (font_description, "Sans");
+  pango_font_description_set_absolute_size (font_description,
+                                            RIG_NUMBER_SLIDER_FONT_SIZE *
+                                            PANGO_SCALE);
+
+  return font_description;
+}
+
 static void
 rig_number_slider_setup_layout (RigNumberSlider *slider,
                                 PangoLayout *layout)
 {
-  PangoFontDescription *font_description = pango_font_description_new ();
-
-  pango_font_description_set_absolute_size (font_description,
-                                            PANGO_SCALE * 10);
-  pango_layout_set_font_description (layout, font_description);
-  pango_font_description_free (font_description);
+  pango_layout_set_font_description (layout, slider->font_description);
 }
 
 static PangoLayout *
@@ -488,40 +536,123 @@ _rig_number_slider_paint (RigObject *object,
                                              (float *) coords,
                                              G_N_ELEMENTS (coords));
 
+  if (slider->text == NULL)
+    {
+      rig_number_slider_ensure_actual_layout (slider);
+
+      cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
+      cogl_pango_show_layout (fb,
+                              slider->actual_layout,
+                              slider->width / 2 -
+                              slider->actual_logical_rect.width / 2,
+                              slider->height / 2 -
+                              slider->actual_logical_rect.height / 2,
+                              &font_color);
+    }
+}
+
+static void
+rig_number_slider_update_text_size (RigNumberSlider *slider)
+{
   rig_number_slider_ensure_actual_layout (slider);
 
-  cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
-  cogl_pango_show_layout (fb,
-                          slider->actual_layout,
-                          slider->width / 2 -
-                          slider->actual_logical_rect.width / 2,
-                          slider->height / 2 -
-                          slider->actual_logical_rect.height / 2,
-                          &font_color);
+  rig_transform_init_identity (slider->text_transform);
+  rig_transform_translate (slider->text_transform,
+                           RIG_NUMBER_SLIDER_ARROW_WIDTH,
+                           slider->height / 2 -
+                           slider->actual_logical_rect.height / 2,
+                           0.0f);
+
+  rig_text_set_size (slider->text,
+                     slider->width - RIG_NUMBER_SLIDER_ARROW_WIDTH * 2,
+                     slider->actual_logical_rect.height);
+}
+
+static CoglBool
+rig_number_slider_transform_motion_event (RigNumberSlider *slider,
+                                          RigInputEvent *event,
+                                          float *x,
+                                          float *y)
+{
+  CoglMatrix transform;
+  CoglMatrix inverse_transform;
+  RigCamera *camera = rig_input_event_get_camera (event);
+
+  rig_graphable_get_modelview (slider, camera, &transform);
+
+  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
+    return FALSE;
+
+  *x = rig_motion_event_get_x (event);
+  *y = rig_motion_event_get_y (event);
+  rig_camera_unproject_coord (camera,
+                              &transform,
+                              &inverse_transform,
+                              0, /* object_coord_z */
+                              x,
+                              y);
+
+  return TRUE;
+}
+
+static RigInputEventStatus
+rig_number_slider_text_grab_cb (RigInputEvent *event,
+                                void *user_data)
+{
+  RigNumberSlider *slider = user_data;
+  float x, y;
+
+  switch (rig_input_event_get_type (event))
+    {
+    case RIG_INPUT_EVENT_TYPE_MOTION:
+      /* Check if this is a click outside of the text control */
+      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN &&
+          (!rig_number_slider_transform_motion_event (slider,
+                                                      event,
+                                                      &x, &y) ||
+           x < RIG_NUMBER_SLIDER_ARROW_WIDTH ||
+           x >= slider->width - RIG_NUMBER_SLIDER_ARROW_WIDTH ||
+           y < 0 ||
+           y >= slider->height))
+        {
+          rig_number_slider_commit_text (slider);
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+      break;
+
+    case RIG_INPUT_EVENT_TYPE_KEY:
+      /* The escape key cancels the text control */
+      if (rig_key_event_get_action (event) == RIG_KEY_EVENT_ACTION_DOWN &&
+          rig_key_event_get_keysym (event) == RIG_KEY_Escape)
+        rig_number_slider_remove_text (slider);
+      break;
+
+    default:
+      break;
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static void
+rig_number_slider_text_activate_cb (RigText *text,
+                                    void *user_data)
+{
+  RigNumberSlider *slider = user_data;
+
+  rig_number_slider_commit_text (slider);
 }
 
 static void
 rig_number_slider_handle_click (RigNumberSlider *slider,
                                 RigInputEvent *event)
 {
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
-  RigCamera *camera = rig_input_event_get_camera (event);
   float x, y;
 
-  rig_graphable_get_modelview (slider, camera, &transform);
-
-  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
+  if (!rig_number_slider_transform_motion_event (slider,
+                                                 event,
+                                                 &x, &y))
     return;
-
-  x = rig_motion_event_get_x (event);
-  y = rig_motion_event_get_y (event);
-  rig_camera_unproject_coord (camera,
-                              &transform,
-                              &inverse_transform,
-                              0, /* object_coord_z */
-                              &x,
-                              &y);
 
   if (x < RIG_NUMBER_SLIDER_ARROW_WIDTH)
     rig_number_slider_set_value (slider, slider->button_value - slider->step);
@@ -529,7 +660,61 @@ rig_number_slider_handle_click (RigNumberSlider *slider,
     rig_number_slider_set_value (slider, slider->button_value + slider->step);
   else
     {
-      /* FIXME: this should start the text entry editing mode */
+      int len;
+      char *text;
+
+      slider->text_transform = rig_transform_new (slider->context, NULL);
+      rig_graphable_add_child (slider, slider->text_transform);
+
+      slider->text = rig_text_new (slider->context);
+      rig_text_set_font_description (slider->text, slider->font_description);
+      rig_text_set_editable (slider->text, TRUE);
+      rig_text_set_activatable (slider->text, TRUE);
+      rig_text_set_activate_callback (slider->text,
+                                      rig_number_slider_text_activate_cb,
+                                      slider);
+
+      text = g_strdup_printf ("%.*f",
+                              slider->decimal_places,
+                              slider->value);
+      rig_text_set_text (slider->text, text);
+      len = strlen (text);
+      g_free (text);
+
+      rig_text_set_cursor_position (slider->text, 0);
+      rig_text_set_selection_bound (slider->text, len);
+
+      rig_text_grab_key_focus (slider->text);
+
+      rig_graphable_add_child (slider->text_transform, slider->text);
+
+      rig_number_slider_update_text_size (slider);
+
+      rig_shell_grab_input (slider->context->shell,
+                            rig_input_event_get_camera (event),
+                            rig_number_slider_text_grab_cb,
+                            slider);
+
+      rig_shell_queue_redraw (slider->context->shell);
+    }
+}
+
+static void
+rig_number_slider_remove_text (RigNumberSlider *slider)
+{
+  if (slider->text)
+    {
+      rig_graphable_remove_child (slider->text);
+      rig_ref_countable_unref (slider->text);
+
+      rig_graphable_remove_child (slider->text_transform);
+      rig_ref_countable_unref (slider->text_transform);
+
+      rig_shell_ungrab_input (slider->context->shell,
+                              rig_number_slider_text_grab_cb,
+                              slider);
+
+      slider->text = NULL;
     }
 }
 
@@ -585,7 +770,8 @@ rig_number_slider_input_region_cb (RigInputRegion *region,
   RigNumberSlider *slider = user_data;
   RigCamera *camera;
 
-  if (!slider->button_down &&
+  if (slider->text == NULL &&
+      !slider->button_down &&
       rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION &&
       rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN &&
       (rig_motion_event_get_button_state (event) & RIG_BUTTON_STATE_1) &&
@@ -670,6 +856,8 @@ rig_number_slider_new (RigContext *context)
   slider->step = 1.0f;
   slider->decimal_places = 2;
 
+  slider->font_description = rig_number_slider_create_font_description ();
+
   rig_object_init (&slider->_parent, &rig_number_slider_type);
 
   rig_paintable_init (RIG_OBJECT (slider));
@@ -705,6 +893,9 @@ rig_number_slider_set_size (RigNumberSlider *slider,
   rig_input_region_set_rectangle (slider->input_region,
                                   0.0f, 0.0f, /* x0 / y0 */
                                   width, height /* x1 / y1 */);
+
+  if (slider->text)
+    rig_number_slider_update_text_size (slider);
 }
 
 void
