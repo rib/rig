@@ -70,6 +70,45 @@ rig_property_destroy (RigProperty *property)
     }
 }
 
+#define DECLARE_STANDARD_COPIER(SUFFIX, CTYPE, TYPE)                    \
+  case RIG_PROPERTY_TYPE_ ## TYPE:                                      \
+  {                                                                     \
+    CTYPE value = rig_property_get_ ## SUFFIX (source_property);        \
+    rig_property_set_ ## SUFFIX (ctx, target_property, value);          \
+  }                                                                     \
+  return
+
+void
+rig_property_copy_value (RigPropertyContext *ctx,
+                         RigProperty *target_property,
+                         RigProperty *source_property)
+{
+  g_return_if_fail (source_property->spec->type ==
+                    target_property->spec->type);
+
+  switch ((RigPropertyType) target_property->spec->type)
+    {
+      DECLARE_STANDARD_COPIER (float, float, FLOAT);
+      DECLARE_STANDARD_COPIER (double, double, DOUBLE);
+      DECLARE_STANDARD_COPIER (integer, int, INTEGER);
+      DECLARE_STANDARD_COPIER (enum, int, ENUM);
+      DECLARE_STANDARD_COPIER (uint32, uint32_t, UINT32);
+      DECLARE_STANDARD_COPIER (boolean, CoglBool, BOOLEAN);
+      DECLARE_STANDARD_COPIER (object, RigObject *, OBJECT);
+      DECLARE_STANDARD_COPIER (pointer, void *, POINTER);
+      DECLARE_STANDARD_COPIER (text, const char *, TEXT);
+      DECLARE_STANDARD_COPIER (quaternion, const CoglQuaternion *, QUATERNION);
+      DECLARE_STANDARD_COPIER (color, const RigColor *, COLOR);
+
+    case RIG_PROPERTY_TYPE_UNKNOWN:
+      return;
+    }
+
+  g_warn_if_reached ();
+}
+
+#undef DECLARE_STANDARD_COPIER
+
 static void
 _rig_property_set_binding_full_valist (RigProperty *property,
                                        RigBindingCallback callback,
@@ -143,6 +182,50 @@ rig_property_set_binding_full (RigProperty *property,
                                          destroy_notify,
                                          ap);
   va_end (ap);
+}
+
+typedef struct
+{
+  RigPropertyContext *context;
+  RigProperty *source_property;
+} RigPropertyCopyBindingData;
+
+static void
+_rig_property_copy_binding_cb (RigProperty *target_property,
+                               void *user_data)
+{
+  RigPropertyCopyBindingData *data = user_data;
+
+  rig_property_copy_value (data->context,
+                           target_property,
+                           data->source_property);
+}
+
+static void
+_rig_property_copy_binding_destroy_notify (RigProperty *property,
+                                           void *user_data)
+{
+  RigPropertyCopyBindingData *data = user_data;
+
+  g_slice_free (RigPropertyCopyBindingData, data);
+}
+
+void
+rig_property_set_copy_binding (RigPropertyContext *context,
+                               RigProperty *target_property,
+                               RigProperty *source_property)
+{
+  RigPropertyCopyBindingData *data = g_slice_new (RigPropertyCopyBindingData);
+
+  data->context = context;
+  data->source_property = source_property;
+
+  rig_property_set_binding_full (target_property,
+                                 _rig_property_copy_binding_cb,
+                                 data,
+                                 _rig_property_copy_binding_destroy_notify,
+                                 source_property,
+                                 NULL /* terminator */);
 }
 
 void

@@ -245,6 +245,23 @@ rig_property_set_binding_full (RigProperty *property,
                                RigBindingDestroyNotify destroy_notify,
                                ...) G_GNUC_NULL_TERMINATED;
 
+/**
+ * rig_property_set_copy_binding:
+ * @context: The property context that will be used to set the property.
+ * @target_property: The property to set the binding on.
+ * @source_property: The depedent property that the value will be taken from.
+ *
+ * This links the value of @target_property with the value of
+ * @source_property so that whenever the value of the source property
+ * changes the target property will be updated with a copy of the same
+ * value. Note that the binding is only in one direction so that
+ * changes in @target_property do not affect @source_property.
+ */
+void
+rig_property_set_copy_binding (RigPropertyContext *context,
+                               RigProperty *target_property,
+                               RigProperty *source_property);
+
 /*
  * XXX: Issues
  *
@@ -339,6 +356,11 @@ rig_property_init (RigProperty *property,
 void
 rig_property_dirty (RigPropertyContext *ctx,
                     RigProperty *property);
+
+void
+rig_property_copy_value (RigPropertyContext *ctx,
+                         RigProperty *target_property,
+                         RigProperty *source_property);
 
 #define DECLARE_STANDARD_GETTER_SETTER(SUFFIX, CTYPE, TYPE) \
 static inline void \
