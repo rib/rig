@@ -107,6 +107,9 @@ typedef struct _RigPropertySpec
 
 typedef void (*RigBindingCallback) (RigProperty *property, void *user_data);
 
+typedef void (*RigBindingDestroyNotify) (RigProperty *property,
+                                         void *user_data);
+
 /* XXX: make sure bindings get freed if any of of the dependency
  * properties are destroyed. */
 typedef struct _RigPropertyBinding
@@ -117,7 +120,7 @@ typedef struct _RigPropertyBinding
    */
   GList *dependencies;
   RigBindingCallback callback;
-  void (*destroy_notify) (RigProperty *property, void *user_data);
+  RigBindingDestroyNotify destroy_notify;
   void *user_data;
 } RigPropertyBinding;
 
@@ -235,14 +238,12 @@ rig_property_set_binding (RigProperty *property,
                           void *user_data,
                           ...) G_GNUC_NULL_TERMINATED;
 
-#if 0
 void
-rig_property_add_binding_full (RigProperty *property,
+rig_property_set_binding_full (RigProperty *property,
                                RigBindingCallback callback,
                                void *user_data,
-                               RigDestroyNotify destroy_notify,
+                               RigBindingDestroyNotify destroy_notify,
                                ...) G_GNUC_NULL_TERMINATED;
-#endif
 
 /*
  * XXX: Issues

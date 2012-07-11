@@ -70,15 +70,15 @@ rig_property_destroy (RigProperty *property)
     }
 }
 
-void
-rig_property_set_binding (RigProperty *property,
-                          RigBindingCallback callback,
-                          void *user_data,
-                          ...)
+static void
+_rig_property_set_binding_full_valist (RigProperty *property,
+                                       RigBindingCallback callback,
+                                       void *user_data,
+                                       RigBindingDestroyNotify destroy_notify,
+                                       va_list ap)
 {
   RigPropertyBinding *binding;
   RigProperty *dependency;
-  va_list ap;
 
   /* XXX: Note: for now we don't allow multiple bindings for the same
    * property. I'm not sure it would make sense, as they would
@@ -96,10 +96,9 @@ rig_property_set_binding (RigProperty *property,
   binding = g_slice_new (RigPropertyBinding);
   binding->callback = callback;
   binding->user_data = user_data;
-  binding->destroy_notify = NULL;
+  binding->destroy_notify = destroy_notify;
   binding->dependencies = NULL;
 
-  va_start (ap, user_data);
   while ((dependency = va_arg (ap, RigProperty *)))
     {
       binding->dependencies =
@@ -107,9 +106,43 @@ rig_property_set_binding (RigProperty *property,
       dependency->dependants =
         g_slist_prepend (dependency->dependants, property);
     }
-  va_end (ap);
 
   property->binding = binding;
+}
+
+void
+rig_property_set_binding (RigProperty *property,
+                          RigBindingCallback callback,
+                          void *user_data,
+                          ...)
+{
+  va_list ap;
+
+  va_start (ap, user_data);
+  _rig_property_set_binding_full_valist (property,
+                                         callback,
+                                         user_data,
+                                         NULL, /* destroy_notify */
+                                         ap);
+  va_end (ap);
+}
+
+void
+rig_property_set_binding_full (RigProperty *property,
+                               RigBindingCallback callback,
+                               void *user_data,
+                               RigBindingDestroyNotify destroy_notify,
+                               ...)
+{
+  va_list ap;
+
+  va_start (ap, destroy_notify);
+  _rig_property_set_binding_full_valist (property,
+                                         callback,
+                                         user_data,
+                                         destroy_notify,
+                                         ap);
+  va_end (ap);
 }
 
 void
