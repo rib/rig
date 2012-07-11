@@ -36,61 +36,41 @@ typedef struct
   float max_value;
   float step;
   int decimal_places;
-  float (* getter) (RigParticleEngine *engine);
-  void (* setter) (RigParticleEngine *engine, float value);
+  const char *prop_name;
 } RigPeSettingsProperty;
+
+#define RIG_PE_SETTINGS_VERTEX_PROP_PART(text_name,             \
+                                         prop_name_v,           \
+                                         step_v,                \
+                                         dp,                    \
+                                         comp)                  \
+  {                                                             \
+    .name = text_name " " G_STRINGIFY (comp),                   \
+      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,        \
+      .step = step_v,                                           \
+      .decimal_places = dp,                                     \
+      .prop_name = prop_name_v "_" G_STRINGIFY (comp)           \
+      }
+#define RIG_PE_SETTINGS_VERTEX_PROP(text_name, prop_name, step, dp)     \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART (text_name, prop_name, step, dp, x), \
+    RIG_PE_SETTINGS_VERTEX_PROP_PART (text_name, prop_name, step, dp, y), \
+    RIG_PE_SETTINGS_VERTEX_PROP_PART (text_name, prop_name, step, dp, z)
+
+#define RIG_PE_SETTINGS_VERTEX_PROP_RANGE(text_name, prop_name, step, dp) \
+  RIG_PE_SETTINGS_VERTEX_PROP ("Min " text_name,                        \
+                               "min_" prop_name,                        \
+                               step, dp),                            \
+    RIG_PE_SETTINGS_VERTEX_PROP ("Max " text_name,                      \
+                                 "max_" prop_name,                      \
+                                 step, dp)
 
 static const RigPeSettingsProperty
 rig_pe_settings_properties[] =
   {
-    {
-      .name = "Min initial velocity X",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_min_initial_velocity_x,
-      .setter = rig_particle_engine_set_min_initial_velocity_x
-    },
-    {
-      .name = "Max initial velocity X",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_max_initial_velocity_x,
-      .setter = rig_particle_engine_set_max_initial_velocity_x
-    },
-    {
-      .name = "Min initial velocity Y",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_min_initial_velocity_y,
-      .setter = rig_particle_engine_set_min_initial_velocity_y
-    },
-    {
-      .name = "Max initial velocity Y",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_max_initial_velocity_y,
-      .setter = rig_particle_engine_set_max_initial_velocity_y
-    },
-    {
-      .name = "Min initial velocity Z",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_min_initial_velocity_z,
-      .setter = rig_particle_engine_set_min_initial_velocity_z
-    },
-    {
-      .name = "Max initial velocity Z",
-      .min_value = -G_MAXFLOAT, .max_value = G_MAXFLOAT,
-      .step = 1.0f,
-      .decimal_places = 2,
-      .getter = rig_particle_engine_get_max_initial_velocity_z,
-      .setter = rig_particle_engine_set_max_initial_velocity_z
-    },
+    RIG_PE_SETTINGS_VERTEX_PROP_RANGE ("initial velocity",
+                                       "initial_velocity",
+                                       1.0f,
+                                       2)
   };
 
 #define RIG_PE_SETTINGS_N_PROPERTIES G_N_ELEMENTS (rig_pe_settings_properties)
@@ -237,13 +217,27 @@ rig_pe_settings_new (RigContext *context,
       const RigPeSettingsProperty *prop = rig_pe_settings_properties + i;
       RigPeSettingsPropertyData *prop_data = settings->prop_data + i;
       RigNumberSlider *slider = rig_number_slider_new (context);
+      RigProperty *pe_prop, *slider_prop;
 
       rig_number_slider_set_name (slider, prop->name);
       rig_number_slider_set_min_value (slider, prop->min_value);
       rig_number_slider_set_max_value (slider, prop->max_value);
-      rig_number_slider_set_value (slider, prop->getter (engine));
       rig_number_slider_set_step (slider, prop->step);
       rig_number_slider_set_decimal_places (slider, prop->decimal_places);
+
+      pe_prop = rig_introspectable_lookup_property (engine, prop->prop_name);
+      if (pe_prop == NULL)
+        g_error ("No property \"%s\" on the particle engine", prop->prop_name);
+
+      rig_number_slider_set_value (slider, rig_property_get_float (pe_prop));
+
+      slider_prop = rig_introspectable_lookup_property (slider, "value");
+      if (slider_prop == NULL)
+        g_error ("No property \"value\" on the number slider");
+
+      rig_property_set_copy_binding (&context->property_ctx,
+                                     pe_prop,
+                                     slider_prop);
 
       prop_data->slider = slider;
 

@@ -94,6 +94,17 @@ allocate (Data *data)
 }
 
 static void
+test_onscreen_resize (CoglOnscreen *onscreen,
+                      int width,
+                      int height,
+                      void *user_data)
+{
+  Data *data = user_data;
+
+  allocate (data);
+}
+
+static void
 test_init (RigShell *shell,
            void *user_data)
 {
@@ -110,6 +121,9 @@ test_init (RigShell *shell,
 
   onscreen = cogl_onscreen_new (data->ctx->cogl_context, 800, 600);
   data->fb = COGL_FRAMEBUFFER (onscreen);
+
+  cogl_onscreen_set_resizeable (onscreen, TRUE);
+  cogl_onscreen_add_resize_handler (onscreen, test_onscreen_resize, data);
 
   cogl_onscreen_show (onscreen);
 
@@ -167,6 +181,8 @@ test_init (RigShell *shell,
   data->pe_settings_transform = rig_transform_new (data->ctx, NULL);
   rig_graphable_add_child (data->pe_settings_transform, data->pe_settings);
   rig_graphable_add_child (data->root, data->pe_settings_transform);
+
+  rig_shell_add_input_camera (shell, data->camera, data->root);
 
   allocate (data);
 }

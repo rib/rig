@@ -54,6 +54,16 @@ typedef struct
   RigParticleEngineColor color;
 } RigParticleEngineVertex;
 
+enum {
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_X,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_X,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_Y,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Y,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_Z,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Z,
+  RIG_PARTICLE_ENGINE_N_PROPS
+};
+
 struct _RigParticleEngine
 {
   RigObjectProps _parent;
@@ -100,9 +110,36 @@ struct _RigParticleEngine
   float point_size;
 
   int ref_count;
+
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[RIG_PARTICLE_ENGINE_N_PROPS];
 };
 
 RigType rig_particle_engine_type;
+
+#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(prop_name, comp, ind) \
+  {                                                                     \
+    .name = G_STRINGIFY (prop_name) "_" G_STRINGIFY (comp),             \
+      .type = RIG_PROPERTY_TYPE_FLOAT,                                  \
+      .data_offset = offsetof (RigParticleEngine, prop_name[ind]),      \
+      .setter = rig_particle_engine_set_ ## prop_name ## _ ## comp      \
+      }
+
+#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC(name)              \
+  RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, x, 0),        \
+    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, y, 1),      \
+    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, z, 2)       \
+
+#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE(name)        \
+  RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC (min_ ## name),          \
+    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC (max_ ## name)
+
+static RigPropertySpec
+_rig_particle_engine_prop_specs[] =
+  {
+    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_velocity),
+    { 0 } /* XXX: Needed for runtime counting of the number of properties */
+  };
 
 static CoglPipeline *
 _rig_particle_engine_create_pipeline (RigParticleEngine *engine)
@@ -431,6 +468,8 @@ _rig_particle_engine_free (void *object)
 
   g_rand_free (engine->rand);
 
+  rig_simple_introspectable_destroy (engine);
+
   g_slice_free (RigParticleEngine, engine);
 }
 
@@ -465,6 +504,11 @@ static RigPaintableVTable _rig_particle_engine_paintable_vtable = {
   _rig_particle_engine_paint
 };
 
+static RigIntrospectableVTable _rig_particle_engine_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
+
 static void
 _rig_particle_engine_init_type (void)
 {
@@ -481,6 +525,14 @@ _rig_particle_engine_init_type (void)
                           RIG_INTERFACE_ID_PAINTABLE,
                           offsetof (RigParticleEngine, paintable),
                           &_rig_particle_engine_paintable_vtable);
+  rig_type_add_interface (&rig_particle_engine_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_particle_engine_introspectable_vtable);
+  rig_type_add_interface (&rig_particle_engine_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigParticleEngine, introspectable),
+                          NULL); /* no implied vtable */
 }
 
 void
@@ -518,6 +570,10 @@ rig_particle_engine_new (RigContext *context)
 
   rig_paintable_init (RIG_OBJECT (engine));
   rig_graphable_init (RIG_OBJECT (engine));
+
+  rig_simple_introspectable_init (engine,
+                                  _rig_particle_engine_prop_specs,
+                                  engine->properties);
 
   return engine;
 }
