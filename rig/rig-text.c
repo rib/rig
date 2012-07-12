@@ -74,7 +74,7 @@ static const uint32_t default_selected_text_color = 0xffffffffff;
 static const uint32_t default_cursor_color = 0x000000ff;
 static const uint32_t default_selection_color = 0x000000ff;
 static const uint32_t default_text_color = 0x000000ff;
-static const uint32_t default_selected_text_color = 0x000000ff;
+static const uint32_t default_selected_text_color = 0xffffffff;
 
 struct _LayoutCache
 {
@@ -717,7 +717,8 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .type = RIG_PROPERTY_TYPE_BOOLEAN,
     .nick = "Selected Text Color Set",
     .blurb = "Whether the selected text color has been set",
-    .flags = RIG_PROPERTY_FLAG_READABLE
+    .flags = RIG_PROPERTY_FLAG_READABLE,
+    .default_value = { .boolean = TRUE }
   },
 
   /**
@@ -3138,7 +3139,7 @@ rig_text_new_full (RigContext *ctx,
 
   text->selection_color_set = FALSE;
   text->cursor_color_set = FALSE;
-  text->selected_text_color_set = FALSE;
+  text->selected_text_color_set = TRUE;
   text->preedit_set = FALSE;
 
   text->password_char = 0;
