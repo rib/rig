@@ -466,6 +466,12 @@ rig_camera_set_viewport (RigCamera *camera,
       camera->viewport[3] == height)
     return;
 
+  /* If the aspect ratio changes we may need to update the projection
+   * matrix... */
+  if ((!camera->orthographic) &&
+      (camera->viewport[2] / camera->viewport[3]) != (width / height))
+    camera->projection_age++;
+
   camera->viewport[0] = x;
   camera->viewport[1] = y;
   camera->viewport[2] = width;
