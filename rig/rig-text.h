@@ -1216,6 +1216,15 @@ rig_text_get_layout_offsets (RigText *text,
                              int *x,
                              int *y);
 
+/**
+ * rig_text_grab_key_focus:
+ * @text: a #RigText
+ *
+ * Causes @text to try to grab the key focus.
+ */
+void
+rig_text_grab_key_focus (RigText *text);
+
 G_END_DECLS
 
 #endif /* __RIG_TEXT_H__ */

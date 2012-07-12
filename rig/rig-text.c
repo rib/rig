@@ -2526,6 +2526,20 @@ lost_key_focus_cb (void *user_data)
   rig_shell_queue_redraw (text->ctx->shell);
 }
 
+void
+rig_text_grab_key_focus (RigText *text)
+{
+  if (!text->has_focus)
+    {
+      text->has_focus = TRUE;
+      rig_shell_grab_key_focus (text->ctx->shell,
+                                rig_text_key_press,
+                                lost_key_focus_cb,
+                                text);
+      rig_shell_queue_redraw (text->ctx->shell);
+    }
+}
+
 static CoglBool
 rig_text_button_press (RigText *text,
                        RigInputEvent *event)
@@ -2539,16 +2553,8 @@ rig_text_button_press (RigText *text,
 
   g_print ("RigText Button Press!\n");
   /* we'll steal keyfocus if we need it */
-  if ((text->editable || text->selectable) &&
-      text->has_focus == FALSE)
-    {
-      text->has_focus = TRUE;
-      rig_shell_grab_key_focus (text->ctx->shell,
-                                rig_text_key_press,
-                                lost_key_focus_cb,
-                                text);
-      rig_shell_queue_redraw (text->ctx->shell);
-    }
+  if (text->editable || text->selectable)
+    rig_text_grab_key_focus (text);
 
   /* if the actor is empty we just reset everything and not
    * set up the dragging of the selection since there's nothing
