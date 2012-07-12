@@ -28,8 +28,8 @@ typedef struct _RigTool
 {
   RigShell *shell;
   RigEntity *selected_entity;
-  RigEntity *rotation_tool;
-  RigEntity *rotation_tool_handle;
+  CoglPrimitive *rotation_tool;
+  CoglPrimitive *rotation_tool_handle;
   RigInputRegion *rotation_circle;
   RigArcball arcball;
   CoglQuaternion saved_rotation;
@@ -120,6 +120,7 @@ typedef struct
   CoglPipeline *shadow_map_tex;
 
   /* root materials */
+  CoglPipeline *default_pipeline;
   CoglPipeline *diffuse_specular;
 
   /* editor state */
@@ -334,30 +335,17 @@ static RigTool *
 rig_tool_new (Data *data)
 {
   RigTool *tool;
-  RigObject *component;
-  CoglPipeline *pipeline;
 
   tool = g_slice_new0 (RigTool);
 
   tool->shell = data->shell;
 
   /* rotation tool */
-  tool->rotation_tool = rig_entity_new (data->ctx, data->next_entity_id++);
-
-  pipeline = create_color_pipeline (1.f, 1.f, 1.f);
-  component = rig_mesh_renderer_new_from_template (data->ctx, "rotation-tool");
-  rig_entity_add_component (tool->rotation_tool, component);
-  component = rig_material_new_with_pipeline (data->ctx, pipeline);
-  rig_entity_add_component (tool->rotation_tool, component);
+  tool->rotation_tool = rig_create_rotation_tool_primitive (data->ctx, 64);
 
   /* rotation tool handle circle */
-  tool->rotation_tool_handle = rig_entity_new (data->ctx, data->next_entity_id++);
-  component = rig_mesh_renderer_new_from_template (data->ctx, "circle");
-  rig_entity_add_component (tool->rotation_tool_handle, component);
-  component = rig_material_new_with_pipeline (data->ctx, pipeline);
-  rig_entity_add_component (tool->rotation_tool_handle, component);
-
-  cogl_object_unref (pipeline);
+  tool->rotation_tool_handle =
+    rig_create_circle_outline_primitive (data->ctx, 64);
 
   tool->rotation_circle =
     rig_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
@@ -555,11 +543,17 @@ rig_tool_draw (RigTool *tool,
   cogl_framebuffer_scale (fb, scale, scale, scale);
   cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_transform (fb, &rotation);
-  rig_entity_draw (tool->rotation_tool, fb);
+  cogl_framebuffer_draw_primitive (fb,
+                                   data->default_pipeline,
+                                   tool->rotation_tool);
   cogl_framebuffer_pop_matrix (fb);
-  rig_entity_draw (tool->rotation_tool_handle, fb);
+  cogl_framebuffer_draw_primitive (fb,
+                                   data->default_pipeline,
+                                   tool->rotation_tool_handle);
   cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
-  rig_entity_draw (tool->rotation_tool_handle, fb);
+  cogl_framebuffer_draw_primitive (fb,
+                                   data->default_pipeline,
+                                   tool->rotation_tool_handle);
   cogl_framebuffer_pop_matrix (fb);
 
   cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
@@ -1242,6 +1236,8 @@ test_init (RigShell *shell, void *user_data)
   data->fb = COGL_FRAMEBUFFER (onscreen);
 
   cogl_onscreen_show (onscreen);
+
+  data->default_pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
   /*
    * Offscreen render for post-processing
