@@ -988,6 +988,12 @@ rig_number_slider_set_value (RigNumberSlider *slider,
   rig_number_slider_clear_layout (slider);
 }
 
+float
+rig_number_slider_get_value (RigNumberSlider *slider)
+{
+  return slider->value;
+}
+
 void
 rig_number_slider_set_step (RigNumberSlider *slider,
                             float step)

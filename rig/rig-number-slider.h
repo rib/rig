@@ -28,6 +28,9 @@ void
 rig_number_slider_set_value (RigNumberSlider *slider,
                              float value);
 
+float
+rig_number_slider_get_value (RigNumberSlider *slider);
+
 void
 rig_number_slider_set_step (RigNumberSlider *slider,
                             float step);
