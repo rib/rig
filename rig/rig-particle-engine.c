@@ -55,18 +55,10 @@ typedef struct
 } RigParticleEngineVertex;
 
 enum {
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_X,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_X,
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_Y,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Y,
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_Z,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Z,
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_X,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_X,
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_Y,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_Y,
-  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_Z,
-  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_Z,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION,
   RIG_PARTICLE_ENGINE_N_PROPS
 };
 
@@ -126,18 +118,13 @@ struct _RigParticleEngine
 
 RigType rig_particle_engine_type;
 
-#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(prop_name, comp, ind) \
-  {                                                                     \
-    .name = G_STRINGIFY (prop_name) "_" G_STRINGIFY (comp),             \
-      .type = RIG_PROPERTY_TYPE_FLOAT,                                  \
-      .data_offset = offsetof (RigParticleEngine, prop_name[ind]),      \
-      .setter = rig_particle_engine_set_ ## prop_name ## _ ## comp      \
+#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC(prop_name)         \
+  {                                                             \
+    .name = G_STRINGIFY (prop_name),                            \
+      .type = RIG_PROPERTY_TYPE_VEC3,                           \
+      .data_offset = offsetof (RigParticleEngine, prop_name),   \
+      .setter = rig_particle_engine_set_ ## prop_name           \
       }
-
-#define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC(name)              \
-  RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, x, 0),        \
-    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, y, 1),      \
-    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_PART(name, z, 2)       \
 
 #define RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE(name)        \
   RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC (min_ ## name),          \
@@ -631,157 +618,53 @@ rig_particle_engine_set_texture (RigParticleEngine *engine,
 }
 
 void
-rig_particle_engine_set_min_initial_velocity_x (RigParticleEngine *engine,
-                                                float value)
+rig_particle_engine_set_min_initial_velocity (RigParticleEngine *engine,
+                                              const float *value)
 {
-  engine->min_initial_velocity[0] = value;
-}
+  const int prop = RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY;
 
-float
-rig_particle_engine_get_min_initial_velocity_x (RigParticleEngine *engine)
-{
-  return engine->min_initial_velocity[0];
-}
+  memcpy (engine->min_initial_velocity, value, sizeof (float) * 3);
 
-void
-rig_particle_engine_set_min_initial_velocity_y (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->min_initial_velocity[1] = value;
-}
+  rig_property_dirty (&engine->context->property_ctx,
+                      &engine->properties[prop]);
 
-float
-rig_particle_engine_get_min_initial_velocity_y (RigParticleEngine *engine)
-{
-  return engine->min_initial_velocity[1];
 }
 
 void
-rig_particle_engine_set_min_initial_velocity_z (RigParticleEngine *engine,
-                                                float value)
+rig_particle_engine_set_max_initial_velocity (RigParticleEngine *engine,
+                                              const float *value)
 {
-  engine->min_initial_velocity[2] = value;
-}
+  const int prop = RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY;
 
-float
-rig_particle_engine_get_min_initial_velocity_z (RigParticleEngine *engine)
-{
-  return engine->min_initial_velocity[2];
-}
+  memcpy (engine->max_initial_velocity, value, sizeof (float) * 3);
 
-void
-rig_particle_engine_set_max_initial_velocity_x (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->max_initial_velocity[0] = value;
-}
+  rig_property_dirty (&engine->context->property_ctx,
+                      &engine->properties[prop]);
 
-float
-rig_particle_engine_get_max_initial_velocity_x (RigParticleEngine *engine)
-{
-  return engine->max_initial_velocity[0];
 }
 
 void
-rig_particle_engine_set_max_initial_velocity_y (RigParticleEngine *engine,
-                                                float value)
+rig_particle_engine_set_min_initial_position (RigParticleEngine *engine,
+                                              const float *value)
 {
-  engine->max_initial_velocity[1] = value;
-}
+  const int prop = RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION;
 
-float
-rig_particle_engine_get_max_initial_velocity_y (RigParticleEngine *engine)
-{
-  return engine->max_initial_velocity[1];
-}
+  memcpy (engine->min_initial_position, value, sizeof (float) * 3);
 
-void
-rig_particle_engine_set_max_initial_velocity_z (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->max_initial_velocity[2] = value;
-}
+  rig_property_dirty (&engine->context->property_ctx,
+                      &engine->properties[prop]);
 
-float
-rig_particle_engine_get_max_initial_velocity_z (RigParticleEngine *engine)
-{
-  return engine->max_initial_velocity[2];
 }
 
 void
-rig_particle_engine_set_min_initial_position_x (RigParticleEngine *engine,
-                                                float value)
+rig_particle_engine_set_max_initial_position (RigParticleEngine *engine,
+                                              const float *value)
 {
-  engine->min_initial_position[0] = value;
-}
+  const int prop = RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION;
 
-float
-rig_particle_engine_get_min_initial_position_x (RigParticleEngine *engine)
-{
-  return engine->min_initial_position[0];
-}
+  memcpy (engine->max_initial_position, value, sizeof (float) * 3);
 
-void
-rig_particle_engine_set_min_initial_position_y (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->min_initial_position[1] = value;
-}
+  rig_property_dirty (&engine->context->property_ctx,
+                      &engine->properties[prop]);
 
-float
-rig_particle_engine_get_min_initial_position_y (RigParticleEngine *engine)
-{
-  return engine->min_initial_position[1];
-}
-
-void
-rig_particle_engine_set_min_initial_position_z (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->min_initial_position[2] = value;
-}
-
-float
-rig_particle_engine_get_min_initial_position_z (RigParticleEngine *engine)
-{
-  return engine->min_initial_position[2];
-}
-
-void
-rig_particle_engine_set_max_initial_position_x (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->max_initial_position[0] = value;
-}
-
-float
-rig_particle_engine_get_max_initial_position_x (RigParticleEngine *engine)
-{
-  return engine->max_initial_position[0];
-}
-
-void
-rig_particle_engine_set_max_initial_position_y (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->max_initial_position[1] = value;
-}
-
-float
-rig_particle_engine_get_max_initial_position_y (RigParticleEngine *engine)
-{
-  return engine->max_initial_position[1];
-}
-
-void
-rig_particle_engine_set_max_initial_position_z (RigParticleEngine *engine,
-                                                float value)
-{
-  engine->max_initial_position[2] = value;
-}
-
-float
-rig_particle_engine_get_max_initial_position_z (RigParticleEngine *engine)
-{
-  return engine->max_initial_position[2];
 }
