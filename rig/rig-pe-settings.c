@@ -57,12 +57,18 @@ typedef struct
     RIG_PE_SETTINGS_VERTEX_PROP_PART (text_name, prop_name, step, dp, z)
 
 #define RIG_PE_SETTINGS_VERTEX_PROP_RANGE(text_name, prop_name, step, dp) \
-  RIG_PE_SETTINGS_VERTEX_PROP ("Min " text_name,                        \
-                               "min_" prop_name,                        \
-                               step, dp),                            \
-    RIG_PE_SETTINGS_VERTEX_PROP ("Max " text_name,                      \
-                                 "max_" prop_name,                      \
-                                 step, dp)
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Min " text_name, "min_" prop_name, \
+                                    step, dp, x),                       \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Max " text_name, "max_" prop_name, \
+                                    step, dp, x),                       \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Min " text_name, "min_" prop_name, \
+                                    step, dp, y),                       \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Max " text_name, "max_" prop_name, \
+                                    step, dp, y),                       \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Min " text_name, "min_" prop_name, \
+                                    step, dp, z),                       \
+  RIG_PE_SETTINGS_VERTEX_PROP_PART ("Max " text_name, "max_" prop_name, \
+                                    step, dp, z)
 
 static const RigPeSettingsProperty
 rig_pe_settings_properties[] =
