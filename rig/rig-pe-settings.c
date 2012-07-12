@@ -76,6 +76,10 @@ rig_pe_settings_properties[] =
     RIG_PE_SETTINGS_VERTEX_PROP_RANGE ("initial velocity",
                                        "initial_velocity",
                                        1.0f,
+                                       2),
+    RIG_PE_SETTINGS_VERTEX_PROP_RANGE ("initial position",
+                                       "initial_position",
+                                       1.0f,
                                        2)
   };
 

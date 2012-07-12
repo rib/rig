@@ -99,4 +99,46 @@ rig_particle_engine_set_max_initial_velocity_z (RigParticleEngine *engine,
 float
 rig_particle_engine_get_max_initial_velocity_z (RigParticleEngine *engine);
 
+void
+rig_particle_engine_set_min_initial_position_x (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_min_initial_position_x (RigParticleEngine *engine);
+
+void
+rig_particle_engine_set_min_initial_position_y (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_min_initial_position_y (RigParticleEngine *engine);
+
+void
+rig_particle_engine_set_min_initial_position_z (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_min_initial_position_z (RigParticleEngine *engine);
+
+void
+rig_particle_engine_set_max_initial_position_x (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_max_initial_position_x (RigParticleEngine *engine);
+
+void
+rig_particle_engine_set_max_initial_position_y (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_max_initial_position_y (RigParticleEngine *engine);
+
+void
+rig_particle_engine_set_max_initial_position_z (RigParticleEngine *engine,
+                                                float value);
+
+float
+rig_particle_engine_get_max_initial_position_z (RigParticleEngine *engine);
+
 #endif /* _RIG_PARTICLE_ENGINE_H_ */

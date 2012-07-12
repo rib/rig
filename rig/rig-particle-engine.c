@@ -61,6 +61,12 @@ enum {
   RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Y,
   RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY_Z,
   RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY_Z,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_X,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_X,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_Y,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_Y,
+  RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION_Z,
+  RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION_Z,
   RIG_PARTICLE_ENGINE_N_PROPS
 };
 
@@ -107,6 +113,9 @@ struct _RigParticleEngine
   float min_initial_velocity[3];
   float max_initial_velocity[3];
 
+  float min_initial_position[3];
+  float max_initial_position[3];
+
   float point_size;
 
   int ref_count;
@@ -138,6 +147,7 @@ static RigPropertySpec
 _rig_particle_engine_prop_specs[] =
   {
     RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_velocity),
+    RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_position),
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
 
@@ -256,10 +266,12 @@ static void
 _rig_particle_engine_get_initial_position (RigParticleEngine *engine,
                                            float position[3])
 {
-  /* TODO: make the initial position configurable with some randomness */
-  position[0] = g_rand_double_range (engine->rand, -40.0f, 40.0f);
-  position[1] = g_rand_double_range (engine->rand, -40.0f, 40.0f);
-  position[2] = 0.0f;
+  int i;
+
+  for (i = 0; i < 3; i++)
+    position[i] = g_rand_double_range (engine->rand,
+                                       engine->min_initial_position[i],
+                                       engine->max_initial_position[i]);
 }
 
 static void
@@ -694,4 +706,82 @@ float
 rig_particle_engine_get_max_initial_velocity_z (RigParticleEngine *engine)
 {
   return engine->max_initial_velocity[2];
+}
+
+void
+rig_particle_engine_set_min_initial_position_x (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_position[0] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_position_x (RigParticleEngine *engine)
+{
+  return engine->min_initial_position[0];
+}
+
+void
+rig_particle_engine_set_min_initial_position_y (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_position[1] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_position_y (RigParticleEngine *engine)
+{
+  return engine->min_initial_position[1];
+}
+
+void
+rig_particle_engine_set_min_initial_position_z (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_position[2] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_position_z (RigParticleEngine *engine)
+{
+  return engine->min_initial_position[2];
+}
+
+void
+rig_particle_engine_set_max_initial_position_x (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_position[0] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_position_x (RigParticleEngine *engine)
+{
+  return engine->max_initial_position[0];
+}
+
+void
+rig_particle_engine_set_max_initial_position_y (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_position[1] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_position_y (RigParticleEngine *engine)
+{
+  return engine->max_initial_position[1];
+}
+
+void
+rig_particle_engine_set_max_initial_position_z (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_position[2] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_position_z (RigParticleEngine *engine)
+{
+  return engine->max_initial_position[2];
 }
