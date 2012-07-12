@@ -91,7 +91,11 @@ struct _RigParticleEngine
   /* The 'current' time within the animation */
   int32_t current_time;
 
-  RigPaintableProps paintable_props;
+  RigGraphableProps graphable;
+  RigPaintableProps paintable;
+
+  float min_initial_velocity[3];
+  float max_initial_velocity[3];
 
   float point_size;
 
@@ -225,10 +229,12 @@ static void
 _rig_particle_engine_get_initial_velocity (RigParticleEngine *engine,
                                            float velocity[3])
 {
-  /* TODO: make the initial velocity configurable with some randomness */
-  velocity[0] = g_rand_double_range (engine->rand, -200.0f, 200.0f);
-  velocity[1] = g_rand_double_range (engine->rand, -300.0f, 100.0f);
-  velocity[2] = 0.0f;
+  int i;
+
+  for (i = 0; i < 3; i++)
+    velocity[i] = g_rand_double_range (engine->rand,
+                                       engine->min_initial_velocity[i],
+                                       engine->max_initial_velocity[i]);
 }
 
 static void
@@ -449,7 +455,13 @@ _rig_particle_engine_paint (RigObject *object,
                                    engine->primitive);
 }
 
-RigPaintableVTable _rig_particle_engine_paintable_vtable = {
+static RigGraphableVTable _rig_particle_engine_graphable_vtable = {
+  NULL, /* child removed */
+  NULL, /* child addded */
+  NULL /* parent changed */
+};
+
+static RigPaintableVTable _rig_particle_engine_paintable_vtable = {
   _rig_particle_engine_paint
 };
 
@@ -462,8 +474,12 @@ _rig_particle_engine_init_type (void)
                           offsetof (RigParticleEngine, ref_count),
                           &_rig_particle_engine_ref_countable_vtable);
   rig_type_add_interface (&rig_particle_engine_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigParticleEngine, graphable),
+                          &_rig_particle_engine_graphable_vtable);
+  rig_type_add_interface (&rig_particle_engine_type,
                           RIG_INTERFACE_ID_PAINTABLE,
-                          offsetof (RigParticleEngine, paintable_props),
+                          offsetof (RigParticleEngine, paintable),
                           &_rig_particle_engine_paintable_vtable);
 }
 
@@ -499,6 +515,9 @@ rig_particle_engine_new (RigContext *context)
   engine->rand = g_rand_new ();
 
   rig_object_init (&engine->_parent, &rig_particle_engine_type);
+
+  rig_paintable_init (RIG_OBJECT (engine));
+  rig_graphable_init (RIG_OBJECT (engine));
 
   return engine;
 }
@@ -541,4 +560,82 @@ rig_particle_engine_set_texture (RigParticleEngine *engine,
   if (engine->texture)
     cogl_object_unref (engine->texture);
   engine->texture = texture;
+}
+
+void
+rig_particle_engine_set_min_initial_velocity_x (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_velocity[0] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_velocity_x (RigParticleEngine *engine)
+{
+  return engine->min_initial_velocity[0];
+}
+
+void
+rig_particle_engine_set_min_initial_velocity_y (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_velocity[1] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_velocity_y (RigParticleEngine *engine)
+{
+  return engine->min_initial_velocity[1];
+}
+
+void
+rig_particle_engine_set_min_initial_velocity_z (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->min_initial_velocity[2] = value;
+}
+
+float
+rig_particle_engine_get_min_initial_velocity_z (RigParticleEngine *engine)
+{
+  return engine->min_initial_velocity[2];
+}
+
+void
+rig_particle_engine_set_max_initial_velocity_x (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_velocity[0] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_velocity_x (RigParticleEngine *engine)
+{
+  return engine->max_initial_velocity[0];
+}
+
+void
+rig_particle_engine_set_max_initial_velocity_y (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_velocity[1] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_velocity_y (RigParticleEngine *engine)
+{
+  return engine->max_initial_velocity[1];
+}
+
+void
+rig_particle_engine_set_max_initial_velocity_z (RigParticleEngine *engine,
+                                                float value)
+{
+  engine->max_initial_velocity[2] = value;
+}
+
+float
+rig_particle_engine_get_max_initial_velocity_z (RigParticleEngine *engine)
+{
+  return engine->max_initial_velocity[2];
 }

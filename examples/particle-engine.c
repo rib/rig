@@ -19,17 +19,23 @@
 
 #include <rig/rig.h>
 #include <rig/rig-particle-engine.h>
+#include <rig/rig-pe-settings.h>
 
 typedef struct
 {
   RigShell *shell;
   RigContext *ctx;
+  RigObject *root;
 
   CoglFramebuffer *fb;
 
   RigCamera *camera;
 
   RigParticleEngine *engine;
+  RigTransform *engine_transform;
+
+  RigPeSettings *pe_settings;
+  RigTransform *pe_settings_transform;
 } Data;
 
 static RigCamera *
@@ -44,6 +50,47 @@ create_camera (RigContext *ctx,
   rig_camera_set_view_transform (camera, &matrix);
 
   return camera;
+}
+
+static void
+allocate (Data *data)
+{
+  int fb_width = cogl_framebuffer_get_width (data->fb);
+  int fb_height = cogl_framebuffer_get_height (data->fb);
+  float width;
+  float height;
+
+  rig_pe_settings_get_preferred_width (data->pe_settings,
+                                       -1, /* for_height */
+                                       NULL, /* min_width */
+                                       &width);
+
+  /* Make sure the particle engine has at least ¼ of the screen */
+  if (width > fb_width * 3 / 4)
+    width = fb_width * 3 / 4;
+
+  rig_pe_settings_get_preferred_height (data->pe_settings,
+                                        width, /* for_width */
+                                        NULL, /* min_height */
+                                        &height);
+
+  if (height > fb_height)
+    height = fb_height;
+
+  rig_transform_init_identity (data->pe_settings_transform);
+  rig_transform_translate (data->pe_settings_transform,
+                           fb_width - width,
+                           fb_height - height,
+                           0.0f);
+  rig_pe_settings_set_size (data->pe_settings, width, height);
+
+  /* Center the particle engine using all of the remaining space to
+   * the left of the settings panel */
+  rig_transform_init_identity (data->engine_transform);
+  rig_transform_translate (data->engine_transform,
+                           (fb_width - width) / 2.0f,
+                           fb_height / 2.0f,
+                           0.0f);
 }
 
 static void
@@ -108,6 +155,61 @@ test_init (RigShell *shell,
           g_clear_error (&error);
         }
     }
+
+  data->root = rig_graph_new (data->ctx, NULL);
+
+  data->engine_transform = rig_transform_new (data->ctx, NULL);
+  rig_graphable_add_child (data->engine_transform, data->engine);
+  rig_graphable_add_child (data->root, data->engine_transform);
+
+  data->pe_settings = rig_pe_settings_new (data->ctx, data->engine);
+
+  data->pe_settings_transform = rig_transform_new (data->ctx, NULL);
+  rig_graphable_add_child (data->pe_settings_transform, data->pe_settings);
+  rig_graphable_add_child (data->root, data->pe_settings_transform);
+
+  allocate (data);
+}
+
+static RigTraverseVisitFlags
+pre_paint_cb (RigObject *object,
+              int depth,
+              void *user_data)
+{
+  RigPaintContext *paint_ctx = user_data;
+  RigCamera *camera = paint_ctx->camera;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
+
+  if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
+    {
+      const CoglMatrix *matrix = rig_transformable_get_matrix (object);
+      cogl_framebuffer_push_matrix (fb);
+      cogl_framebuffer_transform (fb, matrix);
+    }
+
+  if (rig_object_is (object, RIG_INTERFACE_ID_PAINTABLE))
+    {
+      RigPaintableVTable *vtable =
+        rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
+
+      vtable->paint (object, paint_ctx);
+    }
+
+  return RIG_TRAVERSE_VISIT_CONTINUE;
+}
+
+static RigTraverseVisitFlags
+post_paint_cb (RigObject *object,
+               int depth,
+               void *user_data)
+{
+  RigPaintContext *paint_ctx = user_data;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+
+  if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
+    cogl_framebuffer_pop_matrix (fb);
+
+  return RIG_TRAVERSE_VISIT_CONTINUE;
 }
 
 static CoglBool
@@ -117,25 +219,23 @@ test_paint (RigShell *shell,
   RigPaintContext paint_context;
   Data *data = user_data;
 
-  rig_camera_flush (data->camera);
+  rig_particle_engine_set_time (data->engine,
+                                g_get_monotonic_time () / 1000);
 
   cogl_framebuffer_clear4f (data->fb,
                             COGL_BUFFER_BIT_COLOR,
                             0.0f, 0.0f, 0.0f, 1.0f);
 
-  cogl_framebuffer_push_matrix (data->fb);
-  cogl_framebuffer_translate (data->fb,
-                              cogl_framebuffer_get_width (data->fb) / 2.0f,
-                              cogl_framebuffer_get_height (data->fb) / 2.0f,
-                              0.0f);
-
-  rig_particle_engine_set_time (data->engine,
-                                g_get_monotonic_time () / 1000);
+  rig_camera_flush (data->camera);
 
   paint_context.camera = data->camera;
-  rig_paintable_paint (data->engine, &paint_context);
+  rig_graphable_traverse (data->root,
+                          RIG_TRAVERSE_DEPTH_FIRST,
+                          pre_paint_cb,
+                          post_paint_cb,
+                          &paint_context);
 
-  cogl_framebuffer_pop_matrix (data->fb);
+  rig_camera_end_frame (data->camera);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (data->fb));
 
@@ -148,9 +248,20 @@ test_fini (RigShell *shell, void *user_data)
   Data *data = user_data;
 
   rig_ref_countable_unref (data->camera);
+
+  rig_graphable_remove_child (data->engine_transform);
+  rig_graphable_remove_child (data->engine);
+  rig_ref_countable_unref (data->engine_transform);
   rig_ref_countable_unref (data->engine);
+
+  rig_graphable_remove_child (data->pe_settings_transform);
+  rig_graphable_remove_child (data->engine);
+  rig_ref_countable_unref (data->pe_settings_transform);
+  rig_ref_countable_unref (data->pe_settings);
+
   cogl_object_unref (data->fb);
   rig_ref_countable_unref (data->ctx);
+  rig_ref_countable_unref (data->root);
 }
 
 int
