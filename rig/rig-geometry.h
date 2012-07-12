@@ -2,9 +2,13 @@
 #define _RIG_GEOMETRY_H_
 
 CoglAttribute *
-rig_create_circle (RigContext *ctx,
-                   int subdivisions,
-                   int *n_verts);
+rig_create_circle_fan_p2 (RigContext *ctx,
+                          int subdivisions,
+                          int *n_verts);
+
+CoglPrimitive *
+rig_create_circle_outline_primitive (RigContext *ctx,
+                                     uint8_t n_vertices);
 
 CoglTexture *
 rig_create_circle_texture (RigContext *ctx,

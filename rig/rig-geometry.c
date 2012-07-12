@@ -25,11 +25,12 @@
 #include <cogl/cogl.h>
 
 #include "rig-context.h"
+#include "rig-geometry.h"
 
 CoglAttribute *
-rig_create_circle (RigContext *ctx,
-                   int subdivisions,
-                   int *n_verts_ret)
+rig_create_circle_fan_p2 (RigContext *ctx,
+                          int subdivisions,
+                          int *n_verts_ret)
 {
   int n_verts = subdivisions + 2;
   struct CircleVert {
@@ -68,6 +69,28 @@ rig_create_circle (RigContext *ctx,
   return attribute;
 }
 
+CoglPrimitive *
+rig_create_circle_outline_primitive (RigContext *ctx,
+                                     uint8_t n_vertices)
+{
+  CoglPrimitive *primitive;
+  CoglVertexP3C4 *buffer;
+
+  buffer = g_malloc (n_vertices * sizeof (CoglVertexP3C4));
+
+  rig_tesselate_circle_with_line_indices (buffer, n_vertices,
+                                          NULL, /* no indices required */
+                                          0,
+                                          RIG_AXIS_Z, 255, 255, 255);
+
+  primitive = cogl_primitive_new_p3c4 (ctx->cogl_context,
+                                       COGL_VERTICES_MODE_LINE_LOOP,
+                                       n_vertices,
+                                       buffer);
+
+  return primitive;
+}
+
 CoglTexture *
 rig_create_circle_texture (RigContext *ctx,
                            int radius_texels,
@@ -89,7 +112,7 @@ rig_create_circle_texture (RigContext *ctx,
   offscreen = cogl_offscreen_new_to_texture (COGL_TEXTURE (tex2d));
   fb = COGL_FRAMEBUFFER (offscreen);
 
-  circle = rig_create_circle (ctx, 360, &n_verts);
+  circle = rig_create_circle_fan_p2 (ctx, 360, &n_verts);
 
   cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
@@ -166,13 +189,16 @@ rig_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
       vertex->a = 255;
     }
 
-  for (i = indices_base; i < indices_base + n_vertices - 1; i++)
+  if (indices_data)
     {
+      for (i = indices_base; i < indices_base + n_vertices - 1; i++)
+        {
+          indices_data[i * 2] = i;
+          indices_data[i * 2 + 1] = i + 1;
+        }
       indices_data[i * 2] = i;
-      indices_data[i * 2 + 1] = i + 1;
+      indices_data[i * 2 + 1] = indices_base;
     }
-  indices_data[i * 2] = i;
-  indices_data[i * 2 + 1] = indices_base;
 }
 
 CoglPrimitive *
@@ -226,3 +252,5 @@ rig_create_rotation_tool_primitive (RigContext *ctx,
 
   return primitive;
 }
+
+

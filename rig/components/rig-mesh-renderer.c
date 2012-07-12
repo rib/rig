@@ -212,48 +212,6 @@ create_ply_primitive (const gchar *filename)
   return data;
 }
 
-static CoglPrimitive *
-create_circle_primitive (RigMeshRenderer *renderer,
-                         uint8_t          n_vertices)
-{
-  CoglPrimitive *primitive;
-  CoglVertexP3C4 *buffer;
-  CoglIndices *indices;
-  uint8_t *indices_data;
-
-
-  buffer = g_malloc (n_vertices * sizeof (CoglVertexP3C4));
-  indices_data = g_malloc (n_vertices * 2);
-
-  rig_tesselate_circle_with_line_indices (buffer, n_vertices,
-                                          indices_data,
-                                          0,
-                                          RIG_AXIS_Z, 255, 255, 255);
-
-  primitive = cogl_primitive_new_p3c4 (rig_cogl_context,
-                                       COGL_VERTICES_MODE_LINES,
-                                       n_vertices,
-                                       buffer);
-
-  indices = cogl_indices_new (rig_cogl_context,
-                              COGL_INDICES_TYPE_UNSIGNED_BYTE,
-                              indices_data,
-                              n_vertices * 2);
-
-  cogl_primitive_set_indices (primitive, indices, n_vertices * 2);
-
-  cogl_object_unref (indices);
-
-  /* update the renderer states */
-  renderer->primitive = primitive;
-  renderer->vertex_data = (uint8_t *) buffer;
-  renderer->n_vertices = n_vertices;
-  renderer->stride = sizeof (CoglVertexP3C4);
-
-  return primitive;
-}
-
-
 static void
 rig_mesh_get_normal_matrix (const CoglMatrix *matrix,
                             float *normal_matrix)
@@ -394,7 +352,13 @@ rig_mesh_renderer_new_from_template (RigContext *ctx,
     }
   else if (g_strcmp0 (name, "circle") == 0)
     {
-      create_circle_primitive (renderer, 64);
+      renderer->primitive = rig_create_circle_outline_primitive (ctx, 64);
+      renderer->vertex_data = NULL;
+      renderer->n_vertices = 0;
+      renderer->stride = 0;
+      //renderer->vertex_data = (uint8_t *) buffer;
+      //renderer->n_vertices = n_vertices;
+      //renderer->stride = sizeof (CoglVertexP3C4);
     }
   else if (g_strcmp0 (name, "rotation-tool") == 0)
     {
