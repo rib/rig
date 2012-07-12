@@ -4,5 +4,6 @@ assets_DATA = \
 	button-hover.png \
 	button-active.png \
 	button-disabled.png \
+	number-slider-background.png \
 	slider-background.png \
 	slider-handle.png

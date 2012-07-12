@@ -74,6 +74,8 @@ librig_la_SOURCES = \
     rig-text-buffer.c \
     rig-text.c \
     rig-geometry.c \
+    rig-number-slider.c \
+    rig-number-slider.h \
     $(source_h)
 
 if !HAVE_ANDROID
