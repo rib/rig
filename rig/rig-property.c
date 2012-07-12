@@ -98,6 +98,7 @@ rig_property_copy_value (RigPropertyContext *ctx,
       DECLARE_STANDARD_COPIER (pointer, void *, POINTER);
       DECLARE_STANDARD_COPIER (text, const char *, TEXT);
       DECLARE_STANDARD_COPIER (quaternion, const CoglQuaternion *, QUATERNION);
+      DECLARE_STANDARD_COPIER (vec3, const float *, VEC3);
       DECLARE_STANDARD_COPIER (color, const RigColor *, COLOR);
 
     case RIG_PROPERTY_TYPE_UNKNOWN:

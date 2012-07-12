@@ -24,6 +24,7 @@ typedef enum _RigPropertyType
   RIG_PROPERTY_TYPE_BOOLEAN,
   RIG_PROPERTY_TYPE_TEXT,
   RIG_PROPERTY_TYPE_QUATERNION,
+  RIG_PROPERTY_TYPE_VEC3,
   RIG_PROPERTY_TYPE_COLOR,
   RIG_PROPERTY_TYPE_OBJECT,
   RIG_PROPERTY_TYPE_POINTER,
@@ -455,6 +456,48 @@ rig_property_get_quaternion (RigProperty *property)
     {
       CoglQuaternion *data = (CoglQuaternion *)((uint8_t *)property->object +
                                property->spec->data_offset);
+      return data;
+    }
+}
+
+static inline void
+rig_property_set_vec3 (RigPropertyContext *ctx,
+                       RigProperty *property,
+                       const float value[3])
+{
+  float *data = (float *) ((uint8_t *) property->object +
+                           property->spec->data_offset);
+
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_VEC3);
+
+  if (property->spec->setter)
+    {
+      void (*setter) (RigProperty *, const float[3]) =
+        property->spec->setter;
+      setter (property->object, value);
+    }
+  else
+    {
+      memcpy (data, value, sizeof (float) * 3);
+      if (property->dependants)
+        rig_property_dirty (ctx, property);
+    }
+}
+
+static inline const float *
+rig_property_get_vec3 (RigProperty *property)
+{
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_VEC3, 0);
+
+  if (property->spec->getter)
+    {
+      const float *(*getter) (RigProperty *property) = property->spec->getter;
+      return getter (property);
+    }
+  else
+    {
+      const float *data = (const float *) ((uint8_t *) property->object +
+                                           property->spec->data_offset);
       return data;
     }
 }
