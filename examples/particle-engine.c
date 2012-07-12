@@ -118,6 +118,7 @@ test_init (RigShell *shell,
   int i;
 
   data->ctx = rig_context_new (data->shell);
+  rig_context_init (data->ctx);
 
   onscreen = cogl_onscreen_new (data->ctx->cogl_context, 800, 600);
   data->fb = COGL_FRAMEBUFFER (onscreen);
