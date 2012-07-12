@@ -47,13 +47,22 @@ struct _RigMeshRenderer
 void
 _rig_mesh_renderer_init_type (void);
 
-RigMeshRenderer *rig_mesh_renderer_new_from_file     (const char   *file);
-RigMeshRenderer *rig_mesh_renderer_new_from_template (const char   *name);
+RigMeshRenderer *
+rig_mesh_renderer_new_from_file (RigContext *ctx,
+                                 const char *file);
 
-void            rig_mesh_renderer_free              (RigMeshRenderer *renderer);
+RigMeshRenderer *
+rig_mesh_renderer_new_from_template (RigContext *ctx,
+                                     const char *name);
 
-uint8_t *       rig_mesh_renderer_get_vertex_data   (RigMeshRenderer *renderer,
-                                                     size_t          *stride);
-int             rig_mesh_renderer_get_n_vertices    (RigMeshRenderer *renderer);
+void
+rig_mesh_renderer_free (RigMeshRenderer *renderer);
+
+uint8_t *
+rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
+                                   size_t *stride);
+
+int
+rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer);
 
 #endif /* __RIG_MESH_RENDERER_H__ */

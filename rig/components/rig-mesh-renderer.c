@@ -21,6 +21,7 @@
 
 #include "rig-global.h"
 #include "rig-types.h"
+#include "rig-geometry.h"
 #include "components/rig-material.h"
 
 #include "rig-mesh-renderer.h"
@@ -211,118 +212,6 @@ create_ply_primitive (const gchar *filename)
   return data;
 }
 
-/*
- * tesselate_circle:
- * @axis: the axis around which the circle is centered
- */
-static void
-tesselate_circle (CoglVertexP3C4 *buffer,
-                  uint8_t         n_vertices,
-                  uint8_t        *indices_data,
-                  int             indices_base,
-                  RigAxis         axis,
-                  uint8_t         r,
-                  uint8_t         g,
-                  uint8_t         b)
-{
-  float angle, increment;
-  CoglVertexP3C4 *vertex;
-  uint8_t i;
-
-  increment = 2 * G_PI / n_vertices;
-
-  for (i = 0, angle = 0.f; i < n_vertices; i++, angle += increment)
-    {
-      vertex = &buffer[i];
-
-      switch (axis)
-        {
-        case RIG_AXIS_X:
-          vertex->x = 0.f;
-          vertex->y = sinf (angle);
-          vertex->z = cosf (angle);
-          break;
-        case RIG_AXIS_Y:
-          vertex->x = sinf (angle);
-          vertex->y = 0.f;
-          vertex->z = cosf (angle);
-          break;
-        case RIG_AXIS_Z:
-          vertex->x = cosf (angle);
-          vertex->y = sinf (angle);
-          vertex->z = 0.f;
-          break;
-        }
-
-      vertex->r = r;
-      vertex->g = g;
-      vertex->b = b;
-      vertex->a = 255;
-    }
-
-  for (i = indices_base; i < indices_base + n_vertices - 1; i++)
-    {
-      indices_data[i * 2] = i;
-      indices_data[i * 2 + 1] = i + 1;
-    }
-  indices_data[i * 2] = i;
-  indices_data[i * 2 + 1] = indices_base;
-}
-
-static CoglPrimitive *
-create_rotation_tool_primitive (RigMeshRenderer *renderer,
-                                uint8_t          n_vertices)
-{
-  CoglPrimitive *primitive;
-  CoglVertexP3C4 *buffer;
-  CoglIndices *indices;
-  uint8_t *indices_data;
-  int vertex_buffer_size;
-
-  g_assert (n_vertices < 255 / 3);
-
-  vertex_buffer_size = n_vertices * sizeof (CoglVertexP3C4) * 3;
-  buffer = g_malloc (vertex_buffer_size);
-  indices_data = g_malloc (n_vertices * 2 * 3);
-
-  tesselate_circle (buffer, n_vertices,
-                    indices_data,
-                    0,
-                    RIG_AXIS_X, 255, 0, 0);
-
-  tesselate_circle (buffer + n_vertices, n_vertices,
-                    indices_data,
-                    n_vertices,
-                    RIG_AXIS_Y, 0, 255, 0);
-
-  tesselate_circle (buffer + 2 * n_vertices, n_vertices,
-                    indices_data,
-                    n_vertices * 2,
-                    RIG_AXIS_Z, 0, 0, 255);
-
-  primitive = cogl_primitive_new_p3c4 (rig_cogl_context,
-                                       COGL_VERTICES_MODE_LINES,
-                                       n_vertices * 3,
-                                       buffer);
-
-  indices = cogl_indices_new (rig_cogl_context,
-                              COGL_INDICES_TYPE_UNSIGNED_BYTE,
-                              indices_data,
-                              n_vertices * 2 * 3);
-
-  cogl_primitive_set_indices (primitive, indices, n_vertices * 2 * 3);
-
-  cogl_object_unref (indices);
-
-  /* update the renderer states */
-  renderer->primitive = primitive;
-  renderer->vertex_data = (uint8_t *) buffer;
-  renderer->n_vertices = n_vertices * 3;
-  renderer->stride = sizeof (CoglVertexP3C4);
-
-  return primitive;
-}
-
 static CoglPrimitive *
 create_circle_primitive (RigMeshRenderer *renderer,
                          uint8_t          n_vertices)
@@ -336,10 +225,10 @@ create_circle_primitive (RigMeshRenderer *renderer,
   buffer = g_malloc (n_vertices * sizeof (CoglVertexP3C4));
   indices_data = g_malloc (n_vertices * 2);
 
-  tesselate_circle (buffer, n_vertices,
-                    indices_data,
-                    0,
-                    RIG_AXIS_Z, 255, 255, 255);
+  rig_tesselate_circle_with_line_indices (buffer, n_vertices,
+                                          indices_data,
+                                          0,
+                                          RIG_AXIS_Z, 255, 255, 255);
 
   primitive = cogl_primitive_new_p3c4 (rig_cogl_context,
                                        COGL_VERTICES_MODE_LINES,
@@ -460,7 +349,7 @@ _rig_mesh_renderer_init_type (void)
 }
 
 static RigMeshRenderer *
-rig_mesh_renderer_new (void)
+rig_mesh_renderer_new (RigContext *ctx)
 {
   RigMeshRenderer *renderer;
 
@@ -472,22 +361,24 @@ rig_mesh_renderer_new (void)
 }
 
 RigMeshRenderer *
-rig_mesh_renderer_new_from_file (const char *file)
+rig_mesh_renderer_new_from_file (RigContext *ctx,
+                                 const char *file)
 {
   RigMeshRenderer *renderer;
 
-  renderer = rig_mesh_renderer_new ();
+  renderer = rig_mesh_renderer_new (ctx);
   renderer->mesh_data = create_ply_primitive (file);
 
   return renderer;
 }
 
 RigMeshRenderer *
-rig_mesh_renderer_new_from_template (const char *name)
+rig_mesh_renderer_new_from_template (RigContext *ctx,
+                                     const char *name)
 {
   RigMeshRenderer *renderer;
 
-  renderer = rig_mesh_renderer_new ();
+  renderer = rig_mesh_renderer_new (ctx);
 
   if (g_strcmp0 (name, "plane") == 0)
     {
@@ -507,7 +398,13 @@ rig_mesh_renderer_new_from_template (const char *name)
     }
   else if (g_strcmp0 (name, "rotation-tool") == 0)
     {
-      create_rotation_tool_primitive (renderer, 64);
+      renderer->primitive = rig_create_rotation_tool_primitive (ctx, 64);
+      renderer->vertex_data = NULL;
+      renderer->n_vertices = 0;
+      renderer->stride = 0;
+      //renderer->vertex_data = (uint8_t *) buffer;
+      //renderer->n_vertices = n_vertices * 3;
+      //renderer->stride = sizeof (CoglVertexP3C4);
     }
   else
     g_assert_not_reached ();

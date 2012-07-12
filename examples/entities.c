@@ -362,7 +362,7 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.5f);
 
-  component = rig_mesh_renderer_new_from_template ("plane");
+  component = rig_mesh_renderer_new_from_template (data->ctx, "plane");
   rig_entity_add_component (data->plane, component);
   component = rig_material_new_with_pipeline (data->ctx, root_pipeline);
   rig_entity_add_component (data->plane, component);
@@ -375,7 +375,7 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_z (data->cube, 1);
   rig_entity_rotate_y_axis (data->cube, 10);
 
-  component = rig_mesh_renderer_new_from_template ("cube");
+  component = rig_mesh_renderer_new_from_template (data->ctx, "cube");
   rig_entity_add_component (data->cube, component);
 
   pipeline = cogl_pipeline_copy (root_pipeline);

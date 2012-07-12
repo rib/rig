@@ -345,14 +345,14 @@ rig_tool_new (Data *data)
   tool->rotation_tool = rig_entity_new (data->ctx, data->next_entity_id++);
 
   pipeline = create_color_pipeline (1.f, 1.f, 1.f);
-  component = rig_mesh_renderer_new_from_template ("rotation-tool");
+  component = rig_mesh_renderer_new_from_template (data->ctx, "rotation-tool");
   rig_entity_add_component (tool->rotation_tool, component);
   component = rig_material_new_with_pipeline (data->ctx, pipeline);
   rig_entity_add_component (tool->rotation_tool, component);
 
   /* rotation tool handle circle */
   tool->rotation_tool_handle = rig_entity_new (data->ctx, data->next_entity_id++);
-  component = rig_mesh_renderer_new_from_template ("circle");
+  component = rig_mesh_renderer_new_from_template (data->ctx, "circle");
   rig_entity_add_component (tool->rotation_tool_handle, component);
   component = rig_material_new_with_pipeline (data->ctx, pipeline);
   rig_entity_add_component (tool->rotation_tool_handle, component);
@@ -1395,7 +1395,7 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.f);
 
-  component = rig_mesh_renderer_new_from_template ("plane");
+  component = rig_mesh_renderer_new_from_template (data->ctx, "plane");
   rig_entity_add_component (data->plane, component);
   component = rig_material_new_with_pipeline (data->ctx, root_pipeline);
   rig_entity_add_component (data->plane, component);
@@ -1420,14 +1420,15 @@ test_init (RigShell *shell, void *user_data)
       rig_entity_rotate_y_axis (data->cubes[i], 10);
 #endif
 
-      component = rig_mesh_renderer_new_from_template ("cube");
+      component = rig_mesh_renderer_new_from_template (data->ctx, "cube");
       rig_entity_add_component (data->cubes[i], component);
       component = rig_material_new_with_pipeline (data->ctx, pipeline);
-      cogl_object_unref (pipeline);
+      //cogl_object_unref (pipeline);
       rig_entity_add_component (data->cubes[i], component);
 
       rig_graphable_add_child (data->scene, data->cubes[i]);
     }
+  cogl_object_unref (pipeline);
 
   /* create the pipelines to display the shadow color and depth textures */
   data->shadow_color_tex =
