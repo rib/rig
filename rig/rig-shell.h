@@ -172,6 +172,9 @@ rig_shell_grab_key_focus (RigShell *shell,
                           void *user_data);
 
 void
+rig_shell_ungrab_key_focus (RigShell *shell);
+
+void
 rig_shell_queue_redraw (RigShell *shell);
 
 RigCamera *

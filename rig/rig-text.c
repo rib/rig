@@ -1562,6 +1562,9 @@ _rig_text_free (void *object)
 {
   RigText *text = object;
 
+  if (text->has_focus)
+    rig_shell_ungrab_key_focus (text->ctx->shell);
+
   /* get rid of the entire cache */
   rig_text_dirty_cache (text);
 

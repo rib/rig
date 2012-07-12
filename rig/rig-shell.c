@@ -1431,6 +1431,14 @@ rig_shell_grab_key_focus (RigShell *shell,
   shell->keyboard_ungrab_cb = ungrab_callback;
 }
 
+void
+rig_shell_ungrab_key_focus (RigShell *shell)
+{
+  shell->keyboard_focus_cb = NULL;
+  shell->keyboard_focus_data = NULL;
+  shell->keyboard_ungrab_cb = NULL;
+}
+
 static CoglBool
 _rig_shell_paint (RigShell *shell)
 {
