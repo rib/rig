@@ -18,6 +18,13 @@
 #include "rig-sdl-keysyms.h"
 #endif
 
+typedef struct
+{
+  RigInputCallback callback;
+  RigCamera *camera;
+  void *user_data;
+} RigShellGrab;
+
 struct _RigShell
 {
   RigObjectProps _parent;
@@ -45,8 +52,10 @@ struct _RigShell
   RigCamera *window_camera;
 
   GList *input_regions;
-  RigInputCallback grab_cb;
-  void *grab_data;
+
+  /* List of grabs that are currently in place. This are in order from
+   * highest to lowest priority. */
+  GList *grabs;
 
   RigInputCallback keyboard_focus_cb;
   void *keyboard_focus_data;
@@ -1089,7 +1098,7 @@ static RigInputEventStatus
 _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
 {
   RigInputEventStatus status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
-  GList *l;
+  GList *l, *next;
 
   event->camera = shell->window_camera;
 
@@ -1100,8 +1109,24 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
         return status;
     }
 
-  if (shell->grab_cb)
-    return shell->grab_cb (event, shell->grab_data);
+  for (l = shell->grabs; l; l = next)
+    {
+      RigShellGrab *grab = l->data;
+      RigCamera *old_camera = event->camera;
+      RigInputEventStatus grab_status;
+
+      next = l->next;
+
+      if (grab->camera)
+        event->camera = grab->camera;
+
+      grab_status = grab->callback (event, grab->user_data);
+
+      event->camera = old_camera;
+
+      if (grab_status == RIG_INPUT_EVENT_STATUS_HANDLED)
+        return RIG_INPUT_EVENT_STATUS_HANDLED;
+    }
 
   if (shell->keyboard_focus_cb &&
       rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_KEY)
@@ -1262,6 +1287,18 @@ android_handle_cmd (struct android_app *app,
 }
 #endif
 
+static void
+_rig_shell_remove_grab_link (RigShell *shell,
+                             GList *link)
+{
+  RigShellGrab *grab = link->data;
+
+  if (grab->camera)
+    rig_ref_countable_unref (grab->camera);
+  g_slice_free (RigShellGrab, grab);
+  shell->grabs = g_list_delete_link (shell->grabs, link);
+}
+
 RigType rig_shell_type;
 
 static void
@@ -1273,6 +1310,9 @@ _rig_shell_free (void *object)
   for (l = shell->input_regions; l; l = l->next)
     rig_ref_countable_unref (l->data);
   g_list_free (shell->input_regions);
+
+  while (shell->grabs)
+    _rig_shell_remove_grab_link (shell, shell->grabs);
 
   _rig_shell_remove_all_input_cameras (shell);
 
@@ -1591,19 +1631,40 @@ rig_shell_main (RigShell *shell)
 
 void
 rig_shell_grab_input (RigShell *shell,
+                      RigCamera *camera,
                       RigInputCallback callback,
                       void *user_data)
 {
-  g_return_if_fail (shell->grab_cb == NULL);
+  RigShellGrab *grab = g_slice_new (RigShellGrab);
 
-  shell->grab_cb = callback;
-  shell->grab_data = user_data;
+  grab->callback = callback;
+  grab->user_data = user_data;
+
+  if (camera)
+    grab->camera = rig_ref_countable_ref (camera);
+  else
+    grab->camera = NULL;
+
+  shell->grabs = g_list_prepend (shell->grabs, grab);
 }
 
 void
-rig_shell_ungrab_input (RigShell *shell)
+rig_shell_ungrab_input (RigShell *shell,
+                        RigInputCallback callback,
+                        void *user_data)
 {
-  shell->grab_cb = NULL;
+  GList *l;
+
+  for (l = shell->grabs; l; l = l->next)
+    {
+      RigShellGrab *grab = l->data;
+
+      if (grab->callback == callback && grab->user_data == user_data)
+        {
+          _rig_shell_remove_grab_link (shell, l);
+          break;
+        }
+    }
 }
 
 void
@@ -1994,7 +2055,9 @@ _rig_slider_grab_input_cb (RigInputEvent *event,
       RigShell *shell = slider->ctx->shell;
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
         {
-          rig_shell_ungrab_input (shell);
+          rig_shell_ungrab_input (shell,
+                                  _rig_slider_grab_input_cb,
+                                  user_data);
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
@@ -2031,7 +2094,10 @@ _rig_slider_input_cb (RigInputRegion *region,
      rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
     {
       RigShell *shell = slider->ctx->shell;
-      rig_shell_grab_input (shell, _rig_slider_grab_input_cb, slider);
+      rig_shell_grab_input (shell,
+                            rig_input_event_get_camera (event),
+                            _rig_slider_grab_input_cb,
+                            slider);
       slider->grab_x = rig_motion_event_get_x (event);
       slider->grab_y = rig_motion_event_get_y (event);
       slider->grab_progress = slider->progress;

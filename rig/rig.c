@@ -1365,7 +1365,7 @@ _rig_toggle_grab_input_cb (RigInputEvent *event,
           float x = rig_motion_event_get_x (event);
           float y = rig_motion_event_get_y (event);
 
-          rig_shell_ungrab_input (shell);
+          rig_shell_ungrab_input (shell, _rig_toggle_grab_input_cb, user_data);
 
           if (rig_camera_pick_input_region (state->camera,
                                             state->region,
@@ -1427,7 +1427,10 @@ _rig_toggle_input_cb (RigInputRegion *region,
       state->camera = rig_input_event_get_camera (event);
       state->region = region;
 
-      rig_shell_grab_input (shell, _rig_toggle_grab_input_cb, state);
+      rig_shell_grab_input (shell,
+                            state->camera,
+                            _rig_toggle_grab_input_cb,
+                            state);
 
       toggle->tentative_set = TRUE;
 
@@ -1716,7 +1719,9 @@ ui_viewport_grab_input_cb (RigInputEvent *event, void *user_data)
     }
   else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
     {
-      rig_shell_ungrab_input (ui_viewport->ctx->shell);
+      rig_shell_ungrab_input (ui_viewport->ctx->shell,
+                              ui_viewport_grab_input_cb,
+                              user_data);
       return RIG_INPUT_EVENT_STATUS_HANDLED;
     }
 
@@ -1750,7 +1755,9 @@ _rig_ui_viewport_input_cb (RigInputRegion *region,
                  * the grab for you */
                 g_print ("viewport input grab\n");
                 rig_shell_grab_input (ui_viewport->ctx->shell,
-                                      ui_viewport_grab_input_cb, ui_viewport);
+                                      rig_input_event_get_camera (event),
+                                      ui_viewport_grab_input_cb,
+                                      ui_viewport);
                 return RIG_INPUT_EVENT_STATUS_HANDLED;
               }
           }
@@ -2139,7 +2146,7 @@ _rig_button_grab_input_cb (RigInputEvent *event,
       RigShell *shell = button->ctx->shell;
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
         {
-          rig_shell_ungrab_input (shell);
+          rig_shell_ungrab_input (shell, _rig_button_grab_input_cb, user_data);
 
           if (button->on_click)
             button->on_click (button, button->on_click_data);
@@ -2210,7 +2217,10 @@ _rig_button_input_cb (RigInputRegion *region,
           return RIG_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
-      rig_shell_grab_input (shell, _rig_button_grab_input_cb, state);
+      rig_shell_grab_input (shell,
+                            state->camera,
+                            _rig_button_grab_input_cb,
+                            state);
       //button->grab_x = rig_motion_event_get_x (event);
       //button->grab_y = rig_motion_event_get_y (event);
 

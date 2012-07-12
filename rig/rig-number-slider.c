@@ -94,9 +94,6 @@ struct _RigNumberSlider
   float button_x, button_y;
   /* The original value when the button was pressed */
   float button_value;
-  /* The camera that the event was for. We need to store this because
-   * we still need a camera to handle events when the grab is taken */
-  RigCamera *button_camera;
 };
 
 /* Some of the pipelines are cached and attached to the CoglContext so
@@ -277,9 +274,6 @@ _rig_number_slider_free (void *object)
 
   rig_graphable_remove_child (slider->input_region);
   rig_ref_countable_unref (slider->input_region);
-
-  if (slider->button_down)
-    rig_ref_countable_unref (slider->button_camera);
 
   rig_simple_introspectable_destroy (slider);
 
@@ -512,7 +506,7 @@ rig_number_slider_handle_click (RigNumberSlider *slider,
 {
   CoglMatrix transform;
   CoglMatrix inverse_transform;
-  RigCamera *camera = slider->button_camera;
+  RigCamera *camera = rig_input_event_get_camera (event);
   float x, y;
 
   rig_graphable_get_modelview (slider, camera, &transform);
@@ -568,8 +562,9 @@ rig_number_slider_input_cb (RigInputEvent *event,
   if ((rig_motion_event_get_button_state (event) & RIG_BUTTON_STATE_1) == 0)
     {
       slider->button_down = FALSE;
-      rig_ref_countable_unref (slider->button_camera);
-      rig_shell_ungrab_input (slider->context->shell);
+      rig_shell_ungrab_input (slider->context->shell,
+                              rig_number_slider_input_cb,
+                              user_data);
 
       /* If we weren't dragging then this must have been an attempt to
        * click somewhere on the widget */
@@ -601,9 +596,9 @@ rig_number_slider_input_region_cb (RigInputRegion *region,
       slider->button_value = slider->value;
       slider->button_x = rig_motion_event_get_x (event);
       slider->button_y = rig_motion_event_get_y (event);
-      slider->button_camera = rig_ref_countable_ref (camera);
 
       rig_shell_grab_input (slider->context->shell,
+                            camera,
                             rig_number_slider_input_cb,
                             slider);
 

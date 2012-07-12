@@ -2348,7 +2348,9 @@ rig_text_motion_grab (RigInputEvent *event,
     }
   else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
     {
-      rig_shell_ungrab_input (text->ctx->shell);
+      rig_shell_ungrab_input (text->ctx->shell,
+                              rig_text_motion_grab,
+                              user_data);
       text->in_select_drag = FALSE;
       return RIG_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -2607,6 +2609,7 @@ rig_text_button_press (RigText *text,
   /* grab the pointer */
   text->in_select_drag = TRUE;
   rig_shell_grab_input (text->ctx->shell,
+                        camera,
                         rig_text_motion_grab,
                         text);
 

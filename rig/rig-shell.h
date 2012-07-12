@@ -125,13 +125,45 @@ typedef struct _RigInputEvent RigInputEvent;
 typedef RigInputEventStatus (*RigInputCallback) (RigInputEvent *event,
                                                  void *user_data);
 
+/**
+ * rig_shell_grab_input:
+ * @shell: The #RigShell
+ * @camera: An optional #RigCamera to set on grabbed events
+ * @callback: A callback to give all events to
+ * @user_data: A pointer to pass to the callback
+ *
+ * Adds a grab which will get a chance to see all input events before
+ * anything else handles them. The callback can return
+ * %RIG_INPUT_EVENT_STATUS_HANDLED if no further processing should be
+ * done for the event or %RIG_INPUT_EVENT_STATUS_UNHANDLED otherwise.
+ *
+ * Multiple grabs can be in place at the same time. In this case the
+ * events will be given to the grabs in the reverse order that they
+ * were added.
+ *
+ * If a camera is given for the grab then this camera will be set on
+ * all input events before passing them to the callback.
+ */
 void
 rig_shell_grab_input (RigShell *shell,
+                      RigCamera *camera,
                       RigInputCallback callback,
                       void *user_data);
 
+/**
+ * rig_shell_ungrab_input:
+ * @shell: The #RigShell
+ * @callback: The callback that the grab was set with
+ * @user_data: The user data that the grab was set with
+ *
+ * Removes a grab that was previously set with rig_shell_grab_input().
+ * The @callback and @user_data must match the values passed when the
+ * grab was taken.
+ */
 void
-rig_shell_ungrab_input (RigShell *shell);
+rig_shell_ungrab_input (RigShell *shell,
+                        RigInputCallback callback,
+                        void *user_data);
 
 void
 rig_shell_grab_key_focus (RigShell *shell,
