@@ -28,6 +28,7 @@
 #include "rig.h"
 #include "rig-pe-settings.h"
 #include "rig-vec3-slider.h"
+#include "rig-number-slider.h"
 
 typedef struct
 {
@@ -82,7 +83,7 @@ rig_pe_settings_properties[] =
 
 typedef struct
 {
-  RigVec3Slider *slider;
+  RigObject *control;
   RigTransform *transform;
 } RigPeSettingsPropertyData;
 
@@ -122,9 +123,9 @@ _rig_pe_settings_free (void *object)
     {
       RigPeSettingsPropertyData *prop_data = settings->prop_data + i;
 
-      rig_graphable_remove_child (prop_data->slider);
+      rig_graphable_remove_child (prop_data->control);
       rig_graphable_remove_child (prop_data->transform);
-      rig_ref_countable_unref (prop_data->slider);
+      rig_ref_countable_unref (prop_data->control);
       rig_ref_countable_unref (prop_data->transform);
     }
 
@@ -180,6 +181,43 @@ _rig_pe_settings_init_type (void)
                           &_rig_pe_settings_graphable_vtable);
 }
 
+static RigObject *
+rig_pe_settings_create_control_for_property (RigContext *context,
+                                             const RigPeSettingsProperty *
+                                             prop_info,
+                                             RigProperty *prop)
+{
+  switch ((RigPropertyType) prop->spec->type)
+    {
+    case RIG_PROPERTY_TYPE_VEC3:
+      {
+        RigVec3Slider *slider = rig_vec3_slider_new (context);
+        rig_vec3_slider_set_name (slider, prop_info->name);
+        rig_vec3_slider_set_min_value (slider, prop_info->min_value);
+        rig_vec3_slider_set_max_value (slider, prop_info->max_value);
+        rig_vec3_slider_set_step (slider, prop_info->step);
+        rig_vec3_slider_set_decimal_places (slider, prop_info->decimal_places);
+        return slider;
+      }
+
+    case RIG_PROPERTY_TYPE_FLOAT:
+    case RIG_PROPERTY_TYPE_INTEGER:
+      {
+        RigNumberSlider *slider = rig_number_slider_new (context);
+        rig_number_slider_set_name (slider, prop_info->name);
+        rig_number_slider_set_min_value (slider, prop_info->min_value);
+        rig_number_slider_set_max_value (slider, prop_info->max_value);
+        rig_number_slider_set_step (slider, prop_info->step);
+        rig_number_slider_set_decimal_places (slider,
+                                              prop_info->decimal_places);
+        return slider;
+      }
+
+    default:
+      g_assert_not_reached ();
+    }
+}
+
 RigPeSettings *
 rig_pe_settings_new (RigContext *context,
                      RigParticleEngine *engine)
@@ -213,33 +251,33 @@ rig_pe_settings_new (RigContext *context,
     {
       const RigPeSettingsProperty *prop = rig_pe_settings_properties + i;
       RigPeSettingsPropertyData *prop_data = settings->prop_data + i;
-      RigVec3Slider *slider = rig_vec3_slider_new (context);
-      RigProperty *pe_prop, *slider_prop;
-
-      rig_vec3_slider_set_name (slider, prop->name);
-      rig_vec3_slider_set_min_value (slider, prop->min_value);
-      rig_vec3_slider_set_max_value (slider, prop->max_value);
-      rig_vec3_slider_set_step (slider, prop->step);
-      rig_vec3_slider_set_decimal_places (slider, prop->decimal_places);
+      RigObject *control;
+      RigProperty *pe_prop, *control_prop;
 
       pe_prop = rig_introspectable_lookup_property (engine, prop->prop_name);
       if (pe_prop == NULL)
         g_error ("No property \"%s\" on the particle engine", prop->prop_name);
 
-      rig_vec3_slider_set_value (slider, rig_property_get_vec3 (pe_prop));
+      control = rig_pe_settings_create_control_for_property (settings->context,
+                                                             prop,
+                                                             pe_prop);
 
-      slider_prop = rig_introspectable_lookup_property (slider, "value");
-      if (slider_prop == NULL)
-        g_error ("No property \"value\" on the vec3 slider");
+      control_prop = rig_introspectable_lookup_property (control, "value");
+      if (control_prop == NULL)
+        g_error ("No property \"value\" on the control");
+
+      rig_property_copy_value (&settings->context->property_ctx,
+                               control_prop,
+                               pe_prop);
 
       rig_property_set_copy_binding (&context->property_ctx,
                                      pe_prop,
-                                     slider_prop);
+                                     control_prop);
 
-      prop_data->slider = slider;
+      prop_data->control = control;
 
       prop_data->transform = rig_transform_new (context, NULL);
-      rig_graphable_add_child (prop_data->transform, slider);
+      rig_graphable_add_child (prop_data->transform, control);
       rig_graphable_add_child (settings, prop_data->transform);
     }
 
@@ -280,14 +318,14 @@ rig_pe_settings_set_size (RigPeSettings *settings,
                                y_pos,
                                0.0f);
 
-      rig_vec3_slider_get_preferred_height (prop_data->slider,
-                                            pixel_slider_width,
-                                            NULL,
-                                            &preferred_height);
+      rig_sizable_get_preferred_height (prop_data->control,
+                                        pixel_slider_width,
+                                        NULL,
+                                        &preferred_height);
 
-      rig_vec3_slider_set_size (prop_data->slider,
-                                pixel_slider_width,
-                                preferred_height);
+      rig_sizable_set_size (prop_data->control,
+                            pixel_slider_width,
+                            preferred_height);
 
       if (preferred_height > row_height)
         row_height = preferred_height;
@@ -324,10 +362,10 @@ rig_pe_settings_get_preferred_width (RigPeSettings *settings,
       float min_width;
       float natural_width;
 
-      rig_vec3_slider_get_preferred_width (prop_data->slider,
-                                           for_height,
-                                           &min_width,
-                                           &natural_width);
+      rig_sizable_get_preferred_width (prop_data->control,
+                                       for_height,
+                                       &min_width,
+                                       &natural_width);
 
       if (min_width > max_min_width)
         max_min_width = min_width;
@@ -375,10 +413,10 @@ rig_pe_settings_get_preferred_height (RigPeSettings *settings,
       RigPeSettingsPropertyData *prop_data = settings->prop_data + i;
       float natural_height;
 
-      rig_vec3_slider_get_preferred_height (prop_data->slider,
-                                            for_width,
-                                            NULL, /* min_height */
-                                            &natural_height);
+      rig_sizable_get_preferred_height (prop_data->control,
+                                        for_width,
+                                        NULL, /* min_height */
+                                        &natural_height);
 
       if (natural_height > row_height)
         row_height = natural_height;
