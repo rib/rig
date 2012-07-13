@@ -73,15 +73,6 @@ rig_text_set_direction (RigText *text,
 void
 _rig_text_init_type (void);
 
-void
-rig_text_set_size (RigText *text,
-                   float width,
-                   float height);
-
-void
-rig_text_get_size (RigText *text,
-                   float *width,
-                   float *height);
 #if 0
 void
 rig_text_allocate (RigText *text,
@@ -91,18 +82,6 @@ void
 rig_text_get_allocation_box (RigText *text,
                              RigBox *box);
 #endif
-
-void
-rig_text_get_preferred_width (RigText *text,
-                              float for_height,
-                              float *min_width_p,
-                              float *natural_width_p);
-
-void
-rig_text_get_preferred_height (RigText *text,
-                               float for_width,
-                               float *min_height_p,
-                               float *natural_height_p);
 
 CoglBool
 rig_text_has_overlaps (RigText *text);

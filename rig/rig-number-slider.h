@@ -9,6 +9,8 @@ extern RigType rig_number_slider_type;
 
 typedef struct _RigNumberSlider RigNumberSlider;
 
+#define RIG_NUMBER_SLIDER(x) ((RigNumberSlider *) x)
+
 RigNumberSlider *
 rig_number_slider_new (RigContext *ctx);
 
@@ -36,27 +38,10 @@ rig_number_slider_set_step (RigNumberSlider *slider,
                             float step);
 
 void
-rig_number_slider_set_size (RigNumberSlider *slider,
-                            int width,
-                            int height);
-
-void
 rig_number_slider_set_decimal_places (RigNumberSlider *slider,
                                       int decimal_places);
 
 int
 rig_number_slider_get_decimal_places (RigNumberSlider *slider);
-
-void
-rig_number_slider_get_preferred_width (RigNumberSlider *slider,
-                                       float for_height,
-                                       float *min_width_p,
-                                       float *natural_width_p);
-
-void
-rig_number_slider_get_preferred_height (RigNumberSlider *slider,
-                                        float for_width,
-                                        float *min_height_p,
-                                        float *natural_height_p);
 
 #endif /* _RIG_NUMBER_SLIDER_H_ */

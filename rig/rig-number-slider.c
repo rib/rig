@@ -563,9 +563,9 @@ rig_number_slider_update_text_size (RigNumberSlider *slider)
                            slider->actual_logical_rect.height / 2,
                            0.0f);
 
-  rig_text_set_size (slider->text,
-                     slider->width - RIG_NUMBER_SLIDER_ARROW_WIDTH * 2,
-                     slider->actual_logical_rect.height);
+  rig_sizable_set_size (slider->text,
+                        slider->width - RIG_NUMBER_SLIDER_ARROW_WIDTH * 2,
+                        slider->actual_logical_rect.height);
 }
 
 static CoglBool
@@ -796,6 +796,82 @@ rig_number_slider_input_region_cb (RigInputRegion *region,
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
+static void
+rig_number_slider_set_size (RigObject *object,
+                            float width,
+                            float height)
+{
+  RigNumberSlider *slider = RIG_NUMBER_SLIDER (object);
+
+  rig_shell_queue_redraw (slider->context->shell);
+  slider->width = width;
+  slider->height = height;
+  rig_input_region_set_rectangle (slider->input_region,
+                                  0.0f, 0.0f, /* x0 / y0 */
+                                  slider->width, slider->height /* x1 / y1 */);
+
+  if (slider->text)
+    rig_number_slider_update_text_size (slider);
+}
+
+static void
+rig_number_slider_get_size (RigObject *object,
+                            float *width,
+                            float *height)
+{
+  RigNumberSlider *slider = RIG_NUMBER_SLIDER (object);
+
+  *width = slider->width;
+  *height = slider->height;
+}
+
+static void
+rig_number_slider_get_preferred_width (RigObject *object,
+                                       float for_height,
+                                       float *min_width_p,
+                                       float *natural_width_p)
+{
+  RigNumberSlider *slider = RIG_NUMBER_SLIDER (object);
+  float min_width;
+  int layout_width;
+
+  rig_number_slider_ensure_actual_layout (slider);
+  rig_number_slider_ensure_long_layout (slider);
+
+  layout_width = MAX (slider->actual_logical_rect.width,
+                      slider->long_logical_rect.width);
+
+  min_width = layout_width + RIG_NUMBER_SLIDER_ARROW_WIDTH * 2;
+
+  if (min_width_p)
+    *min_width_p = min_width;
+  if (natural_width_p)
+    /* Leave two pixels either side of the label */
+    *natural_width_p = min_width + 4;
+}
+
+static void
+rig_number_slider_get_preferred_height (RigObject *object,
+                                        float for_width,
+                                        float *min_height_p,
+                                        float *natural_height_p)
+{
+  RigNumberSlider *slider = RIG_NUMBER_SLIDER (object);
+  float layout_height;
+
+  rig_number_slider_ensure_actual_layout (slider);
+  rig_number_slider_ensure_long_layout (slider);
+
+  layout_height = MAX (slider->actual_logical_rect.height,
+                       slider->long_logical_rect.height);
+
+  if (min_height_p)
+    *min_height_p = MAX (layout_height, RIG_NUMBER_SLIDER_ARROW_HEIGHT);
+  if (natural_height_p)
+    *natural_height_p = MAX (layout_height + 4,
+                             RIG_NUMBER_SLIDER_ARROW_HEIGHT);
+}
+
 static RigGraphableVTable _rig_number_slider_graphable_vtable = {
   NULL, /* child removed */
   NULL, /* child addded */
@@ -809,6 +885,13 @@ static RigPaintableVTable _rig_number_slider_paintable_vtable = {
 static RigIntrospectableVTable _rig_number_slider_introspectable_vtable = {
   rig_simple_introspectable_lookup_property,
   rig_simple_introspectable_foreach_property
+};
+
+static RigSizableVTable _rig_number_slider_sizable_vtable = {
+  rig_number_slider_set_size,
+  rig_number_slider_get_size,
+  rig_number_slider_get_preferred_width,
+  rig_number_slider_get_preferred_height
 };
 
 static void
@@ -835,6 +918,10 @@ _rig_number_slider_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RigNumberSlider, introspectable),
                           NULL); /* no implied vtable */
+  rig_type_add_interface (&rig_number_slider_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_number_slider_sizable_vtable);
 }
 
 RigNumberSlider *
@@ -877,70 +964,9 @@ rig_number_slider_new (RigContext *context)
                                     slider);
   rig_graphable_add_child (slider, slider->input_region);
 
-  rig_number_slider_set_size (slider, 60, 30);
+  rig_sizable_set_size (slider, 60, 30);
 
   return slider;
-}
-
-void
-rig_number_slider_set_size (RigNumberSlider *slider,
-                            int width,
-                            int height)
-{
-  rig_shell_queue_redraw (slider->context->shell);
-  slider->width = width;
-  slider->height = height;
-  rig_input_region_set_rectangle (slider->input_region,
-                                  0.0f, 0.0f, /* x0 / y0 */
-                                  width, height /* x1 / y1 */);
-
-  if (slider->text)
-    rig_number_slider_update_text_size (slider);
-}
-
-void
-rig_number_slider_get_preferred_width (RigNumberSlider *slider,
-                                       float for_height,
-                                       float *min_width_p,
-                                       float *natural_width_p)
-{
-  float min_width;
-  int layout_width;
-
-  rig_number_slider_ensure_actual_layout (slider);
-  rig_number_slider_ensure_long_layout (slider);
-
-  layout_width = MAX (slider->actual_logical_rect.width,
-                      slider->long_logical_rect.width);
-
-  min_width = layout_width + RIG_NUMBER_SLIDER_ARROW_WIDTH * 2;
-
-  if (min_width_p)
-    *min_width_p = min_width;
-  if (natural_width_p)
-    /* Leave two pixels either side of the label */
-    *natural_width_p = min_width + 4;
-}
-
-void
-rig_number_slider_get_preferred_height (RigNumberSlider *slider,
-                                        float for_width,
-                                        float *min_height_p,
-                                        float *natural_height_p)
-{
-  float layout_height;
-
-  rig_number_slider_ensure_actual_layout (slider);
-  rig_number_slider_ensure_long_layout (slider);
-
-  layout_height = MAX (slider->actual_logical_rect.height,
-                       slider->long_logical_rect.height);
-
-  if (min_height_p)
-    *min_height_p = MAX (layout_height, RIG_NUMBER_SLIDER_ARROW_HEIGHT);
-  if (natural_height_p)
-    *natural_height_p = MAX (layout_height + 4,
-                             RIG_NUMBER_SLIDER_ARROW_HEIGHT);
 }
 
 void

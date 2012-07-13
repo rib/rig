@@ -472,3 +472,59 @@ rig_transformable_get_matrix (RigObject *object)
 
   return transformable->get_matrix (object);
 }
+
+void
+rig_sizable_set_size (RigObject *object,
+                      float width,
+                      float height)
+{
+  RigSizableVTable *sizable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_SIZABLE);
+
+  sizable->set_size (object,
+                     width,
+                     height);
+}
+
+void
+rig_sizable_get_size (void *object,
+                      float *width,
+                      float *height)
+{
+  RigSizableVTable *sizable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_SIZABLE);
+
+  sizable->get_size (object,
+                     width,
+                     height);
+}
+
+void
+rig_sizable_get_preferred_width (void *object,
+                                 float for_height,
+                                 float *min_width_p,
+                                 float *natural_width_p)
+{
+  RigSizableVTable *sizable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_SIZABLE);
+
+  sizable->get_preferred_width (object,
+                                for_height,
+                                min_width_p,
+                                natural_width_p);
+}
+
+void
+rig_sizable_get_preferred_height (void *object,
+                                  float for_width,
+                                  float *min_height_p,
+                                  float *natural_height_p)
+{
+  RigSizableVTable *sizable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_SIZABLE);
+
+  sizable->get_preferred_height (object,
+                                 for_width,
+                                 min_height_p,
+                                 natural_height_p);
+}

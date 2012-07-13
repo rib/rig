@@ -198,4 +198,43 @@ typedef struct RigTransformableVTable
 const CoglMatrix *
 rig_transformable_get_matrix (RigObject *object);
 
+typedef struct _RigSizableVTable
+{
+  void (* set_size) (void *object,
+                     float width,
+                     float height);
+  void (* get_size) (void *object,
+                     float *width,
+                     float *height);
+  void (* get_preferred_width) (void *object,
+                                float for_height,
+                                float *min_width_p,
+                                float *natural_width_p);
+  void (* get_preferred_height) (void *object,
+                                 float for_width,
+                                 float *min_height_p,
+                                 float *natural_height_p);
+} RigSizableVTable;
+
+void
+rig_sizable_set_size (RigObject *object,
+                      float width,
+                      float height);
+
+void
+rig_sizable_get_size (void *object,
+                      float *width,
+                      float *height);
+
+void
+rig_sizable_get_preferred_width (void *object,
+                                 float for_height,
+                                 float *min_width_p,
+                                 float *natural_width_p);
+void
+rig_sizable_get_preferred_height (void *object,
+                                  float for_width,
+                                  float *min_height_p,
+                                  float *natural_height_p);
+
 #endif /* _RIG_INTERFACES_H_ */

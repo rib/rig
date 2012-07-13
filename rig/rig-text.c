@@ -764,11 +764,13 @@ offset_to_bytes (const char *text,
 
 #define bytes_to_offset(t,p)    (g_utf8_pointer_to_offset ((t), (t) + (p)))
 
-void
-rig_text_get_size (RigText *text,
-                   float *width,
-                   float *height)
+static void
+_rig_text_get_size (RigObject *object,
+                    float *width,
+                    float *height)
 {
+  RigText *text = RIG_TEXT (object);
+
   *width = text->width;
   *height = text->height;
 }
@@ -786,15 +788,15 @@ update_size (RigText *text)
 {
   float min_width, min_height, natural_width, natural_height;
 
-  rig_text_get_preferred_width (text,
-                                0,
-                                &min_width,
-                                &natural_width);
-  rig_text_get_preferred_height (text,
-                                 natural_width,
-                                 &min_height,
-                                 &natural_height);
-  rig_text_set_size (text, natural_width, natural_height);
+  rig_sizable_get_preferred_width (text,
+                                   0,
+                                   &min_width,
+                                   &natural_width);
+  rig_sizable_get_preferred_height (text,
+                                    natural_width,
+                                    &min_height,
+                                    &natural_height);
+  rig_sizable_set_size (text, natural_width, natural_height);
 }
 
 static void
@@ -2654,7 +2656,7 @@ rig_text_paint (RigText *text,
   if (n_chars == 0 && (!text->editable || !text->cursor_visible))
     return;
 
-  rig_text_get_size (text, &width, &height);
+  rig_sizable_get_size (text, &width, &height);
   //rig_text_get_allocation_box (text, &alloc);
 
 #if 0
@@ -2815,12 +2817,13 @@ rig_text_paint (RigText *text,
     cogl_framebuffer_pop_clip (fb);
 }
 
-void
-rig_text_get_preferred_width (RigText *text,
-                              float for_height,
-                              float *min_width_p,
-                              float *natural_width_p)
+static void
+_rig_text_get_preferred_width (RigObject *object,
+                               float for_height,
+                               float *min_width_p,
+                               float *natural_width_p)
 {
+  RigText *text = RIG_TEXT (object);
   PangoRectangle logical_rect = { 0, };
   PangoLayout *layout;
   int logical_width;
@@ -2857,12 +2860,14 @@ rig_text_get_preferred_width (RigText *text,
     }
 }
 
-void
-rig_text_get_preferred_height (RigText *text,
-                               float for_width,
-                               float *min_height_p,
-                               float *natural_height_p)
+static void
+_rig_text_get_preferred_height (RigObject *object,
+                                float for_width,
+                                float *min_height_p,
+                                float *natural_height_p)
 {
+  RigText *text = RIG_TEXT (object);
+
   if (for_width == 0)
     {
       if (min_height_p)
@@ -2943,11 +2948,13 @@ rig_text_allocate (RigText *text,
 }
 #endif
 
-void
-rig_text_set_size (RigText *text,
-                   float width,
-                   float height)
+static void
+_rig_text_set_size (RigObject *object,
+                    float width,
+                    float height)
 {
+  RigText *text = RIG_TEXT (object);
+
   text->width = width;
   text->height = height;
 
@@ -3053,6 +3060,13 @@ RigSimpleWidgetVTable _rig_text_simple_widget_vtable = {
  0
 };
 
+static RigSizableVTable _rig_text_sizable_vtable = {
+  _rig_text_set_size,
+  _rig_text_get_size,
+  _rig_text_get_preferred_width,
+  _rig_text_get_preferred_height
+};
+
 RigType rig_text_type;
 
 void
@@ -3079,6 +3093,10 @@ _rig_text_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RigText, introspectable),
                           NULL); /* no implied vtable */
+  rig_type_add_interface (&rig_text_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_text_sizable_vtable);
 }
 
 RigText *
@@ -3816,7 +3834,7 @@ rig_text_get_layout (RigText *text)
   if (text->editable && text->single_line_mode)
     return rig_text_create_layout (text, -1, -1);
 
-  rig_text_get_size (text, &width, &height);
+  rig_sizable_get_size (text, &width, &height);
 
   return rig_text_create_layout (text, width, height);
 }

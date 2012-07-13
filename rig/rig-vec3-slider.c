@@ -163,6 +163,141 @@ _rig_vec3_slider_paint (RigObject *object,
                                     4 /* n_rects */);
 }
 
+static void
+rig_vec3_slider_set_size (RigObject *object,
+                          float width,
+                          float height)
+{
+  RigVec3Slider *slider = RIG_VEC3_SLIDER (object);
+  float control_width, control_height, y_pos;
+  int i;
+
+  rig_shell_queue_redraw (slider->context->shell);
+  slider->width = width;
+  slider->height = height;
+
+  control_width = slider->width - (RIG_VEC3_SLIDER_BORDER_THICKNESS +
+                                   RIG_VEC3_SLIDER_BORDER_GAP) * 2;
+  rig_sizable_get_preferred_height (slider->label,
+                                    control_width,
+                                    NULL, /* min_width */
+                                    &control_height /* natural_height */);
+  rig_sizable_set_size (slider->label, control_width, control_height);
+
+  rig_transform_init_identity (slider->label_transform);
+  rig_transform_translate (slider->label_transform,
+                           RIG_VEC3_SLIDER_BORDER_THICKNESS +
+                           RIG_VEC3_SLIDER_BORDER_GAP,
+                           RIG_VEC3_SLIDER_BORDER_THICKNESS +
+                           RIG_VEC3_SLIDER_BORDER_GAP,
+                           0.0f);
+
+  y_pos = (RIG_VEC3_SLIDER_BORDER_THICKNESS +
+           RIG_VEC3_SLIDER_BORDER_GAP +
+           RIG_VEC3_SLIDER_CONTROL_GAP +
+           control_height);
+
+  for (i = 0; i < 3; i++)
+    {
+      RigVec3SliderControl *control = slider->controls + i;
+
+      rig_transform_init_identity (control->transform);
+      rig_transform_translate (control->transform,
+                               RIG_VEC3_SLIDER_BORDER_THICKNESS +
+                               RIG_VEC3_SLIDER_BORDER_GAP,
+                               y_pos,
+                               0.0f);
+
+      rig_sizable_get_preferred_height (control->slider,
+                                        control_width,
+                                        NULL, /* min_width */
+                                        &control_height);
+      rig_sizable_set_size (control->slider,
+                            control_width,
+                            control_height);
+
+      y_pos += control_height + RIG_VEC3_SLIDER_CONTROL_GAP;
+    }
+}
+
+static void
+rig_vec3_slider_get_size (RigObject *object,
+                          float *width,
+                          float *height)
+{
+  RigVec3Slider *slider = RIG_VEC3_SLIDER (object);
+
+  *width = slider->width;
+  *height = slider->height;
+}
+
+static void
+rig_vec3_slider_get_preferred_width (RigObject *object,
+                                     float for_height,
+                                     float *min_width_p,
+                                     float *natural_width_p)
+{
+  RigVec3Slider *slider = RIG_VEC3_SLIDER (object);
+  float width, max_width = -G_MAXFLOAT;
+  int i;
+
+  rig_sizable_get_preferred_width (slider->label, -1, NULL, &width);
+  if (max_width < width)
+    max_width = width;
+
+  for (i = 0; i < 3; i++)
+    {
+      RigVec3SliderControl *control = slider->controls + i;
+
+      rig_sizable_get_preferred_width (control->slider, -1, NULL, &width);
+      if (max_width < width)
+        max_width = width;
+    }
+
+  width = max_width + (RIG_VEC3_SLIDER_BORDER_THICKNESS +
+                       RIG_VEC3_SLIDER_BORDER_GAP) * 2;
+
+  if (min_width_p)
+    *min_width_p = width;
+  if (natural_width_p)
+    *natural_width_p = width;
+}
+
+static void
+rig_vec3_slider_get_preferred_height (RigObject *object,
+                                      float for_width,
+                                      float *min_height_p,
+                                      float *natural_height_p)
+{
+  RigVec3Slider *slider = RIG_VEC3_SLIDER (object);
+  float total_height = 0.0f, height;
+  int i;
+
+  rig_sizable_get_preferred_height (slider->label, -1, NULL, &height);
+  total_height += height;
+
+  for (i = 0; i < 3; i++)
+    {
+      RigVec3SliderControl *control = slider->controls + i;
+
+      rig_sizable_get_preferred_height (control->slider,
+                                        -1, /* for_width */
+                                        NULL, /* min_height */
+                                        &height);
+      total_height += height;
+    }
+
+  height = (total_height +
+            (RIG_VEC3_SLIDER_BORDER_THICKNESS +
+             RIG_VEC3_SLIDER_BORDER_GAP) * 2 +
+            RIG_VEC3_SLIDER_CONTROL_GAP * 3);
+
+  if (min_height_p)
+    *min_height_p = height;
+  if (natural_height_p)
+    *natural_height_p = height;
+}
+
 static RigGraphableVTable _rig_vec3_slider_graphable_vtable = {
   NULL, /* child removed */
   NULL, /* child addded */
@@ -176,6 +311,13 @@ static RigPaintableVTable _rig_vec3_slider_paintable_vtable = {
 static RigIntrospectableVTable _rig_vec3_slider_introspectable_vtable = {
   rig_simple_introspectable_lookup_property,
   rig_simple_introspectable_foreach_property
+};
+
+static RigSizableVTable _rig_vec3_slider_sizable_vtable = {
+  rig_vec3_slider_set_size,
+  rig_vec3_slider_get_size,
+  rig_vec3_slider_get_preferred_width,
+  rig_vec3_slider_get_preferred_height
 };
 
 static void
@@ -202,6 +344,10 @@ _rig_vec3_slider_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RigVec3Slider, introspectable),
                           NULL); /* no implied vtable */
+  rig_type_add_interface (&rig_vec3_slider_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_vec3_slider_sizable_vtable);
 }
 
 static void
@@ -287,127 +433,6 @@ rig_vec3_slider_new (RigContext *context)
   rig_vec3_slider_set_size (slider, 60, 30);
 
   return slider;
-}
-
-void
-rig_vec3_slider_set_size (RigVec3Slider *slider,
-                          int width,
-                          int height)
-{
-  float control_width, control_height, y_pos;
-  int i;
-
-  rig_shell_queue_redraw (slider->context->shell);
-  slider->width = width;
-  slider->height = height;
-
-  control_width = width - (RIG_VEC3_SLIDER_BORDER_THICKNESS +
-                           RIG_VEC3_SLIDER_BORDER_GAP) * 2;
-  rig_text_get_preferred_height (slider->label,
-                                 control_width,
-                                 NULL, /* min_width */
-                                 &control_height /* natural_height */);
-  rig_text_set_size (slider->label, control_width, control_height);
-
-  rig_transform_init_identity (slider->label_transform);
-  rig_transform_translate (slider->label_transform,
-                           RIG_VEC3_SLIDER_BORDER_THICKNESS +
-                           RIG_VEC3_SLIDER_BORDER_GAP,
-                           RIG_VEC3_SLIDER_BORDER_THICKNESS +
-                           RIG_VEC3_SLIDER_BORDER_GAP,
-                           0.0f);
-
-  y_pos = (RIG_VEC3_SLIDER_BORDER_THICKNESS +
-           RIG_VEC3_SLIDER_BORDER_GAP +
-           RIG_VEC3_SLIDER_CONTROL_GAP +
-           control_height);
-
-  for (i = 0; i < 3; i++)
-    {
-      RigVec3SliderControl *control = slider->controls + i;
-
-      rig_transform_init_identity (control->transform);
-      rig_transform_translate (control->transform,
-                               RIG_VEC3_SLIDER_BORDER_THICKNESS +
-                               RIG_VEC3_SLIDER_BORDER_GAP,
-                               y_pos,
-                               0.0f);
-
-      rig_number_slider_get_preferred_height (control->slider,
-                                              control_width,
-                                              NULL, /* min_width */
-                                              &control_height);
-      rig_number_slider_set_size (control->slider,
-                                  control_width,
-                                  control_height);
-
-      y_pos += control_height + RIG_VEC3_SLIDER_CONTROL_GAP;
-    }
-}
-
-void
-rig_vec3_slider_get_preferred_width (RigVec3Slider *slider,
-                                     float for_height,
-                                     float *min_width_p,
-                                     float *natural_width_p)
-{
-  float width, max_width = -G_MAXFLOAT;
-  int i;
-
-  rig_text_get_preferred_width (slider->label, -1, NULL, &width);
-  if (max_width < width)
-    max_width = width;
-
-  for (i = 0; i < 3; i++)
-    {
-      RigVec3SliderControl *control = slider->controls + i;
-
-      rig_number_slider_get_preferred_width (control->slider, -1, NULL, &width);
-      if (max_width < width)
-        max_width = width;
-    }
-
-  width = max_width + (RIG_VEC3_SLIDER_BORDER_THICKNESS +
-                       RIG_VEC3_SLIDER_BORDER_GAP) * 2;
-
-  if (min_width_p)
-    *min_width_p = width;
-  if (natural_width_p)
-    *natural_width_p = width;
-}
-
-void
-rig_vec3_slider_get_preferred_height (RigVec3Slider *slider,
-                                      float for_width,
-                                      float *min_height_p,
-                                      float *natural_height_p)
-{
-  float total_height = 0.0f, height;
-  int i;
-
-  rig_text_get_preferred_height (slider->label, -1, NULL, &height);
-  total_height += height;
-
-  for (i = 0; i < 3; i++)
-    {
-      RigVec3SliderControl *control = slider->controls + i;
-
-      rig_number_slider_get_preferred_height (control->slider,
-                                              -1, /* for_width */
-                                              NULL, /* min_height */
-                                              &height);
-      total_height += height;
-    }
-
-  height = (total_height +
-            (RIG_VEC3_SLIDER_BORDER_THICKNESS +
-             RIG_VEC3_SLIDER_BORDER_GAP) * 2 +
-            RIG_VEC3_SLIDER_CONTROL_GAP * 3);
-
-  if (min_height_p)
-    *min_height_p = height;
-  if (natural_height_p)
-    *natural_height_p = height;
 }
 
 void
