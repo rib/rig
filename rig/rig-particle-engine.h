@@ -58,6 +58,10 @@ rig_particle_engine_set_texture (RigParticleEngine *engine,
                                  CoglTexture *texture);
 
 void
+rig_particle_engine_set_max_particles (RigParticleEngine *engine,
+                                       int max_particles);
+
+void
 rig_particle_engine_set_min_initial_velocity (RigParticleEngine *engine,
                                               const float *value);
 

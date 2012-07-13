@@ -55,6 +55,7 @@ typedef struct
 } RigParticleEngineVertex;
 
 enum {
+  RIG_PARTICLE_ENGINE_PROP_MAX_PARTICLES,
   RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_VELOCITY,
   RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY,
   RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION,
@@ -133,6 +134,13 @@ RigType rig_particle_engine_type;
 static RigPropertySpec
 _rig_particle_engine_prop_specs[] =
   {
+    {
+      .name = "max_particles",
+      .type = RIG_PROPERTY_TYPE_INTEGER,
+      .data_offset = offsetof (RigParticleEngine, max_particles),
+      .setter = rig_particle_engine_set_max_particles
+    },
+
     RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_velocity),
     RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_position),
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
@@ -615,6 +623,19 @@ rig_particle_engine_set_texture (RigParticleEngine *engine,
   if (engine->texture)
     cogl_object_unref (engine->texture);
   engine->texture = texture;
+}
+
+
+void
+rig_particle_engine_set_max_particles (RigParticleEngine *engine,
+                                       int max_particles)
+{
+  const int prop = RIG_PARTICLE_ENGINE_PROP_MAX_PARTICLES;
+
+  engine->max_particles = max_particles;
+  _rig_particle_engine_clear_resources (engine);
+  rig_property_dirty (&engine->context->property_ctx,
+                      &engine->properties[prop]);
 }
 
 void
