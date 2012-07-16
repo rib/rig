@@ -34,6 +34,7 @@ source_h = \
     rig-util.h \
     rig-text-buffer.h \
     rig-text.h \
+    rig-tool.h \
     rig-geometry.h \
     rig-context.h
 
@@ -73,6 +74,7 @@ librig_la_SOURCES = \
     rig-display-list.c \
     rig-text-buffer.c \
     rig-text.c \
+    rig-tool.c \
     rig-geometry.c \
     rig-number-slider.c \
     rig-number-slider.h \

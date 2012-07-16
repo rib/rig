@@ -25,6 +25,7 @@
 #include "rig-util.h"
 #include "rig-text-buffer.h"
 #include "rig-text.h"
+#include "rig-tool.h"
 #include "rig-geometry.h"
 
 /* entity/components system */
