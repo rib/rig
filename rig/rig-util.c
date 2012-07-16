@@ -96,18 +96,24 @@ void
 rig_util_create_pick_ray (const float       viewport[4],
                           const CoglMatrix *inverse_projection,
                           const CoglMatrix *camera_transform,
-                          float             screen_pos[2],
+                          float             viewport_pos[2],
                           float             ray_position[3],  /* out */
                           float             ray_direction[3]) /* out */
 {
   CoglMatrix inverse_transform;
-  float view_x, view_y;
+  float ndc_x, ndc_y;
   float projected_points[6], unprojected_points[8];
 
-  /* Get the mouse position before the viewport transformation */
-  view_x = (screen_pos[0] - viewport[0]) * 2.0f / viewport[2] - 1.0f;
-  view_y = ((viewport[3] - 1 + viewport[1] - screen_pos[1]) * 2.0f /
-            viewport[3] - 1.0f);
+  /* Undo the Viewport transform, putting us in Normalized Device
+   * Coords
+   *
+   * XXX: We are assuming the incomming coordinates are in viewport
+   * coordinates not device coordinates so we don't need to apply the
+   * viewport offset, we just need to normalized according to the
+   * width and height of the viewport.
+   */
+  ndc_x = viewport_pos[0] * 2.0f / viewport[2] - 1.0f;
+  ndc_y = ((viewport[3] - 1.0f - viewport_pos[1]) * 2.0f / viewport[3] - 1.0f);
 
   /* The main drawing code is doing P x C¯¹ (P is the Projection matrix
    * and C is the Camera transform. To inverse that transformation we need
@@ -116,11 +122,11 @@ rig_util_create_pick_ray (const float       viewport[4],
                         camera_transform, inverse_projection);
 
   /* unproject the point at both the near plane and the far plane */
-  projected_points[0] = view_x;
-  projected_points[1] = view_y;
+  projected_points[0] = ndc_x;
+  projected_points[1] = ndc_y;
   projected_points[2] = 0.0f;
-  projected_points[3] = view_x;
-  projected_points[4] = view_y;
+  projected_points[3] = ndc_x;
+  projected_points[4] = ndc_y;
   projected_points[5] = 1.0f;
   cogl_matrix_project_points (&inverse_transform,
                               3, /* num components for input */
