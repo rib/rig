@@ -1,6 +1,8 @@
 #ifndef _RIG_GEOMETRY_H_
 #define _RIG_GEOMETRY_H_
 
+#include <rig/rig-types.h>
+
 CoglAttribute *
 rig_create_circle_fan_p2 (RigContext *ctx,
                           int subdivisions,
