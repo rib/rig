@@ -2,6 +2,7 @@
 #define _RIG_SHELL_H_
 
 #include "rig-keysyms.h"
+#include "rig-object.h"
 #include "rig-types.h"
 
 #ifdef __ANDROID__
