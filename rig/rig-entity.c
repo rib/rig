@@ -313,6 +313,66 @@ void rig_entity_set_rotation (RigEntity      *entity,
   entity->dirty = TRUE;
 }
 
+void
+rig_entity_apply_rotations (RigObject *entity,
+                            CoglQuaternion *rotations)
+{
+  int depth = 0;
+  RigObject **entity_nodes;
+  RigObject *node = entity;
+  int i;
+
+  do {
+    RigGraphableProps *graphable_priv =
+      rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
+
+    depth++;
+
+    node = graphable_priv->parent;
+  } while (node);
+
+  entity_nodes = g_alloca (sizeof (RigObject *) * depth);
+
+  node = entity;
+  i = 0;
+  do {
+    RigGraphableProps *graphable_priv;
+    RigObjectProps *obj = node;
+
+    if (obj->type == &rig_entity_type)
+      entity_nodes[i++] = node;
+
+    graphable_priv =
+      rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
+    node = graphable_priv->parent;
+  } while (node);
+
+  for (i--; i >= 0; i--)
+    {
+      const CoglQuaternion *rotation = rig_entity_get_rotation (entity_nodes[i]);
+      cogl_quaternion_multiply (rotations, rotations, rotation);
+    }
+}
+
+void
+rig_entity_get_rotations (RigObject *entity,
+                          CoglQuaternion *rotation)
+{
+  cogl_quaternion_init_identity (rotation);
+  rig_entity_apply_rotations (entity, rotation);
+}
+
+void
+rig_entity_get_view_rotations (RigObject *entity,
+                               RigObject *camera_entity,
+                               CoglQuaternion *rotation)
+{
+  rig_entity_get_rotations (camera_entity, rotation);
+  cogl_quaternion_invert (rotation);
+
+  rig_entity_apply_rotations (entity, rotation);
+}
+
 float
 rig_entity_get_scale (RigEntity *entity)
 {

@@ -129,6 +129,19 @@ void
 rig_entity_set_rotation (RigEntity *entity,
                          CoglQuaternion *rotation);
 
+void
+rig_entity_apply_rotations (RigObject *entity,
+                            CoglQuaternion *rotations);
+
+void
+rig_entity_get_rotations (RigObject *entity,
+                          CoglQuaternion *rotation);
+
+void
+rig_entity_get_view_rotations (RigObject *entity,
+                               RigObject *camera_entity,
+                               CoglQuaternion *rotation);
+
 float
 rig_entity_get_scale (RigEntity *entity);
 
