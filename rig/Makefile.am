@@ -14,6 +14,7 @@ source_h = \
     mash-data.h \
     mash-data-loader.h \
     mash-ply-loader.h \
+    rig-color.h \
     rig-entity.h \
     rig-components.h \
     rig-type.h \
@@ -50,6 +51,8 @@ librig_la_SOURCES = \
     mash-ply-loader.c \
     rply.c \
     rply.h \
+    color-table.h \
+    rig-color.c \
     rig-entity.c \
     rig-type.c \
     rig-object.c \

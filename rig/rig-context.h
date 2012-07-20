@@ -68,6 +68,8 @@ struct _RigContext
 
   CoglTexture *circle_texture;
 
+  GHashTable *colors_hash;
+
   CoglPangoFontMap *pango_font_map;
   PangoContext *pango_context;
   PangoFontDescription *pango_font_desc;
