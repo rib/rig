@@ -311,3 +311,9 @@ rig_diamond_get_slice (RigDiamond *diamond)
 {
   return diamond->slice;
 }
+
+float
+rig_diamond_get_size (RigDiamond *diamond)
+{
+  return diamond->size;
+}

@@ -74,4 +74,7 @@ rig_diamond_new (RigContext *ctx,
 RigDiamondSlice *
 rig_diamond_get_slice (RigDiamond *diamond);
 
+float
+rig_diamond_get_size (RigDiamond *diamond);
+
 #endif /* __RIG_DIAMOND_H__ */
