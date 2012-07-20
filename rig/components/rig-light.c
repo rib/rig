@@ -124,6 +124,12 @@ rig_light_set_ambient (RigLight  *light,
   light->ambient = *ambient;
 }
 
+const CoglColor *
+rig_light_get_ambient (RigLight *light)
+{
+  return &light->ambient;
+}
+
 void
 rig_light_set_diffuse (RigLight  *light,
                        CoglColor *diffuse)
@@ -131,11 +137,23 @@ rig_light_set_diffuse (RigLight  *light,
   light->diffuse = *diffuse;
 }
 
+const CoglColor *
+rig_light_get_diffuse (RigLight *light)
+{
+  return &light->diffuse;
+}
+
 void
 rig_light_set_specular (RigLight  *light,
                         CoglColor *specular)
 {
   light->specular = *specular;
+}
+
+const CoglColor *
+rig_light_get_specular (RigLight *light)
+{
+  return &light->specular;
 }
 
 void

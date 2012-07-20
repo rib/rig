@@ -23,7 +23,7 @@
 #include "rig-entity.h"
 
 typedef struct _RigLight RigLight;
-
+extern RigType rig_light_type;
 #define RIG_LIGHT(p) ((RigLight *)(p))
 
 struct _RigLight
@@ -49,13 +49,22 @@ void
 rig_light_set_ambient (RigLight *light,
                        CoglColor *ambient);
 
+const CoglColor *
+rig_light_get_ambient (RigLight *light);
+
 void
 rig_light_set_diffuse (RigLight *light,
                        CoglColor *diffuse);
 
+const CoglColor *
+rig_light_get_diffuse (RigLight *light);
+
 void
 rig_light_set_specular (RigLight *light,
                         CoglColor *specular);
+
+const CoglColor *
+rig_light_get_specular (RigLight *light);
 
 void
 rig_light_add_pipeline (RigLight *light,
