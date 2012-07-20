@@ -353,3 +353,14 @@ rig_entity_get_component (RigEntity *entity,
 
   return NULL;
 }
+
+void
+rig_entity_foreach_component (RigEntity *entity,
+                              RigComponentCallback callback,
+                              void *user_data)
+{
+  int i;
+  for (i = 0; i < entity->components->len; i++)
+    callback (g_ptr_array_index (entity->components, i), user_data);
+}
+

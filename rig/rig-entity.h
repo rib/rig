@@ -192,4 +192,13 @@ void
 rig_entity_set_cast_shadow (RigEntity *entity,
                             gboolean cast_shadow);
 
+
+typedef void (*RigComponentCallback) (RigComponent *component,
+                                      void *user_data);
+
+void
+rig_entity_foreach_component (RigEntity *entity,
+                              RigComponentCallback callback,
+                              void *user_data);
+
 #endif /* __RIG_ENTITY_H__ */
