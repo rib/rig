@@ -123,7 +123,7 @@ test_init (RigShell *shell,
   onscreen = cogl_onscreen_new (data->ctx->cogl_context, 800, 600);
   data->fb = COGL_FRAMEBUFFER (onscreen);
 
-  cogl_onscreen_set_resizeable (onscreen, TRUE);
+  cogl_onscreen_set_resizable (onscreen, TRUE);
   cogl_onscreen_add_resize_handler (onscreen, test_onscreen_resize, data);
 
   cogl_onscreen_show (onscreen);
