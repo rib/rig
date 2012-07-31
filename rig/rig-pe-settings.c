@@ -61,6 +61,14 @@ typedef struct
 static const RigPeSettingsProperty
 rig_pe_settings_properties[] =
   {
+    {
+      .name = "Max particles",
+      .min_value = 1, .max_value = 65536,
+      .step = 1,
+      .decimal_places = 0,
+      .prop_name = "max_particles"
+    },
+
     RIG_PE_SETTINGS_VERTEX_PROP_RANGE ("initial velocity",
                                        "initial_velocity",
                                        1.0f,
@@ -76,7 +84,7 @@ rig_pe_settings_properties[] =
 #define RIG_PE_SETTINGS_EDGE_GAP 5
 #define RIG_PE_SETTINGS_PROPERTY_GAP 5
 
-#define RIG_PE_SETTINGS_N_COLUMNS 2
+#define RIG_PE_SETTINGS_N_COLUMNS 1
 #define RIG_PE_SETTINGS_N_ROWS ((RIG_PE_SETTINGS_N_PROPERTIES +         \
                                  RIG_PE_SETTINGS_N_COLUMNS - 1) /       \
                                 RIG_PE_SETTINGS_N_COLUMNS)
