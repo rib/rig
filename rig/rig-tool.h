@@ -24,9 +24,9 @@
 
 #include <cogl/cogl.h>
 
-#include <rig/rig-shell.h>
-#include <rig/rig-entity.h>
-#include <rig/rig-arcball.h>
+#include <rig-shell.h>
+#include <rig-entity.h>
+#include <rig-arcball.h>
 
 typedef struct _RigTool
 {
