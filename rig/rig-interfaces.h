@@ -34,7 +34,6 @@ rig_ref_countable_ref (void *object);
 void
 rig_ref_countable_unref (void *object);
 
-
 /*
  *
  * Graphable Interface
@@ -236,5 +235,19 @@ rig_sizable_get_preferred_height (void *object,
                                   float for_width,
                                   float *min_height_p,
                                   float *natural_height_p);
+
+/*
+ *
+ * Primable Interface
+ * (E.g. implemented by all geometry components)
+ *
+ */
+typedef struct _RigPrimableVTable
+{
+  CoglPrimitive *(*get_primitive)(void *object);
+} RigPrimableVTable;
+
+CoglPrimitive *
+rig_primable_get_primitive (RigObject *object);
 
 #endif /* _RIG_INTERFACES_H_ */

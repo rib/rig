@@ -235,6 +235,19 @@ rig_mesh_get_normal_matrix (const CoglMatrix *matrix,
   normal_matrix[8] = inverse_matrix.zz;
 }
 
+CoglPrimitive *
+rig_mesh_renderer_get_primitive (RigObject *object)
+{
+  RigMeshRenderer *renderer = object;
+
+  if (renderer->primitive)
+    return renderer->primitive;
+  else if (renderer->mesh_data)
+    return mash_data_get_primitive (renderer->mesh_data);
+  else
+    return NULL;
+}
+
 static void
 rig_mesh_renderer_draw (RigObject *object,
                         CoglFramebuffer *fb)
@@ -247,6 +260,7 @@ rig_mesh_renderer_draw (RigObject *object,
   RigMaterial *material =
     rig_entity_get_component (component->entity, RIG_COMPONENT_TYPE_MATERIAL);
   CoglPipeline *pipeline;
+  CoglPrimitive *primitive;
 
   /* FIXME: We could create a default material component in this case */
   if (!material)
@@ -273,27 +287,21 @@ rig_mesh_renderer_draw (RigObject *object,
                                     FALSE, /* don't transpose again */
                                     normal_matrix);
 
-  if (renderer->primitive)
-    {
-      cogl_framebuffer_draw_primitive (fb,
-                                       pipeline,
-                                       renderer->primitive);
-    }
-  else if (renderer->mesh_data)
-    {
-      CoglPrimitive *primitive;
+  primitive = rig_mesh_renderer_get_primitive (renderer);
 
-      primitive = mash_data_get_primitive (renderer->mesh_data);
-      cogl_framebuffer_draw_primitive (fb,
-                                       pipeline,
-                                       primitive);
-    }
+  cogl_framebuffer_draw_primitive (fb,
+                                   pipeline,
+                                   primitive);
 }
 
 RigType rig_mesh_renderer_type;
 
 static RigComponentableVTable _rig_mesh_renderer_componentable_vtable = {
   .draw = rig_mesh_renderer_draw
+};
+
+static RigPrimableVTable _rig_mesh_renderer_primable_vtable = {
+  .get_primitive = rig_mesh_renderer_get_primitive
 };
 
 void
@@ -304,6 +312,10 @@ _rig_mesh_renderer_init_type (void)
                           RIG_INTERFACE_ID_COMPONENTABLE,
                           offsetof (RigMeshRenderer, component),
                           &_rig_mesh_renderer_componentable_vtable);
+  rig_type_add_interface (&rig_mesh_renderer_type,
+                          RIG_INTERFACE_ID_PRIMABLE,
+                          0, /* no associated properties */
+                          &_rig_mesh_renderer_primable_vtable);
 }
 
 static RigMeshRenderer *

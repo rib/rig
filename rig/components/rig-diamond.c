@@ -33,7 +33,7 @@ _diamond_slice_free (void *object)
   g_slice_free (RigDiamondSlice, object);
 }
 
-RigRefCountableVTable _diamond_slice_ref_countable_vtable = {
+static RigRefCountableVTable _diamond_slice_ref_countable_vtable = {
   rig_ref_countable_simple_ref,
   rig_ref_countable_simple_unref,
   _diamond_slice_free
@@ -276,6 +276,10 @@ static RigComponentableVTable _rig_diamond_componentable_vtable = {
     0
 };
 
+static RigPrimableVTable _rig_diamond_primable_vtable = {
+  .get_primitive = rig_diamond_get_primitive
+};
+
 void
 _rig_diamond_init_type (void)
 {
@@ -284,6 +288,10 @@ _rig_diamond_init_type (void)
                           RIG_INTERFACE_ID_COMPONENTABLE,
                           offsetof (RigDiamond, component),
                           &_rig_diamond_componentable_vtable);
+  rig_type_add_interface (&rig_diamond_type,
+                          RIG_INTERFACE_ID_PRIMABLE,
+                          0, /* no associated properties */
+                          &_rig_diamond_primable_vtable);
 }
 
 RigDiamond *
@@ -316,4 +324,11 @@ float
 rig_diamond_get_size (RigDiamond *diamond)
 {
   return diamond->size;
+}
+
+CoglPrimitive *
+rig_diamond_get_primitive (RigObject *object)
+{
+  RigDiamond *diamond = object;
+  return diamond->slice->primitive;
 }

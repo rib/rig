@@ -528,3 +528,12 @@ rig_sizable_get_preferred_height (void *object,
                                  min_height_p,
                                  natural_height_p);
 }
+
+CoglPrimitive *
+rig_primable_get_primitive (RigObject *object)
+{
+  RigPrimableVTable *primable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_PRIMABLE);
+
+  return primable->get_primitive (object);
+}

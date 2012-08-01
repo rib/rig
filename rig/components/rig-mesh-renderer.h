@@ -65,4 +65,7 @@ rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
 int
 rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer);
 
+CoglPrimitive *
+rig_mesh_renderer_get_primitive (RigObject *object);
+
 #endif /* __RIG_MESH_RENDERER_H__ */

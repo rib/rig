@@ -77,4 +77,7 @@ rig_diamond_get_slice (RigDiamond *diamond);
 float
 rig_diamond_get_size (RigDiamond *diamond);
 
+CoglPrimitive *
+rig_diamond_get_primitive (RigObject *object);
+
 #endif /* __RIG_DIAMOND_H__ */
