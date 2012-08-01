@@ -317,7 +317,7 @@ rig_tool_draw (RigTool *tool,
   float scale, aspect_ratio;
   CoglMatrix saved_projection;
 
-  float fb_width, fb_height;
+  float vp_width, vp_height;
 
   get_rotation (tool->camera,
                 tool->selected_entity,
@@ -325,9 +325,9 @@ rig_tool_draw (RigTool *tool,
 
   /* we change the projection matrix to clip at -position[2] to clip the
    * half sphere that is away from the camera */
-  fb_width = cogl_framebuffer_get_width (fb);
-  fb_height = cogl_framebuffer_get_height (fb);
-  aspect_ratio = fb_width / fb_height;
+  vp_width = cogl_framebuffer_get_viewport_width (fb);
+  vp_height = cogl_framebuffer_get_viewport_height (fb);
+  aspect_ratio = vp_width / vp_height;
 
   cogl_framebuffer_get_projection_matrix (fb, &saved_projection);
   cogl_framebuffer_perspective (fb,
@@ -336,7 +336,7 @@ rig_tool_draw (RigTool *tool,
                                 rig_camera_get_near_plane (tool->camera_component),
                                 -tool->position[2]);
 
-  scale = rig_tool_get_scale_for_length (tool, 128 / fb_width);
+  scale = rig_tool_get_scale_for_length (tool, 128 / vp_width);
 
   /* draw the tool */
   cogl_framebuffer_push_matrix (fb);
