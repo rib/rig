@@ -100,15 +100,10 @@ struct _CoglMatrix
   float ww;
 
   /*< private >*/
-
-  /* Note: we may want to extend this later with private flags
-   * and a cache of the inverse transform matrix. */
-  float          COGL_PRIVATE (inv)[16];
-  unsigned long  COGL_PRIVATE (type);
-  unsigned long  COGL_PRIVATE (flags);
-  unsigned long  COGL_PRIVATE (_padding3);
+  unsigned int COGL_PRIVATE (type) : 16;
+  unsigned int COGL_PRIVATE (flags) : 16;
 };
-COGL_STRUCT_SIZE_ASSERT (CoglMatrix, 128 + sizeof (unsigned long) * 3);
+COGL_STRUCT_SIZE_ASSERT (CoglMatrix, sizeof (float) * 16 + 4);
 
 /**
  * cogl_matrix_init_identity:

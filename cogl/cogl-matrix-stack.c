@@ -444,8 +444,7 @@ _cogl_matrix_entry_get (CoglMatrixEntry *entry,
         case COGL_MATRIX_OP_LOAD:
           {
             CoglMatrixEntryLoad *load = (CoglMatrixEntryLoad *)current;
-            _cogl_matrix_init_from_matrix_without_inverse (matrix,
-                                                           load->matrix);
+            *matrix = *load->matrix;
             goto initialized;
           }
         case COGL_MATRIX_OP_SAVE:
@@ -459,7 +458,7 @@ _cogl_matrix_entry_get (CoglMatrixEntry *entry,
                 _cogl_matrix_entry_get (current->parent, save->cache);
                 save->cache_valid = TRUE;
               }
-            _cogl_matrix_init_from_matrix_without_inverse (matrix, save->cache);
+            *matrix = *save->cache;
             goto initialized;
           }
         default:
