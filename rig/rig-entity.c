@@ -21,6 +21,106 @@
 #include "rig-entity.h"
 #include "rig.h"
 
+enum
+{
+  PROP_LABEL,
+  PROP_X,
+  PROP_Y,
+  PROP_Z,
+  PROP_ROTATION,
+  PROP_SCALE,
+
+  N_PROPS
+};
+
+/* FIXME:
+ *  - directly store the position in the transform matrix?
+ */
+struct _RigEntity
+{
+  RigObjectProps _parent;
+
+  int ref_count;
+
+  uint32_t id;
+
+  char *label;
+
+  RigGraphableProps graphable;
+
+  /* private fields */
+  struct { float x, y, z; } position;
+  CoglQuaternion rotation;
+  float scale;                          /* uniform scaling only */
+  CoglMatrix transform;
+
+  GPtrArray *components;
+
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[N_PROPS];
+
+  unsigned int dirty:1;
+  unsigned int cast_shadow:1;
+};
+
+static RigPropertySpec _rig_entity_prop_specs[] = {
+  {
+    .name = "label",
+    .type = RIG_PROPERTY_TYPE_TEXT,
+    .getter = rig_entity_get_label,
+    .setter = rig_entity_set_label,
+    .nick = "Label",
+    .blurb = "A label for the entity",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "x",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_entity_get_x,
+    .setter = rig_entity_set_x,
+    .nick = "X",
+    .blurb = "The entities X coordinate",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "y",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_entity_get_y,
+    .setter = rig_entity_set_y,
+    .nick = "Y",
+    .blurb = "The entities Y coordinate",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "z",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_entity_get_z,
+    .setter = rig_entity_set_z,
+    .nick = "Z",
+    .blurb = "The entities Z coordinate",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "rotation",
+    .type = RIG_PROPERTY_TYPE_QUATERNION,
+    .getter = rig_entity_get_rotation,
+    .setter = rig_entity_set_rotation,
+    .nick = "Rotation",
+    .blurb = "The entities rotation",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "scale",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .getter = rig_entity_get_scale,
+    .setter = rig_entity_set_scale,
+    .nick = "Scale",
+    .blurb = "The entities uniform scale factor",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  { 0 }
+};
+
 static void
 _rig_entity_free (void *object)
 {
@@ -66,6 +166,10 @@ _rig_entity_init_type (void)
                           RIG_INTERFACE_ID_TRANSFORMABLE,
                           0,
                           &_rig_entity_transformable_vtable);
+  rig_type_add_interface (&rig_entity_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigEntity, introspectable),
+                          NULL); /* no implied vtable */
 }
 
 RigEntity *
@@ -75,9 +179,12 @@ rig_entity_new (RigContext *ctx,
   RigEntity *entity = g_slice_new0 (RigEntity);
 
   rig_object_init (&entity->_parent, &rig_entity_type);
-  rig_graphable_init (entity);
 
   entity->ref_count = 1;
+
+  rig_simple_introspectable_init (entity,
+                                  _rig_entity_prop_specs,
+                                  entity->properties);
 
   entity->id = id;
   entity->position.x = 0.0f;
@@ -89,6 +196,8 @@ rig_entity_new (RigContext *ctx,
   cogl_quaternion_init_identity (&entity->rotation);
   cogl_matrix_init_identity (&entity->transform);
   entity->components = g_ptr_array_new ();
+
+  rig_graphable_init (entity);
 
   return entity;
 }
@@ -380,3 +489,8 @@ rig_entity_foreach_component (RigEntity *entity,
     callback (g_ptr_array_index (entity->components, i), user_data);
 }
 
+CoglBool
+rig_entity_get_cast_shadow (RigEntity *entity)
+{
+  return entity->cast_shadow;
+}

@@ -69,41 +69,11 @@ typedef enum
   RIG_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
 } RigEntityFlag;
 
-/* FIXME:
- *  - directly store the position in the transform matrix?
- */
-struct _RigEntity
-{
-  RigObjectProps _parent;
-
-  int ref_count;
-
-  uint32_t id;
-
-  char *label;
-
-  RigGraphableProps graphable;
-
-  /* private fields */
-  struct { float x, y, z; } position;
-  CoglQuaternion rotation;
-  float scale;                          /* uniform scaling only */
-  CoglMatrix transform;
-
-  GPtrArray *components;
-
-  unsigned int dirty:1;
-  unsigned int cast_shadow:1;
-};
-
 void
 _rig_entity_init_type (void);
 
-static inline CoglBool
-rig_entity_get_cast_shadow (RigEntity *entity)
-{
-  return entity->cast_shadow;
-}
+CoglBool
+rig_entity_get_cast_shadow (RigEntity *entity);
 
 RigEntity *
 rig_entity_new (RigContext *ctx,
