@@ -80,6 +80,8 @@ struct _RigEntity
 
   uint32_t id;
 
+  char *label;
+
   RigGraphableProps graphable;
 
   /* private fields */
@@ -106,6 +108,13 @@ rig_entity_get_cast_shadow (RigEntity *entity)
 RigEntity *
 rig_entity_new (RigContext *ctx,
                 uint32_t id);
+
+const char *
+rig_entity_get_label (RigEntity *entity);
+
+void
+rig_entity_set_label (RigEntity *entity,
+                      const char *label);
 
 uint32_t
 rig_entity_get_id (RigEntity *entity);

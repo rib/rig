@@ -93,6 +93,22 @@ rig_entity_new (RigContext *ctx,
   return entity;
 }
 
+void
+rig_entity_set_label (RigEntity *entity,
+                      const char *label)
+{
+  if (entity->label)
+    g_free (entity->label);
+
+  entity->label = g_strdup (label);
+}
+
+const char *
+rig_entity_get_label (RigEntity *entity)
+{
+  return entity->label;
+}
+
 uint32_t
 rig_entity_get_id (RigEntity *entity)
 {
