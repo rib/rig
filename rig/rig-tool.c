@@ -111,6 +111,8 @@ on_rotation_tool_clicked (RigInputRegion *region,
 
             rig_entity_set_rotation (entity, &new_rotation);
 
+            rig_shell_queue_redraw (tool->shell);
+
             status = RIG_INPUT_EVENT_STATUS_HANDLED;
           }
         else if (action == RIG_MOTION_EVENT_ACTION_UP)
@@ -197,96 +199,96 @@ void
 rig_tool_update (RigTool *tool,
                  RigEntity *selected_entity)
 {
-    RigComponent *camera;
-    CoglMatrix transform;
-    const CoglMatrix *projection;
-    float scale_thingy[4], screen_space[4], x, y;
-    const float *viewport;
+  RigComponent *camera;
+  CoglMatrix transform;
+  const CoglMatrix *projection;
+  float scale_thingy[4], screen_space[4], x, y;
+  const float *viewport;
 
-    if (selected_entity == NULL)
-      {
-        tool->selected_entity = NULL;
+  if (selected_entity == NULL)
+    {
+      tool->selected_entity = NULL;
 
-        /* remove the input region when no entity is selected */
-        rig_shell_remove_input_region (tool->shell, tool->rotation_circle);
+      /* remove the input region when no entity is selected */
+      rig_shell_remove_input_region (tool->shell, tool->rotation_circle);
 
-        return;
-      }
+      return;
+    }
 
-    /* transform the selected entity up to the projection */
-    get_modelview_matrix (tool->camera,
-                          selected_entity,
-                          &transform);
+  /* transform the selected entity up to the projection */
+  get_modelview_matrix (tool->camera,
+                        selected_entity,
+                        &transform);
 
-    tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
+  tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
 
-    cogl_matrix_transform_points (&transform,
-                                  3, /* num components for input */
-                                  sizeof (float) * 3, /* input stride */
-                                  tool->position,
-                                  sizeof (float) * 3, /* output stride */
-                                  tool->position,
-                                  1 /* n_points */);
-
-    camera = rig_entity_get_component (tool->camera,
-                                       RIG_COMPONENT_TYPE_CAMERA);
-    projection = rig_camera_get_projection (RIG_CAMERA (camera));
-
-    scale_thingy[0] = 1.f;
-    scale_thingy[1] = 0.f;
-    scale_thingy[2] = tool->position[2];
-
-    cogl_matrix_project_points (projection,
+  cogl_matrix_transform_points (&transform,
                                 3, /* num components for input */
                                 sizeof (float) * 3, /* input stride */
-                                scale_thingy,
-                                sizeof (float) * 4, /* output stride */
-                                scale_thingy,
-                                1 /* n_points */);
-    scale_thingy[0] /= scale_thingy[3];
-
-    tool->scale = 1. / scale_thingy[0];
-
-    /* update the input region, need project the transformed point and do
-     * the viewport transform */
-    screen_space[0] = tool->position[0];
-    screen_space[1] = tool->position[1];
-    screen_space[2] = tool->position[2];
-    cogl_matrix_project_points (projection,
-                                3, /* num components for input */
-                                sizeof (float) * 3, /* input stride */
-                                screen_space,
-                                sizeof (float) * 4, /* output stride */
-                                screen_space,
+                                tool->position,
+                                sizeof (float) * 3, /* output stride */
+                                tool->position,
                                 1 /* n_points */);
 
-    /* perspective divide */
-    screen_space[0] /= screen_space[3];
-    screen_space[1] /= screen_space[3];
+  camera = rig_entity_get_component (tool->camera,
+                                     RIG_COMPONENT_TYPE_CAMERA);
+  projection = rig_camera_get_projection (RIG_CAMERA (camera));
 
-    /* apply viewport transform */
-    viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
-    x = VIEWPORT_TRANSFORM_X (screen_space[0], viewport[0], viewport[2]);
-    y = VIEWPORT_TRANSFORM_Y (screen_space[1], viewport[1], viewport[3]);
+  scale_thingy[0] = 1.f;
+  scale_thingy[1] = 0.f;
+  scale_thingy[2] = tool->position[2];
 
-    tool->screen_pos[0] = x;
-    tool->screen_pos[1] = y;
+  cogl_matrix_project_points (projection,
+                              3, /* num components for input */
+                              sizeof (float) * 3, /* input stride */
+                              scale_thingy,
+                              sizeof (float) * 4, /* output stride */
+                              scale_thingy,
+                              1 /* n_points */);
+  scale_thingy[0] /= scale_thingy[3];
 
-    if (!tool->button_down)
-      rig_input_region_set_circle (tool->rotation_circle, x, y, 64);
+  tool->scale = 1. / scale_thingy[0];
 
-    if (tool->selected_entity != selected_entity)
-      {
-        /* If we go from a "no entity selected" state to a "entity selected"
-         * one, we set-up the input region */
-        if (tool->selected_entity == NULL)
-            rig_shell_add_input_region (tool->shell, tool->rotation_circle);
+  /* update the input region, need project the transformed point and do
+   * the viewport transform */
+  screen_space[0] = tool->position[0];
+  screen_space[1] = tool->position[1];
+  screen_space[2] = tool->position[2];
+  cogl_matrix_project_points (projection,
+                              3, /* num components for input */
+                              sizeof (float) * 3, /* input stride */
+                              screen_space,
+                              sizeof (float) * 4, /* output stride */
+                              screen_space,
+                              1 /* n_points */);
 
-        tool->selected_entity = selected_entity;
-      }
+  /* perspective divide */
+  screen_space[0] /= screen_space[3];
+  screen_space[1] /= screen_space[3];
 
-    /* save the camera component for other functions to use */
-    tool->camera_component = RIG_CAMERA (camera);
+  /* apply viewport transform */
+  viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
+  x = VIEWPORT_TRANSFORM_X (screen_space[0], viewport[0], viewport[2]);
+  y = VIEWPORT_TRANSFORM_Y (screen_space[1], viewport[1], viewport[3]);
+
+  tool->screen_pos[0] = x;
+  tool->screen_pos[1] = y;
+
+  if (!tool->button_down)
+    rig_input_region_set_circle (tool->rotation_circle, x, y, 64);
+
+  if (tool->selected_entity != selected_entity)
+    {
+      /* If we go from a "no entity selected" state to a "entity selected"
+       * one, we set-up the input region */
+      if (tool->selected_entity == NULL)
+          rig_shell_add_input_region (tool->shell, tool->rotation_circle);
+
+      tool->selected_entity = selected_entity;
+    }
+
+  /* save the camera component for other functions to use */
+  tool->camera_component = RIG_CAMERA (camera);
 }
 
 static float
