@@ -29,16 +29,6 @@
 
 #define __COGL_H_INSIDE__
 
-#ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
-#define COGL_ENABLE_EXPERIMENTAL_2_0_API
-#endif
-
-/* TODO: Most of our currently "experimental" api should now just be
- * considered part of the 2.0 api */
-#ifndef COGL_ENABLE_EXPERIMENTAL_API
-#define COGL_ENABLE_EXPERIMENTAL_API
-#endif
-
 /*
  * API common to the 1.x and 2.0 api...
  */
@@ -57,18 +47,14 @@
 #include <cogl/cogl-path.h>
 #include <cogl/cogl-version.h>
 
-/*
- * 1.x only api...
- */
-#ifndef COGL_ENABLE_EXPERIMENTAL_2_0_API
-#include <cogl/cogl-clip-state.h>
+#ifdef COGL_HAS_GTYPE_SUPPORT
+/* GType integration */
 #include <cogl/cogl-enum-types.h>
 #endif
 
 /*
  * 2.0 api that's compatible with the 1.x api...
  */
-#if defined (COGL_ENABLE_EXPERIMENTAL_API)
 #include <cogl/cogl-swap-chain.h>
 #include <cogl/cogl-renderer.h>
 #include <cogl/cogl-display.h>
@@ -111,7 +97,6 @@
 /* XXX: This will definitly go away once all the Clutter winsys
  * code has been migrated down into Cogl! */
 #include <cogl/cogl-clutter.h>
-#endif
 #ifdef COGL_HAS_SDL_SUPPORT
 #include <cogl/cogl-sdl.h>
 #endif

@@ -36,8 +36,6 @@
 
 G_BEGIN_DECLS
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
-
 /**
  * CoglPipelineFilter:
  * @COGL_PIPELINE_FILTER_NEAREST: Measuring in manhatten distance from the,
@@ -600,8 +598,6 @@ void
 cogl_pipeline_add_layer_snippet (CoglPipeline *pipeline,
                                  int layer,
                                  CoglSnippet *snippet);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 G_END_DECLS
 

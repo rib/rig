@@ -35,9 +35,7 @@ typedef struct _CoglTexture CoglTexture;
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-defines.h>
-#if defined (COGL_ENABLE_EXPERIMENTAL_API)
 #include <cogl/cogl-pixel-buffer.h>
-#endif
 #include <cogl/cogl-bitmap.h>
 
 G_BEGIN_DECLS
@@ -421,8 +419,6 @@ cogl_texture_set_region (CoglTexture *texture,
                          unsigned int rowstride,
                          const uint8_t *data);
 
-#if defined (COGL_ENABLE_EXPERIMENTAL_API)
-
 #define cogl_texture_set_region_from_bitmap \
   cogl_texture_set_region_from_bitmap_EXP
 /**
@@ -459,7 +455,6 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      unsigned int dst_width,
                                      unsigned int dst_height,
                                      CoglBitmap *bitmap);
-#endif
 
 /**
  * cogl_texture_new_from_sub_texture:

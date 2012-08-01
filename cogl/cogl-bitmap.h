@@ -93,8 +93,6 @@ cogl_android_bitmap_new_from_asset (CoglContext *context,
                                     GError **error);
 #endif
 
-#if defined (COGL_ENABLE_EXPERIMENTAL_API)
-
 /**
  * cogl_bitmap_new_from_buffer:
  * @buffer: A #CoglBuffer containing image data
@@ -244,8 +242,6 @@ cogl_bitmap_get_rowstride (CoglBitmap *bitmap);
  */
 CoglPixelBuffer *
 cogl_bitmap_get_buffer (CoglBitmap *bitmap);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 /**
  * cogl_bitmap_get_size_from_file:

@@ -155,8 +155,6 @@ void *
 cogl_object_get_user_data (CoglObject *object,
                            CoglUserDataKey *key);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
-
 #define cogl_debug_object_foreach_type \
   cogl_debug_object_foreach_type_EXP
 
@@ -193,8 +191,6 @@ cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
  */
 void
 cogl_debug_object_print_instances (void);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 #endif /* __COGL_OBJECT_H */
 

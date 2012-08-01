@@ -9,7 +9,6 @@ LOCAL_STATIC_LIBRARIES := cogl android_native_app_glue gobject gmodule gthread g
 LOCAL_ARM_MODE := arm
 LOCAL_CFLAGS := 				\
 	-DG_LOG_DOMAIN=\"TestCoglHello\"	\
-	-DCOGL_ENABLE_EXPERIMENTAL_2_0_API	\
 	$(NULL)
 
 include $(BUILD_SHARED_LIBRARY)

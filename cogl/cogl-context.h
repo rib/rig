@@ -68,8 +68,6 @@ G_BEGIN_DECLS
  * what state other components have left you with.
  */
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
-
 #define COGL_CONTEXT(OBJECT) ((CoglContext *)OBJECT)
 
 /**
@@ -137,8 +135,6 @@ cogl_android_set_native_window (ANativeWindow *window);
  */
 CoglBool
 cogl_is_context (void *object);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_2_0_API */
 
 /* XXX: not guarded by the EXPERIMENTAL_API defines to avoid
  * upsetting glib-mkenums, but this can still be considered implicitly
@@ -222,8 +218,6 @@ typedef enum _CoglFeatureID
 } CoglFeatureID;
 
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
-
 /**
  * cogl_has_feature:
  * @context: A #CoglContext pointer
@@ -294,8 +288,6 @@ void
 cogl_foreach_feature (CoglContext *context,
                       CoglFeatureCallback callback,
                       void *user_data);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 G_END_DECLS
 

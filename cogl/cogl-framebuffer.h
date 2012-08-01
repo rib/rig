@@ -38,10 +38,9 @@
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-indices.h>
 #include <cogl/cogl-bitmap.h>
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
+#include <cogl/cogl-texture.h>
 #include <cogl/cogl-quaternion.h>
 #include <cogl/cogl-euler.h>
-#endif
 
 G_BEGIN_DECLS
 
@@ -84,8 +83,6 @@ G_BEGIN_DECLS
  */
 
 typedef struct _CoglFramebuffer CoglFramebuffer;
-
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 
 #define COGL_FRAMEBUFFER(X) ((CoglFramebuffer *)(X))
 
@@ -346,8 +343,6 @@ cogl_framebuffer_rotate (CoglFramebuffer *framebuffer,
                          float y,
                          float z);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
-
 /**
  * cogl_framebuffer_rotate_quaternion:
  * @framebuffer: A #CoglFramebuffer pointer
@@ -377,8 +372,6 @@ cogl_framebuffer_rotate_quaternion (CoglFramebuffer *framebuffer,
 void
 cogl_framebuffer_rotate_euler (CoglFramebuffer *framebuffer,
                                const CoglEuler *euler);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 /**
  * cogl_framebuffer_transform:
@@ -1695,11 +1688,6 @@ cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
  */
 CoglFramebuffer *
 cogl_get_draw_framebuffer (void);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
-
-/* XXX: Note these are defined outside the COGL_ENABLE_EXPERIMENTAL_API guard since
- * otherwise the glib-mkenums stuff will get upset. */
 
 GQuark
 cogl_framebuffer_error_quark (void);

@@ -29,10 +29,7 @@
 
 #include <glib.h>
 #include "cogl-types.h"
-
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 #include "cogl-quaternion.h"
-#endif
 
 G_BEGIN_DECLS
 
@@ -180,7 +177,6 @@ cogl_matrix_rotate (CoglMatrix *matrix,
 		    float y,
 		    float z);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 /**
  * cogl_matrix_rotate_quaternion:
  * @matrix: A 4x4 transformation matrix
@@ -208,7 +204,6 @@ cogl_matrix_rotate_quaternion (CoglMatrix *matrix,
 void
 cogl_matrix_rotate_euler (CoglMatrix *matrix,
                           const CoglEuler *euler);
-#endif
 
 /**
  * cogl_matrix_translate:
@@ -345,7 +340,6 @@ cogl_matrix_perspective (CoglMatrix *matrix,
                          float       z_near,
                          float       z_far);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 /**
  * cogl_matrix_orthographic:
  * @matrix: A 4x4 transformation matrix
@@ -373,7 +367,6 @@ cogl_matrix_orthographic (CoglMatrix *matrix,
                           float y_2,
                           float near,
                           float far);
-#endif
 
 /**
  * cogl_matrix_ortho:
@@ -402,7 +395,6 @@ cogl_matrix_ortho (CoglMatrix *matrix,
                    float       near,
                    float       far);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 /**
  * cogl_matrix_view_2d_in_frustum:
  * @matrix: A 4x4 transformation matrix
@@ -481,7 +473,6 @@ cogl_matrix_view_2d_in_perspective (CoglMatrix *matrix,
                                     float width_2d,
                                     float height_2d);
 
-#endif
 
 /**
  * cogl_matrix_init_from_array:
@@ -505,7 +496,6 @@ cogl_matrix_init_from_array (CoglMatrix *matrix,
 const float *
 cogl_matrix_get_array (const CoglMatrix *matrix);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 /**
  * cogl_matrix_init_from_quaternion:
  * @matrix: A 4x4 transformation matrix
@@ -527,7 +517,6 @@ cogl_matrix_init_from_quaternion (CoglMatrix *matrix,
 void
 cogl_matrix_init_from_euler (CoglMatrix *matrix,
                              const CoglEuler *euler);
-#endif
 
 /**
  * cogl_matrix_equal:
@@ -617,7 +606,6 @@ cogl_matrix_transform_point (const CoglMatrix *matrix,
                              float *z,
                              float *w);
 
-#ifdef COGL_ENABLE_EXPERIMENTAL_API
 /**
  * cogl_matrix_transform_points:
  * @matrix: A transformation matrix
@@ -730,8 +718,6 @@ cogl_matrix_project_points (const CoglMatrix *matrix,
                             size_t stride_out,
                             void *points_out,
                             int n_points);
-
-#endif /* COGL_ENABLE_EXPERIMENTAL_API */
 
 /**
  * cogl_matrix_is_identity:
