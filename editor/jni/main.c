@@ -1355,6 +1355,10 @@ pick (Data  *data,
     {
       entity = l->data;
 
+      mesh = rig_entity_get_component (entity, RIG_COMPONENT_TYPE_GEOMETRY);
+      if (!mesh || rig_object_get_type (mesh) != &rig_mesh_renderer_type)
+        continue;
+
       /* transform the ray into the model space */
       memcpy (transformed_ray_origin, ray_origin, 3 * sizeof (float));
       memcpy (transformed_ray_direction, ray_direction, 3 * sizeof (float));
@@ -1364,8 +1368,6 @@ pick (Data  *data,
                      transformed_ray_direction);
 
       /* intersect the transformed ray with the mesh data */
-      mesh = rig_entity_get_component (entity,
-                                       RIG_COMPONENT_TYPE_MESH_RENDERER);
       vertex_data =
         rig_mesh_renderer_get_vertex_data (RIG_MESH_RENDERER (mesh), &stride);
       n_vertices = rig_mesh_renderer_get_n_vertices (RIG_MESH_RENDERER (mesh));

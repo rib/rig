@@ -325,7 +325,7 @@ rig_mesh_renderer_new (RigContext *ctx)
 
   renderer = g_slice_new0 (RigMeshRenderer);
   rig_object_init (&renderer->_parent, &rig_mesh_renderer_type);
-  renderer->component.type = RIG_COMPONENT_TYPE_MESH_RENDERER;
+  renderer->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
 
   return renderer;
 }
