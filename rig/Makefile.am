@@ -37,7 +37,9 @@ source_h = \
     rig-text.h \
     rig-tool.h \
     rig-geometry.h \
-    rig-context.h
+    rig-context.h \
+    rig-number-slider.h \
+    rig-vec3-slider.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -80,9 +82,7 @@ librig_la_SOURCES = \
     rig-tool.c \
     rig-geometry.c \
     rig-number-slider.c \
-    rig-number-slider.h \
     rig-vec3-slider.c \
-    rig-vec3-slider.h \
     $(source_h)
 
 if !HAVE_ANDROID
