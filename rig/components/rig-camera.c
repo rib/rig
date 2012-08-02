@@ -637,10 +637,14 @@ rig_camera_set_orthographic_coordinates (RigCamera *camera,
 const CoglMatrix *
 rig_camera_get_inverse_projection (RigCamera *camera)
 {
+  const CoglMatrix *projection;
+
   if (camera->inverse_projection_age == camera->projection_age)
     return &camera->inverse_projection;
 
-  if (!cogl_matrix_get_inverse (&camera->projection,
+  projection = rig_camera_get_projection (camera);
+
+  if (!cogl_matrix_get_inverse (projection,
                                 &camera->inverse_projection))
     return NULL;
 
