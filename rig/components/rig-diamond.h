@@ -57,6 +57,8 @@ struct _RigDiamond
   RigObjectProps _parent;
   RigComponentableProps component;
 
+  RigContext *ctx;
+
   RigDiamondSlice *slice;
 
   int size;
@@ -79,5 +81,9 @@ rig_diamond_get_size (RigDiamond *diamond);
 
 CoglPrimitive *
 rig_diamond_get_primitive (RigObject *object);
+
+void
+rig_diamond_apply_mask (RigDiamond *diamond,
+                        CoglPipeline *pipeline);
 
 #endif /* __RIG_DIAMOND_H__ */

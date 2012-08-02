@@ -305,6 +305,8 @@ rig_diamond_new (RigContext *ctx,
   rig_object_init (&diamond->_parent, &rig_diamond_type);
   diamond->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
 
+  diamond->ctx = rig_ref_countable_ref (ctx);
+
   diamond->size = size;
 
   /* XXX: It could be worth maintaining a cache of diamond slices
@@ -332,3 +334,14 @@ rig_diamond_get_primitive (RigObject *object)
   RigDiamond *diamond = object;
   return diamond->slice->primitive;
 }
+
+void
+rig_diamond_apply_mask (RigDiamond *diamond,
+                        CoglPipeline *pipeline)
+{
+  RigContext *ctx = diamond->ctx;
+  cogl_pipeline_set_layer_texture (pipeline,
+                                   0,
+                                   ctx->circle_texture);
+}
+
