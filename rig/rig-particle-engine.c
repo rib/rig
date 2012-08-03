@@ -60,6 +60,7 @@ enum {
   RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_VELOCITY,
   RIG_PARTICLE_ENGINE_PROP_MIN_INITIAL_POSITION,
   RIG_PARTICLE_ENGINE_PROP_MAX_INITIAL_POSITION,
+  RIG_PARTICLE_ENGINE_PROP_SIZE_EASE_MODE,
   RIG_PARTICLE_ENGINE_N_PROPS
 };
 
@@ -111,6 +112,8 @@ struct _RigParticleEngine
 
   float point_size;
 
+  RigEaseMode size_ease_mode;
+
   int ref_count;
 
   RigSimpleIntrospectableProps introspectable;
@@ -139,6 +142,12 @@ _rig_particle_engine_prop_specs[] =
       .type = RIG_PROPERTY_TYPE_INTEGER,
       .data_offset = offsetof (RigParticleEngine, max_particles),
       .setter = rig_particle_engine_set_max_particles
+    },
+
+    {
+      .name = "size_ease_mode",
+      .type = RIG_PROPERTY_TYPE_ENUM,
+      .data_offset = offsetof (RigParticleEngine, size_ease_mode),
     },
 
     RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_velocity),

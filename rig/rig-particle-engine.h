@@ -4,6 +4,7 @@
 #include <cogl/cogl.h>
 
 #include "rig.h"
+#include "rig-ease.h"
 
 extern RigType rig_particle_engine_type;
 

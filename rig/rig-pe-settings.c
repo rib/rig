@@ -70,6 +70,11 @@ rig_pe_settings_properties[] =
       .prop_name = "max_particles"
     },
 
+    {
+      .name = "Size ease mode",
+      .prop_name = "size_ease_mode"
+    },
+
     RIG_PE_SETTINGS_VERTEX_PROP_RANGE ("initial velocity",
                                        "initial_velocity",
                                        1.0f,
@@ -210,6 +215,7 @@ rig_pe_settings_create_control_for_property (RigContext *context,
       }
 
     case RIG_PROPERTY_TYPE_FLOAT:
+    case RIG_PROPERTY_TYPE_INTEGER:
       {
         RigNumberSlider *slider = rig_number_slider_new (context);
         rig_number_slider_set_name (slider, prop_info->name);
@@ -221,7 +227,7 @@ rig_pe_settings_create_control_for_property (RigContext *context,
         return slider;
       }
 
-    case RIG_PROPERTY_TYPE_INTEGER:
+    case RIG_PROPERTY_TYPE_ENUM:
       {
         RigDropDown *drop = rig_drop_down_new (context);
         rig_drop_down_set_value_names (drop,
