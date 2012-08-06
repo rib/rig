@@ -568,33 +568,6 @@ rig_number_slider_update_text_size (RigNumberSlider *slider)
                         slider->actual_logical_rect.height);
 }
 
-static CoglBool
-rig_number_slider_transform_motion_event (RigNumberSlider *slider,
-                                          RigInputEvent *event,
-                                          float *x,
-                                          float *y)
-{
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
-  RigCamera *camera = rig_input_event_get_camera (event);
-
-  rig_graphable_get_modelview (slider, camera, &transform);
-
-  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
-    return FALSE;
-
-  *x = rig_motion_event_get_x (event);
-  *y = rig_motion_event_get_y (event);
-  rig_camera_unproject_coord (camera,
-                              &transform,
-                              &inverse_transform,
-                              0, /* object_coord_z */
-                              x,
-                              y);
-
-  return TRUE;
-}
-
 static RigInputEventStatus
 rig_number_slider_text_grab_cb (RigInputEvent *event,
                                 void *user_data)
@@ -607,9 +580,9 @@ rig_number_slider_text_grab_cb (RigInputEvent *event,
     case RIG_INPUT_EVENT_TYPE_MOTION:
       /* Check if this is a click outside of the text control */
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN &&
-          (!rig_number_slider_transform_motion_event (slider,
-                                                      event,
-                                                      &x, &y) ||
+          (!rig_motion_event_unproject (event,
+                                        RIG_OBJECT (slider),
+                                        &x, &y) ||
            x < RIG_NUMBER_SLIDER_ARROW_WIDTH ||
            x >= slider->width - RIG_NUMBER_SLIDER_ARROW_WIDTH ||
            y < 0 ||
@@ -649,9 +622,9 @@ rig_number_slider_handle_click (RigNumberSlider *slider,
 {
   float x, y;
 
-  if (!rig_number_slider_transform_motion_event (slider,
-                                                 event,
-                                                 &x, &y))
+  if (!rig_motion_event_unproject (event,
+                                   RIG_OBJECT (slider),
+                                   &x, &y))
     return;
 
   if (x < RIG_NUMBER_SLIDER_ARROW_WIDTH)

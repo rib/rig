@@ -1058,6 +1058,34 @@ rig_motion_event_get_y (RigInputEvent *event)
   return y;
 }
 
+CoglBool
+rig_motion_event_unproject (RigInputEvent *event,
+                            RigObject *graphable,
+                            float *x,
+                            float *y)
+{
+  CoglMatrix transform;
+  CoglMatrix inverse_transform;
+  RigCamera *camera = rig_input_event_get_camera (event);
+
+  rig_graphable_get_modelview (graphable, camera, &transform);
+
+  if (!cogl_matrix_get_inverse (&transform, &inverse_transform))
+    return FALSE;
+
+  *x = rig_motion_event_get_x (event);
+  *y = rig_motion_event_get_y (event);
+  rig_camera_unproject_coord (camera,
+                              &transform,
+                              &inverse_transform,
+                              0, /* object_coord_z */
+                              x,
+                              y);
+
+  return TRUE;
+}
+
+
 typedef struct _CameraPickState
 {
   RigCamera *camera;
