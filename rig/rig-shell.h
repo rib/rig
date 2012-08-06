@@ -211,6 +211,26 @@ rig_motion_event_get_x (RigInputEvent *event);
 float
 rig_motion_event_get_y (RigInputEvent *event);
 
+/**
+ * rig_motion_event_unproject:
+ * @event: A motion event
+ * @graphable: An object that implements #RigGraphable
+ * @x: Output location for the unprojected coordinate
+ * @y: Output location for the unprojected coordinate
+ *
+ * Unprojects the position of the motion event so that it will be
+ * relative to the coordinate space of the given graphable object.
+ *
+ * Return value: %FALSE if the coordinate can't be unprojected or
+ *   %TRUE otherwise. The coordinate can't be unprojected if the
+ *   transform for the graphable object object does not have an inverse.
+ */
+CoglBool
+rig_motion_event_unproject (RigInputEvent *event,
+                            RigObject *graphable,
+                            float *x,
+                            float *y);
+
 typedef struct _RigInputRegion RigInputRegion;
 #define RIG_INPUT_REGION(X) ((RigInputRegion *)X)
 
