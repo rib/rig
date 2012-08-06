@@ -29,6 +29,7 @@
 #include "rig-pe-settings.h"
 #include "rig-vec3-slider.h"
 #include "rig-number-slider.h"
+#include "rig-drop-down.h"
 
 typedef struct
 {
@@ -209,7 +210,6 @@ rig_pe_settings_create_control_for_property (RigContext *context,
       }
 
     case RIG_PROPERTY_TYPE_FLOAT:
-    case RIG_PROPERTY_TYPE_INTEGER:
       {
         RigNumberSlider *slider = rig_number_slider_new (context);
         rig_number_slider_set_name (slider, prop_info->name);
@@ -219,6 +219,18 @@ rig_pe_settings_create_control_for_property (RigContext *context,
         rig_number_slider_set_decimal_places (slider,
                                               prop_info->decimal_places);
         return slider;
+      }
+
+    case RIG_PROPERTY_TYPE_INTEGER:
+      {
+        RigDropDown *drop = rig_drop_down_new (context);
+        rig_drop_down_set_value_names (drop,
+                                       "potato",
+                                       "pie",
+                                       "omelette",
+                                       "hungry",
+                                       NULL);
+        return drop;
       }
 
     default:
