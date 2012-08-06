@@ -832,10 +832,6 @@ _cogl_pipeline_set_vertend (CoglPipeline *pipeline, int vertend);
 CoglPipeline *
 _cogl_pipeline_get_parent (CoglPipeline *pipeline);
 
-void
-_cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
-                             uint8_t       *color);
-
 /* XXX: At some point it could be good for this to accept a mask of
  * the state groups we are interested in comparing since we can
  * probably use that information in a number situations to reduce

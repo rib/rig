@@ -315,17 +315,6 @@ cogl_pipeline_get_color (CoglPipeline *pipeline,
   *color = authority->color;
 }
 
-/* This is used heavily by the cogl journal when logging quads */
-void
-_cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
-                             uint8_t *color)
-{
-  CoglPipeline *authority =
-    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_COLOR);
-
-  _cogl_color_get_rgba_4ubv (&authority->color, color);
-}
-
 void
 cogl_pipeline_set_color (CoglPipeline    *pipeline,
 			 const CoglColor *color)

@@ -38,8 +38,8 @@
 #define _COGL_COLOR_DATA_SIZE 4
 
 void
-_cogl_color_get_rgba_4ubv (const CoglColor *color,
-                           uint8_t *dest);
+_cogl_color_get_rgba_4fv (const CoglColor *color,
+                          float *dest);
 
 #endif /* __COGL_COLOR_PRIVATE_PRIVATE_H */
 

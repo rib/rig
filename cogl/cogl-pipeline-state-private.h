@@ -28,6 +28,23 @@
 #ifndef __COGL_PIPELINE_STATE_PRIVATE_H
 #define __COGL_PIPELINE_STATE_PRIVATE_H
 
+#include "cogl-pipeline-private.h"
+
+/* This is used heavily by the cogl journal when logging quads */
+static inline void
+_cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
+                             uint8_t *color)
+{
+  CoglPipeline *authority =
+    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_COLOR);
+  const CoglColor *cogl_color = &authority->color;
+
+  color[0] = cogl_color->red * 255;
+  color[1] = cogl_color->green * 255;
+  color[2] = cogl_color->blue * 255;
+  color[3] = cogl_color->alpha * 255;
+}
+
 CoglBool
 _cogl_pipeline_maybe_has_custom_texture_transform (CoglPipeline *pipeline);
 

@@ -398,26 +398,16 @@ typedef enum
 /**
  * CoglColor:
  *
- * A structure for holding a color definition. The contents of
- * the CoglColor structure are private and should never by accessed
- * directly.
+ * A structure for holding a single color definition.
  *
  * Since: 1.0
  */
 struct _CoglColor
 {
-  /*< private >*/
-  uint8_t COGL_PRIVATE (red);
-  uint8_t COGL_PRIVATE (green);
-  uint8_t COGL_PRIVATE (blue);
-
-  uint8_t COGL_PRIVATE (alpha);
-
-  /* padding in case we want to change to floats at
-   * some point */
-  uint32_t COGL_PRIVATE (padding0);
-  uint32_t COGL_PRIVATE (padding1);
-  uint32_t COGL_PRIVATE (padding2);
+  float red;
+  float green;
+  float blue;
+  float alpha;
 };
 COGL_STRUCT_SIZE_ASSERT (CoglColor, 16);
 

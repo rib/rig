@@ -3,7 +3,7 @@
  *
  * An object oriented GL/GLES Abstraction/Utility Layer
  *
- * Copyright (C) 2008,2009 Intel Corporation.
+ * Copyright (C) 2008,2009,2012 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,44 +41,6 @@
 #include <cogl/cogl-types.h>
 
 G_BEGIN_DECLS
-
-/**
- * cogl_color_new:
- *
- * Creates a new (empty) color
- *
- * Return value: a newly-allocated #CoglColor. Use cogl_color_free()
- *   to free the allocated resources
- *
- * Since: 1.0
- */
-CoglColor *
-cogl_color_new (void);
-
-/**
- * cogl_color_copy:
- * @color: the color to copy
- *
- * Creates a copy of @color
- *
- * Return value: a newly-allocated #CoglColor. Use cogl_color_free()
- *   to free the allocate resources
- *
- * Since: 1.0
- */
-CoglColor *
-cogl_color_copy (const CoglColor *color);
-
-/**
- * cogl_color_free:
- * @color: the color to free
- *
- * Frees the resources allocated by cogl_color_new() and cogl_color_copy()
- *
- * Since: 1.0
- */
-void
-cogl_color_free (CoglColor *color);
 
 /**
  * cogl_color_init_from_4ub:
@@ -142,7 +104,7 @@ cogl_color_init_from_4fv (CoglColor *color,
  *
  * Since: 1.0
  */
-unsigned char
+uint8_t
 cogl_color_get_red_byte (const CoglColor *color);
 
 /**
@@ -156,7 +118,7 @@ cogl_color_get_red_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-unsigned char
+uint8_t
 cogl_color_get_green_byte (const CoglColor *color);
 
 /**
@@ -170,7 +132,7 @@ cogl_color_get_green_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-unsigned char
+uint8_t
 cogl_color_get_blue_byte (const CoglColor *color);
 
 /**
@@ -184,7 +146,7 @@ cogl_color_get_blue_byte (const CoglColor *color);
  *
  * Since: 1.0
  */
-unsigned char
+uint8_t
 cogl_color_get_alpha_byte (const CoglColor *color);
 
 /**
@@ -309,8 +271,8 @@ cogl_color_get_alpha (const CoglColor *color);
  * Since: 1.4
  */
 void
-cogl_color_set_red_byte (CoglColor     *color,
-                         unsigned char  red);
+cogl_color_set_red_byte (CoglColor *color,
+                         uint8_t red);
 
 /**
  * cogl_color_set_green_byte:
@@ -322,8 +284,8 @@ cogl_color_set_red_byte (CoglColor     *color,
  * Since: 1.4
  */
 void
-cogl_color_set_green_byte (CoglColor     *color,
-                           unsigned char  green);
+cogl_color_set_green_byte (CoglColor *color,
+                           uint8_t green);
 
 /**
  * cogl_color_set_blue_byte:
@@ -335,8 +297,8 @@ cogl_color_set_green_byte (CoglColor     *color,
  * Since: 1.4
  */
 void
-cogl_color_set_blue_byte (CoglColor     *color,
-                          unsigned char  blue);
+cogl_color_set_blue_byte (CoglColor *color,
+                          uint8_t blue);
 
 /**
  * cogl_color_set_alpha_byte:
@@ -348,8 +310,8 @@ cogl_color_set_blue_byte (CoglColor     *color,
  * Since: 1.4
  */
 void
-cogl_color_set_alpha_byte (CoglColor     *color,
-                           unsigned char  alpha);
+cogl_color_set_alpha_byte (CoglColor *color,
+                           uint8_t alpha);
 
 /**
  * cogl_color_set_red_float:
@@ -362,7 +324,7 @@ cogl_color_set_alpha_byte (CoglColor     *color,
  */
 void
 cogl_color_set_red_float (CoglColor *color,
-                          float      red);
+                          float red);
 
 /**
  * cogl_color_set_green_float:
@@ -375,7 +337,7 @@ cogl_color_set_red_float (CoglColor *color,
  */
 void
 cogl_color_set_green_float (CoglColor *color,
-                            float      green);
+                            float green);
 
 /**
  * cogl_color_set_blue_float:
@@ -388,7 +350,7 @@ cogl_color_set_green_float (CoglColor *color,
  */
 void
 cogl_color_set_blue_float (CoglColor *color,
-                           float      blue);
+                           float blue);
 
 /**
  * cogl_color_set_alpha_float:
@@ -401,7 +363,7 @@ cogl_color_set_blue_float (CoglColor *color,
  */
 void
 cogl_color_set_alpha_float (CoglColor *color,
-                            float      alpha);
+                            float alpha);
 
 /**
  * cogl_color_set_red:
@@ -414,7 +376,7 @@ cogl_color_set_alpha_float (CoglColor *color,
  */
 void
 cogl_color_set_red (CoglColor *color,
-                    float      red);
+                    float red);
 
 /**
  * cogl_color_set_green:
@@ -497,6 +459,31 @@ cogl_color_unpremultiply (CoglColor *color);
  */
 CoglBool
 cogl_color_equal (const void *v1, const void *v2);
+
+/**
+ * cogl_color_copy:
+ * @color: the color to copy
+ *
+ * Creates a copy of @color
+ *
+ * Return value: a newly-allocated #CoglColor. Use cogl_color_free()
+ *   to free the allocate resources
+ *
+ * Since: 1.0
+ */
+CoglColor *
+cogl_color_copy (const CoglColor *color);
+
+/**
+ * cogl_color_free:
+ * @color: the color to free
+ *
+ * Frees the resources allocated by cogl_color_new() and cogl_color_copy()
+ *
+ * Since: 1.0
+ */
+void
+cogl_color_free (CoglColor *color);
 
 G_END_DECLS
 
