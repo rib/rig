@@ -5015,6 +5015,12 @@ loader_find_item (Loader *loader, uint32_t id)
   return NULL;
 }
 
+static RigEntity *
+loader_find_entity (Loader *loader, uint32_t id)
+{
+  return g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
+}
+
 static Asset *
 loader_find_asset (Loader *loader, uint32_t id)
 {
@@ -5159,8 +5165,8 @@ parse_start_element (GMarkupParseContext *context,
       if (parent_id_str)
         {
           unsigned int parent_id = g_ascii_strtoull (parent_id_str, NULL, 10);
-          RigEntity *parent = g_hash_table_lookup (loader->id_map,
-                                                   GUINT_TO_POINTER (parent_id));
+          RigEntity *parent = loader_find_entity (loader, parent_id);
+
           if (!parent)
             {
               g_set_error (error,
@@ -5344,9 +5350,9 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
            strcmp (element_name, "path") == 0)
     {
-      const char *item_id_str;
-      uint32_t item_id;
-      Item *item;
+      const char *entity_id_str;
+      uint32_t entity_id;
+      RigEntity *entity;
       const char *property_name;
       RigProperty *prop;
 
@@ -5355,27 +5361,28 @@ parse_start_element (GMarkupParseContext *context,
                                         attribute_values,
                                         error,
                                         G_MARKUP_COLLECT_STRING,
-                                        "item",
-                                        &item_id_str,
+                                        "entity",
+                                        &entity_id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "property",
                                         &property_name,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      item_id = g_ascii_strtoull (item_id_str, NULL, 10);
+      entity_id = g_ascii_strtoull (entity_id_str, NULL, 10);
 
-      item = loader_find_item (loader, item_id);
-      if (!item)
+      entity = loader_find_entity (loader, entity_id);
+      if (!entity)
         {
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Item id referenced in path element");
+                       "Invalid Entity id %d referenced in path element",
+                       entity_id);
           return;
         }
 
-      prop = rig_introspectable_lookup_property (item, property_name);
+      prop = rig_introspectable_lookup_property (entity, property_name);
       if (!prop)
         {
           g_set_error (error,
