@@ -70,4 +70,8 @@ void
 rig_light_add_pipeline (RigLight *light,
                         CoglPipeline *pipeline);
 
+void
+rig_light_set_uniforms (RigLight *light,
+                        CoglPipeline *pipeline);
+
 #endif /* __RIG_LIGHT_H__ */

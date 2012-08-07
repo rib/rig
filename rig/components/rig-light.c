@@ -32,52 +32,59 @@ get_color_array (CoglColor *color)
   return array;
 }
 
-static void
-rig_light_update (RigObject *object,
-                  int64_t time)
+void
+rig_light_set_uniforms (RigLight *light,
+                        CoglPipeline *pipeline)
 {
-  RigLight *light = object;
   RigComponentableProps *component =
-    rig_object_get_properties (object, RIG_INTERFACE_ID_COMPONENTABLE);
+    rig_object_get_properties (light, RIG_INTERFACE_ID_COMPONENTABLE);
+  RigEntity *entity = component->entity;
   float norm_direction[3];
   int location;
 
   /* the lighting shader expects the direction vector to be pointing towards
    * the light, we encode that with the light position in the case of a
    * directional light */
-  norm_direction[0] = rig_entity_get_x (component->entity);
-  norm_direction[1] = rig_entity_get_y (component->entity);
-  norm_direction[2] = rig_entity_get_z (component->entity);
+  norm_direction[0] = rig_entity_get_x (entity);
+  norm_direction[1] = rig_entity_get_y (entity);
+  norm_direction[2] = rig_entity_get_z (entity);
   cogl_vector3_normalize (norm_direction);
 
-  location = cogl_pipeline_get_uniform_location (light->pipeline,
+  location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_direction_norm");
-  cogl_pipeline_set_uniform_float (light->pipeline,
+  cogl_pipeline_set_uniform_float (pipeline,
                                    location,
                                    3, 1,
                                    norm_direction);
 
-  location = cogl_pipeline_get_uniform_location (light->pipeline,
+  location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_ambient");
-  cogl_pipeline_set_uniform_float (light->pipeline,
+  cogl_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->ambient));
 
-  location = cogl_pipeline_get_uniform_location (light->pipeline,
+  location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_diffuse");
-  cogl_pipeline_set_uniform_float (light->pipeline,
+  cogl_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->diffuse));
 
-  location = cogl_pipeline_get_uniform_location (light->pipeline,
+  location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_specular");
-  cogl_pipeline_set_uniform_float (light->pipeline,
+  cogl_pipeline_set_uniform_float (pipeline,
                                    location,
                                    4, 1,
                                    get_color_array (&light->specular));
+}
 
+static void
+rig_light_update (RigObject *object,
+                  int64_t time)
+{
+  RigLight *light = object;
+  rig_light_set_uniforms (light, light->pipeline);
 }
 
 RigType rig_light_type;
