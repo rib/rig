@@ -149,6 +149,11 @@ static RigTransformableVTable _rig_entity_transformable_vtable = {
   rig_entity_get_transform
 };
 
+static RigIntrospectableVTable _rig_entity_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
+
 
 RigType rig_entity_type;
 
@@ -168,6 +173,10 @@ _rig_entity_init_type (void)
                           RIG_INTERFACE_ID_TRANSFORMABLE,
                           0,
                           &_rig_entity_transformable_vtable);
+  rig_type_add_interface (&rig_entity_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_entity_introspectable_vtable);
   rig_type_add_interface (&rig_entity_type,
                           RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RigEntity, introspectable),
