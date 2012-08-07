@@ -6,4 +6,6 @@ assets_DATA = \
 	button-disabled.png \
 	number-slider-background.png \
 	slider-background.png \
-	slider-handle.png
+	slider-handle.png \
+	light-bulb.png
+
