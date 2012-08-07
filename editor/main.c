@@ -982,7 +982,6 @@ struct _Data
   GList *items;
   GList *entities;
   GList *lights;
-  GList *pickables;
   GList *transitions;
 
   Item *selected_item;
@@ -3269,46 +3268,77 @@ create_picking_ray (Data            *data,
   return line;
 }
 
-static RigEntity *
-pick (Data *data,
-      float ray_origin[3],
-      float ray_direction[3])
+typedef struct _PickContext
 {
-  RigEntity *entity, *selected_entity = NULL;
-  RigComponent *mesh;
-  uint8_t *vertex_data;
-  int n_vertices;
-  size_t stride;
-  int index;
-  float distance, min_distance = G_MAXFLOAT;
-  bool hit;
-  float transformed_ray_origin[3];
-  float transformed_ray_direction[3];
-  GList *l;
+  CoglFramebuffer *fb;
+  float *ray_origin;
+  float *ray_direction;
+  RigEntity *selected_entity;
+  float selected_distance;
+  int selected_index;
+} PickContext;
 
-  for (l = data->pickables; l; l = l->next)
+static RigTraverseVisitFlags
+_rig_entitygraph_pre_pick_cb (RigObject *object,
+                              int depth,
+                              void *user_data)
+{
+  PickContext *pick_ctx = user_data;
+  CoglFramebuffer *fb = pick_ctx->fb;
+
+  RigPaintableVTable *vtable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
+
+  /* XXX: It could be nice if Cogl exposed matrix stacks directly, but for now
+   * we just take advantage of an arbitrary framebuffer matrix stack so that
+   * we can avoid repeated accumulating the transform of ancestors when
+   * traversing between scenegraph nodes that have common ancestors.
+   */
+  if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
     {
-      entity = l->data;
+      const CoglMatrix *matrix = rig_transformable_get_matrix (object);
+      cogl_framebuffer_push_matrix (fb);
+      cogl_framebuffer_transform (fb, matrix);
+    }
+
+  if (rig_object_get_type (object) == &rig_entity_type)
+    {
+      RigEntity *entity = object;
+      RigComponent *geometry;
+      uint8_t *vertex_data;
+      int n_vertices;
+      size_t stride;
+      int index;
+      float distance, min_distance = G_MAXFLOAT;
+      bool hit;
+      float transformed_ray_origin[3];
+      float transformed_ray_direction[3];
+      CoglMatrix transform;
+
+      geometry = rig_entity_get_component (entity, RIG_COMPONENT_TYPE_GEOMETRY);
+
+      /* Get a mesh we can pick against */
+      if (!(geometry &&
+            rig_object_is (geometry, RIG_INTERFACE_ID_PICKABLE) &&
+            (vertex_data = rig_pickable_get_vertex_data (geometry,
+                                                         &stride,
+                                                         &n_vertices))))
+        return RIG_TRAVERSE_VISIT_CONTINUE;
 
       /* transform the ray into the model space */
-      memcpy (transformed_ray_origin, ray_origin, 3 * sizeof (float));
-      memcpy (transformed_ray_direction, ray_direction, 3 * sizeof (float));
-      transform_ray (rig_entity_get_transform (entity),
+      memcpy (transformed_ray_origin,
+              pick_ctx->ray_origin, 3 * sizeof (float));
+      memcpy (transformed_ray_direction,
+              pick_ctx->ray_direction, 3 * sizeof (float));
+
+      cogl_framebuffer_get_modelview_matrix (fb, &transform);
+
+      transform_ray (&transform,
                      TRUE, /* inverse of the transform */
                      transformed_ray_origin,
                      transformed_ray_direction);
 
       /* intersect the transformed ray with the mesh data */
-      mesh = rig_entity_get_component (entity, RIG_COMPONENT_TYPE_GEOMETRY);
-      if (!mesh || rig_object_get_type (mesh) != &rig_mesh_renderer_type)
-        continue;
-
-      vertex_data =
-        rig_mesh_renderer_get_vertex_data (RIG_MESH_RENDERER (mesh),
-                                           &stride, &n_vertices);
-      if (!vertex_data)
-        continue;
-
       hit = rig_util_intersect_mesh (vertex_data,
                                      n_vertices,
                                      stride,
@@ -3324,7 +3354,7 @@ pick (Data *data,
       transformed_ray_direction[1] *= distance;
       transformed_ray_direction[2] *= distance;
 
-      rig_util_transform_normal (rig_entity_get_transform (entity),
+      rig_util_transform_normal (&transform,
                                  &transformed_ray_direction[0],
                                  &transformed_ray_direction[1],
                                  &transformed_ray_direction[2]);
@@ -3333,17 +3363,55 @@ pick (Data *data,
       if (hit && distance < min_distance)
         {
           min_distance = distance;
-          selected_entity = entity;
+          pick_ctx->selected_entity = entity;
+          pick_ctx->selected_distance = distance;
+          pick_ctx->selected_index = index;
         }
     }
 
-  if (selected_entity)
+  return RIG_TRAVERSE_VISIT_CONTINUE;
+}
+
+static RigTraverseVisitFlags
+_rig_entitygraph_post_pick_cb (RigObject *object,
+                               int depth,
+                               void *user_data)
+{
+  if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
     {
-      g_message ("Hit entity, triangle #%d, distance %.2f",
-                 index, distance);
+      PickContext *pick_ctx = user_data;
+      cogl_framebuffer_pop_matrix (pick_ctx->fb);
     }
 
-  return selected_entity;
+  return RIG_TRAVERSE_VISIT_CONTINUE;
+}
+
+static RigEntity *
+pick (Data *data,
+      CoglFramebuffer *fb,
+      float ray_origin[3],
+      float ray_direction[3])
+{
+  PickContext pick_ctx;
+
+  pick_ctx.fb = fb;
+  pick_ctx.selected_entity = NULL;
+  pick_ctx.ray_origin = ray_origin;
+  pick_ctx.ray_direction = ray_direction;
+
+  rig_graphable_traverse (data->scene,
+                          RIG_TRAVERSE_DEPTH_FIRST,
+                          _rig_entitygraph_pre_pick_cb,
+                          _rig_entitygraph_post_pick_cb,
+                          &pick_ctx);
+
+  if (pick_ctx.selected_entity)
+    {
+      g_message ("Hit entity, triangle #%d, distance %.2f",
+                 pick_ctx.selected_index, pick_ctx.selected_distance);
+    }
+
+  return pick_ctx.selected_entity;
 }
 
 static void
@@ -3491,7 +3559,11 @@ main_input_cb (RigInputEvent *event,
                                                       len);
             }
 
-          data->selected_entity = pick (data, ray_position, ray_direction);
+          data->selected_entity = pick (data,
+                                        rig_camera_get_framebuffer (camera),
+                                        ray_position,
+                                        ray_direction);
+
           rig_shell_queue_redraw (data->ctx->shell);
           if (data->selected_entity == NULL)
             rig_tool_update (data->tool, NULL);
@@ -4235,7 +4307,7 @@ test_init (RigShell *shell, void *user_data)
   /* plane */
   data->plane = rig_entity_new (data->ctx, data->entity_next_id++);
   //data->entities = g_list_prepend (data->entities, data->plane);
-  data->pickables = g_list_prepend (data->pickables, data->plane);
+  //data->pickables = g_list_prepend (data->pickables, data->plane);
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.f);
 
@@ -4255,7 +4327,7 @@ test_init (RigShell *shell, void *user_data)
 
       rig_entity_set_scale (data->cubes[i], 50);
       //data->entities = g_list_prepend (data->entities, data->cubes[i]);
-      data->pickables = g_list_prepend (data->pickables, data->cubes[i]);
+      //data->pickables = g_list_prepend (data->pickables, data->cubes[i]);
 
       rig_entity_set_cast_shadow (data->cubes[i], TRUE);
       rig_entity_set_x (data->cubes[i], 50 + i * 125);
