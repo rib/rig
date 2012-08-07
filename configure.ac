@@ -303,11 +303,11 @@ dnl ================================================================
 dnl Dah Da!
 dnl ================================================================
 AC_OUTPUT(
-Makefile 
+Makefile
 rig/Makefile
 rig/rig.pc
 examples/Makefile
+examples/editor/Makefile
 data/Makefile
-editor/Makefile
 )
 

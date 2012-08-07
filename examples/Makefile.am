@@ -1,5 +1,9 @@
 include $(top_srcdir)/build/autotools/Makefile.am.silent
 
+if !HAVE_ANDROID
+SUBDIRS = editor
+endif
+
 INCLUDES = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rig \
