@@ -56,6 +56,8 @@ struct _RigEntity
 
   GPtrArray *components;
 
+  CoglPipeline *pipeline_cache;
+
   RigSimpleIntrospectableProps introspectable;
   RigProperty properties[N_PROPS];
 
@@ -553,4 +555,20 @@ CoglBool
 rig_entity_get_cast_shadow (RigEntity *entity)
 {
   return entity->cast_shadow;
+}
+
+void
+rig_entity_set_pipeline_cache (RigEntity *entity,
+                               CoglPipeline *pipeline)
+{
+  if (entity->pipeline_cache)
+    cogl_object_unref (entity->pipeline_cache);
+
+  entity->pipeline_cache = cogl_object_ref (pipeline);
+}
+
+CoglPipeline *
+rig_entity_get_pipeline_cache (RigEntity *entity)
+{
+  return entity->pipeline_cache;
 }
