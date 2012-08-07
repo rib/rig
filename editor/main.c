@@ -843,14 +843,6 @@ catmull_rom_get_point (CatmullRom *cmr,
 
 #endif
 
-typedef struct _Bezier3D
-{
-  float p0[3];
-  float p1[3];
-  float p2[3];
-  float p3[3];
-} Bezier3D;
-
 typedef enum _State
 {
   STATE_NONE
@@ -875,8 +867,6 @@ struct _Data
 
   CoglPipeline *root_pipeline;
   CoglPipeline *default_pipeline;
-
-  Bezier3D bezier;
 
   State state;
 
@@ -1034,170 +1024,6 @@ static RigPropertySpec data_propert_specs[] = {
 #endif
   { 0 }
 };
-
-#if 1
-static void
-bezier_3d_get_point (Bezier3D *bezier,
-                     float t,
-                     float *result)
-{
-  float u = 1 - t;
-  float tt = t * t;
-  float uu = u * u;
-  float uuu = uu * u;
-  float ttt = tt * t;
-
-  memcpy (result, bezier->p0, sizeof (float) * 3);
-  cogl_vector3_multiply_scalar (result, uuu); /* first term */
-
-#define ADD_TERM(R, FACTOR, P) \
-  do { \
-      float factor = (FACTOR); \
-      R[0] += factor * P[0]; \
-      R[1] += factor * P[1]; \
-      R[2] += factor * P[2]; \
-  } while (0)
-
-  ADD_TERM (result, 3 * uu * t, bezier->p1); /* second term */
-  ADD_TERM (result, 3 * u * tt, bezier->p2); /* third term */
-  ADD_TERM (result, ttt, bezier->p3); /* fourth term */
-
-#undef ADD_TERM
-}
-#endif
-
-#if 0
-XYZ CubicBezier(XYZ p0,XYZ p1,XYZ p2,XYZ p3, double mu)
-{
-   XYZ a,b,c,p;
-
-   c.x = 3 * (p1.x - p0.x);
-   c.y = 3 * (p1.y - p0.y);
-   c.z = 3 * (p1.z - p0.z);
-   b.x = 3 * (p2.x - p1.x) - c.x;
-   b.y = 3 * (p2.y - p1.y) - c.y;
-   b.z = 3 * (p2.z - p1.z) - c.z;
-   a.x = p3.x - p0.x - c.x - b.x;
-   a.y = p3.y - p0.y - c.y - b.y;
-   a.z = p3.z - p0.z - c.z - b.z;
-
-   p.x = a.x * mu * mu * mu + b.x * mu * mu + c.x * mu + p0.x;
-   p.y = a.y * mu * mu * mu + b.y * mu * mu + c.y * mu + p0.y;
-   p.z = a.z * mu * mu * mu + b.z * mu * mu + c.z * mu + p0.z;
-
-   return(p);
-}
-#endif
-
-
-
-static void
-bezier_3d_init (Bezier3D *bezier,
-                float *points)
-{
-  memcpy (bezier->p0, points, sizeof (float) * 3);
-  memcpy (bezier->p1, points + 3, sizeof (float) * 3);
-  memcpy (bezier->p2, points + 6, sizeof (float) * 3);
-  memcpy (bezier->p3, points + 9, sizeof (float) * 3);
-}
-
-#if 0
-#define BEZIER_MAX_RECURSE_DEPTH 16
-static void
-bezier_3d_sub (CoglPath *path,
-               Bezier3D *cubic)
-{
-  Bezier3D cubics[BEZIER_MAX_RECURSE_DEPTH];
-  Bezier3D *cleft;
-  Bezier3D *cright;
-  Bezier3D *c;
-  float dif1[3];
-  float dif2[3];
-  float mm[3];
-  float c1[3];
-  float c2[3];
-  float c3[3];
-  float c4[3];
-  float c5[3];
-  int cindex;
-
-  /* Put first curve on stack */
-  cubics[0] = *cubic;
-  cindex =  0;
-
-  while (cindex >= 0)
-    {
-      c = &cubics[cindex];
-
-      /* Calculate distance of control points from their
-       * counterparts on the line between end points */
-      dif1.x = (c->p2.x * 3) - (c->p1.x * 2) - c->p4.x;
-      dif1.y = (c->p2.y * 3) - (c->p1.y * 2) - c->p4.y;
-      dif2.x = (c->p3.x * 3) - (c->p4.x * 2) - c->p1.x;
-      dif2.y = (c->p3.y * 3) - (c->p4.y * 2) - c->p1.y;
-
-      if (dif1.x < 0)
-        dif1.x = -dif1.x;
-      if (dif1.y < 0)
-        dif1.y = -dif1.y;
-      if (dif2.x < 0)
-        dif2.x = -dif2.x;
-      if (dif2.y < 0)
-        dif2.y = -dif2.y;
-
-
-      /* Pick the greatest of two distances */
-      if (dif1.x < dif2.x) dif1.x = dif2.x;
-      if (dif1.y < dif2.y) dif1.y = dif2.y;
-
-      /* Cancel if the curve is flat enough */
-      if (dif1.x + dif1.y <= 1.0 ||
-	  cindex == BEZIER_MAX_RECURSE_DEPTH-1)
-	{
-	  /* Add subdivision point (skip last) */
-	  if (cindex == 0)
-            return;
-
-	  add_node (nodes, FALSE, c->p4.x, c->p4.y);
-
-	  --cindex;
-
-          continue;
-	}
-
-      /* Left recursion goes on top of stack! */
-      cright = c; cleft = &cubics[++cindex];
-
-      /* Subdivide into 2 sub-curves */
-      c1.x = ((c->p1.x + c->p2.x) / 2);
-      c1.y = ((c->p1.y + c->p2.y) / 2);
-      mm.x = ((c->p2.x + c->p3.x) / 2);
-      mm.y = ((c->p2.y + c->p3.y) / 2);
-      c5.x = ((c->p3.x + c->p4.x) / 2);
-      c5.y = ((c->p3.y + c->p4.y) / 2);
-
-      c2.x = ((c1.x + mm.x) / 2);
-      c2.y = ((c1.y + mm.y) / 2);
-      c4.x = ((mm.x + c5.x) / 2);
-      c4.y = ((mm.y + c5.y) / 2);
-
-      c3.x = ((c2.x + c4.x) / 2);
-      c3.y = ((c2.y + c4.y) / 2);
-
-      /* Add left recursion to stack */
-      cleft->p1 = c->p1;
-      cleft->p2 = c1;
-      cleft->p3 = c2;
-      cleft->p4 = c3;
-
-      /* Add right recursion to stack */
-      cright->p1 = c3;
-      cright->p2 = c4;
-      cright->p3 = c5;
-      cright->p4 = c->p4;
-    }
-}
-#endif
 
 #if 0
 static UIViewport *
