@@ -58,9 +58,10 @@ rig_mesh_renderer_new_from_template (RigContext *ctx,
 void
 rig_mesh_renderer_free (RigMeshRenderer *renderer);
 
-uint8_t *
+void *
 rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
-                                   size_t *stride);
+                                   size_t *stride,
+                                   int *n_vertices);
 
 int
 rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer);

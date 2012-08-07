@@ -250,4 +250,23 @@ typedef struct _RigPrimableVTable
 CoglPrimitive *
 rig_primable_get_primitive (RigObject *object);
 
+
+/*
+ *
+ * Pickable Interface
+ * (E.g. implemented by all geometry components)
+ *
+ */
+typedef struct _RigPickableVTable
+{
+  void *(*get_vertex_data)(void *object,
+                           size_t *stride,
+                           int *n_vertices);
+} RigPickableVTable;
+
+void *
+rig_pickable_get_vertex_data (RigObject *object,
+                              size_t *stride,
+                              int *n_vertices);
+
 #endif /* _RIG_INTERFACES_H_ */

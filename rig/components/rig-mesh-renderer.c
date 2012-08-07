@@ -304,6 +304,10 @@ static RigPrimableVTable _rig_mesh_renderer_primable_vtable = {
   .get_primitive = rig_mesh_renderer_get_primitive
 };
 
+static RigPickableVTable _rig_mesh_renderer_pickable_vtable = {
+  .get_vertex_data = rig_mesh_renderer_get_vertex_data
+};
+
 void
 _rig_mesh_renderer_init_type (void)
 {
@@ -316,6 +320,10 @@ _rig_mesh_renderer_init_type (void)
                           RIG_INTERFACE_ID_PRIMABLE,
                           0, /* no associated properties */
                           &_rig_mesh_renderer_primable_vtable);
+  rig_type_add_interface (&rig_mesh_renderer_type,
+                          RIG_INTERFACE_ID_PICKABLE,
+                          0, /* no associated properties */
+                          &_rig_mesh_renderer_pickable_vtable);
 }
 
 static RigMeshRenderer *
@@ -399,12 +407,16 @@ void rig_mesh_renderer_free (RigMeshRenderer *renderer)
   g_slice_free (RigMeshRenderer, renderer);
 }
 
-uint8_t *
+void *
 rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
-                                   size_t          *stride)
+                                   size_t *stride,
+                                   int *n_vertices)
 {
   if (stride)
     *stride = renderer->stride;
+
+  if (*n_vertices)
+    *n_vertices = renderer->n_vertices;
 
   return renderer->vertex_data;
 }

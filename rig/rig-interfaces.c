@@ -537,3 +537,15 @@ rig_primable_get_primitive (RigObject *object)
 
   return primable->get_primitive (object);
 }
+
+void *
+rig_pickable_get_vertex_data (RigObject *object,
+                              size_t *stride,
+                              int *n_vertices)
+{
+  RigPickableVTable *pickable =
+    rig_object_get_vtable (object, RIG_INTERFACE_ID_PICKABLE);
+
+  return pickable->get_vertex_data (object, stride, n_vertices);
+}
+

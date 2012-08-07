@@ -1369,8 +1369,8 @@ pick (Data  *data,
 
       /* intersect the transformed ray with the mesh data */
       vertex_data =
-        rig_mesh_renderer_get_vertex_data (RIG_MESH_RENDERER (mesh), &stride);
-      n_vertices = rig_mesh_renderer_get_n_vertices (RIG_MESH_RENDERER (mesh));
+        rig_mesh_renderer_get_vertex_data (RIG_MESH_RENDERER (mesh),
+                                           &stride, &n_vertices);
 
       hit = rig_util_intersect_mesh (vertex_data,
                                      n_vertices,

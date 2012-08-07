@@ -262,7 +262,7 @@ rig_util_intersect_mesh (const void       *vertices,
   bool hit, found = FALSE;
 
   g_return_val_if_fail (n_points % 3 == 0, FALSE);
-  g_return_val_if_fail (stride > sizeof (Point3f), FALSE);
+  g_return_val_if_fail (stride >= sizeof (Point3f), FALSE);
 
   points = (uint8_t *) vertices;
   for (i = 0; i < n_points / 3; i++, points += stride * 3)

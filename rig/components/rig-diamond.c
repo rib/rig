@@ -280,6 +280,10 @@ static RigPrimableVTable _rig_diamond_primable_vtable = {
   .get_primitive = rig_diamond_get_primitive
 };
 
+static RigPickableVTable _rig_diamond_pickable_vtable = {
+  .get_vertex_data = rig_diamond_get_vertex_data
+};
+
 void
 _rig_diamond_init_type (void)
 {
@@ -292,6 +296,10 @@ _rig_diamond_init_type (void)
                           RIG_INTERFACE_ID_PRIMABLE,
                           0, /* no associated properties */
                           &_rig_diamond_primable_vtable);
+  rig_type_add_interface (&rig_diamond_type,
+                          RIG_INTERFACE_ID_PICKABLE,
+                          0, /* no associated properties */
+                          &_rig_diamond_pickable_vtable);
 }
 
 RigDiamond *
@@ -312,6 +320,25 @@ rig_diamond_new (RigContext *ctx,
   /* XXX: It could be worth maintaining a cache of diamond slices
    * indexed by the <size, tex_width, tex_height> tuple... */
   diamond->slice = diamond_slice_new (ctx, size, tex_width, tex_height);
+
+  diamond->pick_vertices[0].x = 0;
+  diamond->pick_vertices[0].y = 0;
+  diamond->pick_vertices[1].x = 0;
+  diamond->pick_vertices[1].y = size;
+  diamond->pick_vertices[2].x = size;
+  diamond->pick_vertices[2].y = size;
+  diamond->pick_vertices[3] = diamond->pick_vertices[0];
+  diamond->pick_vertices[4] = diamond->pick_vertices[2];
+  diamond->pick_vertices[5].x = size;
+  diamond->pick_vertices[5].y = 0;
+
+  cogl_matrix_transform_points (&diamond->slice->rotate_matrix,
+                                2,
+                                sizeof (CoglVertexP3),
+                                diamond->pick_vertices,
+                                sizeof (CoglVertexP3),
+                                diamond->pick_vertices,
+                                6);
 
   return diamond;
 }
@@ -345,3 +372,16 @@ rig_diamond_apply_mask (RigDiamond *diamond,
                                    ctx->circle_texture);
 }
 
+void *
+rig_diamond_get_vertex_data (RigDiamond *diamond,
+                             size_t *stride,
+                             int *n_vertices)
+{
+  if (stride)
+    *stride = sizeof (CoglVertexP3);
+
+  if (*n_vertices)
+    *n_vertices = 6;
+
+  return diamond->pick_vertices;
+}

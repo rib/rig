@@ -61,6 +61,8 @@ struct _RigDiamond
 
   RigDiamondSlice *slice;
 
+  CoglVertexP3 pick_vertices[6];
+
   int size;
 };
 
@@ -85,5 +87,10 @@ rig_diamond_get_primitive (RigObject *object);
 void
 rig_diamond_apply_mask (RigDiamond *diamond,
                         CoglPipeline *pipeline);
+
+void *
+rig_diamond_get_vertex_data (RigDiamond *diamond,
+                             size_t *stride,
+                             int *n_vertices);
 
 #endif /* __RIG_DIAMOND_H__ */
