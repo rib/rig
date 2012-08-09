@@ -73,7 +73,8 @@ librig_la_SOURCES = \
     rig-flags.h \
     rig-stack.c \
     rig-stack.h \
-    rig-queue.h \
+    rig-list.c \
+    rig-list.h \
     rig-util.c \
     rig-timeline.c \
     rig-display-list.c \
