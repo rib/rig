@@ -862,6 +862,8 @@ struct _Data
   RigObject *root;
   RigObject *scene;
 
+  CoglMatrix identity;
+
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
 
@@ -976,6 +978,7 @@ struct _Data
 
   float grab_x;
   float grab_y;
+  float entity_grab_pos[3];
   RigInputCallback key_focus_callback;
 
   GList *assets;
@@ -2463,14 +2466,13 @@ unproject_window_coord (RigCamera *camera,
 
   /* Convert item z into NDC z */
   {
-    //float x = 0, y = 0, z = 0, w = 1;
-    float z = 0, w = 1;
     float tmp_x, tmp_y, tmp_z;
     const CoglMatrix *m = modelview;
+    float z, w;
 
-    tmp_x = m->xw;
-    tmp_y = m->yw;
-    tmp_z = m->zw;
+    tmp_x = m->xz * object_coord_z + m->xw;
+    tmp_y = m->yz * object_coord_z + m->yw;
+    tmp_z = m->zz * object_coord_z + m->zw;
 
     m = projection;
     z = m->zx * tmp_x + m->zy * tmp_y + m->zz * tmp_z + m->zw;
@@ -2502,6 +2504,86 @@ unproject_window_coord (RigCamera *camera,
   *x = eye_x;
   *y = eye_y;
   //*z = eye_z;
+}
+
+typedef struct _EntityGrabClosure
+{
+  Data *data;
+  RigEntity *entity;
+  float x_vec[3];
+  float y_vec[3];
+} EntityGrabClosure;
+
+static RigInputEventStatus
+entity_grab_input_cb (RigInputEvent *event,
+                      void *user_data)
+
+{
+  EntityGrabClosure *closure = user_data;
+  RigEntity *entity = closure->entity;
+  Data *data = closure->data;
+
+  g_print ("Entity grab event\n");
+
+  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      float x = rig_motion_event_get_x (event);
+      float y = rig_motion_event_get_y (event);
+
+      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
+        {
+          Transition *transition = data->selected_transition;
+          float elapsed = rig_timeline_get_elapsed (data->timeline);
+          Path *path_x = transition_find_path (transition, "x");
+          Path *path_y = transition_find_path (transition, "y");
+          Path *path_z = transition_find_path (transition, "z");
+
+
+          path_insert_float (path_x, elapsed, rig_entity_get_x (entity));
+          path_insert_float (path_y, elapsed, rig_entity_get_y (entity));
+          path_insert_float (path_z, elapsed, rig_entity_get_z (entity));
+
+          rig_shell_ungrab_input (data->ctx->shell,
+                                  entity_grab_input_cb,
+                                  user_data);
+
+          g_slice_free (EntityGrabClosure, user_data);
+
+          rig_shell_queue_redraw (data->ctx->shell);
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+      else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
+        {
+          float move_x, move_y;
+          float dx, dy, dz;
+          float *x_vec = closure->x_vec;
+          float *y_vec = closure->y_vec;
+
+          move_x = x - data->grab_x;
+          move_y = y - data->grab_y;
+
+          dx = x_vec[0] * move_x;
+          dy = x_vec[1] * move_x;
+          dz = x_vec[2] * move_x;
+
+          dx += y_vec[0] * move_y;
+          dy += y_vec[1] * move_y;
+          dz += y_vec[2] * move_y;
+
+
+          rig_entity_set_translate (entity,
+                                    data->entity_grab_pos[0] + dx,
+                                    data->entity_grab_pos[1] + dy,
+                                    data->entity_grab_pos[2] + dz);
+
+          rig_shell_queue_redraw (data->ctx->shell);
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
 static RigInputEventStatus
@@ -2685,19 +2767,26 @@ update_tool_list (Data *data)
   ToolListState state;
 
   if (data->tool_list)
-    rig_graphable_remove_child (data->tool_list);
+    {
+      rig_graphable_remove_child (data->tool_list);
+      data->tool_list = NULL;
+    }
 
-  data->tool_list = rig_graph_new (data->ctx, NULL);
+  if (data->selected_entity)
+    {
+      data->tool_list = rig_graph_new (data->ctx, NULL);
 
-  doc_node = rig_ui_viewport_get_doc_node (data->tool_vp);
-  rig_graphable_add_child (doc_node, data->tool_list);
-  rig_ref_countable_unref (data->tool_list);
+      doc_node = rig_ui_viewport_get_doc_node (data->tool_vp);
+      rig_graphable_add_child (doc_node, data->tool_list);
+      rig_ref_countable_unref (data->tool_list);
 
-  state.data = data;
-  state.n_items = 0;
-  state.tool_list = data->tool_list;
+      state.data = data;
+      state.n_items = 0;
+      state.tool_list = data->tool_list;
 
-  rig_introspectable_foreach_property (data->selected_entity, add_item_property, &state);
+      rig_introspectable_foreach_property (data->selected_entity,
+                                           add_item_property, &state);
+    }
 }
 
 
@@ -3572,6 +3661,117 @@ main_input_cb (RigInputEvent *event,
             rig_tool_update (data->tool, NULL);
 
           update_tool_list (data);
+
+          /* If we have selected an entity then initiate a grab so the
+           * entity can be moved with the mouse...
+           */
+          if (data->selected_entity)
+            {
+              EntityGrabClosure *closure = g_slice_new (EntityGrabClosure);
+              RigEntity *entity = data->selected_entity;
+              RigEntity *parent = rig_graphable_get_parent (entity);
+              CoglMatrix parent_transform;
+              CoglMatrix inverse_transform;
+              RigCamera *camera = rig_input_event_get_camera (event);
+              float origin[3] = {0, 0, 0};
+              float unit_x[3] = {1, 0, 0};
+              float unit_y[3] = {0, 1, 0};
+              float eye_origin[3];
+              float eye_x[3];
+              float eye_y[3];
+              float x_vec[3];
+              float y_vec[3];
+              float entity_x, entity_y, entity_z;
+              float w;
+
+              if (!parent)
+                return RIG_INPUT_EVENT_STATUS_HANDLED;
+
+              data->grab_x = rig_motion_event_get_x (event);
+              data->grab_y = rig_motion_event_get_y (event);
+
+              rig_entity_get_position (entity, data->entity_grab_pos);
+
+              rig_graphable_get_modelview (parent, camera, &parent_transform);
+
+              if (!cogl_matrix_get_inverse (&parent_transform, &inverse_transform))
+                {
+                  g_warning ("Failed to get inverse transform of entity");
+                  return RIG_INPUT_EVENT_STATUS_HANDLED;
+                }
+
+              /* Find the z of our selected entity in eye coordinates */
+              entity_x = 0;
+              entity_y = 0;
+              entity_z = 0;
+              w = 1;
+              cogl_matrix_transform_point (&parent_transform,
+                                           &entity_x, &entity_y, &entity_z, &w);
+
+              //g_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
+
+              /* Convert unit x and y vectors in screen coordinate
+               * into points in eye coordinates with the same z depth
+               * as our selected entity */
+
+              unproject_window_coord (camera,
+                                      &data->identity, &data->identity,
+                                      entity_z, &origin[0], &origin[1]);
+              origin[2] = entity_z;
+              //g_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
+
+              unproject_window_coord (camera,
+                                      &data->identity, &data->identity,
+                                      entity_z, &unit_x[0], &unit_x[1]);
+              unit_x[2] = entity_z;
+              //g_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
+
+              unproject_window_coord (camera,
+                                      &data->identity, &data->identity,
+                                      entity_z, &unit_y[0], &unit_y[1]);
+              unit_y[2] = entity_z;
+              //g_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
+
+
+              /* Transform our points from eye coordinates into entity
+               * coordinates and convert into input mapping vectors */
+
+              w = 1;
+              cogl_matrix_transform_point (&inverse_transform,
+                                           &origin[0], &origin[1], &origin[2], &w);
+              w = 1;
+              cogl_matrix_transform_point (&inverse_transform,
+                                           &unit_x[0], &unit_x[1], &unit_x[2], &w);
+              w = 1;
+              cogl_matrix_transform_point (&inverse_transform,
+                                           &unit_y[0], &unit_y[1], &unit_y[2], &w);
+
+
+              x_vec[0] = unit_x[0] - origin[0];
+              x_vec[1] = unit_x[1] - origin[1];
+              x_vec[2] = unit_x[2] - origin[2];
+
+              //g_print (" =========================== Entity coords: x_vec = %f, %f, %f\n",
+              //         x_vec[0], x_vec[1], x_vec[2]);
+
+              y_vec[0] = unit_y[0] - origin[0];
+              y_vec[1] = unit_y[1] - origin[1];
+              y_vec[2] = unit_y[2] - origin[2];
+
+              //g_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
+              //         y_vec[0], y_vec[1], y_vec[2]);
+
+              closure->data = data;
+              closure->entity = entity;
+              memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
+              memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
+              rig_shell_grab_input (data->ctx->shell,
+                                    rig_input_event_get_camera (event),
+                                    entity_grab_input_cb,
+                                    closure);
+            }
+
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
           state == RIG_BUTTON_STATE_2)
@@ -4266,6 +4466,8 @@ test_init (RigShell *shell, void *user_data)
   _rig_test_list_splice ();
 #endif
 
+  cogl_matrix_init_identity (&data->identity);
+
   data->debug_pick_ray = 1;
 
   for (i = 0; i < DATA_N_PROPS; i++)
@@ -4489,7 +4691,9 @@ test_init (RigShell *shell, void *user_data)
 
   data->main_input_region =
     rig_input_region_new_rectangle (0, 0, 0, 0, main_input_region_cb, data);
-  rig_camera_add_input_region (data->camera,
+  rig_input_region_set_hud_mode (data->main_input_region, TRUE);
+  //rig_camera_add_input_region (data->camera,
+  rig_camera_add_input_region (data->main_camera_component,
                                data->main_input_region);
 
   update_camera_position (data);
