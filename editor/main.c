@@ -897,7 +897,7 @@ struct _Data
   RigTransform *main_transform;
   RigTransform *bottom_bar_transform;
 
-  RigTransform *screen_area_transform;
+  //RigTransform *screen_area_transform;
 
   CoglPrimitive *grid_prim;
   CoglAttribute *circle_node_attribute;
@@ -945,10 +945,13 @@ struct _Data
   CoglMatrix main_view;
   float z_2d;
 
-  RigEntity *main_camera_rig0; /* move to origin */
-  RigEntity *main_camera_rig1; /* armature rotate rotate */
-  RigEntity *main_camera_rig2; /* negative offset */
-  RigEntity *main_camera_rig3; /* armature length */
+  RigEntity *main_camera_to_origin; /* move to origin */
+  RigEntity *main_camera_rotate; /* armature rotate rotate */
+  RigEntity *main_camera_origin_offset; /* negative offset */
+  RigEntity *main_camera_armature; /* armature length */
+  RigEntity *main_camera_dev_scale; /* scale to fit device coords */
+  RigEntity *main_camera_screen_pos; /* position screen in edit view */
+  RigEntity *main_camera_2d_view; /* setup 2d view, origin top-left */
 
   RigEntity *main_camera;
   RigCamera *main_camera_component;
@@ -1445,10 +1448,10 @@ camera_update_view (Data *data, RigEntity *camera, CoglBool shadow_map)
   view = data->main_view;
 
   /* translate into main_area */
-  cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->screen_area_transform));
+  //cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->screen_area_transform));
 
   /* scale to device coordinates */
-  cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->device_transform));
+  //cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->device_transform));
 
 #if 1
   rig_graphable_get_transform (camera, &transform);
@@ -3444,21 +3447,21 @@ update_camera_position (Data *data)
                                &w);
 #endif
 
-  rig_entity_translate (data->main_camera_rig0,
+  rig_entity_translate (data->main_camera_to_origin,
                         data->origin[0] - relative_origin[0],
                         data->origin[1] - relative_origin[1],
                         data->origin[2] - relative_origin[2]);
 
 #endif
   float pos[3] = {0, 0, 0};
-  rig_entity_set_position (data->main_camera_rig0, pos);
-  rig_entity_translate (data->main_camera_rig0,
+  rig_entity_set_position (data->main_camera_to_origin, pos);
+  rig_entity_translate (data->main_camera_to_origin,
                         data->origin[0],
                         data->origin[1],
                         data->origin[2]);
 
-  rig_entity_set_position (data->main_camera_rig2, pos);
-  rig_entity_translate (data->main_camera_rig2,
+  rig_entity_set_position (data->main_camera_origin_offset, pos);
+  rig_entity_translate (data->main_camera_origin_offset,
                         -data->origin[0],
                         -data->origin[1],
                         -data->origin[2]);
@@ -3572,7 +3575,7 @@ main_input_cb (RigInputEvent *event,
           state == RIG_BUTTON_STATE_2)
         {
           //data->saved_rotation = *rig_entity_get_rotation (data->main_camera);
-          data->saved_rotation = *rig_entity_get_rotation (data->main_camera_rig1);
+          data->saved_rotation = *rig_entity_get_rotation (data->main_camera_rotate);
 
           cogl_quaternion_init_identity (&data->arcball.q_drag);
 
@@ -3614,12 +3617,22 @@ main_input_cb (RigInputEvent *event,
           x_vec[1] = origin[1] - unit_x[1];
           x_vec[2] = origin[2] - unit_x[2];
 
+            {
+              CoglMatrix transform;
+              rig_graphable_get_transform (data->main_camera, &transform);
+              cogl_debug_matrix_print (&transform);
+            }
+          g_print (" =========================== x_vec = %f, %f, %f\n",
+                   x_vec[0], x_vec[1], x_vec[2]);
+
           y_vec[0] = origin[0] - unit_y[0];
           y_vec[1] = origin[1] - unit_y[1];
           y_vec[2] = origin[2] - unit_y[2];
 
-          dx = (x - data->grab_x) * (data->main_camera_z / 100.0f);
-          dy = -(y - data->grab_y) * (data->main_camera_z / 100.0f);
+          //dx = (x - data->grab_x) * (data->main_camera_z / 100.0f);
+          //dy = -(y - data->grab_y) * (data->main_camera_z / 100.0f);
+          dx = (x - data->grab_x);
+          dy = -(y - data->grab_y);
 
           translation[0] = dx * x_vec[0];
           translation[1] = dx * x_vec[1];
@@ -3662,7 +3675,7 @@ main_input_cb (RigInputEvent *event,
                                     &data->arcball.q_drag);
 
           //rig_entity_set_rotation (data->main_camera, &new_rotation);
-          rig_entity_set_rotation (data->main_camera_rig1, &new_rotation);
+          rig_entity_set_rotation (data->main_camera_rotate, &new_rotation);
 
           print_quaternion (&new_rotation, "New Rotation");
 
@@ -3737,6 +3750,107 @@ main_input_region_cb (RigInputRegion *region,
   return main_input_cb (event, user_data);
 }
 
+void
+matrix_view_2d_in_frustum (CoglMatrix *matrix,
+                           float left,
+                           float right,
+                           float bottom,
+                           float top,
+                           float z_near,
+                           float z_2d,
+                           float width_2d,
+                           float height_2d)
+{
+  float left_2d_plane = left / z_near * z_2d;
+  float right_2d_plane = right / z_near * z_2d;
+  float bottom_2d_plane = bottom / z_near * z_2d;
+  float top_2d_plane = top / z_near * z_2d;
+
+  float width_2d_start = right_2d_plane - left_2d_plane;
+  float height_2d_start = top_2d_plane - bottom_2d_plane;
+
+  /* Factors to scale from framebuffer geometry to frustum
+   * cross-section geometry. */
+  float width_scale = width_2d_start / width_2d;
+  float height_scale = height_2d_start / height_2d;
+
+  //cogl_matrix_translate (matrix,
+  //                       left_2d_plane, top_2d_plane, -z_2d);
+  cogl_matrix_translate (matrix,
+                         left_2d_plane, top_2d_plane, 0);
+
+  cogl_matrix_scale (matrix, width_scale, -height_scale, width_scale);
+}
+
+/* Assuming a symmetric perspective matrix is being used for your
+ * projective transform then for a given z_2d distance within the
+ * projective frustrum this convenience function determines how
+ * we can use an entity transform to move from a normalized coordinate
+ * space with (0,0) in the center of the screen to a non-normalized
+ * 2D coordinate space with (0,0) at the top-left of the screen.
+ *
+ * Note: It assumes the viewport aspect ratio matches the desired
+ * aspect ratio of the 2d coordinate space which is why we only
+ * need to know the width of the 2d coordinate space.
+ *
+ */
+void
+get_entity_transform_for_2d_view (float fov_y,
+                                  float aspect,
+                                  float z_near,
+                                  float z_2d,
+                                  float width_2d,
+                                  float *dx,
+                                  float *dy,
+                                  float *dz,
+                                  CoglQuaternion *rotation,
+                                  float *scale)
+{
+  float top = z_near * tan (fov_y * G_PI / 360.0);
+  float left = -top * aspect;
+  float right = top * aspect;
+
+  float left_2d_plane = left / z_near * z_2d;
+  float right_2d_plane = right / z_near * z_2d;
+  float top_2d_plane = top / z_near * z_2d;
+
+  float width_2d_start = right_2d_plane - left_2d_plane;
+
+  *dx = left_2d_plane;
+  *dy = top_2d_plane;
+  *dz = 0;
+  //*dz = -z_2d;
+
+  /* Factors to scale from framebuffer geometry to frustum
+   * cross-section geometry. */
+  *scale = width_2d_start / width_2d;
+
+  cogl_quaternion_init_from_z_rotation (rotation, 180);
+}
+
+static void
+matrix_view_2d_in_perspective (CoglMatrix *matrix,
+                               float fov_y,
+                               float aspect,
+                               float z_near,
+                               float z_2d,
+                               float width_2d,
+                               float height_2d)
+{
+  float top = z_near * tan (fov_y * G_PI / 360.0);
+
+  matrix_view_2d_in_frustum (matrix,
+                             -top * aspect,
+                             top * aspect,
+                             -top,
+                             top,
+                             z_near,
+                             z_2d,
+                             width_2d,
+                             height_2d);
+}
+
+
 static void
 allocate (Data *data)
 {
@@ -3771,37 +3885,50 @@ allocate (Data *data)
   screen_aspect = DEVICE_WIDTH / DEVICE_HEIGHT;
   main_aspect = data->main_width / data->main_height;
 
-  rig_transform_init_identity (data->screen_area_transform);
+  //rig_transform_init_identity (data->screen_area_transform);
 
   if (screen_aspect < main_aspect) /* screen is slimmer and taller than the main area */
     {
       data->screen_area_height = data->main_height;
       data->screen_area_width = data->screen_area_height * screen_aspect;
 
-      rig_transform_translate (data->screen_area_transform,
-                               (data->main_width / 2.0) - (data->screen_area_width / 2.0),
-                               0, 0);
+      //rig_transform_translate (data->screen_area_transform,
+      //                         (data->main_width / 2.0) - (data->screen_area_width / 2.0),
+      //                         0, 0);
+      rig_entity_set_translate (data->main_camera_screen_pos,
+                                -(data->main_width / 2.0) + (data->screen_area_width / 2.0),
+                                0, 0);
     }
   else
     {
       data->screen_area_width = data->main_width;
       data->screen_area_height = data->screen_area_width / screen_aspect;
 
+#if 0
       rig_transform_translate (data->screen_area_transform,
                                0,
                                (data->main_height / 2.0) - (data->screen_area_height / 2.0),
                                0);
+#endif
+      rig_entity_set_translate (data->main_camera_screen_pos,
+                                0,
+                                -(data->main_height / 2.0) + (data->screen_area_height / 2.0),
+                                0);
     }
-
-  rig_transform_init_identity (data->device_transform);
 
   /* NB: We know the screen area matches the device aspect ratio so we can use
    * a uniform scale here... */
   device_scale = data->screen_area_width / DEVICE_WIDTH;
+
+#if 0
+  rig_transform_init_identity (data->device_transform);
   rig_transform_scale (data->device_transform,
                        device_scale,
                        device_scale,
                        device_scale);
+#endif
+
+  rig_entity_set_scale (data->main_camera_dev_scale, 1.0 / device_scale);
 
   /* Setup projection for main content view */
   {
@@ -3815,14 +3942,16 @@ allocate (Data *data)
     z_far = 100;
 #endif
     CoglMatrix projection;
+    float x = 0, y = 0, z_2d = 30, w = 1;
+    CoglMatrix inverse;
 
-    data->z_2d = 30; /* position to 2d plane */
+    data->z_2d = z_2d; /* position to 2d plane */
 
     cogl_matrix_init_identity (&data->main_view);
-    cogl_matrix_view_2d_in_perspective (&data->main_view,
-                                        fovy, aspect, z_near, data->z_2d,
-                                        data->main_width,
-                                        data->main_height);
+    matrix_view_2d_in_perspective (&data->main_view,
+                                   fovy, aspect, z_near, data->z_2d,
+                                   data->main_width,
+                                   data->main_height);
 #if 0
     rig_camera_set_view_transform (data->main_camera_component, &data->main_view);
 #endif
@@ -3854,6 +3983,38 @@ allocate (Data *data)
                                     data->top_bar_height,
                                     data->left_bar_width + data->main_width,
                                     data->top_bar_height + data->main_height);
+
+    /* Handle the z_2d translation by changing the length of the
+     * camera's armature.
+     */
+    cogl_matrix_get_inverse (&data->main_view,
+                             &inverse);
+    cogl_matrix_transform_point (&inverse,
+                                 &x, &y, &z_2d, &w);
+
+    data->main_camera_z = z_2d / device_scale;
+    rig_entity_set_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
+    //rig_entity_set_translate (data->main_camera_armature, 0, 0, 0);
+
+    {
+      float dx, dy, dz, scale;
+      CoglQuaternion rotation;
+
+      get_entity_transform_for_2d_view (fovy,
+                                        aspect,
+                                        z_near,
+                                        data->z_2d,
+                                        data->main_width,
+                                        &dx,
+                                        &dy,
+                                        &dz,
+                                        &rotation,
+                                        &scale);
+
+      rig_entity_set_translate (data->main_camera_2d_view, -dx, -dy, -dz);
+      rig_entity_set_rotation (data->main_camera_2d_view, &rotation);
+      rig_entity_set_scale (data->main_camera_2d_view, 1.0 / scale);
+    }
   }
 
 #if 0
@@ -4212,7 +4373,7 @@ test_init (RigShell *shell, void *user_data)
 
   data->timeline_vp = rig_ui_viewport_new (data->ctx, 0, 0, NULL);
 
-  data->screen_area_transform = rig_transform_new (data->ctx, NULL);
+  //data->screen_area_transform = rig_transform_new (data->ctx, NULL);
 
   data->device_transform = rig_transform_new (data->ctx, NULL);
 
@@ -4233,38 +4394,68 @@ test_init (RigShell *shell, void *user_data)
 
   data->scene = rig_graph_new (data->ctx, NULL);
 
-  data->main_camera_rig0 = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->scene, data->main_camera_rig0);
+  /* Conceptually we rig the camera to an armature with a pivot fixed
+   * at the current origin. This setup makes it straight forward to
+   * model user navigation by letting us change the length of the
+   * armature to handle zoom, rotating the armature to handle
+   * middle-click rotating the scene with the mouse and moving the
+   * position of the armature for shift-middle-click translations with
+   * the mouse.
+   *
+   * It also simplifies things if all the viewport setup for the
+   * camera is handled using entity transformations as opposed to
+   * mixing entity transforms with manual camera view transforms.
+   */
 
-  data->main_camera_rig1 = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_rig0, data->main_camera_rig1);
+  data->main_camera_to_origin = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->scene, data->main_camera_to_origin);
 
-  data->main_camera_rig2 = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_rig1, data->main_camera_rig2);
+  data->main_camera_rotate = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->main_camera_to_origin, data->main_camera_rotate);
 
-  data->main_camera_rig3 = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_rig2, data->main_camera_rig3);
+  data->main_camera_armature = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->main_camera_rotate, data->main_camera_armature);
+
+  data->main_camera_origin_offset = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->main_camera_armature, data->main_camera_origin_offset);
+
+  data->main_camera_dev_scale = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->main_camera_origin_offset, data->main_camera_dev_scale);
+
+  data->main_camera_screen_pos = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->main_camera_dev_scale, data->main_camera_screen_pos);
+
+  data->main_camera_2d_view = rig_entity_new (data->ctx, data->entity_next_id++);
+  //rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera_2d_view); FIXME
+
+  data->main_camera = rig_entity_new (data->ctx, data->entity_next_id++);
+  //rig_graphable_add_child (data->main_camera_2d_view, data->main_camera); FIXME
+  rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera);
 
   data->origin[0] = DEVICE_WIDTH / 2;
   data->origin[1] = DEVICE_HEIGHT / 2;
   data->origin[2] = 0;
 
-  rig_entity_translate (data->main_camera_rig0,
+  rig_entity_translate (data->main_camera_to_origin,
                         data->origin[0],
                         data->origin[1],
                         data->origin[2]);
                         //DEVICE_WIDTH / 2, (DEVICE_HEIGHT / 2), 0);
 
-  //rig_entity_rotate_z_axis (data->main_camera_rig0, 45);
+  //rig_entity_rotate_z_axis (data->main_camera_to_origin, 45);
 
-  rig_entity_translate (data->main_camera_rig2,
+  rig_entity_translate (data->main_camera_origin_offset,
                         -DEVICE_WIDTH / 2, -(DEVICE_HEIGHT / 2), 0);
 
   /* FIXME: currently we also do a z translation due to using
    * cogl_matrix_view_2d_in_perspective, we should stop using that api so we can
-   * do our z_2d translation here... */
+   * do our z_2d translation here...
+   *
+   * XXX: should the camera_z transform be done for the negative translate?
+   */
+  //device scale = 0.389062494
   data->main_camera_z = 0.f;
-  rig_entity_translate (data->main_camera_rig3, 0, 0, data->main_camera_z);
+  rig_entity_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
 
 #if 0
   {
@@ -4274,7 +4465,6 @@ test_init (RigShell *shell, void *user_data)
   }
 #endif
 
-  data->main_camera = rig_entity_new (data->ctx, data->entity_next_id++);
   //rig_entity_translate (data->main_camera, 100, 100, 0);
 
 #if 0
@@ -4299,8 +4489,6 @@ test_init (RigShell *shell, void *user_data)
     rig_input_region_new_rectangle (0, 0, 0, 0, main_input_region_cb, data);
   rig_camera_add_input_region (data->camera,
                                data->main_input_region);
-
-  rig_graphable_add_child (data->main_camera_rig3, data->main_camera);
 
   update_camera_position (data);
 
@@ -4391,7 +4579,7 @@ test_init (RigShell *shell, void *user_data)
 
 
   //rig_graphable_add_child (data->main_camera, data->screen_area_transform);
-  rig_graphable_add_child (data->screen_area_transform, data->device_transform);
+  //rig_graphable_add_child (data->screen_area_transform, data->device_transform);
 
   data->root =
     rig_graph_new (data->ctx,
@@ -4930,7 +5118,7 @@ asset_input_cb (RigInputRegion *region,
 
           data->items = g_list_prepend (data->items, item);
           data->selected_item = item;
-          rig_graphable_add_child (data->device_transform, item);
+          //rig_graphable_add_child (data->device_transform, item);
           rig_shell_queue_redraw (data->ctx->shell);
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -5732,6 +5920,7 @@ load (Data *data, const char *file)
 
   data->items_next_id = 0;
 
+#if 0
   for (l = data->items; l; l = l->next)
     {
       Item *item = l->data;
@@ -5741,6 +5930,7 @@ load (Data *data, const char *file)
 
       rig_graphable_add_child (data->device_transform, item);
     }
+#endif
 
   for (l = loader.entities; l; l = l->next)
     {
