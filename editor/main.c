@@ -2697,7 +2697,7 @@ update_tool_list (Data *data)
   state.n_items = 0;
   state.tool_list = data->tool_list;
 
-  rig_introspectable_foreach_property (data->selected_item, add_item_property, &state);
+  rig_introspectable_foreach_property (data->selected_entity, add_item_property, &state);
 }
 
 
@@ -2716,7 +2716,7 @@ item_input_region_cb (RigInputRegion *region,
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
         {
           data->selected_item = item;
-          update_tool_list (data);
+          //update_tool_list (data);
           rig_shell_grab_input (data->ctx->shell,
                                 rig_input_event_get_camera (event),
                                 item_grab_input_cb, item);
@@ -3570,6 +3570,8 @@ main_input_cb (RigInputEvent *event,
           rig_shell_queue_redraw (data->ctx->shell);
           if (data->selected_entity == NULL)
             rig_tool_update (data->tool, NULL);
+
+          update_tool_list (data);
         }
       else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
           state == RIG_BUTTON_STATE_2)
