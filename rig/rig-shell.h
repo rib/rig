@@ -266,6 +266,13 @@ void
 rig_shell_remove_input_region (RigShell *shell,
                                const RigInputRegion *region);
 
+/* If HUD mode is TRUE then the region isn't transformed by the
+ * camera's view transform so the region is in window coordinates.
+ */
+void
+rig_input_region_set_hud_mode (RigInputRegion *region,
+                               CoglBool hud_mode);
+
 typedef struct _RigScrollBar RigScrollBar;
 #define RIG_SCROLL_BAR(X) ((RigScrollBar *)X)
 

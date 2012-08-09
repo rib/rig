@@ -142,6 +142,7 @@ struct _RigInputRegion
 
   CoglBool has_transform;
   CoglMatrix transform;
+  CoglBool hud_mode;
 
   RigInputRegionCallback callback;
   void *user_data;
@@ -235,16 +236,9 @@ fully_transform_points (const CoglMatrix *modelview,
 #undef VIEWPORT_TRANSFORM_Y
 }
 
-/* Given an (x0,y0) (x1,y1) rectangle this transforms it into
- * a polygon in window coordinates that can be intersected
- * with input coordinates for picking.
- */
 static void
-rect_to_screen_polygon (RigShapeRectange *rectangle,
-                        const CoglMatrix *modelview,
-                        const CoglMatrix *projection,
-                        const float *viewport,
-                        float *poly)
+rectangle_poly_init (RigShapeRectange *rectangle,
+                     float *poly)
 {
   poly[0] = rectangle->x0;
   poly[1] = rectangle->y0;
@@ -265,6 +259,20 @@ rect_to_screen_polygon (RigShapeRectange *rectangle,
   poly[13] = rectangle->y0;
   poly[14] = 0;
   poly[15] = 1;
+}
+
+/* Given an (x0,y0) (x1,y1) rectangle this transforms it into
+ * a polygon in window coordinates that can be intersected
+ * with input coordinates for picking.
+ */
+static void
+rect_to_screen_polygon (RigShapeRectange *rectangle,
+                        const CoglMatrix *modelview,
+                        const CoglMatrix *projection,
+                        const float *viewport,
+                        float *poly)
+{
+  rectangle_poly_init (rectangle, poly);
 
   fully_transform_points (modelview,
                           projection,
@@ -361,6 +369,8 @@ rig_camera_pick_input_region (RigCamera *camera,
       cogl_matrix_multiply (&matrix, &region->transform, view);
       modelview = &matrix;
     }
+  else if (region->hud_mode)
+    modelview = &camera->ctx->identity_matrix;
   else
     modelview = view;
 
@@ -368,11 +378,16 @@ rig_camera_pick_input_region (RigCamera *camera,
     {
     case RIG_SHAPE_TYPE_RECTANGLE:
       {
-        rect_to_screen_polygon (&region->shape.rectangle,
-                                modelview,
-                                &camera->projection,
-                                camera->viewport,
-                                poly);
+        if (!region->hud_mode)
+          {
+            rect_to_screen_polygon (&region->shape.rectangle,
+                                    modelview,
+                                    &camera->projection,
+                                    camera->viewport,
+                                    poly);
+          }
+        else
+          rectangle_poly_init (&region->shape.rectangle, poly);
 
 #if 0
         g_print ("transformed input region\n");
@@ -577,6 +592,13 @@ rig_input_region_set_transform (RigInputRegion *region,
 
   region->transform = *matrix;
   region->has_transform = TRUE;
+}
+
+void
+rig_input_region_set_hud_mode (RigInputRegion *region,
+                               CoglBool hud_mode)
+{
+  region->hud_mode = hud_mode;
 }
 
 void
