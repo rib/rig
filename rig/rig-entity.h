@@ -165,6 +165,13 @@ rig_entity_translate (RigEntity *entity,
                       float tx,
                       float tz,
                       float ty);
+
+void
+rig_entity_set_translate (RigEntity *entity,
+                          float tx,
+                          float ty,
+                          float tz);
+
 void
 rig_entity_rotate_x_axis (RigEntity *entity,
                           float x_angle);

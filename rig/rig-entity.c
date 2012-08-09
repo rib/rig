@@ -478,6 +478,19 @@ rig_entity_translate (RigEntity *entity,
 }
 
 void
+rig_entity_set_translate (RigEntity *entity,
+                          float tx,
+                          float ty,
+                          float tz)
+{
+  entity->position.x = tx;
+  entity->position.y = ty;
+  entity->position.z = tz;
+
+  entity->dirty = TRUE;
+}
+
+void
 rig_entity_rotate_x_axis (RigEntity *entity,
                           float      x_angle)
 {
