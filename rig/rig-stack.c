@@ -49,7 +49,7 @@
  */
 
 #include "rig-stack.h"
-#include "rig-queue.h"
+#include "rig-list.h"
 
 #include <stdint.h>
 
@@ -57,18 +57,16 @@
 
 typedef struct _RigMemorySubStack RigMemorySubStack;
 
-RIG_TAILQ_HEAD (RigMemorySubStackList, RigMemorySubStack);
-
 struct _RigMemorySubStack
 {
-  RIG_TAILQ_ENTRY (RigMemorySubStack) list_node;
+  RigList list_node;
   size_t bytes;
   uint8_t *data;
 };
 
 struct _RigMemoryStack
 {
-  RigMemorySubStackList sub_stacks;
+  RigList sub_stacks;
 
   RigMemorySubStack *sub_stack;
   size_t sub_stack_offset;
@@ -89,7 +87,7 @@ rig_memory_stack_add_sub_stack (RigMemoryStack *stack,
 {
   RigMemorySubStack *sub_stack =
     rig_memory_sub_stack_alloc (sub_stack_bytes);
-  RIG_TAILQ_INSERT_TAIL (&stack->sub_stacks, sub_stack, list_node);
+  rig_list_insert (stack->sub_stacks.prev, &sub_stack->list_node);
   stack->sub_stack = sub_stack;
   stack->sub_stack_offset = 0;
 }
@@ -99,7 +97,7 @@ rig_memory_stack_new (size_t initial_size_bytes)
 {
   RigMemoryStack *stack = g_slice_new0 (RigMemoryStack);
 
-  RIG_TAILQ_INIT (&stack->sub_stacks);
+  rig_list_init (&stack->sub_stacks);
 
   rig_memory_stack_add_sub_stack (stack, initial_size_bytes);
 
@@ -124,9 +122,7 @@ rig_memory_stack_alloc (RigMemoryStack *stack, size_t bytes)
    * is made then we may need to skip over one or more of the
    * sub-stacks that are too small for the requested allocation
    * size... */
-  for (sub_stack = sub_stack->list_node.tqe_next;
-       sub_stack;
-       sub_stack = sub_stack->list_node.tqe_next)
+  rig_list_for_each (sub_stack, stack->sub_stack->list_node.next, list_node)
     {
       if (sub_stack->bytes >= bytes)
         {
@@ -143,11 +139,15 @@ rig_memory_stack_alloc (RigMemoryStack *stack, size_t bytes)
    * requested allocation if that's bigger.
    */
 
-  sub_stack = RIG_TAILQ_LAST (&stack->sub_stacks, RigMemorySubStackList);
+  sub_stack = rig_container_of (stack->sub_stacks.prev,
+                                sub_stack,
+                                list_node);
 
   rig_memory_stack_add_sub_stack (stack, MAX (sub_stack->bytes, bytes) * 2);
 
-  sub_stack = RIG_TAILQ_LAST (&stack->sub_stacks, RigMemorySubStackList);
+  sub_stack = rig_container_of (stack->sub_stacks.prev,
+                                sub_stack,
+                                list_node);
 
   stack->sub_stack_offset += bytes;
 
@@ -157,7 +157,9 @@ rig_memory_stack_alloc (RigMemoryStack *stack, size_t bytes)
 void
 rig_memory_stack_rewind (RigMemoryStack *stack)
 {
-  stack->sub_stack = RIG_TAILQ_FIRST (&stack->sub_stacks);
+  stack->sub_stack = rig_container_of (stack->sub_stacks.next,
+                                       stack->sub_stack,
+                                       list_node);
   stack->sub_stack_offset = 0;
 }
 
@@ -173,9 +175,7 @@ rig_memory_stack_free (RigMemoryStack *stack)
 {
   RigMemorySubStack *sub_stack;
 
-  for (sub_stack = stack->sub_stacks.tqh_first;
-       sub_stack;
-       sub_stack = sub_stack->list_node.tqe_next)
+  rig_list_for_each (sub_stack, &stack->sub_stacks, list_node)
     {
       rig_memory_sub_stack_free (sub_stack);
     }
