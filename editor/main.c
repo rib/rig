@@ -2137,7 +2137,7 @@ asset_new_texture (Data *data,
   asset->type = ASSET_TYPE_TEXTURE;
 
 #ifndef __ANDROID__
-  full_path = g_strconcat (_rig_project_dir, path, NULL);
+  full_path = g_build_filename (_rig_project_dir, path, NULL);
   asset->texture = rig_load_texture (data->ctx, full_path, &error);
   g_free (full_path);
 #else
@@ -3982,8 +3982,8 @@ test_init (RigShell *shell, void *user_data)
   data->circle_node_attribute =
     rig_create_circle_fan_p2 (data->ctx, 20, &data->circle_node_n_verts);
 
-  full_path = g_strconcat (RIG_SHARE_DIR, "light-bulb.png", NULL);
-  //full_path = g_strconcat (RIG_HANDSET_SHARE_DIR, "nine-slice-test.png", NULL);
+  full_path = g_build_filename (RIG_SHARE_DIR, "light-bulb.png", NULL);
+  //full_path = g_build_filename (RIG_HANDSET_SHARE_DIR, "nine-slice-test.png", NULL);
   data->light_icon = rig_load_texture (data->ctx, full_path, &error);
   g_free (full_path);
   if (!data->light_icon)
@@ -4314,7 +4314,7 @@ test_init (RigShell *shell, void *user_data)
 
       _rig_project_dir = _rig_handset_remaining_args[0];
 
-      ui = g_strconcat (_rig_handset_remaining_args[0], "/ui.xml");
+      ui = g_build_filename (_rig_handset_remaining_args[0], "ui.xml", NULL);
 
       load (data, ui);
       g_free (ui);
