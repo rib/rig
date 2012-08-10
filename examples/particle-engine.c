@@ -246,11 +246,11 @@ test_paint (RigShell *shell,
   rig_camera_flush (data->camera);
 
   paint_context.camera = data->camera;
-  rig_graphable_traverse (data->root,
-                          RIG_TRAVERSE_DEPTH_FIRST,
-                          pre_paint_cb,
-                          post_paint_cb,
-                          &paint_context);
+
+  rig_paint_graph_with_layers (data->root,
+                               pre_paint_cb,
+                               post_paint_cb,
+                               &paint_context);
 
   rig_camera_end_frame (data->camera);
 
