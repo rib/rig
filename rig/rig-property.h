@@ -83,7 +83,7 @@ typedef struct _RigPropertyValidationObject
 typedef union _RigPropertyValidation
 {
   RigPropertyValidationInteger int_range;
-  RigPropertyValidationInteger float_range;
+  RigPropertyValidationFloat float_range;
   RigPropertyValidationObject object;
   const RigUIEnum *ui_enum;
 } RigPropertyValidation;
