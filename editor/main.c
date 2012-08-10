@@ -3649,7 +3649,7 @@ main_input_cb (RigInputEvent *event,
             {
               CoglMatrix transform;
               rig_graphable_get_transform (data->main_camera, &transform);
-              cogl_debug_matrix_print (&transform);
+              //cogl_debug_matrix_print (&transform);
             }
           g_print (" =========================== x_vec = %f, %f, %f\n",
                    x_vec[0], x_vec[1], x_vec[2]);
