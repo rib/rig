@@ -29,6 +29,45 @@
 
 typedef struct _Data Data;
 
+typedef enum _UndoRedoOp
+{
+  UNDO_REDO_PROPERTY_CHANGE_OP,
+  UNDO_REDO_N_OPS
+} UndoRedoOp;
+
+typedef struct _UndoRedoPropertyChange
+{
+  RigEntity *entity;
+  RigProperty *property;
+  RigBoxed value0;
+  RigBoxed value1;
+} UndoRedoPropertyChange;
+
+typedef struct _UndoRedo
+{
+  UndoRedoOp op;
+  CoglBool mergable;
+  union
+    {
+      UndoRedoPropertyChange prop_change;
+    } d;
+} UndoRedo;
+
+typedef struct _UndoJournal
+{
+  Data *data;
+  GQueue ops;
+  GList *pos;
+  GQueue redo_ops;
+} UndoJournal;
+
+typedef struct _UndoRedoOpImpl
+{
+  void (*apply) (UndoJournal *journal, UndoRedo *undo_redo);
+  UndoRedo *(*invert) (UndoRedo *src);
+  void (*free) (UndoRedo *undo_redo);
+} UndoRedoOpImpl;
+
 typedef struct _Node
 {
   float t;
@@ -166,6 +205,193 @@ typedef struct _TestPaintContext
 
 } TestPaintContext;
 
+typedef enum _State
+{
+  STATE_NONE
+} State;
+
+enum {
+  DATA_PROP_WIDTH,
+  DATA_PROP_HEIGHT,
+  //DATA_PROP_PATH_T,
+
+  DATA_N_PROPS
+};
+
+struct _Data
+{
+  RigCamera *camera;
+  RigObject *root;
+  RigObject *scene;
+
+  CoglMatrix identity;
+
+  CoglPipeline *shadow_color_tex;
+  CoglPipeline *shadow_map_tex;
+
+  CoglPipeline *root_pipeline;
+  CoglPipeline *default_pipeline;
+
+  State state;
+
+  RigShell *shell;
+  RigContext *ctx;
+  CoglOnscreen *onscreen;
+
+  UndoJournal *undo_journal;
+
+  /* shadow mapping */
+  CoglOffscreen *shadow_fb;
+  CoglTexture2D *shadow_color;
+  CoglTexture *shadow_map;
+  RigCamera *shadow_map_camera;
+
+  CoglIndices *diamond_slice_indices;
+  CoglTexture *circle_texture;
+
+  CoglTexture *light_icon;
+  CoglTexture *clip_plane_icon;
+
+  //float width;
+  //RigProperty width_property;
+  //float height;
+  //RigProperty height_property;
+
+  RigTransform *top_bar_transform;
+  RigTransform *left_bar_transform;
+  RigTransform *right_bar_transform;
+  RigTransform *main_transform;
+  RigTransform *bottom_bar_transform;
+
+  //RigTransform *screen_area_transform;
+
+  CoglPrimitive *grid_prim;
+  CoglAttribute *circle_node_attribute;
+  int circle_node_n_verts;
+
+  //RigTransform *slider_transform;
+  //RigSlider *slider;
+  //RigProperty *slider_progress;
+  RigRectangle *rect;
+  float width;
+  float height;
+  float top_bar_height;
+  float left_bar_width;
+  float right_bar_width;
+  float bottom_bar_height;
+  float grab_margin;
+  float main_width;
+  float main_height;
+  float screen_area_width;
+  float screen_area_height;
+
+  RigRectangle *top_bar_rect;
+  RigRectangle *left_bar_rect;
+  RigRectangle *right_bar_rect;
+  RigRectangle *bottom_bar_rect;
+
+  RigUIViewport *assets_vp;
+  RigGraph *assets_list;
+
+  RigUIViewport *tool_vp;
+  RigObject *tool_list;
+
+  RigCamera *timeline_camera;
+  RigInputRegion *timeline_input_region;
+  float timeline_width;
+  float timeline_height;
+  float timeline_len;
+  float timeline_scale;
+
+  RigUIViewport *timeline_vp;
+
+  float grab_timeline_vp_t;
+  float grab_timeline_vp_y;
+
+  CoglMatrix main_view;
+  float z_2d;
+
+  RigEntity *main_camera_to_origin; /* move to origin */
+  RigEntity *main_camera_rotate; /* armature rotate rotate */
+  RigEntity *main_camera_origin_offset; /* negative offset */
+  RigEntity *main_camera_armature; /* armature length */
+  RigEntity *main_camera_dev_scale; /* scale to fit device coords */
+  RigEntity *main_camera_screen_pos; /* position screen in edit view */
+  RigEntity *main_camera_2d_view; /* setup 2d view, origin top-left */
+
+  RigEntity *main_camera;
+  RigCamera *main_camera_component;
+  float main_camera_z;
+  RigInputRegion *main_input_region;
+
+  RigEntity *plane;
+  RigEntity *cubes[N_CUBES];
+  RigEntity *light;
+
+  RigArcball arcball;
+  CoglQuaternion saved_rotation;
+  float origin[3];
+  float saved_origin[3];
+
+  //RigTransform *screen_area_transform;
+  RigTransform *device_transform;
+
+  RigTimeline *timeline;
+  RigProperty *timeline_elapsed;
+  RigProperty *timeline_progress;
+
+  float grab_x;
+  float grab_y;
+  float entity_grab_pos[3];
+  RigInputCallback key_focus_callback;
+
+  GList *assets;
+
+  uint32_t entity_next_id;
+  GList *entities;
+  GList *lights;
+  GList *transitions;
+
+  RigEntity *selected_entity;
+  Transition *selected_transition;
+
+  RigTool *tool;
+
+  /* picking ray */
+  CoglPipeline *picking_ray_color;
+  CoglPrimitive *picking_ray;
+  CoglBool debug_pick_ray;
+
+  //Path *path;
+  //float path_t;
+  //RigProperty path_property;
+
+  RigProperty properties[DATA_N_PROPS];
+
+};
+
+static RigPropertySpec data_propert_specs[] = {
+  {
+    .name = "width",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (Data, width)
+  },
+  {
+    .name = "height",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (Data, height)
+  },
+#if 0
+  {
+    .name = "t",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (Data, path_t)
+  },
+#endif
+  { 0 }
+};
+
+
 #ifndef __ANDROID__
 
 static gboolean _rig_handset_in_device_mode = FALSE;
@@ -184,6 +410,18 @@ static char *_rig_project_dir = NULL;
 
 #endif /* __ANDROID__ */
 
+static CoglBool
+undo_journal_insert (UndoJournal *journal, UndoRedo *undo_redo);
+
+static void
+undo_redo_apply (UndoJournal *journal, UndoRedo *undo_redo);
+
+static UndoRedo *
+undo_redo_invert (UndoRedo *undo_redo);
+
+static void
+undo_redo_free (UndoRedo *undo_redo);
+
 static void
 save (Data *data);
 
@@ -191,8 +429,9 @@ static void
 load (Data *data, const char *file);
 
 static Path *
-transition_find_path (Transition *transition,
-                      const char *property);
+transition_get_path (Transition *transition,
+                     RigObject *object,
+                     const char *property_name);
 
 static void
 path_lerp_property (Path *path, float t);
@@ -707,189 +946,227 @@ path_lerp_property (Path *path, float t)
     }
 }
 
-typedef enum _State
+static UndoRedo *
+undo_journal_find_recent_property_change (UndoJournal *journal,
+                                          RigProperty *property)
 {
-  STATE_NONE
-} State;
+  if (journal->pos &&
+      journal->pos == journal->ops.tail)
+    {
+      UndoRedo *recent = journal->pos->data;
+      if (recent->d.prop_change.property == property &&
+          recent->mergable)
+        return recent;
+    }
 
-enum {
-  DATA_PROP_WIDTH,
-  DATA_PROP_HEIGHT,
-  //DATA_PROP_PATH_T,
+  return NULL;
+}
 
-  DATA_N_PROPS
-};
-
-struct _Data
+static CoglBool
+undo_journal_log_move (UndoJournal *journal,
+                       CoglBool mergable,
+                       RigEntity *entity,
+                       float prev_x,
+                       float prev_y,
+                       float prev_z,
+                       float x,
+                       float y,
+                       float z)
 {
-  RigCamera *camera;
-  RigObject *root;
-  RigObject *scene;
+  RigProperty *position =
+    rig_introspectable_lookup_property (entity, "position");
+  UndoRedo *undo_redo =
+    undo_journal_find_recent_property_change (journal, position);
+  UndoRedoPropertyChange *prop_change;
 
-  CoglMatrix identity;
+  if (!undo_redo)
+    undo_redo = g_slice_new (UndoRedo);
 
-  CoglPipeline *shadow_color_tex;
-  CoglPipeline *shadow_map_tex;
+  undo_redo->op = UNDO_REDO_PROPERTY_CHANGE_OP;
+  undo_redo->mergable = mergable;
 
-  CoglPipeline *root_pipeline;
-  CoglPipeline *default_pipeline;
+  prop_change = &undo_redo->d.prop_change;
+  prop_change->entity = rig_ref_countable_ref (entity);
+  prop_change->property = position;
 
-  State state;
+  prop_change->value0.type = RIG_PROPERTY_TYPE_VEC3;
+  prop_change->value0.d.vec3_val[0] = prev_x;
+  prop_change->value0.d.vec3_val[1] = prev_y;
+  prop_change->value0.d.vec3_val[2] = prev_z;
 
-  RigShell *shell;
-  RigContext *ctx;
-  CoglOnscreen *onscreen;
+  prop_change->value1.type = RIG_PROPERTY_TYPE_VEC3;
+  prop_change->value1.d.vec3_val[0] = x;
+  prop_change->value1.d.vec3_val[1] = y;
+  prop_change->value1.d.vec3_val[2] = z;
 
-  /* shadow mapping */
-  CoglOffscreen *shadow_fb;
-  CoglTexture2D *shadow_color;
-  CoglTexture *shadow_map;
-  RigCamera *shadow_map_camera;
+  undo_journal_insert (journal, undo_redo);
+}
 
-  CoglIndices *diamond_slice_indices;
-  CoglTexture *circle_texture;
+static void
+undo_redo_prop_change_apply (UndoJournal *journal, UndoRedo *undo_redo)
+{
+  UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
 
-  CoglTexture *light_icon;
-  CoglTexture *clip_plane_icon;
+  g_print ("Property change APPLY\n");
 
-  //float width;
-  //RigProperty width_property;
-  //float height;
-  //RigProperty height_property;
+  rig_property_set_boxed (&journal->data->ctx->property_ctx,
+                          prop_change->property, &prop_change->value1);
+}
 
-  RigTransform *top_bar_transform;
-  RigTransform *left_bar_transform;
-  RigTransform *right_bar_transform;
-  RigTransform *main_transform;
-  RigTransform *bottom_bar_transform;
+static UndoRedo *
+undo_redo_prop_change_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedoPropertyChange *src = &undo_redo_src->d.prop_change;
+  UndoRedo *undo_redo_inverse = g_slice_new (UndoRedo);
+  UndoRedoPropertyChange *inverse = &undo_redo_inverse->d.prop_change;
 
-  //RigTransform *screen_area_transform;
+  undo_redo_inverse->op = undo_redo_src->op;
+  undo_redo_inverse->mergable = FALSE;
 
-  CoglPrimitive *grid_prim;
-  CoglAttribute *circle_node_attribute;
-  int circle_node_n_verts;
+  inverse->entity = rig_ref_countable_ref (src->entity);
+  inverse->property = src->property;
+  inverse->value0 = src->value1;
+  inverse->value1 = src->value0;
 
-  //RigTransform *slider_transform;
-  //RigSlider *slider;
-  //RigProperty *slider_progress;
-  RigRectangle *rect;
-  float width;
-  float height;
-  float top_bar_height;
-  float left_bar_width;
-  float right_bar_width;
-  float bottom_bar_height;
-  float grab_margin;
-  float main_width;
-  float main_height;
-  float screen_area_width;
-  float screen_area_height;
+  return undo_redo_inverse;
+}
 
-  RigRectangle *top_bar_rect;
-  RigRectangle *left_bar_rect;
-  RigRectangle *right_bar_rect;
-  RigRectangle *bottom_bar_rect;
+static void
+undo_redo_prop_change_free (UndoRedo *undo_redo)
+{
+  UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
+  rig_ref_countable_unref (prop_change->entity);
+  g_slice_free (UndoRedo, undo_redo);
+}
 
-  RigUIViewport *assets_vp;
-  RigGraph *assets_list;
-
-  RigUIViewport *tool_vp;
-  RigObject *tool_list;
-
-  RigCamera *timeline_camera;
-  RigInputRegion *timeline_input_region;
-  float timeline_width;
-  float timeline_height;
-  float timeline_len;
-  float timeline_scale;
-
-  RigUIViewport *timeline_vp;
-
-  float grab_timeline_vp_t;
-  float grab_timeline_vp_y;
-
-  CoglMatrix main_view;
-  float z_2d;
-
-  RigEntity *main_camera_to_origin; /* move to origin */
-  RigEntity *main_camera_rotate; /* armature rotate rotate */
-  RigEntity *main_camera_origin_offset; /* negative offset */
-  RigEntity *main_camera_armature; /* armature length */
-  RigEntity *main_camera_dev_scale; /* scale to fit device coords */
-  RigEntity *main_camera_screen_pos; /* position screen in edit view */
-  RigEntity *main_camera_2d_view; /* setup 2d view, origin top-left */
-
-  RigEntity *main_camera;
-  RigCamera *main_camera_component;
-  float main_camera_z;
-  RigInputRegion *main_input_region;
-
-  RigEntity *plane;
-  RigEntity *cubes[N_CUBES];
-  RigEntity *light;
-
-  RigArcball arcball;
-  CoglQuaternion saved_rotation;
-  float origin[3];
-  float saved_origin[3];
-
-  //RigTransform *screen_area_transform;
-  RigTransform *device_transform;
-
-  RigTimeline *timeline;
-  RigProperty *timeline_elapsed;
-  RigProperty *timeline_progress;
-
-  float grab_x;
-  float grab_y;
-  float entity_grab_pos[3];
-  RigInputCallback key_focus_callback;
-
-  GList *assets;
-
-  uint32_t entity_next_id;
-  GList *entities;
-  GList *lights;
-  GList *transitions;
-
-  RigEntity *selected_entity;
-  Transition *selected_transition;
-
-  RigTool *tool;
-
-  /* picking ray */
-  CoglPipeline *picking_ray_color;
-  CoglPrimitive *picking_ray;
-  CoglBool debug_pick_ray;
-
-  //Path *path;
-  //float path_t;
-  //RigProperty path_property;
-
-  RigProperty properties[DATA_N_PROPS];
-
-};
-
-static RigPropertySpec data_propert_specs[] = {
+static UndoRedoOpImpl undo_redo_ops[] =
   {
-    .name = "width",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, width)
-  },
-  {
-    .name = "height",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, height)
-  },
-#if 0
-  {
-    .name = "t",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, path_t)
-  },
-#endif
-  { 0 }
-};
+      {
+        undo_redo_prop_change_apply,
+        undo_redo_prop_change_invert,
+        undo_redo_prop_change_free
+      }
+  };
+
+static void
+undo_redo_apply (UndoJournal *journal, UndoRedo *undo_redo)
+{
+  CoglBool status;
+
+  g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
+
+  undo_redo_ops[undo_redo->op].apply (journal, undo_redo);
+}
+
+static UndoRedo *
+undo_redo_invert (UndoRedo *undo_redo)
+{
+  g_return_val_if_fail (undo_redo->op < UNDO_REDO_N_OPS, NULL);
+
+  return undo_redo_ops[undo_redo->op].invert (undo_redo);
+}
+
+static void
+undo_redo_free (UndoRedo *undo_redo)
+{
+  g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
+
+  undo_redo_ops[undo_redo->op].free (undo_redo);
+}
+
+static void
+undo_journal_flush_redos (UndoJournal *journal)
+{
+  UndoRedo *redo;
+  while ((redo = g_queue_pop_head (&journal->redo_ops)))
+    g_queue_push_tail (&journal->ops, redo);
+  journal->pos = journal->ops.tail;
+}
+
+static CoglBool
+undo_journal_insert (UndoJournal *journal, UndoRedo *undo_redo)
+{
+  UndoRedo *inverse = undo_redo_invert (undo_redo);
+
+  g_return_val_if_fail (inverse != NULL, FALSE);
+
+  undo_journal_flush_redos (journal);
+
+  /* Purely for testing purposes we now redundantly apply
+   * the inverse of the operation followed by the operation
+   * itself which should leave us where we started and
+   * if not we should hopefully notice quickly!
+   */
+  undo_redo_apply (journal, inverse);
+  undo_redo_apply (journal, undo_redo);
+
+  undo_redo_free (undo_redo);
+
+  g_queue_push_tail (&journal->ops, inverse);
+  journal->pos = journal->ops.tail;
+
+  return TRUE;
+}
+
+static CoglBool
+undo_journal_undo (UndoJournal *journal)
+{
+  g_print ("UNDO\n");
+  if (journal->pos)
+    {
+      UndoRedo *redo = undo_redo_invert (journal->pos->data);
+      if (!redo)
+        {
+          g_warning ("Not allowing undo of operation that can't be inverted");
+          return FALSE;
+        }
+      g_queue_push_tail (&journal->redo_ops, redo);
+
+      undo_redo_apply (journal, journal->pos->data);
+      journal->pos = journal->pos->prev;
+
+      rig_shell_queue_redraw (journal->data->shell);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+static CoglBool
+undo_journal_redo (UndoJournal *journal)
+{
+  UndoRedo *redo = g_queue_pop_tail (&journal->redo_ops);
+  CoglBool status;
+
+  if (!redo)
+    return FALSE;
+
+  g_print ("REDO\n");
+
+  undo_redo_apply (journal, redo);
+
+  if (journal->pos)
+    journal->pos = journal->pos->next;
+  else
+    journal->pos = journal->ops.head;
+
+  rig_shell_queue_redraw (journal->data->shell);
+
+  return status;
+}
+
+static UndoJournal *
+undo_journal_new (Data *data)
+{
+  UndoJournal *journal = g_new0 (UndoJournal, 1);
+
+  g_queue_init (&journal->ops);
+  journal->data = data;
+  journal->pos = NULL;
+  g_queue_init (&journal->redo_ops);
+
+  return journal;
+}
 
 #if 0
 static UIViewport *
@@ -2342,16 +2619,42 @@ entity_grab_input_cb (RigInputEvent *event,
     {
       float x = rig_motion_event_get_x (event);
       float y = rig_motion_event_get_y (event);
+      float move_x, move_y;
+      float dx, dy, dz;
+      float *x_vec = closure->x_vec;
+      float *y_vec = closure->y_vec;
+
+      move_x = x - data->grab_x;
+      move_y = y - data->grab_y;
+
+      dx = x_vec[0] * move_x;
+      dy = x_vec[1] * move_x;
+      dz = x_vec[2] * move_x;
+
+      dx += y_vec[0] * move_y;
+      dy += y_vec[1] * move_y;
+      dz += y_vec[2] * move_y;
 
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
         {
           Transition *transition = data->selected_transition;
           float elapsed = rig_timeline_get_elapsed (data->timeline);
-          Path *path_position = transition_find_path (transition, "position");
+          Path *path_position = transition_get_path (transition,
+                                                     entity,
+                                                     "position");
 
-          if (path_position)
-            path_insert_vec3 (path_position, elapsed,
-                              rig_entity_get_position (entity));
+          undo_journal_log_move (data->undo_journal,
+                                 FALSE,
+                                 entity,
+                                 data->entity_grab_pos[0],
+                                 data->entity_grab_pos[1],
+                                 data->entity_grab_pos[2],
+                                 data->entity_grab_pos[0] + dx,
+                                 data->entity_grab_pos[1] + dy,
+                                 data->entity_grab_pos[2] + dz);
+
+          path_insert_vec3 (path_position, elapsed,
+                            rig_entity_get_position (entity));
 
           rig_shell_ungrab_input (data->ctx->shell,
                                   entity_grab_input_cb,
@@ -2365,23 +2668,6 @@ entity_grab_input_cb (RigInputEvent *event,
         }
       else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
         {
-          float move_x, move_y;
-          float dx, dy, dz;
-          float *x_vec = closure->x_vec;
-          float *y_vec = closure->y_vec;
-
-          move_x = x - data->grab_x;
-          move_y = y - data->grab_y;
-
-          dx = x_vec[0] * move_x;
-          dy = x_vec[1] * move_x;
-          dz = x_vec[2] * move_x;
-
-          dx += y_vec[0] * move_y;
-          dy += y_vec[1] * move_y;
-          dz += y_vec[2] * move_y;
-
-
           rig_entity_set_translate (entity,
                                     data->entity_grab_pos[0] + dx,
                                     data->entity_grab_pos[1] + dy,
@@ -2601,7 +2887,7 @@ transition_add_path (Transition *transition,
 
 static Path *
 transition_find_path (Transition *transition,
-                      const char *property)
+                      RigProperty *property)
 {
   GList *l;
 
@@ -2609,12 +2895,38 @@ transition_find_path (Transition *transition,
     {
       Path *path = l->data;
 
-      if (strcmp (path->prop->spec->name, property) == 0)
+      if (path->prop == property)
         return path;
     }
 
   return NULL;
 }
+
+static Path *
+transition_get_path (Transition *transition,
+                     RigObject *object,
+                     const char *property_name)
+{
+  RigProperty *property =
+    rig_introspectable_lookup_property (object, property_name);
+  Path *path;
+
+  if (!property)
+    return NULL;
+
+  path = transition_find_path (transition, property);
+  if (path)
+    return path;
+
+  path = path_new_for_property (transition->data->ctx,
+                                &transition->props[TRANSITION_PROP_PROGRESS],
+                                property);
+
+  transition_add_path (transition, path);
+
+  return path;
+}
+
 #if 0
 static void
 update_slider_pos_cb (RigProperty *property,
@@ -3431,6 +3743,14 @@ main_input_cb (RigInputEvent *event,
         case RIG_KEY_s:
           save (data);
           break;
+        case RIG_KEY_z:
+          if (rig_key_event_get_modifier_state (event) & RIG_MODIFIER_CTRL_ON)
+            undo_journal_undo (data->undo_journal);
+          break;
+        case RIG_KEY_y:
+          if (rig_key_event_get_modifier_state (event) & RIG_MODIFIER_CTRL_ON)
+            undo_journal_redo (data->undo_journal);
+          break;
         case RIG_KEY_minus:
           if (data->main_camera_z)
             data->main_camera_z *= 1.2f;
@@ -3989,6 +4309,7 @@ test_init (RigShell *shell, void *user_data)
   data->height  = cogl_framebuffer_get_height (fb);
 
 
+  data->undo_journal = undo_journal_new (data);
   /*
    * Shadow mapping
    */
