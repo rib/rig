@@ -75,6 +75,12 @@ typedef struct _RigPropertyValidationFloat
   float max;
 } RigPropertyValidationFloat;
 
+typedef struct _RigPropertyValidationVec3
+{
+  float min;
+  float max;
+} RigPropertyValidationVec3;
+
 typedef struct _RigPropertyValidationObject
 {
   RigType *type;
@@ -84,6 +90,7 @@ typedef union _RigPropertyValidation
 {
   RigPropertyValidationInteger int_range;
   RigPropertyValidationFloat float_range;
+  RigPropertyValidationVec3 vec3_range;
   RigPropertyValidationObject object;
   const RigUIEnum *ui_enum;
 } RigPropertyValidation;
