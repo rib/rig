@@ -688,23 +688,6 @@ rig_context_init (RigContext *context)
     _rig_shell_init (context->shell);
 }
 
-void
-rig_paintable_init (RigObject *object)
-{
-#if 0
-  RigPaintableProps *props =
-    rig_object_get_properties (object, RIG_INTERFACE_ID_PAINTABLE);
-#endif
-}
-
-void
-rig_paintable_paint (RigObject *object, RigPaintContext *paint_ctx)
-{
-  RigPaintableVTable *paintable = rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
-
-  paintable->paint (object, paint_ctx);
-}
-
 static void
 _rig_nine_slice_free (void *object)
 {

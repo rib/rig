@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "rig-text.h"
+#include "rig-paintable.h"
 #include "components/rig-camera.h"
 
 /* This is only defined since GLib 2.31.0. The documentation says that

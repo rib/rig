@@ -27,6 +27,7 @@
 #include "rig-text.h"
 #include "rig-tool.h"
 #include "rig-geometry.h"
+#include "rig-paintable.h"
 
 /* entity/components system */
 #include "rig-entity.h"

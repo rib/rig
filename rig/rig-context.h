@@ -23,29 +23,6 @@ extern uint8_t _rig_nine_slice_indices_data[54];
 void
 _rig_init (void);
 
-typedef struct _RigPaintableProps
-{
-  int padding;
-} RigPaintableProps;
-
-typedef struct _RigPaintContext
-{
-  RigCamera *camera;
-} RigPaintContext;
-
-#define RIG_PAINT_CONTEXT(X) ((RigPaintContext *)X)
-
-typedef struct _RigPaintableVtable
-{
-  void (*paint) (RigObject *object, RigPaintContext *paint_ctx);
-} RigPaintableVTable;
-
-void
-rig_paintable_init (RigObject *object);
-
-void
-rig_paintable_paint (RigObject *object, RigPaintContext *paint_ctx);
-
 typedef struct _RigSettings RigSettings;
 
 /* TODO Make internals private */
