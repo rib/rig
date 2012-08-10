@@ -118,97 +118,6 @@ static RigPropertySpec _asset_prop_specs[] = {
 #endif
 
 enum {
-    ITEM_PROP_X,
-    ITEM_PROP_Y,
-    ITEM_PROP_Z,
-    ITEM_PROP_ROTATION,
-    ITEM_PROP_TRANSFORM,
-    ITEM_PROP_RECEIVE_SHADOW,
-    ITEM_PROP_CAST_SHADOW,
-    ITEM_N_PROPS
-};
-
-typedef struct _Item
-{
-  RigObjectProps _parent;
-
-  int ref_count;
-
-  Data *data;
-
-  uint32_t id;
-
-  float x, y, z;
-  CoglQuaternion rotation;
-  CoglMatrix transform;
-
-  Asset *texture_asset;
-
-  CoglBool receive_shadow;
-  CoglBool cast_shadow;
-
-  CoglPipeline *pipeline;
-
-  float diamond_size;
-  DiamondSlice *diamond_slice;
-
-  //float x0, y0, x1, y1;
-  RigInputRegion *input_region;
-  RigTransform *input_transform;
-
-  RigGraphableProps graphable;
-  RigPaintableProps paintable;
-
-  RigProperty props[ITEM_N_PROPS];
-  RigSimpleIntrospectableProps introspectable;
-
-} Item;
-
-static RigPropertySpec _item_prop_specs[] = {
-  {
-    .name = "x",
-    .nick = "X",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Item, x),
-  },
-  {
-    .name = "y",
-    .nick = "Y",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Item, y)
-  },
-  {
-    .name = "z",
-    .nick = "Z",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Item, z)
-  },
-  {
-    .name = "rotation",
-    .nick = "Rotation",
-    .type = RIG_PROPERTY_TYPE_QUATERNION,
-    .data_offset = offsetof (Item, rotation)
-  },
-  {
-    .name = "transform",
-    .nick = "Transform",
-  },
-  {
-    .name = "receive-shadow",
-    .nick = "Shadow",
-    .type = RIG_PROPERTY_TYPE_BOOLEAN,
-    .data_offset = offsetof (Item, receive_shadow)
-  },
-  {
-    .name = "cast-shadow",
-    .nick = "Cast Shadow",
-    .type = RIG_PROPERTY_TYPE_BOOLEAN,
-    .data_offset = offsetof (Item, cast_shadow)
-  },
-  { 0 }
-};
-
-enum {
   TRANSITION_PROP_PROGRESS,
   TRANSITION_N_PROPS
 };
@@ -983,14 +892,11 @@ struct _Data
 
   GList *assets;
 
-  uint32_t items_next_id;
   uint32_t entity_next_id;
-  GList *items;
   GList *entities;
   GList *lights;
   GList *transitions;
 
-  Item *selected_item;
   RigEntity *selected_entity;
   Transition *selected_transition;
 
@@ -1923,21 +1829,6 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                        0, 0, DEVICE_WIDTH, DEVICE_HEIGHT);
                                        //0, 0, data->pane_width, data->pane_height);
       cogl_object_unref (pipeline);
-
-#if 1
-      for (l = data->items; l; l = l->next)
-        {
-          Item *item = l->data;
-          const CoglMatrix *matrix = &item->transform;
-
-          cogl_framebuffer_push_matrix (fb);
-          cogl_framebuffer_transform (fb, matrix);
-
-          rig_paintable_paint (item->diamond_slice, paint_ctx);
-
-          cogl_framebuffer_pop_matrix (fb);
-        }
-#endif
     }
 
   shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
@@ -2041,10 +1932,10 @@ paint_timeline_camera (RigCamera *camera, void *user_data)
   //cogl_framebuffer_push_matrix (fb);
   //cogl_framebuffer_transform (fb, rig_transformable_get_matrix (camera));
 
-  if (data->selected_item)
+  if (data->selected_entity)
     {
       //CoglContext *ctx = data->ctx->cogl_context;
-      Item *item = data->selected_item;
+      RigEntity *entity = data->selected_entity;
       //int i;
 
       float viewport_x = 0;
@@ -2074,7 +1965,7 @@ paint_timeline_camera (RigCamera *camera, void *user_data)
           float red, green, blue;
 
           if (path == NULL ||
-              path->prop->object != item ||
+              path->prop->object != entity ||
               path->prop->spec->type != RIG_PROPERTY_TYPE_FLOAT)
             continue;
 
@@ -2409,43 +2300,10 @@ update_transition_progress_cb (RigProperty *property, void *user_data)
   Data *data = user_data;
   double elapsed = rig_timeline_get_elapsed (data->timeline);
   Transition *transition = property->object;
-  //GList *l;
 
   transition->progress = elapsed;
   rig_property_dirty (&data->ctx->property_ctx,
                       &transition->props[TRANSITION_PROP_PROGRESS]);
-
-#if 0
-  /* FIXME: This should just update transition->progress and there
-   * should be separate bindings to update all of the other properties
-   */
-
-  for (l = transition->paths; l; l = l->next)
-    {
-      Path *path = l->data;
-      if (!path)
-        continue;
-      path_lerp_property (path, elapsed);
-    }
-
-  rig_transform_init_identity (item->transform);
-  rig_transform_translate (item->transform,
-                           item->x,
-                           item->y,
-                           item->z);
-  rig_transform_quaternion_rotate (item->transform, &item->rotation);
-#endif
-
-
-  //cogl_matrix_init_identity (&item->transform);
-  //cogl_matrix_translate (&item->transform, x, y, z);
-
-#if 0
-  g_print ("ITEM: e=%f: 0(%f,%f,%f) 1(%f,%f,%f) lerp=(%f, %f, %f)\n", elapsed,
-           n0->point[0], n0->point[1], n0->point[2],
-           n1->point[0], n1->point[1], n1->point[2],
-           x, y, z);
-#endif
 }
 
 static void
@@ -2464,7 +2322,7 @@ unproject_window_coord (RigCamera *camera,
   float eye_x, eye_y, eye_z, eye_w;
   const float *viewport = rig_camera_get_viewport (camera);
 
-  /* Convert item z into NDC z */
+  /* Convert object coord z into NDC z */
   {
     float tmp_x, tmp_y, tmp_z;
     const CoglMatrix *m = modelview;
@@ -2586,77 +2444,6 @@ entity_grab_input_cb (RigInputEvent *event,
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-static RigInputEventStatus
-item_grab_input_cb (RigInputEvent *event,
-                    void *user_data)
-
-{
-  Item *item = user_data;
-  Data *data = item->data;
-
-  //g_print ("Item grab event\n");
-
-  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
-    {
-      float x = rig_motion_event_get_x (event);
-      float y = rig_motion_event_get_y (event);
-      CoglMatrix device_transform;
-      CoglMatrix inverse_transform;
-      RigCamera *camera = rig_input_event_get_camera (event);
-      //double elapsed;
-
-      rig_graphable_get_modelview (data->device_transform,
-                                   camera,
-                                   &device_transform);
-
-      if (!cogl_matrix_get_inverse (&device_transform, &inverse_transform))
-        g_error ("Failed to get inverse transform");
-
-      unproject_window_coord (camera,
-                              &device_transform,
-                              &inverse_transform,
-                              0, /* z in item coordinates */
-                              &x, &y);
-
-      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
-        {
-          Transition *transition = data->selected_transition;
-          float elapsed = rig_timeline_get_elapsed (data->timeline);
-          Path *path_x = transition_find_path (transition, "x");
-          Path *path_y = transition_find_path (transition, "y");
-          //Path *path_z = transition_find_path (transition, "z");
-
-
-          path_insert_float (path_x, elapsed, x);
-          path_insert_float (path_y, elapsed, y);
-          //path_insert_float (item->prop_paths[ITEM_PROP_Z], elapsed, 0);
-
-          rig_shell_ungrab_input (data->ctx->shell,
-                                  item_grab_input_cb,
-                                  user_data);
-
-          rig_shell_queue_redraw (data->ctx->shell);
-
-          return RIG_INPUT_EVENT_STATUS_HANDLED;
-        }
-      else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
-        {
-#if 1
-          cogl_matrix_init_identity (&item->transform);
-          cogl_matrix_translate (&item->transform, x, y, 0);
-#else
-          rig_transform_init_identity (item->transform);
-          rig_transform_translate (item->transform, x, y, 0);
-#endif
-          rig_shell_queue_redraw (data->ctx->shell);
-
-          return RIG_INPUT_EVENT_STATUS_HANDLED;
-        }
-    }
-
-  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
 typedef struct _ToolListState
 {
   Data *data;
@@ -2688,7 +2475,7 @@ property_updated_cb (RigText *text,
 }
 
 static void
-add_item_property (RigProperty *prop, void *user_data)
+add_property (RigProperty *prop, void *user_data)
 {
   ToolListState *state = user_data;
   Data *data = state->data;
@@ -2761,8 +2548,6 @@ add_item_property (RigProperty *prop, void *user_data)
 static void
 update_tool_list (Data *data)
 {
-  //GList *l;
-  //int i = 0;
   RigObject *doc_node;
   ToolListState state;
 
@@ -2785,236 +2570,8 @@ update_tool_list (Data *data)
       state.tool_list = data->tool_list;
 
       rig_introspectable_foreach_property (data->selected_entity,
-                                           add_item_property, &state);
+                                           add_property, &state);
     }
-}
-
-
-static RigInputEventStatus
-item_input_region_cb (RigInputRegion *region,
-                      RigInputEvent *event,
-                      void *user_data)
-{
-  Item *item = user_data;
-  Data *data = item->data;
-
-  //g_print ("Item input\n");
-
-  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
-    {
-      if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
-        {
-          data->selected_item = item;
-          //update_tool_list (data);
-          rig_shell_grab_input (data->ctx->shell,
-                                rig_input_event_get_camera (event),
-                                item_grab_input_cb, item);
-          return RIG_INPUT_EVENT_STATUS_HANDLED;
-        }
-    }
-
-  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static RigIntrospectableVTable _item_introspectable_vtable = {
-  rig_simple_introspectable_lookup_property,
-  rig_simple_introspectable_foreach_property
-};
-
-static RigGraphableVTable _item_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
-static void
-item_free (Item *item)
-{
-  cogl_object_unref (item->pipeline);
-  //rig_ref_countable_unref (item->transform);
-
-  rig_simple_introspectable_destroy (item);
-
-  g_slice_free (Item, item);
-}
-
-RigRefCountableVTable _item_ref_countable_vtable = {
-  rig_ref_countable_simple_ref,
-  rig_ref_countable_simple_unref,
-  item_free
-};
-
-static void
-item_paint (RigObject *object,
-            RigPaintContext *paint_ctx)
-{
-  Item *item = object;
-#if 0
-  RigCamera *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
-
-  cogl_framebuffer_draw_rectangle (fb,
-                                   item->pipeline,
-                                   item->x0,
-                                   item->y0,
-                                   item->x1,
-                                   item->y1);
-#endif
-
-  rig_paintable_paint (item->diamond_slice, paint_ctx);
-}
-
-static RigPaintableVTable _item_paintable_vtable = {
-  item_paint
-};
-
-static const CoglMatrix *
-item_get_matrix (Item *item)
-{
-  return &item->transform;
-}
-
-static RigTransformableVTable _item_transformable_vtable = {
-  item_get_matrix
-};
-
-static RigType _item_type;
-
-static void
-_item_type_init (void)
-{
-  rig_type_init (&_item_type);
-  rig_type_add_interface (&_item_type,
-                          RIG_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (Item, ref_count),
-                          &_item_ref_countable_vtable);
-  rig_type_add_interface (&_item_type,
-                          RIG_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_item_introspectable_vtable);
-  rig_type_add_interface (&_item_type,
-                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (Item, introspectable),
-                          NULL); /* no implied vtable */
-  rig_type_add_interface (&_item_type,
-                          RIG_INTERFACE_ID_GRAPHABLE,
-                          offsetof (Item, graphable),
-                          &_item_graphable_vtable);
-  rig_type_add_interface (&_item_type,
-                          RIG_INTERFACE_ID_PAINTABLE,
-                          offsetof (Item, paintable),
-                          &_item_paintable_vtable);
-  rig_type_add_interface (&_item_type,
-                           RIG_INTERFACE_ID_TRANSFORMABLE,
-                           0,
-                           &_item_transformable_vtable);
-}
-
-static void
-update_item_transform_cb (RigProperty *transform_prop, void *user_data)
-{
-  Item *item = transform_prop->object;
-
-  /* FIXME: Add rig_transform_init_translate() */
-
-  cogl_matrix_init_translation (&item->transform,
-                                item->x,
-                                item->y,
-                                item->z);
-  cogl_matrix_rotate_quaternion (&item->transform,
-                                 &item->rotation);
-#if 0
-  rig_transform_init_identity (item->transform);
-  rig_transform_translate (item->transform,
-                           item->x,
-                           item->y,
-                           item->z);
-  rig_transform_quaternion_rotate (item->transform, &item->rotation);
-#endif
-}
-
-Item *
-item_new (Data *data,
-          Asset *texture_asset,
-          uint32_t id)
-{
-  CoglTexture *texture;
-  Item *item;
-  float width, height;
-  float half_diamond_size;
-
-  g_return_val_if_fail (texture_asset->type == ASSET_TYPE_TEXTURE, NULL);
-
-  item = g_slice_new0 (Item);
-
-  item->ref_count = 1;
-
-  item->id = id;
-
-  rig_object_init (&item->_parent, &_item_type);
-
-  rig_graphable_init (item);
-  rig_paintable_init (item);
-
-  rig_simple_introspectable_init (item, _item_prop_specs, item->props);
-
-  texture = texture_asset->texture;
-
-  item->diamond_size = 400;
-  half_diamond_size = item->diamond_size / 2.0;
-
-  item->diamond_slice = diamond_slice_new (data,
-                                           texture,
-                                           item->diamond_size);
-
-  item->texture_asset = texture_asset;
-
-  item->data = data;
-
-  item->x = item->y = item->z = 0;
-  cogl_quaternion_init (&item->rotation, 0, 0, 1, 0);
-  cogl_matrix_init_identity (&item->transform);
-
-  item->pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (item->pipeline, 0, texture);
-
-  //item->x0 = 0;
-  //item->y0 = 0;
-  width = cogl_texture_get_width (texture);
-  height = cogl_texture_get_height (texture);
-  //item->x1 = width;
-  //item->y1 = height;
-
-  item->input_transform =
-    rig_transform_new (data->ctx,
-                       item->input_region =
-                       rig_input_region_new_rectangle (0, 0,
-                                                       item->diamond_size,
-                                                       item->diamond_size,
-                                                       item_input_region_cb,
-                                                       item),
-                       NULL);
-
-  rig_transform_rotate (item->input_transform, 45, 0, 0, 1);
-  rig_transform_translate (item->input_transform, - half_diamond_size, - half_diamond_size, 0);
-  //rig_transform_translate (item->input_transform, half_diamond_size, half_diamond_size, 0);
-
-  rig_graphable_add_child (item, item->input_transform);
-  //rig_input_region_set_graphable (item->input_region, item->input_transform);
-
-  //cogl_matrix_init_identity (&item->transform_matrix);
-  //rig_input_region_set_transform (item->input_region, &item->transform_matrix);
-  //rig_camera_add_input_region (data->main_camera, item->input_region);
-
-  rig_property_set_binding (&item->props[ITEM_PROP_TRANSFORM],
-                            update_item_transform_cb,
-                            NULL,
-                            &item->props[ITEM_PROP_X],
-                            &item->props[ITEM_PROP_Y],
-                            &item->props[ITEM_PROP_Z],
-                            &item->props[ITEM_PROP_ROTATION],
-                            NULL);
-  return item;
 }
 
 static RigIntrospectableVTable _transition_introspectable_vtable = {
@@ -3057,12 +2614,6 @@ transition_new (Data *data,
 
   transition->progress = 0;
   transition->paths = NULL;
-
-#if 0
-  rig_property_init (&transition->props[ITEM_PROP_PROGRESS],
-                     NULL, /* dummy property: no spec */
-                     transition);
-#endif
 
   rig_property_set_binding (&transition->props[TRANSITION_PROP_PROGRESS],
                             update_transition_progress_cb,
@@ -3165,7 +2716,7 @@ timeline_grab_input_cb (RigInputEvent *event, void *user_data)
           unproject_window_coord (camera,
                                   view,
                                   &inverse_view,
-                                  0, /* z in item coordinates */
+                                  0, /* z in entity coordinates */
                                   &x, &y);
 
           progress = x / data->timeline_width;
@@ -4447,10 +3998,6 @@ test_init (RigShell *shell, void *user_data)
   Data *data = user_data;
   CoglFramebuffer *fb;
   float vector3[3];
-  //GError *error = NULL;
-  //Item *item;
-  //Transition *transition;
-  //Path *path;
   int i;
   char *full_path;
   GError *error = NULL;
@@ -4474,12 +4021,6 @@ test_init (RigShell *shell, void *user_data)
     rig_property_init (&data->properties[i],
                        &data_propert_specs[i],
                        data);
-
-  /* When the items have their own properties then this would
-   * be a binding e.g. for the x property of an item. */
-  //rig_property_init (&data->path_property,
-  //                   &path_property_spec,
-  //                   data);
 
   data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 880, 660);
   cogl_onscreen_show (data->onscreen);
@@ -4875,68 +4416,7 @@ test_init (RigShell *shell, void *user_data)
                             NULL);
 #endif
 
-  //rig_graphable_add_child (data->camera, RIG_OBJECT (data->root));
-
-#if 0
-  item = item_new (data, "contact0.png", 0);
-  rig_graphable_add_child (data->device_transform, item->transform);
-  data->items = g_list_prepend (data->items, item);
-
-  item = item_new (data, "contact1.png", 1);
-  data->items = g_list_prepend (data->items, item);
-  rig_graphable_add_child (data->device_transform, item->transform);
-
-  data->selected_item = item;
-
-  transition = transition_new (data, 0);
-  data->transitions = g_list_prepend (data->transitions, transition);
-  data->selected_transition = transition;
-
-  path = path_new_for_property (data->ctx,
-                                &transition->props[TRANSITION_PROP_PROGRESS],
-                                &item->props[ITEM_PROP_X]);
-  path_insert_float (path, -1, 0);
-  path_insert_float (path, 0, 0);
-  path_insert_float (path, 5, 100);
-  path_insert_float (path, 10, 200);
-  path_insert_float (path, 20, 200);
-  path_insert_float (path, 21, 200);
-  transition_add_path (transition, path);
-
-  path = path_new_for_property (data->ctx,
-                                &transition->props[TRANSITION_PROP_PROGRESS],
-                                &item->props[ITEM_PROP_Y]);
-  path_insert_float (path, -1, 0);
-  path_insert_float (path, 0, 0);
-  path_insert_float (path, 5, 100);
-  path_insert_float (path, 10, 0);
-  path_insert_float (path, 20, 0);
-  path_insert_float (path, 21, 0);
-  transition_add_path (transition, path);
-
-  path = path_new_for_property (data->ctx,
-                                &transition->props[TRANSITION_PROP_PROGRESS],
-                                &item->props[ITEM_PROP_Z]);
-  path_insert_float (path, -1, 0);
-  path_insert_float (path, 0, 0);
-  path_insert_float (path, 5, 0);
-  path_insert_float (path, 10, 0);
-  path_insert_float (path, 20, 0);
-  path_insert_float (path, 21, 0);
-  transition_add_path (transition, path);
-
-  path = path_new_for_property (data->ctx,
-                                &transition->props[TRANSITION_PROP_PROGRESS],
-                                &item->props[ITEM_PROP_ROTATION]);
-  path_insert_quaternion (path, -1, 0, 0, 1, 0);
-  path_insert_quaternion (path, 0, 0, 0, 1, 0);
-  path_insert_quaternion (path, 10, 90, 0, 1, 0);
-  path_insert_quaternion (path, 20, 0, 0, 1, 0);
-  path_insert_quaternion (path, 21, 0, 0, 1, 0);
-  transition_add_path (transition, path);
-#endif
-
-    /* tool */
+  /* tool */
   data->tool = rig_tool_new (data->shell);
   rig_tool_set_camera (data->tool, data->main_camera);
 
@@ -5193,25 +4673,6 @@ save (Data *data)
                asset->path);
     }
 
-  for (l = data->items; l; l = l->next)
-    {
-      Item *item = l->data;
-      //GList *l2;
-      //int i;
-
-      /* TODO: Items should reference assets */
-
-      state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<item id=\"%d\">\n", state.indent, "", item->id);
-
-      state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<texture asset=\"%d\"/>\n", state.indent, "", item->texture_asset->id);
-      state.indent -= INDENT_LEVEL;
-
-      fprintf (file, "%*s</item>\n", state.indent, "");
-      state.indent -= INDENT_LEVEL;
-    }
-
   rig_graphable_traverse (data->scene,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_entitygraph_pre_save_cb,
@@ -5231,16 +4692,16 @@ save (Data *data)
         {
           Path *path = l2->data;
           GList *l3;
-          Item *item;
+          RigEntity *entity;
 
           if (path == NULL)
             continue;
 
-          item = path->prop->object;
+          entity = path->prop->object;
 
           state.indent += INDENT_LEVEL;
-          fprintf (file, "%*s<path item=\"%d\" property=\"%s\">\n", state.indent, "",
-                   item->id,
+          fprintf (file, "%*s<path entity=\"%d\" property=\"%s\">\n", state.indent, "",
+                   rig_entity_get_id (entity),
                    path->prop->spec->name);
 
           state.indent += INDENT_LEVEL;
@@ -5301,10 +4762,6 @@ asset_input_cb (RigInputRegion *region,
     {
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_DOWN)
         {
-          Item *item = item_new (data,
-                                 asset,
-                                 data->items_next_id++);
-
           RigEntity *entity = rig_entity_new (data->ctx,
                                               data->entity_next_id++);
           RigComponent *component =
@@ -5322,9 +4779,6 @@ asset_input_cb (RigInputRegion *region,
           //rig_graphable_add_child (data->device_transform, entity);
           rig_graphable_add_child (data->scene, entity);
 
-          data->items = g_list_prepend (data->items, item);
-          data->selected_item = item;
-          //rig_graphable_add_child (data->device_transform, item);
           rig_shell_queue_redraw (data->ctx->shell);
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -5409,7 +4863,6 @@ update_asset_list (Data *data)
 
 enum {
   LOADER_STATE_NONE,
-  LOADER_STATE_LOADING_ITEM,
   LOADER_STATE_LOADING_ENTITY,
   LOADER_STATE_LOADING_MATERIAL_COMPONENT,
   LOADER_STATE_LOADING_MESH_COMPONENT,
@@ -5429,7 +4882,6 @@ typedef struct _Loader
   uint32_t texture_asset_id;
 
   GList *assets;
-  GList *items;
   GList *entities;
   GList *lights;
   GList *transitions;
@@ -5464,22 +4916,6 @@ loader_pop_state (Loader *loader)
   g_queue_pop_tail (&loader->state);
 }
 
-static Item *
-loader_find_item (Loader *loader, uint32_t id)
-{
-  GList *l;
-
-  for (l = loader->items; l; l = l->next)
-    {
-      Item *item = l->data;
-
-      if (item->id == id)
-        return item;
-    }
-
-  return NULL;
-}
-
 static RigEntity *
 loader_find_entity (Loader *loader, uint32_t id)
 {
@@ -5501,7 +4937,6 @@ loader_find_asset (Loader *loader, uint32_t id)
 
   return NULL;
 }
-
 
 static void
 parse_start_element (GMarkupParseContext *context,
@@ -5550,27 +4985,6 @@ parse_start_element (GMarkupParseContext *context,
         }
       else
         g_warning ("Ignoring unknown asset type: %s\n", type);
-    }
-  else if (state == LOADER_STATE_NONE &&
-           strcmp (element_name, "item") == 0)
-    {
-      const char *id_str;
-
-      loader_push_state (loader, LOADER_STATE_LOADING_ITEM);
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "id",
-                                        &id_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        {
-          return;
-        }
-
-      loader->id = g_ascii_strtoull (id_str, NULL, 10);
     }
   else if (state == LOADER_STATE_NONE &&
            strcmp (element_name, "entity") == 0)
@@ -5770,8 +5184,7 @@ parse_start_element (GMarkupParseContext *context,
 
       loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
     }
-  else if ((state == LOADER_STATE_LOADING_ITEM ||
-            state == LOADER_STATE_LOADING_MATERIAL_COMPONENT) &&
+  else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
            strcmp (element_name, "texture") == 0)
     {
       const char *id_str;
@@ -5853,7 +5266,7 @@ parse_start_element (GMarkupParseContext *context,
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Item property referenced in path element");
+                       "Invalid Entity property referenced in path element");
           return;
         }
 
@@ -5923,48 +5336,8 @@ parse_end_element (GMarkupParseContext *context,
   Loader *loader = user_data;
   int state = loader_get_state (loader);
 
-  if (state == LOADER_STATE_LOADING_ITEM &&
-      strcmp (element_name, "item") == 0)
-    {
-      Item *item;
-      //Data *data = loader->data;
-      Asset *texture_asset;
-      RigEntity *entity;
-      RigComponent *component;
-
-      texture_asset = loader_find_asset (loader, loader->texture_asset_id);
-      if (!texture_asset)
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid asset id");
-          return;
-        }
-
-      item = item_new (loader->data,
-                       texture_asset,
-                       loader->id);
-      entity = rig_entity_new (loader->data->ctx,
-                               loader->data->entity_next_id++);
-      component = rig_material_new_with_texture (loader->data->ctx,
-                                                 texture_asset->texture);
-      rig_entity_add_component (entity, component);
-      component = rig_diamond_new (loader->data->ctx,
-                                   400,
-                                   cogl_texture_get_width (texture_asset->texture),
-                                   cogl_texture_get_height (texture_asset->texture));
-      rig_entity_add_component (entity, component);
-
-      g_print ("loaded item = %p\n", item);
-
-      loader->items = g_list_prepend (loader->items, item);
-      loader->entities = g_list_prepend (loader->entities, entity);
-
-      loader_pop_state (loader);
-    }
-  else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "entity") == 0)
+  if (state == LOADER_STATE_LOADING_ENTITY &&
+      strcmp (element_name, "entity") == 0)
     {
       if (loader->is_light)
         loader->lights = g_list_prepend (loader->entities, loader->current_entity);
@@ -6066,11 +5439,6 @@ free_ux (Data *data)
   g_list_free (data->transitions);
   data->transitions = NULL;
 
-  for (l = data->items; l; l = l->next)
-    item_free (l->data);
-  g_list_free (data->items);
-  data->items = NULL;
-
   for (l = data->assets; l; l = l->next)
     _asset_free (l->data);
   g_list_free (data->assets);
@@ -6121,23 +5489,6 @@ load (Data *data, const char *file)
 
   free_ux (data);
 
-  data->items = loader.items;
-  data->selected_item = loader.items->data;
-
-  data->items_next_id = 0;
-
-#if 0
-  for (l = data->items; l; l = l->next)
-    {
-      Item *item = l->data;
-
-      if (item->id >= data->items_next_id)
-        data->items_next_id = item->id + 1;
-
-      rig_graphable_add_child (data->device_transform, item);
-    }
-#endif
-
   for (l = loader.entities; l; l = l->next)
     {
       if (rig_graphable_get_parent (l->data) == NULL)
@@ -6165,7 +5516,6 @@ static void
 init_types (void)
 {
   _asset_type_init ();
-  _item_type_init ();
   _transition_type_init ();
   _diamond_slice_init_type ();
 }
