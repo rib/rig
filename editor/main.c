@@ -8,6 +8,7 @@
 #include <cogl/cogl.h>
 
 #include "rig.h"
+#include "rig-inspector.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -294,7 +295,7 @@ struct _Data
   RigGraph *assets_list;
 
   RigUIViewport *tool_vp;
-  RigObject *tool_list;
+  RigObject *inspector;
 
   RigCamera *timeline_camera;
   RigInputRegion *timeline_input_region;
@@ -1014,6 +1015,55 @@ undo_journal_log_move (UndoJournal *journal,
   prop_change->value1.d.vec3_val[2] = z;
 
   undo_journal_insert (journal, undo_redo);
+}
+
+static CoglBool
+undo_journal_copy_property_and_log (UndoJournal *journal,
+                                    CoglBool mergable,
+                                    RigEntity *entity,
+                                    RigProperty *target_prop,
+                                    RigProperty *source_prop)
+{
+  UndoRedo *undo_redo;
+  UndoRedoPropertyChange *prop_change;
+
+  /* If we have a mergable entry then we can just update the final value */
+  if (mergable &&
+      (undo_redo =
+       undo_journal_find_recent_property_change (journal, target_prop)))
+    {
+      prop_change = &undo_redo->d.prop_change;
+      rig_boxed_destroy (&prop_change->value1);
+      /* NB: when we are merging then the existing operation is an
+       * inverse of a normal move operation so the new move location
+       * goes into value0... */
+      rig_property_box (source_prop, &prop_change->value0);
+      rig_property_set_boxed (&journal->data->ctx->property_ctx,
+                              target_prop,
+                              &prop_change->value0);
+    }
+  else
+    {
+      undo_redo = g_slice_new (UndoRedo);
+
+      undo_redo->op = UNDO_REDO_PROPERTY_CHANGE_OP;
+      undo_redo->mergable = mergable;
+
+      prop_change = &undo_redo->d.prop_change;
+
+      rig_property_box (target_prop, &prop_change->value0);
+      rig_property_box (source_prop, &prop_change->value1);
+
+      prop_change = &undo_redo->d.prop_change;
+      prop_change->entity = rig_ref_countable_ref (entity);
+      prop_change->property = target_prop;
+
+      rig_property_set_boxed (&journal->data->ctx->property_ctx,
+                              target_prop,
+                              &prop_change->value1);
+
+      undo_journal_insert (journal, undo_redo);
+    }
 }
 
 static void
@@ -2696,13 +2746,6 @@ entity_grab_input_cb (RigInputEvent *event,
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-typedef struct _ToolListState
-{
-  Data *data;
-  RigObject *tool_list;
-  int n_items;
-} ToolListState;
-
 static void
 property_updated_cb (RigText *text,
                      void *user_data)
@@ -2727,102 +2770,52 @@ property_updated_cb (RigText *text,
 }
 
 static void
-add_property (RigProperty *prop, void *user_data)
+inspector_property_changed_cb (RigProperty *target_property,
+                               RigProperty *source_property,
+                               void *user_data)
 {
-  ToolListState *state = user_data;
-  Data *data = state->data;
-  //RigText *text;
+  Data *data = user_data;
 
-  RigTransform *transform =
-    rig_transform_new (data->ctx, NULL);
-
-  switch (prop->spec->type)
-    {
-    case RIG_PROPERTY_TYPE_BOOLEAN:
-      {
-        RigToggle *toggle = rig_toggle_new (data->ctx,
-                                            prop->spec->name);
-        rig_graphable_add_child (transform, toggle);
-        break;
-      }
-    case RIG_PROPERTY_TYPE_FLOAT:
-      {
-        RigText *label = rig_text_new (data->ctx);
-        RigTransform *text_transform = rig_transform_new (data->ctx, NULL);
-        RigText *text = rig_text_new (data->ctx);
-        char *float_value = g_strdup_printf ("%f", rig_property_get_float (prop));
-        float width, height;
-
-        if (prop->spec->nick)
-          rig_text_set_text (label, prop->spec->nick);
-        else
-          rig_text_set_text (label, prop->spec->name);
-
-        rig_graphable_add_child (text_transform, text);
-
-        rig_sizable_get_size (label, &width, &height);
-        rig_transform_translate (text_transform, width + 10, 0, 0);
-
-        rig_text_set_text (text, float_value);
-        g_free (float_value);
-        rig_text_set_color_u32 (text, 0xffffffff);
-        rig_text_set_selection_color_u32 (text, 0x009ccfff);
-        rig_text_set_editable (text, TRUE);
-        rig_text_set_single_line_mode (text, TRUE);
-        rig_text_set_activatable (text, TRUE);
-        rig_text_set_activate_callback (text,
-                                        property_updated_cb,
-                                        prop);
-
-        rig_graphable_add_child (transform, label);
-        rig_graphable_add_child (transform, text_transform);
-        break;
-      }
-    default:
-      {
-        RigText *label = rig_text_new (data->ctx);
-
-        if (prop->spec->nick)
-          rig_text_set_text (label, prop->spec->nick);
-        else
-          rig_text_set_text (label, prop->spec->name);
-
-        rig_graphable_add_child (transform, label);
-      }
-    }
-
-  rig_transform_translate (transform, 0, state->n_items++ * 50, 0);
-
-  rig_graphable_add_child (state->tool_list, transform);
-  g_print ("prop name = %s\n", prop->spec->name);
+  undo_journal_copy_property_and_log (data->undo_journal,
+                                      TRUE, /* mergable */
+                                      data->selected_entity,
+                                      target_property,
+                                      source_property);
 }
 
 static void
-update_tool_list (Data *data)
+update_inspector (Data *data)
 {
   RigObject *doc_node;
-  ToolListState state;
 
-  if (data->tool_list)
+  if (data->inspector)
     {
-      rig_graphable_remove_child (data->tool_list);
-      data->tool_list = NULL;
+      rig_graphable_remove_child (data->inspector);
+      data->inspector = NULL;
     }
 
   if (data->selected_entity)
     {
-      data->tool_list = rig_graph_new (data->ctx, NULL);
+      float width, height;
+
+      data->inspector = rig_inspector_new (data->ctx,
+                                           data->selected_entity,
+                                           inspector_property_changed_cb,
+                                           data);
+
+      rig_sizable_get_preferred_width (data->inspector,
+                                       -1, /* for height */
+                                       NULL, /* min_width */
+                                       &width);
+      rig_sizable_get_preferred_height (data->inspector,
+                                        -1, /* for width */
+                                        NULL, /* min_height */
+                                        &height);
+      rig_sizable_set_size (data->inspector, width, height);
 
       doc_node = rig_ui_viewport_get_doc_node (data->tool_vp);
-      rig_graphable_add_child (doc_node, data->tool_list);
-      rig_ref_countable_unref (data->tool_list);
-
-      state.data = data;
-      state.n_items = 0;
-      state.tool_list = data->tool_list;
-
-      rig_introspectable_foreach_property (data->selected_entity,
-                                           add_property, &state);
+      rig_graphable_add_child (doc_node, data->inspector);
+      rig_ref_countable_unref (data->inspector);
     }
 }
 
@@ -3492,7 +3485,7 @@ main_input_cb (RigInputEvent *event,
           if (data->selected_entity == NULL)
             rig_tool_update (data->tool, NULL);
 
-          update_tool_list (data);
+          update_inspector (data);
 
           /* If we have selected an entity then initiate a grab so the
            * entity can be moved with the mouse...
