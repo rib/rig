@@ -2,6 +2,7 @@
 #include <stdint.h>
 
 #include "rig-property.h"
+#include "rig-interfaces.h"
 
 void
 rig_property_context_init (RigPropertyContext *context)
@@ -70,45 +71,38 @@ rig_property_destroy (RigProperty *property)
     }
 }
 
-#define DECLARE_STANDARD_COPIER(SUFFIX, CTYPE, TYPE)                    \
-  case RIG_PROPERTY_TYPE_ ## TYPE:                                      \
-  {                                                                     \
-    CTYPE value = rig_property_get_ ## SUFFIX (source_property);        \
-    rig_property_set_ ## SUFFIX (ctx, target_property, value);          \
-  }                                                                     \
-  return
-
 void
 rig_property_copy_value (RigPropertyContext *ctx,
-                         RigProperty *target_property,
-                         RigProperty *source_property)
+                         RigProperty *dest,
+                         RigProperty *src)
 {
-  g_return_if_fail (source_property->spec->type ==
-                    target_property->spec->type);
+  g_return_if_fail (src->spec->type == dest->spec->type);
 
-  switch ((RigPropertyType) target_property->spec->type)
+  switch ((RigPropertyType) dest->spec->type)
     {
-      DECLARE_STANDARD_COPIER (float, float, FLOAT);
-      DECLARE_STANDARD_COPIER (double, double, DOUBLE);
-      DECLARE_STANDARD_COPIER (integer, int, INTEGER);
-      DECLARE_STANDARD_COPIER (enum, int, ENUM);
-      DECLARE_STANDARD_COPIER (uint32, uint32_t, UINT32);
-      DECLARE_STANDARD_COPIER (boolean, CoglBool, BOOLEAN);
-      DECLARE_STANDARD_COPIER (object, RigObject *, OBJECT);
-      DECLARE_STANDARD_COPIER (pointer, void *, POINTER);
-      DECLARE_STANDARD_COPIER (text, const char *, TEXT);
-      DECLARE_STANDARD_COPIER (quaternion, const CoglQuaternion *, QUATERNION);
-      DECLARE_STANDARD_COPIER (vec3, const float *, VEC3);
-      DECLARE_STANDARD_COPIER (color, const RigColor *, COLOR);
+#define COPIER(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      rig_property_set_ ## SUFFIX (ctx, dest, \
+                                   rig_property_get_ ## SUFFIX (src)); \
+      return
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) COPIER(SUFFIX, CTYPE, TYPE);
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE) COPIER(SUFFIX, CTYPE, TYPE);
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE) COPIER(SUFFIX, CTYPE, TYPE);
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) COPIER(SUFFIX, CTYPE, TYPE);
 
-    case RIG_PROPERTY_TYPE_UNKNOWN:
-      return;
+    COPIER(text, char *, TEXT);
+
+#include "rig-property-types.h"
+
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef POINTER_TYPE
+#undef SCALAR_TYPE
+#undef COPIER
     }
 
   g_warn_if_reached ();
 }
-
-#undef DECLARE_STANDARD_COPIER
 
 static void
 _rig_property_set_binding_full_valist (RigProperty *property,
@@ -246,5 +240,155 @@ rig_property_dirty (RigPropertyContext *ctx,
       if (binding)
         binding->callback (dependant, binding->user_data);
     }
+}
+
+void
+rig_property_box (RigProperty *property,
+                  RigBoxed *boxed)
+{
+  boxed->type = property->spec->type;
+
+  switch (property->spec->type)
+    {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      { \
+        boxed->d. SUFFIX ## _val = rig_property_get_ ## SUFFIX (property); \
+        break; \
+      }
+    /* Special case the _POINTER types so we can take a reference on
+     * objects... */
+    case RIG_PROPERTY_TYPE_OBJECT:
+      {
+        RigObject *obj = rig_property_get_object (property);
+        if (obj)
+          boxed->d.object_val = rig_ref_countable_ref (obj);
+        else
+          boxed->d.object_val = NULL;
+        break;
+      }
+    case RIG_PROPERTY_TYPE_POINTER:
+      {
+        boxed->d.pointer_val = rig_property_get_pointer (property);
+        break;
+      }
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      { \
+        memcpy (&boxed->d. SUFFIX ## _val, \
+                rig_property_get_ ## SUFFIX (property), \
+                sizeof (boxed->d. SUFFIX ## _val)); \
+        break; \
+      }
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      { \
+        memcpy (&boxed->d. SUFFIX ## _val, \
+                rig_property_get_ ## SUFFIX (property), \
+                sizeof (CTYPE) * LEN); \
+        break; \
+      }
+    case RIG_PROPERTY_TYPE_TEXT:
+      boxed->d.text_val = g_strdup (rig_property_get_text (property));
+      break;
+    }
+
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef SCALAR_TYPE
+}
+
+void
+rig_boxed_destroy (RigBoxed *boxed)
+{
+  if (boxed->type == RIG_PROPERTY_TYPE_OBJECT && boxed->d.object_val)
+    rig_ref_countable_unref (boxed->d.object_val);
+  else if (boxed->type == RIG_PROPERTY_TYPE_TEXT)
+    g_free (boxed->d.text_val);
+}
+
+static double
+boxed_to_double (const RigBoxed *boxed)
+{
+  switch (boxed->type)
+    {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      return boxed->d.SUFFIX ## _val;
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
+
+#include "rig-property-types.h"
+
+#undef SCALAR_TYPE
+#undef POINTER_TYPE
+#undef COMPOSITE_TYPE
+#undef ARRAY_TYPE
+
+    default:
+      g_warn_if_reached ();
+      return 0;
+    }
+}
+
+void
+rig_property_set_boxed (RigPropertyContext *ctx,
+                        RigProperty *property,
+                        const RigBoxed *boxed)
+{
+  /* Handle basic type conversion for scalar types only... */
+  if (property->spec->type != boxed->type)
+    {
+      double intermediate = boxed_to_double (boxed);
+
+      switch (property->spec->type)
+        {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+        case RIG_PROPERTY_TYPE_ ## TYPE: \
+          rig_property_set_ ## SUFFIX (ctx, property, intermediate); \
+          return;
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
+
+#include "rig-property-types.h"
+
+#undef SCALAR_TYPE
+#undef POINTER_TYPE
+#undef COMPOSITE_TYPE
+#undef ARRAY_TYPE
+
+        default:
+          g_warn_if_reached ();
+          return;
+        }
+    }
+
+  switch (boxed->type)
+    {
+#define SET_BY_VAL(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      rig_property_set_ ## SUFFIX (ctx, property, boxed->d.SUFFIX ## _val); \
+      return
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RIG_PROPERTY_TYPE_ ## TYPE: \
+      rig_property_set_ ## SUFFIX (ctx, property, &boxed->d.SUFFIX ## _val); \
+      return;
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) SET_BY_VAL(SUFFIX, CTYPE, TYPE);
+    SET_BY_VAL(text, char *, TEXT);
+
+#include "rig-property-types.h"
+
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef POINTER_TYPE
+#undef SCALAR_TYPE
+#undef SET_FROM_BOXED
+    }
+
+  g_warn_if_reached ();
 }
 

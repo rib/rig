@@ -28,7 +28,6 @@ typedef enum _RigPropertyType
   RIG_PROPERTY_TYPE_COLOR,
   RIG_PROPERTY_TYPE_OBJECT,
   RIG_PROPERTY_TYPE_POINTER,
-  RIG_PROPERTY_TYPE_UNKNOWN,
 } RigPropertyType;
 
 typedef struct _RigProperty RigProperty;
@@ -42,6 +41,27 @@ typedef union _RigPropertyDefault
   CoglBool boolean;
   const void *pointer;
 } RigPropertyDefault;
+
+typedef struct _RigBoxed
+{
+  RigPropertyType type;
+  union
+    {
+      float float_val;
+      double double_val;
+      int integer_val;
+      int enum_val;
+      uint32_t uint32_val;
+      CoglBool boolean_val;
+      char *text_val;
+      CoglQuaternion quaternion_val;
+      float vec3_val[3];
+      RigColor color_val;
+      RigObject *object_val;
+      void *pointer_val;
+    } d;
+} RigBoxed;
+
 
 typedef struct _RigPropertyValidationInteger
 {
@@ -363,7 +383,19 @@ rig_property_copy_value (RigPropertyContext *ctx,
                          RigProperty *target_property,
                          RigProperty *source_property);
 
-#define DECLARE_STANDARD_GETTER_SETTER(SUFFIX, CTYPE, TYPE) \
+void
+rig_property_box (RigProperty *property,
+                  RigBoxed *boxed);
+
+void
+rig_property_set_boxed (RigPropertyContext *ctx,
+                        RigProperty *property,
+                        const RigBoxed *boxed);
+
+void
+rig_boxed_destroy (RigBoxed *boxed);
+
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
 static inline void \
 rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
                              RigProperty *property, \
@@ -408,141 +440,100 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
     } \
 }
 
-DECLARE_STANDARD_GETTER_SETTER(float, float, FLOAT)
-DECLARE_STANDARD_GETTER_SETTER(double, double, DOUBLE)
-DECLARE_STANDARD_GETTER_SETTER(integer, int, INTEGER)
-DECLARE_STANDARD_GETTER_SETTER(enum, int, ENUM)
-DECLARE_STANDARD_GETTER_SETTER(uint32, uint32_t, UINT32)
-DECLARE_STANDARD_GETTER_SETTER(boolean, CoglBool, BOOLEAN)
-DECLARE_STANDARD_GETTER_SETTER(object, RigObject *, OBJECT)
-DECLARE_STANDARD_GETTER_SETTER(pointer, void *, POINTER)
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE) SCALAR_TYPE(SUFFIX, CTYPE, TYPE)
 
-
-static inline void
-rig_property_set_quaternion (RigPropertyContext *ctx,
-                             RigProperty *property,
-                             const CoglQuaternion *value)
-{
-  CoglQuaternion *data =
-    (CoglQuaternion *)((uint8_t *)property->object +
-                       property->spec->data_offset);
-
-  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_QUATERNION);
-
-  if (property->spec->setter)
-    {
-      void (*setter) (RigProperty *, const CoglQuaternion *) = property->spec->setter;
-      setter (property->object, value);
-    }
-  else
-    {
-      *data = *value;
-      if (property->dependants)
-        rig_property_dirty (ctx, property);
-    }
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE) \
+static inline void \
+rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
+                             RigProperty *property, \
+                             const CTYPE *value) \
+{ \
+  CTYPE *data = \
+    (CTYPE *)((uint8_t *)property->object + \
+                         property->spec->data_offset); \
+ \
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE); \
+ \
+  if (property->spec->setter) \
+    { \
+      void (*setter) (RigProperty *, const CTYPE *) = property->spec->setter; \
+      setter (property->object, value); \
+    } \
+  else \
+    { \
+      *data = *value; \
+      if (property->dependants) \
+        rig_property_dirty (ctx, property); \
+    } \
+} \
+ \
+static inline const CTYPE * \
+rig_property_get_ ## SUFFIX (RigProperty *property) \
+{ \
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE, 0); \
+ \
+  if (property->spec->getter) \
+    { \
+      CTYPE *(*getter) (RigProperty *property) = property->spec->getter; \
+      return getter (property); \
+    } \
+  else \
+    { \
+      CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
+                              property->spec->data_offset); \
+      return data; \
+    } \
 }
 
-static inline const CoglQuaternion *
-rig_property_get_quaternion (RigProperty *property)
-{
-  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_QUATERNION, 0);
-
-  if (property->spec->getter)
-    {
-      CoglQuaternion *(*getter) (RigProperty *property) = property->spec->getter;
-      return getter (property);
-    }
-  else
-    {
-      CoglQuaternion *data = (CoglQuaternion *)((uint8_t *)property->object +
-                               property->spec->data_offset);
-      return data;
-    }
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN) \
+static inline void \
+rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
+                             RigProperty *property, \
+                             const CTYPE value[LEN]) \
+{ \
+  float *data = (float *) ((uint8_t *) property->object + \
+                           property->spec->data_offset); \
+ \
+  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE); \
+ \
+  if (property->spec->setter) \
+    { \
+      void (*setter) (RigProperty *, const CTYPE[LEN]) = \
+        property->spec->setter; \
+      setter (property->object, value); \
+    } \
+  else \
+    { \
+      memcpy (data, value, sizeof (CTYPE) * LEN); \
+      if (property->dependants) \
+        rig_property_dirty (ctx, property); \
+    } \
+} \
+ \
+static inline const CTYPE * \
+rig_property_get_ ## SUFFIX (RigProperty *property) \
+{ \
+  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE, 0); \
+ \
+  if (property->spec->getter) \
+    { \
+      const CTYPE *(*getter) (RigProperty *property) = property->spec->getter; \
+      return getter (property); \
+    } \
+  else \
+    { \
+      const CTYPE *data = (const CTYPE *) ((uint8_t *) property->object + \
+                                           property->spec->data_offset); \
+      return data; \
+    } \
 }
 
-static inline void
-rig_property_set_vec3 (RigPropertyContext *ctx,
-                       RigProperty *property,
-                       const float value[3])
-{
-  float *data = (float *) ((uint8_t *) property->object +
-                           property->spec->data_offset);
+#include "rig-property-types.h"
 
-  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_VEC3);
-
-  if (property->spec->setter)
-    {
-      void (*setter) (RigProperty *, const float[3]) =
-        property->spec->setter;
-      setter (property->object, value);
-    }
-  else
-    {
-      memcpy (data, value, sizeof (float) * 3);
-      if (property->dependants)
-        rig_property_dirty (ctx, property);
-    }
-}
-
-static inline const float *
-rig_property_get_vec3 (RigProperty *property)
-{
-  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_VEC3, 0);
-
-  if (property->spec->getter)
-    {
-      const float *(*getter) (RigProperty *property) = property->spec->getter;
-      return getter (property);
-    }
-  else
-    {
-      const float *data = (const float *) ((uint8_t *) property->object +
-                                           property->spec->data_offset);
-      return data;
-    }
-}
-
-static inline void
-rig_property_set_color (RigPropertyContext *ctx,
-                        RigProperty *property,
-                        const RigColor *value)
-{
-  RigColor *data =
-    (RigColor *)((uint8_t *)property->object +
-                       property->spec->data_offset);
-
-  g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_COLOR);
-
-  if (property->spec->setter)
-    {
-      void (*setter) (RigProperty *, const RigColor *) = property->spec->setter;
-      setter (property->object, value);
-    }
-  else
-    {
-      *data = *value;
-      if (property->dependants)
-        rig_property_dirty (ctx, property);
-    }
-}
-
-static inline const RigColor *
-rig_property_get_color (RigProperty *property)
-{
-  g_return_val_if_fail (property->spec->type == RIG_PROPERTY_TYPE_COLOR, 0);
-
-  if (property->spec->getter)
-    {
-      RigColor *(*getter) (RigProperty *property) = property->spec->getter;
-      return getter (property);
-    }
-  else
-    {
-      RigColor *data = (RigColor *)((uint8_t *)property->object +
-                               property->spec->data_offset);
-      return data;
-    }
-}
+#undef ARRAY_TYPE
+#undef POINTER_TYPE
+#undef COMPOSITE_TYPE
+#undef SCALAR_TYPE
 
 static inline void
 rig_property_set_text (RigPropertyContext *ctx,
