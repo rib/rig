@@ -24,9 +24,7 @@
 enum
 {
   PROP_LABEL,
-  PROP_X,
-  PROP_Y,
-  PROP_Z,
+  PROP_POSITION,
   PROP_ROTATION,
   PROP_SCALE,
 
@@ -49,7 +47,7 @@ struct _RigEntity
   RigGraphableProps graphable;
 
   /* private fields */
-  struct { float x, y, z; } position;
+  float position[3];
   CoglQuaternion rotation;
   float scale;                          /* uniform scaling only */
   CoglMatrix transform;
@@ -76,30 +74,12 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
   {
-    .name = "x",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .getter = rig_entity_get_x,
-    .setter = rig_entity_set_x,
-    .nick = "X",
-    .blurb = "The entities X coordinate",
-    .flags = RIG_PROPERTY_FLAG_READWRITE
-  },
-  {
-    .name = "y",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .getter = rig_entity_get_y,
-    .setter = rig_entity_set_y,
-    .nick = "Y",
-    .blurb = "The entities Y coordinate",
-    .flags = RIG_PROPERTY_FLAG_READWRITE
-  },
-  {
-    .name = "z",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .getter = rig_entity_get_z,
-    .setter = rig_entity_set_z,
-    .nick = "Z",
-    .blurb = "The entities Z coordinate",
+    .name = "position",
+    .type = RIG_PROPERTY_TYPE_VEC3,
+    .getter = rig_entity_get_position,
+    .setter = rig_entity_set_position,
+    .nick = "Position",
+    .blurb = "The entity's position",
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
   {
@@ -108,7 +88,7 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .getter = rig_entity_get_rotation,
     .setter = rig_entity_set_rotation,
     .nick = "Rotation",
-    .blurb = "The entities rotation",
+    .blurb = "The entity's rotation",
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
   {
@@ -117,7 +97,7 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .getter = rig_entity_get_scale,
     .setter = rig_entity_set_scale,
     .nick = "Scale",
-    .blurb = "The entities uniform scale factor",
+    .blurb = "The entity's uniform scale factor",
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
   { 0 }
@@ -198,9 +178,9 @@ rig_entity_new (RigContext *ctx,
                                   entity->properties);
 
   entity->id = id;
-  entity->position.x = 0.0f;
-  entity->position.y = 0.0f;
-  entity->position.z = 0.0f;
+  entity->position[0] = 0.0f;
+  entity->position[1] = 0.0f;
+  entity->position[2] = 0.0f;
 
   entity->scale = 1.0f;
 
@@ -238,60 +218,57 @@ rig_entity_get_id (RigEntity *entity)
 float
 rig_entity_get_x (RigEntity *entity)
 {
-  return entity->position.x;
+  return entity->position[0];
 }
 
 void
 rig_entity_set_x (RigEntity *entity,
                  float   x)
 {
-  entity->position.x = x;
+  entity->position[0] = x;
   entity->dirty = TRUE;
 }
 
 float
 rig_entity_get_y (RigEntity *entity)
 {
-  return entity->position.y;
+  return entity->position[1];
 }
 
 void
 rig_entity_set_y (RigEntity *entity,
                   float      y)
 {
-  entity->position.y = y;
+  entity->position[1] = y;
   entity->dirty = TRUE;
 }
 
 float
 rig_entity_get_z (RigEntity *entity)
 {
-  return entity->position.z;
+  return entity->position[2];
 }
 
 void
 rig_entity_set_z (RigEntity *entity,
                   float      z)
 {
-  entity->position.z = z;
+  entity->position[2] = z;
   entity->dirty = TRUE;
 }
 
-void
-rig_entity_get_position (RigEntity *entity,
-                         float      position[3])
+const float *
+rig_entity_get_position (RigEntity *entity)
 {
-  position[0] = entity->position.x;
-  position[1] = entity->position.y;
-  position[2] = entity->position.z;
+  return entity->position;
 }
 
 void rig_entity_set_position (RigEntity *entity,
                               float      position[3])
 {
-  entity->position.x = position[0];
-  entity->position.y = position[1];
-  entity->position.z = position[2];
+  entity->position[0] = position[0];
+  entity->position[1] = position[1];
+  entity->position[2] = position[2];
   entity->dirty = TRUE;
 }
 
@@ -407,9 +384,9 @@ rig_entity_get_transform (RigEntity *entity)
     return &entity->transform;
 
   cogl_matrix_init_translation (&entity->transform,
-                                entity->position.x,
-                                entity->position.y,
-                                entity->position.z);
+                                entity->position[0],
+                                entity->position[1],
+                                entity->position[2]);
   cogl_matrix_init_from_quaternion (&rotation, &entity->rotation);
   cogl_matrix_multiply (&entity->transform, &entity->transform, &rotation);
   cogl_matrix_scale (&entity->transform,
@@ -470,9 +447,9 @@ rig_entity_translate (RigEntity *entity,
                       float      ty,
                       float      tz)
 {
-  entity->position.x += tx;
-  entity->position.y += ty;
-  entity->position.z += tz;
+  entity->position[0] += tx;
+  entity->position[1] += ty;
+  entity->position[2] += tz;
 
   entity->dirty = TRUE;
 }
@@ -483,9 +460,9 @@ rig_entity_set_translate (RigEntity *entity,
                           float ty,
                           float tz)
 {
-  entity->position.x = tx;
-  entity->position.y = ty;
-  entity->position.z = tz;
+  entity->position[0] = tx;
+  entity->position[1] = ty;
+  entity->position[2] = tz;
 
   entity->dirty = TRUE;
 }

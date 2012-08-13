@@ -109,9 +109,8 @@ void
 rig_entity_set_z (RigEntity *entity,
                   float z);
 
-void
-rig_entity_get_position (RigEntity *entity,
-                         float position[3]);
+const float *
+rig_entity_get_position (RigEntity *entity);
 
 void
 rig_entity_set_position (RigEntity *entity,

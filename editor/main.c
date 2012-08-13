@@ -40,6 +40,12 @@ typedef struct _NodeFloat
   float value;
 } NodeFloat;
 
+typedef struct _NodeVec3
+{
+  float t;
+  float value[3];
+} NodeVec3;
+
 typedef struct _NodeQuaternion
 {
   float t;
@@ -205,6 +211,21 @@ node_float_lerp (NodeFloat *a,
 }
 
 void
+node_vec3_lerp (NodeVec3 *a,
+                NodeVec3 *b,
+                float t,
+                float value[3])
+{
+  float range = b->t - a->t;
+  float offset = t - a->t;
+  float factor = offset / range;
+
+  value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
+  value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
+  value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
+}
+
+void
 node_quaternion_lerp (NodeQuaternion *a,
                       NodeQuaternion *b,
                       float t,
@@ -228,6 +249,10 @@ node_free (void *node, void *user_data)
 	g_slice_free (NodeFloat, node);
 	break;
 
+      case RIG_PROPERTY_TYPE_VEC3:
+	g_slice_free (NodeVec3, node);
+	break;
+
       case RIG_PROPERTY_TYPE_QUATERNION:
 	g_slice_free (NodeQuaternion, node);
 	break;
@@ -245,6 +270,16 @@ node_new_for_float (float t, float value)
   node->value = value;
   return node;
 }
+
+NodeFloat *
+node_new_for_vec3 (float t, float value[3])
+{
+  NodeVec3 *node = g_slice_new (NodeVec3);
+  node->t = t;
+  memcpy (node->value, value, sizeof (value));
+  return node;
+}
+
 
 NodeQuaternion *
 node_new_for_quaternion (float t, float angle, float x, float y, float z)
@@ -483,6 +518,18 @@ node_print (void *node, void *user_data)
           break;
 	}
 
+      case RIG_PROPERTY_TYPE_VEC3:
+	{
+	  NodeVec3 *vec3_node = (NodeVec3 *)node;
+
+	  g_print (" t = %f value.x = %f .y = %f .z = %f\n",
+                   vec3_node->t,
+                   vec3_node->value[0],
+                   vec3_node->value[1],
+                   vec3_node->value[2]);
+          break;
+	}
+
       case RIG_PROPERTY_TYPE_QUATERNION:
 	{
 	  NodeQuaternion *q_node = (NodeQuaternion *)node;
@@ -565,6 +612,31 @@ path_insert_float (Path *path,
 }
 
 void
+path_insert_vec3 (Path *path,
+                  float t,
+                  float value[3])
+{
+  GList *link;
+  NodeVec3 *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      memcpy (node->value, value, sizeof (value));
+    }
+  else
+    {
+      node = node_new_for_vec3 (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func,
+                             NULL);
+    }
+}
+
+
+void
 path_insert_quaternion (Path *path,
                         float t,
                         float angle,
@@ -616,6 +688,13 @@ path_lerp_property (Path *path, float t)
 
         node_float_lerp (n0, n1, t, &value);
         rig_property_set_float (&path->ctx->property_ctx, path->prop, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_VEC3:
+      {
+        float value[3];
+        node_vec3_lerp (n0, n1, t, value);
+        rig_property_set_vec3 (&path->ctx->property_ctx, path->prop, value);
         break;
       }
     case RIG_PROPERTY_TYPE_QUATERNION:
@@ -2268,14 +2347,11 @@ entity_grab_input_cb (RigInputEvent *event,
         {
           Transition *transition = data->selected_transition;
           float elapsed = rig_timeline_get_elapsed (data->timeline);
-          Path *path_x = transition_find_path (transition, "x");
-          Path *path_y = transition_find_path (transition, "y");
-          Path *path_z = transition_find_path (transition, "z");
+          Path *path_position = transition_find_path (transition, "position");
 
-
-          path_insert_float (path_x, elapsed, rig_entity_get_x (entity));
-          path_insert_float (path_y, elapsed, rig_entity_get_y (entity));
-          path_insert_float (path_z, elapsed, rig_entity_get_z (entity));
+          if (path_position)
+            path_insert_vec3 (path_position, elapsed,
+                              rig_entity_get_position (entity));
 
           rig_shell_ungrab_input (data->ctx->shell,
                                   entity_grab_input_cb,
@@ -3117,7 +3193,9 @@ main_input_cb (RigInputEvent *event,
               data->grab_x = rig_motion_event_get_x (event);
               data->grab_y = rig_motion_event_get_y (event);
 
-              rig_entity_get_position (entity, data->entity_grab_pos);
+              memcpy (data->entity_grab_pos,
+                      rig_entity_get_position (entity),
+                      sizeof (float) * 3);
 
               rig_graphable_get_modelview (parent, camera, &parent_transform);
 
@@ -4591,6 +4669,16 @@ save (Data *data)
                     fprintf (file, "%*s<node t=\"%f\" value=\"%f\" />\n", state.indent, "", node->t, node->value);
                     break;
                   }
+                case RIG_PROPERTY_TYPE_VEC3:
+                  {
+                    NodeVec3 *node = l3->data;
+                    fprintf (file, "%*s<node t=\"%f\" value=\"(%f, %f, %f)\" />\n",
+                             state.indent, "", node->t,
+                             node->value[0],
+                             node->value[1],
+                             node->value[2]);
+                    break;
+                  }
                 case RIG_PROPERTY_TYPE_QUATERNION:
                   {
                     NodeQuaternion *node = l3->data;
@@ -4869,9 +4957,7 @@ parse_start_element (GMarkupParseContext *context,
       unsigned int id;
       RigEntity *entity;
       const char *parent_id_str;
-      const char *x_str;
-      const char *y_str;
-      const char *z_str;
+      const char *position_str;
       const char *rotation_str;
       const char *scale_str;
 
@@ -4886,14 +4972,8 @@ parse_start_element (GMarkupParseContext *context,
                                         "parent",
                                         &parent_id_str,
                                         G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "x",
-                                        &x_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "y",
-                                        &y_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "z",
-                                        &z_str,
+                                        "position",
+                                        &position_str,
                                         G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                         "rotation",
                                         &rotation_str,
@@ -4935,20 +5015,19 @@ parse_start_element (GMarkupParseContext *context,
           rig_graphable_add_child (parent, entity);
         }
 
-      if (x_str)
+      if (position_str)
         {
-          double x = g_ascii_strtod (x_str, NULL);
-          rig_entity_set_x (entity, x);
-        }
-      if (y_str)
-        {
-          double y = g_ascii_strtod (y_str, NULL);
-          rig_entity_set_y (entity, y);
-        }
-      if (z_str)
-        {
-          double z = g_ascii_strtod (z_str, NULL);
-          rig_entity_set_z (entity, z);
+          float pos[3];
+          if (sscanf (position_str, "(%f, %f, %f)",
+                      &pos[0], &pos[1], &pos[2]) != 3)
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Invalid entity position");
+              return;
+            }
+          rig_entity_set_position (entity, pos);
         }
       if (rotation_str)
         {
@@ -5181,6 +5260,21 @@ parse_start_element (GMarkupParseContext *context,
           {
             float value = g_ascii_strtod (value_str, NULL);
             path_insert_float (loader->current_path, t, value);
+            break;
+          }
+        case RIG_PROPERTY_TYPE_VEC3:
+          {
+            float value[3];
+            if (sscanf (value_str, "(%f, %f, %f)",
+                        &value[0], &value[1], &value[2]) != 3)
+              {
+                g_set_error (error,
+                             G_MARKUP_ERROR,
+                             G_MARKUP_ERROR_INVALID_CONTENT,
+                             "Invalid vec3 value");
+                return;
+              }
+            path_insert_vec3 (loader->current_path, t, value);
             break;
           }
         case RIG_PROPERTY_TYPE_QUATERNION:
