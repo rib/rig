@@ -3342,51 +3342,8 @@ pick (Data *data,
 static void
 update_camera_position (Data *data)
 {
-#if 0
-#if 0
-  /* Calculate where the origin currently is from the camera's
-   * point of view. Then we can fixup the camera's position
-   * so this matches the real position of the origin. */
-  float relative_origin[3] = { 0, 0, -data->main_camera_z };
-
-
-  rig_entity_get_transformed_position (data->main_camera_rig,
-                                       relative_origin);
-#else
-  float relative_origin[3] = { data->main_width / 2, data->main_height / 2, 0 };
-  RigCamera *camera_component =
-    rig_entity_get_component (data->main_camera, RIG_COMPONENT_TYPE_CAMERA);
-  const CoglMatrix *view;
-  float w = 1;
-
-  camera_update_view (data, data->main_camera, FALSE);
-  view = rig_camera_get_view_transform (data->main_camera);
-
-  cogl_matrix_transform_point (view,
-                               &relative_origin[0],
-                               &relative_origin[1],
-                               &relative_origin[2],
-                               &w);
-#endif
-
-  rig_entity_translate (data->main_camera_to_origin,
-                        data->origin[0] - relative_origin[0],
-                        data->origin[1] - relative_origin[1],
-                        data->origin[2] - relative_origin[2]);
-
-#endif
-  float pos[3] = {0, 0, 0};
-  rig_entity_set_position (data->main_camera_to_origin, pos);
-  rig_entity_translate (data->main_camera_to_origin,
-                        data->origin[0],
-                        data->origin[1],
-                        data->origin[2]);
-
-  rig_entity_set_position (data->main_camera_origin_offset, pos);
-  rig_entity_translate (data->main_camera_origin_offset,
-                        -data->origin[0],
-                        -data->origin[1],
-                        -data->origin[2]);
+  rig_entity_set_position (data->main_camera_to_origin,
+                           data->origin);
 
   rig_entity_set_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
 
@@ -3570,6 +3527,31 @@ entity_translate_cb (RigEntity *entity,
   rig_shell_queue_redraw (data->ctx->shell);
 }
 
+static void
+scene_translate_cb (RigEntity *entity,
+                    float start[3],
+                    float rel[3],
+                    void *user_data)
+{
+  Data *data = user_data;
+
+  data->origin[0] = start[0] - rel[0];
+  data->origin[1] = start[1] - rel[1];
+  data->origin[2] = start[2] - rel[2];
+
+  update_camera_position (data);
+}
+
+static void
+scene_translate_done_cb (RigEntity *entity,
+                         float start[3],
+                         float rel[3],
+                         void *user_data)
+{
+  Data *data = user_data;
+
+}
+
 static RigInputEventStatus
 main_input_cb (RigInputEvent *event,
                void *user_data)
@@ -3685,7 +3667,7 @@ main_input_cb (RigInputEvent *event,
         }
       else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
                state == RIG_BUTTON_STATE_2 &&
-               modifiers & RIG_MODIFIER_SHIFT_ON == 0)
+               ((modifiers & RIG_MODIFIER_SHIFT_ON) == 0))
         {
           //data->saved_rotation = *rig_entity_get_rotation (data->main_camera);
           data->saved_rotation = *rig_entity_get_rotation (data->main_camera_rotate);
@@ -3710,6 +3692,16 @@ main_input_cb (RigInputEvent *event,
                state == RIG_BUTTON_STATE_2 &&
                modifiers & RIG_MODIFIER_SHIFT_ON)
         {
+          if (!translate_grab_entity (data,
+                                      rig_input_event_get_camera (event),
+                                      data->main_camera_to_origin,
+                                      rig_motion_event_get_x (event),
+                                      rig_motion_event_get_y (event),
+                                      scene_translate_cb,
+                                      scene_translate_done_cb,
+                                      data))
+            return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+#if 0
           float origin[3] = {0, 0, 0};
           float unit_x[3] = {1, 0, 0};
           float unit_y[3] = {0, 1, 0};
@@ -3765,11 +3757,12 @@ main_input_cb (RigInputEvent *event,
                    x - data->grab_x,
                    y - data->grab_y,
                    dx, dy);
-
+#endif
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
-               state == RIG_BUTTON_STATE_2)
+               state == RIG_BUTTON_STATE_2 &&
+               ((modifiers & RIG_MODIFIER_SHIFT_ON) == 0))
         {
           CoglQuaternion new_rotation;
 
@@ -3795,26 +3788,9 @@ main_input_cb (RigInputEvent *event,
           print_quaternion (&data->arcball.q_drag, "Arcball Quaternion");
 
           g_print ("rig entity set rotation\n");
-          /* XXX: The remaining problem is calculating the new
-           * position for the camera!
-           *
-           * If we transform the point (0, 0, camera_z) by the
-           * camera's transform we can find where the origin is
-           * relative to the camera, and then find out how far that
-           * point is from the true origin so we know how to
-           * translate the camera.
-           */
-          update_camera_position (data);
 
-          //rig_shell_queue_redraw (data->ctx->shell);
+          rig_shell_queue_redraw (data->ctx->shell);
 
-          return RIG_INPUT_EVENT_STATUS_HANDLED;
-        }
-      else if (action == RIG_MOTION_EVENT_ACTION_MOVE &&
-               state == RIG_BUTTON_STATE_2 &&
-               modifiers & RIG_MODIFIER_SHIFT_ON)
-        {
-          g_print ("Translate\n");
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
 
