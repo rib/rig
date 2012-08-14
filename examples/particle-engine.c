@@ -19,7 +19,7 @@
 
 #include <rig/rig.h>
 #include <rig/rig-particle-engine.h>
-#include <rig/rig-pe-settings.h>
+#include <rig/rig-inspector.h>
 
 typedef struct
 {
@@ -34,8 +34,8 @@ typedef struct
   RigParticleEngine *engine;
   RigTransform *engine_transform;
 
-  RigPeSettings *pe_settings;
-  RigTransform *pe_settings_transform;
+  RigInspector *inspector;
+  RigTransform *inspector_transform;
 } Data;
 
 static RigCamera *
@@ -60,29 +60,29 @@ allocate (Data *data)
   float width;
   float height;
 
-  rig_pe_settings_get_preferred_width (data->pe_settings,
-                                       -1, /* for_height */
-                                       NULL, /* min_width */
-                                       &width);
+  rig_sizable_get_preferred_width (data->inspector,
+                                   -1, /* for_height */
+                                   NULL, /* min_width */
+                                   &width);
 
   /* Make sure the particle engine has at least ¼ of the screen */
   if (width > fb_width * 3 / 4)
     width = fb_width * 3 / 4;
 
-  rig_pe_settings_get_preferred_height (data->pe_settings,
-                                        width, /* for_width */
-                                        NULL, /* min_height */
-                                        &height);
+  rig_sizable_get_preferred_height (data->inspector,
+                                    width, /* for_width */
+                                    NULL, /* min_height */
+                                    &height);
 
   if (height > fb_height)
     height = fb_height;
 
-  rig_transform_init_identity (data->pe_settings_transform);
-  rig_transform_translate (data->pe_settings_transform,
+  rig_transform_init_identity (data->inspector_transform);
+  rig_transform_translate (data->inspector_transform,
                            fb_width - width,
                            fb_height - height,
                            0.0f);
-  rig_pe_settings_set_size (data->pe_settings, width, height);
+  rig_sizable_set_size (data->inspector, width, height);
 
   /* Center the particle engine using all of the remaining space to
    * the left of the settings panel */
@@ -102,6 +102,19 @@ test_onscreen_resize (CoglOnscreen *onscreen,
   Data *data = user_data;
 
   allocate (data);
+}
+
+static void
+inspector_property_changed_cb (RigProperty *target_property,
+                               RigProperty *source_property,
+                               void *user_data)
+{
+  RigBoxed box;
+  Data *data = user_data;
+
+  rig_property_box (source_property, &box);
+  rig_property_set_boxed (&data->ctx->property_ctx, target_property, &box);
+  rig_boxed_destroy (&box);
 }
 
 static void
@@ -177,11 +190,14 @@ test_init (RigShell *shell,
   rig_graphable_add_child (data->engine_transform, data->engine);
   rig_graphable_add_child (data->root, data->engine_transform);
 
-  data->pe_settings = rig_pe_settings_new (data->ctx, data->engine);
+  data->inspector = rig_inspector_new (data->ctx,
+                                       data->engine,
+                                       inspector_property_changed_cb,
+                                       data);
 
-  data->pe_settings_transform = rig_transform_new (data->ctx, NULL);
-  rig_graphable_add_child (data->pe_settings_transform, data->pe_settings);
-  rig_graphable_add_child (data->root, data->pe_settings_transform);
+  data->inspector_transform = rig_transform_new (data->ctx, NULL);
+  rig_graphable_add_child (data->inspector_transform, data->inspector);
+  rig_graphable_add_child (data->root, data->inspector_transform);
 
   rig_shell_add_input_camera (shell, data->camera, data->root);
 
@@ -271,10 +287,10 @@ test_fini (RigShell *shell, void *user_data)
   rig_ref_countable_unref (data->engine_transform);
   rig_ref_countable_unref (data->engine);
 
-  rig_graphable_remove_child (data->pe_settings_transform);
+  rig_graphable_remove_child (data->inspector_transform);
   rig_graphable_remove_child (data->engine);
-  rig_ref_countable_unref (data->pe_settings_transform);
-  rig_ref_countable_unref (data->pe_settings);
+  rig_ref_countable_unref (data->inspector_transform);
+  rig_ref_countable_unref (data->inspector);
 
   cogl_object_unref (data->fb);
   rig_ref_countable_unref (data->ctx);
