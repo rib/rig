@@ -585,6 +585,28 @@ nodes_find_greater_than (GList *start, float t)
 }
 
 static GList *
+nodes_find_first (GList *pos)
+{
+  GList *l;
+
+  for (l = pos; l->prev; l = l->prev)
+    ;
+
+  return l;
+}
+
+static GList *
+nodes_find_last (GList *pos)
+{
+  GList *l;
+
+  for (l = pos; l->next; l = l->next)
+    ;
+
+  return l;
+}
+
+static GList *
 nodes_find_greater_than_equal (GList *start, float t)
 {
   GList *l;
@@ -635,12 +657,25 @@ path_find_control_links2 (Path *path,
   if (direction > 0)
     {
       if (pos_node->t > t)
-        /* > --- T -------- PosT ---- */
-        pos = nodes_find_less_than_equal (pos, t);
+        {
+          /* > --- T -------- Pos ---- */
+          GList *tmp = nodes_find_less_than_equal (pos, t);
+          if (!tmp)
+            {
+              *n0 = *n1 = path->pos = nodes_find_first (pos);
+              return;
+            }
+          pos = tmp;
+        }
       else
         {
-          /* > --- PosT -------- T ---- */
+          /* > --- Pos -------- T ---- */
           GList *tmp = nodes_find_greater_than (pos, t);
+          if (!tmp)
+            {
+              *n0 = *n1 = path->pos = nodes_find_last (pos);
+              return;
+            }
           pos = tmp->prev;
         }
 
@@ -651,13 +686,26 @@ path_find_control_links2 (Path *path,
     {
       if (pos_node->t > t)
         {
-          /* < --- T -------- PosT ---- */
+          /* < --- T -------- Pos ---- */
           GList *tmp = nodes_find_less_than (pos, t);
+          if (!tmp)
+            {
+              *n0 = *n1 = path->pos = nodes_find_first (pos);
+              return;
+            }
           pos = tmp->next;
         }
       else
-        /* < --- PosT -------- T ---- */
-        pos = nodes_find_greater_than_equal (pos, t);
+        {
+          /* < --- Pos -------- T ---- */
+          GList *tmp = nodes_find_greater_than_equal (pos, t);
+          if (!tmp)
+            {
+              *n0 = *n1 = path->pos = nodes_find_last (pos);
+              return;
+            }
+          pos = tmp;
+        }
 
       *n0 = pos;
       *n1 = pos->prev;
