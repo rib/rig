@@ -3369,6 +3369,9 @@ update_camera_position (Data *data)
                         -data->origin[0],
                         -data->origin[1],
                         -data->origin[2]);
+
+  rig_entity_set_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
+
   rig_shell_queue_redraw (data->ctx->shell);
 }
 
