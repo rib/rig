@@ -27,6 +27,7 @@
 #include "rig.h"
 #include "rig-particle-engine.h"
 #include "rig-flags.h"
+#include "rig-ease.h"
 
 typedef struct
 {
@@ -141,13 +142,15 @@ _rig_particle_engine_prop_specs[] =
       .name = "max_particles",
       .type = RIG_PROPERTY_TYPE_INTEGER,
       .data_offset = offsetof (RigParticleEngine, max_particles),
-      .setter = rig_particle_engine_set_max_particles
+      .setter = rig_particle_engine_set_max_particles,
     },
 
     {
       .name = "size_ease_mode",
       .type = RIG_PROPERTY_TYPE_ENUM,
       .data_offset = offsetof (RigParticleEngine, size_ease_mode),
+      .flags = RIG_PROPERTY_FLAG_VALIDATE,
+      .validation.ui_enum = &rig_ease_mode_enum
     },
 
     RIG_PARTICLE_ENGINE_VERTEX_PROP_SPEC_RANGE (initial_velocity),
