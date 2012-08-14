@@ -44,7 +44,6 @@ source_h = \
     rig-drop-down.h \
     rig-inspector.h \
     rig-particle-engine.h \
-    rig-pe-settings.h \
     rig-ease.h
 
 librig_la_SOURCES = \
@@ -94,7 +93,6 @@ librig_la_SOURCES = \
     rig-drop-down.c \
     rig-inspector.c \
     rig-particle-engine.c \
-    rig-pe-settings.c \
     rig-ease.c \
     $(source_h)
 
