@@ -975,12 +975,26 @@ undo_journal_log_move (UndoJournal *journal,
 {
   RigProperty *position =
     rig_introspectable_lookup_property (entity, "position");
-  UndoRedo *undo_redo =
-    undo_journal_find_recent_property_change (journal, position);
+  UndoRedo *undo_redo;
   UndoRedoPropertyChange *prop_change;
 
-  if (!undo_redo)
-    undo_redo = g_slice_new (UndoRedo);
+  if (mergable)
+    {
+      undo_redo = undo_journal_find_recent_property_change (journal, position);
+      if (undo_redo)
+        {
+          prop_change = &undo_redo->d.prop_change;
+          /* NB: when we are merging then the existing operation is an
+           * inverse of a normal move operation so the new move
+           * location goes into value0... */
+          prop_change->value0.d.vec3_val[0] = x;
+          prop_change->value0.d.vec3_val[1] = y;
+          prop_change->value0.d.vec3_val[2] = z;
+          return;
+        }
+    }
+
+  undo_redo = g_slice_new (UndoRedo);
 
   undo_redo->op = UNDO_REDO_PROPERTY_CHANGE_OP;
   undo_redo->mergable = mergable;
