@@ -29,6 +29,7 @@
 #include "rig-geometry.h"
 #include "rig-paintable.h"
 #include "rig-color.h"
+#include "rig-asset.h"
 
 /* entity/components system */
 #include "rig-entity.h"

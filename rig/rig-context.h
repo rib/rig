@@ -40,6 +40,8 @@ struct _RigContext
 
   CoglMatrix identity_matrix;
 
+  char *assets_location;
+
   GHashTable *texture_cache;
 
   CoglIndices *nine_slice_indices;
@@ -62,6 +64,10 @@ rig_context_new (RigShell *shell /* optional */);
 
 void
 rig_context_init (RigContext *context);
+
+void
+rig_set_assets_location (RigContext *context,
+                         const char *assets_location);
 
 typedef void (*RigSettingsChangedCallback) (RigSettings *settings,
                                             void *user_data);
@@ -291,6 +297,5 @@ _rig_load_texture (RigContext *ctx, const char *filename, GError **error);
 
 void
 rig_color_init_from_uint32 (RigColor *color, uint32_t value);
-
 
 #endif /* _RIG_CONTEXT_H_ */

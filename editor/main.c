@@ -127,42 +127,6 @@ static uint8_t _diamond_slice_indices_data[] = {
     8,12,13, 8,13,9, 9,13,14, 9,14,10, 10,14,15, 10,15,11
 };
 
-typedef enum _AssetType {
-  ASSET_TYPE_TEXTURE,
-} AssetType;
-
-#if 0
-enum {
-  ASSET_N_PROPS
-};
-#endif
-
-typedef struct _Asset
-{
-  RigObjectProps _parent;
-
-  Data *data;
-
-  uint32_t id;
-
-#if 0
-  RigSimpleIntrospectableProps introspectable;
-  RigProperty props[ASSET_N_PROPS];
-#endif
-
-  AssetType type;
-
-  char *path;
-  CoglTexture *texture;
-
-} Asset;
-
-#if 0
-static RigPropertySpec _asset_prop_specs[] = {
-  { 0 }
-};
-#endif
-
 enum {
   TRANSITION_PROP_PROGRESS,
   TRANSITION_N_PROPS
@@ -293,6 +257,7 @@ struct _Data
 
   RigUIViewport *assets_vp;
   RigGraph *assets_list;
+  GList *asset_input_closures;
 
   RigUIViewport *tool_vp;
   RigObject *inspector;
@@ -2489,83 +2454,6 @@ path_t_update_cb (RigProperty *property, void *user_data)
 }
 #endif
 
-#if 0
-static RigIntrospectableVTable _asset_introspectable_vtable = {
-  rig_simple_introspectable_lookup_property,
-  rig_simple_introspectable_foreach_property
-};
-#endif
-
-static RigType _asset_type;
-
-static void
-_asset_type_init (void)
-{
-  rig_type_init (&_asset_type);
-#if 0
-  rig_type_add_interface (&_asset_type,
-                          RIG_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_asset_introspectable_vtable);
-  rig_type_add_interface (&_asset_type,
-                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (Asset, introspectable),
-                          NULL); /* no implied vtable */
-#endif
-}
-
-static Asset *
-asset_new_texture (Data *data,
-                   uint32_t id,
-                   const char *path)
-{
-  Asset *asset = g_slice_new (Asset);
-  char *full_path;
-  //CoglTexture *texture;
-  GError *error = NULL;
-
-  rig_object_init (&asset->_parent, &_asset_type);
-
-  asset->data = data;
-
-  asset->id = id;
-
-  asset->type = ASSET_TYPE_TEXTURE;
-
-#ifndef __ANDROID__
-  full_path = g_build_filename (_rig_project_dir, path, NULL);
-  asset->texture = rig_load_texture (data->ctx, full_path, &error);
-  g_free (full_path);
-#else
-  asset->texture = rig_load_texture (data->ctx, path, &error);
-#endif
-
-  if (!asset->texture)
-    {
-      g_slice_free (Asset, asset);
-      g_error ("Failed to load asset texture: %s", error->message);
-      g_error_free (error);
-      return NULL;
-    }
-
-  asset->path = g_strdup (path);
-
-  //rig_simple_introspectable_init (asset);
-
-  return asset;
-}
-
-static void
-_asset_free (Asset *asset)
-{
-  if (asset->texture)
-    cogl_object_unref (asset->texture);
-
-  //rig_simple_introspectable_destroy (asset);
-
-  g_slice_free (Asset, asset);
-}
-
 static void
 update_transition_progress_cb (RigProperty *property, void *user_data)
 {
@@ -4711,6 +4599,7 @@ test_init (RigShell *shell, void *user_data)
         }
 
       _rig_project_dir = _rig_handset_remaining_args[0];
+      rig_set_assets_location (data->ctx, _rig_project_dir);
 
       ui = g_build_filename (_rig_handset_remaining_args[0], "ui.xml", NULL);
 
@@ -4793,6 +4682,7 @@ typedef struct _SaveState
   FILE *file;
   int indent;
   RigEntity *current_entity;
+  int next_id;
 } SaveState;
 
 static void
@@ -4873,7 +4763,7 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   state->indent += INDENT_LEVEL;
   fprintf (state->file, "%*s<entity id=\"%d\"\n",
            state->indent, "",
-           rig_entity_get_id (entity));
+           state->next_id++);
 
   if (parent && rig_object_get_type (parent) == &rig_entity_type)
     fprintf (state->file, "%*s        parent=\"%d\"\n",
@@ -4940,20 +4830,22 @@ save (Data *data)
 
   fprintf (file, "<ui>\n");
 
+  state.next_id = 0;
+
   /* Assets */
 
   for (l = data->assets; l; l = l->next)
     {
-      Asset *asset = l->data;
+      RigAsset *asset = l->data;
 
-      if (asset->type != ASSET_TYPE_TEXTURE)
+      if (rig_asset_get_type (asset) != RIG_ASSET_TYPE_TEXTURE)
         continue;
 
       state.indent += INDENT_LEVEL;
       fprintf (file, "%*s<asset id=\"%d\" type=\"texture\" path=\"%s\" />\n",
                state.indent, "",
-               asset->id,
-               asset->path);
+               state.next_id++,
+               rig_asset_get_path (asset));
       state.indent -= INDENT_LEVEL;
     }
 
@@ -5042,15 +4934,25 @@ save (Data *data)
   g_print ("File Saved\n");
 }
 
+typedef struct _AssetInputClosure
+{
+  RigAsset *asset;
+  Data *data;
+} AssetInputClosure;
+
 static RigInputEventStatus
 asset_input_cb (RigInputRegion *region,
                 RigInputEvent *event,
                 void *user_data)
 {
-  Asset *asset = user_data;
-  Data *data = asset->data;
+  AssetInputClosure *closure = user_data;
+  RigAsset *asset = closure->asset;
+  Data *data = closure->data;
 
   g_print ("Asset input\n");
+
+  if (rig_asset_get_type (asset) != RIG_ASSET_TYPE_TEXTURE)
+    return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 
   if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
     {
@@ -5058,13 +4960,14 @@ asset_input_cb (RigInputRegion *region,
         {
           RigEntity *entity = rig_entity_new (data->ctx,
                                               data->entity_next_id++);
+          CoglTexture *texture = rig_asset_get_texture (asset);
           RigMaterial *material=
-            rig_material_new_with_texture (data->ctx, asset->texture);
+            rig_material_new_with_texture (data->ctx, texture);
           RigDiamond *diamond =
             rig_diamond_new (data->ctx,
                              400,
-                             cogl_texture_get_width (asset->texture),
-                             cogl_texture_get_height (asset->texture));
+                             cogl_texture_get_width (texture),
+                             cogl_texture_get_height (texture));
           rig_entity_add_component (entity, material);
           rig_entity_add_component (entity, diamond);
 
@@ -5079,6 +4982,7 @@ asset_input_cb (RigInputRegion *region,
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
+#if 0
 static RigInputEventStatus
 add_light_cb (RigInputRegion *region,
               RigInputEvent *event,
@@ -5095,17 +4999,29 @@ add_light_cb (RigInputRegion *region,
 
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
+#endif
 
 static void
 add_asset_icon (Data *data,
-                CoglTexture *texture,
-                float y_pos,
-                RigInputRegionCallback callback,
-                void *user_data)
+                RigAsset *asset,
+                float y_pos)
 {
+  AssetInputClosure *closure;
+  CoglTexture *texture;
   RigNineSlice *nine_slice;
   RigInputRegion *region;
-  RigTransform *transform =
+  RigTransform *transform;
+
+  if (rig_asset_get_type (asset) != RIG_ASSET_TYPE_TEXTURE)
+    return;
+
+  closure = g_slice_new (AssetInputClosure);
+  closure->asset = asset;
+  closure->data = data;
+
+  texture = rig_asset_get_texture (asset);
+
+  transform =
     rig_transform_new (data->ctx,
                        (nine_slice = rig_nine_slice_new (data->ctx,
                                                          texture,
@@ -5113,10 +5029,15 @@ add_asset_icon (Data *data,
                                                          100, 100)),
                        (region =
                         rig_input_region_new_rectangle (0, 0, 100, 100,
-                                                        callback,
-                                                        user_data)),
+                                                        asset_input_cb,
+                                                        closure)),
                        NULL);
   rig_graphable_add_child (data->assets_list, transform);
+
+  /* XXX: It could be nicer to have some form of weak pointer
+   * mechanism to manage the lifetime of these closures... */
+  data->asset_input_closures = g_list_prepend (data->asset_input_closures,
+                                               closure);
 
   rig_transform_translate (transform, 10, y_pos, 0);
 
@@ -5125,7 +5046,17 @@ add_asset_icon (Data *data,
   rig_ref_countable_unref (transform);
   rig_ref_countable_unref (nine_slice);
   rig_ref_countable_unref (region);
+}
 
+static void
+free_asset_input_closures (Data *data)
+{
+  GList *l;
+
+  for (l = data->asset_input_closures; l; l = l->next)
+    g_slice_free (AssetInputClosure, l->data);
+  g_list_free (data->asset_input_closures);
+  data->asset_input_closures = NULL;
 }
 
 static void
@@ -5136,7 +5067,10 @@ update_asset_list (Data *data)
   RigObject *doc_node;
 
   if (data->assets_list)
-    rig_graphable_remove_child (data->assets_list);
+    {
+      rig_graphable_remove_child (data->assets_list);
+      free_asset_input_closures (data);
+    }
 
   data->assets_list = rig_graph_new (data->ctx, NULL);
 
@@ -5145,12 +5079,9 @@ update_asset_list (Data *data)
   rig_ref_countable_unref (data->assets_list);
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
-    {
-      Asset *asset = l->data;
-      add_asset_icon (data, asset->texture, 10 + 110 * i, asset_input_cb, asset);
-    }
+    add_asset_icon (data, l->data, 10 + 110 * i);
 
-  add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
+  //add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
 }
 
 enum {
@@ -5211,23 +5142,21 @@ loader_pop_state (Loader *loader)
 static RigEntity *
 loader_find_entity (Loader *loader, uint32_t id)
 {
-  return g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
+  RigObject *object =
+    g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
+  if (rig_object_get_type (object) != &rig_entity_type)
+    return NULL;
+  return RIG_ENTITY (object);
 }
 
-static Asset *
+static RigAsset *
 loader_find_asset (Loader *loader, uint32_t id)
 {
-  GList *l;
-
-  for (l = loader->assets; l; l = l->next)
-    {
-      Asset *asset = l->data;
-
-      if (asset->id == id)
-        return asset;
-    }
-
-  return NULL;
+  RigObject *object =
+    g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
+  if (rig_object_get_type (object) != &rig_asset_type)
+    return NULL;
+  return RIG_ASSET (object);
 }
 
 static void
@@ -5269,11 +5198,20 @@ parse_start_element (GMarkupParseContext *context,
         }
 
       id = g_ascii_strtoull (id_str, NULL, 10);
+      if (g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id)))
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       "Duplicate id %d", id);
+          return;
+        }
 
       if (strcmp (type, "texture") == 0)
         {
-          Asset *asset = asset_new_texture (data, id, path);
+          RigAsset *asset = rig_asset_new_texture (data->ctx, path);
           loader->assets = g_list_prepend (loader->assets, asset);
+          g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
         }
       else
         g_warning ("Ignoring unknown asset type: %s\n", type);
@@ -5684,7 +5622,7 @@ parse_end_element (GMarkupParseContext *context,
     {
       CoglPipeline *pipeline = cogl_pipeline_new (loader->data->ctx->cogl_context);
       RigMaterial *material;
-      Asset *texture_asset;
+      RigAsset *texture_asset;
 
       if (loader->texture_specified)
         {
@@ -5698,7 +5636,8 @@ parse_end_element (GMarkupParseContext *context,
               return;
             }
 
-          cogl_pipeline_set_layer_texture (pipeline, 0, texture_asset->texture);
+          cogl_pipeline_set_layer_texture (pipeline, 0,
+                                           rig_asset_get_texture (texture_asset));
         }
 
       material = rig_material_new_with_pipeline (loader->data->ctx, pipeline);
@@ -5738,9 +5677,11 @@ free_ux (Data *data)
   data->transitions = NULL;
 
   for (l = data->assets; l; l = l->next)
-    _asset_free (l->data);
+    rig_ref_countable_unref (l->data);
   g_list_free (data->assets);
   data->assets = NULL;
+
+  free_asset_input_closures (data);
 }
 
 static void
@@ -5813,7 +5754,6 @@ load (Data *data, const char *file)
 static void
 init_types (void)
 {
-  _asset_type_init ();
   _transition_type_init ();
   _diamond_slice_init_type ();
 }

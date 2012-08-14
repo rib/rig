@@ -686,6 +686,13 @@ rig_context_init (RigContext *context)
     _rig_shell_init (context->shell);
 }
 
+void
+rig_set_assets_location (RigContext *context,
+                         const char *assets_location)
+{
+  context->assets_location = g_strdup (assets_location);
+}
+
 static void
 _rig_nine_slice_free (void *object)
 {
@@ -2422,6 +2429,7 @@ _rig_init (void)
       _rig_timeline_init_type ();
       _rig_ui_viewport_init_type ();
       _rig_entity_init_type ();
+      _rig_asset_type_init ();
 
       /* components */
       _rig_camera_init_type ();
@@ -2444,3 +2452,4 @@ rig_color_init_from_uint32 (RigColor *color, uint32_t value)
   color->blue = RIG_UINT32_BLUE_AS_FLOAT (value);
   color->alpha = RIG_UINT32_ALPHA_AS_FLOAT (value);
 }
+
