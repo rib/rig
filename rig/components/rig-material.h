@@ -21,6 +21,7 @@
 #define __RIG_MATERIAL_H__
 
 #include "rig-entity.h"
+#include "rig-asset.h"
 
 typedef struct _RigMaterial RigMaterial;
 #define RIG_MATERIAL(p) ((RigMaterial *)(p))
@@ -30,6 +31,10 @@ struct _RigMaterial
 {
   RigObjectProps _parent;
   RigComponentableProps component;
+  RigAsset *asset;
+  CoglColor color;
+
+  /* TODO: remove - requires updating examples/editor.c */
   CoglPipeline *pipeline; /* pipeline where to update the material uniforms */
 };
 
@@ -37,16 +42,22 @@ void
 _rig_material_init_type (void);
 
 RigMaterial *
-rig_material_new (RigContext *ctx);
+rig_material_new (RigContext *ctx,
+                  RigAsset *asset,
+                  const CoglColor *color);
 
-RigMaterial *
-rig_material_new_with_texture (RigContext *ctx,
-                               CoglTexture *texture);
+RigAsset *
+rig_material_get_asset (RigMaterial *material);
 
+const CoglColor *
+rig_material_get_color (RigMaterial *material);
+
+/* TODO: remove - requires updating examples/editor.c */
 RigMaterial *
 rig_material_new_with_pipeline (RigContext *ctx,
                                 CoglPipeline *pipeline);
 
+/* TODO: remove - requires updating examples/editor.c */
 CoglPipeline *
 rig_material_get_pipeline (RigMaterial *material);
 

@@ -1890,12 +1890,15 @@ get_entity_pipeline (Data *data,
 #if 1
       if (material)
         {
-          CoglPipeline *tmp = rig_material_get_pipeline (material);
-          CoglTexture *tex = cogl_pipeline_get_layer_texture (tmp, 0);
-          if (tex)
-            {
-              cogl_pipeline_set_layer_texture (pipeline, 1, tex);
-            }
+          RigAsset *asset = rig_material_get_asset (material);
+          CoglTexture *texture;
+          if (asset)
+            texture = rig_asset_get_texture (asset);
+          else
+            texture = NULL;
+
+          if (texture)
+            cogl_pipeline_set_layer_texture (pipeline, 1, texture);
         }
 #endif
     }
@@ -2024,6 +2027,7 @@ _rig_entitygraph_post_paint_cb (RigObject *object,
   return RIG_TRAVERSE_VISIT_CONTINUE;
 }
 
+#if 0
 static void
 compute_light_shadow_matrix (Data       *data,
                              CoglMatrix *light_matrix,
@@ -2048,6 +2052,7 @@ compute_light_shadow_matrix (Data       *data,
   cogl_matrix_multiply (light_matrix, light_matrix, &light_view);
   cogl_matrix_multiply (light_matrix, light_matrix, main_camera);
 }
+#endif
 
 #if 1
 static void
@@ -2059,7 +2064,7 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
   CoglContext *ctx = data->ctx->cogl_context;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
   RigComponent *light;
-  CoglFramebuffer *shadow_fb;
+  //CoglFramebuffer *shadow_fb;
 
   camera_update_view (data, camera, FALSE);
 
@@ -2114,6 +2119,7 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
       cogl_object_unref (pipeline);
     }
 
+#if 0
   shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
 
   /* update uniforms in materials */
@@ -2155,6 +2161,7 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                       FALSE,
                                       light_matrix);
   }
+#endif
 
 
 
@@ -4206,7 +4213,6 @@ test_init (RigShell *shell, void *user_data)
   int i;
   char *full_path;
   GError *error = NULL;
-  CoglPipeline *pipeline;
   CoglTexture2D *color_buffer;
   CoglPipeline *root_pipeline;
   CoglSnippet *snippet;
@@ -4465,14 +4471,13 @@ test_init (RigShell *shell, void *user_data)
 
   mesh = rig_mesh_renderer_new_from_template (data->ctx, "plane");
   rig_entity_add_component (data->plane, mesh);
-  material = rig_material_new_with_pipeline (data->ctx, data->root_pipeline);
+  material = rig_material_new (data->ctx, NULL, NULL);
   rig_entity_add_component (data->plane, material);
 
   rig_graphable_add_child (data->scene, data->plane);
 
   /* 5 cubes */
-  pipeline = cogl_pipeline_copy (data->root_pipeline);
-  cogl_pipeline_set_color4f (pipeline, 0.6f, 0.6f, 0.6f, 1.0f);
+  cogl_color_init_from_4f (&color, 0.6f, 0.6f, 0.6f, 1.0f);
   for (i = 0; i < N_CUBES; i++)
     {
       data->cubes[i] = rig_entity_new (data->ctx, data->entity_next_id++);
@@ -4493,12 +4498,11 @@ test_init (RigShell *shell, void *user_data)
 
       mesh = rig_mesh_renderer_new_from_template (data->ctx, "cube");
       rig_entity_add_component (data->cubes[i], mesh);
-      material = rig_material_new_with_pipeline (data->ctx, pipeline);
+      material = rig_material_new (data->ctx, NULL, &color);
       rig_entity_add_component (data->cubes[i], material);
 
       rig_graphable_add_child (data->scene, data->cubes[i]);
     }
-  cogl_object_unref (pipeline);
 
   data->light = rig_entity_new (data->ctx, data->entity_next_id++);
   data->entities = g_list_prepend (data->entities, data->light);
@@ -4731,6 +4735,7 @@ typedef struct _SaveState
   int indent;
   RigEntity *current_entity;
   int next_id;
+  GHashTable *id_map;
 } SaveState;
 
 static void
@@ -4770,11 +4775,25 @@ save_component_cb (RigComponent *component,
     }
   else if (type == &rig_material_type)
     {
-      /* FIXME: The RigMaterial should maintain a reference to the original
-       * asset so we can get its id here. */
-      g_warning ("FIXME: Unable to save materials correctly\n");
-      fprintf (state->file, "%*s<material><texture asset=\"0\"/></material>\n",
-               state->indent, "");
+      RigMaterial *material = RIG_MATERIAL (component);
+      RigAsset *asset = rig_material_get_asset (material);
+
+      fprintf (state->file, "%*s<material>\n", state->indent, "");
+      state->indent += INDENT_LEVEL;
+
+      if (asset)
+        {
+          int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
+          if (id)
+            {
+              fprintf (state->file, "%*s<texture asset=\"%d\"/>\n",
+                       state->indent, "",
+                       id);
+            }
+        }
+
+      state->indent -= INDENT_LEVEL;
+      fprintf (state->file, "%*s</material>\n", state->indent, "");
     }
   else if (type == &rig_diamond_type)
     {
@@ -4808,15 +4827,25 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
 
   entity = object;
 
+  g_hash_table_insert (state->id_map, entity, GINT_TO_POINTER (state->next_id));
+
   state->indent += INDENT_LEVEL;
   fprintf (state->file, "%*s<entity id=\"%d\"\n",
            state->indent, "",
            state->next_id++);
 
   if (parent && rig_object_get_type (parent) == &rig_entity_type)
-    fprintf (state->file, "%*s        parent=\"%d\"\n",
-             state->indent, "",
-             rig_entity_get_id (parent));
+    {
+      int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, parent));
+      if (id)
+        {
+          fprintf (state->file, "%*s        parent=\"%d\"\n",
+                   state->indent, "",
+                   id);
+        }
+      else
+        g_warning ("Failed to find id of parent entity\n");
+    }
 
   /* NB: labels with a "rig:" prefix imply that this is an internal
    * entity that shouldn't be saved (such as the editing camera
@@ -4873,12 +4902,15 @@ save (Data *data)
     }
 
   state.data = data;
+  state.id_map = g_hash_table_new (g_direct_hash, g_direct_equal);
   state.file = file;
   state.indent = 0;
 
   fprintf (file, "<ui>\n");
 
-  state.next_id = 0;
+  /* NB: We have to reserve 0 here so we can tell if lookups into the
+   * id_map fail. */
+  state.next_id = 1;
 
   /* Assets */
 
@@ -4888,6 +4920,8 @@ save (Data *data)
 
       if (rig_asset_get_type (asset) != RIG_ASSET_TYPE_TEXTURE)
         continue;
+
+      g_hash_table_insert (state.id_map, asset, GINT_TO_POINTER (state.next_id));
 
       state.indent += INDENT_LEVEL;
       fprintf (file, "%*s<asset id=\"%d\" type=\"texture\" path=\"%s\" />\n",
@@ -4980,6 +5014,8 @@ save (Data *data)
   fclose (file);
 
   g_print ("File Saved\n");
+
+  g_hash_table_destroy (state.id_map);
 }
 
 typedef struct _AssetInputClosure
@@ -5009,8 +5045,7 @@ asset_input_cb (RigInputRegion *region,
           RigEntity *entity = rig_entity_new (data->ctx,
                                               data->entity_next_id++);
           CoglTexture *texture = rig_asset_get_texture (asset);
-          RigMaterial *material=
-            rig_material_new_with_texture (data->ctx, texture);
+          RigMaterial *material = rig_material_new (data->ctx, asset, NULL);
           RigDiamond *diamond =
             rig_diamond_new (data->ctx,
                              400,
@@ -5636,16 +5671,17 @@ parse_end_element (GMarkupParseContext *context,
       RigMaterial *material =
         rig_entity_get_component (loader->current_entity,
                                   RIG_COMPONENT_TYPE_MATERIAL);
+      RigAsset *asset = NULL;
       CoglTexture *texture = NULL;
       RigDiamond *diamond;
 
       /* We need to know the size of the texture before we can create
        * a diamond component */
       if (material)
-        {
-          CoglPipeline *pipeline = rig_material_get_pipeline (material);
-          texture = cogl_pipeline_get_layer_texture (pipeline, 0);
-        }
+        asset = rig_material_get_asset (material);
+
+      if (asset)
+        texture = rig_asset_get_texture (asset);
 
       if (!texture)
         {
@@ -5668,7 +5704,6 @@ parse_end_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
            strcmp (element_name, "material") == 0)
     {
-      CoglPipeline *pipeline = cogl_pipeline_new (loader->data->ctx->cogl_context);
       RigMaterial *material;
       RigAsset *texture_asset;
 
@@ -5683,12 +5718,11 @@ parse_end_element (GMarkupParseContext *context,
                            "Invalid asset id");
               return;
             }
-
-          cogl_pipeline_set_layer_texture (pipeline, 0,
-                                           rig_asset_get_texture (texture_asset));
         }
+      else
+        texture_asset = NULL;
 
-      material = rig_material_new_with_pipeline (loader->data->ctx, pipeline);
+      material = rig_material_new (loader->data->ctx, texture_asset, NULL);
       rig_entity_add_component (loader->current_entity, material);
 
       loader_pop_state (loader);
@@ -5786,7 +5820,8 @@ load (Data *data, const char *file)
   data->lights = loader.lights;
 
   data->transitions = loader.transitions;
-  data->selected_transition = loader.transitions->data;
+  if (data->transitions)
+    data->selected_transition = loader.transitions->data;
 
   data->assets = loader.assets;
 
