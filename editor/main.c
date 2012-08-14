@@ -2610,20 +2610,42 @@ unproject_window_coord (RigCamera *camera,
   //*z = eye_z;
 }
 
-typedef struct _EntityGrabClosure
+typedef void (*EntityTranslateCallback)(RigEntity *entity,
+                                        float start[3],
+                                        float rel[3],
+                                        void *user_data);
+
+typedef void (*EntityTranslateDoneCallback)(RigEntity *entity,
+                                            float start[3],
+                                            float rel[3],
+                                            void *user_data);
+
+typedef struct _EntityTranslateGrabClosure
 {
   Data *data;
+
+  /* pointer position at start of grab */
+  float grab_x;
+  float grab_y;
+
+  /* entity position at start of grab */
+  float entity_grab_pos[3];
   RigEntity *entity;
+
   float x_vec[3];
   float y_vec[3];
-} EntityGrabClosure;
+
+  EntityTranslateCallback entity_translate_cb;
+  EntityTranslateDoneCallback entity_translate_done_cb;
+  void *user_data;
+} EntityTranslateGrabClosure;
 
 static RigInputEventStatus
-entity_grab_input_cb (RigInputEvent *event,
-                      void *user_data)
+entity_translate_grab_input_cb (RigInputEvent *event,
+                                void *user_data)
 
 {
-  EntityGrabClosure *closure = user_data;
+  EntityTranslateGrabClosure *closure = user_data;
   RigEntity *entity = closure->entity;
   Data *data = closure->data;
 
@@ -2634,60 +2656,42 @@ entity_grab_input_cb (RigInputEvent *event,
       float x = rig_motion_event_get_x (event);
       float y = rig_motion_event_get_y (event);
       float move_x, move_y;
-      float dx, dy, dz;
+      float rel[3];
       float *x_vec = closure->x_vec;
       float *y_vec = closure->y_vec;
 
-      move_x = x - data->grab_x;
-      move_y = y - data->grab_y;
+      move_x = x - closure->grab_x;
+      move_y = y - closure->grab_y;
 
-      dx = x_vec[0] * move_x;
-      dy = x_vec[1] * move_x;
-      dz = x_vec[2] * move_x;
+      rel[0] = x_vec[0] * move_x;
+      rel[1] = x_vec[1] * move_x;
+      rel[2] = x_vec[2] * move_x;
 
-      dx += y_vec[0] * move_y;
-      dy += y_vec[1] * move_y;
-      dz += y_vec[2] * move_y;
+      rel[0] += y_vec[0] * move_y;
+      rel[1] += y_vec[1] * move_y;
+      rel[2] += y_vec[2] * move_y;
 
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
         {
-          Transition *transition = data->selected_transition;
-          float elapsed = rig_timeline_get_elapsed (data->timeline);
-          Path *path_position = transition_get_path (transition,
-                                                     entity,
-                                                     "position");
-
-          undo_journal_log_move (data->undo_journal,
-                                 FALSE,
-                                 entity,
-                                 data->entity_grab_pos[0],
-                                 data->entity_grab_pos[1],
-                                 data->entity_grab_pos[2],
-                                 data->entity_grab_pos[0] + dx,
-                                 data->entity_grab_pos[1] + dy,
-                                 data->entity_grab_pos[2] + dz);
-
-          path_insert_vec3 (path_position, elapsed,
-                            rig_entity_get_position (entity));
+          closure->entity_translate_done_cb (entity,
+                                             closure->entity_grab_pos,
+                                             rel,
+                                             closure->user_data);
 
           rig_shell_ungrab_input (data->ctx->shell,
-                                  entity_grab_input_cb,
+                                  entity_translate_grab_input_cb,
                                   user_data);
 
-          g_slice_free (EntityGrabClosure, user_data);
-
-          rig_shell_queue_redraw (data->ctx->shell);
+          g_slice_free (EntityTranslateGrabClosure, user_data);
 
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_MOVE)
         {
-          rig_entity_set_translate (entity,
-                                    data->entity_grab_pos[0] + dx,
-                                    data->entity_grab_pos[1] + dy,
-                                    data->entity_grab_pos[2] + dz);
-
-          rig_shell_queue_redraw (data->ctx->shell);
+          closure->entity_translate_cb (entity,
+                                        closure->entity_grab_pos,
+                                        rel,
+                                        closure->user_data);
 
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -3399,6 +3403,173 @@ print_quaternion (const CoglQuaternion *q,
   g_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
 }
 
+static CoglBool
+translate_grab_entity (Data *data,
+                       RigCamera *camera,
+                       RigEntity *entity,
+                       float grab_x,
+                       float grab_y,
+                       EntityTranslateCallback translate_cb,
+                       EntityTranslateDoneCallback done_cb,
+                       void *user_data)
+{
+  EntityTranslateGrabClosure *closure =
+    g_slice_new (EntityTranslateGrabClosure);
+  RigEntity *parent = rig_graphable_get_parent (entity);
+  CoglMatrix parent_transform;
+  CoglMatrix inverse_transform;
+  float origin[3] = {0, 0, 0};
+  float unit_x[3] = {1, 0, 0};
+  float unit_y[3] = {0, 1, 0};
+  float eye_origin[3];
+  float eye_x[3];
+  float eye_y[3];
+  float x_vec[3];
+  float y_vec[3];
+  float entity_x, entity_y, entity_z;
+  float w;
+
+  if (!parent)
+    return FALSE;
+
+  rig_graphable_get_modelview (parent, camera, &parent_transform);
+
+  if (!cogl_matrix_get_inverse (&parent_transform, &inverse_transform))
+    {
+      g_warning ("Failed to get inverse transform of entity");
+      return FALSE;
+    }
+
+  /* Find the z of our selected entity in eye coordinates */
+  entity_x = 0;
+  entity_y = 0;
+  entity_z = 0;
+  w = 1;
+  cogl_matrix_transform_point (&parent_transform,
+                               &entity_x, &entity_y, &entity_z, &w);
+
+  //g_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
+
+  /* Convert unit x and y vectors in screen coordinate
+   * into points in eye coordinates with the same z depth
+   * as our selected entity */
+
+  unproject_window_coord (camera,
+                          &data->identity, &data->identity,
+                          entity_z, &origin[0], &origin[1]);
+  origin[2] = entity_z;
+  //g_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
+
+  unproject_window_coord (camera,
+                          &data->identity, &data->identity,
+                          entity_z, &unit_x[0], &unit_x[1]);
+  unit_x[2] = entity_z;
+  //g_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
+
+  unproject_window_coord (camera,
+                          &data->identity, &data->identity,
+                          entity_z, &unit_y[0], &unit_y[1]);
+  unit_y[2] = entity_z;
+  //g_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
+
+
+  /* Transform our points from eye coordinates into entity
+   * coordinates and convert into input mapping vectors */
+
+  w = 1;
+  cogl_matrix_transform_point (&inverse_transform,
+                               &origin[0], &origin[1], &origin[2], &w);
+  w = 1;
+  cogl_matrix_transform_point (&inverse_transform,
+                               &unit_x[0], &unit_x[1], &unit_x[2], &w);
+  w = 1;
+  cogl_matrix_transform_point (&inverse_transform,
+                               &unit_y[0], &unit_y[1], &unit_y[2], &w);
+
+
+  x_vec[0] = unit_x[0] - origin[0];
+  x_vec[1] = unit_x[1] - origin[1];
+  x_vec[2] = unit_x[2] - origin[2];
+
+  //g_print (" =========================== Entity coords: x_vec = %f, %f, %f\n",
+  //         x_vec[0], x_vec[1], x_vec[2]);
+
+  y_vec[0] = unit_y[0] - origin[0];
+  y_vec[1] = unit_y[1] - origin[1];
+  y_vec[2] = unit_y[2] - origin[2];
+
+  //g_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
+  //         y_vec[0], y_vec[1], y_vec[2]);
+
+  closure->data = data;
+  closure->grab_x = grab_x;
+  closure->grab_y = grab_y;
+
+  memcpy (closure->entity_grab_pos,
+          rig_entity_get_position (entity),
+          sizeof (float) * 3);
+
+  closure->entity = entity;
+  closure->entity_translate_cb = translate_cb;
+  closure->entity_translate_done_cb = done_cb;
+  closure->user_data = user_data;
+
+  memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
+  memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
+
+  rig_shell_grab_input (data->ctx->shell,
+                        camera,
+                        entity_translate_grab_input_cb,
+                        closure);
+
+  return TRUE;
+}
+
+static void
+entity_translate_done_cb (RigEntity *entity,
+                          float start[3],
+                          float rel[3],
+                          void *user_data)
+{
+  Data *data = user_data;
+  Transition *transition = data->selected_transition;
+  float elapsed = rig_timeline_get_elapsed (data->timeline);
+  Path *path_position = transition_get_path (transition,
+                                             entity,
+                                             "position");
+
+  undo_journal_log_move (data->undo_journal,
+                         FALSE,
+                         entity,
+                         start[0],
+                         start[1],
+                         start[2],
+                         start[0] + rel[0],
+                         start[1] + rel[1],
+                         start[2] + rel[2]);
+
+  path_insert_vec3 (path_position, elapsed,
+                    rig_entity_get_position (entity));
+
+  rig_shell_queue_redraw (data->ctx->shell);
+}
+
+static void
+entity_translate_cb (RigEntity *entity,
+                     float start[3],
+                     float rel[3],
+                     void *user_data)
+{
+  Data *data = user_data;
+
+  rig_entity_set_translate (entity,
+                            start[0] + rel[0],
+                            start[1] + rel[1],
+                            start[2] + rel[2]);
+
+  rig_shell_queue_redraw (data->ctx->shell);
+}
+
 static RigInputEventStatus
 main_input_cb (RigInputEvent *event,
                void *user_data)
@@ -3499,116 +3670,22 @@ main_input_cb (RigInputEvent *event,
            */
           if (data->selected_entity)
             {
-              EntityGrabClosure *closure = g_slice_new (EntityGrabClosure);
-              RigEntity *entity = data->selected_entity;
-              RigEntity *parent = rig_graphable_get_parent (entity);
-              CoglMatrix parent_transform;
-              CoglMatrix inverse_transform;
-              RigCamera *camera = rig_input_event_get_camera (event);
-              float origin[3] = {0, 0, 0};
-              float unit_x[3] = {1, 0, 0};
-              float unit_y[3] = {0, 1, 0};
-              float eye_origin[3];
-              float eye_x[3];
-              float eye_y[3];
-              float x_vec[3];
-              float y_vec[3];
-              float entity_x, entity_y, entity_z;
-              float w;
-
-              if (!parent)
-                return RIG_INPUT_EVENT_STATUS_HANDLED;
-
-              data->grab_x = rig_motion_event_get_x (event);
-              data->grab_y = rig_motion_event_get_y (event);
-
-              memcpy (data->entity_grab_pos,
-                      rig_entity_get_position (entity),
-                      sizeof (float) * 3);
-
-              rig_graphable_get_modelview (parent, camera, &parent_transform);
-
-              if (!cogl_matrix_get_inverse (&parent_transform, &inverse_transform))
-                {
-                  g_warning ("Failed to get inverse transform of entity");
-                  return RIG_INPUT_EVENT_STATUS_HANDLED;
-                }
-
-              /* Find the z of our selected entity in eye coordinates */
-              entity_x = 0;
-              entity_y = 0;
-              entity_z = 0;
-              w = 1;
-              cogl_matrix_transform_point (&parent_transform,
-                                           &entity_x, &entity_y, &entity_z, &w);
-
-              //g_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
-
-              /* Convert unit x and y vectors in screen coordinate
-               * into points in eye coordinates with the same z depth
-               * as our selected entity */
-
-              unproject_window_coord (camera,
-                                      &data->identity, &data->identity,
-                                      entity_z, &origin[0], &origin[1]);
-              origin[2] = entity_z;
-              //g_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
-
-              unproject_window_coord (camera,
-                                      &data->identity, &data->identity,
-                                      entity_z, &unit_x[0], &unit_x[1]);
-              unit_x[2] = entity_z;
-              //g_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
-
-              unproject_window_coord (camera,
-                                      &data->identity, &data->identity,
-                                      entity_z, &unit_y[0], &unit_y[1]);
-              unit_y[2] = entity_z;
-              //g_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
-
-
-              /* Transform our points from eye coordinates into entity
-               * coordinates and convert into input mapping vectors */
-
-              w = 1;
-              cogl_matrix_transform_point (&inverse_transform,
-                                           &origin[0], &origin[1], &origin[2], &w);
-              w = 1;
-              cogl_matrix_transform_point (&inverse_transform,
-                                           &unit_x[0], &unit_x[1], &unit_x[2], &w);
-              w = 1;
-              cogl_matrix_transform_point (&inverse_transform,
-                                           &unit_y[0], &unit_y[1], &unit_y[2], &w);
-
-
-              x_vec[0] = unit_x[0] - origin[0];
-              x_vec[1] = unit_x[1] - origin[1];
-              x_vec[2] = unit_x[2] - origin[2];
-
-              //g_print (" =========================== Entity coords: x_vec = %f, %f, %f\n",
-              //         x_vec[0], x_vec[1], x_vec[2]);
-
-              y_vec[0] = unit_y[0] - origin[0];
-              y_vec[1] = unit_y[1] - origin[1];
-              y_vec[2] = unit_y[2] - origin[2];
-
-              //g_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
-              //         y_vec[0], y_vec[1], y_vec[2]);
-
-              closure->data = data;
-              closure->entity = entity;
-              memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
-              memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
-              rig_shell_grab_input (data->ctx->shell,
-                                    rig_input_event_get_camera (event),
-                                    entity_grab_input_cb,
-                                    closure);
+              if (!translate_grab_entity (data,
+                                          rig_input_event_get_camera (event),
+                                          data->selected_entity,
+                                          rig_motion_event_get_x (event),
+                                          rig_motion_event_get_y (event),
+                                          entity_translate_cb,
+                                          entity_translate_done_cb,
+                                          data))
+                return RIG_INPUT_EVENT_STATUS_UNHANDLED;
             }
 
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
-          state == RIG_BUTTON_STATE_2)
+               state == RIG_BUTTON_STATE_2 &&
+               modifiers & RIG_MODIFIER_SHIFT_ON == 0)
         {
           //data->saved_rotation = *rig_entity_get_rotation (data->main_camera);
           data->saved_rotation = *rig_entity_get_rotation (data->main_camera_rotate);
