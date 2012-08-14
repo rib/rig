@@ -198,4 +198,11 @@ rig_entity_foreach_component (RigEntity *entity,
                               RigComponentCallback callback,
                               void *user_data);
 
+void
+rig_entity_set_pipeline_cache (RigEntity *entity,
+                               CoglPipeline *pipeline);
+
+CoglPipeline *
+rig_entity_get_pipeline_cache (RigEntity *entity);
+
 #endif /* __RIG_ENTITY_H__ */

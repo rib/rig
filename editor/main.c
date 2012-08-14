@@ -511,8 +511,8 @@ node_new_for_float (float t, float value)
   return node;
 }
 
-NodeFloat *
-node_new_for_vec3 (float t, float value[3])
+NodeVec3 *
+node_new_for_vec3 (float t, const float value[3])
 {
   NodeVec3 *node = g_slice_new (NodeVec3);
   node->t = t;
@@ -705,8 +705,8 @@ void
 path_find_control_points2 (Path *path,
                            float t,
                            int direction,
-                           GList **n0,
-                           GList **n1)
+                           Node **n0,
+                           Node **n1)
 {
   GList *l0, *l1;
   path_find_control_links2 (path, t, direction, &l0, &l1);
@@ -854,7 +854,7 @@ path_insert_float (Path *path,
 void
 path_insert_vec3 (Path *path,
                   float t,
-                  float value[3])
+                  const float value[3])
 {
   GList *link;
   NodeVec3 *node;
@@ -902,7 +902,8 @@ path_insert_quaternion (Path *path,
   else
     {
       node = node_new_for_quaternion (t, angle, x, y, z);
-      g_queue_insert_sorted (&path->nodes, node, path_node_sort_t_func, NULL);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func, NULL);
     }
 
 #if 0
@@ -926,22 +927,24 @@ path_lerp_property (Path *path, float t)
       {
         float value;
 
-        node_float_lerp (n0, n1, t, &value);
+        node_float_lerp ((NodeFloat *)n0, (NodeFloat *)n1, t, &value);
         rig_property_set_float (&path->ctx->property_ctx, path->prop, value);
         break;
       }
     case RIG_PROPERTY_TYPE_VEC3:
       {
         float value[3];
-        node_vec3_lerp (n0, n1, t, value);
+        node_vec3_lerp ((NodeVec3 *)n0, (NodeVec3 *)n1, t, value);
         rig_property_set_vec3 (&path->ctx->property_ctx, path->prop, value);
         break;
       }
     case RIG_PROPERTY_TYPE_QUATERNION:
       {
         CoglQuaternion value;
-        node_quaternion_lerp (n0, n1, t, &value);
-        rig_property_set_quaternion (&path->ctx->property_ctx, path->prop, &value);
+        node_quaternion_lerp ((NodeQuaternion *)n0,
+                              (NodeQuaternion *)n1, t, &value);
+        rig_property_set_quaternion (&path->ctx->property_ctx,
+                                     path->prop, &value);
         break;
       }
     }
@@ -963,7 +966,7 @@ undo_journal_find_recent_property_change (UndoJournal *journal,
   return NULL;
 }
 
-static CoglBool
+static void
 undo_journal_log_move (UndoJournal *journal,
                        CoglBool mergable,
                        RigEntity *entity,
@@ -991,7 +994,6 @@ undo_journal_log_move (UndoJournal *journal,
           prop_change->value0.d.vec3_val[0] = x;
           prop_change->value0.d.vec3_val[1] = y;
           prop_change->value0.d.vec3_val[2] = z;
-          return;
         }
     }
 
@@ -1017,7 +1019,7 @@ undo_journal_log_move (UndoJournal *journal,
   undo_journal_insert (journal, undo_redo);
 }
 
-static CoglBool
+static void
 undo_journal_copy_property_and_log (UndoJournal *journal,
                                     CoglBool mergable,
                                     RigEntity *entity,
@@ -1115,8 +1117,6 @@ static UndoRedoOpImpl undo_redo_ops[] =
 static void
 undo_redo_apply (UndoJournal *journal, UndoRedo *undo_redo)
 {
-  CoglBool status;
-
   g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
   undo_redo_ops[undo_redo->op].apply (journal, undo_redo);
@@ -1200,7 +1200,6 @@ static CoglBool
 undo_journal_redo (UndoJournal *journal)
 {
   UndoRedo *redo = g_queue_pop_tail (&journal->redo_ops);
-  CoglBool status;
 
   if (!redo)
     return FALSE;
@@ -1216,7 +1215,7 @@ undo_journal_redo (UndoJournal *journal)
 
   rig_shell_queue_redraw (journal->data->shell);
 
-  return status;
+  return TRUE;
 }
 
 static UndoJournal *
@@ -1647,29 +1646,14 @@ camera_update_view (Data *data, RigEntity *camera, CoglBool shadow_map)
   CoglMatrix transform;
   CoglMatrix inverse_transform;
   CoglMatrix view;
-  CoglMatrix tmp;
 
   /* translate to z_2d and scale */
   view = data->main_view;
 
-  /* translate into main_area */
-  //cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->screen_area_transform));
-
-  /* scale to device coordinates */
-  //cogl_matrix_multiply (&view, &view, rig_transform_get_matrix (data->device_transform));
-
-#if 1
+  /* apply the camera viewing transform */
   rig_graphable_get_transform (camera, &transform);
   cogl_matrix_get_inverse (&transform, &inverse_transform);
-
-  //tmp = view;
-  //cogl_matrix_multiply (&view, &inverse_transform, &tmp);
-
-  /* apply the camera viewing transform */
   cogl_matrix_multiply (&view, &view, &inverse_transform);
-#endif
-
-  //view = inverse_transform;
 
   if (shadow_map)
     {
@@ -1680,12 +1664,7 @@ camera_update_view (Data *data, RigEntity *camera, CoglBool shadow_map)
       rig_camera_set_view_transform (camera_component, &flipped_view);
     }
   else
-    {
-      CoglMatrix tmp = view;
-      //cogl_matrix_multiply (&view, &view, &data->main_view);
-      //cogl_matrix_multiply (&view, &data->main_view, &tmp);
-      rig_camera_set_view_transform (camera_component, &view);
-    }
+    rig_camera_set_view_transform (camera_component, &view);
 }
 
 static void
@@ -1722,7 +1701,6 @@ get_entity_pipeline (Data *data,
   RigMaterial *material =
     rig_entity_get_component (entity, RIG_COMPONENT_TYPE_MATERIAL);
   CoglPipeline *pipeline;
-  GList *l;
 
   pipeline = rig_entity_get_pipeline_cache (entity);
   if (pipeline)
@@ -1892,7 +1870,7 @@ get_entity_pipeline (Data *data,
 
       //cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
-      rig_diamond_apply_mask (geometry, pipeline);
+      rig_diamond_apply_mask (RIG_DIAMOND (geometry), pipeline);
 
       //cogl_pipeline_set_color4f (pipeline, 1, 0, 0, 1);
 
@@ -1924,8 +1902,6 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
   RigPaintContext *paint_ctx = user_data;
   RigCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
-  RigPaintableVTable *vtable =
-    rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
 
   if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
     {
@@ -2066,11 +2042,9 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
 {
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
-  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
   Data *data = test_paint_ctx->data;
   CoglContext *ctx = data->ctx->cogl_context;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
-  GList *l;
   RigComponent *light;
   CoglFramebuffer *shadow_fb;
 
@@ -2515,10 +2489,12 @@ path_t_update_cb (RigProperty *property, void *user_data)
 }
 #endif
 
+#if 0
 static RigIntrospectableVTable _asset_introspectable_vtable = {
   rig_simple_introspectable_lookup_property,
   rig_simple_introspectable_foreach_property
 };
+#endif
 
 static RigType _asset_type;
 
@@ -2723,10 +2699,11 @@ entity_translate_grab_input_cb (RigInputEvent *event,
 
       if (rig_motion_event_get_action (event) == RIG_MOTION_EVENT_ACTION_UP)
         {
-          closure->entity_translate_done_cb (entity,
-                                             closure->entity_grab_pos,
-                                             rel,
-                                             closure->user_data);
+          if (closure->entity_translate_done_cb)
+            closure->entity_translate_done_cb (entity,
+                                               closure->entity_grab_pos,
+                                               rel,
+                                               closure->user_data);
 
           rig_shell_ungrab_input (data->ctx->shell,
                                   entity_translate_grab_input_cb,
@@ -2748,29 +2725,6 @@ entity_translate_grab_input_cb (RigInputEvent *event,
     }
 
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static void
-property_updated_cb (RigText *text,
-                     void *user_data)
-{
-  RigProperty *prop = user_data;
-  RigContext *ctx = rig_text_get_context (text);
-
-  switch (prop->spec->type)
-    {
-      case RIG_PROPERTY_TYPE_FLOAT:
-        {
-          const char *str = rig_text_get_text (text);
-          float value = strtod (str, NULL);
-          rig_property_set_float (&ctx->property_ctx, prop, value);
-          break;
-        }
-      default:
-        g_warning ("FIXME: missing code to sync text entry back to property");
-    }
-
-  rig_shell_queue_redraw (ctx->shell);
 }
 
 static void
@@ -3204,9 +3158,6 @@ _rig_entitygraph_pre_pick_cb (RigObject *object,
   PickContext *pick_ctx = user_data;
   CoglFramebuffer *fb = pick_ctx->fb;
 
-  RigPaintableVTable *vtable =
-    rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
-
   /* XXX: It could be nice if Cogl exposed matrix stacks directly, but for now
    * we just take advantage of an arbitrary framebuffer matrix stack so that
    * we can avoid repeated accumulating the transform of ancestors when
@@ -3371,9 +3322,6 @@ translate_grab_entity (Data *data,
   float origin[3] = {0, 0, 0};
   float unit_x[3] = {1, 0, 0};
   float unit_y[3] = {0, 1, 0};
-  float eye_origin[3];
-  float eye_x[3];
-  float eye_y[3];
   float x_vec[3];
   float y_vec[3];
   float entity_x, entity_y, entity_z;
@@ -3535,16 +3483,6 @@ scene_translate_cb (RigEntity *entity,
   update_camera_position (data);
 }
 
-static void
-scene_translate_done_cb (RigEntity *entity,
-                         float start[3],
-                         float rel[3],
-                         void *user_data)
-{
-  Data *data = user_data;
-
-}
-
 static RigInputEventStatus
 main_input_cb (RigInputEvent *event,
                void *user_data)
@@ -3570,7 +3508,7 @@ main_input_cb (RigInputEvent *event,
           state == RIG_BUTTON_STATE_1)
         {
           /* pick */
-          RigComponent *camera;
+          RigCamera *camera;
           float ray_position[3], ray_direction[3], screen_pos[2],
                 z_far, z_near;
           const float *viewport;
@@ -3691,7 +3629,7 @@ main_input_cb (RigInputEvent *event,
                                       rig_motion_event_get_x (event),
                                       rig_motion_event_get_y (event),
                                       scene_translate_cb,
-                                      scene_translate_done_cb,
+                                      NULL,
                                       data))
             return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 #if 0
@@ -4026,12 +3964,6 @@ allocate (Data *data)
     float aspect = (float)data->main_width/(float)data->main_height;
     float z_near = 10; /* distance to near clipping plane */
     float z_far = 100; /* distance to far clipping plane */
-#if 1
-    fovy = 60;
-    z_near = 1.1;
-    z_far = 100;
-#endif
-    CoglMatrix projection;
     float x = 0, y = 0, z_2d = 30, w = 1;
     CoglMatrix inverse;
 
@@ -4339,11 +4271,14 @@ test_init (RigShell *shell, void *user_data)
   char *full_path;
   GError *error = NULL;
   CoglPipeline *pipeline;
-  RigComponent *component;
   CoglTexture2D *color_buffer;
   CoglPipeline *root_pipeline;
   CoglSnippet *snippet;
   CoglColor color;
+  RigMeshRenderer *mesh;
+  RigMaterial *material;
+  RigLight *light;
+  RigCamera *camera;
 
   /* A unit test for the list_splice/list_unsplice functions */
 #if 0
@@ -4584,10 +4519,10 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_set_cast_shadow (data->plane, FALSE);
   rig_entity_set_y (data->plane, -1.f);
 
-  component = rig_mesh_renderer_new_from_template (data->ctx, "plane");
-  rig_entity_add_component (data->plane, component);
-  component = rig_material_new_with_pipeline (data->ctx, data->root_pipeline);
-  rig_entity_add_component (data->plane, component);
+  mesh = rig_mesh_renderer_new_from_template (data->ctx, "plane");
+  rig_entity_add_component (data->plane, mesh);
+  material = rig_material_new_with_pipeline (data->ctx, data->root_pipeline);
+  rig_entity_add_component (data->plane, material);
 
   rig_graphable_add_child (data->scene, data->plane);
 
@@ -4612,10 +4547,10 @@ test_init (RigShell *shell, void *user_data)
       rig_entity_rotate_y_axis (data->cubes[i], 10);
 #endif
 
-      component = rig_mesh_renderer_new_from_template (data->ctx, "cube");
-      rig_entity_add_component (data->cubes[i], component);
-      component = rig_material_new_with_pipeline (data->ctx, pipeline);
-      rig_entity_add_component (data->cubes[i], component);
+      mesh = rig_mesh_renderer_new_from_template (data->ctx, "cube");
+      rig_entity_add_component (data->cubes[i], mesh);
+      material = rig_material_new_with_pipeline (data->ctx, pipeline);
+      rig_entity_add_component (data->cubes[i], material);
 
       rig_graphable_add_child (data->scene, data->cubes[i]);
     }
@@ -4632,39 +4567,32 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_rotate_x_axis (data->light, 20);
   rig_entity_rotate_y_axis (data->light, -20);
 
-  component = rig_light_new ();
+  light = rig_light_new ();
   cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
-  //cogl_color_init_from_4f (&color, 0, 0, 0, 1.f);
-  rig_light_set_ambient (RIG_LIGHT (component), &color);
+  rig_light_set_ambient (light, &color);
   cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
-  //cogl_color_init_from_4f (&color, 1, 1, 1, 1.f);
-  rig_light_set_diffuse (RIG_LIGHT (component), &color);
+  rig_light_set_diffuse (light, &color);
   cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
-  //cogl_color_init_from_4f (&color, 1, 1, 1, 1.f);
-  rig_light_set_specular (RIG_LIGHT (component), &color);
-  rig_light_add_pipeline (RIG_LIGHT (component), root_pipeline);
+  rig_light_set_specular (light, &color);
+  rig_light_add_pipeline (light, root_pipeline);
 
-  rig_entity_add_component (data->light, component);
+  rig_entity_add_component (data->light, light);
 
-  component = rig_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
-  data->shadow_map_camera = component;
+  camera = rig_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
+  data->shadow_map_camera = camera;
 
-  rig_camera_set_background_color4f (RIG_CAMERA (component), 0.f, .3f, 0.f, 1.f);
-  rig_camera_set_projection_mode (RIG_CAMERA (component),
+  rig_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
+  rig_camera_set_projection_mode (camera,
                                   RIG_PROJECTION_ORTHOGRAPHIC);
-  rig_camera_set_orthographic_coordinates (RIG_CAMERA (component),
+  rig_camera_set_orthographic_coordinates (camera,
                                            0, 0, 400, 400);
-  rig_camera_set_near_plane (RIG_CAMERA (component), 1.1f);
-  rig_camera_set_far_plane (RIG_CAMERA (component), 1000.f);
+  rig_camera_set_near_plane (camera, 1.1f);
+  rig_camera_set_far_plane (camera, 1000.f);
 
-  rig_entity_add_component (data->light, component);
+  rig_entity_add_component (data->light, camera);
 
   rig_graphable_add_child (data->scene, data->light);
 
-
-
-  //rig_graphable_add_child (data->main_camera, data->screen_area_transform);
-  //rig_graphable_add_child (data->screen_area_transform, data->device_transform);
 
   data->root =
     rig_graph_new (data->ctx,
@@ -4918,13 +4846,12 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
                               void *user_data)
 {
   SaveState *state = user_data;
-  RigType *type = rig_object_get_type (object);
+  const RigType *type = rig_object_get_type (object);
   RigObject *parent = rig_graphable_get_parent (object);
   RigEntity *entity;
   CoglQuaternion *q;
   float angle;
   float axis[3];
-  GList *l2;
 
   if (type != &rig_entity_type)
     {
@@ -4940,10 +4867,7 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
            rig_entity_get_id (entity));
 
   if (parent && rig_object_get_type (parent) == &rig_entity_type)
-    {
-      RigEntity *parent_entity = parent;
-      fprintf (state->file, " parent=\"%d\"", rig_entity_get_id (parent));
-    }
+    fprintf (state->file, " parent=\"%d\"", rig_entity_get_id (parent));
 
   q = rig_entity_get_rotation (entity);
 
@@ -5112,19 +5036,17 @@ asset_input_cb (RigInputRegion *region,
         {
           RigEntity *entity = rig_entity_new (data->ctx,
                                               data->entity_next_id++);
-          RigComponent *component =
-            rig_material_new_with_texture (data->ctx,
-                                           asset->texture);
-          rig_entity_add_component (entity, component);
-          component = rig_diamond_new (data->ctx,
-                                       400,
-                                       cogl_texture_get_width (asset->texture),
-                                       cogl_texture_get_height (asset->texture));
-          rig_entity_add_component (entity, component);
+          RigMaterial *material=
+            rig_material_new_with_texture (data->ctx, asset->texture);
+          RigDiamond *diamond =
+            rig_diamond_new (data->ctx,
+                             400,
+                             cogl_texture_get_width (asset->texture),
+                             cogl_texture_get_height (asset->texture));
+          rig_entity_add_component (entity, material);
+          rig_entity_add_component (entity, diamond);
 
-          //data->entities = g_list_prepend (data->entities, entity);
           data->selected_entity = entity;
-          //rig_graphable_add_child (data->device_transform, entity);
           rig_graphable_add_child (data->scene, entity);
 
           rig_shell_queue_redraw (data->ctx->shell);

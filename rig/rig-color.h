@@ -30,6 +30,6 @@
 gboolean
 rig_util_parse_color (RigContext *ctx,
                       const char *str,
-                      CoglColor *color)
+                      CoglColor *color);
 
 #endif /* _RIG_COLOR_H_ */
