@@ -600,7 +600,7 @@ rig_inspector_new (RigContext *context,
     {
       RigInspectorPropertyData *data = inspector->prop_data + i;
 
-      if (data->source_prop)
+      if (data->source_prop && data->target_prop->binding == NULL)
         rig_property_set_binding (data->target_prop,
                                   property_changed_cb,
                                   data,
