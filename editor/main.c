@@ -4427,28 +4427,36 @@ test_init (RigShell *shell, void *user_data)
 
   data->main_camera_to_origin = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->scene, data->main_camera_to_origin);
+  rig_entity_set_label (data->main_camera_to_origin, "rig:camera_to_origin");
 
   data->main_camera_rotate = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->main_camera_to_origin, data->main_camera_rotate);
+  rig_entity_set_label (data->main_camera_rotate, "rig:camera_rotate");
 
   data->main_camera_armature = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->main_camera_rotate, data->main_camera_armature);
+  rig_entity_set_label (data->main_camera_armature, "rig:camera_armature");
 
   data->main_camera_origin_offset = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->main_camera_armature, data->main_camera_origin_offset);
+  rig_entity_set_label (data->main_camera_origin_offset, "rig:camera_origin_offset");
 
   data->main_camera_dev_scale = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->main_camera_origin_offset, data->main_camera_dev_scale);
+  rig_entity_set_label (data->main_camera_dev_scale, "rig:camera_dev_scale");
 
   data->main_camera_screen_pos = rig_entity_new (data->ctx, data->entity_next_id++);
   rig_graphable_add_child (data->main_camera_dev_scale, data->main_camera_screen_pos);
+  rig_entity_set_label (data->main_camera_screen_pos, "rig:camera_screen_pos");
 
   data->main_camera_2d_view = rig_entity_new (data->ctx, data->entity_next_id++);
   //rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera_2d_view); FIXME
+  rig_entity_set_label (data->main_camera_2d_view, "rig:camera_2d_view");
 
   data->main_camera = rig_entity_new (data->ctx, data->entity_next_id++);
   //rig_graphable_add_child (data->main_camera_2d_view, data->main_camera); FIXME
   rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera);
+  rig_entity_set_label (data->main_camera, "rig:camera");
 
   data->origin[0] = DEVICE_WIDTH / 2;
   data->origin[1] = DEVICE_HEIGHT / 2;
@@ -4807,7 +4815,7 @@ save_component_cb (RigComponent *component,
                "%*s<light "
                "ambient=\"#%02x%02x%02x%02x\" "
                "diffuse=\"#%02x%02x%02x%02x\" "
-               "specular\"#%02x%02x%02x%02x\"/>\n",
+               "specular=\"#%02x%02x%02x%02x\"/>\n",
                state->indent, "",
                cogl_color_get_red_byte (ambient),
                cogl_color_get_green_byte (ambient),
@@ -4852,6 +4860,7 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   CoglQuaternion *q;
   float angle;
   float axis[3];
+  const char *label;
 
   if (type != &rig_entity_type)
     {
@@ -4862,12 +4871,23 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   entity = object;
 
   state->indent += INDENT_LEVEL;
-  fprintf (state->file, "%*s<entity id=\"%d\"",
+  fprintf (state->file, "%*s<entity id=\"%d\"\n",
            state->indent, "",
            rig_entity_get_id (entity));
 
   if (parent && rig_object_get_type (parent) == &rig_entity_type)
-    fprintf (state->file, " parent=\"%d\"", rig_entity_get_id (parent));
+    fprintf (state->file, "%*s        parent=\"%d\"\n",
+             state->indent, "",
+             rig_entity_get_id (parent));
+
+  /* NB: labels with a "rig:" prefix imply that this is an internal
+   * entity that shouldn't be saved (such as the editing camera
+   * entities) */
+  label = rig_entity_get_label (entity);
+  if (label && strncmp ("rig:", label, 4) != 0)
+    fprintf (state->file, "%*s        label=\"%s\"\n",
+             state->indent, "",
+             label);
 
   q = rig_entity_get_rotation (entity);
 
@@ -4875,11 +4895,13 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   cogl_quaternion_get_rotation_axis (q, axis);
 
   fprintf (state->file,
-           " x=\"%f\" y=\"%f\" z=\"%f\" "
-           "rotation=\"[%f (%f, %f, %f)]]\">\n",
+           "%*s        position=\"(%f, %f, %f)\"\n"
+           "%*s        rotation=\"[%f (%f, %f, %f)]]\">\n",
+           state->indent, "",
            rig_entity_get_x (entity),
            rig_entity_get_y (entity),
            rig_entity_get_z (entity),
+           state->indent, "",
            angle, axis[0], axis[1], axis[2]);
 
   state->current_entity = entity;
@@ -4896,15 +4918,14 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
 static void
 save (Data *data)
 {
-  const char *project_name = "Flibble";
   struct stat sb;
-  char *path = g_strdup_printf ("%s/ui.xml", project_name);
+  char *path = g_build_filename (_rig_project_dir, "ui.xml", NULL);
   FILE *file;
   SaveState state;
   GList *l;
 
-  if (stat (project_name, &sb) == -1)
-    mkdir (project_name, 0777);
+  if (stat (_rig_project_dir, &sb) == -1)
+    mkdir (_rig_project_dir, 0777);
 
   file = fopen (path, "w");
   if (!file)
@@ -4933,6 +4954,7 @@ save (Data *data)
                state.indent, "",
                asset->id,
                asset->path);
+      state.indent -= INDENT_LEVEL;
     }
 
   rig_graphable_traverse (data->scene,
