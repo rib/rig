@@ -420,7 +420,7 @@ cogl_framebuffer_get_modelview_matrix (CoglFramebuffer *framebuffer,
  */
 void
 cogl_framebuffer_set_modelview_matrix (CoglFramebuffer *framebuffer,
-                                       CoglMatrix *matrix);
+                                       const CoglMatrix *matrix);
 
 /**
  * cogl_framebuffer_perspective:
@@ -534,7 +534,7 @@ cogl_framebuffer_get_projection_matrix (CoglFramebuffer *framebuffer,
  */
 void
 cogl_framebuffer_set_projection_matrix (CoglFramebuffer *framebuffer,
-                                        CoglMatrix *matrix);
+                                        const CoglMatrix *matrix);
 
 /**
  * cogl_framebuffer_push_scissor_clip:
