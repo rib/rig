@@ -248,7 +248,7 @@ rig_property_box (RigProperty *property,
 {
   boxed->type = property->spec->type;
 
-  switch (property->spec->type)
+  switch ((RigPropertyType) property->spec->type)
     {
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
     case RIG_PROPERTY_TYPE_ ## TYPE: \
@@ -258,6 +258,7 @@ rig_property_box (RigProperty *property,
       }
     /* Special case the _POINTER types so we can take a reference on
      * objects... */
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
     case RIG_PROPERTY_TYPE_OBJECT:
       {
         RigObject *obj = rig_property_get_object (property);
@@ -291,8 +292,11 @@ rig_property_box (RigProperty *property,
     case RIG_PROPERTY_TYPE_TEXT:
       boxed->d.text_val = g_strdup (rig_property_get_text (property));
       break;
+
+#include "rig-property-types.h"
     }
 
+#undef POINTER_TYPE
 #undef ARRAY_TYPE
 #undef COMPOSITE_TYPE
 #undef SCALAR_TYPE
