@@ -27,6 +27,7 @@ enum
   PROP_POSITION,
   PROP_ROTATION,
   PROP_SCALE,
+  PROP_CAST_SHADOW,
 
   N_PROPS
 };
@@ -100,6 +101,16 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .blurb = "The entity's uniform scale factor",
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
+  {
+    .name = "cast-shadow",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .getter = rig_entity_get_cast_shadow,
+    .setter = rig_entity_set_cast_shadow,
+    .nick = "Cast Shadow",
+    .blurb = "Whether the entity casts shadows or not",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+
   { 0 }
 };
 
@@ -512,6 +523,12 @@ rig_entity_rotate_z_axis (RigEntity *entity,
   entity->dirty = TRUE;
 }
 
+CoglBool
+rig_entity_get_cast_shadow (RigEntity *entity)
+{
+  return entity->cast_shadow;
+}
+
 void rig_entity_set_cast_shadow (RigEntity *entity,
                                  gboolean cast_shadow)
 {
@@ -548,12 +565,6 @@ rig_entity_foreach_component (RigEntity *entity,
   int i;
   for (i = 0; i < entity->components->len; i++)
     callback (g_ptr_array_index (entity->components, i), user_data);
-}
-
-CoglBool
-rig_entity_get_cast_shadow (RigEntity *entity)
-{
-  return entity->cast_shadow;
 }
 
 void
