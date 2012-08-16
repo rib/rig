@@ -5249,7 +5249,7 @@ loader_find_entity (Loader *loader, uint32_t id)
 {
   RigObject *object =
     g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
-  if (rig_object_get_type (object) != &rig_entity_type)
+  if (object == NULL || rig_object_get_type (object) != &rig_entity_type)
     return NULL;
   return RIG_ENTITY (object);
 }
@@ -5259,7 +5259,7 @@ loader_find_asset (Loader *loader, uint32_t id)
 {
   RigObject *object =
     g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
-  if (rig_object_get_type (object) != &rig_asset_type)
+  if (object == NULL || rig_object_get_type (object) != &rig_asset_type)
     return NULL;
   return RIG_ASSET (object);
 }
