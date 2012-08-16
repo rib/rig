@@ -4826,6 +4826,13 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
 
   entity = object;
 
+  /* NB: labels with a "rig:" prefix imply that this is an internal
+   * entity that shouldn't be saved (such as the editing camera
+   * entities) */
+  label = rig_entity_get_label (entity);
+  if (label && strncmp ("rig:", label, 4) == 0)
+    return RIG_TRAVERSE_VISIT_CONTINUE;
+
   g_hash_table_insert (state->id_map, entity, GINT_TO_POINTER (state->next_id));
 
   state->indent += INDENT_LEVEL;
@@ -4846,11 +4853,7 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
         g_warning ("Failed to find id of parent entity\n");
     }
 
-  /* NB: labels with a "rig:" prefix imply that this is an internal
-   * entity that shouldn't be saved (such as the editing camera
-   * entities) */
-  label = rig_entity_get_label (entity);
-  if (label && strncmp ("rig:", label, 4) != 0)
+  if (label)
     fprintf (state->file, "%*s        label=\"%s\"\n",
              state->indent, "",
              label);
