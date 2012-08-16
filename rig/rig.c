@@ -273,8 +273,7 @@ struct _RigButton
 
   RigInputRegion *input_region;
 
-  void (*on_click) (RigButton *button, void *user_data);
-  void *on_click_data;
+  RigList on_click_cb_list;
 
   RigSimpleWidgetProps simple_widget;
 
@@ -349,8 +348,7 @@ struct _RigToggle
 
   RigInputRegion *input_region;
 
-  void (*on_toggle) (RigToggle *button, CoglBool value, void *user_data);
-  void *on_toggle_data;
+  RigList on_toggle_cb_list;
 
   RigGraphableProps graphable;
   RigPaintableProps paintable;
@@ -1224,6 +1222,8 @@ _rig_toggle_free (void *object)
 {
   RigToggle *toggle = object;
 
+  rig_closure_list_disconnect_all (&toggle->on_toggle_cb_list);
+
   g_object_unref (toggle->tick);
   g_object_unref (toggle->label);
 
@@ -1356,8 +1356,10 @@ _rig_toggle_grab_input_cb (RigInputEvent *event,
             {
               toggle->state = !toggle->state;
 
-              if (toggle->on_toggle)
-                toggle->on_toggle (toggle, toggle->state, toggle->on_toggle_data);
+              rig_closure_list_invoke (&toggle->on_toggle_cb_list,
+                                       RigToggleCallback,
+                                       toggle,
+                                       toggle->state);
 
               g_print ("Toggle click\n");
 
@@ -1497,6 +1499,8 @@ rig_toggle_new (RigContext *ctx,
 
   toggle->ref_count = 1;
 
+  rig_list_init (&toggle->on_toggle_cb_list);
+
   rig_graphable_init (toggle);
   rig_paintable_init (toggle);
 
@@ -1508,9 +1512,6 @@ rig_toggle_new (RigContext *ctx,
 
   toggle->state = TRUE;
   toggle->enabled = TRUE;
-
-  toggle->on_toggle = NULL;
-  toggle->on_toggle_data = NULL;
 
   toggle->tick = pango_layout_new (ctx->pango_context);
   pango_layout_set_font_description (toggle->tick, ctx->pango_font_desc);
@@ -1545,15 +1546,18 @@ rig_toggle_new (RigContext *ctx,
   return toggle;
 }
 
-void
-rig_toggle_set_on_toggle_callback (RigToggle *toggle,
+RigClosure *
+rig_toggle_add_on_toggle_callback (RigToggle *toggle,
                                    RigToggleCallback callback,
-                                   void *user_data)
+                                   void *user_data,
+                                   RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (toggle->on_toggle == NULL || callback == NULL);
+  g_return_val_if_fail (callback != NULL, NULL);
 
-  toggle->on_toggle = callback;
-  toggle->on_toggle_data = user_data;
+  return rig_closure_list_add (&toggle->on_toggle_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
 void
@@ -2021,6 +2025,8 @@ _rig_button_free (void *object)
 {
   RigButton *button = object;
 
+  rig_closure_list_disconnect_all (&button->on_click_cb_list);
+
   rig_ref_countable_unref (button->background_normal);
   rig_ref_countable_unref (button->background_hover);
   rig_ref_countable_unref (button->background_active);
@@ -2131,8 +2137,9 @@ _rig_button_grab_input_cb (RigInputEvent *event,
         {
           rig_shell_ungrab_input (shell, _rig_button_grab_input_cb, user_data);
 
-          if (button->on_click)
-            button->on_click (button, button->on_click_data);
+          rig_closure_list_invoke (&button->on_click_cb_list,
+                                   RigButtonClickCallback,
+                                   button);
 
           g_print ("Button click\n");
 
@@ -2232,15 +2239,14 @@ rig_button_new (RigContext *ctx,
 
   button->ref_count = 1;
 
+  rig_list_init (&button->on_click_cb_list);
+
   rig_graphable_init (RIG_OBJECT (button));
   rig_paintable_init (RIG_OBJECT (button));
 
   button->ctx = ctx;
 
   button->state = BUTTON_STATE_NORMAL;
-
-  button->on_click = NULL;
-  button->on_click_data = NULL;
 
   normal_texture = rig_load_texture (ctx, RIG_DATA_DIR "button.png", &error);
   if (!normal_texture)
@@ -2323,15 +2329,18 @@ rig_button_new (RigContext *ctx,
   return button;
 }
 
-void
-rig_button_set_on_click_callback (RigButton *button,
+RigClosure *
+rig_button_add_on_click_callback (RigButton *button,
                                   RigButtonClickCallback callback,
-                                  void *user_data)
+                                  void *user_data,
+                                  RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (button->on_click == NULL || callback == NULL);
+  g_return_val_if_fail (callback != NULL, NULL);
 
-  button->on_click = callback;
-  button->on_click_data = user_data;
+  return rig_closure_list_add (&button->on_click_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
 

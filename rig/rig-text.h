@@ -29,6 +29,7 @@
 #include "rig-context.h"
 #include "rig-interfaces.h"
 #include "rig-text-buffer.h"
+#include "rig-closure.h"
 
 #include <pango/pango.h>
 
@@ -95,10 +96,11 @@ typedef void (* RigTextChangedCallback) (RigText *text,
  *
  * The ::text-changed signal is emitted after @actor's text changes
  */
-void
-rig_text_set_text_changed_callback (RigText *text,
+RigClosure *
+rig_text_add_text_changed_callback (RigText *text,
                                     RigTextChangedCallback callback,
-                                    void *user_data);
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb);
 
 typedef void (* RigTextActivateCallback) (RigText *text,
                                           void *user_data);
@@ -111,10 +113,11 @@ typedef void (* RigTextActivateCallback) (RigText *text,
  * by the user, normally by pressing the 'Enter' key. The signal is
  * emitted only if #RigText:activatable is set to %TRUE.
  */
-void
-rig_text_set_activate_callback (RigText *text,
+RigClosure *
+rig_text_add_activate_callback (RigText *text,
                                 RigTextActivateCallback callback,
-                                void *user_data);
+                                void *user_data,
+                                RigClosureDestroyCallback destroy_cb);
 
 typedef void (* RigTextCursorEventCallback) (RigText *text,
                                              const RigRectangleInt *rectangle,
@@ -129,10 +132,11 @@ typedef void (* RigTextCursorEventCallback) (RigText *text,
  * the current position and size of the cursor, relative to the actor
  * ittext.
  */
-void
-rig_text_set_cursor_event_callback (RigText *text,
+RigClosure *
+rig_text_add_cursor_event_callback (RigText *text,
                                     RigTextCursorEventCallback callback,
-                                    void *user_data);
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb);
 
 typedef void (* RigTextInsertedCallback) (RigText *text,
                                           const char *text_str,
@@ -154,10 +158,11 @@ typedef void (* RigTextInsertedCallback) (RigText *text,
  * This signal is emitted when text is inserted into the actor by
  * the user. It is emitted before @text text changes.
  */
-void
-rig_text_set_text_inserted_callback (RigText *text,
+RigClosure *
+rig_text_add_text_inserted_callback (RigText *text,
                                      RigTextInsertedCallback callback,
-                                     void *user_data);
+                                     void *user_data,
+                                     RigClosureDestroyCallback destroy_cb);
 
 typedef void (* RigTextDeletedCallback) (RigText *text,
                                          int start_pos,
@@ -173,10 +178,11 @@ typedef void (* RigTextDeletedCallback) (RigText *text,
  * This signal is emitted when text is deleted from the actor by
  * the user. It is emitted before @text text changes.
  */
-void
-rig_text_set_text_deleted_callback (RigText *text,
+RigClosure *
+rig_text_add_text_deleted_callback (RigText *text,
                                     RigTextDeletedCallback callback,
-                                    void *user_data);
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb);
 
 /**
  * rig_text_new:

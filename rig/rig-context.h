@@ -7,6 +7,7 @@
 #include "rig-shell.h"
 #include "rig-display-list.h"
 #include "rig-property.h"
+#include "rig-closure.h"
 
 /* TODO: This header needs to be split up, since most of the APIs here
  * don't relate directly to the RigContext type. */
@@ -249,10 +250,11 @@ rig_button_new (RigContext *ctx,
 
 typedef void (*RigButtonClickCallback) (RigButton *button, void *user_data);
 
-void
-rig_button_set_on_click_callback (RigButton *button,
+RigClosure *
+rig_button_add_on_click_callback (RigButton *button,
                                   RigButtonClickCallback callback,
-                                  void *user_data);
+                                  void *user_data,
+                                  RigClosureDestroyCallback destroy_cb);
 
 typedef struct _RigToggle RigToggle;
 #define RIG_TOGGLE(X) ((RigToggle *)X)
@@ -267,10 +269,11 @@ typedef void (*RigToggleCallback) (RigToggle *toggle,
                                    CoglBool value,
                                    void *user_data);
 
-void
-rig_toggle_set_on_toggle_callback (RigToggle *toggle,
+RigClosure *
+rig_toggle_add_on_toggle_callback (RigToggle *toggle,
                                    RigToggleCallback callback,
-                                   void *user_data);
+                                   void *user_data,
+                                   RigClosureDestroyCallback destroy_cb);
 
 void
 rig_toggle_set_enabled (RigToggle *toggle,

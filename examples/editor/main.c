@@ -1628,7 +1628,7 @@ main (int argc, char **argv)
 
   data.shell = rig_shell_new (test_init, test_fini, test_paint, &data);
 
-  rig_shell_set_input_callback (data.shell, test_input_handler, &data);
+  rig_shell_add_input_callback (data.shell, test_input_handler, &data, NULL);
 
   rig_shell_main (data.shell);
 

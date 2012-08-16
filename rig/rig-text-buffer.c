@@ -52,11 +52,8 @@ struct _RigTextBuffer
   int simple_text_bytes;
   int simple_text_chars;
 
-  RigTextBufferInsertCallback insert_text_cb;
-  void *insert_text_cb_data;
-
-  RigTextBufferDeleteCallback delete_text_cb;
-  void *delete_text_cb_data;
+  RigList insert_text_cb_list;
+  RigList delete_text_cb_list;
 
   RigSimpleIntrospectableProps introspectable;
   RigProperty properties[N_PROPS];
@@ -95,10 +92,9 @@ _rig_text_buffer_notify_inserted_text (RigTextBuffer *buffer,
                                        const char *chars,
                                        int n_chars)
 {
-  if (buffer->insert_text_cb)
-    buffer->insert_text_cb (buffer,
-                            position, chars, n_chars,
-                            buffer->insert_text_cb_data);
+  rig_closure_list_invoke (&buffer->insert_text_cb_list,
+                           RigTextBufferInsertCallback,
+                           buffer, position, chars, n_chars);
 
   rig_property_dirty (&buffer->ctx->property_ctx,
                       &buffer->properties[PROP_TEXT]);
@@ -111,10 +107,9 @@ _rig_text_buffer_notify_deleted_text (RigTextBuffer *buffer,
                                       int position,
                                       int n_chars)
 {
-  if (buffer->delete_text_cb)
-    buffer->delete_text_cb (buffer,
-                            position, n_chars,
-                            buffer->delete_text_cb_data);
+  rig_closure_list_invoke (&buffer->delete_text_cb_list,
+                           RigTextBufferDeleteCallback,
+                           buffer, position, n_chars);
 
   rig_property_dirty (&buffer->ctx->property_ctx,
                       &buffer->properties[PROP_TEXT]);
@@ -266,6 +261,9 @@ _rig_text_buffer_free (void *object)
 {
   RigTextBuffer *buffer = object;
 
+  rig_closure_list_disconnect_all (&buffer->insert_text_cb_list);
+  rig_closure_list_disconnect_all (&buffer->delete_text_cb_list);
+
   if (buffer->simple_text)
     {
       trash_area (buffer->simple_text, buffer->simple_text_size);
@@ -318,6 +316,9 @@ rig_text_buffer_new (RigContext *ctx)
   buffer = g_slice_new0 (RigTextBuffer);
 
   rig_object_init (&buffer->_parent, &rig_text_buffer_type);
+
+  rig_list_init (&buffer->insert_text_cb_list);
+  rig_list_init (&buffer->delete_text_cb_list);
 
   buffer->ctx = rig_ref_countable_ref (ctx);
 
@@ -443,23 +444,31 @@ rig_text_buffer_delete_text (RigTextBuffer *buffer,
   return _rig_simple_text_buffer_delete_text (buffer, position, n_chars);
 }
 
-void
-rig_text_buffer_set_insert_text_callback (RigTextBuffer *buffer,
+RigClosure *
+rig_text_buffer_add_insert_text_callback (RigTextBuffer *buffer,
                                           RigTextBufferInsertCallback callback,
-                                          void *user_data)
+                                          void *user_data,
+                                          RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (buffer->insert_text_cb == NULL || callback == NULL);
-  buffer->insert_text_cb = callback;
-  buffer->insert_text_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+
+  return rig_closure_list_add (&buffer->insert_text_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
-void
-rig_text_buffer_set_delete_text_callback (RigTextBuffer *buffer,
+RigClosure *
+rig_text_buffer_add_delete_text_callback (RigTextBuffer *buffer,
                                           RigTextBufferDeleteCallback callback,
-                                          void *user_data)
+                                          void *user_data,
+                                          RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (buffer->delete_text_cb == NULL || callback == NULL);
-  buffer->delete_text_cb = callback;
-  buffer->delete_text_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+
+  return rig_closure_list_add (&buffer->delete_text_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 

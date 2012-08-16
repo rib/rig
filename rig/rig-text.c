@@ -214,16 +214,16 @@ struct _RigText
   unsigned int password_hint_id;
   unsigned int password_hint_timeout;
 
-  RigTextChangedCallback changed_cb;
-  void *changed_cb_data;
-  RigTextActivateCallback activate_cb;
-  void *activate_cb_data;
-  RigTextCursorEventCallback cursor_event_cb;
-  void *cursor_event_cb_data;
-  RigTextInsertedCallback inserted_cb;
-  void *inserted_cb_data;
-  RigTextDeletedCallback deleted_cb;
-  void *deleted_cb_data;
+  RigList delete_text_cb_list;
+  RigList insert_text_cb_list;
+  RigList activate_cb_list;
+  RigList cursor_event_cb_list;
+  RigList text_changed_cb_list;
+  RigList text_deleted_cb_list;
+  RigList text_inserted_cb_list;
+
+  RigClosure *buffer_insert_text_closure;
+  RigClosure *buffer_delete_text_closure;
 
   /* bitfields */
   unsigned int alignment               : 2;
@@ -1440,10 +1440,10 @@ rig_text_ensure_cursor_position (RigText *text)
     {
       text->cursor_pos = cursor_pos;
 
-      if (text->cursor_event_cb)
-        text->cursor_event_cb (text,
-                               &text->cursor_pos,
-                               text->cursor_event_cb_data);
+      rig_closure_list_invoke (&text->cursor_event_cb_list,
+                               RigTextCursorEventCallback,
+                               text,
+                               &text->cursor_pos);
     }
 }
 
@@ -1564,6 +1564,14 @@ static void
 _rig_text_free (void *object)
 {
   RigText *text = object;
+
+  rig_closure_list_disconnect_all (&text->delete_text_cb_list);
+  rig_closure_list_disconnect_all (&text->insert_text_cb_list);
+  rig_closure_list_disconnect_all (&text->activate_cb_list);
+  rig_closure_list_disconnect_all (&text->cursor_event_cb_list);
+  rig_closure_list_disconnect_all (&text->text_changed_cb_list);
+  rig_closure_list_disconnect_all (&text->text_deleted_cb_list);
+  rig_closure_list_disconnect_all (&text->text_inserted_cb_list);
 
   if (text->has_focus)
     rig_shell_ungrab_key_focus (text->ctx->shell);
@@ -3113,6 +3121,14 @@ rig_text_new_full (RigContext *ctx,
 
   text->ref_count = 1;
 
+  rig_list_init (&text->delete_text_cb_list);
+  rig_list_init (&text->insert_text_cb_list);
+  rig_list_init (&text->activate_cb_list);
+  rig_list_init (&text->cursor_event_cb_list);
+  rig_list_init (&text->text_changed_cb_list);
+  rig_list_init (&text->text_deleted_cb_list);
+  rig_list_init (&text->text_inserted_cb_list);
+
   rig_graphable_init (text);
   rig_paintable_init (text);
 
@@ -3257,8 +3273,12 @@ buffer_inserted_text (RigTextBuffer *buffer,
 
   n_bytes = g_utf8_offset_to_pointer (chars, n_chars) - chars;
 
-  if (text->inserted_cb)
-    text->inserted_cb (text, chars, n_bytes, &position, text->inserted_cb_data);
+  rig_closure_list_invoke (&text->text_inserted_cb_list,
+                           RigTextInsertedCallback,
+                           text,
+                           chars,
+                           n_bytes,
+                           &position);
 
   /* TODO: What are we supposed to with the out value of position? */
 }
@@ -3287,10 +3307,9 @@ buffer_deleted_text (RigTextBuffer *buffer,
         rig_text_set_positions (text, new_position, new_selection_bound);
     }
 
-  if (text->deleted_cb)
-    text->deleted_cb (text,
-                      position, position + n_chars,
-                      text->deleted_cb_data);
+  rig_closure_list_invoke (&text->delete_text_cb_list,
+                           RigTextDeletedCallback,
+                           text, position, position + n_chars);
 }
 
 static void
@@ -3303,8 +3322,9 @@ text_property_binding_cb (RigProperty *property,
 
   rig_text_notify_preferred_size_changed (text);
 
-  if (text->changed_cb)
-    text->changed_cb (text, text->changed_cb_data);
+  rig_closure_list_invoke (&text->text_changed_cb_list,
+                           RigTextChangedCallback,
+                           text);
 
   rig_property_dirty (&text->ctx->property_ctx,
                       &text->properties[PROP_TEXT]);
@@ -3326,13 +3346,18 @@ buffer_connect_signals (RigText *text)
 {
   RigProperty *buffer_text_prop;
   RigProperty *buffer_max_len_prop;
-  rig_text_buffer_set_insert_text_callback (text->buffer,
-                                            buffer_inserted_text,
-                                            text);
 
-  rig_text_buffer_set_delete_text_callback (text->buffer,
-                                            buffer_deleted_text,
-                                            text);
+  text->buffer_insert_text_closure =
+    rig_text_buffer_add_insert_text_callback (text->buffer,
+                                              buffer_inserted_text,
+                                              text,
+                                              NULL);
+
+  text->buffer_delete_text_closure =
+    rig_text_buffer_add_delete_text_callback (text->buffer,
+                                              buffer_deleted_text,
+                                              text,
+                                              NULL);
 
   buffer_text_prop = rig_introspectable_lookup_property (text->buffer, "text");
   rig_property_set_binding (&text->properties[PROP_TEXT],
@@ -3352,8 +3377,8 @@ buffer_connect_signals (RigText *text)
 static void
 buffer_disconnect_signals (RigText *text)
 {
-  rig_text_buffer_set_insert_text_callback (text->buffer, NULL, NULL);
-  rig_text_buffer_set_delete_text_callback (text->buffer, NULL, NULL);
+  rig_closure_disconnect (text->buffer_insert_text_closure);
+  rig_closure_disconnect (text->buffer_delete_text_closure);
 
   rig_property_set_binding (&text->properties[PROP_TEXT],
                             NULL, NULL, NULL);
@@ -3468,8 +3493,9 @@ rig_text_activate (RigText *text)
 {
   if (text->activatable)
     {
-      if (text->activate_cb)
-        text->activate_cb (text, text->activate_cb_data);
+      rig_closure_list_invoke (&text->activate_cb_list,
+                               RigTextActivateCallback,
+                               text);
       return TRUE;
     }
 
@@ -4293,54 +4319,69 @@ rig_text_get_layout_offsets (RigText *text,
     *y = text->text_y;
 }
 
-void
-rig_text_set_text_inserted_callback (RigText *text,
+RigClosure *
+rig_text_add_text_inserted_callback (RigText *text,
                                      RigTextInsertedCallback callback,
-                                     void *user_data)
+                                     void *user_data,
+                                     RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (text->inserted_cb == NULL || callback == NULL);
-  text->inserted_cb = callback;
-  text->inserted_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rig_closure_list_add (&text->text_inserted_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
-void
-rig_text_set_text_deleted_callback (RigText *text,
+RigClosure *
+rig_text_add_text_deleted_callback (RigText *text,
                                     RigTextDeletedCallback callback,
-                                    void *user_data)
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (text->deleted_cb == NULL || callback == NULL);
-  text->deleted_cb = callback;
-  text->deleted_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rig_closure_list_add (&text->text_deleted_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
-void
-rig_text_set_text_changed_callback (RigText *text,
+RigClosure *
+rig_text_add_text_changed_callback (RigText *text,
                                     RigTextChangedCallback callback,
-                                    void *user_data)
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (text->changed_cb == NULL || callback == NULL);
-  text->changed_cb = callback;
-  text->changed_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rig_closure_list_add (&text->text_changed_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
-void
-rig_text_set_activate_callback (RigText *text,
+RigClosure *
+rig_text_add_activate_callback (RigText *text,
                                 RigTextActivateCallback callback,
-                                void *user_data)
+                                void *user_data,
+                                RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (text->activate_cb == NULL || callback == NULL);
-  text->activate_cb = callback;
-  text->activate_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rig_closure_list_add (&text->activate_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
-void
-rig_text_set_cursor_event_callback (RigText *text,
+RigClosure *
+rig_text_add_cursor_event_callback (RigText *text,
                                     RigTextCursorEventCallback callback,
-                                    void *user_data)
+                                    void *user_data,
+                                    RigClosureDestroyCallback destroy_cb)
 {
-  g_return_if_fail (text->cursor_event_cb == NULL || callback == NULL);
-  text->cursor_event_cb = callback;
-  text->cursor_event_cb_data = user_data;
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rig_closure_list_add (&text->cursor_event_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
 void

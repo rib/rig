@@ -643,9 +643,10 @@ rig_number_slider_handle_click (RigNumberSlider *slider,
       rig_text_set_font_description (slider->text, slider->font_description);
       rig_text_set_editable (slider->text, TRUE);
       rig_text_set_activatable (slider->text, TRUE);
-      rig_text_set_activate_callback (slider->text,
+      rig_text_add_activate_callback (slider->text,
                                       rig_number_slider_text_activate_cb,
-                                      slider);
+                                      slider,
+                                      NULL /* destroy_cb */);
 
       text = g_strdup_printf ("%.*f",
                               slider->decimal_places,

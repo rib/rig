@@ -44,8 +44,7 @@ struct _RigShell
   RigShellPaintCallback paint_cb;
   void *user_data;
 
-  RigInputCallback input_cb;
-  void *input_data;
+  RigList input_cb_list;
   GList *input_cameras;
 
   /* Use to handle input events in window coordinates */
@@ -615,13 +614,16 @@ rig_shell_remove_input_region (RigShell *shell,
   shell->input_regions = g_list_remove (shell->input_regions, region);
 }
 
-void
-rig_shell_set_input_callback (RigShell *shell,
+RigClosure *
+rig_shell_add_input_callback (RigShell *shell,
                               RigInputCallback callback,
-                              void *user_data)
+                              void *user_data,
+                              RigClosureDestroyCallback destroy_cb)
 {
-  shell->input_cb = callback;
-  shell->input_data = user_data;
+  return rig_closure_list_add (&shell->input_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
 
 typedef struct _InputCamera
@@ -1149,12 +1151,15 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
 {
   RigInputEventStatus status = RIG_INPUT_EVENT_STATUS_UNHANDLED;
   GList *l, *next;
+  RigClosure *c, *tmp;
 
   event->camera = shell->window_camera;
 
-  if (shell->input_cb)
+  rig_list_for_each_safe (c, tmp, &shell->input_cb_list, list_node)
     {
-      status = shell->input_cb (event, shell->input_data);
+      RigInputCallback cb = c->function;
+
+      status = cb (event, c->user_data);
       if (status == RIG_INPUT_EVENT_STATUS_HANDLED)
         return status;
     }
@@ -1357,6 +1362,8 @@ _rig_shell_free (void *object)
   RigShell *shell = object;
   GList *l;
 
+  rig_closure_list_disconnect_all (&shell->input_cb_list);
+
   for (l = shell->input_regions; l; l = l->next)
     rig_ref_countable_unref (l->data);
   g_list_free (shell->input_regions);
@@ -1412,6 +1419,8 @@ rig_shell_new (RigShellInitCallback init,
   shell->ref_count = 1;
 
   rig_object_init (&shell->_parent, &rig_shell_type);
+
+  rig_list_init (&shell->input_cb_list);
 
   shell->init_cb = init;
   shell->fini_cb = fini;

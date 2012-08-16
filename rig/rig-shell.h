@@ -4,6 +4,7 @@
 #include "rig-keysyms.h"
 #include "rig-object.h"
 #include "rig-types.h"
+#include "rig-closure.h"
 
 #ifdef __ANDROID__
 #include <android_native_app_glue.h>
@@ -338,9 +339,10 @@ rig_slider_set_length (RigSlider *slider,
 void
 rig_slider_set_progress (RigSlider *slider,
                          float progress);
-void
-rig_shell_set_input_callback (RigShell *shell,
+RigClosure *
+rig_shell_add_input_callback (RigShell *shell,
                               RigInputCallback callback,
-                              void *user_data);
+                              void *user_data,
+                              RigClosureDestroyCallback destroy_cb);
 
 #endif /* _RIG_SHELL_H_ */

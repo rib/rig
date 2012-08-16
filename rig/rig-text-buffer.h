@@ -23,6 +23,7 @@
 #define __RIG_TEXT_BUFFER_H__
 
 #include "rig-types.h"
+#include "rig-closure.h"
 
 G_BEGIN_DECLS
 
@@ -220,20 +221,22 @@ typedef void (*RigTextBufferInsertCallback) (RigTextBuffer *buffer,
                                              int n_chars,
                                              void *user_data);
 
-void
-rig_text_buffer_set_insert_text_callback (RigTextBuffer *buffer,
+RigClosure *
+rig_text_buffer_add_insert_text_callback (RigTextBuffer *buffer,
                                           RigTextBufferInsertCallback callback,
-                                          void *user_data);
+                                          void *user_data,
+                                          RigClosureDestroyCallback destroy_cb);
 
 typedef void (*RigTextBufferDeleteCallback) (RigTextBuffer *buffer,
                                              int position,
                                              int n_chars,
                                              void *user_data);
 
-void
-rig_text_buffer_set_delete_text_callback (RigTextBuffer *buffer,
+RigClosure *
+rig_text_buffer_add_delete_text_callback (RigTextBuffer *buffer,
                                           RigTextBufferDeleteCallback callback,
-                                          void *user_data);
+                                          void *user_data,
+                                          RigClosureDestroyCallback destroy_cb);
 
 G_END_DECLS
 

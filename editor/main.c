@@ -5855,7 +5855,7 @@ main (int argc, char **argv)
 
   rig_context_init (data.ctx);
 
-  rig_shell_set_input_callback (data.shell, test_input_handler, &data);
+  rig_shell_add_input_callback (data.shell, test_input_handler, &data, NULL);
 
   rig_shell_main (data.shell);
 
