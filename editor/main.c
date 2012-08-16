@@ -291,7 +291,6 @@ struct _Data
   RigInputRegion *main_input_region;
 
   RigEntity *plane;
-  RigEntity *cubes[N_CUBES];
   RigEntity *light;
 
   RigArcball arcball;
@@ -2139,18 +2138,6 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
 
     /* plane material */
     material = rig_entity_get_component (data->plane,
-                                         RIG_COMPONENT_TYPE_MATERIAL);
-    pipeline = rig_material_get_pipeline (material);
-    location = cogl_pipeline_get_uniform_location (pipeline,
-                                                   "light_shadow_matrix");
-    cogl_pipeline_set_uniform_matrix (pipeline,
-                                      location,
-                                      4, 1,
-                                      FALSE,
-                                      light_matrix);
-
-    /* cubes material */
-    material = rig_entity_get_component (data->cubes[0],
                                          RIG_COMPONENT_TYPE_MATERIAL);
     pipeline = rig_material_get_pipeline (material);
     location = cogl_pipeline_get_uniform_location (pipeline,
@@ -4475,34 +4462,6 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_add_component (data->plane, material);
 
   rig_graphable_add_child (data->scene, data->plane);
-
-  /* 5 cubes */
-  cogl_color_init_from_4f (&color, 0.6f, 0.6f, 0.6f, 1.0f);
-  for (i = 0; i < N_CUBES; i++)
-    {
-      data->cubes[i] = rig_entity_new (data->ctx, data->entity_next_id++);
-
-      rig_entity_set_scale (data->cubes[i], 50);
-      //data->entities = g_list_prepend (data->entities, data->cubes[i]);
-      //data->pickables = g_list_prepend (data->pickables, data->cubes[i]);
-
-      rig_entity_set_cast_shadow (data->cubes[i], TRUE);
-      rig_entity_set_x (data->cubes[i], 50 + i * 125);
-      rig_entity_set_y (data->cubes[i], 50 + i * 100);
-      rig_entity_set_z (data->cubes[i], 50);
-#if 0
-      rig_entity_set_y (data->cubes[i], .5);
-      rig_entity_set_z (data->cubes[i], 1);
-      rig_entity_rotate_y_axis (data->cubes[i], 10);
-#endif
-
-      mesh = rig_mesh_renderer_new_from_template (data->ctx, "cube");
-      rig_entity_add_component (data->cubes[i], mesh);
-      material = rig_material_new (data->ctx, NULL, &color);
-      rig_entity_add_component (data->cubes[i], material);
-
-      rig_graphable_add_child (data->scene, data->cubes[i]);
-    }
 
   data->light = rig_entity_new (data->ctx, data->entity_next_id++);
   data->entities = g_list_prepend (data->entities, data->light);
