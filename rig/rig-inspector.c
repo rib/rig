@@ -55,7 +55,6 @@ struct _RigInspector
 
   RigContext *context;
   RigObject *object;
-  CoglPipeline *background_pipeline;
 
   RigPaintableProps paintable;
   RigGraphableProps graphable;
@@ -83,8 +82,6 @@ _rig_inspector_free (void *object)
 
   rig_ref_countable_unref (inspector->context);
   rig_ref_countable_unref (inspector->object);
-
-  cogl_object_unref (inspector->background_pipeline);
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -117,15 +114,7 @@ static void
 _rig_inspector_paint (RigObject *object,
                       RigPaintContext *paint_ctx)
 {
-  RigInspector *inspector = (RigInspector *) object;
-  RigCamera *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
-
-  cogl_framebuffer_draw_rectangle (fb,
-                                   inspector->background_pipeline,
-                                   0.0f, 0.0f, /* x1/y1 */
-                                   inspector->width,
-                                   inspector->height);
+  /* NOP */
 }
 
 RigPaintableVTable _rig_inspector_paintable_vtable = {
@@ -570,10 +559,6 @@ rig_inspector_new (RigContext *context,
   inspector->object = rig_ref_countable_ref (object);
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->user_data = user_data;
-
-  inspector->background_pipeline = cogl_pipeline_new (context->cogl_context);
-  cogl_pipeline_set_color4ub (inspector->background_pipeline,
-                              64, 64, 128, 128);
 
   rig_object_init (&inspector->_parent, &rig_inspector_type);
 
