@@ -327,7 +327,7 @@ _rig_mesh_renderer_init_type (void)
 }
 
 static RigMeshRenderer *
-rig_mesh_renderer_new (RigContext *ctx)
+_rig_mesh_renderer_new (RigContext *ctx)
 {
   RigMeshRenderer *renderer;
 
@@ -344,7 +344,9 @@ rig_mesh_renderer_new_from_file (RigContext *ctx,
 {
   RigMeshRenderer *renderer;
 
-  renderer = rig_mesh_renderer_new (ctx);
+  renderer = _rig_mesh_renderer_new (ctx);
+  renderer->type = RIG_MESH_RENDERER_TYPE_FILE;
+  renderer->path = g_strdup (file);
   renderer->mesh_data = create_ply_primitive (file);
 
   return renderer;
@@ -356,7 +358,10 @@ rig_mesh_renderer_new_from_template (RigContext *ctx,
 {
   RigMeshRenderer *renderer;
 
-  renderer = rig_mesh_renderer_new (ctx);
+  renderer = _rig_mesh_renderer_new (ctx);
+
+  renderer->type = RIG_MESH_RENDERER_TYPE_TEMPLATE;
+  renderer->path = g_strdup (name);
 
   if (g_strcmp0 (name, "plane") == 0)
     {
@@ -426,3 +431,16 @@ rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer)
 {
   return renderer->n_vertices;
 }
+
+RigMeshRendererType
+rig_mesh_renderer_get_type (RigMeshRenderer *renderer)
+{
+  return renderer->type;
+}
+
+const char *
+rig_mesh_renderer_get_path (RigMeshRenderer *renderer)
+{
+  return renderer->path;
+}
+

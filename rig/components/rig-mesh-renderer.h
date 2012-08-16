@@ -31,15 +31,27 @@
 typedef struct _RigMeshRenderer RigMeshRenderer;
 extern RigType rig_mesh_renderer_type;
 
+typedef enum _RigMeshRendererType
+{
+  RIG_MESH_RENDERER_TYPE_TEMPLATE,
+  RIG_MESH_RENDERER_TYPE_FILE,
+} RigMeshRendererType;
+
 struct _RigMeshRenderer
 {
   RigObjectProps _parent;
   RigComponentableProps component;
-  CoglPrimitive *primitive;
+
+  RigMeshRendererType type;
+  char *path;
+
   MashData *mesh_data;
   uint8_t *vertex_data;
-  int      n_vertices;
-  size_t   stride;
+  int n_vertices;
+  size_t stride;
+
+  CoglPrimitive *primitive;
+
   CoglPipeline *pipeline_cache;
   int normal_matrix_uniform;
 };
@@ -68,5 +80,11 @@ rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer);
 
 CoglPrimitive *
 rig_mesh_renderer_get_primitive (RigObject *object);
+
+RigMeshRendererType
+rig_mesh_renderer_get_type (RigMeshRenderer *renderer);
+
+const char *
+rig_mesh_renderer_get_path (RigMeshRenderer *renderer);
 
 #endif /* __RIG_MESH_RENDERER_H__ */

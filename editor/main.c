@@ -4801,6 +4801,28 @@ save_component_cb (RigComponent *component,
                state->indent, "",
                rig_diamond_get_size (RIG_DIAMOND (component)));
     }
+  else if (type == &rig_mesh_renderer_type)
+    {
+      RigMeshRenderer *mesh = RIG_MESH_RENDERER (component);
+
+      fprintf (state->file, "%*s<mesh", state->indent, "");
+
+      switch (rig_mesh_renderer_get_type (mesh))
+        {
+        case RIG_MESH_RENDERER_TYPE_TEMPLATE:
+          fprintf (state->file, " type=\"template\" template=\"%s\"",
+                   rig_mesh_renderer_get_path (mesh));
+          break;
+        case RIG_MESH_RENDERER_TYPE_FILE:
+          fprintf (state->file, " type=\"file\" path=\"%s\"",
+                   rig_mesh_renderer_get_path (mesh));
+          break;
+        default:
+          g_warn_if_reached ();
+        }
+
+      fprintf (state->file, " />\n");
+    }
 
   state->indent -= INDENT_LEVEL;
 }
@@ -5487,6 +5509,67 @@ parse_start_element (GMarkupParseContext *context,
       loader->diamond_size = g_ascii_strtod (size_str, NULL);
 
       loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
+    }
+  else if (state == LOADER_STATE_LOADING_ENTITY &&
+           strcmp (element_name, "mesh") == 0)
+    {
+      const char *type_str;
+      const char *template_str;
+      const char *path_str;
+      RigMeshRenderer *mesh;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "type",
+                                        &type_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "template",
+                                        &template_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "path",
+                                        &path_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        return;
+
+      if (strcmp (type_str, "template") == 0)
+        {
+          if (!template_str)
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Missing mesh template name");
+              return;
+            }
+          mesh = rig_mesh_renderer_new_from_template (loader->data->ctx,
+                                                      template_str);
+        }
+      else if (strcmp (type_str, "file") == 0)
+        {
+          if (!path_str)
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Missing mesh path name");
+              return;
+            }
+          mesh = rig_mesh_renderer_new_from_file (loader->data->ctx, path_str);
+        }
+      else
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       "Invalid mesh type \"%s\"", type_str);
+          return;
+        }
+
+      if (mesh)
+        rig_entity_add_component (loader->current_entity, mesh);
     }
   else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
            strcmp (element_name, "texture") == 0)
