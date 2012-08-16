@@ -4777,8 +4777,25 @@ save_component_cb (RigComponent *component,
     {
       RigMaterial *material = RIG_MATERIAL (component);
       RigAsset *asset = rig_material_get_asset (material);
+      const CoglColor *color;
 
-      fprintf (state->file, "%*s<material>\n", state->indent, "");
+      fprintf (state->file, "%*s<material", state->indent, "");
+
+      color = rig_material_get_color (material);
+      if (cogl_color_get_red_float (color) != 1.0 &&
+          cogl_color_get_green_float (color) != 1.0 &&
+          cogl_color_get_blue_float (color) != 1.0 &&
+          cogl_color_get_alpha_float (color) != 1.0)
+        {
+          fprintf (state->file, " color=\"#%02x%02x%02x%02x\"",
+                   cogl_color_get_red_byte (color),
+                   cogl_color_get_green_byte (color),
+                   cogl_color_get_blue_byte (color),
+                   cogl_color_get_alpha_byte (color));
+        }
+
+      fprintf (state->file, ">\n");
+
       state->indent += INDENT_LEVEL;
 
       if (asset)
@@ -4791,6 +4808,7 @@ save_component_cb (RigComponent *component,
                        id);
             }
         }
+
 
       state->indent -= INDENT_LEVEL;
       fprintf (state->file, "%*s</material>\n", state->indent, "");
@@ -5214,6 +5232,7 @@ typedef struct _Loader
   GList *lights;
   GList *transitions;
 
+  CoglColor material_color;
 
   float diamond_size;
   RigEntity *current_entity;
@@ -5433,20 +5452,28 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "material") == 0)
     {
+      const char *color_str;
+
       loader->texture_specified = FALSE;
       loader_push_state (loader, LOADER_STATE_LOADING_MATERIAL_COMPONENT);
-#if 0
-      const char *texture_id;
 
       g_markup_collect_attributes (element_name,
                                    attribute_names,
                                    attribute_values,
                                    error,
                                    G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                   "texture",
-                                   &texture_id,
+                                   "color",
+                                   &color_str,
                                    G_MARKUP_COLLECT_INVALID);
-#endif
+
+      if (color_str)
+        {
+          rig_util_parse_color (loader->data->ctx,
+                                color_str,
+                                &loader->material_color);
+        }
+      else
+        cogl_color_init_from_4f (&loader->material_color, 1, 1, 1, 1);
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "light") == 0)
@@ -5805,7 +5832,9 @@ parse_end_element (GMarkupParseContext *context,
       else
         texture_asset = NULL;
 
-      material = rig_material_new (loader->data->ctx, texture_asset, NULL);
+      material = rig_material_new (loader->data->ctx,
+                                   texture_asset,
+                                   &loader->material_color);
       rig_entity_add_component (loader->current_entity, material);
 
       loader_pop_state (loader);
