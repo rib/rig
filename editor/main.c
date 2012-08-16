@@ -4862,11 +4862,14 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
 
   fprintf (state->file,
            "%*s        position=\"(%f, %f, %f)\"\n"
+           "%*s        scale=\"%f\"\n"
            "%*s        rotation=\"[%f (%f, %f, %f)]]\">\n",
            state->indent, "",
            rig_entity_get_x (entity),
            rig_entity_get_y (entity),
            rig_entity_get_z (entity),
+           state->indent, "",
+           rig_entity_get_scale (entity),
            state->indent, "",
            angle, axis[0], axis[1], axis[2]);
 
