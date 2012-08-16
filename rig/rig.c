@@ -307,6 +307,14 @@ struct _RigText
 };
 
 #define RIG_TOGGLE_BOX_WIDTH 15
+#define RIG_TOGGLE_BOX_RIGHT_PAD 5
+#define RIG_TOGGLE_LABEL_VPAD 23
+#define RIG_TOGGLE_MIN_LABEL_WIDTH 30
+
+#define RIG_TOGGLE_MIN_WIDTH ((RIG_TOGGLE_BOX_WIDTH + \
+                               RIG_TOGGLE_BOX_RIGHT_PAD + \
+                               RIG_TOGGLE_MIN_LABEL_WIDTH)
+
 
 enum {
   RIG_TOGGLE_PROP_STATE,
@@ -1288,7 +1296,7 @@ _rig_toggle_paint (RigObject *object,
 
   cogl_pango_show_layout (camera->fb,
                           toggle->label,
-                          RIG_TOGGLE_BOX_WIDTH + 5, 0,
+                          RIG_TOGGLE_BOX_WIDTH + RIG_TOGGLE_BOX_RIGHT_PAD, 0,
                           &toggle->text_color);
 }
 
@@ -1303,6 +1311,64 @@ static RigIntrospectableVTable _rig_toggle_introspectable_vtable = {
 
 RigSimpleWidgetVTable _rig_toggle_simple_widget_vtable = {
  0
+};
+
+static void
+_rig_toggle_set_size (RigObject *object,
+                      float width,
+                      float height)
+{
+  /* FIXME: we could elipsize the label if smaller than our preferred size */
+}
+
+static void
+_rig_toggle_get_size (RigObject *object,
+                      float *width,
+                      float *height)
+{
+  RigToggle *toggle = RIG_TOGGLE (object);
+
+  *width = toggle->width;
+  *height = toggle->height;
+}
+
+static void
+_rig_toggle_get_preferred_width (RigObject *object,
+                                 float for_height,
+                                 float *min_width_p,
+                                 float *natural_width_p)
+{
+  RigToggle *toggle = RIG_TOGGLE (object);
+
+  /* FIXME */
+
+  if (min_width_p)
+    *min_width_p = toggle->width;
+  if (natural_width_p)
+    *natural_width_p = toggle->width;
+}
+
+static void
+_rig_toggle_get_preferred_height (RigObject *object,
+                                  float for_width,
+                                  float *min_height_p,
+                                  float *natural_height_p)
+{
+  RigToggle *toggle = RIG_TOGGLE (object);
+
+  /* FIXME */
+
+  if (min_height_p)
+    *min_height_p = toggle->height;
+  if (natural_height_p)
+    *natural_height_p = toggle->height;
+}
+
+static RigSizableVTable _rig_toggle_sizable_vtable = {
+  _rig_toggle_set_size,
+  _rig_toggle_get_size,
+  _rig_toggle_get_preferred_width,
+  _rig_toggle_get_preferred_height
 };
 
 RigType rig_toggle_type;
@@ -1331,6 +1397,10 @@ _rig_toggle_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RigToggle, introspectable),
                           NULL); /* no implied vtable */
+  rig_type_add_interface (&rig_toggle_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_toggle_sizable_vtable);
 }
 
 typedef struct _ToggleGrabState
@@ -1532,8 +1602,8 @@ rig_toggle_new (RigContext *ctx,
   toggle->label_width = PANGO_PIXELS (label_size.width);
   toggle->label_height = PANGO_PIXELS (label_size.height);
 
-  toggle->width = toggle->label_width + 10 + RIG_TOGGLE_BOX_WIDTH;
-  toggle->height = toggle->label_height + 23;
+  toggle->width = toggle->label_width + RIG_TOGGLE_BOX_RIGHT_PAD + RIG_TOGGLE_BOX_WIDTH;
+  toggle->height = toggle->label_height + RIG_TOGGLE_LABEL_VPAD;
 
   toggle->pipeline_border = cogl_pipeline_new (ctx->cogl_context);
   toggle->pipeline_box = cogl_pipeline_new (ctx->cogl_context);
