@@ -852,13 +852,6 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
               sizeof (CoglDepthState));
     }
 
-  if (differences & COGL_PIPELINE_STATE_FOG)
-    {
-      memcpy (&big_state->fog_state,
-              &src->big_state->fog_state,
-              sizeof (CoglPipelineFogState));
-    }
-
   if (differences & COGL_PIPELINE_STATE_POINT_SIZE)
     big_state->point_size = src->big_state->point_size;
 
@@ -963,13 +956,6 @@ _cogl_pipeline_init_multi_property_sparse_state (CoglPipeline *pipeline,
         memcpy (&pipeline->big_state->depth_state,
                 &authority->big_state->depth_state,
                 sizeof (CoglDepthState));
-        break;
-      }
-    case COGL_PIPELINE_STATE_FOG:
-      {
-        memcpy (&pipeline->big_state->fog_state,
-                &authority->big_state->fog_state,
-                sizeof (CoglPipelineFogState));
         break;
       }
     case COGL_PIPELINE_STATE_LOGIC_OPS:
@@ -2143,11 +2129,6 @@ _cogl_pipeline_equal (CoglPipeline *pipeline0,
                                                  authorities1[bit]))
             goto done;
           break;
-        case COGL_PIPELINE_STATE_FOG_INDEX:
-          if (!_cogl_pipeline_fog_state_equal (authorities0[bit],
-                                               authorities1[bit]))
-            goto done;
-          break;
         case COGL_PIPELINE_STATE_CULL_FACE_INDEX:
           if (!_cogl_pipeline_cull_face_state_equal (authorities0[bit],
                                                      authorities1[bit]))
@@ -2269,18 +2250,6 @@ _cogl_pipeline_update_authority (CoglPipeline *pipeline,
       pipeline->differences |= state;
       _cogl_pipeline_prune_redundant_ancestry (pipeline);
     }
-}
-
-CoglBool
-_cogl_pipeline_get_fog_enabled (CoglPipeline *pipeline)
-{
-  CoglPipeline *authority;
-
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
-
-  authority =
-    _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_FOG);
-  return authority->big_state->fog_state.enabled;
 }
 
 unsigned long
@@ -2556,8 +2525,6 @@ _cogl_pipeline_init_state_hash_functions (void)
     _cogl_pipeline_hash_blend_state;
   state_hash_functions[COGL_PIPELINE_STATE_DEPTH_INDEX] =
     _cogl_pipeline_hash_depth_state;
-  state_hash_functions[COGL_PIPELINE_STATE_FOG_INDEX] =
-    _cogl_pipeline_hash_fog_state;
   state_hash_functions[COGL_PIPELINE_STATE_CULL_FACE_INDEX] =
     _cogl_pipeline_hash_cull_face_state;
   state_hash_functions[COGL_PIPELINE_STATE_POINT_SIZE_INDEX] =
@@ -2573,7 +2540,7 @@ _cogl_pipeline_init_state_hash_functions (void)
 
   {
   /* So we get a big error if we forget to update this code! */
-  _COGL_STATIC_ASSERT (COGL_PIPELINE_STATE_SPARSE_COUNT == 14,
+  _COGL_STATIC_ASSERT (COGL_PIPELINE_STATE_SPARSE_COUNT == 13,
                        "Make sure to install a hash function for "
                        "newly added pipeline state and update assert "
                        "in _cogl_pipeline_init_state_hash_functions");

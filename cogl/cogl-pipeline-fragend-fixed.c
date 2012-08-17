@@ -374,53 +374,6 @@ _cogl_pipeline_fragend_fixed_end (CoglPipeline *pipeline,
   for (i = highest_unit_index + 1; i < ctx->texture_units->len; i++)
     _cogl_disable_texture_unit (i);
 
-  if (pipelines_difference & COGL_PIPELINE_STATE_FOG)
-    {
-      CoglPipeline *authority =
-        _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_FOG);
-      CoglPipelineFogState *fog_state = &authority->big_state->fog_state;
-
-      if (fog_state->enabled)
-        {
-          GLfloat fogColor[4];
-          GLenum gl_mode = GL_LINEAR;
-
-          fogColor[0] = cogl_color_get_red_float (&fog_state->color);
-          fogColor[1] = cogl_color_get_green_float (&fog_state->color);
-          fogColor[2] = cogl_color_get_blue_float (&fog_state->color);
-          fogColor[3] = cogl_color_get_alpha_float (&fog_state->color);
-
-          GE (ctx, glEnable (GL_FOG));
-
-          GE (ctx, glFogfv (GL_FOG_COLOR, fogColor));
-
-          if (ctx->driver == COGL_DRIVER_GLES1)
-            switch (fog_state->mode)
-              {
-              case COGL_FOG_MODE_LINEAR:
-                gl_mode = GL_LINEAR;
-                break;
-              case COGL_FOG_MODE_EXPONENTIAL:
-                gl_mode = GL_EXP;
-                break;
-              case COGL_FOG_MODE_EXPONENTIAL_SQUARED:
-                gl_mode = GL_EXP2;
-                break;
-              }
-          /* TODO: support other modes for GLES2 */
-
-          /* NB: GLES doesn't have glFogi */
-          GE (ctx, glFogf (GL_FOG_MODE, gl_mode));
-          GE (ctx, glHint (GL_FOG_HINT, GL_NICEST));
-
-          GE (ctx, glFogf (GL_FOG_DENSITY, fog_state->density));
-          GE (ctx, glFogf (GL_FOG_START, fog_state->z_near));
-          GE (ctx, glFogf (GL_FOG_END, fog_state->z_far));
-        }
-      else
-        GE (ctx, glDisable (GL_FOG));
-    }
-
   return TRUE;
 }
 

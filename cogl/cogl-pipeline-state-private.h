@@ -43,10 +43,6 @@ _cogl_pipeline_has_non_layer_vertex_snippets (CoglPipeline *pipeline);
 CoglBool
 _cogl_pipeline_has_non_layer_fragment_snippets (CoglPipeline *pipeline);
 
-void
-_cogl_pipeline_set_fog_state (CoglPipeline *pipeline,
-                              const CoglPipelineFogState *fog_state);
-
 CoglBool
 _cogl_pipeline_color_equal (CoglPipeline *authority0,
                             CoglPipeline *authority1);
@@ -66,10 +62,6 @@ _cogl_pipeline_blend_state_equal (CoglPipeline *authority0,
 CoglBool
 _cogl_pipeline_depth_state_equal (CoglPipeline *authority0,
                                   CoglPipeline *authority1);
-
-CoglBool
-_cogl_pipeline_fog_state_equal (CoglPipeline *authority0,
-                                CoglPipeline *authority1);
 
 CoglBool
 _cogl_pipeline_point_size_equal (CoglPipeline *authority0,
@@ -130,10 +122,6 @@ _cogl_pipeline_hash_user_shader_state (CoglPipeline *authority,
 void
 _cogl_pipeline_hash_depth_state (CoglPipeline *authority,
                                  CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_hash_fog_state (CoglPipeline *authority,
-                               CoglPipelineHashState *state);
 
 void
 _cogl_pipeline_hash_point_size_state (CoglPipeline *authority,

@@ -167,10 +167,6 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_ARBFP))
     return FALSE;
 
-  /* TODO: support fog */
-  if (_cogl_pipeline_get_fog_enabled (pipeline))
-    return FALSE;
-
   /* Fragment snippets are only supported in the GLSL fragend */
   if (_cogl_pipeline_has_fragment_snippets (pipeline))
     return FALSE;

@@ -179,8 +179,6 @@ cogl_euler_init_from_quaternion
 cogl_features_available
 cogl_feature_flags_get_type
 
-cogl_fog_mode_get_type
-
 cogl_foreach_feature
 
 cogl_flush

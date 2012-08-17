@@ -176,7 +176,6 @@ typedef enum
   COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE_INDEX,
   COGL_PIPELINE_STATE_BLEND_INDEX,
   COGL_PIPELINE_STATE_DEPTH_INDEX,
-  COGL_PIPELINE_STATE_FOG_INDEX,
   COGL_PIPELINE_STATE_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_LOGIC_OPS_INDEX,
   COGL_PIPELINE_STATE_CULL_FACE_INDEX,
@@ -219,8 +218,6 @@ typedef enum _CoglPipelineState
     1L<<COGL_PIPELINE_STATE_BLEND_INDEX,
   COGL_PIPELINE_STATE_DEPTH =
     1L<<COGL_PIPELINE_STATE_DEPTH_INDEX,
-  COGL_PIPELINE_STATE_FOG =
-    1L<<COGL_PIPELINE_STATE_FOG_INDEX,
   COGL_PIPELINE_STATE_POINT_SIZE =
     1L<<COGL_PIPELINE_STATE_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_LOGIC_OPS =
@@ -263,7 +260,6 @@ typedef enum _CoglPipelineState
    COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE | \
    COGL_PIPELINE_STATE_BLEND | \
    COGL_PIPELINE_STATE_DEPTH | \
-   COGL_PIPELINE_STATE_FOG | \
    COGL_PIPELINE_STATE_POINT_SIZE | \
    COGL_PIPELINE_STATE_LOGIC_OPS | \
    COGL_PIPELINE_STATE_CULL_FACE | \
@@ -275,7 +271,6 @@ typedef enum _CoglPipelineState
   (COGL_PIPELINE_STATE_LAYERS | \
    COGL_PIPELINE_STATE_BLEND | \
    COGL_PIPELINE_STATE_DEPTH | \
-   COGL_PIPELINE_STATE_FOG | \
    COGL_PIPELINE_STATE_LOGIC_OPS | \
    COGL_PIPELINE_STATE_CULL_FACE | \
    COGL_PIPELINE_STATE_UNIFORMS | \
@@ -318,16 +313,6 @@ typedef struct
 
 typedef struct
 {
-  CoglBool        enabled;
-  CoglColor       color;
-  CoglFogMode     mode;
-  float           density;
-  float           z_near;
-  float           z_far;
-} CoglPipelineFogState;
-
-typedef struct
-{
   CoglColorMask color_mask;
 } CoglPipelineLogicOpsState;
 
@@ -356,7 +341,6 @@ typedef struct
   CoglPipelineAlphaFuncState alpha_state;
   CoglPipelineBlendState blend_state;
   CoglDepthState depth_state;
-  CoglPipelineFogState fog_state;
   float point_size;
   CoglPipelineLogicOpsState logic_ops_state;
   CoglPipelineCullFaceState cull_face_state;
@@ -901,9 +885,6 @@ _cogl_pipeline_get_blend_enabled (CoglPipeline *pipeline);
 void
 _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
                                   CoglPipelineBlendEnable enable);
-
-CoglBool
-_cogl_pipeline_get_fog_enabled (CoglPipeline *pipeline);
 
 void
 _cogl_pipeline_set_static_breadcrumb (CoglPipeline *pipeline,
