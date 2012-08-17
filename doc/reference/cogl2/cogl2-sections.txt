@@ -579,18 +579,6 @@ cogl_pipeline_set_color4ub
 cogl_pipeline_set_color4f
 cogl_pipeline_get_color
 
-cogl_pipeline_set_ambient
-cogl_pipeline_get_ambient
-cogl_pipeline_set_diffuse
-cogl_pipeline_get_diffuse
-cogl_pipeline_set_ambient_and_diffuse
-cogl_pipeline_set_emission
-cogl_pipeline_get_emission
-cogl_pipeline_set_specular
-cogl_pipeline_get_specular
-cogl_pipeline_set_shininess
-cogl_pipeline_get_shininess
-
 CoglMaterialAlphaFunc
 cogl_pipeline_set_alpha_test_function
 
