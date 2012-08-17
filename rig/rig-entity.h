@@ -205,4 +205,10 @@ rig_entity_set_pipeline_cache (RigEntity *entity,
 CoglPipeline *
 rig_entity_get_pipeline_cache (RigEntity *entity);
 
+CoglBool
+rig_entity_get_visible (RigEntity *entity);
+
+void
+rig_entity_set_visible (RigEntity *entity, CoglBool visible);
+
 #endif /* __RIG_ENTITY_H__ */

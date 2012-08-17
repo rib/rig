@@ -24,6 +24,7 @@
 enum
 {
   PROP_LABEL,
+  PROP_VISIBLE,
   PROP_POSITION,
   PROP_ROTATION,
   PROP_SCALE,
@@ -60,6 +61,7 @@ struct _RigEntity
   RigSimpleIntrospectableProps introspectable;
   RigProperty properties[N_PROPS];
 
+  unsigned int visible:1;
   unsigned int dirty:1;
   unsigned int cast_shadow:1;
 };
@@ -72,6 +74,15 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .setter = rig_entity_set_label,
     .nick = "Label",
     .blurb = "A label for the entity",
+    .flags = RIG_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "visible",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .getter = rig_entity_get_visible,
+    .setter = rig_entity_set_visible,
+    .nick = "Visible",
+    .blurb = "Whether the entity is visible or not",
     .flags = RIG_PROPERTY_FLAG_READWRITE
   },
   {
@@ -189,6 +200,9 @@ rig_entity_new (RigContext *ctx,
                                   entity->properties);
 
   entity->id = id;
+
+  entity->visible = TRUE;
+
   entity->position[0] = 0.0f;
   entity->position[1] = 0.0f;
   entity->position[2] = 0.0f;
@@ -441,6 +455,9 @@ rig_entity_draw (RigEntity       *entity,
 {
   int i;
 
+  if (!entity->visible)
+    return;
+
   for (i = 0; i < entity->components->len; i++)
     {
       RigObject *component = g_ptr_array_index (entity->components, i);
@@ -581,4 +598,16 @@ CoglPipeline *
 rig_entity_get_pipeline_cache (RigEntity *entity)
 {
   return entity->pipeline_cache;
+}
+
+CoglBool
+rig_entity_get_visible (RigEntity *entity)
+{
+  return entity->visible;
+}
+
+void
+rig_entity_set_visible (RigEntity *entity, CoglBool visible)
+{
+  entity->visible = visible;
 }

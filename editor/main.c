@@ -1927,13 +1927,18 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
 
   if (rig_object_get_type (object) == &rig_entity_type)
     {
-      RigComponent *geometry =
-        rig_entity_get_component (object, RIG_COMPONENT_TYPE_GEOMETRY);
+      RigEntity *entity = RIG_ENTITY (object);
+      RigComponent *geometry;
       CoglPipeline *pipeline;
       CoglPrimitive *primitive;
       CoglMatrix modelview_matrix;
       float normal_matrix[9];
 
+      if (!rig_entity_get_visible (entity))
+        return RIG_TRAVERSE_VISIT_CONTINUE;
+
+      geometry =
+        rig_entity_get_component (object, RIG_COMPONENT_TYPE_GEOMETRY);
       if (!geometry)
         {
           rig_entity_draw (object, fb);
@@ -3113,6 +3118,9 @@ _rig_entitygraph_pre_pick_cb (RigObject *object,
       float transformed_ray_origin[3];
       float transformed_ray_direction[3];
       CoglMatrix transform;
+
+      if (!rig_entity_get_visible (entity))
+        return RIG_TRAVERSE_VISIT_CONTINUE;
 
       geometry = rig_entity_get_component (entity, RIG_COMPONENT_TYPE_GEOMETRY);
 
