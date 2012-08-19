@@ -30,6 +30,7 @@
 #include "rig-paintable.h"
 #include "rig-color.h"
 #include "rig-asset.h"
+#include "rig-bevel.h"
 
 /* entity/components system */
 #include "rig-entity.h"
