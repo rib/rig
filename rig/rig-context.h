@@ -220,6 +220,16 @@ void
 rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height);
 
 void
+rig_ui_viewport_set_size (RigUIViewport *ui_viewport,
+                          float width,
+                          float height);
+
+void
+rig_ui_viewport_get_size (RigUIViewport *ui_viewport,
+                          float *width,
+                          float *height);
+
+void
 rig_ui_viewport_set_doc_x (RigUIViewport *ui_viewport, float doc_x);
 
 void

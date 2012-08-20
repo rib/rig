@@ -1755,6 +1755,14 @@ static RigGraphableVTable _rig_ui_viewport_graphable_vtable = {
   NULL, /* parent_changed */
 };
 
+static RigSizableVTable _rig_ui_viewport_sizable_vtable = {
+  rig_ui_viewport_set_size,
+  rig_ui_viewport_get_size,
+  NULL,
+  NULL
+};
+
+
 RigType rig_ui_viewport_type;
 
 static void
@@ -1769,6 +1777,10 @@ _rig_ui_viewport_init_type (void)
                           RIG_INTERFACE_ID_GRAPHABLE,
                           offsetof (RigUIViewport, graphable),
                           &_rig_ui_viewport_graphable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_ui_viewport_sizable_vtable);
 }
 
 static void
@@ -1918,25 +1930,38 @@ rig_ui_viewport_new (RigContext *ctx,
 }
 
 void
-rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width)
+rig_ui_viewport_set_size (RigUIViewport *ui_viewport,
+                          float width,
+                          float height)
 {
   ui_viewport->width = width;
+  ui_viewport->height = height;
 
   rig_input_region_set_rectangle (ui_viewport->input_region,
                                   0, 0,
-                                  ui_viewport->width,
-                                  ui_viewport->height);
+                                  width,
+                                  height);
+}
+
+void
+rig_ui_viewport_get_size (RigUIViewport *ui_viewport,
+                          float *width,
+                          float *height)
+{
+  *width = ui_viewport->width;
+  *height = ui_viewport->height;
+}
+
+void
+rig_ui_viewport_set_width (RigUIViewport *ui_viewport, float width)
+{
+  rig_ui_viewport_set_size (ui_viewport, width, ui_viewport->height);
 }
 
 void
 rig_ui_viewport_set_height (RigUIViewport *ui_viewport, float height)
 {
-  ui_viewport->height = height;
-
-  rig_input_region_set_rectangle (ui_viewport->input_region,
-                                  0, 0,
-                                  ui_viewport->width,
-                                  ui_viewport->height);
+  rig_ui_viewport_set_size (ui_viewport, ui_viewport->width, height);
 }
 
 void
