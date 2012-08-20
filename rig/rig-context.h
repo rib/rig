@@ -192,6 +192,16 @@ rig_rectangle_set_width (RigRectangle *rectangle, float width);
 void
 rig_rectangle_set_height (RigRectangle *rectangle, float height);
 
+void
+rig_rectangle_set_size (RigRectangle *rectangle,
+                        float width,
+                        float height);
+
+void
+rig_rectangle_get_size (RigRectangle *rectangle,
+                        float *width,
+                        float *height);
+
 typedef struct _RigUIViewport RigUIViewport;
 #define RIG_UI_VIEWPORT(X) ((RigUIViewport *)X)
 

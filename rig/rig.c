@@ -1168,6 +1168,13 @@ static RigSimpleWidgetVTable _rig_rectangle_simple_widget_vtable = {
  0
 };
 
+static RigSizableVTable _rig_rectangle_sizable_vtable = {
+  rig_rectangle_set_size,
+  rig_rectangle_get_size,
+  NULL,
+  NULL
+};
+
 RigType rig_rectangle_type;
 
 static void
@@ -1190,6 +1197,10 @@ _rig_rectangle_init_type (void)
                           RIG_INTERFACE_ID_SIMPLE_WIDGET,
                           offsetof (RigRectangle, simple_widget),
                           &_rig_rectangle_simple_widget_vtable);
+  rig_type_add_interface (&rig_rectangle_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_rectangle_sizable_vtable);
 }
 
 RigRectangle *
@@ -1230,6 +1241,24 @@ void
 rig_rectangle_set_height (RigRectangle *rectangle, float height)
 {
   rectangle->height = height;
+}
+
+void
+rig_rectangle_set_size (RigRectangle *rectangle,
+                        float width,
+                        float height)
+{
+  rectangle->width = width;
+  rectangle->height = height;
+}
+
+void
+rig_rectangle_get_size (RigRectangle *rectangle,
+                        float *width,
+                        float *height)
+{
+  *width = rectangle->width;
+  *height = rectangle->height;
 }
 
 static void
