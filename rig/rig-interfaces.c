@@ -132,7 +132,7 @@ rig_graphable_get_parent (RigObject *child)
   return child_props->parent;
 }
 
-static void
+static RigTraverseVisitFlags
 _rig_graphable_traverse_breadth (RigObject *graphable,
                                  RigTraverseCallback callback,
                                  void *user_data)
@@ -140,14 +140,13 @@ _rig_graphable_traverse_breadth (RigObject *graphable,
   GQueue *queue = g_queue_new ();
   int dummy;
   int current_depth = 0;
+  RigTraverseVisitFlags flags = 0;
 
   g_queue_push_tail (queue, graphable);
   g_queue_push_tail (queue, &dummy); /* use to delimit depth changes */
 
   while ((graphable = g_queue_pop_head (queue)))
     {
-      RigTraverseVisitFlags flags;
-
       if (graphable == &dummy)
         {
           current_depth++;
@@ -169,6 +168,8 @@ _rig_graphable_traverse_breadth (RigObject *graphable,
     }
 
   g_queue_free (queue);
+
+  return flags;
 }
 
 static RigTraverseVisitFlags
@@ -229,7 +230,7 @@ _rig_graphable_traverse_depth (RigObject *graphable,
  * such as by skipping over an object's children or bailing out of
  * any further traversing.
  */
-void
+RigTraverseVisitFlags
 rig_graphable_traverse (RigObject *root,
                         RigTraverseFlags flags,
                         RigTraverseCallback before_children_callback,
@@ -237,15 +238,15 @@ rig_graphable_traverse (RigObject *root,
                         void *user_data)
 {
   if (flags & RIG_TRAVERSE_BREADTH_FIRST)
-    _rig_graphable_traverse_breadth (root,
-                                     before_children_callback,
-                                     user_data);
+    return _rig_graphable_traverse_breadth (root,
+                                            before_children_callback,
+                                            user_data);
   else /* DEPTH_FIRST */
-    _rig_graphable_traverse_depth (root,
-                                   before_children_callback,
-                                   after_children_callback,
-                                   0, /* start depth */
-                                   user_data);
+    return _rig_graphable_traverse_depth (root,
+                                          before_children_callback,
+                                          after_children_callback,
+                                          0, /* start depth */
+                                          user_data);
 }
 
 #if 0

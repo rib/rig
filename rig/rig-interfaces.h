@@ -105,7 +105,7 @@ typedef RigTraverseVisitFlags (*RigTraverseCallback) (RigObject *object,
                                                       int depth,
                                                       void *user_data);
 
-void
+RigTraverseVisitFlags
 rig_graphable_traverse (RigObject *root,
                         RigTraverseFlags flags,
                         RigTraverseCallback before_children_callback,
