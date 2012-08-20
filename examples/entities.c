@@ -241,7 +241,7 @@ test_init (RigShell *shell, void *user_data)
   RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;
-  CoglColor color;
+  RigColor color;
   float vector3[3];
 
   onscreen = cogl_onscreen_new (data->ctx->cogl_context, 800, 600);
@@ -331,11 +331,11 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_rotate_y_axis (data->light, 10);
 
   component = rig_light_new ();
-  cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+  rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
   rig_light_set_ambient (RIG_LIGHT (component), &color);
-  cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+  rig_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
   rig_light_set_diffuse (RIG_LIGHT (component), &color);
-  cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+  rig_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
   rig_light_set_specular (RIG_LIGHT (component), &color);
   rig_light_add_pipeline (RIG_LIGHT (component), root_pipeline);
 
@@ -345,7 +345,7 @@ test_init (RigShell *shell, void *user_data)
   component = rig_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
   data->shadow_map_camera = component;
 
-  cogl_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
+  rig_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
   rig_camera_set_background_color4f (RIG_CAMERA (component), 0.f, .3f, 0.f, 1.f);
   rig_camera_set_projection_mode (RIG_CAMERA (component),
                                   RIG_PROJECTION_ORTHOGRAPHIC);

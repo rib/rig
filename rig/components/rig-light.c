@@ -18,16 +18,17 @@
  */
 
 #include "rig-light.h"
+#include "rig-color.h"
 
 static float *
-get_color_array (CoglColor *color)
+get_color_array (RigColor *color)
 {
   static float array[4];
 
-  array[0] = cogl_color_get_red_float (color);
-  array[1] = cogl_color_get_blue_float (color);
-  array[2] = cogl_color_get_green_float (color);
-  array[3] = cogl_color_get_alpha_float (color);
+  array[0] = color->red;
+  array[1] = color->green;
+  array[2] = color->blue;
+  array[3] = color->alpha;
 
   return array;
 }
@@ -111,9 +112,9 @@ rig_light_new (void)
   light = g_slice_new0 (RigLight);
   rig_object_init (&light->_parent, &rig_light_type);
   light->component.type = RIG_COMPONENT_TYPE_LIGHT;
-  cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
-  cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
-  cogl_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
+  rig_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
+  rig_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
+  rig_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
 
   return light;
 }
@@ -126,12 +127,12 @@ rig_light_free (RigLight *light)
 
 void
 rig_light_set_ambient (RigLight  *light,
-                       CoglColor *ambient)
+                       RigColor *ambient)
 {
   light->ambient = *ambient;
 }
 
-const CoglColor *
+const RigColor *
 rig_light_get_ambient (RigLight *light)
 {
   return &light->ambient;
@@ -139,12 +140,12 @@ rig_light_get_ambient (RigLight *light)
 
 void
 rig_light_set_diffuse (RigLight  *light,
-                       CoglColor *diffuse)
+                       RigColor *diffuse)
 {
   light->diffuse = *diffuse;
 }
 
-const CoglColor *
+const RigColor *
 rig_light_get_diffuse (RigLight *light)
 {
   return &light->diffuse;
@@ -152,12 +153,12 @@ rig_light_get_diffuse (RigLight *light)
 
 void
 rig_light_set_specular (RigLight  *light,
-                        CoglColor *specular)
+                        RigColor *specular)
 {
   light->specular = *specular;
 }
 
-const CoglColor *
+const RigColor *
 rig_light_get_specular (RigLight *light)
 {
   return &light->specular;

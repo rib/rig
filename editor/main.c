@@ -4203,7 +4203,7 @@ test_init (RigShell *shell, void *user_data)
   CoglTexture2D *color_buffer;
   CoglPipeline *root_pipeline;
   CoglSnippet *snippet;
-  CoglColor color;
+  RigColor color;
   RigMeshRenderer *mesh;
   RigMaterial *material;
   RigLight *light;
@@ -4475,11 +4475,11 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_rotate_y_axis (data->light, -20);
 
   light = rig_light_new ();
-  cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+  rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
   rig_light_set_ambient (light, &color);
-  cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+  rig_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
   rig_light_set_diffuse (light, &color);
-  cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+  rig_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
   rig_light_set_specular (light, &color);
   rig_light_add_pipeline (light, root_pipeline);
 
@@ -4709,9 +4709,9 @@ save_component_cb (RigComponent *component,
   if (type == &rig_light_type)
     {
       RigLight *light = RIG_LIGHT (component);
-      const CoglColor *ambient = rig_light_get_ambient (light);
-      const CoglColor *diffuse = rig_light_get_diffuse (light);
-      const CoglColor *specular = rig_light_get_specular (light);
+      const RigColor *ambient = rig_light_get_ambient (light);
+      const RigColor *diffuse = rig_light_get_diffuse (light);
+      const RigColor *specular = rig_light_get_specular (light);
 
       fprintf (state->file,
                "%*s<light "
@@ -4719,38 +4719,38 @@ save_component_cb (RigComponent *component,
                "diffuse=\"#%02x%02x%02x%02x\" "
                "specular=\"#%02x%02x%02x%02x\"/>\n",
                state->indent, "",
-               cogl_color_get_red_byte (ambient),
-               cogl_color_get_green_byte (ambient),
-               cogl_color_get_blue_byte (ambient),
-               cogl_color_get_alpha_byte (ambient),
-               cogl_color_get_red_byte (diffuse),
-               cogl_color_get_green_byte (diffuse),
-               cogl_color_get_blue_byte (diffuse),
-               cogl_color_get_alpha_byte (diffuse),
-               cogl_color_get_red_byte (specular),
-               cogl_color_get_green_byte (specular),
-               cogl_color_get_blue_byte (specular),
-               cogl_color_get_alpha_byte (specular));
+               rig_color_get_red_byte (ambient),
+               rig_color_get_green_byte (ambient),
+               rig_color_get_blue_byte (ambient),
+               rig_color_get_alpha_byte (ambient),
+               rig_color_get_red_byte (diffuse),
+               rig_color_get_green_byte (diffuse),
+               rig_color_get_blue_byte (diffuse),
+               rig_color_get_alpha_byte (diffuse),
+               rig_color_get_red_byte (specular),
+               rig_color_get_green_byte (specular),
+               rig_color_get_blue_byte (specular),
+               rig_color_get_alpha_byte (specular));
     }
   else if (type == &rig_material_type)
     {
       RigMaterial *material = RIG_MATERIAL (component);
       RigAsset *asset = rig_material_get_asset (material);
-      const CoglColor *color;
+      const RigColor *color;
 
       fprintf (state->file, "%*s<material", state->indent, "");
 
       color = rig_material_get_color (material);
-      if (cogl_color_get_red_float (color) != 1.0 &&
-          cogl_color_get_green_float (color) != 1.0 &&
-          cogl_color_get_blue_float (color) != 1.0 &&
-          cogl_color_get_alpha_float (color) != 1.0)
+      if (color->red != 1.0 &&
+          color->green != 1.0 &&
+          color->blue != 1.0 &&
+          color->alpha != 1.0)
         {
           fprintf (state->file, " color=\"#%02x%02x%02x%02x\"",
-                   cogl_color_get_red_byte (color),
-                   cogl_color_get_green_byte (color),
-                   cogl_color_get_blue_byte (color),
-                   cogl_color_get_alpha_byte (color));
+                   rig_color_get_red_byte (color),
+                   rig_color_get_green_byte (color),
+                   rig_color_get_blue_byte (color),
+                   rig_color_get_alpha_byte (color));
         }
 
       fprintf (state->file, ">\n");
@@ -5197,7 +5197,7 @@ typedef struct _Loader
   GList *lights;
   GList *transitions;
 
-  CoglColor material_color;
+  RigColor material_color;
 
   float diamond_size;
   RigEntity *current_entity;
@@ -5433,12 +5433,12 @@ parse_start_element (GMarkupParseContext *context,
 
       if (color_str)
         {
-          rig_util_parse_color (loader->data->ctx,
-                                color_str,
-                                &loader->material_color);
+          rig_color_init_from_string (loader->data->ctx,
+                                      &loader->material_color,
+                                      color_str);
         }
       else
-        cogl_color_init_from_4f (&loader->material_color, 1, 1, 1, 1);
+        rig_color_init_from_4f (&loader->material_color, 1, 1, 1, 1);
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "light") == 0)
@@ -5446,9 +5446,9 @@ parse_start_element (GMarkupParseContext *context,
       const char *ambient_str;
       const char *diffuse_str;
       const char *specular_str;
-      CoglColor ambient;
-      CoglColor diffuse;
-      CoglColor specular;
+      RigColor ambient;
+      RigColor diffuse;
+      RigColor specular;
       RigLight *light;
 
       if (!g_markup_collect_attributes (element_name,
@@ -5469,9 +5469,9 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      rig_util_parse_color (loader->data->ctx, ambient_str, &ambient);
-      rig_util_parse_color (loader->data->ctx, diffuse_str, &diffuse);
-      rig_util_parse_color (loader->data->ctx, specular_str, &specular);
+      rig_color_init_from_string (loader->data->ctx, &ambient, ambient_str);
+      rig_color_init_from_string (loader->data->ctx, &diffuse, diffuse_str);
+      rig_color_init_from_string (loader->data->ctx, &specular, specular_str);
 
       light = rig_light_new ();
       rig_light_set_ambient (light, &ambient);

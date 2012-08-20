@@ -30,9 +30,9 @@ struct _RigLight
 {
   RigObjectProps _parent;
   RigComponentableProps component;
-  CoglColor ambient;
-  CoglColor diffuse;
-  CoglColor specular;
+  RigColor ambient;
+  RigColor diffuse;
+  RigColor specular;
   CoglPipeline *pipeline; /* pipeline where to update the light uniforms */
 };
 
@@ -47,23 +47,23 @@ rig_light_free (RigLight *light);
 
 void
 rig_light_set_ambient (RigLight *light,
-                       CoglColor *ambient);
+                       RigColor *ambient);
 
-const CoglColor *
+const RigColor *
 rig_light_get_ambient (RigLight *light);
 
 void
 rig_light_set_diffuse (RigLight *light,
-                       CoglColor *diffuse);
+                       RigColor *diffuse);
 
-const CoglColor *
+const RigColor *
 rig_light_get_diffuse (RigLight *light);
 
 void
 rig_light_set_specular (RigLight *light,
-                        CoglColor *specular);
+                        RigColor *specular);
 
-const CoglColor *
+const RigColor *
 rig_light_get_specular (RigLight *light);
 
 void

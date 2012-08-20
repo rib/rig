@@ -21,6 +21,7 @@
 #include "rig-material.h"
 #include "rig-global.h"
 #include "rig-asset.h"
+#include "rig-color.h"
 
 RigType rig_material_type;
 
@@ -41,7 +42,7 @@ _rig_material_init_type (void)
 RigMaterial *
 rig_material_new_full (RigContext *ctx,
                        RigAsset *asset,
-                       const CoglColor *color,
+                       const RigColor *color,
                        CoglPipeline *pipeline)
 {
   RigMaterial *material = g_slice_new0 (RigMaterial);
@@ -52,7 +53,7 @@ rig_material_new_full (RigContext *ctx,
   if (color)
     material->color = *color;
   else
-    cogl_color_init_from_4f (&material->color, 1, 1, 1, 1);
+    rig_color_init_from_4f (&material->color, 1, 1, 1, 1);
 
   if (asset)
     material->asset = rig_ref_countable_ref (asset);
@@ -67,7 +68,7 @@ rig_material_new_full (RigContext *ctx,
 RigMaterial *
 rig_material_new (RigContext *ctx,
                   RigAsset *asset,
-                  const CoglColor *color)
+                  const RigColor *color)
 {
   return rig_material_new_full (ctx, asset, color, NULL);
 }
@@ -86,7 +87,7 @@ rig_material_get_asset (RigMaterial *material)
   return material->asset;
 }
 
-const CoglColor *
+const RigColor *
 rig_material_get_color (RigMaterial *material)
 {
   return &material->color;

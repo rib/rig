@@ -31,6 +31,20 @@
 
 #include "color-table.h"
 #include "rig-context.h"
+#include "rig-color.h"
+
+void
+rig_color_init_from_4ub (RigColor *color,
+                         uint8_t red,
+                         uint8_t green,
+                         uint8_t blue,
+                         uint8_t alpha)
+{
+  color->red = red / 255.0;
+  color->green = green / 255.0;
+  color->blue = blue / 255.0;
+  color->alpha = alpha / 255.0;
+}
 
 static inline void
 skip_whitespace (char **str)
@@ -66,7 +80,7 @@ parse_rgb_value (char *str,
 }
 
 static gboolean
-parse_rgba (CoglColor *color,
+parse_rgba (RigColor *color,
             char *str,
             gboolean has_alpha)
 {
@@ -121,16 +135,16 @@ parse_rgba (CoglColor *color,
   if (*str != ')')
     return FALSE;
 
-  cogl_color_init_from_4f (color, red, green, blue, alpha);
+  rig_color_init_from_4f (color, red, green, blue, alpha);
 
   return TRUE;
 }
 
-static void
-_rig_color_init_from_hls (CoglColor *color,
-                          float hue,
-                          float luminance,
-                          float saturation)
+void
+rig_color_init_from_hls (RigColor *color,
+                         float hue,
+                         float luminance,
+                         float saturation)
 {
   float tmp1, tmp2;
   float tmp3[3];
@@ -141,7 +155,7 @@ _rig_color_init_from_hls (CoglColor *color,
 
   if (saturation == 0)
     {
-      cogl_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
+      rig_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
       return;
     }
 
@@ -174,11 +188,14 @@ _rig_color_init_from_hls (CoglColor *color,
         clr[i] = tmp1;
     }
 
-  cogl_color_init_from_4f (color, clr[0], clr[1], clr[2], 1.0);
+  color->red = clr[0];
+  color->green = clr[1];
+  color->blue = clr[2];
+  color->alpha = 1.0;
 }
 
 static gboolean
-parse_hsla (CoglColor *color,
+parse_hsla (RigColor *color,
             char *str,
             gboolean has_alpha)
 {
@@ -195,7 +212,7 @@ parse_hsla (CoglColor *color,
   /* hue */
   skip_whitespace (&str);
   /* we don't do any angle normalization here because
-   * clutter_color_from_hls() will do it for us
+   * rig_color_from_hls() will do it for us
    */
   number = g_ascii_strtod (str, &str);
   skip_whitespace (&str);
@@ -257,16 +274,16 @@ parse_hsla (CoglColor *color,
   if (*str != ')')
     return FALSE;
 
-  _rig_color_init_from_hls (color, h, l, s);
-  cogl_color_set_alpha (color, a);
+  rig_color_init_from_hls (color, h, l, s);
+  color->alpha = a;
 
   return TRUE;
 }
 
 gboolean
-rig_util_parse_color (RigContext *ctx,
-                      const char *str,
-                      CoglColor *color)
+rig_color_init_from_string (RigContext *ctx,
+                            RigColor *color,
+                            const char *str)
 {
   void *color_index_ptr;
 
@@ -321,7 +338,7 @@ rig_util_parse_color (RigContext *ctx,
 
               alpha = result & 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              rig_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -332,7 +349,7 @@ rig_util_parse_color (RigContext *ctx,
 
               alpha = 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              rig_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -347,7 +364,7 @@ rig_util_parse_color (RigContext *ctx,
               blue  = (blue  << 4) | blue;
               alpha = (alpha << 4) | alpha;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              rig_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -362,7 +379,7 @@ rig_util_parse_color (RigContext *ctx,
 
               alpha = 0xff;
 
-              cogl_color_init_from_4ub (color, red, green, blue, alpha);
+              rig_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -399,13 +416,206 @@ rig_util_parse_color (RigContext *ctx,
        * when retrieving the value back the indices stored are all offset by
        * one. */
       int color_index = GPOINTER_TO_INT (color_index_ptr) - 1;
-      cogl_color_init_from_4ub (color,
-                                color_entries[color_index].red,
-                                color_entries[color_index].green,
-                                color_entries[color_index].blue,
-                                255);
+      rig_color_init_from_4ub (color,
+                               color_entries[color_index].red,
+                               color_entries[color_index].green,
+                               color_entries[color_index].blue,
+                               255);
       return TRUE;
     }
 
   return FALSE;
 }
+
+void
+rig_color_add (const RigColor *a,
+		   const RigColor *b,
+		   RigColor       *result)
+{
+  g_return_if_fail (a != NULL);
+  g_return_if_fail (b != NULL);
+  g_return_if_fail (result != NULL);
+
+  result->red   = CLAMP (a->red   + b->red,   0, 255);
+  result->green = CLAMP (a->green + b->green, 0, 255);
+  result->blue  = CLAMP (a->blue  + b->blue,  0, 255);
+
+  result->alpha = MAX (a->alpha, b->alpha);
+}
+
+void
+rig_color_subtract (const RigColor *a,
+                    const RigColor *b,
+                    RigColor *result)
+{
+  g_return_if_fail (a != NULL);
+  g_return_if_fail (b != NULL);
+  g_return_if_fail (result != NULL);
+
+  result->red   = CLAMP (a->red   - b->red,   0, 255);
+  result->green = CLAMP (a->green - b->green, 0, 255);
+  result->blue  = CLAMP (a->blue  - b->blue,  0, 255);
+
+  result->alpha = MIN (a->alpha, b->alpha);
+}
+
+void
+rig_color_lighten (const RigColor *color,
+		       RigColor       *result)
+{
+  rig_color_shade (color, 1.3, result);
+}
+
+void
+rig_color_darken (const RigColor *color,
+		      RigColor       *result)
+{
+  rig_color_shade (color, 0.7, result);
+}
+
+/**
+ * rig_color_to_hls:
+ * @color: a #RigColor
+ * @hue: (out): return location for the hue value or %NULL
+ * @luminance: (out): return location for the luminance value or %NULL
+ * @saturation: (out): return location for the saturation value or %NULL
+ *
+ * Converts @color to the HLS format.
+ *
+ * The @hue value is in the 0 .. 360 range. The @luminance and
+ * @saturation values are in the 0 .. 1 range.
+ */
+void
+rig_color_to_hls (const RigColor *color,
+                  float *hue,
+                  float *luminance,
+                  float *saturation)
+{
+  float red, green, blue;
+  float min, max, delta;
+  float h, l, s;
+
+  g_return_if_fail (color != NULL);
+
+  red   = color->red;
+  green = color->green;
+  blue  = color->blue;
+
+  if (red > green)
+    {
+      if (red > blue)
+	max = red;
+      else
+	max = blue;
+
+      if (green < blue)
+	min = green;
+      else
+	min = blue;
+    }
+  else
+    {
+      if (green > blue)
+	max = green;
+      else
+	max = blue;
+
+      if (red < blue)
+	min = red;
+      else
+	min = blue;
+    }
+
+  l = (max + min) / 2;
+  s = 0;
+  h = 0;
+
+  if (max != min)
+    {
+      if (l <= 0.5)
+	s = (max - min) / (max + min);
+      else
+	s = (max - min) / (2.0 - max - min);
+
+      delta = max - min;
+
+      if (red == max)
+	h = (green - blue) / delta;
+      else if (green == max)
+	h = 2.0 + (blue - red) / delta;
+      else if (blue == max)
+	h = 4.0 + (red - green) / delta;
+
+      h *= 60;
+
+      if (h < 0)
+	h += 360.0;
+    }
+
+  if (hue)
+    *hue = h;
+
+  if (luminance)
+    *luminance = l;
+
+  if (saturation)
+    *saturation = s;
+}
+
+void
+rig_color_shade (const RigColor *color,
+                 float factor,
+                 RigColor *result)
+{
+  float h, l, s;
+
+  g_return_if_fail (color != NULL);
+  g_return_if_fail (result != NULL);
+
+  rig_color_to_hls (color, &h, &l, &s);
+
+  l *= factor;
+  if (l > 1.0)
+    l = 1.0;
+  else if (l < 0)
+    l = 0;
+
+  s *= factor;
+  if (s > 1.0)
+    s = 1.0;
+  else if (s < 0)
+    s = 0;
+
+  rig_color_init_from_hls (result, h, l, s);
+
+  result->alpha = color->alpha;
+}
+
+gchar *
+rig_color_to_string (const RigColor *color)
+{
+  g_return_val_if_fail (color != NULL, NULL);
+
+  return g_strdup_printf ("#%02x%02x%02x%02x",
+                          (uint8_t)(color->red * 255.0),
+                          (uint8_t)(color->green * 255.0),
+                          (uint8_t)(color->blue * 255.0),
+                          (uint8_t)(color->alpha * 255.0));
+}
+
+void
+rig_color_interpolate (const RigColor *initial,
+                       const RigColor *final,
+                       float progress,
+                       RigColor *result)
+{
+  g_return_if_fail (initial != NULL);
+  g_return_if_fail (final != NULL);
+  g_return_if_fail (result != NULL);
+
+  result->red   = initial->red   + (final->red   - initial->red)   * progress;
+  result->green = initial->green + (final->green - initial->green) * progress;
+  result->blue  = initial->blue  + (final->blue  - initial->blue)  * progress;
+  result->alpha = initial->alpha + (final->alpha - initial->alpha) * progress;
+}
+

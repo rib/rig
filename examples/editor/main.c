@@ -805,7 +805,7 @@ test_init (RigShell *shell, void *user_data)
   RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;
-  CoglColor color;
+  RigColor color;
   float vector3[3];
   int i;
 
@@ -941,11 +941,11 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_rotate_y_axis (data->light, 10);
 
   component = rig_light_new ();
-  cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+  rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
   rig_light_set_ambient (RIG_LIGHT (component), &color);
-  cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+  rig_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
   rig_light_set_diffuse (RIG_LIGHT (component), &color);
-  cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+  rig_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
   rig_light_set_specular (RIG_LIGHT (component), &color);
   rig_light_add_pipeline (RIG_LIGHT (component), root_pipeline);
 
