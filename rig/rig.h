@@ -18,7 +18,7 @@
 #include "rig-context.h"
 #include "rig-shell.h"
 #include "rig-bitmask.h"
-#include "rig-stack.h"
+#include "rig-memory-stack.h"
 #include "rig-timeline.h"
 #include "rig-display-list.h"
 #include "rig-arcball.h"
@@ -32,6 +32,7 @@
 #include "rig-asset.h"
 #include "rig-bevel.h"
 #include "rig-split-view.h"
+#include "rig-stack.h"
 
 /* entity/components system */
 #include "rig-entity.h"

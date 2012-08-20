@@ -1,9 +1,7 @@
 /*
  * Rig
  *
- * An Tiny experimental Toolkit
- *
- * Copyright (C) 2011 Intel Corporation.
+ * Copyright (C) 2012 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,166 +17,293 @@
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
  *
- *
- * RigMemoryStack provides a really simple, but lightning fast
- * memory stack allocation strategy:
- *
- * - The underlying pool of memory is grow-only.
- * - The pool is considered to be a stack which may be comprised
- *   of multiple smaller stacks. Allocation is done as follows:
- *    - If there's enough memory in the current sub-stack then the
- *      stack-pointer will be returned as the allocation and the
- *      stack-pointer will be incremented by the allocation size.
- *    - If there isn't enough memory in the current sub-stack
- *      then a new sub-stack is allocated twice as big as the current
- *      sub-stack or twice as big as the requested allocation size if
- *      that's bigger and the stack-pointer is set to the start of the
- *      new sub-stack.
- * - Allocations can't be freed in a random-order, you can only
- *   rewind the entire stack back to the start. There is no
- *   the concept of stack frames to allow partial rewinds.
- *
- * For example; we plan to use this in our tesselator which has to
- * allocate lots of small vertex, edge and face structures because
- * when tesselation has been finished we just want to free the whole
- * lot in one go.
- *
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
+#include <cogl/cogl.h>
+#include <string.h>
+#include <math.h>
+
+#include "rig.h"
 #include "rig-stack.h"
-#include "rig-list.h"
 
-#include <stdint.h>
-
-#include <glib.h>
-
-typedef struct _RigMemorySubStack RigMemorySubStack;
-
-struct _RigMemorySubStack
-{
-  RigList list_node;
-  size_t bytes;
-  uint8_t *data;
+enum {
+  RIG_STACK_PROP_WIDTH,
+  RIG_STACK_PROP_HEIGHT,
+  RIG_STACK_N_PROPS
 };
 
-struct _RigMemoryStack
+struct _RigStack
 {
-  RigList sub_stacks;
+  RigObjectProps _parent;
 
-  RigMemorySubStack *sub_stack;
-  size_t sub_stack_offset;
+  RigContext *ctx;
+
+  int ref_count;
+
+  RigGraphableProps graphable;
+
+  int width;
+  int height;
+
+  GList *children;
+
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[RIG_STACK_N_PROPS];
 };
 
-static RigMemorySubStack *
-rig_memory_sub_stack_alloc (size_t bytes)
+static RigPropertySpec _rig_stack_prop_specs[] = {
+  {
+    .name = "width",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigStack, width),
+    .setter = rig_stack_set_width
+  },
+  {
+    .name = "height",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigStack, height),
+    .setter = rig_stack_set_height
+  },
+  { 0 } /* XXX: Needed for runtime counting of the number of properties */
+};
+
+static void
+_rig_stack_free (void *object)
 {
-  RigMemorySubStack *sub_stack = g_slice_new (RigMemorySubStack);
-  sub_stack->bytes = bytes;
-  sub_stack->data = g_malloc (bytes);
-  return sub_stack;
+  RigStack *stack = object;
+
+  rig_ref_countable_ref (stack->ctx);
+
+  g_list_foreach (stack->children, (GFunc)rig_ref_countable_unref, NULL);
+  g_list_free (stack->children);
+
+  rig_simple_introspectable_destroy (stack);
+
+  g_slice_free (RigStack, stack);
+}
+
+RigRefCountableVTable _rig_stack_ref_countable_vtable = {
+  rig_ref_countable_simple_ref,
+  rig_ref_countable_simple_unref,
+  _rig_stack_free
+};
+
+static void
+_rig_stack_child_removed_cb (RigObject *parent, RigObject *child)
+{
+  RigStack *stack = RIG_STACK (parent);
+
+  stack->children = g_list_remove (stack->children, child);
 }
 
 static void
-rig_memory_stack_add_sub_stack (RigMemoryStack *stack,
-                                  size_t sub_stack_bytes)
+_rig_stack_child_added_cb (RigObject *parent, RigObject *child)
 {
-  RigMemorySubStack *sub_stack =
-    rig_memory_sub_stack_alloc (sub_stack_bytes);
-  rig_list_insert (stack->sub_stacks.prev, &sub_stack->list_node);
-  stack->sub_stack = sub_stack;
-  stack->sub_stack_offset = 0;
+  RigStack *stack = RIG_STACK (parent);
+
+  stack->children = g_list_append (stack->children, child);
 }
 
-RigMemoryStack *
-rig_memory_stack_new (size_t initial_size_bytes)
+static RigGraphableVTable _rig_stack_graphable_vtable = {
+  _rig_stack_child_removed_cb,
+  _rig_stack_child_added_cb,
+  NULL /* parent changed */
+};
+
+static void
+rig_stack_get_preferred_width (void *object,
+                               float for_height,
+                               float *min_width_p,
+                               float *natural_width_p)
 {
-  RigMemoryStack *stack = g_slice_new0 (RigMemoryStack);
+  RigStack *stack = RIG_STACK (object);
+  float max_min_width = 0.0f;
+  float max_natural_width = 0.0f;
+  GList *l;
 
-  rig_list_init (&stack->sub_stacks);
+  for (l = stack->children; l; l = l->next)
+    {
+      RigObject *child = l->data;
+      float child_min_width;
+      float child_natural_width;
+      rig_sizable_get_preferred_width (child,
+                                       for_height,
+                                       &child_min_width,
+                                       &child_natural_width);
+      if (child_min_width > max_min_width)
+        max_min_width = child_min_width;
+      if (child_natural_width > max_natural_width)
+        max_natural_width = child_natural_width;
+    }
 
-  rig_memory_stack_add_sub_stack (stack, initial_size_bytes);
+  if (min_width_p)
+    *min_width_p = max_natural_width;
+  if (natural_width_p)
+    *natural_width_p = max_natural_width;
+}
+
+static void
+rig_stack_get_preferred_height (void *object,
+                                float for_width,
+                                float *min_height_p,
+                                float *natural_height_p)
+{
+  RigStack *stack = RIG_STACK (object);
+  float max_min_height = 0.0f;
+  float max_natural_height = 0.0f;
+  GList *l;
+
+  for (l = stack->children; l; l = l->next)
+    {
+      RigObject *child = l->data;
+      float child_min_height;
+      float child_natural_height;
+      rig_sizable_get_preferred_height (child,
+                                        for_width,
+                                        &child_min_height,
+                                        &child_natural_height);
+      if (child_min_height > max_min_height)
+        max_min_height = child_min_height;
+      if (child_natural_height > max_natural_height)
+        max_natural_height = child_natural_height;
+    }
+
+  if (min_height_p)
+    *min_height_p = max_natural_height;
+  if (natural_height_p)
+    *natural_height_p = max_natural_height;
+}
+
+static RigSizableVTable _rig_stack_sizable_vtable = {
+  rig_stack_set_size,
+  rig_stack_get_size,
+  rig_stack_get_preferred_width,
+  rig_stack_get_preferred_height
+};
+
+static RigIntrospectableVTable _rig_stack_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
+
+RigType rig_stack_type;
+
+static void
+_rig_stack_init_type (void)
+{
+  rig_type_init (&rig_stack_type);
+  rig_type_add_interface (&rig_stack_type,
+                          RIG_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigStack, ref_count),
+                          &_rig_stack_ref_countable_vtable);
+  rig_type_add_interface (&rig_stack_type,
+                          RIG_INTERFACE_ID_GRAPHABLE,
+                          offsetof (RigStack, graphable),
+                          &_rig_stack_graphable_vtable);
+  rig_type_add_interface (&rig_stack_type,
+                          RIG_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rig_stack_sizable_vtable);
+  rig_type_add_interface (&rig_stack_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_stack_introspectable_vtable);
+  rig_type_add_interface (&rig_stack_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigStack, introspectable),
+                          NULL); /* no implied vtable */
+}
+
+void
+rig_stack_set_size (RigStack *stack,
+                    float width,
+                    float height)
+{
+  GList *l;
+
+  stack->width = width;
+  stack->height = height;
+
+  for (l = stack->children; l; l = l->next)
+    {
+      RigObject *child = l->data;
+      if (rig_object_is (child, RIG_INTERFACE_ID_SIZABLE))
+        rig_sizable_set_size (child, width, height);
+    }
+
+  rig_property_dirty (&stack->ctx->property_ctx,
+                      &stack->properties[RIG_STACK_PROP_WIDTH]);
+  rig_property_dirty (&stack->ctx->property_ctx,
+                      &stack->properties[RIG_STACK_PROP_HEIGHT]);
+}
+
+void
+rig_stack_set_width (RigStack *stack,
+                     float width)
+{
+  rig_stack_set_size (stack, width, stack->height);
+}
+
+void
+rig_stack_set_height (RigStack *stack,
+                      float height)
+{
+  rig_stack_set_size (stack, stack->width, height);
+}
+
+void
+rig_stack_get_size (RigStack *stack,
+                    float *width,
+                    float *height)
+{
+  *width = stack->width;
+  *height = stack->height;
+}
+
+RigStack *
+rig_stack_new (RigContext *context,
+               float width,
+               float height,
+               ...)
+{
+  RigStack *stack = g_slice_new0 (RigStack);
+  static CoglBool initialized = FALSE;
+  va_list ap;
+  RigObject *object;
+
+  if (initialized == FALSE)
+    {
+      _rig_init ();
+      _rig_stack_init_type ();
+
+      initialized = TRUE;
+    }
+
+  stack->ref_count = 1;
+  stack->ctx = rig_ref_countable_ref (context);
+
+  rig_object_init (&stack->_parent, &rig_stack_type);
+
+  rig_simple_introspectable_init (stack,
+                                  _rig_stack_prop_specs,
+                                  stack->properties);
+
+  rig_graphable_init (RIG_OBJECT (stack));
+
+  rig_stack_set_size (stack, width, height);
+
+  va_start (ap, height);
+  while ((object = va_arg (ap, RigObject *)))
+    rig_graphable_add_child (RIG_OBJECT (stack), object);
+  va_end (ap);
 
   return stack;
 }
 
-void *
-rig_memory_stack_alloc (RigMemoryStack *stack, size_t bytes)
-{
-  RigMemorySubStack *sub_stack;
-  void *ret;
-
-  sub_stack = stack->sub_stack;
-  if (G_LIKELY (sub_stack->bytes - stack->sub_stack_offset >= bytes))
-    {
-      ret = sub_stack->data + stack->sub_stack_offset;
-      stack->sub_stack_offset += bytes;
-      return ret;
-    }
-
-  /* If the stack has been rewound and then a large initial allocation
-   * is made then we may need to skip over one or more of the
-   * sub-stacks that are too small for the requested allocation
-   * size... */
-  rig_list_for_each (sub_stack, stack->sub_stack->list_node.next, list_node)
-    {
-      if (sub_stack->bytes >= bytes)
-        {
-          ret = sub_stack->data;
-          stack->sub_stack = sub_stack;
-          stack->sub_stack_offset = bytes;
-          return ret;
-        }
-    }
-
-  /* Finally if we couldn't find a free sub-stack with enough space
-   * for the requested allocation we allocate another sub-stack that's
-   * twice as big as the last sub-stack or twice as big as the
-   * requested allocation if that's bigger.
-   */
-
-  sub_stack = rig_container_of (stack->sub_stacks.prev,
-                                sub_stack,
-                                list_node);
-
-  rig_memory_stack_add_sub_stack (stack, MAX (sub_stack->bytes, bytes) * 2);
-
-  sub_stack = rig_container_of (stack->sub_stacks.prev,
-                                sub_stack,
-                                list_node);
-
-  stack->sub_stack_offset += bytes;
-
-  return sub_stack->data;
-}
-
 void
-rig_memory_stack_rewind (RigMemoryStack *stack)
+rig_stack_append_child (RigStack *stack,
+                        RigObject *child)
 {
-  stack->sub_stack = rig_container_of (stack->sub_stacks.next,
-                                       stack->sub_stack,
-                                       list_node);
-  stack->sub_stack_offset = 0;
-}
-
-static void
-rig_memory_sub_stack_free (RigMemorySubStack *sub_stack)
-{
-  g_free (sub_stack->data);
-  g_slice_free (RigMemorySubStack, sub_stack);
-}
-
-void
-rig_memory_stack_free (RigMemoryStack *stack)
-{
-  RigMemorySubStack *sub_stack;
-
-  rig_list_for_each (sub_stack, &stack->sub_stacks, list_node)
-    {
-      rig_memory_sub_stack_free (sub_stack);
-    }
-
-  g_slice_free (RigMemoryStack, stack);
+  rig_graphable_add_child (stack, child);
+  stack->children = g_list_append (stack->children, child);
 }

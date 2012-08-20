@@ -1,47 +1,39 @@
-/*
- * Rig
- *
- * An object oriented GL/GLES Abstraction/Utility Layer
- *
- * Copyright (C) 2011 Intel Corporation.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
- *
- *
- */
 
-#include <glib.h>
+#ifndef _RIG_STACK_H_
+#define _RIG_STACK_H_
 
-#ifndef __RIG_MEMORY_STACK__
-#define __RIG_MEMORY_STACK__
+#include "rig.h"
 
-G_BEGIN_DECLS
+extern RigType rig_stack_type;
+typedef struct _RigStack RigStack;
+#define RIG_STACK(x) ((RigStack *) x)
 
-typedef struct _RigMemoryStack RigMemoryStack;
-
-RigMemoryStack *
-rig_memory_stack_new (size_t initial_size_bytes);
-
-void *
-rig_memory_stack_alloc (RigMemoryStack *stack, size_t bytes);
+RigStack *
+rig_stack_new (RigContext *context,
+               float width,
+               float height,
+               ...);
 
 void
-rig_memory_stack_rewind (RigMemoryStack *stack);
+rig_stack_set_size (RigStack *stack,
+                    float width,
+                    float height);
 
 void
-rig_memory_stack_free (RigMemoryStack *stack);
+rig_stack_set_width (RigStack *stack,
+                     float width);
 
-G_END_DECLS
+void
+rig_stack_set_height (RigStack *stack,
+                      float height);
 
-#endif /* __RIG_MEMORY_STACK__ */
+void
+rig_stack_get_size (RigStack *stack,
+                    float *width,
+                    float *height);
+
+void
+rig_stack_append_child (RigStack *stack,
+                        RigObject *child);
+
+#endif /* _RIG_STACK_H_ */

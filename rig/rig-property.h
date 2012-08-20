@@ -5,7 +5,7 @@
 
 #include <cogl/cogl.h>
 
-#include "rig-stack.h"
+#include "rig-memory-stack.h"
 #include "rig-types.h"
 #include "rig-object.h"
 

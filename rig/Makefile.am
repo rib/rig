@@ -30,7 +30,7 @@ source_h = \
     rig-bitmask.h \
     rig-shell.h \
     rig-keysyms.h \
-    rig-stack.h \
+    rig-memory-stack.h \
     rig-global.h \
     rig-util.h \
     rig-text-buffer.h \
@@ -46,7 +46,8 @@ source_h = \
     rig-closure.h \
     rig-asset.h \
     rig-bevel.h \
-    rig-split-view.h
+    rig-split-view.h \
+    rig-stack.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -78,8 +79,7 @@ librig_la_SOURCES = \
     rig-bitmask.h \
     rig-bitmask.c \
     rig-flags.h \
-    rig-stack.c \
-    rig-stack.h \
+    rig-memory-stack.c \
     rig-list.c \
     rig-list.h \
     rig-util.c \
@@ -98,6 +98,7 @@ librig_la_SOURCES = \
     rig-asset.c \
     rig-bevel.c \
     rig-split-view.c \
+    rig-stack.c \
     $(source_h)
 
 if !HAVE_ANDROID
