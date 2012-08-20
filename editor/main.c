@@ -222,11 +222,21 @@ struct _Data
   //float height;
   //RigProperty height_property;
 
-  RigTransform *top_bar_transform;
-  RigTransform *left_bar_transform;
-  RigTransform *right_bar_transform;
-  RigTransform *main_transform;
-  RigTransform *bottom_bar_transform;
+  RigSplitView *splits[5];
+
+
+  RigBevel *main_area_bevel;
+  RigStack *top_bar_stack;
+  RigStack *icon_bar_stack;
+  //RigTransform *top_bar_transform;
+  RigStack *left_bar_stack;
+  //RigTransform *left_bar_transform;
+  //RigTransform *right_bar_transform;
+  RigStack *right_bar_stack;
+  //RigTransform *main_transform;
+
+  RigStack *bottom_bar_stack;
+  //RigTransform *bottom_bar_transform;
 
   //RigTransform *screen_area_transform;
 
@@ -251,6 +261,7 @@ struct _Data
   float screen_area_height;
 
   RigRectangle *top_bar_rect;
+  RigRectangle *icon_bar_rect;
   RigRectangle *left_bar_rect;
   RigRectangle *right_bar_rect;
   RigRectangle *bottom_bar_rect;
@@ -2446,7 +2457,7 @@ test_paint (RigShell *shell, void *user_data)
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                            0.5, 0.5, 0.5, 1);
+                            0.22, 0.22, 0.22, 1);
 
   test_paint_ctx.data = data;
   test_paint_ctx.shadow_pass = FALSE;
@@ -3816,28 +3827,18 @@ matrix_view_2d_in_perspective (CoglMatrix *matrix,
                              height_2d);
 }
 
-
 static void
-allocate (Data *data)
+allocate_main_area (Data *data)
 {
   float screen_aspect;
   float main_aspect;
   float device_scale;
-  float vp_width;
-  float vp_height;
 
-  data->top_bar_height = 30;
-  //data->top_bar_height = 0;
-  data->left_bar_width = data->width * 0.2;
-  //data->left_bar_width = 200;
-  //data->left_bar_width = 0;
-  data->right_bar_width = data->width * 0.2;
-  //data->right_bar_width = 200;
-  data->bottom_bar_height = data->height * 0.2;
-  data->grab_margin = 5;
-  data->main_width = data->width - data->left_bar_width - data->right_bar_width;
-  data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
-
+  rig_bevel_get_size (data->main_area_bevel, &data->main_width, &data->main_height);
+  if (data->main_width <= 0)
+    data->main_width = 10;
+  if (data->main_height <= 0)
+    data->main_height = 10;
 
   /* Update the window camera */
   rig_camera_set_projection_mode (data->camera, RIG_PROJECTION_ORTHOGRAPHIC);
@@ -3851,16 +3852,11 @@ allocate (Data *data)
   screen_aspect = DEVICE_WIDTH / DEVICE_HEIGHT;
   main_aspect = data->main_width / data->main_height;
 
-  //rig_transform_init_identity (data->screen_area_transform);
-
   if (screen_aspect < main_aspect) /* screen is slimmer and taller than the main area */
     {
       data->screen_area_height = data->main_height;
       data->screen_area_width = data->screen_area_height * screen_aspect;
 
-      //rig_transform_translate (data->screen_area_transform,
-      //                         (data->main_width / 2.0) - (data->screen_area_width / 2.0),
-      //                         0, 0);
       rig_entity_set_translate (data->main_camera_screen_pos,
                                 -(data->main_width / 2.0) + (data->screen_area_width / 2.0),
                                 0, 0);
@@ -3870,12 +3866,6 @@ allocate (Data *data)
       data->screen_area_width = data->main_width;
       data->screen_area_height = data->screen_area_width / screen_aspect;
 
-#if 0
-      rig_transform_translate (data->screen_area_transform,
-                               0,
-                               (data->main_height / 2.0) - (data->screen_area_height / 2.0),
-                               0);
-#endif
       rig_entity_set_translate (data->main_camera_screen_pos,
                                 0,
                                 -(data->main_height / 2.0) + (data->screen_area_height / 2.0),
@@ -3885,14 +3875,6 @@ allocate (Data *data)
   /* NB: We know the screen area matches the device aspect ratio so we can use
    * a uniform scale here... */
   device_scale = data->screen_area_width / DEVICE_WIDTH;
-
-#if 0
-  rig_transform_init_identity (data->device_transform);
-  rig_transform_scale (data->device_transform,
-                       device_scale,
-                       device_scale,
-                       device_scale);
-#endif
 
   rig_entity_set_scale (data->main_camera_dev_scale, 1.0 / device_scale);
 
@@ -3912,37 +3894,12 @@ allocate (Data *data)
                                    fovy, aspect, z_near, data->z_2d,
                                    data->main_width,
                                    data->main_height);
-#if 0
-    rig_camera_set_view_transform (data->main_camera_component, &data->main_view);
-#endif
 
     rig_camera_set_projection_mode (data->main_camera_component,
                                     RIG_PROJECTION_PERSPECTIVE);
     rig_camera_set_field_of_view (data->main_camera_component, fovy);
     rig_camera_set_near_plane (data->main_camera_component, z_near);
     rig_camera_set_far_plane (data->main_camera_component, z_far);
-
-#if 0
-    cogl_matrix_init_identity (&data->main_view);
-    rig_camera_set_projection_mode (data->main_camera_component,
-                                    RIG_PROJECTION_ORTHOGRAPHIC);
-    rig_camera_set_orthographic_coordinates (data->main_camera_component,
-                                             0, 0, data->main_width, data->main_height);
-    rig_camera_set_near_plane (data->main_camera_component, -1);
-    rig_camera_set_far_plane (data->main_camera_component, 100);
-#endif
-
-    rig_camera_set_viewport (data->main_camera_component,
-                             data->left_bar_width,
-                             data->top_bar_height,
-                             data->main_width,
-                             data->main_height);
-
-    rig_input_region_set_rectangle (data->main_input_region,
-                                    data->left_bar_width,
-                                    data->top_bar_height,
-                                    data->left_bar_width + data->main_width,
-                                    data->top_bar_height + data->main_height);
 
     /* Handle the z_2d translation by changing the length of the
      * camera's armature.
@@ -3977,12 +3934,33 @@ allocate (Data *data)
     }
   }
 
-#if 0
-  data->origin[0] = data->main_width / 2;
-  data->origin[1] = data->main_height / 2;
-  data->origin[2] = 0;
-  //data->origin[2] = data->z_2d;
-#endif
+  rig_arcball_init (&data->arcball,
+                    data->main_width / 2,
+                    data->main_height / 2,
+                    sqrtf (data->main_width * data->main_width + data->main_height * data->main_height) / 2);
+}
+
+static void
+allocate (Data *data)
+{
+  float vp_width;
+  float vp_height;
+
+  data->top_bar_height = 30;
+  //data->top_bar_height = 0;
+  data->left_bar_width = data->width * 0.2;
+  //data->left_bar_width = 200;
+  //data->left_bar_width = 0;
+  data->right_bar_width = data->width * 0.2;
+  //data->right_bar_width = 200;
+  data->bottom_bar_height = data->height * 0.2;
+  data->grab_margin = 5;
+  //data->main_width = data->width - data->left_bar_width - data->right_bar_width;
+  //data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
+
+  rig_split_view_set_size (data->splits[0], data->width, data->height);
+
+  allocate_main_area (data);
 
   /* Setup projection for the timeline view */
   {
@@ -4018,89 +3996,6 @@ allocate (Data *data)
                                    (vp_width / data->timeline_len));
   rig_ui_viewport_set_doc_scale_y (data->timeline_vp,
                                    (vp_height / DEVICE_HEIGHT));
-
-
-#if 0
-  {
-    CoglMatrix input_transform;
-    cogl_matrix_init_identity (&input_transform);
-    cogl_matrix_translate (&input_transform, 0, -data->top_bar_height, 0);
-
-    //rig_camera_set_input_transform (data->main_camera_component, &input_transform);
-  }
-#endif
-
-  rig_rectangle_set_width (data->top_bar_rect, data->width);
-  rig_rectangle_set_height (data->top_bar_rect, data->top_bar_height - data->grab_margin);
-
-  {
-    float left_bar_height = data->height - data->top_bar_height - data->bottom_bar_height;
-
-    rig_rectangle_set_width (data->left_bar_rect, data->left_bar_width - data->grab_margin);
-    rig_rectangle_set_height (data->left_bar_rect,
-                              data->height - data->top_bar_height - data->bottom_bar_height);
-
-    rig_transform_init_identity (data->left_bar_transform);
-    rig_transform_translate (data->left_bar_transform,
-                             0, data->top_bar_height, 0);
-
-    rig_ui_viewport_set_width (data->assets_vp, data->left_bar_width);
-    rig_ui_viewport_set_height (data->assets_vp, left_bar_height);
-  }
-
-  {
-    float right_bar_height = data->height - data->top_bar_height;
-
-    rig_rectangle_set_width (data->right_bar_rect, data->right_bar_width - data->grab_margin);
-    rig_rectangle_set_height (data->right_bar_rect, right_bar_height);
-
-    rig_transform_init_identity (data->right_bar_transform);
-    rig_transform_translate (data->right_bar_transform,
-                             0, data->top_bar_height, 0);
-
-    rig_ui_viewport_set_width (data->tool_vp, data->right_bar_width);
-    rig_ui_viewport_set_height (data->tool_vp, right_bar_height);
-  }
-
-  rig_rectangle_set_width (data->bottom_bar_rect, data->width - data->right_bar_width);
-  rig_rectangle_set_height (data->bottom_bar_rect, data->bottom_bar_height - data->grab_margin);
-
-
-  rig_transform_init_identity (data->right_bar_transform);
-  rig_transform_translate (data->right_bar_transform,
-                           data->width - data->right_bar_width + data->grab_margin,
-                           data->top_bar_height, 0);
-
-  rig_transform_init_identity (data->main_transform);
-  rig_transform_translate (data->main_transform, 0, data->top_bar_height, 0);
-
-  rig_transform_init_identity (data->bottom_bar_transform);
-  rig_transform_translate (data->bottom_bar_transform, 0, data->height - data->bottom_bar_height + data->grab_margin, 0);
-
-  //rig_transform_init_identity (data->slider_transform);
-  //rig_transform_translate (data->slider_transform, 0, data->bottom_bar_height - 20, 0);
-
-  //rig_transform_init_identity (data->screen_area_transform);
-  //rig_transform_translate (data->screen_area_transform, data->main_width / 3, 0, 0);
-
-#if 0
-  rig_transform_init_identity (data->pane1_transform);
-  rig_transform_translate (data->pane1_transform, data->main_width / 3, 0, 0);
-
-  rig_transform_init_identity (data->pane2_transform);
-  rig_transform_translate (data->pane2_transform, (data->main_width / 3) * 2, 0, 0);
-#endif
-
-  //rig_slider_set_length (data->slider, data->width);
-
-  rig_arcball_init (&data->arcball,
-                    data->main_width / 2,
-                    data->main_height / 2,
-                    sqrtf (data->main_width * data->main_width + data->main_height * data->main_height) / 2);
-
-  /* picking ray */
-  data->picking_ray_color = cogl_pipeline_new (data->ctx->cogl_context);
-  cogl_pipeline_set_color4f (data->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 }
 
 static void
@@ -4199,6 +4094,39 @@ create_diffuse_specular_material (void)
   return pipeline;
 }
 
+
+static void
+camera_viewport_binding_cb (RigProperty *property, void *user_data)
+{
+  Data *data = user_data;
+  float x, y, z, width, height;
+
+  x = y = z = 0;
+  rig_graphable_fully_transform_point (data->main_area_bevel,
+                                       data->camera,
+                                       &x, &y, &z);
+
+  x = RIG_UTIL_NEARBYINT (x);
+  y = RIG_UTIL_NEARBYINT (y);
+
+  rig_bevel_get_size (data->main_area_bevel, &width, &height);
+
+  /* XXX: We round down here since that's currently what
+   * rig-bevel.c:_rig_bevel_paint() does too. */
+  width = (int)width;
+  height = (int)height;
+
+  rig_camera_set_viewport (data->main_camera_component,
+                           x, y, width, height);
+
+  rig_input_region_set_rectangle (data->main_input_region,
+                                  x, y,
+                                  x + width,
+                                  y + height);
+
+  allocate_main_area (data);
+}
+
 static void
 test_init (RigShell *shell, void *user_data)
 {
@@ -4216,6 +4144,7 @@ test_init (RigShell *shell, void *user_data)
   RigMaterial *material;
   RigLight *light;
   RigCamera *camera;
+  RigColor top_bar_ref_color, main_area_ref_color, right_bar_ref_color;
 
   /* A unit test for the list_splice/list_unsplice functions */
 #if 0
@@ -4231,7 +4160,7 @@ test_init (RigShell *shell, void *user_data)
                        &data_propert_specs[i],
                        data);
 
-  data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 880, 660);
+  data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
   cogl_onscreen_show (data->onscreen);
 
   /* FIXME: On SDL this isn't taking affect if set before allocating
@@ -4509,50 +4438,193 @@ test_init (RigShell *shell, void *user_data)
   rig_graphable_add_child (data->scene, data->light);
 
 
+  rig_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
+  rig_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
+  rig_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
+
   data->root =
     rig_graph_new (data->ctx,
-                   (data->top_bar_transform =
-                    rig_transform_new (data->ctx,
-                                       (data->top_bar_rect =
-                                        rig_rectangle_new4f (data->ctx, 0, 0,
-                                                             0.2, 0.2, 0.2, 1)),
-                                       NULL)
-                   ),
-                   (data->left_bar_transform =
-                    rig_transform_new (data->ctx,
-                                       (data->left_bar_rect =
-                                        rig_rectangle_new4f (data->ctx, 0, 0,
-                                                             0.2, 0.2, 0.2, 1)),
-                                       (data->assets_vp =
-                                        rig_ui_viewport_new (data->ctx,
-                                                             0, 0,
-                                                             NULL)),
-                                       NULL)
-                   ),
-                   (data->right_bar_transform =
-                    rig_transform_new (data->ctx,
-                                       (data->right_bar_rect =
-                                        rig_rectangle_new4f (data->ctx, 0, 0,
-                                                             0.2, 0.2, 0.2, 1)),
-                                       (data->tool_vp =
-                                        rig_ui_viewport_new (data->ctx,
-                                                             0, 0,
-                                                             NULL)),
-                                       NULL)
-                   ),
-                   (data->main_transform = rig_transform_new (data->ctx, NULL)
-                   ),
-                   (data->bottom_bar_transform =
-                    rig_transform_new (data->ctx,
-                                       (data->bottom_bar_rect =
-                                        rig_rectangle_new4f (data->ctx, 0, 0,
-                                                             0.2, 0.2, 0.2, 1)),
-                                       NULL)
-                   ),
+                   //(data->main_transform = rig_transform_new (data->ctx, NULL)),
                    NULL);
 
+  data->splits[0] =
+    rig_split_view_new (data->ctx,
+                        RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
+                        100,
+                        100,
+                        NULL);
+
+  {
+    RigGraph *graph = rig_graph_new (data->ctx, NULL);
+    RigTransform *transform;
+    RigText *text;
+    float x = 10;
+    float width, height;
+
+    transform = rig_transform_new (data->ctx,
+                                   (text = rig_text_new (data->ctx)), NULL);
+    rig_transform_translate (transform, x, 5, 0);
+    rig_text_set_text (text, "File");
+    rig_graphable_add_child (graph, transform);
+    rig_ref_countable_unref (transform);
+    rig_sizable_get_size (text, &width, &height);
+    x += width + 30;
+
+    transform = rig_transform_new (data->ctx,
+                                   (text = rig_text_new (data->ctx)), NULL);
+    rig_transform_translate (transform, x, 5, 0);
+    rig_text_set_text (text, "Edit");
+    rig_graphable_add_child (graph, transform);
+    rig_ref_countable_unref (transform);
+    rig_sizable_get_size (text, &width, &height);
+    x += width + 30;
+
+    transform = rig_transform_new (data->ctx,
+                                   (text = rig_text_new (data->ctx)), NULL);
+    rig_transform_translate (transform, x, 5, 0);
+    rig_text_set_text (text, "Help");
+    rig_graphable_add_child (graph, transform);
+    rig_ref_countable_unref (transform);
+    rig_sizable_get_size (text, &width, &height);
+    x += width + 30;
+
+    data->top_bar_stack =
+      rig_stack_new (data->ctx, 0, 0,
+                     (data->top_bar_rect =
+                      rig_rectangle_new4f (data->ctx, 0, 0,
+                                           0.41, 0.41, 0.41, 1)),
+                     graph,
+                     rig_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
+                     NULL);
+  }
+
+  rig_graphable_add_child (data->root, data->splits[0]);
+
+  data->splits[1] = rig_split_view_new (data->ctx,
+                                        RIG_SPLIT_VIEW_SPLIT_VERTICAL,
+                                        100,
+                                        100,
+                                        NULL);
+
+  rig_split_view_set_child0 (data->splits[0], data->top_bar_stack);
+  rig_split_view_set_child1 (data->splits[0], data->splits[1]);
+
+  data->splits[2] = rig_split_view_new (data->ctx,
+                                        RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
+                                        100,
+                                        100,
+                                        NULL);
+
+  data->splits[3] = rig_split_view_new (data->ctx,
+                                        RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
+                                        100,
+                                        100,
+                                        NULL);
+
+  data->splits[4] = rig_split_view_new (data->ctx,
+                                        RIG_SPLIT_VIEW_SPLIT_VERTICAL,
+                                        100,
+                                        100,
+                                        NULL);
+
+  data->icon_bar_stack = rig_stack_new (data->ctx, 0, 0,
+                                        (data->icon_bar_rect =
+                                         rig_rectangle_new4f (data->ctx, 0, 0,
+                                                              0.41, 0.41, 0.41, 1)),
+                                        rig_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
+                                        NULL);
+  rig_split_view_set_child0 (data->splits[3], data->splits[4]);
+  rig_split_view_set_child1 (data->splits[3], data->icon_bar_stack);
+
+  data->left_bar_stack = rig_stack_new (data->ctx, 0, 0,
+                                        (data->left_bar_rect =
+                                         rig_rectangle_new4f (data->ctx, 0, 0,
+                                                              0.57, 0.57, 0.57, 1)),
+                                        (data->assets_vp =
+                                         rig_ui_viewport_new (data->ctx,
+                                                              0, 0,
+                                                              NULL)),
+                                        rig_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
+                                        NULL);
+
+  data->main_area_bevel = rig_bevel_new (data->ctx, 0, 0, &main_area_ref_color),
+
+  rig_split_view_set_child0 (data->splits[4], data->left_bar_stack);
+  rig_split_view_set_child1 (data->splits[4], data->main_area_bevel);
+
+  data->bottom_bar_stack = rig_stack_new (data->ctx, 0, 0,
+                                          (data->bottom_bar_rect =
+                                           rig_rectangle_new4f (data->ctx, 0, 0,
+                                                                0.57, 0.57, 0.57, 1)),
+                                          NULL);
+
+  rig_split_view_set_child0 (data->splits[2], data->splits[3]);
+  rig_split_view_set_child1 (data->splits[2], data->bottom_bar_stack);
+
+  data->right_bar_stack =
+    rig_stack_new (data->ctx, 100, 100,
+                   (data->right_bar_rect =
+                    rig_rectangle_new4f (data->ctx, 0, 0,
+                                         0.57, 0.57, 0.57, 1)),
+                   (data->tool_vp =
+                    rig_ui_viewport_new (data->ctx, 0, 0, NULL)),
+                   rig_bevel_new (data->ctx, 0, 0, &right_bar_ref_color),
+                   NULL);
+
+  rig_split_view_set_child0 (data->splits[1], data->splits[2]);
+  rig_split_view_set_child1 (data->splits[1], data->right_bar_stack);
+
+  rig_split_view_set_split_offset (data->splits[0], 30);
+  rig_split_view_set_split_offset (data->splits[1], 850);
+  rig_split_view_set_split_offset (data->splits[2], 500);
+  rig_split_view_set_split_offset (data->splits[3], 470);
+  rig_split_view_set_split_offset (data->splits[4], 150);
 
   rig_shell_add_input_camera (shell, data->camera, data->root);
+
+  rig_property_set_binding_by_name (data->main_camera_component,
+                                    "viewport_x",
+                                    camera_viewport_binding_cb,
+                                    data,
+                                    /* XXX: Hack: we are currently relying on
+                                     * the bevel width being redundantly re-set
+                                     * at times when bevel's position may have
+                                     * also changed.
+                                     *
+                                     * FIXME: We need a proper allocation cycle
+                                     * in Rig!
+                                     */
+                                    rig_introspectable_lookup_property (data->main_area_bevel, "width"),
+                                    NULL);
+
+  rig_property_set_binding_by_name (data->main_camera_component,
+                                    "viewport_y",
+                                    camera_viewport_binding_cb,
+                                    data,
+                                    /* XXX: Hack: we are currently relying on
+                                     * the bevel width being redundantly re-set
+                                     * at times when bevel's position may have
+                                     * also changed.
+                                     *
+                                     * FIXME: We need a proper allocation cycle
+                                     * in Rig!
+                                     */
+                                    rig_introspectable_lookup_property (data->main_area_bevel, "width"),
+                                    NULL);
+
+  rig_property_set_binding_by_name (data->main_camera_component,
+                                    "viewport_width",
+                                    camera_viewport_binding_cb,
+                                    data,
+                                    rig_introspectable_lookup_property (data->main_area_bevel, "width"),
+                                    NULL);
+
+  rig_property_set_binding_by_name (data->main_camera_component,
+                                    "viewport_height",
+                                    camera_viewport_binding_cb,
+                                    data,
+                                    rig_introspectable_lookup_property (data->main_area_bevel, "height"),
+                                    NULL);
 
 #if 0
   data->slider_transform =
@@ -4600,6 +4672,10 @@ test_init (RigShell *shell, void *user_data)
   /* tool */
   data->tool = rig_tool_new (data->shell);
   rig_tool_set_camera (data->tool, data->main_camera);
+
+  /* picking ray */
+  data->picking_ray_color = cogl_pipeline_new (data->ctx->cogl_context);
+  cogl_pipeline_set_color4f (data->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
   allocate (data);
 
