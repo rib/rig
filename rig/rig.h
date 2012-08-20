@@ -31,6 +31,7 @@
 #include "rig-color.h"
 #include "rig-asset.h"
 #include "rig-bevel.h"
+#include "rig-split-view.h"
 
 /* entity/components system */
 #include "rig-entity.h"
