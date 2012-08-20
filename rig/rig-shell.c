@@ -1253,16 +1253,19 @@ _rig_shell_handle_input (RigShell *shell, RigInputEvent *event)
 
           if (scenegraph)
             {
+              RigTraverseVisitFlags flags;
               state.camera = camera;
               state.event = event;
               state.x = x;
               state.y = y;
 
-              rig_graphable_traverse (scenegraph,
-                                      RIG_TRAVERSE_DEPTH_FIRST,
-                                      camera_pick_region_cb,
-                                      NULL,
-                                      &state);
+              flags = rig_graphable_traverse (scenegraph,
+                                              RIG_TRAVERSE_DEPTH_FIRST,
+                                              camera_pick_region_cb,
+                                              NULL,
+                                              &state);
+              if (flags & RIG_TRAVERSE_VISIT_BREAK)
+                return RIG_INPUT_EVENT_STATUS_HANDLED;
             }
         }
     }
