@@ -326,14 +326,19 @@ rig_inspector_create_control_for_property (RigContext *context,
                                            RigProperty **control_prop)
 {
   const RigPropertySpec *spec = prop->spec;
+  const char *name;
   RigText *label;
+
+  if (spec->nick)
+    name = spec->nick;
+  else
+    name = spec->name;
 
   switch ((RigPropertyType) spec->type)
     {
     case RIG_PROPERTY_TYPE_BOOLEAN:
       {
-        RigToggle *toggle = rig_toggle_new (context,
-                                            spec->name);
+        RigToggle *toggle = rig_toggle_new (context, name);
 
         *control_prop = rig_introspectable_lookup_property (toggle, "state");
         rig_property_copy_value (&context->property_ctx,
@@ -348,10 +353,7 @@ rig_inspector_create_control_for_property (RigContext *context,
         RigVec3Slider *slider = rig_vec3_slider_new (context);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
 
-        if (spec->nick)
-          rig_vec3_slider_set_name (slider, spec->nick);
-        else
-          rig_vec3_slider_set_name (slider, spec->name);
+        rig_vec3_slider_set_name (slider, name);
 
         if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
           {
@@ -381,10 +383,7 @@ rig_inspector_create_control_for_property (RigContext *context,
         RigNumberSlider *slider = rig_number_slider_new (context);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
 
-        if (spec->nick)
-          rig_number_slider_set_name (slider, spec->nick);
-        else
-          rig_number_slider_set_name (slider, spec->name);
+        rig_number_slider_set_name (slider, name);
 
         if (spec->type == RIG_PROPERTY_TYPE_INTEGER)
           {
@@ -471,10 +470,7 @@ rig_inspector_create_control_for_property (RigContext *context,
 
   label = rig_text_new (context);
 
-  if (prop->spec->nick)
-    rig_text_set_text (label, prop->spec->nick);
-  else
-    rig_text_set_text (label, prop->spec->name);
+  rig_text_set_text (label, name);
 
   *control_prop = NULL;
 
