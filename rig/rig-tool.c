@@ -48,7 +48,7 @@ on_rotation_tool_clicked (RigInputRegion *region,
         x = rig_motion_event_get_x (event);
         y = rig_motion_event_get_y (event);
 
-        y = -y + 2 * (tool->screen_pos[1]);
+        //y = -y + 2 * (tool->screen_pos[1]);
 
         if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
             state == RIG_BUTTON_STATE_1)
@@ -345,7 +345,15 @@ rig_tool_draw (RigTool *tool,
                               tool->position[0],
                               tool->position[1],
                               tool->position[2]);
-  cogl_framebuffer_scale (fb, scale, scale, scale);
+
+  /* XXX: We flip the y axis here since the get_rotation() call
+   * doesn't take into account that editor/main.c does a view
+   * transform with the camera outside of the entity system
+   * which flips the y axis.
+   *
+   * Note: this means the examples won't look right for now.
+   */
+  cogl_framebuffer_scale (fb, scale, -scale, scale);
   cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_transform (fb, &rotation);
   cogl_framebuffer_draw_primitive (fb,
