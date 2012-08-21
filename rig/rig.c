@@ -1705,6 +1705,12 @@ rig_toggle_get_enabled_property (RigToggle *toggle)
   return &toggle->properties[RIG_TOGGLE_PROP_STATE];
 }
 
+enum {
+  RIG_UI_VIEWPORT_PROP_WIDTH,
+  RIG_UI_VIEWPORT_PROP_HEIGHT,
+  RIG_UI_VIEWPORT_N_PROPS
+};
+
 struct _RigUIViewport
 {
   RigObjectProps _parent;
@@ -1731,6 +1737,24 @@ struct _RigUIViewport
   float grab_doc_x;
   float grab_doc_y;
 
+  RigSimpleIntrospectableProps introspectable;
+  RigProperty properties[RIG_UI_VIEWPORT_N_PROPS];
+};
+
+static RigPropertySpec _rig_ui_viewport_prop_specs[] = {
+  {
+    .name = "width",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigUIViewport, width),
+    .setter = rig_ui_viewport_set_width
+  },
+  {
+    .name = "height",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigUIViewport, height),
+    .setter = rig_ui_viewport_set_height
+  },
+  { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
 static void
@@ -1739,6 +1763,8 @@ _rig_ui_viewport_free (void *object)
   RigUIViewport *ui_viewport = object;
 
   rig_ref_countable_simple_unref (ui_viewport->input_region);
+
+  rig_simple_introspectable_destroy (ui_viewport);
 
   g_slice_free (RigUIViewport, object);
 }
@@ -1762,6 +1788,10 @@ static RigSizableVTable _rig_ui_viewport_sizable_vtable = {
   NULL
 };
 
+static RigIntrospectableVTable _rig_ui_viewport_introspectable_vtable = {
+  rig_simple_introspectable_lookup_property,
+  rig_simple_introspectable_foreach_property
+};
 
 RigType rig_ui_viewport_type;
 
@@ -1781,6 +1811,14 @@ _rig_ui_viewport_init_type (void)
                           RIG_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
                           &_rig_ui_viewport_sizable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rig_ui_viewport_introspectable_vtable);
+  rig_type_add_interface (&rig_ui_viewport_type,
+                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RigUIViewport, introspectable),
+                          NULL); /* no implied vtable */
 }
 
 static void
@@ -1897,6 +1935,10 @@ rig_ui_viewport_new (RigContext *ctx,
 
   ui_viewport->ref_count = 1;
 
+  rig_simple_introspectable_init (ui_viewport,
+                                  _rig_ui_viewport_prop_specs,
+                                  ui_viewport->properties);
+
   rig_graphable_init (RIG_OBJECT (ui_viewport));
 
   ui_viewport->width = width;
@@ -1941,6 +1983,11 @@ rig_ui_viewport_set_size (RigUIViewport *ui_viewport,
                                   0, 0,
                                   width,
                                   height);
+
+  rig_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RIG_UI_VIEWPORT_PROP_WIDTH]);
+  rig_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RIG_UI_VIEWPORT_PROP_HEIGHT]);
 }
 
 void
