@@ -67,6 +67,22 @@ rig_camera_set_viewport (RigCamera *camera,
                          float width,
                          float height);
 
+void
+rig_camera_set_viewport_x (RigCamera *camera,
+                           float x);
+
+void
+rig_camera_set_viewport_y (RigCamera *camera,
+                           float y);
+
+void
+rig_camera_set_viewport_width (RigCamera *camera,
+                               float width);
+
+void
+rig_camera_set_viewport_height (RigCamera *camera,
+                                float height);
+
 const float *
 rig_camera_get_viewport (RigCamera *camera);
 

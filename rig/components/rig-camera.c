@@ -47,6 +47,34 @@ static RigPropertySpec _rig_camera_prop_specs[] = {
     .validation = { .ui_enum = &_rig_projection_ui_enum }
   },
   {
+    .name = "viewport_x",
+    .nick = "Viewport X",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigCamera, viewport[0]),
+    .setter = rig_camera_set_viewport_x
+  },
+  {
+    .name = "viewport_y",
+    .nick = "Viewport Y",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigCamera, viewport[1]),
+    .setter = rig_camera_set_viewport_y
+  },
+  {
+    .name = "viewport_width",
+    .nick = "Viewport Width",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigCamera, viewport[2]),
+    .setter = rig_camera_set_viewport_width
+  },
+  {
+    .name = "viewport_height",
+    .nick = "Viewport Height",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigCamera, viewport[3]),
+    .setter = rig_camera_set_viewport_height
+  },
+  {
     .name = "fov",
     .nick = "Field Of View",
     .type = RIG_PROPERTY_TYPE_INTEGER,
@@ -453,12 +481,12 @@ rig_camera_set_framebuffer (RigCamera *camera,
   camera->fb = cogl_object_ref (framebuffer);
 }
 
-void
-rig_camera_set_viewport (RigCamera *camera,
-                         float x,
-                         float y,
-                         float width,
-                         float height)
+static void
+_rig_camera_set_viewport (RigCamera *camera,
+                          float x,
+                          float y,
+                          float width,
+                          float height)
 {
   if (camera->viewport[0] == x &&
       camera->viewport[1] == y &&
@@ -478,6 +506,76 @@ rig_camera_set_viewport (RigCamera *camera,
   camera->viewport[3] = height;
 
   camera->transform_age++;
+}
+
+void
+rig_camera_set_viewport (RigCamera *camera,
+                         float x,
+                         float y,
+                         float width,
+                         float height)
+{
+  _rig_camera_set_viewport (camera, x, y, width, height);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
+}
+
+void
+rig_camera_set_viewport_x (RigCamera *camera,
+                           float x)
+{
+  _rig_camera_set_viewport (camera,
+                            x,
+                            camera->viewport[1],
+                            camera->viewport[2],
+                            camera->viewport[3]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_X]);
+}
+
+void
+rig_camera_set_viewport_y (RigCamera *camera,
+                           float y)
+{
+  _rig_camera_set_viewport (camera,
+                            camera->viewport[0],
+                            y,
+                            camera->viewport[2],
+                            camera->viewport[3]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_Y]);
+}
+
+void
+rig_camera_set_viewport_width (RigCamera *camera,
+                               float width)
+{
+  _rig_camera_set_viewport (camera,
+                            camera->viewport[0],
+                            camera->viewport[1],
+                            width,
+                            camera->viewport[3]);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_WIDTH]);
+}
+
+void
+rig_camera_set_viewport_height (RigCamera *camera,
+                                float height)
+{
+  _rig_camera_set_viewport (camera,
+                            camera->viewport[0],
+                            camera->viewport[1],
+                            camera->viewport[2],
+                            height);
+  rig_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RIG_CAMERA_PROP_VIEWPORT_HEIGHT]);
 }
 
 const float *
