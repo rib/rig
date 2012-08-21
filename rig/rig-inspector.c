@@ -577,6 +577,7 @@ rig_inspector_new (RigContext *context,
   inspector->prop_data = ((RigInspectorPropertyData *)
                           g_array_free (state.props, FALSE));
 
+#if 0
   for (i = 0; i < inspector->n_props; i++)
     {
       RigInspectorPropertyData *data = inspector->prop_data + i;
@@ -588,6 +589,7 @@ rig_inspector_new (RigContext *context,
                                   data->source_prop,
                                   NULL);
     }
+#endif
 
   rig_inspector_set_size (inspector, 10, 10);
 
