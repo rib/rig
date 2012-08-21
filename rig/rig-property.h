@@ -25,6 +25,7 @@ typedef enum _RigPropertyType
   RIG_PROPERTY_TYPE_TEXT,
   RIG_PROPERTY_TYPE_QUATERNION,
   RIG_PROPERTY_TYPE_VEC3,
+  RIG_PROPERTY_TYPE_VEC4,
   RIG_PROPERTY_TYPE_COLOR,
   RIG_PROPERTY_TYPE_OBJECT,
   RIG_PROPERTY_TYPE_POINTER,
@@ -56,6 +57,7 @@ typedef struct _RigBoxed
       char *text_val;
       CoglQuaternion quaternion_val;
       float vec3_val[3];
+      float vec4_val[4];
       RigColor color_val;
       RigObject *object_val;
       void *pointer_val;
@@ -81,6 +83,12 @@ typedef struct _RigPropertyValidationVec3
   float max;
 } RigPropertyValidationVec3;
 
+typedef struct _RigPropertyValidationVec4
+{
+  float min;
+  float max;
+} RigPropertyValidationVec4;
+
 typedef struct _RigPropertyValidationObject
 {
   RigType *type;
@@ -91,6 +99,7 @@ typedef union _RigPropertyValidation
   RigPropertyValidationInteger int_range;
   RigPropertyValidationFloat float_range;
   RigPropertyValidationVec3 vec3_range;
+  RigPropertyValidationVec4 vec4_range;
   RigPropertyValidationObject object;
   const RigUIEnum *ui_enum;
 } RigPropertyValidation;

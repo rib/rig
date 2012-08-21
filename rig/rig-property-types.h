@@ -13,3 +13,4 @@ COMPOSITE_TYPE(quaternion, CoglQuaternion, QUATERNION)
 COMPOSITE_TYPE(color, RigColor, COLOR)
 
 ARRAY_TYPE(vec3, float, VEC3, 3)
+ARRAY_TYPE(vec4, float, VEC4, 4)
