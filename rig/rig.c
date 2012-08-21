@@ -1571,6 +1571,8 @@ rig_toggle_new (RigContext *ctx,
 {
   RigToggle *toggle = g_slice_new0 (RigToggle);
   PangoRectangle label_size;
+  char *font_name;
+  PangoFontDescription *font_desc;
 
   rig_object_init (RIG_OBJECT (toggle), &rig_toggle_type);
 
@@ -1594,8 +1596,13 @@ rig_toggle_new (RigContext *ctx,
   pango_layout_set_font_description (toggle->tick, ctx->pango_font_desc);
   pango_layout_set_text (toggle->tick, "✔", -1);
 
+  font_name = rig_settings_get_font_name (ctx->settings); /* font_name is allocated */
+  font_desc = pango_font_description_from_string (font_name);
+  g_free (font_name);
+  pango_font_description_free (font_desc);
+
   toggle->label = pango_layout_new (ctx->pango_context);
-  pango_layout_set_font_description (toggle->label, ctx->pango_font_desc);
+  pango_layout_set_font_description (toggle->label, font_desc);
   pango_layout_set_text (toggle->label, label, -1);
 
   pango_layout_get_extents (toggle->label, NULL, &label_size);
