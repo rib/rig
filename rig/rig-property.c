@@ -179,6 +179,49 @@ rig_property_set_binding_full (RigProperty *property,
   va_end (ap);
 }
 
+void
+rig_property_set_binding_by_name (RigObject *object,
+                                  const char *name,
+                                  RigBindingCallback callback,
+                                  void *user_data,
+                                  ...)
+{
+  RigProperty *property = rig_introspectable_lookup_property (object, name);
+  va_list ap;
+
+  g_return_if_fail (property);
+
+  va_start (ap, user_data);
+  _rig_property_set_binding_full_valist (property,
+                                         callback,
+                                         user_data,
+                                         NULL,
+                                         ap);
+  va_end (ap);
+}
+
+void
+rig_property_set_binding_full_by_name (RigObject *object,
+                                       const char *name,
+                                       RigBindingCallback callback,
+                                       void *user_data,
+                                       RigBindingDestroyNotify destroy_notify,
+                                       ...)
+{
+  RigProperty *property = rig_introspectable_lookup_property (object, name);
+  va_list ap;
+
+  g_return_if_fail (property);
+
+  va_start (ap, destroy_notify);
+  _rig_property_set_binding_full_valist (property,
+                                         callback,
+                                         user_data,
+                                         destroy_notify,
+                                         ap);
+  va_end (ap);
+}
+
 typedef struct
 {
   RigPropertyContext *context;

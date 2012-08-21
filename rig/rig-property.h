@@ -273,6 +273,21 @@ rig_property_set_binding_full (RigProperty *property,
                                RigBindingDestroyNotify destroy_notify,
                                ...) G_GNUC_NULL_TERMINATED;
 
+void
+rig_property_set_binding_by_name (RigObject *object,
+                                  const char *name,
+                                  RigBindingCallback callback,
+                                  void *user_data,
+                                  ...) G_GNUC_NULL_TERMINATED;
+
+void
+rig_property_set_binding_full_by_name (RigObject *object,
+                                       const char *name,
+                                       RigBindingCallback callback,
+                                       void *user_data,
+                                       RigBindingDestroyNotify destroy_notify,
+                                       ...) G_GNUC_NULL_TERMINATED;
+
 /**
  * rig_property_set_copy_binding:
  * @context: The property context that will be used to set the property.
