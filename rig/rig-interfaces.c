@@ -359,6 +359,34 @@ rig_graphable_get_modelview (RigObject *graphable,
   rig_graphable_apply_transform (graphable, transform);
 }
 
+void
+rig_graphable_fully_transform_point (RigObject *graphable,
+                                     RigCamera *camera,
+                                     float *x,
+                                     float *y,
+                                     float *z)
+{
+  CoglMatrix modelview;
+  const CoglMatrix *projection;
+  const float *viewport;
+  float point[3] = { *x, *y, *z };
+
+  rig_graphable_get_modelview (graphable, camera, &modelview);
+  projection = rig_camera_get_projection (camera);
+  viewport = rig_camera_get_viewport (camera);
+
+  rig_util_fully_transform_vertices (&modelview,
+                                     projection,
+                                     viewport,
+                                     point,
+                                     point,
+                                     1);
+
+  *x = point[0];
+  *y = point[1];
+  *z = point[2];
+}
+
 RigProperty *
 rig_introspectable_lookup_property (RigObject *object,
                                     const char *name)

@@ -140,6 +140,13 @@ rig_graphable_get_modelview (RigObject *graphable,
                              RigCamera *camera,
                              CoglMatrix *transform);
 
+void
+rig_graphable_fully_transform_point (RigObject *graphable,
+                                     RigCamera *camera,
+                                     float *x,
+                                     float *y,
+                                     float *z);
+
 /*
  *
  * Introspectable Interface
