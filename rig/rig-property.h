@@ -522,7 +522,7 @@ rig_property_set_ ## SUFFIX (RigPropertyContext *ctx, \
                              RigProperty *property, \
                              const CTYPE value[LEN]) \
 { \
-  float *data = (float *) ((uint8_t *) property->object + \
+  CTYPE *data = (CTYPE *) ((uint8_t *) property->object + \
                            property->spec->data_offset); \
  \
   g_return_if_fail (property->spec->type == RIG_PROPERTY_TYPE_ ## TYPE); \
