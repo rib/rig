@@ -419,10 +419,15 @@ node_float_lerp (NodeFloat *a,
                  float *value)
 {
   float range = b->t - a->t;
-  float offset = t - a->t;
-  float factor = offset / range;
+  if (range)
+    {
+      float offset = t - a->t;
+      float factor = offset / range;
 
-  *value = a->value + (b->value - a->value) * factor;
+      *value = a->value + (b->value - a->value) * factor;
+    }
+  else
+    *value = a->value;
 }
 
 void
@@ -432,12 +437,18 @@ node_vec3_lerp (NodeVec3 *a,
                 float value[3])
 {
   float range = b->t - a->t;
-  float offset = t - a->t;
-  float factor = offset / range;
 
-  value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
-  value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
-  value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
+  if (range)
+    {
+      float offset = t - a->t;
+      float factor = offset / range;
+
+      value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
+      value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
+      value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
+    }
+  else
+    memcpy (value, a->value, sizeof (float) * 3);
 }
 
 void
@@ -447,10 +458,15 @@ node_quaternion_lerp (NodeQuaternion *a,
                       CoglQuaternion *value)
 {
   float range = b->t - a->t;
-  float offset = t - a->t;
-  float factor = offset / range;
+  if (range)
+    {
+      float offset = t - a->t;
+      float factor = offset / range;
 
-  cogl_quaternion_nlerp (value, &a->value, &b->value, factor);
+      cogl_quaternion_nlerp (value, &a->value, &b->value, factor);
+    }
+  else
+    *value = a->value;
 }
 
 void
