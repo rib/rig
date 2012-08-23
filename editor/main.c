@@ -5070,15 +5070,20 @@ save (Data *data)
           Path *path = l2->data;
           GList *l3;
           RigEntity *entity;
+          int id;
 
           if (path == NULL)
             continue;
 
           entity = path->prop->object;
 
+          id = GPOINTER_TO_INT (g_hash_table_lookup (state.id_map, entity));
+          if (!id)
+            g_warning ("Failed to find id of entity\n");
+
           state.indent += INDENT_LEVEL;
           fprintf (file, "%*s<path entity=\"%d\" property=\"%s\">\n", state.indent, "",
-                   rig_entity_get_id (entity),
+                   id,
                    path->prop->spec->name);
 
           state.indent += INDENT_LEVEL;
