@@ -33,6 +33,7 @@
 #include "rig-bevel.h"
 #include "rig-split-view.h"
 #include "rig-stack.h"
+#include "rig-entry.h"
 
 /* entity/components system */
 #include "rig-entity.h"

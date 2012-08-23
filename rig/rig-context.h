@@ -24,6 +24,16 @@ extern uint8_t _rig_nine_slice_indices_data[54];
 void
 _rig_init (void);
 
+/*
+ * Note: The size and padding for this circle texture have been carefully
+ * chosen so it has a power of two size and we have enough padding to scale
+ * down the circle to a size of 2 pixels and still have a 1 texel transparent
+ * border which we rely on for anti-aliasing.
+ */
+#define CIRCLE_TEX_RADIUS 16
+#define CIRCLE_TEX_PADDING 16
+
+
 typedef struct _RigSettings RigSettings;
 
 /* TODO Make internals private */
