@@ -507,7 +507,7 @@ node_new_for_vec3 (float t, const float value[3])
 {
   NodeVec3 *node = g_slice_new (NodeVec3);
   node->t = t;
-  memcpy (node->value, value, sizeof (value));
+  memcpy (node->value, value, sizeof (float) * 3);
   return node;
 }
 
