@@ -4562,6 +4562,20 @@ test_init (RigShell *shell, void *user_data)
                                                               NULL)),
                                         rig_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
                                         NULL);
+    {
+      RigEntry *entry;
+      RigText *text;
+      RigTransform *transform;
+      transform = rig_transform_new (data->ctx,
+                                     (entry = rig_entry_new (data->ctx)), NULL);
+      rig_transform_translate (transform, 20, 10, 0);
+      rig_graphable_add_child (data->assets_vp, transform);
+
+      text = rig_entry_get_text (entry);
+      rig_text_set_editable (text, TRUE);
+      rig_text_set_text (text, "Search...");
+    }
+
 
   data->main_area_bevel = rig_bevel_new (data->ctx, 0, 0, &main_area_ref_color),
 
@@ -5267,7 +5281,7 @@ update_asset_list (Data *data)
   rig_ref_countable_unref (data->assets_list);
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
-    add_asset_icon (data, l->data, 10 + 110 * i);
+    add_asset_icon (data, l->data, 70 + 110 * i);
 
   //add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
 }
