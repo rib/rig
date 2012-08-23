@@ -122,6 +122,8 @@ enum
   PROP_SELECTED_TEXT_COLOR,
   PROP_SELECTED_TEXT_COLOR_SET,
   PROP_DIRECTION,
+  PROP_WIDTH,
+  PROP_HEIGHT,
 
   N_PROPS
 };
@@ -735,6 +737,20 @@ static RigPropertySpec _rig_text_prop_specs[] = {
     .blurb = "Direction of the text",
     .flags = RIG_PROPERTY_FLAG_READWRITE,
     .default_value = { .integer = RIG_TEXT_DIRECTION_LEFT_TO_RIGHT }
+  },
+
+  {
+    .name = "width",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigText, width),
+    .setter = rig_text_set_width
+  },
+
+  {
+    .name = "height",
+    .type = RIG_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RigText, height),
+    .setter = rig_text_set_height
   },
 
   { 0 }
@@ -2964,6 +2980,9 @@ _rig_text_set_size (RigObject *object,
 {
   RigText *text = RIG_TEXT (object);
 
+  if (text->width == width && text->height == height)
+    return;
+
   text->width = width;
   text->height = height;
 
@@ -2984,6 +3003,23 @@ _rig_text_set_size (RigObject *object,
                                     0, 0,
                                     width,
                                     height);
+
+  rig_property_dirty (&text->ctx->property_ctx,
+                      &text->properties[PROP_WIDTH]);
+  rig_property_dirty (&text->ctx->property_ctx,
+                      &text->properties[PROP_HEIGHT]);
+}
+
+void
+rig_text_set_width (RigText *text, float width)
+{
+  _rig_text_set_size (text, width, text->height);
+}
+
+void
+rig_text_set_height (RigText *text, float height)
+{
+  _rig_text_set_size (text, text->width, height);
 }
 
 CoglBool

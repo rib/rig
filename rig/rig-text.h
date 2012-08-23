@@ -1210,6 +1210,12 @@ rig_text_get_layout_offsets (RigText *text,
 void
 rig_text_grab_key_focus (RigText *text);
 
+void
+rig_text_set_width (RigText *text, float width);
+
+void
+rig_text_set_height (RigText *text, float height);
+
 G_END_DECLS
 
 #endif /* __RIG_TEXT_H__ */
