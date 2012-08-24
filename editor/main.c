@@ -158,6 +158,13 @@ static RigPropertySpec _transition_prop_specs[] = {
   { 0 }
 };
 
+typedef enum _Pass
+{
+  PASS_COLOR,
+  PASS_SHADOW,
+  PASS_DOF_DEPTH
+} Pass;
+
 typedef struct _TestPaintContext
 {
   RigPaintContext _parent;
@@ -166,7 +173,7 @@ typedef struct _TestPaintContext
 
   GList *camera_stack;
 
-  gboolean shadow_pass;
+  Pass pass;
 
 } TestPaintContext;
 
@@ -174,6 +181,34 @@ typedef enum _State
 {
   STATE_NONE
 } State;
+
+typedef struct
+{
+  RigContext *ctx;
+
+  /* The size of our depth_pass and normal_pass textuers */
+  int width;
+  int height;
+
+  /* A texture to hold depth-of-field blend factors based
+   * on the distance of the geometry from the focal plane.
+   */
+  CoglTexture *depth_pass;
+  CoglFramebuffer *depth_pass_fb;
+
+  /* This is our normal, pristine render of the color buffer */
+  CoglTexture *color_pass;
+  CoglFramebuffer *color_pass_fb;
+
+  /* This is our color buffer reduced in size and blurred */
+  CoglTexture *blur_pass;
+
+  CoglPipeline *pipeline;
+
+  RigDownsampler *downsampler;
+  RigGaussianBlurrer *blurrer;
+} RigDepthOfField;
+
 
 enum {
   DATA_PROP_WIDTH,
@@ -196,6 +231,10 @@ struct _Data
 
   CoglPipeline *root_pipeline;
   CoglPipeline *default_pipeline;
+
+  CoglPipeline *dof_pipeline_template;
+  CoglPipeline *dof_pipeline;
+  CoglPipeline *dof_diamond_pipeline;
 
   State state;
 
@@ -255,6 +294,8 @@ struct _Data
   float right_bar_width;
   float bottom_bar_height;
   float grab_margin;
+  float main_x;
+  float main_y;
   float main_width;
   float main_height;
   float screen_area_width;
@@ -303,6 +344,11 @@ struct _Data
 
   RigEntity *plane;
   RigEntity *light;
+
+  /* postprocessing */
+  CoglFramebuffer *postprocess;
+  RigDepthOfField dof;
+  CoglBool enable_dof;
 
   RigArcball arcball;
   CoglQuaternion saved_rotation;
@@ -987,6 +1033,167 @@ path_lerp_property (Path *path, float t)
         break;
       }
     }
+}
+
+static void
+rig_dof_init (RigDepthOfField *dof,
+              RigContext *ctx)
+{
+  CoglPipeline *pipeline;
+  CoglSnippet *snippet;
+
+  memset (dof, sizeof (dof), 0);
+
+  dof->ctx = ctx;
+
+  pipeline = cogl_pipeline_new (ctx->cogl_context);
+  dof->pipeline = pipeline;
+
+  cogl_pipeline_set_layer_texture (pipeline, 0, NULL); /* depth */
+  cogl_pipeline_set_layer_texture (pipeline, 1, NULL); /* blurred */
+  cogl_pipeline_set_layer_texture (pipeline, 2, NULL); /* color */
+
+  /* disable blending */
+  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              NULL, /* definitions */
+                              NULL  /* post */);
+
+  cogl_snippet_set_replace (snippet,
+      "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord_in[0].st);\n"
+      "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord_in[1].st);\n"
+      "cogl_texel2 = texture2D (cogl_sampler2, cogl_tex_coord_in[2].st);\n"
+      "cogl_color_out = mix (cogl_texel1, cogl_texel2, cogl_texel0.a);\n"
+      "cogl_color_out.a = 1.0;\n");
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  dof->downsampler = rig_downsampler_new (ctx);
+  dof->blurrer = rig_gaussian_blurrer_new (ctx, 7);
+}
+
+static void
+rig_dof_destroy (RigDepthOfField *dof)
+{
+  rig_downsampler_free (dof->downsampler);
+  rig_gaussian_blurrer_free (dof->blurrer);
+  cogl_object_unref (dof->pipeline);
+}
+
+static void
+rig_dof_set_framebuffer_size (RigDepthOfField *dof,
+                              int width,
+                              int height)
+{
+  if (dof->width == width && dof->height == height)
+    return;
+
+
+  if (dof->color_pass_fb)
+    {
+      cogl_object_unref (dof->color_pass_fb);
+      dof->color_pass_fb = NULL;
+      cogl_object_unref (dof->color_pass);
+      dof->color_pass = NULL;
+    }
+
+  if (dof->depth_pass_fb)
+    {
+      cogl_object_unref (dof->depth_pass_fb);
+      dof->depth_pass_fb = NULL;
+      cogl_object_unref (dof->depth_pass);
+      dof->depth_pass = NULL;
+    }
+
+  dof->width = width;
+  dof->height = height;
+}
+
+static CoglFramebuffer *
+rig_dof_get_depth_pass_fb (RigDepthOfField *dof)
+{
+  if (!dof->depth_pass)
+    {
+      GError *error = NULL;
+
+      /*
+       * Offscreen render for post-processing
+       */
+      dof->depth_pass = COGL_TEXTURE (
+        cogl_texture_2d_new_with_size (rig_cogl_context,
+                                       dof->width,
+                                       dof->height,
+                                       COGL_PIXEL_FORMAT_RGBA_8888,
+                                       &error));
+      if (error)
+        {
+          g_critical ("could not create texture: %s", error->message);
+          return NULL;
+        }
+
+      dof->depth_pass_fb = COGL_FRAMEBUFFER (
+        cogl_offscreen_new_to_texture (dof->depth_pass));
+    }
+
+  return dof->depth_pass_fb;
+}
+
+static CoglFramebuffer *
+rig_dof_get_color_pass_fb (RigDepthOfField *dof)
+{
+  if (!dof->color_pass)
+    {
+      GError *error = NULL;
+
+      /*
+       * Offscreen render for post-processing
+       */
+      dof->color_pass = COGL_TEXTURE (
+        cogl_texture_2d_new_with_size (rig_cogl_context,
+                                       dof->width,
+                                       dof->height,
+                                       COGL_PIXEL_FORMAT_RGBA_8888,
+                                       &error));
+      if (error)
+        {
+          g_critical ("could not create texture: %s", error->message);
+          return NULL;
+        }
+
+      dof->color_pass_fb = COGL_FRAMEBUFFER (
+        cogl_offscreen_new_to_texture (dof->color_pass));
+    }
+
+  return dof->color_pass_fb;
+}
+
+static void
+rig_dof_draw_rectangle (RigDepthOfField *dof,
+                        CoglFramebuffer *fb,
+                        float x1,
+                        float y1,
+                        float x2,
+                        float y2)
+{
+  CoglTexture *downsampled =
+    rig_downsampler_downsample (dof->downsampler, dof->color_pass, 4, 4);
+
+  CoglTexture *blurred =
+    rig_gaussian_blurrer_blur (dof->blurrer, downsampled);
+
+  CoglPipeline *pipeline = cogl_pipeline_copy (dof->pipeline);
+
+  cogl_pipeline_set_layer_texture (pipeline, 0, dof->depth_pass);
+  cogl_pipeline_set_layer_texture (pipeline, 1, blurred);
+  cogl_pipeline_set_layer_texture (pipeline, 2, dof->color_pass);
+
+  cogl_framebuffer_draw_rectangle (fb, pipeline,
+                                   x1, y1, x2, y2);
+
+  cogl_object_unref (blurred);
+  cogl_object_unref (downsampled);
 }
 
 static UndoRedo *
@@ -1729,11 +1936,40 @@ get_normal_matrix (const CoglMatrix *matrix,
   normal_matrix[8] = inverse_matrix.zz;
 }
 
+static void
+set_focal_parameters (CoglPipeline *pipeline,
+                      float focal_distance,
+                      float depth_of_field)
+{
+  int location;
+  float distance;
+
+  /* I want to have the focal distance as positive when it's in front of the
+   * camera (it seems more natural, but as, in OpenGL, the camera is facing
+   * the negative Ys, the actual value to give to the shader has to be
+   * negated */
+  distance = -focal_distance;
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "dof_focal_distance");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   1 /* n_components */, 1 /* count */,
+                                   &distance);
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "dof_depth_of_field");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   1 /* n_components */, 1 /* count */,
+                                   &depth_of_field);
+}
+
 CoglPipeline *
 get_entity_pipeline (Data *data,
                      RigEntity *entity,
                      RigComponent *geometry,
-                     gboolean shadow_pass)
+                     Pass pass)
 {
   CoglSnippet *snippet;
   CoglDepthState depth_state;
@@ -1741,9 +1977,127 @@ get_entity_pipeline (Data *data,
     rig_entity_get_component (entity, RIG_COMPONENT_TYPE_MATERIAL);
   CoglPipeline *pipeline;
 
-  pipeline = rig_entity_get_pipeline_cache (entity);
-  if (pipeline)
-    return cogl_object_ref (pipeline);
+  if (pass == PASS_COLOR)
+    {
+      pipeline = rig_entity_get_pipeline_cache (entity);
+      if (pipeline)
+        return cogl_object_ref (pipeline);
+    }
+  else if (pass == PASS_DOF_DEPTH)
+    {
+      if (!data->dof_pipeline_template)
+        {
+          CoglPipeline *pipeline;
+          CoglDepthState depth_state;
+          CoglSnippet *snippet;
+
+          pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+
+          cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
+
+          cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+
+          cogl_depth_state_init (&depth_state);
+          cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+          cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+
+          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+              /* definitions */
+              "uniform float dof_focal_distance;\n"
+              "uniform float dof_depth_of_field;\n"
+
+              "varying float dof_blur;\n",
+              //"varying vec4 world_pos;\n",
+
+              /* compute the amount of bluriness we want */
+              "vec4 world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+              //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+              "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
+              "                  dof_depth_of_field, 0.0, 1.0);\n"
+          );
+
+          cogl_pipeline_add_snippet (pipeline, snippet);
+          cogl_object_unref (snippet);
+
+          /* This was used to debug the focal distance and bluriness amount in the DoF
+           * effect: */
+#if 0
+          cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
+          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+              "varying vec4 world_pos;\n"
+              "varying float dof_blur;",
+
+             "cogl_color_out = vec4(dof_blur,0,0,1);\n"
+             //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
+             //"if (world_pos.z < -30.0) cogl_color_out = vec4(0,1,0,1);\n"
+             //"if (abs (world_pos.z + 30.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
+             "cogl_color_out.a = dof_blur;\n"
+             //"cogl_color_out.a = 1.0;\n"
+          );
+
+          cogl_pipeline_add_snippet (pipeline, snippet);
+          cogl_object_unref (snippet);
+#endif
+
+          data->dof_pipeline_template = pipeline;
+        }
+
+      if (rig_object_get_type (geometry) == &rig_diamond_type)
+        {
+          if (!data->dof_diamond_pipeline)
+            {
+              CoglPipeline *dof_diamond_pipeline =
+                cogl_pipeline_copy (data->dof_pipeline_template);
+              CoglSnippet *snippet;
+
+              rig_diamond_apply_mask (RIG_DIAMOND (geometry), dof_diamond_pipeline);
+
+              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                          /* declarations */
+                                          "varying float dof_blur;",
+
+                                          /* post */
+                                          "if (cogl_color_out.a <= 0.0)\n"
+                                          "  discard;\n"
+                                          "\n"
+                                          "cogl_color_out.a = dof_blur;\n");
+
+              cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
+              cogl_object_unref (snippet);
+
+              set_focal_parameters (dof_diamond_pipeline, 30.f, 3.0f);
+
+              data->dof_diamond_pipeline = dof_diamond_pipeline;
+            }
+
+          return cogl_object_ref (data->dof_diamond_pipeline);
+        }
+      else
+        {
+          if (!data->dof_pipeline)
+            {
+              CoglPipeline *dof_pipeline =
+                cogl_pipeline_copy (data->dof_pipeline_template);
+              CoglSnippet *snippet;
+
+              /* store the bluriness in the alpha channel */
+              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                  "varying float dof_blur;",
+
+                  "cogl_color_out.a = dof_blur;\n"
+              );
+              cogl_pipeline_add_snippet (dof_pipeline, snippet);
+              cogl_object_unref (snippet);
+
+              set_focal_parameters (dof_pipeline, 30.f, 3.0f);
+
+              data->dof_pipeline = dof_pipeline;
+            }
+
+          return cogl_object_ref (data->dof_pipeline);
+        }
+    }
 
   pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
@@ -1975,7 +2329,7 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
       pipeline = get_entity_pipeline (test_paint_ctx->data,
                                       object,
                                       geometry,
-                                      test_paint_ctx->shadow_pass);
+                                      test_paint_ctx->pass);
 #endif
 
       primitive = rig_primable_get_primitive (geometry);
@@ -2085,61 +2439,15 @@ compute_light_shadow_matrix (Data       *data,
 }
 #endif
 
-#if 1
 static void
-paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
+paint_scene (TestPaintContext *test_paint_ctx)
 {
-  RigCamera *camera_component =
-    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
+  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
   Data *data = test_paint_ctx->data;
   CoglContext *ctx = data->ctx->cogl_context;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
-  RigComponent *light;
-  //CoglFramebuffer *shadow_fb;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
 
-  camera_update_view (data, camera, FALSE);
-
-  rig_camera_flush (camera_component);
-
-  light = rig_entity_get_component (camera, RIG_COMPONENT_TYPE_LIGHT);
-  test_paint_ctx->shadow_pass = light ? TRUE : FALSE;
-
-#if 0
-  {
-    CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-    CoglMatrix view;
-    float fovy = 10; /* y-axis field of view */
-    float aspect = (float)data->main_width/(float)data->main_height;
-    float z_near = 10; /* distance to near clipping plane */
-    float z_far = 100; /* distance to far clipping plane */
-#if 1
-    fovy = 60;
-    z_near = 1.1;
-    z_far = 100;
-#endif
-
-    g_assert (data->main_width == cogl_framebuffer_get_viewport_width (fb));
-    g_assert (data->main_height == cogl_framebuffer_get_viewport_height (fb));
-
-    cogl_matrix_init_identity (&view);
-    cogl_matrix_view_2d_in_perspective (&view,
-                                        fovy, aspect, z_near, data->z_2d,
-                                        DEVICE_WIDTH,
-                                        DEVICE_HEIGHT);
-    cogl_framebuffer_set_modelview_matrix (fb, &view);
-
-    cogl_framebuffer_draw_rectangle (fb, pipeline,
-                                     1, 1, DEVICE_WIDTH - 2, DEVICE_HEIGHT - 2);
-    cogl_object_unref (pipeline);
-  }
-#endif
-
-#if 0
-  cogl_framebuffer_transform (fb, rig_transform_get_matrix (data->screen_area_transform));
-  cogl_framebuffer_transform (fb, rig_transform_get_matrix (data->device_transform));
-#endif
-
-  if (!test_paint_ctx->shadow_pass)
+  if (test_paint_ctx->pass == PASS_COLOR)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
       cogl_pipeline_set_color4f (pipeline, 0, 0, 0, 1.0);
@@ -2190,8 +2498,118 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
                           _rig_entitygraph_post_paint_cb,
                           test_paint_ctx);
 
-  if (!test_paint_ctx->shadow_pass)
+}
+
+#if 1
+static void
+paint_main_camera_component (RigEntity *camera, TestPaintContext *test_paint_ctx)
+{
+  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
+  RigCamera *save_camera = paint_ctx->camera;
+  RigCamera *camera_component =
+    rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
+  Data *data = test_paint_ctx->data;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
+  //CoglFramebuffer *shadow_fb;
+
+  paint_ctx->camera = camera_component;
+
+  if (rig_entity_get_component (camera, RIG_COMPONENT_TYPE_LIGHT))
+    test_paint_ctx->pass = PASS_SHADOW;
+  else
+    test_paint_ctx->pass = PASS_COLOR;
+
+  camera_update_view (data, camera, FALSE);
+
+  if (test_paint_ctx->pass != PASS_SHADOW &&
+      data->enable_dof)
     {
+      const float *viewport = rig_camera_get_viewport (camera_component);
+      int width = viewport[2];
+      int height = viewport[3];
+      int save_viewport_x = viewport[0];
+      int save_viewport_y = viewport[1];
+      Pass save_pass = test_paint_ctx->pass;
+      CoglFramebuffer *pass_fb;
+
+      rig_camera_set_viewport (camera_component, 0, 0, width, height);
+
+      rig_dof_set_framebuffer_size (&data->dof, width, height);
+
+      pass_fb = rig_dof_get_depth_pass_fb (&data->dof);
+      rig_camera_set_framebuffer (camera_component, pass_fb);
+
+      rig_camera_flush (camera_component);
+      cogl_framebuffer_clear4f (pass_fb,
+                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+                                1, 1, 1, 1);
+
+      test_paint_ctx->pass = PASS_DOF_DEPTH;
+      paint_scene (test_paint_ctx);
+      test_paint_ctx->pass = save_pass;
+
+      rig_camera_end_frame (camera_component);
+
+      pass_fb = rig_dof_get_color_pass_fb (&data->dof);
+      rig_camera_set_framebuffer (camera_component, pass_fb);
+
+      rig_camera_flush (camera_component);
+      cogl_framebuffer_clear4f (pass_fb,
+                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+                                0.22, 0.22, 0.22, 1);
+
+      test_paint_ctx->pass = PASS_COLOR;
+      paint_scene (test_paint_ctx);
+      test_paint_ctx->pass = save_pass;
+
+      rig_camera_end_frame (camera_component);
+
+      rig_camera_set_framebuffer (camera_component, fb);
+      rig_camera_set_clear (camera_component, FALSE);
+
+      rig_camera_flush (camera_component);
+
+      rig_camera_end_frame (camera_component);
+
+      rig_camera_set_viewport (camera_component,
+                               save_viewport_x,
+                               save_viewport_y,
+                               width, height);
+      paint_ctx->camera = save_camera;
+      rig_camera_flush (save_camera);
+      rig_dof_draw_rectangle (&data->dof,
+                              rig_camera_get_framebuffer (save_camera),
+                              data->main_x,
+                              data->main_y,
+                              data->main_x + data->main_width,
+                              data->main_y + data->main_height);
+      rig_camera_end_frame (save_camera);
+    }
+  else
+    {
+      rig_camera_set_framebuffer (camera_component, fb);
+
+      rig_camera_flush (camera_component);
+
+      paint_scene (test_paint_ctx);
+
+      rig_camera_end_frame (camera_component);
+    }
+
+  rig_camera_flush (camera_component);
+  if (test_paint_ctx->pass == PASS_COLOR)
+    {
+      /* Use this to visualize the depth-of-field alpha buffer... */
+#if 0
+      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+      cogl_pipeline_set_layer_texture (pipeline, 0, data->dof.depth_pass);
+      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+      cogl_framebuffer_draw_rectangle (fb,
+                                       pipeline,
+                                       0, 0,
+                                       200, 200);
+#endif
+
       if (data->debug_pick_ray && data->picking_ray)
       //if (data->picking_ray)
         {
@@ -2199,21 +2617,6 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                            data->picking_ray_color,
                                            data->picking_ray);
         }
-#if 0
-      for (l = data->entities; l; l = l->next)
-        {
-          RigEntity *entity = l->data;
-          const CoglMatrix *transform;
-          cogl_framebuffer_push_matrix (fb);
-
-          transform = rig_entity_get_transform (entity);
-          cogl_framebuffer_transform (fb, transform);
-
-          rig_entity_draw (entity, fb);
-
-          cogl_framebuffer_pop_matrix (fb);
-        }
-#endif
 
       draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
 
@@ -2223,20 +2626,18 @@ paint_main_area_camera (RigEntity *camera, TestPaintContext *test_paint_ctx)
           rig_tool_draw (data->tool, fb);
         }
     }
-
   rig_camera_end_frame (camera_component);
 }
 #endif
 
 static void
-paint_timeline_camera (RigCamera *camera, void *user_data)
+paint_timeline_camera (TestPaintContext *test_paint_ctx)
 {
-  Data *data = user_data;
-  CoglContext *ctx = data->ctx->cogl_context;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
+  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
+  Data *data = test_paint_ctx->data;
+  RigContext *ctx = data->ctx;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
   GList *l;
-
-  rig_camera_flush (camera);
 
   //cogl_framebuffer_push_matrix (fb);
   //cogl_framebuffer_transform (fb, rig_transformable_get_matrix (camera));
@@ -2342,7 +2743,8 @@ paint_timeline_camera (RigCamera *camera, void *user_data)
               g_array_append_val (points, p);
             }
 
-          prim = cogl_primitive_new_p2 (ctx, COGL_VERTICES_MODE_LINE_STRIP,
+          prim = cogl_primitive_new_p2 (ctx->cogl_context,
+                                        COGL_VERTICES_MODE_LINE_STRIP,
                                         points->len, (CoglVertexP2 *)points->data);
           draw_jittered_primitive4f (data, fb, prim, red, green, blue);
           cogl_object_unref (prim);
@@ -2359,21 +2761,27 @@ paint_timeline_camera (RigCamera *camera, void *user_data)
 
         progress = rig_timeline_get_progress (data->timeline);
 
-        progress_x = -viewport_t_offset * viewport_t_scale + data->timeline_width * data->timeline_scale * progress;
+        progress_x =
+          -viewport_t_offset *
+          viewport_t_scale +
+          data->timeline_width *
+          data->timeline_scale * progress;
+
         progress_line[0] = progress_x;
         progress_line[1] = 0;
         progress_line[2] = progress_x;
         progress_line[3] = data->timeline_height;
 
-        prim = cogl_primitive_new_p2 (ctx, COGL_VERTICES_MODE_LINE_STRIP, 2, (CoglVertexP2 *)progress_line);
+        prim = cogl_primitive_new_p2 (ctx->cogl_context,
+                                      COGL_VERTICES_MODE_LINE_STRIP,
+                                      2,
+                                      (CoglVertexP2 *)progress_line);
         draw_jittered_primitive4f (data, fb, prim, 0, 1, 0);
         cogl_object_unref (prim);
       }
     }
 
   //cogl_framebuffer_pop_matrix (fb);
-
-  rig_camera_end_frame (camera);
 }
 
 static RigTraverseVisitFlags
@@ -2476,22 +2884,27 @@ test_paint (RigShell *shell, void *user_data)
                             0.22, 0.22, 0.22, 1);
 
   test_paint_ctx.data = data;
-  test_paint_ctx.shadow_pass = FALSE;
+  test_paint_ctx.pass = PASS_COLOR;
 
   paint_ctx->camera = data->camera;
 
-  //g_print ("Data camera = %p\n", data->camera);
   rig_camera_flush (data->camera);
   rig_graphable_traverse (data->root,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_scenegraph_pre_paint_cb,
                           _rig_scenegraph_post_paint_cb,
                           &test_paint_ctx);
+  /* FIXME: this should be moved to the end of this function but we
+   * currently get warnings about unbalanced _flush()/_end_frame()
+   * pairs. */
   rig_camera_end_frame (data->camera);
 
-  paint_main_area_camera (data->main_camera, &test_paint_ctx);
+  paint_main_camera_component (data->main_camera, &test_paint_ctx);
 
-  paint_timeline_camera (data->timeline_camera, data);
+  paint_ctx->camera = data->timeline_camera;
+  rig_camera_flush (paint_ctx->camera);
+  paint_timeline_camera (&test_paint_ctx);
+  rig_camera_end_frame (paint_ctx->camera);
 
 #if 0
   paint_ctx->camera = data->main_camera;
@@ -3185,7 +3598,6 @@ _rig_entitygraph_pre_pick_cb (RigObject *object,
       if (hit)
         {
           const CoglMatrix *view = rig_camera_get_view_transform (pick_ctx->camera);
-          CoglMatrix modelview;
           float w = 1;
 
           /* to compare intersection distances we find the actual point of ray
@@ -4144,6 +4556,9 @@ camera_viewport_binding_cb (RigProperty *property, void *user_data)
                                        data->camera,
                                        &x, &y, &z);
 
+  data->main_x = x;
+  data->main_y = y;
+
   x = RIG_UTIL_NEARBYINT (x);
   y = RIG_UTIL_NEARBYINT (y);
 
@@ -4262,6 +4677,14 @@ test_init (RigShell *shell, void *user_data)
 
   data->root_pipeline = root_pipeline;
   data->default_pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+
+  /*
+   * Depth of Field
+   */
+
+  rig_dof_init (&data->dof, data->ctx);
+  data->enable_dof = TRUE;
+
 
   data->diamond_slice_indices =
     cogl_indices_new (data->ctx->cogl_context,
@@ -4777,6 +5200,7 @@ test_fini (RigShell *shell, void *user_data)
 
   cogl_object_unref (data->light_icon);
 
+  rig_dof_destroy (&data->dof);
   //cogl_object_unref (data->rounded_tex);
 }
 
