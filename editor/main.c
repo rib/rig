@@ -6018,6 +6018,12 @@ load (Data *data, const char *file)
   data->transitions = loader.transitions;
   if (data->transitions)
     data->selected_transition = loader.transitions->data;
+  else
+    {
+      Transition *transition = transition_new (data, 0);
+      data->transitions = g_list_prepend (data->transitions, transition);
+      data->selected_transition = transition;
+    }
 
   data->assets = loader.assets;
 
