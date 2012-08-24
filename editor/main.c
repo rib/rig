@@ -3104,6 +3104,7 @@ create_picking_ray (Data            *data,
 
 typedef struct _PickContext
 {
+  RigCamera *camera;
   CoglFramebuffer *fb;
   float *ray_origin;
   float *ray_direction;
@@ -3140,7 +3141,7 @@ _rig_entitygraph_pre_pick_cb (RigObject *object,
       int n_vertices;
       size_t stride;
       int index;
-      float distance, min_distance = G_MAXFLOAT;
+      float distance;
       bool hit;
       float transformed_ray_origin[3];
       float transformed_ray_direction[3];
@@ -3181,25 +3182,42 @@ _rig_entitygraph_pre_pick_cb (RigObject *object,
                                      &index,
                                      &distance);
 
-      /* to compare intersection distances we need to re-transform it back
-       * to the world space, */
-      cogl_vector3_normalize (transformed_ray_direction);
-      transformed_ray_direction[0] *= distance;
-      transformed_ray_direction[1] *= distance;
-      transformed_ray_direction[2] *= distance;
-
-      rig_util_transform_normal (&transform,
-                                 &transformed_ray_direction[0],
-                                 &transformed_ray_direction[1],
-                                 &transformed_ray_direction[2]);
-      distance = cogl_vector3_magnitude (transformed_ray_direction);
-
-      if (hit && distance < min_distance)
+      if (hit)
         {
-          min_distance = distance;
-          pick_ctx->selected_entity = entity;
-          pick_ctx->selected_distance = distance;
-          pick_ctx->selected_index = index;
+          const CoglMatrix *view = rig_camera_get_view_transform (pick_ctx->camera);
+          CoglMatrix modelview;
+          float w = 1;
+
+          /* to compare intersection distances we find the actual point of ray
+           * intersection in model coordinates and transform that into eye
+           * coordinates */
+
+          transformed_ray_direction[0] *= distance;
+          transformed_ray_direction[1] *= distance;
+          transformed_ray_direction[2] *= distance;
+
+          transformed_ray_direction[0] += transformed_ray_origin[0];
+          transformed_ray_direction[1] += transformed_ray_origin[1];
+          transformed_ray_direction[2] += transformed_ray_origin[2];
+
+          cogl_matrix_transform_point (&transform,
+                                       &transformed_ray_direction[0],
+                                       &transformed_ray_direction[1],
+                                       &transformed_ray_direction[2],
+                                       &w);
+          cogl_matrix_transform_point (view,
+                                       &transformed_ray_direction[0],
+                                       &transformed_ray_direction[1],
+                                       &transformed_ray_direction[2],
+                                       &w);
+          distance = transformed_ray_direction[2];
+
+          if (distance > pick_ctx->selected_distance)
+            {
+              pick_ctx->selected_entity = entity;
+              pick_ctx->selected_distance = distance;
+              pick_ctx->selected_index = index;
+            }
         }
     }
 
@@ -3222,13 +3240,16 @@ _rig_entitygraph_post_pick_cb (RigObject *object,
 
 static RigEntity *
 pick (Data *data,
+      RigCamera *camera,
       CoglFramebuffer *fb,
       float ray_origin[3],
       float ray_direction[3])
 {
   PickContext pick_ctx;
 
+  pick_ctx.camera = camera;
   pick_ctx.fb = fb;
+  pick_ctx.selected_distance = -G_MAXFLOAT;
   pick_ctx.selected_entity = NULL;
   pick_ctx.ray_origin = ray_origin;
   pick_ctx.ray_direction = ray_direction;
@@ -3533,6 +3554,7 @@ main_input_cb (RigInputEvent *event,
             }
 
           data->selected_entity = pick (data,
+                                        camera,
                                         rig_camera_get_framebuffer (camera),
                                         ray_position,
                                         ray_direction);
