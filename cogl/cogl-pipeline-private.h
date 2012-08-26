@@ -451,10 +451,6 @@ struct _CoglPipeline
    * pipelines with only a few layers... */
   CoglPipelineLayer    *short_layers_cache[3];
 
-  /* The deprecated cogl_pipeline_get_layers() API returns a
-   * const GList of layers, which we track here... */
-  GList                *deprecated_get_layers_list;
-
   /* XXX: consider adding an authorities cache to speed up sparse
    * property value lookups:
    * CoglPipeline *authorities_cache[COGL_PIPELINE_N_SPARSE_PROPERTIES];
@@ -484,7 +480,6 @@ struct _CoglPipeline
   unsigned int          real_blend_enable:1;
 
   unsigned int          layers_cache_dirty:1;
-  unsigned int          deprecated_get_layers_list_dirty:1;
 
   /* For debugging purposes it's possible to associate a static const
    * string with a pipeline which can be an aid when trying to trace
@@ -924,9 +919,6 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n);
 /*
  * API to support the deprecate cogl_pipeline_layer_xyz functions...
  */
-
-const GList *
-_cogl_pipeline_get_layers (CoglPipeline *pipeline);
 
 typedef CoglBool (*CoglPipelineInternalLayerCallback) (CoglPipelineLayer *layer,
                                                        void *user_data);
