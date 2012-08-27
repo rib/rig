@@ -491,34 +491,6 @@ cogl_texture_new_from_sub_texture (CoglTexture *full_texture,
                                    int sub_width,
                                    int sub_height);
 
-#ifndef COGL_DISABLE_DEPRECATED
-
-/**
- * cogl_texture_ref:
- * @texture: a #CoglTexture.
- *
- * Increment the reference count for a cogl texture.
- *
- * Deprecated: 1.2: Use cogl_object_ref() instead
- *
- * Return value: the @texture pointer.
- */
-void *
-cogl_texture_ref (void *texture) G_GNUC_DEPRECATED;
-
-/**
- * cogl_texture_unref:
- * @texture: a #CoglTexture.
- *
- * Decrement the reference count for a cogl texture.
- *
- * Deprecated: 1.2: Use cogl_object_unref() instead
- */
-void
-cogl_texture_unref (void *texture) G_GNUC_DEPRECATED;
-
-#endif /* COGL_DISABLE_DEPRECATED */
-
 G_END_DECLS
 
 #endif /* __COGL_TEXTURE_H__ */

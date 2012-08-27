@@ -97,35 +97,6 @@ cogl_is_texture (void *object)
   return FALSE;
 }
 
-void *
-cogl_texture_ref (void *object)
-{
-  if (!cogl_is_texture (object))
-    return NULL;
-
-  _COGL_OBJECT_DEBUG_REF (CoglTexture, object);
-
-  cogl_object_ref (object);
-
-  return object;
-}
-
-void
-cogl_texture_unref (void *object)
-{
-  if (!cogl_is_texture (object))
-    {
-      g_warning (G_STRINGIFY (cogl_texture_unref)
-                 ": Ignoring unref of CoglObject "
-                 "due to type mismatch");
-      return;
-    }
-
-  _COGL_OBJECT_DEBUG_UNREF (CoglTexture, object);
-
-  cogl_object_unref (object);
-}
-
 void
 _cogl_texture_init (CoglTexture *texture,
                     const CoglTextureVtable *vtable)

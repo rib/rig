@@ -584,14 +584,8 @@ cogl_texture_pixmap_x11_update_area
 #endif
 cogl_texture_rectangle_new_from_bitmap
 cogl_texture_rectangle_new_with_size_EXP
-#ifndef COGL_DISABLE_DEPRECATED
-cogl_texture_ref
-#endif
 cogl_texture_set_region
 cogl_texture_set_region_from_bitmap_EXP
-#ifndef COGL_DISABLE_DEPRECATED
-cogl_texture_unref
-#endif
 cogl_texture_2d_new_from_bitmap
 cogl_texture_2d_new_from_data_EXP
 cogl_texture_2d_new_from_foreign_EXP
