@@ -37,6 +37,7 @@
 #include "cogl-object-private.h"
 #include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
+#include "cogl-error-private.h"
 
 #include <string.h>
 #include <math.h>
@@ -112,7 +113,7 @@ static CoglBool
 _cogl_texture_rectangle_can_create (unsigned int width,
                                     unsigned int height,
                                     CoglPixelFormat internal_format,
-                                    GError **error)
+                                    CoglError **error)
 {
   GLenum gl_intformat;
   GLenum gl_format;
@@ -122,10 +123,10 @@ _cogl_texture_rectangle_can_create (unsigned int width,
 
   if (!cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_RECTANGLE))
     {
-      g_set_error (error,
-                   COGL_TEXTURE_ERROR,
-                   COGL_TEXTURE_ERROR_TYPE,
-                   "The CoglTextureRectangle feature isn't available");
+      _cogl_set_error (error,
+                       COGL_TEXTURE_ERROR,
+                       COGL_TEXTURE_ERROR_TYPE,
+                       "The CoglTextureRectangle feature isn't available");
       return FALSE;
     }
 
@@ -144,10 +145,10 @@ _cogl_texture_rectangle_can_create (unsigned int width,
                                             width,
                                             height))
     {
-      g_set_error (error,
-                   COGL_TEXTURE_ERROR,
-                   COGL_TEXTURE_ERROR_SIZE,
-                   "The requested texture size + format is unsupported");
+      _cogl_set_error (error,
+                       COGL_TEXTURE_ERROR,
+                       COGL_TEXTURE_ERROR_SIZE,
+                       "The requested texture size + format is unsupported");
       return FALSE;
     }
 
@@ -193,7 +194,7 @@ cogl_texture_rectangle_new_with_size (CoglContext *ctx,
                                       int width,
                                       int height,
                                       CoglPixelFormat internal_format,
-                                      GError **error)
+                                      CoglError **error)
 {
   CoglTextureRectangle *tex_rect;
   GLenum                gl_intformat;
@@ -233,7 +234,7 @@ cogl_texture_rectangle_new_with_size (CoglContext *ctx,
 CoglTextureRectangle *
 cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bmp,
                                         CoglPixelFormat internal_format,
-                                        GError **error)
+                                        CoglError **error)
 {
   CoglTextureRectangle *tex_rect;
   CoglBitmap           *dst_bmp;

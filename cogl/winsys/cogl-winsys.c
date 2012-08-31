@@ -30,8 +30,8 @@
 
 #include <gmodule.h>
 
-GQuark
-_cogl_winsys_error_quark (void)
+uint32_t
+_cogl_winsys_error_domain (void)
 {
   return g_quark_from_static_string ("cogl-winsys-error-quark");
 }

@@ -59,8 +59,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-GQuark
-cogl_texture_error_quark (void)
+uint32_t
+cogl_texture_error_domain (void)
 {
   return g_quark_from_static_string ("cogl-texture-error-quark");
 }
@@ -415,7 +415,7 @@ CoglTexture *
 cogl_texture_new_from_file (const char        *filename,
                             CoglTextureFlags   flags,
                             CoglPixelFormat    internal_format,
-                            GError           **error)
+                            CoglError           **error)
 {
   CoglBitmap *bmp;
   CoglTexture *texture = NULL;

@@ -89,7 +89,7 @@ typedef struct _CoglFramebuffer CoglFramebuffer;
 /**
  * cogl_framebuffer_allocate:
  * @framebuffer: A #CoglFramebuffer
- * @error: A pointer to a #GError for returning exceptions.
+ * @error: A pointer to a #CoglError for returning exceptions.
  *
  * Explicitly allocates a configured #CoglFramebuffer allowing developers to
  * check and handle any errors that might arise from an unsupported
@@ -108,7 +108,7 @@ typedef struct _CoglFramebuffer CoglFramebuffer;
  */
 CoglBool
 cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
-                           GError **error);
+                           CoglError **error);
 
 /**
  * cogl_framebuffer_get_width:
@@ -1689,15 +1689,15 @@ cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
 CoglFramebuffer *
 cogl_get_draw_framebuffer (void);
 
-GQuark
-cogl_framebuffer_error_quark (void);
+uint32_t
+cogl_framebuffer_error_domain (void);
 
 /**
  * COGL_FRAMEBUFFER_ERROR:
  *
  * An error domain for reporting #CoglFramebuffer exceptions
  */
-#define COGL_FRAMEBUFFER_ERROR (cogl_framebuffer_error_quark ())
+#define COGL_FRAMEBUFFER_ERROR (cogl_framebuffer_error_domain ())
 
 typedef enum { /*< prefix=COGL_FRAMEBUFFER_ERROR >*/
   COGL_FRAMEBUFFER_ERROR_ALLOCATE

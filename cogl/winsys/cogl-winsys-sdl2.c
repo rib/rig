@@ -86,11 +86,11 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 
 static CoglBool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
-                               GError **error)
+                               CoglError **error)
 {
   if (SDL_VideoInit (NULL) < 0)
     {
-      g_set_error (error, COGL_WINSYS_ERROR,
+      _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "SDL_Init failed: %s",
                    SDL_GetError ());
@@ -139,7 +139,7 @@ set_gl_attribs_from_framebuffer_config (CoglFramebufferConfig *config)
 
 static CoglBool
 _cogl_winsys_display_setup (CoglDisplay *display,
-                            GError **error)
+                            CoglError **error)
 {
   CoglDisplaySdl2 *sdl_display;
   const char * (* get_string_func) (GLenum name);
@@ -166,7 +166,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
                                                 SDL_WINDOW_HIDDEN);
   if (sdl_display->dummy_window == NULL)
     {
-      g_set_error (error, COGL_WINSYS_ERROR,
+      _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "SDL_CreateWindow failed: %s",
                    SDL_GetError ());
@@ -177,7 +177,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   if (sdl_display->context == NULL)
     {
-      g_set_error (error, COGL_WINSYS_ERROR,
+      _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_INIT,
                    "SDL_GL_CreateContext failed: %s",
                    SDL_GetError ());
@@ -198,7 +198,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
        * it's normal GL */
       if (!g_ascii_isdigit (gl_version[0]))
         {
-          g_set_error (error, COGL_WINSYS_ERROR,
+          _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_INIT,
                        "The GL driver was requested but SDL is using GLES");
           goto error;
@@ -208,7 +208,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
     case COGL_DRIVER_GLES2:
       if (!g_str_has_prefix (gl_version, "OpenGL ES 2"))
         {
-          g_set_error (error, COGL_WINSYS_ERROR,
+          _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_INIT,
                        "The GLES2 driver was requested but SDL is "
                        "not using GLES2");
@@ -219,7 +219,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
     case COGL_DRIVER_GLES1:
       if (!g_str_has_prefix (gl_version, "OpenGL ES 1"))
         {
-          g_set_error (error, COGL_WINSYS_ERROR,
+          _cogl_set_error (error, COGL_WINSYS_ERROR,
                        COGL_WINSYS_ERROR_INIT,
                        "The GLES1 driver was requested but SDL is "
                        "not using GLES1");
@@ -239,7 +239,7 @@ error:
 }
 
 static CoglBool
-_cogl_winsys_context_init (CoglContext *context, GError **error)
+_cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
 
@@ -320,7 +320,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
 
 static CoglBool
 _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
-                            GError **error)
+                            CoglError **error)
 {
   CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
   CoglOnscreenSdl2 *sdl_onscreen;
@@ -338,7 +338,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
 
   if (window == NULL)
     {
-      g_set_error (error, COGL_WINSYS_ERROR,
+      _cogl_set_error (error, COGL_WINSYS_ERROR,
                    COGL_WINSYS_ERROR_CREATE_ONSCREEN,
                    "SDL_CreateWindow failed: %s",
                    SDL_GetError ());

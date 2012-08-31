@@ -164,7 +164,7 @@ main (int argc, char **argv)
   CoglRenderer *renderer;
   CoglDisplay *display;
   CoglContext *ctx;
-  GError *error = NULL;
+  CoglError *error = NULL;
   CoglWinsysID winsys_id;
   const char *winsys_name;
 

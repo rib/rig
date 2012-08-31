@@ -24,7 +24,7 @@ do_test (CoglBool check_orientation)
   int fb_width = cogl_framebuffer_get_width (test_fb);
   int fb_height = cogl_framebuffer_get_height (test_fb);
   CoglPrimitive *prim;
-  GError *error = NULL;
+  CoglError *error = NULL;
   CoglTexture2D *tex_2d;
   CoglPipeline *pipeline, *solid_pipeline;
   CoglBool res;

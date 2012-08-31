@@ -44,7 +44,7 @@ struct _CoglDriverVtable
 
   CoglBool
   (* update_features) (CoglContext *context,
-                       GError **error);
+                       CoglError **error);
 };
 
 #endif /* __COGL_DRIVER_H */

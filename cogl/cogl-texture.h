@@ -56,12 +56,12 @@ G_BEGIN_DECLS
 /**
  * COGL_TEXTURE_ERROR:
  *
- * #GError domain for texture errors.
+ * #CoglError domain for texture errors.
  *
  * Since: 2.0
  * Stability: Unstable
  */
-#define COGL_TEXTURE_ERROR (cogl_texture_error_quark ())
+#define COGL_TEXTURE_ERROR (cogl_texture_error_domain ())
 
 
 /**
@@ -98,7 +98,7 @@ typedef enum {
   COGL_TEXTURE_TYPE_RECTANGLE
 } CoglTextureType;
 
-GQuark cogl_texture_error_quark (void);
+uint32_t cogl_texture_error_domain (void);
 
 /**
  * cogl_texture_new_with_size:
@@ -132,7 +132,7 @@ cogl_texture_new_with_size (unsigned int width,
  *    have non-premultiplied source data and are going to adjust the blend
  *    mode (see cogl_material_set_blend()) or use the data for something
  *    other than straight blending.
- * @error: return location for a #GError or %NULL
+ * @error: return location for a #CoglError or %NULL
  *
  * Creates a #CoglTexture from an image file.
  *
@@ -144,7 +144,7 @@ CoglTexture *
 cogl_texture_new_from_file (const char       *filename,
                             CoglTextureFlags   flags,
                             CoglPixelFormat    internal_format,
-                            GError           **error);
+                            CoglError           **error);
 
 /**
  * cogl_texture_new_from_data:

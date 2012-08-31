@@ -85,7 +85,7 @@ cogl_is_texture_rectangle (void *object);
  * @width: The texture width to allocate
  * @height: The texture height to allocate
  * @internal_format: The desired internal texture format
- * @error: An optional GError pointer for reporting exceptions
+ * @error: An optional CoglError pointer for reporting exceptions
  *
  * Allocates a new #CoglTextureRectangle texture with a given @width, @height
  * and @internal_format. This texture is a low-level texture that
@@ -111,14 +111,14 @@ cogl_texture_rectangle_new_with_size (CoglContext *ctx,
                                       int width,
                                       int height,
                                       CoglPixelFormat internal_format,
-                                      GError **error);
+                                      CoglError **error);
 
 /**
  * cogl_texture_rectangle_new_from_bitmap:
  * @bitmap: A #CoglBitmap
  * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
  *    texture
- * @error: A return location for a GError or %NULL
+ * @error: A return location for a CoglError or %NULL
  *
  * Allocates a new #CoglTextureRectangle texture which will be
  * initialized with the pixel data from @bitmap. Internally the data
@@ -143,7 +143,7 @@ cogl_texture_rectangle_new_with_size (CoglContext *ctx,
 CoglTextureRectangle *
 cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bitmap,
                                         CoglPixelFormat internal_format,
-                                        GError **error);
+                                        CoglError **error);
 
 G_END_DECLS
 

@@ -32,6 +32,7 @@
 #include "cogl-context-private.h"
 #include "cogl-feature-private.h"
 #include "cogl-renderer-private.h"
+#include "cogl-error-private.h"
 
 static CoglBool
 _cogl_driver_pixel_format_from_gl_internal (CoglContext *context,
@@ -258,14 +259,14 @@ _cogl_get_gl_version (CoglContext *ctx,
 
 static CoglBool
 check_gl_version (CoglContext *ctx,
-                  GError **error)
+                  CoglError **error)
 {
   int major, minor;
   const char *gl_extensions;
 
   if (!_cogl_get_gl_version (ctx, &major, &minor))
     {
-      g_set_error (error,
+      _cogl_set_error (error,
                    COGL_DRIVER_ERROR,
                    COGL_DRIVER_ERROR_UNKNOWN_VERSION,
                    "The OpenGL version could not be determined");
@@ -282,7 +283,7 @@ check_gl_version (CoglContext *ctx,
      extension */
   if (!_cogl_check_extension ("GL_ARB_multitexture", gl_extensions))
     {
-      g_set_error (error,
+      _cogl_set_error (error,
                    COGL_DRIVER_ERROR,
                    COGL_DRIVER_ERROR_INVALID_VERSION,
                    "The OpenGL driver is missing "
@@ -293,7 +294,7 @@ check_gl_version (CoglContext *ctx,
   /* OpenGL 1.2 is required */
   if (!COGL_CHECK_GL_VERSION (major, minor, 1, 2))
     {
-      g_set_error (error,
+      _cogl_set_error (error,
                    COGL_DRIVER_ERROR,
                    COGL_DRIVER_ERROR_INVALID_VERSION,
                    "The OpenGL version of your driver (%i.%i) "
@@ -307,7 +308,7 @@ check_gl_version (CoglContext *ctx,
 
 static CoglBool
 _cogl_driver_update_features (CoglContext *ctx,
-                              GError **error)
+                              CoglError **error)
 {
   CoglPrivateFeatureFlags private_flags = 0;
   CoglFeatureFlags flags = 0;

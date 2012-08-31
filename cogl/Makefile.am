@@ -105,6 +105,7 @@ cogl_experimental_h = \
 	$(srcdir)/cogl-buffer.h 		\
 	$(srcdir)/cogl-pixel-buffer.h		\
 	$(srcdir)/cogl-version.h		\
+	$(srcdir)/cogl-error.h			\
 	$(NULL)
 
 cogl_nodist_experimental_h = \
@@ -354,6 +355,8 @@ cogl_sources_c = \
 	$(srcdir)/cogl-magazine.c			\
 	$(srcdir)/cogl-gles2-context-private.h		\
 	$(srcdir)/cogl-gles2-context.c			\
+	$(srcdir)/cogl-error-private.h			\
+	$(srcdir)/cogl-error.c				\
 	$(NULL)
 
 if USE_GLIB

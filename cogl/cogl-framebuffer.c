@@ -48,6 +48,7 @@
 #include "cogl-private.h"
 #include "cogl-primitives-private.h"
 #include "cogl-path-private.h"
+#include "cogl-error-private.h"
 
 #ifndef GL_FRAMEBUFFER
 #define GL_FRAMEBUFFER		0x8D40
@@ -135,8 +136,8 @@ COGL_OBJECT_DEFINE_WITH_CODE (Offscreen, offscreen,
  * abstract class manually.
  */
 
-GQuark
-cogl_framebuffer_error_quark (void)
+uint32_t
+cogl_framebuffer_error_domain (void)
 {
   return g_quark_from_static_string ("cogl-framebuffer-error-quark");
 }
@@ -1032,7 +1033,7 @@ _cogl_framebuffer_try_creating_gl_fbo (CoglContext *ctx,
 
 static CoglBool
 _cogl_offscreen_allocate (CoglOffscreen *offscreen,
-                          GError **error)
+                          CoglError **error)
 {
   CoglFramebuffer *fb = COGL_FRAMEBUFFER (offscreen);
   CoglContext *ctx = fb->context;
@@ -1149,16 +1150,16 @@ _cogl_offscreen_allocate (CoglOffscreen *offscreen,
     }
   else
     {
-      g_set_error (error, COGL_FRAMEBUFFER_ERROR,
-                   COGL_FRAMEBUFFER_ERROR_ALLOCATE,
-                   "Failed to create an OpenGL framebuffer object");
+      _cogl_set_error (error, COGL_FRAMEBUFFER_ERROR,
+                       COGL_FRAMEBUFFER_ERROR_ALLOCATE,
+                       "Failed to create an OpenGL framebuffer object");
       return FALSE;
     }
 }
 
 CoglBool
 cogl_framebuffer_allocate (CoglFramebuffer *framebuffer,
-                           GError **error)
+                           CoglError **error)
 {
   CoglOnscreen *onscreen = COGL_ONSCREEN (framebuffer);
   const CoglWinsysVtable *winsys = _cogl_framebuffer_get_winsys (framebuffer);

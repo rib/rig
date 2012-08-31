@@ -157,8 +157,8 @@ cogl_flush (void)
     _cogl_framebuffer_flush_journal (l->data);
 }
 
-GQuark
-_cogl_driver_error_quark (void)
+uint32_t
+_cogl_driver_error_domain (void)
 {
   return g_quark_from_static_string ("cogl-driver-error-quark");
 }
@@ -203,10 +203,10 @@ _cogl_transform_point (const CoglMatrix *matrix_mv,
 #undef VIEWPORT_TRANSFORM_X
 #undef VIEWPORT_TRANSFORM_Y
 
-GQuark
-_cogl_error_quark (void)
+uint32_t
+_cogl_system_error_domain (void)
 {
-  return g_quark_from_static_string ("cogl-error-quark");
+  return g_quark_from_static_string ("cogl-system-error-quark");
 }
 
 void

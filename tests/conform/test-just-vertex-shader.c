@@ -29,7 +29,7 @@ paint (TestState *state)
 {
   CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
   CoglTexture *tex;
-  GError *error = NULL;
+  CoglError *error = NULL;
   CoglSnippet *snippet;
 
   cogl_framebuffer_clear4f (test_fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);

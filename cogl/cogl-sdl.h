@@ -47,7 +47,7 @@ G_BEGIN_DECLS
  * this:
  * |[
  * MyAppData data;
- * GError *error = NULL;
+ * CoglError *error = NULL;
  *
  * data.ctx = cogl_sdl_context_new (SDL_USEREVENT, &error);
  * if (!data.ctx)
@@ -90,7 +90,7 @@ G_BEGIN_DECLS
  * cogl_sdl_context_new:
  * @type: An SDL user event type between %SDL_USEREVENT and
  *        %SDL_NUMEVENTS - %1
- * @error: A GError return location.
+ * @error: A CoglError return location.
  *
  * This is a convenience function for creating a new #CoglContext for
  * use with SDL and specifying what SDL user event type Cogl can use
@@ -123,7 +123,7 @@ G_BEGIN_DECLS
  * Stability: unstable
  */
 CoglContext *
-cogl_sdl_context_new (int type, GError **error);
+cogl_sdl_context_new (int type, CoglError **error);
 
 /**
  * cogl_sdl_renderer_set_event_type:
