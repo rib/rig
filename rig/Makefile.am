@@ -49,6 +49,7 @@ source_h = \
     rig-split-view.h \
     rig-stack.h \
     rig-entry.h \
+    rig-gaussian-blurrer.h \
     rig-downsampler.h
 
 librig_la_SOURCES = \
@@ -102,6 +103,7 @@ librig_la_SOURCES = \
     rig-split-view.c \
     rig-stack.c \
     rig-entry.c \
+    rig-gaussian-blurrer.c \
     rig-downsampler.c \
     $(source_h)
 

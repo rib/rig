@@ -35,6 +35,7 @@
 #include "rig-stack.h"
 #include "rig-entry.h"
 #include "rig-downsampler.h"
+#include "rig-gaussian-blurrer.h"
 
 /* entity/components system */
 #include "rig-entity.h"
