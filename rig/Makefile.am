@@ -48,7 +48,8 @@ source_h = \
     rig-bevel.h \
     rig-split-view.h \
     rig-stack.h \
-    rig-entry.h
+    rig-entry.h \
+    rig-downsampler.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -101,6 +102,7 @@ librig_la_SOURCES = \
     rig-split-view.c \
     rig-stack.c \
     rig-entry.c \
+    rig-downsampler.c \
     $(source_h)
 
 if !HAVE_ANDROID

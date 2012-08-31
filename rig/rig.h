@@ -34,6 +34,7 @@
 #include "rig-split-view.h"
 #include "rig-stack.h"
 #include "rig-entry.h"
+#include "rig-downsampler.h"
 
 /* entity/components system */
 #include "rig-entity.h"
