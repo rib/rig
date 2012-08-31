@@ -357,6 +357,8 @@ cogl_sources_c = \
 	$(srcdir)/cogl-gles2-context.c			\
 	$(srcdir)/cogl-error-private.h			\
 	$(srcdir)/cogl-error.c				\
+	$(srcdir)/cogl-framebuffer-gl-private.h		\
+	$(srcdir)/cogl-framebuffer-gl.c			\
 	$(NULL)
 
 if USE_GLIB
