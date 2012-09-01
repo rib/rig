@@ -150,62 +150,103 @@ typedef struct _CoglTextureVertex       CoglTextureVertex;
 
 /* Enum declarations */
 
-#define COGL_A_BIT              (1 << 4)
-#define COGL_BGR_BIT            (1 << 5)
-#define COGL_AFIRST_BIT         (1 << 6)
-#define COGL_PREMULT_BIT        (1 << 7)
-#define COGL_DEPTH_BIT          (1 << 8)
-#define COGL_STENCIL_BIT        (1 << 9)
+/**
+ * COGL_BITWISE_BIT:
+ *
+ * A flag that can be masked with a #CoglPixelFormat to determine if
+ * the format should be accessed with bitwise operations. If the flag
+ * is set then all of the bytes representing a pixel should
+ * interpreted as a single integer stored in the native endianness of
+ * the CPU. The order of the components in the name of the format
+ * represent the bits within that integer in order of decreasing
+ * significance. For example, the bytes for a pixel in the format
+ * RGB_565 should be interpreted as a 16-bit integer, with the red
+ * component in the most significant 5 bits, green in the next 6 bits
+ * and so on.
+ *
+ * If the flag is not set then each component is byte aligned and is
+ * stored in order of increasing memory addresses. For example, in
+ * RGB_888, there are 24 bits per pixel with the red component stored
+ * in the byte with the lowest address and so on.
+ */
+#define COGL_BITWISE_BIT        (1 << 5)
+
+/**
+ * COGL_A_BIT:
+ *
+ * A flag that can be masked with a #CoglPixelFormat to determine if
+ * the format has an alpha component.
+ */
+#define COGL_A_BIT              (1 << 6)
+
+/**
+ * COGL_BGR_BIT:
+ *
+ * A flag that can be masked with a #CoglPixelFormat to determine if
+ * the color components are ordered Blue, followed by Green followed
+ * by Red.
+ *
+ * (Note: it depends on the %COGL_BITWISE_BIT flag whether the order
+ * relates to the order of bits or to memory address order)
+ */
+#define COGL_BGR_BIT            (1 << 7)
+
+/**
+ * COGL_AFIRST_BIT:
+ *
+ * A flag that can be masked with a #CoglPixelFormat to determine if
+ * an alpha component is in front of the first color component.
+ *
+ * (Note: it depends on the %COGL_BITWISE_BIT flag whether "first"
+ * means first in terms of bits or first in memory address order)
+ */
+#define COGL_AFIRST_BIT         (1 << 8)
+
+/**
+ * COGL_PREMULT_BIT:
+ *
+ * A flag that can be masked with a #CoglPixelFormat to determine if
+ * it represents a pre-multiplied alpha format.
+ */
+#define COGL_PREMULT_BIT        (1 << 9)
+
+/**
+ * COGL_PIXEL_FORMAT_BPP_MASK:
+ *
+ * Masks out the bytes per pixel for the given format
+ */
+#define COGL_PIXEL_FORMAT_BPP_MASK (0x3f)
+
+/* FIXME: Add a separate CoglInternalFormat enum to handle these */
+#define COGL_DEPTH_BIT          (1 << 10)
+#define COGL_STENCIL_BIT        (1 << 11)
+
+#define COGL_FORMAT_ENUM(X) ((X)<<24)
 
 /* XXX: Notes to those adding new formats here...
  *
  * First this diagram outlines how we allocate the 32bits of a
  * CoglPixelFormat currently...
  *
- *                            6 bits for flags
- *                          |-----|
- *  enum        unused             4 bits for the bytes-per-pixel
- *                                 and component alignment info
- *  |------| |-------------|       |--|
- *  00000000 xxxxxxxx xxxxxxSD PFBA0000
- *                          ^ stencil
- *                           ^ depth
- *                             ^ premult
- *                              ^ alpha first
- *                               ^ bgr order
- *                                ^ has alpha
- *
- * The most awkward part about the formats is how we use the last 4
- * bits to encode the bytes per pixel and component alignment
- * information. Ideally we should have had 3 bits for the bpp and a
- * flag for alignment but we didn't plan for that in advance so we
- * instead use a small lookup table to query the bpp and whether the
- * components are byte aligned or not.
- *
- * The mapping is the following (see discussion on bug #660188):
- *
- * 0     = undefined
- * 1, 8  = 1 bpp (e.g. A_8, G_8)
- * 2     = 3 bpp, aligned (e.g. 888)
- * 3     = 4 bpp, aligned (e.g. 8888)
- * 4-6   = 2 bpp, not aligned (e.g. 565, 4444, 5551)
- * 7     = YUV: undefined bpp, undefined alignment
- * 9     = 2 bpp, aligned
- * 10    = depth, aligned (8, 16, 24, 32, 32f)
- * 11    = undefined
- * 12    = 3 bpp, not aligned
- * 13    = 4 bpp, not aligned (e.g. 2101010)
- * 14-15 = undefined
- *
- * Note: the gap at 10-11 is just because we wanted to maintain that
- * all non-aligned formats have the third bit set in case that's
- * useful later.
+ *                            7 bits for flags
+ *                       |------|
+ *  enum        unused             6 bits for the bytes-per-pixel
+ *  |------| |----------|        |----|
+ *  00000000 xxxxxxxx xxxSDPFB ABxxxxxx
+ *                       ^ stencil
+ *                        ^ depth
+ *                         ^ premult
+ *                          ^ alpha first
+ *                           ^ bgr order
+ *                             ^ has alpha
+ *                              ^ bitwise
+ *                               ^^^^^^ bpp
  *
  * Since we don't want to waste bits adding more and more flags, we'd
  * like to see most new pixel formats that can't be represented
- * uniquely with the existing flags in the least significant byte
+ * uniquely with the existing flags in the least significant bits
  * simply be enumerated with sequential values in the most significant
- * enum byte.
+ * enum byte (though still set the flags as appropriate too).
  *
  * Note: Cogl avoids exposing any padded XRGB or RGBX formats and
  * instead we leave it up to applications to decided whether they
@@ -213,16 +254,14 @@ typedef struct _CoglTextureVertex       CoglTextureVertex;
  * change this policy without good reasoning.
  *
  * So to add a new format:
- * 1) Use the mapping table above to figure out what to but in
- *    the lowest nibble.
- * 2) OR in the COGL_PREMULT_BIT, COGL_AFIRST_BIT, COGL_A_BIT and
- *    COGL_BGR_BIT flags as appropriate.
- * 3) If the result is not yet unique then also combine with an
+ * 1) OR in the COGL_BITWISE_BIT, COGL_A_BIT, COGL_BGR_BIT,
+ *    COGL_AFIRST_BIT and COGL_PREMULT_BIT, flags as appropriate.
+ * 2) If the result is not yet unique then also combine with an
  *    increment of the last sequence number in the most significant
  *    byte.
  *
- * The last sequence number used was 0 (i.e. no formats currently need
- *                                      a sequence number)
+ * The last sequence number used was 2
+ *
  * Update this note whenever a new sequence number is used.
  */
 /**
@@ -232,7 +271,6 @@ typedef struct _CoglTextureVertex       CoglTextureVertex;
  * @COGL_PIXEL_FORMAT_RGB_565: RGB, 16 bits
  * @COGL_PIXEL_FORMAT_RGBA_4444: RGBA, 16 bits
  * @COGL_PIXEL_FORMAT_RGBA_5551: RGBA, 16 bits
- * @COGL_PIXEL_FORMAT_YUV: Not currently supported
  * @COGL_PIXEL_FORMAT_G_8: Single luminance component
  * @COGL_PIXEL_FORMAT_RGB_888: RGB, 24 bits
  * @COGL_PIXEL_FORMAT_BGR_888: BGR, 24 bits
@@ -270,51 +308,47 @@ typedef struct _CoglTextureVertex       CoglTextureVertex;
  * would be in 1-5. Therefore the order in memory depends on the
  * endianness of the system.
  *
- * When uploading a texture %COGL_PIXEL_FORMAT_ANY can be used as the
- * internal format. Cogl will try to pick the best format to use
- * internally and convert the texture data if necessary.
- *
  * Since: 0.8
  */
 typedef enum { /*< prefix=COGL_PIXEL_FORMAT >*/
-  COGL_PIXEL_FORMAT_ANY           = 0,
-  COGL_PIXEL_FORMAT_A_8           = 1 | COGL_A_BIT,
+  COGL_PIXEL_FORMAT_ANY = 0,
+  COGL_PIXEL_FORMAT_A_8 = (1 | COGL_A_BIT),
 
-  COGL_PIXEL_FORMAT_RGB_565       = 4,
-  COGL_PIXEL_FORMAT_RGBA_4444     = 5 | COGL_A_BIT,
-  COGL_PIXEL_FORMAT_RGBA_5551     = 6 | COGL_A_BIT,
-  COGL_PIXEL_FORMAT_YUV           = 7,
-  COGL_PIXEL_FORMAT_G_8           = 8,
+  COGL_PIXEL_FORMAT_RGB_565 = (2 | COGL_BITWISE_BIT),
+  COGL_PIXEL_FORMAT_RGBA_4444 = (2 | COGL_BITWISE_BIT | COGL_A_BIT),
+  COGL_PIXEL_FORMAT_RGBA_4444_PRE = (2 | COGL_PIXEL_FORMAT_RGBA_4444 | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_RGBA_5551 = (2 | COGL_BITWISE_BIT | COGL_A_BIT | COGL_FORMAT_ENUM(1)),
+  COGL_PIXEL_FORMAT_RGBA_5551_PRE = (2 | COGL_PIXEL_FORMAT_RGBA_5551 | COGL_PREMULT_BIT),
 
-  COGL_PIXEL_FORMAT_RGB_888       = 2,
-  COGL_PIXEL_FORMAT_BGR_888       = (2 | COGL_BGR_BIT),
+  COGL_PIXEL_FORMAT_G_8 = 1,
 
-  COGL_PIXEL_FORMAT_RGBA_8888     = (3 | COGL_A_BIT),
-  COGL_PIXEL_FORMAT_BGRA_8888     = (3 | COGL_A_BIT | COGL_BGR_BIT),
-  COGL_PIXEL_FORMAT_ARGB_8888     = (3 | COGL_A_BIT | COGL_AFIRST_BIT),
-  COGL_PIXEL_FORMAT_ABGR_8888     = (3 | COGL_A_BIT | COGL_BGR_BIT | COGL_AFIRST_BIT),
+  COGL_PIXEL_FORMAT_RGB_888 = 3,
+  COGL_PIXEL_FORMAT_BGR_888 = (3 | COGL_BGR_BIT),
 
-  COGL_PIXEL_FORMAT_RGBA_1010102  = (13 | COGL_A_BIT),
-  COGL_PIXEL_FORMAT_BGRA_1010102  = (13 | COGL_A_BIT | COGL_BGR_BIT),
-  COGL_PIXEL_FORMAT_ARGB_2101010  = (13 | COGL_A_BIT | COGL_AFIRST_BIT),
-  COGL_PIXEL_FORMAT_ABGR_2101010  = (13 | COGL_A_BIT | COGL_BGR_BIT | COGL_AFIRST_BIT),
+  COGL_PIXEL_FORMAT_RGBA_8888 = (4 | COGL_A_BIT),
+  COGL_PIXEL_FORMAT_BGRA_8888 = (4 | COGL_A_BIT | COGL_BGR_BIT),
+  COGL_PIXEL_FORMAT_ARGB_8888 = (4 | COGL_A_BIT | COGL_AFIRST_BIT),
+  COGL_PIXEL_FORMAT_ABGR_8888 = (4 | COGL_A_BIT | COGL_BGR_BIT | COGL_AFIRST_BIT),
 
-  COGL_PIXEL_FORMAT_RGBA_8888_PRE = (3 | COGL_A_BIT | COGL_PREMULT_BIT),
-  COGL_PIXEL_FORMAT_BGRA_8888_PRE = (3 | COGL_A_BIT | COGL_PREMULT_BIT | COGL_BGR_BIT),
-  COGL_PIXEL_FORMAT_ARGB_8888_PRE = (3 | COGL_A_BIT | COGL_PREMULT_BIT | COGL_AFIRST_BIT),
-  COGL_PIXEL_FORMAT_ABGR_8888_PRE = (3 | COGL_A_BIT | COGL_PREMULT_BIT | COGL_BGR_BIT | COGL_AFIRST_BIT),
-  COGL_PIXEL_FORMAT_RGBA_4444_PRE = (COGL_PIXEL_FORMAT_RGBA_4444 | COGL_A_BIT | COGL_PREMULT_BIT),
-  COGL_PIXEL_FORMAT_RGBA_5551_PRE = (COGL_PIXEL_FORMAT_RGBA_5551 | COGL_A_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_RGBA_8888_PRE = (4 | COGL_A_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_BGRA_8888_PRE = (4 | COGL_A_BIT | COGL_BGR_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_ARGB_8888_PRE = (4 | COGL_A_BIT | COGL_AFIRST_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_ABGR_8888_PRE = (4 | COGL_A_BIT | COGL_BGR_BIT | COGL_AFIRST_BIT | COGL_PREMULT_BIT),
 
-  COGL_PIXEL_FORMAT_RGBA_1010102_PRE = (COGL_PIXEL_FORMAT_RGBA_1010102 | COGL_PREMULT_BIT),
-  COGL_PIXEL_FORMAT_BGRA_1010102_PRE = (COGL_PIXEL_FORMAT_BGRA_1010102 | COGL_PREMULT_BIT),
-  COGL_PIXEL_FORMAT_ARGB_2101010_PRE = (COGL_PIXEL_FORMAT_ARGB_2101010 | COGL_PREMULT_BIT),
-  COGL_PIXEL_FORMAT_ABGR_2101010_PRE = (COGL_PIXEL_FORMAT_ABGR_2101010 | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_RGBA_1010102 = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2)),
+  COGL_PIXEL_FORMAT_BGRA_1010102 = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_BGR_BIT),
+  COGL_PIXEL_FORMAT_ARGB_2101010 = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_AFIRST_BIT),
+  COGL_PIXEL_FORMAT_ABGR_2101010 = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_BGR_BIT | COGL_AFIRST_BIT),
 
-  COGL_PIXEL_FORMAT_DEPTH_16  = (9 | COGL_DEPTH_BIT),
-  COGL_PIXEL_FORMAT_DEPTH_32  = (3 | COGL_DEPTH_BIT),
+  COGL_PIXEL_FORMAT_RGBA_1010102_PRE = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_BGRA_1010102_PRE = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_BGR_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_ARGB_2101010_PRE = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_AFIRST_BIT | COGL_PREMULT_BIT),
+  COGL_PIXEL_FORMAT_ABGR_2101010_PRE = (4 | COGL_A_BIT | COGL_FORMAT_ENUM(2) | COGL_BGR_BIT | COGL_AFIRST_BIT | COGL_PREMULT_BIT),
 
-  COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8 = (3 | COGL_DEPTH_BIT | COGL_STENCIL_BIT)
+  COGL_PIXEL_FORMAT_DEPTH_16 = (2 | COGL_DEPTH_BIT),
+  COGL_PIXEL_FORMAT_DEPTH_32 = (4 | COGL_DEPTH_BIT),
+
+  COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8 = (4 | COGL_DEPTH_BIT | COGL_STENCIL_BIT)
 } CoglPixelFormat;
 
 /**

@@ -310,7 +310,6 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
     case COGL_PIXEL_FORMAT_DEPTH_32:
     case COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
     case COGL_PIXEL_FORMAT_ANY:
-    case COGL_PIXEL_FORMAT_YUV:
       g_assert_not_reached ();
 
     case COGL_PIXEL_FORMAT_A_8:
