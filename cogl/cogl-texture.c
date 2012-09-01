@@ -534,19 +534,6 @@ cogl_texture_get_format (CoglTexture *texture)
   return texture->vtable->get_format (texture);
 }
 
-unsigned int
-cogl_texture_get_rowstride (CoglTexture *texture)
-{
-  CoglPixelFormat format = cogl_texture_get_format (texture);
-  /* FIXME: This function should go away. It previously just returned
-     the rowstride that was used to upload the data as far as I can
-     tell. This is not helpful */
-
-  /* Just guess at a suitable rowstride */
-  return (_cogl_pixel_format_get_bytes_per_pixel (format)
-          * cogl_texture_get_width (texture));
-}
-
 int
 cogl_texture_get_max_waste (CoglTexture *texture)
 {

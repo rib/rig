@@ -276,38 +276,6 @@ cogl_texture_get_height (CoglTexture *texture);
 CoglPixelFormat
 cogl_texture_get_format (CoglTexture *texture);
 
-
-/**
- * cogl_texture_get_rowstride:
- * @texture a #CoglTexture pointer.
- *
- * Determines the bytes-per-pixel for the #CoglPixelFormat retrieved
- * from cogl_texture_get_format() and multiplies that by the texture's
- * width.
- *
- * <note>It's very unlikely that anyone would need to use this API to
- * query the internal rowstride of a #CoglTexture which can just be
- * considered an implementation detail. Actually it's not even useful
- * internally since underlying drivers are free to use a different
- * format</note>
- *
- * <note>This API is only here for backwards compatibility and
- * shouldn't be used in new code. In particular please don't be
- * mislead to pass the returned value to cogl_texture_get_data() for
- * the rowstride, since you should be passing the rowstride you desire
- * for your destination buffer not the rowstride of the source
- * texture.</note>
- *
- * Return value: The bytes-per-pixel for the current format
- *               multiplied by the texture's width
- *
- * Deprecated: 1.10: There's no replacement for the API but there's
- *                   also no known need for API either. It was just
- *                   a mistake that it was ever published.
- */
-unsigned int
-cogl_texture_get_rowstride (CoglTexture *texture);
-
 /**
  * cogl_texture_get_max_waste:
  * @texture a #CoglTexture pointer.
@@ -366,10 +334,9 @@ cogl_texture_get_gl_texture (CoglTexture *texture,
  *
  * Copies the pixel data from a cogl texture to system memory.
  *
- * <note>Don't pass the value of cogl_texture_get_rowstride() as the
- * @rowstride argument, the rowstride should be the rowstride you
- * want for the destination @data buffer not the rowstride of the
- * source texture</note>
+ * <note>The rowstride should be the rowstride you want for the
+ * destination @data buffer you don't need to try and calculate the
+ * rowstride of the source texture</note>
  *
  * Return value: the size of the texture data in bytes
  */
