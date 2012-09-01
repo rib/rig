@@ -155,9 +155,6 @@ void *
 cogl_object_get_user_data (CoglObject *object,
                            CoglUserDataKey *key);
 
-#define cogl_debug_object_foreach_type \
-  cogl_debug_object_foreach_type_EXP
-
 /**
  * cogl_debug_object_foreach_type:
  * func: A callback function for each type
@@ -174,9 +171,6 @@ cogl_object_get_user_data (CoglObject *object,
 void
 cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
                                 void *user_data);
-
-#define cogl_debug_object_print_instances \
-  cogl_debug_object_print_instances_EXP
 
 /**
  * cogl_debug_object_print_instances:
