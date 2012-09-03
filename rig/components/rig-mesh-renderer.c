@@ -197,17 +197,21 @@ create_primitive_from_vertex_data (RigMeshRenderer *renderer,
 }
 
 static MashData *
-create_ply_primitive (const gchar *filename)
+create_ply_primitive (RigContext *ctx, const gchar *filename)
 {
   MashData *data = mash_data_new ();
   GError *error = NULL;
+  char *full_path = g_build_filename (ctx->assets_location, filename, NULL);
 
-  mash_data_load (data, MASH_DATA_NONE, filename, &error);
+  mash_data_load (data, MASH_DATA_NONE, full_path, &error);
   if (error)
     {
       g_critical ("could not load model %s: %s", filename, error->message);
+      g_free (full_path);
       return NULL;
     }
+
+  g_free (full_path);
 
   return data;
 }
@@ -347,7 +351,7 @@ rig_mesh_renderer_new_from_file (RigContext *ctx,
   renderer = _rig_mesh_renderer_new (ctx);
   renderer->type = RIG_MESH_RENDERER_TYPE_FILE;
   renderer->path = g_strdup (file);
-  renderer->mesh_data = create_ply_primitive (file);
+  renderer->mesh_data = create_ply_primitive (ctx, file);
 
   return renderer;
 }
