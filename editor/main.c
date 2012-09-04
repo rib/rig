@@ -1282,10 +1282,10 @@ undo_journal_copy_property_and_log (UndoJournal *journal,
        undo_journal_find_recent_property_change (journal, target_prop)))
     {
       prop_change = &undo_redo->d.prop_change;
-      rig_boxed_destroy (&prop_change->value1);
       /* NB: when we are merging then the existing operation is an
        * inverse of a normal move operation so the new move location
        * goes into value0... */
+      rig_boxed_destroy (&prop_change->value0);
       rig_property_box (source_prop, &prop_change->value0);
       rig_property_set_boxed (&journal->data->ctx->property_ctx,
                               target_prop,
