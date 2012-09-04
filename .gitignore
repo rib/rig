@@ -43,5 +43,6 @@ stamp-h1
 stamp-marshal
 xmldocs.make
 
+/examples/editor/editor
 /examples/entities
-/editor/rig-editor
+/editor/rig
