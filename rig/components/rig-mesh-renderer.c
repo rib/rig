@@ -420,7 +420,7 @@ rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
   if (stride)
     *stride = renderer->stride;
 
-  if (*n_vertices)
+  if (n_vertices)
     *n_vertices = renderer->n_vertices;
 
   return renderer->vertex_data;

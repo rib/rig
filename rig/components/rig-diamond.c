@@ -380,7 +380,7 @@ rig_diamond_get_vertex_data (RigDiamond *diamond,
   if (stride)
     *stride = sizeof (CoglVertexP3);
 
-  if (*n_vertices)
+  if (n_vertices)
     *n_vertices = 6;
 
   return diamond->pick_vertices;
