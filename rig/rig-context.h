@@ -292,36 +292,6 @@ rig_button_add_on_click_callback (RigButton *button,
                                   void *user_data,
                                   RigClosureDestroyCallback destroy_cb);
 
-typedef struct _RigToggle RigToggle;
-#define RIG_TOGGLE(X) ((RigToggle *)X)
-
-extern RigType rig_toggle_type;
-
-RigToggle *
-rig_toggle_new (RigContext *ctx,
-                const char *label);
-
-typedef void (*RigToggleCallback) (RigToggle *toggle,
-                                   CoglBool value,
-                                   void *user_data);
-
-RigClosure *
-rig_toggle_add_on_toggle_callback (RigToggle *toggle,
-                                   RigToggleCallback callback,
-                                   void *user_data,
-                                   RigClosureDestroyCallback destroy_cb);
-
-void
-rig_toggle_set_enabled (RigToggle *toggle,
-                        CoglBool enabled);
-
-void
-rig_toggle_set_state (RigToggle *toggle,
-                      CoglBool state);
-
-RigProperty *
-rig_toggle_get_enabled_property (RigToggle *toggle);
-
 CoglTexture *
 _rig_load_texture (RigContext *ctx, const char *filename, GError **error);
 

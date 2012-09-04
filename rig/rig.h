@@ -36,6 +36,7 @@
 #include "rig-entry.h"
 #include "rig-downsampler.h"
 #include "rig-gaussian-blurrer.h"
+#include "rig-toggle.h"
 
 /* entity/components system */
 #include "rig-entity.h"
