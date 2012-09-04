@@ -1359,13 +1359,16 @@ _rig_toggle_get_preferred_width (RigObject *object,
                                  float *natural_width_p)
 {
   RigToggle *toggle = RIG_TOGGLE (object);
+  PangoRectangle logical_rect;
+  float width;
 
-  /* FIXME */
+  pango_layout_get_pixel_extents (toggle->label, NULL, &logical_rect);
+  width = logical_rect.width + RIG_TOGGLE_BOX_WIDTH + RIG_TOGGLE_BOX_RIGHT_PAD;
 
   if (min_width_p)
-    *min_width_p = toggle->width;
+    *min_width_p = width;
   if (natural_width_p)
-    *natural_width_p = toggle->width;
+    *natural_width_p = width;
 }
 
 static void
@@ -1375,13 +1378,16 @@ _rig_toggle_get_preferred_height (RigObject *object,
                                   float *natural_height_p)
 {
   RigToggle *toggle = RIG_TOGGLE (object);
+  PangoRectangle logical_rect;
+  float height;
 
-  /* FIXME */
+  pango_layout_get_pixel_extents (toggle->label, NULL, &logical_rect);
+  height = MAX (logical_rect.height, RIG_TOGGLE_BOX_WIDTH);
 
   if (min_height_p)
-    *min_height_p = toggle->height;
+    *min_height_p = height;
   if (natural_height_p)
-    *natural_height_p = toggle->height;
+    *natural_height_p = height;
 }
 
 static RigSizableVTable _rig_toggle_sizable_vtable = {
