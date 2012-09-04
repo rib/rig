@@ -229,7 +229,6 @@ struct _Data
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
 
-  CoglPipeline *root_pipeline;
   CoglPipeline *default_pipeline;
 
   CoglPipeline *dof_pipeline_template;
@@ -2369,7 +2368,6 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
               CoglPipeline *template = rig_diamond_slice_get_pipeline_template (slice);
               CoglPipeline *material_pipeline = rig_material_get_pipeline (material);
               CoglPipeline *pipeline = cogl_pipeline_copy (template);
-              //CoglPipeline *pipeline = cogl_pipeline_copy (data->root_pipeline);
               //CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
               /* FIXME: we should be combining the material and
@@ -4465,86 +4463,6 @@ data_onscreen_resize (CoglOnscreen *onscreen,
   allocate (data);
 }
 
-CoglPipeline *
-create_diffuse_specular_material (void)
-{
-  CoglPipeline *pipeline;
-  CoglSnippet *snippet;
-  CoglDepthState depth_state;
-
-  pipeline = cogl_pipeline_new (rig_cogl_context);
-  cogl_pipeline_set_color4f (pipeline, 0.8f, 0.8f, 0.8f, 1.f);
-
-  /* enable depth testing */
-  cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
-  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
-
-  /* set up our vertex shader */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-
-      /* definitions */
-      "uniform mat4 light_shadow_matrix;\n"
-      "uniform mat3 normal_matrix;\n"
-      "varying vec3 normal_direction, eye_direction;\n"
-      "varying vec4 shadow_coords;\n",
-
-      "normal_direction = normalize(normal_matrix * cogl_normal_in);\n"
-      "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
-
-      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n"
-      "                cogl_position_in;\n"
-);
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
-
-  /* and fragment shader */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-      /* definitions */
-      "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-      "uniform vec3 light0_direction_norm;\n"
-      "varying vec3 normal_direction, eye_direction;\n",
-
-      /* post */
-      NULL);
-
-  cogl_snippet_set_replace (snippet,
-      "vec4 final_color = light0_ambient * cogl_color_in;\n"
-
-      " vec3 L = light0_direction_norm;\n"
-      " vec3 N = normalize(normal_direction);\n"
-
-      "float lambert = dot(N, L);\n"
-
-      "if (lambert > 0.0)\n"
-      "{\n"
-      "  final_color += cogl_color_in * light0_diffuse * lambert;\n"
-
-      "  vec3 E = normalize(eye_direction);\n"
-      "  vec3 R = reflect (-L, N);\n"
-      "  float specular = pow (max(dot(R, E), 0.0),\n"
-      "                        2.);\n"
-      "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
-      "}\n"
-
-      "shadow_coords_d = shadow_coords / shadow_coords.w;\n"
-      "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, cogl_tex_coord_in[0]);\n"
-      "float distance_from_light = cogl_texel7.z + 0.0005;\n"
-      "float shadow = 1.0;\n"
-      "if (shadow_coords.w > 0.0 && distance_from_light < shadow_coords_d.z)\n"
-      "    shadow = 0.5;\n"
-
-      "cogl_color_out = shadow * final_color;\n"
-  );
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
-
-  return pipeline;
-}
-
-
 static void
 camera_viewport_binding_cb (RigProperty *property, void *user_data)
 {
@@ -4590,8 +4508,6 @@ test_init (RigShell *shell, void *user_data)
   char *full_path;
   GError *error = NULL;
   CoglTexture2D *color_buffer;
-  CoglPipeline *root_pipeline;
-  CoglSnippet *snippet;
   RigColor color;
   RigMeshRenderer *mesh;
   RigMaterial *material;
@@ -4658,24 +4574,6 @@ test_init (RigShell *shell, void *user_data)
   if (data->shadow_fb == NULL)
     g_critical ("could not create offscreen buffer");
 
-  /* Hook the shadow sampling */
-  root_pipeline = create_diffuse_specular_material ();
-  cogl_pipeline_set_layer_texture (root_pipeline, 7, data->shadow_map);
-
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
-                              /* declarations */
-                              "varying vec4 shadow_coords;\n"
-                              "vec4 shadow_coords_d;\n",
-                              /* post */
-                              "");
-
-  cogl_snippet_set_replace (snippet,
-                            "cogl_texel = texture2D(cogl_sampler7, shadow_coords_d.st);\n");
-
-  cogl_pipeline_add_layer_snippet (root_pipeline, 7, snippet);
-  cogl_object_unref (snippet);
-
-  data->root_pipeline = root_pipeline;
   data->default_pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
   /*
@@ -4879,7 +4777,6 @@ test_init (RigShell *shell, void *user_data)
   rig_light_set_diffuse (light, &color);
   rig_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
   rig_light_set_specular (light, &color);
-  rig_light_add_pipeline (light, root_pipeline);
 
   rig_entity_add_component (data->light, light);
 
