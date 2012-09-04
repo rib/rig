@@ -43,6 +43,7 @@ source_h = \
     rig-paintable.h \
     rig-drop-down.h \
     rig-inspector.h \
+    rig-prop-inspector.h \
     rig-closure.h \
     rig-asset.h \
     rig-bevel.h \
@@ -98,6 +99,7 @@ librig_la_SOURCES = \
     rig-paintable.c \
     rig-drop-down.c \
     rig-inspector.c \
+    rig-prop-inspector.c \
     rig-closure.c \
     rig-asset.c \
     rig-bevel.c \

@@ -27,6 +27,7 @@
 
 #include "rig.h"
 #include "rig-inspector.h"
+#include "rig-prop-inspector.h"
 #include "rig-vec3-slider.h"
 #include "rig-number-slider.h"
 #include "rig-drop-down.h"
@@ -319,172 +320,9 @@ _rig_inspector_init_type (void)
                           &_rig_inspector_sizable_vtable);
 }
 
-static RigObject *
-rig_inspector_create_control_for_property (RigContext *context,
-                                           RigObject *object,
-                                           RigProperty *prop,
-                                           RigProperty **control_prop)
-{
-  const RigPropertySpec *spec = prop->spec;
-  const char *name;
-  RigText *label;
-
-  if (spec->nick)
-    name = spec->nick;
-  else
-    name = spec->name;
-
-  switch ((RigPropertyType) spec->type)
-    {
-    case RIG_PROPERTY_TYPE_BOOLEAN:
-      {
-        RigToggle *toggle = rig_toggle_new (context, name);
-
-        *control_prop = rig_introspectable_lookup_property (toggle, "state");
-        rig_property_copy_value (&context->property_ctx,
-                                 *control_prop,
-                                 prop);
-
-        return toggle;
-      }
-
-    case RIG_PROPERTY_TYPE_VEC3:
-      {
-        RigVec3Slider *slider = rig_vec3_slider_new (context);
-        float min = -G_MAXFLOAT, max = G_MAXFLOAT;
-
-        rig_vec3_slider_set_name (slider, name);
-
-        if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
-          {
-            const RigPropertyValidationVec3 *validation =
-              &spec->validation.vec3_range;
-
-            min = validation->min;
-            max = validation->max;
-          }
-
-        rig_vec3_slider_set_min_value (slider, min);
-        rig_vec3_slider_set_max_value (slider, max);
-
-        rig_vec3_slider_set_decimal_places (slider, 2);
-
-        *control_prop = rig_introspectable_lookup_property (slider, "value");
-        rig_property_copy_value (&context->property_ctx,
-                                 *control_prop,
-                                 prop);
-
-        return slider;
-      }
-
-    case RIG_PROPERTY_TYPE_FLOAT:
-    case RIG_PROPERTY_TYPE_INTEGER:
-      {
-        RigNumberSlider *slider = rig_number_slider_new (context);
-        float min = -G_MAXFLOAT, max = G_MAXFLOAT;
-
-        rig_number_slider_set_name (slider, name);
-
-        if (spec->type == RIG_PROPERTY_TYPE_INTEGER)
-          {
-            rig_number_slider_set_decimal_places (slider, 0);
-            rig_number_slider_set_step (slider, 1.0);
-
-            if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
-              {
-                const RigPropertyValidationFloat *validation =
-                  &spec->validation.float_range;
-
-                min = validation->min;
-                max = validation->max;
-              }
-          }
-        else
-          {
-            rig_number_slider_set_decimal_places (slider, 2);
-            rig_number_slider_set_step (slider, 0.1);
-
-            if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
-              {
-                const RigPropertyValidationInteger *validation =
-                  &spec->validation.int_range;
-
-                min = validation->min;
-                max = validation->max;
-              }
-          }
-
-        rig_number_slider_set_min_value (slider, min);
-        rig_number_slider_set_max_value (slider, max);
-
-        *control_prop = rig_introspectable_lookup_property (slider, "value");
-
-        if (spec->type == RIG_PROPERTY_TYPE_INTEGER)
-          {
-            int value = rig_property_get_integer (prop);
-            rig_number_slider_set_value (slider, value);
-          }
-        else
-          rig_property_copy_value (&context->property_ctx,
-                                   *control_prop,
-                                   prop);
-
-        return slider;
-      }
-
-    case RIG_PROPERTY_TYPE_ENUM:
-      /* If the enum isn't validated then we can't get the value
-       * names so we can't make a useful control */
-      if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
-        {
-          RigDropDown *drop = rig_drop_down_new (context);
-          int value = rig_property_get_enum (prop);
-          int n_values, i;
-          const RigUIEnum *ui_enum = spec->validation.ui_enum;
-          RigDropDownValue *values;
-
-          for (n_values = 0; ui_enum->values[n_values].nick; n_values++);
-
-          values = g_alloca (sizeof (RigDropDownValue) * n_values);
-
-          for (i = 0; i < n_values; i++)
-            {
-              values[i].name = (ui_enum->values[i].blurb ?
-                                ui_enum->values[i].blurb :
-                                ui_enum->values[i].nick);
-              values[i].value = ui_enum->values[i].value;
-            }
-
-          rig_drop_down_set_values_array (drop, values, n_values);
-          rig_drop_down_set_value (drop, value);
-
-          *control_prop = rig_introspectable_lookup_property (drop, "value");
-
-          return drop;
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  label = rig_text_new (context);
-
-  rig_text_set_text (label, name);
-
-  *control_prop = NULL;
-
-  return label;
-}
-
-typedef struct
-{
-  RigInspector *inspector;
-  GArray *props;
-} GetPropertyState;
-
 static void
 property_changed_cb (RigProperty *target_prop,
+                     RigProperty *source_prop,
                      void *user_data)
 {
   RigInspectorPropertyData *prop_data = user_data;
@@ -493,36 +331,55 @@ property_changed_cb (RigProperty *target_prop,
   g_return_if_fail (target_prop == prop_data->target_prop);
 
   inspector->property_changed_cb (target_prop,
-                                  prop_data->source_prop,
+                                  source_prop,
                                   inspector->user_data);
 }
 
 static void
-add_property (RigProperty *prop,
-              void *user_data)
+get_all_properties_cb (RigProperty *prop,
+                       void *user_data)
 {
-  GetPropertyState *state = user_data;
-  RigInspector *inspector = state->inspector;
-  RigProperty *control_prop;
-  RigObject *control;
+  GArray *array = user_data;
+  RigInspectorPropertyData *prop_data;
 
-  control = rig_inspector_create_control_for_property (inspector->context,
-                                                       inspector->object,
-                                                       prop,
-                                                       &control_prop);
+  g_array_set_size (array, array->len + 1);
+  prop_data = &g_array_index (array,
+                              RigInspectorPropertyData,
+                              array->len - 1);
+  prop_data->target_prop = prop;
+}
 
-  if (control)
+static void
+create_property_controls (RigInspector *inspector)
+{
+  GArray *props;
+  int i;
+
+  props = g_array_new (FALSE, /* not zero terminated */
+                       FALSE, /* don't clear */
+                       sizeof (RigInspectorPropertyData));
+
+  rig_introspectable_foreach_property (inspector->object,
+                                       get_all_properties_cb,
+                                       props);
+
+  inspector->n_props = props->len;
+  inspector->n_rows = ((inspector->n_props + RIG_INSPECTOR_N_COLUMNS - 1) /
+                       RIG_INSPECTOR_N_COLUMNS);
+  inspector->prop_data = ((RigInspectorPropertyData *)
+                          g_array_free (props, FALSE));
+
+  for (i = 0; i < inspector->n_props; i++)
     {
-      RigInspectorPropertyData *prop_data;
+      RigInspectorPropertyData *prop_data = inspector->prop_data + i;
+      RigObject *control;
 
-      g_array_set_size (state->props, state->props->len + 1);
-      prop_data = &g_array_index (state->props,
-                                  RigInspectorPropertyData,
-                                  state->props->len - 1);
+      control = rig_prop_inspector_new (inspector->context,
+                                        prop_data->target_prop,
+                                        property_changed_cb,
+                                        prop_data);
 
       prop_data->control = control;
-      prop_data->source_prop = control_prop;
-      prop_data->target_prop = prop;
       prop_data->inspector = inspector;
 
       prop_data->transform = rig_transform_new (inspector->context, NULL);
@@ -539,8 +396,6 @@ rig_inspector_new (RigContext *context,
 {
   RigInspector *inspector = g_slice_new0 (RigInspector);
   static CoglBool initialized = FALSE;
-  GetPropertyState state;
-  int i;
 
   if (initialized == FALSE)
     {
@@ -561,35 +416,7 @@ rig_inspector_new (RigContext *context,
   rig_paintable_init (RIG_OBJECT (inspector));
   rig_graphable_init (RIG_OBJECT (inspector));
 
-  state.inspector = inspector;
-  state.props = g_array_new (FALSE, /* not zero terminated */
-                             FALSE, /* don't clear */
-                             sizeof (RigInspectorPropertyData));
-
-  rig_introspectable_foreach_property (object,
-                                       add_property,
-                                       &state);
-
-
-  inspector->n_props = state.props->len;
-  inspector->n_rows = ((inspector->n_props + RIG_INSPECTOR_N_COLUMNS - 1) /
-                       RIG_INSPECTOR_N_COLUMNS);
-  inspector->prop_data = ((RigInspectorPropertyData *)
-                          g_array_free (state.props, FALSE));
-
-#if 0
-  for (i = 0; i < inspector->n_props; i++)
-    {
-      RigInspectorPropertyData *data = inspector->prop_data + i;
-
-      if (data->source_prop && data->target_prop->binding == NULL)
-        rig_property_set_binding (data->target_prop,
-                                  property_changed_cb,
-                                  data,
-                                  data->source_prop,
-                                  NULL);
-    }
-#endif
+  create_property_controls (inspector);
 
   rig_inspector_set_size (inspector, 10, 10);
 
