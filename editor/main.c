@@ -5592,6 +5592,8 @@ asset_input_cb (RigInputRegion *region,
           data->selected_entity = entity;
           rig_graphable_add_child (data->scene, entity);
 
+          update_inspector (data);
+
           rig_shell_queue_redraw (data->ctx->shell);
           return RIG_INPUT_EVENT_STATUS_HANDLED;
         }
