@@ -8,12 +8,14 @@ void
 rig_property_context_init (RigPropertyContext *context)
 {
   context->prop_update_stack = rig_memory_stack_new (4096);
+  rig_list_init (&context->animated_changed_cb_list);
 }
 
 void
 rig_property_context_destroy (RigPropertyContext *context)
 {
   rig_memory_stack_free (context->prop_update_stack);
+  rig_closure_list_disconnect_all (&context->animated_changed_cb_list);
 }
 
 void
@@ -27,6 +29,7 @@ rig_property_init (RigProperty *property,
   property->object = object;
   property->queued_count = 0;
   property->magic_marker = 0;
+  property->animated = FALSE;
 }
 
 static void
@@ -102,6 +105,23 @@ rig_property_copy_value (RigPropertyContext *ctx,
     }
 
   g_warn_if_reached ();
+}
+
+void
+rig_property_set_animated (RigPropertyContext *context,
+                           RigProperty *property,
+                           CoglBool value)
+{
+  g_return_if_fail (property->spec->animatable);
+
+  if (value != property->animated)
+    {
+      property->animated = value;
+
+      rig_closure_list_invoke (&context->animated_changed_cb_list,
+                               RigPropertyAnimatedChangedCb,
+                               property);
+    }
 }
 
 static void

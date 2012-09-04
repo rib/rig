@@ -92,7 +92,8 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .setter = rig_entity_set_position,
     .nick = "Position",
     .blurb = "The entity's position",
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "rotation",
@@ -101,7 +102,8 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .setter = rig_entity_set_rotation,
     .nick = "Rotation",
     .blurb = "The entity's rotation",
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "scale",
@@ -110,7 +112,8 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .setter = rig_entity_set_scale,
     .nick = "Scale",
     .blurb = "The entity's uniform scale factor",
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "cast-shadow",

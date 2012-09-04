@@ -82,7 +82,8 @@ static RigPropertySpec _rig_camera_prop_specs[] = {
     .setter = rig_camera_set_field_of_view,
     .flags = RIG_PROPERTY_FLAG_READWRITE |
       RIG_PROPERTY_FLAG_VALIDATE,
-    .validation = { .int_range = { .min = 1, .max = 135}}
+    .validation = { .int_range = { .min = 1, .max = 135}},
+    .animatable = TRUE
   },
   {
     .name = "near",
@@ -90,7 +91,8 @@ static RigPropertySpec _rig_camera_prop_specs[] = {
     .type = RIG_PROPERTY_TYPE_FLOAT,
     .getter = rig_camera_get_near_plane,
     .setter = rig_camera_set_near_plane,
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "far",
@@ -98,7 +100,8 @@ static RigPropertySpec _rig_camera_prop_specs[] = {
     .type = RIG_PROPERTY_TYPE_FLOAT,
     .getter = rig_camera_get_far_plane,
     .setter = rig_camera_set_far_plane,
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "background_color",
@@ -106,7 +109,8 @@ static RigPropertySpec _rig_camera_prop_specs[] = {
     .type = RIG_PROPERTY_TYPE_COLOR,
     .getter = rig_camera_get_background_color,
     .setter = rig_camera_set_background_color,
-    .flags = RIG_PROPERTY_FLAG_READWRITE
+    .flags = RIG_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   /* FIXME: Figure out how to expose the orthographic coordinates as
    * properties? */

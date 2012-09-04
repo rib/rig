@@ -8,10 +8,15 @@
 #include "rig-memory-stack.h"
 #include "rig-types.h"
 #include "rig-object.h"
+#include "rig-closure.h"
 
 typedef struct _RigPropertyContext
 {
   RigMemoryStack *prop_update_stack;
+
+  /* List of callbacks to invoke whenever any property changes its
+   * animated flag */
+  RigList animated_changed_cb_list;
 } RigPropertyContext;
 
 typedef enum _RigPropertyType
@@ -35,6 +40,9 @@ typedef struct _RigProperty RigProperty;
 
 typedef void (*RigPropertyUpdateCallback) (RigProperty *property,
                                            void *user_data);
+
+typedef void (*RigPropertyAnimatedChangedCb) (RigProperty *property,
+                                              void *user_data);
 
 typedef union _RigPropertyDefault
 {
@@ -140,6 +148,8 @@ typedef struct _RigPropertySpec
 
   unsigned int type:16;
   unsigned int is_ui_property:1;
+  /* Whether this property is allowed to be animatable or not */
+  unsigned int animatable:1;
 } RigPropertySpec;
 
 typedef void (*RigBindingCallback) (RigProperty *property, void *user_data);
@@ -169,6 +179,12 @@ struct _RigProperty
   void *object;
   uint16_t queued_count;
   uint16_t magic_marker;
+
+  /* Whether this property being animated. If this is TRUE, then any
+   * changes to the property should be considered to be changes only
+   * to the current frame in the timeline, otherwise it is a change to
+   * the property throughout the entire timeline */
+  CoglBool animated;
 };
 
 #if 0
@@ -413,6 +429,11 @@ void
 rig_property_copy_value (RigPropertyContext *ctx,
                          RigProperty *target_property,
                          RigProperty *source_property);
+
+void
+rig_property_set_animated (RigPropertyContext *context,
+                           RigProperty *property,
+                           CoglBool value);
 
 void
 rig_property_box (RigProperty *property,
