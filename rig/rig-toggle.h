@@ -58,4 +58,34 @@ rig_toggle_set_state (RigToggle *toggle,
 RigProperty *
 rig_toggle_get_enabled_property (RigToggle *toggle);
 
+/**
+ * rig_toggle_set_tick:
+ * @toggle: A #RigToggle
+ * @tick: The new string to display for the tick
+ *
+ * Sets the string used to display the tick character. This defaults to ‘✔’.
+ */
+void
+rig_toggle_set_tick (RigToggle *toggle,
+                     const char *tick);
+
+const char *
+rig_toggle_get_tick (RigToggle *toggle);
+
+/**
+ * rig_toggle_set_tick_color:
+ * @toggle: A #RigToggle
+ * @color: The new color
+ *
+ * Sets the color that will be used to display the tick character.
+ * This defaults to black
+ */
+void
+rig_toggle_set_tick_color (RigToggle *toggle,
+                           const RigColor *color);
+
+void
+rig_toggle_get_tick_color (RigToggle *toggle,
+                           RigColor *color);
+
 #endif /* _RIG_TOGGLE_H_ */

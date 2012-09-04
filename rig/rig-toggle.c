@@ -40,6 +40,8 @@
 enum {
   RIG_TOGGLE_PROP_STATE,
   RIG_TOGGLE_PROP_ENABLED,
+  RIG_TOGGLE_PROP_TICK,
+  RIG_TOGGLE_PROP_TICK_COLOR,
   RIG_TOGGLE_N_PROPS
 };
 
@@ -74,6 +76,7 @@ struct _RigToggle
   CoglPipeline *pipeline_box;
 
   CoglColor text_color;
+  CoglColor tick_color;
 
   RigInputRegion *input_region;
 
@@ -98,6 +101,18 @@ static RigPropertySpec _rig_toggle_prop_specs[] = {
     .type = RIG_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RigToggle, state),
     .setter = rig_toggle_set_enabled
+  },
+  {
+    .name = "tick",
+    .type = RIG_PROPERTY_TYPE_TEXT,
+    .setter = rig_toggle_set_tick,
+    .getter = rig_toggle_get_tick
+  },
+  {
+    .name = "tick_color",
+    .type = RIG_PROPERTY_TYPE_COLOR,
+    .setter = rig_toggle_set_tick_color,
+    .getter = rig_toggle_get_tick_color
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -162,7 +177,7 @@ _rig_toggle_paint (RigObject *object,
     cogl_pango_show_layout (camera->fb,
                             toggle->tick,
                             0, 0,
-                            &toggle->text_color);
+                            &toggle->tick_color);
 
   cogl_pango_show_layout (camera->fb,
                           toggle->label,
@@ -439,6 +454,11 @@ _rig_toggle_update_colours (RigToggle *toggle)
                            RIG_UINT32_GREEN_AS_FLOAT (text),
                            RIG_UINT32_BLUE_AS_FLOAT (text),
                            RIG_UINT32_ALPHA_AS_FLOAT (text));
+  cogl_color_init_from_4f (&toggle->tick_color,
+                           RIG_UINT32_RED_AS_FLOAT (text),
+                           RIG_UINT32_GREEN_AS_FLOAT (text),
+                           RIG_UINT32_BLUE_AS_FLOAT (text),
+                           RIG_UINT32_ALPHA_AS_FLOAT (text));
 }
 
 RigToggle *
@@ -559,4 +579,39 @@ RigProperty *
 rig_toggle_get_enabled_property (RigToggle *toggle)
 {
   return &toggle->properties[RIG_TOGGLE_PROP_STATE];
+}
+
+void
+rig_toggle_set_tick (RigToggle *toggle,
+                     const char *tick)
+{
+  pango_layout_set_text (toggle->tick, tick, -1);
+  rig_shell_queue_redraw (toggle->ctx->shell);
+}
+
+const char *
+rig_toggle_get_tick (RigToggle *toggle)
+{
+  return pango_layout_get_text (toggle->tick);
+}
+
+void
+rig_toggle_set_tick_color (RigToggle *toggle,
+                           const RigColor *color)
+{
+  toggle->tick_color.red = color->red;
+  toggle->tick_color.green = color->green;
+  toggle->tick_color.blue = color->blue;
+  toggle->tick_color.alpha = color->alpha;
+  rig_shell_queue_redraw (toggle->ctx->shell);
+}
+
+void
+rig_toggle_get_tick_color (RigToggle *toggle,
+                           RigColor *color)
+{
+  color->red = toggle->tick_color.red;
+  color->green = toggle->tick_color.green;
+  color->blue = toggle->tick_color.blue;
+  color->alpha = toggle->tick_color.alpha;
 }
