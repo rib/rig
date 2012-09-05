@@ -226,6 +226,8 @@ struct _Data
 
   CoglMatrix identity;
 
+  CoglTexture *gradient;
+
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
 
@@ -1884,7 +1886,7 @@ draw_jittered_primitive4f (Data *data,
 }
 
 static void
-camera_update_view (Data *data, RigEntity *camera, CoglBool shadow_map)
+camera_update_view (Data *data, RigEntity *camera, Pass pass)
 {
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
@@ -1893,14 +1895,17 @@ camera_update_view (Data *data, RigEntity *camera, CoglBool shadow_map)
   CoglMatrix view;
 
   /* translate to z_2d and scale */
-  view = data->main_view;
+  if (pass != PASS_SHADOW)
+    view = data->main_view;
+  else
+    view = data->identity;
 
   /* apply the camera viewing transform */
   rig_graphable_get_transform (camera, &transform);
   cogl_matrix_get_inverse (&transform, &inverse_transform);
   cogl_matrix_multiply (&view, &view, &inverse_transform);
 
-  if (shadow_map)
+  if (pass == PASS_SHADOW)
     {
       CoglMatrix flipped_view;
       cogl_matrix_init_identity (&flipped_view);
@@ -1964,6 +1969,35 @@ set_focal_parameters (CoglPipeline *pipeline,
                                    &depth_of_field);
 }
 
+static void
+get_light_modelviewprojection (const CoglMatrix *model_transform,
+                               RigEntity  *light,
+                               const CoglMatrix *light_projection,
+                               CoglMatrix *light_mvp)
+{
+  const CoglMatrix *light_transform;
+  CoglMatrix light_view;
+
+  /* TODO: cache the bias * light_projection * light_view matrix! */
+
+  /* Move the unit data from [-1,1] to [0,1], column major order */
+  float bias[16] = {
+    .5f, .0f, .0f, .0f,
+    .0f, .5f, .0f, .0f,
+    .0f, .0f, .5f, .0f,
+    .5f, .5f, .5f, 1.f
+  };
+
+  light_transform = rig_entity_get_transform (light);
+  cogl_matrix_get_inverse (light_transform, &light_view);
+
+  cogl_matrix_init_from_array (light_mvp, bias);
+  cogl_matrix_multiply (light_mvp, light_mvp, light_projection);
+  cogl_matrix_multiply (light_mvp, light_mvp, &light_view);
+
+  cogl_matrix_multiply (light_mvp, light_mvp, model_transform);
+}
+
 CoglPipeline *
 get_entity_pipeline (Data *data,
                      RigEntity *entity,
@@ -1975,14 +2009,18 @@ get_entity_pipeline (Data *data,
   RigMaterial *material =
     rig_entity_get_component (entity, RIG_COMPONENT_TYPE_MATERIAL);
   CoglPipeline *pipeline;
+  CoglFramebuffer *shadow_fb;
 
   if (pass == PASS_COLOR)
     {
       pipeline = rig_entity_get_pipeline_cache (entity);
       if (pipeline)
-        return cogl_object_ref (pipeline);
+        {
+          cogl_object_ref (pipeline);
+          goto FOUND;
+        }
     }
-  else if (pass == PASS_DOF_DEPTH)
+  else if (pass == PASS_DOF_DEPTH || pass == PASS_SHADOW)
     {
       if (!data->dof_pipeline_template)
         {
@@ -2141,7 +2179,6 @@ get_entity_pipeline (Data *data,
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
 
-#if 0
   /* Vertex shader setup for shadow mapping */
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
@@ -2150,13 +2187,11 @@ get_entity_pipeline (Data *data,
       "varying vec4 shadow_coords;\n",
 
       /* post */
-      "shadow_coords = light_shadow_matrix * cogl_modelview_matrix *\n"
-      "                cogl_position_in;\n"
+      "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
   );
 
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
-#endif
 
   /* and fragment shader */
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -2208,7 +2243,24 @@ get_entity_pipeline (Data *data,
   cogl_object_unref (snippet);
 
 
-#if 0
+  /* Hook the shadow map sampling */
+
+  cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_map);
+  /* For debugging the shadow mapping... */
+  //cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_color);
+  //cogl_pipeline_set_layer_texture (pipeline, 7, data->gradient);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
+                              /* declarations */
+                              "varying vec4 shadow_coords;\n",
+                              /* post */
+                              "");
+
+  cogl_snippet_set_replace (snippet,
+                            "cogl_texel = texture2D(cogl_sampler7, cogl_tex_coord.st);\n");
+
+  cogl_pipeline_add_layer_snippet (pipeline, 7, snippet);
+  cogl_object_unref (snippet);
 
   /* Handle shadow mapping */
 
@@ -2217,36 +2269,17 @@ get_entity_pipeline (Data *data,
       "",
 
       /* post */
-      "shadow_coords_d = shadow_coords / shadow_coords.w;\n"
-      "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, cogl_tex_coord_in[0]);\n"
+      "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, shadow_coords);\n"
       "float distance_from_light = cogl_texel7.z + 0.0005;\n"
       "float shadow = 1.0;\n"
-      "if (shadow_coords.w > 0.0 && distance_from_light < shadow_coords_d.z)\n"
-      "    shadow = 0.5;\n"
+      "if (distance_from_light < shadow_coords.z)\n"
+      "  shadow = 0.5;\n"
 
       "cogl_color_out = shadow * cogl_color_out;\n"
   );
 
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
-
-  /* Hook the shadow map sampling */
-
-  cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_map);
-
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
-                              /* declarations */
-                              "varying vec4 shadow_coords;\n"
-                              "vec4 shadow_coords_d;\n",
-                              /* post */
-                              "");
-
-  cogl_snippet_set_replace (snippet,
-                            "cogl_texel = texture2D(cogl_sampler7, shadow_coords_d.st);\n");
-
-  cogl_pipeline_add_layer_snippet (pipeline, 7, snippet);
-  cogl_object_unref (snippet);
-#endif
 
 #if 1
   {
@@ -2284,6 +2317,44 @@ get_entity_pipeline (Data *data,
 #endif
 
   rig_entity_set_pipeline_cache (entity, pipeline);
+
+FOUND:
+
+  /* FIXME: there's lots to optimize about this! */
+#if 1
+  shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
+
+  /* update uniforms in pipelines */
+  {
+    CoglMatrix light_shadow_matrix, light_projection;
+    CoglMatrix model_transform;
+    const float *light_matrix;
+    int location;
+
+    cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
+
+    /* XXX: This is pretty bad that we are having to do this. It would
+     * be nicer if cogl exposed matrix-stacks publicly so we could
+     * maintain the entity model_matrix incrementally as we traverse
+     * the scenegraph. */
+    rig_graphable_get_transform (entity, &model_transform);
+
+    get_light_modelviewprojection (&model_transform,
+                                   data->light,
+                                   &light_projection,
+                                   &light_shadow_matrix);
+
+    light_matrix = cogl_matrix_get_array (&light_shadow_matrix);
+
+    location = cogl_pipeline_get_uniform_location (pipeline,
+                                                   "light_shadow_matrix");
+    cogl_pipeline_set_uniform_matrix (pipeline,
+                                      location,
+                                      4, 1,
+                                      FALSE,
+                                      light_matrix);
+  }
+#endif
 
   return pipeline;
 }
@@ -2410,33 +2481,6 @@ _rig_entitygraph_post_paint_cb (RigObject *object,
   return RIG_TRAVERSE_VISIT_CONTINUE;
 }
 
-#if 0
-static void
-compute_light_shadow_matrix (Data       *data,
-                             CoglMatrix *light_matrix,
-                             CoglMatrix *light_projection,
-                             RigEntity  *light)
-{
-  CoglMatrix *main_camera, *light_transform, light_view;
-  /* Move the unit data from [-1,1] to [0,1], column major order */
-  float bias[16] = {
-    .5f, .0f, .0f, .0f,
-    .0f, .5f, .0f, .0f,
-    .0f, .0f, .5f, .0f,
-    .5f, .5f, .5f, 1.f
-  };
-
-  main_camera = rig_entity_get_transform (data->main_camera);
-  light_transform = rig_entity_get_transform (light);
-  cogl_matrix_get_inverse (light_transform, &light_view);
-
-  cogl_matrix_init_from_array (light_matrix, bias);
-  cogl_matrix_multiply (light_matrix, light_matrix, light_projection);
-  cogl_matrix_multiply (light_matrix, light_matrix, &light_view);
-  cogl_matrix_multiply (light_matrix, light_matrix, main_camera);
-}
-#endif
-
 static void
 paint_scene (TestPaintContext *test_paint_ctx)
 {
@@ -2456,40 +2500,6 @@ paint_scene (TestPaintContext *test_paint_ctx)
       cogl_object_unref (pipeline);
     }
 
-#if 0
-  shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
-
-  /* update uniforms in materials */
-  {
-    CoglMatrix light_shadow_matrix, light_projection;
-    CoglPipeline *pipeline;
-    RigMaterial *material;
-    const float *light_matrix;
-    int location;
-
-    cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
-    compute_light_shadow_matrix (data,
-                                 &light_shadow_matrix,
-                                 &light_projection,
-                                 data->light);
-    light_matrix = cogl_matrix_get_array (&light_shadow_matrix);
-
-    /* plane material */
-    material = rig_entity_get_component (data->plane,
-                                         RIG_COMPONENT_TYPE_MATERIAL);
-    pipeline = rig_material_get_pipeline (material);
-    location = cogl_pipeline_get_uniform_location (pipeline,
-                                                   "light_shadow_matrix");
-    cogl_pipeline_set_uniform_matrix (pipeline,
-                                      location,
-                                      4, 1,
-                                      FALSE,
-                                      light_matrix);
-  }
-#endif
-
-
-
   rig_graphable_traverse (data->scene,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_entitygraph_pre_paint_cb,
@@ -2500,7 +2510,7 @@ paint_scene (TestPaintContext *test_paint_ctx)
 
 #if 1
 static void
-paint_main_camera_component (RigEntity *camera, TestPaintContext *test_paint_ctx)
+paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
 {
   RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
   RigCamera *save_camera = paint_ctx->camera;
@@ -2517,7 +2527,7 @@ paint_main_camera_component (RigEntity *camera, TestPaintContext *test_paint_ctx
   else
     test_paint_ctx->pass = PASS_COLOR;
 
-  camera_update_view (data, camera, FALSE);
+  camera_update_view (data, camera, test_paint_ctx->pass);
 
   if (test_paint_ctx->pass != PASS_SHADOW &&
       data->enable_dof)
@@ -2594,13 +2604,26 @@ paint_main_camera_component (RigEntity *camera, TestPaintContext *test_paint_ctx
       rig_camera_end_frame (camera_component);
     }
 
-  rig_camera_flush (camera_component);
   if (test_paint_ctx->pass == PASS_COLOR)
     {
+      rig_camera_flush (camera_component);
+
       /* Use this to visualize the depth-of-field alpha buffer... */
 #if 0
       CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
       cogl_pipeline_set_layer_texture (pipeline, 0, data->dof.depth_pass);
+      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+      cogl_framebuffer_draw_rectangle (fb,
+                                       pipeline,
+                                       0, 0,
+                                       200, 200);
+#endif
+
+      /* Use this to visualize the shadow_map */
+#if 0
+      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+      cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_map);
+      //cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_color);
       cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
       cogl_framebuffer_draw_rectangle (fb,
                                        pipeline,
@@ -2623,8 +2646,11 @@ paint_main_camera_component (RigEntity *camera, TestPaintContext *test_paint_ctx
           rig_tool_update (data->tool, data->selected_entity);
           rig_tool_draw (data->tool, fb);
         }
+
+      rig_camera_end_frame (camera_component);
     }
-  rig_camera_end_frame (camera_component);
+
+  paint_ctx->camera = save_camera;
 }
 #endif
 
@@ -2897,7 +2923,11 @@ test_paint (RigShell *shell, void *user_data)
    * pairs. */
   rig_camera_end_frame (data->camera);
 
-  paint_main_camera_component (data->main_camera, &test_paint_ctx);
+  paint_ctx->camera = data->camera;
+  paint_camera_entity (data->light, &test_paint_ctx);
+
+  paint_ctx->camera = data->camera;
+  paint_camera_entity (data->main_camera, &test_paint_ctx);
 
   paint_ctx->camera = data->timeline_camera;
   rig_camera_flush (paint_ctx->camera);
@@ -4543,6 +4573,43 @@ test_init (RigShell *shell, void *user_data)
 
 
   data->undo_journal = undo_journal_new (data);
+
+  {
+    CoglVertexP2C4 quad[] = {
+      { 0, 0, 0xff, 0x00, 0x00, 0xff },
+      { 0, 200, 0x00, 0xff, 0x00, 0xff },
+      { 200, 200, 0x00, 0x00, 0xff, 0xff },
+      { 200, 0, 0xff, 0xff, 0xff, 0xff }
+    };
+    CoglOffscreen *offscreen;
+    CoglPrimitive *prim =
+      cogl_primitive_new_p2c4 (data->ctx->cogl_context, COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+    CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+
+    data->gradient = COGL_TEXTURE (
+      cogl_texture_2d_new_with_size (rig_cogl_context,
+                                     200, 200,
+                                     COGL_PIXEL_FORMAT_ANY,
+                                     NULL));
+
+    offscreen = cogl_offscreen_new_to_texture (data->gradient);
+
+    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
+                                   0, 0,
+                                   200,
+                                   200,
+                                   -1,
+                                   100);
+    cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
+                              COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
+                              0, 0, 0, 1);
+    cogl_framebuffer_draw_primitive (COGL_FRAMEBUFFER (offscreen),
+                                     pipeline,
+                                     prim);
+    cogl_object_unref (prim);
+    cogl_object_unref (offscreen);
+  }
+
   /*
    * Shadow mapping
    */
@@ -4761,14 +4828,15 @@ test_init (RigShell *shell, void *user_data)
 
   data->light = rig_entity_new (data->ctx, data->entity_next_id++);
   data->entities = g_list_prepend (data->entities, data->light);
-
+#if 1
   vector3[0] = 0;
   vector3[1] = 0;
-  vector3[2] = 200;
+  vector3[2] = 500;
   rig_entity_set_position (data->light, vector3);
 
   rig_entity_rotate_x_axis (data->light, 20);
   rig_entity_rotate_y_axis (data->light, -20);
+#endif
 
   light = rig_light_new ();
   rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
@@ -4787,9 +4855,9 @@ test_init (RigShell *shell, void *user_data)
   rig_camera_set_projection_mode (camera,
                                   RIG_PROJECTION_ORTHOGRAPHIC);
   rig_camera_set_orthographic_coordinates (camera,
-                                           0, 0, 400, 400);
+                                           -1000, -1000, 1000, 1000);
   rig_camera_set_near_plane (camera, 1.1f);
-  rig_camera_set_far_plane (camera, 1000.f);
+  rig_camera_set_far_plane (camera, 1500.f);
 
   rig_entity_add_component (data->light, camera);
 
