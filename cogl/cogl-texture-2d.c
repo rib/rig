@@ -70,8 +70,7 @@ _cogl_texture_2d_set_wrap_mode_parameters (CoglTexture *tex,
                                            GLenum wrap_mode_p)
 {
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+  CoglContext *ctx = tex->context;
 
   /* Only set the wrap mode if it's different from the current value
      to avoid too many GL calls. Texture 2D doesn't make use of the r
@@ -105,15 +104,14 @@ _cogl_texture_2d_free (CoglTexture2D *tex_2d)
 }
 
 static CoglBool
-_cogl_texture_2d_can_create (unsigned int width,
+_cogl_texture_2d_can_create (CoglContext *ctx,
+                             unsigned int width,
                              unsigned int height,
                              CoglPixelFormat internal_format)
 {
   GLenum gl_intformat;
   GLenum gl_format;
   GLenum gl_type;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
 
   /* If NPOT textures aren't supported then the size must be a power
      of two */
@@ -151,14 +149,15 @@ _cogl_texture_2d_set_auto_mipmap (CoglTexture *tex,
 }
 
 static CoglTexture2D *
-_cogl_texture_2d_create_base (unsigned int     width,
-                              unsigned int     height,
-                              CoglPixelFormat  internal_format)
+_cogl_texture_2d_create_base (CoglContext *ctx,
+                              int width,
+                              int height,
+                              CoglPixelFormat internal_format)
 {
   CoglTexture2D *tex_2d = g_new (CoglTexture2D, 1);
   CoglTexture *tex = COGL_TEXTURE (tex_2d);
 
-  _cogl_texture_init (tex, &cogl_texture_2d_vtable);
+  _cogl_texture_init (tex, ctx, &cogl_texture_2d_vtable);
 
   tex_2d->width = width;
   tex_2d->height = height;
@@ -196,7 +195,7 @@ cogl_texture_2d_new_with_size (CoglContext *ctx,
   if (internal_format == COGL_PIXEL_FORMAT_ANY)
     internal_format = COGL_PIXEL_FORMAT_RGBA_8888_PRE;
 
-  if (!_cogl_texture_2d_can_create (width, height, internal_format))
+  if (!_cogl_texture_2d_can_create (ctx, width, height, internal_format))
     {
       _cogl_set_error (error, COGL_TEXTURE_ERROR,
                        COGL_TEXTURE_ERROR_SIZE,
@@ -211,7 +210,8 @@ cogl_texture_2d_new_with_size (CoglContext *ctx,
                                                             &gl_format,
                                                             &gl_type);
 
-  tex_2d = _cogl_texture_2d_create_base (width, height,
+  tex_2d = _cogl_texture_2d_create_base (ctx,
+                                         width, height,
                                          internal_format);
 
   ctx->texture_driver->gen (ctx, GL_TEXTURE_2D, 1, &tex_2d->gl_texture);
@@ -245,7 +245,8 @@ cogl_texture_2d_new_from_bitmap (CoglBitmap *bmp,
     _cogl_texture_determine_internal_format (cogl_bitmap_get_format (bmp),
                                              internal_format);
 
-  if (!_cogl_texture_2d_can_create (cogl_bitmap_get_width (bmp),
+  if (!_cogl_texture_2d_can_create (ctx,
+                                    cogl_bitmap_get_width (bmp),
                                     cogl_bitmap_get_height (bmp),
                                     internal_format))
     {
@@ -270,7 +271,8 @@ cogl_texture_2d_new_from_bitmap (CoglBitmap *bmp,
       return NULL;
     }
 
-  tex_2d = _cogl_texture_2d_create_base (cogl_bitmap_get_width (bmp),
+  tex_2d = _cogl_texture_2d_create_base (ctx,
+                                         cogl_bitmap_get_width (bmp),
                                          cogl_bitmap_get_height (bmp),
                                          internal_format);
 
@@ -464,7 +466,8 @@ cogl_texture_2d_new_from_foreign (CoglContext *ctx,
      the dirtiness tracking that Cogl would do. */
 
   /* Create new texture */
-  tex_2d = _cogl_texture_2d_create_base (width, height,
+  tex_2d = _cogl_texture_2d_create_base (ctx,
+                                         width, height,
                                          format);
   _cogl_texture_2d_set_auto_mipmap (COGL_TEXTURE (tex_2d), FALSE);
 
@@ -507,7 +510,8 @@ _cogl_egl_texture_2d_new_from_image (CoglContext *ctx,
                         COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE,
                         NULL);
 
-  tex_2d = _cogl_texture_2d_create_base (width, height,
+  tex_2d = _cogl_texture_2d_create_base (ctx,
+                                         width, height,
                                          format);
 
   ctx->texture_driver->gen (ctx, GL_TEXTURE_2D, 1, &tex_2d->gl_texture);
@@ -619,9 +623,11 @@ _cogl_texture_2d_copy_from_framebuffer (CoglTexture2D *tex_2d,
                                         int width,
                                         int height)
 {
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+  CoglContext *ctx;
 
   _COGL_RETURN_IF_FAIL (cogl_is_texture_2d (tex_2d));
+
+  ctx = COGL_TEXTURE (tex_2d)->context;
 
   /* Make sure the current framebuffers are bound, though we don't need to
    * flush the clip state here since we aren't going to draw to the
@@ -660,8 +666,7 @@ static CoglBool
 _cogl_texture_2d_can_hardware_repeat (CoglTexture *tex)
 {
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  CoglContext *ctx = tex->context;
 
   if (cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_NPOT_REPEAT) ||
       (_cogl_util_is_pot (tex_2d->width) &&
@@ -724,8 +729,7 @@ _cogl_texture_2d_set_filters (CoglTexture *tex,
                               GLenum       mag_filter)
 {
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+  CoglContext *ctx = tex->context;
 
   if (min_filter == tex_2d->min_filter
       && mag_filter == tex_2d->mag_filter)
@@ -747,8 +751,7 @@ static void
 _cogl_texture_2d_pre_paint (CoglTexture *tex, CoglTexturePrePaintFlags flags)
 {
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+  CoglContext *ctx = tex->context;
 
   /* Only update if the mipmaps are dirty */
   if ((flags & COGL_TEXTURE_NEEDS_MIPMAP) &&
@@ -800,11 +803,10 @@ _cogl_texture_2d_set_region (CoglTexture    *tex,
                              CoglBitmap     *bmp)
 {
   CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
+  CoglContext *ctx = tex->context;
   GLenum gl_format;
   GLenum gl_type;
   uint8_t *data;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
 
   bmp = _cogl_texture_prepare_for_upload (bmp,
                                           cogl_texture_get_format (tex),
@@ -854,12 +856,11 @@ _cogl_texture_2d_get_data (CoglTexture *tex,
                            unsigned int rowstride,
                            uint8_t *data)
 {
-  CoglTexture2D   *tex_2d = COGL_TEXTURE_2D (tex);
-  int              bpp;
-  GLenum           gl_format;
-  GLenum           gl_type;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
+  CoglTexture2D *tex_2d = COGL_TEXTURE_2D (tex);
+  CoglContext *ctx = tex->context;
+  int bpp;
+  GLenum gl_format;
+  GLenum gl_type;
 
   bpp = _cogl_pixel_format_get_bytes_per_pixel (format);
 
