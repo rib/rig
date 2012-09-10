@@ -53,6 +53,19 @@ _rig_transition_type_init (void)
                           NULL); /* no implied vtable */
 }
 
+static void
+free_prop_data_cb (void *data)
+{
+  RigTransitionPropData *prop_data = data;
+
+  if (prop_data->path)
+    rig_path_free (prop_data->path);
+
+  rig_boxed_destroy (&prop_data->constant_value);
+
+  g_slice_free (RigTransitionPropData, prop_data);
+}
+
 RigTransition *
 rig_transition_new (RigContext *context,
                     uint32_t id)
@@ -78,7 +91,11 @@ rig_transition_new (RigContext *context,
   rig_simple_introspectable_init (transition, _rig_transition_prop_specs, transition->props);
 
   transition->progress = 0;
-  transition->paths = NULL;
+
+  transition->properties = g_hash_table_new_full (g_direct_hash,
+                                                  g_direct_equal,
+                                                  NULL, /* key_destroy */
+                                                  free_prop_data_cb);
 
 #if 0
   rig_property_set_binding (&transition->props[RIG_TRANSITION_PROP_PROGRESS],
@@ -94,43 +111,61 @@ rig_transition_new (RigContext *context,
 void
 rig_transition_free (RigTransition *transition)
 {
-  GList *l;
-
   rig_simple_introspectable_destroy (transition);
 
-  for (l = transition->paths; l; l = l->next)
-    {
-      RigPath *path = l->data;
-      rig_path_free (path);
-    }
+  g_hash_table_destroy (transition->properties);
 
   rig_ref_countable_unref (transition->context);
 
   g_slice_free (RigTransition, transition);
 }
 
-void
-rig_transition_add_path (RigTransition *transition,
-                         RigPath *path)
+RigTransitionPropData *
+rig_transition_find_prop_data (RigTransition *transition,
+                               RigProperty *property)
 {
-  transition->paths = g_list_prepend (transition->paths, path);
+  return g_hash_table_lookup (transition->properties, property);
+}
+
+RigTransitionPropData *
+rig_transition_get_prop_data (RigTransition *transition,
+                              RigObject *object,
+                              const char *property_name)
+{
+  RigTransitionPropData *prop_data;
+  RigProperty *property =
+    rig_introspectable_lookup_property (object, property_name);
+
+  if (!property)
+    return NULL;
+
+  prop_data = rig_transition_find_prop_data (transition, property);
+
+  if (prop_data == NULL)
+    {
+      prop_data = g_slice_new (RigTransitionPropData);
+      prop_data->property = property;
+      prop_data->path = NULL;
+
+      rig_property_box (property, &prop_data->constant_value);
+
+      g_hash_table_insert (transition->properties,
+                           property,
+                           prop_data);
+    }
+
+  return prop_data;
 }
 
 RigPath *
 rig_transition_find_path (RigTransition *transition,
                           RigProperty *property)
 {
-  GList *l;
+  RigTransitionPropData *prop_data;
 
-  for (l = transition->paths; l; l = l->next)
-    {
-      RigPath *path = l->data;
+  prop_data = rig_transition_find_prop_data (transition, property);
 
-      if (path->prop == property)
-        return path;
-    }
-
-  return NULL;
+  return prop_data ? prop_data->path : NULL;
 }
 
 RigPath *
@@ -138,24 +173,29 @@ rig_transition_get_path (RigTransition *transition,
                          RigObject *object,
                          const char *property_name)
 {
-  RigProperty *property =
-    rig_introspectable_lookup_property (object, property_name);
-  RigPath *path;
+  RigTransitionPropData *prop_data =
+    rig_transition_get_prop_data (transition, object, property_name);
 
-  if (!property)
+  if (!prop_data)
     return NULL;
 
-  path = rig_transition_find_path (transition, property);
-  if (path)
-    return path;
+  if (prop_data->path == NULL)
+      prop_data->path = rig_path_new (transition->context,
+                                      prop_data->property->spec->type);
 
-  path = rig_path_new_for_property (transition->context,
-                                    &transition->props[RIG_TRANSITION_PROP_PROGRESS],
-                                    property);
+  return prop_data->path;
+}
 
-  rig_transition_add_path (transition, path);
+static void
+update_progress_cb (RigProperty *property,
+                    RigPath *path,
+                    const RigBoxed *constant_value,
+                    void *user_data)
+{
+  RigTransition *transition = user_data;
 
-  return path;
+  if (property->animated && path)
+    rig_path_lerp_property (path, property, transition->progress);
 }
 
 void
@@ -165,4 +205,43 @@ rig_transition_set_progress (RigTransition *transition,
   transition->progress = progress;
   rig_property_dirty (&transition->context->property_ctx,
                       &transition->props[RIG_TRANSITION_PROP_PROGRESS]);
+
+  rig_transition_foreach_property (transition,
+                                   update_progress_cb,
+                                   transition);
+}
+
+typedef struct
+{
+  RigTransitionForeachPropertyCb callback;
+  void *user_data;
+} ForeachPathData;
+
+static void
+foreach_path_cb (void *key,
+                 void *value,
+                 void *user_data)
+{
+  RigTransitionPropData *prop_data = value;
+  ForeachPathData *data = user_data;
+
+  data->callback (prop_data->property,
+                  prop_data->path,
+                  &prop_data->constant_value,
+                  data->user_data);
+}
+
+void
+rig_transition_foreach_property (RigTransition *transition,
+                                 RigTransitionForeachPropertyCb callback,
+                                 void *user_data)
+{
+  ForeachPathData data;
+
+  data.callback = callback;
+  data.user_data = user_data;
+
+  g_hash_table_foreach (transition->properties,
+                        foreach_path_cb,
+                        &data);
 }

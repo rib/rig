@@ -29,41 +29,24 @@ rig_path_free (RigPath *path)
 {
   g_queue_foreach (&path->nodes,
                    rig_node_free,
-                   GUINT_TO_POINTER (path->prop->spec->type));
+                   GUINT_TO_POINTER (path->type));
   g_queue_clear (&path->nodes);
   rig_ref_countable_unref (path->ctx);
   g_slice_free (RigPath, path);
 }
 
-static void
-update_path_property_cb (RigProperty *path_property, void *user_data)
-{
-  RigPath *path = user_data;
-  float progress = rig_property_get_float (path->progress_prop);
-
-  rig_path_lerp_property (path, progress);
-}
-
 RigPath *
-rig_path_new_for_property (RigContext *ctx,
-                           RigProperty *progress_prop,
-                           RigProperty *path_prop)
+rig_path_new (RigContext *ctx,
+              RigPropertyType type)
 {
   RigPath *path = g_slice_new (RigPath);
 
   path->ctx = rig_ref_countable_ref (ctx);
 
-  path->progress_prop = progress_prop;
-  path->prop = path_prop;
+  path->type = type;
 
   g_queue_init (&path->nodes);
   path->pos = NULL;
-
-  rig_property_set_binding (path_prop,
-                            update_path_property_cb,
-                            path,
-                            progress_prop,
-                            NULL);
 
   return path;
 }
@@ -251,7 +234,7 @@ rig_path_print (RigPath *path)
   g_print ("path=%p\n", path);
   g_queue_foreach (&path->nodes,
                    node_print,
-                   GUINT_TO_POINTER (path->prop->spec->type));
+                   GUINT_TO_POINTER (path->type));
 }
 
 static int
@@ -338,12 +321,33 @@ rig_path_insert_vec3 (RigPath *path,
 }
 
 void
+rig_path_insert_vec4 (RigPath *path,
+                      float t,
+                      const float value[4])
+{
+  GList *link;
+  RigNodeVec4 *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      memcpy (node->value, value, sizeof (value));
+    }
+  else
+    {
+      node = rig_node_new_for_vec4 (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func,
+                             NULL);
+    }
+}
+
+void
 rig_path_insert_quaternion (RigPath *path,
                             float t,
-                            float angle,
-                            float x,
-                            float y,
-                            float z)
+                            const CoglQuaternion *value)
 {
   GList *link;
   RigNodeQuaternion *node;
@@ -358,11 +362,11 @@ rig_path_insert_quaternion (RigPath *path,
   if (link)
     {
       node = link->data;
-      cogl_quaternion_init (&node->value, angle, x, y, z);
+      node->value = *value;
     }
   else
     {
-      node = rig_node_new_for_quaternion (t, angle, x, y, z);
+      node = rig_node_new_for_quaternion (t, value);
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func, NULL);
     }
@@ -374,29 +378,175 @@ rig_path_insert_quaternion (RigPath *path,
 }
 
 void
-rig_path_lerp_property (RigPath *path, float t)
+rig_path_insert_double (RigPath *path,
+                        float t,
+                        double value)
+{
+  GList *link;
+  RigNodeDouble *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      node->value = value;
+    }
+  else
+    {
+      node = rig_node_new_for_double (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func,
+                             NULL);
+    }
+}
+
+void
+rig_path_insert_integer (RigPath *path,
+                         float t,
+                         int value)
+{
+  GList *link;
+  RigNodeInteger *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      node->value = value;
+    }
+  else
+    {
+      node = rig_node_new_for_integer (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func,
+                             NULL);
+    }
+}
+
+void
+rig_path_insert_uint32 (RigPath *path,
+                        float t,
+                        uint32_t value)
+{
+  GList *link;
+  RigNodeUint32 *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      node->value = value;
+    }
+  else
+    {
+      node = rig_node_new_for_uint32 (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func,
+                             NULL);
+    }
+}
+
+void
+rig_path_insert_color (RigPath *path,
+                       float t,
+                       const RigColor *value)
+{
+  GList *link;
+  RigNodeColor *node;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      node = link->data;
+      node->value = *value;
+    }
+  else
+    {
+      node = rig_node_new_for_color (t, value);
+      g_queue_insert_sorted (&path->nodes, node,
+                             (GCompareDataFunc)path_node_sort_t_func, NULL);
+    }
+}
+
+void
+rig_path_lerp_property (RigPath *path,
+                        RigProperty *property,
+                        float t)
 {
   RigNode *n0, *n1;
+
+  g_return_if_fail (property->spec->type == path->type);
 
   path_find_control_points2 (path, t, 1,
                              &n0,
                              &n1);
 
-  switch (path->prop->spec->type)
+  switch (path->type)
     {
     case RIG_PROPERTY_TYPE_FLOAT:
       {
         float value;
 
         rig_node_float_lerp ((RigNodeFloat *)n0, (RigNodeFloat *)n1, t, &value);
-        rig_property_set_float (&path->ctx->property_ctx, path->prop, value);
+        rig_property_set_float (&path->ctx->property_ctx, property, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_DOUBLE:
+      {
+        double value;
+
+        rig_node_double_lerp ((RigNodeDouble *) n0,
+                              (RigNodeDouble *) n1,
+                              t,
+                              &value);
+        rig_property_set_double (&path->ctx->property_ctx, property, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_INTEGER:
+      {
+        int value;
+
+        rig_node_integer_lerp ((RigNodeInteger *) n0,
+                               (RigNodeInteger *) n1,
+                               t,
+                               &value);
+        rig_property_set_integer (&path->ctx->property_ctx, property, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_UINT32:
+      {
+        uint32_t value;
+
+        rig_node_uint32_lerp ((RigNodeUint32 *) n0,
+                              (RigNodeUint32 *) n1,
+                              t,
+                              &value);
+        rig_property_set_uint32 (&path->ctx->property_ctx, property, value);
         break;
       }
     case RIG_PROPERTY_TYPE_VEC3:
       {
         float value[3];
         rig_node_vec3_lerp ((RigNodeVec3 *)n0, (RigNodeVec3 *)n1, t, value);
-        rig_property_set_vec3 (&path->ctx->property_ctx, path->prop, value);
+        rig_property_set_vec3 (&path->ctx->property_ctx, property, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_VEC4:
+      {
+        float value[4];
+        rig_node_vec4_lerp ((RigNodeVec4 *)n0, (RigNodeVec4 *)n1, t, value);
+        rig_property_set_vec4 (&path->ctx->property_ctx, property, value);
+        break;
+      }
+    case RIG_PROPERTY_TYPE_COLOR:
+      {
+        RigColor value;
+        rig_node_color_lerp ((RigNodeColor *)n0, (RigNodeColor *)n1, t, &value);
+        rig_property_set_color (&path->ctx->property_ctx, property, &value);
         break;
       }
     case RIG_PROPERTY_TYPE_QUATERNION:
@@ -405,8 +555,18 @@ rig_path_lerp_property (RigPath *path, float t)
         rig_node_quaternion_lerp ((RigNodeQuaternion *)n0,
                                   (RigNodeQuaternion *)n1, t, &value);
         rig_property_set_quaternion (&path->ctx->property_ctx,
-                                     path->prop, &value);
+                                     property, &value);
         break;
       }
+
+      /* These types of properties can't be interoplated so they
+       * probably shouldn't end up in a path */
+    case RIG_PROPERTY_TYPE_ENUM:
+    case RIG_PROPERTY_TYPE_BOOLEAN:
+    case RIG_PROPERTY_TYPE_TEXT:
+    case RIG_PROPERTY_TYPE_OBJECT:
+    case RIG_PROPERTY_TYPE_POINTER:
+      g_warn_if_reached ();
+      break;
     }
 }

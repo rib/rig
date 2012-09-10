@@ -32,6 +32,24 @@ enum {
   RIG_TRANSITION_N_PROPS
 };
 
+/* State for an individual property that the transition is tracking */
+typedef struct
+{
+  RigProperty *property;
+
+  /* The transition maintains two sets of state for each property. One
+   * is a constant value that is used throughout the entire transition
+   * and the other is a path whose actual property value depends on
+   * the progress of the timeline. Only one of these states will
+   * actually be used depending on whether the property is animated.
+   * However both states are retained so that if the user toggles the
+   * animated button for a property information won't be lost. */
+
+  /* path may be NULL */
+  RigPath *path;
+  RigBoxed constant_value;
+} RigTransitionPropData;
+
 struct _RigTransition
 {
   RigObjectProps _parent;
@@ -40,7 +58,10 @@ struct _RigTransition
 
   float progress;
 
-  GList *paths;
+  /* Hash table of RigTransitionProperties. The key is a pointer to
+   * the RigProperty indexed using g_direct_hash and the value is the
+   * RigTransitionPropData struct */
+  GHashTable *properties;
 
   RigContext *context;
 
@@ -52,6 +73,11 @@ void
 rig_transition_set_progress (RigTransition *transition,
                              float progress);
 
+RigTransitionPropData *
+rig_transition_get_prop_data (RigTransition *transition,
+                              RigObject *object,
+                              const char *property_name);
+
 RigPath *
 rig_transition_get_path (RigTransition *transition,
                          RigObject *object,
@@ -61,9 +87,16 @@ RigTransition *
 rig_transition_new (RigContext *context,
                     uint32_t id);
 
+typedef void
+(* RigTransitionForeachPropertyCb) (RigProperty *property,
+                                    RigPath *path,
+                                    const RigBoxed *constant_value,
+                                    void *user_data);
+
 void
-rig_transition_add_path (RigTransition *transition,
-                         RigPath *path);
+rig_transition_foreach_property (RigTransition *transition,
+                                 RigTransitionForeachPropertyCb callback,
+                                 void *user_data);
 
 void
 rig_transition_free (RigTransition *transition);

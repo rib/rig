@@ -1280,6 +1280,119 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
 }
 #endif
 
+typedef struct
+{
+  CoglPipeline *pipeline;
+  RigEntity *entity;
+  TestPaintContext *test_paint_ctx;
+
+  float viewport_x, viewport_y;
+  float viewport_t_scale;
+  float viewport_y_scale;
+  float viewport_t_offset;
+  float viewport_y_offset;
+} PaintTimelineData;
+
+static void
+paint_timeline_path_cb (RigProperty *property,
+                        RigPath *path,
+                        const RigBoxed *constant_value,
+                        void *user_data)
+{
+  PaintTimelineData *paint_data = user_data;
+  RigPaintContext *paint_ctx = &paint_data->test_paint_ctx->_parent;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+  RigData *data = paint_data->test_paint_ctx->data;
+  RigContext *ctx = data->ctx;
+  CoglPrimitive *prim;
+  GArray *points;
+  GList *l;
+  GList *next;
+  float red, green, blue;
+
+  if (path == NULL ||
+      property->object != paint_data->entity ||
+      property->spec->type != RIG_PROPERTY_TYPE_FLOAT)
+    return;
+
+  if (strcmp (property->spec->name, "x") == 0)
+    red = 1.0, green = 0.0, blue = 0.0;
+  else if (strcmp (property->spec->name, "y") == 0)
+    red = 0.0, green = 1.0, blue = 0.0;
+  else if (strcmp (property->spec->name, "z") == 0)
+    red = 0.0, green = 0.0, blue = 1.0;
+  else
+    return;
+
+  points = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
+
+  for (l = path->nodes.head; l; l = next)
+    {
+      RigNodeFloat *f_node = l->data;
+      CoglVertexP2 p;
+
+      next = l->next;
+
+      /* FIXME: This clipping wasn't working... */
+#if 0
+      /* Only draw the nodes within the current viewport */
+      if (next)
+        {
+          float max_t = (viewport_t_offset +
+                         data->timeline_vp->width * viewport_t_scale);
+          if (next->t < viewport_t_offset)
+            continue;
+          if (node->t > max_t && next->t > max_t)
+            break;
+        }
+#endif
+
+#define HANDLE_HALF_SIZE 4
+      p.x = (paint_data->viewport_x +
+             (f_node->t - paint_data->viewport_t_offset) *
+             paint_data->viewport_t_scale);
+
+      cogl_pipeline_set_color4f (paint_data->pipeline, red, green, blue, 1);
+
+      p.y = (paint_data->viewport_y +
+             (f_node->value - paint_data->viewport_y_offset) *
+             paint_data->viewport_y_scale);
+#if 1
+#if 1
+      cogl_framebuffer_push_matrix (fb);
+      cogl_framebuffer_translate (fb, p.x, p.y, 0);
+      cogl_framebuffer_scale (fb, HANDLE_HALF_SIZE, HANDLE_HALF_SIZE, 0);
+      cogl_framebuffer_draw_attributes (fb,
+                                        paint_data->pipeline,
+                                        COGL_VERTICES_MODE_LINE_STRIP,
+                                        1,
+                                        data->circle_node_n_verts - 1,
+                                        &data->circle_node_attribute,
+                                        1);
+      cogl_framebuffer_pop_matrix (fb);
+#else
+#if 0
+      cogl_framebuffer_draw_rectangle (fb,
+                                       pipeline,
+                                       p.x - HANDLE_HALF_SIZE,
+                                       p.y - HANDLE_HALF_SIZE,
+                                       p.x + HANDLE_HALF_SIZE,
+                                       p.y + HANDLE_HALF_SIZE);
+#endif
+#endif
+#endif
+      g_array_append_val (points, p);
+    }
+
+  prim = cogl_primitive_new_p2 (ctx->cogl_context,
+                                COGL_VERTICES_MODE_LINE_STRIP,
+                                points->len, (CoglVertexP2 *)points->data);
+  draw_jittered_primitive4f (data, fb, prim, red, green, blue);
+  cogl_object_unref (prim);
+
+  g_array_free (points, TRUE);
+}
+
 static void
 paint_timeline_camera (TestPaintContext *test_paint_ctx)
 {
@@ -1287,124 +1400,42 @@ paint_timeline_camera (TestPaintContext *test_paint_ctx)
   RigData *data = test_paint_ctx->data;
   RigContext *ctx = data->ctx;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
-  GList *l;
 
   //cogl_framebuffer_push_matrix (fb);
   //cogl_framebuffer_transform (fb, rig_transformable_get_matrix (camera));
 
   if (data->selected_entity)
     {
-      //CoglContext *ctx = data->ctx->cogl_context;
-      RigEntity *entity = data->selected_entity;
-      //int i;
+      PaintTimelineData paint_data;
 
-      float viewport_x = 0;
-      float viewport_y = 0;
+      paint_data.test_paint_ctx = test_paint_ctx;
 
-      float viewport_t_scale =
+      paint_data.entity = data->selected_entity;
+      paint_data.viewport_x = 0;
+      paint_data.viewport_y = 0;
+
+      paint_data.viewport_t_scale =
         rig_ui_viewport_get_doc_scale_x (data->timeline_vp) *
         data->timeline_scale;
 
-      float viewport_y_scale =
+      paint_data.viewport_y_scale =
         rig_ui_viewport_get_doc_scale_y (data->timeline_vp) *
         data->timeline_scale;
 
-      float viewport_t_offset = rig_ui_viewport_get_doc_x (data->timeline_vp);
-      float viewport_y_offset = rig_ui_viewport_get_doc_y (data->timeline_vp);
-      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-      //NodeFloat *next;
+      paint_data.viewport_t_offset =
+        rig_ui_viewport_get_doc_x (data->timeline_vp);
+      paint_data.viewport_y_offset =
+        rig_ui_viewport_get_doc_y (data->timeline_vp);
+      paint_data.pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
-      CoglPrimitive *prim;
+      rig_transition_foreach_property (data->selected_transition,
+                                       paint_timeline_path_cb,
+                                       &paint_data);
 
-      for (l = data->selected_transition->paths; l; l = l->next)
-        {
-          RigPath *path = l->data;
-          GArray *points;
-          GList *l;
-          GList *next;
-          float red, green, blue;
-
-          if (path == NULL ||
-              path->prop->object != entity ||
-              path->prop->spec->type != RIG_PROPERTY_TYPE_FLOAT)
-            continue;
-
-          if (strcmp (path->prop->spec->name, "x") == 0)
-            red = 1.0, green = 0.0, blue = 0.0;
-          else if (strcmp (path->prop->spec->name, "y") == 0)
-            red = 0.0, green = 1.0, blue = 0.0;
-          else if (strcmp (path->prop->spec->name, "z") == 0)
-            red = 0.0, green = 0.0, blue = 1.0;
-          else
-            continue;
-
-          points = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
-
-          for (l = path->nodes.head; l; l = next)
-            {
-              RigNodeFloat *f_node = l->data;
-              CoglVertexP2 p;
-
-              next = l->next;
-
-              /* FIXME: This clipping wasn't working... */
-#if 0
-              /* Only draw the nodes within the current viewport */
-              if (next)
-                {
-                  float max_t = viewport_t_offset + data->timeline_vp->width * viewport_t_scale;
-                  if (next->t < viewport_t_offset)
-                    continue;
-                  if (node->t > max_t && next->t > max_t)
-                    break;
-                }
-#endif
-
-#define HANDLE_HALF_SIZE 4
-              p.x = viewport_x + (f_node->t - viewport_t_offset) * viewport_t_scale;
-
-              cogl_pipeline_set_color4f (pipeline, red, green, blue, 1);
-
-              p.y = viewport_y + (f_node->value - viewport_y_offset) * viewport_y_scale;
-#if 1
-#if 1
-              cogl_framebuffer_push_matrix (fb);
-              cogl_framebuffer_translate (fb, p.x, p.y, 0);
-              cogl_framebuffer_scale (fb, HANDLE_HALF_SIZE, HANDLE_HALF_SIZE, 0);
-              cogl_framebuffer_draw_attributes (fb,
-                                                pipeline,
-                                                COGL_VERTICES_MODE_LINE_STRIP,
-                                                1,
-                                                data->circle_node_n_verts - 1,
-                                                &data->circle_node_attribute,
-                                                1);
-              cogl_framebuffer_pop_matrix (fb);
-#else
-#if 0
-              cogl_framebuffer_draw_rectangle (fb,
-                                               pipeline,
-                                               p.x - HANDLE_HALF_SIZE,
-                                               p.y - HANDLE_HALF_SIZE,
-                                               p.x + HANDLE_HALF_SIZE,
-                                               p.y + HANDLE_HALF_SIZE);
-#endif
-#endif
-#endif
-              g_array_append_val (points, p);
-            }
-
-          prim = cogl_primitive_new_p2 (ctx->cogl_context,
-                                        COGL_VERTICES_MODE_LINE_STRIP,
-                                        points->len, (CoglVertexP2 *)points->data);
-          draw_jittered_primitive4f (data, fb, prim, red, green, blue);
-          cogl_object_unref (prim);
-
-          g_array_free (points, TRUE);
-        }
-
-      cogl_object_unref (pipeline);
+      cogl_object_unref (paint_data.pipeline);
 
       {
+        CoglPrimitive *prim;
         double progress;
         float progress_x;
         float progress_line[4];
@@ -1412,8 +1443,8 @@ paint_timeline_camera (TestPaintContext *test_paint_ctx)
         progress = rig_timeline_get_progress (data->timeline);
 
         progress_x =
-          -viewport_t_offset *
-          viewport_t_scale +
+          -paint_data.viewport_t_offset *
+          paint_data.viewport_t_scale +
           data->timeline_width *
           data->timeline_scale * progress;
 

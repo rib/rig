@@ -37,8 +37,38 @@ typedef struct
 typedef struct
 {
   float t;
+  double value;
+} RigNodeDouble;
+
+typedef struct
+{
+  float t;
+  int value;
+} RigNodeInteger;
+
+typedef struct
+{
+  float t;
+  uint32_t value;
+} RigNodeUint32;
+
+typedef struct
+{
+  float t;
   float value[3];
 } RigNodeVec3;
+
+typedef struct
+{
+  float t;
+  float value[4];
+} RigNodeVec4;
+
+typedef struct
+{
+  float t;
+  RigColor value;
+} RigNodeColor;
 
 typedef struct
 {
@@ -65,16 +95,61 @@ rig_node_quaternion_lerp (RigNodeQuaternion *a,
                           CoglQuaternion *value);
 
 void
+rig_node_double_lerp (RigNodeDouble *a,
+                      RigNodeDouble *b,
+                      float t,
+                      double *value);
+
+void
+rig_node_integer_lerp (RigNodeInteger *a,
+                       RigNodeInteger *b,
+                       float t,
+                       int *value);
+
+void
+rig_node_uint32_lerp (RigNodeUint32 *a,
+                      RigNodeUint32 *b,
+                      float t,
+                      uint32_t *value);
+
+void
+rig_node_vec4_lerp (RigNodeVec4 *a,
+                    RigNodeVec4 *b,
+                    float t,
+                    float value[4]);
+
+void
+rig_node_color_lerp (RigNodeColor *a,
+                     RigNodeColor *b,
+                     float t,
+                     RigColor *value);
+
+void
 rig_node_free (void *node, void *user_data);
 
 RigNodeFloat *
 rig_node_new_for_float (float t, float value);
 
+RigNodeDouble *
+rig_node_new_for_double (float t, double value);
+
 RigNodeVec3 *
 rig_node_new_for_vec3 (float t, const float value[3]);
 
+RigNodeVec4 *
+rig_node_new_for_vec4 (float t, const float value[4]);
+
+RigNodeInteger *
+rig_node_new_for_integer (float t, int value);
+
+RigNodeUint32 *
+rig_node_new_for_uint32 (float t, uint32_t value);
+
 RigNodeQuaternion *
-rig_node_new_for_quaternion (float t, float angle, float x, float y, float z);
+rig_node_new_for_quaternion (float t, const CoglQuaternion *value);
+
+RigNodeColor *
+rig_node_new_for_color (float t, const RigColor *value);
 
 GList *
 rig_nodes_find_less_than (GList *start, float t);

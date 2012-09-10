@@ -207,6 +207,326 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   return RIG_TRAVERSE_VISIT_CONTINUE;
 }
 
+static void
+save_float (SaveState *state,
+            float value)
+{
+  fprintf (state->file, "%f", value);
+}
+
+static void
+save_double (SaveState *state,
+             double value)
+{
+  fprintf (state->file, "%f", value);
+}
+
+static void
+save_integer (SaveState *state,
+              int value)
+{
+  fprintf (state->file, "%i", value);
+}
+
+static void
+save_uint32 (SaveState *state,
+             uint32_t value)
+{
+  fprintf (state->file, "%" G_GUINT32_FORMAT, value);
+}
+
+static void
+save_boolean (SaveState *state,
+              CoglBool value)
+{
+  fputs (value ? "yes" : "no", state->file);
+}
+
+static void
+save_text (SaveState *state,
+           const char *value)
+{
+  FILE *file = state->file;
+
+  while (*value)
+    {
+      gunichar ch = g_utf8_get_char (value);
+
+      switch (ch)
+        {
+        case '"':
+          fputs ("&quot;", file);
+          break;
+
+        case '\'':
+          fputs ("&apos;", file);
+          break;
+
+        case '<':
+          fputs ("&lt;", file);
+          break;
+
+        case '>':
+          fputs ("&gt;", file);
+          break;
+
+        default:
+          if (ch >= ' ' && ch <= 127)
+            fputc (ch, file);
+          else
+            fprintf (file, "&#%i;", ch);
+        }
+
+      value = g_utf8_next_char (value);
+    }
+}
+
+static void
+save_vec3 (SaveState *state,
+           const float *value)
+{
+  fprintf (state->file, "(%f, %f, %f)",
+           value[0],
+           value[1],
+           value[2]);
+}
+
+static void
+save_vec4 (SaveState *state,
+           const float *value)
+{
+  fprintf (state->file, "(%f, %f, %f, %f)",
+           value[0],
+           value[1],
+           value[2],
+           value[3]);
+}
+
+static void
+save_color (SaveState *state,
+            const RigColor *value)
+{
+  fprintf (state->file, "(%f, %f, %f, %f)",
+           value->red,
+           value->green,
+           value->blue,
+           value->alpha);
+}
+
+static void
+save_quaternion (SaveState *state,
+                 const CoglQuaternion *value)
+{
+  float angle;
+  float axis[3];
+
+  angle = cogl_quaternion_get_rotation_angle (value);
+  cogl_quaternion_get_rotation_axis (value, axis);
+
+  fprintf (state->file,
+           "[%f (%f, %f, %f)]",
+           angle, axis[0], axis[1], axis[2]);
+}
+
+static void
+save_path (SaveState *state,
+           RigPath *path)
+{
+  FILE *file = state->file;
+  GList *l;
+
+  fprintf (file,
+           "%*s<path>\n",
+           state->indent, "");
+
+  state->indent += INDENT_LEVEL;
+
+  for (l = path->nodes.head; l; l = l->next)
+    {
+      RigNode *node = l->data;
+
+      fprintf (file,
+               "%*s<node t=\"%f\" value=\"",
+               state->indent, "",
+               node->t);
+
+      switch (path->type)
+        {
+        case RIG_PROPERTY_TYPE_FLOAT:
+          {
+            RigNodeFloat *node = l->data;
+            save_float (state, node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_DOUBLE:
+          {
+            RigNodeDouble *node = l->data;
+            save_double (state, node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_VEC3:
+          {
+            RigNodeVec3 *node = l->data;
+            save_vec3 (state, node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_VEC4:
+          {
+            RigNodeVec4 *node = l->data;
+            save_vec4 (state, node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_COLOR:
+          {
+            RigNodeColor *node = l->data;
+            save_color (state, &node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_QUATERNION:
+          {
+            RigNodeQuaternion *node = l->data;
+            save_quaternion (state, &node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_INTEGER:
+          {
+            RigNodeInteger *node = l->data;
+            save_uint32 (state, node->value);
+            goto handled;
+          }
+        case RIG_PROPERTY_TYPE_UINT32:
+          {
+            RigNodeUint32 *node = l->data;
+            save_uint32 (state, node->value);
+            goto handled;
+          }
+
+          /* These types of properties can't be interoplated so they
+           * probably shouldn't end up in a path */
+        case RIG_PROPERTY_TYPE_ENUM:
+        case RIG_PROPERTY_TYPE_BOOLEAN:
+        case RIG_PROPERTY_TYPE_TEXT:
+        case RIG_PROPERTY_TYPE_OBJECT:
+        case RIG_PROPERTY_TYPE_POINTER:
+          break;
+        }
+
+      g_warn_if_reached ();
+
+    handled:
+      fprintf (file, "\" />\n");
+    }
+
+  state->indent -= INDENT_LEVEL;
+
+  fprintf (file,
+           "%*s</path>\n",
+           state->indent, "");
+}
+
+static void
+save_boxed_value (SaveState *state,
+                  const RigBoxed *value)
+{
+  switch (value->type)
+    {
+    case RIG_PROPERTY_TYPE_FLOAT:
+      save_float (state, value->d.float_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_DOUBLE:
+      save_double (state, value->d.double_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_INTEGER:
+      save_integer (state, value->d.integer_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_UINT32:
+      save_uint32 (state, value->d.uint32_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_BOOLEAN:
+      save_boolean (state, value->d.boolean_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_TEXT:
+      save_text (state, value->d.text_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_QUATERNION:
+      save_quaternion (state, &value->d.quaternion_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_VEC3:
+      save_vec3 (state, value->d.vec3_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_VEC4:
+      save_vec4 (state, value->d.vec4_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_COLOR:
+      save_color (state, &value->d.color_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_ENUM:
+      /* FIXME: this should probably save the string names rather than
+       * the integer value */
+      save_integer (state, value->d.enum_val);
+      return;
+
+    case RIG_PROPERTY_TYPE_OBJECT:
+    case RIG_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+}
+
+static void
+save_property_cb (RigProperty *property,
+                  RigPath *path,
+                  const RigBoxed *constant_value,
+                  void *user_data)
+{
+  SaveState *state = user_data;
+  FILE *file = state->file;
+  RigEntity *entity;
+  int id;
+
+  if (path == NULL)
+    return;
+
+  entity = property->object;
+
+  id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, entity));
+  if (!id)
+    g_warning ("Failed to find id of entity\n");
+
+  state->indent += INDENT_LEVEL;
+  fprintf (file, "%*s<property entity=\"%d\" name=\"%s\" animated=\"%s\">\n",
+           state->indent, "",
+           id,
+           property->spec->name,
+           property->animated ? "yes" : "no");
+
+  state->indent += INDENT_LEVEL;
+
+  if (path)
+    save_path (state, path);
+
+  fprintf (file, "%*s<constant value=\"", state->indent, "");
+  save_boxed_value (state, constant_value);
+  fprintf (file, "\" />\n");
+
+  state->indent -= INDENT_LEVEL;
+
+  fprintf (file, "%*s</property>\n", state->indent, "");
+
+  state->indent -= INDENT_LEVEL;
+}
+
 void
 rig_save (RigData *data)
 {
@@ -265,77 +585,14 @@ rig_save (RigData *data)
   for (l = data->transitions; l; l = l->next)
     {
       RigTransition *transition = l->data;
-      GList *l2;
       //int i;
 
       state.indent += INDENT_LEVEL;
       fprintf (file, "%*s<transition id=\"%d\">\n", state.indent, "", transition->id);
 
-      for (l2 = transition->paths; l2; l2 = l2->next)
-        {
-          RigPath *path = l2->data;
-          GList *l3;
-          RigEntity *entity;
-          int id;
-
-          if (path == NULL)
-            continue;
-
-          entity = path->prop->object;
-
-          id = GPOINTER_TO_INT (g_hash_table_lookup (state.id_map, entity));
-          if (!id)
-            g_warning ("Failed to find id of entity\n");
-
-          state.indent += INDENT_LEVEL;
-          fprintf (file, "%*s<path entity=\"%d\" property=\"%s\">\n", state.indent, "",
-                   id,
-                   path->prop->spec->name);
-
-          state.indent += INDENT_LEVEL;
-          for (l3 = path->nodes.head; l3; l3 = l3->next)
-            {
-              switch (path->prop->spec->type)
-                {
-                case RIG_PROPERTY_TYPE_FLOAT:
-                  {
-                    RigNodeFloat *node = l3->data;
-                    fprintf (file, "%*s<node t=\"%f\" value=\"%f\" />\n", state.indent, "", node->t, node->value);
-                    break;
-                  }
-                case RIG_PROPERTY_TYPE_VEC3:
-                  {
-                    RigNodeVec3 *node = l3->data;
-                    fprintf (file, "%*s<node t=\"%f\" value=\"(%f, %f, %f)\" />\n",
-                             state.indent, "", node->t,
-                             node->value[0],
-                             node->value[1],
-                             node->value[2]);
-                    break;
-                  }
-                case RIG_PROPERTY_TYPE_QUATERNION:
-                  {
-                    RigNodeQuaternion *node = l3->data;
-                    CoglQuaternion *q = &node->value;
-                    float angle;
-                    float axis[3];
-
-                    angle = cogl_quaternion_get_rotation_angle (q);
-                    cogl_quaternion_get_rotation_axis (q, axis);
-
-                    fprintf (file, "%*s<node t=\"%f\" value=\"[%f (%f, %f, %f)]\" />\n", state.indent, "",
-                             node->t, angle, axis[0], axis[1], axis[2]);
-                    break;
-                  }
-                default:
-                  g_warn_if_reached ();
-                }
-            }
-          state.indent -= INDENT_LEVEL;
-
-          fprintf (file, "%*s</path>\n", state.indent, "");
-          state.indent -= INDENT_LEVEL;
-        }
+      rig_transition_foreach_property (transition,
+                                       save_property_cb,
+                                       &state);
 
       fprintf (file, "%*s</transition>\n", state.indent, "");
       fprintf (file, "</ui>\n");
@@ -357,6 +614,8 @@ enum {
   LOADER_STATE_LOADING_LIGHT_COMPONENT,
   LOADER_STATE_LOADING_CAMERA_COMPONENT,
   LOADER_STATE_LOADING_TRANSITION,
+  LOADER_STATE_LOADING_PROPERTY,
+  LOADER_STATE_LOADING_CONSTANT,
   LOADER_STATE_LOADING_PATH
 };
 
@@ -380,6 +639,7 @@ typedef struct _Loader
   CoglBool is_light;
 
   RigTransition *current_transition;
+  RigTransitionPropData *current_property;
   RigPath *current_path;
 
   GHashTable *id_map;
@@ -422,6 +682,293 @@ loader_find_asset (Loader *loader, uint32_t id)
   if (object == NULL || rig_object_get_type (object) != &rig_asset_type)
     return NULL;
   return RIG_ASSET (object);
+}
+
+static CoglBool
+load_float (float *value,
+            const char *str)
+{
+  *value = g_ascii_strtod (str, NULL);
+  return TRUE;
+}
+
+static CoglBool
+load_double (double *value,
+             const char *str)
+{
+  *value = g_ascii_strtod (str, NULL);
+  return TRUE;
+}
+
+static CoglBool
+load_integer (int *value,
+              const char *str)
+{
+  *value = g_ascii_strtoll (str, NULL, 10);
+  return TRUE;
+}
+
+static CoglBool
+load_uint32 (uint32_t *value,
+             const char *str)
+{
+  *value = g_ascii_strtoull (str, NULL, 10);
+  return TRUE;
+}
+
+static CoglBool
+load_boolean (CoglBool *value,
+              const char *str)
+{
+  /* Borrowed from gmarkup.c in glib */
+  char const * const falses[] = { "false", "f", "no", "n", "0" };
+  char const * const trues[] = { "true", "t", "yes", "y", "1" };
+  int i;
+
+  for (i = 0; i < G_N_ELEMENTS (falses); i++)
+    {
+      if (g_ascii_strcasecmp (str, falses[i]) == 0)
+        {
+          *value = FALSE;
+
+          return TRUE;
+        }
+    }
+
+  for (i = 0; i < G_N_ELEMENTS (trues); i++)
+    {
+      if (g_ascii_strcasecmp (str, trues[i]) == 0)
+        {
+          *value = TRUE;
+
+          return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+static CoglBool
+load_text (char **value,
+           const char *str)
+{
+  *value = g_strdup (str);
+  return TRUE;
+}
+
+static CoglBool
+load_vec3 (float *value,
+           const char *str)
+{
+  return sscanf (str, "(%f, %f, %f)",
+                 &value[0], &value[1], &value[2]) == 3;
+}
+
+static CoglBool
+load_vec4 (float *value,
+           const char *str)
+{
+  return sscanf (str, "(%f, %f, %f, %f)",
+                 &value[0], &value[1], &value[2], &value[3]) == 4;
+}
+
+static CoglBool
+load_color (RigColor *value,
+            const char *str)
+{
+  return sscanf (str, "(%f, %f, %f, %f)",
+                 &value->red, &value->green, &value->blue, &value->alpha) == 4;
+}
+
+static CoglBool
+load_quaternion (CoglQuaternion *value,
+                 const char *str)
+{
+  float angle, x, y, z;
+
+  if (sscanf (str, "[%f (%f, %f, %f)]", &angle, &x, &y, &z) != 4)
+    return FALSE;
+
+  cogl_quaternion_init (value, angle, x, y, z);
+
+  return TRUE;
+}
+
+static CoglBool
+load_boxed_value (RigBoxed *value,
+                  RigPropertyType type,
+                  const char *str,
+                  GError **error)
+{
+  value->type = type;
+
+  switch (type)
+    {
+    case RIG_PROPERTY_TYPE_FLOAT:
+      if (!load_float (&value->d.float_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_DOUBLE:
+      if (!load_double (&value->d.double_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_INTEGER:
+      if (!load_integer (&value->d.integer_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_ENUM:
+      /* FIXME: this should probably load the string name rather than
+       * the integer value */
+      if (!load_integer (&value->d.enum_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_UINT32:
+      if (!load_uint32 (&value->d.uint32_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_BOOLEAN:
+      if (!load_boolean (&value->d.boolean_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_TEXT:
+      if (!load_text (&value->d.text_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_QUATERNION:
+      if (!load_quaternion (&value->d.quaternion_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_VEC3:
+      if (!load_vec3 (value->d.vec3_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_VEC4:
+      if (!load_vec4 (value->d.vec4_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_COLOR:
+      if (!load_color (&value->d.color_val, str))
+        goto error;
+      return TRUE;
+
+    case RIG_PROPERTY_TYPE_OBJECT:
+    case RIG_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+
+ error:
+  g_set_error (error,
+               G_MARKUP_ERROR,
+               G_MARKUP_ERROR_INVALID_CONTENT,
+               "Invalid value encountered");
+
+  return FALSE;
+}
+
+static CoglBool
+load_path_node (RigPath *path,
+                float t,
+                const char *value_str,
+                GError **error)
+{
+  switch (path->type)
+    {
+    case RIG_PROPERTY_TYPE_FLOAT:
+      {
+        float value;
+        if (!load_float (&value, value_str))
+          goto error;
+        rig_path_insert_float (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_DOUBLE:
+      {
+        double value;
+        if (!load_double (&value, value_str))
+          goto error;
+        rig_path_insert_double (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_INTEGER:
+      {
+        int value;
+        if (!load_integer (&value, value_str))
+          goto error;
+        rig_path_insert_integer (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_UINT32:
+      {
+        uint32_t value;
+        if (!load_uint32 (&value, value_str))
+          goto error;
+        rig_path_insert_uint32 (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_VEC3:
+      {
+        float value[3];
+        if (!load_vec3 (value, value_str))
+          goto error;
+        rig_path_insert_vec3 (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_VEC4:
+      {
+        float value[4];
+        if (!load_vec4 (value, value_str))
+          goto error;
+        rig_path_insert_vec4 (path, t, value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_COLOR:
+      {
+        RigColor value;
+        if (!load_color (&value, value_str))
+          goto error;
+        rig_path_insert_color (path, t, &value);
+        return TRUE;
+      }
+    case RIG_PROPERTY_TYPE_QUATERNION:
+      {
+        CoglQuaternion value;
+        if (!load_quaternion (&value, value_str))
+          goto error;
+        rig_path_insert_quaternion (path, t, &value);
+        return TRUE;
+      }
+
+      /* These shouldn't be animatable */
+    case RIG_PROPERTY_TYPE_BOOLEAN:
+    case RIG_PROPERTY_TYPE_TEXT:
+    case RIG_PROPERTY_TYPE_ENUM:
+    case RIG_PROPERTY_TYPE_OBJECT:
+    case RIG_PROPERTY_TYPE_POINTER:
+      g_warn_if_reached ();
+      goto error;
+    }
+
+  g_warn_if_reached ();
+
+ error:
+  g_set_error (error,
+               G_MARKUP_ERROR,
+               G_MARKUP_ERROR_INVALID_CONTENT,
+               "Invalid value encountered");
+
+  return FALSE;
 }
 
 static void
@@ -781,13 +1328,14 @@ parse_start_element (GMarkupParseContext *context,
       loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
-           strcmp (element_name, "path") == 0)
+           strcmp (element_name, "property") == 0)
     {
       const char *entity_id_str;
       uint32_t entity_id;
       RigEntity *entity;
       const char *property_name;
-      RigProperty *prop;
+      CoglBool animated;
+      RigTransitionPropData *prop_data;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
@@ -797,8 +1345,11 @@ parse_start_element (GMarkupParseContext *context,
                                         "entity",
                                         &entity_id_str,
                                         G_MARKUP_COLLECT_STRING,
-                                        "property",
+                                        "name",
                                         &property_name,
+                                        G_MARKUP_COLLECT_BOOLEAN,
+                                        "animated",
+                                        &animated,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
@@ -815,21 +1366,68 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      prop = rig_introspectable_lookup_property (entity, property_name);
-      if (!prop)
+      prop_data = rig_transition_get_prop_data (loader->current_transition,
+                                                entity,
+                                                property_name);
+
+      if (prop_data->property->spec->animatable)
+        {
+          rig_property_set_animated (&data->ctx->property_ctx,
+                                     prop_data->property,
+                                     animated);
+        }
+      else if (animated)
         {
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Entity property referenced in path element");
+                       "A non-animatable property is marked as animated");
           return;
         }
 
+      if (!prop_data)
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       "Invalid Entity property referenced in "
+                       "property element");
+          return;
+        }
+
+      loader->current_property = prop_data;
+
+      loader_push_state (loader, LOADER_STATE_LOADING_PROPERTY);
+    }
+  else if (state == LOADER_STATE_LOADING_PROPERTY &&
+           strcmp (element_name, "constant") == 0)
+    {
+      const char *value_str;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "value",
+                                        &value_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        return;
+
+      if (!load_boxed_value (&loader->current_property->constant_value,
+                             loader->current_property->constant_value.type,
+                             value_str,
+                             error))
+        return;
+
+      loader_push_state (loader, LOADER_STATE_LOADING_CONSTANT);
+    }
+  else if (state == LOADER_STATE_LOADING_PROPERTY &&
+           strcmp (element_name, "path") == 0)
+    {
       loader->current_path =
-        rig_path_new_for_property (data->ctx,
-                                   &loader->current_transition
-                                   ->props[RIG_TRANSITION_PROP_PROGRESS],
-                                   prop);
+        rig_path_new (data->ctx,
+                      loader->current_property->property->spec->type);
 
       loader_push_state (loader, LOADER_STATE_LOADING_PATH);
     }
@@ -855,49 +1453,11 @@ parse_start_element (GMarkupParseContext *context,
 
       t = g_ascii_strtod (t_str, NULL);
 
-      switch (loader->current_path->prop->spec->type)
-        {
-        case RIG_PROPERTY_TYPE_FLOAT:
-          {
-            float value = g_ascii_strtod (value_str, NULL);
-            rig_path_insert_float (loader->current_path, t, value);
-            break;
-          }
-        case RIG_PROPERTY_TYPE_VEC3:
-          {
-            float value[3];
-            if (sscanf (value_str, "(%f, %f, %f)",
-                        &value[0], &value[1], &value[2]) != 3)
-              {
-                g_set_error (error,
-                             G_MARKUP_ERROR,
-                             G_MARKUP_ERROR_INVALID_CONTENT,
-                             "Invalid vec3 value");
-                return;
-              }
-            rig_path_insert_vec3 (loader->current_path, t, value);
-            break;
-          }
-        case RIG_PROPERTY_TYPE_QUATERNION:
-          {
-            float angle, x, y, z;
-
-            if (sscanf (value_str, "[%f (%f, %f, %f)]", &angle, &x, &y, &z) != 4)
-              {
-                g_set_error (error,
-                             G_MARKUP_ERROR,
-                             G_MARKUP_ERROR_INVALID_CONTENT,
-                             "Invalid rotation value");
-                return;
-              }
-
-            rig_path_insert_quaternion (loader->current_path,
-                                        t,
-                                        angle,
-                                        x, y, z);
-            break;
-          }
-        }
+      if (!load_path_node (loader->current_path,
+                           t,
+                           value_str,
+                           error))
+        return;
     }
 }
 
@@ -992,8 +1552,13 @@ parse_end_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_PATH &&
            strcmp (element_name, "path") == 0)
     {
-      rig_transition_add_path (loader->current_transition,
-                               loader->current_path);
+      g_assert (loader->current_property->path == NULL);
+      loader->current_property->path = loader->current_path;
+      loader_pop_state (loader);
+    }
+  else if (state == LOADER_STATE_LOADING_CONSTANT &&
+           strcmp (element_name, "constant") == 0)
+    {
       loader_pop_state (loader);
     }
 }
