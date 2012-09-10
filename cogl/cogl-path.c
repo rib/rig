@@ -96,8 +96,6 @@ _cogl_path_data_unref (CoglPathData *data)
 
       g_array_free (data->path_nodes, TRUE);
 
-      cogl_object_unref (data->context);
-
       g_slice_free (CoglPathData, data);
     }
 }
@@ -124,7 +122,6 @@ _cogl_path_modify (CoglPath *path)
       path->data->fill_attribute_buffer = NULL;
       path->data->stroke_attribute_buffer = NULL;
       path->data->ref_count = 1;
-      cogl_object_ref (path->data->context);
 
       _cogl_path_data_unref (old_data);
     }
@@ -867,7 +864,7 @@ cogl_path_new (CoglContext *context)
   data = path->data = g_slice_new (CoglPathData);
 
   data->ref_count = 1;
-  data->context = cogl_object_ref (context);
+  data->context = context;
   data->fill_rule = COGL_PATH_FILL_RULE_EVEN_ODD;
   data->path_nodes = g_array_new (FALSE, FALSE, sizeof (CoglPathNode));
   data->last_path = 0;

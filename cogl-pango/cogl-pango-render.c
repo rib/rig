@@ -235,7 +235,6 @@ cogl_pango_renderer_set_property (GObject *object,
     {
     case PROP_COGL_CONTEXT:
       renderer->ctx = g_value_get_pointer (value);
-      cogl_object_ref (renderer->ctx);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -275,10 +274,7 @@ cogl_pango_renderer_dispose (GObject *object)
   CoglPangoRenderer *priv = COGL_PANGO_RENDERER (object);
 
   if (priv->ctx)
-    {
-      cogl_object_unref (priv->ctx);
-      priv->ctx = NULL;
-    }
+    priv->ctx = NULL;
 }
 
 static void

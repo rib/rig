@@ -1530,8 +1530,6 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
                                  NULL);
     }
 
-  cogl_object_unref (gles2_context->context);
-
   g_free (gles2_context->vtable);
 
   g_free (gles2_context);
@@ -1603,7 +1601,6 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
 
   gles2_ctx = g_malloc0 (sizeof (CoglGLES2Context));
 
-  cogl_object_ref (ctx);
   gles2_ctx->context = ctx;
 
   COGL_LIST_INIT (&gles2_ctx->foreign_offscreens);
@@ -1612,7 +1609,6 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
   gles2_ctx->winsys = winsys->context_create_gles2_context (ctx, error);
   if (gles2_ctx->winsys == NULL)
     {
-      cogl_object_unref (gles2_ctx->context);
       g_free (gles2_ctx);
       return NULL;
     }
