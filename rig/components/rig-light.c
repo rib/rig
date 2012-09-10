@@ -84,8 +84,6 @@ static void
 rig_light_update (RigObject *object,
                   int64_t time)
 {
-  RigLight *light = object;
-  rig_light_set_uniforms (light, light->pipeline);
 }
 
 RigType rig_light_type;
@@ -162,19 +160,4 @@ const RigColor *
 rig_light_get_specular (RigLight *light)
 {
   return &light->specular;
-}
-
-void
-rig_light_add_pipeline (RigLight     *light,
-                        CoglPipeline *pipeline)
-{
-  /* XXX: right now the light can only update the uniforms of one pipeline */
-  if (light->pipeline)
-    {
-      cogl_object_unref (light->pipeline);
-      light->pipeline = NULL;
-    }
-
-  if (pipeline)
-    light->pipeline = cogl_object_ref (pipeline);
 }

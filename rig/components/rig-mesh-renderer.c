@@ -216,29 +216,6 @@ create_ply_primitive (RigContext *ctx, const gchar *filename)
   return data;
 }
 
-static void
-rig_mesh_get_normal_matrix (const CoglMatrix *matrix,
-                            float *normal_matrix)
-{
-  CoglMatrix inverse_matrix;
-
-  /* Invert the matrix */
-  cogl_matrix_get_inverse (matrix, &inverse_matrix);
-
-  /* Transpose it while converting it to 3x3 */
-  normal_matrix[0] = inverse_matrix.xx;
-  normal_matrix[1] = inverse_matrix.xy;
-  normal_matrix[2] = inverse_matrix.xz;
-
-  normal_matrix[3] = inverse_matrix.yx;
-  normal_matrix[4] = inverse_matrix.yy;
-  normal_matrix[5] = inverse_matrix.yz;
-
-  normal_matrix[6] = inverse_matrix.zx;
-  normal_matrix[7] = inverse_matrix.zy;
-  normal_matrix[8] = inverse_matrix.zz;
-}
-
 CoglPrimitive *
 rig_mesh_renderer_get_primitive (RigObject *object)
 {
@@ -252,56 +229,10 @@ rig_mesh_renderer_get_primitive (RigObject *object)
     return NULL;
 }
 
-static void
-rig_mesh_renderer_draw (RigObject *object,
-                        CoglFramebuffer *fb)
-{
-  RigMeshRenderer *renderer = object;
-  RigComponentableProps *component =
-    rig_object_get_properties (object, RIG_INTERFACE_ID_COMPONENTABLE);
-  CoglMatrix modelview_matrix;
-  float normal_matrix[9];
-  RigMaterial *material =
-    rig_entity_get_component (component->entity, RIG_COMPONENT_TYPE_MATERIAL);
-  CoglPipeline *pipeline;
-  CoglPrimitive *primitive;
-
-  /* FIXME: We could create a default material component in this case */
-  if (!material)
-    {
-      g_warning ("Can't paint mesh without a material component");
-      return;
-    }
-
-  pipeline = rig_material_get_pipeline (material);
-
-  if (G_UNLIKELY (renderer->pipeline_cache != pipeline))
-    {
-      renderer->normal_matrix_uniform =
-        cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
-      renderer->pipeline_cache = pipeline;
-    }
-
-  cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
-  rig_mesh_get_normal_matrix (&modelview_matrix, normal_matrix);
-  cogl_pipeline_set_uniform_matrix (pipeline,
-                                    renderer->normal_matrix_uniform,
-                                    3, /* dimensions */
-                                    1, /* count */
-                                    FALSE, /* don't transpose again */
-                                    normal_matrix);
-
-  primitive = rig_mesh_renderer_get_primitive (renderer);
-
-  cogl_framebuffer_draw_primitive (fb,
-                                   pipeline,
-                                   primitive);
-}
-
 RigType rig_mesh_renderer_type;
 
 static RigComponentableVTable _rig_mesh_renderer_componentable_vtable = {
-  .draw = rig_mesh_renderer_draw
+  .draw = NULL
 };
 
 static RigPrimableVTable _rig_mesh_renderer_primable_vtable = {

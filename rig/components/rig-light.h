@@ -33,7 +33,6 @@ struct _RigLight
   RigColor ambient;
   RigColor diffuse;
   RigColor specular;
-  CoglPipeline *pipeline; /* pipeline where to update the light uniforms */
 };
 
 void

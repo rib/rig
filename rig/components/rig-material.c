@@ -58,10 +58,6 @@ rig_material_new_full (RigContext *ctx,
   if (asset)
     material->asset = rig_ref_countable_ref (asset);
 
-  /* TODO: remove - requires updating examples/editor.c */
-  if (pipeline)
-    material->pipeline = cogl_object_ref (pipeline);
-
   return material;
 }
 
@@ -71,14 +67,6 @@ rig_material_new (RigContext *ctx,
                   const RigColor *color)
 {
   return rig_material_new_full (ctx, asset, color, NULL);
-}
-
-/* TODO: remove - requires updating examples/editor.c */
-RigMaterial *
-rig_material_new_with_pipeline (RigContext *ctx,
-                                CoglPipeline *pipeline)
-{
-  return rig_material_new_full (ctx, NULL, NULL, pipeline);
 }
 
 RigAsset *
@@ -93,9 +81,3 @@ rig_material_get_color (RigMaterial *material)
   return &material->color;
 }
 
-/* TODO: remove - requires updating examples/editor.c */
-CoglPipeline *
-rig_material_get_pipeline (RigMaterial *material)
-{
-  return material->pipeline;
-}

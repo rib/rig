@@ -33,9 +33,6 @@ struct _RigMaterial
   RigComponentableProps component;
   RigAsset *asset;
   RigColor color;
-
-  /* TODO: remove - requires updating examples/editor.c */
-  CoglPipeline *pipeline; /* pipeline where to update the material uniforms */
 };
 
 void
@@ -51,14 +48,5 @@ rig_material_get_asset (RigMaterial *material);
 
 const RigColor *
 rig_material_get_color (RigMaterial *material);
-
-/* TODO: remove - requires updating examples/editor.c */
-RigMaterial *
-rig_material_new_with_pipeline (RigContext *ctx,
-                                CoglPipeline *pipeline);
-
-/* TODO: remove - requires updating examples/editor.c */
-CoglPipeline *
-rig_material_get_pipeline (RigMaterial *material);
 
 #endif /* __RIG_MATERIAL_H__ */
