@@ -306,8 +306,6 @@ AC_OUTPUT(
 Makefile
 rig/Makefile
 rig/rig.pc
-examples/Makefile
-examples/editor/Makefile
 data/Makefile
 editor/Makefile
 )
