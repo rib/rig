@@ -9,7 +9,10 @@
 
 #include "rig.h"
 #include "rig-inspector.h"
+
+#include "rig-data.h"
 #include "rig-transition.h"
+#include "rig-load-save.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -26,10 +29,6 @@
 #define CIRCLE_TEX_PADDING 16
 
 #define N_CUBES 5
-
-#define INDENT_LEVEL 2
-
-typedef struct _Data Data;
 
 typedef enum _UndoRedoOp
 {
@@ -55,17 +54,17 @@ typedef struct _UndoRedo
     } d;
 } UndoRedo;
 
-typedef struct _UndoJournal
+struct _RigUndoJournal
 {
-  Data *data;
+  RigData *data;
   GQueue ops;
   GList *pos;
   GQueue redo_ops;
-} UndoJournal;
+};
 
 typedef struct _UndoRedoOpImpl
 {
-  void (*apply) (UndoJournal *journal, UndoRedo *undo_redo);
+  void (*apply) (RigUndoJournal *journal, UndoRedo *undo_redo);
   UndoRedo *(*invert) (UndoRedo *src);
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
@@ -101,7 +100,7 @@ typedef struct _TestPaintContext
 {
   RigPaintContext _parent;
 
-  Data *data;
+  RigData *data;
 
   GList *camera_stack;
 
@@ -109,214 +108,19 @@ typedef struct _TestPaintContext
 
 } TestPaintContext;
 
-typedef enum _State
-{
-  STATE_NONE
-} State;
-
-enum {
-  DATA_PROP_WIDTH,
-  DATA_PROP_HEIGHT,
-  //DATA_PROP_PATH_T,
-
-  DATA_N_PROPS
-};
-
-struct _Data
-{
-  RigCamera *camera;
-  RigObject *root;
-  RigObject *scene;
-
-  CoglMatrix identity;
-
-  CoglTexture *gradient;
-
-  CoglPipeline *shadow_color_tex;
-  CoglPipeline *shadow_map_tex;
-
-  CoglPipeline *default_pipeline;
-
-  CoglPipeline *dof_pipeline_template;
-  CoglPipeline *dof_pipeline;
-  CoglPipeline *dof_diamond_pipeline;
-
-  State state;
-
-  RigShell *shell;
-  RigContext *ctx;
-  CoglOnscreen *onscreen;
-
-  UndoJournal *undo_journal;
-
-  /* shadow mapping */
-  CoglOffscreen *shadow_fb;
-  CoglTexture2D *shadow_color;
-  CoglTexture *shadow_map;
-  RigCamera *shadow_map_camera;
-
-  CoglTexture *circle_texture;
-
-  CoglTexture *light_icon;
-  CoglTexture *clip_plane_icon;
-
-  //float width;
-  //RigProperty width_property;
-  //float height;
-  //RigProperty height_property;
-
-  RigSplitView *splits[5];
-
-
-  RigBevel *main_area_bevel;
-  RigStack *top_bar_stack;
-  RigStack *icon_bar_stack;
-  //RigTransform *top_bar_transform;
-  RigStack *left_bar_stack;
-  //RigTransform *left_bar_transform;
-  //RigTransform *right_bar_transform;
-  RigStack *right_bar_stack;
-  //RigTransform *main_transform;
-
-  RigStack *bottom_bar_stack;
-  //RigTransform *bottom_bar_transform;
-
-  //RigTransform *screen_area_transform;
-
-  CoglPrimitive *grid_prim;
-  CoglAttribute *circle_node_attribute;
-  int circle_node_n_verts;
-
-  //RigTransform *slider_transform;
-  //RigSlider *slider;
-  //RigProperty *slider_progress;
-  RigRectangle *rect;
-  float width;
-  float height;
-  float top_bar_height;
-  float left_bar_width;
-  float right_bar_width;
-  float bottom_bar_height;
-  float grab_margin;
-  float main_x;
-  float main_y;
-  float main_width;
-  float main_height;
-  float screen_area_width;
-  float screen_area_height;
-
-  RigRectangle *top_bar_rect;
-  RigRectangle *icon_bar_rect;
-  RigRectangle *left_bar_rect;
-  RigRectangle *right_bar_rect;
-  RigRectangle *bottom_bar_rect;
-
-  RigUIViewport *assets_vp;
-  RigGraph *assets_list;
-  GList *asset_input_closures;
-
-  RigUIViewport *tool_vp;
-  RigObject *inspector;
-
-  RigCamera *timeline_camera;
-  RigInputRegion *timeline_input_region;
-  float timeline_width;
-  float timeline_height;
-  float timeline_len;
-  float timeline_scale;
-
-  RigUIViewport *timeline_vp;
-
-  float grab_timeline_vp_t;
-  float grab_timeline_vp_y;
-
-  CoglMatrix main_view;
-  float z_2d;
-
-  RigEntity *main_camera_to_origin; /* move to origin */
-  RigEntity *main_camera_rotate; /* armature rotate rotate */
-  RigEntity *main_camera_origin_offset; /* negative offset */
-  RigEntity *main_camera_armature; /* armature length */
-  RigEntity *main_camera_dev_scale; /* scale to fit device coords */
-  RigEntity *main_camera_screen_pos; /* position screen in edit view */
-  RigEntity *main_camera_2d_view; /* setup 2d view, origin top-left */
-
-  RigEntity *main_camera;
-  RigCamera *main_camera_component;
-  float main_camera_z;
-  RigInputRegion *main_input_region;
-
-  RigEntity *plane;
-  RigEntity *light;
-
-  /* postprocessing */
-  CoglFramebuffer *postprocess;
-  RigDepthOfField *dof;
-  CoglBool enable_dof;
-
-  RigArcball arcball;
-  CoglQuaternion saved_rotation;
-  float origin[3];
-  float saved_origin[3];
-
-  //RigTransform *screen_area_transform;
-  RigTransform *device_transform;
-
-  RigTimeline *timeline;
-  RigProperty *timeline_elapsed;
-  RigProperty *timeline_progress;
-
-  float grab_x;
-  float grab_y;
-  float entity_grab_pos[3];
-  RigInputCallback key_focus_callback;
-
-  GList *assets;
-
-  uint32_t entity_next_id;
-  GList *entities;
-  GList *lights;
-  GList *transitions;
-
-  RigEntity *selected_entity;
-  RigTransition *selected_transition;
-
-  RigTool *tool;
-
-  /* picking ray */
-  CoglPipeline *picking_ray_color;
-  CoglPrimitive *picking_ray;
-  CoglBool debug_pick_ray;
-
-  //Path *path;
-  //float path_t;
-  //RigProperty path_property;
-
-  RigProperty properties[DATA_N_PROPS];
-
-};
-
-static RigPropertySpec data_propert_specs[] = {
+static RigPropertySpec rig_data_property_specs[] = {
   {
     .name = "width",
     .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, width)
+    .data_offset = offsetof (RigData, width)
   },
   {
     .name = "height",
     .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, height)
+    .data_offset = offsetof (RigData, height)
   },
-#if 0
-  {
-    .name = "t",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Data, path_t)
-  },
-#endif
   { 0 }
 };
-
 
 #ifndef __ANDROID__
 
@@ -337,10 +141,10 @@ static char *_rig_project_dir = NULL;
 #endif /* __ANDROID__ */
 
 static CoglBool
-undo_journal_insert (UndoJournal *journal, UndoRedo *undo_redo);
+undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo);
 
 static void
-undo_redo_apply (UndoJournal *journal, UndoRedo *undo_redo);
+undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo);
 
 static UndoRedo *
 undo_redo_invert (UndoRedo *undo_redo);
@@ -348,14 +152,8 @@ undo_redo_invert (UndoRedo *undo_redo);
 static void
 undo_redo_free (UndoRedo *undo_redo);
 
-static void
-save (Data *data);
-
-static void
-load (Data *data, const char *file);
-
 static UndoRedo *
-undo_journal_find_recent_property_change (UndoJournal *journal,
+undo_journal_find_recent_property_change (RigUndoJournal *journal,
                                           RigProperty *property)
 {
   if (journal->pos &&
@@ -371,7 +169,7 @@ undo_journal_find_recent_property_change (UndoJournal *journal,
 }
 
 static void
-undo_journal_log_move (UndoJournal *journal,
+undo_journal_log_move (RigUndoJournal *journal,
                        CoglBool mergable,
                        RigEntity *entity,
                        float prev_x,
@@ -424,7 +222,7 @@ undo_journal_log_move (UndoJournal *journal,
 }
 
 static void
-undo_journal_copy_property_and_log (UndoJournal *journal,
+undo_journal_copy_property_and_log (RigUndoJournal *journal,
                                     CoglBool mergable,
                                     RigEntity *entity,
                                     RigProperty *target_prop,
@@ -473,7 +271,7 @@ undo_journal_copy_property_and_log (UndoJournal *journal,
 }
 
 static void
-undo_redo_prop_change_apply (UndoJournal *journal, UndoRedo *undo_redo)
+undo_redo_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
 
@@ -519,7 +317,7 @@ static UndoRedoOpImpl undo_redo_ops[] =
   };
 
 static void
-undo_redo_apply (UndoJournal *journal, UndoRedo *undo_redo)
+undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
@@ -543,7 +341,7 @@ undo_redo_free (UndoRedo *undo_redo)
 }
 
 static void
-undo_journal_flush_redos (UndoJournal *journal)
+undo_journal_flush_redos (RigUndoJournal *journal)
 {
   UndoRedo *redo;
   while ((redo = g_queue_pop_head (&journal->redo_ops)))
@@ -552,7 +350,7 @@ undo_journal_flush_redos (UndoJournal *journal)
 }
 
 static CoglBool
-undo_journal_insert (UndoJournal *journal, UndoRedo *undo_redo)
+undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedo *inverse = undo_redo_invert (undo_redo);
 
@@ -577,7 +375,7 @@ undo_journal_insert (UndoJournal *journal, UndoRedo *undo_redo)
 }
 
 static CoglBool
-undo_journal_undo (UndoJournal *journal)
+undo_journal_undo (RigUndoJournal *journal)
 {
   g_print ("UNDO\n");
   if (journal->pos)
@@ -601,7 +399,7 @@ undo_journal_undo (UndoJournal *journal)
 }
 
 static CoglBool
-undo_journal_redo (UndoJournal *journal)
+undo_journal_redo (RigUndoJournal *journal)
 {
   UndoRedo *redo = g_queue_pop_tail (&journal->redo_ops);
 
@@ -622,10 +420,10 @@ undo_journal_redo (UndoJournal *journal)
   return TRUE;
 }
 
-static UndoJournal *
-undo_journal_new (Data *data)
+static RigUndoJournal *
+undo_journal_new (RigData *data)
 {
-  UndoJournal *journal = g_new0 (UndoJournal, 1);
+  RigUndoJournal *journal = g_new0 (RigUndoJournal, 1);
 
   g_queue_init (&journal->ops);
   journal->data = data;
@@ -704,7 +502,7 @@ static const float jitter_offsets[32] =
  * since we jitter the modelview not the projection.
  */
 static void
-draw_jittered_primitive4f (Data *data,
+draw_jittered_primitive4f (RigData *data,
                            CoglFramebuffer *fb,
                            CoglPrimitive *prim,
                            float red,
@@ -734,7 +532,7 @@ draw_jittered_primitive4f (Data *data,
 }
 
 static void
-camera_update_view (Data *data, RigEntity *camera, Pass pass)
+camera_update_view (RigData *data, RigEntity *camera, Pass pass)
 {
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
@@ -847,7 +645,7 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
 }
 
 CoglPipeline *
-get_entity_pipeline (Data *data,
+get_entity_pipeline (RigData *data,
                      RigEntity *entity,
                      RigComponent *geometry,
                      Pass pass)
@@ -1282,7 +1080,7 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
           if (rig_object_get_type (geometry) == &rig_diamond_type)
             {
               TestPaintContext *test_paint_ctx = paint_ctx;
-              Data *data = test_paint_ctx->data;
+              RigData *data = test_paint_ctx->data;
               RigDiamondSlice *slice = rig_diamond_get_slice (geometry);
               CoglPipeline *template = rig_diamond_slice_get_pipeline_template (slice);
               CoglPipeline *material_pipeline = rig_material_get_pipeline (material);
@@ -1333,7 +1131,7 @@ static void
 paint_scene (TestPaintContext *test_paint_ctx)
 {
   RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
-  Data *data = test_paint_ctx->data;
+  RigData *data = test_paint_ctx->data;
   CoglContext *ctx = data->ctx->cogl_context;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
 
@@ -1364,7 +1162,7 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
   RigCamera *save_camera = paint_ctx->camera;
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
-  Data *data = test_paint_ctx->data;
+  RigData *data = test_paint_ctx->data;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
   //CoglFramebuffer *shadow_fb;
 
@@ -1506,7 +1304,7 @@ static void
 paint_timeline_camera (TestPaintContext *test_paint_ctx)
 {
   RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
-  Data *data = test_paint_ctx->data;
+  RigData *data = test_paint_ctx->data;
   RigContext *ctx = data->ctx;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
   GList *l;
@@ -1746,7 +1544,7 @@ _rig_scenegraph_post_paint_cb (RigObject *object,
 static CoglBool
 test_paint (RigShell *shell, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (data->camera);
   TestPaintContext test_paint_ctx;
   RigPaintContext *paint_ctx = &test_paint_ctx._parent;
@@ -1801,7 +1599,7 @@ test_paint (RigShell *shell, void *user_data)
 static void
 path_t_update_cb (RigProperty *property, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   double elapsed = rig_timeline_get_elapsed (data->timeline);
   Node *n0, *n1;
   float x, y, z;
@@ -1820,16 +1618,16 @@ path_t_update_cb (RigProperty *property, void *user_data)
 static void
 update_transition_progress_cb (RigProperty *property, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   double elapsed = rig_timeline_get_elapsed (data->timeline);
   RigTransition *transition = property->object;
 
   rig_transition_set_progress (transition, elapsed);
 }
 
-static RigTransition *
-create_transition (Data *data,
-                   uint32_t id)
+RigTransition *
+rig_create_transition (RigData *data,
+                       uint32_t id)
 {
   RigTransition *transition = rig_transition_new (data->ctx, id);
 
@@ -1914,7 +1712,7 @@ typedef void (*EntityTranslateDoneCallback)(RigEntity *entity,
 
 typedef struct _EntityTranslateGrabClosure
 {
-  Data *data;
+  RigData *data;
 
   /* pointer position at start of grab */
   float grab_x;
@@ -1939,7 +1737,7 @@ entity_translate_grab_input_cb (RigInputEvent *event,
 {
   EntityTranslateGrabClosure *closure = user_data;
   RigEntity *entity = closure->entity;
-  Data *data = closure->data;
+  RigData *data = closure->data;
 
   g_print ("Entity grab event\n");
 
@@ -1998,7 +1796,7 @@ inspector_property_changed_cb (RigProperty *target_property,
                                RigProperty *source_property,
                                void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   undo_journal_copy_property_and_log (data->undo_journal,
                                       TRUE, /* mergable */
@@ -2008,7 +1806,7 @@ inspector_property_changed_cb (RigProperty *target_property,
 }
 
 static void
-update_inspector (Data *data)
+update_inspector (RigData *data)
 {
   RigObject *doc_node;
 
@@ -2048,7 +1846,7 @@ static void
 update_slider_pos_cb (RigProperty *property,
                       void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   double progress = rig_timeline_get_progress (data->timeline);
 
   //g_print ("update_slider_pos_cb %f\n", progress);
@@ -2060,7 +1858,7 @@ static void
 update_timeline_progress_cb (RigProperty *property,
                              void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   double progress = rig_property_get_float (data->slider_progress);
 
   //g_print ("update_timeline_progress_cb %f\n", progress);
@@ -2072,7 +1870,7 @@ update_timeline_progress_cb (RigProperty *property,
 static RigInputEventStatus
 timeline_grab_input_cb (RigInputEvent *event, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   if (rig_input_event_get_type (event) != RIG_INPUT_EVENT_TYPE_MOTION)
     return RIG_INPUT_EVENT_STATUS_UNHANDLED;
@@ -2145,7 +1943,7 @@ static RigInputEventStatus
 timeline_input_cb (RigInputEvent *event,
                    void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
     {
@@ -2270,7 +2068,7 @@ transform_ray (CoglMatrix *transform,
 }
 
 static CoglPrimitive *
-create_picking_ray (Data            *data,
+create_picking_ray (RigData            *data,
                     CoglFramebuffer *fb,
                     float            ray_position[3],
                     float            ray_direction[3],
@@ -2427,7 +2225,7 @@ _rig_entitygraph_post_pick_cb (RigObject *object,
 }
 
 static RigEntity *
-pick (Data *data,
+pick (RigData *data,
       RigCamera *camera,
       CoglFramebuffer *fb,
       float ray_origin[3],
@@ -2458,7 +2256,7 @@ pick (Data *data,
 }
 
 static void
-update_camera_position (Data *data)
+update_camera_position (RigData *data)
 {
   rig_entity_set_position (data->main_camera_to_origin,
                            data->origin);
@@ -2479,7 +2277,7 @@ print_quaternion (const CoglQuaternion *q,
 }
 
 static CoglBool
-translate_grab_entity (Data *data,
+translate_grab_entity (RigData *data,
                        RigCamera *camera,
                        RigEntity *entity,
                        float grab_x,
@@ -2603,7 +2401,7 @@ entity_translate_done_cb (RigEntity *entity,
                           float rel[3],
                           void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   RigTransition *transition = data->selected_transition;
   float elapsed = rig_timeline_get_elapsed (data->timeline);
   RigPath *path_position = rig_transition_get_path (transition,
@@ -2632,7 +2430,7 @@ entity_translate_cb (RigEntity *entity,
                      float rel[3],
                      void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   rig_entity_set_translate (entity,
                             start[0] + rel[0],
@@ -2648,7 +2446,7 @@ scene_translate_cb (RigEntity *entity,
                     float rel[3],
                     void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   data->origin[0] = start[0] - rel[0];
   data->origin[1] = start[1] - rel[1];
@@ -2661,7 +2459,7 @@ static RigInputEventStatus
 main_input_cb (RigInputEvent *event,
                void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   g_print ("Main Input Callback\n");
 
@@ -2917,7 +2715,7 @@ main_input_cb (RigInputEvent *event,
       switch (rig_key_event_get_keysym (event))
         {
         case RIG_KEY_s:
-          save (data);
+          rig_save (data);
           break;
         case RIG_KEY_z:
           if (rig_key_event_get_modifier_state (event) & RIG_MODIFIER_CTRL_ON)
@@ -3054,7 +2852,7 @@ matrix_view_2d_in_perspective (CoglMatrix *matrix,
 }
 
 static void
-allocate_main_area (Data *data)
+allocate_main_area (RigData *data)
 {
   float screen_aspect;
   float main_aspect;
@@ -3167,7 +2965,7 @@ allocate_main_area (Data *data)
 }
 
 static void
-allocate (Data *data)
+allocate (RigData *data)
 {
   float vp_width;
   float vp_height;
@@ -3230,13 +3028,13 @@ data_onscreen_resize (CoglOnscreen *onscreen,
                       int height,
                       void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   data->width = width;
   data->height = height;
 
-  rig_property_dirty (&data->ctx->property_ctx, &data->properties[DATA_PROP_WIDTH]);
-  rig_property_dirty (&data->ctx->property_ctx, &data->properties[DATA_PROP_HEIGHT]);
+  rig_property_dirty (&data->ctx->property_ctx, &data->properties[RIG_DATA_PROP_WIDTH]);
+  rig_property_dirty (&data->ctx->property_ctx, &data->properties[RIG_DATA_PROP_HEIGHT]);
 
   allocate (data);
 }
@@ -3244,7 +3042,7 @@ data_onscreen_resize (CoglOnscreen *onscreen,
 static void
 camera_viewport_binding_cb (RigProperty *property, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   float x, y, z, width, height;
 
   x = y = z = 0;
@@ -3279,7 +3077,7 @@ camera_viewport_binding_cb (RigProperty *property, void *user_data)
 static void
 test_init (RigShell *shell, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   CoglFramebuffer *fb;
   float vector3[3];
   int i;
@@ -3302,9 +3100,9 @@ test_init (RigShell *shell, void *user_data)
 
   data->debug_pick_ray = 1;
 
-  for (i = 0; i < DATA_N_PROPS; i++)
+  for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rig_property_init (&data->properties[i],
-                       &data_propert_specs[i],
+                       &rig_data_property_specs[i],
                        data);
 
   data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
@@ -3883,7 +3681,7 @@ test_init (RigShell *shell, void *user_data)
 
       ui = g_build_filename (_rig_handset_remaining_args[0], "ui.xml", NULL);
 
-      load (data, ui);
+      rig_load (data, ui);
       g_free (ui);
     }
 #endif
@@ -3892,13 +3690,13 @@ test_init (RigShell *shell, void *user_data)
 static void
 test_fini (RigShell *shell, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
   int i;
 
   rig_ref_countable_unref (data->camera);
   rig_ref_countable_unref (data->root);
 
-  for (i = 0; i < DATA_N_PROPS; i++)
+  for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rig_property_destroy (&data->properties[i]);
 
   rig_ref_countable_unref (data->timeline_vp);
@@ -3917,7 +3715,7 @@ test_fini (RigShell *shell, void *user_data)
 static RigInputEventStatus
 test_input_handler (RigInputEvent *event, void *user_data)
 {
-  Data *data = user_data;
+  RigData *data = user_data;
 
   if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
     {
@@ -3957,351 +3755,10 @@ test_input_handler (RigInputEvent *event, void *user_data)
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-typedef struct _SaveState
-{
-  Data *data;
-  FILE *file;
-  int indent;
-  RigEntity *current_entity;
-  int next_id;
-  GHashTable *id_map;
-} SaveState;
-
-static void
-save_component_cb (RigComponent *component,
-                   void *user_data)
-{
-  const RigType *type = rig_object_get_type (component);
-  SaveState *state = user_data;
-
-  state->indent += INDENT_LEVEL;
-
-  if (type == &rig_light_type)
-    {
-      RigLight *light = RIG_LIGHT (component);
-      const RigColor *ambient = rig_light_get_ambient (light);
-      const RigColor *diffuse = rig_light_get_diffuse (light);
-      const RigColor *specular = rig_light_get_specular (light);
-
-      fprintf (state->file,
-               "%*s<light "
-               "ambient=\"#%02x%02x%02x%02x\" "
-               "diffuse=\"#%02x%02x%02x%02x\" "
-               "specular=\"#%02x%02x%02x%02x\"/>\n",
-               state->indent, "",
-               rig_color_get_red_byte (ambient),
-               rig_color_get_green_byte (ambient),
-               rig_color_get_blue_byte (ambient),
-               rig_color_get_alpha_byte (ambient),
-               rig_color_get_red_byte (diffuse),
-               rig_color_get_green_byte (diffuse),
-               rig_color_get_blue_byte (diffuse),
-               rig_color_get_alpha_byte (diffuse),
-               rig_color_get_red_byte (specular),
-               rig_color_get_green_byte (specular),
-               rig_color_get_blue_byte (specular),
-               rig_color_get_alpha_byte (specular));
-    }
-  else if (type == &rig_material_type)
-    {
-      RigMaterial *material = RIG_MATERIAL (component);
-      RigAsset *asset = rig_material_get_asset (material);
-      const RigColor *color;
-
-      fprintf (state->file, "%*s<material", state->indent, "");
-
-      color = rig_material_get_color (material);
-      if (color->red != 1.0 &&
-          color->green != 1.0 &&
-          color->blue != 1.0 &&
-          color->alpha != 1.0)
-        {
-          fprintf (state->file, " color=\"#%02x%02x%02x%02x\"",
-                   rig_color_get_red_byte (color),
-                   rig_color_get_green_byte (color),
-                   rig_color_get_blue_byte (color),
-                   rig_color_get_alpha_byte (color));
-        }
-
-      fprintf (state->file, ">\n");
-
-      state->indent += INDENT_LEVEL;
-
-      if (asset)
-        {
-          int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
-          if (id)
-            {
-              fprintf (state->file, "%*s<texture asset=\"%d\"/>\n",
-                       state->indent, "",
-                       id);
-            }
-        }
-
-
-      state->indent -= INDENT_LEVEL;
-      fprintf (state->file, "%*s</material>\n", state->indent, "");
-    }
-  else if (type == &rig_diamond_type)
-    {
-      fprintf (state->file, "%*s<diamond size=\"%f\"/>\n",
-               state->indent, "",
-               rig_diamond_get_size (RIG_DIAMOND (component)));
-    }
-  else if (type == &rig_mesh_renderer_type)
-    {
-      RigMeshRenderer *mesh = RIG_MESH_RENDERER (component);
-
-      fprintf (state->file, "%*s<mesh", state->indent, "");
-
-      switch (rig_mesh_renderer_get_type (mesh))
-        {
-        case RIG_MESH_RENDERER_TYPE_TEMPLATE:
-          fprintf (state->file, " type=\"template\" template=\"%s\"",
-                   rig_mesh_renderer_get_path (mesh));
-          break;
-        case RIG_MESH_RENDERER_TYPE_FILE:
-          fprintf (state->file, " type=\"file\" path=\"%s\"",
-                   rig_mesh_renderer_get_path (mesh));
-          break;
-        default:
-          g_warn_if_reached ();
-        }
-
-      fprintf (state->file, " />\n");
-    }
-
-  state->indent -= INDENT_LEVEL;
-}
-
-static RigTraverseVisitFlags
-_rig_entitygraph_pre_save_cb (RigObject *object,
-                              int depth,
-                              void *user_data)
-{
-  SaveState *state = user_data;
-  const RigType *type = rig_object_get_type (object);
-  RigObject *parent = rig_graphable_get_parent (object);
-  RigEntity *entity;
-  CoglQuaternion *q;
-  float angle;
-  float axis[3];
-  const char *label;
-
-  if (type != &rig_entity_type)
-    {
-      g_warning ("Can't save non-entity graphables\n");
-      return RIG_TRAVERSE_VISIT_CONTINUE;
-    }
-
-  entity = object;
-
-  /* NB: labels with a "rig:" prefix imply that this is an internal
-   * entity that shouldn't be saved (such as the editing camera
-   * entities) */
-  label = rig_entity_get_label (entity);
-  if (label && strncmp ("rig:", label, 4) == 0)
-    return RIG_TRAVERSE_VISIT_CONTINUE;
-
-  g_hash_table_insert (state->id_map, entity, GINT_TO_POINTER (state->next_id));
-
-  state->indent += INDENT_LEVEL;
-  fprintf (state->file, "%*s<entity id=\"%d\"\n",
-           state->indent, "",
-           state->next_id++);
-
-  if (parent && rig_object_get_type (parent) == &rig_entity_type)
-    {
-      int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, parent));
-      if (id)
-        {
-          fprintf (state->file, "%*s        parent=\"%d\"\n",
-                   state->indent, "",
-                   id);
-        }
-      else
-        g_warning ("Failed to find id of parent entity\n");
-    }
-
-  if (label)
-    fprintf (state->file, "%*s        label=\"%s\"\n",
-             state->indent, "",
-             label);
-
-  q = rig_entity_get_rotation (entity);
-
-  angle = cogl_quaternion_get_rotation_angle (q);
-  cogl_quaternion_get_rotation_axis (q, axis);
-
-  fprintf (state->file,
-           "%*s        position=\"(%f, %f, %f)\"\n"
-           "%*s        scale=\"%f\"\n"
-           "%*s        rotation=\"[%f (%f, %f, %f)]]\">\n",
-           state->indent, "",
-           rig_entity_get_x (entity),
-           rig_entity_get_y (entity),
-           rig_entity_get_z (entity),
-           state->indent, "",
-           rig_entity_get_scale (entity),
-           state->indent, "",
-           angle, axis[0], axis[1], axis[2]);
-
-  state->current_entity = entity;
-  rig_entity_foreach_component (entity,
-                                save_component_cb,
-                                state);
-
-  fprintf (state->file, "%*s</entity>\n", state->indent, "");
-  state->indent -= INDENT_LEVEL;
-
-  return RIG_TRAVERSE_VISIT_CONTINUE;
-}
-
-static void
-save (Data *data)
-{
-  struct stat sb;
-  char *path = g_build_filename (_rig_project_dir, "ui.xml", NULL);
-  FILE *file;
-  SaveState state;
-  GList *l;
-
-  if (stat (_rig_project_dir, &sb) == -1)
-    mkdir (_rig_project_dir, 0777);
-
-  file = fopen (path, "w");
-  if (!file)
-    {
-      g_warning ("Failed to open %s file for saving\n", path);
-      return;
-    }
-
-  state.data = data;
-  state.id_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-  state.file = file;
-  state.indent = 0;
-
-  fprintf (file, "<ui>\n");
-
-  /* NB: We have to reserve 0 here so we can tell if lookups into the
-   * id_map fail. */
-  state.next_id = 1;
-
-  /* Assets */
-
-  for (l = data->assets; l; l = l->next)
-    {
-      RigAsset *asset = l->data;
-
-      if (rig_asset_get_type (asset) != RIG_ASSET_TYPE_TEXTURE)
-        continue;
-
-      g_hash_table_insert (state.id_map, asset, GINT_TO_POINTER (state.next_id));
-
-      state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<asset id=\"%d\" type=\"texture\" path=\"%s\" />\n",
-               state.indent, "",
-               state.next_id++,
-               rig_asset_get_path (asset));
-      state.indent -= INDENT_LEVEL;
-    }
-
-  rig_graphable_traverse (data->scene,
-                          RIG_TRAVERSE_DEPTH_FIRST,
-                          _rig_entitygraph_pre_save_cb,
-                          NULL,
-                          &state);
-
-  for (l = data->transitions; l; l = l->next)
-    {
-      RigTransition *transition = l->data;
-      GList *l2;
-      //int i;
-
-      state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<transition id=\"%d\">\n", state.indent, "", transition->id);
-
-      for (l2 = transition->paths; l2; l2 = l2->next)
-        {
-          RigPath *path = l2->data;
-          GList *l3;
-          RigEntity *entity;
-          int id;
-
-          if (path == NULL)
-            continue;
-
-          entity = path->prop->object;
-
-          id = GPOINTER_TO_INT (g_hash_table_lookup (state.id_map, entity));
-          if (!id)
-            g_warning ("Failed to find id of entity\n");
-
-          state.indent += INDENT_LEVEL;
-          fprintf (file, "%*s<path entity=\"%d\" property=\"%s\">\n", state.indent, "",
-                   id,
-                   path->prop->spec->name);
-
-          state.indent += INDENT_LEVEL;
-          for (l3 = path->nodes.head; l3; l3 = l3->next)
-            {
-              switch (path->prop->spec->type)
-                {
-                case RIG_PROPERTY_TYPE_FLOAT:
-                  {
-                    RigNodeFloat *node = l3->data;
-                    fprintf (file, "%*s<node t=\"%f\" value=\"%f\" />\n", state.indent, "", node->t, node->value);
-                    break;
-                  }
-                case RIG_PROPERTY_TYPE_VEC3:
-                  {
-                    RigNodeVec3 *node = l3->data;
-                    fprintf (file, "%*s<node t=\"%f\" value=\"(%f, %f, %f)\" />\n",
-                             state.indent, "", node->t,
-                             node->value[0],
-                             node->value[1],
-                             node->value[2]);
-                    break;
-                  }
-                case RIG_PROPERTY_TYPE_QUATERNION:
-                  {
-                    RigNodeQuaternion *node = l3->data;
-                    CoglQuaternion *q = &node->value;
-                    float angle;
-                    float axis[3];
-
-                    angle = cogl_quaternion_get_rotation_angle (q);
-                    cogl_quaternion_get_rotation_axis (q, axis);
-
-                    fprintf (file, "%*s<node t=\"%f\" value=\"[%f (%f, %f, %f)]\" />\n", state.indent, "",
-                             node->t, angle, axis[0], axis[1], axis[2]);
-                    break;
-                  }
-                default:
-                  g_warn_if_reached ();
-                }
-            }
-          state.indent -= INDENT_LEVEL;
-
-          fprintf (file, "%*s</path>\n", state.indent, "");
-          state.indent -= INDENT_LEVEL;
-        }
-
-      fprintf (file, "%*s</transition>\n", state.indent, "");
-      fprintf (file, "</ui>\n");
-    }
-
-  fclose (file);
-
-  g_print ("File Saved\n");
-
-  g_hash_table_destroy (state.id_map);
-}
-
 typedef struct _AssetInputClosure
 {
   RigAsset *asset;
-  Data *data;
+  RigData *data;
 } AssetInputClosure;
 
 static RigInputEventStatus
@@ -4311,7 +3768,7 @@ asset_input_cb (RigInputRegion *region,
 {
   AssetInputClosure *closure = user_data;
   RigAsset *asset = closure->asset;
-  Data *data = closure->data;
+  RigData *data = closure->data;
 
   g_print ("Asset input\n");
 
@@ -4367,7 +3824,7 @@ add_light_cb (RigInputRegion *region,
 #endif
 
 static void
-add_asset_icon (Data *data,
+add_asset_icon (RigData *data,
                 RigAsset *asset,
                 float y_pos)
 {
@@ -4414,7 +3871,7 @@ add_asset_icon (Data *data,
 }
 
 static void
-free_asset_input_closures (Data *data)
+free_asset_input_closures (RigData *data)
 {
   GList *l;
 
@@ -4424,8 +3881,8 @@ free_asset_input_closures (Data *data)
   data->asset_input_closures = NULL;
 }
 
-static void
-update_asset_list (Data *data)
+void
+rig_update_asset_list (RigData *data)
 {
   GList *l;
   int i = 0;
@@ -4449,666 +3906,8 @@ update_asset_list (Data *data)
   //add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
 }
 
-enum {
-  LOADER_STATE_NONE,
-  LOADER_STATE_LOADING_ENTITY,
-  LOADER_STATE_LOADING_MATERIAL_COMPONENT,
-  LOADER_STATE_LOADING_MESH_COMPONENT,
-  LOADER_STATE_LOADING_DIAMOND_COMPONENT,
-  LOADER_STATE_LOADING_LIGHT_COMPONENT,
-  LOADER_STATE_LOADING_CAMERA_COMPONENT,
-  LOADER_STATE_LOADING_TRANSITION,
-  LOADER_STATE_LOADING_PATH
-};
-
-typedef struct _Loader
-{
-  Data *data;
-  GQueue state;
-  uint32_t id;
-  CoglBool texture_specified;
-  uint32_t texture_asset_id;
-
-  GList *assets;
-  GList *entities;
-  GList *lights;
-  GList *transitions;
-
-  RigColor material_color;
-
-  float diamond_size;
-  RigEntity *current_entity;
-  CoglBool is_light;
-
-  RigTransition *current_transition;
-  RigPath *current_path;
-
-  GHashTable *id_map;
-} Loader;
-
-static void
-loader_push_state (Loader *loader, int state)
-{
-  g_queue_push_tail (&loader->state, GINT_TO_POINTER (state));
-}
-
-static int
-loader_get_state (Loader *loader)
-{
-  void *state = g_queue_peek_tail (&loader->state);
-  return GPOINTER_TO_INT (state);
-}
-
-static void
-loader_pop_state (Loader *loader)
-{
-  g_queue_pop_tail (&loader->state);
-}
-
-static RigEntity *
-loader_find_entity (Loader *loader, uint32_t id)
-{
-  RigObject *object =
-    g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
-  if (object == NULL || rig_object_get_type (object) != &rig_entity_type)
-    return NULL;
-  return RIG_ENTITY (object);
-}
-
-static RigAsset *
-loader_find_asset (Loader *loader, uint32_t id)
-{
-  RigObject *object =
-    g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
-  if (object == NULL || rig_object_get_type (object) != &rig_asset_type)
-    return NULL;
-  return RIG_ASSET (object);
-}
-
-static void
-parse_start_element (GMarkupParseContext *context,
-                     const char *element_name,
-                     const char **attribute_names,
-                     const char **attribute_values,
-                     void *user_data,
-                     GError **error)
-{
-  Loader *loader = user_data;
-  Data *data = loader->data;
-  int state = loader_get_state (loader);
-
-  if (state == LOADER_STATE_NONE &&
-      strcmp (element_name, "asset") == 0)
-    {
-      const char *id_str;
-      const char *type;
-      const char *path;
-      uint32_t id;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "id",
-                                        &id_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "type",
-                                        &type,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "path",
-                                        &path,
-                                        G_MARKUP_COLLECT_INVALID))
-        {
-          return;
-        }
-
-      id = g_ascii_strtoull (id_str, NULL, 10);
-      if (g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id)))
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Duplicate id %d", id);
-          return;
-        }
-
-      if (strcmp (type, "texture") == 0)
-        {
-          RigAsset *asset = rig_asset_new_texture (data->ctx, path);
-          loader->assets = g_list_prepend (loader->assets, asset);
-          g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
-        }
-      else
-        g_warning ("Ignoring unknown asset type: %s\n", type);
-    }
-  else if (state == LOADER_STATE_NONE &&
-           strcmp (element_name, "entity") == 0)
-    {
-      const char *id_str;
-      unsigned int id;
-      RigEntity *entity;
-      const char *parent_id_str;
-      const char *position_str;
-      const char *rotation_str;
-      const char *scale_str;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "id",
-                                        &id_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "parent",
-                                        &parent_id_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "position",
-                                        &position_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "rotation",
-                                        &rotation_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "scale",
-                                        &scale_str,
-                                        G_MARKUP_COLLECT_INVALID))
-      {
-        return;
-      }
-
-      id = g_ascii_strtoull (id_str, NULL, 10);
-      if (g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id)))
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Duplicate entity id %d", id);
-          return;
-        }
-
-      entity = rig_entity_new (loader->data->ctx, loader->data->entity_next_id++);
-
-      if (parent_id_str)
-        {
-          unsigned int parent_id = g_ascii_strtoull (parent_id_str, NULL, 10);
-          RigEntity *parent = loader_find_entity (loader, parent_id);
-
-          if (!parent)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Invalid parent id referenced in entity element");
-              rig_ref_countable_unref (entity);
-              return;
-            }
-
-          rig_graphable_add_child (parent, entity);
-        }
-
-      if (position_str)
-        {
-          float pos[3];
-          if (sscanf (position_str, "(%f, %f, %f)",
-                      &pos[0], &pos[1], &pos[2]) != 3)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Invalid entity position");
-              return;
-            }
-          rig_entity_set_position (entity, pos);
-        }
-      if (rotation_str)
-        {
-          float angle;
-          float axis[3];
-          CoglQuaternion q;
-
-          if (sscanf (rotation_str, "[%f (%f, %f, %f)]",
-                      &angle, &axis[0], &axis[1], &axis[2]) != 4)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Invalid entity rotation");
-              return;
-            }
-          cogl_quaternion_init_from_angle_vector (&q, angle, axis);
-          rig_entity_set_rotation (entity, &q);
-        }
-      if (scale_str)
-        {
-          double scale = g_ascii_strtod (scale_str, NULL);
-          rig_entity_set_scale (entity, scale);
-        }
-
-      loader->current_entity = entity;
-      loader->is_light = FALSE;
-      g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), entity);
-
-      loader_push_state (loader, LOADER_STATE_LOADING_ENTITY);
-    }
-  else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "material") == 0)
-    {
-      const char *color_str;
-
-      loader->texture_specified = FALSE;
-      loader_push_state (loader, LOADER_STATE_LOADING_MATERIAL_COMPONENT);
-
-      g_markup_collect_attributes (element_name,
-                                   attribute_names,
-                                   attribute_values,
-                                   error,
-                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                   "color",
-                                   &color_str,
-                                   G_MARKUP_COLLECT_INVALID);
-
-      if (color_str)
-        {
-          rig_color_init_from_string (loader->data->ctx,
-                                      &loader->material_color,
-                                      color_str);
-        }
-      else
-        rig_color_init_from_4f (&loader->material_color, 1, 1, 1, 1);
-    }
-  else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "light") == 0)
-    {
-      const char *ambient_str;
-      const char *diffuse_str;
-      const char *specular_str;
-      RigColor ambient;
-      RigColor diffuse;
-      RigColor specular;
-      RigLight *light;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "ambient",
-                                        &ambient_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "diffuse",
-                                        &diffuse_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "specular",
-                                        &specular_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        {
-          return;
-        }
-
-      rig_color_init_from_string (loader->data->ctx, &ambient, ambient_str);
-      rig_color_init_from_string (loader->data->ctx, &diffuse, diffuse_str);
-      rig_color_init_from_string (loader->data->ctx, &specular, specular_str);
-
-      light = rig_light_new ();
-      rig_light_set_ambient (light, &ambient);
-      rig_light_set_diffuse (light, &diffuse);
-      rig_light_set_specular (light, &specular);
-
-      rig_entity_add_component (loader->current_entity, light);
-      loader->is_light = TRUE;
-
-      //loader_push_state (loader, LOADER_STATE_LOADING_LIGHT_COMPONENT);
-    }
-  else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "diamond") == 0)
-    {
-      const char *size_str;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "size",
-                                        &size_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      loader->diamond_size = g_ascii_strtod (size_str, NULL);
-
-      loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
-    }
-  else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "mesh") == 0)
-    {
-      const char *type_str;
-      const char *template_str;
-      const char *path_str;
-      RigMeshRenderer *mesh;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "type",
-                                        &type_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "template",
-                                        &template_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "path",
-                                        &path_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      if (strcmp (type_str, "template") == 0)
-        {
-          if (!template_str)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing mesh template name");
-              return;
-            }
-          mesh = rig_mesh_renderer_new_from_template (loader->data->ctx,
-                                                      template_str);
-        }
-      else if (strcmp (type_str, "file") == 0)
-        {
-          if (!path_str)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing mesh path name");
-              return;
-            }
-          mesh = rig_mesh_renderer_new_from_file (loader->data->ctx, path_str);
-        }
-      else
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid mesh type \"%s\"", type_str);
-          return;
-        }
-
-      if (mesh)
-        rig_entity_add_component (loader->current_entity, mesh);
-    }
-  else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
-           strcmp (element_name, "texture") == 0)
-    {
-      const char *id_str;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "asset",
-                                        &id_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      loader->texture_specified = TRUE;
-      loader->texture_asset_id = g_ascii_strtoull (id_str, NULL, 10);
-    }
-  else if (state == LOADER_STATE_NONE &&
-           strcmp (element_name, "transition") == 0)
-    {
-      const char *id_str;
-      uint32_t id;
-
-      loader_push_state (loader, LOADER_STATE_LOADING_TRANSITION);
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "id",
-                                        &id_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      id = g_ascii_strtoull (id_str, NULL, 10);
-
-      loader->current_transition = create_transition (loader->data, id);
-      loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
-    }
-  else if (state == LOADER_STATE_LOADING_TRANSITION &&
-           strcmp (element_name, "path") == 0)
-    {
-      const char *entity_id_str;
-      uint32_t entity_id;
-      RigEntity *entity;
-      const char *property_name;
-      RigProperty *prop;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "entity",
-                                        &entity_id_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "property",
-                                        &property_name,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      entity_id = g_ascii_strtoull (entity_id_str, NULL, 10);
-
-      entity = loader_find_entity (loader, entity_id);
-      if (!entity)
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Entity id %d referenced in path element",
-                       entity_id);
-          return;
-        }
-
-      prop = rig_introspectable_lookup_property (entity, property_name);
-      if (!prop)
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Entity property referenced in path element");
-          return;
-        }
-
-      loader->current_path =
-        rig_path_new_for_property (data->ctx,
-                                   &loader->current_transition
-                                   ->props[RIG_TRANSITION_PROP_PROGRESS],
-                                   prop);
-
-      loader_push_state (loader, LOADER_STATE_LOADING_PATH);
-    }
-  else if (state == LOADER_STATE_LOADING_PATH &&
-           strcmp (element_name, "node") == 0)
-    {
-      const char *t_str;
-      float t;
-      const char *value_str;
-
-      if (!g_markup_collect_attributes (element_name,
-                                        attribute_names,
-                                        attribute_values,
-                                        error,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "t",
-                                        &t_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "value",
-                                        &value_str,
-                                        G_MARKUP_COLLECT_INVALID))
-        return;
-
-      t = g_ascii_strtod (t_str, NULL);
-
-      switch (loader->current_path->prop->spec->type)
-        {
-        case RIG_PROPERTY_TYPE_FLOAT:
-          {
-            float value = g_ascii_strtod (value_str, NULL);
-            rig_path_insert_float (loader->current_path, t, value);
-            break;
-          }
-        case RIG_PROPERTY_TYPE_VEC3:
-          {
-            float value[3];
-            if (sscanf (value_str, "(%f, %f, %f)",
-                        &value[0], &value[1], &value[2]) != 3)
-              {
-                g_set_error (error,
-                             G_MARKUP_ERROR,
-                             G_MARKUP_ERROR_INVALID_CONTENT,
-                             "Invalid vec3 value");
-                return;
-              }
-            rig_path_insert_vec3 (loader->current_path, t, value);
-            break;
-          }
-        case RIG_PROPERTY_TYPE_QUATERNION:
-          {
-            float angle, x, y, z;
-
-            if (sscanf (value_str, "[%f (%f, %f, %f)]", &angle, &x, &y, &z) != 4)
-              {
-                g_set_error (error,
-                             G_MARKUP_ERROR,
-                             G_MARKUP_ERROR_INVALID_CONTENT,
-                             "Invalid rotation value");
-                return;
-              }
-
-            rig_path_insert_quaternion (loader->current_path,
-                                        t,
-                                        angle,
-                                        x, y, z);
-            break;
-          }
-        }
-    }
-}
-
-static void
-parse_end_element (GMarkupParseContext *context,
-                   const char *element_name,
-                   void *user_data,
-                   GError **error)
-{
-  Loader *loader = user_data;
-  int state = loader_get_state (loader);
-
-  if (state == LOADER_STATE_LOADING_ENTITY &&
-      strcmp (element_name, "entity") == 0)
-    {
-      if (loader->is_light)
-        loader->lights = g_list_prepend (loader->entities, loader->current_entity);
-      else
-        loader->entities = g_list_prepend (loader->entities, loader->current_entity);
-
-      loader_pop_state (loader);
-    }
-  else if (state == LOADER_STATE_LOADING_DIAMOND_COMPONENT &&
-           strcmp (element_name, "diamond") == 0)
-    {
-      RigMaterial *material =
-        rig_entity_get_component (loader->current_entity,
-                                  RIG_COMPONENT_TYPE_MATERIAL);
-      RigAsset *asset = NULL;
-      CoglTexture *texture = NULL;
-      RigDiamond *diamond;
-
-      /* We need to know the size of the texture before we can create
-       * a diamond component */
-      if (material)
-        asset = rig_material_get_asset (material);
-
-      if (asset)
-        texture = rig_asset_get_texture (asset);
-
-      if (!texture)
-        {
-          g_set_error (error,
-                       G_MARKUP_ERROR,
-                       G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Can't add diamond component without a texture");
-          return;
-        }
-
-      diamond = rig_diamond_new (loader->data->ctx,
-                                 loader->diamond_size,
-                                 cogl_texture_get_width (texture),
-                                 cogl_texture_get_height (texture));
-      rig_entity_add_component (loader->current_entity,
-                                diamond);
-
-      loader_pop_state (loader);
-    }
-  else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
-           strcmp (element_name, "material") == 0)
-    {
-      RigMaterial *material;
-      RigAsset *texture_asset;
-
-      if (loader->texture_specified)
-        {
-          texture_asset = loader_find_asset (loader, loader->texture_asset_id);
-          if (!texture_asset)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Invalid asset id");
-              return;
-            }
-        }
-      else
-        texture_asset = NULL;
-
-      material = rig_material_new (loader->data->ctx,
-                                   texture_asset,
-                                   &loader->material_color);
-      rig_entity_add_component (loader->current_entity, material);
-
-      loader_pop_state (loader);
-    }
-  else if (state == LOADER_STATE_LOADING_TRANSITION &&
-           strcmp (element_name, "transition") == 0)
-    {
-      loader_pop_state (loader);
-    }
-  else if (state == LOADER_STATE_LOADING_PATH &&
-           strcmp (element_name, "path") == 0)
-    {
-      rig_transition_add_path (loader->current_transition,
-                               loader->current_path);
-      loader_pop_state (loader);
-    }
-}
-
-static void
-parse_error (GMarkupParseContext *context,
-             GError *error,
-             void *user_data)
-{
-
-}
-
-static void
-free_ux (Data *data)
+void
+rig_free_ux (RigData *data)
 {
   GList *l;
 
@@ -5126,80 +3925,6 @@ free_ux (Data *data)
 }
 
 static void
-load (Data *data, const char *file)
-{
-  GMarkupParser parser = {
-    .start_element = parse_start_element,
-    .end_element = parse_end_element,
-    .error = parse_error
-  };
-  Loader loader;
-  char *contents;
-  gsize len;
-  GError *error = NULL;
-  GMarkupParseContext *context;
-  GList *l;
-
-  memset (&loader, 0, sizeof (loader));
-  loader.data = data;
-  g_queue_init (&loader.state);
-  loader_push_state (&loader, LOADER_STATE_NONE);
-  g_queue_push_tail (&loader.state, LOADER_STATE_NONE);
-
-  loader.id_map = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-  if (!g_file_get_contents (file,
-                            &contents,
-                            &len,
-                            &error))
-    {
-      g_warning ("Failed to load ui description: %s", error->message);
-      return;
-    }
-
-  context = g_markup_parse_context_new (&parser, 0, &loader, NULL);
-
-  if (!g_markup_parse_context_parse (context, contents, len, &error))
-    {
-      g_warning ("Failed to parse ui description: %s", error->message);
-      g_markup_parse_context_free (context);
-    }
-
-  g_queue_clear (&loader.state);
-
-  free_ux (data);
-
-  for (l = loader.entities; l; l = l->next)
-    {
-      if (rig_graphable_get_parent (l->data) == NULL)
-        rig_graphable_add_child (data->scene, l->data);
-    }
-
-  g_list_free (data->lights);
-  data->lights = loader.lights;
-
-  data->transitions = loader.transitions;
-  if (data->transitions)
-    data->selected_transition = loader.transitions->data;
-  else
-    {
-      RigTransition *transition = create_transition (data, 0);
-      data->transitions = g_list_prepend (data->transitions, transition);
-      data->selected_transition = transition;
-    }
-
-  data->assets = loader.assets;
-
-  update_asset_list (data);
-
-  rig_shell_queue_redraw (data->ctx->shell);
-
-  g_hash_table_destroy (loader.id_map);
-
-  g_print ("File Loaded\n");
-}
-
-static void
 init_types (void)
 {
 }
@@ -5209,14 +3934,14 @@ init_types (void)
 void
 android_main (struct android_app *application)
 {
-  Data data;
+  RigData data;
 
   /* Make sure glue isn't stripped */
   app_dummy ();
 
   g_android_init ();
 
-  memset (&data, 0, sizeof (Data));
+  memset (&data, 0, sizeof (RigData));
   data.app = application;
 
   init_types ();
@@ -5241,7 +3966,7 @@ android_main (struct android_app *application)
 int
 main (int argc, char **argv)
 {
-  Data data;
+  RigData data;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
@@ -5253,7 +3978,7 @@ main (int argc, char **argv)
       exit(EXIT_FAILURE);
     }
 
-  memset (&data, 0, sizeof (Data));
+  memset (&data, 0, sizeof (RigData));
 
   init_types ();
 

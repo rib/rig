@@ -28,6 +28,9 @@ rig_SOURCES = \
 	jni/rig-path.c \
 	jni/rig-path.h \
 	jni/rig-transition.c \
-	jni/rig-transition.h
+	jni/rig-transition.h \
+	jni/rig-types-private.h \
+	jni/rig-load-save.h \
+	jni/rig-load-save.c
 
 rig_LDADD = $(common_ldadd)
