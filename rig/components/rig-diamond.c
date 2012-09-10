@@ -100,7 +100,7 @@ primitive_new_p2t2t2 (CoglContext *ctx,
   return primitive;
 }
 
-RigDiamondSlice *
+static RigDiamondSlice *
 diamond_slice_new (RigContext *ctx,
                    float size,
                    int tex_width,
