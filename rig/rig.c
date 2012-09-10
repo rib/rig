@@ -1180,6 +1180,8 @@ rig_rectangle_get_size (RigRectangle *rectangle,
 enum {
   RIG_UI_VIEWPORT_PROP_WIDTH,
   RIG_UI_VIEWPORT_PROP_HEIGHT,
+  RIG_UI_VIEWPORT_PROP_X_PANNABLE,
+  RIG_UI_VIEWPORT_PROP_Y_PANNABLE,
   RIG_UI_VIEWPORT_N_PROPS
 };
 
@@ -1200,6 +1202,9 @@ struct _RigUIViewport
   float doc_y;
   float doc_scale_x;
   float doc_scale_y;
+
+  CoglBool x_pannable;
+  CoglBool y_pannable;
 
   RigTransform *doc_transform;
 
@@ -1226,6 +1231,21 @@ static RigPropertySpec _rig_ui_viewport_prop_specs[] = {
     .data_offset = offsetof (RigUIViewport, height),
     .setter = rig_ui_viewport_set_height
   },
+  {
+    .name = "x-pannable",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RigUIViewport, x_pannable),
+    .getter = rig_ui_viewport_get_x_pannable,
+    .setter = rig_ui_viewport_set_x_pannable
+  },
+  {
+    .name = "y-pannable",
+    .type = RIG_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RigUIViewport, y_pannable),
+    .getter = rig_ui_viewport_get_y_pannable,
+    .setter = rig_ui_viewport_set_y_pannable
+  },
+
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
@@ -1330,10 +1350,15 @@ ui_viewport_grab_input_cb (RigInputEvent *event, void *user_data)
           float inv_x_scale = 1.0 / x_scale;
           float inv_y_scale = 1.0 / y_scale;
 
-          rig_ui_viewport_set_doc_x (ui_viewport,
-                                     ui_viewport->grab_doc_x + (dx * inv_x_scale));
-          rig_ui_viewport_set_doc_y (ui_viewport,
-                                     ui_viewport->grab_doc_y + (dy * inv_y_scale));
+          if (ui_viewport->x_pannable)
+            rig_ui_viewport_set_doc_x (ui_viewport,
+                                       ui_viewport->grab_doc_x +
+                                       (dx * inv_x_scale));
+
+          if (ui_viewport->y_pannable)
+            rig_ui_viewport_set_doc_y (ui_viewport,
+                                       ui_viewport->grab_doc_y +
+                                       (dy * inv_y_scale));
 
           rig_shell_queue_redraw (ui_viewport->ctx->shell);
           return RIG_INPUT_EVENT_STATUS_HANDLED;
@@ -1419,6 +1444,9 @@ rig_ui_viewport_new (RigContext *ctx,
   ui_viewport->doc_y = 0;
   ui_viewport->doc_scale_x = 1;
   ui_viewport->doc_scale_y = 1;
+
+  ui_viewport->x_pannable = TRUE;
+  ui_viewport->y_pannable = TRUE;
 
   ui_viewport->doc_transform = rig_transform_new (ctx, NULL);
   rig_graphable_add_child (ui_viewport, ui_viewport->doc_transform);
@@ -1558,6 +1586,32 @@ RigObject *
 rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport)
 {
   return ui_viewport->doc_transform;
+}
+
+void
+rig_ui_viewport_set_x_pannable (RigUIViewport *ui_viewport,
+                                CoglBool pannable)
+{
+  ui_viewport->x_pannable = pannable;
+}
+
+CoglBool
+rig_ui_viewport_get_x_pannable (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->x_pannable;
+}
+
+void
+rig_ui_viewport_set_y_pannable (RigUIViewport *ui_viewport,
+                                CoglBool pannable)
+{
+  ui_viewport->y_pannable = pannable;
+}
+
+CoglBool
+rig_ui_viewport_get_y_pannable (RigUIViewport *ui_viewport)
+{
+  return ui_viewport->y_pannable;
 }
 
 #if 0

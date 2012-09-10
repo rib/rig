@@ -275,6 +275,21 @@ rig_ui_viewport_get_doc_matrix (RigUIViewport *ui_viewport);
 RigObject *
 rig_ui_viewport_get_doc_node (RigUIViewport *ui_viewport);
 
+void
+rig_ui_viewport_set_x_pannable (RigUIViewport *ui_viewport,
+                                CoglBool pannable);
+
+CoglBool
+rig_ui_viewport_get_x_pannable (RigUIViewport *ui_viewport);
+
+void
+rig_ui_viewport_set_y_pannable (RigUIViewport *ui_viewport,
+                                CoglBool pannable);
+
+CoglBool
+rig_ui_viewport_get_y_pannable (RigUIViewport *ui_viewport);
+
+
 typedef struct _RigButton RigButton;
 #define RIG_BUTTON(X) ((RigButton *)X)
 

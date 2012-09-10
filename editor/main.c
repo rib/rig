@@ -4972,6 +4972,9 @@ test_init (RigShell *shell, void *user_data)
                                                               NULL)),
                                         rig_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
                                         NULL);
+
+  rig_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
+
     {
       RigEntry *entry;
       RigText *text;
@@ -5010,6 +5013,8 @@ test_init (RigShell *shell, void *user_data)
                     rig_ui_viewport_new (data->ctx, 0, 0, NULL)),
                    rig_bevel_new (data->ctx, 0, 0, &right_bar_ref_color),
                    NULL);
+
+  rig_ui_viewport_set_x_pannable (data->tool_vp, FALSE);
 
   rig_split_view_set_child0 (data->splits[1], data->splits[2]);
   rig_split_view_set_child1 (data->splits[1], data->right_bar_stack);
