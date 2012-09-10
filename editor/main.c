@@ -1575,26 +1575,6 @@ test_paint (RigShell *shell, void *user_data)
   return FALSE;
 }
 
-#if 0
-static void
-path_t_update_cb (RigProperty *property, void *user_data)
-{
-  RigData *data = user_data;
-  double elapsed = rig_timeline_get_elapsed (data->timeline);
-  Node *n0, *n1;
-  float x, y, z;
-
-  path_find_control_points2 (data->path, elapsed, 1, &n0, &n1);
-
-  lerp_node_pos (n0, n1, elapsed, &x, &y, &z);
-
-  g_print ("e=%f: 0(%f,%f,%f) 1(%f,%f,%f) lerp=(%f, %f, %f)\n", elapsed,
-           n0->point[0], n0->point[1], n0->point[2],
-           n1->point[0], n1->point[1], n1->point[2],
-           x, y, z);
-}
-#endif
-
 static void
 update_transition_progress_cb (RigProperty *property, void *user_data)
 {
@@ -1820,32 +1800,6 @@ update_inspector (RigData *data)
       rig_ref_countable_unref (data->inspector);
     }
 }
-
-#if 0
-static void
-update_slider_pos_cb (RigProperty *property,
-                      void *user_data)
-{
-  RigData *data = user_data;
-  double progress = rig_timeline_get_progress (data->timeline);
-
-  //g_print ("update_slider_pos_cb %f\n", progress);
-
-  rig_slider_set_progress (data->slider, progress);
-}
-
-static void
-update_timeline_progress_cb (RigProperty *property,
-                             void *user_data)
-{
-  RigData *data = user_data;
-  double progress = rig_property_get_float (data->slider_progress);
-
-  //g_print ("update_timeline_progress_cb %f\n", progress);
-
-  rig_timeline_set_progress (data->timeline, progress);
-}
-#endif
 
 static RigInputEventStatus
 timeline_grab_input_cb (RigInputEvent *event, void *user_data)
@@ -3617,20 +3571,6 @@ test_init (RigShell *shell, void *user_data)
     rig_introspectable_lookup_property (data->timeline, "elapsed");
   data->timeline_progress =
     rig_introspectable_lookup_property (data->timeline, "progress");
-
-#if 0
-  rig_property_set_binding (data->slider_progress,
-                            update_slider_pos_cb,
-                            data,
-                            data->timeline_elapsed,
-                            NULL);
-
-  rig_property_set_binding (data->timeline_progress,
-                            update_timeline_progress_cb,
-                            data,
-                            data->slider_progress,
-                            NULL);
-#endif
 
   /* tool */
   data->tool = rig_tool_new (data->shell);
