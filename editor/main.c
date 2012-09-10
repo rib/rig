@@ -69,26 +69,6 @@ typedef struct _UndoRedoOpImpl
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
 
-typedef struct _DiamondSlice
-{
-  RigObjectProps _parent;
-  int ref_count;
-
-  CoglMatrix rotate_matrix;
-
-  CoglTexture *texture;
-
-  float width;
-  float height;
-
-  CoglPipeline *pipeline;
-  CoglPrimitive *primitive;
-
-  RigGraphableProps graphable;
-  RigPaintableProps paintable;
-
-} DiamondSlice;
-
 typedef enum _Pass
 {
   PASS_COLOR,
