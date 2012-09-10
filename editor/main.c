@@ -4631,8 +4631,8 @@ test_init (RigShell *shell, void *user_data)
     cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
 
   /* retrieve the depth texture */
-  cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (data->shadow_fb),
-                                         TRUE);
+  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (data->shadow_fb),
+                                              TRUE);
   /* FIXME: It doesn't seem right that we can query back the texture before
    * the framebuffer has been allocated. */
   data->shadow_map =
