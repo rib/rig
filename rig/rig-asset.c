@@ -114,7 +114,7 @@ rig_asset_new_texture (RigContext *ctx,
 {
   RigAsset *asset = g_slice_new (RigAsset);
   char *full_path;
-  GError *error = NULL;
+  CoglError *error = NULL;
 
   rig_object_init (&asset->_parent, &rig_asset_type);
 

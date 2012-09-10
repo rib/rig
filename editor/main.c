@@ -1117,7 +1117,7 @@ rig_dof_get_depth_pass_fb (RigDepthOfField *dof)
 {
   if (!dof->depth_pass)
     {
-      GError *error = NULL;
+      CoglError *error = NULL;
 
       /*
        * Offscreen render for post-processing
@@ -1146,7 +1146,7 @@ rig_dof_get_color_pass_fb (RigDepthOfField *dof)
 {
   if (!dof->color_pass)
     {
-      GError *error = NULL;
+      CoglError *error = NULL;
 
       /*
        * Offscreen render for post-processing
@@ -3205,7 +3205,7 @@ Transition *
 transition_new (Data *data,
                 uint32_t id)
 {
-  //GError *error = NULL;
+  //CoglError *error = NULL;
   Transition *transition;
 
   transition = g_slice_new0 (Transition);
@@ -4536,7 +4536,7 @@ test_init (RigShell *shell, void *user_data)
   float vector3[3];
   int i;
   char *full_path;
-  GError *error = NULL;
+  CoglError *error = NULL;
   CoglTexture2D *color_buffer;
   RigColor color;
   RigMeshRenderer *mesh;
@@ -4678,7 +4678,7 @@ test_init (RigShell *shell, void *user_data)
   if (!data->light_icon)
     {
       g_warning ("Failed to load light-bulb texture: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   data->timeline_vp = rig_ui_viewport_new (data->ctx, 0, 0, NULL);

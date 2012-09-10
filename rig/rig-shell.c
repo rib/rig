@@ -1881,7 +1881,7 @@ rig_scroll_bar_new (RigContext *ctx,
   RigScrollBar *scroll_bar = g_slice_new0 (RigScrollBar);
   CoglTexture *bg_texture;
   CoglTexture *handle_texture;
-  GError *error = NULL;
+  CoglError *error = NULL;
   //PangoRectangle label_size;
   float width;
   float height;
@@ -2187,7 +2187,7 @@ rig_slider_new (RigContext *ctx,
   RigSlider *slider = g_slice_new0 (RigSlider);
   CoglTexture *bg_texture;
   CoglTexture *handle_texture;
-  GError *error = NULL;
+  CoglError *error = NULL;
   //PangoRectangle label_size;
   float width;
   float height;

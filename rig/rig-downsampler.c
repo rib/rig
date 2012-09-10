@@ -103,7 +103,7 @@ rig_downsampler_downsample (RigDownsampler *downsampler,
       cogl_texture_get_height (downsampler->dest) != dest_height ||
       cogl_texture_get_format (downsampler->dest) != format)
     {
-      GError *error = NULL;
+      CoglError *error = NULL;
       CoglOffscreen *offscreen;
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (downsampler->ctx->cogl_context,

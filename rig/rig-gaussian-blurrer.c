@@ -285,7 +285,7 @@ rig_gaussian_blurrer_blur (RigGaussianBlurrer *blurrer,
 
   if (!blurrer->x_pass)
     {
-      GError *error = NULL;
+      CoglError *error = NULL;
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,
                                        src_w,
@@ -308,7 +308,7 @@ rig_gaussian_blurrer_blur (RigGaussianBlurrer *blurrer,
 
   if (!blurrer->y_pass)
     {
-      GError *error = NULL;
+      CoglError *error = NULL;
       /* create the second FBO (final destination) to render the y pass */
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,

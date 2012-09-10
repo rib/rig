@@ -1525,7 +1525,7 @@ static inline void
 rig_text_set_markup_internal (RigText *text,
                               const char *str)
 {
-  GError *error;
+  CoglError *error;
   char *stripped_text = NULL;
   PangoAttrList *attrs = NULL;
   CoglBool res;

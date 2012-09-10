@@ -237,7 +237,7 @@ test_init (RigShell *shell, void *user_data)
   Data *data = user_data;
   CoglOnscreen *onscreen;
   CoglTexture2D *color_buffer;
-  GError *error = NULL;
+  CoglError *error = NULL;
   RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;

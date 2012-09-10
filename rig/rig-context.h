@@ -99,7 +99,7 @@ char *
 rig_settings_get_font_name (RigSettings *settings);
 
 CoglTexture *
-rig_load_texture (RigContext *ctx, const char *filename, GError **error);
+rig_load_texture (RigContext *ctx, const char *filename, CoglError **error);
 
 typedef struct _RigGraph RigGraph;
 #define RIG_GRAPH(X) ((RigGraph *)X)
@@ -293,7 +293,7 @@ rig_button_add_on_click_callback (RigButton *button,
                                   RigClosureDestroyCallback destroy_cb);
 
 CoglTexture *
-_rig_load_texture (RigContext *ctx, const char *filename, GError **error);
+_rig_load_texture (RigContext *ctx, const char *filename, CoglError **error);
 
 void
 rig_color_init_from_uint32 (RigColor *color, uint32_t value);

@@ -159,7 +159,7 @@ rig_downsample_init (RigDownsample *down,
   CoglTexture2D *texture_2d;
   CoglOffscreen *offscreen;
   unsigned int src_w, src_h;
-  GError *error = NULL;
+  CoglError *error = NULL;
 
   /* validation */
   src_w = cogl_texture_get_width (source);
@@ -446,7 +446,7 @@ rig_gaussian_blur_init (RigGaussianBlur *blur,
   CoglPixelFormat format;
   CoglOffscreen *offscreen;
   CoglPipeline *base_pipeline;
-  GError *error = NULL;
+  CoglError *error = NULL;
 
   /* validation */
   if (n_taps < 5 || n_taps > 17 || n_taps % 2 == 0 )
@@ -801,7 +801,7 @@ test_init (RigShell *shell, void *user_data)
   Data *data = user_data;
   CoglOnscreen *onscreen;
   CoglTexture2D *color_buffer;
-  GError *error = NULL;
+  CoglError *error = NULL;
   RigObject *component;
   CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;

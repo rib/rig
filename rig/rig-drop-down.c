@@ -157,7 +157,7 @@ rig_drop_down_create_bg_pipeline (RigContext *context)
       CoglPipeline *pipeline = cogl_pipeline_new (context->cogl_context);
       static CoglUserDataKey bg_pipeline_destroy_key;
       CoglTexture *bg_texture;
-      GError *error = NULL;
+      CoglError *error = NULL;
 
       bg_texture = rig_load_texture (context,
                                      RIG_DATA_DIR

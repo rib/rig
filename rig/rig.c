@@ -497,7 +497,7 @@ texture_destroyed_cb (void *user_data)
 }
 
 CoglTexture *
-rig_load_texture (RigContext *ctx, const char *filename, GError **error)
+rig_load_texture (RigContext *ctx, const char *filename, CoglError **error)
 {
   RigTextureCacheEntry *entry =
     g_hash_table_lookup (ctx->texture_cache, filename);
@@ -534,7 +534,7 @@ RigContext *
 rig_context_new (RigShell *shell)
 {
   RigContext *context = g_new0 (RigContext, 1);
-  GError *error = NULL;
+  CoglError *error = NULL;
 
   _rig_init ();
 
@@ -1889,7 +1889,7 @@ rig_button_new (RigContext *ctx,
   CoglTexture *hover_texture;
   CoglTexture *active_texture;
   CoglTexture *disabled_texture;
-  GError *error = NULL;
+  CoglError *error = NULL;
   PangoRectangle label_size;
 
   rig_object_init (RIG_OBJECT (button), &rig_button_type);
@@ -1909,7 +1909,7 @@ rig_button_new (RigContext *ctx,
   if (!normal_texture)
     {
       g_warning ("Failed to load button texture: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   hover_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-hover.png", &error);
@@ -1917,7 +1917,7 @@ rig_button_new (RigContext *ctx,
     {
       cogl_object_unref (normal_texture);
       g_warning ("Failed to load button-hover texture: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   active_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-active.png", &error);
@@ -1926,7 +1926,7 @@ rig_button_new (RigContext *ctx,
       cogl_object_unref (normal_texture);
       cogl_object_unref (hover_texture);
       g_warning ("Failed to load button-active texture: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   disabled_texture = rig_load_texture (ctx, RIG_DATA_DIR "button-disabled.png", &error);
@@ -1936,7 +1936,7 @@ rig_button_new (RigContext *ctx,
       cogl_object_unref (hover_texture);
       cogl_object_unref (active_texture);
       g_warning ("Failed to load button-disabled texture: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   button->label = pango_layout_new (ctx->pango_context);
