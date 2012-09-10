@@ -1471,34 +1471,6 @@ undo_journal_new (Data *data)
   return journal;
 }
 
-#if 0
-static UIViewport *
-ui_viewport_new (float width,
-                 float height,
-                 float doc_x,
-                 float doc_y,
-                 float doc_x_scale,
-                 float doc_y_scale)
-{
-  UIViewport *vp = g_slice_new (UIViewport);
-
-  vp->width = width;
-  vp->height = height;
-  vp->doc_x = doc_x;
-  vp->doc_y = doc_y;
-  vp->doc_x_scale = doc_x_scale;
-  vp->doc_y_scale = doc_y_scale;
-
-  return vp;
-}
-
-static void
-ui_viewport_free (UIViewport *vp)
-{
-  g_slice_free (UIViewport, vp);
-}
-#endif
-
 typedef struct _VertexP2T2T2
 {
   float x, y, s0, t0, s1, t1;
