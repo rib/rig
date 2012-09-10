@@ -36,6 +36,7 @@
 #include "cogl-bitmap.h"
 #include "cogl-bitmap-private.h"
 #include "cogl-texture-private.h"
+#include "cogl-texture-2d-gl.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-sliced-private.h"
 #include "cogl-texture-driver.h"
@@ -982,12 +983,12 @@ _cogl_texture_2d_sliced_new_from_foreign (GLuint           gl_handle,
       y_pot_waste < 0 || y_pot_waste >= height)
     return NULL;
 
-  tex_2d = cogl_texture_2d_new_from_foreign (ctx,
-                                             gl_target,
-                                             gl_width,
-                                             gl_height,
-                                             format,
-                                             NULL);
+  tex_2d = cogl_texture_2d_gl_new_from_foreign (ctx,
+                                                gl_target,
+                                                gl_width,
+                                                gl_height,
+                                                format,
+                                                NULL);
 
   if (!tex_2d)
     return NULL;

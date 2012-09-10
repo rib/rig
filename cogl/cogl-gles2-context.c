@@ -43,6 +43,7 @@
 #include "cogl-onscreen-template-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-swap-chain-private.h"
+#include "cogl-texture-2d-gl.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-error-private.h"
@@ -1932,12 +1933,12 @@ cogl_gles2_texture_2d_new_from_handle (CoglContext *ctx,
                                        CoglPixelFormat internal_format,
                                        CoglError **error)
 {
-  return cogl_texture_2d_new_from_foreign (ctx,
-                                           handle,
-                                           width,
-                                           height,
-                                           internal_format,
-                                           error);
+  return cogl_texture_2d_gl_new_from_foreign (ctx,
+                                              handle,
+                                              width,
+                                              height,
+                                              internal_format,
+                                              error);
 }
 
 CoglBool

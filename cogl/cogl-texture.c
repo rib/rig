@@ -42,6 +42,7 @@
 #include "cogl-texture-driver.h"
 #include "cogl-texture-2d-sliced-private.h"
 #include "cogl-texture-2d-private.h"
+#include "cogl-texture-2d-gl.h"
 #include "cogl-texture-rectangle-private.h"
 #include "cogl-sub-texture-private.h"
 #include "cogl-atlas-texture-private.h"
@@ -489,12 +490,12 @@ cogl_texture_new_from_foreign (GLuint           gl_handle,
   else
     {
       _COGL_GET_CONTEXT (ctx, NULL);
-      return COGL_TEXTURE (cogl_texture_2d_new_from_foreign (ctx,
-                                                             gl_handle,
-                                                             width,
-                                                             height,
-                                                             format,
-                                                             NULL));
+      return COGL_TEXTURE (cogl_texture_2d_gl_new_from_foreign (ctx,
+                                                                gl_handle,
+                                                                width,
+                                                                height,
+                                                                format,
+                                                                NULL));
     }
 }
 
