@@ -9,6 +9,7 @@
 
 #include "rig.h"
 #include "rig-inspector.h"
+#include "rig-transition.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -69,38 +70,6 @@ typedef struct _UndoRedoOpImpl
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
 
-typedef struct _Node
-{
-  float t;
-} Node;
-
-typedef struct _NodeFloat
-{
-  float t;
-  float value;
-} NodeFloat;
-
-typedef struct _NodeVec3
-{
-  float t;
-  float value[3];
-} NodeVec3;
-
-typedef struct _NodeQuaternion
-{
-  float t;
-  CoglQuaternion value;
-} NodeQuaternion;
-
-typedef struct _Path
-{
-  RigContext *ctx;
-  RigProperty *progress_prop;
-  RigProperty *prop;
-  GQueue nodes;
-  GList *pos;
-} Path;
-
 typedef struct _DiamondSlice
 {
   RigObjectProps _parent;
@@ -120,37 +89,6 @@ typedef struct _DiamondSlice
   RigPaintableProps paintable;
 
 } DiamondSlice;
-
-enum {
-  TRANSITION_PROP_PROGRESS,
-  TRANSITION_N_PROPS
-};
-
-typedef struct _Transition
-{
-  RigObjectProps _parent;
-
-  Data *data;
-
-  uint32_t id;
-
-  float progress;
-
-  GList *paths;
-
-  RigProperty props[TRANSITION_N_PROPS];
-  RigSimpleIntrospectableProps introspectable;
-
-} Transition;
-
-static RigPropertySpec _transition_prop_specs[] = {
-  {
-    .name = "progress",
-    .type = RIG_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (Transition, progress)
-  },
-  { 0 }
-};
 
 typedef enum _Pass
 {
@@ -369,7 +307,7 @@ struct _Data
   GList *transitions;
 
   RigEntity *selected_entity;
-  Transition *selected_transition;
+  RigTransition *selected_transition;
 
   RigTool *tool;
 
@@ -443,591 +381,6 @@ save (Data *data);
 
 static void
 load (Data *data, const char *file);
-
-static Path *
-transition_get_path (Transition *transition,
-                     RigObject *object,
-                     const char *property_name);
-
-static void
-path_lerp_property (Path *path, float t);
-
-void
-node_float_lerp (NodeFloat *a,
-                 NodeFloat *b,
-                 float t,
-                 float *value)
-{
-  float range = b->t - a->t;
-  if (range)
-    {
-      float offset = t - a->t;
-      float factor = offset / range;
-
-      *value = a->value + (b->value - a->value) * factor;
-    }
-  else
-    *value = a->value;
-}
-
-void
-node_vec3_lerp (NodeVec3 *a,
-                NodeVec3 *b,
-                float t,
-                float value[3])
-{
-  float range = b->t - a->t;
-
-  if (range)
-    {
-      float offset = t - a->t;
-      float factor = offset / range;
-
-      value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
-      value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
-      value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
-    }
-  else
-    memcpy (value, a->value, sizeof (float) * 3);
-}
-
-void
-node_quaternion_lerp (NodeQuaternion *a,
-                      NodeQuaternion *b,
-                      float t,
-                      CoglQuaternion *value)
-{
-  float range = b->t - a->t;
-  if (range)
-    {
-      float offset = t - a->t;
-      float factor = offset / range;
-
-      cogl_quaternion_nlerp (value, &a->value, &b->value, factor);
-    }
-  else
-    *value = a->value;
-}
-
-void
-node_free (void *node, void *user_data)
-{
-  RigPropertyType type = GPOINTER_TO_UINT (user_data);
-
-  switch (type)
-    {
-      case RIG_PROPERTY_TYPE_FLOAT:
-	g_slice_free (NodeFloat, node);
-	break;
-
-      case RIG_PROPERTY_TYPE_VEC3:
-	g_slice_free (NodeVec3, node);
-	break;
-
-      case RIG_PROPERTY_TYPE_QUATERNION:
-	g_slice_free (NodeQuaternion, node);
-	break;
-
-      default:
-        g_warn_if_reached ();
-    }
-}
-
-NodeFloat *
-node_new_for_float (float t, float value)
-{
-  NodeFloat *node = g_slice_new (NodeFloat);
-  node->t = t;
-  node->value = value;
-  return node;
-}
-
-NodeVec3 *
-node_new_for_vec3 (float t, const float value[3])
-{
-  NodeVec3 *node = g_slice_new (NodeVec3);
-  node->t = t;
-  memcpy (node->value, value, sizeof (float) * 3);
-  return node;
-}
-
-
-NodeQuaternion *
-node_new_for_quaternion (float t, float angle, float x, float y, float z)
-{
-  NodeQuaternion *node = g_slice_new (NodeQuaternion);
-  node->t = t;
-  cogl_quaternion_init (&node->value, angle, x, y, z);
-
-  return node;
-}
-
-void
-path_free (Path *path)
-{
-  g_queue_foreach (&path->nodes, node_free, GUINT_TO_POINTER (path->prop->spec->type));
-  g_queue_clear (&path->nodes);
-  rig_ref_countable_unref (path->ctx);
-  g_slice_free (Path, path);
-}
-
-
-static void
-update_path_property_cb (RigProperty *path_property, void *user_data)
-{
-  Path *path = user_data;
-  float progress = rig_property_get_float (path->progress_prop);
-
-  path_lerp_property (path, progress);
-}
-
-Path *
-path_new_for_property (RigContext *ctx,
-                       RigProperty *progress_prop,
-                       RigProperty *path_prop)
-{
-  Path *path = g_slice_new (Path);
-
-  path->ctx = rig_ref_countable_ref (ctx);
-
-  path->progress_prop = progress_prop;
-  path->prop = path_prop;
-
-  g_queue_init (&path->nodes);
-  path->pos = NULL;
-
-  rig_property_set_binding (path_prop,
-                            update_path_property_cb,
-                            path,
-                            progress_prop,
-                            NULL);
-
-  return path;
-}
-
-static GList *
-nodes_find_less_than (GList *start, float t)
-{
-  GList *l;
-
-  for (l = start; l; l = l->prev)
-    {
-      Node *node = l->data;
-      if (node->t < t)
-        return l;
-    }
-
-  return NULL;
-}
-
-static GList *
-nodes_find_less_than_equal (GList *start, float t)
-{
-  GList *l;
-
-  for (l = start; l; l = l->prev)
-    {
-      Node *node = l->data;
-      if (node->t <= t)
-        return l;
-    }
-
-  return NULL;
-}
-
-static GList *
-nodes_find_greater_than (GList *start, float t)
-{
-  GList *l;
-
-  for (l = start; l; l = l->next)
-    {
-      Node *node = l->data;
-      if (node->t > t)
-        return l;
-    }
-
-  return NULL;
-}
-
-static GList *
-nodes_find_first (GList *pos)
-{
-  GList *l;
-
-  for (l = pos; l->prev; l = l->prev)
-    ;
-
-  return l;
-}
-
-static GList *
-nodes_find_last (GList *pos)
-{
-  GList *l;
-
-  for (l = pos; l->next; l = l->next)
-    ;
-
-  return l;
-}
-
-static GList *
-nodes_find_greater_than_equal (GList *start, float t)
-{
-  GList *l;
-
-  for (l = start; l; l = l->next)
-    {
-      Node *node = l->data;
-      if (node->t >= t)
-        return l;
-    }
-
-  return NULL;
-}
-
-/* Finds 1 point either side of the given t using the direction to resolve
- * which points to choose if t corresponds to a specific node.
- */
-static void
-path_find_control_links2 (Path *path,
-                          float t,
-                          int direction,
-                          GList **n0,
-                          GList **n1)
-{
-  GList *pos;
-  Node *pos_node;
-
-  if (G_UNLIKELY (path->nodes.head == NULL))
-    {
-      *n0 = NULL;
-      *n1= NULL;
-      return;
-    }
-
-  if (G_UNLIKELY (path->pos == NULL))
-    path->pos = path->nodes.head;
-
-  pos = path->pos;
-  pos_node = pos->data;
-
-  /*
-   * Note:
-   *
-   * A node with t exactly == t may only be considered as the first control
-   * point moving in the current direction.
-   */
-
-  if (direction > 0)
-    {
-      if (pos_node->t > t)
-        {
-          /* > --- T -------- Pos ---- */
-          GList *tmp = nodes_find_less_than_equal (pos, t);
-          if (!tmp)
-            {
-              *n0 = *n1 = path->pos = nodes_find_first (pos);
-              return;
-            }
-          pos = tmp;
-        }
-      else
-        {
-          /* > --- Pos -------- T ---- */
-          GList *tmp = nodes_find_greater_than (pos, t);
-          if (!tmp)
-            {
-              *n0 = *n1 = path->pos = nodes_find_last (pos);
-              return;
-            }
-          pos = tmp->prev;
-        }
-
-      *n0 = pos;
-      *n1 = pos->next;
-    }
-  else
-    {
-      if (pos_node->t > t)
-        {
-          /* < --- T -------- Pos ---- */
-          GList *tmp = nodes_find_less_than (pos, t);
-          if (!tmp)
-            {
-              *n0 = *n1 = path->pos = nodes_find_first (pos);
-              return;
-            }
-          pos = tmp->next;
-        }
-      else
-        {
-          /* < --- Pos -------- T ---- */
-          GList *tmp = nodes_find_greater_than_equal (pos, t);
-          if (!tmp)
-            {
-              *n0 = *n1 = path->pos = nodes_find_last (pos);
-              return;
-            }
-          pos = tmp;
-        }
-
-      *n0 = pos;
-      *n1 = pos->prev;
-    }
-
-  path->pos = pos;
-}
-
-void
-path_find_control_points2 (Path *path,
-                           float t,
-                           int direction,
-                           Node **n0,
-                           Node **n1)
-{
-  GList *l0, *l1;
-  path_find_control_links2 (path, t, direction, &l0, &l1);
-  *n0 = l0->data;
-  *n1 = l1->data;
-}
-
-/* Finds 2 points either side of the given t using the direction to resolve
- * which points to choose if t corresponds to a specific node. */
-void
-path_find_control_points4 (Path *path,
-                           float t,
-                           int direction,
-                           Node **n0,
-                           Node **n1,
-                           Node **n2,
-                           Node **n3)
-{
-  GList *l1, *l2;
-
-  path_find_control_links2 (path, t, direction, &l1, &l2);
-
-  if (direction > 0)
-    {
-      *n0 = l1->prev->data;
-      *n3 = l2->next->data;
-    }
-  else
-    {
-      *n0 = l1->next->data;
-      *n3 = l2->prev->data;
-    }
-
-  *n1 = l1->data;
-  *n2 = l2->data;
-}
-
-void
-node_print (void *node, void *user_data)
-{
-  RigPropertyType type = GPOINTER_TO_UINT (user_data);
-  switch (type)
-    {
-      case RIG_PROPERTY_TYPE_FLOAT:
-	{
-	  NodeFloat *f_node = (NodeFloat *)node;
-
-	  g_print (" t = %f value = %f\n", f_node->t, f_node->value);
-          break;
-	}
-
-      case RIG_PROPERTY_TYPE_VEC3:
-	{
-	  NodeVec3 *vec3_node = (NodeVec3 *)node;
-
-	  g_print (" t = %f value.x = %f .y = %f .z = %f\n",
-                   vec3_node->t,
-                   vec3_node->value[0],
-                   vec3_node->value[1],
-                   vec3_node->value[2]);
-          break;
-	}
-
-      case RIG_PROPERTY_TYPE_QUATERNION:
-	{
-	  NodeQuaternion *q_node = (NodeQuaternion *)node;
-	  const CoglQuaternion *q = &q_node->value;
-	  g_print (" t = %f [%f (%f, %f, %f)]\n",
-                   q_node->t,
-                   q->w, q->x, q->y, q->z);
-	  break;
-	}
-
-      default:
-        g_warn_if_reached ();
-    }
-}
-
-void
-path_print (Path *path)
-{
-  g_print ("path=%p\n", path);
-  g_queue_foreach (&path->nodes, node_print, GUINT_TO_POINTER (path->prop->spec->type));
-}
-
-static int
-path_find_t_cb (gconstpointer a, gconstpointer b)
-{
-  const Node *node = a;
-  const float *t = b;
-
-  if (node->t == *t)
-    return 0;
-
-  return 1;
-}
-
-static int
-path_node_sort_t_func (const Node *a,
-                       const Node *b,
-                       void *user_data)
-{
-  if (a->t == b->t)
-    return 0;
-  else if (a->t < b->t)
-    return -1;
-  else
-    return 1;
-}
-
-void
-path_insert_float (Path *path,
-                   float t,
-                   float value)
-{
-  GList *link;
-  NodeFloat *node;
-
-#if 0
-  g_print ("BEFORE:\n");
-  path_print (path);
-#endif
-
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
-
-  if (link)
-    {
-      node = link->data;
-      node->value = value;
-    }
-  else
-    {
-      node = node_new_for_float (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
-    }
-
-#if 0
-  g_print ("AFTER:\n");
-  path_print (path);
-#endif
-}
-
-void
-path_insert_vec3 (Path *path,
-                  float t,
-                  const float value[3])
-{
-  GList *link;
-  NodeVec3 *node;
-
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
-
-  if (link)
-    {
-      node = link->data;
-      memcpy (node->value, value, sizeof (value));
-    }
-  else
-    {
-      node = node_new_for_vec3 (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
-    }
-}
-
-
-void
-path_insert_quaternion (Path *path,
-                        float t,
-                        float angle,
-                        float x,
-                        float y,
-                        float z)
-{
-  GList *link;
-  NodeQuaternion *node;
-
-#if 0
-  g_print ("BEFORE:\n");
-  path_print (path);
-#endif
-
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
-
-  if (link)
-    {
-      node = link->data;
-      cogl_quaternion_init (&node->value, angle, x, y, z);
-    }
-  else
-    {
-      node = node_new_for_quaternion (t, angle, x, y, z);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func, NULL);
-    }
-
-#if 0
-  g_print ("AFTER:\n");
-  path_print (path);
-#endif
-}
-
-static void
-path_lerp_property (Path *path, float t)
-{
-  Node *n0, *n1;
-
-  path_find_control_points2 (path, t, 1,
-                             &n0,
-                             &n1);
-
-  switch (path->prop->spec->type)
-    {
-    case RIG_PROPERTY_TYPE_FLOAT:
-      {
-        float value;
-
-        node_float_lerp ((NodeFloat *)n0, (NodeFloat *)n1, t, &value);
-        rig_property_set_float (&path->ctx->property_ctx, path->prop, value);
-        break;
-      }
-    case RIG_PROPERTY_TYPE_VEC3:
-      {
-        float value[3];
-        node_vec3_lerp ((NodeVec3 *)n0, (NodeVec3 *)n1, t, value);
-        rig_property_set_vec3 (&path->ctx->property_ctx, path->prop, value);
-        break;
-      }
-    case RIG_PROPERTY_TYPE_QUATERNION:
-      {
-        CoglQuaternion value;
-        node_quaternion_lerp ((NodeQuaternion *)n0,
-                              (NodeQuaternion *)n1, t, &value);
-        rig_property_set_quaternion (&path->ctx->property_ctx,
-                                     path->prop, &value);
-        break;
-      }
-    }
-}
 
 static void
 rig_dof_init (RigDepthOfField *dof,
@@ -2376,7 +1729,7 @@ paint_timeline_camera (TestPaintContext *test_paint_ctx)
 
       for (l = data->selected_transition->paths; l; l = l->next)
         {
-          Path *path = l->data;
+          RigPath *path = l->data;
           GArray *points;
           GList *l;
           GList *next;
@@ -2400,7 +1753,7 @@ paint_timeline_camera (TestPaintContext *test_paint_ctx)
 
           for (l = path->nodes.head; l; l = next)
             {
-              NodeFloat *f_node = l->data;
+              RigNodeFloat *f_node = l->data;
               CoglVertexP2 p;
 
               next = l->next;
@@ -2658,11 +2011,26 @@ update_transition_progress_cb (RigProperty *property, void *user_data)
 {
   Data *data = user_data;
   double elapsed = rig_timeline_get_elapsed (data->timeline);
-  Transition *transition = property->object;
+  RigTransition *transition = property->object;
 
-  transition->progress = elapsed;
-  rig_property_dirty (&data->ctx->property_ctx,
-                      &transition->props[TRANSITION_PROP_PROGRESS]);
+  rig_transition_set_progress (transition, elapsed);
+}
+
+static RigTransition *
+create_transition (Data *data,
+                   uint32_t id)
+{
+  RigTransition *transition = rig_transition_new (data->ctx, id);
+
+  /* FIXME: this should probably only update the progress for the
+   * current transition */
+  rig_property_set_binding (&transition->props[RIG_TRANSITION_PROP_PROGRESS],
+                            update_transition_progress_cb,
+                            data,
+                            data->timeline_elapsed,
+                            NULL);
+
+  return transition;
 }
 
 static void
@@ -2862,121 +2230,6 @@ update_inspector (Data *data)
       rig_graphable_add_child (doc_node, data->inspector);
       rig_ref_countable_unref (data->inspector);
     }
-}
-
-static RigIntrospectableVTable _transition_introspectable_vtable = {
-  rig_simple_introspectable_lookup_property,
-  rig_simple_introspectable_foreach_property
-};
-
-static RigType _transition_type;
-
-static void
-_transition_type_init (void)
-{
-  rig_type_init (&_transition_type);
-  rig_type_add_interface (&_transition_type,
-                          RIG_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_transition_introspectable_vtable);
-  rig_type_add_interface (&_transition_type,
-                          RIG_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (Transition, introspectable),
-                          NULL); /* no implied vtable */
-}
-
-Transition *
-transition_new (Data *data,
-                uint32_t id)
-{
-  //CoglError *error = NULL;
-  Transition *transition;
-
-  transition = g_slice_new0 (Transition);
-
-  transition->id = id;
-
-  rig_object_init (&transition->_parent, &_transition_type);
-
-  rig_simple_introspectable_init (transition, _transition_prop_specs, transition->props);
-
-  transition->data = data;
-
-  transition->progress = 0;
-  transition->paths = NULL;
-
-  rig_property_set_binding (&transition->props[TRANSITION_PROP_PROGRESS],
-                            update_transition_progress_cb,
-                            data,
-                            data->timeline_elapsed,
-                            NULL);
-
-  return transition;
-}
-
-static void
-transition_free (Transition *transition)
-{
-  GList *l;
-
-  rig_simple_introspectable_destroy (transition);
-
-  for (l = transition->paths; l; l = l->next)
-    {
-      Path *path = l->data;
-      path_free (path);
-    }
-
-  g_slice_free (Transition, transition);
-}
-
-void
-transition_add_path (Transition *transition,
-                     Path *path)
-{
-  transition->paths = g_list_prepend (transition->paths, path);
-}
-
-static Path *
-transition_find_path (Transition *transition,
-                      RigProperty *property)
-{
-  GList *l;
-
-  for (l = transition->paths; l; l = l->next)
-    {
-      Path *path = l->data;
-
-      if (path->prop == property)
-        return path;
-    }
-
-  return NULL;
-}
-
-static Path *
-transition_get_path (Transition *transition,
-                     RigObject *object,
-                     const char *property_name)
-{
-  RigProperty *property =
-    rig_introspectable_lookup_property (object, property_name);
-  Path *path;
-
-  if (!property)
-    return NULL;
-
-  path = transition_find_path (transition, property);
-  if (path)
-    return path;
-
-  path = path_new_for_property (transition->data->ctx,
-                                &transition->props[TRANSITION_PROP_PROGRESS],
-                                property);
-
-  transition_add_path (transition, path);
-
-  return path;
 }
 
 #if 0
@@ -3540,11 +2793,11 @@ entity_translate_done_cb (RigEntity *entity,
                           void *user_data)
 {
   Data *data = user_data;
-  Transition *transition = data->selected_transition;
+  RigTransition *transition = data->selected_transition;
   float elapsed = rig_timeline_get_elapsed (data->timeline);
-  Path *path_position = transition_get_path (transition,
-                                             entity,
-                                             "position");
+  RigPath *path_position = rig_transition_get_path (transition,
+                                                    entity,
+                                                    "position");
 
   undo_journal_log_move (data->undo_journal,
                          FALSE,
@@ -3556,8 +2809,8 @@ entity_translate_done_cb (RigEntity *entity,
                          start[1] + rel[1],
                          start[2] + rel[2]);
 
-  path_insert_vec3 (path_position, elapsed,
-                    rig_entity_get_position (entity));
+  rig_path_insert_vec3 (path_position, elapsed,
+                        rig_entity_get_position (entity));
 
   rig_shell_queue_redraw (data->ctx->shell);
 }
@@ -5150,7 +4403,7 @@ save (Data *data)
 
   for (l = data->transitions; l; l = l->next)
     {
-      Transition *transition = l->data;
+      RigTransition *transition = l->data;
       GList *l2;
       //int i;
 
@@ -5159,7 +4412,7 @@ save (Data *data)
 
       for (l2 = transition->paths; l2; l2 = l2->next)
         {
-          Path *path = l2->data;
+          RigPath *path = l2->data;
           GList *l3;
           RigEntity *entity;
           int id;
@@ -5185,13 +4438,13 @@ save (Data *data)
                 {
                 case RIG_PROPERTY_TYPE_FLOAT:
                   {
-                    NodeFloat *node = l3->data;
+                    RigNodeFloat *node = l3->data;
                     fprintf (file, "%*s<node t=\"%f\" value=\"%f\" />\n", state.indent, "", node->t, node->value);
                     break;
                   }
                 case RIG_PROPERTY_TYPE_VEC3:
                   {
-                    NodeVec3 *node = l3->data;
+                    RigNodeVec3 *node = l3->data;
                     fprintf (file, "%*s<node t=\"%f\" value=\"(%f, %f, %f)\" />\n",
                              state.indent, "", node->t,
                              node->value[0],
@@ -5201,7 +4454,7 @@ save (Data *data)
                   }
                 case RIG_PROPERTY_TYPE_QUATERNION:
                   {
-                    NodeQuaternion *node = l3->data;
+                    RigNodeQuaternion *node = l3->data;
                     CoglQuaternion *q = &node->value;
                     float angle;
                     float axis[3];
@@ -5416,8 +4669,8 @@ typedef struct _Loader
   RigEntity *current_entity;
   CoglBool is_light;
 
-  Transition *current_transition;
-  Path *current_path;
+  RigTransition *current_transition;
+  RigPath *current_path;
 
   GHashTable *id_map;
 } Loader;
@@ -5814,7 +5067,7 @@ parse_start_element (GMarkupParseContext *context,
 
       id = g_ascii_strtoull (id_str, NULL, 10);
 
-      loader->current_transition = transition_new (loader->data, id);
+      loader->current_transition = create_transition (loader->data, id);
       loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
@@ -5863,9 +5116,10 @@ parse_start_element (GMarkupParseContext *context,
         }
 
       loader->current_path =
-        path_new_for_property (data->ctx,
-                               &loader->current_transition->props[TRANSITION_PROP_PROGRESS],
-                               prop);
+        rig_path_new_for_property (data->ctx,
+                                   &loader->current_transition
+                                   ->props[RIG_TRANSITION_PROP_PROGRESS],
+                                   prop);
 
       loader_push_state (loader, LOADER_STATE_LOADING_PATH);
     }
@@ -5896,7 +5150,7 @@ parse_start_element (GMarkupParseContext *context,
         case RIG_PROPERTY_TYPE_FLOAT:
           {
             float value = g_ascii_strtod (value_str, NULL);
-            path_insert_float (loader->current_path, t, value);
+            rig_path_insert_float (loader->current_path, t, value);
             break;
           }
         case RIG_PROPERTY_TYPE_VEC3:
@@ -5911,7 +5165,7 @@ parse_start_element (GMarkupParseContext *context,
                              "Invalid vec3 value");
                 return;
               }
-            path_insert_vec3 (loader->current_path, t, value);
+            rig_path_insert_vec3 (loader->current_path, t, value);
             break;
           }
         case RIG_PROPERTY_TYPE_QUATERNION:
@@ -5927,7 +5181,10 @@ parse_start_element (GMarkupParseContext *context,
                 return;
               }
 
-            path_insert_quaternion (loader->current_path, t, angle, x, y, z);
+            rig_path_insert_quaternion (loader->current_path,
+                                        t,
+                                        angle,
+                                        x, y, z);
             break;
           }
         }
@@ -6025,7 +5282,8 @@ parse_end_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_PATH &&
            strcmp (element_name, "path") == 0)
     {
-      transition_add_path (loader->current_transition, loader->current_path);
+      rig_transition_add_path (loader->current_transition,
+                               loader->current_path);
       loader_pop_state (loader);
     }
 }
@@ -6044,7 +5302,7 @@ free_ux (Data *data)
   GList *l;
 
   for (l = data->transitions; l; l = l->next)
-    transition_free (l->data);
+    rig_transition_free (l->data);
   g_list_free (data->transitions);
   data->transitions = NULL;
 
@@ -6114,7 +5372,7 @@ load (Data *data, const char *file)
     data->selected_transition = loader.transitions->data;
   else
     {
-      Transition *transition = transition_new (data, 0);
+      RigTransition *transition = create_transition (data, 0);
       data->transitions = g_list_prepend (data->transitions, transition);
       data->selected_transition = transition;
     }
@@ -6133,7 +5391,6 @@ load (Data *data, const char *file)
 static void
 init_types (void)
 {
-  _transition_type_init ();
 }
 
 #ifdef __ANDROID__

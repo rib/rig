@@ -21,5 +21,13 @@ common_ldadd = \
 
 bin_PROGRAMS = rig
 
-rig_SOURCES = jni/main.c
+rig_SOURCES = \
+	jni/main.c \
+	jni/rig-node.c \
+	jni/rig-node.h \
+	jni/rig-path.c \
+	jni/rig-path.h \
+	jni/rig-transition.c \
+	jni/rig-transition.h
+
 rig_LDADD = $(common_ldadd)
