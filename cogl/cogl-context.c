@@ -527,19 +527,7 @@ _cogl_context_free (CoglContext *context)
 CoglContext *
 _cogl_context_get_default (void)
 {
-  CoglError *error = NULL;
-  /* Create if doesn't exist yet */
-  if (_cogl_context == NULL)
-    {
-      _cogl_context = cogl_context_new (NULL, &error);
-      if (!_cogl_context)
-        {
-          g_warning ("Failed to create default context: %s",
-                     error->message);
-          cogl_error_free (error);
-        }
-    }
-
+  _COGL_RETURN_VAL_IF_FAIL (_cogl_context != NULL, NULL);
   return _cogl_context;
 }
 
