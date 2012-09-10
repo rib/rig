@@ -114,34 +114,6 @@ typedef enum _State
   STATE_NONE
 } State;
 
-typedef struct
-{
-  RigContext *ctx;
-
-  /* The size of our depth_pass and normal_pass textuers */
-  int width;
-  int height;
-
-  /* A texture to hold depth-of-field blend factors based
-   * on the distance of the geometry from the focal plane.
-   */
-  CoglTexture *depth_pass;
-  CoglFramebuffer *depth_pass_fb;
-
-  /* This is our normal, pristine render of the color buffer */
-  CoglTexture *color_pass;
-  CoglFramebuffer *color_pass_fb;
-
-  /* This is our color buffer reduced in size and blurred */
-  CoglTexture *blur_pass;
-
-  CoglPipeline *pipeline;
-
-  RigDownsampler *downsampler;
-  RigGaussianBlurrer *blurrer;
-} RigDepthOfField;
-
-
 enum {
   DATA_PROP_WIDTH,
   DATA_PROP_HEIGHT,
@@ -279,7 +251,7 @@ struct _Data
 
   /* postprocessing */
   CoglFramebuffer *postprocess;
-  RigDepthOfField dof;
+  RigDepthOfField *dof;
   CoglBool enable_dof;
 
   RigArcball arcball;
@@ -381,167 +353,6 @@ save (Data *data);
 
 static void
 load (Data *data, const char *file);
-
-static void
-rig_dof_init (RigDepthOfField *dof,
-              RigContext *ctx)
-{
-  CoglPipeline *pipeline;
-  CoglSnippet *snippet;
-
-  memset (dof, sizeof (dof), 0);
-
-  dof->ctx = ctx;
-
-  pipeline = cogl_pipeline_new (ctx->cogl_context);
-  dof->pipeline = pipeline;
-
-  cogl_pipeline_set_layer_texture (pipeline, 0, NULL); /* depth */
-  cogl_pipeline_set_layer_texture (pipeline, 1, NULL); /* blurred */
-  cogl_pipeline_set_layer_texture (pipeline, 2, NULL); /* color */
-
-  /* disable blending */
-  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              NULL, /* definitions */
-                              NULL  /* post */);
-
-  cogl_snippet_set_replace (snippet,
-      "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord_in[0].st);\n"
-      "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord_in[1].st);\n"
-      "cogl_texel2 = texture2D (cogl_sampler2, cogl_tex_coord_in[2].st);\n"
-      "cogl_color_out = mix (cogl_texel1, cogl_texel2, cogl_texel0.a);\n"
-      "cogl_color_out.a = 1.0;\n");
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
-
-  dof->downsampler = rig_downsampler_new (ctx);
-  dof->blurrer = rig_gaussian_blurrer_new (ctx, 7);
-}
-
-static void
-rig_dof_destroy (RigDepthOfField *dof)
-{
-  rig_downsampler_free (dof->downsampler);
-  rig_gaussian_blurrer_free (dof->blurrer);
-  cogl_object_unref (dof->pipeline);
-}
-
-static void
-rig_dof_set_framebuffer_size (RigDepthOfField *dof,
-                              int width,
-                              int height)
-{
-  if (dof->width == width && dof->height == height)
-    return;
-
-
-  if (dof->color_pass_fb)
-    {
-      cogl_object_unref (dof->color_pass_fb);
-      dof->color_pass_fb = NULL;
-      cogl_object_unref (dof->color_pass);
-      dof->color_pass = NULL;
-    }
-
-  if (dof->depth_pass_fb)
-    {
-      cogl_object_unref (dof->depth_pass_fb);
-      dof->depth_pass_fb = NULL;
-      cogl_object_unref (dof->depth_pass);
-      dof->depth_pass = NULL;
-    }
-
-  dof->width = width;
-  dof->height = height;
-}
-
-static CoglFramebuffer *
-rig_dof_get_depth_pass_fb (RigDepthOfField *dof)
-{
-  if (!dof->depth_pass)
-    {
-      CoglError *error = NULL;
-
-      /*
-       * Offscreen render for post-processing
-       */
-      dof->depth_pass = COGL_TEXTURE (
-        cogl_texture_2d_new_with_size (rig_cogl_context,
-                                       dof->width,
-                                       dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888,
-                                       &error));
-      if (error)
-        {
-          g_critical ("could not create texture: %s", error->message);
-          return NULL;
-        }
-
-      dof->depth_pass_fb = COGL_FRAMEBUFFER (
-        cogl_offscreen_new_to_texture (dof->depth_pass));
-    }
-
-  return dof->depth_pass_fb;
-}
-
-static CoglFramebuffer *
-rig_dof_get_color_pass_fb (RigDepthOfField *dof)
-{
-  if (!dof->color_pass)
-    {
-      CoglError *error = NULL;
-
-      /*
-       * Offscreen render for post-processing
-       */
-      dof->color_pass = COGL_TEXTURE (
-        cogl_texture_2d_new_with_size (rig_cogl_context,
-                                       dof->width,
-                                       dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888,
-                                       &error));
-      if (error)
-        {
-          g_critical ("could not create texture: %s", error->message);
-          return NULL;
-        }
-
-      dof->color_pass_fb = COGL_FRAMEBUFFER (
-        cogl_offscreen_new_to_texture (dof->color_pass));
-    }
-
-  return dof->color_pass_fb;
-}
-
-static void
-rig_dof_draw_rectangle (RigDepthOfField *dof,
-                        CoglFramebuffer *fb,
-                        float x1,
-                        float y1,
-                        float x2,
-                        float y2)
-{
-  CoglTexture *downsampled =
-    rig_downsampler_downsample (dof->downsampler, dof->color_pass, 4, 4);
-
-  CoglTexture *blurred =
-    rig_gaussian_blurrer_blur (dof->blurrer, downsampled);
-
-  CoglPipeline *pipeline = cogl_pipeline_copy (dof->pipeline);
-
-  cogl_pipeline_set_layer_texture (pipeline, 0, dof->depth_pass);
-  cogl_pipeline_set_layer_texture (pipeline, 1, blurred);
-  cogl_pipeline_set_layer_texture (pipeline, 2, dof->color_pass);
-
-  cogl_framebuffer_draw_rectangle (fb, pipeline,
-                                   x1, y1, x2, y2);
-
-  cogl_object_unref (blurred);
-  cogl_object_unref (downsampled);
-}
 
 static UndoRedo *
 undo_journal_find_recent_property_change (UndoJournal *journal,
@@ -1579,9 +1390,9 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
 
       rig_camera_set_viewport (camera_component, 0, 0, width, height);
 
-      rig_dof_set_framebuffer_size (&data->dof, width, height);
+      rig_dof_effect_set_framebuffer_size (data->dof, width, height);
 
-      pass_fb = rig_dof_get_depth_pass_fb (&data->dof);
+      pass_fb = rig_dof_effect_get_depth_pass_fb (data->dof);
       rig_camera_set_framebuffer (camera_component, pass_fb);
 
       rig_camera_flush (camera_component);
@@ -1595,7 +1406,7 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
 
       rig_camera_end_frame (camera_component);
 
-      pass_fb = rig_dof_get_color_pass_fb (&data->dof);
+      pass_fb = rig_dof_effect_get_color_pass_fb (data->dof);
       rig_camera_set_framebuffer (camera_component, pass_fb);
 
       rig_camera_flush (camera_component);
@@ -1622,12 +1433,12 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                width, height);
       paint_ctx->camera = save_camera;
       rig_camera_flush (save_camera);
-      rig_dof_draw_rectangle (&data->dof,
-                              rig_camera_get_framebuffer (save_camera),
-                              data->main_x,
-                              data->main_y,
-                              data->main_x + data->main_width,
-                              data->main_y + data->main_height);
+      rig_dof_effect_draw_rectangle (data->dof,
+                                     rig_camera_get_framebuffer (save_camera),
+                                     data->main_x,
+                                     data->main_y,
+                                     data->main_x + data->main_width,
+                                     data->main_y + data->main_height);
       rig_camera_end_frame (save_camera);
     }
   else
@@ -3584,7 +3395,7 @@ test_init (RigShell *shell, void *user_data)
    * Depth of Field
    */
 
-  rig_dof_init (&data->dof, data->ctx);
+  data->dof = rig_dof_effect_new (data->ctx);
   data->enable_dof = TRUE;
 
   data->circle_texture = rig_create_circle_texture (data->ctx,
@@ -4099,7 +3910,7 @@ test_fini (RigShell *shell, void *user_data)
 
   cogl_object_unref (data->light_icon);
 
-  rig_dof_destroy (&data->dof);
+  rig_dof_effect_free (data->dof);
   //cogl_object_unref (data->rounded_tex);
 }
 

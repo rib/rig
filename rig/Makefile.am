@@ -52,7 +52,8 @@ source_h = \
     rig-entry.h \
     rig-gaussian-blurrer.h \
     rig-downsampler.h \
-    rig-toggle.h
+    rig-toggle.h \
+    rig-dof-effect.h
 
 librig_la_SOURCES = \
     components/rig-animation-clip.c \
@@ -109,6 +110,7 @@ librig_la_SOURCES = \
     rig-gaussian-blurrer.c \
     rig-downsampler.c \
     rig-toggle.c \
+    rig-dof-effect.c \
     $(source_h)
 
 if !HAVE_ANDROID
