@@ -449,6 +449,10 @@ rut_property_set_boxed (RutPropertyContext *ctx,
 void
 rut_boxed_destroy (RutBoxed *boxed);
 
+void
+rut_boxed_copy (RutBoxed *dst,
+                const RutBoxed *src);
+
 #define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
 static inline void \
 rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \

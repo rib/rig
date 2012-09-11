@@ -346,6 +346,57 @@ rut_property_box (RutProperty *property,
 }
 
 void
+rut_boxed_copy (RutBoxed *dst,
+                const RutBoxed *src)
+{
+  dst->type = src->type;
+
+  switch (src->type)
+    {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE)                      \
+    case RUT_PROPERTY_TYPE_ ## TYPE:                          \
+      dst->d. SUFFIX ## _val = src->d. SUFFIX ## _val;        \
+      return;
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE) \
+    SCALAR_TYPE (SUFFIX, CTYPE, TYPE)
+    /* Special case the _POINTER types so we can take a reference on
+     * objects... */
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+    case RUT_PROPERTY_TYPE_OBJECT:
+      {
+        if (src->d.object_val)
+          dst->d.object_val = rut_refable_ref (src->d.object_val);
+        else
+          dst->d.object_val = NULL;
+        return;
+      }
+    case RUT_PROPERTY_TYPE_POINTER:
+      dst->d.pointer_val = src->d.pointer_val;
+      return;
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)                    \
+    case RUT_PROPERTY_TYPE_ ## TYPE:                          \
+      {                                                       \
+        memcpy (&dst->d. SUFFIX ## _val,                      \
+                &src->d. SUFFIX ## _val,                      \
+                sizeof (CTYPE) * LEN);                        \
+        return;                                               \
+      }
+    case RUT_PROPERTY_TYPE_TEXT:
+      dst->d.text_val = g_strdup (src->d.text_val);
+      return;
+
+#include "rut-property-types.h"
+    }
+
+#undef POINTER_TYPE
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef SCALAR_TYPE
+
+  g_assert_not_reached ();
+}
+
+void
 rut_boxed_destroy (RutBoxed *boxed)
 {
   if (boxed->type == RUT_PROPERTY_TYPE_OBJECT && boxed->d.object_val)
