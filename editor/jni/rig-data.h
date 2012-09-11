@@ -159,6 +159,7 @@ typedef struct _RigData
 
   RigEntity *plane;
   RigEntity *light;
+  RigEntity *light_handle;
 
   /* postprocessing */
   CoglFramebuffer *postprocess;

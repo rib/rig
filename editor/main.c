@@ -1021,6 +1021,9 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
           rig_entity_draw (object, fb);
           return RIG_TRAVERSE_VISIT_CONTINUE;
         }
+
+      if (object == test_paint_ctx->data->light)
+        rig_entity_draw (object, fb);
 #if 1
       pipeline = get_entity_pipeline (test_paint_ctx->data,
                                       object,
@@ -2532,6 +2535,8 @@ main_input_cb (RigInputEvent *event,
           rig_shell_queue_redraw (data->ctx->shell);
           if (data->selected_entity == NULL)
             rig_tool_update (data->tool, NULL);
+          else if (data->selected_entity == data->light_handle)
+            data->selected_entity = data->light;
 
           update_inspector (data);
 
@@ -3361,6 +3366,15 @@ test_init (RigShell *shell, void *user_data)
   rig_entity_rotate_x_axis (data->light, 20);
   rig_entity_rotate_y_axis (data->light, -20);
 #endif
+
+    {
+      RigMeshRenderer *mesh = rig_mesh_renderer_new_from_template (data->ctx, "cube");
+
+      data->light_handle = rig_entity_new (data->ctx, data->entity_next_id++);
+      rig_entity_add_component (data->light_handle, mesh);
+      rig_graphable_add_child (data->light, data->light_handle);
+      rig_entity_set_scale (data->light_handle, 100);
+    }
 
   light = rig_light_new ();
   rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
