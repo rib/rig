@@ -245,3 +245,31 @@ rig_transition_foreach_property (RigTransition *transition,
                         foreach_path_cb,
                         &data);
 }
+
+void
+rig_transition_update_property (RigTransition *transition,
+                                RutProperty *property)
+{
+  RigTransitionPropData *prop_data =
+    rig_transition_find_prop_data (transition, property);
+
+  /* Update the given property depending on what the transition thinks
+   * it should currently be. This will either be calculated by
+   * interpolating the path for the property or by using the constant
+   * value depending on whether the property is animated */
+
+  if (prop_data)
+    {
+      if (property->animated)
+        {
+          if (prop_data->path)
+            rig_path_lerp_property (prop_data->path,
+                                    property,
+                                    transition->progress);
+        }
+      else
+        rut_property_set_boxed (&transition->context->property_ctx,
+                                property,
+                                &prop_data->constant_value);
+    }
+}

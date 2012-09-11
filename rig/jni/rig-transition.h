@@ -101,4 +101,8 @@ rig_transition_foreach_property (RigTransition *transition,
 void
 rig_transition_free (RigTransition *transition);
 
+void
+rig_transition_update_property (RigTransition *transition,
+                                RutProperty *property);
+
 #endif /* _RUT_TRANSITION_H_ */
