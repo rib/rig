@@ -82,7 +82,9 @@ _rig_inspector_free (void *object)
   int i;
 
   rig_ref_countable_unref (inspector->context);
-  rig_ref_countable_unref (inspector->object);
+
+  if (rig_object_is (inspector->object, RIG_INTERFACE_ID_REF_COUNTABLE))
+    rig_ref_countable_unref (inspector->object);
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -359,9 +361,10 @@ create_property_controls (RigInspector *inspector)
                        FALSE, /* don't clear */
                        sizeof (RigInspectorPropertyData));
 
-  rig_introspectable_foreach_property (inspector->object,
-                                       get_all_properties_cb,
-                                       props);
+  if (rig_object_is (inspector->object, RIG_INTERFACE_ID_INTROSPECTABLE))
+    rig_introspectable_foreach_property (inspector->object,
+                                         get_all_properties_cb,
+                                         props);
 
   inspector->n_props = props->len;
   inspector->n_rows = ((inspector->n_props + RIG_INSPECTOR_N_COLUMNS - 1) /
@@ -407,7 +410,10 @@ rig_inspector_new (RigContext *context,
 
   inspector->ref_count = 1;
   inspector->context = rig_ref_countable_ref (context);
-  inspector->object = rig_ref_countable_ref (object);
+  if (rig_object_is (object, RIG_INTERFACE_ID_REF_COUNTABLE))
+    inspector->object = rig_ref_countable_ref (object);
+  else
+    inspector->object = object;
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->user_data = user_data;
 

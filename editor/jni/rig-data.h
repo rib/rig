@@ -130,6 +130,7 @@ typedef struct _RigData
 
   RigUIViewport *tool_vp;
   RigObject *inspector;
+  GList *component_inspectors;
 
   RigCamera *timeline_camera;
   RigInputRegion *timeline_input_region;

@@ -1823,6 +1823,49 @@ inspector_property_changed_cb (RigProperty *target_property,
                                       source_property);
 }
 
+typedef struct _AddComponentState
+{
+  RigData *data;
+  int y_offset;
+} AddComponentState;
+
+static void
+add_component_inspector_cb (RigComponent *component,
+                            void *user_data)
+{
+  AddComponentState *state = user_data;
+  RigData *data = state->data;
+  RigInspector *inspector = rig_inspector_new (data->ctx,
+                                               component,
+                                               inspector_property_changed_cb,
+                                               data);
+  RigTransform *transform = rig_transform_new (data->ctx, inspector, NULL);
+  float width, height;
+  RigObject *doc_node;
+
+  rig_ref_countable_unref (inspector);
+
+  rig_sizable_get_preferred_width (inspector,
+                                   -1, /* for height */
+                                   NULL, /* min_width */
+                                   &width);
+  rig_sizable_get_preferred_height (inspector,
+                                    -1, /* for width */
+                                    NULL, /* min_height */
+                                    &height);
+  rig_sizable_set_size (inspector, width, height);
+
+  doc_node = rig_ui_viewport_get_doc_node (data->tool_vp);
+
+  rig_transform_translate (transform, 0, state->y_offset, 0);
+  state->y_offset += height;
+  rig_graphable_add_child (doc_node, transform);
+  rig_ref_countable_unref (transform);
+
+  data->component_inspectors =
+    g_list_prepend (data->component_inspectors, inspector);
+}
+
 static void
 update_inspector (RigData *data)
 {
@@ -1832,11 +1875,22 @@ update_inspector (RigData *data)
     {
       rig_graphable_remove_child (data->inspector);
       data->inspector = NULL;
+
+      if (data->component_inspectors)
+        {
+          GList *l;
+
+          for (l = data->component_inspectors; l; l = l->next)
+            rig_graphable_remove_child (l->data);
+          g_list_free (data->component_inspectors);
+          data->component_inspectors = NULL;
+        }
     }
 
   if (data->selected_entity)
     {
       float width, height;
+      AddComponentState component_add_state;
 
       data->inspector = rig_inspector_new (data->ctx,
                                            data->selected_entity,
@@ -1856,6 +1910,12 @@ update_inspector (RigData *data)
       doc_node = rig_ui_viewport_get_doc_node (data->tool_vp);
       rig_graphable_add_child (doc_node, data->inspector);
       rig_ref_countable_unref (data->inspector);
+
+      component_add_state.data = data;
+      component_add_state.y_offset = height + 10;
+      rig_entity_foreach_component (data->selected_entity,
+                                    add_component_inspector_cb,
+                                    &component_add_state);
     }
 }
 
