@@ -503,6 +503,8 @@ add_animatable_toggle (RigPropInspector *inspector,
       rig_toggle_set_tick (control, "•");
       rig_toggle_set_tick_color (control, &(RigColor) { 1, 0, 0, 1 });
 
+      rig_toggle_set_state (control, prop->animated);
+
       rig_toggle_add_on_toggle_callback (control,
                                          animated_toggle_cb,
                                          inspector,
