@@ -212,9 +212,9 @@ _cogl_system_error_domain (void)
 void
 _cogl_init (void)
 {
-  static size_t init_status = 0;
+  static CoglBool initialized = FALSE;
 
-  if (g_once_init_enter (&init_status))
+  if (initialized == FALSE)
     {
       bindtextdomain (GETTEXT_PACKAGE, COGL_LOCALEDIR);
       bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
@@ -223,7 +223,7 @@ _cogl_init (void)
 
       _cogl_config_read ();
       _cogl_debug_check_environment ();
-      g_once_init_leave (&init_status, 1);
+      initialized = TRUE;
     }
 }
 
