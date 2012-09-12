@@ -985,6 +985,28 @@ FOUND:
   return pipeline;
 }
 
+static void
+draw_entity_camera_frustum (RigData *data,
+                            RigEntity *entity,
+                            CoglFramebuffer *fb)
+{
+  RigCamera *camera =
+    rig_entity_get_component (entity, RIG_COMPONENT_TYPE_CAMERA);
+  CoglPrimitive *primitive = rig_camera_create_frustum_primitive (camera);
+  CoglPipeline *pipeline = cogl_pipeline_new (rig_cogl_context);
+  CoglDepthState depth_state;
+
+  /* enable depth testing */
+  cogl_depth_state_init (&depth_state);
+  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+
+  cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+
+  cogl_object_unref (primitive);
+  cogl_object_unref (pipeline);
+}
+
 static RigTraverseVisitFlags
 _rig_entitygraph_pre_paint_cb (RigObject *object,
                                int depth,
@@ -1018,12 +1040,12 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
         rig_entity_get_component (object, RIG_COMPONENT_TYPE_GEOMETRY);
       if (!geometry)
         {
-          rig_entity_draw (object, fb);
+          if (!test_paint_ctx->data->play_mode &&
+              object == test_paint_ctx->data->light)
+            draw_entity_camera_frustum (test_paint_ctx->data, object, fb);
           return RIG_TRAVERSE_VISIT_CONTINUE;
         }
 
-      if (object == test_paint_ctx->data->light)
-        rig_entity_draw (object, fb);
 #if 1
       pipeline = get_entity_pipeline (test_paint_ctx->data,
                                       object,
