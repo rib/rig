@@ -403,6 +403,32 @@ rig_entity_set_scale (RigEntity *entity,
   entity->dirty = TRUE;
 }
 
+void
+rig_entity_apply_scales (RigObject *entity,
+                         float *scales)
+{
+  RigObject *node = entity;
+
+  do {
+    RigGraphableProps *graphable_priv =
+      rig_object_get_properties (node, RIG_INTERFACE_ID_GRAPHABLE);
+    RigObjectProps *obj = node;
+
+    if (obj->type == &rig_entity_type)
+      *scales *= rig_entity_get_scale (node);
+
+    node = graphable_priv->parent;
+  } while (node);
+}
+
+void
+rig_entity_get_scales (RigObject *entity,
+                       float *scales)
+{
+  *scales = 1;
+  rig_entity_apply_scales (entity, scales);
+}
+
 CoglMatrix *
 rig_entity_get_transform (RigEntity *entity)
 {

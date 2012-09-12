@@ -147,6 +147,14 @@ void
 rig_entity_set_scale (RigEntity *entity,
                       float scale);
 
+void
+rig_entity_apply_scales (RigObject *entity,
+                         float *scales);
+
+void
+rig_entity_get_scales (RigObject *entity,
+                       float *scales);
+
 CoglMatrix *
 rig_entity_get_transform (RigEntity *entity);
 
