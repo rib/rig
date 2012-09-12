@@ -229,25 +229,6 @@ rig_camera_create_frustum_primitive (RigCamera *camera)
   return primitive;
 }
 
-static void
-draw_frustum (RigCamera *camera,
-              CoglFramebuffer *fb)
-{
-  CoglPrimitive *primitive = rig_camera_create_frustum_primitive (camera);
-  CoglPipeline *pipeline = cogl_pipeline_new (rig_cogl_context);
-  CoglDepthState depth_state;
-
-  /* enable depth testing */
-  cogl_depth_state_init (&depth_state);
-  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
-  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
-
-  cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
-
-  cogl_object_unref (primitive);
-  cogl_object_unref (pipeline);
-}
-
 typedef struct _CameraFlushState
 {
   RigCamera *current_camera;
@@ -307,37 +288,8 @@ _rig_camera_flush_transforms (RigCamera *camera)
   state->in_frame = TRUE;
 }
 
-void
-rig_camera_draw (RigObject *object,
-                 CoglFramebuffer *fb)
-{
-  RigCamera *camera = object;
-
-  if (fb != camera->fb)
-    {
-      /* When the fb we have to draw to is not the one this camera is
-       * responsible for, we can draw its frustum to visualize it */
-      draw_frustum (camera, fb);
-      return;
-    }
-
-  _rig_camera_flush_transforms (camera);
-
-  if (camera->clear_fb)
-    {
-      cogl_framebuffer_clear4f (fb,
-                                COGL_BUFFER_BIT_COLOR |
-                                COGL_BUFFER_BIT_DEPTH |
-                                COGL_BUFFER_BIT_STENCIL,
-                                cogl_color_get_red_float (&camera->bg_color),
-                                cogl_color_get_green_float (&camera->bg_color),
-                                cogl_color_get_blue_float (&camera->bg_color),
-                                cogl_color_get_alpha_float (&camera->bg_color));
-    }
-}
-
 static RigComponentableVTable _rig_camera_componentable_vtable = {
-  .draw = rig_camera_draw
+  .draw = NULL
 };
 
 static RigIntrospectableVTable _rig_camera_introspectable_vtable = {
@@ -931,7 +883,19 @@ rig_camera_unproject_coord (RigCamera *camera,
 void
 rig_camera_flush (RigCamera *camera)
 {
-  rig_camera_draw (camera, camera->fb);
+  _rig_camera_flush_transforms (camera);
+
+  if (camera->clear_fb)
+    {
+      cogl_framebuffer_clear4f (camera->fb,
+                                COGL_BUFFER_BIT_COLOR |
+                                COGL_BUFFER_BIT_DEPTH |
+                                COGL_BUFFER_BIT_STENCIL,
+                                cogl_color_get_red_float (&camera->bg_color),
+                                cogl_color_get_green_float (&camera->bg_color),
+                                cogl_color_get_blue_float (&camera->bg_color),
+                                cogl_color_get_alpha_float (&camera->bg_color));
+    }
 }
 
 void
