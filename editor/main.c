@@ -1587,7 +1587,7 @@ test_paint (RigShell *shell, void *user_data)
   paint_camera_entity (data->light, &test_paint_ctx);
 
   paint_ctx->camera = data->camera;
-  paint_camera_entity (data->main_camera, &test_paint_ctx);
+  paint_camera_entity (data->editor_camera, &test_paint_ctx);
 
   paint_ctx->camera = data->timeline_camera;
   rig_camera_flush (paint_ctx->camera);
@@ -1595,9 +1595,9 @@ test_paint (RigShell *shell, void *user_data)
   rig_camera_end_frame (paint_ctx->camera);
 
 #if 0
-  paint_ctx->camera = data->main_camera;
+  paint_ctx->camera = data->editor_camera;
 
-  rig_graphable_traverse (data->main_camera,
+  rig_graphable_traverse (data->editor_camera,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_scenegraph_pre_paint_cb,
                           _rig_scenegraph_post_paint_cb,
@@ -2228,10 +2228,10 @@ pick (RigData *data,
 static void
 update_camera_position (RigData *data)
 {
-  rig_entity_set_position (data->main_camera_to_origin,
+  rig_entity_set_position (data->editor_camera_to_origin,
                            data->origin);
 
-  rig_entity_set_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
+  rig_entity_set_translate (data->editor_camera_armature, 0, 0, data->editor_camera_z);
 
   rig_shell_queue_redraw (data->ctx->shell);
 }
@@ -2458,7 +2458,7 @@ main_input_cb (RigInputEvent *event,
       float y = rig_motion_event_get_y (event);
       RigButtonState state;
 
-      if (rig_camera_transform_window_coordinate (data->main_camera_component, &x, &y))
+      if (rig_camera_transform_window_coordinate (data->editor_camera_component, &x, &y))
         data->key_focus_callback = main_input_cb;
 
       state = rig_motion_event_get_button_state (event);
@@ -2476,7 +2476,7 @@ main_input_cb (RigInputEvent *event,
           const CoglMatrix *camera_view;
           CoglMatrix camera_transform;
 
-          camera = rig_entity_get_component (data->main_camera,
+          camera = rig_entity_get_component (data->editor_camera,
                                              RIG_COMPONENT_TYPE_CAMERA);
           viewport = rig_camera_get_viewport (RIG_CAMERA (camera));
           z_near = rig_camera_get_near_plane (RIG_CAMERA (camera));
@@ -2485,7 +2485,7 @@ main_input_cb (RigInputEvent *event,
             rig_camera_get_inverse_projection (RIG_CAMERA (camera));
 
 #if 0
-          camera_transform = rig_entity_get_transform (data->main_camera);
+          camera_transform = rig_entity_get_transform (data->editor_camera);
 #else
           camera_view = rig_camera_get_view_transform (camera);
           cogl_matrix_get_inverse (camera_view, &camera_transform);
@@ -2562,8 +2562,8 @@ main_input_cb (RigInputEvent *event,
                state == RIG_BUTTON_STATE_2 &&
                ((modifiers & RIG_MODIFIER_SHIFT_ON) == 0))
         {
-          //data->saved_rotation = *rig_entity_get_rotation (data->main_camera);
-          data->saved_rotation = *rig_entity_get_rotation (data->main_camera_rotate);
+          //data->saved_rotation = *rig_entity_get_rotation (data->editor_camera);
+          data->saved_rotation = *rig_entity_get_rotation (data->editor_camera_rotate);
 
           cogl_quaternion_init_identity (&data->arcball.q_drag);
 
@@ -2587,7 +2587,7 @@ main_input_cb (RigInputEvent *event,
         {
           if (!translate_grab_entity (data,
                                       rig_input_event_get_camera (event),
-                                      data->main_camera_to_origin,
+                                      data->editor_camera_to_origin,
                                       rig_motion_event_get_x (event),
                                       rig_motion_event_get_y (event),
                                       scene_translate_cb,
@@ -2604,11 +2604,11 @@ main_input_cb (RigInputEvent *event,
           float dy;
           float translation[3];
 
-          rig_entity_get_transformed_position (data->main_camera,
+          rig_entity_get_transformed_position (data->editor_camera,
                                                origin);
-          rig_entity_get_transformed_position (data->main_camera,
+          rig_entity_get_transformed_position (data->editor_camera,
                                                unit_x);
-          rig_entity_get_transformed_position (data->main_camera,
+          rig_entity_get_transformed_position (data->editor_camera,
                                                unit_y);
 
           x_vec[0] = origin[0] - unit_x[0];
@@ -2617,7 +2617,7 @@ main_input_cb (RigInputEvent *event,
 
             {
               CoglMatrix transform;
-              rig_graphable_get_transform (data->main_camera, &transform);
+              rig_graphable_get_transform (data->editor_camera, &transform);
               cogl_debug_matrix_print (&transform);
             }
           g_print (" =========================== x_vec = %f, %f, %f\n",
@@ -2627,8 +2627,8 @@ main_input_cb (RigInputEvent *event,
           y_vec[1] = origin[1] - unit_y[1];
           y_vec[2] = origin[2] - unit_y[2];
 
-          //dx = (x - data->grab_x) * (data->main_camera_z / 100.0f);
-          //dy = -(y - data->grab_y) * (data->main_camera_z / 100.0f);
+          //dx = (x - data->grab_x) * (data->editor_camera_z / 100.0f);
+          //dy = -(y - data->grab_y) * (data->editor_camera_z / 100.0f);
           dx = (x - data->grab_x);
           dy = -(y - data->grab_y);
 
@@ -2673,8 +2673,8 @@ main_input_cb (RigInputEvent *event,
                                     &data->saved_rotation,
                                     &data->arcball.q_drag);
 
-          //rig_entity_set_rotation (data->main_camera, &new_rotation);
-          rig_entity_set_rotation (data->main_camera_rotate, &new_rotation);
+          //rig_entity_set_rotation (data->editor_camera, &new_rotation);
+          rig_entity_set_rotation (data->editor_camera_rotate, &new_rotation);
 
           print_quaternion (&new_rotation, "New Rotation");
 
@@ -2715,15 +2715,15 @@ main_input_cb (RigInputEvent *event,
             undo_journal_redo (data->undo_journal);
           break;
         case RIG_KEY_minus:
-          if (data->main_camera_z)
-            data->main_camera_z *= 1.2f;
+          if (data->editor_camera_z)
+            data->editor_camera_z *= 1.2f;
           else
-            data->main_camera_z = 0.1;
+            data->editor_camera_z = 0.1;
 
           update_camera_position (data);
           break;
         case RIG_KEY_equal:
-          data->main_camera_z *= 0.8;
+          data->editor_camera_z *= 0.8;
           update_camera_position (data);
           break;
         }
@@ -2733,7 +2733,7 @@ main_input_cb (RigInputEvent *event,
 }
 
 static RigInputEventStatus
-main_input_region_cb (RigInputRegion *region,
+editor_input_region_cb (RigInputRegion *region,
                       RigInputEvent *event,
                       void *user_data)
 {
@@ -2870,7 +2870,7 @@ allocate_main_area (RigData *data)
       data->screen_area_height = data->main_height;
       data->screen_area_width = data->screen_area_height * screen_aspect;
 
-      rig_entity_set_translate (data->main_camera_screen_pos,
+      rig_entity_set_translate (data->editor_camera_screen_pos,
                                 -(data->main_width / 2.0) + (data->screen_area_width / 2.0),
                                 0, 0);
     }
@@ -2879,7 +2879,7 @@ allocate_main_area (RigData *data)
       data->screen_area_width = data->main_width;
       data->screen_area_height = data->screen_area_width / screen_aspect;
 
-      rig_entity_set_translate (data->main_camera_screen_pos,
+      rig_entity_set_translate (data->editor_camera_screen_pos,
                                 0,
                                 -(data->main_height / 2.0) + (data->screen_area_height / 2.0),
                                 0);
@@ -2889,7 +2889,7 @@ allocate_main_area (RigData *data)
    * a uniform scale here... */
   device_scale = data->screen_area_width / DEVICE_WIDTH;
 
-  rig_entity_set_scale (data->main_camera_dev_scale, 1.0 / device_scale);
+  rig_entity_set_scale (data->editor_camera_dev_scale, 1.0 / device_scale);
 
   /* Setup projection for main content view */
   {
@@ -2908,11 +2908,11 @@ allocate_main_area (RigData *data)
                                    data->main_width,
                                    data->main_height);
 
-    rig_camera_set_projection_mode (data->main_camera_component,
+    rig_camera_set_projection_mode (data->editor_camera_component,
                                     RIG_PROJECTION_PERSPECTIVE);
-    rig_camera_set_field_of_view (data->main_camera_component, fovy);
-    rig_camera_set_near_plane (data->main_camera_component, z_near);
-    rig_camera_set_far_plane (data->main_camera_component, z_far);
+    rig_camera_set_field_of_view (data->editor_camera_component, fovy);
+    rig_camera_set_near_plane (data->editor_camera_component, z_near);
+    rig_camera_set_far_plane (data->editor_camera_component, z_far);
 
     /* Handle the z_2d translation by changing the length of the
      * camera's armature.
@@ -2922,9 +2922,9 @@ allocate_main_area (RigData *data)
     cogl_matrix_transform_point (&inverse,
                                  &x, &y, &z_2d, &w);
 
-    data->main_camera_z = z_2d / device_scale;
-    rig_entity_set_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
-    //rig_entity_set_translate (data->main_camera_armature, 0, 0, 0);
+    data->editor_camera_z = z_2d / device_scale;
+    rig_entity_set_translate (data->editor_camera_armature, 0, 0, data->editor_camera_z);
+    //rig_entity_set_translate (data->editor_camera_armature, 0, 0, 0);
 
     {
       float dx, dy, dz, scale;
@@ -2941,9 +2941,9 @@ allocate_main_area (RigData *data)
                                         &rotation,
                                         &scale);
 
-      rig_entity_set_translate (data->main_camera_2d_view, -dx, -dy, -dz);
-      rig_entity_set_rotation (data->main_camera_2d_view, &rotation);
-      rig_entity_set_scale (data->main_camera_2d_view, 1.0 / scale);
+      rig_entity_set_translate (data->editor_camera_2d_view, -dx, -dy, -dz);
+      rig_entity_set_rotation (data->editor_camera_2d_view, &rotation);
+      rig_entity_set_scale (data->editor_camera_2d_view, 1.0 / scale);
     }
   }
 
@@ -3054,10 +3054,10 @@ camera_viewport_binding_cb (RigProperty *target_property,
   width = (int)width;
   height = (int)height;
 
-  rig_camera_set_viewport (data->main_camera_component,
+  rig_camera_set_viewport (data->editor_camera_component,
                            x, y, width, height);
 
-  rig_input_region_set_rectangle (data->main_input_region,
+  rig_input_region_set_rectangle (data->editor_input_region,
                                   x, y,
                                   x + width,
                                   y + height);
@@ -3246,52 +3246,52 @@ test_init (RigShell *shell, void *user_data)
    * mixing entity transforms with manual camera view transforms.
    */
 
-  data->main_camera_to_origin = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->scene, data->main_camera_to_origin);
-  rig_entity_set_label (data->main_camera_to_origin, "rig:camera_to_origin");
+  data->editor_camera_to_origin = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->scene, data->editor_camera_to_origin);
+  rig_entity_set_label (data->editor_camera_to_origin, "rig:camera_to_origin");
 
-  data->main_camera_rotate = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_to_origin, data->main_camera_rotate);
-  rig_entity_set_label (data->main_camera_rotate, "rig:camera_rotate");
+  data->editor_camera_rotate = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->editor_camera_to_origin, data->editor_camera_rotate);
+  rig_entity_set_label (data->editor_camera_rotate, "rig:camera_rotate");
 
-  data->main_camera_armature = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_rotate, data->main_camera_armature);
-  rig_entity_set_label (data->main_camera_armature, "rig:camera_armature");
+  data->editor_camera_armature = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->editor_camera_rotate, data->editor_camera_armature);
+  rig_entity_set_label (data->editor_camera_armature, "rig:camera_armature");
 
-  data->main_camera_origin_offset = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_armature, data->main_camera_origin_offset);
-  rig_entity_set_label (data->main_camera_origin_offset, "rig:camera_origin_offset");
+  data->editor_camera_origin_offset = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->editor_camera_armature, data->editor_camera_origin_offset);
+  rig_entity_set_label (data->editor_camera_origin_offset, "rig:camera_origin_offset");
 
-  data->main_camera_dev_scale = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_origin_offset, data->main_camera_dev_scale);
-  rig_entity_set_label (data->main_camera_dev_scale, "rig:camera_dev_scale");
+  data->editor_camera_dev_scale = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->editor_camera_origin_offset, data->editor_camera_dev_scale);
+  rig_entity_set_label (data->editor_camera_dev_scale, "rig:camera_dev_scale");
 
-  data->main_camera_screen_pos = rig_entity_new (data->ctx, data->entity_next_id++);
-  rig_graphable_add_child (data->main_camera_dev_scale, data->main_camera_screen_pos);
-  rig_entity_set_label (data->main_camera_screen_pos, "rig:camera_screen_pos");
+  data->editor_camera_screen_pos = rig_entity_new (data->ctx, data->entity_next_id++);
+  rig_graphable_add_child (data->editor_camera_dev_scale, data->editor_camera_screen_pos);
+  rig_entity_set_label (data->editor_camera_screen_pos, "rig:camera_screen_pos");
 
-  data->main_camera_2d_view = rig_entity_new (data->ctx, data->entity_next_id++);
-  //rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera_2d_view); FIXME
-  rig_entity_set_label (data->main_camera_2d_view, "rig:camera_2d_view");
+  data->editor_camera_2d_view = rig_entity_new (data->ctx, data->entity_next_id++);
+  //rig_graphable_add_child (data->editor_camera_screen_pos, data->editor_camera_2d_view); FIXME
+  rig_entity_set_label (data->editor_camera_2d_view, "rig:camera_2d_view");
 
-  data->main_camera = rig_entity_new (data->ctx, data->entity_next_id++);
-  //rig_graphable_add_child (data->main_camera_2d_view, data->main_camera); FIXME
-  rig_graphable_add_child (data->main_camera_screen_pos, data->main_camera);
-  rig_entity_set_label (data->main_camera, "rig:camera");
+  data->editor_camera = rig_entity_new (data->ctx, data->entity_next_id++);
+  //rig_graphable_add_child (data->editor_camera_2d_view, data->editor_camera); FIXME
+  rig_graphable_add_child (data->editor_camera_screen_pos, data->editor_camera);
+  rig_entity_set_label (data->editor_camera, "rig:camera");
 
   data->origin[0] = DEVICE_WIDTH / 2;
   data->origin[1] = DEVICE_HEIGHT / 2;
   data->origin[2] = 0;
 
-  rig_entity_translate (data->main_camera_to_origin,
+  rig_entity_translate (data->editor_camera_to_origin,
                         data->origin[0],
                         data->origin[1],
                         data->origin[2]);
                         //DEVICE_WIDTH / 2, (DEVICE_HEIGHT / 2), 0);
 
-  //rig_entity_rotate_z_axis (data->main_camera_to_origin, 45);
+  //rig_entity_rotate_z_axis (data->editor_camera_to_origin, 45);
 
-  rig_entity_translate (data->main_camera_origin_offset,
+  rig_entity_translate (data->editor_camera_origin_offset,
                         -DEVICE_WIDTH / 2, -(DEVICE_HEIGHT / 2), 0);
 
   /* FIXME: currently we also do a z translation due to using
@@ -3301,45 +3301,47 @@ test_init (RigShell *shell, void *user_data)
    * XXX: should the camera_z transform be done for the negative translate?
    */
   //device scale = 0.389062494
-  data->main_camera_z = 0.f;
-  rig_entity_translate (data->main_camera_armature, 0, 0, data->main_camera_z);
+  data->editor_camera_z = 0.f;
+  rig_entity_translate (data->editor_camera_armature, 0, 0, data->editor_camera_z);
 
 #if 0
   {
     float pos[3] = {0, 0, 0};
-    rig_entity_set_position (data->main_camera_rig, pos);
-    rig_entity_translate (data->main_camera_rig, 100, 100, 0);
+    rig_entity_set_position (data->editor_camera_rig, pos);
+    rig_entity_translate (data->editor_camera_rig, 100, 100, 0);
   }
 #endif
 
-  //rig_entity_translate (data->main_camera, 100, 100, 0);
+  //rig_entity_translate (data->editor_camera, 100, 100, 0);
 
 #if 0
-  data->main_camera_z = 20.f;
+  data->editor_camera_z = 20.f;
   vector3[0] = 0.f;
   vector3[1] = 0.f;
-  vector3[2] = data->main_camera_z;
-  rig_entity_set_position (data->main_camera, vector3);
+  vector3[2] = data->editor_camera_z;
+  rig_entity_set_position (data->editor_camera, vector3);
 #else
-  data->main_camera_z = 10.f;
+  data->editor_camera_z = 10.f;
 #endif
 
-  data->main_camera_component = rig_camera_new (data->ctx, fb);
-  rig_camera_set_clear (data->main_camera_component, FALSE);
-  rig_entity_add_component (data->main_camera, data->main_camera_component);
+  data->editor_camera_component = rig_camera_new (data->ctx, fb);
+  rig_camera_set_clear (data->editor_camera_component, FALSE);
+  rig_entity_add_component (data->editor_camera, data->editor_camera_component);
   rig_shell_add_input_camera (shell,
-                              data->main_camera_component,
+                              data->editor_camera_component,
                               data->scene);
-                              //data->screen_area_transform);
 
-  data->main_input_region =
-    rig_input_region_new_rectangle (0, 0, 0, 0, main_input_region_cb, data);
-  rig_input_region_set_hud_mode (data->main_input_region, TRUE);
+  data->editor_input_region =
+    rig_input_region_new_rectangle (0, 0, 0, 0, editor_input_region_cb, data);
+  rig_input_region_set_hud_mode (data->editor_input_region, TRUE);
   //rig_camera_add_input_region (data->camera,
-  rig_camera_add_input_region (data->main_camera_component,
-                               data->main_input_region);
+  rig_camera_add_input_region (data->editor_camera_component,
+                               data->editor_input_region);
+
 
   update_camera_position (data);
+
+  data->current_camera = data->editor_camera;
 
   /* plane */
   data->plane = rig_entity_new (data->ctx, data->entity_next_id++);
@@ -3565,7 +3567,7 @@ test_init (RigShell *shell, void *user_data)
 
   rig_shell_add_input_camera (shell, data->camera, data->root);
 
-  rig_property_set_binding_by_name (data->main_camera_component,
+  rig_property_set_binding_by_name (data->editor_camera_component,
                                     "viewport_x",
                                     camera_viewport_binding_cb,
                                     data,
@@ -3580,7 +3582,7 @@ test_init (RigShell *shell, void *user_data)
                                     rig_introspectable_lookup_property (data->main_area_bevel, "width"),
                                     NULL);
 
-  rig_property_set_binding_by_name (data->main_camera_component,
+  rig_property_set_binding_by_name (data->editor_camera_component,
                                     "viewport_y",
                                     camera_viewport_binding_cb,
                                     data,
@@ -3595,14 +3597,14 @@ test_init (RigShell *shell, void *user_data)
                                     rig_introspectable_lookup_property (data->main_area_bevel, "width"),
                                     NULL);
 
-  rig_property_set_binding_by_name (data->main_camera_component,
+  rig_property_set_binding_by_name (data->editor_camera_component,
                                     "viewport_width",
                                     camera_viewport_binding_cb,
                                     data,
                                     rig_introspectable_lookup_property (data->main_area_bevel, "width"),
                                     NULL);
 
-  rig_property_set_binding_by_name (data->main_camera_component,
+  rig_property_set_binding_by_name (data->editor_camera_component,
                                     "viewport_height",
                                     camera_viewport_binding_cb,
                                     data,
@@ -3640,7 +3642,7 @@ test_init (RigShell *shell, void *user_data)
 
   /* tool */
   data->tool = rig_tool_new (data->shell);
-  rig_tool_set_camera (data->tool, data->main_camera);
+  rig_tool_set_camera (data->tool, data->editor_camera);
 
   /* picking ray */
   data->picking_ray_color = cogl_pipeline_new (data->ctx->cogl_context);

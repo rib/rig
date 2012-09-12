@@ -144,18 +144,20 @@ typedef struct _RigData
   CoglMatrix main_view;
   float z_2d;
 
-  RigEntity *main_camera_to_origin; /* move to origin */
-  RigEntity *main_camera_rotate; /* armature rotate rotate */
-  RigEntity *main_camera_origin_offset; /* negative offset */
-  RigEntity *main_camera_armature; /* armature length */
-  RigEntity *main_camera_dev_scale; /* scale to fit device coords */
-  RigEntity *main_camera_screen_pos; /* position screen in edit view */
-  RigEntity *main_camera_2d_view; /* setup 2d view, origin top-left */
+  RigEntity *editor_camera_to_origin; /* move to origin */
+  RigEntity *editor_camera_rotate; /* armature rotate rotate */
+  RigEntity *editor_camera_origin_offset; /* negative offset */
+  RigEntity *editor_camera_armature; /* armature length */
+  RigEntity *editor_camera_dev_scale; /* scale to fit device coords */
+  RigEntity *editor_camera_screen_pos; /* position screen in edit view */
+  RigEntity *editor_camera_2d_view; /* setup 2d view, origin top-left */
 
-  RigEntity *main_camera;
-  RigCamera *main_camera_component;
-  float main_camera_z;
-  RigInputRegion *main_input_region;
+  RigEntity *current_camera;
+
+  RigEntity *editor_camera;
+  RigCamera *editor_camera_component;
+  float editor_camera_z;
+  RigInputRegion *editor_input_region;
 
   RigEntity *plane;
   RigEntity *light;
