@@ -2464,6 +2464,23 @@ scene_translate_cb (RigEntity *entity,
   update_camera_position (data);
 }
 
+static void
+set_play_mode_enabled (RigData *data, CoglBool enabled)
+{
+  data->play_mode = enabled;
+
+  if (data->play_mode)
+    {
+      data->enable_dof = TRUE;
+    }
+  else
+    {
+      data->enable_dof = FALSE;
+    }
+
+  rig_shell_queue_redraw (data->ctx->shell);
+}
+
 static RigInputEventStatus
 main_input_cb (RigInputEvent *event,
                void *user_data)
@@ -2747,6 +2764,9 @@ main_input_cb (RigInputEvent *event,
         case RIG_KEY_equal:
           data->editor_camera_z *= 0.8;
           update_camera_position (data);
+          break;
+        case RIG_KEY_p:
+          set_play_mode_enabled (data, !data->play_mode);
           break;
         }
     }
@@ -3207,7 +3227,7 @@ test_init (RigShell *shell, void *user_data)
    */
 
   data->dof = rig_dof_effect_new (data->ctx);
-  data->enable_dof = TRUE;
+  data->enable_dof = FALSE;
 
   data->circle_texture = rig_create_circle_texture (data->ctx,
                                                     CIRCLE_TEX_RADIUS /* radius */,
@@ -3671,6 +3691,8 @@ test_init (RigShell *shell, void *user_data)
   cogl_pipeline_set_color4f (data->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
   allocate (data);
+
+  set_play_mode_enabled (data, FALSE);
 
 #ifndef __ANDROID__
   if (_rig_handset_remaining_args &&

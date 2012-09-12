@@ -37,6 +37,8 @@ enum {
 
 typedef struct _RigData
 {
+  CoglBool play_mode;
+
   RigCamera *camera;
   RigObject *root;
   RigObject *scene;
