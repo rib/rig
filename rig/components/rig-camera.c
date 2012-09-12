@@ -151,9 +151,8 @@ static RigTransformableVTable _rig_camera_transformable_vtable = {
 };
 #endif
 
-static void
-draw_frustum (RigCamera *camera,
-              CoglFramebuffer *fb)
+CoglPrimitive *
+rig_camera_create_frustum_primitive (RigCamera *camera)
 {
   RigVertex4C4 vertices[8] = {
     /* near plane in projection space */
@@ -171,14 +170,12 @@ draw_frustum (RigCamera *camera,
   CoglAttributeBuffer *attribute_buffer;
   CoglAttribute *attributes[2];
   CoglPrimitive *primitive;
-  CoglPipeline *pipeline;
   CoglIndices *indices;
   unsigned char indices_data[24] = {
       0,1, 1,2, 2,3, 3,0,
       4,5, 5,6, 6,7, 7,4,
       0,4, 1,5, 2,6, 3,7
   };
-  CoglDepthState depth_state;
   int i;
 
   projection_inv = rig_camera_get_inverse_projection (camera);
@@ -229,7 +226,16 @@ draw_frustum (RigCamera *camera,
   cogl_object_unref (attributes[1]);
   cogl_object_unref (indices);
 
-  pipeline = cogl_pipeline_new (rig_cogl_context);
+  return primitive;
+}
+
+static void
+draw_frustum (RigCamera *camera,
+              CoglFramebuffer *fb)
+{
+  CoglPrimitive *primitive = rig_camera_create_frustum_primitive (camera);
+  CoglPipeline *pipeline = cogl_pipeline_new (rig_cogl_context);
+  CoglDepthState depth_state;
 
   /* enable depth testing */
   cogl_depth_state_init (&depth_state);

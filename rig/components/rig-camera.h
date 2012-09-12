@@ -178,6 +178,9 @@ rig_camera_unproject_coord (RigCamera *camera,
                             float *x,
                             float *y);
 
+CoglPrimitive *
+rig_camera_create_frustum_primitive (RigCamera *camera);
+
 #if 0
 /* PRIVATE */
 RigInputEventStatus
