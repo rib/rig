@@ -162,7 +162,6 @@ typedef struct _RigData
   float editor_camera_z;
   RigInputRegion *editor_input_region;
 
-  RigEntity *plane;
   RigEntity *light;
   RigEntity *light_handle;
 

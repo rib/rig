@@ -3445,20 +3445,6 @@ test_init (RigShell *shell, void *user_data)
 
   data->current_camera = data->editor_camera;
 
-  /* plane */
-  data->plane = rig_entity_new (data->ctx, data->entity_next_id++);
-  //data->entities = g_list_prepend (data->entities, data->plane);
-  //data->pickables = g_list_prepend (data->pickables, data->plane);
-  rig_entity_set_cast_shadow (data->plane, FALSE);
-  rig_entity_set_y (data->plane, -1.f);
-
-  mesh = rig_mesh_renderer_new_from_template (data->ctx, "plane");
-  rig_entity_add_component (data->plane, mesh);
-  material = rig_material_new (data->ctx, NULL, NULL);
-  rig_entity_add_component (data->plane, material);
-
-  rig_graphable_add_child (data->scene, data->plane);
-
   data->light = rig_entity_new (data->ctx, data->entity_next_id++);
   data->entities = g_list_prepend (data->entities, data->light);
 #if 1
