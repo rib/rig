@@ -135,16 +135,6 @@ typedef struct _CoglQuaternion CoglQuaternion;
  * circular dependencies. */
 typedef struct _CoglEuler CoglEuler;
 
-/**
- * CoglAngle:
- *
- * Integer representation of an angle such that 1024 corresponds to
- * full circle (i.e., 2 * pi).
- *
- * Since: 1.0
- */
-typedef int32_t CoglAngle;
-
 typedef struct _CoglColor               CoglColor;
 typedef struct _CoglTextureVertex       CoglTextureVertex;
 
