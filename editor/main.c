@@ -2472,10 +2472,12 @@ set_play_mode_enabled (RigData *data, CoglBool enabled)
   if (data->play_mode)
     {
       data->enable_dof = TRUE;
+      data->debug_pick_ray = 0;
     }
   else
     {
       data->enable_dof = FALSE;
+      data->debug_pick_ray = 1;
     }
 
   rig_shell_queue_redraw (data->ctx->shell);
@@ -3130,8 +3132,6 @@ test_init (RigShell *shell, void *user_data)
 #endif
 
   cogl_matrix_init_identity (&data->identity);
-
-  data->debug_pick_ray = 1;
 
   for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rig_property_init (&data->properties[i],
