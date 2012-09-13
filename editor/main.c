@@ -76,7 +76,7 @@ typedef enum _Pass
   PASS_DOF_DEPTH
 } Pass;
 
-typedef struct _TestPaintContext
+typedef struct _PaintContext
 {
   RigPaintContext _parent;
 
@@ -86,7 +86,7 @@ typedef struct _TestPaintContext
 
   Pass pass;
 
-} TestPaintContext;
+} PaintContext;
 
 static RigPropertySpec rig_data_property_specs[] = {
   {
@@ -1012,9 +1012,9 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
                                int depth,
                                void *user_data)
 {
-  TestPaintContext *test_paint_ctx = user_data;
-  RigPaintContext *paint_ctx = user_data;
-  RigCamera *camera = paint_ctx->camera;
+  PaintContext *paint_ctx = user_data;
+  RigPaintContext *rig_paint_ctx = user_data;
+  RigCamera *camera = rig_paint_ctx->camera;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
 
   if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
@@ -1040,17 +1040,17 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
         rig_entity_get_component (object, RIG_COMPONENT_TYPE_GEOMETRY);
       if (!geometry)
         {
-          if (!test_paint_ctx->data->play_mode &&
-              object == test_paint_ctx->data->light)
-            draw_entity_camera_frustum (test_paint_ctx->data, object, fb);
+          if (!paint_ctx->data->play_mode &&
+              object == paint_ctx->data->light)
+            draw_entity_camera_frustum (paint_ctx->data, object, fb);
           return RIG_TRAVERSE_VISIT_CONTINUE;
         }
 
 #if 1
-      pipeline = get_entity_pipeline (test_paint_ctx->data,
+      pipeline = get_entity_pipeline (paint_ctx->data,
                                       object,
                                       geometry,
-                                      test_paint_ctx->pass);
+                                      paint_ctx->pass);
 #endif
 
       primitive = rig_primable_get_primitive (geometry);
@@ -1084,8 +1084,8 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
         {
           if (rig_object_get_type (geometry) == &rig_diamond_type)
             {
-              TestPaintContext *test_paint_ctx = paint_ctx;
-              RigData *data = test_paint_ctx->data;
+              PaintContext *paint_ctx = rig_paint_ctx;
+              RigData *data = paint_ctx->data;
               RigDiamondSlice *slice = rig_diamond_get_slice (geometry);
               CoglPipeline *template = rig_diamond_slice_get_pipeline_template (slice);
               CoglPipeline *material_pipeline = rig_material_get_pipeline (material);
@@ -1124,8 +1124,8 @@ _rig_entitygraph_post_paint_cb (RigObject *object,
 {
   if (rig_object_is (object, RIG_INTERFACE_ID_TRANSFORMABLE))
     {
-      RigPaintContext *paint_ctx = user_data;
-      CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+      RigPaintContext *rig_paint_ctx = user_data;
+      CoglFramebuffer *fb = rig_camera_get_framebuffer (rig_paint_ctx->camera);
       cogl_framebuffer_pop_matrix (fb);
     }
 
@@ -1133,14 +1133,14 @@ _rig_entitygraph_post_paint_cb (RigObject *object,
 }
 
 static void
-paint_scene (TestPaintContext *test_paint_ctx)
+paint_scene (PaintContext *paint_ctx)
 {
-  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
-  RigData *data = test_paint_ctx->data;
+  RigPaintContext *rig_paint_ctx = &paint_ctx->_parent;
+  RigData *data = paint_ctx->data;
   CoglContext *ctx = data->ctx->cogl_context;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (rig_paint_ctx->camera);
 
-  if (test_paint_ctx->pass == PASS_COLOR)
+  if (paint_ctx->pass == PASS_COLOR)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
       cogl_pipeline_set_color4f (pipeline, 0, 0, 0, 1.0);
@@ -1155,32 +1155,32 @@ paint_scene (TestPaintContext *test_paint_ctx)
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_entitygraph_pre_paint_cb,
                           _rig_entitygraph_post_paint_cb,
-                          test_paint_ctx);
+                          paint_ctx);
 
 }
 
 #if 1
 static void
-paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
+paint_camera_entity (RigEntity *camera, PaintContext *paint_ctx)
 {
-  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
-  RigCamera *save_camera = paint_ctx->camera;
+  RigPaintContext *rig_paint_ctx = &paint_ctx->_parent;
+  RigCamera *save_camera = rig_paint_ctx->camera;
   RigCamera *camera_component =
     rig_entity_get_component (camera, RIG_COMPONENT_TYPE_CAMERA);
-  RigData *data = test_paint_ctx->data;
+  RigData *data = paint_ctx->data;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera_component);
   //CoglFramebuffer *shadow_fb;
 
-  paint_ctx->camera = camera_component;
+  rig_paint_ctx->camera = camera_component;
 
   if (rig_entity_get_component (camera, RIG_COMPONENT_TYPE_LIGHT))
-    test_paint_ctx->pass = PASS_SHADOW;
+    paint_ctx->pass = PASS_SHADOW;
   else
-    test_paint_ctx->pass = PASS_COLOR;
+    paint_ctx->pass = PASS_COLOR;
 
-  camera_update_view (data, camera, test_paint_ctx->pass);
+  camera_update_view (data, camera, paint_ctx->pass);
 
-  if (test_paint_ctx->pass != PASS_SHADOW &&
+  if (paint_ctx->pass != PASS_SHADOW &&
       data->enable_dof)
     {
       const float *viewport = rig_camera_get_viewport (camera_component);
@@ -1188,7 +1188,7 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
       int height = viewport[3];
       int save_viewport_x = viewport[0];
       int save_viewport_y = viewport[1];
-      Pass save_pass = test_paint_ctx->pass;
+      Pass save_pass = paint_ctx->pass;
       CoglFramebuffer *pass_fb;
 
       rig_camera_set_viewport (camera_component, 0, 0, width, height);
@@ -1203,9 +1203,9 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                 COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                                 1, 1, 1, 1);
 
-      test_paint_ctx->pass = PASS_DOF_DEPTH;
-      paint_scene (test_paint_ctx);
-      test_paint_ctx->pass = save_pass;
+      paint_ctx->pass = PASS_DOF_DEPTH;
+      paint_scene (paint_ctx);
+      paint_ctx->pass = save_pass;
 
       rig_camera_end_frame (camera_component);
 
@@ -1217,9 +1217,9 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                 COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                                 0.22, 0.22, 0.22, 1);
 
-      test_paint_ctx->pass = PASS_COLOR;
-      paint_scene (test_paint_ctx);
-      test_paint_ctx->pass = save_pass;
+      paint_ctx->pass = PASS_COLOR;
+      paint_scene (paint_ctx);
+      paint_ctx->pass = save_pass;
 
       rig_camera_end_frame (camera_component);
 
@@ -1234,7 +1234,7 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
                                save_viewport_x,
                                save_viewport_y,
                                width, height);
-      paint_ctx->camera = save_camera;
+      rig_paint_ctx->camera = save_camera;
       rig_camera_flush (save_camera);
       rig_dof_effect_draw_rectangle (data->dof,
                                      rig_camera_get_framebuffer (save_camera),
@@ -1250,12 +1250,12 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
 
       rig_camera_flush (camera_component);
 
-      paint_scene (test_paint_ctx);
+      paint_scene (paint_ctx);
 
       rig_camera_end_frame (camera_component);
     }
 
-  if (test_paint_ctx->pass == PASS_COLOR)
+  if (paint_ctx->pass == PASS_COLOR)
     {
       rig_camera_flush (camera_component);
 
@@ -1301,7 +1301,7 @@ paint_camera_entity (RigEntity *camera, TestPaintContext *test_paint_ctx)
       rig_camera_end_frame (camera_component);
     }
 
-  paint_ctx->camera = save_camera;
+  rig_paint_ctx->camera = save_camera;
 }
 #endif
 
@@ -1309,7 +1309,7 @@ typedef struct
 {
   CoglPipeline *pipeline;
   RigEntity *entity;
-  TestPaintContext *test_paint_ctx;
+  PaintContext *paint_ctx;
 
   float viewport_x, viewport_y;
   float viewport_t_scale;
@@ -1325,9 +1325,9 @@ paint_timeline_path_cb (RigProperty *property,
                         void *user_data)
 {
   PaintTimelineData *paint_data = user_data;
-  RigPaintContext *paint_ctx = &paint_data->test_paint_ctx->_parent;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
-  RigData *data = paint_data->test_paint_ctx->data;
+  RigPaintContext *rig_paint_ctx = &paint_data->paint_ctx->_parent;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (rig_paint_ctx->camera);
+  RigData *data = paint_data->paint_ctx->data;
   RigContext *ctx = data->ctx;
   CoglPrimitive *prim;
   GArray *points;
@@ -1419,12 +1419,12 @@ paint_timeline_path_cb (RigProperty *property,
 }
 
 static void
-paint_timeline_camera (TestPaintContext *test_paint_ctx)
+paint_timeline_camera (PaintContext *paint_ctx)
 {
-  RigPaintContext *paint_ctx = &test_paint_ctx->_parent;
-  RigData *data = test_paint_ctx->data;
+  RigPaintContext *rig_paint_ctx = &paint_ctx->_parent;
+  RigData *data = paint_ctx->data;
   RigContext *ctx = data->ctx;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (rig_paint_ctx->camera);
 
   //cogl_framebuffer_push_matrix (fb);
   //cogl_framebuffer_transform (fb, rig_transformable_get_matrix (camera));
@@ -1433,7 +1433,7 @@ paint_timeline_camera (TestPaintContext *test_paint_ctx)
     {
       PaintTimelineData paint_data;
 
-      paint_data.test_paint_ctx = test_paint_ctx;
+      paint_data.paint_ctx = paint_ctx;
 
       paint_data.entity = data->selected_entity;
       paint_data.viewport_x = 0;
@@ -1495,8 +1495,8 @@ _rig_scenegraph_pre_paint_cb (RigObject *object,
                               int depth,
                               void *user_data)
 {
-  RigPaintContext *paint_ctx = user_data;
-  RigCamera *camera = paint_ctx->camera;
+  RigPaintContext *rig_paint_ctx = user_data;
+  RigCamera *camera = rig_paint_ctx->camera;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (camera);
   RigPaintableVTable *vtable =
     rig_object_get_vtable (object, RIG_INTERFACE_ID_PAINTABLE);
@@ -1536,7 +1536,7 @@ _rig_scenegraph_pre_paint_cb (RigObject *object,
     }
 
   if (rig_object_is (object, RIG_INTERFACE_ID_PAINTABLE))
-    vtable->paint (object, paint_ctx);
+    vtable->paint (object, rig_paint_ctx);
 
   /* XXX:
    * How can we maintain state between the pre and post stages?  Is it
@@ -1552,8 +1552,8 @@ _rig_scenegraph_post_paint_cb (RigObject *object,
                                int depth,
                                void *user_data)
 {
-  RigPaintContext *paint_ctx = user_data;
-  CoglFramebuffer *fb = rig_camera_get_framebuffer (paint_ctx->camera);
+  RigPaintContext *rig_paint_ctx = user_data;
+  CoglFramebuffer *fb = rig_camera_get_framebuffer (rig_paint_ctx->camera);
 
 #if 0
   if (rig_object_get_type (object) == &rig_camera_type)
@@ -1578,52 +1578,52 @@ _rig_scenegraph_post_paint_cb (RigObject *object,
 }
 
 static CoglBool
-test_paint (RigShell *shell, void *user_data)
+paint (RigShell *shell, void *user_data)
 {
   RigData *data = user_data;
   CoglFramebuffer *fb = rig_camera_get_framebuffer (data->camera);
-  TestPaintContext test_paint_ctx;
-  RigPaintContext *paint_ctx = &test_paint_ctx._parent;
+  PaintContext paint_ctx;
+  RigPaintContext *rig_paint_ctx = &paint_ctx._parent;
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                             0.22, 0.22, 0.22, 1);
 
-  test_paint_ctx.data = data;
-  test_paint_ctx.pass = PASS_COLOR;
+  paint_ctx.data = data;
+  paint_ctx.pass = PASS_COLOR;
 
-  paint_ctx->camera = data->camera;
+  rig_paint_ctx->camera = data->camera;
 
   rig_camera_flush (data->camera);
   rig_graphable_traverse (data->root,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_scenegraph_pre_paint_cb,
                           _rig_scenegraph_post_paint_cb,
-                          &test_paint_ctx);
+                          &paint_ctx);
   /* FIXME: this should be moved to the end of this function but we
    * currently get warnings about unbalanced _flush()/_end_frame()
    * pairs. */
   rig_camera_end_frame (data->camera);
 
-  paint_ctx->camera = data->camera;
-  paint_camera_entity (data->light, &test_paint_ctx);
+  rig_paint_ctx->camera = data->camera;
+  paint_camera_entity (data->light, &paint_ctx);
 
-  paint_ctx->camera = data->camera;
-  paint_camera_entity (data->editor_camera, &test_paint_ctx);
+  rig_paint_ctx->camera = data->camera;
+  paint_camera_entity (data->editor_camera, &paint_ctx);
 
-  paint_ctx->camera = data->timeline_camera;
-  rig_camera_flush (paint_ctx->camera);
-  paint_timeline_camera (&test_paint_ctx);
-  rig_camera_end_frame (paint_ctx->camera);
+  rig_paint_ctx->camera = data->timeline_camera;
+  rig_camera_flush (rig_paint_ctx->camera);
+  paint_timeline_camera (&paint_ctx);
+  rig_camera_end_frame (rig_paint_ctx->camera);
 
 #if 0
-  paint_ctx->camera = data->editor_camera;
+  rig_paint_ctx->camera = data->editor_camera;
 
   rig_graphable_traverse (data->editor_camera,
                           RIG_TRAVERSE_DEPTH_FIRST,
                           _rig_scenegraph_pre_paint_cb,
                           _rig_scenegraph_post_paint_cb,
-                          &test_paint_ctx);
+                          &paint_ctx);
 #endif
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
@@ -3170,7 +3170,7 @@ camera_viewport_binding_cb (RigProperty *target_property,
 }
 
 static void
-test_init (RigShell *shell, void *user_data)
+init (RigShell *shell, void *user_data)
 {
   RigData *data = user_data;
   CoglFramebuffer *fb;
@@ -3766,7 +3766,7 @@ test_init (RigShell *shell, void *user_data)
 }
 
 static void
-test_fini (RigShell *shell, void *user_data)
+fini (RigShell *shell, void *user_data)
 {
   RigData *data = user_data;
   int i;
@@ -3791,7 +3791,7 @@ test_fini (RigShell *shell, void *user_data)
 }
 
 static RigInputEventStatus
-test_input_handler (RigInputEvent *event, void *user_data)
+shell_input_handler (RigInputEvent *event, void *user_data)
 {
   RigData *data = user_data;
 
@@ -4025,16 +4025,16 @@ android_main (struct android_app *application)
   init_types ();
 
   data.shell = rig_android_shell_new (application,
-                                      test_init,
-                                      test_fini,
-                                      test_paint,
+                                      init,
+                                      fini,
+                                      paint,
                                       &data);
 
   data.ctx = rig_context_new (data.shell);
 
   rig_context_init (data.ctx);
 
-  rig_shell_set_input_callback (data.shell, test_input_handler, &data);
+  rig_shell_set_input_callback (data.shell, shell_input_handler, &data);
 
   rig_shell_main (data.shell);
 }
@@ -4060,13 +4060,13 @@ main (int argc, char **argv)
 
   init_types ();
 
-  data.shell = rig_shell_new (test_init, test_fini, test_paint, &data);
+  data.shell = rig_shell_new (init, fini, paint, &data);
 
   data.ctx = rig_context_new (data.shell);
 
   rig_context_init (data.ctx);
 
-  rig_shell_add_input_callback (data.shell, test_input_handler, &data, NULL);
+  rig_shell_add_input_callback (data.shell, shell_input_handler, &data, NULL);
 
   rig_shell_main (data.shell);
 
