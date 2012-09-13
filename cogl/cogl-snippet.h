@@ -301,9 +301,7 @@ G_BEGIN_DECLS
  *   cogl_pipeline_set_uniform_1f (pipeline, location, 0.5f);
  *
  *   /<!-- -->* Now we can render with the snippet as usual *<!-- -->/
- *   cogl_push_source (pipeline);
- *   cogl_rectangle (0, 0, 10, 10);
- *   cogl_pop_source ();
+ *   cogl_framebuffer_draw_rectangle (fb, pipeline, 0, 0, 10, 10);
  * </programlisting>
  */
 typedef struct _CoglSnippet CoglSnippet;

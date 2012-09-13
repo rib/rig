@@ -69,8 +69,8 @@ typedef struct _CoglSubTexture CoglSubTexture;
  * that hardware can understand natively.
  *
  * <note>Remember: Unless you are using high level drawing APIs such
- * as cogl_rectangle() or other APIs documented to understand the
- * #CoglMetaTexture interface then you need to use the
+ * as cogl_framebuffer_draw_rectangle() or other APIs documented to
+ * understand the #CoglMetaTexture interface then you need to use the
  * #CoglMetaTexture interface to resolve a #CoglSubTexture into a
  * low-level texture before drawing.</note>
  *

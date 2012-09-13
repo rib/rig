@@ -38,7 +38,6 @@
 #include "cogl-pipeline.h"
 #include "cogl-context-private.h"
 #include "cogl-object-private.h"
-#include "cogl-primitives.h"
 #include "cogl-pipeline-opengl-private.h"
 
 #include <string.h>

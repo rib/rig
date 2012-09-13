@@ -105,14 +105,6 @@ draw_tests (TestState *state)
     }
 }
 
-static const CoglTextureVertex vertices[4] =
-  {
-    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
-    { 0.0f, TEX_SIZE * 2, 0.0f, 0.0f, 2.0f },
-    { TEX_SIZE * 2, TEX_SIZE * 2, 0.0f, 2.0f, 2.0f },
-    { TEX_SIZE * 2, 0.0f, 0.0f, 2.0f, 0.0f }
-  };
-
 static void
 validate_set (TestState *state, int offset)
 {

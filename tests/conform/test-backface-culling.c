@@ -71,7 +71,6 @@ paint_test_backface_culling (TestState *state,
   for (draw_num = 0; draw_num < 8; draw_num++)
     {
       float x1 = 0, x2, y1 = 0, y2 = (float)(TEXTURE_RENDER_SIZE);
-      CoglTextureVertex verts[4];
       CoglPipeline *pipeline;
 
       cogl_framebuffer_push_matrix (framebuffer);
@@ -82,8 +81,6 @@ paint_test_backface_culling (TestState *state,
 
       cogl_pipeline_set_front_face_winding (pipeline, FRONT_WINDING (draw_num));
       cogl_pipeline_set_cull_face_mode (pipeline, CULL_FACE_MODE (draw_num));
-
-      memset (verts, 0, sizeof (verts));
 
       x2 = x1 + (float)(TEXTURE_RENDER_SIZE);
 

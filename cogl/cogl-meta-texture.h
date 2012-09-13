@@ -57,12 +57,12 @@ G_BEGIN_DECLS
  * For example the GPU is not able to automatically handle repeating a
  * texture that is part of a larger atlas texture but if you use
  * %COGL_PIPELINE_WRAP_MODE_REPEAT with an atlas texture when drawing
- * with cogl_rectangle() you should see that it "Just Works™" - at
- * least if you don't use multi-texturing. The reason this works is
- * because cogl_rectangle() internally understands the #CoglMetaTexture
- * interface and is able to manually resolve the low-level textures
- * using this interface and by making multiple draw calls it can
- * emulate the texture repeat modes.
+ * with cogl_framebuffer_draw_rectangle() you should see that it "Just
+ * Works™" - at least if you don't use multi-texturing. The reason
+ * this works is because cogl_framebuffer_draw_rectangle() internally
+ * understands the #CoglMetaTexture interface and is able to manually
+ * resolve the low-level textures using this interface and by making
+ * multiple draw calls it can emulate the texture repeat modes.
  *
  * Cogl doesn't aim to pretend that meta-textures are just like real
  * textures because it would get extremely complex to try and emulate
@@ -72,12 +72,13 @@ G_BEGIN_DECLS
  * the developer's responsibility to resolve all textures referenced by
  * a #CoglPipeline to low-level textures before drawing.
  *
- * If you want to develop custom primitive APIs like cogl_rectangle()
- * and you want to support drawing with #CoglAtlasTexture<!-- -->s
- * or #CoglSubTexture<!-- -->s for example, then you will need to use
- * this #CoglMetaTexture interface to be able to resolve high-level
- * textures into low-level textures before drawing with Cogl's
- * low-level drawing APIs such as cogl_draw_attributes().
+ * If you want to develop custom primitive APIs like
+ * cogl_framebuffer_draw_rectangle() and you want to support drawing
+ * with #CoglAtlasTexture<!-- -->s or #CoglSubTexture<!-- -->s for
+ * example, then you will need to use this #CoglMetaTexture interface
+ * to be able to resolve high-level textures into low-level textures
+ * before drawing with Cogl's low-level drawing APIs such as
+ * cogl_draw_attributes().
  *
  * <note>Most developers won't need to use this interface directly
  * but still it is worth understanding the distinction between
@@ -149,9 +150,10 @@ typedef void (*CoglMetaTextureCallback) (CoglTexture *sub_texture,
  * consistently using this interface which greately simplifies
  * implementing primitives that support all texture types.
  *
- * For example if you use the cogl_rectangle() API then Cogl will
- * internally use this API to resolve the low level textures of any
- * meta textures you have associated with CoglPipeline layers.
+ * For example if you use the cogl_framebuffer_draw_rectangle() API
+ * then Cogl will internally use this API to resolve the low level
+ * textures of any meta textures you have associated with CoglPipeline
+ * layers.
  *
  * <note>The low level drawing APIs such as cogl_draw_attributes()
  * don't understand the #CoglMetaTexture interface and so it is your

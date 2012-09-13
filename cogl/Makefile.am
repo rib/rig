@@ -59,7 +59,6 @@ cogl_1_public_h = \
 	$(srcdir)/cogl-color.h 			\
 	$(srcdir)/cogl-matrix.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
-	$(srcdir)/cogl-primitives.h 		\
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
 	$(srcdir)/cogl-clutter.h       		\
@@ -213,7 +212,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-bitmap-conversion.c 		\
 	$(srcdir)/cogl-bitmap-packing.h			\
 	$(srcdir)/cogl-primitives-private.h 		\
-	$(srcdir)/cogl-primitives.h 			\
 	$(srcdir)/cogl-primitives.c 			\
 	$(srcdir)/cogl-path-private.h 			\
 	$(srcdir)/cogl-path.c 				\

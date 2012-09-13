@@ -136,7 +136,6 @@ typedef struct _CoglQuaternion CoglQuaternion;
 typedef struct _CoglEuler CoglEuler;
 
 typedef struct _CoglColor               CoglColor;
-typedef struct _CoglTextureVertex       CoglTextureVertex;
 
 /* Enum declarations */
 
@@ -446,27 +445,6 @@ struct _CoglColor
   float alpha;
 };
 COGL_STRUCT_SIZE_ASSERT (CoglColor, 16);
-
-/**
- * CoglTextureVertex:
- * @x: Model x-coordinate
- * @y: Model y-coordinate
- * @z: Model z-coordinate
- * @tx: Texture x-coordinate
- * @ty: Texture y-coordinate
- * @color: The color to use at this vertex. This is ignored if
- *   use_color is %FALSE when calling cogl_polygon()
- *
- * Used to specify vertex information when calling cogl_polygon()
- */
-struct _CoglTextureVertex
-{
-  float x, y, z;
-  float tx, ty;
-
-  CoglColor color;
-};
-COGL_STRUCT_SIZE_ASSERT (CoglTextureVertex, 36);
 
 /**
  * CoglTextureFlags:
