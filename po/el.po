@@ -11,8 +11,8 @@ msgstr ""
 "Project-Id-Version: cogl master\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=cogl&keywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2012-08-30 11:33+0000\n"
-"PO-Revision-Date: 2012-08-31 14:59+0200\n"
+"POT-Creation-Date: 2012-09-07 13:16+0000\n"
+"PO-Revision-Date: 2012-09-13 03:26+0200\n"
 "Last-Translator: Tom Tryfonidis <tomtryf@gmail.com>\n"
 "Language-Team: team@gnome.gr\n"
 "Language: el\n"
@@ -41,12 +41,13 @@ msgstr "Επιπρόσθετες μεταβλητές περιβάλλοντος
 #: ../cogl/cogl-debug.c:191
 msgid "Comma-separated list of GL extensions to pretend are disabled"
 msgstr ""
-"Λίστα πρόσθετων GL χωρισμένα με κόμματα για να προσποιούνται πως είναι "
+"Λίστα των πρόσθετων GL χωρισμένα με κόμματα για να προσποιούνται πως είναι "
 "απενεργοποιημένα"
 
 #: ../cogl/cogl-debug.c:193
 msgid "Override the GL version that Cogl will assume the driver supports"
 msgstr ""
+"Παράκαμψη της έκδοσης GL όπου το Cogl θα υποθέσει πως υποστηρίζεται ο οδηγός"
 
 #: ../cogl/cogl-debug-options.h:25 ../cogl/cogl-debug-options.h:30
 #: ../cogl/cogl-debug-options.h:35 ../cogl/cogl-debug-options.h:40
@@ -69,7 +70,7 @@ msgstr "Αποσφαλμάτωση αναφορά καταμέτρησης ζη�
 
 #: ../cogl/cogl-debug-options.h:32
 msgid "Trace Texture Slicing"
-msgstr "Ανίχνευση τεμαχισμoύ Υφής"
+msgstr "Ανίχνευση τεμαχισμού υφής"
 
 #: ../cogl/cogl-debug-options.h:33
 msgid "debug the creation of texture slices"
@@ -113,7 +114,7 @@ msgstr "Ανίχνευση πινάκων"
 
 #: ../cogl/cogl-debug-options.h:58
 msgid "Trace all matrix manipulation"
-msgstr "Εντοπισμός όλων των χειραγωγήσεων πινάκων"
+msgstr "Ανίχνευση όλων των διαχειρίσιμων πινάκων"
 
 #: ../cogl/cogl-debug-options.h:63
 msgid "Trace Misc Drawing"
@@ -323,11 +324,12 @@ msgstr "Αποσφαλμάτωση υποστήριξης offscreen"
 
 #: ../cogl/cogl-debug-options.h:175
 msgid "Disable program caches"
-msgstr "Απενεργοποίηση μνήμης cache προγραμμάτων"
+msgstr "Απενεργοποίηση προσωρινής μνήμης προγραμμάτων"
 
 #: ../cogl/cogl-debug-options.h:176
 msgid "Disable fallback caches for arbfp and glsl programs"
-msgstr "Απενεργοποίηση αναδίπλωσης μνήμης cache για arbfp και glsl προγράμματα"
+msgstr ""
+"Απενεργοποίηση εφεδρικής προσωρινής μνήμης για τα προγράμματα arbfp και glsl"
 
 #: ../cogl/cogl-debug-options.h:180
 msgid "Disable read pixel optimization"
