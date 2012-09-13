@@ -214,6 +214,8 @@ typedef struct _RigData
 
 /* FIXME: find a better place to put these prototypes */
 
+extern CoglBool _rig_in_device_mode;
+
 void
 rig_update_asset_list (RigData *data);
 

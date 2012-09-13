@@ -1641,7 +1641,8 @@ rig_load (RigData *data, const char *file)
 
   data->assets = loader.assets;
 
-  rig_update_asset_list (data);
+  if (!_rig_in_device_mode)
+    rig_update_asset_list (data);
 
   rig_shell_queue_redraw (data->ctx->shell);
 
