@@ -44,6 +44,7 @@ typedef struct
 {
   RigNumberSlider *slider;
   RigTransform *transform;
+  RigProperty *property;
 } RigVec3SliderControl;
 
 struct _RigVec3Slider
@@ -362,7 +363,15 @@ rig_vec3_slider_property_changed_cb (RigProperty *target_property,
     {
       RigVec3SliderControl *control = slider->controls + i;
 
-      slider->value[i] = rig_number_slider_get_value (control->slider);
+      /* When rig_vec3_slider_set_value is called this callback will
+       * be invoked three times, one for each of the child number
+       * sliders that get modified. Therefore we only want to update
+       * the value for the property that is actually being notified
+       * because otherwise we will update the vec3 with values from
+       * the number sliders that haven't been updated yet and we will
+       * report an inconsistent value. */
+      if (source_property == control->property)
+        slider->value[i] = rig_number_slider_get_value (control->slider);
     }
 
   rig_property_dirty (&slider->context->property_ctx,
@@ -374,7 +383,6 @@ rig_vec3_slider_new (RigContext *context)
 {
   RigVec3Slider *slider = g_slice_new0 (RigVec3Slider);
   static CoglBool initialized = FALSE;
-  RigProperty *slider_properties[3];
   int i;
 
   if (initialized == FALSE)
@@ -419,16 +427,16 @@ rig_vec3_slider_new (RigContext *context)
       label[0] += i;
       rig_number_slider_set_name (control->slider, label);
 
-      slider_properties[i] =
+      control->property =
         rig_introspectable_lookup_property (control->slider, "value");
     }
 
   rig_property_set_binding (&slider->properties[RIG_VEC3_SLIDER_PROP_VALUE],
                             rig_vec3_slider_property_changed_cb,
                             slider,
-                            slider_properties[0],
-                            slider_properties[1],
-                            slider_properties[2],
+                            slider->controls[0].property,
+                            slider->controls[1].property,
+                            slider->controls[2].property,
                             NULL);
 
   rig_vec3_slider_set_size (slider, 60, 30);
@@ -476,6 +484,12 @@ rig_vec3_slider_set_value (RigVec3Slider *slider,
                            const float *value)
 {
   int i;
+
+  /* This value will get updated anyway as the notifications for the
+   * slider properties are emitted. However we want to copy in the
+   * whole value immediately so that it won't notify on an
+   * inconsistent state in response to the slider values changing */
+  memcpy (slider->value, value, sizeof (float) * 3);
 
   for (i = 0; i < 3; i++)
     {
