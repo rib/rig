@@ -1549,6 +1549,11 @@ parse_end_element (GMarkupParseContext *context,
     {
       loader_pop_state (loader);
     }
+  else if (state == LOADER_STATE_LOADING_PROPERTY &&
+           strcmp (element_name, "property") == 0)
+    {
+      loader_pop_state (loader);
+    }
   else if (state == LOADER_STATE_LOADING_PATH &&
            strcmp (element_name, "path") == 0)
     {
