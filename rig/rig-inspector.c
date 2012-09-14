@@ -374,14 +374,14 @@ create_property_controls (RigInspector *inspector)
       RigInspectorPropertyData *prop_data = inspector->prop_data + i;
       RigObject *control;
 
+      prop_data->inspector = inspector;
+
       control = rig_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
                                         property_changed_cb,
                                         prop_data);
 
       prop_data->control = control;
-      prop_data->inspector = inspector;
-
       prop_data->transform = rig_transform_new (inspector->context, NULL);
       rig_graphable_add_child (prop_data->transform, control);
       rig_graphable_add_child (inspector, prop_data->transform);
@@ -421,4 +421,19 @@ rig_inspector_new (RigContext *context,
   rig_inspector_set_size (inspector, 10, 10);
 
   return inspector;
+}
+
+void
+rig_inspector_reload_property (RigInspector *inspector,
+                               RigProperty *property)
+{
+  int i;
+
+  for (i = 0; i < inspector->n_props; i++)
+    {
+      RigInspectorPropertyData *prop_data = inspector->prop_data + i;
+
+      if (prop_data->target_prop == property)
+        rig_prop_inspector_reload_property (prop_data->control);
+    }
 }

@@ -327,10 +327,6 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
         RigToggle *toggle = rig_toggle_new (context, name);
 
         *control_prop = rig_introspectable_lookup_property (toggle, "state");
-        rig_property_copy_value (&context->property_ctx,
-                                 *control_prop,
-                                 prop);
-
         return toggle;
       }
 
@@ -356,9 +352,6 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
         rig_vec3_slider_set_decimal_places (slider, 2);
 
         *control_prop = rig_introspectable_lookup_property (slider, "value");
-        rig_property_copy_value (&context->property_ctx,
-                                 *control_prop,
-                                 prop);
 
         return slider;
       }
@@ -405,16 +398,6 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
 
         *control_prop = rig_introspectable_lookup_property (slider, "value");
 
-        if (spec->type == RIG_PROPERTY_TYPE_INTEGER)
-          {
-            int value = rig_property_get_integer (prop);
-            rig_number_slider_set_value (slider, value);
-          }
-        else
-          rig_property_copy_value (&context->property_ctx,
-                                   *control_prop,
-                                   prop);
-
         return slider;
       }
 
@@ -424,7 +407,6 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
       if ((spec->flags & RIG_PROPERTY_FLAG_VALIDATE))
         {
           RigDropDown *drop = rig_drop_down_new (context);
-          int value = rig_property_get_enum (prop);
           int n_values, i;
           const RigUIEnum *ui_enum = spec->validation.ui_enum;
           RigDropDownValue *values;
@@ -442,7 +424,6 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
             }
 
           rig_drop_down_set_values_array (drop, values, n_values);
-          rig_drop_down_set_value (drop, value);
 
           *control_prop = rig_introspectable_lookup_property (drop, "value");
 
@@ -594,7 +575,28 @@ rig_prop_inspector_new (RigContext *ctx,
 
   add_control (inspector, property);
 
+  rig_prop_inspector_reload_property (inspector);
+
   rig_prop_inspector_set_size (inspector, 10, 10);
 
   return inspector;
+}
+
+void
+rig_prop_inspector_reload_property (RigPropInspector *inspector)
+{
+  if (inspector->source_prop && inspector->target_prop)
+    {
+      if (inspector->target_prop->spec->type == RIG_PROPERTY_TYPE_INTEGER)
+        {
+          int value = rig_property_get_integer (inspector->target_prop);
+          rig_property_set_float (&inspector->context->property_ctx,
+                                  inspector->source_prop,
+                                  value);
+        }
+      else
+        rig_property_copy_value (&inspector->context->property_ctx,
+                                 inspector->source_prop,
+                                 inspector->target_prop);
+    }
 }

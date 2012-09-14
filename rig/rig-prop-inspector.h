@@ -21,4 +21,7 @@ rig_prop_inspector_new (RigContext *ctx,
                         RigPropInspectorCallback property_changed_cb,
                         void *user_data);
 
+void
+rig_prop_inspector_reload_property (RigPropInspector *inspector);
+
 #endif /* _RIG_PROP_INSPECTOR_H_ */
