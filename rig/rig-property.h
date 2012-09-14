@@ -152,7 +152,9 @@ typedef struct _RigPropertySpec
   unsigned int animatable:1;
 } RigPropertySpec;
 
-typedef void (*RigBindingCallback) (RigProperty *property, void *user_data);
+typedef void (*RigBindingCallback) (RigProperty *target_property,
+                                    RigProperty *source_property,
+                                    void *user_data);
 
 typedef void (*RigBindingDestroyNotify) (RigProperty *property,
                                          void *user_data);

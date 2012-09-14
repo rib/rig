@@ -465,11 +465,13 @@ rig_prop_inspector_create_control_for_property (RigContext *context,
 
 static void
 property_changed_cb (RigProperty *target_prop,
+                     RigProperty *source_prop,
                      void *user_data)
 {
   RigPropInspector *inspector = user_data;
 
   g_return_if_fail (target_prop == &inspector->dummy_prop);
+  g_return_if_fail (source_prop == inspector->source_prop);
 
   inspector->property_changed_cb (inspector->target_prop,
                                   inspector->source_prop,

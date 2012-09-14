@@ -242,30 +242,16 @@ rig_property_set_binding_full_by_name (RigObject *object,
   va_end (ap);
 }
 
-typedef struct
-{
-  RigPropertyContext *context;
-  RigProperty *source_property;
-} RigPropertyCopyBindingData;
-
 static void
 _rig_property_copy_binding_cb (RigProperty *target_property,
+                               RigProperty *source_property,
                                void *user_data)
 {
-  RigPropertyCopyBindingData *data = user_data;
+  RigPropertyContext *context = user_data;
 
-  rig_property_copy_value (data->context,
+  rig_property_copy_value (context,
                            target_property,
-                           data->source_property);
-}
-
-static void
-_rig_property_copy_binding_destroy_notify (RigProperty *property,
-                                           void *user_data)
-{
-  RigPropertyCopyBindingData *data = user_data;
-
-  g_slice_free (RigPropertyCopyBindingData, data);
+                           source_property);
 }
 
 void
@@ -273,17 +259,11 @@ rig_property_set_copy_binding (RigPropertyContext *context,
                                RigProperty *target_property,
                                RigProperty *source_property)
 {
-  RigPropertyCopyBindingData *data = g_slice_new (RigPropertyCopyBindingData);
-
-  data->context = context;
-  data->source_property = source_property;
-
-  rig_property_set_binding_full (target_property,
-                                 _rig_property_copy_binding_cb,
-                                 data,
-                                 _rig_property_copy_binding_destroy_notify,
-                                 source_property,
-                                 NULL /* terminator */);
+  rig_property_set_binding (target_property,
+                            _rig_property_copy_binding_cb,
+                            context,
+                            source_property,
+                            NULL /* terminator */);
 }
 
 void
@@ -301,7 +281,7 @@ rig_property_dirty (RigPropertyContext *ctx,
       RigProperty *dependant = l->data;
       RigPropertyBinding *binding = dependant->binding;
       if (binding)
-        binding->callback (dependant, binding->user_data);
+        binding->callback (dependant, property, binding->user_data);
     }
 }
 

@@ -3349,7 +3349,8 @@ buffer_deleted_text (RigTextBuffer *buffer,
 }
 
 static void
-text_property_binding_cb (RigProperty *property,
+text_property_binding_cb (RigProperty *target_property,
+                          RigProperty *source_property,
                           void *user_data)
 {
   RigText *text = user_data;
@@ -3369,7 +3370,8 @@ text_property_binding_cb (RigProperty *property,
 }
 
 static void
-max_length_property_binding_cb (RigProperty *property,
+max_length_property_binding_cb (RigProperty *target_property,
+                                RigProperty *source_property,
                                 void *user_data)
 {
   RigText *text = user_data;

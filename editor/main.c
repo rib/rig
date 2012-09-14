@@ -1607,11 +1607,13 @@ test_paint (RigShell *shell, void *user_data)
 }
 
 static void
-update_transition_progress_cb (RigProperty *property, void *user_data)
+update_transition_progress_cb (RigProperty *target_property,
+                               RigProperty *source_property,
+                               void *user_data)
 {
   RigData *data = user_data;
   double elapsed = rig_timeline_get_elapsed (data->timeline);
-  RigTransition *transition = property->object;
+  RigTransition *transition = target_property->object;
 
   rig_transition_set_progress (transition, elapsed);
 }
@@ -3005,7 +3007,9 @@ data_onscreen_resize (CoglOnscreen *onscreen,
 }
 
 static void
-camera_viewport_binding_cb (RigProperty *property, void *user_data)
+camera_viewport_binding_cb (RigProperty *target_property,
+                            RigProperty *source_property,
+                            void *user_data)
 {
   RigData *data = user_data;
   float x, y, z, width, height;

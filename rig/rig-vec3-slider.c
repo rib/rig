@@ -351,7 +351,8 @@ _rig_vec3_slider_init_type (void)
 }
 
 static void
-rig_vec3_slider_property_changed_cb (RigProperty *property,
+rig_vec3_slider_property_changed_cb (RigProperty *target_property,
+                                     RigProperty *source_property,
                                      void *user_data)
 {
   RigVec3Slider *slider = user_data;
