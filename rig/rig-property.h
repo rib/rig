@@ -482,7 +482,7 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
   if (property->spec->getter) \
     { \
       CTYPE (*getter) (RigProperty *property) = property->spec->getter; \
-      return getter (property); \
+      return getter (property->object); \
     } \
   else \
     { \
@@ -527,7 +527,7 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
   if (property->spec->getter) \
     { \
       CTYPE *(*getter) (RigProperty *property) = property->spec->getter; \
-      return getter (property); \
+      return getter (property->object); \
     } \
   else \
     { \
@@ -570,7 +570,7 @@ rig_property_get_ ## SUFFIX (RigProperty *property) \
   if (property->spec->getter) \
     { \
       const CTYPE *(*getter) (RigProperty *property) = property->spec->getter; \
-      return getter (property); \
+      return getter (property->object); \
     } \
   else \
     { \
@@ -620,7 +620,7 @@ rig_property_get_text (RigProperty *property)
   if (property->spec->getter)
     {
       const char *(*getter) (RigProperty *property) = property->spec->getter;
-      return getter (property);
+      return getter (property->object);
     }
   else
     {
