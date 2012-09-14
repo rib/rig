@@ -23,7 +23,7 @@
 #include "rig-data.h"
 
 void
-rig_save (RigData *data);
+rig_save (RigData *data, const char *path);
 
 void
 rig_load (RigData *data, const char *file);

@@ -2815,7 +2815,7 @@ main_input_cb (RigInputEvent *event,
       switch (rig_key_event_get_keysym (event))
         {
         case RIG_KEY_s:
-          rig_save (data);
+          rig_save (data, _rig_handset_remaining_args[0]);
           break;
         case RIG_KEY_z:
           if (rig_key_event_get_modifier_state (event) & RIG_MODIFIER_CTRL_ON)
@@ -3825,19 +3825,16 @@ init (RigShell *shell, void *user_data)
       struct stat st;
 
       stat (_rig_handset_remaining_args[0], &st);
-      if (!S_ISDIR (st.st_mode))
+      if (!S_ISREG (st.st_mode))
         {
-          g_error ("Could not find project directory %s",
+          g_error ("Could not find ui xml files: %s",
                    _rig_handset_remaining_args[0]);
         }
 
-      _rig_project_dir = _rig_handset_remaining_args[0];
+      _rig_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
       rig_set_assets_location (data->ctx, _rig_project_dir);
 
-      ui = g_build_filename (_rig_handset_remaining_args[0], "ui.xml", NULL);
-
-      rig_load (data, ui);
-      g_free (ui);
+      rig_load (data, _rig_handset_remaining_args[0]);
     }
 #endif
 }

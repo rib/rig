@@ -528,10 +528,10 @@ save_property_cb (RigProperty *property,
 }
 
 void
-rig_save (RigData *data)
+rig_save (RigData *data,
+          const char *path)
 {
   struct stat sb;
-  char *path = g_build_filename (data->ctx->assets_location, "ui.xml", NULL);
   FILE *file;
   SaveState state;
   GList *l;
