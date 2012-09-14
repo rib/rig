@@ -2363,6 +2363,19 @@ translate_grab_entity (RigData *data,
 }
 
 static void
+reload_position_inspector (RigData *data,
+                           RigEntity *entity)
+{
+  if (data->inspector)
+    {
+      RigProperty *property =
+        rig_introspectable_lookup_property (entity, "position");
+
+      rig_inspector_reload_property (data->inspector, property);
+    }
+}
+
+static void
 entity_translate_done_cb (RigEntity *entity,
                           float start[3],
                           float rel[3],
@@ -2388,6 +2401,8 @@ entity_translate_done_cb (RigEntity *entity,
   rig_path_insert_vec3 (path_position, elapsed,
                         rig_entity_get_position (entity));
 
+  reload_position_inspector (data, entity);
+
   rig_shell_queue_redraw (data->ctx->shell);
 }
 
@@ -2403,6 +2418,8 @@ entity_translate_cb (RigEntity *entity,
                             start[0] + rel[0],
                             start[1] + rel[1],
                             start[2] + rel[2]);
+
+  reload_position_inspector (data, entity);
 
   rig_shell_queue_redraw (data->ctx->shell);
 }
