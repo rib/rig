@@ -3299,7 +3299,7 @@ init (RigShell *shell, void *user_data)
   /* Setup the shadow map */
   /* TODO: reallocate if the onscreen framebuffer is resized */
   color_buffer = cogl_texture_2d_new_with_size (rig_cogl_context,
-                                                data->width, data->height,
+                                                data->width * 2, data->height * 2,
                                                 COGL_PIXEL_FORMAT_ANY,
                                                 &error);
   if (error)
