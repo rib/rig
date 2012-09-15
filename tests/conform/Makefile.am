@@ -11,7 +11,6 @@ common_sources = \
 	$(NULL)
 
 unported_test_sources = \
-	test-fixed.c \
 	test-materials.c \
 	test-viewport.c \
 	test-multitexture.c \
