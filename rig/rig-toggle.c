@@ -322,7 +322,7 @@ _rig_toggle_grab_input_cb (RigInputEvent *event,
                                             state->region,
                                             x, y))
             {
-              toggle->state = !toggle->state;
+              rig_toggle_set_state (toggle, !toggle->state);
 
               rig_closure_list_invoke (&toggle->on_toggle_cb_list,
                                        RigToggleCallback,
