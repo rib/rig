@@ -1033,7 +1033,8 @@ _rig_entitygraph_pre_paint_cb (RigObject *object,
       CoglMatrix modelview_matrix;
       float normal_matrix[9];
 
-      if (!rig_entity_get_visible (entity))
+      if (!rig_entity_get_visible (entity) ||
+          (paint_ctx->pass == PASS_SHADOW && !rig_entity_get_cast_shadow (entity)))
         return RIG_TRAVERSE_VISIT_CONTINUE;
 
       geometry =
@@ -3515,6 +3516,7 @@ init (RigShell *shell, void *user_data)
       rig_entity_add_component (data->light_handle, mesh);
       rig_graphable_add_child (data->light, data->light_handle);
       rig_entity_set_scale (data->light_handle, 100);
+      rig_entity_set_cast_shadow (data->light_handle, FALSE);
     }
 
   light = rig_light_new ();
