@@ -3821,20 +3821,17 @@ init (RigShell *shell, void *user_data)
   if (_rig_handset_remaining_args &&
       _rig_handset_remaining_args[0])
     {
-      char *ui;
-      struct stat st;
-
-      stat (_rig_handset_remaining_args[0], &st);
-      if (!S_ISREG (st.st_mode))
+      if (_rig_handset_remaining_args[0])
         {
-          g_error ("Could not find ui xml files: %s",
-                   _rig_handset_remaining_args[0]);
+          struct stat st;
+
+          _rig_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
+          rig_set_assets_location (data->ctx, _rig_project_dir);
+
+          stat (_rig_handset_remaining_args[0], &st);
+          if (S_ISREG (st.st_mode))
+            rig_load (data, _rig_handset_remaining_args[0]);
         }
-
-      _rig_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
-      rig_set_assets_location (data->ctx, _rig_project_dir);
-
-      rig_load (data, _rig_handset_remaining_args[0]);
     }
 #endif
 }
