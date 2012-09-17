@@ -1269,6 +1269,7 @@ echo ""
 echo " • Extra:"
 echo "        Build API reference: ${enable_gtk_doc}"
 echo "        Build introspection data: ${enable_introspection}"
+echo "        Enable internationalization: ${USE_NLS}"
 
 echo ""
 
