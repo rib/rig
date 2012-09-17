@@ -1,7 +1,8 @@
 include $(top_srcdir)/build/autotools/Makefile.am.silent
 
 INCLUDES = \
-	-I$(top_srcdir)
+	-I$(top_srcdir) \
+	-I$(top_builddir)/deps/glib
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
@@ -15,6 +16,7 @@ endif
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
+	$(top_builddir)/deps/glib/libglib.la \
 	$(top_builddir)/cogl/libcogl2.la
 
 programs = cogl-info
