@@ -587,7 +587,16 @@ rig_prop_inspector_reload_property (RigPropInspector *inspector)
 {
   if (inspector->source_prop && inspector->target_prop)
     {
-      if (inspector->target_prop->spec->type == RIG_PROPERTY_TYPE_INTEGER)
+
+      if (inspector->target_prop->spec->type == RIG_PROPERTY_TYPE_ENUM &&
+          inspector->source_prop->spec->type == RIG_PROPERTY_TYPE_INTEGER)
+        {
+          int value = rig_property_get_enum (inspector->target_prop);
+          rig_property_set_integer (&inspector->context->property_ctx,
+                                    inspector->source_prop,
+                                    value);
+        }
+      else if (inspector->target_prop->spec->type == RIG_PROPERTY_TYPE_INTEGER)
         {
           int value = rig_property_get_integer (inspector->target_prop);
           rig_property_set_float (&inspector->context->property_ctx,

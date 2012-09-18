@@ -186,7 +186,8 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
   fprintf (state->file,
            "%*s        position=\"(%f, %f, %f)\"\n"
            "%*s        scale=\"%f\"\n"
-           "%*s        rotation=\"[%f (%f, %f, %f)]]\">\n",
+           "%*s        rotation=\"[%f (%f, %f, %f)]]\"\n"
+           "%*s        cast_shadow=\"%s\">\n",
            state->indent, "",
            rig_entity_get_x (entity),
            rig_entity_get_y (entity),
@@ -194,7 +195,9 @@ _rig_entitygraph_pre_save_cb (RigObject *object,
            state->indent, "",
            rig_entity_get_scale (entity),
            state->indent, "",
-           angle, axis[0], axis[1], axis[2]);
+           angle, axis[0], axis[1], axis[2],
+           state->indent, "",
+           rig_entity_get_cast_shadow (entity) ? "yes" : "no");
 
   state->current_entity = entity;
   rig_entity_foreach_component (entity,
@@ -1038,6 +1041,7 @@ parse_start_element (GMarkupParseContext *context,
       const char *position_str;
       const char *rotation_str;
       const char *scale_str;
+      const char *cast_shadow_str;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
@@ -1058,6 +1062,9 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                         "scale",
                                         &scale_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "cast_shadow",
+                                        &cast_shadow_str,
                                         G_MARKUP_COLLECT_INVALID))
       {
         return;
@@ -1129,6 +1136,21 @@ parse_start_element (GMarkupParseContext *context,
         {
           double scale = g_ascii_strtod (scale_str, NULL);
           rig_entity_set_scale (entity, scale);
+        }
+      if (cast_shadow_str)
+        {
+          if (strcmp (cast_shadow_str, "yes") == 0)
+            rig_entity_set_cast_shadow (entity, TRUE);
+          else if (strcmp (cast_shadow_str, "no") == 0)
+            rig_entity_set_cast_shadow (entity, FALSE);
+          else
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Invalid cast_shadow value");
+              return;
+            }
         }
 
       loader->current_entity = entity;

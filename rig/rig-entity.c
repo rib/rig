@@ -116,7 +116,7 @@ static RigPropertySpec _rig_entity_prop_specs[] = {
     .animatable = TRUE
   },
   {
-    .name = "cast-shadow",
+    .name = "cast_shadow",
     .type = RIG_PROPERTY_TYPE_BOOLEAN,
     .getter = rig_entity_get_cast_shadow,
     .setter = rig_entity_set_cast_shadow,
