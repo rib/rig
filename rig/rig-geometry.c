@@ -253,4 +253,39 @@ rig_create_rotation_tool_primitive (RigContext *ctx,
   return primitive;
 }
 
+CoglPrimitive *
+rig_create_create_grid (RigContext *ctx,
+                        float width,
+                        float height,
+                        float x_space,
+                        float y_space)
+{
+  GArray *lines = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
+  float x, y;
+  int n_lines = 0;
 
+  for (x = 0; x < width; x += x_space)
+    {
+      CoglVertexP2 p[2] = {
+        { .x = x, .y = 0 },
+        { .x = x, .y = height }
+      };
+      g_array_append_vals (lines, p, 2);
+      n_lines++;
+    }
+
+  for (y = 0; y < height; y += y_space)
+    {
+      CoglVertexP2 p[2] = {
+        { .x = 0, .y = y },
+        { .x = width, .y = y }
+      };
+      g_array_append_vals (lines, p, 2);
+      n_lines++;
+    }
+
+  return cogl_primitive_new_p2 (ctx->cogl_context,
+                                COGL_VERTICES_MODE_LINES,
+                                n_lines * 2,
+                                (CoglVertexP2 *)lines->data);
+}

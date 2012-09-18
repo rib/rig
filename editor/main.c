@@ -83,48 +83,6 @@ static char *_rig_project_dir = NULL;
 
 #endif /* __ANDROID__ */
 
-typedef struct _VertexP2T2T2
-{
-  float x, y, s0, t0, s1, t1;
-} VertexP2T2T2;
-
-CoglPrimitive *
-create_grid (RigContext *ctx,
-             float width,
-             float height,
-             float x_space,
-             float y_space)
-{
-  GArray *lines = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
-  float x, y;
-  int n_lines = 0;
-
-  for (x = 0; x < width; x += x_space)
-    {
-      CoglVertexP2 p[2] = {
-        { .x = x, .y = 0 },
-        { .x = x, .y = height }
-      };
-      g_array_append_vals (lines, p, 2);
-      n_lines++;
-    }
-
-  for (y = 0; y < height; y += y_space)
-    {
-      CoglVertexP2 p[2] = {
-        { .x = 0, .y = y },
-        { .x = width, .y = y }
-      };
-      g_array_append_vals (lines, p, 2);
-      n_lines++;
-    }
-
-  return cogl_primitive_new_p2 (ctx->cogl_context,
-                                COGL_VERTICES_MODE_LINES,
-                                n_lines * 2,
-                                (CoglVertexP2 *)lines->data);
-}
-
 static const float jitter_offsets[32] =
 {
   0.375f, 0.4375f,
@@ -3009,11 +2967,11 @@ init (RigShell *shell, void *user_data)
 
   if (!_rig_in_device_mode)
     {
-      data->grid_prim = create_grid (data->ctx,
-                                     DEVICE_WIDTH,
-                                     DEVICE_HEIGHT,
-                                     100,
-                                     100);
+      data->grid_prim = rig_create_create_grid (data->ctx,
+                                                DEVICE_WIDTH,
+                                                DEVICE_HEIGHT,
+                                                100,
+                                                100);
     }
 
   data->circle_node_attribute =

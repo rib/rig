@@ -31,4 +31,11 @@ CoglPrimitive *
 rig_create_rotation_tool_primitive (RigContext *ctx,
                                     uint8_t n_vertices);
 
+CoglPrimitive *
+rig_create_create_grid (RigContext *ctx,
+                        float width,
+                        float height,
+                        float x_space,
+                        float y_space);
+
 #endif /* _RIG_GEOMETRY_H_ */
