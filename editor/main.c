@@ -3211,7 +3211,7 @@ init (RigShell *shell, void *user_data)
   CoglError *error = NULL;
   CoglTexture2D *color_buffer;
   RigColor color;
-  RigMeshRenderer *mesh;
+  RigMesh *mesh;
   RigMaterial *material;
   RigLight *light;
   RigCamera *camera;
@@ -3510,7 +3510,7 @@ init (RigShell *shell, void *user_data)
 
   if (!_rig_in_device_mode)
     {
-      RigMeshRenderer *mesh = rig_mesh_renderer_new_from_template (data->ctx, "cube");
+      RigMesh *mesh = rig_mesh_new_from_template (data->ctx, "cube");
 
       data->light_handle = rig_entity_new (data->ctx, data->entity_next_id++);
       rig_entity_add_component (data->light_handle, mesh);

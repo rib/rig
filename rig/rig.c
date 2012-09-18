@@ -2138,7 +2138,7 @@ _rig_init (void)
       _rig_camera_init_type ();
       _rig_animation_clip_init_type ();
       _rig_light_init_type ();
-      _rig_mesh_renderer_init_type ();
+      _rig_mesh_init_type ();
       _rig_material_init_type ();
       _rig_diamond_init_type ();
       _rig_diamond_slice_init_type ();

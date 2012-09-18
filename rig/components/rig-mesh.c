@@ -24,7 +24,7 @@
 #include "rig-geometry.h"
 #include "components/rig-material.h"
 
-#include "rig-mesh-renderer.h"
+#include "rig-mesh.h"
 
 typedef struct
 {
@@ -156,7 +156,7 @@ static Vertex plane_vertices[] =
 #undef norm
 
 static CoglPrimitive *
-create_primitive_from_vertex_data (RigMeshRenderer *renderer,
+create_primitive_from_vertex_data (RigMesh *renderer,
                                    Vertex          *data,
                                    int              n_vertices)
 {
@@ -217,9 +217,9 @@ create_ply_primitive (RigContext *ctx, const gchar *filename)
 }
 
 CoglPrimitive *
-rig_mesh_renderer_get_primitive (RigObject *object)
+rig_mesh_get_primitive (RigObject *object)
 {
-  RigMeshRenderer *renderer = object;
+  RigMesh *renderer = object;
 
   if (renderer->primitive)
     return renderer->primitive;
@@ -229,73 +229,73 @@ rig_mesh_renderer_get_primitive (RigObject *object)
     return NULL;
 }
 
-RigType rig_mesh_renderer_type;
+RigType rig_mesh_type;
 
-static RigComponentableVTable _rig_mesh_renderer_componentable_vtable = {
+static RigComponentableVTable _rig_mesh_componentable_vtable = {
   .draw = NULL
 };
 
-static RigPrimableVTable _rig_mesh_renderer_primable_vtable = {
-  .get_primitive = rig_mesh_renderer_get_primitive
+static RigPrimableVTable _rig_mesh_primable_vtable = {
+  .get_primitive = rig_mesh_get_primitive
 };
 
-static RigPickableVTable _rig_mesh_renderer_pickable_vtable = {
-  .get_vertex_data = rig_mesh_renderer_get_vertex_data
+static RigPickableVTable _rig_mesh_pickable_vtable = {
+  .get_vertex_data = rig_mesh_get_vertex_data
 };
 
 void
-_rig_mesh_renderer_init_type (void)
+_rig_mesh_init_type (void)
 {
-  rig_type_init (&rig_mesh_renderer_type);
-  rig_type_add_interface (&rig_mesh_renderer_type,
+  rig_type_init (&rig_mesh_type);
+  rig_type_add_interface (&rig_mesh_type,
                           RIG_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (RigMeshRenderer, component),
-                          &_rig_mesh_renderer_componentable_vtable);
-  rig_type_add_interface (&rig_mesh_renderer_type,
+                          offsetof (RigMesh, component),
+                          &_rig_mesh_componentable_vtable);
+  rig_type_add_interface (&rig_mesh_type,
                           RIG_INTERFACE_ID_PRIMABLE,
                           0, /* no associated properties */
-                          &_rig_mesh_renderer_primable_vtable);
-  rig_type_add_interface (&rig_mesh_renderer_type,
+                          &_rig_mesh_primable_vtable);
+  rig_type_add_interface (&rig_mesh_type,
                           RIG_INTERFACE_ID_PICKABLE,
                           0, /* no associated properties */
-                          &_rig_mesh_renderer_pickable_vtable);
+                          &_rig_mesh_pickable_vtable);
 }
 
-static RigMeshRenderer *
-_rig_mesh_renderer_new (RigContext *ctx)
+static RigMesh *
+_rig_mesh_new (RigContext *ctx)
 {
-  RigMeshRenderer *renderer;
+  RigMesh *renderer;
 
-  renderer = g_slice_new0 (RigMeshRenderer);
-  rig_object_init (&renderer->_parent, &rig_mesh_renderer_type);
+  renderer = g_slice_new0 (RigMesh);
+  rig_object_init (&renderer->_parent, &rig_mesh_type);
   renderer->component.type = RIG_COMPONENT_TYPE_GEOMETRY;
 
   return renderer;
 }
 
-RigMeshRenderer *
-rig_mesh_renderer_new_from_file (RigContext *ctx,
-                                 const char *file)
+RigMesh *
+rig_mesh_new_from_file (RigContext *ctx,
+                        const char *file)
 {
-  RigMeshRenderer *renderer;
+  RigMesh *renderer;
 
-  renderer = _rig_mesh_renderer_new (ctx);
-  renderer->type = RIG_MESH_RENDERER_TYPE_FILE;
+  renderer = _rig_mesh_new (ctx);
+  renderer->type = RIG_MESH_TYPE_FILE;
   renderer->path = g_strdup (file);
   renderer->mesh_data = create_ply_primitive (ctx, file);
 
   return renderer;
 }
 
-RigMeshRenderer *
-rig_mesh_renderer_new_from_template (RigContext *ctx,
-                                     const char *name)
+RigMesh *
+rig_mesh_new_from_template (RigContext *ctx,
+                            const char *name)
 {
-  RigMeshRenderer *renderer;
+  RigMesh *renderer;
 
-  renderer = _rig_mesh_renderer_new (ctx);
+  renderer = _rig_mesh_new (ctx);
 
-  renderer->type = RIG_MESH_RENDERER_TYPE_TEMPLATE;
+  renderer->type = RIG_MESH_TYPE_TEMPLATE;
   renderer->path = g_strdup (name);
 
   if (g_strcmp0 (name, "plane") == 0)
@@ -336,7 +336,7 @@ rig_mesh_renderer_new_from_template (RigContext *ctx,
   return renderer;
 }
 
-void rig_mesh_renderer_free (RigMeshRenderer *renderer)
+void rig_mesh_free (RigMesh *renderer)
 {
   if (renderer->primitive)
     cogl_object_unref (renderer->primitive);
@@ -344,13 +344,13 @@ void rig_mesh_renderer_free (RigMeshRenderer *renderer)
   if (renderer->mesh_data)
     g_object_unref (renderer->mesh_data);
 
-  g_slice_free (RigMeshRenderer, renderer);
+  g_slice_free (RigMesh, renderer);
 }
 
 void *
-rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
-                                   size_t *stride,
-                                   int *n_vertices)
+rig_mesh_get_vertex_data (RigMesh *renderer,
+                          size_t *stride,
+                          int *n_vertices)
 {
   if (stride)
     *stride = renderer->stride;
@@ -362,19 +362,19 @@ rig_mesh_renderer_get_vertex_data (RigMeshRenderer *renderer,
 }
 
 int
-rig_mesh_renderer_get_n_vertices (RigMeshRenderer *renderer)
+rig_mesh_get_n_vertices (RigMesh *renderer)
 {
   return renderer->n_vertices;
 }
 
-RigMeshRendererType
-rig_mesh_renderer_get_type (RigMeshRenderer *renderer)
+RigMeshType
+rig_mesh_get_type (RigMesh *renderer)
 {
   return renderer->type;
 }
 
 const char *
-rig_mesh_renderer_get_path (RigMeshRenderer *renderer)
+rig_mesh_get_path (RigMesh *renderer)
 {
   return renderer->path;
 }

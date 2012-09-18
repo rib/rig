@@ -22,7 +22,7 @@
 
 #include "components/rig-animation-clip.h"
 #include "components/rig-light.h"
-#include "components/rig-mesh-renderer.h"
+#include "components/rig-mesh.h"
 #include "components/rig-material.h"
 #include "components/rig-camera.h"
 #include "components/rig-diamond.h"

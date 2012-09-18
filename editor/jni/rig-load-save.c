@@ -98,21 +98,21 @@ save_component_cb (RigComponent *component,
                state->indent, "",
                rig_diamond_get_size (RIG_DIAMOND (component)));
     }
-  else if (type == &rig_mesh_renderer_type)
+  else if (type == &rig_mesh_type)
     {
-      RigMeshRenderer *mesh = RIG_MESH_RENDERER (component);
+      RigMesh *mesh = RIG_MESH (component);
 
       fprintf (state->file, "%*s<mesh", state->indent, "");
 
-      switch (rig_mesh_renderer_get_type (mesh))
+      switch (rig_mesh_get_type (mesh))
         {
-        case RIG_MESH_RENDERER_TYPE_TEMPLATE:
+        case RIG_MESH_TYPE_TEMPLATE:
           fprintf (state->file, " type=\"template\" template=\"%s\"",
-                   rig_mesh_renderer_get_path (mesh));
+                   rig_mesh_get_path (mesh));
           break;
-        case RIG_MESH_RENDERER_TYPE_FILE:
+        case RIG_MESH_TYPE_FILE:
           fprintf (state->file, " type=\"file\" path=\"%s\"",
-                   rig_mesh_renderer_get_path (mesh));
+                   rig_mesh_get_path (mesh));
           break;
         default:
           g_warn_if_reached ();
@@ -1253,7 +1253,7 @@ parse_start_element (GMarkupParseContext *context,
       const char *type_str;
       const char *template_str;
       const char *path_str;
-      RigMeshRenderer *mesh;
+      RigMesh *mesh;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
@@ -1281,8 +1281,8 @@ parse_start_element (GMarkupParseContext *context,
                            "Missing mesh template name");
               return;
             }
-          mesh = rig_mesh_renderer_new_from_template (loader->data->ctx,
-                                                      template_str);
+          mesh = rig_mesh_new_from_template (loader->data->ctx,
+                                             template_str);
         }
       else if (strcmp (type_str, "file") == 0)
         {
@@ -1294,7 +1294,7 @@ parse_start_element (GMarkupParseContext *context,
                            "Missing mesh path name");
               return;
             }
-          mesh = rig_mesh_renderer_new_from_file (loader->data->ctx, path_str);
+          mesh = rig_mesh_new_from_file (loader->data->ctx, path_str);
         }
       else
         {
