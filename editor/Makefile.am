@@ -31,6 +31,8 @@ rig_SOURCES = \
 	jni/rig-transition.h \
 	jni/rig-types-private.h \
 	jni/rig-load-save.h \
-	jni/rig-load-save.c
+	jni/rig-load-save.c \
+	jni/rig-undo-journal.h \
+	jni/rig-undo-journal.c
 
 rig_LDADD = $(common_ldadd)
