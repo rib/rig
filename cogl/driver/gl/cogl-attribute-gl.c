@@ -39,6 +39,7 @@
 #include "cogl-attribute-private.h"
 #include "cogl-attribute-gl-private.h"
 #include "cogl-pipeline-progend-glsl-private.h"
+#include "cogl-buffer-gl-private.h"
 
 typedef struct _ForeachChangedBitState
 {
