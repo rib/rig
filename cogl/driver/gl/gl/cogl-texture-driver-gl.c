@@ -168,7 +168,7 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
 
-  data = _cogl_bitmap_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
+  data = _cogl_bitmap_gl_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
 
   /* Setup gl alignment to match rowstride and top-left corner */
   prep_gl_for_pixels_upload_full (ctx,
@@ -187,7 +187,7 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
                             source_gl_type,
                             data) );
 
-  _cogl_bitmap_unbind (source_bmp);
+  _cogl_bitmap_gl_unbind (source_bmp);
 }
 
 static void
@@ -204,7 +204,7 @@ _cogl_texture_driver_upload_to_gl (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
 
-  data = _cogl_bitmap_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
+  data = _cogl_bitmap_gl_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
 
   /* Setup gl alignment to match rowstride and top-left corner */
   prep_gl_for_pixels_upload_full (ctx,
@@ -222,7 +222,7 @@ _cogl_texture_driver_upload_to_gl (CoglContext *ctx,
                          source_gl_type,
                          data) );
 
-  _cogl_bitmap_unbind (source_bmp);
+  _cogl_bitmap_gl_unbind (source_bmp);
 }
 
 static void
@@ -241,7 +241,7 @@ _cogl_texture_driver_upload_to_gl_3d (CoglContext *ctx,
   CoglPixelFormat source_format = cogl_bitmap_get_format (source_bmp);
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (source_format);
 
-  data = _cogl_bitmap_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
+  data = _cogl_bitmap_gl_bind (source_bmp, COGL_BUFFER_ACCESS_READ, 0);
 
   /* Setup gl alignment to match rowstride and top-left corner */
   prep_gl_for_pixels_upload_full (ctx,
@@ -263,7 +263,7 @@ _cogl_texture_driver_upload_to_gl_3d (CoglContext *ctx,
                          source_gl_type,
                          data) );
 
-  _cogl_bitmap_unbind (source_bmp);
+  _cogl_bitmap_gl_unbind (source_bmp);
 }
 
 static CoglBool
