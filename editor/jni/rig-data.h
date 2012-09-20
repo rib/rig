@@ -186,6 +186,7 @@ typedef struct _RigData
   float grab_y;
   float entity_grab_pos[3];
   RigInputCallback key_focus_callback;
+  float grab_progress;
 
   GList *assets;
 

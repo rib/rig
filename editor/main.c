@@ -2476,12 +2476,82 @@ main_input_cb (RigInputEvent *event,
 }
 
 static RigInputEventStatus
+device_mode_grab_input_cb (RigInputEvent *event, void *user_data)
+{
+  RigData *data = user_data;
+
+  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      RigMotionEventAction action = rig_motion_event_get_action (event);
+
+      switch (action)
+        {
+        case RIG_MOTION_EVENT_ACTION_UP:
+          rig_shell_ungrab_input (data->ctx->shell,
+                                  device_mode_grab_input_cb,
+                                  user_data);
+          return RIG_INPUT_EVENT_STATUS_HANDLED;
+        case RIG_MOTION_EVENT_ACTION_MOVE:
+          {
+            float x = rig_motion_event_get_x (event);
+            float dx = x - data->grab_x;
+            CoglFramebuffer *fb = COGL_FRAMEBUFFER (data->onscreen);
+            float progression = dx / cogl_framebuffer_get_width (fb);
+
+            rig_timeline_set_progress (data->timeline,
+                                       data->grab_progress + progression);
+
+            rig_shell_queue_redraw (data->ctx->shell);
+            return RIG_INPUT_EVENT_STATUS_HANDLED;
+          }
+        default:
+          return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static RigInputEventStatus
+device_mode_input_cb (RigInputEvent *event,
+                      void *user_data)
+{
+  RigData *data = user_data;
+
+  g_print ("Device Input Callback\n");
+
+  if (rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_MOTION)
+    {
+      RigMotionEventAction action = rig_motion_event_get_action (event);
+      RigButtonState state = rig_motion_event_get_button_state (event);
+
+      if (action == RIG_MOTION_EVENT_ACTION_DOWN &&
+          state == RIG_BUTTON_STATE_1)
+        {
+            data->grab_x = rig_motion_event_get_x (event);
+            data->grab_y = rig_motion_event_get_y (event);
+            data->grab_progress = rig_timeline_get_progress (data->timeline);
+
+            /* TODO: Add rig_shell_implicit_grab_input() that handles releasing
+             * the grab for you */
+            rig_shell_grab_input (data->ctx->shell,
+                                  rig_input_event_get_camera (event),
+                                  device_mode_grab_input_cb, data);
+            return RIG_INPUT_EVENT_STATUS_HANDLED;
+
+        }
+    }
+
+  return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static RigInputEventStatus
 editor_input_region_cb (RigInputRegion *region,
                       RigInputEvent *event,
                       void *user_data)
 {
   if (_rig_in_device_mode)
-    return RIG_INPUT_EVENT_STATUS_UNHANDLED;
+    return device_mode_input_cb (event, user_data);
   else
     return main_input_cb (event, user_data);
 }
