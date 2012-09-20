@@ -3424,7 +3424,6 @@ init (RigShell *shell, void *user_data)
     }
 
   data->timeline = rig_timeline_new (data->ctx, 20.0);
-  rig_timeline_set_loop_enabled (data->timeline, TRUE);
   rig_timeline_stop (data->timeline);
 
   data->timeline_elapsed =
