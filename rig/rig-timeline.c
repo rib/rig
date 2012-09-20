@@ -99,7 +99,7 @@ RigTimeline *
 rig_timeline_new (RigContext *ctx,
                   float length)
 {
-  RigTimeline *timeline = g_slice_new (RigTimeline);
+  RigTimeline *timeline = g_slice_new0 (RigTimeline);
 
   rig_object_init (&timeline->_parent, &_rig_timeline_type);
 
