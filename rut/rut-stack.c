@@ -72,9 +72,9 @@ _rut_stack_free (void *object)
 {
   RutStack *stack = object;
 
-  rut_ref_countable_ref (stack->ctx);
+  rut_refable_ref (stack->ctx);
 
-  g_list_foreach (stack->children, (GFunc)rut_ref_countable_unref, NULL);
+  g_list_foreach (stack->children, (GFunc)rut_refable_unref, NULL);
   g_list_free (stack->children);
 
   rut_simple_introspectable_destroy (stack);
@@ -83,8 +83,8 @@ _rut_stack_free (void *object)
 }
 
 RutRefCountableVTable _rut_stack_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_stack_free
 };
 
@@ -280,7 +280,7 @@ rut_stack_new (RutContext *context,
     }
 
   stack->ref_count = 1;
-  stack->ctx = rut_ref_countable_ref (context);
+  stack->ctx = rut_refable_ref (context);
 
   rut_object_init (&stack->_parent, &rut_stack_type);
 

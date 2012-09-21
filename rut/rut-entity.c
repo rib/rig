@@ -138,8 +138,8 @@ _rut_entity_free (void *object)
 }
 
 static RutRefCountableVTable _rut_entity_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_entity_free
 };
 

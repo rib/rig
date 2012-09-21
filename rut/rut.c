@@ -457,8 +457,8 @@ _rut_context_free (void *object)
 }
 
 static RutRefCountableVTable _rut_context_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_context_free
 };
 
@@ -595,7 +595,7 @@ rut_context_new (RutShell *shell)
 
   if (shell)
     {
-      context->shell = rut_ref_countable_ref (shell);
+      context->shell = rut_refable_ref (shell);
 
       _rut_shell_associate_context (shell, context);
     }
@@ -631,8 +631,8 @@ _rut_nine_slice_free (void *object)
 }
 
 RutRefCountableVTable _rut_nine_slice_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_nine_slice_free
 };
 
@@ -850,8 +850,8 @@ _rut_graph_free (void *object)
 }
 
 RutRefCountableVTable _rut_graph_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_graph_free
 };
 
@@ -909,8 +909,8 @@ _rut_transform_free (void *object)
 }
 
 RutRefCountableVTable _rut_transform_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_transform_free
 };
 
@@ -1051,8 +1051,8 @@ _rut_rectangle_free (void *object)
 }
 
 static RutRefCountableVTable _rut_rectangle_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_rectangle_free
 };
 
@@ -1254,7 +1254,7 @@ _rut_ui_viewport_free (void *object)
 {
   RutUIViewport *ui_viewport = object;
 
-  rut_ref_countable_simple_unref (ui_viewport->input_region);
+  rut_refable_simple_unref (ui_viewport->input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
 
@@ -1262,8 +1262,8 @@ _rut_ui_viewport_free (void *object)
 }
 
 static RutRefCountableVTable _rut_ui_viewport_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_ui_viewport_free
 };
 
@@ -1626,8 +1626,8 @@ _rut_text_free (void *object)
 }
 
 RutRefCountableVTable _rut_text_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_text_free
 };
 
@@ -1738,10 +1738,10 @@ _rut_button_free (void *object)
 
   rut_closure_list_disconnect_all (&button->on_click_cb_list);
 
-  rut_ref_countable_unref (button->background_normal);
-  rut_ref_countable_unref (button->background_hover);
-  rut_ref_countable_unref (button->background_active);
-  rut_ref_countable_unref (button->background_disabled);
+  rut_refable_unref (button->background_normal);
+  rut_refable_unref (button->background_hover);
+  rut_refable_unref (button->background_active);
+  rut_refable_unref (button->background_disabled);
 
   g_object_unref (button->label);
 
@@ -1749,8 +1749,8 @@ _rut_button_free (void *object)
 }
 
 RutRefCountableVTable _rut_button_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_button_free
 };
 

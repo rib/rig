@@ -81,10 +81,10 @@ _rut_inspector_free (void *object)
   RutInspector *inspector = object;
   int i;
 
-  rut_ref_countable_unref (inspector->context);
+  rut_refable_unref (inspector->context);
 
   if (rut_object_is (inspector->object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    rut_ref_countable_unref (inspector->object);
+    rut_refable_unref (inspector->object);
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -92,8 +92,8 @@ _rut_inspector_free (void *object)
 
       rut_graphable_remove_child (prop_data->control);
       rut_graphable_remove_child (prop_data->transform);
-      rut_ref_countable_unref (prop_data->control);
-      rut_ref_countable_unref (prop_data->transform);
+      rut_refable_unref (prop_data->control);
+      rut_refable_unref (prop_data->transform);
     }
 
   g_free (inspector->prop_data);
@@ -102,8 +102,8 @@ _rut_inspector_free (void *object)
 }
 
 RutRefCountableVTable _rut_inspector_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_inspector_free
 };
 
@@ -409,9 +409,9 @@ rut_inspector_new (RutContext *context,
     }
 
   inspector->ref_count = 1;
-  inspector->context = rut_ref_countable_ref (context);
+  inspector->context = rut_refable_ref (context);
   if (rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    inspector->object = rut_ref_countable_ref (object);
+    inspector->object = rut_refable_ref (object);
   else
     inspector->object = object;
   inspector->property_changed_cb = user_property_changed_cb;

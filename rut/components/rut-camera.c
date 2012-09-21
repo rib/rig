@@ -127,15 +127,15 @@ _rut_camera_free (void *object)
   cogl_object_unref (camera->fb);
 
   for (l = camera->input_regions; l; l = l->next)
-    rut_ref_countable_unref (l->data);
+    rut_refable_unref (l->data);
   g_list_free (camera->input_regions);
 
   g_slice_free (RutCamera, object);
 }
 
 RutRefCountableVTable _rut_camera_ref_countable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_camera_free
 };
 
@@ -340,7 +340,7 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   int width = cogl_framebuffer_get_width (framebuffer);
   int height = cogl_framebuffer_get_height (framebuffer);
 
-  camera->ctx = rut_ref_countable_ref (ctx);
+  camera->ctx = rut_refable_ref (ctx);
 
   rut_object_init (&camera->_parent, &rut_camera_type);
 

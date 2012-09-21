@@ -31,7 +31,7 @@ rig_path_free (RigPath *path)
                    rig_node_free,
                    GUINT_TO_POINTER (path->type));
   g_queue_clear (&path->nodes);
-  rut_ref_countable_unref (path->ctx);
+  rut_refable_unref (path->ctx);
   g_slice_free (RigPath, path);
 }
 
@@ -41,7 +41,7 @@ rig_path_new (RutContext *ctx,
 {
   RigPath *path = g_slice_new (RigPath);
 
-  path->ctx = rut_ref_countable_ref (ctx);
+  path->ctx = rut_refable_ref (ctx);
 
   path->type = type;
 

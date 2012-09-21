@@ -34,8 +34,8 @@ _diamond_slice_free (void *object)
 }
 
 static RutRefCountableVTable _diamond_slice_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _diamond_slice_free
 };
 
@@ -313,7 +313,7 @@ rut_diamond_new (RutContext *ctx,
   rut_object_init (&diamond->_parent, &rut_diamond_type);
   diamond->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  diamond->ctx = rut_ref_countable_ref (ctx);
+  diamond->ctx = rut_refable_ref (ctx);
 
   diamond->size = size;
 

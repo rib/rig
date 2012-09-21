@@ -56,7 +56,7 @@ rut_material_new_full (RutContext *ctx,
     rut_color_init_from_4f (&material->color, 1, 1, 1, 1);
 
   if (asset)
-    material->asset = rut_ref_countable_ref (asset);
+    material->asset = rut_refable_ref (asset);
 
   return material;
 }

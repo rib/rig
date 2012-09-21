@@ -80,8 +80,8 @@ _rut_asset_free (void *object)
 }
 
 static RutRefCountableVTable _rut_asset_ref_countable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_asset_free
 };
 

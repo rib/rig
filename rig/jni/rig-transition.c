@@ -84,7 +84,7 @@ rig_transition_new (RutContext *context,
   transition = g_slice_new0 (RigTransition);
 
   transition->id = id;
-  transition->context = rut_ref_countable_ref (context);
+  transition->context = rut_refable_ref (context);
 
   rut_object_init (&transition->_parent, &rig_transition_type);
 
@@ -115,7 +115,7 @@ rig_transition_free (RigTransition *transition)
 
   g_hash_table_destroy (transition->properties);
 
-  rut_ref_countable_unref (transition->context);
+  rut_refable_unref (transition->context);
 
   g_slice_free (RigTransition, transition);
 }

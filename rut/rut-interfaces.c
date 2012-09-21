@@ -5,7 +5,7 @@
 #include "components/rut-camera.h"
 
 void *
-rut_ref_countable_simple_ref (void *object)
+rut_refable_simple_ref (void *object)
 {
   int *ref_count = rut_object_get_properties (object,
                                                RUT_INTERFACE_ID_REF_COUNTABLE);
@@ -14,7 +14,7 @@ rut_ref_countable_simple_ref (void *object)
 }
 
 void
-rut_ref_countable_simple_unref (void *object)
+rut_refable_simple_unref (void *object)
 {
   int *ref_count = rut_object_get_properties (object,
                                                RUT_INTERFACE_ID_REF_COUNTABLE);
@@ -28,7 +28,7 @@ rut_ref_countable_simple_unref (void *object)
 }
 
 void *
-rut_ref_countable_ref (void *object)
+rut_refable_ref (void *object)
 {
   RutObject *obj = object;
   const RutType *type = rut_object_get_type (obj);
@@ -40,7 +40,7 @@ rut_ref_countable_ref (void *object)
 }
 
 void
-rut_ref_countable_unref (void *object)
+rut_refable_unref (void *object)
 {
   RutObject *obj = object;
   const RutType *type = rut_object_get_type (obj);
@@ -91,7 +91,7 @@ rut_graphable_add_child (RutObject *parent, RutObject *child)
     parent_vtable->child_added (parent, child);
 
   /* XXX: maybe this should be deferred to parent_vtable->child_added ? */
-  g_queue_push_tail (&parent_props->children, rut_ref_countable_ref (child));
+  g_queue_push_tail (&parent_props->children, rut_refable_ref (child));
 }
 
 void
@@ -108,7 +108,7 @@ rut_graphable_remove_child (RutObject *child)
   parent_props = rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
 
   g_queue_remove (&parent_props->children, child);
-  rut_ref_countable_unref (child);
+  rut_refable_unref (child);
   child_props->parent = NULL;
 }
 

@@ -166,7 +166,7 @@ rut_shell_get_context (RutShell *shell)
 static void
 _rut_shell_fini (RutShell *shell)
 {
-  rut_ref_countable_simple_unref (shell->rut_ctx);
+  rut_refable_simple_unref (shell->rut_ctx);
 }
 
 struct _RutInputEvent
@@ -447,7 +447,7 @@ _rut_input_region_free (void *object)
   switch (region->transform.any.type)
     {
     case RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE:
-      rut_ref_countable_simple_unref (region->transform.graphable.graphable);
+      rut_refable_simple_unref (region->transform.graphable.graphable);
       break;
     default:
       break;
@@ -458,8 +458,8 @@ _rut_input_region_free (void *object)
 }
 
 static RutRefCountableVTable _rut_input_region_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_input_region_free
 };
 
@@ -575,7 +575,7 @@ rut_input_region_set_graphable (RutInputRegion *region,
                                 RutObject *graphable)
 {
   region->transform.any.type = RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE;
-  region->transform.graphable.graphable = rut_ref_countable_simple_ref (graphable);
+  region->transform.graphable.graphable = rut_refable_simple_ref (graphable);
 }
 #endif
 
@@ -639,10 +639,10 @@ rut_shell_add_input_camera (RutShell *shell,
 {
   InputCamera *input_camera = g_slice_new (InputCamera);
 
-  input_camera->camera = rut_ref_countable_ref (camera);
+  input_camera->camera = rut_refable_ref (camera);
 
   if (scenegraph)
-    input_camera->scenegraph = rut_ref_countable_ref (scenegraph);
+    input_camera->scenegraph = rut_refable_ref (scenegraph);
   else
     input_camera->scenegraph = NULL;
 
@@ -652,9 +652,9 @@ rut_shell_add_input_camera (RutShell *shell,
 static void
 input_camera_free (InputCamera *input_camera)
 {
-  rut_ref_countable_unref (input_camera->camera);
+  rut_refable_unref (input_camera->camera);
   if (input_camera->scenegraph)
-    rut_ref_countable_unref (input_camera->scenegraph);
+    rut_refable_unref (input_camera->scenegraph);
   g_slice_free (InputCamera, input_camera);
 }
 
@@ -1352,7 +1352,7 @@ _rut_shell_remove_grab_link (RutShell *shell,
   RutShellGrab *grab = link->data;
 
   if (grab->camera)
-    rut_ref_countable_unref (grab->camera);
+    rut_refable_unref (grab->camera);
   g_slice_free (RutShellGrab, grab);
   shell->grabs = g_list_delete_link (shell->grabs, link);
 }
@@ -1368,7 +1368,7 @@ _rut_shell_free (void *object)
   rut_closure_list_disconnect_all (&shell->input_cb_list);
 
   for (l = shell->input_regions; l; l = l->next)
-    rut_ref_countable_unref (l->data);
+    rut_refable_unref (l->data);
   g_list_free (shell->input_regions);
 
   while (shell->grabs)
@@ -1382,8 +1382,8 @@ _rut_shell_free (void *object)
 }
 
 RutRefCountableVTable _rut_shell_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_shell_free
 };
 
@@ -1711,7 +1711,7 @@ rut_shell_grab_input (RutShell *shell,
   grab->user_data = user_data;
 
   if (camera)
-    grab->camera = rut_ref_countable_ref (camera);
+    grab->camera = rut_refable_ref (camera);
   else
     grab->camera = NULL;
 
@@ -1768,15 +1768,15 @@ _rut_scroll_bar_free (void *object)
 {
   RutScrollBar *scroll_bar = object;
 
-  rut_ref_countable_simple_unref (scroll_bar->background);
-  rut_ref_countable_simple_unref (scroll_bar->handle);
+  rut_refable_simple_unref (scroll_bar->background);
+  rut_refable_simple_unref (scroll_bar->handle);
 
   g_slice_free (RutScrollBar, object);
 }
 
 static RutRefCountableVTable _rut_scroll_bar_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_scroll_bar_free
 };
 
@@ -2020,13 +2020,13 @@ _rut_slider_free (void *object)
 {
   RutSlider *slider = object;
 
-  rut_ref_countable_simple_unref (slider->input_region);
+  rut_refable_simple_unref (slider->input_region);
 
   rut_graphable_remove_child (slider->handle_transform);
 
-  rut_ref_countable_simple_unref (slider->handle_transform);
-  rut_ref_countable_simple_unref (slider->handle);
-  rut_ref_countable_simple_unref (slider->background);
+  rut_refable_simple_unref (slider->handle_transform);
+  rut_refable_simple_unref (slider->handle);
+  rut_refable_simple_unref (slider->background);
 
   rut_simple_introspectable_destroy (slider);
 
@@ -2034,8 +2034,8 @@ _rut_slider_free (void *object)
 }
 
 RutRefCountableVTable _rut_slider_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_slider_free
 };
 

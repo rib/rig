@@ -272,14 +272,14 @@ _rut_text_buffer_free (void *object)
 
   rut_simple_introspectable_destroy (buffer);
 
-  rut_ref_countable_simple_unref (buffer->ctx);
+  rut_refable_simple_unref (buffer->ctx);
 
   g_slice_free (RutTextBuffer, buffer);
 }
 
 static RutRefCountableVTable _rut_text_buffer_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_text_buffer_free
 };
 
@@ -320,7 +320,7 @@ rut_text_buffer_new (RutContext *ctx)
   rut_list_init (&buffer->insert_text_cb_list);
   rut_list_init (&buffer->delete_text_cb_list);
 
-  buffer->ctx = rut_ref_countable_ref (ctx);
+  buffer->ctx = rut_refable_ref (ctx);
 
   buffer->ref_count = 1;
 

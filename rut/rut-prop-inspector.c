@@ -95,7 +95,7 @@ _rut_prop_inspector_free (void *object)
   RutPropInspector *inspector = object;
   int i;
 
-  rut_ref_countable_unref (inspector->context);
+  rut_refable_unref (inspector->context);
 
   for (i = 0; i < inspector->n_controls; i++)
     {
@@ -103,16 +103,16 @@ _rut_prop_inspector_free (void *object)
 
       rut_graphable_remove_child (control->control);
       rut_graphable_remove_child (control->transform);
-      rut_ref_countable_unref (control->control);
-      rut_ref_countable_unref (control->transform);
+      rut_refable_unref (control->control);
+      rut_refable_unref (control->transform);
     }
 
   g_slice_free (RutPropInspector, inspector);
 }
 
 RutRefCountableVTable _rut_prop_inspector_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_prop_inspector_free
 };
 
@@ -554,7 +554,7 @@ rut_prop_inspector_new (RutContext *ctx,
     }
 
   inspector->ref_count = 1;
-  inspector->context = rut_ref_countable_ref (ctx);
+  inspector->context = rut_refable_ref (ctx);
   inspector->target_prop = property;
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->user_data = user_data;

@@ -136,8 +136,8 @@ _rut_toggle_free (void *object)
 }
 
 RutRefCountableVTable _rut_toggle_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_toggle_free
 };
 

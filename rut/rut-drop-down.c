@@ -281,7 +281,7 @@ _rut_drop_down_free (void *object)
 {
   RutDropDown *drop = object;
 
-  rut_ref_countable_unref (drop->context);
+  rut_refable_unref (drop->context);
   cogl_object_unref (drop->bg_pipeline);
   cogl_object_unref (drop->highlighted_bg_pipeline);
 
@@ -290,7 +290,7 @@ _rut_drop_down_free (void *object)
   rut_drop_down_clear_layouts (drop);
 
   rut_graphable_remove_child (drop->input_region);
-  rut_ref_countable_unref (drop->input_region);
+  rut_refable_unref (drop->input_region);
 
   rut_simple_introspectable_destroy (drop);
 
@@ -304,8 +304,8 @@ _rut_drop_down_free (void *object)
 }
 
 RutRefCountableVTable _rut_drop_down_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_drop_down_free
 };
 
@@ -944,7 +944,7 @@ rut_drop_down_new (RutContext *context)
     }
 
   drop->ref_count = 1;
-  drop->context = rut_ref_countable_ref (context);
+  drop->context = rut_refable_ref (context);
 
   /* Set a dummy value so we can assume that value_index is always a
    * valid index */

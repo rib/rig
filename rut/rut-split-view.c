@@ -145,7 +145,7 @@ _rut_split_view_free (void *object)
 {
   RutSplitView *split_view = object;
 
-  rut_ref_countable_unref (split_view->context);
+  rut_refable_unref (split_view->context);
 
 #if 0
   cogl_object_unref (split_view->background_pipeline);
@@ -153,12 +153,12 @@ _rut_split_view_free (void *object)
   cogl_object_unref (split_view->split_pipeline);
 
   if (split_view->child0)
-    rut_ref_countable_unref (split_view->child0);
+    rut_refable_unref (split_view->child0);
   if (split_view->child1)
-    rut_ref_countable_unref (split_view->child1);
+    rut_refable_unref (split_view->child1);
 
   rut_graphable_remove_child (split_view->child1_transform);
-  rut_ref_countable_unref (split_view->child1_transform);
+  rut_refable_unref (split_view->child1_transform);
 
   rut_simple_introspectable_destroy (split_view);
 
@@ -166,8 +166,8 @@ _rut_split_view_free (void *object)
 }
 
 RutRefCountableVTable _rut_split_view_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_split_view_free
 };
 
@@ -648,7 +648,7 @@ rut_split_view_new (RutContext *context,
 
   split_view->ref_count = 1;
 
-  split_view->context = rut_ref_countable_ref (context);
+  split_view->context = rut_refable_ref (context);
 
 #if 0
   split_view->background_pipeline = cogl_pipeline_new (context->cogl_context);
@@ -732,7 +732,7 @@ rut_split_view_join (RutSplitView *split_view, RutSplitViewJoin join)
   if (split_view->child1)
     {
       rut_graphable_remove_child (split_view->child1_transform);
-      rut_ref_countable_unref (split_view->child1);
+      rut_refable_unref (split_view->child1);
     }
 
   split_view->split = 0;
@@ -757,7 +757,7 @@ rut_split_view_set_child0 (RutSplitView *split_view,
   if (child0)
     rut_graphable_add_child (split_view, child0);
 
-  split_view->child0 = rut_ref_countable_ref (child0);
+  split_view->child0 = rut_refable_ref (child0);
 }
 
 void
@@ -773,7 +773,7 @@ rut_split_view_set_child1 (RutSplitView *split_view,
   if (child1)
     rut_graphable_add_child (split_view->child1_transform, child1);
 
-  split_view->child1 = rut_ref_countable_ref (child1);
+  split_view->child1 = rut_refable_ref (child1);
 }
 
 void

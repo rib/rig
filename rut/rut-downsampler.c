@@ -55,7 +55,7 @@ _rut_downsampler_reset (RutDownsampler *downsampler)
 
   if (downsampler->camera)
     {
-      rut_ref_countable_unref (downsampler->camera);
+      rut_refable_unref (downsampler->camera);
       downsampler->camera = NULL;
     }
 }

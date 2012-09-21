@@ -306,7 +306,7 @@ rut_property_box (RutProperty *property,
       {
         RutObject *obj = rut_property_get_object (property);
         if (obj)
-          boxed->d.object_val = rut_ref_countable_ref (obj);
+          boxed->d.object_val = rut_refable_ref (obj);
         else
           boxed->d.object_val = NULL;
         break;
@@ -349,7 +349,7 @@ void
 rut_boxed_destroy (RutBoxed *boxed)
 {
   if (boxed->type == RUT_PROPERTY_TYPE_OBJECT && boxed->d.object_val)
-    rut_ref_countable_unref (boxed->d.object_val);
+    rut_refable_unref (boxed->d.object_val);
   else if (boxed->type == RUT_PROPERTY_TYPE_TEXT)
     g_free (boxed->d.text_val);
 }

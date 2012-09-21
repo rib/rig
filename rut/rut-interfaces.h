@@ -23,16 +23,16 @@ typedef struct _RutRefCountableVTable
 } RutRefCountableVTable;
 
 void *
-rut_ref_countable_simple_ref (void *object);
+rut_refable_simple_ref (void *object);
 
 void
-rut_ref_countable_simple_unref (void *object);
+rut_refable_simple_unref (void *object);
 
 void *
-rut_ref_countable_ref (void *object);
+rut_refable_ref (void *object);
 
 void
-rut_ref_countable_unref (void *object);
+rut_refable_unref (void *object);
 
 /*
  *

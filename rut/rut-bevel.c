@@ -77,7 +77,7 @@ _rut_bevel_free (void *object)
 {
   RutBevel *bevel = object;
 
-  rut_ref_countable_ref (bevel->ctx);
+  rut_refable_ref (bevel->ctx);
 
   if (bevel->pipeline)
     cogl_object_unref (bevel->pipeline);
@@ -90,8 +90,8 @@ _rut_bevel_free (void *object)
 }
 
 RutRefCountableVTable _rut_bevel_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_bevel_free
 };
 
@@ -290,7 +290,7 @@ rut_bevel_new (RutContext *context,
   rut_object_init (&bevel->_parent, &rut_bevel_type);
 
   bevel->ref_count = 1;
-  bevel->ctx = rut_ref_countable_ref (context);
+  bevel->ctx = rut_refable_ref (context);
 
   rut_simple_introspectable_init (bevel,
                                   _rut_bevel_prop_specs,

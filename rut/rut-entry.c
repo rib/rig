@@ -82,7 +82,7 @@ _rut_entry_free (void *object)
 {
   RutEntry *entry = object;
 
-  rut_ref_countable_ref (entry->ctx);
+  rut_refable_ref (entry->ctx);
 
   if (entry->pipeline)
     cogl_object_unref (entry->pipeline);
@@ -92,14 +92,14 @@ _rut_entry_free (void *object)
   rut_simple_introspectable_destroy (entry);
 
   rut_graphable_remove_child (entry->text);
-  rut_ref_countable_unref (entry->text);
+  rut_refable_unref (entry->text);
 
   g_slice_free (RutEntry, entry);
 }
 
 RutRefCountableVTable _rut_entry_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_entry_free
 };
 
@@ -296,7 +296,7 @@ rut_entry_new (RutContext *ctx)
   rut_object_init (&entry->_parent, &rut_entry_type);
 
   entry->ref_count = 1;
-  entry->ctx = rut_ref_countable_ref (ctx);
+  entry->ctx = rut_refable_ref (ctx);
 
   rut_simple_introspectable_init (entry,
                                   _rut_entry_prop_specs,

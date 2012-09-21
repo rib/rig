@@ -55,7 +55,7 @@ _rut_timeline_free (void *object)
 
   timeline->ctx->timelines =
     g_slist_remove (timeline->ctx->timelines, timeline);
-  rut_ref_countable_unref (timeline->ctx);
+  rut_refable_unref (timeline->ctx);
 
   g_timer_destroy (timeline->gtimer);
 
@@ -65,8 +65,8 @@ _rut_timeline_free (void *object)
 }
 
 static RutRefCountableVTable _rut_timeline_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_timeline_free
 };
 
@@ -117,7 +117,7 @@ rut_timeline_new (RutContext *ctx,
                                   _rut_timeline_prop_specs,
                                   timeline->properties);
 
-  timeline->ctx = rut_ref_countable_ref (ctx);
+  timeline->ctx = rut_refable_ref (ctx);
   ctx->timelines = g_slist_prepend (ctx->timelines, timeline);
 
   return timeline;

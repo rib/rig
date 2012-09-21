@@ -1495,7 +1495,7 @@ add_component_inspector_cb (RutComponent *component,
   float width, height;
   RutObject *doc_node;
 
-  rut_ref_countable_unref (inspector);
+  rut_refable_unref (inspector);
 
   rut_sizable_get_preferred_width (inspector,
                                    -1, /* for height */
@@ -1512,7 +1512,7 @@ add_component_inspector_cb (RutComponent *component,
   rut_transform_translate (transform, 0, state->y_offset, 0);
   state->y_offset += height;
   rut_graphable_add_child (doc_node, transform);
-  rut_ref_countable_unref (transform);
+  rut_refable_unref (transform);
 
   data->component_inspectors =
     g_list_prepend (data->component_inspectors, inspector);
@@ -1561,7 +1561,7 @@ update_inspector (RigData *data)
 
       doc_node = rut_ui_viewport_get_doc_node (data->tool_vp);
       rut_graphable_add_child (doc_node, data->inspector);
-      rut_ref_countable_unref (data->inspector);
+      rut_refable_unref (data->inspector);
 
       component_add_state.data = data;
       component_add_state.y_offset = height + 10;
@@ -3312,7 +3312,7 @@ init (RutShell *shell, void *user_data)
       rut_transform_translate (transform, x, 5, 0);
       rut_text_set_text (text, "File");
       rut_graphable_add_child (graph, transform);
-      rut_ref_countable_unref (transform);
+      rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
       x += width + 30;
 
@@ -3321,7 +3321,7 @@ init (RutShell *shell, void *user_data)
       rut_transform_translate (transform, x, 5, 0);
       rut_text_set_text (text, "Edit");
       rut_graphable_add_child (graph, transform);
-      rut_ref_countable_unref (transform);
+      rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
       x += width + 30;
 
@@ -3330,7 +3330,7 @@ init (RutShell *shell, void *user_data)
       rut_transform_translate (transform, x, 5, 0);
       rut_text_set_text (text, "Help");
       rut_graphable_add_child (graph, transform);
-      rut_ref_countable_unref (transform);
+      rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
       x += width + 30;
 
@@ -3589,8 +3589,8 @@ fini (RutShell *shell, void *user_data)
   RigData *data = user_data;
   int i;
 
-  rut_ref_countable_unref (data->camera);
-  rut_ref_countable_unref (data->root);
+  rut_refable_unref (data->camera);
+  rut_refable_unref (data->root);
 
   for (i = 0; i < RUT_DATA_N_PROPS; i++)
     rut_property_destroy (&data->properties[i]);
@@ -3604,7 +3604,7 @@ fini (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      rut_ref_countable_unref (data->timeline_vp);
+      rut_refable_unref (data->timeline_vp);
       cogl_object_unref (data->grid_prim);
       cogl_object_unref (data->light_icon);
     }
@@ -3764,9 +3764,9 @@ add_asset_icon (RigData *data,
 
   //rut_input_region_set_graphable (region, nine_slice);
 
-  rut_ref_countable_unref (transform);
-  rut_ref_countable_unref (nine_slice);
-  rut_ref_countable_unref (region);
+  rut_refable_unref (transform);
+  rut_refable_unref (nine_slice);
+  rut_refable_unref (region);
 }
 
 static void
@@ -3797,7 +3797,7 @@ rig_update_asset_list (RigData *data)
 
   doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
   rut_graphable_add_child (doc_node, data->assets_list);
-  rut_ref_countable_unref (data->assets_list);
+  rut_refable_unref (data->assets_list);
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
     add_asset_icon (data, l->data, 70 + 110 * i);
@@ -3816,7 +3816,7 @@ rig_free_ux (RigData *data)
   data->transitions = NULL;
 
   for (l = data->assets; l; l = l->next)
-    rut_ref_countable_unref (l->data);
+    rut_refable_unref (l->data);
   g_list_free (data->assets);
   data->assets = NULL;
 

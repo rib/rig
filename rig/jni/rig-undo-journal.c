@@ -97,7 +97,7 @@ rig_undo_journal_log_move (RigUndoJournal *journal,
   undo_redo->mergable = mergable;
 
   prop_change = &undo_redo->d.prop_change;
-  prop_change->entity = rut_ref_countable_ref (entity);
+  prop_change->entity = rut_refable_ref (entity);
   prop_change->property = position;
 
   prop_change->value0.type = RUT_PROPERTY_TYPE_VEC3;
@@ -151,7 +151,7 @@ rig_undo_journal_copy_property_and_log (RigUndoJournal *journal,
       rut_property_box (source_prop, &prop_change->value1);
 
       prop_change = &undo_redo->d.prop_change;
-      prop_change->entity = rut_ref_countable_ref (entity);
+      prop_change->entity = rut_refable_ref (entity);
       prop_change->property = target_prop;
 
       rut_property_set_boxed (&journal->data->ctx->property_ctx,
@@ -183,7 +183,7 @@ undo_redo_prop_change_invert (UndoRedo *undo_redo_src)
   undo_redo_inverse->op = undo_redo_src->op;
   undo_redo_inverse->mergable = FALSE;
 
-  inverse->entity = rut_ref_countable_ref (src->entity);
+  inverse->entity = rut_refable_ref (src->entity);
   inverse->property = src->property;
   inverse->value0 = src->value1;
   inverse->value1 = src->value0;
@@ -195,7 +195,7 @@ static void
 undo_redo_prop_change_free (UndoRedo *undo_redo)
 {
   UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
-  rut_ref_countable_unref (prop_change->entity);
+  rut_refable_unref (prop_change->entity);
   g_slice_free (UndoRedo, undo_redo);
 }
 

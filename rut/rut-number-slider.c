@@ -302,7 +302,7 @@ _rut_number_slider_free (void *object)
 
   rut_number_slider_remove_text (slider);
 
-  rut_ref_countable_unref (slider->context);
+  rut_refable_unref (slider->context);
   cogl_object_unref (slider->bg_pipeline);
   cogl_object_unref (slider->selected_bg_pipeline);
 
@@ -311,7 +311,7 @@ _rut_number_slider_free (void *object)
   rut_number_slider_clear_layout (slider);
 
   rut_graphable_remove_child (slider->input_region);
-  rut_ref_countable_unref (slider->input_region);
+  rut_refable_unref (slider->input_region);
 
   rut_simple_introspectable_destroy (slider);
 
@@ -321,8 +321,8 @@ _rut_number_slider_free (void *object)
 }
 
 RutRefCountableVTable _rut_number_slider_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_number_slider_free
 };
 
@@ -679,10 +679,10 @@ rut_number_slider_remove_text (RutNumberSlider *slider)
   if (slider->text)
     {
       rut_graphable_remove_child (slider->text);
-      rut_ref_countable_unref (slider->text);
+      rut_refable_unref (slider->text);
 
       rut_graphable_remove_child (slider->text_transform);
-      rut_ref_countable_unref (slider->text_transform);
+      rut_refable_unref (slider->text_transform);
 
       rut_shell_ungrab_input (slider->context->shell,
                               rut_number_slider_text_grab_cb,
@@ -913,7 +913,7 @@ rut_number_slider_new (RutContext *context)
     }
 
   slider->ref_count = 1;
-  slider->context = rut_ref_countable_ref (context);
+  slider->context = rut_refable_ref (context);
   slider->step = 1.0f;
   slider->decimal_places = 2;
 

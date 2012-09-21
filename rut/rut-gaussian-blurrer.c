@@ -258,8 +258,8 @@ void
 rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer)
 {
   _rut_gaussian_blurrer_free_buffers (blurrer);
-  rut_ref_countable_unref (blurrer->x_pass_camera);
-  rut_ref_countable_unref (blurrer->y_pass_camera);
+  rut_refable_unref (blurrer->x_pass_camera);
+  rut_refable_unref (blurrer->y_pass_camera);
   g_slice_free (RutGaussianBlurrer, blurrer);
 }
 

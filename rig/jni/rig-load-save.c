@@ -1093,7 +1093,7 @@ parse_start_element (GMarkupParseContext *context,
                            G_MARKUP_ERROR,
                            G_MARKUP_ERROR_INVALID_CONTENT,
                            "Invalid parent id referenced in entity element");
-              rut_ref_countable_unref (entity);
+              rut_refable_unref (entity);
               return;
             }
 

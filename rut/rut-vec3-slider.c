@@ -94,24 +94,24 @@ _rut_vec3_slider_free (void *object)
   int i;
 
   rut_graphable_remove_child (slider->label);
-  rut_ref_countable_unref (slider->label);
+  rut_refable_unref (slider->label);
   rut_graphable_remove_child (slider->label_transform);
-  rut_ref_countable_unref (slider->label_transform);
+  rut_refable_unref (slider->label_transform);
 
   for (i = 0; i < 3; i++)
     {
       RutVec3SliderControl *control = slider->controls + i;
 
       rut_graphable_remove_child (control->slider);
-      rut_ref_countable_unref (control->slider);
+      rut_refable_unref (control->slider);
 
       rut_graphable_remove_child (control->transform);
-      rut_ref_countable_unref (control->transform);
+      rut_refable_unref (control->transform);
     }
 
   cogl_object_unref (slider->border_pipeline);
 
-  rut_ref_countable_unref (slider->context);
+  rut_refable_unref (slider->context);
 
   rut_simple_introspectable_destroy (slider);
 
@@ -119,8 +119,8 @@ _rut_vec3_slider_free (void *object)
 }
 
 RutRefCountableVTable _rut_vec3_slider_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_vec3_slider_free
 };
 
@@ -394,7 +394,7 @@ rut_vec3_slider_new (RutContext *context)
     }
 
   slider->ref_count = 1;
-  slider->context = rut_ref_countable_ref (context);
+  slider->context = rut_refable_ref (context);
 
   rut_object_init (&slider->_parent, &rut_vec3_slider_type);
 

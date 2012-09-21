@@ -3081,8 +3081,8 @@ rut_text_add_move_binding (RutBindingPool  *pool,
 #endif
 
 RutRefCountableVTable _rut_text_ref_countable_vtable = {
-  rut_ref_countable_simple_ref,
-  rut_ref_countable_simple_unref,
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
   _rut_text_free
 };
 
@@ -3273,7 +3273,7 @@ get_buffer (RutText *text)
       RutTextBuffer *buffer;
       buffer = rut_text_buffer_new (text->ctx);
       rut_text_set_buffer (text, buffer);
-      rut_ref_countable_simple_unref (buffer);
+      rut_refable_simple_unref (buffer);
     }
 
   return text->buffer;
@@ -3442,12 +3442,12 @@ rut_text_set_buffer (RutText *text,
                      RutTextBuffer *buffer)
 {
   if (buffer)
-    rut_ref_countable_simple_ref (buffer);
+    rut_refable_simple_ref (buffer);
 
   if (text->buffer)
     {
       buffer_disconnect_signals (text);
-      rut_ref_countable_simple_unref (text->buffer);
+      rut_refable_simple_unref (text->buffer);
     }
 
   text->buffer = buffer;
