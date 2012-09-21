@@ -1,149 +1,42 @@
+include $(top_srcdir)/build/autotools/Makefile.am.silent
 
-lib_LTLIBRARIES = librig.la
+INCLUDES = \
+	-I$(top_srcdir) \
+	-I$(top_srcdir)/rut \
+	-I$(top_builddir)/rut
 
-components_source_h = \
-    components/rig-animation-clip.h \
-    components/rig-camera.h \
-    components/rig-light.h \
-    components/rig-mesh.h \
-    components/rig-material.h \
-    components/rig-diamond.h
+AM_CFLAGS = \
+	$(RIG_DEP_CFLAGS) \
+	$(RIG_EXTRA_CFLAGS) \
+	-DRIG_EXAMPLES_DATA=\""$(abs_top_srcdir)/examples/"\" \
+	-DRIG_SHARE_DIR=\"$(datadir)/\"
 
-source_h = \
-    $(components_source_h) \
-    mash-data.h \
-    mash-data-loader.h \
-    mash-ply-loader.h \
-    rig-color.h \
-    rig-entity.h \
-    rig-components.h \
-    rig-type.h \
-    rig-object.h \
-    rig-property.h \
-    rig-types.h \
-    rig-interfaces.h \
-    rig-planes.h \
-    rig-timeline.h \
-    rig-display-list.h \
-    rig.h \
-    rig-arcball.h \
-    rig-bitmask.h \
-    rig-shell.h \
-    rig-keysyms.h \
-    rig-memory-stack.h \
-    rig-global.h \
-    rig-util.h \
-    rig-text-buffer.h \
-    rig-text.h \
-    rig-tool.h \
-    rig-geometry.h \
-    rig-context.h \
-    rig-number-slider.h \
-    rig-vec3-slider.h \
-    rig-paintable.h \
-    rig-drop-down.h \
-    rig-inspector.h \
-    rig-prop-inspector.h \
-    rig-closure.h \
-    rig-asset.h \
-    rig-bevel.h \
-    rig-split-view.h \
-    rig-stack.h \
-    rig-entry.h \
-    rig-gaussian-blurrer.h \
-    rig-downsampler.h \
-    rig-toggle.h \
-    rig-dof-effect.h
+AM_CPPFLAGS = \
+	-DG_DISABLE_SINGLE_INCLUDES \
+	-DCOGL_DISABLE_DEPRECATED
 
-librig_la_SOURCES = \
-    components/rig-animation-clip.c \
-    components/rig-camera.c \
-    components/rig-light.c \
-    components/rig-mesh.c \
-    components/rig-material.c \
-    components/rig-diamond.c \
-    mash-data.c \
-    mash-data-loader.c \
-    mash-ply-loader.c \
-    rply.c \
-    rply.h \
-    color-table.h \
-    rig-color.c \
-    rig-entity.c \
-    rig-type.c \
-    rig-object.c \
-    rig-property.c \
-    rig-interfaces.c \
-    rig.c \
-    rig-arcball.c \
-    rig-transform-private.h \
-    rig-camera-private.h \
-    rig-volume.c \
-    rig-volume-private.h \
-    rig-planes.c \
-    rig-shell.c \
-    rig-bitmask.h \
-    rig-bitmask.c \
-    rig-flags.h \
-    rig-memory-stack.c \
-    rig-list.c \
-    rig-list.h \
-    rig-util.c \
-    rig-timeline.c \
-    rig-display-list.c \
-    rig-text-buffer.c \
-    rig-text.c \
-    rig-tool.c \
-    rig-geometry.c \
-    rig-number-slider.c \
-    rig-vec3-slider.c \
-    rig-paintable.c \
-    rig-drop-down.c \
-    rig-inspector.c \
-    rig-prop-inspector.c \
-    rig-closure.c \
-    rig-asset.c \
-    rig-bevel.c \
-    rig-split-view.c \
-    rig-stack.c \
-    rig-entry.c \
-    rig-gaussian-blurrer.c \
-    rig-downsampler.c \
-    rig-toggle.c \
-    rig-dof-effect.c \
-    $(source_h)
+common_ldadd = \
+	$(RIG_DEP_LIBS) \
+	$(top_builddir)/rut/librut.la
 
-if !HAVE_ANDROID
-librig_la_SOURCES += \
-    rig-sdl-keysyms.c
+bin_PROGRAMS = rig
+
+rig_SOURCES = \
+	jni/main.c \
+	jni/rig-node.c \
+	jni/rig-node.h \
+	jni/rig-path.c \
+	jni/rig-path.h \
+	jni/rig-transition.c \
+	jni/rig-transition.h \
+	jni/rig-types-private.h \
+	jni/rig-load-save.h \
+	jni/rig-load-save.c
+
+if EDITOR_ENABLED
+rig_SOURCES += \
+	jni/rig-undo-journal.h \
+	jni/rig-undo-journal.c
 endif
 
-librig_la_LIBADD = \
-    @RIG_DEP_LIBS@ \
-    @RIG_EXTRA_LDFLAGS@
-librig_la_LDFLAGS = \
-    -no-undefined \
-    -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
-    -export-dynamic \
-    -export-symbols-regex "(^rig.*)|(^_rig_bitmask.*)"
-librig_la_CFLAGS = \
-    @RIG_DEP_CFLAGS@ \
-    @RIG_EXTRA_CFLAGS@
-librig_la_CPPFLAGS = \
-    -I$(top_srcdir) \
-    -I$(top_srcdir)/rig \
-    -DRIG_DATA_DIR=\""$(datadir)/"\"
-
-
-rig_headersdir =  $(includedir)/rig
-rig_headers_DATA = $(source_h)
-
-rig_components_headersdir =  $(includedir)/rig/components
-rig_components_headers_DATA = $(components_source_h)
-
-pc_files = rig.pc
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(pc_files)
-
-EXTRA_DIST = rig.pc.in
-DISTCLEANFILES = $(pc_files)
+rig_LDADD = $(common_ldadd)

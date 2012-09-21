@@ -66,7 +66,7 @@ m4_define([gtk_doc_req_version],        [1.13])
 
 
 AC_INIT(rig, [rig_version])
-AC_CONFIG_SRCDIR(rig/rig.c)
+AC_CONFIG_SRCDIR(rut/rut.c)
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/autotools])
 AC_CONFIG_HEADERS(config.h)
@@ -314,10 +314,9 @@ dnl Dah Da!
 dnl ================================================================
 AC_OUTPUT(
 Makefile
-rig/Makefile
-rig/rig.pc
+rut/Makefile
 data/Makefile
-editor/Makefile
+rig/Makefile
 )
 
 echo ""
