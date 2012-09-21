@@ -202,6 +202,16 @@ if test x"$enable_uninstalled" = xyes; then
         SHARE_UNINSTALLED_DIR,"`pwd`/rig/data",[path to source data dir])
 fi
 
+AC_ARG_ENABLE(editor,
+              AC_HELP_STRING([--disable-editor],
+			     [Disable building the interactive editor]),
+              [],
+	      [enable_editor=yes])
+AS_IF([test x"$enable_editor" = xyes],
+      [
+	AC_DEFINE(RIG_EDITOR_ENABLED, [1], [Whether to build the editor or not])
+      ])
+AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
 dnl ================================================================
 dnl Compiler stuff.
@@ -310,3 +320,13 @@ data/Makefile
 editor/Makefile
 )
 
+echo ""
+echo "Rig - $RIG_VERSION ($RIG_RELEASE_STATUS)"
+echo ""
+echo " • Editor: $enable_editor"
+echo ""
+echo " • Compiler options:"
+echo "        Rig debug: ${enable_debug}"
+echo "        Compiler flags: ${CFLAGS} ${RIG_EXTRA_CFLAGS}"
+echo "        Linker flags: ${LDFLAGS} ${RIG_EXTRA_LDFLAGS}"
+echo ""

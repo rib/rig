@@ -67,13 +67,18 @@ static RigPropertySpec rig_data_property_specs[] = {
 
 #ifndef __ANDROID__
 
+#ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
+#endif
+
 static char **_rig_handset_remaining_args = NULL;
 
 static const GOptionEntry rig_handset_entries[] =
 {
+#ifdef RIG_EDITOR_ENABLED
   { "device-mode", 'd', 0, 0,
     &_rig_in_device_mode, "Run in Device Mode" },
+#endif
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
     &_rig_handset_remaining_args, "Project" },
   { 0 }
@@ -919,6 +924,7 @@ paint_camera_entity (RigEntity *camera, PaintContext *paint_ctx)
                                            data->picking_ray);
         }
 
+#ifdef RIG_EDITOR_ENABLED
       if (!_rig_in_device_mode)
         {
           draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
@@ -929,6 +935,7 @@ paint_camera_entity (RigEntity *camera, PaintContext *paint_ctx)
               rig_tool_draw (data->tool, fb);
             }
         }
+#endif /* RIG_EDITOR_ENABLED */
 
       rig_camera_end_frame (camera_component);
     }
@@ -1226,6 +1233,7 @@ paint (RigShell *shell, void *user_data)
 
   rig_paint_ctx->camera = data->camera;
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       rig_camera_flush (data->camera);
@@ -1239,6 +1247,7 @@ paint (RigShell *shell, void *user_data)
        * pairs. */
       rig_camera_end_frame (data->camera);
     }
+#endif
 
   rig_paint_ctx->camera = data->camera;
   paint_camera_entity (data->light, &paint_ctx);
@@ -1246,6 +1255,7 @@ paint (RigShell *shell, void *user_data)
   rig_paint_ctx->camera = data->camera;
   paint_camera_entity (data->editor_camera, &paint_ctx);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       rig_paint_ctx->camera = data->timeline_camera;
@@ -1253,6 +1263,7 @@ paint (RigShell *shell, void *user_data)
       paint_timeline_camera (&paint_ctx);
       rig_camera_end_frame (rig_paint_ctx->camera);
     }
+#endif
 
 #if 0
   rig_paint_ctx->camera = data->editor_camera;
@@ -2437,6 +2448,7 @@ main_input_cb (RigInputEvent *event,
         }
 #endif
     }
+#ifdef RIG_EDITOR_ENABLED
   else if (!_rig_in_device_mode &&
            rig_input_event_get_type (event) == RIG_INPUT_EVENT_TYPE_KEY &&
            rig_key_event_get_action (event) == RIG_KEY_EVENT_ACTION_UP)
@@ -2471,6 +2483,7 @@ main_input_cb (RigInputEvent *event,
           break;
         }
     }
+#endif /* RIG_EDITOR_ENABLED */
 
   return RIG_INPUT_EVENT_STATUS_UNHANDLED;
 }
@@ -2550,10 +2563,12 @@ editor_input_region_cb (RigInputRegion *region,
                       RigInputEvent *event,
                       void *user_data)
 {
-  if (_rig_in_device_mode)
-    return device_mode_input_cb (event, user_data);
-  else
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
     return main_input_cb (event, user_data);
+  else
+#endif
+    return device_mode_input_cb (event, user_data);
 }
 
 void
@@ -2663,19 +2678,21 @@ allocate_main_area (RigData *data)
   float main_aspect;
   float device_scale;
 
-  if (_rig_in_device_mode)
-    {
-      CoglFramebuffer *fb = COGL_FRAMEBUFFER (data->onscreen);
-      data->main_width = cogl_framebuffer_get_width (fb);
-      data->main_height = cogl_framebuffer_get_height (fb);
-    }
-  else
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
     {
       rig_bevel_get_size (data->main_area_bevel, &data->main_width, &data->main_height);
       if (data->main_width <= 0)
         data->main_width = 10;
       if (data->main_height <= 0)
         data->main_height = 10;
+    }
+  else
+#endif /* RIG_EDITOR_ENABLED */
+    {
+      CoglFramebuffer *fb = COGL_FRAMEBUFFER (data->onscreen);
+      data->main_width = cogl_framebuffer_get_width (fb);
+      data->main_height = cogl_framebuffer_get_height (fb);
     }
 
   /* Update the window camera */
@@ -2772,6 +2789,7 @@ allocate_main_area (RigData *data)
     }
   }
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       rig_arcball_init (&data->arcball,
@@ -2782,6 +2800,7 @@ allocate_main_area (RigData *data)
                                data->main_height *
                                data->main_height) / 2);
     }
+#endif /* RIG_EDITOR_ENABLED */
 }
 
 static void
@@ -2802,11 +2821,14 @@ allocate (RigData *data)
   //data->main_width = data->width - data->left_bar_width - data->right_bar_width;
   //data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     rig_split_view_set_size (data->splits[0], data->width, data->height);
+#endif
 
   allocate_main_area (data);
 
+#ifdef RIG_EDITOR_ENABLED
   /* Setup projection for the timeline view */
   if (!_rig_in_device_mode)
     {
@@ -2842,6 +2864,7 @@ allocate (RigData *data)
       rig_ui_viewport_set_doc_scale_y (data->timeline_vp,
                                        (vp_height / DEVICE_HEIGHT));
     }
+#endif /* RIG_EDITOR_ENABLED */
 }
 
 static void
@@ -2927,13 +2950,16 @@ init (RigShell *shell, void *user_data)
                        &rig_data_property_specs[i],
                        data);
 
-  if (_rig_in_device_mode)
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
+  else
+#endif
     data->onscreen = cogl_onscreen_new (data->ctx->cogl_context,
                                         DEVICE_WIDTH / 2, DEVICE_HEIGHT / 2);
-  else
-    data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
   cogl_onscreen_show (data->onscreen);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       /* FIXME: On SDL this isn't taking affect if set before allocating
@@ -2941,11 +2967,13 @@ init (RigShell *shell, void *user_data)
       cogl_onscreen_set_resizable (data->onscreen, TRUE);
       cogl_onscreen_add_resize_handler (data->onscreen, data_onscreen_resize, data);
     }
+#endif
 
   fb = COGL_FRAMEBUFFER (data->onscreen);
   data->width = cogl_framebuffer_get_width (fb);
   data->height  = cogl_framebuffer_get_height (fb);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     data->undo_journal = rig_undo_journal_new (data);
 
@@ -2990,6 +3018,7 @@ init (RigShell *shell, void *user_data)
       cogl_object_unref (prim);
       cogl_object_unref (offscreen);
     }
+#endif /* RIG_EDITOR_ENABLED */
 
   /*
    * Shadow mapping
@@ -3035,6 +3064,7 @@ init (RigShell *shell, void *user_data)
                                                     CIRCLE_TEX_RADIUS /* radius */,
                                                     CIRCLE_TEX_PADDING /* padding */);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       data->grid_prim = rig_create_create_grid (data->ctx,
@@ -3043,10 +3073,12 @@ init (RigShell *shell, void *user_data)
                                                 100,
                                                 100);
     }
+#endif
 
   data->circle_node_attribute =
     rig_create_circle_fan_p2 (data->ctx, 20, &data->circle_node_n_verts);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       full_path = g_build_filename (RIG_SHARE_DIR, "light-bulb.png", NULL);
@@ -3061,6 +3093,7 @@ init (RigShell *shell, void *user_data)
 
       data->timeline_vp = rig_ui_viewport_new (data->ctx, 0, 0, NULL);
     }
+#endif
 
   data->device_transform = rig_transform_new (data->ctx, NULL);
 
@@ -3073,6 +3106,7 @@ init (RigShell *shell, void *user_data)
    */
   rig_shell_set_window_camera (shell, data->camera);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       data->timeline_camera = rig_camera_new (data->ctx, fb);
@@ -3081,6 +3115,7 @@ init (RigShell *shell, void *user_data)
       data->timeline_scale = 1;
       data->timeline_len = 20;
     }
+#endif
 
   data->scene = rig_graph_new (data->ctx, NULL);
 
@@ -3206,6 +3241,7 @@ init (RigShell *shell, void *user_data)
   rig_entity_rotate_y_axis (data->light, -20);
 #endif
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       RigMesh *mesh = rig_mesh_new_from_template (data->ctx, "cube");
@@ -3216,6 +3252,7 @@ init (RigShell *shell, void *user_data)
       rig_entity_set_scale (data->light_handle, 100);
       rig_entity_set_cast_shadow (data->light_handle, FALSE);
     }
+#endif
 
   light = rig_light_new ();
   rig_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
@@ -3247,6 +3284,7 @@ init (RigShell *shell, void *user_data)
                    //(data->main_transform = rig_transform_new (data->ctx, NULL)),
                    NULL);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       RigGraph *graph = rig_graph_new (data->ctx, NULL);
@@ -3403,22 +3441,12 @@ init (RigShell *shell, void *user_data)
       rig_split_view_set_split_offset (data->splits[3], 470);
       rig_split_view_set_split_offset (data->splits[4], 150);
     }
+#endif
 
   rig_shell_add_input_camera (shell, data->camera, data->root);
 
-  if (_rig_in_device_mode)
-    {
-      int width = cogl_framebuffer_get_width (fb);
-      int height = cogl_framebuffer_get_height (fb);
-
-      rig_camera_set_viewport (data->editor_camera_component,
-                               0, 0, width, height);
-
-      rig_input_region_set_rectangle (data->editor_input_region,
-                                      0, 0, width, height);
-
-    }
-  else
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
     {
       RigProperty *main_area_width =
         rig_introspectable_lookup_property (data->main_area_bevel, "width");
@@ -3469,6 +3497,19 @@ init (RigShell *shell, void *user_data)
                                         main_area_height,
                                         NULL);
     }
+  else
+#endif /* RIG_EDITOR_ENABLED */
+    {
+      int width = cogl_framebuffer_get_width (fb);
+      int height = cogl_framebuffer_get_height (fb);
+
+      rig_camera_set_viewport (data->editor_camera_component,
+                               0, 0, width, height);
+
+      rig_input_region_set_rectangle (data->editor_input_region,
+                                      0, 0, width, height);
+
+    }
 
 #if 0
   data->slider_transform =
@@ -3483,6 +3524,7 @@ init (RigShell *shell, void *user_data)
     rig_introspectable_lookup_property (data->slider, "progress");
 #endif
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       data->timeline_input_region =
@@ -3492,6 +3534,7 @@ init (RigShell *shell, void *user_data)
       rig_camera_add_input_region (data->timeline_camera,
                                    data->timeline_input_region);
     }
+#endif /* RIG_EDITOR_ENABLED */
 
   data->timeline = rig_timeline_new (data->ctx, 20.0);
   rig_timeline_stop (data->timeline);
@@ -3511,10 +3554,12 @@ init (RigShell *shell, void *user_data)
 
   allocate (data);
 
-  if (_rig_in_device_mode)
-    set_play_mode_enabled (data, TRUE);
-  else
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
     set_play_mode_enabled (data, FALSE);
+  else
+#endif
+    set_play_mode_enabled (data, TRUE);
 
 #ifndef __ANDROID__
   if (_rig_handset_remaining_args &&
@@ -3553,12 +3598,14 @@ fini (RigShell *shell, void *user_data)
 
   rig_dof_effect_free (data->dof);
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
       rig_ref_countable_unref (data->timeline_vp);
       cogl_object_unref (data->grid_prim);
       cogl_object_unref (data->light_icon);
     }
+#endif
 }
 
 static RigInputEventStatus

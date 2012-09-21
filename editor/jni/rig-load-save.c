@@ -1663,8 +1663,10 @@ rig_load (RigData *data, const char *file)
 
   data->assets = loader.assets;
 
+#ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     rig_update_asset_list (data);
+#endif
 
   rig_shell_queue_redraw (data->ctx->shell);
 
