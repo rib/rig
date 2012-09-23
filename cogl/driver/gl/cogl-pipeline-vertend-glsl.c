@@ -54,8 +54,7 @@ typedef struct
   GString *header, *source;
 
   /* The number of tex coord attributes that the shader was generated
-     for. If this changes on GLES2 then we need to regenerate the
-     shader */
+   * for. If this changes then we need to regenerate the shader */
   int n_tex_coord_attribs;
 } CoglPipelineShaderState;
 
@@ -210,11 +209,10 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
   if (shader_state->gl_shader)
     {
       /* If we already have a valid GLSL shader then we don't need to
-         generate a new one. However if the number of tex coord
-         attribs changes on GLES2 then we need to regenerate the
-         shader with a different boiler plate */
-      if (ctx->driver != COGL_DRIVER_GLES2 ||
-          shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
+       * generate a new one. However if the number of tex coord
+       * attribs changes then we need to regenerate the shader with a
+       * different boiler plate */
+      if (shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
         return;
 
       /* We need to recreate the shader so destroy the existing one */
@@ -264,33 +262,6 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
   shader_state = get_shader_state (pipeline);
 
   unit_index = _cogl_pipeline_layer_get_unit_index (layer);
-
-  if (ctx->driver != COGL_DRIVER_GLES2)
-    {
-      /* We are using the fixed function uniforms for the user matrices
-         and the only way to set them is with the fixed function API so we
-         still need to flush them here */
-      if (layers_difference & COGL_PIPELINE_LAYER_STATE_USER_MATRIX)
-        {
-          CoglPipelineLayerState state = COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
-          CoglPipelineLayer *authority =
-            _cogl_pipeline_layer_get_authority (layer, state);
-          CoglTextureUnit *unit = _cogl_get_texture_unit (unit_index);
-          CoglMatrixEntry *matrix_entry;
-
-          _cogl_matrix_stack_set (unit->matrix_stack,
-                                  &authority->big_state->matrix);
-
-          _cogl_set_active_texture_unit (unit_index);
-
-          matrix_entry = unit->matrix_stack->last_entry;
-          _cogl_matrix_entry_flush_to_gl_builtins (ctx,
-                                                   matrix_entry,
-                                                   COGL_MATRIX_TEXTURE,
-                                                   framebuffer,
-                                                   FALSE /* do flip */);
-        }
-    }
 
   if (shader_state->source == NULL)
     return TRUE;
@@ -442,6 +413,7 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
       source_strings[1] = shader_state->source->str;
 
       _cogl_glsl_shader_set_source_with_boilerplate (ctx,
+                                                     NULL,
                                                      shader, GL_VERTEX_SHADER,
                                                      shader_state
                                                      ->n_tex_coord_attribs,

@@ -91,6 +91,8 @@ typedef struct
   GString *header, *source;
   UnitState *unit_state;
 
+  CoglBool ref_point_coord;
+
   /* List of layers that we haven't generated code for yet. These are
      in reverse order. As soon as we're about to generate code for
      layer we'll remove it from the list so we don't generate it
@@ -98,8 +100,7 @@ typedef struct
   LayerDataList layers;
 
   /* The number of tex coord attributes that the shader was generated
-     for. If this changes on GLES2 then we need to regenerate the
-     shader */
+   * for. If this changes then we need to regenerate the shader */
   int n_tex_coord_attribs;
 } CoglPipelineShaderState;
 
@@ -117,6 +118,7 @@ shader_state_new (int n_layers)
   shader_state = g_slice_new0 (CoglPipelineShaderState);
   shader_state->ref_count = 1;
   shader_state->unit_state = g_new0 (UnitState, n_layers);
+  shader_state->ref_point_coord = FALSE;
 
   return shader_state;
 }
@@ -284,11 +286,10 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
   if (shader_state->gl_shader)
     {
       /* If we already have a valid GLSL shader then we don't need to
-         generate a new one. However if the number of tex coord
-         attribs changes on GLES2 then we need to regenerate the
-         shader with a different boiler plate */
-      if ((ctx->driver != COGL_DRIVER_GLES2 ||
-          shader_state->n_tex_coord_attribs == n_tex_coord_attribs))
+       * generate a new one. However if the number of tex coord
+       * attribs changes then we need to regenerate the shader with a
+       * different boiler plate */
+      if (shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
         return;
 
       /* We need to recreate the shader so destroy the existing one */
@@ -408,19 +409,13 @@ ensure_texture_lookup_generated (CoglPipelineShaderState *shader_state,
                           layer->index,
                           layer->index);
 
-  /* If point sprite coord generation is being used then divert to the
-     built-in varying var for that instead of the texture
-     coordinates. We don't want to do this under GL because in that
-     case we will instead use glTexEnv(GL_COORD_REPLACE) to replace
-     the texture coords with the point sprite coords. Although GL also
-     supports the gl_PointCoord variable, it requires GLSL 1.2 which
-     would mean we would have to declare the GLSL version and check
-     for it */
-  if (ctx->driver == COGL_DRIVER_GLES2 &&
-      cogl_pipeline_get_layer_point_sprite_coords_enabled (pipeline,
+  if (cogl_pipeline_get_layer_point_sprite_coords_enabled (pipeline,
                                                            layer->index))
-    g_string_append_printf (shader_state->source,
-                            "vec4 (gl_PointCoord, 0.0, 1.0)");
+    {
+      shader_state->ref_point_coord = TRUE;
+      g_string_append_printf (shader_state->source,
+                              "vec4 (gl_PointCoord, 0.0, 1.0)");
+    }
   else
     g_string_append_printf (shader_state->source,
                             "cogl_tex_coord_in[%d]",
@@ -978,6 +973,7 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
       GLint compile_status;
       GLuint shader;
       CoglPipelineSnippetData snippet_data;
+      const char *version_string;
 
       COGL_STATIC_COUNTER (fragend_glsl_compile_counter,
                            "glsl fragment compile counter",
@@ -1053,7 +1049,16 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
       lengths[1] = shader_state->source->len;
       source_strings[1] = shader_state->source->str;
 
+      if (shader_state->ref_point_coord &&
+          ctx->driver == COGL_DRIVER_GL)
+        {
+          version_string = "#version 120\n";
+        }
+      else
+        version_string = NULL;
+
       _cogl_glsl_shader_set_source_with_boilerplate (ctx,
+                                                     version_string,
                                                      shader, GL_FRAGMENT_SHADER,
                                                      shader_state
                                                      ->n_tex_coord_attribs,
