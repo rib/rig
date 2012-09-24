@@ -8,8 +8,8 @@ PKG_NAME=rig
 
 (test -f $srcdir/configure.ac \
   && test -f $srcdir/autogen.sh \
-  && test -d $srcdir/$PKG_NAME \
-  && test -f $srcdir/$PKG_NAME/$PKG_NAME.c) || {
+  && test -d $srcdir/rig \
+  && test -f $srcdir/rig/jni/main.c) || {
     echo -n "**Error**: Directory \"$srcdir\" does not look like the"
     echo " top-level $PKG_NAME directory"
     exit 1
