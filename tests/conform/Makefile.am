@@ -109,8 +109,11 @@ BUILT_SOURCES = wrappers
 # testing (such as test-bitmask) will still compile
 INCLUDES = \
 	-I$(top_srcdir) \
-	-I$(top_builddir)/cogl \
-	-I$(top_builddir)/deps/glib
+	-I$(top_builddir)/cogl
+
+if !USE_GLIB
+INCLUDES += -I$(top_builddir)/deps/glib
+endif
 
 test_conformance_CPPFLAGS = \
 	-DCOGL_DISABLE_DEPRECATED \
