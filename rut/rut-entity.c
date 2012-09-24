@@ -402,11 +402,11 @@ rut_entity_set_scale (RutEntity *entity,
   entity->dirty = TRUE;
 }
 
-void
-rut_entity_apply_scales (RutObject *entity,
-                         float *scales)
+float
+rut_entity_get_scales (RutObject *entity)
 {
   RutObject *node = entity;
+  float scales = 1;
 
   do {
     RutGraphableProps *graphable_priv =
@@ -414,18 +414,12 @@ rut_entity_apply_scales (RutObject *entity,
     RutObjectProps *obj = node;
 
     if (obj->type == &rut_entity_type)
-      *scales *= rut_entity_get_scale (node);
+      scales *= rut_entity_get_scale (node);
 
     node = graphable_priv->parent;
   } while (node);
-}
 
-void
-rut_entity_get_scales (RutObject *entity,
-                       float *scales)
-{
-  *scales = 1;
-  rut_entity_apply_scales (entity, scales);
+  return scales;
 }
 
 CoglMatrix *
