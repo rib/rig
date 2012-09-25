@@ -109,8 +109,9 @@ _rut_asset_type_init (void)
 }
 
 RutAsset *
-rut_asset_new_texture (RutContext *ctx,
-                       const char *path)
+rut_asset_new_texture_full (RutContext *ctx,
+                            const char *path,
+                            RutAssetType type)
 {
   RutAsset *asset = g_slice_new (RutAsset);
   char *full_path;
@@ -120,7 +121,7 @@ rut_asset_new_texture (RutContext *ctx,
 
   asset->ref_count = 1;
 
-  asset->type = RUT_ASSET_TYPE_TEXTURE;
+  asset->type = type;
 
 #ifndef __ANDROID__
   /* TODO: move this non-android logic into rut_load_texture() */
@@ -144,6 +145,20 @@ rut_asset_new_texture (RutContext *ctx,
   //rut_simple_introspectable_init (asset);
 
   return asset;
+}
+
+RutAsset *
+rut_asset_new_texture (RutContext *ctx,
+                       const char *path)
+{
+  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_TEXTURE);
+}
+
+RutAsset *
+rut_asset_new_normal_map (RutContext *ctx,
+                          const char *path)
+{
+  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_NORMAL_MAP);
 }
 
 RutAssetType

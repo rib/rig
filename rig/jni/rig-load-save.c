@@ -569,16 +569,22 @@ rig_save (RigData *data,
   for (l = data->assets; l; l = l->next)
     {
       RutAsset *asset = l->data;
+      const char *type;
 
-      if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE)
+      if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_TEXTURE)
+        type = "texture";
+      else if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_NORMAL_MAP)
+        type = "normal-map";
+      else
         continue;
 
       g_hash_table_insert (state.id_map, asset, GINT_TO_POINTER (state.next_id));
 
       state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<asset id=\"%d\" type=\"texture\" path=\"%s\" />\n",
+      fprintf (file, "%*s<asset id=\"%d\" type=\"%s\" path=\"%s\" />\n",
                state.indent, "",
                state.next_id++,
+               type,
                rut_asset_get_path (asset));
       state.indent -= INDENT_LEVEL;
     }
@@ -995,6 +1001,7 @@ parse_start_element (GMarkupParseContext *context,
       const char *type;
       const char *path;
       uint32_t id;
+      RutAsset *asset = NULL;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
@@ -1026,12 +1033,20 @@ parse_start_element (GMarkupParseContext *context,
 
       if (strcmp (type, "texture") == 0)
         {
-          RutAsset *asset = rut_asset_new_texture (data->ctx, path);
-          loader->assets = g_list_prepend (loader->assets, asset);
-          g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
+          asset = rut_asset_new_texture (data->ctx, path);
+        }
+      else if (strcmp (type, "normal-map") == 0)
+        {
+          asset = rut_asset_new_normal_map (data->ctx, path);
         }
       else
         g_warning ("Ignoring unknown asset type: %s\n", type);
+
+      if (asset)
+        {
+          loader->assets = g_list_prepend (loader->assets, asset);
+          g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
+        }
     }
   else if (state == LOADER_STATE_NONE &&
            strcmp (element_name, "entity") == 0)
