@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1654,8 +1658,8 @@ rig_load (RigData *data, const char *file)
 
   data->assets = loader.assets;
 
-#ifdef RUT_EDITOR_ENABLED
-  if (!_rut_in_device_mode)
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
     rig_update_asset_list (data);
 #endif
 
