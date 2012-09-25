@@ -88,26 +88,13 @@ get_max_texture_units (void)
   return ctx->max_texture_units;
 }
 
-static CoglBool
+static void
 _cogl_pipeline_fragend_fixed_start (CoglPipeline *pipeline,
                                     int n_layers,
                                     unsigned long pipelines_difference,
                                     int n_tex_coord_attribs)
 {
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FIXED)))
-    return FALSE;
-
-  if (ctx->driver == COGL_DRIVER_GLES2)
-    return FALSE;
-
-  /* Fragment snippets are only supported in the GLSL fragend */
-  if (_cogl_pipeline_has_fragment_snippets (pipeline))
-    return FALSE;
-
   _cogl_use_fragment_program (0, COGL_PIPELINE_PROGRAM_TYPE_FIXED);
-  return TRUE;
 }
 
 static void

@@ -43,27 +43,13 @@
 
 const CoglPipelineVertend _cogl_pipeline_fixed_vertend;
 
-static CoglBool
+static void
 _cogl_pipeline_vertend_fixed_start (CoglPipeline *pipeline,
                                     int n_layers,
                                     unsigned long pipelines_difference,
                                     int n_tex_coord_attribs)
 {
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FIXED)))
-    return FALSE;
-
-  if (ctx->driver == COGL_DRIVER_GLES2)
-    return FALSE;
-
-  /* Vertex snippets are only supported in the GLSL fragend */
-  if (_cogl_pipeline_has_vertex_snippets (pipeline))
-    return FALSE;
-
   _cogl_use_vertex_program (0, COGL_PIPELINE_PROGRAM_TYPE_FIXED);
-
-  return TRUE;
 }
 
 static CoglBool

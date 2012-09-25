@@ -3,7 +3,7 @@
  *
  * An object oriented GL/GLES Abstraction/Utility Layer
  *
- * Copyright (C) 2011 Intel Corporation.
+ * Copyright (C) 2012 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +22,7 @@
  *
  *
  * Authors:
- *   Neil Roberts <neil@linux.intel.com>
+ *   Robert Bragg <robert@linux.intel.com>
  */
 
 #ifdef HAVE_CONFIG_H
@@ -34,14 +34,14 @@
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-state-private.h"
 
-#ifdef COGL_PIPELINE_PROGEND_FIXED
+#ifdef COGL_PIPELINE_PROGEND_FIXED_ARBFP
 
 #include "cogl-context.h"
 #include "cogl-context-private.h"
 #include "cogl-framebuffer-private.h"
 
 static CoglBool
-_cogl_pipeline_progend_fixed_start (CoglPipeline *pipeline)
+_cogl_pipeline_progend_fixed_arbfp_start (CoglPipeline *pipeline)
 {
   _COGL_GET_CONTEXT (ctx, FALSE);
 
@@ -55,6 +55,12 @@ _cogl_pipeline_progend_fixed_start (CoglPipeline *pipeline)
   if (_cogl_pipeline_has_vertex_snippets (pipeline))
     return FALSE;
 
+  /* Validate that we can handle the fragment state using ARBfp
+   */
+
+  if (!cogl_has_feature (ctx, COGL_FEATURE_ID_ARBFP))
+    return FALSE;
+
   /* Fragment snippets are only supported in the GLSL fragend */
   if (_cogl_pipeline_has_fragment_snippets (pipeline))
     return FALSE;
@@ -63,8 +69,8 @@ _cogl_pipeline_progend_fixed_start (CoglPipeline *pipeline)
 }
 
 static void
-_cogl_pipeline_progend_fixed_pre_paint (CoglPipeline *pipeline,
-                                        CoglFramebuffer *framebuffer)
+_cogl_pipeline_progend_fixed_arbfp_pre_paint (CoglPipeline *pipeline,
+                                              CoglFramebuffer *framebuffer)
 {
   CoglContext *ctx = framebuffer->context;
 
@@ -82,15 +88,15 @@ _cogl_pipeline_progend_fixed_pre_paint (CoglPipeline *pipeline,
                                              FALSE /* enable flip */);
 }
 
-const CoglPipelineProgend _cogl_pipeline_fixed_progend =
+const CoglPipelineProgend _cogl_pipeline_fixed_arbfp_progend =
   {
     COGL_PIPELINE_VERTEND_FIXED,
-    COGL_PIPELINE_FRAGEND_FIXED,
-    _cogl_pipeline_progend_fixed_start,
+    COGL_PIPELINE_FRAGEND_ARBFP,
+    _cogl_pipeline_progend_fixed_arbfp_start,
     NULL, /* end */
     NULL, /* pre_change_notify */
     NULL, /* layer_pre_change_notify */
-    _cogl_pipeline_progend_fixed_pre_paint
+    _cogl_pipeline_progend_fixed_arbfp_pre_paint
   };
 
-#endif /* COGL_PIPELINE_PROGEND_FIXED */
+#endif /* COGL_PIPELINE_PROGEND_FIXED_ARBFP */

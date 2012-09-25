@@ -143,7 +143,7 @@ get_layer_vertex_snippets (CoglPipelineLayer *layer)
   return &layer->big_state->vertex_snippets;
 }
 
-static CoglBool
+static void
 _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
                                    int n_layers,
                                    unsigned long pipelines_difference,
@@ -152,10 +152,7 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
   CoglPipelineShaderState *shader_state;
   CoglPipeline *template_pipeline = NULL;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  if (!cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-    return FALSE;
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   /* Now lookup our glsl backend private state (allocating if
    * necessary) */
@@ -218,7 +215,7 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
          shader with a different boiler plate */
       if (ctx->driver != COGL_DRIVER_GLES2 ||
           shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
-        return TRUE;
+        return;
 
       /* We need to recreate the shader so destroy the existing one */
       GE( ctx, glDeleteShader (shader_state->gl_shader) );
@@ -250,8 +247,6 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
        to copy it from the custom uniform in the vertex shader */
     g_string_append (shader_state->source,
                      "  cogl_point_size_out = cogl_point_size_in;\n");
-
-  return TRUE;
 }
 
 static CoglBool

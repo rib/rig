@@ -206,7 +206,7 @@ has_replace_hook (CoglPipelineLayer *layer,
   return FALSE;
 }
 
-static CoglBool
+static void
 _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
                                    int n_layers,
                                    unsigned long pipelines_difference,
@@ -217,10 +217,7 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
   CoglPipeline *template_pipeline = NULL;
   int i;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  if (!cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-    return FALSE;
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   /* Now lookup our glsl backend private state */
   shader_state = get_shader_state (pipeline);
@@ -292,7 +289,7 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
          shader with a different boiler plate */
       if ((ctx->driver != COGL_DRIVER_GLES2 ||
           shader_state->n_tex_coord_attribs == n_tex_coord_attribs))
-        return TRUE;
+        return;
 
       /* We need to recreate the shader so destroy the existing one */
       GE( ctx, glDeleteShader (shader_state->gl_shader) );
@@ -326,8 +323,6 @@ _cogl_pipeline_fragend_glsl_start (CoglPipeline *pipeline,
       shader_state->unit_state[i].sampled = FALSE;
       shader_state->unit_state[i].combine_constant_used = FALSE;
     }
-
-  return TRUE;
 }
 
 static void

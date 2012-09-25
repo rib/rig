@@ -149,7 +149,7 @@ dirty_shader_state (CoglPipeline *pipeline)
                              NULL);
 }
 
-static CoglBool
+static void
 _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
                                     int n_layers,
                                     unsigned long pipelines_difference,
@@ -159,17 +159,7 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   CoglPipeline *authority;
   CoglPipeline *template_pipeline = NULL;
 
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  /* First validate that we can handle the current state using ARBfp
-   */
-
-  if (!cogl_has_feature (ctx, COGL_FEATURE_ID_ARBFP))
-    return FALSE;
-
-  /* Fragment snippets are only supported in the GLSL fragend */
-  if (_cogl_pipeline_has_fragment_snippets (pipeline))
-    return FALSE;
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   /* Now lookup our ARBfp backend private state */
   shader_state = get_shader_state (pipeline);
@@ -177,7 +167,7 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   /* If we have a valid shader_state then we are all set and don't
    * need to generate a new program. */
   if (shader_state)
-    return TRUE;
+    return;
 
   /* If we don't have an associated arbfp program yet then find the
    * arbfp-authority (the oldest ancestor whose state will result in
@@ -200,7 +190,7 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
        * arbfp-authority... */
       shader_state->ref_count++;
       set_shader_state (pipeline, shader_state);
-      return TRUE;
+      return;
     }
 
   /* If we haven't yet found an existing program then before we resort to
@@ -255,8 +245,6 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
       shader_state->ref_count++;
       set_shader_state (template_pipeline, shader_state);
     }
-
-  return TRUE;
 }
 
 static const char *
