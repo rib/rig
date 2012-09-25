@@ -7,8 +7,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=clutter\n"
-"POT-Creation-Date: 2012-09-24 22:55+0300\n"
-"PO-Revision-Date: 2012-09-24 23:01+0300\n"
+"POT-Creation-Date: 2012-09-26 00:56+0300\n"
+"PO-Revision-Date: 2012-09-26 00:58+0300\n"
 "Last-Translator: Rūdolfs Mazurs <rudolfs.mazurs@gmail.com>\n"
 "Language-Team: Latvian <lata-l10n@googlegroups.com>\n"
 "Language: lv\n"
@@ -349,6 +349,165 @@ msgstr "Izsekot veiktspējas problēmas"
 #: ../cogl/cogl-debug-options.h:192
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Mēģina izcelt neoptimālu Cogl lietojumu."
+
+#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
+#, c-format
+msgid "Could not allocate %lu bytes to read file \"%s\""
+msgstr "Nevarēja atrast %lu baitus, lai nolasītu datni “%s”"
+
+#: ../deps/glib/gfileutils.c:557
+#, c-format
+msgid "Error reading file '%s': %s"
+msgstr "Kļūda, nolasot datni “%s” — %s"
+
+#: ../deps/glib/gfileutils.c:571
+#, c-format
+msgid "File \"%s\" is too large"
+msgstr "Datne “%s” ir pārāk liela"
+
+#: ../deps/glib/gfileutils.c:654
+#, c-format
+msgid "Failed to read from file '%s': %s"
+msgstr "Neizdevās nolasīt no datnes “%s” — %s"
+
+#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
+#, c-format
+msgid "Failed to open file '%s': %s"
+msgstr "Neizdevās atvērt datni “%s” — %s"
+
+#: ../deps/glib/gfileutils.c:722
+#, c-format
+msgid "Failed to get attributes of file '%s': fstat() failed: %s"
+msgstr "Neizdevās dabūt datnes “%s” atribūtus — fstat() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:756
+#, c-format
+msgid "Failed to open file '%s': fdopen() failed: %s"
+msgstr "Neizdevās atvērt datni “%s” — fdopen() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:864
+#, c-format
+msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
+msgstr "Neizdevās pārsaukt datni “%s” uz “%s” — g_rename() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
+#, c-format
+msgid "Failed to create file '%s': %s"
+msgstr "Neizdevās izveidot datni “%s” — %s"
+
+#: ../deps/glib/gfileutils.c:920
+#, c-format
+msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
+msgstr "Neizdevās atvērt datni “%s” rakstīšanai — fdopen() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:945
+#, c-format
+msgid "Failed to write file '%s': fwrite() failed: %s"
+msgstr "Neizdevās rakstīt datnē “%s” — fwrite() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:964
+#, c-format
+msgid "Failed to write file '%s': fflush() failed: %s"
+msgstr "Neizdevās rakstīt datnē “%s” — fflush() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:1008
+#, c-format
+msgid "Failed to write file '%s': fsync() failed: %s"
+msgstr "Neizdevās rakstīt datnē “%s” — fsync() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:1032
+#, c-format
+msgid "Failed to close file '%s': fclose() failed: %s"
+msgstr "Neizdevās aizvērt datni “%s” — fclose() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:1154
+#, c-format
+msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
+msgstr "Nevarēja izdzēst esošo datni “%s” — g_unlink() neizdevās — %s"
+
+#: ../deps/glib/gfileutils.c:1414
+#, c-format
+msgid "Template '%s' invalid, should not contain a '%s'"
+msgstr "Veidne “%s” ir nepareiza, nedrīkstētu saturēt “%s”"
+
+#: ../deps/glib/gfileutils.c:1427
+#, c-format
+msgid "Template '%s' doesn't contain XXXXXX"
+msgstr "Veidne “%s” nesatur XXXXXX"
+
+#: ../deps/glib/gfileutils.c:2009
+#, c-format
+msgid "%.1f KiB"
+msgstr "%.1f KiB"
+
+#: ../deps/glib/gfileutils.c:2012
+#, c-format
+msgid "%.1f MiB"
+msgstr "%.1f MiB"
+
+#: ../deps/glib/gfileutils.c:2015
+#, c-format
+msgid "%.1f GiB"
+msgstr "%.1f GiB"
+
+#: ../deps/glib/gfileutils.c:2018
+#, c-format
+msgid "%.1f TiB"
+msgstr "%.1f TiB"
+
+#: ../deps/glib/gfileutils.c:2021
+#, c-format
+msgid "%.1f PiB"
+msgstr "%.1f PiB"
+
+#: ../deps/glib/gfileutils.c:2024
+#, c-format
+msgid "%.1f EiB"
+msgstr "%.1f EiB"
+
+#: ../deps/glib/gfileutils.c:2037
+#, c-format
+msgid "%.1f kB"
+msgstr "%.1f kB"
+
+#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
+#, c-format
+msgid "%.1f MB"
+msgstr "%.1f MB"
+
+#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
+#, c-format
+msgid "%.1f GB"
+msgstr "%.1f GB"
+
+#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
+#, c-format
+msgid "%.1f TB"
+msgstr "%.1f TB"
+
+#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
+#, c-format
+msgid "%.1f PB"
+msgstr "%.1f PB"
+
+#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
+#, c-format
+msgid "%.1f EB"
+msgstr "%.1f EB"
+
+#: ../deps/glib/gfileutils.c:2144
+#, c-format
+msgid "%.1f KB"
+msgstr "%.1f KB"
+
+#: ../deps/glib/gfileutils.c:2212
+#, c-format
+msgid "Failed to read the symbolic link '%s': %s"
+msgstr "Neizdevās nolasīt simbolisko saiti “%s” — %s"
+
+#: ../deps/glib/gfileutils.c:2233
+msgid "Symbolic links not supported"
+msgstr "Simboliskās saites nav atbalstītas"
 
 #~ msgid "Cogl debugging flags to set"
 #~ msgstr "Iestatāmie Cogl atkļūdošanas karodziņi"
