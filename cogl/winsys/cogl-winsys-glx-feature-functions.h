@@ -28,7 +28,6 @@
 
 /* Macro prototypes:
  * COGL_WINSYS_FEATURE_BEGIN (name, namespaces, extension_names,
- *                            implied_public_feature_flags,
  *                            implied_private_feature_flags,
  *                            implied_winsys_feature)
  * COGL_WINSYS_FEATURE_FUNCTION (return_type, function_name,
@@ -47,7 +46,6 @@ COGL_WINSYS_FEATURE_BEGIN (texture_from_pixmap,
                            "EXT\0",
                            "texture_from_pixmap\0",
                            0,
-                           0,
                            COGL_WINSYS_FEATURE_TEXTURE_FROM_PIXMAP)
 COGL_WINSYS_FEATURE_FUNCTION (void, glXBindTexImage,
                               (Display *display,
@@ -64,7 +62,6 @@ COGL_WINSYS_FEATURE_BEGIN (video_sync,
                            "SGI\0",
                            "video_sync\0",
                            0,
-                           0,
                            COGL_WINSYS_FEATURE_VBLANK_COUNTER)
 COGL_WINSYS_FEATURE_FUNCTION (int, glXGetVideoSync,
                               (unsigned int *count))
@@ -78,7 +75,6 @@ COGL_WINSYS_FEATURE_BEGIN (swap_control,
                            "SGI\0",
                            "swap_control\0",
                            0,
-                           0,
                            COGL_WINSYS_FEATURE_SWAP_THROTTLE)
 COGL_WINSYS_FEATURE_FUNCTION (int, glXSwapInterval,
                               (int interval))
@@ -87,7 +83,6 @@ COGL_WINSYS_FEATURE_END ()
 COGL_WINSYS_FEATURE_BEGIN (copy_sub_buffer,
                            "MESA\0",
                            "copy_sub_buffer\0",
-                           0,
                            0,
 /* We initially assumed that copy_sub_buffer is synchronized on
  * which is only the case for a subset of GPUs for example it is not
@@ -107,7 +102,6 @@ COGL_WINSYS_FEATURE_END ()
 COGL_WINSYS_FEATURE_BEGIN (swap_event,
                            "INTEL\0",
                            "swap_event\0",
-                           0,
                            0,
                            COGL_WINSYS_FEATURE_SWAP_BUFFERS_EVENT)
 COGL_WINSYS_FEATURE_END ()

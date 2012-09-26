@@ -99,7 +99,7 @@ typedef struct _CoglTexturePixmapGLX
 /* Define a set of arrays containing the functions required from GL
    for each winsys feature */
 #define COGL_WINSYS_FEATURE_BEGIN(name, namespaces, extension_names,    \
-                                  feature_flags, feature_flags_private, \
+                                  feature_flags_private,                \
                                   winsys_feature)                       \
   static const CoglFeatureFunction                                      \
   cogl_glx_feature_ ## name ## _funcs[] = {
@@ -113,10 +113,10 @@ typedef struct _CoglTexturePixmapGLX
 /* Define an array of features */
 #undef COGL_WINSYS_FEATURE_BEGIN
 #define COGL_WINSYS_FEATURE_BEGIN(name, namespaces, extension_names,    \
-                                  feature_flags, feature_flags_private, \
+                                  feature_flags_private,                \
                                   winsys_feature)                       \
   { 255, 255, 0, namespaces, extension_names,                           \
-      feature_flags, feature_flags_private,                             \
+      feature_flags_private,                                            \
       winsys_feature, \
       cogl_glx_feature_ ## name ## _funcs },
 #undef COGL_WINSYS_FEATURE_FUNCTION
@@ -411,7 +411,6 @@ update_winsys_features (CoglContext *context, CoglError **error)
 
   COGL_NOTE (WINSYS, "  GLX Extensions: %s", glx_extensions);
 
-  context->feature_flags |= COGL_FEATURE_ONSCREEN_MULTIPLE;
   COGL_FLAGS_SET (context->features,
                   COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
   COGL_FLAGS_SET (context->winsys_features,
@@ -425,7 +424,6 @@ update_winsys_features (CoglContext *context, CoglError **error)
                              glx_extensions,
                              glx_renderer))
       {
-        context->feature_flags |= winsys_feature_data[i].feature_flags;
         if (winsys_feature_data[i].winsys_feature)
           COGL_FLAGS_SET (context->winsys_features,
                           winsys_feature_data[i].winsys_feature,

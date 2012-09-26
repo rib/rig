@@ -332,7 +332,6 @@ _cogl_driver_update_features (CoglContext *ctx,
                               CoglError **error)
 {
   CoglPrivateFeatureFlags private_flags = 0;
-  CoglFeatureFlags flags = 0;
   const char *gl_extensions;
   int max_clip_planes = 0;
   int num_stencil_bits = 0;
@@ -364,9 +363,6 @@ _cogl_driver_update_features (CoglContext *ctx,
 
   _cogl_gpu_info_init (ctx, &ctx->gpu);
 
-  flags = (COGL_FEATURE_TEXTURE_READ_PIXELS
-           | COGL_FEATURE_UNSIGNED_INT_INDICES
-           | COGL_FEATURE_DEPTH_RANGE);
   COGL_FLAGS_SET (ctx->features,
                   COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
   COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_DEPTH_RANGE, TRUE);
@@ -384,10 +380,6 @@ _cogl_driver_update_features (CoglContext *ctx,
   if (COGL_CHECK_GL_VERSION (gl_major, gl_minor, 2, 0) ||
       _cogl_check_extension ("GL_ARB_texture_non_power_of_two", gl_extensions))
     {
-      flags |= COGL_FEATURE_TEXTURE_NPOT
-        | COGL_FEATURE_TEXTURE_NPOT_BASIC
-        | COGL_FEATURE_TEXTURE_NPOT_MIPMAP
-        | COGL_FEATURE_TEXTURE_NPOT_REPEAT;
       COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_NPOT, TRUE);
       COGL_FLAGS_SET (ctx->features,
                       COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, TRUE);
@@ -410,27 +402,18 @@ _cogl_driver_update_features (CoglContext *ctx,
     private_flags |= COGL_PRIVATE_FEATURE_FOUR_CLIP_PLANES;
 
   if (ctx->glGenRenderbuffers)
-    {
-      flags |= COGL_FEATURE_OFFSCREEN;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
 
   if (ctx->glBlitFramebuffer)
     private_flags |= COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT;
 
   if (ctx->glRenderbufferStorageMultisampleIMG)
-    {
-      flags |= COGL_FEATURE_OFFSCREEN_MULTISAMPLE;
-      COGL_FLAGS_SET (ctx->features,
-                      COGL_FEATURE_ID_OFFSCREEN_MULTISAMPLE, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features,
+                    COGL_FEATURE_ID_OFFSCREEN_MULTISAMPLE, TRUE);
 
   if (COGL_CHECK_GL_VERSION (gl_major, gl_minor, 3, 0) ||
       _cogl_check_extension ("GL_ARB_depth_texture", gl_extensions))
-    {
-      flags |= COGL_FEATURE_DEPTH_TEXTURE;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_DEPTH_TEXTURE, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_DEPTH_TEXTURE, TRUE);
 
   if (COGL_CHECK_GL_VERSION (gl_major, gl_minor, 2, 1) ||
       _cogl_check_extension ("GL_EXT_pixel_buffer_object", gl_extensions))
@@ -438,22 +421,14 @@ _cogl_driver_update_features (CoglContext *ctx,
 
   if (COGL_CHECK_GL_VERSION (gl_major, gl_minor, 2, 0) ||
       _cogl_check_extension ("GL_ARB_point_sprite", gl_extensions))
-    {
-      flags |= COGL_FEATURE_POINT_SPRITE;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
 
   if (ctx->glGenPrograms)
-    {
-      flags |= COGL_FEATURE_SHADERS_ARBFP;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_ARBFP, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_ARBFP, TRUE);
 
   if (ctx->glCreateProgram)
-    {
-      flags |= COGL_FEATURE_SHADERS_GLSL;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, TRUE);
+
   /* If all of the old GLSL extensions are available then we can fake
    * the GL 2.0 GLSL support by diverting to the old function names */
   else if (ctx->glCreateProgramObject && /* GL_ARB_shader_objects */
@@ -478,15 +453,12 @@ _cogl_driver_update_features (CoglContext *ctx,
        * GLES2 context on top of regular GL then we'll need to do
        * something here */
 
-      flags |= COGL_FEATURE_SHADERS_GLSL;
       COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, TRUE);
     }
 
   if (ctx->glGenBuffers)
     {
       private_flags |= COGL_PRIVATE_FEATURE_VBOS;
-      flags |= (COGL_FEATURE_MAP_BUFFER_FOR_READ |
-                COGL_FEATURE_MAP_BUFFER_FOR_WRITE);
       COGL_FLAGS_SET (ctx->features,
                          COGL_FEATURE_ID_MAP_BUFFER_FOR_READ, TRUE);
       COGL_FLAGS_SET (ctx->features,
@@ -494,17 +466,11 @@ _cogl_driver_update_features (CoglContext *ctx,
     }
 
   if (_cogl_check_extension ("GL_ARB_texture_rectangle", gl_extensions))
-    {
-      flags |= COGL_FEATURE_TEXTURE_RECTANGLE;
-      COGL_FLAGS_SET (ctx->features,
-                      COGL_FEATURE_ID_TEXTURE_RECTANGLE, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features,
+                    COGL_FEATURE_ID_TEXTURE_RECTANGLE, TRUE);
 
   if (ctx->glTexImage3D)
-    {
-      flags |= COGL_FEATURE_TEXTURE_3D;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_3D, TRUE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_3D, TRUE);
 
   if (ctx->glEGLImageTargetTexture2D)
     private_flags |= COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE;
@@ -517,7 +483,6 @@ _cogl_driver_update_features (CoglContext *ctx,
 
   /* Cache features */
   ctx->private_feature_flags |= private_flags;
-  ctx->feature_flags |= flags;
 
   return TRUE;
 }

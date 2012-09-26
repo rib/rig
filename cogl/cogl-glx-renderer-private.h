@@ -96,7 +96,7 @@ typedef struct _CoglGLXRenderer
   (* glXGetProcAddress) (const GLubyte *procName);
 
   /* Function pointers for GLX specific extensions */
-#define COGL_WINSYS_FEATURE_BEGIN(a, b, c, d, e, f)
+#define COGL_WINSYS_FEATURE_BEGIN(a, b, c, d, e)
 
 #define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args) \
   ret (APIENTRY * pf_ ## name) args;

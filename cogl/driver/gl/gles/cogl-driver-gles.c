@@ -190,7 +190,6 @@ _cogl_driver_update_features (CoglContext *context,
                               CoglError **error)
 {
   CoglPrivateFeatureFlags private_flags = 0;
-  CoglFeatureFlags flags = 0;
   const char *gl_extensions;
   int num_stencil_bits = 0;
 
@@ -239,11 +238,8 @@ _cogl_driver_update_features (CoglContext *context,
 
   if (context->driver == COGL_DRIVER_GLES2)
     {
-      flags |= COGL_FEATURE_SHADERS_GLSL | COGL_FEATURE_OFFSCREEN;
       /* Note GLES 2 core doesn't support mipmaps for npot textures or
        * repeat modes other than CLAMP_TO_EDGE. */
-      flags |= COGL_FEATURE_TEXTURE_NPOT_BASIC;
-      flags |= COGL_FEATURE_DEPTH_RANGE;
       COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_GLSL, TRUE);
       COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
       COGL_FLAGS_SET (context->features,
@@ -256,37 +252,23 @@ _cogl_driver_update_features (CoglContext *context,
   private_flags |= COGL_PRIVATE_FEATURE_VBOS;
 
   /* Both GLES 1.1 and GLES 2.0 support point sprites in core */
-  flags |= COGL_FEATURE_POINT_SPRITE;
   COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
 
   if (context->glGenRenderbuffers)
-    {
-      flags |= COGL_FEATURE_OFFSCREEN;
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
-    }
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_OFFSCREEN, TRUE);
 
   if (context->glBlitFramebuffer)
     private_flags |= COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT;
 
   if (_cogl_check_extension ("GL_OES_element_index_uint", gl_extensions))
-    {
-      flags |= COGL_FEATURE_UNSIGNED_INT_INDICES;
-      COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
-    }
+    COGL_FLAGS_SET (context->features,
+                    COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
 
   if (_cogl_check_extension ("GL_OES_depth_texture", gl_extensions))
-    {
-      flags |= COGL_FEATURE_DEPTH_TEXTURE;
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_TEXTURE, TRUE);
-    }
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_DEPTH_TEXTURE, TRUE);
 
   if (_cogl_check_extension ("GL_OES_texture_npot", gl_extensions))
     {
-      flags |= (COGL_FEATURE_TEXTURE_NPOT |
-                COGL_FEATURE_TEXTURE_NPOT_BASIC |
-                COGL_FEATURE_TEXTURE_NPOT_MIPMAP |
-                COGL_FEATURE_TEXTURE_NPOT_REPEAT);
       COGL_FLAGS_SET (context->features,
                       COGL_FEATURE_ID_TEXTURE_NPOT, TRUE);
       COGL_FLAGS_SET (context->features,
@@ -298,8 +280,6 @@ _cogl_driver_update_features (CoglContext *context,
     }
   else if (_cogl_check_extension ("GL_IMG_texture_npot", gl_extensions))
     {
-      flags |= (COGL_FEATURE_TEXTURE_NPOT_BASIC |
-                COGL_FEATURE_TEXTURE_NPOT_MIPMAP);
       COGL_FLAGS_SET (context->features,
                       COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, TRUE);
       COGL_FLAGS_SET (context->features,
@@ -307,19 +287,13 @@ _cogl_driver_update_features (CoglContext *context,
     }
 
   if (context->glTexImage3D)
-    {
-      flags |= COGL_FEATURE_TEXTURE_3D;
-      COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_TEXTURE_3D, TRUE);
-    }
+    COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_TEXTURE_3D, TRUE);
 
   if (context->glMapBuffer)
-    {
-      /* The GL_OES_mapbuffer extension doesn't support mapping for
-         read */
-      flags |= COGL_FEATURE_MAP_BUFFER_FOR_WRITE;
-      COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE, TRUE);
-    }
+    /* The GL_OES_mapbuffer extension doesn't support mapping for
+       read */
+    COGL_FLAGS_SET (context->features,
+                    COGL_FEATURE_ID_MAP_BUFFER_FOR_WRITE, TRUE);
 
   if (context->glEGLImageTargetTexture2D)
     private_flags |= COGL_PRIVATE_FEATURE_TEXTURE_2D_FROM_EGL_IMAGE;
@@ -335,7 +309,6 @@ _cogl_driver_update_features (CoglContext *context,
 
   /* Cache features */
   context->private_feature_flags |= private_flags;
-  context->feature_flags |= flags;
 
   return TRUE;
 }

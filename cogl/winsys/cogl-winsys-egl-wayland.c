@@ -285,7 +285,6 @@ static CoglBool
 _cogl_winsys_egl_context_init (CoglContext *context,
                                CoglError **error)
 {
-  context->feature_flags |= COGL_FEATURE_ONSCREEN_MULTIPLE;
   COGL_FLAGS_SET (context->features,
                   COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
   COGL_FLAGS_SET (context->winsys_features,

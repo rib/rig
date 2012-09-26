@@ -81,23 +81,13 @@ _cogl_init_feature_overrides (CoglContext *ctx)
     ctx->private_feature_flags &= ~COGL_PRIVATE_FEATURE_PBOS;
 
   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_ARBFP)))
-    {
-      ctx->feature_flags &= ~COGL_FEATURE_SHADERS_ARBFP;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_ARBFP, FALSE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_ARBFP, FALSE);
 
   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_GLSL)))
-    {
-      ctx->feature_flags &= ~COGL_FEATURE_SHADERS_GLSL;
-      COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, FALSE);
-    }
+    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, FALSE);
 
   if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_NPOT_TEXTURES)))
     {
-      ctx->feature_flags &= ~(COGL_FEATURE_TEXTURE_NPOT |
-                              COGL_FEATURE_TEXTURE_NPOT_BASIC |
-                              COGL_FEATURE_TEXTURE_NPOT_MIPMAP |
-                              COGL_FEATURE_TEXTURE_NPOT_REPEAT);
       COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_NPOT, FALSE);
       COGL_FLAGS_SET (ctx->features,
                       COGL_FEATURE_ID_TEXTURE_NPOT_BASIC, FALSE);
@@ -171,7 +161,6 @@ cogl_context_new (CoglDisplay *display,
 
   /* Init default values */
   memset (context->features, 0, sizeof (context->features));
-  context->feature_flags = 0;
   context->private_feature_flags = 0;
 
   context->texture_types = NULL;

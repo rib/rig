@@ -112,7 +112,6 @@ COGL_TYPE_BUFFER_UPDATE_HINT
 COGL_TYPE_BUFFER_USAGE_HINT
 COGL_TYPE_DEBUG_FLAGS
 COGL_TYPE_DRIVER_ERROR
-COGL_TYPE_FEATURE_FLAGS
 COGL_TYPE_INDICES_TYPE
 COGL_TYPE_PIXEL_FORMAT
 COGL_TYPE_READ_PIXELS_FLAGS
@@ -127,7 +126,6 @@ cogl_buffer_bit_get_type
 cogl_buffer_target_get_type
 cogl_debug_flags_get_type
 cogl_driver_error_get_type
-cogl_feature_flags_get_type
 cogl_indices_type_get_type
 cogl_pixel_format_get_type
 cogl_read_pixels_flags_get_type
