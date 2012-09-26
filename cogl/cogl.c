@@ -90,26 +90,13 @@ _cogl_gl_error_to_string (GLenum error_code)
 #endif /* COGL_GL_DEBUG */
 
 CoglBool
-_cogl_check_extension (const char *name, const gchar *ext)
+_cogl_check_extension (const char *name, char * const *ext)
 {
-  char *end;
-  int name_len, n;
-
-  if (name == NULL || ext == NULL)
-    return FALSE;
-
-  end = (char*)(ext + strlen(ext));
-
-  name_len = strlen(name);
-
-  while (ext < end)
-    {
-      n = strcspn(ext, " ");
-
-      if ((name_len == n) && (!strncmp(name, ext, n)))
-	return TRUE;
-      ext += (n + 1);
-    }
+  while (*ext)
+    if (!strcmp (name, *ext))
+      return TRUE;
+    else
+      ext++;
 
   return FALSE;
 }
