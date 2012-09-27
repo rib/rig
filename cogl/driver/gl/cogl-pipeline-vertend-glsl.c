@@ -53,9 +53,6 @@ typedef struct
   GLuint gl_shader;
   GString *header, *source;
 
-  /* The number of tex coord attributes that the shader was generated
-   * for. If this changes then we need to regenerate the shader */
-  int n_tex_coord_attribs;
 } CoglPipelineShaderState;
 
 static CoglUserDataKey shader_state_key;
@@ -145,8 +142,7 @@ get_layer_vertex_snippets (CoglPipelineLayer *layer)
 static void
 _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
                                    int n_layers,
-                                   unsigned long pipelines_difference,
-                                   int n_tex_coord_attribs)
+                                   unsigned long pipelines_difference)
 {
   CoglPipelineShaderState *shader_state;
   CoglPipeline *template_pipeline = NULL;
@@ -207,23 +203,10 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
     }
 
   if (shader_state->gl_shader)
-    {
-      /* If we already have a valid GLSL shader then we don't need to
-       * generate a new one. However if the number of tex coord
-       * attribs changes then we need to regenerate the shader with a
-       * different boiler plate */
-      if (shader_state->n_tex_coord_attribs == n_tex_coord_attribs)
-        return;
-
-      /* We need to recreate the shader so destroy the existing one */
-      GE( ctx, glDeleteShader (shader_state->gl_shader) );
-      shader_state->gl_shader = 0;
-    }
+    return;
 
   /* If we make it here then we have a shader_state struct without a gl_shader
      because this is the first time we've encountered it */
-
-  shader_state->n_tex_coord_attribs = n_tex_coord_attribs;
 
   /* We reuse two grow-only GStrings for code-gen. One string
      contains the uniform and attribute declarations while the
@@ -255,16 +238,25 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
 {
   CoglPipelineShaderState *shader_state;
   CoglPipelineSnippetData snippet_data;
-  int unit_index;
+  int layer_index = layer->index;
 
   _COGL_GET_CONTEXT (ctx, FALSE);
 
   shader_state = get_shader_state (pipeline);
 
-  unit_index = _cogl_pipeline_layer_get_unit_index (layer);
-
   if (shader_state->source == NULL)
     return TRUE;
+
+  g_string_append_printf (shader_state->header,
+                          "uniform mat4 cogl_texture_matrix%i;\n"
+                          "attribute vec4 cogl_tex_coord%i_in;\n"
+                          "varying vec4 _cogl_tex_coord%i;\n"
+                          "#define cogl_tex_coord%i_out _cogl_tex_coord%i\n",
+                          layer_index,
+                          layer_index,
+                          layer_index,
+                          layer_index,
+                          layer_index);
 
   /* Transform the texture coordinates by the layer's user matrix.
    *
@@ -284,18 +276,18 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
                           "{\n"
                           "  return matrix * tex_coord;\n"
                           "}\n",
-                          unit_index);
+                          layer_index);
 
   /* Wrap the layer code in any snippets that have been hooked */
   memset (&snippet_data, 0, sizeof (snippet_data));
   snippet_data.snippets = get_layer_vertex_snippets (layer);
   snippet_data.hook = COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM;
   snippet_data.chain_function = g_strdup_printf ("cogl_real_transform_layer%i",
-                                                 unit_index);
+                                                 layer_index);
   snippet_data.final_name = g_strdup_printf ("cogl_transform_layer%i",
-                                             unit_index);
+                                             layer_index);
   snippet_data.function_prefix = g_strdup_printf ("cogl_transform_layer%i",
-                                                  unit_index);
+                                                  layer_index);
   snippet_data.return_type = "vec4";
   snippet_data.return_variable = "cogl_tex_coord";
   snippet_data.return_variable_is_argument = TRUE;
@@ -310,14 +302,14 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
   g_free ((char *) snippet_data.function_prefix);
 
   g_string_append_printf (shader_state->source,
-                          "  cogl_tex_coord_out[%i] = "
-                          "cogl_transform_layer%i (cogl_texture_matrix[%i],\n"
+                          "  cogl_tex_coord%i_out = "
+                          "cogl_transform_layer%i (cogl_texture_matrix%i,\n"
                           "                           "
                           "                        cogl_tex_coord%i_in);\n",
-                          unit_index,
-                          unit_index,
-                          unit_index,
-                          unit_index);
+                          layer_index,
+                          layer_index,
+                          layer_index,
+                          layer_index);
 
   return TRUE;
 }
@@ -415,8 +407,6 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
       _cogl_glsl_shader_set_source_with_boilerplate (ctx,
                                                      NULL,
                                                      shader, GL_VERTEX_SHADER,
-                                                     shader_state
-                                                     ->n_tex_coord_attribs,
                                                      2, /* count */
                                                      source_strings, lengths);
 

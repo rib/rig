@@ -60,7 +60,7 @@ paint (TestState *state)
                             "cogl_modelview_projection_matrix * "
                             "cogl_position_in;\n"
                             "  cogl_color_out = cogl_color_in;\n"
-                            "  cogl_tex_coord_out[0] = cogl_tex_coord_in;\n");
+                            "  cogl_tex_coord0_out = cogl_tex_coord_in;\n");
 
   /* Draw something without the snippet */
   cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 50, 50);
