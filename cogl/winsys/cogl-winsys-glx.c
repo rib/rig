@@ -436,6 +436,9 @@ update_winsys_features (CoglContext *context, CoglError **error)
     {
       glx_renderer->pf_glXGetVideoSync = NULL;
       glx_renderer->pf_glXWaitVideoSync = NULL;
+      COGL_FLAGS_SET (context->winsys_features,
+                      COGL_WINSYS_FEATURE_VBLANK_COUNTER,
+                      FALSE);
     }
 
   if (glx_renderer->pf_glXWaitVideoSync)
