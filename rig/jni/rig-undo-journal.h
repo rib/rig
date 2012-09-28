@@ -26,6 +26,7 @@
 #include <rut.h>
 
 #include "rig-data.h"
+#include "rut-list.h"
 
 typedef enum _UndoRedoOp
 {
@@ -43,6 +44,8 @@ typedef struct _UndoRedoPropertyChange
 
 typedef struct _UndoRedo
 {
+  RutList list_node;
+
   UndoRedoOp op;
   CoglBool mergable;
   union
@@ -54,9 +57,21 @@ typedef struct _UndoRedo
 struct _RigUndoJournal
 {
   RigData *data;
-  GQueue ops;
-  GList *pos;
-  GQueue redo_ops;
+
+  /* List of operations that can be undone. The operations are
+   * appended to the end of this list so that they are kept in order
+   * from the earliest added operation to the last added operation.
+   * The operations are not stored inverted so each operation
+   * represents the action that user made. */
+  RutList undo_ops;
+
+  /* List of operations that can be redone. As the user presses undo,
+   * the operations are added to the tail of this list. Therefore the
+   * list is in the order of earliest undone operation to the latest.
+   * The operations represent the original action that the user made
+   * so it will not need to be inverted before redoing the
+   * operation. */
+  RutList redo_ops;
 };
 
 void

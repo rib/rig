@@ -43,17 +43,99 @@ undo_redo_invert (UndoRedo *undo_redo);
 static void
 undo_redo_free (UndoRedo *undo_redo);
 
+static void
+dump_op (UndoRedo *op,
+         GString *buf)
+{
+  switch (op->op)
+    {
+    case UNDO_REDO_PROPERTY_CHANGE_OP:
+      if (op->d.prop_change.value0.type == RUT_PROPERTY_TYPE_VEC3)
+        {
+          const float *v = op->d.prop_change.value0.d.vec3_val;
+          int i;
+
+          g_string_append_c (buf, '(');
+
+          for (i = 0; i < 3; i++)
+            {
+              if (i > 0)
+                g_string_append_c (buf, ',');
+              g_string_append_printf (buf, "%.1f", v[i]);
+            }
+
+          g_string_append (buf, ")→(");
+
+          v = op->d.prop_change.value1.d.vec3_val;
+
+          for (i = 0; i < 3; i++)
+            {
+              if (i > 0)
+                g_string_append_c (buf, ',');
+              g_string_append_printf (buf, "%.1f", v[i]);
+            }
+
+          g_string_append_c (buf, ')');
+        }
+      else
+        g_string_append (buf, "-");
+      break;
+
+    default:
+      g_string_append (buf, "-");
+      break;
+    }
+}
+
+static void
+dump_journal (RigUndoJournal *journal)
+{
+  GString *buf_a = g_string_new (NULL), *buf_b = g_string_new (NULL);
+  UndoRedo *undo, *redo;
+
+  undo = rut_container_of (journal->undo_ops.next, undo, list_node);
+  redo = rut_container_of (journal->redo_ops.next, redo, list_node);
+
+  printf ("%-50s%-50s\n", "Undo", "Redo");
+
+  while (&undo->list_node != &journal->undo_ops ||
+         &redo->list_node != &journal->redo_ops)
+    {
+      g_string_set_size (buf_a, 0);
+      g_string_set_size (buf_b, 0);
+
+      if (&undo->list_node != &journal->undo_ops)
+        {
+          dump_op (undo, buf_a);
+          undo = rut_container_of (undo->list_node.next, undo, list_node);
+        }
+
+      if (&redo->list_node != &journal->redo_ops)
+        {
+          dump_op (redo, buf_b);
+          redo = rut_container_of (redo->list_node.next, redo, list_node);
+        }
+
+      printf ("%-50s%-50s\n", buf_a->str, buf_b->str);
+    }
+
+  g_string_free (buf_a, TRUE);
+  g_string_free (buf_b, TRUE);
+}
+
 static UndoRedo *
 rig_undo_journal_find_recent_property_change (RigUndoJournal *journal,
                                               RutProperty *property)
 {
-  if (journal->pos &&
-      journal->pos == journal->ops.tail)
+  if (!rut_list_empty (&journal->undo_ops))
     {
-      UndoRedo *recent = journal->pos->data;
-      if (recent->d.prop_change.property == property &&
-          recent->mergable)
-        return recent;
+      UndoRedo *last_op =
+        rut_container_of (journal->undo_ops.prev, last_op, list_node);
+
+      if (last_op->op == UNDO_REDO_PROPERTY_CHANGE_OP &&
+          last_op->d.prop_change.property == property &&
+          last_op->mergable)
+        return last_op;
     }
 
   return NULL;
@@ -82,12 +164,9 @@ rig_undo_journal_log_move (RigUndoJournal *journal,
       if (undo_redo)
         {
           prop_change = &undo_redo->d.prop_change;
-          /* NB: when we are merging then the existing operation is an
-           * inverse of a normal move operation so the new move
-           * location goes into value0... */
-          prop_change->value0.d.vec3_val[0] = x;
-          prop_change->value0.d.vec3_val[1] = y;
-          prop_change->value0.d.vec3_val[2] = z;
+          prop_change->value1.d.vec3_val[0] = x;
+          prop_change->value1.d.vec3_val[1] = y;
+          prop_change->value1.d.vec3_val[2] = z;
         }
     }
 
@@ -129,14 +208,11 @@ rig_undo_journal_copy_property_and_log (RigUndoJournal *journal,
        rig_undo_journal_find_recent_property_change (journal, target_prop)))
     {
       prop_change = &undo_redo->d.prop_change;
-      /* NB: when we are merging then the existing operation is an
-       * inverse of a normal move operation so the new move location
-       * goes into value0... */
-      rut_boxed_destroy (&prop_change->value0);
-      rut_property_box (source_prop, &prop_change->value0);
+      rut_boxed_destroy (&prop_change->value1);
+      rut_property_box (source_prop, &prop_change->value1);
       rut_property_set_boxed (&journal->data->ctx->property_ctx,
                               target_prop,
-                              &prop_change->value0);
+                              &prop_change->value1);
     }
   else
     {
@@ -235,18 +311,41 @@ undo_redo_free (UndoRedo *undo_redo)
 static void
 rig_undo_journal_flush_redos (RigUndoJournal *journal)
 {
-  UndoRedo *redo;
-  while ((redo = g_queue_pop_head (&journal->redo_ops)))
-    g_queue_push_tail (&journal->ops, redo);
-  journal->pos = journal->ops.tail;
+  RutList reversed_operations;
+  UndoRedo *l, *tmp;
+
+  /* Build a list of inverted operations out of the redo list. These
+   * will be added two the end of the undo list so that the previously
+   * undone actions themselves become undoable actions */
+  rut_list_init (&reversed_operations);
+
+  rut_list_for_each (l, &journal->redo_ops, list_node)
+    {
+      UndoRedo *inverted = undo_redo_invert (l);
+
+      /* Add the inverted node to the end so it will keep the same
+       * order */
+      if (inverted)
+        rut_list_insert (reversed_operations.prev, &inverted->list_node);
+    }
+
+  /* Add all of the redo operations again in reverse order so that if
+   * the user undoes past all of the redoes to put them back into the
+   * state they were before the undoes, they will be able to continue
+   * undoing to undo those actions again */
+  rut_list_for_each_reverse_safe (l, tmp, &journal->redo_ops, list_node)
+    rut_list_insert (journal->undo_ops.prev, &l->list_node);
+  rut_list_init (&journal->redo_ops);
+
+  rut_list_insert_list (journal->undo_ops.prev, &reversed_operations);
 }
 
 static CoglBool
 rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
-  UndoRedo *inverse = undo_redo_invert (undo_redo);
+  UndoRedo *inverse;
 
-  g_return_val_if_fail (inverse != NULL, FALSE);
+  g_return_val_if_fail (undo_redo != NULL, FALSE);
 
   rig_undo_journal_flush_redos (journal);
 
@@ -255,13 +354,14 @@ rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
    * itself which should leave us where we started and
    * if not we should hopefully notice quickly!
    */
+  inverse = undo_redo_invert (undo_redo);
   undo_redo_apply (journal, inverse);
   undo_redo_apply (journal, undo_redo);
+  undo_redo_free (inverse);
 
-  undo_redo_free (undo_redo);
+  rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
 
-  g_queue_push_tail (&journal->ops, inverse);
-  journal->pos = journal->ops.tail;
+  dump_journal (journal);
 
   return TRUE;
 }
@@ -270,20 +370,27 @@ CoglBool
 rig_undo_journal_undo (RigUndoJournal *journal)
 {
   g_print ("UNDO\n");
-  if (journal->pos)
+  if (!rut_list_empty (&journal->undo_ops))
     {
-      UndoRedo *redo = undo_redo_invert (journal->pos->data);
-      if (!redo)
+      UndoRedo *op = rut_container_of (journal->undo_ops.prev, op, list_node);
+      UndoRedo *inverse = undo_redo_invert (op);
+
+      if (!inverse)
         {
           g_warning ("Not allowing undo of operation that can't be inverted");
           return FALSE;
         }
-      g_queue_push_tail (&journal->redo_ops, redo);
 
-      undo_redo_apply (journal, journal->pos->data);
-      journal->pos = journal->pos->prev;
+      rut_list_remove (&op->list_node);
+      rut_list_insert (journal->redo_ops.prev, &op->list_node);
+
+      undo_redo_apply (journal, inverse);
+      undo_redo_free (inverse);
 
       rut_shell_queue_redraw (journal->data->shell);
+
+      dump_journal (journal);
+
       return TRUE;
     }
   else
@@ -293,21 +400,22 @@ rig_undo_journal_undo (RigUndoJournal *journal)
 CoglBool
 rig_undo_journal_redo (RigUndoJournal *journal)
 {
-  UndoRedo *redo = g_queue_pop_tail (&journal->redo_ops);
+  UndoRedo *op;
 
-  if (!redo)
+  if (rut_list_empty (&journal->redo_ops))
     return FALSE;
+
+  op = rut_container_of (journal->redo_ops.prev, op, list_node);
 
   g_print ("REDO\n");
 
-  undo_redo_apply (journal, redo);
-
-  if (journal->pos)
-    journal->pos = journal->pos->next;
-  else
-    journal->pos = journal->ops.head;
+  undo_redo_apply (journal, op);
+  rut_list_remove (&op->list_node);
+  rut_list_insert (journal->undo_ops.prev, &op->list_node);
 
   rut_shell_queue_redraw (journal->data->shell);
+
+  dump_journal (journal);
 
   return TRUE;
 }
@@ -317,10 +425,9 @@ rig_undo_journal_new (RigData *data)
 {
   RigUndoJournal *journal = g_new0 (RigUndoJournal, 1);
 
-  g_queue_init (&journal->ops);
   journal->data = data;
-  journal->pos = NULL;
-  g_queue_init (&journal->redo_ops);
+  rut_list_init (&journal->undo_ops);
+  rut_list_init (&journal->redo_ops);
 
   return journal;
 }
