@@ -193,19 +193,46 @@ rig_node_free (void *node, void *user_data)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
       g_slice_free (RigNodeFloat, node);
-      break;
+      return;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      g_slice_free (RigNodeDouble, node);
+      return;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      g_slice_free (RigNodeInteger, node);
+      return;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      g_slice_free (RigNodeUint32, node);
+      return;
 
     case RUT_PROPERTY_TYPE_VEC3:
       g_slice_free (RigNodeVec3, node);
-      break;
+      return;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      g_slice_free (RigNodeVec4, node);
+      return;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
       g_slice_free (RigNodeQuaternion, node);
-      break;
+      return;
 
-    default:
-      g_warn_if_reached ();
+    case RUT_PROPERTY_TYPE_COLOR:
+      g_slice_free (RigNodeColor, node);
+      return;
+
+      /* These types shouldn't become nodes */
+    case RUT_PROPERTY_TYPE_ENUM:
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+    case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      break;
     }
+
+  g_warn_if_reached ();
 }
 
 RigNodeInteger *
