@@ -75,9 +75,9 @@ rut_dof_effect_new (RutContext *ctx)
                               NULL  /* post */);
 
   cogl_snippet_set_replace (snippet,
-      "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord_in[0].st);\n"
-      "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord_in[1].st);\n"
-      "cogl_texel2 = texture2D (cogl_sampler2, cogl_tex_coord_in[2].st);\n"
+      "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+      "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord1_in.st);\n"
+      "cogl_texel2 = texture2D (cogl_sampler2, cogl_tex_coord2_in.st);\n"
       "cogl_color_out = mix (cogl_texel1, cogl_texel2, cogl_texel0.a);\n"
       "cogl_color_out.a = 1.0;\n");
 
