@@ -112,4 +112,12 @@ rut_list_insert_list (RutList *list,
        &pos->member != (head);                                          \
        pos = rut_container_of(pos->member.prev, pos, member))
 
+#define rut_list_for_each_reverse_safe(pos, tmp, head, member)          \
+  for (pos = 0, tmp = 0,                                                \
+         pos = rut_container_of((head)->prev, pos, member),             \
+         tmp = rut_container_of((pos)->member.prev, tmp, member);       \
+       &pos->member != (head);                                          \
+       pos = tmp,                                                       \
+         tmp = rut_container_of(pos->member.prev, tmp, member))
+
 #endif /* RUT_LIST_H */
