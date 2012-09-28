@@ -74,6 +74,11 @@ struct _RutPropInspector
   RutPropInspectorCallback property_changed_cb;
   void *user_data;
 
+  /* This is set while the property is being reloaded. This will make
+   * it avoid forwarding on property changes that were just caused by
+   * reading the already current value. */
+  CoglBool reloading_property;
+
   int ref_count;
 };
 
@@ -454,6 +459,12 @@ property_changed_cb (RutProperty *target_prop,
   g_return_if_fail (target_prop == &inspector->dummy_prop);
   g_return_if_fail (source_prop == inspector->source_prop);
 
+  /* If the property change was only triggered because we are
+   * rereading the existing value then we won't bother notifying
+   * anyone */
+  if (inspector->reloading_property)
+    return;
+
   inspector->property_changed_cb (inspector->target_prop,
                                   inspector->source_prop,
                                   inspector->user_data);
@@ -587,6 +598,7 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
 {
   if (inspector->source_prop && inspector->target_prop)
     {
+      inspector->reloading_property = TRUE;
 
       if (inspector->target_prop->spec->type == RUT_PROPERTY_TYPE_ENUM &&
           inspector->source_prop->spec->type == RUT_PROPERTY_TYPE_INTEGER)
@@ -607,5 +619,7 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
         rut_property_copy_value (&inspector->context->property_ctx,
                                  inspector->source_prop,
                                  inspector->target_prop);
+
+      inspector->reloading_property = FALSE;
     }
 }
