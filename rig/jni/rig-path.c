@@ -24,11 +24,18 @@
 #include "rig-path.h"
 #include "rig-node.h"
 
+static void
+node_free_cb (void *node,
+              void *user_data)
+{
+  rig_node_free (GPOINTER_TO_UINT (user_data), node);
+}
+
 void
 rig_path_free (RigPath *path)
 {
   g_queue_foreach (&path->nodes,
-                   rig_node_free,
+                   node_free_cb,
                    GUINT_TO_POINTER (path->type));
   g_queue_clear (&path->nodes);
   rut_refable_unref (path->ctx);

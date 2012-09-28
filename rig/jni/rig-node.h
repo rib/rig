@@ -125,7 +125,8 @@ rig_node_color_lerp (RigNodeColor *a,
                      RutColor *value);
 
 void
-rig_node_free (void *node, void *user_data);
+rig_node_free (RutPropertyType type,
+               void *node);
 
 RigNodeFloat *
 rig_node_new_for_float (float t, float value);

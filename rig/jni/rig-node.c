@@ -185,10 +185,9 @@ rig_node_quaternion_lerp (RigNodeQuaternion *a,
 }
 
 void
-rig_node_free (void *node, void *user_data)
+rig_node_free (RutPropertyType type,
+               void *node)
 {
-  RutPropertyType type = GPOINTER_TO_UINT (user_data);
-
   switch (type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
