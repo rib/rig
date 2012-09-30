@@ -670,9 +670,9 @@ typedef enum
  * Since: 1.0
  */
 typedef enum {
-  COGL_BUFFER_BIT_COLOR   = 1L<<0,
-  COGL_BUFFER_BIT_DEPTH   = 1L<<1,
-  COGL_BUFFER_BIT_STENCIL = 1L<<2
+  COGL_BUFFER_BIT_COLOR   = 1<<0,
+  COGL_BUFFER_BIT_DEPTH   = 1<<1,
+  COGL_BUFFER_BIT_STENCIL = 1<<2
 } CoglBufferBit;
 
 /**

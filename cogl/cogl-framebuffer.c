@@ -198,7 +198,7 @@ _cogl_framebuffer_get_winsys (CoglFramebuffer *framebuffer)
  * the journal */
 void
 _cogl_framebuffer_clear_without_flush4f (CoglFramebuffer *framebuffer,
-                                         unsigned long buffers,
+                                         CoglBufferBit buffers,
                                          float red,
                                          float green,
                                          float blue,
@@ -232,7 +232,7 @@ _cogl_framebuffer_dirty (CoglFramebuffer *framebuffer)
 
 void
 cogl_framebuffer_clear4f (CoglFramebuffer *framebuffer,
-                          unsigned long buffers,
+                          CoglBufferBit buffers,
                           float red,
                           float green,
                           float blue,
@@ -391,7 +391,7 @@ cleared:
  */
 void
 cogl_framebuffer_clear (CoglFramebuffer *framebuffer,
-                        unsigned long buffers,
+                        CoglBufferBit buffers,
                         const CoglColor *color)
 {
   cogl_framebuffer_clear4f (framebuffer, buffers,
@@ -1784,7 +1784,7 @@ _cogl_blit_framebuffer (unsigned int src_x,
 
 void
 cogl_framebuffer_discard_buffers (CoglFramebuffer *framebuffer,
-                                  unsigned long buffers)
+                                  CoglBufferBit buffers)
 {
   CoglContext *ctx = framebuffer->context;
 

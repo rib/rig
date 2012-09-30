@@ -1030,7 +1030,7 @@ cogl_framebuffer_get_context (CoglFramebuffer *framebuffer);
  */
 void
 cogl_framebuffer_clear (CoglFramebuffer *framebuffer,
-                        unsigned long buffers,
+                        CoglBufferBit buffers,
                         const CoglColor *color);
 
 /**
@@ -1055,7 +1055,7 @@ cogl_framebuffer_clear (CoglFramebuffer *framebuffer,
  */
 void
 cogl_framebuffer_clear4f (CoglFramebuffer *framebuffer,
-                          unsigned long buffers,
+                          CoglBufferBit buffers,
                           float red,
                           float green,
                           float blue,
@@ -1629,7 +1629,7 @@ cogl_framebuffer_stroke_path (CoglFramebuffer *framebuffer,
  */
 void
 cogl_framebuffer_discard_buffers (CoglFramebuffer *framebuffer,
-                                  unsigned long buffers);
+                                  CoglBufferBit buffers);
 
 /**
  * cogl_framebuffer_finish:
