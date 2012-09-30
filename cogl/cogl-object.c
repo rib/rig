@@ -239,7 +239,7 @@ cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
                                 void *user_data)
 {
   GHashTableIter iter;
-  unsigned long *instance_count;
+  unsigned int *instance_count;
   CoglDebugObjectTypeInfo info;
 
   g_hash_table_iter_init (&iter, _cogl_debug_instances);
@@ -256,7 +256,7 @@ static void
 print_instances_cb (const CoglDebugObjectTypeInfo *info,
                     void *user_data)
 {
-  g_print ("\t%s: %lu\n", info->name, info->instance_count);
+  g_print ("\t%s: %u\n", info->name, info->instance_count);
 }
 
 void

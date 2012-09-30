@@ -117,7 +117,7 @@ typedef void (*CoglUserDataDestroyCallback) (void *user_data);
 typedef struct
 {
   const char *name;
-  unsigned long instance_count;
+  unsigned int instance_count;
 } CoglDebugObjectTypeInfo;
 
 /**

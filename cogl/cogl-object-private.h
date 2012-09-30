@@ -117,7 +117,7 @@ struct _CoglObject
 #define COGL_OBJECT_COMMON_DEFINE_WITH_CODE(TypeName, type_name, code)  \
                                                                         \
 CoglObjectClass _cogl_##type_name##_class;                              \
-static unsigned long _cogl_object_##type_name##_count;                  \
+static unsigned int _cogl_object_##type_name##_count;                   \
                                                                         \
 static inline void                                                      \
 _cogl_object_##type_name##_inc (void)                                   \
