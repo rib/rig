@@ -10,8 +10,8 @@ msgstr ""
 "Project-Id-Version: cogl master\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=cogl&keywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2012-09-07 13:16+0000\n"
-"PO-Revision-Date: 2012-09-08 14:45+0200\n"
+"POT-Creation-Date: 2012-09-28 16:20+0000\n"
+"PO-Revision-Date: 2012-10-01 20:21+0200\n"
 "Last-Translator: Marek Černocký <marek@manet.cz>\n"
 "Language-Team: Czech <gnome-cs-list@gnome.org>\n"
 "Language: cs\n"
@@ -352,3 +352,164 @@ msgstr "Sledovat výkonostní aspekty"
 #: ../cogl/cogl-debug-options.h:192
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Zkusit zdůraznit suboptimální využití Cogl"
+
+#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
+#, c-format
+msgid "Could not allocate %lu bytes to read file \"%s\""
+msgstr "Nelze alokovat %lu bajtů pro čtení souboru „%s“"
+
+#: ../deps/glib/gfileutils.c:557
+#, c-format
+msgid "Error reading file '%s': %s"
+msgstr "Chyba při čtení souboru „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:571
+#, c-format
+msgid "File \"%s\" is too large"
+msgstr "Soubor „%s“ je příliš velký"
+
+#: ../deps/glib/gfileutils.c:654
+#, c-format
+msgid "Failed to read from file '%s': %s"
+msgstr "Selhalo čtení ze souboru „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
+#, c-format
+msgid "Failed to open file '%s': %s"
+msgstr "Selhalo otevření souboru „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:722
+#, c-format
+msgid "Failed to get attributes of file '%s': fstat() failed: %s"
+msgstr "Selhalo získání vlastností souboru „%s“: selhala funkce fstat(): %s"
+
+#: ../deps/glib/gfileutils.c:756
+#, c-format
+msgid "Failed to open file '%s': fdopen() failed: %s"
+msgstr "Selhalo otevření souboru „%s“: selhala funkce fdopen(): %s"
+
+#: ../deps/glib/gfileutils.c:864
+#, c-format
+msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
+msgstr ""
+"Selhalo přejmenování souboru „%s“ na „%s“: selhala funkce g_rename(): %s"
+
+#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
+#, c-format
+msgid "Failed to create file '%s': %s"
+msgstr "Selhalo vytvoření souboru „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:920
+#, c-format
+msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
+msgstr "Selhalo otevření souboru „%s“ pro zápis: selhala funkce fdopen(): %s"
+
+#: ../deps/glib/gfileutils.c:945
+#, c-format
+msgid "Failed to write file '%s': fwrite() failed: %s"
+msgstr "Selhal zápis souboru „%s“: selhala funkce fwrite(): %s"
+
+#: ../deps/glib/gfileutils.c:964
+#, c-format
+msgid "Failed to write file '%s': fflush() failed: %s"
+msgstr "Selhal zápis souboru „%s“: selhala funkce fflush(): %s"
+
+#: ../deps/glib/gfileutils.c:1008
+#, c-format
+msgid "Failed to write file '%s': fsync() failed: %s"
+msgstr "Selhal zápis souboru „%s“: selhala funkce fsync(): %s"
+
+#: ../deps/glib/gfileutils.c:1032
+#, c-format
+msgid "Failed to close file '%s': fclose() failed: %s"
+msgstr "Selhalo zavření souboru „%s“: selhala funkce fclose(): %s"
+
+#: ../deps/glib/gfileutils.c:1154
+#, c-format
+msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
+msgstr ""
+"Existující soubor „%s“ nemohl být odstraněn: selhala funkce g_unlink(): %s"
+
+#: ../deps/glib/gfileutils.c:1414
+#, c-format
+msgid "Template '%s' invalid, should not contain a '%s'"
+msgstr "Šablona „%s“ je neplatná, neměla by obsahovat „%s“"
+
+#: ../deps/glib/gfileutils.c:1427
+#, c-format
+msgid "Template '%s' doesn't contain XXXXXX"
+msgstr "Šablona „%s“ neobsahuje XXXXXX"
+
+#: ../deps/glib/gfileutils.c:2009
+#, c-format
+msgid "%.1f KiB"
+msgstr "%.1f KiB"
+
+#: ../deps/glib/gfileutils.c:2012
+#, c-format
+msgid "%.1f MiB"
+msgstr "%.1f MiB"
+
+#: ../deps/glib/gfileutils.c:2015
+#, c-format
+msgid "%.1f GiB"
+msgstr "%.1f GiB"
+
+#: ../deps/glib/gfileutils.c:2018
+#, c-format
+msgid "%.1f TiB"
+msgstr "%.1f TiB"
+
+#: ../deps/glib/gfileutils.c:2021
+#, c-format
+msgid "%.1f PiB"
+msgstr "%.1f PiB"
+
+#: ../deps/glib/gfileutils.c:2024
+#, c-format
+msgid "%.1f EiB"
+msgstr "%.1f EiB"
+
+#: ../deps/glib/gfileutils.c:2037
+#, c-format
+msgid "%.1f kB"
+msgstr "%.1f kB"
+
+#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
+#, c-format
+msgid "%.1f MB"
+msgstr "%.1f MB"
+
+#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
+#, c-format
+msgid "%.1f GB"
+msgstr "%.1f GB"
+
+#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
+#, c-format
+msgid "%.1f TB"
+msgstr "%.1f TB"
+
+#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
+#, c-format
+msgid "%.1f PB"
+msgstr "%.1f PB"
+
+#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
+#, c-format
+msgid "%.1f EB"
+msgstr "%.1f EB"
+
+#: ../deps/glib/gfileutils.c:2144
+#, c-format
+msgid "%.1f KB"
+msgstr "%.1f kB"
+
+#: ../deps/glib/gfileutils.c:2212
+#, c-format
+msgid "Failed to read the symbolic link '%s': %s"
+msgstr "Selhalo čtení symbolického odkazu „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:2233
+msgid "Symbolic links not supported"
+msgstr "Symbolické odkazy nejsou podporovány"
