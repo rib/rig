@@ -128,16 +128,10 @@ rig_transition_find_prop_data (RigTransition *transition,
 }
 
 RigTransitionPropData *
-rig_transition_get_prop_data (RigTransition *transition,
-                              RutObject *object,
-                              const char *property_name)
+rig_transition_get_prop_data_for_property (RigTransition *transition,
+                                           RutProperty *property)
 {
   RigTransitionPropData *prop_data;
-  RutProperty *property =
-    rut_introspectable_lookup_property (object, property_name);
-
-  if (!property)
-    return NULL;
 
   prop_data = rig_transition_find_prop_data (transition, property);
 
@@ -157,6 +151,20 @@ rig_transition_get_prop_data (RigTransition *transition,
   return prop_data;
 }
 
+RigTransitionPropData *
+rig_transition_get_prop_data (RigTransition *transition,
+                              RutObject *object,
+                              const char *property_name)
+{
+  RutProperty *property =
+    rut_introspectable_lookup_property (object, property_name);
+
+  if (!property)
+    return NULL;
+
+  return rig_transition_get_prop_data_for_property (transition, property);
+}
+
 RigPath *
 rig_transition_find_path (RigTransition *transition,
                           RutProperty *property)
@@ -166,6 +174,31 @@ rig_transition_find_path (RigTransition *transition,
   prop_data = rig_transition_find_prop_data (transition, property);
 
   return prop_data ? prop_data->path : NULL;
+}
+
+static RigPath *
+rig_transition_get_path_for_prop_data (RigTransition *transition,
+                                       RigTransitionPropData *prop_data)
+{
+  if (prop_data->path == NULL)
+      prop_data->path = rig_path_new (transition->context,
+                                      prop_data->property->spec->type);
+
+  return prop_data->path;
+}
+
+RigPath *
+rig_transition_get_path_for_property (RigTransition *transition,
+                                      RutProperty *property)
+{
+  RigTransitionPropData *prop_data =
+    rig_transition_get_prop_data_for_property (transition,
+                                               property);
+
+  if (!prop_data)
+    return NULL;
+
+  return rig_transition_get_path_for_prop_data (transition, prop_data);
 }
 
 RigPath *
@@ -179,11 +212,7 @@ rig_transition_get_path (RigTransition *transition,
   if (!prop_data)
     return NULL;
 
-  if (prop_data->path == NULL)
-      prop_data->path = rig_path_new (transition->context,
-                                      prop_data->property->spec->type);
-
-  return prop_data->path;
+  return rig_transition_get_path_for_prop_data (transition, prop_data);
 }
 
 static void

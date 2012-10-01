@@ -74,9 +74,17 @@ rig_transition_set_progress (RigTransition *transition,
                              float progress);
 
 RigTransitionPropData *
+rig_transition_get_prop_data_for_property (RigTransition *transition,
+                                           RutProperty *property);
+
+RigTransitionPropData *
 rig_transition_get_prop_data (RigTransition *transition,
                               RutObject *object,
                               const char *property_name);
+
+RigPath *
+rig_transition_get_path_for_property (RigTransition *transition,
+                                      RutProperty *property);
 
 RigPath *
 rig_transition_get_path (RigTransition *transition,
