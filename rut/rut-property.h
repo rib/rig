@@ -284,6 +284,12 @@ rut_property_context_init (RutPropertyContext *context);
 void
 rut_property_context_destroy (RutPropertyContext *context);
 
+RutClosure *
+rut_property_context_add_animated_callback (RutPropertyContext *context,
+                                            RutPropertyAnimatedChangedCb cb,
+                                            void *user_data,
+                                            RutClosureDestroyCallback destroy);
+
 void
 rut_property_destroy (RutProperty *property);
 

@@ -18,6 +18,18 @@ rut_property_context_destroy (RutPropertyContext *context)
   rut_closure_list_disconnect_all (&context->animated_changed_cb_list);
 }
 
+RutClosure *
+rut_property_context_add_animated_callback (RutPropertyContext *context,
+                                            RutPropertyAnimatedChangedCb cb,
+                                            void *user_data,
+                                            RutClosureDestroyCallback destroy)
+{
+  return rut_closure_list_add (&context->animated_changed_cb_list,
+                               cb,
+                               user_data,
+                               destroy);
+}
+
 void
 rut_property_init (RutProperty *property,
                    const RutPropertySpec *spec,
