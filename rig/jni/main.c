@@ -1480,6 +1480,19 @@ inspector_property_changed_cb (RutProperty *target_property,
   rut_boxed_destroy (&new_value);
 }
 
+static void
+inspector_animated_changed_cb (RutProperty *property,
+                               CoglBool value,
+                               void *user_data)
+{
+  RigData *data = user_data;
+
+  rig_undo_journal_log_set_animated (data->undo_journal,
+                                     data->selected_entity,
+                                     property,
+                                     value);
+}
+
 typedef struct _AddComponentState
 {
   RigData *data;
@@ -1495,6 +1508,7 @@ add_component_inspector_cb (RutComponent *component,
   RutInspector *inspector = rut_inspector_new (data->ctx,
                                                component,
                                                inspector_property_changed_cb,
+                                               inspector_animated_changed_cb,
                                                data);
   RutTransform *transform = rut_transform_new (data->ctx, inspector, NULL);
   float width, height;
@@ -1552,6 +1566,7 @@ update_inspector (RigData *data)
       data->inspector = rut_inspector_new (data->ctx,
                                            data->selected_entity,
                                            inspector_property_changed_cb,
+                                           inspector_animated_changed_cb,
                                            data);
 
       rut_sizable_get_preferred_width (data->inspector,

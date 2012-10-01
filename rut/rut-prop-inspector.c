@@ -75,6 +75,7 @@ struct _RutPropInspector
   RutProperty dummy_prop;
 
   RutPropInspectorCallback property_changed_cb;
+  RutPropInspectorAnimatedCallback animated_changed_cb;
   void *user_data;
 
   /* This is set while the property is being reloaded. This will make
@@ -491,6 +492,10 @@ animated_toggle_cb (RutToggle *toggle,
   rut_property_set_animated (&inspector->context->property_ctx,
                              inspector->target_prop,
                              value);
+
+  inspector->animated_changed_cb (inspector->target_prop,
+                                  value,
+                                  inspector->user_data);
 }
 
 static void
@@ -580,6 +585,7 @@ RutPropInspector *
 rut_prop_inspector_new (RutContext *ctx,
                         RutProperty *property,
                         RutPropInspectorCallback user_property_changed_cb,
+                        RutPropInspectorAnimatedCallback user_animated_cb,
                         void *user_data)
 {
   RutPropInspector *inspector = g_slice_new0 (RutPropInspector);
@@ -597,6 +603,7 @@ rut_prop_inspector_new (RutContext *ctx,
   inspector->context = rut_refable_ref (ctx);
   inspector->target_prop = property;
   inspector->property_changed_cb = user_property_changed_cb;
+  inspector->animated_changed_cb = user_animated_cb;
   inspector->user_data = user_data;
 
   rut_object_init (&inspector->_parent, &rut_prop_inspector_type);

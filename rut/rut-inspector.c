@@ -68,6 +68,7 @@ struct _RutInspector
   int height;
 
   RutInspectorCallback property_changed_cb;
+  RutInspectorCallback animated_changed_cb;
   void *user_data;
 
   int ref_count;
@@ -338,6 +339,21 @@ property_changed_cb (RutProperty *target_prop,
 }
 
 static void
+animated_changed_cb (RutProperty *property,
+                     CoglBool value,
+                     void *user_data)
+{
+  RutInspectorPropertyData *prop_data = user_data;
+  RutInspector *inspector = prop_data->inspector;
+
+  g_return_if_fail (property == prop_data->target_prop);
+
+  inspector->animated_changed_cb (property,
+                                  value,
+                                  inspector->user_data);
+}
+
+static void
 get_all_properties_cb (RutProperty *prop,
                        void *user_data)
 {
@@ -382,6 +398,7 @@ create_property_controls (RutInspector *inspector)
       control = rut_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
                                         property_changed_cb,
+                                        animated_changed_cb,
                                         prop_data);
 
       prop_data->control = control;
@@ -395,6 +412,7 @@ RutInspector *
 rut_inspector_new (RutContext *context,
                    RutObject *object,
                    RutInspectorCallback user_property_changed_cb,
+                   RutInspectorAnimatedCallback user_animated_changed_cb,
                    void *user_data)
 {
   RutInspector *inspector = g_slice_new0 (RutInspector);
@@ -415,6 +433,7 @@ rut_inspector_new (RutContext *context,
   else
     inspector->object = object;
   inspector->property_changed_cb = user_property_changed_cb;
+  inspector->animated_changed_cb = user_animated_changed_cb;
   inspector->user_data = user_data;
 
   rut_object_init (&inspector->_parent, &rut_inspector_type);
