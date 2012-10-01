@@ -81,6 +81,12 @@ dump_op (UndoRedo *op,
         g_string_append (buf, "-");
       break;
 
+    case UNDO_REDO_SET_ANIMATED_OP:
+      g_string_append_printf (buf,
+                              "animated=%s",
+                              op->d.set_animated.value ? "yes" : "no");
+      break;
+
     default:
       g_string_append (buf, "-");
       break;
@@ -346,6 +352,28 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
                                          position);
 }
 
+void
+rig_undo_journal_log_set_animated (RigUndoJournal *journal,
+                                   RutEntity *entity,
+                                   RutProperty *property,
+                                   CoglBool value)
+{
+  UndoRedo *undo_redo;
+  UndoRedoSetAnimated *set_animated;
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_SET_ANIMATED_OP;
+  undo_redo->mergable = FALSE;
+
+  set_animated = &undo_redo->d.set_animated;
+
+  set_animated->entity = rut_refable_ref (entity);
+  set_animated->property = property;
+  set_animated->value = value;
+
+  rig_undo_journal_insert (journal, undo_redo);
+}
+
 static void
 undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
@@ -497,6 +525,40 @@ undo_redo_path_modify_free (UndoRedo *undo_redo)
   g_slice_free (UndoRedo, undo_redo);
 }
 
+static void
+undo_redo_set_animated_apply (RigUndoJournal *journal,
+                              UndoRedo *undo_redo)
+{
+  UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
+  RigData *data = journal->data;
+
+  g_print ("Set animated APPLY\n");
+
+  rut_property_set_animated (&data->ctx->property_ctx,
+                             set_animated->property,
+                             set_animated->value);
+}
+
+static UndoRedo *
+undo_redo_set_animated_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+
+  inverse->d.set_animated.value = !inverse->d.set_animated.value;
+
+  rut_refable_ref (inverse->d.set_animated.entity);
+
+  return inverse;
+}
+
+static void
+undo_redo_set_animated_free (UndoRedo *undo_redo)
+{
+  UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
+  rut_refable_unref (set_animated->entity);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
 static UndoRedoOpImpl undo_redo_ops[] =
   {
     {
@@ -518,6 +580,11 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_path_modify_apply,
       undo_redo_path_modify_invert,
       undo_redo_path_modify_free
+    },
+    {
+      undo_redo_set_animated_apply,
+      undo_redo_set_animated_invert,
+      undo_redo_set_animated_free
     }
   };
 
