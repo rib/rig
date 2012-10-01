@@ -1467,12 +1467,17 @@ inspector_property_changed_cb (RutProperty *target_property,
                                void *user_data)
 {
   RigData *data = user_data;
+  RutBoxed new_value;
 
-  rig_undo_journal_copy_property_and_log (data->undo_journal,
-                                          TRUE, /* mergable */
-                                          data->selected_entity,
-                                          target_property,
-                                          source_property);
+  rut_property_box (source_property, &new_value);
+
+  rig_undo_journal_set_property_and_log (data->undo_journal,
+                                         TRUE, /* mergable */
+                                         data->selected_entity,
+                                         &new_value,
+                                         target_property);
+
+  rut_boxed_destroy (&new_value);
 }
 
 typedef struct _AddComponentState
@@ -2119,24 +2124,13 @@ entity_translate_done_cb (RutEntity *entity,
                           void *user_data)
 {
   RigData *data = user_data;
-  RigTransition *transition = data->selected_transition;
-  float elapsed = rut_timeline_get_elapsed (data->timeline);
-  RigPath *path_position = rig_transition_get_path (transition,
-                                                    entity,
-                                                    "position");
 
-  rig_undo_journal_log_move (data->undo_journal,
-                             FALSE,
-                             entity,
-                             start[0],
-                             start[1],
-                             start[2],
-                             start[0] + rel[0],
-                             start[1] + rel[1],
-                             start[2] + rel[2]);
-
-  rig_path_insert_vec3 (path_position, elapsed,
-                        rut_entity_get_position (entity));
+  rig_undo_journal_move_and_log (data->undo_journal,
+                                 FALSE, /* mergable */
+                                 entity,
+                                 start[0] + rel[0],
+                                 start[1] + rel[1],
+                                 start[2] + rel[2]);
 
   reload_position_inspector (data, entity);
 

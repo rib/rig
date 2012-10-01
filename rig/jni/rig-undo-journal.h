@@ -30,17 +30,37 @@
 
 typedef enum _UndoRedoOp
 {
-  UNDO_REDO_PROPERTY_CHANGE_OP,
+  UNDO_REDO_CONST_PROPERTY_CHANGE_OP,
+  UNDO_REDO_PATH_ADD_OP,
+  UNDO_REDO_PATH_REMOVE_OP,
+  UNDO_REDO_PATH_MODIFY_OP,
   UNDO_REDO_N_OPS
 } UndoRedoOp;
 
-typedef struct _UndoRedoPropertyChange
+typedef struct _UndoRedoConstPropertyChange
 {
   RutEntity *entity;
   RutProperty *property;
   RutBoxed value0;
   RutBoxed value1;
-} UndoRedoPropertyChange;
+} UndoRedoConstPropertyChange;
+
+typedef struct _UndoRedoPathAddRemove
+{
+  RutEntity *entity;
+  RutProperty *property;
+  float t;
+  RutBoxed value;
+} UndoRedoPathAddRemove;
+
+typedef struct _UndoRedoPathModify
+{
+  RutEntity *entity;
+  RutProperty *property;
+  float t;
+  RutBoxed value0;
+  RutBoxed value1;
+} UndoRedoPathModify;
 
 typedef struct _UndoRedo
 {
@@ -50,7 +70,9 @@ typedef struct _UndoRedo
   CoglBool mergable;
   union
     {
-      UndoRedoPropertyChange prop_change;
+      UndoRedoConstPropertyChange const_prop_change;
+      UndoRedoPathAddRemove path_add_remove;
+      UndoRedoPathModify path_modify;
     } d;
 } UndoRedo;
 
@@ -75,22 +97,19 @@ struct _RigUndoJournal
 };
 
 void
-rig_undo_journal_copy_property_and_log (RigUndoJournal *journal,
-                                        CoglBool mergable,
-                                        RutEntity *entity,
-                                        RutProperty *target_prop,
-                                        RutProperty *source_prop);
+rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
+                                       CoglBool mergable,
+                                       RutEntity *entity,
+                                       const RutBoxed *value,
+                                       RutProperty *property);
 
 void
-rig_undo_journal_log_move (RigUndoJournal *journal,
-                           CoglBool mergable,
-                           RutEntity *entity,
-                           float prev_x,
-                           float prev_y,
-                           float prev_z,
-                           float x,
-                           float y,
-                           float z);
+rig_undo_journal_move_and_log (RigUndoJournal *journal,
+                               CoglBool mergable,
+                               RutEntity *entity,
+                               float x,
+                               float y,
+                               float z);
 
 CoglBool
 rig_undo_journal_undo (RigUndoJournal *journal);

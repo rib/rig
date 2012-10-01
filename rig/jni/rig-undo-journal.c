@@ -49,10 +49,10 @@ dump_op (UndoRedo *op,
 {
   switch (op->op)
     {
-    case UNDO_REDO_PROPERTY_CHANGE_OP:
-      if (op->d.prop_change.value0.type == RUT_PROPERTY_TYPE_VEC3)
+    case UNDO_REDO_CONST_PROPERTY_CHANGE_OP:
+      if (op->d.const_prop_change.value0.type == RUT_PROPERTY_TYPE_VEC3)
         {
-          const float *v = op->d.prop_change.value0.d.vec3_val;
+          const float *v = op->d.const_prop_change.value0.d.vec3_val;
           int i;
 
           g_string_append_c (buf, '(');
@@ -66,7 +66,7 @@ dump_op (UndoRedo *op,
 
           g_string_append (buf, ")→(");
 
-          v = op->d.prop_change.value1.d.vec3_val;
+          v = op->d.const_prop_change.value1.d.vec3_val;
 
           for (i = 0; i < 3; i++)
             {
@@ -132,8 +132,8 @@ rig_undo_journal_find_recent_property_change (RigUndoJournal *journal,
       UndoRedo *last_op =
         rut_container_of (journal->undo_ops.prev, last_op, list_node);
 
-      if (last_op->op == UNDO_REDO_PROPERTY_CHANGE_OP &&
-          last_op->d.prop_change.property == property &&
+      if (last_op->op == UNDO_REDO_CONST_PROPERTY_CHANGE_OP &&
+          last_op->d.const_prop_change.property == property &&
           last_op->mergable)
         return last_op;
     }
@@ -141,107 +141,215 @@ rig_undo_journal_find_recent_property_change (RigUndoJournal *journal,
   return NULL;
 }
 
-void
-rig_undo_journal_log_move (RigUndoJournal *journal,
-                           CoglBool mergable,
-                           RutEntity *entity,
-                           float prev_x,
-                           float prev_y,
-                           float prev_z,
-                           float x,
-                           float y,
-                           float z)
+static void
+rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
+                                                CoglBool mergable,
+                                                RutEntity *entity,
+                                                const RutBoxed *value,
+                                                RutProperty *property)
 {
-  RutProperty *position =
-    rut_introspectable_lookup_property (entity, "position");
+  RigData *data = journal->data;
   UndoRedo *undo_redo;
-  UndoRedoPropertyChange *prop_change;
-
-  if (mergable)
-    {
-      undo_redo = rig_undo_journal_find_recent_property_change (journal,
-                                                                position);
-      if (undo_redo)
-        {
-          prop_change = &undo_redo->d.prop_change;
-          prop_change->value1.d.vec3_val[0] = x;
-          prop_change->value1.d.vec3_val[1] = y;
-          prop_change->value1.d.vec3_val[2] = z;
-        }
-    }
-
-  undo_redo = g_slice_new (UndoRedo);
-
-  undo_redo->op = UNDO_REDO_PROPERTY_CHANGE_OP;
-  undo_redo->mergable = mergable;
-
-  prop_change = &undo_redo->d.prop_change;
-  prop_change->entity = rut_refable_ref (entity);
-  prop_change->property = position;
-
-  prop_change->value0.type = RUT_PROPERTY_TYPE_VEC3;
-  prop_change->value0.d.vec3_val[0] = prev_x;
-  prop_change->value0.d.vec3_val[1] = prev_y;
-  prop_change->value0.d.vec3_val[2] = prev_z;
-
-  prop_change->value1.type = RUT_PROPERTY_TYPE_VEC3;
-  prop_change->value1.d.vec3_val[0] = x;
-  prop_change->value1.d.vec3_val[1] = y;
-  prop_change->value1.d.vec3_val[2] = z;
-
-  rig_undo_journal_insert (journal, undo_redo);
-}
-
-void
-rig_undo_journal_copy_property_and_log (RigUndoJournal *journal,
-                                        CoglBool mergable,
-                                        RutEntity *entity,
-                                        RutProperty *target_prop,
-                                        RutProperty *source_prop)
-{
-  UndoRedo *undo_redo;
-  UndoRedoPropertyChange *prop_change;
+  UndoRedoConstPropertyChange *prop_change;
+  RigTransitionPropData *prop_data =
+    rig_transition_get_prop_data_for_property (data->selected_transition,
+                                               property);
 
   /* If we have a mergable entry then we can just update the final value */
   if (mergable &&
       (undo_redo =
-       rig_undo_journal_find_recent_property_change (journal, target_prop)))
+       rig_undo_journal_find_recent_property_change (journal, property)))
     {
-      prop_change = &undo_redo->d.prop_change;
+      prop_change = &undo_redo->d.const_prop_change;
       rut_boxed_destroy (&prop_change->value1);
-      rut_property_box (source_prop, &prop_change->value1);
+      rut_boxed_copy (&prop_change->value1, value);
       rut_property_set_boxed (&journal->data->ctx->property_ctx,
-                              target_prop,
-                              &prop_change->value1);
+                              property,
+                              value);
+      rut_boxed_destroy (&prop_data->constant_value);
+      rut_boxed_copy (&prop_data->constant_value, value);
     }
   else
     {
       undo_redo = g_slice_new (UndoRedo);
 
-      undo_redo->op = UNDO_REDO_PROPERTY_CHANGE_OP;
+      undo_redo->op = UNDO_REDO_CONST_PROPERTY_CHANGE_OP;
       undo_redo->mergable = mergable;
 
-      prop_change = &undo_redo->d.prop_change;
+      prop_change = &undo_redo->d.const_prop_change;
 
-      rut_property_box (target_prop, &prop_change->value0);
-      rut_property_box (source_prop, &prop_change->value1);
+      rut_boxed_copy (&prop_change->value0, &prop_data->constant_value);
+      rut_boxed_copy (&prop_change->value1, value);
 
-      prop_change = &undo_redo->d.prop_change;
       prop_change->entity = rut_refable_ref (entity);
-      prop_change->property = target_prop;
+      prop_change->property = property;
 
       rut_property_set_boxed (&journal->data->ctx->property_ctx,
-                              target_prop,
-                              &prop_change->value1);
+                              property,
+                              value);
+
+      rut_boxed_destroy (&prop_data->constant_value);
+      rut_boxed_copy (&prop_data->constant_value, value);
 
       rig_undo_journal_insert (journal, undo_redo);
     }
 }
 
-static void
-undo_redo_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
+static UndoRedo *
+rig_undo_journal_find_recent_timeline_property_change (RigUndoJournal *journal,
+                                                       float t,
+                                                       RutProperty *property)
 {
-  UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
+  if (!rut_list_empty (&journal->undo_ops))
+    {
+      UndoRedo *last_op =
+        rut_container_of (journal->undo_ops.prev, last_op, list_node);
+
+      if (last_op->op == UNDO_REDO_PATH_ADD_OP &&
+          last_op->d.path_add_remove.property == property &&
+          last_op->d.path_add_remove.t == t &&
+          last_op->mergable)
+        return last_op;
+
+      if (last_op->op == UNDO_REDO_PATH_MODIFY_OP &&
+          last_op->d.path_modify.property == property &&
+          last_op->d.path_modify.t == t &&
+          last_op->mergable)
+        return last_op;
+    }
+
+  return NULL;
+}
+
+static void
+rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
+                                                CoglBool mergable,
+                                                RutEntity *entity,
+                                                const RutBoxed *value,
+                                                RutProperty *property)
+{
+  RigData *data = journal->data;
+  UndoRedo *undo_redo;
+  float t = data->selected_transition->progress;
+  RigPath *path =
+    rig_transition_get_path_for_property (data->selected_transition,
+                                          property);
+
+  /* If we have a mergable entry then we can just update the final value */
+  if (mergable &&
+      (undo_redo =
+       rig_undo_journal_find_recent_timeline_property_change (journal,
+                                                              t,
+                                                              property)))
+    {
+      if (undo_redo->op == UNDO_REDO_PATH_ADD_OP)
+        {
+          UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
+
+          rut_boxed_destroy (&add_remove->value);
+          rut_boxed_copy (&add_remove->value, value);
+        }
+      else
+        {
+          UndoRedoPathModify *modify = &undo_redo->d.path_modify;
+
+          rut_boxed_destroy (&modify->value1);
+          rut_boxed_copy (&modify->value1, value);
+        }
+
+      rig_path_insert_boxed (path, t, value);
+      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+                              property,
+                              value);
+    }
+  else
+    {
+      RutBoxed old_value;
+
+      undo_redo = g_slice_new (UndoRedo);
+
+      if (rig_path_get_boxed (path, t, &old_value))
+        {
+          UndoRedoPathModify *modify = &undo_redo->d.path_modify;
+
+          undo_redo->op = UNDO_REDO_PATH_MODIFY_OP;
+          modify->entity = rut_refable_ref (entity);
+          modify->property = property;
+          modify->t = t;
+          modify->value0 = old_value;
+          rut_boxed_copy (&modify->value1, value);
+        }
+      else
+        {
+          UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
+
+          undo_redo->op = UNDO_REDO_PATH_ADD_OP;
+          add_remove->entity = rut_refable_ref (entity);
+          add_remove->property = property;
+          add_remove->t = t;
+          rut_boxed_copy (&add_remove->value, value);
+        }
+
+      undo_redo->mergable = mergable;
+
+      rig_path_insert_boxed (path, t, value);
+      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+                              property,
+                              value);
+
+      rig_undo_journal_insert (journal, undo_redo);
+    }
+}
+
+void
+rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
+                                       CoglBool mergable,
+                                       RutEntity *entity,
+                                       const RutBoxed *value,
+                                       RutProperty *property)
+{
+  if (property->animated)
+    rig_undo_journal_set_timeline_property_and_log (journal,
+                                                    mergable,
+                                                    entity,
+                                                    value,
+                                                    property);
+  else
+    rig_undo_journal_set_constant_property_and_log (journal,
+                                                    mergable,
+                                                    entity,
+                                                    value,
+                                                    property);
+}
+
+void
+rig_undo_journal_move_and_log (RigUndoJournal *journal,
+                               CoglBool mergable,
+                               RutEntity *entity,
+                               float x,
+                               float y,
+                               float z)
+{
+  RutProperty *position =
+    rut_introspectable_lookup_property (entity, "position");
+  RutBoxed value;
+
+  value.type = RUT_PROPERTY_TYPE_VEC3;
+  value.d.vec3_val[0] = x;
+  value.d.vec3_val[1] = y;
+  value.d.vec3_val[2] = z;
+
+  rig_undo_journal_set_property_and_log (journal,
+                                         mergable,
+                                         entity,
+                                         &value,
+                                         position);
+}
+
+static void
+undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
+{
+  UndoRedoConstPropertyChange *prop_change = &undo_redo->d.const_prop_change;
 
   g_print ("Property change APPLY\n");
 
@@ -250,11 +358,12 @@ undo_redo_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 }
 
 static UndoRedo *
-undo_redo_prop_change_invert (UndoRedo *undo_redo_src)
+undo_redo_const_prop_change_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedoPropertyChange *src = &undo_redo_src->d.prop_change;
+  UndoRedoConstPropertyChange *src = &undo_redo_src->d.const_prop_change;
   UndoRedo *undo_redo_inverse = g_slice_new (UndoRedo);
-  UndoRedoPropertyChange *inverse = &undo_redo_inverse->d.prop_change;
+  UndoRedoConstPropertyChange *inverse =
+    &undo_redo_inverse->d.const_prop_change;
 
   undo_redo_inverse->op = undo_redo_src->op;
   undo_redo_inverse->mergable = FALSE;
@@ -268,20 +377,148 @@ undo_redo_prop_change_invert (UndoRedo *undo_redo_src)
 }
 
 static void
-undo_redo_prop_change_free (UndoRedo *undo_redo)
+undo_redo_const_prop_change_free (UndoRedo *undo_redo)
 {
-  UndoRedoPropertyChange *prop_change = &undo_redo->d.prop_change;
+  UndoRedoConstPropertyChange *prop_change = &undo_redo->d.const_prop_change;
   rut_refable_unref (prop_change->entity);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
+static void
+undo_redo_path_add_apply (RigUndoJournal *journal,
+                          UndoRedo *undo_redo)
+{
+  UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
+  RigData *data = journal->data;
+  RigPath *path;
+
+  g_print ("Path add APPLY\n");
+
+  path = rig_transition_get_path_for_property (data->selected_transition,
+                                               add_remove->property);
+  rig_path_insert_boxed (path, add_remove->t, &add_remove->value);
+
+  rig_transition_update_property (data->selected_transition,
+                                  add_remove->property);
+}
+
+static UndoRedo *
+undo_redo_path_add_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+
+  inverse->op = UNDO_REDO_PATH_REMOVE_OP;
+  rut_boxed_copy (&inverse->d.path_add_remove.value,
+                  &undo_redo_src->d.path_add_remove.value);
+  rut_refable_ref (inverse->d.path_add_remove.entity);
+
+  return inverse;
+}
+
+static void
+undo_redo_path_remove_apply (RigUndoJournal *journal,
+                             UndoRedo *undo_redo)
+{
+  UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
+  RigData *data = journal->data;
+  RigPath *path;
+
+  g_print ("Path remove APPLY\n");
+
+  path = rig_transition_get_path_for_property (data->selected_transition,
+                                               add_remove->property);
+  rig_path_remove (path, add_remove->t);
+
+  rig_transition_update_property (data->selected_transition,
+                                  add_remove->property);
+}
+
+static UndoRedo *
+undo_redo_path_remove_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+
+  inverse->op = UNDO_REDO_PATH_ADD_OP;
+  rut_boxed_copy (&inverse->d.path_add_remove.value,
+                  &undo_redo_src->d.path_add_remove.value);
+  rut_refable_ref (inverse->d.path_add_remove.entity);
+
+  return inverse;
+}
+
+static void
+undo_redo_path_add_remove_free (UndoRedo *undo_redo)
+{
+  UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
+  rut_boxed_destroy (&add_remove->value);
+  rut_refable_unref (add_remove->entity);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
+static void
+undo_redo_path_modify_apply (RigUndoJournal *journal,
+                             UndoRedo *undo_redo)
+{
+  UndoRedoPathModify *modify = &undo_redo->d.path_modify;
+  RigData *data = journal->data;
+  RigPath *path;
+
+  g_print ("Path modify APPLY\n");
+
+  path = rig_transition_get_path_for_property (data->selected_transition,
+                                               modify->property);
+  rig_path_insert_boxed (path, modify->t, &modify->value1);
+
+  rig_transition_update_property (data->selected_transition,
+                                  modify->property);
+}
+
+static UndoRedo *
+undo_redo_path_modify_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+
+  rut_boxed_copy (&inverse->d.path_modify.value0,
+                  &undo_redo_src->d.path_modify.value1);
+  rut_boxed_copy (&inverse->d.path_modify.value1,
+                  &undo_redo_src->d.path_modify.value0);
+  rut_refable_ref (inverse->d.path_modify.entity);
+
+  return inverse;
+}
+
+static void
+undo_redo_path_modify_free (UndoRedo *undo_redo)
+{
+  UndoRedoPathModify *modify = &undo_redo->d.path_modify;
+  rut_boxed_destroy (&modify->value0);
+  rut_boxed_destroy (&modify->value1);
+  rut_refable_unref (modify->entity);
   g_slice_free (UndoRedo, undo_redo);
 }
 
 static UndoRedoOpImpl undo_redo_ops[] =
   {
-      {
-        undo_redo_prop_change_apply,
-        undo_redo_prop_change_invert,
-        undo_redo_prop_change_free
-      }
+    {
+      undo_redo_const_prop_change_apply,
+      undo_redo_const_prop_change_invert,
+      undo_redo_const_prop_change_free
+    },
+    {
+      undo_redo_path_add_apply,
+      undo_redo_path_add_invert,
+      undo_redo_path_add_remove_free
+    },
+    {
+      undo_redo_path_remove_apply,
+      undo_redo_path_remove_invert,
+      undo_redo_path_add_remove_free
+    },
+    {
+      undo_redo_path_modify_apply,
+      undo_redo_path_modify_invert,
+      undo_redo_path_modify_free
+    }
   };
 
 static void
@@ -431,5 +668,3 @@ rig_undo_journal_new (RigData *data)
 
   return journal;
 }
-
-
