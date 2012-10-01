@@ -92,4 +92,18 @@ rig_path_lerp_property (RigPath *path,
                         RutProperty *property,
                         float t);
 
+CoglBool
+rig_path_get_boxed (RigPath *path,
+                    float t,
+                    RutBoxed *value);
+
+void
+rig_path_insert_boxed (RigPath *path,
+                       float t,
+                       const RutBoxed *value);
+
+void
+rig_path_remove (RigPath *path,
+                 float t);
+
 #endif /* _RUT_PATH_H_ */

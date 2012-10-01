@@ -577,3 +577,173 @@ rig_path_lerp_property (RigPath *path,
       break;
     }
 }
+
+CoglBool
+rig_path_get_boxed (RigPath *path,
+                    float t,
+                    RutBoxed *value)
+{
+  GList *link;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link == NULL)
+    return FALSE;
+
+  switch (path->type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      {
+        RigNodeFloat *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_FLOAT;
+        value->d.float_val = node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      {
+        RigNodeDouble *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_DOUBLE;
+        value->d.double_val = node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      {
+        RigNodeInteger *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_INTEGER;
+        value->d.integer_val = node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      {
+        RigNodeUint32 *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_UINT32;
+        value->d.uint32_val = node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_VEC3:
+      {
+        RigNodeVec3 *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_VEC3;
+        memcpy (value->d.vec3_val, node->value, sizeof (float) * 3);
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      {
+        RigNodeVec4 *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_VEC4;
+        memcpy (value->d.vec4_val, node->value, sizeof (float) * 4);
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      {
+        RigNodeColor *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_COLOR;
+        value->d.color_val = node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      {
+        RigNodeQuaternion *node = link->data;
+
+        value->type = RUT_PROPERTY_TYPE_QUATERNION;
+        value->d.quaternion_val = node->value;
+      }
+      return TRUE;
+
+      /* These types of properties can't be interoplated so they
+       * probably shouldn't end up in a path */
+    case RUT_PROPERTY_TYPE_ENUM:
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+    case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+
+  return FALSE;
+}
+
+void
+rig_path_insert_boxed (RigPath *path,
+                       float t,
+                       const RutBoxed *value)
+{
+  g_return_if_fail (value->type == path->type);
+
+  switch (path->type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      rig_path_insert_float (path, t, value->d.float_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      rig_path_insert_double (path, t, value->d.double_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      rig_path_insert_integer (path, t, value->d.integer_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      rig_path_insert_uint32 (path, t, value->d.uint32_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_VEC3:
+      rig_path_insert_vec3 (path, t, value->d.vec3_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      rig_path_insert_vec4 (path, t, value->d.vec4_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      rig_path_insert_color (path, t, &value->d.color_val);
+      return;
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      rig_path_insert_quaternion (path, t, &value->d.quaternion_val);
+      return;
+
+      /* These types of properties can't be interoplated so they
+       * probably shouldn't end up in a path */
+    case RUT_PROPERTY_TYPE_ENUM:
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+    case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+}
+
+void
+rig_path_remove (RigPath *path,
+                 float t)
+{
+  GList *link;
+
+  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+
+  if (link)
+    {
+      rig_node_free (path->type, link->data);
+      g_queue_delete_link (&path->nodes, link);
+    }
+}
