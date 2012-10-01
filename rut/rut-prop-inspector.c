@@ -65,6 +65,9 @@ struct _RutPropInspector
   RutProperty *source_prop;
   RutProperty *target_prop;
 
+  RutToggle *animated_toggle;
+  RutClosure *animated_closure;
+
   /* This dummy property is used so that we can listen to changes on
    * the source property without having to directly make the target
    * property depend on it. The target property can only have one
@@ -111,6 +114,9 @@ _rut_prop_inspector_free (void *object)
       rut_refable_unref (control->control);
       rut_refable_unref (control->transform);
     }
+
+  if (inspector->animated_closure)
+    rut_closure_disconnect (inspector->animated_closure);
 
   g_slice_free (RutPropInspector, inspector);
 }
@@ -477,9 +483,24 @@ animated_toggle_cb (RutToggle *toggle,
 {
   RutPropInspector *inspector = user_data;
 
+  /* If the change was only triggered because we are rereading the
+   * existing value then we won't bother updating the state */
+  if (inspector->reloading_property)
+    return;
+
   rut_property_set_animated (&inspector->context->property_ctx,
                              inspector->target_prop,
                              value);
+}
+
+static void
+animated_property_toggle_cb (RutProperty *property,
+                             void *user_data)
+{
+  RutPropInspector *inspector = user_data;
+
+  if (property == inspector->target_prop)
+    rut_prop_inspector_reload_property (inspector);
 }
 
 static void
@@ -493,6 +514,8 @@ add_animatable_toggle (RutPropInspector *inspector,
       RutObject *control = rut_toggle_new (inspector->context, "");
       RutPropInspectorControl *control_data =
         inspector->controls + inspector->n_controls++;
+      RutPropertyContext *property_ctx =
+        &inspector->context->property_ctx;
 
       rut_toggle_set_tick (control, "•");
       rut_toggle_set_tick_color (control, &(RutColor) { 1, 0, 0, 1 });
@@ -508,6 +531,12 @@ add_animatable_toggle (RutPropInspector *inspector,
       control_data->transform = rut_transform_new (inspector->context, NULL);
       rut_graphable_add_child (control_data->transform, control);
       rut_graphable_add_child (inspector, control_data->transform);
+
+      inspector->animated_toggle = control;
+      rut_property_context_add_animated_callback (property_ctx,
+                                                  animated_property_toggle_cb,
+                                                  inspector,
+                                                  NULL /* destroy */);
     }
 }
 
@@ -596,29 +625,37 @@ rut_prop_inspector_new (RutContext *ctx,
 void
 rut_prop_inspector_reload_property (RutPropInspector *inspector)
 {
-  if (inspector->source_prop && inspector->target_prop)
+  if (inspector->target_prop)
     {
       inspector->reloading_property = TRUE;
 
-      if (inspector->target_prop->spec->type == RUT_PROPERTY_TYPE_ENUM &&
-          inspector->source_prop->spec->type == RUT_PROPERTY_TYPE_INTEGER)
+      if (inspector->source_prop)
         {
-          int value = rut_property_get_enum (inspector->target_prop);
-          rut_property_set_integer (&inspector->context->property_ctx,
-                                    inspector->source_prop,
-                                    value);
+          if (inspector->target_prop->spec->type == RUT_PROPERTY_TYPE_ENUM &&
+              inspector->source_prop->spec->type == RUT_PROPERTY_TYPE_INTEGER)
+            {
+              int value = rut_property_get_enum (inspector->target_prop);
+              rut_property_set_integer (&inspector->context->property_ctx,
+                                        inspector->source_prop,
+                                        value);
+            }
+          else if (inspector->target_prop->spec->type ==
+                   RUT_PROPERTY_TYPE_INTEGER)
+            {
+              int value = rut_property_get_integer (inspector->target_prop);
+              rut_property_set_float (&inspector->context->property_ctx,
+                                      inspector->source_prop,
+                                      value);
+            }
+          else
+            rut_property_copy_value (&inspector->context->property_ctx,
+                                     inspector->source_prop,
+                                     inspector->target_prop);
         }
-      else if (inspector->target_prop->spec->type == RUT_PROPERTY_TYPE_INTEGER)
-        {
-          int value = rut_property_get_integer (inspector->target_prop);
-          rut_property_set_float (&inspector->context->property_ctx,
-                                  inspector->source_prop,
-                                  value);
-        }
-      else
-        rut_property_copy_value (&inspector->context->property_ctx,
-                                 inspector->source_prop,
-                                 inspector->target_prop);
+
+      if (inspector->animated_toggle)
+        rut_toggle_set_state (inspector->animated_toggle,
+                              inspector->target_prop->animated);
 
       inspector->reloading_property = FALSE;
     }
