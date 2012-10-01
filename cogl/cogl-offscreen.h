@@ -82,36 +82,6 @@ cogl_offscreen_new_to_texture (CoglTexture *texture);
 CoglBool
 cogl_is_offscreen (void *object);
 
-#ifndef COGL_DISABLE_DEPRECATED
-
-/**
- * cogl_offscreen_ref:
- * @offscreen: A pointer to a #CoglOffscreen framebuffer
- *
- * Increments the reference count on the @offscreen framebuffer.
- *
- * Return value: (transfer none): For convenience it returns the
- *                                given @offscreen
- *
- * Deprecated: 1.2: cogl_object_ref() should be used in new code.
- */
-void *
-cogl_offscreen_ref (void *offscreen) G_GNUC_DEPRECATED;
-
-/**
- * cogl_offscreen_unref:
- * @offscreen: A pointer to a #CoglOffscreen framebuffer
- *
- * Decreases the reference count for the @offscreen buffer and frees it when
- * the count reaches 0.
- *
- * Deprecated: 1.2: cogl_object_unref() should be used in new code.
- */
-void
-cogl_offscreen_unref (void *offscreen) G_GNUC_DEPRECATED;
-
-#endif /* COGL_DISABLE_DEPRECATED */
-
 G_END_DECLS
 
 #endif /* __COGL_OFFSCREEN_H__ */
