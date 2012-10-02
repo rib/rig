@@ -22,6 +22,8 @@
 #include "rut-global.h"
 #include "math.h"
 
+#define MESA_CONST_ATTRIB_BUG_WORKAROUND
+
 static void
 _diamond_slice_free (void *object)
 {
@@ -54,6 +56,9 @@ _rut_diamond_slice_init_type (void)
 typedef struct _VertexP2T2T2
 {
   float x, y, s0, t0, s1, t1;
+#ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
+  float Nx, Ny, Nz;
+#endif
 } VertexP2T2T2;
 
 static CoglPrimitive *
@@ -64,8 +69,12 @@ primitive_new_p2t2t2 (CoglContext *ctx,
 {
   CoglAttributeBuffer *attribute_buffer =
     cogl_attribute_buffer_new (ctx, n_vertices * sizeof (VertexP2T2T2), data);
-  CoglAttribute *attributes[3];
+  int n_attributes = 4;
+  CoglAttribute *attributes[n_attributes];
   CoglPrimitive *primitive;
+#ifndef MESA_CONST_ATTRIB_BUG_WORKAROUND
+  const float normal[3] = { 0, 0, 1 };
+#endif
   int i;
 
   attributes[0] = cogl_attribute_new (attribute_buffer,
@@ -87,14 +96,27 @@ primitive_new_p2t2t2 (CoglContext *ctx,
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
 
+#ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
+  attributes[3] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_normal_in",
+                                      sizeof (VertexP2T2T2),
+                                      offsetof (VertexP2T2T2, Nx),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+#else
+  attributes[3] = cogl_attribute_new_const_3fv (ctx,
+                                                "cogl_normal_in",
+                                                normal);
+#endif
+
   cogl_object_unref (attribute_buffer);
 
   primitive = cogl_primitive_new_with_attributes (mode,
                                                   n_vertices,
                                                   attributes,
-                                                  3);
+                                                  n_attributes);
 
-  for (i = 0; i < 3; i++)
+  for (i = 0; i < n_attributes; i++)
     cogl_object_unref (attributes[i]);
 
   return primitive;
@@ -203,6 +225,12 @@ diamond_slice_new (RutContext *ctx,
                                        &vertices[i].y,
                                        &z,
                                        &w);
+
+#ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
+          vertices[i].Nx = 0;
+          vertices[i].Ny = 0;
+          vertices[i].Nz = 1;
+#endif
         }
 
       cogl_matrix_init_identity (&matrix);
