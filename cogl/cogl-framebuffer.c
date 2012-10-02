@@ -111,6 +111,8 @@ _cogl_framebuffer_init (CoglFramebuffer *framebuffer,
   framebuffer->viewport_y = 0;
   framebuffer->viewport_width = width;
   framebuffer->viewport_height = height;
+  framebuffer->viewport_age = 0;
+  framebuffer->viewport_age_for_scissor_workaround = -1;
   framebuffer->dither_enabled = TRUE;
 
   framebuffer->modelview_stack = _cogl_matrix_stack_new ();
@@ -177,6 +179,9 @@ _cogl_framebuffer_free (CoglFramebuffer *framebuffer)
   framebuffer->projection_stack = NULL;
 
   cogl_object_unref (framebuffer->journal);
+
+  if (ctx->viewport_scissor_workaround_framebuffer == framebuffer)
+    ctx->viewport_scissor_workaround_framebuffer = NULL;
 
   ctx->framebuffers = g_list_remove (ctx->framebuffers, framebuffer);
 
@@ -457,6 +462,7 @@ cogl_framebuffer_set_viewport (CoglFramebuffer *framebuffer,
   framebuffer->viewport_y = y;
   framebuffer->viewport_width = width;
   framebuffer->viewport_height = height;
+  framebuffer->viewport_age++;
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
