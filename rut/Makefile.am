@@ -5,7 +5,7 @@ components_source_h = \
     components/rut-animation-clip.h \
     components/rut-camera.h \
     components/rut-light.h \
-    components/rut-mesh.h \
+    components/rut-model.h \
     components/rut-material.h \
     components/rut-diamond.h
 
@@ -59,7 +59,7 @@ librut_la_SOURCES = \
     components/rut-animation-clip.c \
     components/rut-camera.c \
     components/rut-light.c \
-    components/rut-mesh.c \
+    components/rut-model.c \
     components/rut-material.c \
     components/rut-diamond.c \
     mash-data.c \

@@ -2138,7 +2138,7 @@ _rut_init (void)
       _rut_camera_init_type ();
       _rut_animation_clip_init_type ();
       _rut_light_init_type ();
-      _rut_mesh_init_type ();
+      _rut_model_init_type ();
       _rut_material_init_type ();
       _rut_diamond_init_type ();
       _rut_diamond_slice_init_type ();

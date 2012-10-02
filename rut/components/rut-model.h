@@ -18,8 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RUT_MESH_H_
-#define _RUT_MESH_H_
+#ifndef _RUT_MODEL_H_
+#define _RUT_MODEL_H_
 
 #include <stdint.h>
 
@@ -28,25 +28,25 @@
 #include "rut-entity.h"
 #include "mash-data-loader.h"
 
-#define RUT_MESH(p) ((RutMesh *)(p))
-typedef struct _RutMesh RutMesh;
-extern RutType rut_mesh_type;
+#define RUT_MODEL(p) ((RutModel *)(p))
+typedef struct _RutModel RutModel;
+extern RutType rut_model_type;
 
-typedef enum _RutMeshType
+typedef enum _RutModelType
 {
-  RUT_MESH_TYPE_TEMPLATE,
-  RUT_MESH_TYPE_FILE,
-} RutMeshType;
+  RUT_MODEL_TYPE_TEMPLATE,
+  RUT_MODEL_TYPE_FILE,
+} RutModelType;
 
-struct _RutMesh
+struct _RutModel
 {
   RutObjectProps _parent;
   RutComponentableProps component;
 
-  RutMeshType type;
+  RutModelType type;
   char *path;
 
-  MashData *mesh_data;
+  MashData *model_data;
   uint8_t *vertex_data;
   int n_vertices;
   size_t stride;
@@ -58,34 +58,34 @@ struct _RutMesh
 };
 
 void
-_rut_mesh_init_type (void);
+_rut_model_init_type (void);
 
-RutMesh *
-rut_mesh_new_from_file (RutContext *ctx,
-                        const char *file);
+RutModel *
+rut_model_new_from_file (RutContext *ctx,
+                         const char *file);
 
-RutMesh *
-rut_mesh_new_from_template (RutContext *ctx,
-                            const char *name);
+RutModel *
+rut_model_new_from_template (RutContext *ctx,
+                             const char *name);
 
 void
-rut_mesh_free (RutMesh *renderer);
+rut_model_free (RutModel *renderer);
 
 void *
-rut_mesh_get_vertex_data (RutMesh *renderer,
-                          size_t *stride,
-                          int *n_vertices);
+rut_model_get_vertex_data (RutModel *renderer,
+                           size_t *stride,
+                           int *n_vertices);
 
 int
-rut_mesh_get_n_vertices (RutMesh *renderer);
+rut_model_get_n_vertices (RutModel *renderer);
 
 CoglPrimitive *
-rut_mesh_get_primitive (RutObject *object);
+rut_model_get_primitive (RutObject *object);
 
-RutMeshType
-rut_mesh_get_type (RutMesh *renderer);
+RutModelType
+rut_model_get_type (RutModel *renderer);
 
 const char *
-rut_mesh_get_path (RutMesh *renderer);
+rut_model_get_path (RutModel *renderer);
 
-#endif /* _RUT_MESH_H_ */
+#endif /* _RUT_MODEL_H_ */

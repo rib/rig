@@ -22,7 +22,7 @@
 
 #include "components/rut-animation-clip.h"
 #include "components/rut-light.h"
-#include "components/rut-mesh.h"
+#include "components/rut-model.h"
 #include "components/rut-material.h"
 #include "components/rut-camera.h"
 #include "components/rut-diamond.h"

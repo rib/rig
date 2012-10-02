@@ -248,13 +248,13 @@ typedef struct _Point3f
 } Point3f;
 
 bool
-rut_util_intersect_mesh (const void       *vertices,
-                         int               n_points,
-                         size_t            stride,
-                         float             ray_origin[3],
-                         float             ray_direction[3],
-                         int              *index,
-                         float            *t_out)
+rut_util_intersect_model (const void       *vertices,
+                          int               n_points,
+                          size_t            stride,
+                          float             ray_origin[3],
+                          float             ray_direction[3],
+                          int              *index,
+                          float            *t_out)
 {
   uint8_t *points;
   int i;

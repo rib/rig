@@ -24,7 +24,7 @@
 #include "rut-geometry.h"
 #include "components/rut-material.h"
 
-#include "rut-mesh.h"
+#include "rut-model.h"
 
 typedef struct
 {
@@ -156,9 +156,9 @@ static Vertex plane_vertices[] =
 #undef norm
 
 static CoglPrimitive *
-create_primitive_from_vertex_data (RutMesh *renderer,
-                                   Vertex          *data,
-                                   int              n_vertices)
+create_primitive_from_vertex_data (RutModel *model,
+                                   Vertex *data,
+                                   int n_vertices)
 {
   CoglAttributeBuffer *attribute_buffer;
   CoglAttribute *attributes[2];
@@ -187,11 +187,11 @@ create_primitive_from_vertex_data (RutMesh *renderer,
   cogl_object_unref (attributes[0]);
   cogl_object_unref (attributes[1]);
 
-  /* update the renderer states */
-  renderer->primitive = primitive;
-  renderer->vertex_data = (uint8_t *) data;
-  renderer->n_vertices = n_vertices;
-  renderer->stride = sizeof (Vertex);
+  /* update the model states */
+  model->primitive = primitive;
+  model->vertex_data = (uint8_t *) data;
+  model->n_vertices = n_vertices;
+  model->stride = sizeof (Vertex);
 
   return primitive;
 }
@@ -217,165 +217,165 @@ create_ply_primitive (RutContext *ctx, const gchar *filename)
 }
 
 CoglPrimitive *
-rut_mesh_get_primitive (RutObject *object)
+rut_model_get_primitive (RutObject *object)
 {
-  RutMesh *renderer = object;
+  RutModel *model = object;
 
-  if (renderer->primitive)
-    return renderer->primitive;
-  else if (renderer->mesh_data)
-    return mash_data_get_primitive (renderer->mesh_data);
+  if (model->primitive)
+    return model->primitive;
+  else if (model->model_data)
+    return mash_data_get_primitive (model->model_data);
   else
     return NULL;
 }
 
-RutType rut_mesh_type;
+RutType rut_model_type;
 
-static RutComponentableVTable _rut_mesh_componentable_vtable = {
+static RutComponentableVTable _rut_model_componentable_vtable = {
   .draw = NULL
 };
 
-static RutPrimableVTable _rut_mesh_primable_vtable = {
-  .get_primitive = rut_mesh_get_primitive
+static RutPrimableVTable _rut_model_primable_vtable = {
+  .get_primitive = rut_model_get_primitive
 };
 
-static RutPickableVTable _rut_mesh_pickable_vtable = {
-  .get_vertex_data = rut_mesh_get_vertex_data
+static RutPickableVTable _rut_model_pickable_vtable = {
+  .get_vertex_data = rut_model_get_vertex_data
 };
 
 void
-_rut_mesh_init_type (void)
+_rut_model_init_type (void)
 {
-  rut_type_init (&rut_mesh_type);
-  rut_type_add_interface (&rut_mesh_type,
+  rut_type_init (&rut_model_type);
+  rut_type_add_interface (&rut_model_type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (RutMesh, component),
-                          &_rut_mesh_componentable_vtable);
-  rut_type_add_interface (&rut_mesh_type,
+                          offsetof (RutModel, component),
+                          &_rut_model_componentable_vtable);
+  rut_type_add_interface (&rut_model_type,
                           RUT_INTERFACE_ID_PRIMABLE,
                           0, /* no associated properties */
-                          &_rut_mesh_primable_vtable);
-  rut_type_add_interface (&rut_mesh_type,
+                          &_rut_model_primable_vtable);
+  rut_type_add_interface (&rut_model_type,
                           RUT_INTERFACE_ID_PICKABLE,
                           0, /* no associated properties */
-                          &_rut_mesh_pickable_vtable);
+                          &_rut_model_pickable_vtable);
 }
 
-static RutMesh *
-_rut_mesh_new (RutContext *ctx)
+static RutModel *
+_rut_model_new (RutContext *ctx)
 {
-  RutMesh *renderer;
+  RutModel *model;
 
-  renderer = g_slice_new0 (RutMesh);
-  rut_object_init (&renderer->_parent, &rut_mesh_type);
-  renderer->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
+  model = g_slice_new0 (RutModel);
+  rut_object_init (&model->_parent, &rut_model_type);
+  model->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  return renderer;
+  return model;
 }
 
-RutMesh *
-rut_mesh_new_from_file (RutContext *ctx,
-                        const char *file)
+RutModel *
+rut_model_new_from_file (RutContext *ctx,
+                         const char *file)
 {
-  RutMesh *renderer;
+  RutModel *model;
 
-  renderer = _rut_mesh_new (ctx);
-  renderer->type = RUT_MESH_TYPE_FILE;
-  renderer->path = g_strdup (file);
-  renderer->mesh_data = create_ply_primitive (ctx, file);
+  model = _rut_model_new (ctx);
+  model->type = RUT_MODEL_TYPE_FILE;
+  model->path = g_strdup (file);
+  model->model_data = create_ply_primitive (ctx, file);
 
-  return renderer;
+  return model;
 }
 
-RutMesh *
-rut_mesh_new_from_template (RutContext *ctx,
-                            const char *name)
+RutModel *
+rut_model_new_from_template (RutContext *ctx,
+                             const char *name)
 {
-  RutMesh *renderer;
+  RutModel *model;
 
-  renderer = _rut_mesh_new (ctx);
+  model = _rut_model_new (ctx);
 
-  renderer->type = RUT_MESH_TYPE_TEMPLATE;
-  renderer->path = g_strdup (name);
+  model->type = RUT_MODEL_TYPE_TEMPLATE;
+  model->path = g_strdup (name);
 
   if (g_strcmp0 (name, "plane") == 0)
     {
-      create_primitive_from_vertex_data (renderer,
+      create_primitive_from_vertex_data (model,
                                          plane_vertices,
                                          G_N_ELEMENTS (plane_vertices));
     }
   else if (g_strcmp0 (name, "cube") == 0)
     {
-      create_primitive_from_vertex_data (renderer,
+      create_primitive_from_vertex_data (model,
                                          cube_vertices,
                                          G_N_ELEMENTS (cube_vertices));
     }
   else if (g_strcmp0 (name, "circle") == 0)
     {
-      renderer->primitive = rut_create_circle_outline_primitive (ctx, 64);
-      renderer->vertex_data = NULL;
-      renderer->n_vertices = 0;
-      renderer->stride = 0;
-      //renderer->vertex_data = (uint8_t *) buffer;
-      //renderer->n_vertices = n_vertices;
-      //renderer->stride = sizeof (CoglVertexP3C4);
+      model->primitive = rut_create_circle_outline_primitive (ctx, 64);
+      model->vertex_data = NULL;
+      model->n_vertices = 0;
+      model->stride = 0;
+      //model->vertex_data = (uint8_t *) buffer;
+      //model->n_vertices = n_vertices;
+      //model->stride = sizeof (CoglVertexP3C4);
     }
   else if (g_strcmp0 (name, "rotation-tool") == 0)
     {
-      renderer->primitive = rut_create_rotation_tool_primitive (ctx, 64);
-      renderer->vertex_data = NULL;
-      renderer->n_vertices = 0;
-      renderer->stride = 0;
-      //renderer->vertex_data = (uint8_t *) buffer;
-      //renderer->n_vertices = n_vertices * 3;
-      //renderer->stride = sizeof (CoglVertexP3C4);
+      model->primitive = rut_create_rotation_tool_primitive (ctx, 64);
+      model->vertex_data = NULL;
+      model->n_vertices = 0;
+      model->stride = 0;
+      //model->vertex_data = (uint8_t *) buffer;
+      //model->n_vertices = n_vertices * 3;
+      //model->stride = sizeof (CoglVertexP3C4);
     }
   else
     g_assert_not_reached ();
 
-  return renderer;
+  return model;
 }
 
-void rut_mesh_free (RutMesh *renderer)
+void rut_model_free (RutModel *model)
 {
-  if (renderer->primitive)
-    cogl_object_unref (renderer->primitive);
+  if (model->primitive)
+    cogl_object_unref (model->primitive);
 
-  if (renderer->mesh_data)
-    g_object_unref (renderer->mesh_data);
+  if (model->model_data)
+    g_object_unref (model->model_data);
 
-  g_slice_free (RutMesh, renderer);
+  g_slice_free (RutModel, model);
 }
 
 void *
-rut_mesh_get_vertex_data (RutMesh *renderer,
-                          size_t *stride,
-                          int *n_vertices)
+rut_model_get_vertex_data (RutModel *model,
+                           size_t *stride,
+                           int *n_vertices)
 {
   if (stride)
-    *stride = renderer->stride;
+    *stride = model->stride;
 
   if (n_vertices)
-    *n_vertices = renderer->n_vertices;
+    *n_vertices = model->n_vertices;
 
-  return renderer->vertex_data;
+  return model->vertex_data;
 }
 
 int
-rut_mesh_get_n_vertices (RutMesh *renderer)
+rut_model_get_n_vertices (RutModel *model)
 {
-  return renderer->n_vertices;
+  return model->n_vertices;
 }
 
-RutMeshType
-rut_mesh_get_type (RutMesh *renderer)
+RutModelType
+rut_model_get_type (RutModel *model)
 {
-  return renderer->type;
+  return model->type;
 }
 
 const char *
-rut_mesh_get_path (RutMesh *renderer)
+rut_model_get_path (RutModel *model)
 {
-  return renderer->path;
+  return model->path;
 }
 

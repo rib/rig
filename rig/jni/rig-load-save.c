@@ -102,21 +102,21 @@ save_component_cb (RutComponent *component,
                state->indent, "",
                rut_diamond_get_size (RUT_DIAMOND (component)));
     }
-  else if (type == &rut_mesh_type)
+  else if (type == &rut_model_type)
     {
-      RutMesh *mesh = RUT_MESH (component);
+      RutModel *model = RUT_MODEL (component);
 
-      fprintf (state->file, "%*s<mesh", state->indent, "");
+      fprintf (state->file, "%*s<model", state->indent, "");
 
-      switch (rut_mesh_get_type (mesh))
+      switch (rut_model_get_type (model))
         {
-        case RUT_MESH_TYPE_TEMPLATE:
+        case RUT_MODEL_TYPE_TEMPLATE:
           fprintf (state->file, " type=\"template\" template=\"%s\"",
-                   rut_mesh_get_path (mesh));
+                   rut_model_get_path (model));
           break;
-        case RUT_MESH_TYPE_FILE:
+        case RUT_MODEL_TYPE_FILE:
           fprintf (state->file, " type=\"file\" path=\"%s\"",
-                   rut_mesh_get_path (mesh));
+                   rut_model_get_path (model));
           break;
         default:
           g_warn_if_reached ();
@@ -616,7 +616,7 @@ enum {
   LOADER_STATE_NONE,
   LOADER_STATE_LOADING_ENTITY,
   LOADER_STATE_LOADING_MATERIAL_COMPONENT,
-  LOADER_STATE_LOADING_MESH_COMPONENT,
+  LOADER_STATE_LOADING_MODEL_COMPONENT,
   LOADER_STATE_LOADING_DIAMOND_COMPONENT,
   LOADER_STATE_LOADING_LIGHT_COMPONENT,
   LOADER_STATE_LOADING_CAMERA_COMPONENT,
@@ -1248,12 +1248,12 @@ parse_start_element (GMarkupParseContext *context,
       loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
-           strcmp (element_name, "mesh") == 0)
+           strcmp (element_name, "model") == 0)
     {
       const char *type_str;
       const char *template_str;
       const char *path_str;
-      RutMesh *mesh;
+      RutModel *model;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
@@ -1278,10 +1278,10 @@ parse_start_element (GMarkupParseContext *context,
               g_set_error (error,
                            G_MARKUP_ERROR,
                            G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing mesh template name");
+                           "Missing model template name");
               return;
             }
-          mesh = rut_mesh_new_from_template (loader->data->ctx,
+          model = rut_model_new_from_template (loader->data->ctx,
                                              template_str);
         }
       else if (strcmp (type_str, "file") == 0)
@@ -1291,22 +1291,22 @@ parse_start_element (GMarkupParseContext *context,
               g_set_error (error,
                            G_MARKUP_ERROR,
                            G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing mesh path name");
+                           "Missing model path name");
               return;
             }
-          mesh = rut_mesh_new_from_file (loader->data->ctx, path_str);
+          model = rut_model_new_from_file (loader->data->ctx, path_str);
         }
       else
         {
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid mesh type \"%s\"", type_str);
+                       "Invalid model type \"%s\"", type_str);
           return;
         }
 
-      if (mesh)
-        rut_entity_add_component (loader->current_entity, mesh);
+      if (model)
+        rut_entity_add_component (loader->current_entity, model);
     }
   else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
            strcmp (element_name, "texture") == 0)

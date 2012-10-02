@@ -92,13 +92,13 @@ rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
                              float ray_origin[3], float ray_direction[3],
                              float *u, float *v, float *t);
 bool
-rut_util_intersect_mesh (const void       *vertices,
-                         int               n_points,
-                         size_t            stride,
-                         float             ray_origin[3],
-                         float             ray_direction[3],
-                         int              *index,
-                         float            *t_out);
+rut_util_intersect_model (const void       *vertices,
+                          int               n_points,
+                          size_t            stride,
+                          float             ray_origin[3],
+                          float             ray_direction[3],
+                          int              *index,
+                          float            *t_out);
 
 /* Split Bob Jenkins' One-at-a-Time hash
  *

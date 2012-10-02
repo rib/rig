@@ -1860,7 +1860,7 @@ entitygraph_pre_pick_cb (RutObject *object,
 
       geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
 
-      /* Get a mesh we can pick against */
+      /* Get a model we can pick against */
       if (!(geometry &&
             rut_object_is (geometry, RUT_INTERFACE_ID_PICKABLE) &&
             (vertex_data = rut_pickable_get_vertex_data (geometry,
@@ -1881,8 +1881,8 @@ entitygraph_pre_pick_cb (RutObject *object,
                      transformed_ray_origin,
                      transformed_ray_direction);
 
-      /* intersect the transformed ray with the mesh data */
-      hit = rut_util_intersect_mesh (vertex_data,
+      /* intersect the transformed ray with the model data */
+      hit = rut_util_intersect_model (vertex_data,
                                      n_vertices,
                                      stride,
                                      transformed_ray_origin,
@@ -2941,7 +2941,7 @@ init (RutShell *shell, void *user_data)
   CoglError *error = NULL;
   CoglTexture2D *color_buffer;
   RutColor color;
-  RutMesh *mesh;
+  RutModel *model;
   RutMaterial *material;
   RutLight *light;
   RutCamera *camera;
@@ -3252,10 +3252,10 @@ init (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      RutMesh *mesh = rut_mesh_new_from_template (data->ctx, "cube");
+      RutModel *model = rut_model_new_from_template (data->ctx, "cube");
 
       data->light_handle = rut_entity_new (data->ctx, data->entity_next_id++);
-      rut_entity_add_component (data->light_handle, mesh);
+      rut_entity_add_component (data->light_handle, model);
       rut_graphable_add_child (data->light, data->light_handle);
       rut_entity_set_scale (data->light_handle, 100);
       rut_entity_set_cast_shadow (data->light_handle, FALSE);
