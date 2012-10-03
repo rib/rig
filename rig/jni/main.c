@@ -1052,191 +1052,6 @@ paint_camera_entity (RutEntity *camera, PaintContext *paint_ctx)
 }
 #endif
 
-typedef struct
-{
-  CoglPipeline *pipeline;
-  RutEntity *entity;
-  PaintContext *paint_ctx;
-
-  float viewport_x, viewport_y;
-  float viewport_t_scale;
-  float viewport_y_scale;
-  float viewport_t_offset;
-  float viewport_y_offset;
-} PaintTimelineData;
-
-static void
-paint_timeline_path_cb (RutProperty *property,
-                        RigPath *path,
-                        const RutBoxed *constant_value,
-                        void *user_data)
-{
-  PaintTimelineData *paint_data = user_data;
-  RutPaintContext *rut_paint_ctx = &paint_data->paint_ctx->_parent;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
-  RigData *data = paint_data->paint_ctx->data;
-  RutContext *ctx = data->ctx;
-  CoglPrimitive *prim;
-  GArray *points;
-  GList *l;
-  GList *next;
-  float red, green, blue;
-
-  if (path == NULL ||
-      property->object != paint_data->entity ||
-      property->spec->type != RUT_PROPERTY_TYPE_FLOAT)
-    return;
-
-  if (strcmp (property->spec->name, "x") == 0)
-    red = 1.0, green = 0.0, blue = 0.0;
-  else if (strcmp (property->spec->name, "y") == 0)
-    red = 0.0, green = 1.0, blue = 0.0;
-  else if (strcmp (property->spec->name, "z") == 0)
-    red = 0.0, green = 0.0, blue = 1.0;
-  else
-    return;
-
-  points = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
-
-  for (l = path->nodes.head; l; l = next)
-    {
-      RigNodeFloat *f_node = l->data;
-      CoglVertexP2 p;
-
-      next = l->next;
-
-      /* FIXME: This clipping wasn't working... */
-#if 0
-      /* Only draw the nodes within the current viewport */
-      if (next)
-        {
-          float max_t = (viewport_t_offset +
-                         data->timeline_vp->width * viewport_t_scale);
-          if (next->t < viewport_t_offset)
-            continue;
-          if (node->t > max_t && next->t > max_t)
-            break;
-        }
-#endif
-
-#define HANDLE_HALF_SIZE 4
-      p.x = (paint_data->viewport_x +
-             (f_node->t - paint_data->viewport_t_offset) *
-             paint_data->viewport_t_scale);
-
-      cogl_pipeline_set_color4f (paint_data->pipeline, red, green, blue, 1);
-
-      p.y = (paint_data->viewport_y +
-             (f_node->value - paint_data->viewport_y_offset) *
-             paint_data->viewport_y_scale);
-#if 1
-#if 1
-      cogl_framebuffer_push_matrix (fb);
-      cogl_framebuffer_translate (fb, p.x, p.y, 0);
-      cogl_framebuffer_scale (fb, HANDLE_HALF_SIZE, HANDLE_HALF_SIZE, 0);
-      cogl_framebuffer_draw_attributes (fb,
-                                        paint_data->pipeline,
-                                        COGL_VERTICES_MODE_LINE_STRIP,
-                                        1,
-                                        data->circle_node_n_verts - 1,
-                                        &data->circle_node_attribute,
-                                        1);
-      cogl_framebuffer_pop_matrix (fb);
-#else
-#if 0
-      cogl_framebuffer_draw_rectangle (fb,
-                                       pipeline,
-                                       p.x - HANDLE_HALF_SIZE,
-                                       p.y - HANDLE_HALF_SIZE,
-                                       p.x + HANDLE_HALF_SIZE,
-                                       p.y + HANDLE_HALF_SIZE);
-#endif
-#endif
-#endif
-      g_array_append_val (points, p);
-    }
-
-  prim = cogl_primitive_new_p2 (ctx->cogl_context,
-                                COGL_VERTICES_MODE_LINE_STRIP,
-                                points->len, (CoglVertexP2 *)points->data);
-  draw_jittered_primitive4f (data, fb, prim, red, green, blue);
-  cogl_object_unref (prim);
-
-  g_array_free (points, TRUE);
-}
-
-static void
-paint_timeline_camera (PaintContext *paint_ctx)
-{
-  RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RigData *data = paint_ctx->data;
-  RutContext *ctx = data->ctx;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
-
-  //cogl_framebuffer_push_matrix (fb);
-  //cogl_framebuffer_transform (fb, rut_transformable_get_matrix (camera));
-
-  if (data->selected_entity)
-    {
-      PaintTimelineData paint_data;
-
-      paint_data.paint_ctx = paint_ctx;
-
-      paint_data.entity = data->selected_entity;
-      paint_data.viewport_x = 0;
-      paint_data.viewport_y = 0;
-
-      paint_data.viewport_t_scale =
-        rut_ui_viewport_get_doc_scale_x (data->timeline_vp) *
-        data->timeline_scale;
-
-      paint_data.viewport_y_scale =
-        rut_ui_viewport_get_doc_scale_y (data->timeline_vp) *
-        data->timeline_scale;
-
-      paint_data.viewport_t_offset =
-        rut_ui_viewport_get_doc_x (data->timeline_vp);
-      paint_data.viewport_y_offset =
-        rut_ui_viewport_get_doc_y (data->timeline_vp);
-      paint_data.pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-
-      rig_transition_foreach_property (data->selected_transition,
-                                       paint_timeline_path_cb,
-                                       &paint_data);
-
-      cogl_object_unref (paint_data.pipeline);
-
-      {
-        CoglPrimitive *prim;
-        double progress;
-        float progress_x;
-        float progress_line[4];
-
-        progress = rut_timeline_get_progress (data->timeline);
-
-        progress_x =
-          -paint_data.viewport_t_offset *
-          paint_data.viewport_t_scale +
-          data->timeline_width *
-          data->timeline_scale * progress;
-
-        progress_line[0] = progress_x;
-        progress_line[1] = 0;
-        progress_line[2] = progress_x;
-        progress_line[3] = data->timeline_height;
-
-        prim = cogl_primitive_new_p2 (ctx->cogl_context,
-                                      COGL_VERTICES_MODE_LINE_STRIP,
-                                      2,
-                                      (CoglVertexP2 *)progress_line);
-        draw_jittered_primitive4f (data, fb, prim, 0, 1, 0);
-        cogl_object_unref (prim);
-      }
-    }
-
-  //cogl_framebuffer_pop_matrix (fb);
-}
-
 static RutTraverseVisitFlags
 scenegraph_pre_paint_cb (RutObject *object,
                          int depth,
@@ -1362,16 +1177,6 @@ paint (RutShell *shell, void *user_data)
 
   rut_paint_ctx->camera = data->camera;
   paint_camera_entity (data->editor_camera, &paint_ctx);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      rut_paint_ctx->camera = data->timeline_camera;
-      rut_camera_flush (rut_paint_ctx->camera);
-      paint_timeline_camera (&paint_ctx);
-      rut_camera_end_frame (rut_paint_ctx->camera);
-    }
-#endif
 
 #if 0
   rut_paint_ctx->camera = data->editor_camera;
@@ -1694,142 +1499,6 @@ update_inspector (RigData *data)
                                     add_component_inspector_cb,
                                     &component_add_state);
     }
-}
-
-static RutInputEventStatus
-timeline_grab_input_cb (RutInputEvent *event, void *user_data)
-{
-  RigData *data = user_data;
-
-  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-
-  if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
-    {
-      RutButtonState state = rut_motion_event_get_button_state (event);
-      float x = rut_motion_event_get_x (event);
-      float y = rut_motion_event_get_y (event);
-
-      if (state & RUT_BUTTON_STATE_1)
-        {
-          RutCamera *camera = data->timeline_camera;
-          const CoglMatrix *view = rut_camera_get_view_transform (camera);
-          CoglMatrix inverse_view;
-          float progress;
-
-          if (!cogl_matrix_get_inverse (view, &inverse_view))
-            g_error ("Failed to get inverse transform");
-
-          unproject_window_coord (camera,
-                                  view,
-                                  &inverse_view,
-                                  0, /* z in entity coordinates */
-                                  &x, &y);
-
-          progress = x / data->timeline_width;
-          //g_print ("x = %f, y = %f progress=%f\n", x, y, progress);
-
-          rut_timeline_set_progress (data->timeline, progress);
-          rut_shell_queue_redraw (data->ctx->shell);
-
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-      else if (state & RUT_BUTTON_STATE_2)
-        {
-          float dx = data->grab_x - x;
-          float dy = data->grab_y - y;
-          float t_scale =
-            rut_ui_viewport_get_doc_scale_x (data->timeline_vp) *
-            data->timeline_scale;
-
-          float y_scale =
-            rut_ui_viewport_get_doc_scale_y (data->timeline_vp) *
-            data->timeline_scale;
-
-          float inv_t_scale = 1.0 / t_scale;
-          float inv_y_scale = 1.0 / y_scale;
-
-
-          rut_ui_viewport_set_doc_x (data->timeline_vp,
-                                     data->grab_timeline_vp_t + (dx * inv_t_scale));
-          rut_ui_viewport_set_doc_y (data->timeline_vp,
-                                     data->grab_timeline_vp_y + (dy * inv_y_scale));
-
-          rut_shell_queue_redraw (data->ctx->shell);
-        }
-    }
-  else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
-    {
-      rut_shell_ungrab_input (data->ctx->shell,
-                              timeline_grab_input_cb,
-                              user_data);
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
-    }
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static RutInputEventStatus
-timeline_input_cb (RutInputEvent *event,
-                   void *user_data)
-{
-  RigData *data = user_data;
-
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      rut_shell_grab_key_focus (data->ctx->shell,
-                                timeline_input_cb,
-                                NULL,
-                                data);
-
-      switch (rut_motion_event_get_action (event))
-        {
-        case RUT_MOTION_EVENT_ACTION_DOWN:
-          {
-            data->grab_x = rut_motion_event_get_x (event);
-            data->grab_y = rut_motion_event_get_y (event);
-            data->grab_timeline_vp_t = rut_ui_viewport_get_doc_x (data->timeline_vp);
-            data->grab_timeline_vp_y = rut_ui_viewport_get_doc_y (data->timeline_vp);
-            /* TODO: Add rut_shell_implicit_grab_input() that handles releasing
-             * the grab for you */
-            g_print ("timeline input grab\n");
-            rut_shell_grab_input (data->ctx->shell,
-                                  rut_input_event_get_camera (event),
-                                  timeline_grab_input_cb, data);
-            return RUT_INPUT_EVENT_STATUS_HANDLED;
-          }
-	default:
-	  break;
-        }
-    }
-  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
-           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
-    {
-      switch (rut_key_event_get_keysym (event))
-        {
-        case RUT_KEY_equal:
-          data->timeline_scale += 0.2;
-          rut_shell_queue_redraw (data->ctx->shell);
-          break;
-        case RUT_KEY_minus:
-          data->timeline_scale -= 0.2;
-          rut_shell_queue_redraw (data->ctx->shell);
-          break;
-        case RUT_KEY_Home:
-          data->timeline_scale = 1;
-          rut_shell_queue_redraw (data->ctx->shell);
-        }
-      g_print ("Key press in timeline area\n");
-    }
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static RutInputEventStatus
-timeline_region_input_cb (RutInputRegion *region,
-                          RutInputEvent *event,
-                          void *user_data)
-{
-  return timeline_input_cb (event, user_data);
 }
 
 static CoglPrimitive *
@@ -2560,16 +2229,6 @@ main_input_cb (RutInputEvent *event,
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
 
-#if 0
-      switch (rut_motion_event_get_action (event))
-        {
-        case RUT_MOTION_EVENT_ACTION_DOWN:
-          /* TODO: Add rut_shell_implicit_grab_input() that handles releasing
-           * the grab for you */
-          rut_shell_grab_input (data->ctx->shell, timeline_grab_input_cb, data);
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-#endif
     }
 #ifdef RIG_EDITOR_ENABLED
   else if (!_rig_in_device_mode &&
@@ -2934,18 +2593,6 @@ allocate_main_area (RigData *data)
 static void
 allocate (RigData *data)
 {
-  float vp_width;
-  float vp_height;
-
-  data->top_bar_height = 30;
-  //data->top_bar_height = 0;
-  data->left_bar_width = data->width * 0.2;
-  //data->left_bar_width = 200;
-  //data->left_bar_width = 0;
-  data->right_bar_width = data->width * 0.2;
-  //data->right_bar_width = 200;
-  data->bottom_bar_height = data->height * 0.2;
-  data->grab_margin = 5;
   //data->main_width = data->width - data->left_bar_width - data->right_bar_width;
   //data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
 
@@ -2955,44 +2602,6 @@ allocate (RigData *data)
 #endif
 
   allocate_main_area (data);
-
-#ifdef RIG_EDITOR_ENABLED
-  /* Setup projection for the timeline view */
-  if (!_rig_in_device_mode)
-    {
-      data->timeline_width = data->width - data->right_bar_width;
-      data->timeline_height = data->bottom_bar_height;
-
-      rut_camera_set_projection_mode (data->timeline_camera, RUT_PROJECTION_ORTHOGRAPHIC);
-      rut_camera_set_orthographic_coordinates (data->timeline_camera,
-                                               0, 0,
-                                               data->timeline_width,
-                                               data->timeline_height);
-      rut_camera_set_near_plane (data->timeline_camera, -1);
-      rut_camera_set_far_plane (data->timeline_camera, 100);
-      rut_camera_set_background_color4f (data->timeline_camera, 1, 0, 0, 1);
-
-      rut_camera_set_viewport (data->timeline_camera,
-                               0,
-                               data->height - data->bottom_bar_height,
-                               data->timeline_width,
-                               data->timeline_height);
-
-      rut_input_region_set_rectangle (data->timeline_input_region,
-                                      0, 0, data->timeline_width, data->timeline_height);
-
-      vp_width = data->width - data->bottom_bar_height;
-      rut_ui_viewport_set_width (data->timeline_vp,
-                                 vp_width);
-      vp_height = data->bottom_bar_height;
-      rut_ui_viewport_set_height (data->timeline_vp,
-                                  vp_height);
-      rut_ui_viewport_set_doc_scale_x (data->timeline_vp,
-                                       (vp_width / data->timeline_len));
-      rut_ui_viewport_set_doc_scale_y (data->timeline_vp,
-                                       (vp_height / DEVICE_HEIGHT));
-    }
-#endif /* RIG_EDITOR_ENABLED */
 }
 
 static void
@@ -3218,8 +2827,6 @@ init (RutShell *shell, void *user_data)
           g_warning ("Failed to load light-bulb texture: %s", error->message);
           cogl_error_free (error);
         }
-
-      data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
     }
 #endif
 
@@ -3233,17 +2840,6 @@ init (RutShell *shell, void *user_data)
    * be used when handling input events in device coordinates.
    */
   rut_shell_set_window_camera (shell, data->camera);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      data->timeline_camera = rut_camera_new (data->ctx, fb);
-      rut_camera_set_clear (data->timeline_camera, FALSE);
-      rut_shell_add_input_camera (shell, data->timeline_camera, NULL);
-      data->timeline_scale = 1;
-      data->timeline_len = 20;
-    }
-#endif
 
   data->scene = rut_graph_new (data->ctx, NULL);
 
@@ -3557,10 +3153,14 @@ init (RutShell *shell, void *user_data)
       rut_split_view_set_child0 (data->splits[4], data->left_bar_stack);
       rut_split_view_set_child1 (data->splits[4], data->main_area_bevel);
 
+      data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
+      rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
+
       data->bottom_bar_stack = rut_stack_new (data->ctx, 0, 0,
                                               (data->bottom_bar_rect =
                                                rut_rectangle_new4f (data->ctx, 0, 0,
                                                                     0.57, 0.57, 0.57, 1)),
+                                              data->timeline_vp,
                                               NULL);
 
       rut_split_view_set_child0 (data->splits[2], data->splits[3]);
@@ -3669,18 +3269,6 @@ init (RutShell *shell, void *user_data)
   data->slider_progress =
     rut_introspectable_lookup_property (data->slider, "progress");
 #endif
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      data->timeline_input_region =
-        rut_input_region_new_rectangle (0, 0, 0, 0,
-                                        timeline_region_input_cb,
-                                        data);
-      rut_camera_add_input_region (data->timeline_camera,
-                                   data->timeline_input_region);
-    }
-#endif /* RIG_EDITOR_ENABLED */
 
   data->timeline = rut_timeline_new (data->ctx, 20.0);
   rut_timeline_stop (data->timeline);

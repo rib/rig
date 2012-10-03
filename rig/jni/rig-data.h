@@ -80,7 +80,6 @@ typedef struct _RigData
 
   RutSplitView *splits[5];
 
-
   RutBevel *main_area_bevel;
   RutStack *top_bar_stack;
   RutStack *icon_bar_stack;
@@ -106,11 +105,6 @@ typedef struct _RigData
   RutRectangle *rect;
   float width;
   float height;
-  float top_bar_height;
-  float left_bar_width;
-  float right_bar_width;
-  float bottom_bar_height;
-  float grab_margin;
   float main_x;
   float main_y;
   float main_width;
@@ -134,17 +128,7 @@ typedef struct _RigData
   RutObject *inspector;
   GList *component_inspectors;
 
-  RutCamera *timeline_camera;
-  RutInputRegion *timeline_input_region;
-  float timeline_width;
-  float timeline_height;
-  float timeline_len;
-  float timeline_scale;
-
   RutUIViewport *timeline_vp;
-
-  float grab_timeline_vp_t;
-  float grab_timeline_vp_y;
 
   CoglMatrix main_view;
   float z_2d;
