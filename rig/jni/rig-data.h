@@ -21,6 +21,7 @@
 #define _RUT_DATA_H_
 
 #include "rig-transition.h"
+#include "rig-transition-view.h"
 
 /* TODO:
  * This structure should be split up into runtime data and editor data
@@ -129,6 +130,7 @@ typedef struct _RigData
   GList *component_inspectors;
 
   RutUIViewport *timeline_vp;
+  RigTransitionView *transition_view;
 
   CoglMatrix main_view;
   float z_2d;

@@ -3312,6 +3312,22 @@ init (RutShell *shell, void *user_data)
         }
     }
 #endif
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode &&
+      data->selected_transition)
+    {
+      RutObject *doc_node =
+        rut_ui_viewport_get_doc_node (data->timeline_vp);
+
+      data->transition_view =
+        rig_transition_view_new (data->ctx,
+                                 data->scene,
+                                 data->selected_transition,
+                                 data->timeline);
+      rut_graphable_add_child (doc_node, data->transition_view);
+    }
+#endif
 }
 
 static void
@@ -3336,6 +3352,7 @@ fini (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode)
     {
       rut_refable_unref (data->timeline_vp);
+      rut_refable_unref (data->transition_view);
       cogl_object_unref (data->grid_prim);
       cogl_object_unref (data->light_icon);
     }
