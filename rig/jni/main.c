@@ -3239,7 +3239,6 @@ init (RutShell *shell, void *user_data)
   data->current_camera = data->editor_camera;
 
   data->light = rut_entity_new (data->ctx, data->entity_next_id++);
-  data->entities = g_list_prepend (data->entities, data->light);
 #if 1
   vector3[0] = 0;
   vector3[1] = 0;
