@@ -412,9 +412,6 @@ get_entity_pipeline (RigData *data,
   if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_geometry_component_update_pipeline (geometry, pipeline);
 
-  for (l = data->lights; l; l = l->next)
-    light_update_pipeline (l->data, pipeline);
-
   pipeline = cogl_pipeline_new (rut_cogl_context);
 #endif
 

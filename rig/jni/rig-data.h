@@ -192,7 +192,6 @@ typedef struct _RigData
 
   uint32_t entity_next_id;
   GList *entities;
-  GList *lights;
   GList *transitions;
 
   RutEntity *selected_entity;
