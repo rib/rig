@@ -117,6 +117,9 @@ void
 rut_graphable_init (RutObject *object);
 
 void
+rut_graphable_destroy (RutObject *object);
+
+void
 rut_graphable_add_child (RutObject *parent, RutObject *child);
 
 void

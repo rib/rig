@@ -1619,6 +1619,9 @@ _rut_text_free (void *object)
   rut_text_set_buffer (text, NULL);
   g_free (text->font_name);
 
+  rut_simple_introspectable_destroy (text);
+  rut_graphable_destroy (text);
+
   g_slice_free (RutText, text);
 }
 

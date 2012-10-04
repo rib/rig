@@ -119,6 +119,8 @@ _rut_prop_inspector_free (void *object)
   if (inspector->animated_closure)
     rut_closure_disconnect (inspector->animated_closure);
 
+  rut_graphable_destroy (inspector);
+
   g_slice_free (RutPropInspector, inspector);
 }
 

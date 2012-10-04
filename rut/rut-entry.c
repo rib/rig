@@ -94,6 +94,8 @@ _rut_entry_free (void *object)
   rut_graphable_remove_child (entry->text);
   rut_refable_unref (entry->text);
 
+  rut_graphable_destroy (entry);
+
   g_slice_free (RutEntry, entry);
 }
 

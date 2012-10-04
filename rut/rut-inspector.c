@@ -99,6 +99,8 @@ _rut_inspector_free (void *object)
 
   g_free (inspector->prop_data);
 
+  rut_graphable_destroy (inspector);
+
   g_slice_free (RutInspector, inspector);
 }
 

@@ -161,6 +161,7 @@ _rut_split_view_free (void *object)
   rut_refable_unref (split_view->child1_transform);
 
   rut_simple_introspectable_destroy (split_view);
+  rut_graphable_destroy (split_view);
 
   g_slice_free (RutSplitView, split_view);
 }

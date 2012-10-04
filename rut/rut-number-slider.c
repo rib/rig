@@ -314,6 +314,7 @@ _rut_number_slider_free (void *object)
   rut_refable_unref (slider->input_region);
 
   rut_simple_introspectable_destroy (slider);
+  rut_graphable_destroy (slider);
 
   pango_font_description_free (slider->font_description);
 

@@ -78,6 +78,7 @@ _rut_stack_free (void *object)
   g_list_free (stack->children);
 
   rut_simple_introspectable_destroy (stack);
+  rut_graphable_destroy (stack);
 
   g_slice_free (RutStack, stack);
 }

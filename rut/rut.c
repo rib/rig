@@ -627,6 +627,8 @@ _rut_nine_slice_free (void *object)
   cogl_object_unref (nine_slice->pipeline);
   cogl_object_unref (nine_slice->primitive);
 
+  rut_graphable_destroy (nine_slice);
+
   g_slice_free (RutNineSlice, object);
 }
 
@@ -844,7 +846,7 @@ _rut_graph_free (void *object)
 {
   RutGraph *graph = RUT_GRAPH (object);
 
-  rut_graphable_remove_all_children (graph);
+  rut_graphable_destroy (graph);
 
   g_slice_free (RutGraph, object);
 }
@@ -903,7 +905,7 @@ _rut_transform_free (void *object)
 {
   RutTransform *transform = RUT_TRANSFORM (object);
 
-  rut_graphable_remove_all_children (transform);
+  rut_graphable_destroy (transform);
 
   g_slice_free (RutTransform, object);
 }
@@ -1046,6 +1048,8 @@ _rut_rectangle_free (void *object)
   RutRectangle *rectangle = object;
 
   cogl_object_unref (rectangle->pipeline);
+
+  rut_graphable_destroy (rectangle);
 
   g_slice_free (RutRectangle, object);
 }
@@ -1257,6 +1261,7 @@ _rut_ui_viewport_free (void *object)
   rut_refable_simple_unref (ui_viewport->input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
+  rut_graphable_destroy (ui_viewport);
 
   g_slice_free (RutUIViewport, object);
 }
@@ -1660,6 +1665,8 @@ _rut_text_free (void *object)
 
   g_object_unref (text->text);
 
+  rut_graphable_destroy (text);
+
   g_slice_free (RutText, object);
 }
 
@@ -1782,6 +1789,8 @@ _rut_button_free (void *object)
   rut_refable_unref (button->background_disabled);
 
   g_object_unref (button->label);
+
+  rut_graphable_destroy (button);
 
   g_slice_free (RutButton, object);
 }

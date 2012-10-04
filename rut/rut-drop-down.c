@@ -293,6 +293,7 @@ _rut_drop_down_free (void *object)
   rut_refable_unref (drop->input_region);
 
   rut_simple_introspectable_destroy (drop);
+  rut_graphable_destroy (drop);
 
   pango_font_description_free (drop->font_description);
 

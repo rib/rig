@@ -63,6 +63,19 @@ rut_graphable_init (RutObject *object)
 }
 
 void
+rut_graphable_destroy (RutObject *object)
+{
+  RutGraphableProps *props =
+    rut_object_get_properties (object, RUT_INTERFACE_ID_GRAPHABLE);
+
+  /* The node shouldn't have a parent, because if it did then it would
+   * still have a reference and it shouldn't be being destroyed */
+  g_warn_if_fail (props->parent == NULL);
+
+  rut_graphable_remove_all_children (object);
+}
+
+void
 rut_graphable_add_child (RutObject *parent, RutObject *child)
 {
   RutGraphableProps *parent_props =

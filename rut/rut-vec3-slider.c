@@ -114,6 +114,7 @@ _rut_vec3_slider_free (void *object)
   rut_refable_unref (slider->context);
 
   rut_simple_introspectable_destroy (slider);
+  rut_graphable_destroy (slider);
 
   g_slice_free (RutVec3Slider, slider);
 }

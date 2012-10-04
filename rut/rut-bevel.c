@@ -85,6 +85,7 @@ _rut_bevel_free (void *object)
     cogl_object_unref (bevel->prim);
 
   rut_simple_introspectable_destroy (bevel);
+  rut_graphable_destroy (bevel);
 
   g_slice_free (RutBevel, bevel);
 }

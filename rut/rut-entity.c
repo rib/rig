@@ -146,6 +146,8 @@ _rut_entity_free (void *object)
 
   g_ptr_array_free (entity->components, TRUE);
 
+  rut_graphable_destroy (entity);
+
   g_slice_free (RutEntity, entity);
 }
 

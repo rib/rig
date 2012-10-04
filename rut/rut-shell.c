@@ -454,6 +454,8 @@ _rut_input_region_free (void *object)
     }
 #endif
 
+  rut_graphable_destroy (region);
+
   g_slice_free (RutInputRegion, region);
 }
 
@@ -1771,6 +1773,8 @@ _rut_scroll_bar_free (void *object)
   rut_refable_simple_unref (scroll_bar->background);
   rut_refable_simple_unref (scroll_bar->handle);
 
+  rut_graphable_destroy (scroll_bar);
+
   g_slice_free (RutScrollBar, object);
 }
 
@@ -2029,6 +2033,8 @@ _rut_slider_free (void *object)
   rut_refable_simple_unref (slider->background);
 
   rut_simple_introspectable_destroy (slider);
+
+  rut_graphable_destroy (slider);
 
   g_slice_free (RutSlider, object);
 }

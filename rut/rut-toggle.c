@@ -147,6 +147,7 @@ _rut_toggle_free (void *object)
   cogl_object_unref (toggle->pipeline_box);
 
   rut_simple_introspectable_destroy (toggle);
+  rut_graphable_destroy (toggle);
 
   g_slice_free (RutToggle, object);
 }
