@@ -75,13 +75,10 @@ rut_graphable_add_child (RutObject *parent, RutObject *child)
     rut_object_get_vtable (child, RUT_INTERFACE_ID_GRAPHABLE);
   RutObject *old_parent = child_props->parent;
 
+  rut_refable_ref (child);
+
   if (old_parent)
-    {
-      RutGraphableVTable *old_parent_vtable =
-        rut_object_get_vtable (old_parent, RUT_INTERFACE_ID_GRAPHABLE);
-      if (old_parent_vtable->child_removed)
-        old_parent_vtable->child_removed (old_parent, child);
-    }
+    rut_graphable_remove_child (child);
 
   child_props->parent = parent;
   if (child_vtable && child_vtable->parent_changed)
@@ -91,7 +88,7 @@ rut_graphable_add_child (RutObject *parent, RutObject *child)
     parent_vtable->child_added (parent, child);
 
   /* XXX: maybe this should be deferred to parent_vtable->child_added ? */
-  g_queue_push_tail (&parent_props->children, rut_refable_ref (child));
+  g_queue_push_tail (&parent_props->children, child);
 }
 
 void
@@ -100,12 +97,17 @@ rut_graphable_remove_child (RutObject *child)
   RutGraphableProps *child_props =
     rut_object_get_properties (child, RUT_INTERFACE_ID_GRAPHABLE);
   RutObject *parent = child_props->parent;
+  RutGraphableVTable *parent_vtable;
   RutGraphableProps *parent_props;
 
   if (!parent)
     return;
 
+  parent_vtable = rut_object_get_vtable (parent, RUT_INTERFACE_ID_GRAPHABLE);
   parent_props = rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+
+  if (parent_vtable->child_removed)
+    parent_vtable->child_removed (parent, child);
 
   g_queue_remove (&parent_props->children, child);
   rut_refable_unref (child);
