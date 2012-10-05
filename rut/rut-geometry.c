@@ -26,6 +26,7 @@
 
 #include "rut-context.h"
 #include "rut-geometry.h"
+#include "rut-interfaces.h"
 
 CoglAttribute *
 rut_create_circle_fan_p2 (RutContext *ctx,
@@ -69,25 +70,33 @@ rut_create_circle_fan_p2 (RutContext *ctx,
   return attribute;
 }
 
-CoglPrimitive *
-rut_create_circle_outline_primitive (RutContext *ctx,
-                                     uint8_t n_vertices)
+RutMesh *
+rut_create_circle_outline_mesh (uint8_t n_vertices)
 {
-  CoglPrimitive *primitive;
-  CoglVertexP3C4 *buffer;
+  RutBuffer *buffer = rut_buffer_new (n_vertices * sizeof (CoglVertexP3C4));
+  RutMesh *mesh;
 
-  buffer = g_malloc (n_vertices * sizeof (CoglVertexP3C4));
-
-  rut_tesselate_circle_with_line_indices (buffer, n_vertices,
+  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data,
+                                          n_vertices,
                                           NULL, /* no indices required */
                                           0,
                                           RUT_AXIS_Z, 255, 255, 255);
 
-  primitive = cogl_primitive_new_p3c4 (ctx->cogl_context,
-                                       COGL_VERTICES_MODE_LINE_LOOP,
-                                       n_vertices,
-                                       buffer);
+  mesh = rut_mesh_new_from_buffer_p3c4 (COGL_VERTICES_MODE_LINE_LOOP,
+                                        n_vertices, buffer);
 
+  rut_refable_unref (buffer);
+
+  return mesh;
+}
+
+CoglPrimitive *
+rut_create_circle_outline_primitive (RutContext *ctx,
+                                     uint8_t n_vertices)
+{
+  RutMesh *mesh = rut_create_circle_outline_mesh (n_vertices);
+  CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
+  rut_refable_unref (mesh);
   return primitive;
 }
 
@@ -201,54 +210,66 @@ rut_tesselate_circle_with_line_indices (CoglVertexP3C4 *buffer,
     }
 }
 
-CoglPrimitive *
-rut_create_rotation_tool_primitive (RutContext *ctx,
-                                    uint8_t n_vertices)
+RutMesh *
+rut_create_rotation_tool_mesh (uint8_t n_vertices)
 {
-  CoglPrimitive *primitive;
-  CoglVertexP3C4 *buffer;
-  CoglIndices *indices;
+  RutMesh *mesh;
+  RutBuffer *buffer;
+  RutBuffer *indices_buffer;
   uint8_t *indices_data;
   int vertex_buffer_size;
 
   g_assert (n_vertices < 255 / 3);
 
   vertex_buffer_size = n_vertices * sizeof (CoglVertexP3C4) * 3;
-  buffer = g_malloc (vertex_buffer_size);
-  indices_data = g_malloc (n_vertices * 2 * 3);
+  buffer = rut_buffer_new (vertex_buffer_size);
 
-  rut_tesselate_circle_with_line_indices (buffer, n_vertices,
+  indices_buffer = rut_buffer_new (n_vertices * 2 * 3);
+  indices_data = indices_buffer->data;
+
+  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data,
+                                          n_vertices,
                                           indices_data,
                                           0,
                                           RUT_AXIS_X, 255, 0, 0);
 
-  rut_tesselate_circle_with_line_indices (buffer + n_vertices, n_vertices,
+  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data +
+                                            n_vertices,
+                                          n_vertices,
                                           indices_data,
                                           n_vertices,
                                           RUT_AXIS_Y, 0, 255, 0);
 
-  rut_tesselate_circle_with_line_indices (buffer + 2 * n_vertices, n_vertices,
+  rut_tesselate_circle_with_line_indices ((CoglVertexP3C4 *)buffer->data +
+                                            2 * n_vertices,
+                                          n_vertices,
                                           indices_data,
                                           n_vertices * 2,
                                           RUT_AXIS_Z, 0, 0, 255);
 
-  primitive = cogl_primitive_new_p3c4 (ctx->cogl_context,
-                                       COGL_VERTICES_MODE_LINES,
-                                       n_vertices * 3,
-                                       buffer);
+  mesh = rut_mesh_new_from_buffer_p3c4 (COGL_VERTICES_MODE_LINES,
+                                        n_vertices * 3,
+                                        buffer);
 
-  g_free (buffer);
+  rut_refable_unref (buffer);
 
-  indices = cogl_indices_new (ctx->cogl_context,
-                              COGL_INDICES_TYPE_UNSIGNED_BYTE,
-                              indices_data,
-                              n_vertices * 2 * 3);
+  rut_mesh_set_indices (mesh,
+                        COGL_INDICES_TYPE_UNSIGNED_BYTE,
+                        indices_buffer,
+                        n_vertices * 2 * 3);
 
-  g_free (indices_data);
+  rut_refable_unref (indices_buffer);
 
-  cogl_primitive_set_indices (primitive, indices, n_vertices * 2 * 3);
+  return mesh;
+}
 
-  cogl_object_unref (indices);
+CoglPrimitive *
+rut_create_rotation_tool_primitive (RutContext *ctx,
+                                    uint8_t n_vertices)
+{
+  RutMesh *mesh = rut_create_rotation_tool_mesh (n_vertices);
+  CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
+  rut_refable_unref (mesh);
 
   return primitive;
 }
