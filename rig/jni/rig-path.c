@@ -316,7 +316,7 @@ rig_path_insert_vec3 (RigPath *path,
   if (link)
     {
       node = link->data;
-      memcpy (node->value, value, sizeof (value));
+      memcpy (node->value, value, sizeof (node->value));
     }
   else
     {
@@ -340,7 +340,7 @@ rig_path_insert_vec4 (RigPath *path,
   if (link)
     {
       node = link->data;
-      memcpy (node->value, value, sizeof (value));
+      memcpy (node->value, value, sizeof (node->value));
     }
   else
     {
