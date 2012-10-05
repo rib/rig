@@ -11,9 +11,6 @@ components_source_h = \
 
 source_h = \
     $(components_source_h) \
-    mash-data.h \
-    mash-data-loader.h \
-    mash-ply-loader.h \
     rut-color.h \
     rut-entity.h \
     rut-components.h \
@@ -64,9 +61,6 @@ librut_la_SOURCES = \
     components/rut-model.c \
     components/rut-material.c \
     components/rut-diamond.c \
-    mash-data.c \
-    mash-data-loader.c \
-    mash-ply-loader.c \
     rply.c \
     rply.h \
     color-table.h \
