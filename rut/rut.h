@@ -40,6 +40,7 @@
 #include "rut-dof-effect.h"
 #include "rut-inspector.h"
 #include "rut-mesh.h"
+#include "rut-mesh-ply.h"
 
 /* entity/components system */
 #include "rut-entity.h"

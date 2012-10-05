@@ -54,7 +54,8 @@ source_h = \
     rut-downsampler.h \
     rut-toggle.h \
     rut-dof-effect.h \
-    rut-mesh.h
+    rut-mesh.h \
+    rut-mesh-ply.h
 
 librut_la_SOURCES = \
     components/rut-animation-clip.c \
@@ -113,6 +114,7 @@ librut_la_SOURCES = \
     rut-toggle.c \
     rut-dof-effect.c \
     rut-mesh.c \
+    rut-mesh-ply.c \
     $(source_h)
 
 if !HAVE_ANDROID
