@@ -298,7 +298,7 @@ static RutPrimableVTable _rut_diamond_primable_vtable = {
 };
 
 static RutPickableVTable _rut_diamond_pickable_vtable = {
-  .get_vertex_data = rut_diamond_get_vertex_data
+  .get_mesh = rut_diamond_get_pick_mesh
 };
 
 void
@@ -330,6 +330,11 @@ rut_diamond_new (RutContext *ctx,
                  int tex_height)
 {
   RutDiamond *diamond = g_slice_new0 (RutDiamond);
+  RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+                                                    6,
+                                                    buffer);
+  CoglVertexP3 *pick_vertices = (CoglVertexP3 *)buffer->data;
 
   rut_object_init (&diamond->_parent, &rut_diamond_type);
 
@@ -345,24 +350,26 @@ rut_diamond_new (RutContext *ctx,
    * indexed by the <size, tex_width, tex_height> tuple... */
   diamond->slice = diamond_slice_new (ctx, size, tex_width, tex_height);
 
-  diamond->pick_vertices[0].x = 0;
-  diamond->pick_vertices[0].y = 0;
-  diamond->pick_vertices[1].x = 0;
-  diamond->pick_vertices[1].y = size;
-  diamond->pick_vertices[2].x = size;
-  diamond->pick_vertices[2].y = size;
-  diamond->pick_vertices[3] = diamond->pick_vertices[0];
-  diamond->pick_vertices[4] = diamond->pick_vertices[2];
-  diamond->pick_vertices[5].x = size;
-  diamond->pick_vertices[5].y = 0;
+  pick_vertices[0].x = 0;
+  pick_vertices[0].y = 0;
+  pick_vertices[1].x = 0;
+  pick_vertices[1].y = size;
+  pick_vertices[2].x = size;
+  pick_vertices[2].y = size;
+  pick_vertices[3] = pick_vertices[0];
+  pick_vertices[4] = pick_vertices[2];
+  pick_vertices[5].x = size;
+  pick_vertices[5].y = 0;
 
   cogl_matrix_transform_points (&diamond->slice->rotate_matrix,
                                 2,
                                 sizeof (CoglVertexP3),
-                                diamond->pick_vertices,
+                                pick_vertices,
                                 sizeof (CoglVertexP3),
-                                diamond->pick_vertices,
+                                pick_vertices,
                                 6);
+
+  diamond->pick_mesh = pick_mesh;
 
   return diamond;
 }
@@ -396,16 +403,8 @@ rut_diamond_apply_mask (RutDiamond *diamond,
                                    ctx->circle_texture);
 }
 
-void *
-rut_diamond_get_vertex_data (RutDiamond *diamond,
-                             size_t *stride,
-                             int *n_vertices)
+RutMesh *
+rut_diamond_get_pick_mesh (RutDiamond *diamond)
 {
-  if (stride)
-    *stride = sizeof (CoglVertexP3);
-
-  if (n_vertices)
-    *n_vertices = 6;
-
-  return diamond->pick_vertices;
+  return diamond->pick_mesh;
 }

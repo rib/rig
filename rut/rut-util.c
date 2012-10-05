@@ -3,6 +3,7 @@
 #include <cogl/cogl.h>
 
 #include "rut-global.h"
+#include "rut-mesh.h"
 #include "rut-util.h"
 
 /* Help macros to scale from OpenGL <-1,1> coordinates system to
@@ -240,59 +241,79 @@ rut_util_intersect_triangle (float v0[3], float v1[3], float v2[3],
   return TRUE;
 }
 
-typedef struct _Point3f
+typedef struct _IntersectState
 {
-  float x;
-  float y;
-  float z;
-} Point3f;
+  float *ray_origin;
+  float *ray_direction;
+  float min_t;
+  int index;
+  int hit_index;
+  bool found;
+} IntersectState;
 
-bool
-rut_util_intersect_model (const void       *vertices,
-                          int               n_points,
-                          size_t            stride,
-                          float             ray_origin[3],
-                          float             ray_direction[3],
-                          int              *index,
-                          float            *t_out)
+static CoglBool
+intersect_triangle_cb (void **attributes_v0,
+                       void **attributes_v1,
+                       void **attributes_v2,
+                       int index_v0,
+                       int index_v1,
+                       int index_v2,
+                       void *user_data)
 {
-  uint8_t *points;
-  int i;
-  float u, v, t, min_t = G_MAXFLOAT;
-  bool hit, found = FALSE;
+  IntersectState *state = user_data;
+  float *pos_v0 = attributes_v0[0];
+  float *pos_v1 = attributes_v1[0];
+  float *pos_v2 = attributes_v2[0];
+  float u, v, t;
+  bool hit;
 
-  g_return_val_if_fail (n_points % 3 == 0, FALSE);
-  g_return_val_if_fail (stride >= sizeof (Point3f), FALSE);
+  hit = rut_util_intersect_triangle (pos_v0, pos_v1, pos_v2,
+                                     state->ray_origin,
+                                     state->ray_direction,
+                                     &u, &v, &t);
 
-  points = (uint8_t *) vertices;
-  for (i = 0; i < n_points / 3; i++, points += stride * 3)
+  /* found a closer triangle. t > 0 means that we don't want results
+   * behind the ray origin */
+  if (hit && t > 0 && t < state->min_t)
     {
-      float *v0, *v1, *v2;
-
-      v0 = (float *) points;
-      v1 = (float *) (points + stride);
-      v2 = (float *) (points + 2 * stride);
-
-      hit = rut_util_intersect_triangle (v0, v1, v2,
-                                         ray_origin, ray_direction,
-                                         &u, &v, &t);
-
-      /* found a closer triangle. t > 0 means that we don't want results
-       * behind the ray origin */
-      if (hit && t > 0 && t < min_t)
-        {
-          min_t = t;
-          found = TRUE;
-
-          if (index)
-            *index = i;
-        }
+      state->min_t = t;
+      state->found = TRUE;
+      state->hit_index = state->index;
     }
 
-  if (found)
+  state->index++;
+
+  return TRUE;
+}
+
+bool
+rut_util_intersect_mesh (RutMesh *mesh,
+                         float ray_origin[3],
+                         float ray_direction[3],
+                         int *index,
+                         float *t_out)
+{
+  IntersectState state;
+
+  state.ray_origin = ray_origin;
+  state.ray_direction = ray_direction;
+  state.min_t = G_MAXFLOAT;
+  state.found = FALSE;
+  state.index = 0;
+
+  rut_mesh_foreach_triangle (mesh,
+                             intersect_triangle_cb,
+                             &state,
+                             "cogl_position_in",
+                             NULL);
+
+  if (state.found)
     {
       if (t_out)
-        *t_out = min_t;
+        *t_out = state.min_t;
+
+      if (index)
+        *index = state.hit_index;
 
       return TRUE;
     }

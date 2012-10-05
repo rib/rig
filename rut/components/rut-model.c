@@ -22,9 +22,11 @@
 #include "rut-global.h"
 #include "rut-types.h"
 #include "rut-geometry.h"
-#include "components/rut-material.h"
+#include "rut-mesh.h"
+#include "rut-mesh-ply.h"
 
-#include "rut-model.h"
+#include "components/rut-material.h"
+#include "components/rut-model.h"
 
 typedef struct
 {
@@ -155,78 +157,21 @@ static Vertex plane_vertices[] =
 
 #undef norm
 
-static CoglPrimitive *
-create_primitive_from_vertex_data (RutModel *model,
-                                   Vertex *data,
-                                   int n_vertices)
-{
-  CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[2];
-  CoglPrimitive *primitive;
-
-  attribute_buffer = cogl_attribute_buffer_new (rut_cogl_context,
-                                                n_vertices * sizeof (Vertex),
-                                                data);
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (Vertex),
-                                      offsetof (Vertex, x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_normal_in",
-                                      sizeof (Vertex),
-                                      offsetof (Vertex, n_x),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  cogl_object_unref (attribute_buffer);
-
-  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
-                                                  n_vertices,
-                                                  attributes, 2);
-  cogl_object_unref (attributes[0]);
-  cogl_object_unref (attributes[1]);
-
-  /* update the model states */
-  model->primitive = primitive;
-  model->vertex_data = (uint8_t *) data;
-  model->n_vertices = n_vertices;
-  model->stride = sizeof (Vertex);
-
-  return primitive;
-}
-
-static MashData *
-create_ply_primitive (RutContext *ctx, const gchar *filename)
-{
-  MashData *data = mash_data_new ();
-  GError *error = NULL;
-  char *full_path = g_build_filename (ctx->assets_location, filename, NULL);
-
-  mash_data_load (data, MASH_DATA_NONE, full_path, &error);
-  if (error)
-    {
-      g_critical ("could not load model %s: %s", filename, error->message);
-      g_free (full_path);
-      return NULL;
-    }
-
-  g_free (full_path);
-
-  return data;
-}
-
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object)
 {
   RutModel *model = object;
 
-  if (model->primitive)
-    return model->primitive;
-  else if (model->model_data)
-    return mash_data_get_primitive (model->model_data);
-  else
-    return NULL;
+  if (!model->primitive)
+    {
+      if (model->mesh)
+        {
+          model->primitive =
+            rut_mesh_create_primitive (model->ctx, model->mesh);
+        }
+    }
+
+  return model->primitive;
 }
 
 RutType rut_model_type;
@@ -240,7 +185,7 @@ static RutPrimableVTable _rut_model_primable_vtable = {
 };
 
 static RutPickableVTable _rut_model_pickable_vtable = {
-  .get_vertex_data = rut_model_get_vertex_data
+  .get_mesh = rut_model_get_mesh
 };
 
 void
@@ -269,22 +214,120 @@ _rut_model_new (RutContext *ctx)
   model = g_slice_new0 (RutModel);
   rut_object_init (&model->_parent, &rut_model_type);
   model->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
+  model->ctx = ctx;
 
   return model;
 }
+
+/* These should be sorted in descending order of size to
+ * avoid gaps due to attributes being naturally aligned. */
+static RutPLYAttribute ply_attributes[] =
+{
+  {
+    .name = "cogl_position_in",
+    .properties = {
+      { "x" },
+      { "y" },
+      { "z" },
+    },
+    .n_properties = 3,
+    .min_components = 1,
+  },
+  {
+    .name = "cogl_normal_in",
+    .properties = {
+      { "nx" },
+      { "ny" },
+      { "nz" },
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_tex_coord0_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+  },
+  {
+    .name = "tangent",
+    .properties = {
+      { "tanx" },
+      { "tany" },
+      { "tanz" }
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_color_in",
+    .properties = {
+      { "red" },
+      { "green" },
+      { "blue" },
+      { "alpha" }
+    },
+    .n_properties = 4,
+    .normalized = TRUE,
+    .min_components = 3,
+  }
+};
+
 
 RutModel *
 rut_model_new_from_file (RutContext *ctx,
                          const char *file)
 {
+  char *full_path = g_build_filename (ctx->assets_location, file, NULL);
   RutModel *model;
+  GError *error = NULL;
+  RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
 
   model = _rut_model_new (ctx);
   model->type = RUT_MODEL_TYPE_FILE;
   model->path = g_strdup (file);
-  model->model_data = create_ply_primitive (ctx, file);
+  model->mesh = rut_mesh_new_from_ply (ctx,
+                                       full_path,
+                                       ply_attributes,
+                                       G_N_ELEMENTS (ply_attributes),
+                                       padding_status,
+                                       &error);
+  if (!model->mesh)
+    {
+      g_critical ("could not load model %s: %s", full_path, error->message);
+      rut_model_free (model);
+      model = NULL;
+    }
+
+  g_free (full_path);
 
   return model;
+}
+
+static RutMesh *
+create_mesh_from_vertex_data (Vertex *data,
+                              int n_vertices)
+{
+  RutBuffer *buffer = rut_buffer_new (sizeof (Vertex) * n_vertices);
+  RutMesh *mesh;
+
+  memcpy (buffer->data, data, buffer->size);
+
+  mesh = rut_mesh_new_from_buffer_p3n3 (COGL_VERTICES_MODE_TRIANGLES,
+                                        n_vertices,
+                                        buffer);
+
+  rut_refable_unref (buffer);
+
+  return mesh;
 }
 
 RutModel *
@@ -300,35 +343,23 @@ rut_model_new_from_template (RutContext *ctx,
 
   if (g_strcmp0 (name, "plane") == 0)
     {
-      create_primitive_from_vertex_data (model,
-                                         plane_vertices,
-                                         G_N_ELEMENTS (plane_vertices));
+      model->mesh =
+        create_mesh_from_vertex_data (plane_vertices,
+                                      G_N_ELEMENTS (plane_vertices));
     }
   else if (g_strcmp0 (name, "cube") == 0)
     {
-      create_primitive_from_vertex_data (model,
-                                         cube_vertices,
-                                         G_N_ELEMENTS (cube_vertices));
+      model->mesh =
+        create_mesh_from_vertex_data (cube_vertices,
+                                      G_N_ELEMENTS (cube_vertices));
     }
   else if (g_strcmp0 (name, "circle") == 0)
     {
-      model->primitive = rut_create_circle_outline_primitive (ctx, 64);
-      model->vertex_data = NULL;
-      model->n_vertices = 0;
-      model->stride = 0;
-      //model->vertex_data = (uint8_t *) buffer;
-      //model->n_vertices = n_vertices;
-      //model->stride = sizeof (CoglVertexP3C4);
+      model->mesh = rut_create_circle_outline_mesh (64);
     }
   else if (g_strcmp0 (name, "rotation-tool") == 0)
     {
-      model->primitive = rut_create_rotation_tool_primitive (ctx, 64);
-      model->vertex_data = NULL;
-      model->n_vertices = 0;
-      model->stride = 0;
-      //model->vertex_data = (uint8_t *) buffer;
-      //model->n_vertices = n_vertices * 3;
-      //model->stride = sizeof (CoglVertexP3C4);
+      model->mesh = rut_create_rotation_tool_mesh (64);
     }
   else
     g_assert_not_reached ();
@@ -341,30 +372,16 @@ void rut_model_free (RutModel *model)
   if (model->primitive)
     cogl_object_unref (model->primitive);
 
-  if (model->model_data)
-    g_object_unref (model->model_data);
+  if (model->mesh)
+    rut_refable_unref (model->mesh);
 
   g_slice_free (RutModel, model);
 }
 
-void *
-rut_model_get_vertex_data (RutModel *model,
-                           size_t *stride,
-                           int *n_vertices)
+RutMesh *
+rut_model_get_mesh (RutModel *model)
 {
-  if (stride)
-    *stride = model->stride;
-
-  if (n_vertices)
-    *n_vertices = model->n_vertices;
-
-  return model->vertex_data;
-}
-
-int
-rut_model_get_n_vertices (RutModel *model)
-{
-  return model->n_vertices;
+  return model->mesh;
 }
 
 RutModelType

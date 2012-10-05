@@ -3,6 +3,7 @@
 
 #include "rut-types.h"
 #include "rut-property.h"
+#include "rut-mesh.h"
 
 /* A Collection of really simple, common interfaces that don't seem to
  * warrent being split out into separate files.
@@ -266,14 +267,10 @@ rut_primable_get_primitive (RutObject *object);
  */
 typedef struct _RutPickableVTable
 {
-  void *(*get_vertex_data)(void *object,
-                           size_t *stride,
-                           int *n_vertices);
+  RutMesh *(*get_mesh)(void *object);
 } RutPickableVTable;
 
 void *
-rut_pickable_get_vertex_data (RutObject *object,
-                              size_t *stride,
-                              int *n_vertices);
+rut_pickable_get_mesh (RutObject *object);
 
 #endif /* _RUT_INTERFACES_H_ */

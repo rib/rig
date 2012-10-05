@@ -1845,9 +1845,7 @@ entitygraph_pre_pick_cb (RutObject *object,
     {
       RutEntity *entity = object;
       RutComponent *geometry;
-      uint8_t *vertex_data;
-      int n_vertices;
-      size_t stride;
+      RutMesh *mesh;
       int index;
       float distance;
       bool hit;
@@ -1863,9 +1861,7 @@ entitygraph_pre_pick_cb (RutObject *object,
       /* Get a model we can pick against */
       if (!(geometry &&
             rut_object_is (geometry, RUT_INTERFACE_ID_PICKABLE) &&
-            (vertex_data = rut_pickable_get_vertex_data (geometry,
-                                                         &stride,
-                                                         &n_vertices))))
+            (mesh = rut_pickable_get_mesh (geometry))))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
       /* transform the ray into the model space */
@@ -1882,9 +1878,7 @@ entitygraph_pre_pick_cb (RutObject *object,
                      transformed_ray_direction);
 
       /* intersect the transformed ray with the model data */
-      hit = rut_util_intersect_model (vertex_data,
-                                     n_vertices,
-                                     stride,
+      hit = rut_util_intersect_mesh (mesh,
                                      transformed_ray_origin,
                                      transformed_ray_direction,
                                      &index,

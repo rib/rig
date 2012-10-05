@@ -568,13 +568,11 @@ rut_primable_get_primitive (RutObject *object)
 }
 
 void *
-rut_pickable_get_vertex_data (RutObject *object,
-                              size_t *stride,
-                              int *n_vertices)
+rut_pickable_get_mesh (RutObject *object)
 {
   RutPickableVTable *pickable =
     rut_object_get_vtable (object, RUT_INTERFACE_ID_PICKABLE);
 
-  return pickable->get_vertex_data (object, stride, n_vertices);
+  return pickable->get_mesh (object);
 }
 

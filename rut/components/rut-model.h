@@ -26,7 +26,7 @@
 #include <cogl/cogl.h>
 
 #include "rut-entity.h"
-#include "mash-data-loader.h"
+#include "rut-mesh.h"
 
 #define RUT_MODEL(p) ((RutModel *)(p))
 typedef struct _RutModel RutModel;
@@ -43,13 +43,12 @@ struct _RutModel
   RutObjectProps _parent;
   RutComponentableProps component;
 
+  RutContext *ctx;
+
   RutModelType type;
   char *path;
 
-  MashData *model_data;
-  uint8_t *vertex_data;
-  int n_vertices;
-  size_t stride;
+  RutMesh *mesh;
 
   CoglPrimitive *primitive;
 
@@ -71,13 +70,8 @@ rut_model_new_from_template (RutContext *ctx,
 void
 rut_model_free (RutModel *renderer);
 
-void *
-rut_model_get_vertex_data (RutModel *renderer,
-                           size_t *stride,
-                           int *n_vertices);
-
-int
-rut_model_get_n_vertices (RutModel *renderer);
+RutMesh *
+rut_model_get_mesh (RutModel *model);
 
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);

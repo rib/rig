@@ -64,7 +64,7 @@ struct _RutDiamond
 
   RutDiamondSlice *slice;
 
-  CoglVertexP3 pick_vertices[6];
+  RutMesh *pick_mesh;
 
   int size;
 };
@@ -91,9 +91,7 @@ void
 rut_diamond_apply_mask (RutDiamond *diamond,
                         CoglPipeline *pipeline);
 
-void *
-rut_diamond_get_vertex_data (RutDiamond *diamond,
-                             size_t *stride,
-                             int *n_vertices);
+RutMesh *
+rut_diamond_get_pick_mesh (RutDiamond *diamond);
 
 #endif /* __RUT_DIAMOND_H__ */
