@@ -58,8 +58,8 @@ pkgconfig_DATA = $(pc_files)
 EXTRA_DIST += cogl2.pc.in
 DISTCLEANFILES += $(pc_files)
 
-# public 1.x api headers
-cogl_1_public_h = \
+# public api headers
+cogl_public_h = \
 	$(srcdir)/cogl1-context.h 		\
 	$(srcdir)/cogl-bitmap.h 		\
 	$(srcdir)/cogl-color.h 			\
@@ -398,7 +398,7 @@ cogl_sources_c += \
 endif
 
 if SUPPORT_XLIB
-cogl_1_public_h += \
+cogl_public_h += \
 	$(srcdir)/cogl-clutter-xlib.h \
 	$(srcdir)/cogl-xlib-renderer.h
 
@@ -505,7 +505,7 @@ if USE_GLIB
 # glib-mkenums rules
 glib_enum_h = cogl-enum-types.h
 glib_enum_c = cogl-enum-types.c
-glib_enum_headers = $(cogl_1_public_h)
+glib_enum_headers = $(cogl_public_h)
 include $(top_srcdir)/build/autotools/Makefile.am.enums
 endif
 
@@ -536,7 +536,7 @@ nodist_libcogl2_la_SOURCES = $(BUILT_SOURCES)
 
 # Cogl installed headers
 cogl_headers = \
-	$(cogl_1_public_h) \
+	$(cogl_public_h) \
 	$(srcdir)/cogl-pango.h \
 	$(NULL)
 
@@ -588,7 +588,7 @@ dist-hook: ../build/win32/vs9/cogl.vcproj ../build/win32/vs10/cogl.vcxproj ../bu
 
 cogl.vsenums_h:
 	echo 'perl %1\bin\glib-mkenums --symbol-prefix cogl_gtype --template ../../cogl/cogl-enum-types.h.in ' >vsenums_h.temp1
-	for F in `echo $(cogl_1_public_h) $(srcdir)/cogl-win32-renderer.h`; do \
+	for F in `echo $(cogl_public_h) $(srcdir)/cogl-win32-renderer.h`; do \
 		case $$F in \
 		*xlib*.h|*wayland*.h) ;; \
 		*.h) echo '../../cogl'$$F' '	\
@@ -603,7 +603,7 @@ cogl.vsenums_h:
 
 cogl.vsenums_c:
 	echo 'perl %1\bin\glib-mkenums --symbol-prefix cogl_gtype --template ../../cogl/cogl-enum-types.c.in ' >vsenums_c.temp1
-	for F in `echo $(cogl_1_public_h) $(srcdir)/cogl-win32-renderer.h`; do \
+	for F in `echo $(cogl_public_h) $(srcdir)/cogl-win32-renderer.h`; do \
 		case $$F in \
 		*xlib*.h|*wayland*.h) ;; \
 		*.h) echo '../../cogl'$$F' '	\
@@ -648,7 +648,7 @@ Cogl-2.0.gir: libcogl2.la Makefile
 Cogl_2_0_gir_NAMESPACE = Cogl
 Cogl_2_0_gir_VERSION = 2.0
 Cogl_2_0_gir_LIBS = libcogl2.la
-Cogl_2_0_gir_FILES = $(cogl_1_public_h) cogl-enum-types.h
+Cogl_2_0_gir_FILES = $(cogl_public_h) cogl-enum-types.h
 Cogl_2_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API
 Cogl_2_0_gir_INCLUDES = GL-1.0 GObject-2.0
 Cogl_2_0_gir_EXPORT_PACKAGES = cogl2
