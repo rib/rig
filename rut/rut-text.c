@@ -1555,7 +1555,7 @@ rut_text_set_markup_internal (RutText *text,
 
   if (stripped_text)
     {
-      rut_text_buffer_set_text (get_buffer (text), stripped_text, strlen (stripped_text));
+      rut_text_buffer_set_text (get_buffer (text), stripped_text);
       g_free (stripped_text);
     }
 
@@ -3910,7 +3910,7 @@ rut_text_set_text (RutText *text,
     }
 
   rut_text_set_use_markup_internal (text, FALSE);
-  rut_text_buffer_set_text (get_buffer (text), text_str, -1);
+  rut_text_buffer_set_text (get_buffer (text), text_str);
 }
 
 void
@@ -3921,7 +3921,7 @@ rut_text_set_markup (RutText *text,
   if (markup != NULL && *markup != '\0')
     rut_text_set_markup_internal (text, markup);
   else
-    rut_text_buffer_set_text (get_buffer (text), "", 0);
+    rut_text_buffer_set_text (get_buffer (text), "");
 }
 
 PangoLayout *

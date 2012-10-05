@@ -342,7 +342,7 @@ rut_text_buffer_new_with_text (RutContext *ctx,
                                int text_len)
 {
   RutTextBuffer *buffer = rut_text_buffer_new (ctx);
-  rut_text_buffer_set_text (buffer, text, text_len);
+  rut_text_buffer_set_text_with_length (buffer, text, text_len);
   return buffer;
 }
 
@@ -368,14 +368,21 @@ rut_text_buffer_get_text (RutTextBuffer *buffer)
 }
 
 void
-rut_text_buffer_set_text (RutTextBuffer *buffer,
-                          const char *chars,
-                          int n_chars)
+rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
+                                      const char *chars,
+                                      int n_chars)
 {
   g_return_if_fail (chars != NULL);
 
   rut_text_buffer_delete_text (buffer, 0, -1);
   rut_text_buffer_insert_text (buffer, 0, chars, n_chars);
+}
+
+void
+rut_text_buffer_set_text (RutTextBuffer *buffer,
+                          const char *chars)
+{
+  rut_text_buffer_set_text_with_length (buffer, chars, -1);
 }
 
 void

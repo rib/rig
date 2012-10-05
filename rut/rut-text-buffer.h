@@ -126,6 +126,20 @@ rut_text_buffer_get_text (RutTextBuffer *buffer);
  * rut_text_buffer_set_text:
  * @buffer: a #RutTextBuffer
  * @chars: the new text
+ *
+ * Sets the text in the buffer to the null-terminated string in @chars.
+ *
+ * This is roughly equivalent to calling rut_text_buffer_delete_text()
+ * and rut_text_buffer_insert_text().
+ */
+void
+rut_text_buffer_set_text (RutTextBuffer *buffer,
+                          const char *chars);
+
+/**
+ * rut_text_buffer_set_text_with_length:
+ * @buffer: a #RutTextBuffer
+ * @chars: the new text
  * @n_chars: the number of characters in @text, or -1
  *
  * Sets the text in the buffer.
@@ -136,9 +150,9 @@ rut_text_buffer_get_text (RutTextBuffer *buffer);
  * Note that @n_chars is in characters, not in bytes.
  */
 void
-rut_text_buffer_set_text (RutTextBuffer *buffer,
-                          const char *chars,
-                          int n_chars);
+rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
+                                      const char *chars,
+                                      int n_chars);
 
 /**
  * rut_text_buffer_set_max_length:
