@@ -2133,6 +2133,9 @@ _rut_init (void)
       _rut_ui_viewport_init_type ();
       _rut_entity_init_type ();
       _rut_asset_type_init ();
+      _rut_buffer_init_type ();
+      _rut_attribute_init_type ();
+      _rut_mesh_init_type ();
 
       /* components */
       _rut_camera_init_type ();

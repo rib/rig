@@ -39,6 +39,7 @@
 #include "rut-toggle.h"
 #include "rut-dof-effect.h"
 #include "rut-inspector.h"
+#include "rut-mesh.h"
 
 /* entity/components system */
 #include "rut-entity.h"

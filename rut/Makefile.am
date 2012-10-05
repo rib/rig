@@ -53,7 +53,8 @@ source_h = \
     rut-gaussian-blurrer.h \
     rut-downsampler.h \
     rut-toggle.h \
-    rut-dof-effect.h
+    rut-dof-effect.h \
+    rut-mesh.h
 
 librut_la_SOURCES = \
     components/rut-animation-clip.c \
@@ -111,6 +112,7 @@ librut_la_SOURCES = \
     rut-downsampler.c \
     rut-toggle.c \
     rut-dof-effect.c \
+    rut-mesh.c \
     $(source_h)
 
 if !HAVE_ANDROID
