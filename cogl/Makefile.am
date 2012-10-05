@@ -60,58 +60,58 @@ DISTCLEANFILES += $(pc_files)
 
 # public api headers
 cogl_public_h = \
-	$(srcdir)/cogl1-context.h 		\
+	$(srcdir)/cogl-attribute-buffer.h 	\
+	$(srcdir)/cogl-attribute.h 		\
 	$(srcdir)/cogl-bitmap.h 		\
+	$(srcdir)/cogl-buffer.h 		\
+	$(srcdir)/cogl-clip-state.h		\
+	$(srcdir)/cogl-clutter.h       		\
 	$(srcdir)/cogl-color.h 			\
+	$(srcdir)/cogl-context.h 		\
+	$(srcdir)/cogl-depth-state.h 		\
+	$(srcdir)/cogl-display.h 		\
+	$(srcdir)/cogl-error.h			\
+	$(srcdir)/cogl-euler.h 			\
+	$(srcdir)/cogl-framebuffer.h		\
+	$(srcdir)/cogl-gles2-types.h		\
+	$(srcdir)/cogl-gles2.h			\
+	$(srcdir)/cogl-index-buffer.h 		\
+	$(srcdir)/cogl-indices.h 		\
 	$(srcdir)/cogl-matrix.h 		\
+	$(srcdir)/cogl-meta-texture.h		\
+	$(srcdir)/cogl-object.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
+	$(srcdir)/cogl-onscreen-template.h 	\
+	$(srcdir)/cogl-onscreen.h		\
+	$(srcdir)/cogl-path.h 			\
+	$(srcdir)/cogl-pipeline-layer-state.h 	\
+	$(srcdir)/cogl-pipeline-state.h 	\
+	$(srcdir)/cogl-pipeline.h 		\
+	$(srcdir)/cogl-pixel-buffer.h		\
+	$(srcdir)/cogl-poll.h			\
+	$(srcdir)/cogl-primitive-texture.h	\
+	$(srcdir)/cogl-primitive.h 		\
+	$(srcdir)/cogl-quaternion.h 		\
+	$(srcdir)/cogl-renderer.h 		\
+	$(srcdir)/cogl-snippet.h		\
+	$(srcdir)/cogl-sub-texture.h            \
+	$(srcdir)/cogl-swap-chain.h 		\
+	$(srcdir)/cogl-texture-2d-gl.h 		\
+	$(srcdir)/cogl-texture-2d-sliced.h      \
+	$(srcdir)/cogl-texture-2d.h             \
+	$(srcdir)/cogl-texture-3d.h             \
+	$(srcdir)/cogl-texture-rectangle.h      \
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
-	$(srcdir)/cogl-clutter.h       		\
+	$(srcdir)/cogl-vector.h 		\
+	$(srcdir)/cogl-version.h		\
 	$(srcdir)/cogl.h			\
+	$(srcdir)/cogl1-context.h 		\
 	$(NULL)
 
-# experimental 2.0 api headers
-# Note: we don't run glib-mkenums over these headers
+# experimental api headers
+# Note: we don't run glib-mkenums or gobject introspection over these headers
 cogl_experimental_h = \
-	$(srcdir)/cogl-object.h 		\
-	$(srcdir)/cogl-renderer.h 		\
-	$(srcdir)/cogl-swap-chain.h 		\
-	$(srcdir)/cogl-onscreen-template.h 	\
-	$(srcdir)/cogl-display.h 		\
-	$(srcdir)/cogl-context.h 		\
-	$(srcdir)/cogl-pipeline.h 		\
-	$(srcdir)/cogl-pipeline-state.h 	\
-	$(srcdir)/cogl-pipeline-layer-state.h 	\
-	$(srcdir)/cogl-snippet.h		\
-	$(srcdir)/cogl-path.h 			\
-	$(srcdir)/cogl-gles2.h			\
-	$(srcdir)/cogl-gles2-types.h		\
-	$(srcdir)/cogl-index-buffer.h 		\
-	$(srcdir)/cogl-attribute-buffer.h 	\
-	$(srcdir)/cogl-indices.h 		\
-	$(srcdir)/cogl-attribute.h 		\
-	$(srcdir)/cogl-primitive.h 		\
-	$(srcdir)/cogl-clip-state.h		\
-	$(srcdir)/cogl-framebuffer.h		\
-	$(srcdir)/cogl-onscreen.h		\
-	$(srcdir)/cogl-vector.h 		\
-	$(srcdir)/cogl-euler.h 			\
-	$(srcdir)/cogl-quaternion.h 		\
-	$(srcdir)/cogl-poll.h			\
-	$(srcdir)/cogl-texture-3d.h             \
-	$(srcdir)/cogl-texture-2d.h             \
-	$(srcdir)/cogl-texture-2d-gl.h 		\
-	$(srcdir)/cogl-texture-rectangle.h      \
-	$(srcdir)/cogl-texture-2d-sliced.h      \
-	$(srcdir)/cogl-sub-texture.h            \
-	$(srcdir)/cogl-meta-texture.h		\
-	$(srcdir)/cogl-primitive-texture.h	\
-	$(srcdir)/cogl-depth-state.h 		\
-	$(srcdir)/cogl-buffer.h 		\
-	$(srcdir)/cogl-pixel-buffer.h		\
-	$(srcdir)/cogl-version.h		\
-	$(srcdir)/cogl-error.h			\
 	$(NULL)
 
 cogl_nodist_experimental_h = \
@@ -391,7 +391,7 @@ cogl_sources_c = \
 	$(NULL)
 
 if USE_GLIB
-cogl_experimental_h += \
+cogl_public_h += \
 	$(srcdir)/cogl-glib-source.h
 cogl_sources_c += \
 	$(srcdir)/cogl-glib-source.c
@@ -402,7 +402,7 @@ cogl_public_h += \
 	$(srcdir)/cogl-clutter-xlib.h \
 	$(srcdir)/cogl-xlib-renderer.h
 
-cogl_experimental_h += \
+cogl_public_h += \
        $(srcdir)/winsys/cogl-texture-pixmap-x11.h \
        $(srcdir)/cogl-xlib.h
 
@@ -424,7 +424,7 @@ cogl_sources_c += \
 	$(srcdir)/winsys/cogl-winsys-glx.c
 endif
 if SUPPORT_WGL
-cogl_experimental_h += \
+cogl_public_h += \
 	$(srcdir)/cogl-win32-renderer.h
 
 cogl_sources_c += \
@@ -474,7 +474,7 @@ cogl_sources_c += \
 	$(srcdir)/winsys/cogl-winsys-egl-android-private.h
 endif
 if SUPPORT_EGL
-cogl_experimental_h += \
+cogl_public_h += \
        $(srcdir)/cogl-egl.h
 cogl_nodist_experimental_h += \
        $(builddir)/cogl-egl-defines.h
@@ -485,7 +485,7 @@ cogl_sources_c += \
        $(srcdir)/winsys/cogl-winsys-egl-private.h
 endif
 if SUPPORT_SDL
-cogl_experimental_h += $(srcdir)/cogl-sdl.h
+cogl_public_h += $(srcdir)/cogl-sdl.h
 cogl_sources_c += \
        $(srcdir)/winsys/cogl-winsys-sdl-private.h \
        $(srcdir)/winsys/cogl-winsys-sdl.c \
