@@ -55,6 +55,9 @@ extern RutType rut_diamond_type;
 struct _RutDiamond
 {
   RutObjectProps _parent;
+
+  int ref_count;
+
   RutComponentableProps component;
 
   RutContext *ctx;

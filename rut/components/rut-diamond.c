@@ -272,6 +272,23 @@ rut_diamond_slice_get_pipeline_template (RutDiamondSlice *slice)
 
 RutType rut_diamond_type;
 
+static void
+_rut_diamond_free (void *object)
+{
+  RutDiamond *diamond = object;
+
+  rut_refable_unref (diamond->slice);
+  rut_refable_unref (diamond->pick_mesh);
+
+  g_slice_free (RutDiamond, diamond);
+}
+
+static RutRefCountableVTable _rut_diamond_ref_countable_vtable = {
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
+  _rut_diamond_free
+};
+
 static RutComponentableVTable _rut_diamond_componentable_vtable = {
     0
 };
@@ -288,6 +305,10 @@ void
 _rut_diamond_init_type (void)
 {
   rut_type_init (&rut_diamond_type);
+  rut_type_add_interface (&rut_diamond_type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RutDiamond, ref_count),
+                          &_rut_diamond_ref_countable_vtable);
   rut_type_add_interface (&rut_diamond_type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
                           offsetof (RutDiamond, component),
@@ -311,6 +332,9 @@ rut_diamond_new (RutContext *ctx,
   RutDiamond *diamond = g_slice_new0 (RutDiamond);
 
   rut_object_init (&diamond->_parent, &rut_diamond_type);
+
+  diamond->ref_count = 1;
+
   diamond->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
   diamond->ctx = rut_refable_ref (ctx);
