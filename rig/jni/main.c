@@ -3779,12 +3779,246 @@ free_asset_input_closures (RigData *data)
   data->asset_input_closures = NULL;
 }
 
+static void
+add_asset (RigData *data, GFile *asset_file)
+{
+  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  GFile *dir = g_file_get_parent (asset_file);
+  char *path = g_file_get_relative_path (assets_dir, asset_file);
+  GList *directory_tags = NULL;
+  GList *l;
+  RutAsset *asset;
+
+  while (!g_file_equal (assets_dir, dir))
+    {
+      char *basename = g_file_get_basename (dir);
+      directory_tags =
+        g_list_prepend (directory_tags, (char *)g_intern_string (basename));
+      g_free (basename);
+      dir = g_file_get_parent (dir);
+    }
+
+  directory_tags =
+    g_list_prepend (directory_tags, (char *)g_intern_string ("image"));
+
+  asset = rut_asset_new_texture (data->ctx, path);
+
+  add_asset_icon (data, asset, data->assets_list_tail_pos);
+  data->assets_list_tail_pos += 110;
+
+  g_print ("TODO: Add asset %s, tags:", path);
+  for (l = directory_tags; l; l = l->next)
+    g_print ("%s, ", (char *)l->data);
+  g_print ("\n");
+
+  g_list_free (directory_tags);
+
+  g_object_unref (assets_dir);
+  g_object_unref (dir);
+  g_free (path);
+}
+
+#if 0
+static GList *
+copy_tags (GList *tags)
+{
+  GList *l, *copy = NULL;
+  for (l = tags; l; l = l->next)
+    {
+      char *tag = g_intern_string (l->data);
+      copy = g_list_prepend (copy, tag);
+    }
+  return copy;
+}
+#endif
+
+static void
+enumerate_dir_for_assets (RigData *data,
+                          GFile *directory);
+
+void
+enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
+{
+  GFileType type = g_file_info_get_file_type (info);
+  const char *name = g_file_info_get_name (info);
+
+  if (name[0] == '.')
+    return;
+
+  if (type == G_FILE_TYPE_DIRECTORY)
+    {
+      GFile *directory = g_file_get_child (parent, name);
+
+      enumerate_dir_for_assets (data, directory);
+
+      g_object_unref (directory);
+    }
+  else if (type == G_FILE_TYPE_REGULAR ||
+           type == G_FILE_TYPE_SYMBOLIC_LINK)
+    {
+      const char *content_type = g_file_info_get_content_type (info);
+      char *mime_type = g_content_type_get_mime_type (content_type);
+      if (mime_type)
+        {
+          if (strncmp (mime_type, "image/", 6) == 0)
+            {
+              GFile *image = g_file_get_child (parent, name);
+              add_asset (data, image);
+              g_object_unref (image);
+            }
+          g_free (mime_type);
+        }
+    }
+}
+
+#ifdef USE_ASYNC_IO
+typedef struct _AssetEnumeratorState
+{
+  RigData *data;
+  GFile *directory;
+  GFileEnumerator *enumerator;
+  GCancellable *cancellable;
+  GList *tags;
+} AssetEnumeratorState;
+
+static void
+cleanup_assets_enumerator (AssetEnumeratorState *state)
+{
+  if (state->enumerator)
+    g_object_unref (state->enumerator);
+
+  g_object_unref (state->cancellable);
+  g_object_unref (state->directory);
+  g_list_free (state->tags);
+
+  state->data->asset_enumerators =
+    g_list_remove (state->data->asset_enumerators, state);
+
+  g_slice_free (AssetEnumeratorState, state);
+}
+
+static void
+assets_found_cb (GObject *source_object,
+                 GAsyncResult *res,
+                 gpointer user_data)
+{
+  AssetEnumeratorState *state = user_data;
+  GList *infos;
+  GList *l;
+
+  infos = g_file_enumerator_next_files_finish (state->enumerator,
+                                               res,
+                                               NULL);
+  if (!infos)
+    {
+      cleanup_assets_enumerator (state);
+      return;
+    }
+
+  for (l = infos; l; l = l->next)
+    enumerate_file_info (state->data, state->directory, l->data);
+
+  g_list_free (infos);
+
+  g_file_enumerator_next_files_async (state->enumerator,
+                                      5, /* what's a good number here? */
+                                      G_PRIORITY_DEFAULT,
+                                      state->cancellable,
+                                      asset_found_cb,
+                                      state);
+}
+
+static void
+assets_enumerator_cb (GObject *source_object,
+                      GAsyncResult *res,
+                      gpointer user_data)
+{
+  AssetEnumeratorState *state = user_data;
+  GError *error = NULL;
+
+  state->enumerator =
+    g_file_enumerate_children_finish (state->directory, res, &error);
+  if (!state->enumerator)
+    {
+      g_warning ("Error while looking for assets: %s", error->message);
+      g_error_free (error);
+      cleanup_assets_enumerator (state);
+      return;
+    }
+
+  g_file_enumerator_next_files_async (state->enumerator,
+                                      5, /* what's a good number here? */
+                                      G_PRIORITY_DEFAULT,
+                                      state->cancellable,
+                                      assets_found_cb,
+                                      state);
+}
+
+static void
+enumerate_dir_for_assets_async (RigData *data,
+                                GFile *directory)
+{
+  AssetEnumeratorState *state = g_slice_new0 (AssetEnumeratorState);
+
+  state->data = data;
+  state->directory = g_object_ref (directory);
+
+  state->cancellable = g_cancellable_new ();
+
+  /* NB: we can only use asynchronous IO if we are running with a Glib
+   * mainloop */
+  g_file_enumerate_children_async (file,
+                                   "standard::*",
+                                   G_FILE_QUERY_INFO_NONE,
+                                   G_PRIORITY_DEFAULT,
+                                   state->cancellable,
+                                   assets_enumerator_cb,
+                                   data);
+
+  data->asset_enumerators = g_list_prepend (data->asset_enumerators, state);
+}
+
+#else /* USE_ASYNC_IO */
+
+static void
+enumerate_dir_for_assets (RigData *data,
+                          GFile *file)
+{
+  GFileEnumerator *enumerator;
+  GError *error = NULL;
+  GFileInfo *file_info;
+
+  enumerator = g_file_enumerate_children (file,
+                                          "standard::*",
+                                          G_FILE_QUERY_INFO_NONE,
+                                          NULL,
+                                          &error);
+  if (!enumerator)
+    {
+      char *path = g_file_get_path (file);
+      g_warning ("Failed to enumerator assets dir %s: %s",
+                 path, error->message);
+      g_free (path);
+      g_error_free (error);
+      return;
+    }
+
+  while ((file_info = g_file_enumerator_next_file (enumerator,
+                                                   NULL,
+                                                   &error)))
+    {
+      enumerate_file_info (data, file, file_info);
+    }
+}
+#endif /* USE_ASYNC_IO */
+
 void
 rig_update_asset_list (RigData *data)
 {
   GList *l;
   int i = 0;
   RutObject *doc_node;
+  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
 
   if (data->assets_list)
     {
@@ -3797,9 +4031,14 @@ rig_update_asset_list (RigData *data)
   doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
   rut_graphable_add_child (doc_node, data->assets_list);
   rut_refable_unref (data->assets_list);
+  data->assets_list_tail_pos = 70;
 
-  for (l = data->assets, i= 0; l; l = l->next, i++)
-    add_asset_icon (data, l->data, 70 + 110 * i);
+  enumerate_dir_for_assets (data, assets_dir);
+
+  g_object_unref (assets_dir);
+
+  //for (l = data->assets, i= 0; l; l = l->next, i++)
+  //  add_asset_icon (data, l->data, 70 + 110 * i);
 
   //add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
 }

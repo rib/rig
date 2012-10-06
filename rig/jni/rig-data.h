@@ -126,7 +126,9 @@ typedef struct _RigData
 
   RutUIViewport *assets_vp;
   RutGraph *assets_list;
+  float assets_list_tail_pos;
   GList *asset_input_closures;
+  GList *asset_enumerators;
 
   RutUIViewport *tool_vp;
   RutObject *inspector;
