@@ -2492,6 +2492,11 @@ main_input_cb (RutInputEvent *event,
         case RUT_KEY_p:
           set_play_mode_enabled (data, !data->play_mode);
           break;
+        case RUT_KEY_Delete:
+          if (data->selected_entity)
+            rig_undo_journal_delete_entity_and_log (data->undo_journal,
+                                                    data->selected_entity);
+          break;
         }
     }
 #endif /* RIG_EDITOR_ENABLED */

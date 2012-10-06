@@ -374,6 +374,30 @@ rig_undo_journal_log_set_animated (RigUndoJournal *journal,
   rig_undo_journal_insert (journal, undo_redo);
 }
 
+void
+rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
+                                        RutEntity *entity)
+{
+  UndoRedo *undo_redo;
+  UndoRedoDeleteEntity *delete_entity;
+  RutEntity *parent = rut_graphable_get_parent (entity);
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
+  undo_redo->mergable = FALSE;
+
+  delete_entity = &undo_redo->d.delete_entity;
+
+  delete_entity->parent_entity = rut_refable_ref (parent);
+  delete_entity->deleted_entity = rut_refable_ref (entity);
+  delete_entity->inverted = FALSE;
+
+  rut_graphable_remove_child (entity);
+  rut_shell_queue_redraw (journal->data->ctx->shell);
+
+  rig_undo_journal_insert (journal, undo_redo);
+}
+
 static void
 undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
@@ -559,6 +583,44 @@ undo_redo_set_animated_free (UndoRedo *undo_redo)
   g_slice_free (UndoRedo, undo_redo);
 }
 
+static void
+undo_redo_delete_entity_apply (RigUndoJournal *journal,
+                               UndoRedo *undo_redo)
+{
+  UndoRedoDeleteEntity *delete_entity = &undo_redo->d.delete_entity;
+
+  g_print ("Delete entity APPLY\n");
+
+  if (!delete_entity->inverted)
+    rut_graphable_remove_child (delete_entity->deleted_entity);
+  else
+    rut_graphable_add_child (delete_entity->parent_entity,
+                             delete_entity->deleted_entity);
+}
+
+static UndoRedo *
+undo_redo_delete_entity_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedoDeleteEntity *inverse_delete_entity = &inverse->d.delete_entity;
+
+  rut_refable_ref (inverse_delete_entity->parent_entity);
+  rut_refable_ref (inverse_delete_entity->deleted_entity);
+  inverse_delete_entity->inverted = !inverse_delete_entity->inverted;
+
+  return inverse;
+}
+
+static void
+undo_redo_delete_entity_free (UndoRedo *undo_redo)
+{
+  UndoRedoDeleteEntity *delete_entity = &undo_redo->d.delete_entity;
+
+  rut_refable_unref (delete_entity->parent_entity);
+  rut_refable_unref (delete_entity->deleted_entity);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
 static UndoRedoOpImpl undo_redo_ops[] =
   {
     {
@@ -585,6 +647,11 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_set_animated_apply,
       undo_redo_set_animated_invert,
       undo_redo_set_animated_free
+    },
+    {
+      undo_redo_delete_entity_apply,
+      undo_redo_delete_entity_invert,
+      undo_redo_delete_entity_free
     }
   };
 
