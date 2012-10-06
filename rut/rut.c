@@ -1374,16 +1374,20 @@ ui_viewport_grab_input_cb (RutInputEvent *event, void *user_data)
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
+
 static RutInputEventStatus
-_rut_ui_viewport_input_cb (RutInputRegion *region,
-                           RutInputEvent *event,
+_rut_ui_viewport_input_cb (RutInputEvent *event,
                            void *user_data)
 {
   RutUIViewport *ui_viewport = user_data;
 
-  g_print ("viewport input\n");
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
+      rut_shell_grab_key_focus (ui_viewport->ctx->shell,
+                                _rut_ui_viewport_input_cb,
+                                NULL,
+                                ui_viewport);
+
       switch (rut_motion_event_get_action (event))
         {
         case RUT_MOTION_EVENT_ACTION_DOWN:
@@ -1412,8 +1416,42 @@ _rut_ui_viewport_input_cb (RutInputRegion *region,
 	  break;
         }
     }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_DOWN)
+    {
+      switch (rut_key_event_get_keysym (event))
+        {
+        case RUT_KEY_Page_Up:
+          if (ui_viewport->y_pannable)
+            {
+              rut_ui_viewport_set_doc_y (ui_viewport,
+                                         ui_viewport->doc_y + ui_viewport->height);
+              rut_shell_queue_redraw (ui_viewport->ctx->shell);
+              g_print ("Page Up %f %f\n", ui_viewport->height, ui_viewport->doc_y);
+            }
+          break;
+        case RUT_KEY_Page_Down:
+          if (ui_viewport->y_pannable)
+            {
+              rut_ui_viewport_set_doc_y (ui_viewport,
+                                         ui_viewport->doc_y - ui_viewport->height);
+              rut_shell_queue_redraw (ui_viewport->ctx->shell);
+              g_print ("Page Down %f %f\n", ui_viewport->height, ui_viewport->doc_y);
+            }
+          break;
+        }
+    }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static RutInputEventStatus
+_rut_ui_viewport_input_region_cb (RutInputRegion *region,
+                                  RutInputEvent *event,
+                                  void *user_data)
+{
+  g_print ("viewport input\n");
+  return _rut_ui_viewport_input_cb (event, user_data);
 }
 
 RutUIViewport *
@@ -1457,7 +1495,7 @@ rut_ui_viewport_new (RutContext *ctx,
     rut_input_region_new_rectangle (0, 0,
                                     ui_viewport->width,
                                     ui_viewport->height,
-                                    _rut_ui_viewport_input_cb,
+                                    _rut_ui_viewport_input_region_cb,
                                     ui_viewport);
 
   //rut_input_region_set_graphable (ui_viewport->input_region, ui_viewport);

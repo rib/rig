@@ -1668,7 +1668,10 @@ timeline_input_cb (RutInputEvent *event,
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      data->key_focus_callback = timeline_input_cb;
+      rut_shell_grab_key_focus (data->ctx->shell,
+                                timeline_input_cb,
+                                NULL,
+                                data);
 
       switch (rut_motion_event_get_action (event))
         {
@@ -2212,7 +2215,12 @@ main_input_cb (RutInputEvent *event,
       RutButtonState state;
 
       if (rut_camera_transform_window_coordinate (data->editor_camera_component, &x, &y))
-        data->key_focus_callback = main_input_cb;
+        {
+          rut_shell_grab_key_focus (data->ctx->shell,
+                                    main_input_cb,
+                                    NULL,
+                                    data);
+        }
 
       state = rut_motion_event_get_button_state (event);
 
@@ -3615,6 +3623,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
 {
   RigData *data = user_data;
 
+#if 0
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       /* Anything that can claim the keyboard focus will do so during
@@ -3622,6 +3631,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
        * callbacks */
       data->key_focus_callback = NULL;
     }
+#endif
 
   switch (rut_input_event_get_type (event))
     {
@@ -3642,12 +3652,14 @@ shell_input_handler (RutInputEvent *event, void *user_data)
 #endif
       break;
 
+#if 0
     case RUT_INPUT_EVENT_TYPE_KEY:
       {
         if (data->key_focus_callback)
           data->key_focus_callback (event, data);
       }
       break;
+#endif
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
