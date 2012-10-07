@@ -48,6 +48,8 @@ typedef struct _RutAsset
   char *path;
   CoglTexture *texture;
 
+  GList *directory_tags;
+
 } RutAsset;
 
 #if 0
@@ -177,4 +179,22 @@ CoglTexture *
 rut_asset_get_texture (RutAsset *asset)
 {
   return asset->texture;
+}
+
+void
+rut_asset_set_directory_tags (RutAsset *asset,
+                              GList *directory_tags)
+{
+  asset->directory_tags = directory_tags;
+}
+
+CoglBool
+rut_asset_has_tag (RutAsset *asset, const char *tag)
+{
+  GList *l;
+
+  for (l = asset->directory_tags; l; l = l->next)
+    if (strcmp (tag, l->data) == 0)
+      return TRUE;
+  return FALSE;
 }

@@ -3791,6 +3791,19 @@ free_asset_input_closures (RigData *data)
   data->asset_input_closures = NULL;
 }
 
+CoglBool
+find_tag (GList *tags,
+          const char *tag)
+{
+  GList *l;
+
+  for (l = tags; l; l = l->next)
+    {
+      if (strcmp (tag, l->data) == 0)
+        return TRUE;
+    }
+  return FALSE;
+}
 static void
 add_asset (RigData *data, GFile *asset_file)
 {
@@ -3813,7 +3826,12 @@ add_asset (RigData *data, GFile *asset_file)
   directory_tags =
     g_list_prepend (directory_tags, (char *)g_intern_string ("image"));
 
-  asset = rut_asset_new_texture (data->ctx, path);
+  if (find_tag (directory_tags, "normal-maps"))
+    asset = rut_asset_new_normal_map (data->ctx, path);
+  else
+    asset = rut_asset_new_texture (data->ctx, path);
+
+  rut_asset_set_directory_tags (asset, directory_tags);
 
   add_asset_icon (data, asset, data->assets_list_tail_pos);
   data->assets_list_tail_pos += 110;
