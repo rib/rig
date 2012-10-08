@@ -2177,7 +2177,6 @@ _rut_init (void)
 
       /* components */
       _rut_camera_init_type ();
-      _rut_animation_clip_init_type ();
       _rut_light_init_type ();
       _rut_model_init_type ();
       _rut_material_init_type ();

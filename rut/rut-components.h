@@ -20,7 +20,6 @@
 #ifndef __RUT_COMPONENTS_H__
 #define __RUT_COMPONENTS_H__
 
-#include "components/rut-animation-clip.h"
 #include "components/rut-light.h"
 #include "components/rut-model.h"
 #include "components/rut-material.h"

@@ -2,7 +2,6 @@
 lib_LTLIBRARIES = librut.la
 
 components_source_h = \
-    components/rut-animation-clip.h \
     components/rut-camera.h \
     components/rut-light.h \
     components/rut-model.h \
@@ -55,7 +54,6 @@ source_h = \
     rut-mesh-ply.h
 
 librut_la_SOURCES = \
-    components/rut-animation-clip.c \
     components/rut-camera.c \
     components/rut-light.c \
     components/rut-model.c \
