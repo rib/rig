@@ -333,6 +333,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
   RutMesh *mesh;
   int i;
   int32_t n_vertices;
+  int max_component_size = 1;
 
   memset (rut_attributes, 0, sizeof (void *) * n_attributes);
 
@@ -462,6 +463,9 @@ rut_mesh_new_from_ply (RutContext *ctx,
       component_size =  get_sizeof_attribute_type (loader_attribute->type);
       loader_attribute->size = component_size * n_components;
 
+      if (component_size > max_component_size)
+        max_component_size = component_size;
+
       /* Align the offset according to the natural alignment of the
        * attribute type... */
       loader.n_vertex_bytes =
@@ -472,8 +476,9 @@ rut_mesh_new_from_ply (RutContext *ctx,
       loader.n_vertex_bytes += loader_attribute->size;
     }
 
-  /* Align the size of a vertex to 32 bits */
-  loader.n_vertex_bytes = (loader.n_vertex_bytes + 3) & ~(unsigned int) 3;
+  /* Align the size of a vertex to the size of the largest component type */
+  loader.n_vertex_bytes = ((loader.n_vertex_bytes + max_component_size - 1) &
+                           ~(unsigned int) (max_component_size - 1));
 
   loader.vertex_buffer = rut_buffer_new (loader.n_vertex_bytes * n_vertices);
   loader.current_vertex_pos = loader.vertex_buffer->data;
