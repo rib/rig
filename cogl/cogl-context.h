@@ -234,6 +234,7 @@ typedef enum _CoglFeatureID
   COGL_FEATURE_ID_GLES2_CONTEXT,
   COGL_FEATURE_ID_DEPTH_TEXTURE,
 
+  /*< private >*/
   _COGL_N_FEATURE_IDS   /*< skip >*/
 } CoglFeatureID;
 
