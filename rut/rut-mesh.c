@@ -131,6 +131,7 @@ rut_mesh_new (CoglVerticesMode mode,
   RutMesh *mesh = g_slice_new0 (RutMesh);
   RutAttribute **attributes_real =
     g_slice_copy (sizeof (void *) * n_attributes, attributes);
+  int i;
 
   rut_object_init (&mesh->_parent, &rut_mesh_type);
 
@@ -140,6 +141,9 @@ rut_mesh_new (CoglVerticesMode mode,
   mesh->n_attributes = n_attributes;
   mesh->mode = mode;
   mesh->n_vertices = n_vertices;
+
+  for (i = 0; i < n_attributes; i++)
+    rut_refable_ref (attributes[i]);
 
   return mesh;
 }

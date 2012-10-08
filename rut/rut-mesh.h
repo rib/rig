@@ -122,9 +122,6 @@ rut_attribute_new (RutBuffer *buffer,
                    int n_components,
                    RutAttributeType type);
 
-/* XXX: Note ownership for the attributes is transferred to the newly
- * created mesh so you should not unref the attributes afterwards.
- */
 RutMesh *
 rut_mesh_new (CoglVerticesMode mode,
               int n_vertices,

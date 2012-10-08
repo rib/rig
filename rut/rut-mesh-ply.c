@@ -558,6 +558,8 @@ rut_mesh_new_from_ply (RutContext *ctx,
                        rut_attributes,
                        n_loader_attributes);
 
+  for (i = 0; i < n_loader_attributes; i++)
+    rut_refable_unref (rut_attributes[i]);
 
   indices_buffer = rut_buffer_new (loader.faces->len *
                                    g_array_get_element_size (loader.faces));
