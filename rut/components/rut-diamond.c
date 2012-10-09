@@ -58,6 +58,7 @@ typedef struct _VertexP2T2T2
   float x, y, s0, t0, s1, t1;
 #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
   float Nx, Ny, Nz;
+  float Tx, Ty, Tz;
 #endif
 } VertexP2T2T2;
 
@@ -69,11 +70,12 @@ primitive_new_p2t2t2 (CoglContext *ctx,
 {
   CoglAttributeBuffer *attribute_buffer =
     cogl_attribute_buffer_new (ctx, n_vertices * sizeof (VertexP2T2T2), data);
-  int n_attributes = 4;
+  int n_attributes = 6;
   CoglAttribute *attributes[n_attributes];
   CoglPrimitive *primitive;
 #ifndef MESA_CONST_ATTRIB_BUG_WORKAROUND
   const float normal[3] = { 0, 0, 1 };
+  const float tangent[3] = { 1, 0, 0 };
 #endif
   int i;
 
@@ -83,30 +85,50 @@ primitive_new_p2t2t2 (CoglContext *ctx,
                                       offsetof (VertexP2T2T2, x),
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
+
+  /* coords for circle mask, for rounded corners */
   attributes[1] = cogl_attribute_new (attribute_buffer,
                                       "cogl_tex_coord0_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, s0),
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
+  /* coords for primary texture */
   attributes[2] = cogl_attribute_new (attribute_buffer,
                                       "cogl_tex_coord1_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, s1),
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
+  /* coords for normal map */
+  attributes[3] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_tex_coord2_in",
+                                      sizeof (VertexP2T2T2),
+                                      offsetof (VertexP2T2T2, s1),
+                                      2,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
 
 #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
-  attributes[3] = cogl_attribute_new (attribute_buffer,
+  attributes[4] = cogl_attribute_new (attribute_buffer,
                                       "cogl_normal_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, Nx),
                                       3,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[5] = cogl_attribute_new (attribute_buffer,
+                                      "tangent_in",
+                                      sizeof (VertexP2T2T2),
+                                      offsetof (VertexP2T2T2, Tx),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
 #else
-  attributes[3] = cogl_attribute_new_const_3fv (ctx,
+  attributes[4] = cogl_attribute_new_const_3fv (ctx,
                                                 "cogl_normal_in",
                                                 normal);
+
+  attributes[5] = cogl_attribute_new_const_3fv (ctx,
+                                                "tangent_in",
+                                                tangent);
 #endif
 
   cogl_object_unref (attribute_buffer);
@@ -230,6 +252,10 @@ diamond_slice_new (RutContext *ctx,
           vertices[i].Nx = 0;
           vertices[i].Ny = 0;
           vertices[i].Nz = 1;
+
+          vertices[i].Tx = 1;
+          vertices[i].Ty = 0;
+          vertices[i].Tz = 0;
 #endif
         }
 

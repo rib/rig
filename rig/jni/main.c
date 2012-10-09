@@ -270,6 +270,8 @@ get_entity_pipeline (RigData *data,
   CoglDepthState depth_state;
   RutMaterial *material =
     rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+  CoglTexture *texture = NULL;
+  CoglTexture *normal_map = NULL;
   CoglPipeline *pipeline;
   CoglFramebuffer *shadow_fb;
 
@@ -400,6 +402,21 @@ get_entity_pipeline (RigData *data,
 
   pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
+  if (material)
+    {
+      RutAsset *texture_asset = rut_material_get_texture_asset (material);
+      RutAsset *normal_map_asset =
+        rut_material_get_normal_map_asset (material);
+
+      if (texture_asset)
+        texture = rut_asset_get_texture (texture_asset);
+      if (texture)
+        cogl_pipeline_set_layer_texture (pipeline, 1, texture);
+
+      if (normal_map_asset)
+        normal_map = rut_asset_get_texture (normal_map_asset);
+    }
+
 #if 0
   /* NB: Our texture colours aren't premultiplied */
   cogl_pipeline_set_blend (pipeline,
@@ -427,16 +444,45 @@ get_entity_pipeline (RigData *data,
 
       /* definitions */
       "uniform mat3 normal_matrix;\n"
-      "varying vec3 normal_direction, eye_direction;\n",
+      "varying vec3 normal, eye_direction;\n",
 
       /* post */
-      "normal_direction = normalize(normal_matrix * cogl_normal_in);\n"
-      //"normal_direction = cogl_normal_in;\n"
-      "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
+      "normal = normalize(normal_matrix * cogl_normal_in);\n"
+      "eye_direction = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
   );
 
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
+
+  if (normal_map)
+    {
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+          /* definitions */
+          "uniform vec3 light0_direction_norm;\n"
+          "attribute vec3 tangent_in;\n"
+          "varying vec3 light_direction;\n",
+
+          /* post */
+          "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
+          "vec3 binormal = cross(normal, tangent);\n"
+
+          /* Transform the light direction into tangent space */
+          "vec3 v;\n"
+          "v.x = dot (light0_direction_norm, tangent);\n"
+          "v.y = dot (light0_direction_norm, binormal);\n"
+          "v.z = dot (light0_direction_norm, normal);\n"
+          "light_direction = normalize (v);\n"
+
+          /* Transform the eye direction into tangent space */
+          "v.x = dot (eye_direction, tangent);\n"
+          "v.y = dot (eye_direction, binormal);\n"
+          "v.z = dot (eye_direction, normal);\n"
+          "eye_direction = normalize (v);\n"
+      );
+
+      cogl_pipeline_add_snippet (pipeline, snippet);
+      cogl_object_unref (snippet);
+    }
 
   /* Vertex shader setup for shadow mapping */
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
@@ -453,50 +499,132 @@ get_entity_pipeline (RigData *data,
   cogl_object_unref (snippet);
 
   /* and fragment shader */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-      /* definitions */
-      //"varying vec3 normal_direction;\n",
-      "varying vec3 normal_direction, eye_direction;\n",
-      /* post */
-      "");
-  //cogl_snippet_set_pre (snippet, "cogl_color_out = cogl_color_in;\n");
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  if (material)
+    {
+      if (normal_map)
+        {
+          /* We don't want this layer to be automatically modulated with the
+           * previous layers so we set its combine mode to "REPLACE" so it
+           * will be skipped past and we can sample its texture manually */
+          cogl_pipeline_set_layer_combine (pipeline, 2, "RGBA=REPLACE(PREVIOUS)", NULL);
+          cogl_pipeline_set_layer_texture (pipeline, 2, normal_map);
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-      /* definitions */
-      "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-      "uniform vec3 light0_direction_norm;\n",
+          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+              /* definitions */
+              "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+              "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+              "uniform float material_shininess;\n"
+              "varying vec3 light_direction, eye_direction;\n",
 
-      /* post */
-      "vec4 final_color;\n"
+              /* post */
+              "vec4 final_color;\n"
 
-      "vec3 L = light0_direction_norm;\n"
-      "vec3 N = normalize(normal_direction);\n"
+              "if (cogl_color_out.a <= 0.0)\n"
+              "  discard;\n"
 
-      "if (cogl_color_out.a <= 0.0)\n"
-      "  discard;\n"
+              "vec3 L = normalize(light_direction);\n"
 
-      "final_color = light0_ambient * cogl_color_out;\n"
-      "float lambert = dot(N, L);\n"
-      //"float lambert = 1.0;\n"
+	      "vec3 N = texture2D(cogl_sampler2, cogl_tex_coord2_in.st).rgb;\n"
+	      "N = 2.0 * N - 1.0;\n"
+              "N = normalize(N);\n"
 
-      "if (lambert > 0.0)\n"
-      "{\n"
-      "  final_color += cogl_color_out * light0_diffuse * lambert;\n"
-      //"  final_color +=  vec4(1.0, 0.0, 0.0, 1.0) * light0_diffuse * lambert;\n"
+              "vec4 ambient = light0_ambient * material_ambient;\n"
 
-      "  vec3 E = normalize(eye_direction);\n"
-      "  vec3 R = reflect (-L, N);\n"
-      "  float specular = pow (max(dot(R, E), 0.0),\n"
-      "                        2.);\n"
-      "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
-      "}\n"
+              "final_color = ambient * cogl_color_out;\n"
+              "float lambert = dot(N, L);\n"
 
-      "cogl_color_out = final_color;\n"
-      //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
-  );
+              "if (lambert > 0.0)\n"
+              "{\n"
+              "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+              "  vec4 specular = light0_specular * material_specular;\n"
+
+              "  final_color += cogl_color_out * diffuse * lambert;\n"
+
+              "  vec3 E = normalize(eye_direction);\n"
+              "  vec3 R = reflect (-L, N);\n"
+              "  float specular_factor = pow (max(dot(R, E), 0.0), material_shininess);\n"
+              "  final_color += specular * specular_factor;\n"
+              "}\n"
+
+              "cogl_color_out = final_color;\n"
+          );
+        }
+      else
+        {
+          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+              /* definitions */
+              "varying vec3 normal, eye_direction;\n"
+              "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+              "uniform vec3 light0_direction_norm;\n"
+              "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+              "uniform float material_shininess;\n",
+
+              /* post */
+              "vec4 final_color;\n"
+
+              "if (cogl_color_out.a <= 0.0)\n"
+              "  discard;\n"
+
+              "vec3 L = light0_direction_norm;\n"
+              "vec3 N = normalize(normal);\n"
+
+              "vec4 ambient = light0_ambient * material_ambient;\n"
+
+              "final_color = ambient * cogl_color_out;\n"
+              "float lambert = dot(N, L);\n"
+
+              "if (lambert > 0.0)\n"
+              "{\n"
+              "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+              "  vec4 specular = light0_specular * material_specular;\n"
+
+              "  final_color += cogl_color_out * diffuse * lambert;\n"
+
+              "  vec3 E = normalize(eye_direction);\n"
+              "  vec3 R = reflect (-L, N);\n"
+              "  float specular_factor = pow (max(dot(R, E), 0.0), material_shininess);\n"
+              "  final_color += specular * specular_factor;\n"
+              "}\n"
+
+              "cogl_color_out = final_color;\n"
+          );
+        }
+    }
+  else
+    {
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+          /* definitions */
+          "varying vec3 normal, eye_direction;\n"
+          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+          "uniform vec3 light0_direction_norm;\n",
+
+          /* post */
+          "vec4 final_color;\n"
+
+          "vec3 L = light0_direction_norm;\n"
+          "vec3 N = normalize(normal);\n"
+
+          "if (cogl_color_out.a <= 0.0)\n"
+          "  discard;\n"
+
+          "final_color = light0_ambient * cogl_color_out;\n"
+          "float lambert = dot(N, L);\n"
+
+          "if (lambert > 0.0)\n"
+          "{\n"
+          "  final_color += cogl_color_out * light0_diffuse * lambert;\n"
+
+          "  vec3 E = normalize(eye_direction);\n"
+          "  vec3 R = reflect (-L, N);\n"
+          "  float specular = pow (max(dot(R, E), 0.0),\n"
+          "                        2.);\n"
+          "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
+          "}\n"
+
+          "cogl_color_out = final_color;\n"
+      );
+    }
 
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
@@ -509,27 +637,20 @@ get_entity_pipeline (RigData *data,
   //cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_color);
   //cogl_pipeline_set_layer_texture (pipeline, 7, data->gradient);
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
-                              /* declarations */
-                              "varying vec4 shadow_coords;\n",
-                              /* post */
-                              "");
-
-  cogl_snippet_set_replace (snippet,
-                            "cogl_texel = texture2D(cogl_sampler7, cogl_tex_coord.st);\n");
-
-  cogl_pipeline_add_layer_snippet (pipeline, 7, snippet);
-  cogl_object_unref (snippet);
+  /* We don't want this layer to be automatically modulated with the
+   * previous layers so we set its combine mode to "REPLACE" so it
+   * will be skipped past and we can sample its texture manually */
+  cogl_pipeline_set_layer_combine (pipeline, 7, "RGBA=REPLACE(PREVIOUS)", NULL);
 
   /* Handle shadow mapping */
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
       /* declarations */
-      "",
+      "varying vec4 shadow_coords;\n",
 
       /* post */
-      "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, shadow_coords);\n"
-      "float distance_from_light = cogl_texel7.z + 0.0005;\n"
+      "vec4 texel7 =  texture2D (cogl_sampler7, shadow_coords.xy);\n"
+      "float distance_from_light = texel7.z + 0.0005;\n"
       "float shadow = 1.0;\n"
       "if (distance_from_light < shadow_coords.z)\n"
       "  shadow = 0.5;\n"
@@ -540,40 +661,8 @@ get_entity_pipeline (RigData *data,
   cogl_pipeline_add_snippet (pipeline, snippet);
   cogl_object_unref (snippet);
 
-#if 1
-  {
-    RutLight *light = rut_entity_get_component (data->light, RUT_COMPONENT_TYPE_LIGHT);
-    rut_light_set_uniforms (light, pipeline);
-  }
-#endif
-
-#if 1
   if (rut_object_get_type (geometry) == &rut_diamond_type)
-    {
-      //pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-
-      //cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
-
-      rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
-
-      //cogl_pipeline_set_color4f (pipeline, 1, 0, 0, 1);
-
-#if 1
-      if (material)
-        {
-          RutAsset *asset = rut_material_get_texture_asset (material);
-          CoglTexture *texture;
-          if (asset)
-            texture = rut_asset_get_texture (asset);
-          else
-            texture = NULL;
-
-          if (texture)
-            cogl_pipeline_set_layer_texture (pipeline, 1, texture);
-        }
-#endif
-    }
-#endif
+    rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
 
   rut_entity_set_pipeline_cache (entity, pipeline);
 
@@ -665,6 +754,7 @@ entitygraph_pre_paint_cb (RutObject *object,
       CoglPrimitive *primitive;
       CoglMatrix modelview_matrix;
       float normal_matrix[9];
+      RutMaterial *material;
 
       if (!rut_entity_get_visible (entity) ||
           (paint_ctx->pass == PASS_SHADOW && !rut_entity_get_cast_shadow (entity)))
@@ -686,6 +776,18 @@ entitygraph_pre_paint_cb (RutObject *object,
                                       geometry,
                                       paint_ctx->pass);
 #endif
+
+      /* FIXME: only update the lighting uniforms when the light has
+       * actually moved!!! */
+      {
+        RutLight *light = rut_entity_get_component (paint_ctx->data->light,
+                                                    RUT_COMPONENT_TYPE_LIGHT);
+        rut_light_set_uniforms (light, pipeline);
+      }
+
+      material = rut_entity_get_component (object, RUT_COMPONENT_TYPE_MATERIAL);
+      if (material)
+        rut_material_flush_uniforms (material, pipeline);
 
       primitive = rut_primable_get_primitive (geometry);
 
@@ -3688,35 +3790,71 @@ asset_input_cb (RutInputRegion *region,
   AssetInputClosure *closure = user_data;
   RutAsset *asset = closure->asset;
   RigData *data = closure->data;
-
-  g_print ("Asset input\n");
-
-  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE)
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  RutEntity *entity;
+  RutMaterial *material;
+  RutDiamond *diamond;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
         {
-          RutEntity *entity = rut_entity_new (data->ctx,
-                                              data->entity_next_id++);
-          CoglTexture *texture = rut_asset_get_texture (asset);
-          RutMaterial *material = rut_material_new (data->ctx, asset);
-          RutDiamond *diamond =
-            rut_diamond_new (data->ctx,
-                             400,
-                             cogl_texture_get_width (texture),
-                             cogl_texture_get_height (texture));
-          rut_entity_add_component (entity, material);
-          rut_entity_add_component (entity, diamond);
+          RutAssetType type = rut_asset_get_type (asset);
 
-          data->selected_entity = entity;
-          rut_graphable_add_child (data->scene, entity);
+          switch (type)
+            {
+            case RUT_ASSET_TYPE_TEXTURE:
+            case RUT_ASSET_TYPE_NORMAL_MAP:
+              {
+                if (data->selected_entity)
+                  {
+                    RutObject *geom;
 
-          update_inspector (data);
+                    entity = data->selected_entity;
 
-          rut_shell_queue_redraw (data->ctx->shell);
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+                    /* XXX: for now we only expect to be dealing with
+                     * diamond geometry based entities */
+
+                    geom = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+                    if (rut_object_get_type (geom) != &rut_diamond_type)
+                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                    material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                    if (!material)
+                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                  }
+                else
+                  {
+                    CoglTexture *texture;
+
+                    entity = rut_entity_new (data->ctx, data->entity_next_id++);
+                    texture = rut_asset_get_texture (asset);
+                    if (type == RUT_ASSET_TYPE_TEXTURE)
+                      material = rut_material_new (data->ctx, asset);
+                    else
+                      material = rut_material_new (data->ctx, NULL);
+                    diamond = rut_diamond_new (data->ctx,
+                                               400,
+                                               cogl_texture_get_width (texture),
+                                               cogl_texture_get_height (texture));
+                    rut_entity_add_component (entity, material);
+                    rut_entity_add_component (entity, diamond);
+
+                    data->selected_entity = entity;
+                    rut_graphable_add_child (data->scene, entity);
+                  }
+
+                if (type == RUT_ASSET_TYPE_TEXTURE)
+                  rut_material_set_texture_asset (material, asset);
+                else
+                  rut_material_set_normal_map_asset (material, asset);
+
+                rut_entity_set_pipeline_cache (entity, NULL);
+
+                update_inspector (data);
+
+                rut_shell_queue_redraw (data->ctx->shell);
+                return RUT_INPUT_EVENT_STATUS_HANDLED;
+              }
+            }
         }
     }
 
@@ -3753,7 +3891,8 @@ add_asset_icon (RigData *data,
   RutInputRegion *region;
   RutTransform *transform;
 
-  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE)
+  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE &&
+      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP)
     return;
 
   closure = g_slice_new (AssetInputClosure);

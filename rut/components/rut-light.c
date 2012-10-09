@@ -40,16 +40,19 @@ rut_light_set_uniforms (RutLight *light,
   RutComponentableProps *component =
     rut_object_get_properties (light, RUT_INTERFACE_ID_COMPONENTABLE);
   RutEntity *entity = component->entity;
-  float norm_direction[3];
+  float origin[3] = {0, 0, 0};
+  float norm_direction[3] = {0, 0, 1};
   int location;
 
-  /* the lighting shader expects the direction vector to be pointing towards
-   * the light, we encode that with the light position in the case of a
-   * directional light */
-  norm_direction[0] = rut_entity_get_x (entity);
-  norm_direction[1] = rut_entity_get_y (entity);
-  norm_direction[2] = rut_entity_get_z (entity);
+  rut_entity_get_transformed_position (entity, origin);
+  rut_entity_get_transformed_position (entity, norm_direction);
+  cogl_vector3_subtract (norm_direction, norm_direction, origin);
   cogl_vector3_normalize (norm_direction);
+
+  g_print ("light direction = (%f, %f, %f)\n",
+           norm_direction[0],
+           norm_direction[1],
+           norm_direction[2]);
 
   location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_direction_norm");
