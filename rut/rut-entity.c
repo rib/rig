@@ -613,7 +613,9 @@ rut_entity_set_pipeline_cache (RutEntity *entity,
   if (entity->pipeline_cache)
     cogl_object_unref (entity->pipeline_cache);
 
-  entity->pipeline_cache = cogl_object_ref (pipeline);
+  entity->pipeline_cache = pipeline;
+  if (pipeline)
+    cogl_object_ref (pipeline);
 }
 
 CoglPipeline *
