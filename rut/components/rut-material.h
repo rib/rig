@@ -31,8 +31,16 @@ struct _RutMaterial
 {
   RutObjectProps _parent;
   RutComponentableProps component;
-  RutAsset *asset;
-  RutColor color;
+  RutAsset *texture_asset;
+  RutAsset *normal_map_asset;
+
+  RutColor ambient;
+  RutColor diffuse;
+  RutColor specular;
+  float shininess;
+
+  int uniforms_age;
+  int uniforms_flush_age;
 };
 
 void
@@ -40,13 +48,55 @@ _rut_material_init_type (void);
 
 RutMaterial *
 rut_material_new (RutContext *ctx,
-                  RutAsset *asset,
-                  const RutColor *color);
+                  RutAsset *asset);
+
+void
+rut_material_set_texture_asset (RutMaterial *material,
+                                RutAsset *asset);
 
 RutAsset *
-rut_material_get_asset (RutMaterial *material);
+rut_material_get_texture_asset (RutMaterial *material);
+
+void
+rut_material_set_normal_map_asset (RutMaterial *material,
+                                   RutAsset *normal_map_asset);
+
+RutAsset *
+rut_material_get_normal_map_asset (RutMaterial *material);
+
+void
+rut_material_set_ambient (RutMaterial *material,
+                          const RutColor *color);
 
 const RutColor *
-rut_material_get_color (RutMaterial *material);
+rut_material_get_ambient (RutMaterial *material);
+
+void
+rut_material_set_diffuse (RutMaterial *material,
+                          const RutColor *color);
+
+const RutColor *
+rut_material_get_diffuse (RutMaterial *material);
+
+void
+rut_material_set_specular (RutMaterial *material,
+                           const RutColor *color);
+
+const RutColor *
+rut_material_get_specular (RutMaterial *material);
+
+void
+rut_material_set_shininess (RutMaterial *material,
+                            float shininess);
+
+float
+rut_material_get_shininess (RutMaterial *material);
+
+void
+rut_material_flush_uniforms (RutMaterial *material,
+                             CoglPipeline *pipeline);
+
+void
+rut_material_flush_uniforms_ignore_age (RutMaterial *material);
 
 #endif /* __RUT_MATERIAL_H__ */

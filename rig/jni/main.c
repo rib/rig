@@ -561,7 +561,7 @@ get_entity_pipeline (RigData *data,
 #if 1
       if (material)
         {
-          RutAsset *asset = rut_material_get_asset (material);
+          RutAsset *asset = rut_material_get_texture_asset (material);
           CoglTexture *texture;
           if (asset)
             texture = rut_asset_get_texture (asset);
@@ -3701,7 +3701,7 @@ asset_input_cb (RutInputRegion *region,
           RutEntity *entity = rut_entity_new (data->ctx,
                                               data->entity_next_id++);
           CoglTexture *texture = rut_asset_get_texture (asset);
-          RutMaterial *material = rut_material_new (data->ctx, asset, NULL);
+          RutMaterial *material = rut_material_new (data->ctx, asset);
           RutDiamond *diamond =
             rut_diamond_new (data->ctx,
                              400,

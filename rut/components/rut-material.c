@@ -41,8 +41,7 @@ _rut_material_init_type (void)
 
 RutMaterial *
 rut_material_new_full (RutContext *ctx,
-                       RutAsset *asset,
-                       const RutColor *color,
+                       RutAsset *texture_asset,
                        CoglPipeline *pipeline)
 {
   RutMaterial *material = g_slice_new0 (RutMaterial);
@@ -50,34 +49,160 @@ rut_material_new_full (RutContext *ctx,
   rut_object_init (&material->_parent, &rut_material_type);
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
-  if (color)
-    material->color = *color;
-  else
-    rut_color_init_from_4f (&material->color, 1, 1, 1, 1);
+  rut_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
+  rut_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
+  rut_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
 
-  if (asset)
-    material->asset = rut_refable_ref (asset);
+  material->shininess = 100;
+
+  material->uniforms_flush_age = -1;
+
+  if (texture_asset)
+    material->texture_asset = rut_refable_ref (texture_asset);
 
   return material;
 }
 
 RutMaterial *
 rut_material_new (RutContext *ctx,
-                  RutAsset *asset,
-                  const RutColor *color)
+                  RutAsset *texture_asset)
 {
-  return rut_material_new_full (ctx, asset, color, NULL);
+  return rut_material_new_full (ctx, texture_asset, NULL);
+}
+
+void
+rut_material_set_texture_asset (RutMaterial *material,
+                                RutAsset *texture_asset)
+{
+  if (material->texture_asset)
+    {
+      rut_refable_unref (material->texture_asset);
+      material->texture_asset = NULL;
+    }
+
+  if (texture_asset)
+    material->texture_asset = rut_refable_ref (texture_asset);
 }
 
 RutAsset *
-rut_material_get_asset (RutMaterial *material)
+rut_material_get_texture_asset (RutMaterial *material)
 {
-  return material->asset;
+  return material->texture_asset;
+}
+
+void
+rut_material_set_normal_map_asset (RutMaterial *material,
+                                   RutAsset *normal_map_asset)
+{
+  if (material->normal_map_asset)
+    {
+      rut_refable_unref (material->normal_map_asset);
+      material->normal_map_asset = NULL;
+    }
+
+  if (normal_map_asset)
+    material->normal_map_asset = rut_refable_ref (normal_map_asset);
+}
+
+RutAsset *
+rut_material_get_normal_map_asset (RutMaterial *material)
+{
+  return material->normal_map_asset;
+}
+
+void
+rut_material_set_ambient (RutMaterial *material,
+                          const RutColor *color)
+{
+  material->ambient = *color;
+  material->uniforms_age++;
 }
 
 const RutColor *
-rut_material_get_color (RutMaterial *material)
+rut_material_get_ambient (RutMaterial *material)
 {
-  return &material->color;
+  return &material->ambient;
 }
 
+void
+rut_material_set_diffuse (RutMaterial *material,
+                          const RutColor *color)
+{
+  material->diffuse = *color;
+  material->uniforms_age++;
+
+}
+
+const RutColor *
+rut_material_get_diffuse (RutMaterial *material)
+{
+  return &material->diffuse;
+}
+
+void
+rut_material_set_specular (RutMaterial *material,
+                           const RutColor *color)
+{
+  material->specular = *color;
+  material->uniforms_age++;
+}
+
+const RutColor *
+rut_material_get_specular (RutMaterial *material)
+{
+  return &material->specular;
+}
+
+void
+rut_material_set_shininess (RutMaterial *material,
+                            float shininess)
+{
+  material->shininess = shininess;
+  material->uniforms_age++;
+}
+
+float
+rut_material_get_shininess (RutMaterial *material)
+{
+  return material->shininess;
+}
+
+void
+rut_material_flush_uniforms (RutMaterial *material,
+                             CoglPipeline *pipeline)
+{
+  int location;
+
+  //if (material->uniforms_age == material->uniforms_flush_age)
+  //  return;
+
+  location = cogl_pipeline_get_uniform_location (pipeline, "material_ambient");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   4, 1,
+                                   (float *)&material->ambient);
+
+  location = cogl_pipeline_get_uniform_location (pipeline, "material_diffuse");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   4, 1,
+                                   (float *)&material->diffuse);
+
+  location = cogl_pipeline_get_uniform_location (pipeline, "material_specular");
+  cogl_pipeline_set_uniform_float (pipeline,
+                                   location,
+                                   4, 1,
+                                   (float *)&material->specular);
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "material_shininess");
+  cogl_pipeline_set_uniform_1f (pipeline, location, material->shininess);
+
+  material->uniforms_flush_age = material->uniforms_age;
+}
+
+void
+rut_material_dirty_uniforms (RutMaterial *material)
+{
+  material->uniforms_flush_age = material->uniforms_age -1;
+}

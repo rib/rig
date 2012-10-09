@@ -59,23 +59,37 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_material_type)
     {
       RutMaterial *material = RUT_MATERIAL (component);
-      RutAsset *asset = rut_material_get_asset (material);
-      const RutColor *color;
+      RutAsset *asset = rut_material_get_texture_asset (material);
+      const RutColor *ambient, *diffuse, *specular;
 
       fprintf (state->file, "%*s<material", state->indent, "");
 
-      color = rut_material_get_color (material);
-      if (color->red != 1.0 &&
-          color->green != 1.0 &&
-          color->blue != 1.0 &&
-          color->alpha != 1.0)
-        {
-          fprintf (state->file, " color=\"#%02x%02x%02x%02x\"",
-                   rut_color_get_red_byte (color),
-                   rut_color_get_green_byte (color),
-                   rut_color_get_blue_byte (color),
-                   rut_color_get_alpha_byte (color));
-        }
+      ambient = rut_material_get_ambient (material);
+      fprintf (state->file, " ambient=\"#%02x%02x%02x%02x\"",
+               rut_color_get_red_byte (ambient),
+               rut_color_get_green_byte (ambient),
+               rut_color_get_blue_byte (ambient),
+               rut_color_get_alpha_byte (ambient));
+
+      diffuse = rut_material_get_diffuse (material);
+      fprintf (state->file, "%*s          diffuse=\"#%02x%02x%02x%02x\"",
+               state->indent, "",
+               rut_color_get_red_byte (diffuse),
+               rut_color_get_green_byte (diffuse),
+               rut_color_get_blue_byte (diffuse),
+               rut_color_get_alpha_byte (diffuse));
+
+      specular = rut_material_get_specular (material);
+      fprintf (state->file, "%*s          specular=\"#%02x%02x%02x%02x\"",
+               state->indent, "",
+               rut_color_get_red_byte (specular),
+               rut_color_get_green_byte (specular),
+               rut_color_get_blue_byte (specular),
+               rut_color_get_alpha_byte (specular));
+
+      fprintf (state->file, "%*s          shininess=\"%f\"",
+               state->indent, "",
+               rut_material_get_shininess (material));
 
       fprintf (state->file, ">\n");
 
@@ -644,7 +658,14 @@ typedef struct _Loader
   GList *entities;
   GList *transitions;
 
-  RutColor material_color;
+  RutColor material_ambient;
+  CoglBool ambient_set;
+  RutColor material_diffuse;
+  CoglBool diffuse_set;
+  RutColor material_specular;
+  CoglBool specular_set;
+  float material_shininess;
+  CoglBool shininess_set;
 
   float diamond_size;
   RutEntity *current_entity;
@@ -1178,7 +1199,8 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "material") == 0)
     {
-      const char *color_str;
+      const char *color_str, *ambient_str, *diffuse_str, *specular_str;
+      const char *shininess_str;
 
       loader->texture_specified = FALSE;
       loader_push_state (loader, LOADER_STATE_LOADING_MATERIAL_COMPONENT);
@@ -1190,16 +1212,62 @@ parse_start_element (GMarkupParseContext *context,
                                    G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                    "color",
                                    &color_str,
+                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                   "ambient",
+                                   &ambient_str,
+                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                   "diffuse",
+                                   &diffuse_str,
+                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                   "specular",
+                                   &specular_str,
+                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                   "shininess",
+                                   &shininess_str,
                                    G_MARKUP_COLLECT_INVALID);
 
-      if (color_str)
+      /* XXX: This is a depecated attribute, remove once existing xml
+       * files have stopped using it... */
+      if (color_str && diffuse_str == NULL)
+        diffuse_str = color_str;
+
+      if (ambient_str)
         {
           rut_color_init_from_string (loader->data->ctx,
-                                      &loader->material_color,
-                                      color_str);
+                                      &loader->material_ambient,
+                                      ambient_str);
+          loader->ambient_set = TRUE;
         }
       else
-        rut_color_init_from_4f (&loader->material_color, 1, 1, 1, 1);
+        loader->ambient_set = FALSE;
+
+      if (diffuse_str)
+        {
+          rut_color_init_from_string (loader->data->ctx,
+                                      &loader->material_diffuse,
+                                      diffuse_str);
+          loader->diffuse_set = TRUE;
+        }
+      else
+        loader->diffuse_set = FALSE;
+
+      if (specular_str)
+        {
+          rut_color_init_from_string (loader->data->ctx,
+                                      &loader->material_specular,
+                                      specular_str);
+          loader->specular_set = TRUE;
+        }
+      else
+        loader->specular_set = FALSE;
+
+      if (shininess_str)
+        {
+          loader->material_shininess = g_ascii_strtod (shininess_str, NULL);
+          loader->shininess_set = TRUE;
+        }
+      else
+        loader->shininess_set = FALSE;
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "light") == 0)
@@ -1528,7 +1596,7 @@ parse_end_element (GMarkupParseContext *context,
       /* We need to know the size of the texture before we can create
        * a diamond component */
       if (material)
-        asset = rut_material_get_asset (material);
+        asset = rut_material_get_texture_asset (material);
 
       if (asset)
         texture = rut_asset_get_texture (asset);
@@ -1573,8 +1641,17 @@ parse_end_element (GMarkupParseContext *context,
         texture_asset = NULL;
 
       material = rut_material_new (loader->data->ctx,
-                                   texture_asset,
-                                   &loader->material_color);
+                                   texture_asset);
+
+      if (loader->ambient_set)
+        rut_material_set_ambient (material, &loader->material_ambient);
+      if (loader->diffuse_set)
+        rut_material_set_diffuse (material, &loader->material_diffuse);
+      if (loader->specular_set)
+        rut_material_set_specular (material, &loader->material_specular);
+      if (loader->shininess_set)
+        rut_material_set_shininess (material, loader->material_shininess);
+
       rut_entity_add_component (loader->current_entity, material);
 
       loader_pop_state (loader);
