@@ -3286,8 +3286,6 @@ init (RutShell *shell, void *user_data)
   data->picking_ray_color = cogl_pipeline_new (data->ctx->cogl_context);
   cogl_pipeline_set_color4f (data->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
-  allocate (data);
-
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     set_play_mode_enabled (data, FALSE);
@@ -3328,6 +3326,8 @@ init (RutShell *shell, void *user_data)
       rut_graphable_add_child (doc_node, data->transition_view);
     }
 #endif
+
+  allocate (data);
 }
 
 static void
