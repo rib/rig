@@ -305,6 +305,57 @@ _rut_ui_viewport_input_region_cb (RutInputRegion *region,
   return _rut_ui_viewport_input_cb (event, user_data);
 }
 
+static RutTraverseVisitFlags
+update_children_size_cb (RutObject *object,
+                         int depth,
+                         void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+
+  if (depth == 0)
+    {
+      g_assert (object == ui_viewport->doc_transform);
+      return RUT_TRAVERSE_VISIT_CONTINUE;
+    }
+
+  g_assert (depth == 1);
+
+  if (rut_object_is (object, RUT_INTERFACE_ID_SIZABLE))
+    {
+      float width, height;
+
+      if (ui_viewport->x_pannable)
+        rut_sizable_get_preferred_width (object,
+                                         -1, /* for_height */
+                                         NULL, /* min_width */
+                                         &width);
+      else
+        width = ui_viewport->width;
+
+      if (ui_viewport->y_pannable)
+        rut_sizable_get_preferred_height (object,
+                                          width, /* for_width */
+                                          NULL, /* min_height */
+                                          &height);
+      else
+        height = ui_viewport->height;
+
+      rut_sizable_set_size (object, width, height);
+    }
+
+  return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
+}
+
+static void
+update_children_size (RutUIViewport *ui_viewport)
+{
+  rut_graphable_traverse (ui_viewport->doc_transform,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          update_children_size_cb,
+                          NULL,
+                          ui_viewport);
+}
+
 RutUIViewport *
 rut_ui_viewport_new (RutContext *ctx,
                      float width,
@@ -366,6 +417,8 @@ rut_ui_viewport_new (RutContext *ctx,
     rut_graphable_add_child (RUT_OBJECT (ui_viewport), object);
   va_end (ap);
 
+  update_children_size (ui_viewport);
+
   return ui_viewport;
 }
 
@@ -381,6 +434,8 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
                                   0, 0,
                                   width,
                                   height);
+
+  update_children_size (ui_viewport);
 
   rut_property_dirty (&ui_viewport->ctx->property_ctx,
                       &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_WIDTH]);
@@ -491,6 +546,8 @@ rut_ui_viewport_set_x_pannable (RutUIViewport *ui_viewport,
                                 CoglBool pannable)
 {
   ui_viewport->x_pannable = pannable;
+
+  update_children_size (ui_viewport);
 }
 
 CoglBool
@@ -504,6 +561,8 @@ rut_ui_viewport_set_y_pannable (RutUIViewport *ui_viewport,
                                 CoglBool pannable)
 {
   ui_viewport->y_pannable = pannable;
+
+  update_children_size (ui_viewport);
 }
 
 CoglBool
