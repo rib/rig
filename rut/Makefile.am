@@ -51,7 +51,8 @@ source_h = \
     rut-toggle.h \
     rut-dof-effect.h \
     rut-mesh.h \
-    rut-mesh-ply.h
+    rut-mesh-ply.h \
+    rut-ui-viewport.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -107,6 +108,7 @@ librut_la_SOURCES = \
     rut-dof-effect.c \
     rut-mesh.c \
     rut-mesh-ply.c \
+    rut-ui-viewport.c \
     $(source_h)
 
 if !HAVE_ANDROID

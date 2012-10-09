@@ -41,6 +41,7 @@
 #include "rut-inspector.h"
 #include "rut-mesh.h"
 #include "rut-mesh-ply.h"
+#include "rut-ui-viewport.h"
 
 /* entity/components system */
 #include "rut-entity.h"
