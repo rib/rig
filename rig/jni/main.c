@@ -1958,6 +1958,10 @@ pick (RigData *data,
   pick_ctx.ray_origin = ray_origin;
   pick_ctx.ray_direction = ray_direction;
 
+  /* We are hijacking the framebuffer's matrix to track the graphable
+   * transforms so we need to initialise it to a known state */
+  cogl_framebuffer_identity_matrix (fb);
+
   rut_graphable_traverse (data->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           entitygraph_pre_pick_cb,
