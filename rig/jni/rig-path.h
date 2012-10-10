@@ -23,17 +23,31 @@
 #include <rut.h>
 #include "rig-node.h"
 
+typedef struct _RigPath RigPath;
+
 struct _RigPath
 {
   RutContext *ctx;
   RutPropertyType type;
   GQueue nodes;
   GList *pos;
+  RutList operation_cb_list;
 };
 
-extern RutType rig_path_type;
+typedef enum
+{
+  RIG_PATH_OPERATION_ADDED,
+  RIG_PATH_OPERATION_REMOVED,
+  RIG_PATH_OPERATION_MODIFIED
+} RigPathOperation;
 
-typedef struct _RigPath RigPath;
+typedef void
+(* RigPathOperationCallback) (RigPath *path,
+                              RigPathOperation op,
+                              RigNode *node,
+                              void *user_data);
+
+extern RutType rig_path_type;
 
 #define RUT_PATH(x) ((RigPath *) x)
 
@@ -105,5 +119,11 @@ rig_path_insert_boxed (RigPath *path,
 void
 rig_path_remove (RigPath *path,
                  float t);
+
+RutClosure *
+rig_path_add_operation_callback (RigPath *path,
+                                 RigPathOperationCallback callback,
+                                 void *user_data,
+                                 RutClosureDestroyCallback destroy_cb);
 
 #endif /* _RUT_PATH_H_ */

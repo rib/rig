@@ -34,6 +34,7 @@ node_free_cb (void *node,
 void
 rig_path_free (RigPath *path)
 {
+  rut_closure_list_disconnect_all (&path->operation_cb_list);
   g_queue_foreach (&path->nodes,
                    node_free_cb,
                    GUINT_TO_POINTER (path->type));
@@ -54,6 +55,8 @@ rig_path_new (RutContext *ctx,
 
   g_queue_init (&path->nodes);
   path->pos = NULL;
+
+  rut_list_init (&path->operation_cb_list);
 
   return path;
 }
@@ -269,6 +272,28 @@ path_node_sort_t_func (const RigNode *a,
     return 1;
 }
 
+static void
+notify_node_added (RigPath *path,
+                   RigNode *node)
+{
+  rut_closure_list_invoke (&path->operation_cb_list,
+                           RigPathOperationCallback,
+                           path,
+                           RIG_PATH_OPERATION_ADDED,
+                           node);
+}
+
+static void
+notify_node_modified (RigPath *path,
+                      RigNode *node)
+{
+  rut_closure_list_invoke (&path->operation_cb_list,
+                           RigPathOperationCallback,
+                           path,
+                           RIG_PATH_OPERATION_MODIFIED,
+                           node);
+}
+
 void
 rig_path_insert_float (RigPath *path,
                        float t,
@@ -288,6 +313,7 @@ rig_path_insert_float (RigPath *path,
     {
       node = link->data;
       node->value = value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -295,6 +321,7 @@ rig_path_insert_float (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 
 #if 0
@@ -317,6 +344,7 @@ rig_path_insert_vec3 (RigPath *path,
     {
       node = link->data;
       memcpy (node->value, value, sizeof (node->value));
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -324,6 +352,7 @@ rig_path_insert_vec3 (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -341,6 +370,7 @@ rig_path_insert_vec4 (RigPath *path,
     {
       node = link->data;
       memcpy (node->value, value, sizeof (node->value));
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -348,6 +378,7 @@ rig_path_insert_vec4 (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -370,12 +401,14 @@ rig_path_insert_quaternion (RigPath *path,
     {
       node = link->data;
       node->value = *value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_quaternion (t, value);
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func, NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 
 #if 0
@@ -398,6 +431,7 @@ rig_path_insert_double (RigPath *path,
     {
       node = link->data;
       node->value = value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -405,6 +439,7 @@ rig_path_insert_double (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -422,6 +457,7 @@ rig_path_insert_integer (RigPath *path,
     {
       node = link->data;
       node->value = value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -429,6 +465,7 @@ rig_path_insert_integer (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -446,6 +483,7 @@ rig_path_insert_uint32 (RigPath *path,
     {
       node = link->data;
       node->value = value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
@@ -453,6 +491,7 @@ rig_path_insert_uint32 (RigPath *path,
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func,
                              NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -470,12 +509,14 @@ rig_path_insert_color (RigPath *path,
     {
       node = link->data;
       node->value = *value;
+      notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_color (t, value);
       g_queue_insert_sorted (&path->nodes, node,
                              (GCompareDataFunc)path_node_sort_t_func, NULL);
+      notify_node_added (path, (RigNode *) node);
     }
 }
 
@@ -743,7 +784,24 @@ rig_path_remove (RigPath *path,
 
   if (link)
     {
+      rut_closure_list_invoke (&path->operation_cb_list,
+                               RigPathOperationCallback,
+                               path,
+                               RIG_PATH_OPERATION_REMOVED,
+                               link->data);
       rig_node_free (path->type, link->data);
       g_queue_delete_link (&path->nodes, link);
     }
+}
+
+RutClosure *
+rig_path_add_operation_callback (RigPath *path,
+                                 RigPathOperationCallback callback,
+                                 void *user_data,
+                                 RutClosureDestroyCallback destroy_cb)
+{
+  return rut_closure_list_add (&path->operation_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
