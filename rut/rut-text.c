@@ -819,10 +819,6 @@ update_size (RutText *text)
 static void
 rut_text_notify_preferred_size_changed (RutText *text)
 {
-  /* FIXME:
-   * This is basically just a hack for now.
-   */
-  update_size (text);
 }
 
 static inline void

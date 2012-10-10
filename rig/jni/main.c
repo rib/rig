@@ -3426,27 +3426,33 @@ init (RutShell *shell, void *user_data)
                             NULL);
 
       transform = rut_transform_new (data->ctx,
-                                     (text = rut_text_new (data->ctx)), NULL);
+                                     (text =
+                                      rut_text_new_with_text (data->ctx,
+                                                              NULL,
+                                                              "File")), NULL);
       rut_transform_translate (transform, x, 5, 0);
-      rut_text_set_text (text, "File");
       rut_graphable_add_child (graph, transform);
       rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
       x += width + 30;
 
       transform = rut_transform_new (data->ctx,
-                                     (text = rut_text_new (data->ctx)), NULL);
+                                     (text =
+                                      rut_text_new_with_text (data->ctx,
+                                                              NULL,
+                                                              "Edit")), NULL);
       rut_transform_translate (transform, x, 5, 0);
-      rut_text_set_text (text, "Edit");
       rut_graphable_add_child (graph, transform);
       rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
       x += width + 30;
 
       transform = rut_transform_new (data->ctx,
-                                     (text = rut_text_new (data->ctx)), NULL);
+                                     (text =
+                                      rut_text_new_with_text (data->ctx,
+                                                              NULL,
+                                                              "Help")), NULL);
       rut_transform_translate (transform, x, 5, 0);
-      rut_text_set_text (text, "Help");
       rut_graphable_add_child (graph, transform);
       rut_refable_unref (transform);
       rut_sizable_get_size (text, &width, &height);
@@ -3516,6 +3522,8 @@ init (RutShell *shell, void *user_data)
           RutEntry *entry;
           RutText *text;
           RutTransform *transform;
+          float width, min_height;
+
           transform = rut_transform_new (data->ctx,
                                          (entry = rut_entry_new (data->ctx)), NULL);
           rut_transform_translate (transform, 20, 10, 0);
@@ -3523,7 +3531,12 @@ init (RutShell *shell, void *user_data)
 
           text = rut_entry_get_text (entry);
           rut_text_set_editable (text, TRUE);
+          rut_text_set_single_line_mode (text, TRUE);
           rut_text_set_text (text, "Search...");
+
+          rut_sizable_get_preferred_height (entry, -1, &min_height, NULL);
+          rut_sizable_get_preferred_width (entry, min_height, NULL, &width);
+          rut_sizable_set_size (entry, width, min_height);
         }
 
 

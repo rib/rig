@@ -187,6 +187,58 @@ _rut_entry_paint (RutObject *object,
 #endif
 }
 
+void
+rut_entry_set_size (RutEntry *entry,
+                    float width,
+                    float height)
+{
+  if (entry->prim)
+    {
+      cogl_object_unref (entry->prim);
+      entry->prim = NULL;
+    }
+
+  rut_sizable_set_size (entry->text, width, height);
+
+  entry->width = width;
+  entry->height = height;
+
+  rut_property_dirty (&entry->ctx->property_ctx,
+                      &entry->properties[RUT_ENTRY_PROP_WIDTH]);
+  rut_property_dirty (&entry->ctx->property_ctx,
+                      &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
+}
+
+void
+rut_entry_get_size (RutEntry *entry,
+                    float *width,
+                    float *height)
+{
+  rut_sizable_get_size (entry->text, width, height);
+}
+
+static void
+_rut_entry_get_preferred_width (RutObject *object,
+                                float for_height,
+                                float *min_width_p,
+                                float *natural_width_p)
+{
+  RutEntry *entry = RUT_ENTRY (object);
+  rut_sizable_get_preferred_width (entry->text, for_height,
+                                   min_width_p, natural_width_p);
+}
+
+static void
+_rut_entry_get_preferred_height (RutObject *object,
+                                 float for_width,
+                                 float *min_height_p,
+                                 float *natural_height_p)
+{
+  RutEntry *entry = RUT_ENTRY (object);
+  rut_sizable_get_preferred_height (entry->text, for_width,
+                                    min_height_p, natural_height_p);
+}
+
 RutPaintableVTable _rut_entry_paintable_vtable = {
   _rut_entry_paint
 };
@@ -194,8 +246,8 @@ RutPaintableVTable _rut_entry_paintable_vtable = {
 static RutSizableVTable _rut_entry_sizable_vtable = {
   rut_entry_set_size,
   rut_entry_get_size,
-  NULL,
-  NULL
+  _rut_entry_get_preferred_width,
+  _rut_entry_get_preferred_height
 };
 
 static RutIntrospectableVTable _rut_entry_introspectable_vtable = {
@@ -235,35 +287,6 @@ _rut_entry_init_type (void)
                           NULL); /* no implied vtable */
 }
 
-void
-rut_entry_set_size (RutEntry *entry,
-                    float width,
-                    float height)
-{
-  if (entry->prim)
-    {
-      cogl_object_unref (entry->prim);
-      entry->prim = NULL;
-    }
-
-  rut_sizable_set_size (entry->text, width, height);
-
-  entry->width = width;
-  entry->height = height;
-
-  rut_property_dirty (&entry->ctx->property_ctx,
-                      &entry->properties[RUT_ENTRY_PROP_WIDTH]);
-  rut_property_dirty (&entry->ctx->property_ctx,
-                      &entry->properties[RUT_ENTRY_PROP_HEIGHT]);
-}
-
-void
-rut_entry_get_size (RutEntry *entry,
-                    float *width,
-                    float *height)
-{
-  rut_sizable_get_size (entry->text, width, height);
-}
 
 void
 rut_entry_set_width (RutEntry *entry,
