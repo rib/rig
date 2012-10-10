@@ -543,8 +543,15 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
       tri_i[1] = move_to_i (i++, &state, tri_v[1]);
       tri_i[2] = move_to_i (i++, &state, tri_v[2]);
 
-      for (; i < n_vertices; i++)
+      while (TRUE)
         {
+          if (!callback (tri_v[0], tri_v[1], tri_v[2],
+                         tri_i[0], tri_i[1], tri_i[2], user_data))
+            return;
+
+          if (i >= n_vertices)
+            break;
+
           switch (mode)
             {
             case COGL_VERTICES_MODE_TRIANGLES:
@@ -554,20 +561,16 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
               break;
             case COGL_VERTICES_MODE_TRIANGLE_FAN:
               SWAP_TRIANGLE_VERTICES (1, 2);
-              tri_i[2] = move_to_i (i, &state, tri_v[2]);
+              tri_i[2] = move_to_i (i++, &state, tri_v[2]);
               break;
             case COGL_VERTICES_MODE_TRIANGLE_STRIP:
               SWAP_TRIANGLE_VERTICES (0, 1);
               SWAP_TRIANGLE_VERTICES (1, 2);
-              tri_i[2] = move_to_i (i, &state, tri_v[2]);
+              tri_i[2] = move_to_i (i++, &state, tri_v[2]);
               break;
             default:
               g_warn_if_reached ();
             }
-
-          if (!callback (tri_v[0], tri_v[1], tri_v[2],
-                         tri_i[0], tri_i[1], tri_i[2], user_data))
-            return;
         }
     }
   else
@@ -579,8 +582,15 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
       tri_i[1] = move_to (i++, n_attributes, bases, strides, tri_v[1]);
       tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
 
-      for (; i < n_vertices; i++)
+      while (TRUE)
         {
+          if (!callback (tri_v[0], tri_v[1], tri_v[2],
+                         tri_i[0], tri_i[1], tri_i[2], user_data))
+            return;
+
+          if (i >= n_vertices)
+            break;
+
           switch (mode)
             {
             case COGL_VERTICES_MODE_TRIANGLES:
@@ -590,20 +600,16 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
               break;
             case COGL_VERTICES_MODE_TRIANGLE_FAN:
               SWAP_TRIANGLE_VERTICES (1, 2);
-              tri_i[2] = move_to (i, n_attributes, bases, strides, tri_v[2]);
+              tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
               break;
             case COGL_VERTICES_MODE_TRIANGLE_STRIP:
               SWAP_TRIANGLE_VERTICES (0, 1);
               SWAP_TRIANGLE_VERTICES (1, 2);
-              tri_i[2] = move_to (i, n_attributes, bases, strides, tri_v[2]);
+              tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
               break;
             default:
               g_warn_if_reached ();
             }
-
-          if (!callback (tri_v[0], tri_v[1], tri_v[2],
-                         tri_i[0], tri_i[1], tri_i[2], user_data))
-            return;
         }
     }
 #undef SWAP_TRIANGLE_VERTICES
