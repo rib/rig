@@ -3371,10 +3371,16 @@ init (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      RutModel *model = rut_model_new_from_template (data->ctx, "cube");
+      char *full_path = g_build_filename (RIG_SHARE_DIR, "light.ply", NULL);
+      RutModel *model = rut_model_new_from_file (data->ctx, full_path);
+      g_free (full_path);
+
+      if (!model)
+        model = rut_model_new_from_template (data->ctx, "cube");
 
       data->light_handle = rut_entity_new (data->ctx, data->entity_next_id++);
       rut_entity_add_component (data->light_handle, model);
+      rut_entity_set_receive_shadow (data->light_handle, FALSE);
       rut_graphable_add_child (data->light, data->light_handle);
       rut_entity_set_scale (data->light_handle, 100);
       rut_entity_set_cast_shadow (data->light_handle, FALSE);

@@ -1377,7 +1377,7 @@ parse_start_element (GMarkupParseContext *context,
                            "Missing model path name");
               return;
             }
-          model = rut_model_new_from_file (loader->data->ctx, path_str);
+          model = rut_model_new_from_asset (loader->data->ctx, path_str);
         }
       else
         {

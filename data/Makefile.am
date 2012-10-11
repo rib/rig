@@ -8,5 +8,6 @@ assets_DATA = \
 	number-slider-background.png \
 	slider-background.png \
 	slider-handle.png \
-	light-bulb.png
+	light-bulb.png \
+	light.ply
 

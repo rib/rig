@@ -286,29 +286,38 @@ RutModel *
 rut_model_new_from_file (RutContext *ctx,
                          const char *file)
 {
-  char *full_path = g_build_filename (ctx->assets_location, file, NULL);
   RutModel *model;
   GError *error = NULL;
   RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
 
   model = _rut_model_new (ctx);
   model->type = RUT_MODEL_TYPE_FILE;
-  model->path = g_strdup (file);
   model->mesh = rut_mesh_new_from_ply (ctx,
-                                       full_path,
+                                       file,
                                        ply_attributes,
                                        G_N_ELEMENTS (ply_attributes),
                                        padding_status,
                                        &error);
   if (!model->mesh)
     {
-      g_critical ("could not load model %s: %s", full_path, error->message);
+      g_critical ("could not load model %s: %s", file, error->message);
       rut_model_free (model);
       model = NULL;
     }
 
-  g_free (full_path);
+  return model;
+}
 
+RutModel *
+rut_model_new_from_asset (RutContext *ctx,
+                          const char *file)
+{
+  char *full_path = g_build_filename (ctx->assets_location, file, NULL);
+  RutModel *model = rut_model_new_from_file (ctx, full_path);
+
+  model->path = g_strdup (file);
+
+  g_free (full_path);
   return model;
 }
 

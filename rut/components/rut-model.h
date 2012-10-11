@@ -64,6 +64,10 @@ rut_model_new_from_file (RutContext *ctx,
                          const char *file);
 
 RutModel *
+rut_model_new_from_asset (RutContext *ctx,
+                         const char *file);
+
+RutModel *
 rut_model_new_from_template (RutContext *ctx,
                              const char *name);
 
