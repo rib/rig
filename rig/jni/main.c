@@ -484,19 +484,22 @@ get_entity_pipeline (RigData *data,
       cogl_object_unref (snippet);
     }
 
-  /* Vertex shader setup for shadow mapping */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+  if (rut_entity_get_receive_shadow (entity))
+    {
+      /* Vertex shader setup for shadow mapping */
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
-      /* definitions */
-      "uniform mat4 light_shadow_matrix;\n"
-      "varying vec4 shadow_coords;\n",
+          /* definitions */
+          "uniform mat4 light_shadow_matrix;\n"
+          "varying vec4 shadow_coords;\n",
 
-      /* post */
-      "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
-  );
+          /* post */
+          "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
+      );
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+      cogl_pipeline_add_snippet (pipeline, snippet);
+      cogl_object_unref (snippet);
+    }
 
   /* and fragment shader */
 
@@ -630,36 +633,39 @@ get_entity_pipeline (RigData *data,
   cogl_object_unref (snippet);
 
 
-  /* Hook the shadow map sampling */
+  if (rut_entity_get_receive_shadow (entity))
+    {
+      /* Hook the shadow map sampling */
 
-  cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_map);
-  /* For debugging the shadow mapping... */
-  //cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_color);
-  //cogl_pipeline_set_layer_texture (pipeline, 7, data->gradient);
+      cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_map);
+      /* For debugging the shadow mapping... */
+      //cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_color);
+      //cogl_pipeline_set_layer_texture (pipeline, 7, data->gradient);
 
-  /* We don't want this layer to be automatically modulated with the
-   * previous layers so we set its combine mode to "REPLACE" so it
-   * will be skipped past and we can sample its texture manually */
-  cogl_pipeline_set_layer_combine (pipeline, 7, "RGBA=REPLACE(PREVIOUS)", NULL);
+      /* We don't want this layer to be automatically modulated with the
+       * previous layers so we set its combine mode to "REPLACE" so it
+       * will be skipped past and we can sample its texture manually */
+      cogl_pipeline_set_layer_combine (pipeline, 7, "RGBA=REPLACE(PREVIOUS)", NULL);
 
-  /* Handle shadow mapping */
+      /* Handle shadow mapping */
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-      /* declarations */
-      "varying vec4 shadow_coords;\n",
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+          /* declarations */
+          "varying vec4 shadow_coords;\n",
 
-      /* post */
-      "vec4 texel7 =  texture2D (cogl_sampler7, shadow_coords.xy);\n"
-      "float distance_from_light = texel7.z + 0.0005;\n"
-      "float shadow = 1.0;\n"
-      "if (distance_from_light < shadow_coords.z)\n"
-      "  shadow = 0.5;\n"
+          /* post */
+          "vec4 texel7 =  texture2D (cogl_sampler7, shadow_coords.xy);\n"
+          "float distance_from_light = texel7.z + 0.0005;\n"
+          "float shadow = 1.0;\n"
+          "if (distance_from_light < shadow_coords.z)\n"
+          "  shadow = 0.5;\n"
 
-      "cogl_color_out = shadow * cogl_color_out;\n"
-  );
+          "cogl_color_out = shadow * cogl_color_out;\n"
+      );
 
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+      cogl_pipeline_add_snippet (pipeline, snippet);
+      cogl_object_unref (snippet);
+    }
 
   if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);

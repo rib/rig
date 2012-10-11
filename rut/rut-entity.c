@@ -28,6 +28,7 @@ enum
   PROP_ROTATION,
   PROP_SCALE,
   PROP_CAST_SHADOW,
+  PROP_RECEIVE_SHADOW,
 
   N_PROPS
 };
@@ -39,6 +40,7 @@ struct _RutEntity
 {
   RutObjectProps _parent;
 
+  RutContext *ctx;
   int ref_count;
 
   uint32_t id;
@@ -63,6 +65,7 @@ struct _RutEntity
   unsigned int visible:1;
   unsigned int dirty:1;
   unsigned int cast_shadow:1;
+  unsigned int receive_shadow:1;
 };
 
 static RutPropertySpec _rut_entity_prop_specs[] = {
@@ -121,6 +124,15 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .setter = rut_entity_set_cast_shadow,
     .nick = "Cast Shadow",
     .blurb = "Whether the entity casts shadows or not",
+    .flags = RUT_PROPERTY_FLAG_READWRITE
+  },
+  {
+    .name = "receive_shadow",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter = rut_entity_get_receive_shadow,
+    .setter = rut_entity_set_receive_shadow,
+    .nick = "Receive Shadow",
+    .blurb = "Whether the entity receives shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE
   },
 
@@ -195,6 +207,7 @@ rut_entity_new (RutContext *ctx,
 
   rut_object_init (&entity->_parent, &rut_entity_type);
 
+  entity->ctx = ctx;
   entity->ref_count = 1;
 
   rut_simple_introspectable_init (entity,
@@ -204,6 +217,7 @@ rut_entity_new (RutContext *ctx,
   entity->id = id;
 
   entity->visible = TRUE;
+  entity->receive_shadow = TRUE;
 
   entity->position[0] = 0.0f;
   entity->position[1] = 0.0f;
@@ -571,10 +585,32 @@ rut_entity_get_cast_shadow (RutEntity *entity)
 void rut_entity_set_cast_shadow (RutEntity *entity,
                                  gboolean cast_shadow)
 {
-  if (cast_shadow)
-    entity->cast_shadow = TRUE;
-  else
-    entity->cast_shadow = FALSE;
+  if (entity->cast_shadow == cast_shadow)
+    return;
+
+  entity->cast_shadow = cast_shadow;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[PROP_CAST_SHADOW]);
+}
+
+CoglBool
+rut_entity_get_receive_shadow (RutEntity *entity)
+{
+  return entity->receive_shadow;
+}
+
+void
+rut_entity_set_receive_shadow (RutEntity *entity,
+                               gboolean receive_shadow)
+{
+  if (entity->receive_shadow == receive_shadow)
+    return;
+
+  entity->receive_shadow = receive_shadow;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[PROP_RECEIVE_SHADOW]);
 }
 
 RutObject *

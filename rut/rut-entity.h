@@ -192,6 +192,12 @@ void
 rut_entity_set_cast_shadow (RutEntity *entity,
                             gboolean cast_shadow);
 
+CoglBool
+rut_entity_get_receive_shadow (RutEntity *entity);
+
+void
+rut_entity_set_receive_shadow (RutEntity *entity,
+                               gboolean receive_shadow);
 
 typedef void (*RutComponentCallback) (RutComponent *component,
                                       void *user_data);
