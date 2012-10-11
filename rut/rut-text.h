@@ -1211,6 +1211,9 @@ void
 rut_text_grab_key_focus (RutText *text);
 
 void
+rut_text_ungrab_key_focus (RutText *text);
+
+void
 rut_text_set_width (RutText *text, float width);
 
 void

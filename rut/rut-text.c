@@ -759,6 +759,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
 static void buffer_connect_signals (RutText *text);
 static void buffer_disconnect_signals (RutText *text);
 static RutTextBuffer *get_buffer (RutText *text);
+static RutInputEventStatus rut_text_key_press (RutInputEvent *event,
+                                               void *user_data);
 
 #define offset_real(t,p)        ((p) == -1 ? g_utf8_strlen ((t), -1) : (p))
 
@@ -1586,7 +1588,7 @@ _rut_text_free (void *object)
   rut_closure_list_disconnect_all (&text->text_inserted_cb_list);
 
   if (text->has_focus)
-    rut_shell_ungrab_key_focus (text->ctx->shell);
+    rut_text_ungrab_key_focus (text);
 
   /* get rid of the entire cache */
   rut_text_dirty_cache (text);
@@ -2399,6 +2401,112 @@ rut_text_remove_password_hint (void *data)
   return G_SOURCE_REMOVE;
 }
 
+static CoglBool
+rut_text_button_press (RutText *text,
+                       RutInputEvent *event)
+{
+  //CoglBool res = FALSE;
+  float x, y;
+  int index_;
+  CoglMatrix transform;
+  CoglMatrix inverse_transform;
+  RutCamera *camera;
+
+  g_print ("RutText Button Press!\n");
+  /* we'll steal keyfocus if we need it */
+  if (text->editable || text->selectable)
+    rut_text_grab_key_focus (text);
+
+  /* if the actor is empty we just reset everything and not
+   * set up the dragging of the selection since there's nothing
+   * to select
+   */
+  if (rut_text_buffer_get_length (get_buffer (text)) == 0)
+    {
+      rut_text_set_positions (text, -1, -1);
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  x = rut_motion_event_get_x (event);
+  y = rut_motion_event_get_y (event);
+
+  camera = rut_input_event_get_camera (event);
+
+  if (text->has_focus &&
+      !rut_camera_pick_input_region (camera, text->input_region, x, y))
+    {
+      rut_text_ungrab_key_focus (text);
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  rut_graphable_get_modelview (text, camera, &transform);
+  if (cogl_matrix_get_inverse (&transform,
+                               &inverse_transform))
+    {
+      int offset;
+      const char *text_str;
+
+      rut_camera_unproject_coord (camera,
+                                  &transform,
+                                  &inverse_transform,
+                                  0,
+                                  &x,
+                                  &y);
+
+      index_ = rut_text_coords_to_position (text, x, y);
+      text_str = rut_text_buffer_get_text (get_buffer (text));
+      offset = bytes_to_offset (text_str, index_);
+
+#warning "TODO: handle single vs double vs tripple click"
+#if 0
+      /* what we select depends on the number of button clicks we
+       * receive:
+       *
+       *   1: just position the cursor and the selection
+       *   2: select the current word
+       *   3: select the contents of the whole actor
+       */
+      if (event->click_count == 1)
+        {
+          rut_text_set_positions (text, offset, offset);
+        }
+      else if (event->click_count == 2)
+        {
+          rut_text_select_word (text);
+        }
+      else if (event->click_count == 3)
+        {
+          rut_text_select_line (text);
+        }
+#else
+      rut_text_set_positions (text, offset, offset);
+#endif
+    }
+
+  /* grab the pointer */
+  text->in_select_drag = TRUE;
+  rut_shell_grab_input (text->ctx->shell,
+                        camera,
+                        rut_text_motion_grab,
+                        text);
+
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
+}
+
+static RutInputEventStatus
+rut_text_input_cb (RutInputEvent *event,
+                   void *user_data)
+{
+  RutText *text = user_data;
+
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+    return rut_text_button_press (text, event);
+
+  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
 static RutInputEventStatus
 rut_text_key_press (RutInputEvent *event,
                     void *user_data)
@@ -2409,14 +2517,17 @@ rut_text_key_press (RutInputEvent *event,
   RutModifierState modifiers;
   CoglBool handled = FALSE;
 
-  g_return_val_if_fail (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY,
-                        RUT_INPUT_EVENT_STATUS_UNHANDLED);
+  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_KEY)
+    {
+      rut_text_input_cb (event, user_data);
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
 
   if (rut_key_event_get_action (event) != RUT_KEY_EVENT_ACTION_DOWN)
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_HANDLED;
 
   if (!text->editable)
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    return RUT_INPUT_EVENT_STATUS_HANDLED;
 
   modifiers = rut_key_event_get_modifier_state (event);
 
@@ -2496,6 +2607,10 @@ rut_text_key_press (RutInputEvent *event,
     case RUT_KEY_ISO_Enter:
       handled = rut_text_real_activate (text, event);
       break;
+    case RUT_KEY_Escape:
+      rut_text_ungrab_key_focus (text);
+      handled = TRUE;
+      break;
     }
 
   if (handled)
@@ -2536,17 +2651,7 @@ rut_text_key_press (RutInputEvent *event,
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-static void
-lost_key_focus_cb (void *user_data)
-{
-  RutText *text = user_data;
-
-  text->has_focus = FALSE;
-
-  rut_shell_queue_redraw (text->ctx->shell);
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
 void
@@ -2555,98 +2660,30 @@ rut_text_grab_key_focus (RutText *text)
   if (!text->has_focus)
     {
       text->has_focus = TRUE;
-      rut_shell_grab_key_focus (text->ctx->shell,
-                                rut_text_key_press,
-                                lost_key_focus_cb,
-                                text);
+
+      /* Note: we don't use rut_shell_grab_key_focus here becase we also want
+       * to grab mouse input that might otherwise slopily to move focus to other
+       * parts of the UI.
+       */
+      rut_shell_grab_input (text->ctx->shell,
+                            NULL,
+                            rut_text_key_press,
+                            text);
       rut_shell_queue_redraw (text->ctx->shell);
     }
 }
 
-static CoglBool
-rut_text_button_press (RutText *text,
-                       RutInputEvent *event)
+void
+rut_text_ungrab_key_focus (RutText *text)
 {
-  //CoglBool res = FALSE;
-  float x, y;
-  int index_;
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
-  RutCamera *camera;
-
-  g_print ("RutText Button Press!\n");
-  /* we'll steal keyfocus if we need it */
-  if (text->editable || text->selectable)
-    rut_text_grab_key_focus (text);
-
-  /* if the actor is empty we just reset everything and not
-   * set up the dragging of the selection since there's nothing
-   * to select
-   */
-  if (rut_text_buffer_get_length (get_buffer (text)) == 0)
+  if (text->has_focus)
     {
-      rut_text_set_positions (text, -1, -1);
-
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
+      rut_shell_ungrab_input (text->ctx->shell,
+                              rut_text_key_press,
+                              text);
+      text->has_focus = FALSE;
+      rut_shell_queue_redraw (text->ctx->shell);
     }
-
-  x = rut_motion_event_get_x (event);
-  y = rut_motion_event_get_y (event);
-
-  camera = rut_input_event_get_camera (event);
-
-  rut_graphable_get_modelview (text, camera, &transform);
-  if (cogl_matrix_get_inverse (&transform,
-                               &inverse_transform))
-    {
-      int offset;
-      const char *text_str;
-
-      rut_camera_unproject_coord (camera,
-                                  &transform,
-                                  &inverse_transform,
-                                  0,
-                                  &x,
-                                  &y);
-
-      index_ = rut_text_coords_to_position (text, x, y);
-      text_str = rut_text_buffer_get_text (get_buffer (text));
-      offset = bytes_to_offset (text_str, index_);
-
-#warning "TODO: handle single vs double vs tripple click"
-#if 0
-      /* what we select depends on the number of button clicks we
-       * receive:
-       *
-       *   1: just position the cursor and the selection
-       *   2: select the current word
-       *   3: select the contents of the whole actor
-       */
-      if (event->click_count == 1)
-        {
-          rut_text_set_positions (text, offset, offset);
-        }
-      else if (event->click_count == 2)
-        {
-          rut_text_select_word (text);
-        }
-      else if (event->click_count == 3)
-        {
-          rut_text_select_line (text);
-        }
-#else
-      rut_text_set_positions (text, offset, offset);
-#endif
-    }
-
-  /* grab the pointer */
-  text->in_select_drag = TRUE;
-  rut_shell_grab_input (text->ctx->shell,
-                        camera,
-                        rut_text_motion_grab,
-                        text);
-
-  return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
 
@@ -3031,13 +3068,7 @@ rut_text_input_region_cb (RutInputRegion *region,
                           RutInputEvent *event,
                           void *user_data)
 {
-  RutText *text = user_data;
-
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
-    return rut_text_button_press (text, event);
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  return rut_text_input_cb (event, user_data);
 }
 
 #if 0
@@ -3177,6 +3208,7 @@ rut_text_new_full (RutContext *ctx,
   text->use_underline = FALSE;
   text->use_markup = FALSE;
   text->justify = FALSE;
+  text->activatable = TRUE;
 
   for (i = 0; i < N_CACHED_LAYOUTS; i++)
     text->cached_layouts[i].layout = NULL;
@@ -3532,6 +3564,8 @@ rut_text_activate (RutText *text)
                                text);
       return TRUE;
     }
+
+  rut_text_ungrab_key_focus (text);
 
   return FALSE;
 }
