@@ -1394,10 +1394,10 @@ update_transition_progress_cb (RutProperty *target_property,
                                void *user_data)
 {
   RigData *data = user_data;
-  double elapsed = rut_timeline_get_elapsed (data->timeline);
+  double progress = rut_timeline_get_progress (data->timeline);
   RigTransition *transition = target_property->object;
 
-  rig_transition_set_progress (transition, elapsed);
+  rig_transition_set_progress (transition, progress);
 }
 
 RigTransition *
