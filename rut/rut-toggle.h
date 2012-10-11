@@ -37,6 +37,12 @@ RutToggle *
 rut_toggle_new (RutContext *ctx,
                 const char *label);
 
+RutToggle *
+rut_toggle_new_with_icons (RutContext *ctx,
+                           const char *unselected_icon,
+                           const char *selected_icon,
+                           const char *label);
+
 typedef void (*RutToggleCallback) (RutToggle *toggle,
                                    CoglBool value,
                                    void *user_data);

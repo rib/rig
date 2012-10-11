@@ -516,14 +516,21 @@ add_animatable_toggle (RutPropInspector *inspector,
 
   if (spec->animatable)
     {
-      RutObject *control = rut_toggle_new (inspector->context, "");
+      char *unselected_icon =
+        g_build_filename (RIG_DATA_DIR, "record-button.png", NULL);
+      char *selected_icon =
+        g_build_filename (RIG_DATA_DIR, "record-button-selected.png", NULL);
+      RutObject *control = rut_toggle_new_with_icons (inspector->context,
+                                                      unselected_icon,
+                                                      selected_icon,
+                                                      "");
       RutPropInspectorControl *control_data =
         inspector->controls + inspector->n_controls++;
       RutPropertyContext *property_ctx =
         &inspector->context->property_ctx;
 
-      rut_toggle_set_tick (control, "•");
-      rut_toggle_set_tick_color (control, &(RutColor) { 1, 0, 0, 1 });
+      g_free (unselected_icon);
+      g_free (selected_icon);
 
       rut_toggle_set_state (control, prop->animated);
 

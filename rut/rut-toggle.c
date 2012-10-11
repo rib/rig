@@ -63,6 +63,9 @@ struct _RutToggle
   /* FIXME: we don't need a separate tick for every toggle! */
   PangoLayout *tick;
 
+  CoglTexture *selected_icon;
+  CoglTexture *unselected_icon;
+
   PangoLayout *label;
   int label_width;
   int label_height;
@@ -70,10 +73,12 @@ struct _RutToggle
   float width;
   float height;
 
-  /* FIXME: we should be able to share border/box pipelines
+  /* FIXME: we should be able to share these pipelines
    * between different toggle boxes. */
   CoglPipeline *pipeline_border;
   CoglPipeline *pipeline_box;
+  CoglPipeline *pipeline_selected_icon;
+  CoglPipeline *pipeline_unselected_icon;
 
   CoglColor text_color;
   CoglColor tick_color;
@@ -124,7 +129,18 @@ _rut_toggle_free (void *object)
 
   rut_closure_list_disconnect_all (&toggle->on_toggle_cb_list);
 
-  g_object_unref (toggle->tick);
+  if (toggle->selected_icon)
+    {
+      cogl_object_unref (toggle->selected_icon);
+      cogl_object_unref (toggle->pipeline_selected_icon);
+    }
+  if (toggle->unselected_icon)
+    {
+      cogl_object_unref (toggle->unselected_icon);
+      cogl_object_unref (toggle->pipeline_unselected_icon);
+    }
+  if (toggle->tick)
+    g_object_unref (toggle->tick);
   g_object_unref (toggle->label);
 
   cogl_object_unref (toggle->pipeline_border);
@@ -154,34 +170,68 @@ _rut_toggle_paint (RutObject *object,
   RutToggle *toggle = RUT_TOGGLE (object);
   RutCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = camera->fb;
-  int box_y;
+  int icon_width;
 
-  /* FIXME: This is a fairly lame way of drawing a check box! */
+  if (toggle->selected_icon)
+    {
+      CoglTexture *icon;
+      CoglPipeline *pipeline;
+      int icon_y;
+      int icon_height;
 
-  box_y = (toggle->label_height / 2.0) - (RUT_TOGGLE_BOX_WIDTH / 2.0);
+      if (toggle->state || toggle->tentative_set)
+        {
+          icon = toggle->selected_icon;
+          pipeline = toggle->pipeline_selected_icon;
+        }
+      else
+        {
+          icon = toggle->unselected_icon;
+          pipeline = toggle->pipeline_unselected_icon;
+        }
+
+      icon_y = (toggle->label_height / 2.0) -
+        (cogl_texture_get_height (icon) / 2.0);
+      icon_width = cogl_texture_get_width (icon);
+      icon_height = cogl_texture_get_height (icon);
+
+      cogl_framebuffer_draw_rectangle (fb,
+                                       pipeline,
+                                       0, icon_y,
+                                       icon_width,
+                                       icon_y + icon_height);
+    }
+  else
+    {
+      /* FIXME: This is a fairly lame way of drawing a check box! */
+
+      int box_y = (toggle->label_height / 2.0) - (RUT_TOGGLE_BOX_WIDTH / 2.0);
 
 
-  cogl_framebuffer_draw_rectangle (fb,
-                                   toggle->pipeline_border,
-                                   0, box_y,
-                                   RUT_TOGGLE_BOX_WIDTH,
-                                   box_y + RUT_TOGGLE_BOX_WIDTH);
+      cogl_framebuffer_draw_rectangle (fb,
+                                       toggle->pipeline_border,
+                                       0, box_y,
+                                       RUT_TOGGLE_BOX_WIDTH,
+                                       box_y + RUT_TOGGLE_BOX_WIDTH);
 
-  cogl_framebuffer_draw_rectangle (fb,
-                                   toggle->pipeline_box,
-                                   1, box_y + 1,
-                                   RUT_TOGGLE_BOX_WIDTH - 2,
-                                   box_y + RUT_TOGGLE_BOX_WIDTH - 2);
+      cogl_framebuffer_draw_rectangle (fb,
+                                       toggle->pipeline_box,
+                                       1, box_y + 1,
+                                       RUT_TOGGLE_BOX_WIDTH - 2,
+                                       box_y + RUT_TOGGLE_BOX_WIDTH - 2);
 
-  if (toggle->state || toggle->tentative_set)
-    cogl_pango_show_layout (camera->fb,
-                            toggle->tick,
-                            0, 0,
-                            &toggle->tick_color);
+      if (toggle->state || toggle->tentative_set)
+        cogl_pango_show_layout (camera->fb,
+                                toggle->tick,
+                                0, 0,
+                                &toggle->tick_color);
+
+      icon_width = RUT_TOGGLE_BOX_WIDTH;
+    }
 
   cogl_pango_show_layout (camera->fb,
                           toggle->label,
-                          RUT_TOGGLE_BOX_WIDTH + RUT_TOGGLE_BOX_RIGHT_PAD, 0,
+                          icon_width + RUT_TOGGLE_BOX_RIGHT_PAD, 0,
                           &toggle->text_color);
 }
 
@@ -228,7 +278,15 @@ _rut_toggle_get_preferred_width (RutObject *object,
   float width;
 
   pango_layout_get_pixel_extents (toggle->label, NULL, &logical_rect);
-  width = logical_rect.width + RUT_TOGGLE_BOX_WIDTH + RUT_TOGGLE_BOX_RIGHT_PAD;
+
+  if (toggle->selected_icon)
+    {
+      width = logical_rect.width +
+        cogl_texture_get_width (toggle->selected_icon) +
+        RUT_TOGGLE_BOX_RIGHT_PAD;
+    }
+  else
+    width = logical_rect.width + RUT_TOGGLE_BOX_WIDTH + RUT_TOGGLE_BOX_RIGHT_PAD;
 
   if (min_width_p)
     *min_width_p = width;
@@ -247,7 +305,12 @@ _rut_toggle_get_preferred_height (RutObject *object,
   float height;
 
   pango_layout_get_pixel_extents (toggle->label, NULL, &logical_rect);
-  height = MAX (logical_rect.height, RUT_TOGGLE_BOX_WIDTH);
+
+  if (toggle->selected_icon)
+    height = MAX (logical_rect.height,
+                  cogl_texture_get_height (toggle->selected_icon));
+  else
+    height = MAX (logical_rect.height, RUT_TOGGLE_BOX_WIDTH);
 
   if (min_height_p)
     *min_height_p = height;
@@ -462,8 +525,10 @@ _rut_toggle_update_colours (RutToggle *toggle)
 }
 
 RutToggle *
-rut_toggle_new (RutContext *ctx,
-                const char *label)
+rut_toggle_new_with_icons (RutContext *ctx,
+                           const char *unselected_icon,
+                           const char *selected_icon,
+                           const char *label)
 {
   RutToggle *toggle = g_slice_new0 (RutToggle);
   PangoRectangle label_size;
@@ -497,9 +562,38 @@ rut_toggle_new (RutContext *ctx,
   toggle->state = TRUE;
   toggle->enabled = TRUE;
 
-  toggle->tick = pango_layout_new (ctx->pango_context);
-  pango_layout_set_font_description (toggle->tick, ctx->pango_font_desc);
-  pango_layout_set_text (toggle->tick, "✔", -1);
+  if (selected_icon)
+    {
+      toggle->selected_icon = rut_load_texture (ctx, selected_icon, NULL);
+      if (toggle->selected_icon && unselected_icon)
+        toggle->unselected_icon = rut_load_texture (ctx, unselected_icon, NULL);
+      if (toggle->unselected_icon)
+        {
+          toggle->pipeline_selected_icon = cogl_pipeline_new (ctx->cogl_context);
+          cogl_pipeline_set_layer_texture (toggle->pipeline_selected_icon, 0,
+                                           toggle->selected_icon);
+          toggle->pipeline_unselected_icon = cogl_pipeline_copy (toggle->pipeline_selected_icon);
+          cogl_pipeline_set_layer_texture (toggle->pipeline_unselected_icon, 0,
+                                           toggle->unselected_icon);
+        }
+      else
+        {
+          g_warning ("Failed to load toggle icons %s and %s",
+                     selected_icon, unselected_icon);
+          if (toggle->selected_icon)
+            {
+              cogl_object_unref (toggle->selected_icon);
+              toggle->selected_icon = NULL;
+            }
+        }
+    }
+
+  if (!toggle->selected_icon)
+    {
+      toggle->tick = pango_layout_new (ctx->pango_context);
+      pango_layout_set_font_description (toggle->tick, ctx->pango_font_desc);
+      pango_layout_set_text (toggle->tick, "✔", -1);
+    }
 
   font_name = rut_settings_get_font_name (ctx->settings); /* font_name is allocated */
   font_desc = pango_font_description_from_string (font_name);
@@ -533,6 +627,13 @@ rut_toggle_new (RutContext *ctx,
   rut_graphable_add_child (toggle, toggle->input_region);
 
   return toggle;
+}
+
+RutToggle *
+rut_toggle_new (RutContext *ctx,
+                const char *label)
+{
+  return rut_toggle_new_with_icons (ctx, NULL, NULL, label);
 }
 
 RutClosure *

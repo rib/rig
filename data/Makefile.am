@@ -9,5 +9,7 @@ assets_DATA = \
 	slider-background.png \
 	slider-handle.png \
 	light-bulb.png \
-	light.ply
+	light.ply \
+	record-button.png \
+	record-button-selected.png
 
