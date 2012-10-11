@@ -49,6 +49,7 @@ typedef struct _LoaderAttribute
 typedef struct _LoaderProperty
 {
   int component;
+  const char *name;
   LoaderAttribute *loader_attribute;
 } LoaderProperty;
 
@@ -437,7 +438,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
       if (load_status[i] == RUT_PLY_ATTRIBUTE_STATUS_MISSING)
         continue;
 
-      loader_attribute = &loader_attributes[n_loader_attributes++];
+      loader_attribute = &loader_attributes[n_loader_attributes];
       loader_attribute->name = attribute->name;
       if (load_status[i] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
         {
@@ -458,7 +459,17 @@ rut_mesh_new_from_ply (RutContext *ctx,
           loader_attribute->type =
             get_attribute_type_for_ply_type (ply_attribute_type);
           loader_attribute->padding = FALSE;
+
+          for (j = 0; j < n_components; j++)
+            {
+              int p = n_loader_attributes * RUT_PLY_MAX_ATTRIBUTE_PROPERTIES + j;
+              LoaderProperty *loader_property = &loader_properties[p];
+              loader_property->component = j;
+              loader_property->name = attribute->properties[j].name;
+              loader_property->loader_attribute = loader_attribute;
+            }
         }
+
       loader_attribute->n_components = n_components;
       component_size =  get_sizeof_attribute_type (loader_attribute->type);
       loader_attribute->size = component_size * n_components;
@@ -474,6 +485,8 @@ rut_mesh_new_from_ply (RutContext *ctx,
 
       loader_attribute->offset = loader.n_vertex_bytes;
       loader.n_vertex_bytes += loader_attribute->size;
+
+      n_loader_attributes++;
     }
 
   /* Align the size of a vertex to the size of the largest component type */
@@ -501,7 +514,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
                 LoaderProperty *loader_property = &loader_properties[p];
 
                 if (!ply_set_read_cb (loader.ply, "vertex",
-                                      attributes[i].properties[j].name,
+                                      loader_property->name,
                                       rut_mesh_ply_loader_vertex_read_cb,
                                       &loader, p))
                   {
@@ -510,9 +523,6 @@ rut_mesh_new_from_ply (RutContext *ctx,
                                  "Failed to parse PLY file %s", display_name);
                     goto EXIT;
                   }
-
-                loader_property->component = j;
-                loader_property->loader_attribute = loader_attribute;
               }
         }
 
