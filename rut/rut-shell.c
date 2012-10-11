@@ -1128,7 +1128,7 @@ camera_pick_region_cb (RutObject *object,
       rut_graphable_apply_transform (parent, &transform);
 
       rect.x0 = 0;
-      rect.x0 = 0;
+      rect.y0 = 0;
       rect.x1 = rut_ui_viewport_get_width (ui_viewport);
       rect.y1 = rut_ui_viewport_get_height (ui_viewport);
 
