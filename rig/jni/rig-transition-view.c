@@ -46,6 +46,11 @@
 /* Width of the progress marker */
 #define RIG_TRANSITION_VIEW_PROGRESS_WIDTH 4.0f
 
+#define RIG_TRANSITION_VIEW_UNSELECTED_COLOR \
+  GUINT32_TO_BE (0xff0000ff)
+#define RIG_TRANSITION_VIEW_SELECTED_COLOR \
+  GUINT32_TO_BE (0xffffffff)
+
 typedef struct
 {
   RutObject *transform;
@@ -67,6 +72,12 @@ typedef struct
   RigTransitionViewControl controls[RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS];
 
   RutClosure *path_operation_closure;
+
+  /* True if this property currently has any selected nodes. This is
+   * an optimisation so that we can generate the dots buffer slightly
+   * faster by only checking in the selected nodes list for paths for
+   * properties that have selected nodes */
+  CoglBool has_selected_nodes;
 } RigTransitionViewProperty;
 
 struct _RigTransitionViewObject
@@ -108,6 +119,8 @@ struct _RigTransitionView
 
   RutList objects;
 
+  RutList selected_nodes;
+
   CoglBool dots_dirty;
   CoglAttributeBuffer *dots_buffer;
   CoglPrimitive *dots_primitive;
@@ -121,7 +134,15 @@ struct _RigTransitionView
   int ref_count;
 };
 
-typedef CoglVertexP2 RigTransitionViewDotVertex;
+typedef struct
+{
+  RutList list_node;
+
+  RigTransitionViewProperty *prop_data;
+  float t;
+} RigTransitionViewSelectedNode;
+
+typedef CoglVertexP2C4 RigTransitionViewDotVertex;
 
 RutType rig_transition_view_type;
 
@@ -146,11 +167,32 @@ rig_transition_view_ungrab_input (RigTransitionView *view)
 }
 
 static void
+rig_transition_view_clear_selected_nodes (RigTransitionView *view)
+{
+  RigTransitionViewSelectedNode *selected_node, *t;
+
+  if (rut_list_empty (&view->selected_nodes))
+    return;
+
+  rut_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
+    {
+      selected_node->prop_data->has_selected_nodes = FALSE;
+      g_slice_free (RigTransitionViewSelectedNode, selected_node);
+    }
+
+  rut_list_init (&view->selected_nodes);
+
+  view->dots_dirty = TRUE;
+}
+
+static void
 _rig_transition_view_free (void *object)
 {
   RigTransitionView *view = object;
 
   rig_transition_view_ungrab_input (view);
+
+  rig_transition_view_clear_selected_nodes (view);
 
   rut_closure_disconnect (view->animated_closure);
 
@@ -222,41 +264,80 @@ rig_transition_view_create_dots_buffer (RigTransitionView *view)
 static CoglPrimitive *
 rig_transition_view_create_dots_primitive (RigTransitionView *view)
 {
-  CoglAttribute *attribute;
+  CoglAttribute *attributes[2];
   CoglPrimitive *prim;
 
-  attribute = cogl_attribute_new (view->dots_buffer,
-                                  "cogl_position_in",
-                                  sizeof (RigTransitionViewDotVertex),
-                                  offsetof (RigTransitionViewDotVertex, x),
-                                  2, /* n_components */
-                                  COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[0] = cogl_attribute_new (view->dots_buffer,
+                                      "cogl_position_in",
+                                      sizeof (RigTransitionViewDotVertex),
+                                      offsetof (RigTransitionViewDotVertex, x),
+                                      2, /* n_components */
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cogl_attribute_new (view->dots_buffer,
+                                      "cogl_color_in",
+                                      sizeof (RigTransitionViewDotVertex),
+                                      offsetof (RigTransitionViewDotVertex, r),
+                                      4, /* n_components */
+                                      COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
-  prim = cogl_primitive_new (COGL_VERTICES_MODE_POINTS,
-                             view->n_dots,
-                             attribute,
-                             NULL);
+  prim = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_POINTS,
+                                             view->n_dots,
+                                             attributes,
+                                             2 /* n_attributes */);
 
-  cogl_object_unref (attribute);
+  cogl_object_unref (attributes[0]);
+  cogl_object_unref (attributes[1]);
 
   return prim;
 }
 
 typedef struct
 {
+  RigTransitionView *view;
+  RigTransitionViewProperty *prop_data;
+
   RigTransitionViewDotVertex *v;
   int row_pos;
 } RigTransitionViewDotData;
 
 static void
-rig_transition_view_add_dot_cb (void *data,
-                                void *user_data)
+rig_transition_view_add_dot_unselected_cb (void *data,
+                                           void *user_data)
 {
   RigNode *node = data;
   RigTransitionViewDotData *dot_data = user_data;
+  RigTransitionViewDotVertex *v = dot_data->v;
 
-  dot_data->v->x = node->t;
-  dot_data->v->y = dot_data->row_pos;
+  v->x = node->t;
+  v->y = dot_data->row_pos;
+  *(uint32_t *) &v->r = RIG_TRANSITION_VIEW_UNSELECTED_COLOR;
+
+  dot_data->v++;
+}
+
+static void
+rig_transition_view_add_dot_selected_cb (void *data,
+                                         void *user_data)
+{
+  RigNode *node = data;
+  RigTransitionViewDotData *dot_data = user_data;
+  RigTransitionViewDotVertex *v = dot_data->v;
+  uint32_t color = RIG_TRANSITION_VIEW_UNSELECTED_COLOR;
+  RigTransitionViewSelectedNode *selected_node;
+
+  rut_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
+    {
+      if (selected_node->prop_data == dot_data->prop_data &&
+          selected_node->t == node->t)
+        {
+          color = RIG_TRANSITION_VIEW_SELECTED_COLOR;
+          break;
+        }
+    }
+
+  v->x = node->t;
+  v->y = dot_data->row_pos;
+  *(uint32_t *) &v->r = color;
 
   dot_data->v++;
 }
@@ -280,23 +361,24 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
   else
     buffer_is_mapped = TRUE;
 
+  dot_data.view = view;
   dot_data.v = buffer_data;
   dot_data.row_pos = 0;
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
-
       dot_data.row_pos++;
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (dot_data.prop_data, &object->properties, list_node)
         {
           RigPath *path =
             rig_transition_get_path_for_property (view->transition,
-                                                  prop_data->property);
+                                                  dot_data.prop_data->property);
 
           g_queue_foreach (&path->nodes,
-                           rig_transition_view_add_dot_cb,
+                           dot_data.prop_data->has_selected_nodes ?
+                           rig_transition_view_add_dot_selected_cb :
+                           rig_transition_view_add_dot_unselected_cb,
                            &dot_data);
 
           dot_data.row_pos++;
@@ -655,6 +737,69 @@ rig_transition_view_create_label_control (RigTransitionView *view,
   rut_graphable_add_child (control->transform, label);
 }
 
+static CoglBool
+rig_transition_view_select_node (RigTransitionView *view,
+                                 RigTransitionViewProperty *prop_data,
+                                 float t)
+{
+  RigTransitionViewSelectedNode *selected_node;
+
+  /* Check if the node is already selected */
+  if (prop_data->has_selected_nodes)
+    {
+      rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+        {
+          if (selected_node->prop_data == prop_data &&
+              selected_node->t == t)
+            return TRUE;
+        }
+    }
+
+  selected_node = g_slice_new (RigTransitionViewSelectedNode);
+  selected_node->prop_data = prop_data;
+  selected_node->t = t;
+
+  prop_data->has_selected_nodes = TRUE;
+  view->dots_dirty = TRUE;
+
+  rut_list_insert (view->selected_nodes.prev, &selected_node->list_node);
+
+  return FALSE;
+}
+
+static void
+rig_transition_view_unselect_node (RigTransitionView *view,
+                                   RigTransitionViewProperty *prop_data,
+                                   float t)
+{
+  if (prop_data->has_selected_nodes)
+    {
+      RigTransitionViewSelectedNode *selected_node, *tmp;
+      CoglBool has_nodes = FALSE;
+
+      rut_list_for_each_safe (selected_node,
+                              tmp,
+                              &view->selected_nodes,
+                              list_node)
+        {
+          if (selected_node->prop_data == prop_data)
+            {
+              if (selected_node->t == t)
+                {
+                  rut_list_remove (&selected_node->list_node);
+                  g_slice_free (RigTransitionViewSelectedNode, selected_node);
+                  view->dots_dirty = TRUE;
+                  break;
+                }
+              else
+                has_nodes = TRUE;
+            }
+        }
+
+      prop_data->has_selected_nodes = has_nodes;
+    }
+}
+
 static void
 rig_transition_view_path_operation_cb (RigPath *path,
                                        RigPathOperation op,
@@ -677,6 +822,8 @@ rig_transition_view_path_operation_cb (RigPath *path,
       break;
 
     case RIG_PATH_OPERATION_REMOVED:
+      rig_transition_view_unselect_node (view, prop_data, node->t);
+
       view->n_dots--;
       view->dots_dirty = TRUE;
       rut_shell_queue_redraw (view->context->shell);
@@ -845,6 +992,23 @@ rig_transition_view_property_removed_no_allocation (RigTransitionView *view,
   if (prop_data == NULL)
     return;
 
+  if (prop_data->has_selected_nodes)
+    {
+      RigTransitionViewSelectedNode *selected_node, *t;
+
+      rut_list_for_each_safe (selected_node,
+                              t,
+                              &view->selected_nodes,
+                              list_node)
+        {
+          if (selected_node->prop_data == prop_data)
+            {
+              rut_list_remove (&selected_node->list_node);
+              g_slice_free (RigTransitionViewSelectedNode, selected_node);
+            }
+        }
+    }
+
   object_data = prop_data->object;
 
   rut_closure_disconnect (prop_data->path_operation_closure);
@@ -884,12 +1048,6 @@ rig_transition_view_create_dots_pipeline (RigTransitionView *view)
   char *dot_filename;
   CoglBitmap *bitmap;
   CoglError *error = NULL;
-
-  cogl_pipeline_set_color4ub (pipeline,
-                              200,
-                              0,
-                              0,
-                              255);
 
   dot_filename = g_build_filename (RIG_SHARE_DIR, "dot.png", NULL);
 
@@ -998,7 +1156,8 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
     {
       RutButtonState state = rut_motion_event_get_button_state (event);
 
-      if (state & RUT_BUTTON_STATE_1)
+      if ((state & RUT_BUTTON_STATE_1) &&
+          rut_list_empty (&view->selected_nodes))
         {
           rig_transition_view_update_timeline_progress (view, event);
           return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -1013,6 +1172,89 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
+static CoglBool
+rig_transition_view_find_node_in_path (RigTransitionView *view,
+                                       RigPath *path,
+                                       float min_progress,
+                                       float max_progress,
+                                       float *t_out)
+{
+  GList *l;
+
+  for (l = path->nodes.head; l; l = l->next)
+    {
+      RigNode *node = l->data;
+
+      if (node->t >= min_progress && node->t <= max_progress)
+        {
+          *t_out = node->t;
+          return TRUE;
+        }
+    }
+
+  return FALSE;
+}
+
+static CoglBool
+rig_transition_view_find_node (RigTransitionView *view,
+                               RutInputEvent *event,
+                               RigTransitionViewProperty **prop_data_out,
+                               float *t_out)
+{
+  float x = rut_motion_event_get_x (event);
+  float y = rut_motion_event_get_y (event);
+  float progress;
+  RigTransitionViewObject *object_data;
+  int row_num = 0;
+
+  if (!rut_motion_event_unproject (event, view, &x, &y))
+    {
+      g_error ("Failed to get inverse transform");
+      return FALSE;
+    }
+
+  progress = ((x - view->controls_width) /
+              (view->total_width - view->controls_width));
+
+  if (progress < 0.0f || progress > 1.0f)
+    return FALSE;
+
+  rut_list_for_each (object_data, &view->objects, list_node)
+    {
+      RigTransitionViewProperty *prop_data;
+
+      row_num++;
+
+      rut_list_for_each (prop_data, &object_data->properties, list_node)
+        {
+          if (row_num == (int) (y / view->row_height))
+            {
+              float scaled_dot_size =
+                view->row_height /
+                (float) (view->total_width - view->controls_width);
+
+              if (rig_transition_view_find_node_in_path (view,
+                                                         prop_data->path,
+                                                         progress -
+                                                         scaled_dot_size,
+                                                         progress +
+                                                         scaled_dot_size,
+                                                         t_out))
+                {
+                  *prop_data_out = prop_data;
+                  return TRUE;
+                }
+
+              return FALSE;
+            }
+
+          row_num++;
+        }
+    }
+
+  return FALSE;
+}
+
 static RutInputEventStatus
 rig_transition_view_input_region_cb (RutInputRegion *region,
                                      RutInputEvent *event,
@@ -1025,7 +1267,33 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
       (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
       !view->have_grab)
     {
-      rig_transition_view_update_timeline_progress (view, event);
+      RigTransitionViewProperty *prop_data;
+      float t;
+
+      if (rig_transition_view_find_node (view, event, &prop_data, &t))
+        {
+          if ((rut_motion_event_get_modifier_state (event) &
+               (RUT_MODIFIER_LEFT_SHIFT_ON |
+                RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
+            rig_transition_view_clear_selected_nodes (view);
+
+          /* If shift is down then we actually want to toggle the
+           * node. If the node is already selected then trying to
+           * select it again will return TRUE so we know to remove it.
+           * If shift wasn't down then it definetely won't be selected
+           * because we'll have just cleared the selection above so it
+           * doesn't matter if we toggle it */
+          if (rig_transition_view_select_node (view, prop_data, t))
+            rig_transition_view_unselect_node (view, prop_data, t);
+
+          rut_shell_queue_redraw (view->context->shell);
+        }
+      else
+        {
+          rig_transition_view_clear_selected_nodes (view);
+          rig_transition_view_update_timeline_progress (view, event);
+        }
+
       view->have_grab = TRUE;
       rut_shell_grab_input (view->context->shell,
                             rut_input_event_get_camera (event),
@@ -1102,6 +1370,7 @@ rig_transition_view_new (RutContext *ctx,
                                     view);
   rut_graphable_add_child (view, view->input_region);
 
+  rut_list_init (&view->selected_nodes);
   rut_list_init (&view->objects);
 
   /* Add all of the existing animated properties from the transition */
