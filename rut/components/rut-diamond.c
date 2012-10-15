@@ -411,12 +411,6 @@ rut_diamond_new (RutContext *ctx,
   return diamond;
 }
 
-RutDiamondSlice *
-rut_diamond_get_slice (RutDiamond *diamond)
-{
-  return diamond->slice;
-}
-
 float
 rut_diamond_get_size (RutDiamond *diamond)
 {

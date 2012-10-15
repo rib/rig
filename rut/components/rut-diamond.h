@@ -72,9 +72,6 @@ rut_diamond_new (RutContext *ctx,
                  int tex_width,
                  int tex_height);
 
-RutDiamondSlice *
-rut_diamond_get_slice (RutDiamond *diamond);
-
 float
 rut_diamond_get_size (RutDiamond *diamond);
 
