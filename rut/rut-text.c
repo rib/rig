@@ -2437,7 +2437,7 @@ rut_text_button_press (RutText *text,
   camera = rut_input_event_get_camera (event);
 
   if (text->has_focus &&
-      !rut_camera_pick_input_region (camera, text->input_region, x, y))
+      !rut_camera_pick_inputable (camera, text->input_region, x, y))
     {
       rut_text_ungrab_key_focus (text);
       return RUT_INPUT_EVENT_STATUS_HANDLED;

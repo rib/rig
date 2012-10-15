@@ -382,9 +382,9 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
 
           rut_shell_ungrab_input (shell, _rut_toggle_grab_input_cb, user_data);
 
-          if (rut_camera_pick_input_region (state->camera,
-                                            state->region,
-                                            x, y))
+          if (rut_camera_pick_inputable (state->camera,
+                                         state->region,
+                                         x, y))
             {
               rut_toggle_set_state (toggle, !toggle->state);
 
@@ -409,9 +409,9 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
 
-         if (rut_camera_pick_input_region (state->camera,
-                                           state->region,
-                                           x, y))
+         if (rut_camera_pick_inputable (state->camera,
+                                        state->region,
+                                        x, y))
            toggle->tentative_set = TRUE;
          else
            toggle->tentative_set = FALSE;

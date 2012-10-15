@@ -733,9 +733,9 @@ rut_drop_down_input_cb (RutInputEvent *event,
     {
       RutCamera *camera = rut_input_event_get_camera (event);
 
-      highlighted = rut_camera_pick_input_region (camera,
-                                                  drop->input_region,
-                                                  x, y);
+      highlighted = rut_camera_pick_inputable (camera,
+                                               drop->input_region,
+                                               x, y);
     }
 
   if (highlighted != drop->highlighted)

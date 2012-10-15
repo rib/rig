@@ -338,26 +338,25 @@ point_in_screen_poly (float point_x,
 }
 
 CoglBool
-rut_camera_pick_input_region (RutCamera *camera,
-                              RutInputRegion *region,
-                              float x,
-                              float y)
+rut_camera_pick_inputable (RutCamera *camera,
+                           RutObject *inputable,
+                           float x,
+                           float y)
 {
   CoglMatrix matrix;
   const CoglMatrix *modelview = NULL;
   float poly[16];
-  RutObject *parent = rut_graphable_get_parent (region);
   const CoglMatrix *view = rut_camera_get_view_transform (camera);
+  RutInputRegion *region = rut_inputable_get_input_region (inputable);
 
-  if (parent)
+  if (region->hud_mode)
+    modelview = &camera->ctx->identity_matrix;
+  else if (rut_object_is (inputable, RUT_INTERFACE_ID_GRAPHABLE))
     {
-      RutObject *parent = rut_graphable_get_parent (region);
       matrix = *view;
-      rut_graphable_apply_transform (parent, &matrix);
+      rut_graphable_apply_transform (inputable, &matrix);
       modelview = &matrix;
     }
-  else if (region->hud_mode)
-    modelview = &camera->ctx->identity_matrix;
   else
     modelview = view;
 
@@ -1045,8 +1044,8 @@ camera_pick_region_cb (RutObject *object,
       RutInputRegion *region = (RutInputRegion *)object;
 
       //g_print ("cam pick: cap=%p region=%p\n", state->camera, object);
-      if (rut_camera_pick_input_region (state->camera,
-                                        region, state->x, state->y))
+      if (rut_camera_pick_inputable (state->camera,
+                                     region, state->x, state->y))
         {
           if (region->callback (region, state->event, region->user_data) ==
               RUT_INPUT_EVENT_STATUS_HANDLED)
@@ -1153,7 +1152,7 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
             {
               RutInputRegion *region = l2->data;
 
-              if (rut_camera_pick_input_region (camera, region, x, y))
+              if (rut_camera_pick_inputable (camera, region, x, y))
                 {
                   status = region->callback (region, event, region->user_data);
 
