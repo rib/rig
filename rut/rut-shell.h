@@ -286,12 +286,6 @@ void
 rut_input_region_set_transform (RutInputRegion *region,
                                 CoglMatrix *matrix);
 
-#if 0
-void
-rut_input_region_set_graphable (RutInputRegion *region,
-                                RutObject *graphable);
-#endif
-
 void
 rut_input_region_set_rectangle (RutInputRegion *region,
                                 float x0,

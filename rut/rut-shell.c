@@ -139,8 +139,6 @@ struct _RutInputRegion
   RutGraphableProps graphable;
   RutInputableProps inputable;
 
-  CoglBool has_transform;
-  CoglMatrix transform;
   CoglBool hud_mode;
 
   RutInputRegionCallback callback;
@@ -360,11 +358,6 @@ rut_camera_pick_input_region (RutCamera *camera,
       rut_graphable_apply_transform (parent, &matrix);
       modelview = &matrix;
     }
-  else if (region->has_transform)
-    {
-      cogl_matrix_multiply (&matrix, &region->transform, view);
-      modelview = &matrix;
-    }
   else if (region->hud_mode)
     modelview = &camera->ctx->identity_matrix;
   else
@@ -440,17 +433,6 @@ _rut_input_region_free (void *object)
 {
   RutInputRegion *region = object;
 
-#if 0
-  switch (region->transform.any.type)
-    {
-    case RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE:
-      rut_refable_simple_unref (region->transform.graphable.graphable);
-      break;
-    default:
-      break;
-    }
-#endif
-
   rut_graphable_destroy (region);
 
   g_slice_free (RutInputRegion, region);
@@ -519,10 +501,6 @@ rut_input_region_new_rectangle (float x0,
 
   region = rut_input_region_new_common (callback, user_data);
 
-  //region->transform.any.type = RUT_INPUT_TRANSFORM_TYPE_MATRIX;
-  //region->transform.matrix.matrix = NULL;
-  region->has_transform = FALSE;
-
   rut_input_region_set_rectangle (region, x0, y0, x1, y1);
 
   return region;
@@ -538,8 +516,6 @@ rut_input_region_new_circle (float x0,
   RutInputRegion *region;
 
   region = rut_input_region_new_common (callback, user_data);
-
-  region->has_transform = FALSE;
 
   rut_input_region_set_circle (region, x0, y0, radius);
 
@@ -571,30 +547,6 @@ rut_input_region_set_circle (RutInputRegion *region,
   region->shape.circle.x = x;
   region->shape.circle.y = y;
   region->shape.circle.r_squared = radius * radius;
-}
-
-#if 0
-void
-rut_input_region_set_graphable (RutInputRegion *region,
-                                RutObject *graphable)
-{
-  region->transform.any.type = RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE;
-  region->transform.graphable.graphable = rut_refable_simple_ref (graphable);
-}
-#endif
-
-void
-rut_input_region_set_transform (RutInputRegion *region,
-                                CoglMatrix *matrix)
-{
-  if (cogl_matrix_is_identity (matrix))
-    {
-      region->has_transform = FALSE;
-      return;
-    }
-
-  region->transform = *matrix;
-  region->has_transform = TRUE;
 }
 
 void
