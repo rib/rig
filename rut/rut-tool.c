@@ -156,6 +156,7 @@ rut_tool_new (RutShell *shell)
 
   tool->rotation_circle =
     rut_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
+  rut_input_region_set_hud_mode (tool->rotation_circle, TRUE);
 
   return tool;
 }
@@ -205,12 +206,16 @@ rut_tool_update (RutTool *tool,
   float scale_thingy[4], screen_space[4], x, y;
   const float *viewport;
 
+  camera = rut_entity_get_component (tool->camera,
+                                     RUT_COMPONENT_TYPE_CAMERA);
+
   if (selected_entity == NULL)
     {
       tool->selected_entity = NULL;
 
       /* remove the input region when no entity is selected */
-      rut_shell_remove_input_region (tool->shell, tool->rotation_circle);
+      rut_camera_remove_input_region (RUT_CAMERA (camera),
+                                      tool->rotation_circle);
 
       return;
     }
@@ -230,8 +235,6 @@ rut_tool_update (RutTool *tool,
                                 tool->position,
                                 1 /* n_points */);
 
-  camera = rut_entity_get_component (tool->camera,
-                                     RUT_COMPONENT_TYPE_CAMERA);
   projection = rut_camera_get_projection (RUT_CAMERA (camera));
 
   scale_thingy[0] = 1.f;
@@ -282,7 +285,8 @@ rut_tool_update (RutTool *tool,
       /* If we go from a "no entity selected" state to a "entity selected"
        * one, we set-up the input region */
       if (tool->selected_entity == NULL)
-          rut_shell_add_input_region (tool->shell, tool->rotation_circle);
+        rut_camera_add_input_region (RUT_CAMERA (camera),
+                                     tool->rotation_circle);
 
       tool->selected_entity = selected_entity;
     }

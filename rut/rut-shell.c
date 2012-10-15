@@ -50,8 +50,6 @@ struct _RutShell
   /* Use to handle input events in window coordinates */
   RutCamera *window_camera;
 
-  GList *input_regions;
-
   /* List of grabs that are currently in place. This are in order from
    * highest to lowest priority. */
   GList *grabs;
@@ -408,10 +406,8 @@ rut_camera_pick_input_region (RutCamera *camera,
          * center point is transformed but the raius of the circle stays
          * constant. */
 
-        /* XXX: This is a hack to use input regions in the tool example */
-        if (camera)
-          cogl_matrix_transform_point (modelview,
-                                       &center_x, &center_y, &z, &w);
+        cogl_matrix_transform_point (modelview,
+                                     &center_x, &center_y, &z, &w);
 
         a = x - center_x;
         b = y - center_y;
@@ -554,20 +550,6 @@ rut_input_region_set_hud_mode (RutInputRegion *region,
                                CoglBool hud_mode)
 {
   region->hud_mode = hud_mode;
-}
-
-void
-rut_shell_add_input_region (RutShell *shell,
-                            RutInputRegion *region)
-{
-  shell->input_regions = g_list_prepend (shell->input_regions, region);
-}
-
-void
-rut_shell_remove_input_region (RutShell *shell,
-                               const RutInputRegion *region)
-{
-  shell->input_regions = g_list_remove (shell->input_regions, region);
 }
 
 RutClosure *
@@ -1150,27 +1132,6 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
         return status;
     }
 
-  /* XXX: remove this when the rotation tool works with RutCamera */
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      float x = rut_motion_event_get_x (event);
-      float y = rut_motion_event_get_y (event);
-
-      for (l = shell->input_regions; l; l = l->next)
-        {
-          RutInputRegion *region = l->data;
-
-          if (rut_camera_pick_input_region (NULL, region, x, y))
-            {
-              status = region->callback (region, event, region->user_data);
-
-              if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-                return status;
-            }
-        }
-    }
-
-
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
@@ -1313,13 +1274,8 @@ static void
 _rut_shell_free (void *object)
 {
   RutShell *shell = object;
-  GList *l;
 
   rut_closure_list_disconnect_all (&shell->input_cb_list);
-
-  for (l = shell->input_regions; l; l = l->next)
-    rut_refable_unref (l->data);
-  g_list_free (shell->input_regions);
 
   while (shell->grabs)
     _rut_shell_remove_grab_link (shell, shell->grabs);

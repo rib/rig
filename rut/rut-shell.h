@@ -299,14 +299,6 @@ rut_input_region_set_circle (RutInputRegion *region,
                              float y0,
                              float radius);
 
-void
-rut_shell_add_input_region (RutShell *shell,
-                            RutInputRegion *region);
-
-void
-rut_shell_remove_input_region (RutShell *shell,
-                               const RutInputRegion *region);
-
 /* If HUD mode is TRUE then the region isn't transformed by the
  * camera's view transform so the region is in window coordinates.
  */
