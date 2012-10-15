@@ -188,11 +188,21 @@ rut_shell_ungrab_input (RutShell *shell,
                         RutInputCallback callback,
                         void *user_data);
 
+/**
+ * rut_shell_grab_key_focus:
+ * @shell: The #RutShell
+ * @inputable: A #RutObject that implements the inputable interface
+ * @ungrab_callback: A callback to invoke when the grab is lost
+ *
+ * Sets the shell's key grab to the given object. The object must
+ * implement the inputable interface. All key events will be given to
+ * the input region of this object until either something else takes
+ * the key focus or rut_shell_ungrab_key_focus() is called.
+ */
 void
 rut_shell_grab_key_focus (RutShell *shell,
-                          RutInputCallback callback,
-                          GDestroyNotify ungrab_callback,
-                          void *user_data);
+                          RutObject *inputable,
+                          GDestroyNotify ungrab_callback);
 
 void
 rut_shell_ungrab_key_focus (RutShell *shell);

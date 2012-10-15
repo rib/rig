@@ -56,8 +56,7 @@ struct _RutShell
    * highest to lowest priority. */
   GList *grabs;
 
-  RutInputCallback keyboard_focus_cb;
-  void *keyboard_focus_data;
+  RutObject *keyboard_focus_object;
   GDestroyNotify keyboard_ungrab_cb;
 
   CoglBool redraw_queued;
@@ -1188,10 +1187,13 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
-  if (shell->keyboard_focus_cb &&
+  if (shell->keyboard_focus_object &&
       rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
     {
-      status = shell->keyboard_focus_cb (event, shell->keyboard_focus_data);
+      RutInputRegion *region =
+        rut_inputable_get_input_region (shell->keyboard_focus_object);
+
+      status = region->callback (region, event, region->user_data);
       if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
         return status;
     }
@@ -1481,28 +1483,43 @@ rut_android_shell_new (struct android_app* application,
 
 void
 rut_shell_grab_key_focus (RutShell *shell,
-                          RutInputCallback callback,
-                          GDestroyNotify ungrab_callback,
-                          void *user_data)
+                          RutObject *inputable,
+                          GDestroyNotify ungrab_callback)
 {
-  if (shell->keyboard_focus_cb == callback &&
-      shell->keyboard_focus_data == user_data)
-    return;
+  g_return_if_fail (rut_object_is (inputable, RUT_INTERFACE_ID_INPUTABLE));
 
-  if (shell->keyboard_ungrab_cb)
-    shell->keyboard_ungrab_cb (shell->keyboard_focus_data);
+  /* If something tries to set the keyboard focus to the same object
+   * then we probably do still want to call the keyboard ungrab
+   * callback for the last object that set it. The code may be
+   * assuming that when this function is called it definetely has the
+   * keyboard focus and that the callback will definetely called at
+   * some point. Otherwise this function is more like a request and it
+   * should have a way of reporting whether the request succeeded */
 
-  shell->keyboard_focus_cb = callback;
-  shell->keyboard_focus_data = user_data;
+  if (rut_object_is (inputable, RUT_INTERFACE_ID_REF_COUNTABLE))
+    rut_refable_ref (inputable);
+
+  rut_shell_ungrab_key_focus (shell);
+
+  shell->keyboard_focus_object = inputable;
   shell->keyboard_ungrab_cb = ungrab_callback;
 }
 
 void
 rut_shell_ungrab_key_focus (RutShell *shell)
 {
-  shell->keyboard_focus_cb = NULL;
-  shell->keyboard_focus_data = NULL;
-  shell->keyboard_ungrab_cb = NULL;
+  if (shell->keyboard_focus_object)
+    {
+      if (shell->keyboard_ungrab_cb)
+        shell->keyboard_ungrab_cb (shell->keyboard_focus_object);
+
+      if (rut_object_is (shell->keyboard_focus_object,
+                         RUT_INTERFACE_ID_REF_COUNTABLE))
+        rut_refable_unref (shell->keyboard_focus_object);
+
+      shell->keyboard_focus_object = NULL;
+      shell->keyboard_ungrab_cb = NULL;
+    }
 }
 
 static CoglBool

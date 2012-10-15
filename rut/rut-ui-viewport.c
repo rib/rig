@@ -275,9 +275,8 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       rut_shell_grab_key_focus (ui_viewport->ctx->shell,
-                                _rut_ui_viewport_input_cb,
-                                NULL,
-                                ui_viewport);
+                                ui_viewport->input_region,
+                                NULL /* ungrab_cb */);
 
       switch (rut_motion_event_get_action (event))
         {
