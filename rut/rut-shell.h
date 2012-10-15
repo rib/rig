@@ -1,3 +1,24 @@
+/*
+ * Rut
+ *
+ * Copyright (C) 2012 Intel Corporation.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #ifndef _RUT_SHELL_H_
 #define _RUT_SHELL_H_
 
@@ -293,28 +314,6 @@ rut_shell_remove_input_region (RutShell *shell,
 void
 rut_input_region_set_hud_mode (RutInputRegion *region,
                                CoglBool hud_mode);
-
-typedef struct _RutScrollBar RutScrollBar;
-#define RUT_SCROLL_BAR(X) ((RutScrollBar *)X)
-
-RutType rut_scroll_bar_type;
-
-RutScrollBar *
-rut_scroll_bar_new (RutContext *ctx,
-                    RutAxis axis,
-                    float length,
-                    float virtual_length,
-                    float viewport_length);
-
-/* How long is virtual length of the document being scrolled */
-void
-rut_scroll_bar_set_virtual_length (RutScrollBar *scroll_bar,
-                                   float virtual_length);
-
-/* What is the length of the viewport into the document being scrolled */
-void
-rut_scroll_bar_set_viewport_length (RutScrollBar *scroll_bar,
-                                    float viewport_length);
 
 typedef struct _RutSlider RutSlider;
 #define RUT_SLIDER(X) ((RutSlider *)X)

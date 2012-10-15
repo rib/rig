@@ -3614,6 +3614,9 @@ add_asset (RigData *data, GFile *asset_file)
   add_asset_icon (data, asset, data->assets_list_tail_pos);
   data->assets_list_tail_pos += 110;
 
+  rut_ui_viewport_set_doc_height (data->assets_vp,
+                                  data->assets_list_tail_pos);
+
   g_print ("TODO: Add asset %s, tags:", path);
   for (l = directory_tags; l; l = l->next)
     g_print ("%s, ", (char *)l->data);

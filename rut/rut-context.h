@@ -157,6 +157,9 @@ rut_nine_slice_new (RutContext *ctx,
                     float width,
                     float height);
 
+CoglTexture *
+rut_nine_slice_get_texture (RutNineSlice *nine_slice);
+
 typedef struct _RutSimpleWidgetProps
 {
   RutDisplayList display_list;

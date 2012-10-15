@@ -41,6 +41,7 @@
 #include "rut-entity.h"
 #include "rut-components.h"
 #include "rut-geometry.h"
+#include "rut-scroll-bar.h"
 
 /*
  * Overall issues to keep in mind for a useful and efficient UI scenegraph:
@@ -839,6 +840,12 @@ rut_nine_slice_new (RutContext *ctx,
                                    top, right, bottom, left,
                                    width, height,
                                    NULL);
+}
+
+CoglTexture *
+rut_nine_slice_get_texture (RutNineSlice *nine_slice)
+{
+  return nine_slice->texture;
 }
 
 static void
@@ -1706,6 +1713,7 @@ _rut_init (void)
       _rut_buffer_init_type ();
       _rut_attribute_init_type ();
       _rut_mesh_init_type ();
+      _rut_scroll_bar_init_type ();
 
       /* components */
       _rut_camera_init_type ();

@@ -12,5 +12,9 @@ assets_DATA = \
 	light-bulb.png \
 	light.ply \
 	record-button.png \
-	record-button-selected.png
+	record-button-selected.png \
+	scroll-button-left-active.png \
+	scroll-button-right-active.png \
+	scroll-button-up-active.png \
+	scroll-button-down-active.png
 

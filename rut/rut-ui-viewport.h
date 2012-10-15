@@ -62,6 +62,12 @@ void
 rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y);
 
 void
+rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width);
+
+void
+rut_ui_viewport_set_doc_height (RutUIViewport *ui_viewport, float doc_height);
+
+void
 rut_ui_viewport_set_doc_scale_x (RutUIViewport *ui_viewport, float doc_scale_x);
 
 void

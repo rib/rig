@@ -25,11 +25,18 @@
 #include <config.h>
 #endif
 
-#include "rut.h"
+#include "rut-context.h"
+#include "rut-interfaces.h"
+#include "rut-ui-viewport.h"
+#include "rut-scroll-bar.h"
 
 enum {
   RUT_UI_VIEWPORT_PROP_WIDTH,
   RUT_UI_VIEWPORT_PROP_HEIGHT,
+  RUT_UI_VIEWPORT_PROP_DOC_WIDTH,
+  RUT_UI_VIEWPORT_PROP_DOC_HEIGHT,
+  RUT_UI_VIEWPORT_PROP_DOC_X,
+  RUT_UI_VIEWPORT_PROP_DOC_Y,
   RUT_UI_VIEWPORT_PROP_X_PANNABLE,
   RUT_UI_VIEWPORT_PROP_Y_PANNABLE,
   RUT_UI_VIEWPORT_N_PROPS
@@ -50,11 +57,20 @@ struct _RutUIViewport
 
   float doc_x;
   float doc_y;
+  float doc_width;
+  float doc_height;
   float doc_scale_x;
   float doc_scale_y;
 
   CoglBool x_pannable;
   CoglBool y_pannable;
+
+  RutTransform *scroll_bar_x_transform;
+  RutScrollBar *scroll_bar_x;
+  CoglBool scroll_bar_x_visible;
+  RutTransform *scroll_bar_y_transform;
+  RutScrollBar *scroll_bar_y;
+  CoglBool scroll_bar_y_visible;
 
   RutTransform *doc_transform;
 
@@ -80,6 +96,30 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, height),
     .setter = rut_ui_viewport_set_height
+  },
+  {
+    .name = "doc-width",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutUIViewport, doc_width),
+    .setter = rut_ui_viewport_set_doc_width
+  },
+  {
+    .name = "doc-height",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutUIViewport, doc_height),
+    .setter = rut_ui_viewport_set_doc_height
+  },
+  {
+    .name = "doc-x",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutUIViewport, doc_x),
+    .setter = rut_ui_viewport_set_doc_x
+  },
+  {
+    .name = "doc-y",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutUIViewport, doc_y),
+    .setter = rut_ui_viewport_set_doc_y
   },
   {
     .name = "x-pannable",
@@ -169,8 +209,8 @@ _rut_ui_viewport_update_doc_matrix (RutUIViewport *ui_viewport)
 {
   rut_transform_init_identity (ui_viewport->doc_transform);
   rut_transform_translate (ui_viewport->doc_transform,
-                           ui_viewport->doc_x,
-                           ui_viewport->doc_y,
+                           -ui_viewport->doc_x,
+                           -ui_viewport->doc_y,
                            0);
   rut_transform_scale (ui_viewport->doc_transform,
                        ui_viewport->doc_scale_x,
@@ -276,7 +316,7 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
           if (ui_viewport->y_pannable)
             {
               rut_ui_viewport_set_doc_y (ui_viewport,
-                                         ui_viewport->doc_y + ui_viewport->height);
+                                         ui_viewport->doc_y - ui_viewport->height);
               rut_shell_queue_redraw (ui_viewport->ctx->shell);
               g_print ("Page Up %f %f\n", ui_viewport->height, ui_viewport->doc_y);
             }
@@ -285,7 +325,7 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
           if (ui_viewport->y_pannable)
             {
               rut_ui_viewport_set_doc_y (ui_viewport,
-                                         ui_viewport->doc_y - ui_viewport->height);
+                                         ui_viewport->doc_y + ui_viewport->height);
               rut_shell_queue_redraw (ui_viewport->ctx->shell);
               g_print ("Page Down %f %f\n", ui_viewport->height, ui_viewport->doc_y);
             }
@@ -356,6 +396,185 @@ update_children_size (RutUIViewport *ui_viewport)
                           ui_viewport);
 }
 
+static void
+maybe_clamp_position (RutUIViewport *ui_viewport)
+{
+   if (ui_viewport->doc_width > 0)
+    {
+      float doc_view_x = ui_viewport->width / ui_viewport->doc_scale_x;
+      if (ui_viewport->doc_x < 0)
+        ui_viewport->doc_x = 0;
+      else if ((ui_viewport->doc_x + doc_view_x) > ui_viewport->doc_width)
+        ui_viewport->doc_x = ui_viewport->doc_width - doc_view_x;
+    }
+
+  if (ui_viewport->doc_height > 0)
+    {
+      float doc_view_y = ui_viewport->height / ui_viewport->doc_scale_y;
+      if (ui_viewport->doc_y < 0)
+        ui_viewport->doc_y = 0;
+      else if ((ui_viewport->doc_y + doc_view_y) > ui_viewport->doc_height)
+        ui_viewport->doc_y = ui_viewport->doc_height - doc_view_y;
+    }
+}
+
+static void
+update_scroll_bars (RutUIViewport *ui_viewport)
+{
+  float doc_view_x = ui_viewport->width * (1.0 / ui_viewport->doc_scale_x);
+  float doc_view_y = ui_viewport->height * (1.0 / ui_viewport->doc_scale_y);
+
+  if (ui_viewport->doc_width > 0)
+    {
+      if (ui_viewport->doc_x < 0)
+        rut_ui_viewport_set_doc_x (ui_viewport, 0);
+      else if ((ui_viewport->doc_x + doc_view_x) > ui_viewport->doc_width)
+        rut_ui_viewport_set_doc_x (ui_viewport,
+                                   ui_viewport->doc_x + doc_view_x);
+
+      rut_graphable_add_child (ui_viewport, ui_viewport->scroll_bar_x);
+    }
+  else
+    rut_graphable_remove_child (ui_viewport->scroll_bar_x);
+
+  if (ui_viewport->doc_height > 0)
+    {
+      if (ui_viewport->doc_y < 0)
+        rut_ui_viewport_set_doc_y (ui_viewport, 0);
+      else if ((ui_viewport->doc_y + doc_view_y) > ui_viewport->doc_height)
+        rut_ui_viewport_set_doc_y (ui_viewport,
+                                   ui_viewport->doc_y + doc_view_y);
+
+      rut_graphable_add_child (ui_viewport, ui_viewport->scroll_bar_y_transform);
+    }
+  else
+    rut_graphable_remove_child (ui_viewport->scroll_bar_y_transform);
+}
+
+static void
+position_scroll_bars (RutUIViewport *ui_viewport)
+{
+  CoglBool need_scroll_bar_x, need_scroll_bar_y;
+
+  rut_transform_init_identity (ui_viewport->scroll_bar_x_transform);
+  rut_transform_init_identity (ui_viewport->scroll_bar_y_transform);
+
+  rut_transform_translate (ui_viewport->scroll_bar_x_transform,
+                           0,
+                           ui_viewport->height -
+                           rut_scroll_bar_get_thickness (ui_viewport->scroll_bar_x),
+                           0);
+
+  rut_transform_translate (ui_viewport->scroll_bar_y_transform,
+                           ui_viewport->width -
+                           rut_scroll_bar_get_thickness (ui_viewport->scroll_bar_y),
+                           0,
+                           0);
+
+  if (ui_viewport->doc_width)
+    {
+      if (ui_viewport->width > (ui_viewport->doc_width * ui_viewport->doc_scale_x))
+        need_scroll_bar_x = FALSE;
+      else
+        need_scroll_bar_x = TRUE;
+    }
+  else
+    need_scroll_bar_x = FALSE;
+
+  if (ui_viewport->scroll_bar_x_visible != need_scroll_bar_x)
+    {
+      if (need_scroll_bar_x)
+        rut_graphable_add_child (ui_viewport,
+                                 ui_viewport->scroll_bar_x_transform);
+      else
+        rut_graphable_remove_child (ui_viewport->scroll_bar_x_transform);
+    }
+
+  if (ui_viewport->doc_height)
+    {
+      if (ui_viewport->height > (ui_viewport->doc_height * ui_viewport->doc_scale_y))
+        need_scroll_bar_y = FALSE;
+      else
+        need_scroll_bar_y = TRUE;
+    }
+  else
+    need_scroll_bar_y = FALSE;
+
+  if (ui_viewport->scroll_bar_y_visible != need_scroll_bar_y)
+    {
+      if (need_scroll_bar_y)
+        rut_graphable_add_child (ui_viewport,
+                                 ui_viewport->scroll_bar_y_transform);
+      else
+        rut_graphable_remove_child (ui_viewport->scroll_bar_y_transform);
+    }
+
+}
+
+static void
+update_scroll_bar_x_cb (RutProperty *target_property,
+                        RutProperty *source_property,
+                        void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+
+  /* Update the scrollbar virtual_length, viewport_length and offset */
+
+  rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_x,
+                                     ui_viewport->doc_width * ui_viewport->doc_scale_x);
+
+  rut_scroll_bar_set_virtual_viewport (ui_viewport->scroll_bar_x,
+                                       ui_viewport->width / ui_viewport->doc_scale_x);
+
+  rut_scroll_bar_set_virtual_offset (ui_viewport->scroll_bar_x,
+                                     ui_viewport->doc_x * ui_viewport->doc_scale_x);
+}
+
+static void
+update_scroll_bar_y_cb (RutProperty *target_property,
+                        RutProperty *source_property,
+                        void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+
+  /* Update the scrollbar virtual_length, viewport_length and offset */
+
+  rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_y,
+                                     ui_viewport->doc_height * ui_viewport->doc_scale_y);
+
+  rut_scroll_bar_set_virtual_viewport (ui_viewport->scroll_bar_y,
+                                       ui_viewport->height / ui_viewport->doc_scale_y);
+
+  rut_scroll_bar_set_virtual_offset (ui_viewport->scroll_bar_y,
+                                     ui_viewport->doc_y * ui_viewport->doc_scale_y);
+}
+
+static void
+update_doc_x_cb (RutProperty *target_property,
+                 RutProperty *source_property,
+                 void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+  RutScrollBar *scroll_bar = ui_viewport->scroll_bar_x;
+
+  rut_ui_viewport_set_doc_x (ui_viewport,
+                             rut_scroll_bar_get_virtual_offset (scroll_bar) /
+                             ui_viewport->doc_scale_x);
+}
+
+static void
+update_doc_y_cb (RutProperty *target_property,
+                 RutProperty *source_property,
+                 void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+  RutScrollBar *scroll_bar = ui_viewport->scroll_bar_y;
+
+  rut_ui_viewport_set_doc_y (ui_viewport,
+                             rut_scroll_bar_get_virtual_offset (scroll_bar) /
+                             ui_viewport->doc_scale_y);
+}
+
 RutUIViewport *
 rut_ui_viewport_new (RutContext *ctx,
                      float width,
@@ -391,11 +610,87 @@ rut_ui_viewport_new (RutContext *ctx,
   ui_viewport->height = height;
   ui_viewport->doc_x = 0;
   ui_viewport->doc_y = 0;
+  ui_viewport->doc_width = 0;
+  ui_viewport->doc_height = 0;
   ui_viewport->doc_scale_x = 1;
   ui_viewport->doc_scale_y = 1;
 
   ui_viewport->x_pannable = TRUE;
   ui_viewport->y_pannable = TRUE;
+
+  ui_viewport->scroll_bar_x_transform =
+    rut_transform_new (ctx,
+                       (ui_viewport->scroll_bar_x =
+                        rut_scroll_bar_new (ctx,
+                                            RUT_AXIS_X,
+                                            width, /* len */
+                                            width * 2, /* virtual len */
+                                            width)), /* viewport len */
+                       NULL);
+
+  ui_viewport->scroll_bar_y_transform =
+    rut_transform_new (ctx,
+                       (ui_viewport->scroll_bar_y =
+                        rut_scroll_bar_new (ctx,
+                                            RUT_AXIS_Y,
+                                            height, /* len */
+                                            height * 2, /* virtual len */
+                                            height)), /* viewport len */
+                       NULL);
+
+  position_scroll_bars (ui_viewport);
+
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_x,
+                                    "virtual_length",
+                                    update_scroll_bar_x_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_WIDTH],
+                                    NULL);
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_x,
+                                    "virtual_offset",
+                                    update_scroll_bar_x_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X],
+                                    NULL);
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_x,
+                                    "virtual_viewport",
+                                    update_scroll_bar_x_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_WIDTH],
+                                    NULL);
+
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_y,
+                                    "virtual_length",
+                                    update_scroll_bar_y_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_HEIGHT],
+                                    NULL);
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_y,
+                                    "virtual_offset",
+                                    update_scroll_bar_y_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_Y],
+                                    NULL);
+  rut_property_set_binding_by_name (ui_viewport->scroll_bar_y,
+                                    "virtual_viewport",
+                                    update_scroll_bar_y_cb,
+                                    ui_viewport,
+                                    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_HEIGHT],
+                                    NULL);
+
+  rut_property_set_binding (&ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X],
+                            update_doc_x_cb,
+                            ui_viewport,
+                            rut_introspectable_lookup_property (ui_viewport->scroll_bar_x,
+                                                                "virtual_offset"),
+                            NULL);
+  rut_property_set_binding (&ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_Y],
+                            update_doc_y_cb,
+                            ui_viewport,
+                            rut_introspectable_lookup_property (ui_viewport->scroll_bar_y,
+                                                                "virtual_offset"),
+                            NULL);
+
 
   ui_viewport->doc_transform = rut_transform_new (ctx, NULL);
   rut_graphable_add_child (ui_viewport, ui_viewport->doc_transform);
@@ -429,12 +724,34 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
 {
   ui_viewport->width = width;
   ui_viewport->height = height;
+  float spacing;
 
   rut_input_region_set_rectangle (ui_viewport->input_region,
                                   0, 0,
                                   width,
                                   height);
 
+  position_scroll_bars (ui_viewport);
+
+  /* If we might need to show both scroll bars at some point then leave a space
+   * in the corner so we don't have to deal with the chicken and egg situation
+   * of one scroll bar affecting whether the other scrollbar should be visible
+   * or not.
+   */
+  if (ui_viewport->x_pannable && ui_viewport->y_pannable)
+    spacing = rut_scroll_bar_get_thickness (ui_viewport->scroll_bar_x);
+  else
+    spacing = 0;
+
+  rut_scroll_bar_set_length (ui_viewport->scroll_bar_x, width - spacing);
+  rut_scroll_bar_set_length (ui_viewport->scroll_bar_y, height - spacing);
+
+  /* FIXME: UI viewports should not change the size of children, since
+   * they are intended to just provide a translated view of their
+   * children. If something wants to track the width of the viewport
+   * to make sure it fits without scrolling then it can listen for
+   * width property changes.
+   */
   update_children_size (ui_viewport);
 
   rut_property_dirty (&ui_viewport->ctx->property_ctx,
@@ -468,7 +785,12 @@ void
 rut_ui_viewport_set_doc_x (RutUIViewport *ui_viewport, float doc_x)
 {
   ui_viewport->doc_x = doc_x;
+  maybe_clamp_position (ui_viewport);
+
   _rut_ui_viewport_update_doc_matrix (ui_viewport);
+
+  rut_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X]);
 }
 
 void
@@ -476,7 +798,34 @@ rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y)
 {
   g_print ("ui_viewport doc_y = %f\n", doc_y);
   ui_viewport->doc_y = doc_y;
+  maybe_clamp_position (ui_viewport);
+
   _rut_ui_viewport_update_doc_matrix (ui_viewport);
+
+  rut_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_Y]);
+}
+
+void
+rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width)
+{
+  ui_viewport->doc_width = doc_width;
+  rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_x,
+                                     doc_width * (1.0 / ui_viewport->doc_scale_x));
+
+  rut_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_WIDTH]);
+}
+
+void
+rut_ui_viewport_set_doc_height (RutUIViewport *ui_viewport, float doc_height)
+{
+  ui_viewport->doc_height = doc_height;
+  rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_y,
+                                     doc_height * (1.0 / ui_viewport->doc_scale_y));
+
+  rut_property_dirty (&ui_viewport->ctx->property_ctx,
+                      &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_HEIGHT]);
 }
 
 void

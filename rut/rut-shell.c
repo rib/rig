@@ -149,9 +149,6 @@ struct _RutInputRegion
 
 
 static void
-_rut_scroll_bar_init_type (void);
-
-static void
 _rut_slider_init_type (void);
 
 static void
@@ -1399,7 +1396,6 @@ _rut_shell_init_types (void)
                           offsetof (RutShell, ref_count),
                           &_rut_shell_ref_countable_vtable);
 
-  _rut_scroll_bar_init_type ();
   _rut_slider_init_type ();
   _rut_input_region_init_type ();
 }
@@ -1745,228 +1741,6 @@ rut_shell_queue_redraw (RutShell *shell)
   shell->redraw_queued = TRUE;
 }
 
-struct _RutScrollBar
-{
-  RutObjectProps _parent;
-  int ref_count;
-
-  RutNineSlice *background;
-  RutNineSlice *handle;
-
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
-  RutSimpleWidgetProps simple_widget;
-
-  RutInputRegion *input_region;
-
-  RutAxis axis;
-  float virtual_length;
-  float viewport_length;
-  float offset;
-};
-
-static void
-_rut_scroll_bar_free (void *object)
-{
-  RutScrollBar *scroll_bar = object;
-
-  rut_refable_simple_unref (scroll_bar->background);
-  rut_refable_simple_unref (scroll_bar->handle);
-
-  rut_graphable_destroy (scroll_bar);
-
-  g_slice_free (RutScrollBar, object);
-}
-
-static RutRefCountableVTable _rut_scroll_bar_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_scroll_bar_free
-};
-
-static void
-_rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
-{
-  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (object);
-  RutPaintableVTable *bg_paintable =
-    rut_object_get_vtable (scroll_bar->background, RUT_INTERFACE_ID_PAINTABLE);
-  RutPaintableVTable *handle_paintable =
-    rut_object_get_vtable (scroll_bar->handle, RUT_INTERFACE_ID_PAINTABLE);
-
-  bg_paintable->paint (RUT_OBJECT (scroll_bar->background), paint_ctx);
-  handle_paintable->paint (RUT_OBJECT (scroll_bar->handle), paint_ctx);
-}
-
-static RutPaintableVTable _rut_scroll_bar_paintable_vtable = {
-  _rut_scroll_bar_paint
-};
-
-RutGraphableVTable _rut_scroll_bar_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
-#if 0
-static void
-_rut_scroll_bar_set_camera (RutObject *object,
-                            RutCamera *camera)
-{
-  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (object);
-  //if (old_camera)
-  //  rut_camera_remove_input_region (old_camera, scroll_bar->input_region);
-
-  /* FIXME: we don't have a way of cleaning up state associated
-   * with any previous camera we may have been associated with.
-   *
-   * Adding a changed_camera vfunc would be quite awkward considering
-   * that the scroll bar may belong to a graph containing nodes that
-   * aren't widgets which and so when we reparent them we don't
-   * get an opportunity to hook into that and notify that the camera
-   * has changed.
-   *
-   * TODO: Add a RutAugmentable interface that lets us attach private
-   * data to objects implementing that interface. This would let
-   * us associate a camera pointer with scroll_bar->input_region and
-   * so we could remove the region from the previous camera.
-   */
-  if (camera)
-    rut_camera_add_input_region (camera, scroll_bar->input_region);
-}
-#endif
-
-RutSimpleWidgetVTable _rut_scroll_bar_simple_widget_vtable = {
-  0,
-};
-
-RutType rut_scroll_bar_type;
-
-static void
-_rut_scroll_bar_init_type (void)
-{
-  rut_type_init (&rut_scroll_bar_type);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutScrollBar, ref_count),
-                          &_rut_scroll_bar_ref_countable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutScrollBar, graphable),
-                          &_rut_scroll_bar_graphable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutScrollBar, paintable),
-                          &_rut_scroll_bar_paintable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_SIMPLE_WIDGET,
-                          offsetof (RutScrollBar, simple_widget),
-                          &_rut_scroll_bar_simple_widget_vtable);
-}
-
-static RutInputEventStatus
-_rut_scroll_bar_input_cb (RutInputRegion *region,
-                          RutInputEvent *event,
-                          void *user_data)
-{
-  //RutScrollBar *scroll_bar = user_data;
-
-  g_print ("Scroll Bar input\n");
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-RutScrollBar *
-rut_scroll_bar_new (RutContext *ctx,
-                    RutAxis axis,
-                    float length,
-                    float virtual_length,
-                    float viewport_length)
-{
-  RutScrollBar *scroll_bar = g_slice_new0 (RutScrollBar);
-  CoglTexture *bg_texture;
-  CoglTexture *handle_texture;
-  CoglError *error = NULL;
-  //PangoRectangle label_size;
-  float width;
-  float height;
-  float handle_size;
-
-  rut_object_init (&scroll_bar->_parent, &rut_scroll_bar_type);
-
-  scroll_bar->ref_count = 1;
-
-  rut_graphable_init (RUT_OBJECT (scroll_bar));
-  rut_paintable_init (RUT_OBJECT (scroll_bar));
-
-  scroll_bar->axis = axis;
-  scroll_bar->virtual_length = virtual_length;
-  scroll_bar->viewport_length = viewport_length;
-  scroll_bar->offset = 0;
-
-  bg_texture = rut_load_texture (ctx, RIG_DATA_DIR "slider-background.png", &error);
-  if (!bg_texture)
-    {
-      g_warning ("Failed to load slider-background.png: %s", error->message);
-      g_error_free (error);
-    }
-
-  handle_texture = rut_load_texture (ctx, RIG_DATA_DIR "slider-handle.png", &error);
-  if (!handle_texture)
-    {
-      g_warning ("Failed to load slider-handle.png: %s", error->message);
-      g_error_free (error);
-    }
-
-  if (axis == RUT_AXIS_X)
-    {
-      width = length;
-      height = 20;
-    }
-  else
-    {
-      width = 20;
-      height = length;
-    }
-
-  scroll_bar->background = rut_nine_slice_new (ctx, bg_texture, 2, 3, 3, 3,
-                                               width, height);
-
-  scroll_bar->input_region =
-    rut_input_region_new_rectangle (0, 0, width, height,
-                                    _rut_scroll_bar_input_cb,
-                                    scroll_bar);
-  //rut_input_region_set_graphable (scroll_bar->input_region,
-  //                                scroll_bar);
-  rut_graphable_add_child (scroll_bar, scroll_bar->input_region);
-
-  handle_size = (viewport_length / virtual_length) * length;
-  handle_size = MAX (20, handle_size);
-
-  if (axis == RUT_AXIS_X)
-    width = handle_size;
-  else
-    height = handle_size;
-
-  scroll_bar->handle = rut_nine_slice_new (ctx, handle_texture, 4, 5, 6, 5,
-                                           width, height);
-
-  return scroll_bar;
-}
-
-void
-rut_scroll_bar_set_virtual_length (RutScrollBar *scroll_bar,
-                                   float virtual_length)
-{
-  scroll_bar->virtual_length = virtual_length;
-}
-
-void
-rut_scroll_bar_set_viewport_length (RutScrollBar *scroll_bar,
-                                    float viewport_length)
-{
-  scroll_bar->viewport_length = viewport_length;
-}
-
 enum {
   RUT_SLIDER_PROP_PROGRESS,
   RUT_SLIDER_N_PROPS
@@ -2017,7 +1791,6 @@ static RutPropertySpec _rut_slider_prop_specs[] = {
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
-
 
 static void
 _rut_slider_free (void *object)
