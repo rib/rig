@@ -50,6 +50,10 @@ struct _RutShell
   /* Use to handle input events in window coordinates */
   RutCamera *window_camera;
 
+  /* Last known position of the mouse */
+  float mouse_x;
+  float mouse_y;
+
   /* List of grabs that are currently in place. This are in order from
    * highest to lowest priority. */
   GList *grabs;
@@ -1030,29 +1034,17 @@ typedef struct _CameraPickState
   RutCamera *camera;
   RutInputEvent *event;
   float x, y;
+  RutObject *picked_object;
 } CameraPickState;
 
 static RutTraverseVisitFlags
-camera_pick_region_cb (RutObject *object,
-                       int depth,
-                       void *user_data)
+camera_pre_pick_region_cb (RutObject *object,
+                           int depth,
+                           void *user_data)
 {
   CameraPickState *state = user_data;
 
-  if (rut_object_get_type (object) == &rut_input_region_type)
-    {
-      RutInputRegion *region = (RutInputRegion *)object;
-
-      //g_print ("cam pick: cap=%p region=%p\n", state->camera, object);
-      if (rut_camera_pick_inputable (state->camera,
-                                     region, state->x, state->y))
-        {
-          if (region->callback (region, state->event, region->user_data) ==
-              RUT_INPUT_EVENT_STATUS_HANDLED)
-            return RUT_TRAVERSE_VISIT_BREAK;
-        }
-    }
-  else if (rut_object_get_type (object) == &rut_ui_viewport_type)
+  if (rut_object_get_type (object) == &rut_ui_viewport_type)
     {
       RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
       CoglMatrix transform;
@@ -1083,12 +1075,91 @@ camera_pick_region_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
+static RutTraverseVisitFlags
+camera_post_pick_region_cb (RutObject *object,
+                            int depth,
+                            void *user_data)
+{
+  CameraPickState *state = user_data;
+
+  if (rut_object_is (object, RUT_INTERFACE_ID_INPUTABLE))
+    {
+      if (rut_camera_pick_inputable (state->camera,
+                                     object,
+                                     state->x, state->y))
+        {
+          state->picked_object = object;
+          return RUT_TRAVERSE_VISIT_BREAK;
+        }
+    }
+
+  return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+static RutObject *
+_rut_shell_get_scenegraph_event_target (RutShell *shell,
+                                        RutInputEvent *event)
+{
+  RutObject *picked_object = NULL;
+  GList *l;
+
+  /* Key events by default go to the object that has key focus. If
+   * there is no object with key focus then we will let them go to
+   * whichever object the pointer is over to implement a kind of
+   * sloppy focus as a fallback */
+  if (shell->keyboard_focus_object &&
+      rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
+    return shell->keyboard_focus_object;
+
+  for (l = shell->input_cameras; l; l = l->next)
+    {
+      InputCamera *input_camera = l->data;
+      RutCamera *camera = input_camera->camera;
+      RutObject *scenegraph = input_camera->scenegraph;
+      float x = shell->mouse_x;
+      float y = shell->mouse_y;
+      CameraPickState state;
+
+      event->camera = camera;
+      event->input_transform = &camera->input_transform;
+
+      if (scenegraph)
+        {
+          RutTraverseVisitFlags flags;
+          state.camera = camera;
+          state.event = event;
+          state.x = x;
+          state.y = y;
+
+          flags = rut_graphable_traverse (scenegraph,
+                                          RUT_TRAVERSE_DEPTH_FIRST,
+                                          camera_pre_pick_region_cb,
+                                          camera_post_pick_region_cb,
+                                          &state);
+          if (flags & RUT_TRAVERSE_VISIT_BREAK)
+            return state.picked_object;
+        }
+    }
+
+  return picked_object;
+}
+
 static RutInputEventStatus
 _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   GList *l, *next;
   RutClosure *c, *tmp;
+  RutObject *target;
+
+  /* Keep track of the last known position of the mouse so that we can
+   * send key events to whatever is under the mouse when there is no
+   * key focus */
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    {
+     shell->mouse_x = rut_motion_event_get_x (event);
+     shell->mouse_y = rut_motion_event_get_y (event);
+    }
 
   event->camera = shell->window_camera;
 
@@ -1120,67 +1191,56 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
         return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
-  if (shell->keyboard_focus_object &&
-      rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
-    {
-      RutInputRegion *region =
-        rut_inputable_get_input_region (shell->keyboard_focus_object);
-
-      status = region->callback (region, event, region->user_data);
-      if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-        return status;
-    }
-
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
       RutCamera *camera = input_camera->camera;
-      RutObject *scenegraph = input_camera->scenegraph;
       GList *l2;
 
       event->camera = camera;
-
       event->input_transform = &camera->input_transform;
 
-      if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+      for (l2 = camera->input_regions; l2; l2 = l2->next)
         {
-          float x = rut_motion_event_get_x (event);
-          float y = rut_motion_event_get_y (event);
-          CameraPickState state;
+          RutInputRegion *region = l2->data;
 
-          for (l2 = camera->input_regions; l2; l2 = l2->next)
+          if (rut_camera_pick_inputable (camera,
+                                         region,
+                                         shell->mouse_x,
+                                         shell->mouse_y))
             {
-              RutInputRegion *region = l2->data;
+              status = region->callback (region, event, region->user_data);
 
-              if (rut_camera_pick_inputable (camera, region, x, y))
-                {
-                  status = region->callback (region, event, region->user_data);
-
-                  if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-                    return status;
-                }
-            }
-
-          if (scenegraph)
-            {
-              RutTraverseVisitFlags flags;
-              state.camera = camera;
-              state.event = event;
-              state.x = x;
-              state.y = y;
-
-              flags = rut_graphable_traverse (scenegraph,
-                                              RUT_TRAVERSE_DEPTH_FIRST,
-                                              camera_pick_region_cb,
-                                              NULL,
-                                              &state);
-              if (flags & RUT_TRAVERSE_VISIT_BREAK)
-                return RUT_INPUT_EVENT_STATUS_HANDLED;
+              if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
+                return status;
             }
         }
     }
 
-  event->input_transform = NULL;
+  /* If nothing has handled the event by now we'll try to pick a
+   * single object from the scenegraphs attached to the cameras that
+   * will handle the event */
+  target = _rut_shell_get_scenegraph_event_target (shell, event);
+
+  /* Send the event to the object we found. If it doesn't handle it
+   * then we'll also bubble the event up to any inputable parents of
+   * the object until one of them handles it */
+  while (target)
+    {
+      if (rut_object_is (target, RUT_INTERFACE_ID_INPUTABLE))
+        {
+          RutInputRegion *region = rut_inputable_get_input_region (target);
+
+          status = region->callback (region, event, region->user_data);
+          if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
+            break;
+        }
+
+      if (!rut_object_is (target, RUT_INTERFACE_ID_GRAPHABLE))
+        break;
+
+      target = rut_graphable_get_parent (target);
+    }
 
   return status;
 }

@@ -1995,14 +1995,8 @@ main_input_cb (RutInputEvent *event,
       float y = rut_motion_event_get_y (event);
       RutButtonState state;
 
-      if (rut_camera_transform_window_coordinate (data->editor_camera_component,
-                                                  &x,
-                                                  &y))
-        {
-          rut_shell_grab_key_focus (data->ctx->shell,
-                                    data->editor_input_region,
-                                    NULL /* ungrab_cb */);
-        }
+      rut_camera_transform_window_coordinate (data->editor_camera_component,
+                                              &x, &y);
 
       state = rut_motion_event_get_button_state (event);
 

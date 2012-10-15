@@ -74,7 +74,6 @@ struct _RutUIViewport
 
   RutTransform *doc_transform;
 
-  RutInputRegion *input_region;
   float grab_x;
   float grab_y;
   float grab_doc_x;
@@ -82,6 +81,8 @@ struct _RutUIViewport
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_UI_VIEWPORT_N_PROPS];
+
+  RutInputableProps inputable;
 };
 
 static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
@@ -144,7 +145,7 @@ _rut_ui_viewport_free (void *object)
 {
   RutUIViewport *ui_viewport = object;
 
-  rut_refable_simple_unref (ui_viewport->input_region);
+  rut_refable_simple_unref (ui_viewport->inputable.input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
@@ -201,6 +202,10 @@ _rut_ui_viewport_init_type (void)
   rut_type_add_interface (&rut_ui_viewport_type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (RutUIViewport, introspectable),
+                          NULL); /* no implied vtable */
+  rut_type_add_interface (&rut_ui_viewport_type,
+                          RUT_INTERFACE_ID_INPUTABLE,
+                          offsetof (RutUIViewport, inputable),
                           NULL); /* no implied vtable */
 }
 
@@ -274,10 +279,6 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      rut_shell_grab_key_focus (ui_viewport->ctx->shell,
-                                ui_viewport->input_region,
-                                NULL /* ungrab_cb */);
-
       switch (rut_motion_event_get_action (event))
         {
         case RUT_MOTION_EVENT_ACTION_DOWN:
@@ -696,15 +697,12 @@ rut_ui_viewport_new (RutContext *ctx,
 
   _rut_ui_viewport_update_doc_matrix (ui_viewport);
 
-  ui_viewport->input_region =
+  ui_viewport->inputable.input_region =
     rut_input_region_new_rectangle (0, 0,
                                     ui_viewport->width,
                                     ui_viewport->height,
                                     _rut_ui_viewport_input_region_cb,
                                     ui_viewport);
-
-  //rut_input_region_set_graphable (ui_viewport->input_region, ui_viewport);
-  rut_graphable_add_child (ui_viewport, ui_viewport->input_region);
 
   va_start (ap, height);
   while ((object = va_arg (ap, RutObject *)))
@@ -725,7 +723,7 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
   ui_viewport->height = height;
   float spacing;
 
-  rut_input_region_set_rectangle (ui_viewport->input_region,
+  rut_input_region_set_rectangle (ui_viewport->inputable.input_region,
                                   0, 0,
                                   width,
                                   height);
