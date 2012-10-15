@@ -19,6 +19,10 @@ typedef struct _RutTransform RutTransform;
 #define RUT_TRANSFORM(X) ((RutTransform *)X)
 RutType rut_transform_type;
 
+typedef struct _RutInputRegion RutInputRegion;
+#define RUT_INPUT_REGION(X) ((RutInputRegion *)X)
+extern RutType rut_input_region_type;
+
 typedef struct _RutUIEnumValue
 {
   int value;

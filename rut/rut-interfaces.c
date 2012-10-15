@@ -591,3 +591,11 @@ rut_pickable_get_mesh (RutObject *object)
   return pickable->get_mesh (object);
 }
 
+RutInputRegion *
+rut_inputable_get_input_region (RutObject *object)
+{
+  RutInputableProps *props =
+    rut_object_get_properties (object, RUT_INTERFACE_ID_INPUTABLE);
+
+  return props->input_region;
+}

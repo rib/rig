@@ -138,6 +138,7 @@ struct _RutInputRegion
   RutShape shape;
 
   RutGraphableProps graphable;
+  RutInputableProps inputable;
 
   CoglBool has_transform;
   CoglMatrix transform;
@@ -482,6 +483,10 @@ _rut_input_region_init_type (void)
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutInputRegion, graphable),
                           &_rut_input_region_graphable_vtable);
+  rut_type_add_interface (&rut_input_region_type,
+                          RUT_INTERFACE_ID_INPUTABLE,
+                          offsetof (RutInputRegion, inputable),
+                          NULL /* no vtable */);
 }
 
 static RutInputRegion *
@@ -495,6 +500,7 @@ rut_input_region_new_common (RutInputRegionCallback  callback,
   region->ref_count = 1;
 
   rut_graphable_init (RUT_OBJECT (region));
+  region->inputable.input_region = region;
 
   region->callback = callback;
   region->user_data = user_data;

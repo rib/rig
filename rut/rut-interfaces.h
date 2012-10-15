@@ -276,4 +276,22 @@ typedef struct _RutPickableVTable
 void *
 rut_pickable_get_mesh (RutObject *object);
 
+/*
+ *
+ * Inputable Interface
+ *
+ * The inputable represents something that wants to receive input
+ * events. This is acheived a property which points to the input
+ * region for this object. There aren't actually any methods on this
+ * interface, just the property.
+ */
+
+typedef struct _RutInputableProps
+{
+  RutInputRegion *input_region;
+} RutInputableProps;
+
+RutInputRegion *
+rut_inputable_get_input_region (RutObject *object);
+
 #endif /* _RUT_INTERFACES_H_ */

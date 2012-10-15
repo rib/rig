@@ -253,11 +253,6 @@ rut_motion_event_unproject (RutInputEvent *event,
                             float *x,
                             float *y);
 
-typedef struct _RutInputRegion RutInputRegion;
-#define RUT_INPUT_REGION(X) ((RutInputRegion *)X)
-
-RutType rut_input_region_type;
-
 typedef RutInputEventStatus (*RutInputRegionCallback) (RutInputRegion *region,
                                                        RutInputEvent *event,
                                                        void *user_data);
