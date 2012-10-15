@@ -33,20 +33,14 @@ typedef struct _RutDiamondSlice
 
   CoglMatrix rotate_matrix;
 
-  CoglTexture *texture;
-
   float size;
 
-  CoglPipeline *pipeline;
   CoglPrimitive *primitive;
 
 } RutDiamondSlice;
 
 void
 _rut_diamond_slice_init_type (void);
-
-CoglPipeline *
-rut_diamond_slice_get_pipeline_template (RutDiamondSlice *slice);
 
 typedef struct _RutDiamond RutDiamond;
 #define RUT_DIAMOND(p) ((RutDiamond *)(p))

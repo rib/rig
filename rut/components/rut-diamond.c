@@ -29,7 +29,6 @@ _diamond_slice_free (void *object)
 {
   RutDiamondSlice *diamond_slice = object;
 
-  cogl_object_unref (diamond_slice->pipeline);
   cogl_object_unref (diamond_slice->primitive);
 
   g_slice_free (RutDiamondSlice, object);
@@ -163,16 +162,6 @@ diamond_slice_new (RutContext *ctx,
   diamond_slice->ref_count = 1;
 
   diamond_slice->size = size;
-
-  diamond_slice->pipeline = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (diamond_slice->pipeline, 0, ctx->circle_texture);
-
-  /* XXX: For the sake of setting up a pipeline that can be used as a
-   * template for rendering the diamond shape we are adding a second
-   * texture 2D layer, but it's arbitrary that we are using the
-   * circle_texture here. */
-  cogl_pipeline_set_layer_texture (diamond_slice->pipeline, 1,
-                                   ctx->circle_texture);
 
     {
       /* x0,y0,x1,y1 and s0,t0,s1,t1 define the postion and texture
@@ -316,12 +305,6 @@ diamond_slice_new (RutContext *ctx,
     }
 
   return diamond_slice;
-}
-
-CoglPipeline *
-rut_diamond_slice_get_pipeline_template (RutDiamondSlice *slice)
-{
-  return slice->pipeline;
 }
 
 RutType rut_diamond_type;

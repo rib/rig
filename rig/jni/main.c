@@ -819,34 +819,6 @@ entitygraph_pre_paint_cb (RutObject *object,
       /* FIXME: cache the pipeline with the entity */
       cogl_object_unref (pipeline);
 
-#if 0
-      geometry = rut_entity_get_component (object, RUT_COMPONENT_TYPE_GEOMETRY);
-      material = rut_entity_get_component (object, RUT_COMPONENT_TYPE_MATERIAL);
-      if (geometry && material)
-        {
-          if (rut_object_get_type (geometry) == &rut_diamond_type)
-            {
-              PaintContext *paint_ctx = rut_paint_ctx;
-              RigData *data = paint_ctx->data;
-              RutDiamondSlice *slice = rut_diamond_get_slice (geometry);
-              CoglPipeline *template = rut_diamond_slice_get_pipeline_template (slice);
-              CoglPipeline *material_pipeline = rut_material_get_pipeline (material);
-              CoglPipeline *pipeline = cogl_pipeline_copy (template);
-              //CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-
-              /* FIXME: we should be combining the material and
-               * diamond slice state together before now! */
-              cogl_pipeline_set_layer_texture (pipeline, 1,
-                                               cogl_pipeline_get_layer_texture (material_pipeline, 0));
-
-              cogl_framebuffer_draw_primitive (fb,
-                                               pipeline,
-                                               slice->primitive);
-
-              cogl_object_unref (pipeline);
-            }
-        }
-#endif
       return RUT_TRAVERSE_VISIT_CONTINUE;
     }
 
