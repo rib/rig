@@ -22,6 +22,7 @@
 
 #include <rut.h>
 #include "rig-transition.h"
+#include "rig-undo-journal.h"
 
 extern RutType rig_transition_view_type;
 
@@ -33,6 +34,7 @@ RigTransitionView *
 rig_transition_view_new (RutContext *ctx,
                          RutObject *graph,
                          RigTransition *transition,
-                         RutTimeline *timeline);
+                         RutTimeline *timeline,
+                         RigUndoJournal *undo_journal);
 
 #endif /* _RIG_TRANSITION_VIEW_H_ */

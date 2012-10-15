@@ -3316,7 +3316,8 @@ init (RutShell *shell, void *user_data)
         rig_transition_view_new (data->ctx,
                                  data->scene,
                                  data->selected_transition,
-                                 data->timeline);
+                                 data->timeline,
+                                 data->undo_journal);
       rut_graphable_add_child (doc_node, data->transition_view);
     }
 #endif

@@ -103,6 +103,7 @@ struct _RigTransitionView
   RutContext *context;
   RigTransition *transition;
   RutTimeline *timeline;
+  RigUndoJournal *undo_journal;
 
   RutInputRegion *input_region;
   CoglBool have_grab;
@@ -1257,6 +1258,20 @@ rig_transition_view_find_node (RigTransitionView *view,
   return FALSE;
 }
 
+static void
+rig_transition_view_delete_selected_nodes (RigTransitionView *view)
+{
+  while (!rut_list_empty (&view->selected_nodes))
+    {
+      RigTransitionViewSelectedNode *node =
+        rut_container_of (view->selected_nodes.next, node, list_node);
+
+      rig_undo_journal_delete_path_node_and_log (view->undo_journal,
+                                                 node->prop_data->property,
+                                                 node->t);
+    }
+}
+
 static RutInputEventStatus
 rig_transition_view_input_region_cb (RutInputRegion *region,
                                      RutInputEvent *event,
@@ -1264,45 +1279,57 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
 {
   RigTransitionView *view = user_data;
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
-      (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
-      !view->have_grab)
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      RigTransitionViewProperty *prop_data;
-      float t;
-
-      if (rig_transition_view_find_node (view, event, &prop_data, &t))
+      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
+          (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
+          !view->have_grab)
         {
-          if ((rut_motion_event_get_modifier_state (event) &
-               (RUT_MODIFIER_LEFT_SHIFT_ON |
-                RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
-            rig_transition_view_clear_selected_nodes (view);
+          RigTransitionViewProperty *prop_data;
+          float t;
 
-          /* If shift is down then we actually want to toggle the
-           * node. If the node is already selected then trying to
-           * select it again will return TRUE so we know to remove it.
-           * If shift wasn't down then it definetely won't be selected
-           * because we'll have just cleared the selection above so it
-           * doesn't matter if we toggle it */
-          if (rig_transition_view_select_node (view, prop_data, t))
-            rig_transition_view_unselect_node (view, prop_data, t);
+          if (rig_transition_view_find_node (view, event, &prop_data, &t))
+            {
+              if ((rut_motion_event_get_modifier_state (event) &
+                   (RUT_MODIFIER_LEFT_SHIFT_ON |
+                    RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
+                rig_transition_view_clear_selected_nodes (view);
 
-          rut_shell_queue_redraw (view->context->shell);
+              /* If shift is down then we actually want to toggle the
+               * node. If the node is already selected then trying to
+               * select it again will return TRUE so we know to remove it.
+               * If shift wasn't down then it definetely won't be selected
+               * because we'll have just cleared the selection above so it
+               * doesn't matter if we toggle it */
+              if (rig_transition_view_select_node (view, prop_data, t))
+                rig_transition_view_unselect_node (view, prop_data, t);
+
+              rut_shell_queue_redraw (view->context->shell);
+            }
+          else
+            {
+              rig_transition_view_clear_selected_nodes (view);
+              rig_transition_view_update_timeline_progress (view, event);
+            }
+
+          view->have_grab = TRUE;
+          rut_shell_grab_input (view->context->shell,
+                                rut_input_event_get_camera (event),
+                                rig_transition_view_grab_input_cb,
+                                view);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
-      else
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_DOWN)
+    {
+      switch (rut_key_event_get_keysym (event))
         {
-          rig_transition_view_clear_selected_nodes (view);
-          rig_transition_view_update_timeline_progress (view, event);
+        case RUT_KEY_Delete:
+          rig_transition_view_delete_selected_nodes (view);
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
-
-      view->have_grab = TRUE;
-      rut_shell_grab_input (view->context->shell,
-                            rut_input_event_get_camera (event),
-                            rig_transition_view_grab_input_cb,
-                            view);
-
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -1336,7 +1363,8 @@ RigTransitionView *
 rig_transition_view_new (RutContext *ctx,
                          RutObject *graph,
                          RigTransition *transition,
-                         RutTimeline *timeline)
+                         RutTimeline *timeline,
+                         RigUndoJournal *undo_journal)
 {
   RigTransitionView *view = g_slice_new0 (RigTransitionView);
   static CoglBool initialized = FALSE;
@@ -1353,6 +1381,7 @@ rig_transition_view_new (RutContext *ctx,
   view->graph = rut_refable_ref (graph);
   view->transition = transition;
   view->timeline = rut_refable_ref (timeline);
+  view->undo_journal = undo_journal;
 
   view->dots_dirty = TRUE;
 

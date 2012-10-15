@@ -130,6 +130,11 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
                                float z);
 
 void
+rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
+                                           RutProperty *property,
+                                           float t);
+
+void
 rig_undo_journal_log_set_animated (RigUndoJournal *journal,
                                    RutEntity *entity,
                                    RutProperty *property,
