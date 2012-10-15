@@ -177,16 +177,4 @@ rut_camera_unproject_coord (RutCamera *camera,
 CoglPrimitive *
 rut_camera_create_frustum_primitive (RutCamera *camera);
 
-#if 0
-/* PRIVATE */
-RutInputEventStatus
-_rut_camera_input_callback_wrapper (RutCameraInputCallbackState *state,
-                                    RutInputEvent *event);
-
-void
-rut_camera_add_input_callback (RutCamera *camera,
-                               RutInputCallback callback,
-                               void *user_data);
-#endif
-
 #endif /* __RUT_CAMERA_H__ */

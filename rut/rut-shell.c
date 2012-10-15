@@ -1226,15 +1226,6 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
       RutObject *scenegraph = input_camera->scenegraph;
       GList *l2;
 
-#if 0
-      for (l2 = camera->input_callbacks; l2; l2 = l2->next)
-        {
-          status = _rut_camera_input_callback_wrapper (l2->data, event);
-          if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-            return status;
-        }
-#endif
-
       event->camera = camera;
 
       event->input_transform = &camera->input_transform;

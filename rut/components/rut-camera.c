@@ -770,42 +770,6 @@ rut_camera_remove_input_region (RutCamera *camera,
   camera->input_regions = g_list_remove (camera->input_regions, region);
 }
 
-#if 0
-typedef struct _RutCameraInputCallbackState
-{
-  RutInputCallback callback;
-  void *user_data;
-} RutCameraInputCallbackState;
-
-RutInputEventStatus
-_rut_camera_input_callback_wrapper (RutCameraInputCallbackState *state,
-                                    RutInputEvent *event)
-{
-  RutCamera *camera = state->camera;
-  float *viewport = camera->viewport;
-
-  cogl_matrix_translate (event->input_transform,
-                         viewport[0], viewport[1], 0);
-  cogl_matrix_scale (event->input_transform,
-                     cogl_framebuffer_get_width (camera->fb) / viewport[2],
-                     cogl_framebuffer_get_height (camera->fb) / viewport[3]);
-
-  return state->callback (event, state->user_data);
-}
-
-void
-rut_camera_add_input_callback (RutCamera *camera,
-                               RutInputCallback callback,
-                               void *user_data)
-{
-  RutCameraInputCallbackState *state = g_slice_new (RutCameraInputCallbackState);
-  state->camera = camera;
-  state->callback = callback;
-  state->user_data = user_data;
-  camera->input_callbacks = g_list_prepend (camera->input_callbacks, state);
-}
-#endif
-
 CoglBool
 rut_camera_transform_window_coordinate (RutCamera *camera,
                                         float *x,

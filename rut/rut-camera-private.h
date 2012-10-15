@@ -67,8 +67,6 @@ struct _RutCamera
   CoglMatrix input_transform;
   GList *input_regions;
 
-  GList *input_callbacks;
-
   int frame;
   GTimer *timer;
 

@@ -2945,7 +2945,6 @@ init (RutShell *shell, void *user_data)
   data->editor_input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0, editor_input_region_cb, data);
   rut_input_region_set_hud_mode (data->editor_input_region, TRUE);
-  //rut_camera_add_input_region (data->camera,
   rut_camera_add_input_region (data->editor_camera_component,
                                data->editor_input_region);
 
