@@ -789,7 +789,9 @@ rig_transition_view_unselect_node (RigTransitionView *view,
                   rut_list_remove (&selected_node->list_node);
                   g_slice_free (RigTransitionViewSelectedNode, selected_node);
                   view->dots_dirty = TRUE;
-                  break;
+                  /* we don't want to break here because we want to
+                   * continue searching so that we can update the
+                   * has_nodes value */
                 }
               else
                 has_nodes = TRUE;
