@@ -25,7 +25,7 @@
 
 #include <rut.h>
 
-#include "rig-data.h"
+#include "rig-types.h"
 #include "rut-list.h"
 
 typedef enum _UndoRedoOp
@@ -94,7 +94,7 @@ typedef struct _UndoRedo
     } d;
 } UndoRedo;
 
-struct _RigUndoJournal
+typedef struct _RigUndoJournal
 {
   RigData *data;
 
@@ -112,7 +112,7 @@ struct _RigUndoJournal
    * so it will not need to be inverted before redoing the
    * operation. */
   RutList redo_ops;
-};
+} RigUndoJournal;
 
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,

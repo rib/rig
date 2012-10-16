@@ -22,12 +22,8 @@
 
 #include "rig-transition.h"
 #include "rig-transition-view.h"
-
-/* TODO:
- * This structure should be split up into runtime data and editor data
- */
-
-typedef struct _RigUndoJournal RigUndoJournal;
+#include "rig-types.h"
+#include "rig-undo-journal.h"
 
 enum {
   RUT_DATA_PROP_WIDTH,
@@ -36,7 +32,7 @@ enum {
   RUT_DATA_N_PROPS
 };
 
-typedef struct _RigData
+struct _RigData
 {
   CoglBool play_mode;
 
@@ -196,8 +192,7 @@ typedef struct _RigData
   //RutProperty path_property;
 
   RutProperty properties[RUT_DATA_N_PROPS];
-
-} RigData;
+};
 
 /* FIXME: find a better place to put these prototypes */
 

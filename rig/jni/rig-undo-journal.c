@@ -23,6 +23,7 @@
 #endif
 
 #include "rig-undo-journal.h"
+#include "rig-data.h"
 
 typedef struct _UndoRedoOpImpl
 {

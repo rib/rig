@@ -33,7 +33,8 @@ rig_SOURCES = \
 	jni/rig-load-save.h \
 	jni/rig-load-save.c \
 	jni/rig-transition-view.c \
-	jni/rig-transition-view.h
+	jni/rig-transition-view.h \
+	jni/rig-types.h
 
 if EDITOR_ENABLED
 rig_SOURCES += \
