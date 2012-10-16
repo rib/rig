@@ -2232,17 +2232,6 @@ main_input_cb (RutInputEvent *event,
     {
       switch (rut_key_event_get_keysym (event))
         {
-        case RUT_KEY_s:
-          rig_save (data, _rig_handset_remaining_args[0]);
-          break;
-        case RUT_KEY_z:
-          if (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON)
-            rig_undo_journal_undo (data->undo_journal);
-          break;
-        case RUT_KEY_y:
-          if (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON)
-            rig_undo_journal_redo (data->undo_journal);
-          break;
         case RUT_KEY_minus:
           if (data->editor_camera_z)
             data->editor_camera_z *= 1.2f;
@@ -3388,14 +3377,32 @@ shell_input_handler (RutInputEvent *event, void *user_data)
 #endif
       break;
 
-#if 0
     case RUT_INPUT_EVENT_TYPE_KEY:
-      {
-        if (data->key_focus_callback)
-          data->key_focus_callback (event, data);
-      }
-      break;
+#ifdef RIG_EDITOR_ENABLED
+      if (!_rig_in_device_mode &&
+          rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_DOWN)
+        {
+          switch (rut_key_event_get_keysym (event))
+            {
+            case RUT_KEY_s:
+              rig_save (data, _rig_handset_remaining_args[0]);
+              return RUT_INPUT_EVENT_STATUS_HANDLED;
+
+            case RUT_KEY_z:
+              if ((rut_key_event_get_modifier_state (event) &
+                   RUT_MODIFIER_CTRL_ON))
+                rig_undo_journal_undo (data->undo_journal);
+              return RUT_INPUT_EVENT_STATUS_HANDLED;
+
+            case RUT_KEY_y:
+              if ((rut_key_event_get_modifier_state (event) &
+                   RUT_MODIFIER_CTRL_ON))
+                rig_undo_journal_redo (data->undo_journal);
+              return RUT_INPUT_EVENT_STATUS_HANDLED;
+            }
+        }
 #endif
+      break;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
