@@ -152,10 +152,8 @@ _rut_split_view_free (void *object)
 #endif
   cogl_object_unref (split_view->split_pipeline);
 
-  if (split_view->child0)
-    rut_refable_unref (split_view->child0);
-  if (split_view->child1)
-    rut_refable_unref (split_view->child1);
+  rut_split_view_set_child0 (split_view, NULL);
+  rut_split_view_set_child1 (split_view, NULL);
 
   rut_graphable_remove_child (split_view->child1_transform);
   rut_refable_unref (split_view->child1_transform);
@@ -753,12 +751,18 @@ rut_split_view_set_child0 (RutSplitView *split_view,
     return;
 
   if (split_view->child0)
-    rut_graphable_remove_child (split_view->child0);
+    {
+      rut_graphable_remove_child (split_view->child0);
+      rut_refable_unref (split_view->child0);
+    }
 
   if (child0)
-    rut_graphable_add_child (split_view, child0);
+    {
+      rut_graphable_add_child (split_view, child0);
+      rut_refable_ref (child0);
+    }
 
-  split_view->child0 = rut_refable_ref (child0);
+  split_view->child0 = child0;
 }
 
 void
@@ -769,12 +773,18 @@ rut_split_view_set_child1 (RutSplitView *split_view,
     return;
 
   if (split_view->child1)
-    rut_graphable_remove_child (split_view->child1);
+    {
+      rut_graphable_remove_child (split_view->child1);
+      rut_refable_unref (split_view->child1);
+    }
 
   if (child1)
-    rut_graphable_add_child (split_view->child1_transform, child1);
+    {
+      rut_graphable_add_child (split_view->child1_transform, child1);
+      rut_refable_ref (child1);
+    }
 
-  split_view->child1 = rut_refable_ref (child1);
+  split_view->child1 = child1;
 }
 
 void
