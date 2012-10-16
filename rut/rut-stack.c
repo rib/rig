@@ -72,7 +72,7 @@ _rut_stack_free (void *object)
 {
   RutStack *stack = object;
 
-  rut_refable_ref (stack->ctx);
+  rut_refable_unref (stack->ctx);
 
   g_list_foreach (stack->children, (GFunc)rut_refable_unref, NULL);
   g_list_free (stack->children);
