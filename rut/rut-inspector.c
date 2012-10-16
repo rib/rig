@@ -68,7 +68,7 @@ struct _RutInspector
   int height;
 
   RutInspectorCallback property_changed_cb;
-  RutInspectorCallback animated_changed_cb;
+  RutInspectorAnimatedCallback animated_changed_cb;
   void *user_data;
 
   int ref_count;
