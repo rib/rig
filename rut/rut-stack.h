@@ -32,8 +32,4 @@ rut_stack_get_size (RutStack *stack,
                     float *width,
                     float *height);
 
-void
-rut_stack_append_child (RutStack *stack,
-                        RutObject *child);
-
 #endif /* _RUT_STACK_H_ */

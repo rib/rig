@@ -32,6 +32,13 @@ enum {
   RUT_STACK_N_PROPS
 };
 
+typedef struct
+{
+  RutList list_node;
+
+  RutObject *child;
+} RutStackChild;
+
 struct _RutStack
 {
   RutObjectProps _parent;
@@ -45,7 +52,7 @@ struct _RutStack
   int width;
   int height;
 
-  GList *children;
+  RutList children;
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_STACK_N_PROPS];
@@ -74,11 +81,11 @@ _rut_stack_free (void *object)
 
   rut_refable_unref (stack->ctx);
 
-  g_list_foreach (stack->children, (GFunc)rut_refable_unref, NULL);
-  g_list_free (stack->children);
-
   rut_simple_introspectable_destroy (stack);
   rut_graphable_destroy (stack);
+
+  /* Destroying the graphable state should remove all the children */
+  g_warn_if_fail (rut_list_empty (&stack->children));
 
   g_slice_free (RutStack, stack);
 }
@@ -93,16 +100,30 @@ static void
 _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
 {
   RutStack *stack = RUT_STACK (parent);
+  RutStackChild *child_data;
 
-  stack->children = g_list_remove (stack->children, child);
+  rut_list_for_each (child_data, &stack->children, list_node)
+    if (child_data->child == child)
+      {
+        rut_list_remove (&child_data->list_node);
+        g_slice_free (RutStackChild, child_data);
+        rut_refable_unref (child);
+        return;
+      }
+
+  g_warn_if_reached ();
 }
 
 static void
 _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
 {
   RutStack *stack = RUT_STACK (parent);
+  RutStackChild *child_data;
 
-  stack->children = g_list_append (stack->children, child);
+  child_data = g_slice_new (RutStackChild);
+  child_data->child = rut_refable_ref (child);
+
+  rut_list_insert (stack->children.prev, &child_data->list_node);
 }
 
 static RutGraphableVTable _rut_stack_graphable_vtable = {
@@ -120,11 +141,11 @@ rut_stack_get_preferred_width (void *object,
   RutStack *stack = RUT_STACK (object);
   float max_min_width = 0.0f;
   float max_natural_width = 0.0f;
-  GList *l;
+  RutStackChild *child_data;
 
-  for (l = stack->children; l; l = l->next)
+  rut_list_for_each (child_data, &stack->children, list_node)
     {
-      RutObject *child = l->data;
+      RutObject *child = child_data->child;
       float child_min_width;
       float child_natural_width;
       rut_sizable_get_preferred_width (child,
@@ -152,11 +173,11 @@ rut_stack_get_preferred_height (void *object,
   RutStack *stack = RUT_STACK (object);
   float max_min_height = 0.0f;
   float max_natural_height = 0.0f;
-  GList *l;
+  RutStackChild *child_data;
 
-  for (l = stack->children; l; l = l->next)
+  rut_list_for_each (child_data, &stack->children, list_node)
     {
-      RutObject *child = l->data;
+      RutObject *child = child_data->child;
       float child_min_height;
       float child_natural_height;
       rut_sizable_get_preferred_height (child,
@@ -220,14 +241,14 @@ rut_stack_set_size (RutStack *stack,
                     float width,
                     float height)
 {
-  GList *l;
+  RutStackChild *child_data;
 
   stack->width = width;
   stack->height = height;
 
-  for (l = stack->children; l; l = l->next)
+  rut_list_for_each (child_data, &stack->children, list_node)
     {
-      RutObject *child = l->data;
+      RutObject *child = child_data->child;
       if (rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
         rut_sizable_set_size (child, width, height);
     }
@@ -282,6 +303,7 @@ rut_stack_new (RutContext *context,
 
   stack->ref_count = 1;
   stack->ctx = rut_refable_ref (context);
+  rut_list_init (&stack->children);
 
   rut_object_init (&stack->_parent, &rut_stack_type);
 
@@ -299,12 +321,4 @@ rut_stack_new (RutContext *context,
   va_end (ap);
 
   return stack;
-}
-
-void
-rut_stack_append_child (RutStack *stack,
-                        RutObject *child)
-{
-  rut_graphable_add_child (stack, child);
-  stack->children = g_list_append (stack->children, child);
 }
