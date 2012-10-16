@@ -809,6 +809,9 @@ rig_path_remove (RigPath *path,
                                link->data);
       rig_node_free (path->type, link->data);
       g_queue_delete_link (&path->nodes, link);
+
+      if (path->pos == link)
+        path->pos = NULL;
     }
 }
 
