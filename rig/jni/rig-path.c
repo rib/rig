@@ -64,7 +64,7 @@ rig_path_new (RutContext *ctx,
 /* Finds 1 point either side of the given t using the direction to resolve
  * which points to choose if t corresponds to a specific node.
  */
-static void
+static CoglBool
 path_find_control_links2 (RigPath *path,
                           float t,
                           int direction,
@@ -75,11 +75,7 @@ path_find_control_links2 (RigPath *path,
   RigNode *pos_node;
 
   if (G_UNLIKELY (path->nodes.head == NULL))
-    {
-      *n0 = NULL;
-      *n1= NULL;
-      return;
-    }
+    return FALSE;
 
   if (G_UNLIKELY (path->pos == NULL))
     path->pos = path->nodes.head;
@@ -103,7 +99,7 @@ path_find_control_links2 (RigPath *path,
           if (!tmp)
             {
               *n0 = *n1 = path->pos = rig_nodes_find_first (pos);
-              return;
+              return TRUE;
             }
           pos = tmp;
         }
@@ -114,13 +110,13 @@ path_find_control_links2 (RigPath *path,
           if (!tmp)
             {
               *n0 = *n1 = path->pos = rig_nodes_find_last (pos);
-              return;
+              return TRUE;
             }
           pos = tmp->prev;
         }
 
       *n0 = pos;
-      *n1 = pos->next;
+      *n1 = pos->next ? pos->next : pos;
     }
   else
     {
@@ -131,7 +127,7 @@ path_find_control_links2 (RigPath *path,
           if (!tmp)
             {
               *n0 = *n1 = path->pos = rig_nodes_find_first (pos);
-              return;
+              return TRUE;
             }
           pos = tmp->next;
         }
@@ -142,19 +138,21 @@ path_find_control_links2 (RigPath *path,
           if (!tmp)
             {
               *n0 = *n1 = path->pos = rig_nodes_find_last (pos);
-              return;
+              return TRUE;
             }
           pos = tmp;
         }
 
       *n0 = pos;
-      *n1 = pos->prev;
+      *n1 = pos->prev ? pos->prev : pos;
     }
 
   path->pos = pos;
+
+  return TRUE;
 }
 
-void
+static CoglBool
 path_find_control_points2 (RigPath *path,
                            float t,
                            int direction,
@@ -162,14 +160,21 @@ path_find_control_points2 (RigPath *path,
                            RigNode **n1)
 {
   GList *l0, *l1;
-  path_find_control_links2 (path, t, direction, &l0, &l1);
-  *n0 = l0->data;
-  *n1 = l1->data;
+
+  if (path_find_control_links2 (path, t, direction, &l0, &l1))
+    {
+      *n0 = l0->data;
+      *n1 = l1->data;
+      return TRUE;
+    }
+  else
+    return FALSE;
 }
 
 /* Finds 2 points either side of the given t using the direction to resolve
  * which points to choose if t corresponds to a specific node. */
-void
+#if 0
+static CoglBool
 path_find_control_points4 (RigPath *path,
                            float t,
                            int direction,
@@ -180,22 +185,32 @@ path_find_control_points4 (RigPath *path,
 {
   GList *l1, *l2;
 
-  path_find_control_links2 (path, t, direction, &l1, &l2);
+  if (!path_find_control_links2 (path, t, direction, &l1, &l2))
+    return FALSE;
 
   if (direction > 0)
     {
+      if (l1->prev == NULL || l2->next == NULL)
+        return FALSE;
+
       *n0 = l1->prev->data;
       *n3 = l2->next->data;
     }
   else
     {
+      if (l1->next == NULL || l2->prev == NULL)
+        return FALSE;
+
       *n0 = l1->next->data;
       *n3 = l2->prev->data;
     }
 
   *n1 = l1->data;
   *n2 = l2->data;
+
+  return TRUE;
 }
+#endif
 
 static void
 node_print (void *node, void *user_data)
@@ -520,18 +535,19 @@ rig_path_insert_color (RigPath *path,
     }
 }
 
-void
+CoglBool
 rig_path_lerp_property (RigPath *path,
                         RutProperty *property,
                         float t)
 {
   RigNode *n0, *n1;
 
-  g_return_if_fail (property->spec->type == path->type);
+  g_return_val_if_fail (property->spec->type == path->type, FALSE);
 
-  path_find_control_points2 (path, t, 1,
-                             &n0,
-                             &n1);
+  if (!path_find_control_points2 (path, t, 1,
+                                  &n0,
+                                  &n1))
+    return FALSE;
 
   switch (path->type)
     {
@@ -617,6 +633,8 @@ rig_path_lerp_property (RigPath *path,
       g_warn_if_reached ();
       break;
     }
+
+  return TRUE;
 }
 
 CoglBool

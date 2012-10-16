@@ -101,7 +101,7 @@ rig_path_insert_color (RigPath *path,
                        float t,
                        const RutColor *value);
 
-void
+CoglBool
 rig_path_lerp_property (RigPath *path,
                         RutProperty *property,
                         float t);
