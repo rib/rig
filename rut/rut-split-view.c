@@ -34,19 +34,6 @@
 
 #define RUT_SPLIT_VIEW_N_COLUMNS 1
 
-typedef struct
-{
-  RutObject *control;
-  RutTransform *transform;
-  RutProperty *source_prop;
-  RutProperty *target_prop;
-
-  /* A pointer is stored back to the split_view so that we can use a
-   * pointer to this data directly as the callback data for the
-   * property binding */
-  RutSplitView *split_view;
-} RutSplitViewPropertyData;
-
 enum {
   RUT_SPLIT_VIEW_PROP_WIDTH,
   RUT_SPLIT_VIEW_PROP_HEIGHT,
