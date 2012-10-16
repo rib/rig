@@ -65,40 +65,40 @@ struct _RutShell
 };
 
 /* PRIVATE */
-typedef enum _RutShapeType
+typedef enum _RutInputShapeType
 {
-  RUT_SHAPE_TYPE_RECTANGLE,
-  RUT_SHAPE_TYPE_CIRCLE
-} RutShapeType;
+  RUT_INPUT_SHAPE_TYPE_RECTANGLE,
+  RUT_INPUT_SHAPE_TYPE_CIRCLE
+} RutInputShapeType;
 
 /* PRIVATE */
-typedef struct _RutShapeRectangle
+typedef struct _RutInputShapeRectangle
 {
-  RutShapeType type;
+  RutInputShapeType type;
   float x0, y0, x1, y1;
-} RutShapeRectange;
+} RutInputShapeRectange;
 
 /* PRIVATE */
-typedef struct _RutShapeCircle
+typedef struct _RutInputShapeCircle
 {
-  RutShapeType type;
+  RutInputShapeType type;
   float x, y;
   float r_squared;
-} RutShapeCircle;
+} RutInputShapeCircle;
 
 /* PRIVATE */
-typedef struct _RutShapeAny
+typedef struct _RutInputShapeAny
 {
-  RutShapeType type;
-} RutShapeAny;
+  RutInputShapeType type;
+} RutInputShapeAny;
 
 /* PRIVATE */
-typedef union _RutShape
+typedef union _RutInputShape
 {
-  RutShapeAny any;
-  RutShapeRectange rectangle;
-  RutShapeCircle circle;
-} RutShape;
+  RutInputShapeAny any;
+  RutInputShapeRectange rectangle;
+  RutInputShapeCircle circle;
+} RutInputShape;
 
 typedef enum _RutInputTransformType
 {
@@ -136,7 +136,7 @@ struct _RutInputRegion
 
   int ref_count;
 
-  RutShape shape;
+  RutInputShape shape;
 
   RutGraphableProps graphable;
   RutInputableProps inputable;
@@ -233,7 +233,7 @@ fully_transform_points (const CoglMatrix *modelview,
 }
 
 static void
-rectangle_poly_init (RutShapeRectange *rectangle,
+rectangle_poly_init (RutInputShapeRectange *rectangle,
                      float *poly)
 {
   poly[0] = rectangle->x0;
@@ -262,7 +262,7 @@ rectangle_poly_init (RutShapeRectange *rectangle,
  * with input coordinates for picking.
  */
 static void
-rect_to_screen_polygon (RutShapeRectange *rectangle,
+rect_to_screen_polygon (RutInputShapeRectange *rectangle,
                         const CoglMatrix *modelview,
                         const CoglMatrix *projection,
                         const float *viewport,
@@ -366,7 +366,7 @@ rut_camera_pick_inputable (RutCamera *camera,
 
   switch (region->shape.any.type)
     {
-    case RUT_SHAPE_TYPE_RECTANGLE:
+    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
       {
         if (!region->hud_mode)
           {
@@ -394,9 +394,9 @@ rut_camera_pick_inputable (RutCamera *camera,
         else
           return FALSE;
       }
-    case RUT_SHAPE_TYPE_CIRCLE:
+    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
       {
-        RutShapeCircle *circle = &region->shape.circle;
+        RutInputShapeCircle *circle = &region->shape.circle;
         float center_x = circle->x;
         float center_y = circle->y;
         float z = 0;
@@ -529,7 +529,7 @@ rut_input_region_set_rectangle (RutInputRegion *region,
                                 float x1,
                                 float y1)
 {
-  region->shape.any.type = RUT_SHAPE_TYPE_RECTANGLE;
+  region->shape.any.type = RUT_INPUT_SHAPE_TYPE_RECTANGLE;
   region->shape.rectangle.x0 = x0;
   region->shape.rectangle.y0 = y0;
   region->shape.rectangle.x1 = x1;
@@ -542,7 +542,7 @@ rut_input_region_set_circle (RutInputRegion *region,
                              float y,
                              float radius)
 {
-  region->shape.any.type = RUT_SHAPE_TYPE_CIRCLE;
+  region->shape.any.type = RUT_INPUT_SHAPE_TYPE_CIRCLE;
   region->shape.circle.x = x;
   region->shape.circle.y = y;
   region->shape.circle.r_squared = radius * radius;
@@ -1048,7 +1048,7 @@ camera_pre_pick_region_cb (RutObject *object,
     {
       RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
       CoglMatrix transform;
-      RutShapeRectange rect;
+      RutInputShapeRectange rect;
       float poly[16];
       RutObject *parent = rut_graphable_get_parent (object);
       const CoglMatrix *view = rut_camera_get_view_transform (state->camera);

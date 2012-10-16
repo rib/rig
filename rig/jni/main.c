@@ -344,15 +344,25 @@ get_entity_pipeline (RigData *data,
           data->dof_pipeline_template = pipeline;
         }
 
-      if (rut_object_get_type (geometry) == &rut_diamond_type)
+      if (rut_object_get_type (geometry) == &rut_shape_type ||
+          rut_object_get_type (geometry) == &rut_diamond_type)
         {
-          if (!data->dof_diamond_pipeline)
+          if (!data->dof_shape_pipeline)
             {
-              CoglPipeline *dof_diamond_pipeline =
+              CoglPipeline *dof_shape_pipeline =
                 cogl_pipeline_copy (data->dof_pipeline_template);
               CoglSnippet *snippet;
 
-              rut_diamond_apply_mask (RUT_DIAMOND (geometry), dof_diamond_pipeline);
+              if (rut_object_get_type (geometry) == &rut_shape_type)
+                {
+                  CoglTexture *shape_texture =
+                    rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+                  cogl_pipeline_set_layer_texture (dof_shape_pipeline,
+                                                   0, shape_texture);
+                }
+              else
+                rut_diamond_apply_mask (RUT_DIAMOND (geometry),
+                                        dof_shape_pipeline);
 
               snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                                           /* declarations */
@@ -364,15 +374,15 @@ get_entity_pipeline (RigData *data,
                                           "\n"
                                           "cogl_color_out.a = dof_blur;\n");
 
-              cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
+              cogl_pipeline_add_snippet (dof_shape_pipeline, snippet);
               cogl_object_unref (snippet);
 
-              set_focal_parameters (dof_diamond_pipeline, 30.f, 3.0f);
+              set_focal_parameters (dof_shape_pipeline, 30.f, 3.0f);
 
-              data->dof_diamond_pipeline = dof_diamond_pipeline;
+              data->dof_shape_pipeline = dof_shape_pipeline;
             }
 
-          return cogl_object_ref (data->dof_diamond_pipeline);
+          return cogl_object_ref (data->dof_shape_pipeline);
         }
       else
         {
@@ -426,7 +436,7 @@ get_entity_pipeline (RigData *data,
 #endif
 
 #if 0
-  if (rut_object_get_type (geometry) == &rut_diamond_type)
+  if (rut_object_get_type (geometry) == &rut_shape_type)
     rut_geometry_component_update_pipeline (geometry, pipeline);
 
   pipeline = cogl_pipeline_new (rut_cogl_context);
@@ -667,7 +677,13 @@ get_entity_pipeline (RigData *data,
       cogl_object_unref (snippet);
     }
 
-  if (rut_object_get_type (geometry) == &rut_diamond_type)
+  if (rut_object_get_type (geometry) == &rut_shape_type)
+    {
+      CoglTexture *shape_texture =
+        rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+      cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+    }
+  else if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
 
   rut_entity_set_pipeline_cache (entity, pipeline);
@@ -3396,7 +3412,7 @@ asset_input_cb (RutInputRegion *region,
   RigData *data = closure->data;
   RutEntity *entity;
   RutMaterial *material;
-  RutDiamond *diamond;
+  RutShape *shape;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -3411,16 +3427,8 @@ asset_input_cb (RutInputRegion *region,
               {
                 if (data->selected_entity)
                   {
-                    RutObject *geom;
-
                     entity = data->selected_entity;
 
-                    /* XXX: for now we only expect to be dealing with
-                     * diamond geometry based entities */
-
-                    geom = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
-                    if (rut_object_get_type (geom) != &rut_diamond_type)
-                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
                     material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
                     if (!material)
                       return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -3435,12 +3443,12 @@ asset_input_cb (RutInputRegion *region,
                       material = rut_material_new (data->ctx, asset);
                     else
                       material = rut_material_new (data->ctx, NULL);
-                    diamond = rut_diamond_new (data->ctx,
-                                               400,
-                                               cogl_texture_get_width (texture),
-                                               cogl_texture_get_height (texture));
+                    shape = rut_shape_new (data->ctx,
+                                           768,
+                                           cogl_texture_get_width (texture),
+                                           cogl_texture_get_height (texture));
                     rut_entity_add_component (entity, material);
-                    rut_entity_add_component (entity, diamond);
+                    rut_entity_add_component (entity, shape);
 
                     data->selected_entity = entity;
                     rut_graphable_add_child (data->scene, entity);

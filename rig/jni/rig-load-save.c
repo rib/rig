@@ -110,6 +110,12 @@ save_component_cb (RutComponent *component,
       state->indent -= INDENT_LEVEL;
       fprintf (state->file, "%*s</material>\n", state->indent, "");
     }
+  else if (type == &rut_shape_type)
+    {
+      fprintf (state->file, "%*s<shape size=\"%f\"/>\n",
+               state->indent, "",
+               rut_shape_get_size (RUT_SHAPE (component)));
+    }
   else if (type == &rut_diamond_type)
     {
       fprintf (state->file, "%*s<diamond size=\"%f\"/>\n",
@@ -637,6 +643,7 @@ enum {
   LOADER_STATE_LOADING_ENTITY,
   LOADER_STATE_LOADING_MATERIAL_COMPONENT,
   LOADER_STATE_LOADING_MODEL_COMPONENT,
+  LOADER_STATE_LOADING_SHAPE_COMPONENT,
   LOADER_STATE_LOADING_DIAMOND_COMPONENT,
   LOADER_STATE_LOADING_LIGHT_COMPONENT,
   LOADER_STATE_LOADING_CAMERA_COMPONENT,
@@ -667,7 +674,7 @@ typedef struct _Loader
   float material_shininess;
   CoglBool shininess_set;
 
-  float diamond_size;
+  float shape_size;
   RutEntity *current_entity;
 
   RigTransition *current_transition;
@@ -1312,6 +1319,25 @@ parse_start_element (GMarkupParseContext *context,
       //loader_push_state (loader, LOADER_STATE_LOADING_LIGHT_COMPONENT);
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
+           strcmp (element_name, "shape") == 0)
+    {
+      const char *size_str;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "size",
+                                        &size_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        return;
+
+      loader->shape_size = g_ascii_strtod (size_str, NULL);
+
+      loader_push_state (loader, LOADER_STATE_LOADING_SHAPE_COMPONENT);
+    }
+  else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "diamond") == 0)
     {
       const char *size_str;
@@ -1326,7 +1352,7 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      loader->diamond_size = g_ascii_strtod (size_str, NULL);
+      loader->shape_size = g_ascii_strtod (size_str, NULL);
 
       loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
     }
@@ -1583,6 +1609,42 @@ parse_end_element (GMarkupParseContext *context,
 
       loader_pop_state (loader);
     }
+  else if (state == LOADER_STATE_LOADING_SHAPE_COMPONENT &&
+           strcmp (element_name, "shape") == 0)
+    {
+      RutMaterial *material =
+        rut_entity_get_component (loader->current_entity,
+                                  RUT_COMPONENT_TYPE_MATERIAL);
+      RutAsset *asset = NULL;
+      CoglTexture *texture = NULL;
+      RutShape *shape;
+
+      /* We need to know the size of the texture before we can create
+       * a shape component */
+      if (material)
+        asset = rut_material_get_texture_asset (material);
+
+      if (asset)
+        texture = rut_asset_get_texture (asset);
+
+      if (!texture)
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       "Can't add shape component without a texture");
+          return;
+        }
+
+      shape = rut_shape_new (loader->data->ctx,
+                             loader->shape_size,
+                             cogl_texture_get_width (texture),
+                             cogl_texture_get_height (texture));
+      rut_entity_add_component (loader->current_entity,
+                                shape);
+
+      loader_pop_state (loader);
+    }
   else if (state == LOADER_STATE_LOADING_DIAMOND_COMPONENT &&
            strcmp (element_name, "diamond") == 0)
     {
@@ -1611,7 +1673,7 @@ parse_end_element (GMarkupParseContext *context,
         }
 
       diamond = rut_diamond_new (loader->data->ctx,
-                                 loader->diamond_size,
+                                 loader->shape_size,
                                  cogl_texture_get_width (texture),
                                  cogl_texture_get_height (texture));
       rut_entity_add_component (loader->current_entity,
