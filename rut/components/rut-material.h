@@ -27,6 +27,14 @@ typedef struct _RutMaterial RutMaterial;
 #define RUT_MATERIAL(p) ((RutMaterial *)(p))
 extern RutType rut_material_type;
 
+enum {
+  RUT_MATERIAL_PROP_AMBIENT,
+  RUT_MATERIAL_PROP_DIFFUSE,
+  RUT_MATERIAL_PROP_SPECULAR,
+  RUT_MATERIAL_PROP_SHININESS,
+  RUT_MATERIAL_N_PROPS
+};
+
 struct _RutMaterial
 {
   RutObjectProps _parent;
@@ -41,6 +49,9 @@ struct _RutMaterial
 
   int uniforms_age;
   int uniforms_flush_age;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_MATERIAL_N_PROPS];
 };
 
 void
