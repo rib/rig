@@ -25,6 +25,17 @@ typedef struct
   void *user_data;
 } RutShellGrab;
 
+typedef struct
+{
+  RutList list_node;
+
+  int depth;
+  RutObject *graphable;
+
+  RutPrePaintCallback callback;
+  void *user_data;
+} RutShellPrePaintEntry;
+
 struct _RutShell
 {
   RutObjectProps _parent;
@@ -62,6 +73,16 @@ struct _RutShell
   GDestroyNotify keyboard_ungrab_cb;
 
   CoglBool redraw_queued;
+
+  /* Queue of callbacks to be invoked before painting. If
+   * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
+   * sorted order. Otherwise it is kept in no particular order and it
+   * will be sorted once prepaint flushing starts. That way it doesn't
+   * need to keep track of hierarchy changes that occur after the
+   * pre-paint was queued. This assumes that the depths won't change
+   * will the queue is being flushed */
+  RutList pre_paint_callbacks;
+  CoglBool flushing_pre_paints;
 };
 
 /* PRIVATE */
@@ -1394,6 +1415,9 @@ rut_shell_new (RutShellInitCallback init,
   shell->paint_cb = paint;
   shell->user_data = user_data;
 
+  rut_list_init (&shell->pre_paint_callbacks);
+  shell->flushing_pre_paints = FALSE;
+
   return shell;
 }
 
@@ -1480,6 +1504,88 @@ rut_shell_ungrab_key_focus (RutShell *shell)
     }
 }
 
+static void
+update_pre_paint_entry_depth (RutShellPrePaintEntry *entry)
+{
+  RutObject *parent;
+
+  entry->depth = 0;
+
+  for (parent = rut_graphable_get_parent (entry->graphable);
+       parent;
+       parent = rut_graphable_get_parent (parent))
+    entry->depth++;
+}
+
+static int
+compare_entry_depth_cb (const void *a,
+                        const void *b)
+{
+  RutShellPrePaintEntry *entry_a = *(RutShellPrePaintEntry **) a;
+  RutShellPrePaintEntry *entry_b = *(RutShellPrePaintEntry **) b;
+
+  return entry_a->depth - entry_b->depth;
+}
+
+static void
+sort_pre_paint_callbacks (RutShell *shell)
+{
+  RutShellPrePaintEntry **entry_ptrs;
+  RutShellPrePaintEntry *entry;
+  int i = 0, n_entries = 0;
+
+  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+    {
+      update_pre_paint_entry_depth (entry);
+      n_entries++;
+    }
+
+  entry_ptrs = g_alloca (sizeof (RutShellPrePaintEntry *) * n_entries);
+
+  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+    entry_ptrs[i++] = entry;
+
+  qsort (entry_ptrs,
+         n_entries,
+         sizeof (RutShellPrePaintEntry *),
+         compare_entry_depth_cb);
+
+  /* Reconstruct the list from the sorted array */
+  rut_list_init (&shell->pre_paint_callbacks);
+  for (i = 0; i < n_entries; i++)
+    rut_list_insert (shell->pre_paint_callbacks.prev,
+                     &entry_ptrs[i]->list_node);
+}
+
+static void
+flush_pre_paint_callbacks (RutShell *shell)
+{
+  /* This doesn't support recursive flushing */
+  g_return_if_fail (!shell->flushing_pre_paints);
+
+  sort_pre_paint_callbacks (shell);
+
+  /* Mark that we're in the middle of flushing so that subsequent adds
+   * will keep the list sorted by depth */
+  shell->flushing_pre_paints = TRUE;
+
+  while (!rut_list_empty (&shell->pre_paint_callbacks))
+    {
+      RutShellPrePaintEntry *entry =
+        rut_container_of (shell->pre_paint_callbacks.next,
+                          entry,
+                          list_node);
+
+      rut_list_remove (&entry->list_node);
+
+      entry->callback (entry->graphable, entry->user_data);
+
+      g_slice_free (RutShellPrePaintEntry, entry);
+    }
+
+  shell->flushing_pre_paints = FALSE;
+}
+
 static CoglBool
 _rut_shell_paint (RutShell *shell)
 {
@@ -1488,6 +1594,8 @@ _rut_shell_paint (RutShell *shell)
 
   for (l = shell->rut_ctx->timelines; l; l = l->next)
     _rut_timeline_update (l->data);
+
+  flush_pre_paint_callbacks (shell);
 
   if (shell->paint_cb (shell, shell->user_data))
     return TRUE;
@@ -2066,3 +2174,70 @@ rut_slider_set_progress (RutSlider *slider,
   g_print ("progress = %f\n", slider->progress);
 }
 
+void
+rut_shell_add_pre_paint_callback (RutShell *shell,
+                                  RutObject *graphable,
+                                  RutPrePaintCallback callback,
+                                  void *user_data)
+{
+  RutShellPrePaintEntry *entry;
+  RutList *insert_point;
+
+  /* Don't do anything if the graphable is already queued */
+  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+    {
+      if (entry->graphable == graphable)
+        {
+          g_warn_if_fail (entry->callback == callback);
+          g_warn_if_fail (entry->user_data == user_data);
+          return;
+        }
+    }
+
+  entry = g_slice_new (RutShellPrePaintEntry);
+  entry->graphable = graphable;
+  entry->callback = callback;
+  entry->user_data = user_data;
+
+  insert_point = &shell->pre_paint_callbacks;
+
+  /* If we are in the middle of flushing the queue then we'll keep the
+   * list in order sorted by depth. Otherwise we'll delay sorting it
+   * until the flushing starts so that the hierarchy is free to
+   * change in the meantime. */
+
+  if (shell->flushing_pre_paints)
+    {
+      RutShellPrePaintEntry *next_entry;
+
+      update_pre_paint_entry_depth (entry);
+
+      rut_list_for_each (next_entry, &shell->pre_paint_callbacks, list_node)
+        {
+          if (next_entry->depth >= entry->depth)
+            {
+              insert_point = &next_entry->list_node;
+              break;
+            }
+        }
+    }
+
+  rut_list_insert (insert_point->prev, &entry->list_node);
+}
+
+void
+rut_shell_remove_pre_paint_callback (RutShell *shell,
+                                     RutObject *graphable)
+{
+  RutShellPrePaintEntry *entry;
+
+  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+    {
+      if (entry->graphable == graphable)
+        {
+          rut_list_remove (&entry->list_node);
+          g_slice_free (RutShellPrePaintEntry, entry);
+          break;
+        }
+    }
+}

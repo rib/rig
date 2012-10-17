@@ -335,4 +335,52 @@ rut_shell_add_input_callback (RutShell *shell,
                               void *user_data,
                               RutClosureDestroyCallback destroy_cb);
 
+typedef void
+(* RutPrePaintCallback) (RutObject *graphable,
+                         void *user_data);
+
+/**
+ * rut_shell_add_pre_paint_callback:
+ * @shell: The #RutShell
+ * @graphable: An object implementing the graphable interface
+ * @callback: The callback to invoke
+ * @user_data: A user data pointer to pass to the callback
+ *
+ * Adds a callback that will be invoked just before the next frame of
+ * the shell is painted. The callback is associated with a graphable
+ * object which is used to ensure the callbacks are invoked in
+ * increasing order of depth in the hierarchy that the graphable
+ * object belongs to. If this function is called a second time for the
+ * same graphable object then no extra callback will be added. For
+ * that reason, this function should always be called with the same
+ * callback and user_data pointers for a particular graphable object.
+ *
+ * It is safe to call this function in the middle of a pre paint
+ * callback. The shell will keep calling callbacks until all of the
+ * pending callbacks are complete and no new callbacks were queued.
+ *
+ * Typically this callback will be registered when an object needs to
+ * layout its children before painting. In that case it is expecting
+ * that setting the size on the objects children may cause them to
+ * also register a pre-paint callback.
+ */
+void
+rut_shell_add_pre_paint_callback (RutShell *shell,
+                                  RutObject *graphable,
+                                  RutPrePaintCallback callback,
+                                  void *user_data);
+
+/**
+ * rut_shell_remove_pre_paint_callback:
+ * @shell: The #RutShell
+ * @graphable: A graphable object
+ *
+ * Removes a pre-paint callback that was previously registered with
+ * rut_shell_add_pre_paint_callback(). It is not an error to call this
+ * function if no callback has actually been registered.
+ */
+void
+rut_shell_remove_pre_paint_callback (RutShell *shell,
+                                     RutObject *graphable);
+
 #endif /* _RUT_SHELL_H_ */
