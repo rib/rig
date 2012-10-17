@@ -44,7 +44,7 @@
 #include "rut-scroll-bar.h"
 
 /*
- * Overall issues to keep in mind for a useful and efficient UI scenegraph:
+ * Overall issues to keep in mind for the UI scenegraph support in Rut:
  * (in no particular order)
  *
  * How does it handle batching geometry?
@@ -66,17 +66,17 @@
  *  - Is the graph acyclic, or does it allow recursion?
  *
  * Note: Rut doesn't actually tackle any of these particularly well currently
- * and may never since it's currently just wanted as a minimal toolkit in Cogl
- * for debugging purposes and examples. Never the less they are things to keep
- * in mind when shaping the code on the off-chance that something interesting
- * comes out of it.
+ * and may never since it's currently just wanted as a minimal toolkit to
+ * implement the UI of Rig and isn't intended to run on a real device. Never the
+ * less they are things to keep in mind when shaping the code on the off-chance
+ * that something interesting comes out of it.
  *
  * One quite nice thing about this code is the simple approach to interface
  * oriented programming:
  *
- * - Interfaces are a vtable struct typedef of function pointers that must be
- *   implemented and a struct typedef of per-instance properties that must be
- *   available. (Both are optional)
+ * - Interfaces are defined by the combination of a struct typedef of function
+ *   pointers (vtable) and a struct typedef of per-instance properties that are
+ *   both optional.
  *
  * - Types are variables that have a bitmask of supported interfaces and an
  *   array indexable up to the highest offset bit in the bitmask. Each entry
@@ -90,113 +90,13 @@
  *   the interface vtable or accessing interface properties can be done in O(1)
  *   time.
  *
- * Interfaces defined currently for Rut are:
+ * Some of the interfaces defined currently for Rut are:
  * "RefCountable"
  *  - implies an int ref_count property and ref, unref, free methods
  * "Graphable"
  *  - implies parent and children properties but no methods
- * "PaintBatchable"
- *  - no properties implied but adds set_insert_point and update methods.
- *
- * The Rut rendering model was designed so objects retain drawing primitives
- * and drawing state instead of using immediate mode drawing.
- *
- * The objects in the scenegraph have a very tight integration with the linear
- * "display list" structure used to actually paint. A display list is just
- * a linked list of rendering commands including transformation and primitive
- * drawing commands. Each object that wants to render is expected to maintain
- * a linked list of drawing commands.
- *
- * Objects in the scenegraph wanting to render implement the "PaintBatchable"
- * interface which has two methods "set_insert_point" and "update_batch".  The
- * set_insert_point method gives the object a display list link node which
- * tells it where it can insert its own linked list of commands. The
- * "update_batch" method (not used currently) will be used if an object queues
- * an update and it allows the object to change the commands it has linked into
- * the display list.
- *
- * This design will mean that individual objects may be update completely in
- * isolation without any graph traversal.
- *
- * The main disadvantage is that with no indirection at all then it would be
- * difficult to add a thread boundary for rendering without copying the display
- * list. Later instead of literally manipulating a GList though we could use
- * a rut_display_list api which would allow us to internally queue list
- * manipulations instead of allowing direct access.
- *
- * Transforms around children in the scenegraph will have corresponding "push"
- * "pop" commands in the display list and the "pop" commands will contain a
- * back link to the "push". This means that when dealing with the display list
- * data structure we can walk backwards from any primitive to recover all the
- * transformations apply to the primitive jumping over redundant commands.
- *
- * Another problem with this design compared to having a simple
- * imperative paint method like clutter is that it may be more awkward
- * to support nodes belonging to multiple camera graphs which would
- * each need separate display lists. The interface would need some
- * further work to allow nodes to be associated with multiple cameras.
- *
- * Something else to consider is the very tight coupling between nodes
- * in the graph and the code that paints what they represent.
- * Something I'm keen on experimenting with is having a globally aware
- * scene compositor that owns the whole screen, but can derive the
- * structure of a UI from a scene graph, and input regions may be
- * associated with the graph too.
- *
- */
-
-/* Requirements for batching:
- * - Want to be able to insert commands around children. E.g. for a transform
- *   we want to insert a "push" command, then a transform, then a child's
- *   commands and then a "pop" command. Also we want a parent to be able to
- *   draw things before and after drawing children.
- * - Want to be able to "re-batch" individual objects in isolation so the
- *   cost of batching a new frame scales according to how many changes
- *   there are not by the total scene complexity.
- * - Want to be able to hide an object by removing from a display list
- *   ("un-batching")
- * - We need to think about how transform information is exposed so that it's
- *   possible to efficiently determine the transformation of any batched
- *   primitive. In Clutter we have an "apply_transform" method because
- *   transforms are dealt with in the paint method which is a black box but
- *   the apply_transform approach isn't very extensible (e.g. it can't handle
- *   projection matrix changes.)
- *
- * Can we use a clutter-style imperative paint method?
- *  - The advantage is that it's a natural way for an implementation to
- *    pass control to children and directly pass the display list insert
- *    point too:
- *
- *    void
- *    rut_batchable_insert_batch (RutObject *object,
- *                                RutBatchContext *paint_ctx,
- *                                GList *insert_point);
- *
- *    Having a wrapper function as above like clutter also allows us to
- *    play tricks and not necessarily *actually* paint the child; we
- *    might just change the child's insert point if we know the child
- *    itself hasn't change.
- *
- * Why do we have the apply transform in clutter?
- * - To determine the matrix used for input transformation because the transforms
- *   are dealt with as part of the imperative paint functions which are a black
- *   box.
- * Do we need that here?
- * - If the transforms were handled as nodes in the scenegraph then no we can
- *   just walk up the ancestors of the scenegraph.
- *   - The disadvantage is that some of these transforms are essentially just
- *     implementation details for a particular drawable and there is a question
- *     of who owns the scenegraph so it might not make sense to let objects
- *     expose private transforms in the scenegraph.
- *   - recovering the transforms from the display list would be possible but
- *   that could be quite inefficient if we don't find a way to avoid walking
- *   over redundant branches in the scenegraph since it would be very
- *   expensive for objects inserted near the end of the display list.
- *   - Could we have some sideband linking in the display list to be able to
- *   only walk through commands relating to ancestors?
- *      - If transform pops had a back link to transform pushes then it would
- *        be possible to efficiently skip over commands relating to redundant
- *        branches of the display list.
+ * "Paintable"
+ *  - no properties implied, just a paint() method to draw with Cogl
  *
  */
 
@@ -1188,125 +1088,6 @@ rut_rectangle_get_size (RutRectangle *rectangle,
   *height = rectangle->height;
 }
 
-#if 0
-static void
-_rut_text_free (void *object)
-{
-  RutText *text = object;
-
-  g_object_unref (text->text);
-
-  rut_graphable_destroy (text);
-
-  g_slice_free (RutText, object);
-}
-
-RutRefCountableVTable _rut_text_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_text_free
-};
-
-static RutGraphableVTable _rut_text_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
-static void
-_rut_text_paint (RutObject *object,
-                 RutPaintContext *paint_ctx)
-{
-  RutText *text = RUT_TEXT (object);
-  RutCamera *camera = paint_ctx->camera;
-
-  cogl_pango_show_layout (camera->fb,
-                          text->text,
-                          0, 0,
-                          &text->text_color);
-}
-
-static RutPaintableVTable _rut_text_paintable_vtable = {
-  _rut_text_paint
-};
-
-RutSimpleWidgetVTable _rut_text_simple_widget_vtable = {
- 0
-};
-
-RutType rut_text_type;
-
-static void
-_rut_text_init_type (void)
-{
-  rut_type_init (&rut_text_type);
-  rut_type_add_interface (&rut_text_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutText, ref_count),
-                          &_rut_text_ref_countable_vtable);
-  rut_type_add_interface (&rut_text_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutText, graphable),
-                          &_rut_text_graphable_vtable);
-  rut_type_add_interface (&rut_text_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutText, paintable),
-                          &_rut_text_paintable_vtable);
-}
-
-static RutInputEventStatus
-_rut_text_input_cb (RutInputRegion *region,
-                      RutInputEvent *event,
-                      void *user_data)
-{
-  //RutText *text = user_data;
-
-  g_print ("Text input\n");
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
-RutText *
-rut_text_new (RutContext *ctx,
-              const char *text_str)
-{
-  RutText *text = g_slice_new0 (RutText);
-  PangoRectangle text_size;
-
-  rut_object_init (RUT_OBJECT (text), &rut_text_type);
-
-  text->ref_count = 1;
-
-  rut_graphable_init (RUT_OBJECT (text));
-  rut_paintable_init (RUT_OBJECT (text));
-
-  text->ctx = ctx;
-
-  text->text = pango_layout_new (ctx->pango_context);
-  pango_layout_set_font_description (text->text, ctx->pango_font_desc);
-  pango_layout_set_text (text->text, text_str, -1);
-
-  pango_layout_get_extents (text->text, NULL, &text_size);
-  text->text_width = PANGO_PIXELS (text_size.width);
-  text->text_height = PANGO_PIXELS (text_size.height);
-
-  text->width = text->text_width + 10;
-  text->height = text->text_height + 23;
-
-  cogl_color_init_from_4f (&text->text_color, 0, 0, 0, 1);
-
-  text->input_region =
-    rut_input_region_new_rectangle (0, 0, text->width, text->height,
-                                    _rut_text_input_cb,
-                                    text);
-
-  //rut_input_region_set_graphable (text->input_region, text);
-  rut_graphable_add_child (text, text->input_region);
-
-  return text;
-}
-#endif
-
 static void
 _rut_button_free (void *object)
 {
@@ -1631,61 +1412,6 @@ rut_button_add_on_click_callback (RutButton *button,
                                user_data,
                                destroy_cb);
 }
-
-
-/*
- * TODO:
- *
- * Should we add a _queue_batch_update() mechanism or should scene
- * changing events just immediately modify the display lists?
- * - An advantage of deferring is that it can avoid potentially
- *   redundant work.
- * - A difficulty with this currently is that there isn't a way
- *   access the camera associated with a node in the graph.
- *
- * Should we add a "Widgetable" interface that implies:
- * - RefCountable
- * - Graphable
- * - PaintBatchable
- *
- * There are probably lots of utility apis we could add too for
- * widgets.
- *
- * Can we figure out a neat way of handling Cloning?
- * Can we figure out a neat way of handling per-camera state for
- * widgets?
- */
-/*
-
-When we paint we should paint an ordered list of cameras
-
-Questions:
-- Where should logic for picking and tracking if we have a valid pick buffer live?
--
-
-Think about this idea of the "div" graph that feeds into a separate spacial graph which feeds into a render graph
-
------
-
-If I wanted a visual tool where I could have prototyped the hairy cube code how might that work:
-
-- Some ui to setup a viewing frustum
-- Some ui to add geometry to the scene - a few toy models such as spheres, pyramids cubes would have been fine here
-- Some ui to render the noise textures
-  - ui to create a texture
-  - ui to create a camera around texture
-  - DESC
-  - ui to describe what to render to the camera
-  - ui to add a random number generator
-  -
-- Some ui to describe N different pipelines - one for each shell
-- Some ui to describe what to draw for a frame
-  - An ordered list of drawing commands:
-    - draw geometry X with pipeline Y
-    - draw geometry A with pipeline B
-    - ...
-
-*/
 
 void
 _rut_init (void)
