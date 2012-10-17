@@ -130,6 +130,8 @@ _rut_camera_free (void *object)
     rut_refable_unref (l->data);
   g_list_free (camera->input_regions);
 
+  rut_simple_introspectable_destroy (camera);
+
   g_slice_free (RutCamera, object);
 }
 
