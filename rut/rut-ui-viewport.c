@@ -169,7 +169,8 @@ static RutSizableVTable _rut_ui_viewport_sizable_vtable = {
   rut_ui_viewport_set_size,
   rut_ui_viewport_get_size,
   NULL,
-  NULL
+  NULL,
+  NULL /* add_preferred_size_callback */
 };
 
 static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {

@@ -999,7 +999,8 @@ static RutSizableVTable _rut_rectangle_sizable_vtable = {
   rut_rectangle_set_size,
   rut_rectangle_get_size,
   NULL,
-  NULL
+  NULL,
+  NULL /* add_preferred_size_callback */
 };
 
 RutType rut_rectangle_type;

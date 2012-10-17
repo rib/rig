@@ -208,6 +208,10 @@ typedef struct RutTransformableVTable
 const CoglMatrix *
 rut_transformable_get_matrix (RutObject *object);
 
+typedef void
+(* RutSizablePreferredSizeCallback) (RutObject *sizable,
+                                     void *user_data);
+
 typedef struct _RutSizableVTable
 {
   void (* set_size) (void *object,
@@ -224,6 +228,16 @@ typedef struct _RutSizableVTable
                                  float for_width,
                                  float *min_height_p,
                                  float *natural_height_p);
+  /* Registers a callback that gets invoked whenever the preferred
+   * size of the sizable object changes. The implementation is
+   * optional. If it is not implemented then a dummy closure object
+   * will be returned and it is assumed that the object's preferred
+   * size never changes */
+  RutClosure *
+  (* add_preferred_size_callback) (void *object,
+                                   RutSizablePreferredSizeCallback callback,
+                                   void *user_data,
+                                   RutClosureDestroyCallback destroy_cb);
 } RutSizableVTable;
 
 void
@@ -246,6 +260,25 @@ rut_sizable_get_preferred_height (void *object,
                                   float for_width,
                                   float *min_height_p,
                                   float *natural_height_p);
+
+/**
+ * rut_sizable_add_preferred_size_callback:
+ * @object: An object implementing the sizable interface
+ * @cb: The callback to invoke
+ * @user_data: A data pointer that will be passed to the callback
+ * @destroy_cb: A callback that will be invoked when the callback is removed.
+ *
+ * Adds a callback to be invoked whenever the preferred size of the
+ * given sizable object changes.
+ *
+ * Return value: A #RutClosure representing the callback. This can be
+ *   removed with rut_closure_disconnect().
+ */
+RutClosure *
+rut_sizable_add_preferred_size_callback (RutObject *object,
+                                         RutSizablePreferredSizeCallback cb,
+                                         void *user_data,
+                                         RutClosureDestroyCallback destroy_cb);
 
 /*
  *

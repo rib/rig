@@ -200,7 +200,8 @@ static RutSizableVTable _rut_stack_sizable_vtable = {
   rut_stack_set_size,
   rut_stack_get_size,
   rut_stack_get_preferred_width,
-  rut_stack_get_preferred_height
+  rut_stack_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static RutIntrospectableVTable _rut_stack_introspectable_vtable = {

@@ -295,7 +295,8 @@ static RutSizableVTable _rut_prop_inspector_sizable_vtable = {
   rut_prop_inspector_set_size,
   rut_prop_inspector_get_size,
   rut_prop_inspector_get_preferred_width,
-  rut_prop_inspector_get_preferred_height
+  rut_prop_inspector_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void

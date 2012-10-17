@@ -188,7 +188,8 @@ static RutSizableVTable _rut_bevel_sizable_vtable = {
   rut_bevel_set_size,
   rut_bevel_get_size,
   NULL,
-  NULL
+  NULL,
+  NULL /* add_preferred_size_callback */
 };
 
 static RutIntrospectableVTable _rut_bevel_introspectable_vtable = {

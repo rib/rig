@@ -457,12 +457,12 @@ rut_split_view_set_height (RutSplitView *split_view,
   rut_split_view_set_size (split_view, split_view->width, height);
 }
 
-
 static RutSizableVTable _rut_split_view_sizable_vtable = {
   rut_split_view_set_size,
   rut_split_view_get_size,
   rut_split_view_get_preferred_width,
-  rut_split_view_get_preferred_height
+  rut_split_view_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static RutIntrospectableVTable _rut_split_view_introspectable_vtable = {

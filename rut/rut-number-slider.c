@@ -866,7 +866,8 @@ static RutSizableVTable _rut_number_slider_sizable_vtable = {
   rut_number_slider_set_size,
   rut_number_slider_get_size,
   rut_number_slider_get_preferred_width,
-  rut_number_slider_get_preferred_height
+  rut_number_slider_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void

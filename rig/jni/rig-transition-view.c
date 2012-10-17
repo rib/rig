@@ -696,7 +696,8 @@ static RutSizableVTable _rig_transition_view_sizable_vtable = {
   rig_transition_view_set_size,
   rig_transition_view_get_size,
   rig_transition_view_get_preferred_width,
-  rig_transition_view_get_preferred_height
+  rig_transition_view_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void

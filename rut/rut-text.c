@@ -3139,7 +3139,8 @@ static RutSizableVTable _rut_text_sizable_vtable = {
   _rut_text_set_size,
   _rut_text_get_size,
   _rut_text_get_preferred_width,
-  _rut_text_get_preferred_height
+  _rut_text_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 RutType rut_text_type;

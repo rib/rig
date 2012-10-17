@@ -300,7 +300,8 @@ static RutSizableVTable _rut_inspector_sizable_vtable = {
   rut_inspector_set_size,
   rut_inspector_get_size,
   rut_inspector_get_preferred_width,
-  rut_inspector_get_preferred_height
+  rut_inspector_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void

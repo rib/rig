@@ -249,7 +249,8 @@ static RutSizableVTable _rut_entry_sizable_vtable = {
   rut_entry_set_size,
   rut_entry_get_size,
   _rut_entry_get_preferred_width,
-  _rut_entry_get_preferred_height
+  _rut_entry_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static RutIntrospectableVTable _rut_entry_introspectable_vtable = {

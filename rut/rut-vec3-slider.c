@@ -319,7 +319,8 @@ static RutSizableVTable _rut_vec3_slider_sizable_vtable = {
   rut_vec3_slider_set_size,
   rut_vec3_slider_get_size,
   rut_vec3_slider_get_preferred_width,
-  rut_vec3_slider_get_preferred_height
+  rut_vec3_slider_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void

@@ -573,6 +573,42 @@ rut_sizable_get_preferred_height (void *object,
                                  natural_height_p);
 }
 
+RutClosure *
+rut_sizable_add_preferred_size_callback (RutObject *object,
+                                         RutSizablePreferredSizeCallback cb,
+                                         void *user_data,
+                                         RutClosureDestroyCallback destroy_cb)
+{
+  RutSizableVTable *sizable =
+    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+
+  /* If the object has no implementation for the needs layout callback
+   * then we'll assume its preferred size never changes. We'll return
+   * a dummy closure object that will never be invoked so that the
+   * rest of the code doesn't need to handle this specially */
+  if (sizable->add_preferred_size_callback == NULL)
+    {
+      RutList dummy_list;
+      RutClosure *closure;
+
+      rut_list_init (&dummy_list);
+
+      closure = rut_closure_list_add (&dummy_list,
+                                      cb,
+                                      user_data,
+                                      destroy_cb);
+
+      rut_list_init (&closure->list_node);
+
+      return closure;
+    }
+  else
+    return sizable->add_preferred_size_callback (object,
+                                                 cb,
+                                                 user_data,
+                                                 destroy_cb);
+}
+
 CoglPrimitive *
 rut_primable_get_primitive (RutObject *object)
 {

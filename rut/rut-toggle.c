@@ -323,7 +323,8 @@ static RutSizableVTable _rut_toggle_sizable_vtable = {
   _rut_toggle_set_size,
   _rut_toggle_get_size,
   _rut_toggle_get_preferred_width,
-  _rut_toggle_get_preferred_height
+  _rut_toggle_get_preferred_height,
+  NULL /* add_preferred_size_callback (the preferred size never changes) */
 };
 
 RutType rut_toggle_type;

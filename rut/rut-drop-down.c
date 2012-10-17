@@ -897,7 +897,8 @@ static RutSizableVTable _rut_drop_down_sizable_vtable = {
   rut_drop_down_set_size,
   rut_drop_down_get_size,
   rut_drop_down_get_preferred_width,
-  rut_drop_down_get_preferred_height
+  rut_drop_down_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 static void
