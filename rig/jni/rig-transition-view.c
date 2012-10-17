@@ -105,6 +105,8 @@ struct _RigTransitionView
   RutTimeline *timeline;
   RigUndoJournal *undo_journal;
 
+  RutList preferred_size_cb_list;
+
   RutInputRegion *input_region;
   CoglBool have_grab;
 
@@ -116,6 +118,7 @@ struct _RigTransitionView
 
   int controls_width;
   int total_width;
+  int total_height;
   int row_height;
 
   RutList objects;
@@ -148,8 +151,8 @@ typedef CoglVertexP2C4 RigTransitionViewDotVertex;
 RutType rig_transition_view_type;
 
 static void
-rig_transition_view_property_removed_no_allocation (RigTransitionView *view,
-                                                    RutProperty *property);
+rig_transition_view_property_removed (RigTransitionView *view,
+                                      RutProperty *property);
 
 static RutInputEventStatus
 rig_transition_view_grab_input_cb (RutInputEvent *event,
@@ -191,6 +194,8 @@ _rig_transition_view_free (void *object)
 {
   RigTransitionView *view = object;
 
+  rut_closure_list_disconnect_all (&view->preferred_size_cb_list);
+
   rig_transition_view_ungrab_input (view);
 
   rig_transition_view_clear_selected_nodes (view);
@@ -214,13 +219,10 @@ _rig_transition_view_free (void *object)
 
           was_last = prop_data->list_node.next == &object->properties;
 
-          rig_transition_view_property_removed_no_allocation (view,
-                                                              property);
+          rig_transition_view_property_removed (view, property);
         }
       while (!was_last);
     }
-
-  rut_refable_unref (view->context);
 
   if (view->dots_buffer)
     cogl_object_unref (view->dots_buffer);
@@ -232,9 +234,13 @@ _rig_transition_view_free (void *object)
   rut_graphable_remove_child (view->input_region);
   rut_refable_unref (view->input_region);
 
-  rut_graphable_destroy (view);
-
   rut_refable_unref (view->timeline);
+
+  rut_shell_remove_pre_paint_callback (view->context->shell, view);
+
+  rut_refable_unref (view->context);
+
+  rut_graphable_destroy (view);
 
   g_slice_free (RigTransitionView, view);
 }
@@ -490,8 +496,10 @@ RutPaintableVTable _rig_transition_view_paintable_vtable = {
 };
 
 static void
-rig_transition_view_allocate (RigTransitionView *view)
+rig_transition_view_allocate_cb (RutObject *graphable,
+                                 void *user_data)
 {
+  RigTransitionView *view = RIG_TRANSITION_VIEW (graphable);
   float column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
   float row_height = 0.0f;
   RigTransitionViewObject *object;
@@ -627,55 +635,198 @@ rig_transition_view_allocate (RigTransitionView *view)
 }
 
 static void
+rig_transition_view_queue_allocation (RigTransitionView *view)
+{
+  rut_shell_add_pre_paint_callback (view->context->shell,
+                                    view,
+                                    rig_transition_view_allocate_cb,
+                                    NULL /* user_data */);
+}
+
+static void
+rig_transition_view_preferred_size_changed (RigTransitionView *view)
+{
+  rut_closure_list_invoke (&view->preferred_size_cb_list,
+                           RutSizablePreferredSizeCallback,
+                           view);
+}
+
+
+static void
 rig_transition_view_set_size (void *object,
                               float total_width,
                               float total_height)
 {
   RigTransitionView *view = object;
 
-  /* FIXME: RigTransitionView isn't really sizable currently. The methods are
-   * just here as stubs because ideally it would be sizable and its
-   * preferred size would change when an object is added or removed.
-   * This is only really useful once Rut has some way to do an
-   * allocation cycle */
+  /* FIXME: RigTransitionView currently ignores its height and just
+   * paints as tall as it wants */
 
   view->total_width = total_width;
+  view->total_height = total_height;
 
-  rig_transition_view_allocate (view);
+  rig_transition_view_queue_allocation (view);
 }
 
 static void
-rig_transition_view_get_preferred_width (void *object,
+handle_control_width (RigTransitionViewControl *control,
+                      float indentation,
+                      float *min_width_p,
+                      float *natural_width_p)
+{
+  float min_width, natural_width;
+
+  rut_sizable_get_preferred_width (control->control,
+                                   -1, /* for_height */
+                                   &min_width,
+                                   &natural_width);
+
+  min_width += indentation;
+  natural_width += indentation;
+
+  if (natural_width > *natural_width_p)
+    *natural_width_p = natural_width;
+  if (min_width > *min_width_p)
+    *min_width_p = min_width;
+}
+
+static void
+rig_transition_view_get_preferred_width (void *sizable,
                                          float for_height,
                                          float *min_width_p,
                                          float *natural_width_p)
 {
-  /* FIXME: RigTransitionView isn't really sizable currently. The methods are
-   * just here as stubs because ideally it would be sizable and its
-   * preferred size would change when an object is added or removed.
-   * This is only really useful once Rut has some way to do an
-   * allocation cycle */
+  RigTransitionView *view = RIG_TRANSITION_VIEW (sizable);
+  float min_column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
+  float natural_column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
+  float total_min_width = 0.0f, total_natural_width = 0.0f;
+  RigTransitionViewObject *object;
+  int i;
+
+  memset (min_column_widths, 0, sizeof (min_column_widths));
+  memset (natural_column_widths, 0, sizeof (natural_column_widths));
+
+  /* Everything in a single column will be allocated to the same
+   * width */
+
+  rut_list_for_each (object, &view->objects, list_node)
+    {
+      RigTransitionViewProperty *prop_data;
+
+      for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
+        {
+          RigTransitionViewControl *control = object->controls + i;
+
+          handle_control_width (control,
+                                0.0f, /* indentation */
+                                min_column_widths + i,
+                                natural_column_widths + i);
+        }
+
+      rut_list_for_each (prop_data, &object->properties, list_node)
+        {
+          for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
+            {
+              RigTransitionViewControl *control = prop_data->controls + i;
+
+              handle_control_width (control,
+                                    i == 0.0f ?
+                                    RIG_TRANSITION_VIEW_PROPERTY_INDENTATION :
+                                    0.0f,
+                                    min_column_widths + i,
+                                    natural_column_widths + i);
+            }
+        }
+    }
+
+  for (i = 0; i < RIG_TRANSITION_VIEW_N_COLUMNS; i++)
+    {
+      total_min_width += min_column_widths[i];
+      total_natural_width += natural_column_widths[i];
+    }
+
   if (min_width_p)
-    *min_width_p = 10;
+    *min_width_p = nearbyintf (total_min_width);
   if (natural_width_p)
-    *natural_width_p = 10;
+    *natural_width_p = nearbyintf (total_natural_width);
 }
 
 static void
-rig_transition_view_get_preferred_height (void *object,
+handle_control_height (RigTransitionViewControl *control,
+                       float *row_height)
+{
+  float natural_height;
+
+  rut_sizable_get_preferred_height (control->control,
+                                    -1, /* for_width */
+                                    NULL, /* min_height */
+                                    &natural_height);
+
+  if (natural_height > *row_height)
+    *row_height = natural_height;
+}
+
+static void
+rig_transition_view_get_preferred_height (void *sizable,
                                           float for_width,
                                           float *min_height_p,
                                           float *natural_height_p)
 {
-  /* FIXME: RigTransitionView isn't really sizable currently. The methods are
-   * just here as stubs because ideally it would be sizable and its
-   * preferred size would change when an object is added or removed.
-   * This is only really useful once Rut has some way to do an
-   * allocation cycle */
+  RigTransitionView *view = RIG_TRANSITION_VIEW (sizable);
+  RigTransitionViewObject *object;
+  float row_height = 0.0f;
+  int n_rows = 0;
+  int i;
+
+  /* All of the rows will have the same height */
+
+  rut_list_for_each (object, &view->objects, list_node)
+    {
+      RigTransitionViewProperty *prop_data;
+
+      n_rows++;
+
+      for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
+        {
+          RigTransitionViewControl *control = object->controls + i;
+
+          handle_control_height (control,
+                                 &row_height);
+        }
+
+      rut_list_for_each (prop_data, &object->properties, list_node)
+        {
+          for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
+            {
+              RigTransitionViewControl *control = prop_data->controls + i;
+
+              handle_control_height (control,
+                                     &row_height);
+            }
+
+          n_rows++;
+        }
+    }
+
   if (min_height_p)
-    *min_height_p = 10;
+    *min_height_p = row_height * n_rows;
   if (natural_height_p)
-    *natural_height_p = 10;
+    *natural_height_p = row_height * n_rows;
+}
+
+static RutClosure *
+rig_transition_view_add_preferred_size_callback
+                               (void *object,
+                                RutSizablePreferredSizeCallback cb,
+                                void *user_data,
+                                RutClosureDestroyCallback destroy_cb)
+{
+  RigTransitionView *view = object;
+
+  return rut_closure_list_add (&view->preferred_size_cb_list,
+                               cb,
+                               user_data,
+                               destroy_cb);
 }
 
 static void
@@ -683,13 +834,10 @@ rig_transition_view_get_size (void *object,
                               float *width,
                               float *height)
 {
-  /* FIXME: RigTransitionView isn't really sizable currently. The methods are
-   * just here as stubs because ideally it would be sizable and its
-   * preferred size would change when an object is added or removed.
-   * This is only really useful once Rut has some way to do an
-   * allocation cycle */
-  *width = 10;
-  *height = 10;
+  RigTransitionView *view = object;
+
+  *width = view->total_width;
+  *height = view->total_height;
 }
 
 static RutSizableVTable _rig_transition_view_sizable_vtable = {
@@ -697,7 +845,7 @@ static RutSizableVTable _rig_transition_view_sizable_vtable = {
   rig_transition_view_get_size,
   rig_transition_view_get_preferred_width,
   rig_transition_view_get_preferred_height,
-  NULL /* add_preferred_size_callback */
+  rig_transition_view_add_preferred_size_callback
 };
 
 static void
@@ -850,10 +998,8 @@ rig_transition_view_update_label_property (RutProperty *target_property,
 
   rut_property_set_text (&view->context->property_ctx, target_property, label);
 
-  /* FIXME: this should queue an allocation cycle rather than
-   * immediately reallocating. Or even better just let setting the
-   * property queue an allocation cycle */
-  rig_transition_view_allocate (view);
+  rig_transition_view_queue_allocation (view);
+  rig_transition_view_preferred_size_changed (view);
 }
 
 static RigTransitionViewObject *
@@ -896,8 +1042,8 @@ rig_transition_view_create_object_data (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_property_added_no_allocation (RigTransitionView *view,
-                                                  RutProperty *property)
+rig_transition_view_property_added (RigTransitionView *view,
+                                    RutProperty *property)
 {
   RigTransitionViewProperty *prop_data;
   RigTransitionViewObject *object_data;
@@ -938,22 +1084,9 @@ rig_transition_view_property_added_no_allocation (RigTransitionView *view,
   prop_data->path = path;
 
   rut_list_insert (&object_data->properties, &prop_data->list_node);
-}
 
-static void
-rig_transition_view_property_added (RigTransitionView *view,
-                                    RutProperty *property)
-{
-  rig_transition_view_property_added_no_allocation (view, property);
-  rig_transition_view_allocate (view);
-}
-
-static void
-rig_transition_view_property_removed (RigTransitionView *view,
-                                      RutProperty *property)
-{
-  rig_transition_view_property_removed_no_allocation (view, property);
-  rig_transition_view_allocate (view);
+  rig_transition_view_queue_allocation (view);
+  rig_transition_view_preferred_size_changed (view);
 }
 
 static void
@@ -985,8 +1118,8 @@ rig_transition_view_find_property (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_property_removed_no_allocation (RigTransitionView *view,
-                                                    RutProperty *property)
+rig_transition_view_property_removed (RigTransitionView *view,
+                                      RutProperty *property)
 {
   RigTransitionViewProperty *prop_data =
     rig_transition_view_find_property (view, property);
@@ -1041,8 +1174,8 @@ rig_transition_view_property_removed_no_allocation (RigTransitionView *view,
 
   g_slice_free (RigTransitionViewProperty, prop_data);
 
-  /* FIXME: This needs to queue an allocation cycle because its
-   * preferred size will have changed */
+  rig_transition_view_queue_allocation (view);
+  rig_transition_view_preferred_size_changed (view);
 }
 
 static CoglPipeline *
@@ -1357,7 +1490,7 @@ rig_transition_view_add_property_cb (RutProperty *property,
   RigTransitionView *view = user_data;
 
   if (property->animated)
-    rig_transition_view_property_added_no_allocation (view, property);
+    rig_transition_view_property_added (view, property);
 }
 
 RigTransitionView *
@@ -1383,6 +1516,8 @@ rig_transition_view_new (RutContext *ctx,
   view->transition = transition;
   view->timeline = rut_refable_ref (timeline);
   view->undo_journal = undo_journal;
+
+  rut_list_init (&view->preferred_size_cb_list);
 
   view->dots_dirty = TRUE;
 
@@ -1418,7 +1553,7 @@ rig_transition_view_new (RutContext *ctx,
                                                 view,
                                                 NULL /* destroy */);
 
-  rig_transition_view_allocate (view);
+  rig_transition_view_queue_allocation (view);
 
   return view;
 }

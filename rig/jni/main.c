@@ -3153,6 +3153,7 @@ init (RutShell *shell, void *user_data)
 
       data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
       rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
+      rut_ui_viewport_set_x_expand (data->timeline_vp, TRUE);
 
       data->bottom_bar_stack = rut_stack_new (data->ctx, 0, 0,
                                               (data->bottom_bar_rect =
@@ -3323,6 +3324,8 @@ init (RutShell *shell, void *user_data)
                                  data->timeline,
                                  data->undo_journal);
       rut_graphable_add_child (doc_node, data->transition_view);
+      rut_ui_viewport_set_sync_widget (data->timeline_vp,
+                                       data->transition_view);
     }
 #endif
 
