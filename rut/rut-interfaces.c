@@ -123,8 +123,8 @@ rut_graphable_remove_child (RutObject *child)
     parent_vtable->child_removed (parent, child);
 
   g_queue_remove (&parent_props->children, child);
-  rut_refable_unref (child);
   child_props->parent = NULL;
+  rut_refable_unref (child);
 }
 
 void
