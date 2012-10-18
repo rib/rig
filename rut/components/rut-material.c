@@ -30,7 +30,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_COLOR,
     .getter = rut_material_get_ambient,
     .setter = rut_material_set_ambient,
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "diffuse",
@@ -38,7 +39,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_COLOR,
     .getter = rut_material_get_diffuse,
     .setter = rut_material_set_diffuse,
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "specular",
@@ -46,7 +48,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_COLOR,
     .getter = rut_material_get_specular,
     .setter = rut_material_set_specular,
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "shininess",
@@ -56,17 +59,19 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .setter = rut_material_set_shininess,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
-    .validation = { .float_range = { 0, 1000 }}
+    .validation = { .float_range = { 0, 1000 }},
+    .animatable = TRUE
   },
   {
     .name = "alpha-mask-threshold",
-    .nick = "Alpha Mask Threshold",
+    .nick = "Alpha Threshold",
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .getter = rut_material_get_alpha_mask_threshold,
     .setter = rut_material_set_alpha_mask_threshold,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
-    .validation = { .float_range = { 0, 1 }}
+    .validation = { .float_range = { 0, 1 }},
+    .animatable = TRUE
   },
   { 0 }
 };
