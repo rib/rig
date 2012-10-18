@@ -630,8 +630,9 @@ rig_save (RigData *data,
                                        &state);
 
       fprintf (file, "%*s</transition>\n", state.indent, "");
-      fprintf (file, "</ui>\n");
     }
+
+  fprintf (file, "</ui>\n");
 
   fclose (file);
 
