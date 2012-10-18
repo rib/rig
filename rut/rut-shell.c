@@ -1093,26 +1093,11 @@ camera_pre_pick_region_cb (RutObject *object,
         return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
     }
 
-  return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
-static RutTraverseVisitFlags
-camera_post_pick_region_cb (RutObject *object,
-                            int depth,
-                            void *user_data)
-{
-  CameraPickState *state = user_data;
-
-  if (rut_object_is (object, RUT_INTERFACE_ID_INPUTABLE))
-    {
-      if (rut_camera_pick_inputable (state->camera,
-                                     object,
-                                     state->x, state->y))
-        {
-          state->picked_object = object;
-          return RUT_TRAVERSE_VISIT_BREAK;
-        }
-    }
+  if (rut_object_is (object, RUT_INTERFACE_ID_INPUTABLE) &&
+      rut_camera_pick_inputable (state->camera,
+                                 object,
+                                 state->x, state->y))
+    state->picked_object = object;
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -1122,6 +1107,7 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
                                         RutInputEvent *event)
 {
   RutObject *picked_object = NULL;
+  RutCamera *picked_camera = NULL;
   GList *l;
 
   /* Key events by default go to the object that has key focus. If
@@ -1146,20 +1132,30 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
 
       if (scenegraph)
         {
-          RutTraverseVisitFlags flags;
           state.camera = camera;
           state.event = event;
           state.x = x;
           state.y = y;
+          state.picked_object = NULL;
 
-          flags = rut_graphable_traverse (scenegraph,
-                                          RUT_TRAVERSE_DEPTH_FIRST,
-                                          camera_pre_pick_region_cb,
-                                          camera_post_pick_region_cb,
-                                          &state);
-          if (flags & RUT_TRAVERSE_VISIT_BREAK)
-            return state.picked_object;
+          rut_graphable_traverse (scenegraph,
+                                  RUT_TRAVERSE_DEPTH_FIRST,
+                                  camera_pre_pick_region_cb,
+                                  NULL, /* post_children_cb */
+                                  &state);
+
+          if (state.picked_object)
+            {
+              picked_object = state.picked_object;
+              picked_camera = camera;
+            }
         }
+    }
+
+  if (picked_object)
+    {
+      event->camera = picked_camera;
+      event->input_transform = &picked_camera->input_transform;
     }
 
   return picked_object;
