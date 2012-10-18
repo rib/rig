@@ -65,14 +65,14 @@ save_component_cb (RutComponent *component,
       fprintf (state->file, "%*s<material", state->indent, "");
 
       ambient = rut_material_get_ambient (material);
-      fprintf (state->file, " ambient=\"#%02x%02x%02x%02x\"",
+      fprintf (state->file, " ambient=\"#%02x%02x%02x%02x\"\n",
                rut_color_get_red_byte (ambient),
                rut_color_get_green_byte (ambient),
                rut_color_get_blue_byte (ambient),
                rut_color_get_alpha_byte (ambient));
 
       diffuse = rut_material_get_diffuse (material);
-      fprintf (state->file, "%*s          diffuse=\"#%02x%02x%02x%02x\"",
+      fprintf (state->file, "%*s          diffuse=\"#%02x%02x%02x%02x\"\n",
                state->indent, "",
                rut_color_get_red_byte (diffuse),
                rut_color_get_green_byte (diffuse),
@@ -80,7 +80,7 @@ save_component_cb (RutComponent *component,
                rut_color_get_alpha_byte (diffuse));
 
       specular = rut_material_get_specular (material);
-      fprintf (state->file, "%*s          specular=\"#%02x%02x%02x%02x\"",
+      fprintf (state->file, "%*s          specular=\"#%02x%02x%02x%02x\"\n",
                state->indent, "",
                rut_color_get_red_byte (specular),
                rut_color_get_green_byte (specular),
@@ -1808,21 +1808,9 @@ rig_load (RigData *data, const char *file)
     }
 
   data->transitions = loader.transitions;
-  if (data->transitions)
-    data->selected_transition = loader.transitions->data;
-  else
-    {
-      RigTransition *transition = rig_create_transition (data, 0);
-      data->transitions = g_list_prepend (data->transitions, transition);
-      data->selected_transition = transition;
-    }
 
-  data->assets = loader.assets;
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    rig_update_asset_list (data);
-#endif
+  if (_rig_in_device_mode)
+    data->assets = loader.assets;
 
   rut_shell_queue_redraw (data->ctx->shell);
 

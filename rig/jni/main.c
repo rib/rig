@@ -3313,6 +3313,18 @@ init (RutShell *shell, void *user_data)
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    rig_update_asset_list (data);
+
+  if (data->transitions)
+    data->selected_transition = data->transitions->data;
+  else
+    {
+      RigTransition *transition = rig_create_transition (data, 0);
+      data->transitions = g_list_prepend (data->transitions, transition);
+      data->selected_transition = transition;
+    }
+
   if (!_rig_in_device_mode &&
       data->selected_transition)
     {
@@ -3634,6 +3646,8 @@ add_asset (RigData *data, GFile *asset_file)
 
   if (!asset)
     return;
+
+  data->assets = g_list_prepend (data->assets, asset);
 
   rut_asset_set_directory_tags (asset, directory_tags);
 
