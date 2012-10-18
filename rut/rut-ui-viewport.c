@@ -37,8 +37,11 @@ enum {
   RUT_UI_VIEWPORT_PROP_DOC_HEIGHT,
   RUT_UI_VIEWPORT_PROP_DOC_X,
   RUT_UI_VIEWPORT_PROP_DOC_Y,
+  RUT_UI_VIEWPORT_PROP_SYNC_WIDGET,
   RUT_UI_VIEWPORT_PROP_X_PANNABLE,
   RUT_UI_VIEWPORT_PROP_Y_PANNABLE,
+  RUT_UI_VIEWPORT_PROP_X_EXPAND,
+  RUT_UI_VIEWPORT_PROP_Y_EXPAND,
   RUT_UI_VIEWPORT_N_PROPS
 };
 
@@ -62,8 +65,13 @@ struct _RutUIViewport
   float doc_scale_x;
   float doc_scale_y;
 
+  RutObject *sync_widget;
+  RutClosure *sync_widget_preferred_size_closure;
+
   CoglBool x_pannable;
   CoglBool y_pannable;
+  CoglBool x_expand;
+  CoglBool y_expand;
 
   RutTransform *scroll_bar_x_transform;
   RutScrollBar *scroll_bar_x;
@@ -123,6 +131,12 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
     .setter = rut_ui_viewport_set_doc_y
   },
   {
+    .name = "sync-widget",
+    .type = RUT_PROPERTY_TYPE_OBJECT,
+    .data_offset = offsetof (RutUIViewport, sync_widget),
+    .setter = rut_ui_viewport_set_sync_widget
+  },
+  {
     .name = "x-pannable",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, x_pannable),
@@ -136,6 +150,18 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
     .getter = rut_ui_viewport_get_y_pannable,
     .setter = rut_ui_viewport_set_y_pannable
   },
+  {
+    .name = "x-expand",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RutUIViewport, x_expand),
+    .setter = rut_ui_viewport_set_x_expand
+  },
+  {
+    .name = "y-expand",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = offsetof (RutUIViewport, y_expand),
+    .setter = rut_ui_viewport_set_y_expand
+  },
 
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -144,6 +170,8 @@ static void
 _rut_ui_viewport_free (void *object)
 {
   RutUIViewport *ui_viewport = object;
+
+  rut_ui_viewport_set_sync_widget (ui_viewport, NULL);
 
   rut_refable_simple_unref (ui_viewport->inputable.input_region);
 
@@ -346,55 +374,44 @@ _rut_ui_viewport_input_region_cb (RutInputRegion *region,
   return _rut_ui_viewport_input_cb (event, user_data);
 }
 
-static RutTraverseVisitFlags
-update_children_size_cb (RutObject *object,
-                         int depth,
-                         void *user_data)
+static void
+pre_paint_cb (RutObject *graphable,
+              void *user_data)
 {
-  RutUIViewport *ui_viewport = user_data;
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (graphable);
 
-  if (depth == 0)
-    {
-      g_assert (object == ui_viewport->doc_transform);
-      return RUT_TRAVERSE_VISIT_CONTINUE;
-    }
-
-  g_assert (depth == 1);
-
-  if (rut_object_is (object, RUT_INTERFACE_ID_SIZABLE))
+  if (ui_viewport->sync_widget)
     {
       float width, height;
 
-      if (ui_viewport->x_pannable)
-        rut_sizable_get_preferred_width (object,
-                                         -1, /* for_height */
-                                         NULL, /* min_width */
-                                         &width);
-      else
-        width = ui_viewport->width;
+      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
+                                       -1, /* for_height */
+                                       NULL, /* min_width */
+                                       &width);
 
-      if (ui_viewport->y_pannable)
-        rut_sizable_get_preferred_height (object,
-                                          width, /* for_width */
-                                          NULL, /* min_height */
-                                          &height);
-      else
+      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
+                                        width, /* for_width */
+                                        NULL, /* min_height */
+                                        &height);
+
+      if (ui_viewport->x_expand && width < ui_viewport->width)
+        width = ui_viewport->width;
+      if (ui_viewport->y_expand && height < ui_viewport->height)
         height = ui_viewport->height;
 
-      rut_sizable_set_size (object, width, height);
+      rut_sizable_set_size (ui_viewport->sync_widget, width, height);
+      rut_ui_viewport_set_doc_width (ui_viewport, width);
+      rut_ui_viewport_set_doc_height (ui_viewport, height);
     }
-
-  return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
 }
 
 static void
-update_children_size (RutUIViewport *ui_viewport)
+queue_allocation (RutUIViewport *ui_viewport)
 {
-  rut_graphable_traverse (ui_viewport->doc_transform,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          update_children_size_cb,
-                          NULL,
-                          ui_viewport);
+  rut_shell_add_pre_paint_callback (ui_viewport->ctx->shell,
+                                    ui_viewport,
+                                    pre_paint_cb,
+                                    NULL /* user_data */);
 }
 
 static void
@@ -710,8 +727,6 @@ rut_ui_viewport_new (RutContext *ctx,
     rut_graphable_add_child (RUT_OBJECT (ui_viewport), object);
   va_end (ap);
 
-  update_children_size (ui_viewport);
-
   return ui_viewport;
 }
 
@@ -720,9 +735,10 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
                           float width,
                           float height)
 {
+  float spacing;
+
   ui_viewport->width = width;
   ui_viewport->height = height;
-  float spacing;
 
   rut_input_region_set_rectangle (ui_viewport->inputable.input_region,
                                   0, 0,
@@ -744,13 +760,8 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
   rut_scroll_bar_set_length (ui_viewport->scroll_bar_x, width - spacing);
   rut_scroll_bar_set_length (ui_viewport->scroll_bar_y, height - spacing);
 
-  /* FIXME: UI viewports should not change the size of children, since
-   * they are intended to just provide a translated view of their
-   * children. If something wants to track the width of the viewport
-   * to make sure it fits without scrolling then it can listen for
-   * width property changes.
-   */
-  update_children_size (ui_viewport);
+  if (ui_viewport->sync_widget)
+    queue_allocation (ui_viewport);
 
   rut_property_dirty (&ui_viewport->ctx->property_ctx,
                       &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_WIDTH]);
@@ -893,8 +904,6 @@ rut_ui_viewport_set_x_pannable (RutUIViewport *ui_viewport,
                                 CoglBool pannable)
 {
   ui_viewport->x_pannable = pannable;
-
-  update_children_size (ui_viewport);
 }
 
 CoglBool
@@ -908,12 +917,89 @@ rut_ui_viewport_set_y_pannable (RutUIViewport *ui_viewport,
                                 CoglBool pannable)
 {
   ui_viewport->y_pannable = pannable;
-
-  update_children_size (ui_viewport);
 }
 
 CoglBool
 rut_ui_viewport_get_y_pannable (RutUIViewport *ui_viewport)
 {
   return ui_viewport->y_pannable;
+}
+
+static void
+preferred_size_change_cb (RutObject *child,
+                          void *user_data)
+{
+  RutUIViewport *ui_viewport = user_data;
+
+  g_warn_if_fail (ui_viewport->sync_widget == child);
+
+  queue_allocation (ui_viewport);
+}
+
+void
+rut_ui_viewport_set_sync_widget (RutUIViewport *ui_viewport,
+                                 RutObject *widget)
+{
+  RutClosure *preferred_size_closure = NULL;
+  RutProperty *property =
+    &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_SYNC_WIDGET];
+
+  if (widget)
+    {
+      g_return_if_fail (rut_object_is (widget, RUT_INTERFACE_ID_SIZABLE));
+      rut_refable_ref (widget);
+      queue_allocation (ui_viewport);
+      preferred_size_closure =
+        rut_sizable_add_preferred_size_callback (widget,
+                                                 preferred_size_change_cb,
+                                                 ui_viewport,
+                                                 NULL /* destroy_cb */);
+    }
+
+  if (ui_viewport->sync_widget)
+    {
+      rut_closure_disconnect (ui_viewport->sync_widget_preferred_size_closure);
+      rut_refable_unref (ui_viewport->sync_widget);
+    }
+
+  ui_viewport->sync_widget_preferred_size_closure = preferred_size_closure;
+  ui_viewport->sync_widget = widget;
+
+  rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
+}
+
+void
+rut_ui_viewport_set_x_expand (RutUIViewport *ui_viewport,
+                              CoglBool expand)
+{
+  if (ui_viewport->x_expand != expand)
+    {
+      RutProperty *property =
+        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_X_EXPAND];
+
+      ui_viewport->x_expand = expand;
+
+      if (ui_viewport->sync_widget)
+        queue_allocation (ui_viewport);
+
+      rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
+    }
+}
+
+void
+rut_ui_viewport_set_y_expand (RutUIViewport *ui_viewport,
+                              CoglBool expand)
+{
+  if (ui_viewport->y_expand != expand)
+    {
+      RutProperty *property =
+        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_Y_EXPAND];
+
+      ui_viewport->y_expand = expand;
+
+      if (ui_viewport->sync_widget)
+        queue_allocation (ui_viewport);
+
+      rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
+    }
 }
