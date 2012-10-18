@@ -822,6 +822,8 @@ rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width)
   rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_x,
                                      doc_width * (1.0 / ui_viewport->doc_scale_x));
 
+  position_scroll_bars (ui_viewport);
+
   rut_property_dirty (&ui_viewport->ctx->property_ctx,
                       &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_WIDTH]);
 }
@@ -832,6 +834,8 @@ rut_ui_viewport_set_doc_height (RutUIViewport *ui_viewport, float doc_height)
   ui_viewport->doc_height = doc_height;
   rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_y,
                                      doc_height * (1.0 / ui_viewport->doc_scale_y));
+
+  position_scroll_bars (ui_viewport);
 
   rut_property_dirty (&ui_viewport->ctx->property_ctx,
                       &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_HEIGHT]);
