@@ -356,13 +356,17 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
   CoglBool buffer_is_mapped;
   RigTransitionViewDotVertex *buffer_data;
   RigTransitionViewDotData dot_data;
+  size_t map_size = sizeof (RigTransitionViewDotVertex) * view->n_dots;
 
-  if ((buffer_data = cogl_buffer_map (COGL_BUFFER (view->dots_buffer),
-                                      COGL_BUFFER_ACCESS_WRITE,
-                                      COGL_BUFFER_MAP_HINT_DISCARD)) == NULL)
+  buffer_data = cogl_buffer_map_range (COGL_BUFFER (view->dots_buffer),
+                                       0, /* offset */
+                                       map_size,
+                                       COGL_BUFFER_ACCESS_WRITE,
+                                       COGL_BUFFER_MAP_HINT_DISCARD);
+
+  if (buffer_data == NULL)
     {
-      buffer_data =
-        g_malloc (sizeof (RigTransitionViewDotVertex) * view->n_dots);
+      buffer_data = g_malloc (map_size);
       buffer_is_mapped = FALSE;
     }
   else
@@ -399,7 +403,7 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
       cogl_buffer_set_data (COGL_BUFFER (view->dots_buffer),
                             0, /* offset */
                             buffer_data,
-                            sizeof (RigTransitionViewDotVertex) * view->n_dots);
+                            map_size);
       g_free (buffer_data);
     }
 
