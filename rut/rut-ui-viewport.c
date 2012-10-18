@@ -491,7 +491,8 @@ position_scroll_bars (RutUIViewport *ui_viewport)
 
   if (ui_viewport->doc_width)
     {
-      if (ui_viewport->width > (ui_viewport->doc_width * ui_viewport->doc_scale_x))
+      if (ui_viewport->width >=
+          (ui_viewport->doc_width * ui_viewport->doc_scale_x))
         need_scroll_bar_x = FALSE;
       else
         need_scroll_bar_x = TRUE;
@@ -510,7 +511,8 @@ position_scroll_bars (RutUIViewport *ui_viewport)
 
   if (ui_viewport->doc_height)
     {
-      if (ui_viewport->height > (ui_viewport->doc_height * ui_viewport->doc_scale_y))
+      if (ui_viewport->height >=
+          (ui_viewport->doc_height * ui_viewport->doc_scale_y))
         need_scroll_bar_y = FALSE;
       else
         need_scroll_bar_y = TRUE;
