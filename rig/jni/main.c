@@ -3417,20 +3417,29 @@ shell_input_handler (RutInputEvent *event, void *user_data)
           switch (rut_key_event_get_keysym (event))
             {
             case RUT_KEY_s:
-              rig_save (data, _rig_handset_remaining_args[0]);
-              return RUT_INPUT_EVENT_STATUS_HANDLED;
-
+              if ((rut_key_event_get_modifier_state (event) &
+                   RUT_MODIFIER_CTRL_ON))
+                {
+                  rig_save (data, _rig_handset_remaining_args[0]);
+                  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                }
+              break;
             case RUT_KEY_z:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
-                rig_undo_journal_undo (data->undo_journal);
-              return RUT_INPUT_EVENT_STATUS_HANDLED;
-
+                {
+                  rig_undo_journal_undo (data->undo_journal);
+                  return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+              break;
             case RUT_KEY_y:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
-                rig_undo_journal_redo (data->undo_journal);
-              return RUT_INPUT_EVENT_STATUS_HANDLED;
+                {
+                  rig_undo_journal_redo (data->undo_journal);
+                  return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+              break;
             }
         }
 #endif
