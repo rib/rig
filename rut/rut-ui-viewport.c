@@ -507,6 +507,8 @@ position_scroll_bars (RutUIViewport *ui_viewport)
                                  ui_viewport->scroll_bar_x_transform);
       else
         rut_graphable_remove_child (ui_viewport->scroll_bar_x_transform);
+
+      ui_viewport->scroll_bar_x_visible = need_scroll_bar_x;
     }
 
   if (ui_viewport->doc_height)
@@ -527,8 +529,9 @@ position_scroll_bars (RutUIViewport *ui_viewport)
                                  ui_viewport->scroll_bar_y_transform);
       else
         rut_graphable_remove_child (ui_viewport->scroll_bar_y_transform);
-    }
 
+      ui_viewport->scroll_bar_y_visible = need_scroll_bar_y;
+    }
 }
 
 static void
