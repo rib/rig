@@ -48,7 +48,7 @@ typedef struct _RutAsset
   char *path;
   CoglTexture *texture;
 
-  GList *directory_tags;
+  GList *inferred_tags;
 
 } RutAsset;
 
@@ -188,11 +188,29 @@ rut_asset_get_texture (RutAsset *asset)
   return asset->texture;
 }
 
-void
-rut_asset_set_directory_tags (RutAsset *asset,
-                              GList *directory_tags)
+static GList *
+copy_tags (GList *tags)
 {
-  asset->directory_tags = directory_tags;
+  GList *l, *copy = NULL;
+  for (l = tags; l; l = l->next)
+    {
+      char *tag = g_intern_string (l->data);
+      copy = g_list_prepend (copy, tag);
+    }
+  return copy;
+}
+
+void
+rut_asset_set_inferred_tags (RutAsset *asset,
+                             const GList *inferred_tags)
+{
+  asset->inferred_tags = copy_tags (inferred_tags);
+}
+
+const GList *
+rut_asset_get_inferred_tags (RutAsset *asset)
+{
+  return asset->inferred_tags;
 }
 
 CoglBool
@@ -200,7 +218,7 @@ rut_asset_has_tag (RutAsset *asset, const char *tag)
 {
   GList *l;
 
-  for (l = asset->directory_tags; l; l = l->next)
+  for (l = asset->inferred_tags; l; l = l->next)
     if (strcmp (tag, l->data) == 0)
       return TRUE;
   return FALSE;

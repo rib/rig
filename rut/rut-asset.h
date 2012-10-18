@@ -35,8 +35,11 @@ CoglTexture *
 rut_asset_get_texture (RutAsset *asset);
 
 void
-rut_asset_set_directory_tags (RutAsset *asset,
-                              GList *directory_tags);
+rut_asset_set_inferred_tags (RutAsset *asset,
+                             const GList *inferred_tags);
+
+const GList *
+rut_asset_get_inferred_tags (RutAsset *asset);
 
 CoglBool
 rut_asset_has_tag (RutAsset *asset, const char *tag);

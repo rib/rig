@@ -198,9 +198,6 @@ struct _RigData
 
 extern CoglBool _rig_in_device_mode;
 
-void
-rig_update_asset_list (RigData *data);
-
 RigTransition *
 rig_create_transition (RigData *data,
                        uint32_t id);

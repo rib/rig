@@ -68,6 +68,9 @@ static RutPropertySpec rut_data_property_specs[] = {
   { 0 }
 };
 
+static void
+rig_load_asset_list (RigData *data);
+
 #ifndef __ANDROID__
 
 #ifdef RIG_EDITOR_ENABLED
@@ -2657,6 +2660,244 @@ camera_viewport_binding_cb (RutProperty *target_property,
   allocate_main_area (data);
 }
 
+typedef struct _AssetInputClosure
+{
+  RutAsset *asset;
+  RigData *data;
+} AssetInputClosure;
+
+static void
+free_asset_input_closures (RigData *data)
+{
+  GList *l;
+
+  for (l = data->asset_input_closures; l; l = l->next)
+    g_slice_free (AssetInputClosure, l->data);
+  g_list_free (data->asset_input_closures);
+  data->asset_input_closures = NULL;
+}
+
+static RutInputEventStatus
+asset_input_cb (RutInputRegion *region,
+                RutInputEvent *event,
+                void *user_data)
+{
+  AssetInputClosure *closure = user_data;
+  RutAsset *asset = closure->asset;
+  RigData *data = closure->data;
+  RutEntity *entity;
+  RutMaterial *material;
+  RutShape *shape;
+
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    {
+      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+        {
+          RutAssetType type = rut_asset_get_type (asset);
+
+          switch (type)
+            {
+            case RUT_ASSET_TYPE_TEXTURE:
+            case RUT_ASSET_TYPE_NORMAL_MAP:
+            case RUT_ASSET_TYPE_ALPHA_MASK:
+              {
+                if (data->selected_entity)
+                  {
+                    entity = data->selected_entity;
+
+                    material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                    if (!material)
+                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                  }
+                else
+                  {
+                    CoglTexture *texture;
+
+                    entity = rut_entity_new (data->ctx, data->entity_next_id++);
+                    texture = rut_asset_get_texture (asset);
+                    if (type == RUT_ASSET_TYPE_TEXTURE)
+                      material = rut_material_new (data->ctx, asset);
+                    else
+                      material = rut_material_new (data->ctx, NULL);
+                    shape = rut_shape_new (data->ctx,
+                                           768,
+                                           cogl_texture_get_width (texture),
+                                           cogl_texture_get_height (texture));
+                    rut_entity_add_component (entity, material);
+                    rut_entity_add_component (entity, shape);
+
+                    data->selected_entity = entity;
+                    rut_graphable_add_child (data->scene, entity);
+                  }
+
+                if (type == RUT_ASSET_TYPE_TEXTURE)
+                  rut_material_set_texture_asset (material, asset);
+                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
+                  rut_material_set_normal_map_asset (material, asset);
+                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
+                  rut_material_set_alpha_mask_asset (material, asset);
+                else
+                  g_warn_if_reached ();
+
+                rut_entity_set_pipeline_cache (entity, NULL);
+
+                update_inspector (data);
+
+                rut_shell_queue_redraw (data->ctx->shell);
+                return RUT_INPUT_EVENT_STATUS_HANDLED;
+              }
+            }
+        }
+    }
+
+  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static CoglBool
+asset_matches_search (RutAsset *asset,
+                      const char *search)
+{
+  const GList *inferred_tags;
+  char **tags;
+  const char *path;
+  int i;
+
+  if (!search)
+    return TRUE;
+
+  inferred_tags = rut_asset_get_inferred_tags (asset);
+  tags = g_strsplit_set (search, " \t", 0);
+
+  path = rut_asset_get_path (asset);
+  if (path)
+    {
+      if (strstr (path, search))
+        return TRUE;
+    }
+
+  for (i = 0; tags[i]; i++)
+    {
+      GList *l;
+      CoglBool found = FALSE;
+
+      for (l = inferred_tags; l; l = l->next)
+        {
+          if (strcmp (tags[i], l->data) == 0)
+            {
+              found = TRUE;
+              break;
+            }
+        }
+
+      if (!found)
+        {
+          g_strfreev (tags);
+          return FALSE;
+        }
+    }
+
+  g_strfreev (tags);
+  return TRUE;
+}
+
+static void
+add_asset_icon (RigData *data,
+                RutAsset *asset,
+                float y_pos)
+{
+  AssetInputClosure *closure;
+  CoglTexture *texture;
+  RutNineSlice *nine_slice;
+  RutInputRegion *region;
+  RutTransform *transform;
+
+  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE &&
+      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP &&
+      rut_asset_get_type (asset) != RUT_ASSET_TYPE_ALPHA_MASK)
+    return;
+
+  closure = g_slice_new (AssetInputClosure);
+  closure->asset = asset;
+  closure->data = data;
+
+  texture = rut_asset_get_texture (asset);
+
+  transform =
+    rut_transform_new (data->ctx,
+                       (nine_slice = rut_nine_slice_new (data->ctx,
+                                                         texture,
+                                                         0, 0, 0, 0,
+                                                         100, 100)),
+                       (region =
+                        rut_input_region_new_rectangle (0, 0, 100, 100,
+                                                        asset_input_cb,
+                                                        closure)),
+                       NULL);
+  rut_graphable_add_child (data->assets_list, transform);
+
+  /* XXX: It could be nicer to have some form of weak pointer
+   * mechanism to manage the lifetime of these closures... */
+  data->asset_input_closures = g_list_prepend (data->asset_input_closures,
+                                               closure);
+
+  rut_transform_translate (transform, 10, y_pos, 0);
+
+  //rut_input_region_set_graphable (region, nine_slice);
+
+  rut_refable_unref (transform);
+  rut_refable_unref (nine_slice);
+  rut_refable_unref (region);
+}
+
+static CoglBool
+rig_search_asset_list (RigData *data, const char *search)
+{
+  GList *l;
+  int i;
+  RutObject *doc_node;
+  CoglBool found = FALSE;
+
+  if (data->assets_list)
+    {
+      rut_graphable_remove_child (data->assets_list);
+      free_asset_input_closures (data);
+    }
+
+  data->assets_list = rut_graph_new (data->ctx, NULL);
+
+  doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
+  rut_graphable_add_child (doc_node, data->assets_list);
+  rut_refable_unref (data->assets_list);
+  data->assets_list_tail_pos = 70;
+
+  for (l = data->assets, i= 0; l; l = l->next, i++)
+    {
+      RutAsset *asset = l->data;
+
+      if (!asset_matches_search (asset, search))
+        continue;
+
+      found = TRUE;
+      add_asset_icon (data, asset, data->assets_list_tail_pos);
+      data->assets_list_tail_pos += 110;
+
+      rut_ui_viewport_set_doc_height (data->assets_vp,
+                                      data->assets_list_tail_pos);
+    }
+
+  return found;
+}
+
+static void
+asset_search_update_cb (RutText *text,
+                        void *user_data)
+{
+  g_print ("Asset search: %s\n", rut_text_get_text (text));
+
+  if (!rig_search_asset_list (user_data, rut_text_get_text (text)))
+    rig_search_asset_list (user_data, NULL);
+}
+
 static void
 init (RutShell *shell, void *user_data)
 {
@@ -3142,6 +3383,11 @@ init (RutShell *shell, void *user_data)
           rut_text_set_single_line_mode (text, TRUE);
           rut_text_set_text (text, "Search...");
 
+          rut_text_add_text_changed_callback (text,
+                                              asset_search_update_cb,
+                                              data,
+                                              NULL);
+
           rut_sizable_get_preferred_height (entry, -1, &min_height, NULL);
           rut_sizable_get_preferred_width (entry, min_height, NULL, &width);
           rut_sizable_set_size (entry, width, min_height);
@@ -3314,7 +3560,7 @@ init (RutShell *shell, void *user_data)
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    rig_update_asset_list (data);
+    rig_load_asset_list (data);
 
   if (data->transitions)
     data->selected_transition = data->transitions->data;
@@ -3449,88 +3695,6 @@ shell_input_handler (RutInputEvent *event, void *user_data)
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-typedef struct _AssetInputClosure
-{
-  RutAsset *asset;
-  RigData *data;
-} AssetInputClosure;
-
-static RutInputEventStatus
-asset_input_cb (RutInputRegion *region,
-                RutInputEvent *event,
-                void *user_data)
-{
-  AssetInputClosure *closure = user_data;
-  RutAsset *asset = closure->asset;
-  RigData *data = closure->data;
-  RutEntity *entity;
-  RutMaterial *material;
-  RutShape *shape;
-
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    {
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
-        {
-          RutAssetType type = rut_asset_get_type (asset);
-
-          switch (type)
-            {
-            case RUT_ASSET_TYPE_TEXTURE:
-            case RUT_ASSET_TYPE_NORMAL_MAP:
-            case RUT_ASSET_TYPE_ALPHA_MASK:
-              {
-                if (data->selected_entity)
-                  {
-                    entity = data->selected_entity;
-
-                    material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                    if (!material)
-                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-                  }
-                else
-                  {
-                    CoglTexture *texture;
-
-                    entity = rut_entity_new (data->ctx, data->entity_next_id++);
-                    texture = rut_asset_get_texture (asset);
-                    if (type == RUT_ASSET_TYPE_TEXTURE)
-                      material = rut_material_new (data->ctx, asset);
-                    else
-                      material = rut_material_new (data->ctx, NULL);
-                    shape = rut_shape_new (data->ctx,
-                                           768,
-                                           cogl_texture_get_width (texture),
-                                           cogl_texture_get_height (texture));
-                    rut_entity_add_component (entity, material);
-                    rut_entity_add_component (entity, shape);
-
-                    data->selected_entity = entity;
-                    rut_graphable_add_child (data->scene, entity);
-                  }
-
-                if (type == RUT_ASSET_TYPE_TEXTURE)
-                  rut_material_set_texture_asset (material, asset);
-                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-                  rut_material_set_normal_map_asset (material, asset);
-                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-                  rut_material_set_alpha_mask_asset (material, asset);
-                else
-                  g_warn_if_reached ();
-
-                rut_entity_set_pipeline_cache (entity, NULL);
-
-                update_inspector (data);
-
-                rut_shell_queue_redraw (data->ctx->shell);
-                return RUT_INPUT_EVENT_STATUS_HANDLED;
-              }
-            }
-        }
-    }
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-}
-
 #if 0
 static RutInputEventStatus
 add_light_cb (RutInputRegion *region,
@@ -3549,66 +3713,6 @@ add_light_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 #endif
-
-static void
-add_asset_icon (RigData *data,
-                RutAsset *asset,
-                float y_pos)
-{
-  AssetInputClosure *closure;
-  CoglTexture *texture;
-  RutNineSlice *nine_slice;
-  RutInputRegion *region;
-  RutTransform *transform;
-
-  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE &&
-      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP &&
-      rut_asset_get_type (asset) != RUT_ASSET_TYPE_ALPHA_MASK)
-    return;
-
-  closure = g_slice_new (AssetInputClosure);
-  closure->asset = asset;
-  closure->data = data;
-
-  texture = rut_asset_get_texture (asset);
-
-  transform =
-    rut_transform_new (data->ctx,
-                       (nine_slice = rut_nine_slice_new (data->ctx,
-                                                         texture,
-                                                         0, 0, 0, 0,
-                                                         100, 100)),
-                       (region =
-                        rut_input_region_new_rectangle (0, 0, 100, 100,
-                                                        asset_input_cb,
-                                                        closure)),
-                       NULL);
-  rut_graphable_add_child (data->assets_list, transform);
-
-  /* XXX: It could be nicer to have some form of weak pointer
-   * mechanism to manage the lifetime of these closures... */
-  data->asset_input_closures = g_list_prepend (data->asset_input_closures,
-                                               closure);
-
-  rut_transform_translate (transform, 10, y_pos, 0);
-
-  //rut_input_region_set_graphable (region, nine_slice);
-
-  rut_refable_unref (transform);
-  rut_refable_unref (nine_slice);
-  rut_refable_unref (region);
-}
-
-static void
-free_asset_input_closures (RigData *data)
-{
-  GList *l;
-
-  for (l = data->asset_input_closures; l; l = l->next)
-    g_slice_free (AssetInputClosure, l->data);
-  g_list_free (data->asset_input_closures);
-  data->asset_input_closures = NULL;
-}
 
 CoglBool
 find_tag (GList *tags,
@@ -3630,26 +3734,47 @@ add_asset (RigData *data, GFile *asset_file)
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  GList *directory_tags = NULL;
+  GList *inferred_tags = NULL;
   GList *l;
   RutAsset *asset;
 
   while (!g_file_equal (assets_dir, dir))
     {
       char *basename = g_file_get_basename (dir);
-      directory_tags =
-        g_list_prepend (directory_tags, (char *)g_intern_string (basename));
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string (basename));
       g_free (basename);
       dir = g_file_get_parent (dir);
     }
 
-  directory_tags =
-    g_list_prepend (directory_tags, (char *)g_intern_string ("image"));
+  inferred_tags =
+    g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
+  inferred_tags =
+    g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
 
-  if (find_tag (directory_tags, "normal-maps"))
-    asset = rut_asset_new_normal_map (data->ctx, path);
-  else if (find_tag (directory_tags, "alpha-masks"))
-    asset = rut_asset_new_alpha_mask (data->ctx, path);
+  if (find_tag (inferred_tags, "normal-maps"))
+    {
+      asset = rut_asset_new_normal_map (data->ctx, path);
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("map"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("normal-map"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("bump-map"));
+    }
+  else if (find_tag (inferred_tags, "alpha-masks"))
+    {
+      asset = rut_asset_new_alpha_mask (data->ctx, path);
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("alpha-mask"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("mask"));
+    }
   else
     asset = rut_asset_new_texture (data->ctx, path);
 
@@ -3658,20 +3783,9 @@ add_asset (RigData *data, GFile *asset_file)
 
   data->assets = g_list_prepend (data->assets, asset);
 
-  rut_asset_set_directory_tags (asset, directory_tags);
+  rut_asset_set_inferred_tags (asset, inferred_tags);
 
-  add_asset_icon (data, asset, data->assets_list_tail_pos);
-  data->assets_list_tail_pos += 110;
-
-  rut_ui_viewport_set_doc_height (data->assets_vp,
-                                  data->assets_list_tail_pos);
-
-  g_print ("TODO: Add asset %s, tags:", path);
-  for (l = directory_tags; l; l = l->next)
-    g_print ("%s, ", (char *)l->data);
-  g_print ("\n");
-
-  g_list_free (directory_tags);
+  g_list_free (inferred_tags);
 
   g_object_unref (assets_dir);
   g_object_unref (dir);
@@ -3872,35 +3986,16 @@ enumerate_dir_for_assets (RigData *data,
 }
 #endif /* USE_ASYNC_IO */
 
-void
-rig_update_asset_list (RigData *data)
+static void
+rig_load_asset_list (RigData *data)
 {
-  GList *l;
-  int i = 0;
-  RutObject *doc_node;
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
-
-  if (data->assets_list)
-    {
-      rut_graphable_remove_child (data->assets_list);
-      free_asset_input_closures (data);
-    }
-
-  data->assets_list = rut_graph_new (data->ctx, NULL);
-
-  doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
-  rut_graphable_add_child (doc_node, data->assets_list);
-  rut_refable_unref (data->assets_list);
-  data->assets_list_tail_pos = 70;
 
   enumerate_dir_for_assets (data, assets_dir);
 
   g_object_unref (assets_dir);
 
-  //for (l = data->assets, i= 0; l; l = l->next, i++)
-  //  add_asset_icon (data, l->data, 70 + 110 * i);
-
-  //add_asset_icon (data, data->light_icon, 10 + 110 * i++, add_light_cb, NULL);
+  rig_search_asset_list (data, NULL);
 }
 
 void
