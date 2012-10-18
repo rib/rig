@@ -1377,9 +1377,9 @@ rig_transition_view_find_node (RigTransitionView *view,
               if (rig_transition_view_find_node_in_path (view,
                                                          prop_data->path,
                                                          progress -
-                                                         scaled_dot_size,
+                                                         scaled_dot_size / 2.0f,
                                                          progress +
-                                                         scaled_dot_size,
+                                                         scaled_dot_size / 2.0f,
                                                          t_out))
                 {
                   *prop_data_out = prop_data;
