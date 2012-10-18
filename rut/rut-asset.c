@@ -137,7 +137,7 @@ rut_asset_new_texture_full (RutContext *ctx,
   if (!asset->texture)
     {
       g_slice_free (RutAsset, asset);
-      g_error ("Failed to load asset texture: %s", error->message);
+      g_warning ("Failed to load asset texture: %s", error->message);
       g_error_free (error);
       return NULL;
     }

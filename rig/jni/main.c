@@ -3602,6 +3602,7 @@ find_tag (GList *tags,
     }
   return FALSE;
 }
+
 static void
 add_asset (RigData *data, GFile *asset_file)
 {
@@ -3630,6 +3631,9 @@ add_asset (RigData *data, GFile *asset_file)
     asset = rut_asset_new_alpha_mask (data->ctx, path);
   else
     asset = rut_asset_new_texture (data->ctx, path);
+
+  if (!asset)
+    return;
 
   rut_asset_set_directory_tags (asset, directory_tags);
 
