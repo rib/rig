@@ -1048,7 +1048,7 @@ paint_camera_entity (RutEntity *camera, PaintContext *paint_ctx)
         }
 
 #ifdef RIG_EDITOR_ENABLED
-      if (!_rig_in_device_mode)
+      if (!_rig_in_device_mode && !data->play_mode)
         {
           draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
 
