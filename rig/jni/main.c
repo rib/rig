@@ -2952,6 +2952,7 @@ init (RutShell *shell, void *user_data)
   data->current_camera = data->editor_camera;
 
   data->light = rut_entity_new (data->ctx, data->entity_next_id++);
+  rut_entity_set_label (data->light, "rig:light");
 #if 1
   vector3[0] = 0;
   vector3[1] = 0;
@@ -2973,6 +2974,7 @@ init (RutShell *shell, void *user_data)
         model = rut_model_new_from_template (data->ctx, "cube");
 
       data->light_handle = rut_entity_new (data->ctx, data->entity_next_id++);
+      rut_entity_set_label (data->light_handle, "rig:light_handle");
       rut_entity_add_component (data->light_handle, model);
       rut_entity_set_receive_shadow (data->light_handle, FALSE);
       rut_graphable_add_child (data->light, data->light_handle);
