@@ -573,8 +573,6 @@ add_control (RutPropInspector *inspector,
 
       control_data->control = control;
 
-      control_data->control = control;
-
       control_data->transform = rut_transform_new (inspector->context, NULL);
       rut_graphable_add_child (control_data->transform, control);
       rut_graphable_add_child (inspector, control_data->transform);
