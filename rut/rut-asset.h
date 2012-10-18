@@ -4,6 +4,7 @@
 typedef enum _RutAssetType {
   RUT_ASSET_TYPE_TEXTURE,
   RUT_ASSET_TYPE_NORMAL_MAP,
+  RUT_ASSET_TYPE_ALPHA_MASK,
 } RutAssetType;
 
 extern RutType rut_asset_type;
@@ -18,6 +19,10 @@ rut_asset_new_texture (RutContext *ctx,
 
 RutAsset *
 rut_asset_new_normal_map (RutContext *ctx,
+                          const char *path);
+
+RutAsset *
+rut_asset_new_alpha_mask (RutContext *ctx,
                           const char *path);
 
 RutAssetType

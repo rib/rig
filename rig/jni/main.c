@@ -272,6 +272,7 @@ get_entity_pipeline (RigData *data,
     rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
   CoglTexture *texture = NULL;
   CoglTexture *normal_map = NULL;
+  CoglTexture *alpha_mask = NULL;
   CoglPipeline *pipeline;
   CoglFramebuffer *shadow_fb;
 
@@ -417,6 +418,8 @@ get_entity_pipeline (RigData *data,
       RutAsset *texture_asset = rut_material_get_texture_asset (material);
       RutAsset *normal_map_asset =
         rut_material_get_normal_map_asset (material);
+      RutAsset *alpha_mask_asset =
+        rut_material_get_alpha_mask_asset (material);
 
       if (texture_asset)
         texture = rut_asset_get_texture (texture_asset);
@@ -425,6 +428,9 @@ get_entity_pipeline (RigData *data,
 
       if (normal_map_asset)
         normal_map = rut_asset_get_texture (normal_map_asset);
+
+      if (alpha_mask_asset)
+        alpha_mask = rut_asset_get_texture (alpha_mask_asset);
     }
 
 #if 0
@@ -515,13 +521,34 @@ get_entity_pipeline (RigData *data,
 
   if (material)
     {
-      if (normal_map)
+      if (alpha_mask)
         {
           /* We don't want this layer to be automatically modulated with the
            * previous layers so we set its combine mode to "REPLACE" so it
            * will be skipped past and we can sample its texture manually */
           cogl_pipeline_set_layer_combine (pipeline, 2, "RGBA=REPLACE(PREVIOUS)", NULL);
-          cogl_pipeline_set_layer_texture (pipeline, 2, normal_map);
+          cogl_pipeline_set_layer_texture (pipeline, 2, alpha_mask);
+
+          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                      /* definitions */
+                                      "uniform float material_alpha_threshold;\n",
+
+                                      /* post */
+                                      "if (texture2D(cogl_sampler2, cogl_tex_coord2_in.st).a <= \n"
+                                      "    material_alpha_threshold)\n"
+                                      "  discard;\n");
+
+          cogl_pipeline_add_snippet (pipeline, snippet);
+          cogl_object_unref (snippet);
+        }
+
+      if (normal_map)
+        {
+          /* We don't want this layer to be automatically modulated with the
+           * previous layers so we set its combine mode to "REPLACE" so it
+           * will be skipped past and we can sample its texture manually */
+          cogl_pipeline_set_layer_combine (pipeline, 5, "RGBA=REPLACE(PREVIOUS)", NULL);
+          cogl_pipeline_set_layer_texture (pipeline, 5, normal_map);
 
           snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
               /* definitions */
@@ -538,7 +565,7 @@ get_entity_pipeline (RigData *data,
 
               "vec3 L = normalize(light_direction);\n"
 
-	      "vec3 N = texture2D(cogl_sampler2, cogl_tex_coord2_in.st).rgb;\n"
+	      "vec3 N = texture2D(cogl_sampler5, cogl_tex_coord5_in.st).rgb;\n"
 	      "N = 2.0 * N - 1.0;\n"
               "N = normalize(N);\n"
 
@@ -3424,6 +3451,7 @@ asset_input_cb (RutInputRegion *region,
             {
             case RUT_ASSET_TYPE_TEXTURE:
             case RUT_ASSET_TYPE_NORMAL_MAP:
+            case RUT_ASSET_TYPE_ALPHA_MASK:
               {
                 if (data->selected_entity)
                   {
@@ -3456,8 +3484,12 @@ asset_input_cb (RutInputRegion *region,
 
                 if (type == RUT_ASSET_TYPE_TEXTURE)
                   rut_material_set_texture_asset (material, asset);
-                else
+                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
                   rut_material_set_normal_map_asset (material, asset);
+                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
+                  rut_material_set_alpha_mask_asset (material, asset);
+                else
+                  g_warn_if_reached ();
 
                 rut_entity_set_pipeline_cache (entity, NULL);
 
@@ -3504,7 +3536,8 @@ add_asset_icon (RigData *data,
   RutTransform *transform;
 
   if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE &&
-      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP)
+      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP &&
+      rut_asset_get_type (asset) != RUT_ASSET_TYPE_ALPHA_MASK)
     return;
 
   closure = g_slice_new (AssetInputClosure);
@@ -3588,6 +3621,8 @@ add_asset (RigData *data, GFile *asset_file)
 
   if (find_tag (directory_tags, "normal-maps"))
     asset = rut_asset_new_normal_map (data->ctx, path);
+  else if (find_tag (directory_tags, "alpha-masks"))
+    asset = rut_asset_new_alpha_mask (data->ctx, path);
   else
     asset = rut_asset_new_texture (data->ctx, path);
 

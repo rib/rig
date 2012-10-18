@@ -32,6 +32,7 @@ enum {
   RUT_MATERIAL_PROP_DIFFUSE,
   RUT_MATERIAL_PROP_SPECULAR,
   RUT_MATERIAL_PROP_SHININESS,
+  RUT_MATERIAL_PROP_ALPHA_MASK_THRESHOLD,
   RUT_MATERIAL_N_PROPS
 };
 
@@ -41,11 +42,14 @@ struct _RutMaterial
   RutComponentableProps component;
   RutAsset *texture_asset;
   RutAsset *normal_map_asset;
+  RutAsset *alpha_mask_asset;
 
   RutColor ambient;
   RutColor diffuse;
   RutColor specular;
   float shininess;
+
+  float alpha_mask_threshold;
 
   int uniforms_age;
   int uniforms_flush_age;
@@ -76,6 +80,13 @@ RutAsset *
 rut_material_get_normal_map_asset (RutMaterial *material);
 
 void
+rut_material_set_alpha_mask_asset (RutMaterial *material,
+                                   RutAsset *alpha_mask_asset);
+
+RutAsset *
+rut_material_get_alpha_mask_asset (RutMaterial *material);
+
+void
 rut_material_set_ambient (RutMaterial *material,
                           const RutColor *color);
 
@@ -102,6 +113,13 @@ rut_material_set_shininess (RutMaterial *material,
 
 float
 rut_material_get_shininess (RutMaterial *material);
+
+float
+rut_material_get_alpha_mask_threshold (RutMaterial *material);
+
+void
+rut_material_set_alpha_mask_threshold (RutMaterial *material,
+                                       float alpha_mask_threshold);
 
 void
 rut_material_flush_uniforms (RutMaterial *material,

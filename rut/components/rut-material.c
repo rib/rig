@@ -58,6 +58,16 @@ static RutPropertySpec _rut_material_prop_specs[] = {
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1000 }}
   },
+  {
+    .name = "alpha-mask-threshold",
+    .nick = "Alpha Mask Threshold",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .getter = rut_material_get_alpha_mask_threshold,
+    .setter = rut_material_set_alpha_mask_threshold,
+    .flags = RUT_PROPERTY_FLAG_READWRITE |
+      RUT_PROPERTY_FLAG_VALIDATE,
+    .validation = { .float_range = { 0, 1 }}
+  },
   { 0 }
 };
 
@@ -167,6 +177,26 @@ rut_material_get_normal_map_asset (RutMaterial *material)
 }
 
 void
+rut_material_set_alpha_mask_asset (RutMaterial *material,
+                                   RutAsset *alpha_mask_asset)
+{
+  if (material->alpha_mask_asset)
+    {
+      rut_refable_unref (material->alpha_mask_asset);
+      material->alpha_mask_asset = NULL;
+    }
+
+  if (alpha_mask_asset)
+    material->alpha_mask_asset = rut_refable_ref (alpha_mask_asset);
+}
+
+RutAsset *
+rut_material_get_alpha_mask_asset (RutMaterial *material)
+{
+  return material->alpha_mask_asset;
+}
+
+void
 rut_material_set_ambient (RutMaterial *material,
                           const RutColor *color)
 {
@@ -223,6 +253,29 @@ rut_material_get_shininess (RutMaterial *material)
   return material->shininess;
 }
 
+float
+rut_material_get_alpha_mask_threshold (RutMaterial *material)
+{
+  return material->alpha_mask_threshold;
+}
+
+void
+rut_material_set_alpha_mask_threshold (RutMaterial *material,
+                                       float threshold)
+{
+  RutEntity *entity;
+  RutContext *ctx;
+  if (material->alpha_mask_threshold == threshold)
+    return;
+
+  material->alpha_mask_threshold = threshold;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_ALPHA_MASK_THRESHOLD]);
+}
+
 void
 rut_material_flush_uniforms (RutMaterial *material,
                              CoglPipeline *pipeline)
@@ -253,6 +306,10 @@ rut_material_flush_uniforms (RutMaterial *material,
   location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "material_shininess");
   cogl_pipeline_set_uniform_1f (pipeline, location, material->shininess);
+
+  location = cogl_pipeline_get_uniform_location (pipeline,
+                                                 "material_alpha_threshold");
+  cogl_pipeline_set_uniform_1f (pipeline, location, material->alpha_mask_threshold);
 
   material->uniforms_flush_age = material->uniforms_age;
 }

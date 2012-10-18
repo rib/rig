@@ -163,6 +163,13 @@ rut_asset_new_normal_map (RutContext *ctx,
   return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_NORMAL_MAP);
 }
 
+RutAsset *
+rut_asset_new_alpha_mask (RutContext *ctx,
+                          const char *path)
+{
+  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_ALPHA_MASK);
+}
+
 RutAssetType
 rut_asset_get_type (RutAsset *asset)
 {

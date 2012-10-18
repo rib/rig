@@ -71,7 +71,7 @@ primitive_new_p2t2t2 (CoglContext *ctx,
 {
   CoglAttributeBuffer *attribute_buffer =
     cogl_attribute_buffer_new (ctx, n_vertices * sizeof (VertexP2T2T2), data);
-  int n_attributes = 6;
+  int n_attributes = 7;
   CoglAttribute *attributes[n_attributes];
   CoglPrimitive *primitive;
 #ifndef MESA_CONST_ATTRIB_BUG_WORKAROUND
@@ -101,33 +101,40 @@ primitive_new_p2t2t2 (CoglContext *ctx,
                                       offsetof (VertexP2T2T2, s1),
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
-  /* coords for normal map */
+  /* coords for alpha mask texture */
   attributes[3] = cogl_attribute_new (attribute_buffer,
                                       "cogl_tex_coord2_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, s1),
                                       2,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
+  /* coords for normal map */
+  attributes[4] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_tex_coord5_in",
+                                      sizeof (VertexP2T2T2),
+                                      offsetof (VertexP2T2T2, s1),
+                                      2,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
 
 #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
-  attributes[4] = cogl_attribute_new (attribute_buffer,
+  attributes[5] = cogl_attribute_new (attribute_buffer,
                                       "cogl_normal_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, Nx),
                                       3,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[5] = cogl_attribute_new (attribute_buffer,
+  attributes[6] = cogl_attribute_new (attribute_buffer,
                                       "tangent_in",
                                       sizeof (VertexP2T2T2),
                                       offsetof (VertexP2T2T2, Tx),
                                       3,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
 #else
-  attributes[4] = cogl_attribute_new_const_3fv (ctx,
+  attributes[5] = cogl_attribute_new_const_3fv (ctx,
                                                 "cogl_normal_in",
                                                 normal);
 
-  attributes[5] = cogl_attribute_new_const_3fv (ctx,
+  attributes[6] = cogl_attribute_new_const_3fv (ctx,
                                                 "tangent_in",
                                                 tangent);
 #endif

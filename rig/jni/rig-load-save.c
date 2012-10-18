@@ -595,6 +595,8 @@ rig_save (RigData *data,
         type = "texture";
       else if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_NORMAL_MAP)
         type = "normal-map";
+      else if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_ALPHA_MASK)
+        type = "alpha-mask";
       else
         continue;
 
@@ -1066,6 +1068,10 @@ parse_start_element (GMarkupParseContext *context,
       else if (strcmp (type, "normal-map") == 0)
         {
           asset = rut_asset_new_normal_map (data->ctx, path);
+        }
+      else if (strcmp (type, "alpha-mask") == 0)
+        {
+          asset = rut_asset_new_alpha_mask (data->ctx, path);
         }
       else
         g_warning ("Ignoring unknown asset type: %s\n", type);
