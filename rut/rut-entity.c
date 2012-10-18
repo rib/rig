@@ -236,6 +236,12 @@ rut_entity_new (RutContext *ctx,
   return entity;
 }
 
+RutContext *
+rut_entity_get_context (RutEntity *entity)
+{
+  return entity->ctx;
+}
+
 void
 rut_entity_set_label (RutEntity *entity,
                       const char *label)

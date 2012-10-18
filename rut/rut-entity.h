@@ -78,6 +78,9 @@ RutEntity *
 rut_entity_new (RutContext *ctx,
                 uint32_t id);
 
+RutContext *
+rut_entity_get_context (RutEntity *entity);
+
 const char *
 rut_entity_get_label (RutEntity *entity);
 
