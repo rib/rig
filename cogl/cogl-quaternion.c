@@ -226,13 +226,6 @@ cogl_quaternion_init_from_euler (CoglQuaternion *quaternion,
     sin_heading * sin_pitch * cos_roll;
 }
 
-void
-cogl_quaternion_init_from_quaternion (CoglQuaternion *quaternion,
-                                      CoglQuaternion *src)
-{
-  memcpy (quaternion, src, sizeof (float) * 4);
-}
-
 /* XXX: it could be nice to make something like this public... */
 /*
  * COGL_MATRIX_READ:

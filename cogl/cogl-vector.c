@@ -221,12 +221,6 @@ cogl_vector4_init_zero (float *vector)
   memset (vector, 0, sizeof (CoglVector4));
 }
 
-void
-cogl_vector4_init_from_vector4 (float *vector, float *src)
-{
-  *vector4 = *src;
-}
-
 CoglBool
 cogl_vector4_equal (const void *v0, const void *v1)
 {
