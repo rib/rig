@@ -2404,7 +2404,7 @@ rut_text_remove_password_hint (void *data)
   return G_SOURCE_REMOVE;
 }
 
-static CoglBool
+static RutInputEventStatus
 rut_text_button_press (RutText *text,
                        RutInputEvent *event)
 {
@@ -2440,7 +2440,14 @@ rut_text_button_press (RutText *text,
       !rut_camera_pick_inputable (camera, text->input_region, x, y))
     {
       rut_text_ungrab_key_focus (text);
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
+
+      /* Note: we don't want to claim this event by returning _HANDLED
+       * here since that would mean, for example, that the user goes
+       * to grab a scrollbar when typing then they would have to click
+       * the scrollbar twice, once to drop the text entry grab and
+       * then again to actually grab the scrollbar. */
+      g_print ("Ungrab\n");
+      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
     }
 
   rut_graphable_get_modelview (text, camera, &transform);
@@ -2521,10 +2528,7 @@ rut_text_key_press (RutInputEvent *event,
   CoglBool handled = FALSE;
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_KEY)
-    {
-      rut_text_input_cb (event, user_data);
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
-    }
+    return rut_text_input_cb (event, user_data);
 
   if (rut_key_event_get_action (event) != RUT_KEY_EVENT_ACTION_DOWN)
     return RUT_INPUT_EVENT_STATUS_HANDLED;
