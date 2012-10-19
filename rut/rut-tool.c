@@ -26,107 +26,116 @@
 #include "rut-tool.h"
 
 static RutInputEventStatus
+rotation_tool_grab_cb (RutInputEvent *event,
+                       void *user_data)
+{
+  RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  RutTool *tool = user_data;
+
+  g_warn_if_fail (tool->button_down);
+
+  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+
+  switch (rut_motion_event_get_action (event))
+    {
+    case RUT_MOTION_EVENT_ACTION_MOVE:
+      {
+        CoglQuaternion camera_rotation;
+        CoglQuaternion new_rotation;
+        RutEntity *parent;
+        CoglQuaternion parent_inverse;
+        RutEntity *entity = tool->selected_entity;
+        float x = rut_motion_event_get_x (event);
+        float y = rut_motion_event_get_y (event);
+
+        rut_arcball_mouse_motion (&tool->arcball, x, y);
+
+        cogl_quaternion_multiply (&camera_rotation,
+                                  &tool->arcball.q_drag,
+                                  &tool->saved_rotation);
+
+        /* XXX: We have calculated the combined rotation in camera
+         * space, we now need to separate out the rotation of the
+         * entity itself.
+         *
+         * We rotate by the inverse of the parent's view transform
+         * so we are left with just the entity's rotation.
+         */
+        parent = rut_graphable_get_parent (entity);
+
+        rut_entity_get_view_rotations (parent,
+                                       tool->camera,
+                                       &parent_inverse);
+        cogl_quaternion_invert (&parent_inverse);
+
+        cogl_quaternion_multiply (&new_rotation,
+                                  &parent_inverse,
+                                  &camera_rotation);
+
+        rut_entity_set_rotation (entity, &new_rotation);
+
+        rut_shell_queue_redraw (tool->shell);
+
+        status = RUT_INPUT_EVENT_STATUS_HANDLED;
+      }
+      break;
+
+    case RUT_MOTION_EVENT_ACTION_UP:
+      if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
+        {
+          tool->button_down = FALSE;
+
+          rut_shell_ungrab_input (tool->shell,
+                                  rotation_tool_grab_cb,
+                                  tool);
+        }
+      break;
+
+    default:
+      break;
+    }
+
+  return status;
+}
+
+static RutInputEventStatus
 on_rotation_tool_clicked (RutInputRegion *region,
                           RutInputEvent *event,
                           void *user_data)
 {
-  RutTool *tool = user_data;
-  RutMotionEventAction action;
-  RutButtonState state;
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  RutEntity *entity;
-  float x, y;
+  RutTool *tool = user_data;
 
-  entity = tool->selected_entity;
-
-  switch (rut_input_event_get_type (event))
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
+      rut_motion_event_get_button_state (event) == RUT_BUTTON_STATE_1)
     {
-      case RUT_INPUT_EVENT_TYPE_MOTION:
-      {
-        action = rut_motion_event_get_action (event);
-        state = rut_motion_event_get_button_state (event);
-        x = rut_motion_event_get_x (event);
-        y = rut_motion_event_get_y (event);
+      RutEntity *entity = tool->selected_entity;
+      float x = rut_motion_event_get_x (event);
+      float y = rut_motion_event_get_y (event);
 
-        //y = -y + 2 * (tool->screen_pos[1]);
+      rut_shell_grab_input (tool->shell,
+                            rut_input_event_get_camera (event),
+                            rotation_tool_grab_cb,
+                            tool);
 
-        if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
-            state == RUT_BUTTON_STATE_1)
-          {
-            rut_input_region_set_circle (tool->rotation_circle,
-                                         tool->screen_pos[0],
-                                         tool->screen_pos[1],
-                                         128);
+      rut_arcball_init (&tool->arcball,
+                        tool->screen_pos[0],
+                        tool->screen_pos[1],
+                        128);
 
+      rut_entity_get_view_rotations (entity,
+                                     tool->camera,
+                                     &tool->saved_rotation);
 
-            rut_arcball_init (&tool->arcball,
-                              tool->screen_pos[0],
-                              tool->screen_pos[1],
-                              128);
+      cogl_quaternion_init_identity (&tool->arcball.q_drag);
 
-            rut_entity_get_view_rotations (entity, tool->camera, &tool->saved_rotation);
+      rut_arcball_mouse_down (&tool->arcball, x, y);
 
-            cogl_quaternion_init_identity (&tool->arcball.q_drag);
+      tool->button_down = TRUE;
 
-            rut_arcball_mouse_down (&tool->arcball, x, y);
-
-            tool->button_down = TRUE;
-
-            status = RUT_INPUT_EVENT_STATUS_HANDLED;
-          }
-        else if (action == RUT_MOTION_EVENT_ACTION_MOVE &&
-                 state == RUT_BUTTON_STATE_1)
-          {
-            CoglQuaternion camera_rotation;
-            CoglQuaternion new_rotation;
-            RutEntity *parent;
-            CoglQuaternion parent_inverse;
-
-            if (!tool->button_down)
-              break;
-
-            rut_arcball_mouse_motion (&tool->arcball, x, y);
-
-            cogl_quaternion_multiply (&camera_rotation,
-                                      &tool->arcball.q_drag,
-                                      &tool->saved_rotation);
-
-            /* XXX: We have calculated the combined rotation in camera
-             * space, we now need to separate out the rotation of the
-             * entity itself.
-             *
-             * We rotate by the inverse of the parent's view transform
-             * so we are left with just the entity's rotation.
-             */
-            parent = rut_graphable_get_parent (entity);
-
-            rut_entity_get_view_rotations (parent,
-                                           tool->camera,
-                                           &parent_inverse);
-            cogl_quaternion_invert (&parent_inverse);
-
-            cogl_quaternion_multiply (&new_rotation,
-                                      &parent_inverse,
-                                      &camera_rotation);
-
-            rut_entity_set_rotation (entity, &new_rotation);
-
-            rut_shell_queue_redraw (tool->shell);
-
-            status = RUT_INPUT_EVENT_STATUS_HANDLED;
-          }
-        else if (action == RUT_MOTION_EVENT_ACTION_UP)
-          {
-            tool->button_down = FALSE;
-
-            rut_input_region_set_circle (tool->rotation_circle, x, y, 64);
-          }
-
-        break;
-      }
-
-      case RUT_INPUT_EVENT_TYPE_KEY:
-        break;
+      status = RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   return status;
@@ -277,8 +286,7 @@ rut_tool_update (RutTool *tool,
   tool->screen_pos[0] = x;
   tool->screen_pos[1] = y;
 
-  if (!tool->button_down)
-    rut_input_region_set_circle (tool->rotation_circle, x, y, 64);
+  rut_input_region_set_circle (tool->rotation_circle, x, y, 64);
 
   if (tool->selected_entity != selected_entity)
     {
