@@ -31,15 +31,19 @@ rotation_tool_grab_cb (RutInputEvent *event,
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   RutTool *tool = user_data;
+  RutMotionEventAction action;
 
   g_warn_if_fail (tool->button_down);
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 
-  switch (rut_motion_event_get_action (event))
+  action = rut_motion_event_get_action (event);
+
+  switch (action)
     {
     case RUT_MOTION_EVENT_ACTION_MOVE:
+    case RUT_MOTION_EVENT_ACTION_UP:
       {
         CoglQuaternion camera_rotation;
         CoglQuaternion new_rotation;
@@ -48,6 +52,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
         RutEntity *entity = tool->selected_entity;
         float x = rut_motion_event_get_x (event);
         float y = rut_motion_event_get_y (event);
+        RutToolRotationEventType event_type = RUT_TOOL_ROTATION_DRAG;
 
         rut_arcball_mouse_motion (&tool->arcball, x, y);
 
@@ -73,23 +78,30 @@ rotation_tool_grab_cb (RutInputEvent *event,
                                   &parent_inverse,
                                   &camera_rotation);
 
-        rut_entity_set_rotation (entity, &new_rotation);
+        if (action == RUT_MOTION_EVENT_ACTION_UP)
+          {
+            if ((rut_motion_event_get_button_state (event) &
+                 RUT_BUTTON_STATE_1) == 0)
+              {
+                status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                event_type = RUT_TOOL_ROTATION_RELEASE;
 
-        rut_shell_queue_redraw (tool->shell);
+                tool->button_down = FALSE;
 
-        status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                rut_shell_ungrab_input (tool->shell,
+                                        rotation_tool_grab_cb,
+                                        tool);
+              }
+          }
+        else
+          status = RUT_INPUT_EVENT_STATUS_HANDLED;
+
+        rut_closure_list_invoke (&tool->rotation_event_cb_list,
+                                 RutToolRotationEventCallback,
+                                 tool,
+                                 event_type,
+                                 &new_rotation);
       }
-      break;
-
-    case RUT_MOTION_EVENT_ACTION_UP:
-      if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
-        {
-          tool->button_down = FALSE;
-
-          rut_shell_ungrab_input (tool->shell,
-                                  rotation_tool_grab_cb,
-                                  tool);
-        }
       break;
 
     default:
@@ -152,6 +164,8 @@ rut_tool_new (RutShell *shell)
   tool->shell = shell;
 
   ctx = rut_shell_get_context (shell);
+
+  rut_list_init (&tool->rotation_event_cb_list);
 
   /* pipeline to draw the tool */
   tool->default_pipeline = cogl_pipeline_new (rut_cogl_context);
@@ -384,9 +398,23 @@ rut_tool_draw (RutTool *tool,
   cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
 }
 
+RutClosure *
+rut_tool_add_rotation_event_callback (RutTool *tool,
+                                      RutToolRotationEventCallback callback,
+                                      void *user_data,
+                                      RutClosureDestroyCallback destroy_cb)
+{
+  return rut_closure_list_add (&tool->rotation_event_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
+}
+
 void
 rut_tool_free (RutTool *tool)
 {
+  rut_closure_list_disconnect_all (&tool->rotation_event_cb_list);
+
   cogl_object_unref (tool->default_pipeline);
   cogl_object_unref (tool->rotation_tool);
   cogl_object_unref (tool->rotation_tool_handle);

@@ -1964,6 +1964,43 @@ entity_translate_cb (RutEntity *entity,
 }
 
 static void
+tool_rotation_event_cb (RutTool *tool,
+                        RutToolRotationEventType type,
+                        const CoglQuaternion *rotation,
+                        void *user_data)
+{
+  RigData *data = user_data;
+
+  g_return_if_fail (data->selected_entity);
+
+  switch (type)
+    {
+    case RUT_TOOL_ROTATION_DRAG:
+      rut_entity_set_rotation (data->selected_entity, rotation);
+      rut_shell_queue_redraw (data->shell);
+      break;
+
+    case RUT_TOOL_ROTATION_RELEASE:
+      {
+        RutProperty *rotation_prop =
+          rut_introspectable_lookup_property (data->selected_entity,
+                                              "rotation");
+        RutBoxed value;
+
+        value.type = RUT_PROPERTY_TYPE_QUATERNION;
+        value.d.quaternion_val = *rotation;
+
+        rig_undo_journal_set_property_and_log (data->undo_journal,
+                                               FALSE /* mergable */,
+                                               data->selected_entity,
+                                               &value,
+                                               rotation_prop);
+      }
+      break;
+    }
+}
+
+static void
 scene_translate_cb (RutEntity *entity,
                     float start[3],
                     float rel[3],
@@ -3527,6 +3564,10 @@ init (RutShell *shell, void *user_data)
 
   /* tool */
   data->tool = rut_tool_new (data->shell);
+  rut_tool_add_rotation_event_callback (data->tool,
+                                        tool_rotation_event_cb,
+                                        data,
+                                        NULL /* destroy_cb */);
   rut_tool_set_camera (data->tool, data->editor_camera);
 
   /* picking ray */

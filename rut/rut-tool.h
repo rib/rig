@@ -27,6 +27,7 @@
 #include <rut-shell.h>
 #include <rut-entity.h>
 #include <rut-arcball.h>
+#include <rut-closure.h>
 
 typedef struct _RutTool
 {
@@ -44,7 +45,20 @@ typedef struct _RutTool
   float position[3];    /* transformed position of the selected entity */
   float screen_pos[2];
   float scale;
+  RutList rotation_event_cb_list;
 } RutTool;
+
+typedef enum
+{
+  RUT_TOOL_ROTATION_DRAG,
+  RUT_TOOL_ROTATION_RELEASE
+} RutToolRotationEventType;
+
+typedef void
+(* RutToolRotationEventCallback) (RutTool *tool,
+                                  RutToolRotationEventType type,
+                                  const CoglQuaternion *rotation,
+                                  void *user_data);
 
 RutTool *
 rut_tool_new (RutShell *shell);
@@ -60,6 +74,12 @@ rut_tool_update (RutTool *tool,
 void
 rut_tool_draw (RutTool *tool,
                CoglFramebuffer *fb);
+
+RutClosure *
+rut_tool_add_rotation_event_callback (RutTool *tool,
+                                      RutToolRotationEventCallback callback,
+                                      void *user_data,
+                                      RutClosureDestroyCallback destroy_cb);
 
 void
 rut_tool_free (RutTool *tool);
