@@ -343,10 +343,11 @@ rut_entity_get_rotation (RutEntity *entity)
   return &entity->rotation;
 }
 
-void rut_entity_set_rotation (RutEntity      *entity,
-                              CoglQuaternion *rotation)
+void
+rut_entity_set_rotation (RutEntity *entity,
+                         const CoglQuaternion *rotation)
 {
-  cogl_quaternion_init_from_quaternion (&entity->rotation, rotation);
+  entity->rotation = *rotation;
   entity->dirty = TRUE;
 }
 

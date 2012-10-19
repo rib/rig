@@ -128,7 +128,7 @@ rut_entity_get_rotation (RutEntity *entity);
 
 void
 rut_entity_set_rotation (RutEntity *entity,
-                         CoglQuaternion *rotation);
+                         const CoglQuaternion *rotation);
 
 void
 rut_entity_apply_rotations (RutObject *entity,
