@@ -60,7 +60,7 @@ cogl_color_init_from_4f (CoglColor *color,
 
 void
 cogl_color_init_from_4fv (CoglColor *color,
-                          float *color_array)
+                          const float *color_array)
 {
   memcpy (color, color_array, sizeof (CoglColor));
 }
