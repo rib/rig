@@ -3610,6 +3610,8 @@ fini (RutShell *shell, void *user_data)
 
   rut_dof_effect_free (data->dof);
 
+  rut_tool_free (data->tool);
+
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {

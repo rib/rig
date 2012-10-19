@@ -383,3 +383,19 @@ rut_tool_draw (RutTool *tool,
 
   cogl_framebuffer_set_projection_matrix (fb, &saved_projection);
 }
+
+void
+rut_tool_free (RutTool *tool)
+{
+  cogl_object_unref (tool->default_pipeline);
+  cogl_object_unref (tool->rotation_tool);
+  cogl_object_unref (tool->rotation_tool_handle);
+  rut_refable_unref (tool->rotation_circle);
+
+  if (tool->button_down)
+    rut_shell_ungrab_input (tool->shell,
+                            rotation_tool_grab_cb,
+                            tool);
+
+  g_slice_free (RutTool, tool);
+}

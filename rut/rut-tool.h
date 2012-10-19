@@ -61,4 +61,7 @@ void
 rut_tool_draw (RutTool *tool,
                CoglFramebuffer *fb);
 
+void
+rut_tool_free (RutTool *tool);
+
 #endif /* __RUT_TOOL_H__ */
