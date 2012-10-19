@@ -32,8 +32,6 @@ typedef struct _RutShapeModel
   RutObjectProps _parent;
   int ref_count;
 
-  float size;
-
   /* TODO: Allow this to be an asset */
   CoglTexture *shape_texture;
 
@@ -50,12 +48,14 @@ typedef struct _RutShapeModel
 void
 _rut_shape_model_init_type (void);
 
-CoglPipeline *
-rut_shape_model_get_pipeline_template (RutShapeModel *model);
-
 typedef struct _RutShape RutShape;
 #define RUT_SHAPE(p) ((RutShape *)(p))
 extern RutType rut_shape_type;
+
+enum {
+  RUT_SHAPE_PROP_SHAPED,
+  RUT_SHAPE_N_PROPS
+};
 
 struct _RutShape
 {
@@ -67,9 +67,16 @@ struct _RutShape
 
   RutContext *ctx;
 
+  int tex_width;
+  int tex_height;
+  CoglBool shaped;
+
   RutShapeModel *model;
 
-  int size;
+  RutList reshaped_cb_list;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_SHAPE_N_PROPS];
 };
 
 void
@@ -77,15 +84,9 @@ _rut_shape_init_type (void);
 
 RutShape *
 rut_shape_new (RutContext *ctx,
-               float size,
+               CoglBool shaped,
                int tex_width,
                int tex_height);
-
-RutShapeModel *
-rut_shape_get_model (RutShape *shape);
-
-float
-rut_shape_get_size (RutShape *shape);
 
 CoglPrimitive *
 rut_shape_get_primitive (RutObject *object);
@@ -100,5 +101,21 @@ rut_shape_get_shape_texture (RutShape *shape);
 
 RutMesh *
 rut_shape_get_pick_mesh (RutShape *shape);
+
+void
+rut_shape_set_shaped (RutShape *shape,
+                      CoglBool shaped);
+
+CoglBool
+rut_shape_get_shaped (RutShape *shape);
+
+typedef void (*RutShapeReShapedCallback) (RutShape *shape,
+                                          void *user_data);
+
+RutClosure *
+rut_shape_add_reshaped_callback (RutShape *shape,
+                                 RutShapeReShapedCallback callback,
+                                 void *user_data,
+                                 RutClosureDestroyCallback destroy_cb);
 
 #endif /* __RUT_SHAPE_H__ */

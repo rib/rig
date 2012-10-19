@@ -263,6 +263,15 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
   cogl_matrix_multiply (light_mvp, light_mvp, model_transform);
 }
 
+static void
+reshape_cb (RutShape *shape, void *user_data)
+{
+  RutComponentableProps *componentable =
+    rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
+  RutEntity *entity = componentable->entity;
+  rut_entity_set_pipeline_cache (entity, NULL);
+}
+
 CoglPipeline *
 get_entity_pipeline (RigData *data,
                      RutEntity *entity,
@@ -709,9 +718,19 @@ get_entity_pipeline (RigData *data,
 
   if (rut_object_get_type (geometry) == &rut_shape_type)
     {
-      CoglTexture *shape_texture =
-        rut_shape_get_shape_texture (RUT_SHAPE (geometry));
-      cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+      CoglTexture *shape_texture;
+
+      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
+        {
+          shape_texture =
+            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+          cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+        }
+
+      rut_shape_add_reshaped_callback (RUT_SHAPE (geometry),
+                                       reshape_cb,
+                                       NULL,
+                                       NULL);
     }
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
@@ -2757,7 +2776,7 @@ asset_input_cb (RutInputRegion *region,
                     else
                       material = rut_material_new (data->ctx, NULL);
                     shape = rut_shape_new (data->ctx,
-                                           768,
+                                           TRUE,
                                            cogl_texture_get_width (texture),
                                            cogl_texture_get_height (texture));
                     rut_entity_add_component (entity, material);
@@ -2768,7 +2787,21 @@ asset_input_cb (RutInputRegion *region,
                   }
 
                 if (type == RUT_ASSET_TYPE_TEXTURE)
-                  rut_material_set_texture_asset (material, asset);
+                  {
+                    RutObject *geom =
+                      rut_entity_get_component (entity,
+                                                RUT_COMPONENT_TYPE_GEOMETRY);
+
+                    if (geom && rut_object_get_type (geom) == &rut_shape_type)
+                      {
+                        CoglTexture *tex = rut_asset_get_texture (asset);
+                        rut_shape_set_texture_size (RUT_SHAPE (geom),
+                                                    cogl_texture_get_width (tex),
+                                                    cogl_texture_get_height (tex));
+                      }
+
+                    rut_material_set_texture_asset (material, asset);
+                  }
                 else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
                   rut_material_set_normal_map_asset (material, asset);
                 else if (type == RUT_ASSET_TYPE_ALPHA_MASK)

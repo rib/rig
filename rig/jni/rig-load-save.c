@@ -112,9 +112,10 @@ save_component_cb (RutComponent *component,
     }
   else if (type == &rut_shape_type)
     {
-      fprintf (state->file, "%*s<shape size=\"%f\"/>\n",
+      CoglBool shaped = rut_shape_get_shaped (RUT_SHAPE (component));
+      fprintf (state->file, "%*s<shape shaped=\"%s\"/>\n",
                state->indent, "",
-               rut_shape_get_size (RUT_SHAPE (component)));
+               shaped ? "true" : "false");
     }
   else if (type == &rut_diamond_type)
     {
@@ -677,7 +678,8 @@ typedef struct _Loader
   float material_shininess;
   CoglBool shininess_set;
 
-  float shape_size;
+  CoglBool shaped;
+  float diamond_size;
   RutEntity *current_entity;
 
   RigTransition *current_transition;
@@ -1328,19 +1330,27 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "shape") == 0)
     {
-      const char *size_str;
+      const char *shaped_str;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
                                         attribute_values,
                                         error,
                                         G_MARKUP_COLLECT_STRING,
-                                        "size",
-                                        &size_str,
+                                        "shaped",
+                                        &shaped_str,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      loader->shape_size = g_ascii_strtod (size_str, NULL);
+      if (strcmp (shaped_str, "true") == 0)
+        loader->shaped = TRUE;
+      else if (strcmp (shaped_str, "false") == 0)
+        loader->shaped = FALSE;
+      else
+        {
+          g_warn_if_reached ();
+          loader->shaped = FALSE;
+        }
 
       loader_push_state (loader, LOADER_STATE_LOADING_SHAPE_COMPONENT);
     }
@@ -1359,7 +1369,7 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      loader->shape_size = g_ascii_strtod (size_str, NULL);
+      loader->diamond_size = g_ascii_strtod (size_str, NULL);
 
       loader_push_state (loader, LOADER_STATE_LOADING_DIAMOND_COMPONENT);
     }
@@ -1644,7 +1654,7 @@ parse_end_element (GMarkupParseContext *context,
         }
 
       shape = rut_shape_new (loader->data->ctx,
-                             loader->shape_size,
+                             loader->shaped,
                              cogl_texture_get_width (texture),
                              cogl_texture_get_height (texture));
       rut_entity_add_component (loader->current_entity,
@@ -1680,7 +1690,7 @@ parse_end_element (GMarkupParseContext *context,
         }
 
       diamond = rut_diamond_new (loader->data->ctx,
-                                 loader->shape_size,
+                                 loader->diamond_size,
                                  cogl_texture_get_width (texture),
                                  cogl_texture_get_height (texture));
       rut_entity_add_component (loader->current_entity,
