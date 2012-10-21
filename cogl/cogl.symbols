@@ -494,12 +494,6 @@ cogl_quaternion_squad
 cogl_read_pixels
 cogl_read_pixels_flags_get_type
 
-cogl_rectangle
-cogl_rectangles
-cogl_rectangles_with_texture_coords
-cogl_rectangle_with_multitexture_coords
-cogl_rectangle_with_texture_coords
-
 cogl_renderer_add_constraint
 cogl_renderer_check_onscreen_template
 cogl_renderer_connect

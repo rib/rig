@@ -51,7 +51,7 @@ struct _CoglPangoDisplayList
   CoglPangoPipelineCache *pipeline_cache;
 };
 
-/* This matches the format expected by cogl_rectangles_with_texture_coords */
+/* Matches the format expected by cogl_framebuffer_draw_textured_rectangles */
 struct _CoglPangoDisplayListRectangle
 {
   float x_1, y_1, x_2, y_2;
@@ -74,7 +74,7 @@ struct _CoglPangoDisplayListNode
       /* The texture to render these coords from */
       CoglTexture *texture;
       /* Array of rectangles in the format expected by
-         cogl_rectangles_with_texture_coords */
+         cogl_framebuffer_draw_textured_rectangles */
       GArray *rectangles;
       /* A primitive representing those vertices */
       CoglPrimitive *primitive;
