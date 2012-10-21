@@ -2081,21 +2081,18 @@ init (RutShell *shell, void *user_data)
 
   data->shadow_color = color_buffer;
 
-  /* XXX: Rutht now there's no way to disable rendering to the color
-   * buffer. */
+  /* XXX: Right now there's no way to avoid allocating a color buffer. */
   data->shadow_fb =
     cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
+  if (data->shadow_fb == NULL)
+    g_critical ("could not create offscreen buffer");
 
   /* retrieve the depth texture */
   cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (data->shadow_fb),
                                               TRUE);
-  /* FIXME: It doesn't seem right that we can query back the texture before
-   * the framebuffer has been allocated. */
   data->shadow_map =
     cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (data->shadow_fb));
 
-  if (data->shadow_fb == NULL)
-    g_critical ("could not create offscreen buffer");
 
   data->default_pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
