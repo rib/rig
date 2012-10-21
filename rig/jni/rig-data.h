@@ -26,10 +26,12 @@
 #include "rig-undo-journal.h"
 
 enum {
-  RUT_DATA_PROP_WIDTH,
-  RUT_DATA_PROP_HEIGHT,
+  RIG_DATA_PROP_WIDTH,
+  RIG_DATA_PROP_HEIGHT,
+  RIG_DATA_PROP_DEVICE_WIDTH,
+  RIG_DATA_PROP_DEVICE_HEIGHT,
 
-  RUT_DATA_N_PROPS
+  RIG_DATA_N_PROPS
 };
 
 struct _RigData
@@ -69,6 +71,9 @@ struct _RigData
 
   CoglTexture *light_icon;
   CoglTexture *clip_plane_icon;
+
+  float device_width;
+  float device_height;
 
   //float width;
   //RutProperty width_property;
@@ -190,7 +195,7 @@ struct _RigData
   //float path_t;
   //RutProperty path_property;
 
-  RutProperty properties[RUT_DATA_N_PROPS];
+  RutProperty properties[RIG_DATA_N_PROPS];
 };
 
 /* FIXME: find a better place to put these prototypes */
