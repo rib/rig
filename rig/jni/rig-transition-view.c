@@ -1442,6 +1442,8 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
               if (rig_transition_view_select_node (view, prop_data, t))
                 rig_transition_view_unselect_node (view, prop_data, t);
 
+              rut_timeline_set_progress (view->timeline, t);
+
               rut_shell_queue_redraw (view->context->shell);
             }
           else
