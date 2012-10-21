@@ -208,10 +208,12 @@ rut_entity_foreach_component (RutEntity *entity,
 
 void
 rut_entity_set_pipeline_cache (RutEntity *entity,
+                               int slot,
                                CoglPipeline *pipeline);
 
 CoglPipeline *
-rut_entity_get_pipeline_cache (RutEntity *entity);
+rut_entity_get_pipeline_cache (RutEntity *entity,
+                               int slot);
 
 CoglBool
 rut_entity_get_visible (RutEntity *entity);

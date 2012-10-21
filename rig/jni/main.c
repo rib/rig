@@ -34,6 +34,11 @@
 
 #define N_CUBES 5
 
+typedef enum _CacheSlot
+{
+  CACHE_SLOT_SHADOW,
+  CACHE_SLOT_COLOR
+} CacheSlot;
 
 typedef enum _Pass
 {
@@ -269,162 +274,174 @@ reshape_cb (RutShape *shape, void *user_data)
   RutComponentableProps *componentable =
     rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
-  rut_entity_set_pipeline_cache (entity, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR, NULL);
 }
 
-CoglPipeline *
-get_entity_pipeline (RigData *data,
-                     RutEntity *entity,
-                     RutComponent *geometry,
-                     Pass pass)
+static CoglPipeline *
+get_entity_mask_pipeline (RigData *data,
+                          RutEntity *entity,
+                          RutComponent *geometry)
+{
+  CoglPipeline *pipeline;
+
+  pipeline = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_SHADOW);
+  if (pipeline)
+    return cogl_object_ref (pipeline);
+
+  /* TODO: move into init() somewhere */
+  if (G_UNLIKELY (!data->dof_pipeline_template))
+    {
+      CoglPipeline *pipeline;
+      CoglDepthState depth_state;
+      CoglSnippet *snippet;
+
+      pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+
+      cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
+
+      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+
+      cogl_depth_state_init (&depth_state);
+      cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+      cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+                                  /* definitions */
+                                  "uniform float dof_focal_distance;\n"
+                                  "uniform float dof_depth_of_field;\n"
+
+                                  "varying float dof_blur;\n",
+                                  //"varying vec4 world_pos;\n",
+
+                                  /* compute the amount of bluriness we want */
+                                  "vec4 world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+                                  //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+                                  "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
+                                  "                  dof_depth_of_field, 0.0, 1.0);\n"
+      );
+
+      cogl_pipeline_add_snippet (pipeline, snippet);
+      cogl_object_unref (snippet);
+
+      /* This was used to debug the focal distance and bluriness amount in the DoF
+       * effect: */
+#if 0
+      cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  "varying vec4 world_pos;\n"
+                                  "varying float dof_blur;",
+
+                                  "cogl_color_out = vec4(dof_blur,0,0,1);\n"
+                                  //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                  //"if (world_pos.z < -30.0) cogl_color_out = vec4(0,1,0,1);\n"
+                                  //"if (abs (world_pos.z + 30.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
+                                  "cogl_color_out.a = dof_blur;\n"
+                                  //"cogl_color_out.a = 1.0;\n"
+      );
+
+      cogl_pipeline_add_snippet (pipeline, snippet);
+      cogl_object_unref (snippet);
+#endif
+
+      data->dof_pipeline_template = pipeline;
+    }
+
+  /* TODO: move into init() somewhere */
+  if (G_UNLIKELY (!data->dof_shape_pipeline))
+    {
+      CoglPipeline *dof_shape_pipeline =
+        cogl_pipeline_copy (data->dof_pipeline_template);
+      CoglSnippet *snippet;
+
+      if (rut_object_get_type (geometry) == &rut_shape_type)
+        {
+          CoglTexture *shape_texture =
+            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+          cogl_pipeline_set_layer_texture (dof_shape_pipeline,
+                                           0, shape_texture);
+        }
+      else
+        rut_diamond_apply_mask (RUT_DIAMOND (geometry),
+                                dof_shape_pipeline);
+
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  /* declarations */
+                                  "varying float dof_blur;",
+
+                                  /* post */
+                                  "if (cogl_color_out.a <= 0.0)\n"
+                                  "  discard;\n"
+                                  "\n"
+                                  "cogl_color_out.a = dof_blur;\n");
+
+      cogl_pipeline_add_snippet (dof_shape_pipeline, snippet);
+      cogl_object_unref (snippet);
+
+      set_focal_parameters (dof_shape_pipeline, 30.f, 3.0f);
+
+      data->dof_shape_pipeline = dof_shape_pipeline;
+    }
+
+  /* TODO: move into init() somewhere */
+  if (G_UNLIKELY (!data->dof_pipeline))
+    {
+      CoglPipeline *dof_pipeline =
+        cogl_pipeline_copy (data->dof_pipeline_template);
+      CoglSnippet *snippet;
+
+      /* store the bluriness in the alpha channel */
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  "varying float dof_blur;",
+
+                                  "cogl_color_out.a = dof_blur;\n"
+      );
+      cogl_pipeline_add_snippet (dof_pipeline, snippet);
+      cogl_object_unref (snippet);
+
+      set_focal_parameters (dof_pipeline, 30.f, 3.0f);
+
+      data->dof_pipeline = dof_pipeline;
+    }
+
+  if (rut_object_get_type (geometry) == &rut_shape_type ||
+      rut_object_get_type (geometry) == &rut_diamond_type)
+    {
+      pipeline = cogl_object_ref (data->dof_shape_pipeline);
+    }
+  else
+    pipeline = cogl_object_ref (data->dof_pipeline);
+
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
+
+  return pipeline;
+}
+
+static CoglPipeline *
+get_entity_color_pipeline (RigData *data,
+                           RutEntity *entity,
+                           RutComponent *geometry)
 {
   CoglSnippet *snippet;
   CoglDepthState depth_state;
-  RutMaterial *material =
-    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+  RutMaterial *material;
   CoglTexture *texture = NULL;
   CoglTexture *normal_map = NULL;
   CoglTexture *alpha_mask = NULL;
   CoglPipeline *pipeline;
   CoglFramebuffer *shadow_fb;
 
-  if (pass == PASS_COLOR)
+  pipeline = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_COLOR);
+  if (pipeline)
     {
-      pipeline = rut_entity_get_pipeline_cache (entity);
-      if (pipeline)
-        {
-          cogl_object_ref (pipeline);
-          goto FOUND;
-        }
-    }
-  else if (pass == PASS_DOF_DEPTH || pass == PASS_SHADOW)
-    {
-      if (!data->dof_pipeline_template)
-        {
-          CoglPipeline *pipeline;
-          CoglDepthState depth_state;
-          CoglSnippet *snippet;
-
-          pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-
-          cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
-
-          cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-
-          cogl_depth_state_init (&depth_state);
-          cogl_depth_state_set_test_enabled (&depth_state, TRUE);
-          cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
-
-          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-
-              /* definitions */
-              "uniform float dof_focal_distance;\n"
-              "uniform float dof_depth_of_field;\n"
-
-              "varying float dof_blur;\n",
-              //"varying vec4 world_pos;\n",
-
-              /* compute the amount of bluriness we want */
-              "vec4 world_pos = cogl_modelview_matrix * cogl_position_in;\n"
-              //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
-              "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
-              "                  dof_depth_of_field, 0.0, 1.0);\n"
-          );
-
-          cogl_pipeline_add_snippet (pipeline, snippet);
-          cogl_object_unref (snippet);
-
-          /* This was used to debug the focal distance and bluriness amount in the DoF
-           * effect: */
-#if 0
-          cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
-          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-              "varying vec4 world_pos;\n"
-              "varying float dof_blur;",
-
-             "cogl_color_out = vec4(dof_blur,0,0,1);\n"
-             //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
-             //"if (world_pos.z < -30.0) cogl_color_out = vec4(0,1,0,1);\n"
-             //"if (abs (world_pos.z + 30.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
-             "cogl_color_out.a = dof_blur;\n"
-             //"cogl_color_out.a = 1.0;\n"
-          );
-
-          cogl_pipeline_add_snippet (pipeline, snippet);
-          cogl_object_unref (snippet);
-#endif
-
-          data->dof_pipeline_template = pipeline;
-        }
-
-      if (rut_object_get_type (geometry) == &rut_shape_type ||
-          rut_object_get_type (geometry) == &rut_diamond_type)
-        {
-          if (!data->dof_shape_pipeline)
-            {
-              CoglPipeline *dof_shape_pipeline =
-                cogl_pipeline_copy (data->dof_pipeline_template);
-              CoglSnippet *snippet;
-
-              if (rut_object_get_type (geometry) == &rut_shape_type)
-                {
-                  CoglTexture *shape_texture =
-                    rut_shape_get_shape_texture (RUT_SHAPE (geometry));
-                  cogl_pipeline_set_layer_texture (dof_shape_pipeline,
-                                                   0, shape_texture);
-                }
-              else
-                rut_diamond_apply_mask (RUT_DIAMOND (geometry),
-                                        dof_shape_pipeline);
-
-              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                          /* declarations */
-                                          "varying float dof_blur;",
-
-                                          /* post */
-                                          "if (cogl_color_out.a <= 0.0)\n"
-                                          "  discard;\n"
-                                          "\n"
-                                          "cogl_color_out.a = dof_blur;\n");
-
-              cogl_pipeline_add_snippet (dof_shape_pipeline, snippet);
-              cogl_object_unref (snippet);
-
-              set_focal_parameters (dof_shape_pipeline, 30.f, 3.0f);
-
-              data->dof_shape_pipeline = dof_shape_pipeline;
-            }
-
-          return cogl_object_ref (data->dof_shape_pipeline);
-        }
-      else
-        {
-          if (!data->dof_pipeline)
-            {
-              CoglPipeline *dof_pipeline =
-                cogl_pipeline_copy (data->dof_pipeline_template);
-              CoglSnippet *snippet;
-
-              /* store the bluriness in the alpha channel */
-              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                  "varying float dof_blur;",
-
-                  "cogl_color_out.a = dof_blur;\n"
-              );
-              cogl_pipeline_add_snippet (dof_pipeline, snippet);
-              cogl_object_unref (snippet);
-
-              set_focal_parameters (dof_pipeline, 30.f, 3.0f);
-
-              data->dof_pipeline = dof_pipeline;
-            }
-
-          return cogl_object_ref (data->dof_pipeline);
-        }
+      cogl_object_ref (pipeline);
+      goto FOUND;
     }
 
   pipeline = cogl_pipeline_new (data->ctx->cogl_context);
 
+  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
   if (material)
     {
       RutAsset *texture_asset = rut_material_get_texture_asset (material);
@@ -735,12 +752,11 @@ get_entity_pipeline (RigData *data,
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
 
-  rut_entity_set_pipeline_cache (entity, pipeline);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR, pipeline);
 
 FOUND:
 
   /* FIXME: there's lots to optimize about this! */
-#if 1
   shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
 
   /* update uniforms in pipelines */
@@ -773,9 +789,20 @@ FOUND:
                                       FALSE,
                                       light_matrix);
   }
-#endif
 
   return pipeline;
+}
+
+static CoglPipeline *
+get_entity_pipeline (RigData *data,
+                     RutEntity *entity,
+                     RutComponent *geometry,
+                     Pass pass)
+{
+  if (pass == PASS_COLOR)
+    return get_entity_color_pipeline (data, entity, geometry);
+  else if (pass == PASS_DOF_DEPTH || pass == PASS_SHADOW)
+    return get_entity_mask_pipeline (data, entity, geometry);
 }
 
 static void
@@ -2809,7 +2836,8 @@ asset_input_cb (RutInputRegion *region,
                 else
                   g_warn_if_reached ();
 
-                rut_entity_set_pipeline_cache (entity, NULL);
+                rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR, NULL);
+                rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
 
                 update_inspector (data);
 

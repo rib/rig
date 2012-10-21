@@ -20,6 +20,11 @@
 #include "rut-entity.h"
 #include "rut.h"
 
+/* XXX: at some point we should perhaps separate out the Rig rendering code
+ * into a "Renderer" and let that code somehow define how many slots it wants
+ * associated with an entity for caching state. */
+#define N_PIPELINE_CACHE_SLOTS 2
+
 enum
 {
   PROP_LABEL,
@@ -57,7 +62,7 @@ struct _RutEntity
 
   GPtrArray *components;
 
-  CoglPipeline *pipeline_cache;
+  CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[N_PROPS];
@@ -143,10 +148,18 @@ static void
 _rut_entity_free (void *object)
 {
   RutEntity *entity = object;
+  CoglPipeline **pipeline_caches = entity->pipeline_caches;
+  int i;
 
   g_ptr_array_free (entity->components, TRUE);
 
   rut_graphable_destroy (entity);
+
+  for (i = 0; i < N_PIPELINE_CACHE_SLOTS; i++)
+    {
+      if (pipeline_caches[i])
+        cogl_object_unref (pipeline_caches[i]);
+    }
 
   g_slice_free (RutEntity, entity);
 }
@@ -644,20 +657,22 @@ rut_entity_foreach_component (RutEntity *entity,
 
 void
 rut_entity_set_pipeline_cache (RutEntity *entity,
+                               int slot,
                                CoglPipeline *pipeline)
 {
-  if (entity->pipeline_cache)
-    cogl_object_unref (entity->pipeline_cache);
+  if (entity->pipeline_caches[slot])
+    cogl_object_unref (entity->pipeline_caches[slot]);
 
-  entity->pipeline_cache = pipeline;
+  entity->pipeline_caches[slot] = pipeline;
   if (pipeline)
     cogl_object_ref (pipeline);
 }
 
 CoglPipeline *
-rut_entity_get_pipeline_cache (RutEntity *entity)
+rut_entity_get_pipeline_cache (RutEntity *entity,
+                               int slot)
 {
-  return entity->pipeline_cache;
+  return entity->pipeline_caches[slot];
 }
 
 CoglBool
