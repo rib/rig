@@ -202,8 +202,7 @@ _rut_entity_init_type (void)
 }
 
 RutEntity *
-rut_entity_new (RutContext *ctx,
-                uint32_t id)
+rut_entity_new (RutContext *ctx)
 {
   RutEntity *entity = g_slice_new0 (RutEntity);
 
@@ -215,8 +214,6 @@ rut_entity_new (RutContext *ctx,
   rut_simple_introspectable_init (entity,
                                   _rut_entity_prop_specs,
                                   entity->properties);
-
-  entity->id = id;
 
   entity->visible = TRUE;
   entity->receive_shadow = TRUE;
@@ -256,12 +253,6 @@ const char *
 rut_entity_get_label (RutEntity *entity)
 {
   return entity->label;
-}
-
-uint32_t
-rut_entity_get_id (RutEntity *entity)
-{
-  return entity->id;
 }
 
 float

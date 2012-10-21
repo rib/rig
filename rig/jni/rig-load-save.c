@@ -1134,7 +1134,7 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      entity = rut_entity_new (loader->data->ctx, loader->data->entity_next_id++);
+      entity = rut_entity_new (loader->data->ctx);
 
       if (parent_id_str)
         {

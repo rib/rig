@@ -2769,7 +2769,7 @@ asset_input_cb (RutInputRegion *region,
                   {
                     CoglTexture *texture;
 
-                    entity = rut_entity_new (data->ctx, data->entity_next_id++);
+                    entity = rut_entity_new (data->ctx);
                     texture = rut_asset_get_texture (asset);
                     if (type == RUT_ASSET_TYPE_TEXTURE)
                       material = rut_material_new (data->ctx, asset);
@@ -3166,35 +3166,35 @@ init (RutShell *shell, void *user_data)
    * mixing entity transforms with manual camera view transforms.
    */
 
-  data->editor_camera_to_origin = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_to_origin = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->scene, data->editor_camera_to_origin);
   rut_entity_set_label (data->editor_camera_to_origin, "rig:camera_to_origin");
 
-  data->editor_camera_rotate = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_rotate = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->editor_camera_to_origin, data->editor_camera_rotate);
   rut_entity_set_label (data->editor_camera_rotate, "rig:camera_rotate");
 
-  data->editor_camera_armature = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_armature = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->editor_camera_rotate, data->editor_camera_armature);
   rut_entity_set_label (data->editor_camera_armature, "rig:camera_armature");
 
-  data->editor_camera_origin_offset = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_origin_offset = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->editor_camera_armature, data->editor_camera_origin_offset);
   rut_entity_set_label (data->editor_camera_origin_offset, "rig:camera_origin_offset");
 
-  data->editor_camera_dev_scale = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_dev_scale = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->editor_camera_origin_offset, data->editor_camera_dev_scale);
   rut_entity_set_label (data->editor_camera_dev_scale, "rig:camera_dev_scale");
 
-  data->editor_camera_screen_pos = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_screen_pos = rut_entity_new (data->ctx);
   rut_graphable_add_child (data->editor_camera_dev_scale, data->editor_camera_screen_pos);
   rut_entity_set_label (data->editor_camera_screen_pos, "rig:camera_screen_pos");
 
-  data->editor_camera_2d_view = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera_2d_view = rut_entity_new (data->ctx);
   //rut_graphable_add_child (data->editor_camera_screen_pos, data->editor_camera_2d_view); FIXME
   rut_entity_set_label (data->editor_camera_2d_view, "rig:camera_2d_view");
 
-  data->editor_camera = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->editor_camera = rut_entity_new (data->ctx);
   //rut_graphable_add_child (data->editor_camera_2d_view, data->editor_camera); FIXME
   rut_graphable_add_child (data->editor_camera_screen_pos, data->editor_camera);
   rut_entity_set_label (data->editor_camera, "rig:camera");
@@ -3262,7 +3262,7 @@ init (RutShell *shell, void *user_data)
 
   data->current_camera = data->editor_camera;
 
-  data->light = rut_entity_new (data->ctx, data->entity_next_id++);
+  data->light = rut_entity_new (data->ctx);
   rut_entity_set_label (data->light, "rig:light");
 #if 1
   vector3[0] = 0;
@@ -3284,7 +3284,7 @@ init (RutShell *shell, void *user_data)
       if (!model)
         model = rut_model_new_from_template (data->ctx, "cube");
 
-      data->light_handle = rut_entity_new (data->ctx, data->entity_next_id++);
+      data->light_handle = rut_entity_new (data->ctx);
       rut_entity_set_label (data->light_handle, "rig:light_handle");
       rut_entity_add_component (data->light_handle, model);
       rut_entity_set_receive_shadow (data->light_handle, FALSE);

@@ -75,8 +75,7 @@ CoglBool
 rut_entity_get_cast_shadow (RutEntity *entity);
 
 RutEntity *
-rut_entity_new (RutContext *ctx,
-                uint32_t id);
+rut_entity_new (RutContext *ctx);
 
 RutContext *
 rut_entity_get_context (RutEntity *entity);
@@ -87,9 +86,6 @@ rut_entity_get_label (RutEntity *entity);
 void
 rut_entity_set_label (RutEntity *entity,
                       const char *label);
-
-uint32_t
-rut_entity_get_id (RutEntity *entity);
 
 float
 rut_entity_get_x (RutEntity *entity);
