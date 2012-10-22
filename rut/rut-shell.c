@@ -20,6 +20,7 @@
 
 typedef struct
 {
+  RutList list_node;
   RutInputCallback callback;
   RutCamera *camera;
   void *user_data;
@@ -67,7 +68,11 @@ struct _RutShell
 
   /* List of grabs that are currently in place. This are in order from
    * highest to lowest priority. */
-  GList *grabs;
+  RutList grabs;
+  /* A pointer to the next grab to process. This is only used while
+   * invoking the grab callbacks so that we can cope with multiple
+   * grabs being removed from the list while one is being processed */
+  RutShellGrab *next_grab;
 
   RutObject *keyboard_focus_object;
   GDestroyNotify keyboard_ungrab_cb;
@@ -1165,9 +1170,10 @@ static RutInputEventStatus
 _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  GList *l, *next;
+  GList *l;
   RutClosure *c, *tmp;
   RutObject *target;
+  RutShellGrab *grab;
 
   /* Keep track of the last known position of the mouse so that we can
    * send key events to whatever is under the mouse when there is no
@@ -1189,13 +1195,10 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
         return status;
     }
 
-  for (l = shell->grabs; l; l = next)
+  rut_list_for_each_safe (grab, shell->next_grab, &shell->grabs, list_node)
     {
-      RutShellGrab *grab = l->data;
       RutCamera *old_camera = event->camera;
       RutInputEventStatus grab_status;
-
-      next = l->next;
 
       if (grab->camera)
         event->camera = grab->camera;
@@ -1334,14 +1337,22 @@ android_handle_cmd (struct android_app *app,
 
 static void
 _rut_shell_remove_grab_link (RutShell *shell,
-                             GList *link)
+                             RutShellGrab *grab)
 {
-  RutShellGrab *grab = link->data;
-
   if (grab->camera)
     rut_refable_unref (grab->camera);
+
+  /* If we are in the middle of iterating the grab callbacks then this
+   * will make it cope with removing arbritrary nodes from the list
+   * while iterating it */
+  if (shell->next_grab == grab)
+    shell->next_grab = rut_container_of (grab->list_node.next,
+                                         grab,
+                                         list_node);
+
+  rut_list_remove (&grab->list_node);
+
   g_slice_free (RutShellGrab, grab);
-  shell->grabs = g_list_delete_link (shell->grabs, link);
 }
 
 RutType rut_shell_type;
@@ -1353,8 +1364,13 @@ _rut_shell_free (void *object)
 
   rut_closure_list_disconnect_all (&shell->input_cb_list);
 
-  while (shell->grabs)
-    _rut_shell_remove_grab_link (shell, shell->grabs);
+  while (!rut_list_empty (&shell->grabs))
+    {
+      RutShellGrab *first_grab =
+        rut_container_of (shell->grabs.next, first_grab, list_node);
+
+      _rut_shell_remove_grab_link (shell, first_grab);
+    }
 
   _rut_shell_remove_all_input_cameras (shell);
 
@@ -1405,6 +1421,7 @@ rut_shell_new (RutShellInitCallback init,
   rut_object_init (&shell->_parent, &rut_shell_type);
 
   rut_list_init (&shell->input_cb_list);
+  rut_list_init (&shell->grabs);
 
   shell->init_cb = init;
   shell->fini_cb = fini;
@@ -1798,7 +1815,7 @@ rut_shell_grab_input (RutShell *shell,
   else
     grab->camera = NULL;
 
-  shell->grabs = g_list_prepend (shell->grabs, grab);
+  rut_list_insert (&shell->grabs, &grab->list_node);
 }
 
 void
@@ -1806,18 +1823,14 @@ rut_shell_ungrab_input (RutShell *shell,
                         RutInputCallback callback,
                         void *user_data)
 {
-  GList *l;
+  RutShellGrab *grab;
 
-  for (l = shell->grabs; l; l = l->next)
-    {
-      RutShellGrab *grab = l->data;
-
-      if (grab->callback == callback && grab->user_data == user_data)
-        {
-          _rut_shell_remove_grab_link (shell, l);
-          break;
-        }
-    }
+  rut_list_for_each (grab, &shell->grabs, list_node)
+    if (grab->callback == callback && grab->user_data == user_data)
+      {
+        _rut_shell_remove_grab_link (shell, grab);
+        break;
+      }
 }
 
 void
