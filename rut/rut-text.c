@@ -2420,17 +2420,6 @@ rut_text_button_press (RutText *text,
   if (text->editable || text->selectable)
     rut_text_grab_key_focus (text);
 
-  /* if the actor is empty we just reset everything and not
-   * set up the dragging of the selection since there's nothing
-   * to select
-   */
-  if (rut_text_buffer_get_length (get_buffer (text)) == 0)
-    {
-      rut_text_set_positions (text, -1, -1);
-
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
-    }
-
   x = rut_motion_event_get_x (event);
   y = rut_motion_event_get_y (event);
 
@@ -2448,6 +2437,17 @@ rut_text_button_press (RutText *text,
        * then again to actually grab the scrollbar. */
       g_print ("Ungrab\n");
       return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+    }
+
+  /* if the actor is empty we just reset everything and not
+   * set up the dragging of the selection since there's nothing
+   * to select
+   */
+  if (rut_text_buffer_get_length (get_buffer (text)) == 0)
+    {
+      rut_text_set_positions (text, -1, -1);
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   rut_graphable_get_modelview (text, camera, &transform);
