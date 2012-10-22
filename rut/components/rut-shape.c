@@ -205,7 +205,7 @@ shape_model_new (RutContext *ctx,
   else
     {
       size_x = tex_width;
-      size_y = tex_width;
+      size_y = tex_height;
       geom_size_x = tex_width;
       geom_size_y = tex_height;
     }
