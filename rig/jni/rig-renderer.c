@@ -556,6 +556,50 @@ get_entity_color_pipeline (RigData *data,
 
   /* and fragment shader */
 
+  /* XXX: ideally we wouldn't have to rely on conditionals + discards
+   * in the fragment shader to differentiate blended and unblended
+   * regions and instead we should let users mark out opaque regions
+   * in geometry.
+   */
+  if (blended)
+    {
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  /* definitions */
+                                  NULL,
+
+                                  /* post */
+                                  "if (cogl_color_out.a <= 0.0 || cogl_color_out.a == 1.0)\n"
+                                  "  discard;\n");
+    }
+  else
+    {
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  /* definitions */
+                                  NULL,
+
+                                  /* post */
+                                  "if (cogl_color_out.a != 1.0)\n"
+                                  "  discard;\n");
+    }
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              /* definitions */
+                              NULL,
+
+                              /* post */
+
+                              /* FIXME: We need to unpremultiply our colour at this
+                               * point to perform lighting, but this is obviously not
+                               * ideal and we should instead avoid being premultiplied
+                               * at this stage by not premultiplying our textures on
+                               * load for example. */
+                              "cogl_color_out.rgb /= cogl_color_out.a;\n");
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+
   if (material)
     {
       if (alpha_mask)
@@ -597,9 +641,6 @@ get_entity_color_pipeline (RigData *data,
               /* post */
               "vec4 final_color;\n"
 
-              "if (cogl_color_out.a <= 0.0)\n"
-              "  discard;\n"
-
               "vec3 L = normalize(light_direction);\n"
 
 	      "vec3 N = texture2D(cogl_sampler5, cogl_tex_coord5_in.st).rgb;\n"
@@ -624,7 +665,7 @@ get_entity_color_pipeline (RigData *data,
               "  final_color += specular * specular_factor;\n"
               "}\n"
 
-              "cogl_color_out = final_color;\n"
+              "cogl_color_out.rgb = final_color.rgb;\n"
           );
         }
       else
@@ -639,9 +680,6 @@ get_entity_color_pipeline (RigData *data,
 
               /* post */
               "vec4 final_color;\n"
-
-              "if (cogl_color_out.a <= 0.0)\n"
-              "  discard;\n"
 
               "vec3 L = light0_direction_norm;\n"
               "vec3 N = normalize(normal);\n"
@@ -664,7 +702,7 @@ get_entity_color_pipeline (RigData *data,
               "  final_color += specular * specular_factor;\n"
               "}\n"
 
-              "cogl_color_out = final_color;\n"
+              "cogl_color_out.rgb = final_color.rgb;\n"
           );
         }
     }
@@ -682,9 +720,6 @@ get_entity_color_pipeline (RigData *data,
           "vec3 L = light0_direction_norm;\n"
           "vec3 N = normalize(normal);\n"
 
-          "if (cogl_color_out.a <= 0.0)\n"
-          "  discard;\n"
-
           "final_color = light0_ambient * cogl_color_out;\n"
           "float lambert = dot(N, L);\n"
 
@@ -699,7 +734,7 @@ get_entity_color_pipeline (RigData *data,
           "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
           "}\n"
 
-          "cogl_color_out = final_color;\n"
+          "cogl_color_out.rgb = final_color.rgb;\n"
       );
     }
 
@@ -734,12 +769,26 @@ get_entity_color_pipeline (RigData *data,
           "if (distance_from_light < shadow_coords.z)\n"
           "  shadow = 0.5;\n"
 
-          "cogl_color_out = shadow * cogl_color_out;\n"
+          "cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n"
       );
 
       cogl_pipeline_add_snippet (pipeline, snippet);
       cogl_object_unref (snippet);
     }
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              /* definitions */
+                              NULL,
+
+                              /* post */
+
+                              /* FIXME: Avoid premultiplying here by fiddling the
+                               * blend mode instead which should be more efficient */
+                              "cogl_color_out.rgb *= cogl_color_out.a;\n"
+  );
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
 
   if (rut_object_get_type (geometry) == &rut_shape_type)
     {
