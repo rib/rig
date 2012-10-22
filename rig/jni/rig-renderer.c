@@ -280,22 +280,14 @@ get_entity_mask_pipeline (RigData *data,
     }
 
   /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!data->dof_shape_pipeline))
+  if (G_UNLIKELY (!data->dof_diamond_pipeline))
     {
-      CoglPipeline *dof_shape_pipeline =
+      CoglPipeline *dof_diamond_pipeline =
         cogl_pipeline_copy (data->dof_pipeline_template);
       CoglSnippet *snippet;
 
-      if (rut_object_get_type (geometry) == &rut_shape_type)
-        {
-          CoglTexture *shape_texture =
-            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
-          cogl_pipeline_set_layer_texture (dof_shape_pipeline,
-                                           0, shape_texture);
-        }
-      else
-        rut_diamond_apply_mask (RUT_DIAMOND (geometry),
-                                dof_shape_pipeline);
+      rut_diamond_apply_mask (RUT_DIAMOND (geometry),
+                              dof_diamond_pipeline);
 
       snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                                   /* declarations */
@@ -307,12 +299,12 @@ get_entity_mask_pipeline (RigData *data,
                                   "\n"
                                   "cogl_color_out.a = dof_blur;\n");
 
-      cogl_pipeline_add_snippet (dof_shape_pipeline, snippet);
+      cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      set_focal_parameters (dof_shape_pipeline, 30.f, 3.0f);
+      set_focal_parameters (dof_diamond_pipeline, 30.f, 3.0f);
 
-      data->dof_shape_pipeline = dof_shape_pipeline;
+      data->dof_diamond_pipeline = dof_diamond_pipeline;
     }
 
   /* TODO: move into init() somewhere */
@@ -336,10 +328,58 @@ get_entity_mask_pipeline (RigData *data,
       data->dof_pipeline = dof_pipeline;
     }
 
-  if (rut_object_get_type (geometry) == &rut_shape_type ||
-      rut_object_get_type (geometry) == &rut_diamond_type)
+  if (rut_object_get_type (geometry) == &rut_diamond_type)
     {
-      pipeline = cogl_object_ref (data->dof_shape_pipeline);
+      pipeline = cogl_object_ref (data->dof_diamond_pipeline);
+    }
+  else if (rut_object_get_type (geometry) == &rut_shape_type)
+    {
+      RutMaterial *material =
+        rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+      CoglSnippet *snippet;
+
+      pipeline = cogl_pipeline_copy (data->dof_diamond_pipeline);
+
+      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
+        {
+          CoglTexture *shape_texture =
+            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+
+          cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+        }
+
+      if (material)
+        {
+          RutAsset *texture_asset = rut_material_get_texture_asset (material);
+          RutAsset *alpha_mask_asset =
+            rut_material_get_alpha_mask_asset (material);
+
+          if (texture_asset)
+            cogl_pipeline_set_layer_texture (pipeline, 1,
+                                             rut_asset_get_texture (texture_asset));
+
+          if (alpha_mask_asset)
+            {
+              /* We don't want this layer to be automatically modulated with the
+               * previous layers so we set its combine mode to "REPLACE" so it
+               * will be skipped past and we can sample its texture manually */
+              cogl_pipeline_set_layer_combine (pipeline, 2, "RGBA=REPLACE(PREVIOUS)", NULL);
+              cogl_pipeline_set_layer_texture (pipeline, 2,
+                                               rut_asset_get_texture (alpha_mask_asset));
+
+              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                          /* definitions */
+                                          "uniform float material_alpha_threshold;\n",
+
+                                          /* post */
+                                          "if (texture2D(cogl_sampler2, cogl_tex_coord2_in.st).a <= \n"
+                                          "    material_alpha_threshold)\n"
+                                          "  discard;\n");
+
+              cogl_pipeline_add_snippet (pipeline, snippet);
+              cogl_object_unref (snippet);
+            }
+        }
     }
   else
     pipeline = cogl_object_ref (data->dof_pipeline);
@@ -802,57 +842,47 @@ entitygraph_pre_paint_cb (RutObject *object,
           return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
-#if 1
       pipeline = get_entity_pipeline (paint_ctx->data,
                                       object,
                                       geometry,
                                       paint_ctx->pass);
-#endif
 
-      /* FIXME: only update the lighting uniforms when the light has
-       * actually moved!!! */
-      {
-        RutLight *light = rut_entity_get_component (paint_ctx->data->light,
-                                                    RUT_COMPONENT_TYPE_LIGHT);
-        rut_light_set_uniforms (light, pipeline);
-      }
+      if (paint_ctx->pass == RIG_PASS_COLOR)
+        {
+          int location;
+          RutLight *light = rut_entity_get_component (paint_ctx->data->light,
+                                                      RUT_COMPONENT_TYPE_LIGHT);
+          /* FIXME: only update the lighting uniforms when the light has
+           * actually moved! */
+          rut_light_set_uniforms (light, pipeline);
 
-      material = rut_entity_get_component (object, RUT_COMPONENT_TYPE_MATERIAL);
-      if (material)
-        rut_material_flush_uniforms (material, pipeline);
+          /* FIXME: only update the material uniforms when the material has
+           * actually changed! */
+          material = rut_entity_get_component (object, RUT_COMPONENT_TYPE_MATERIAL);
+          if (material)
+            rut_material_flush_uniforms (material, pipeline);
+
+          cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
+          get_normal_matrix (&modelview_matrix, normal_matrix);
+
+          location = cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
+          cogl_pipeline_set_uniform_matrix (pipeline,
+                                            location,
+                                            3, /* dimensions */
+                                            1, /* count */
+                                            FALSE, /* don't transpose again */
+                                            normal_matrix);
+        }
 
       primitive = rut_primable_get_primitive (geometry);
-
-#if 1
-      cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
-      get_normal_matrix (&modelview_matrix, normal_matrix);
-
-      {
-        int location = cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
-        cogl_pipeline_set_uniform_matrix (pipeline,
-                                          location,
-                                          3, /* dimensions */
-                                          1, /* count */
-                                          FALSE, /* don't transpose again */
-                                          normal_matrix);
-      }
-#endif
-
       cogl_framebuffer_draw_primitive (fb,
                                        pipeline,
                                        primitive);
 
-      /* FIXME: cache the pipeline with the entity */
       cogl_object_unref (pipeline);
 
       return RUT_TRAVERSE_VISIT_CONTINUE;
     }
-
-  /* XXX:
-   * How can we maintain state between the pre and post stages?  Is it
-   * ok to just "sub-class" the paint context and maintain a stack of
-   * state that needs to be shared with the post paint code.
-   */
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
