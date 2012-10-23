@@ -277,17 +277,25 @@ _rut_toggle_get_preferred_width (RutObject *object,
   RutToggle *toggle = RUT_TOGGLE (object);
   PangoRectangle logical_rect;
   float width;
+  float right_pad;
 
   pango_layout_get_pixel_extents (toggle->label, NULL, &logical_rect);
+
+  /* Don't bother padding the right of the toggle button if the label
+   * is empty */
+  if (logical_rect.width > 0)
+    right_pad = RUT_TOGGLE_BOX_RIGHT_PAD;
+  else
+    right_pad = 0.0f;
 
   if (toggle->selected_icon)
     {
       width = logical_rect.width +
         cogl_texture_get_width (toggle->selected_icon) +
-        RUT_TOGGLE_BOX_RIGHT_PAD;
+        right_pad;
     }
   else
-    width = logical_rect.width + RUT_TOGGLE_BOX_WIDTH + RUT_TOGGLE_BOX_RIGHT_PAD;
+    width = logical_rect.width + RUT_TOGGLE_BOX_WIDTH + right_pad;
 
   if (min_width_p)
     *min_width_p = width;
