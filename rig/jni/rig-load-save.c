@@ -1092,6 +1092,7 @@ parse_start_element (GMarkupParseContext *context,
       unsigned int id;
       RutEntity *entity;
       const char *parent_id_str;
+      const char *label_str;
       const char *position_str;
       const char *rotation_str;
       const char *scale_str;
@@ -1107,6 +1108,9 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                         "parent",
                                         &parent_id_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "label",
+                                        &label_str,
                                         G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                         "position",
                                         &position_str,
@@ -1153,6 +1157,9 @@ parse_start_element (GMarkupParseContext *context,
 
           rut_graphable_add_child (parent, entity);
         }
+
+      if (label_str)
+        rut_entity_set_label (entity, label_str);
 
       if (position_str)
         {
