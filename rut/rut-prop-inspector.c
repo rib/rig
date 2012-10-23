@@ -37,6 +37,9 @@
 
 #define RUT_PROP_INSPECTOR_MAX_N_CONTROLS 3
 
+/* Horizontal padding to add between controls */
+#define RUT_PROP_INSPECTOR_PADDING 5
+
 typedef struct
 {
   RutTransform *transform;
@@ -156,7 +159,8 @@ rut_prop_inspector_set_size (void *object,
 {
   RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
   float preferred_widths[RUT_PROP_INSPECTOR_MAX_N_CONTROLS];
-  float total_preferred_width = 0.0f;
+  float total_preferred_width =
+    (inspector->n_controls - 1) * RUT_PROP_INSPECTOR_PADDING;
   float total_expandable_width = 0.0f;
   float x_pos = 0.0f;
   float extra_space;
@@ -212,7 +216,7 @@ rut_prop_inspector_set_size (void *object,
                             nearbyintf (width),
                             nearbyintf (height));
 
-      x_pos += width;
+      x_pos += width + RUT_PROP_INSPECTOR_PADDING;
     }
 }
 
@@ -223,8 +227,9 @@ rut_prop_inspector_get_preferred_width (void *object,
                                         float *natural_width_p)
 {
   RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
-  float total_natural_width = 0.0f;
-  float total_min_width = 0.0f;
+  float total_natural_width =
+    (inspector->n_controls - 1) * RUT_PROP_INSPECTOR_PADDING;
+  float total_min_width = total_natural_width;
   int i;
 
   for (i = 0; i < inspector->n_controls; i++)
