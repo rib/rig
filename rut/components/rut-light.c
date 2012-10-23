@@ -49,11 +49,6 @@ rut_light_set_uniforms (RutLight *light,
   cogl_vector3_subtract (norm_direction, norm_direction, origin);
   cogl_vector3_normalize (norm_direction);
 
-  g_print ("light direction = (%f, %f, %f)\n",
-           norm_direction[0],
-           norm_direction[1],
-           norm_direction[2]);
-
   location = cogl_pipeline_get_uniform_location (pipeline,
                                                  "light0_direction_norm");
   cogl_pipeline_set_uniform_float (pipeline,

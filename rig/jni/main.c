@@ -352,8 +352,6 @@ entity_translate_grab_input_cb (RutInputEvent *event,
   RutEntity *entity = closure->entity;
   RigData *data = closure->data;
 
-  g_print ("Entity grab event\n");
-
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       float x = rut_motion_event_get_x (event);
@@ -1052,8 +1050,6 @@ main_input_cb (RutInputEvent *event,
 {
   RigData *data = user_data;
 
-  g_print ("Main Input Callback\n");
-
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       RutMotionEventAction action = rut_motion_event_get_action (event);
@@ -1173,10 +1169,10 @@ main_input_cb (RutInputEvent *event,
 
           //rut_arcball_mouse_down (&data->arcball, data->width - x, y);
           rut_arcball_mouse_down (&data->arcball, data->main_width - x, data->main_height - y);
-          g_print ("Arcball init, mouse = (%d, %d)\n", (int)(data->width - x), (int)(data->height - y));
+          //g_print ("Arcball init, mouse = (%d, %d)\n", (int)(data->width - x), (int)(data->height - y));
 
-          print_quaternion (&data->saved_rotation, "Saved Quaternion");
-          print_quaternion (&data->arcball.q_drag, "Arcball Initial Quaternion");
+          //print_quaternion (&data->saved_rotation, "Saved Quaternion");
+          //print_quaternion (&data->arcball.q_drag, "Arcball Initial Quaternion");
           //data->button_down = TRUE;
 
           data->grab_x = x;
@@ -1268,10 +1264,12 @@ main_input_cb (RutInputEvent *event,
 
           //rut_arcball_mouse_motion (&data->arcball, data->width - x, y);
           rut_arcball_mouse_motion (&data->arcball, data->main_width - x, data->main_height - y);
+#if 0
           g_print ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
                    data->arcball.center[0],
                    data->arcball.center[1],
                    x, y);
+#endif
 
           cogl_quaternion_multiply (&new_rotation,
                                     &data->saved_rotation,
@@ -1280,11 +1278,9 @@ main_input_cb (RutInputEvent *event,
           //rut_entity_set_rotation (data->editor_camera, &new_rotation);
           rut_entity_set_rotation (data->editor_camera_rotate, &new_rotation);
 
-          print_quaternion (&new_rotation, "New Rotation");
+          //print_quaternion (&new_rotation, "New Rotation");
 
-          print_quaternion (&data->arcball.q_drag, "Arcball Quaternion");
-
-          g_print ("rig entity set rotation\n");
+          //print_quaternion (&data->arcball.q_drag, "Arcball Quaternion");
 
           rut_shell_queue_redraw (data->ctx->shell);
 
@@ -1368,8 +1364,6 @@ device_mode_input_cb (RutInputEvent *event,
                       void *user_data)
 {
   RigData *data = user_data;
-
-  g_print ("Device Input Callback\n");
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -1957,8 +1951,6 @@ static void
 asset_search_update_cb (RutText *text,
                         void *user_data)
 {
-  g_print ("Asset search: %s\n", rut_text_get_text (text));
-
   if (!rig_search_asset_list (user_data, rut_text_get_text (text)))
     rig_search_asset_list (user_data, NULL);
 }

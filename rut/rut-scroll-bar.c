@@ -293,11 +293,14 @@ _rut_scroll_bar_input_cb (RutInputRegion *region,
       else
         pos = y;
 
-      g_print ("handle_pos=%f\n", scroll_bar->handle_pos);
       if (pos < scroll_bar->arrow_len)
-        g_print ("Scroll Bar: Arrow 0\n");
+        {
+          //g_print ("Scroll Bar: Arrow 0\n");
+        }
       else if (pos > (scroll_bar->length - scroll_bar->arrow_len))
-        g_print ("Scroll Bar: Arrow 1\n");
+        {
+          //g_print ("Scroll Bar: Arrow 1\n");
+        }
       else if (pos > scroll_bar->handle_pos &&
                pos < scroll_bar->handle_pos + scroll_bar->handle_len)
         {
@@ -307,20 +310,20 @@ _rut_scroll_bar_input_cb (RutInputRegion *region,
               scroll_bar->grab_y = rut_motion_event_get_y (event);
               scroll_bar->grab_offset = scroll_bar->offset;
 
-              g_print ("Scroll Bar: Handle click\n");
-
               rut_shell_grab_input (scroll_bar->ctx->shell,
                                     rut_input_event_get_camera (event),
                                     _rut_scroll_bar_grab_input_cb,
                                     scroll_bar);
             }
-          else
-            g_print ("Scroll Bar: Handle\n");
         }
       else if (pos < scroll_bar->handle_pos)
-        g_print ("Scroll Bar: In front of handle\n");
+        {
+          //g_print ("Scroll Bar: In front of handle\n");
+        }
       else
-        g_print ("Scroll Bar: After handle\n");
+        {
+          //g_print ("Scroll Bar: After handle\n");
+        }
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;

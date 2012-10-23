@@ -564,8 +564,6 @@ _rut_split_view_input_cb (RutInputRegion *region,
 {
   RutSplitView *split_view = user_data;
 
-  g_print ("Split View input callback\n");
-
   if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {

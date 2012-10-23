@@ -324,7 +324,6 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
 
                 /* TODO: Add rut_shell_implicit_grab_input() that handles releasing
                  * the grab for you */
-                g_print ("viewport input grab\n");
                 rut_shell_grab_input (ui_viewport->ctx->shell,
                                       rut_input_event_get_camera (event),
                                       ui_viewport_grab_input_cb,
@@ -347,7 +346,6 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
               rut_ui_viewport_set_doc_y (ui_viewport,
                                          ui_viewport->doc_y - ui_viewport->height);
               rut_shell_queue_redraw (ui_viewport->ctx->shell);
-              g_print ("Page Up %f %f\n", ui_viewport->height, ui_viewport->doc_y);
             }
           break;
         case RUT_KEY_Page_Down:
@@ -356,7 +354,6 @@ _rut_ui_viewport_input_cb (RutInputEvent *event,
               rut_ui_viewport_set_doc_y (ui_viewport,
                                          ui_viewport->doc_y + ui_viewport->height);
               rut_shell_queue_redraw (ui_viewport->ctx->shell);
-              g_print ("Page Down %f %f\n", ui_viewport->height, ui_viewport->doc_y);
             }
           break;
         }
@@ -370,7 +367,6 @@ _rut_ui_viewport_input_region_cb (RutInputRegion *region,
                                   RutInputEvent *event,
                                   void *user_data)
 {
-  g_print ("viewport input\n");
   return _rut_ui_viewport_input_cb (event, user_data);
 }
 
@@ -810,7 +806,6 @@ rut_ui_viewport_set_doc_x (RutUIViewport *ui_viewport, float doc_x)
 void
 rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y)
 {
-  g_print ("ui_viewport doc_y = %f\n", doc_y);
   ui_viewport->doc_y = doc_y;
   maybe_clamp_position (ui_viewport);
 
