@@ -54,6 +54,7 @@ struct _RigData
   CoglPipeline *dof_pipeline_template;
   CoglPipeline *dof_pipeline;
   CoglPipeline *dof_diamond_pipeline;
+  CoglPipeline *dof_unshaped_pipeline;
 
   RutShell *shell;
   RutContext *ctx;

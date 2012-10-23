@@ -286,8 +286,9 @@ get_entity_mask_pipeline (RigData *data,
         cogl_pipeline_copy (data->dof_pipeline_template);
       CoglSnippet *snippet;
 
-      rut_diamond_apply_mask (RUT_DIAMOND (geometry),
-                              dof_diamond_pipeline);
+      cogl_pipeline_set_layer_texture (dof_diamond_pipeline,
+                                       0,
+                                       data->ctx->circle_texture);
 
       snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                                   /* declarations */
@@ -305,6 +306,31 @@ get_entity_mask_pipeline (RigData *data,
       set_focal_parameters (dof_diamond_pipeline, 30.f, 3.0f);
 
       data->dof_diamond_pipeline = dof_diamond_pipeline;
+    }
+
+  /* TODO: move into init() somewhere */
+  if (G_UNLIKELY (!data->dof_unshaped_pipeline))
+    {
+      CoglPipeline *dof_unshaped_pipeline =
+        cogl_pipeline_copy (data->dof_pipeline_template);
+      CoglSnippet *snippet;
+
+      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                                  /* declarations */
+                                  "varying float dof_blur;",
+
+                                  /* post */
+                                  "if (cogl_color_out.a < 0.25)\n"
+                                  "  discard;\n"
+                                  "\n"
+                                  "cogl_color_out.a = dof_blur;\n");
+
+      cogl_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
+      cogl_object_unref (snippet);
+
+      set_focal_parameters (dof_unshaped_pipeline, 30.f, 3.0f);
+
+      data->dof_unshaped_pipeline = dof_unshaped_pipeline;
     }
 
   /* TODO: move into init() somewhere */
@@ -338,7 +364,7 @@ get_entity_mask_pipeline (RigData *data,
         rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
       CoglSnippet *snippet;
 
-      pipeline = cogl_pipeline_copy (data->dof_diamond_pipeline);
+      pipeline = cogl_pipeline_copy (data->dof_unshaped_pipeline);
 
       if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
         {
