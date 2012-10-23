@@ -28,7 +28,8 @@
 typedef enum _CacheSlot
 {
   CACHE_SLOT_SHADOW,
-  CACHE_SLOT_COLOR
+  CACHE_SLOT_COLOR_BLENDED,
+  CACHE_SLOT_COLOR_UNBLENDED,
 } CacheSlot;
 
 static const float jitter_offsets[32] =
@@ -57,13 +58,13 @@ static const float jitter_offsets[32] =
 /* XXX: This assumes that the primitive is being drawn in pixel coordinates,
  * since we jitter the modelview not the projection.
  */
-static void
-draw_jittered_primitive4f (RigData *data,
-                           CoglFramebuffer *fb,
-                           CoglPrimitive *prim,
-                           float red,
-                           float green,
-                           float blue)
+void
+rig_draw_jittered_primitive4f (RigData *data,
+                               CoglFramebuffer *fb,
+                               CoglPrimitive *prim,
+                               float red,
+                               float green,
+                               float blue)
 {
   CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
   int i;
@@ -87,8 +88,8 @@ draw_jittered_primitive4f (RigData *data,
   cogl_object_unref (pipeline);
 }
 
-static void
-camera_update_view (RigData *data, RutEntity *camera, RigPass pass)
+void
+rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
 {
   RutCamera *camera_component =
     rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
@@ -97,7 +98,7 @@ camera_update_view (RigData *data, RutEntity *camera, RigPass pass)
   CoglMatrix view;
 
   /* translate to z_2d and scale */
-  if (pass != RIG_PASS_SHADOW)
+  if (!shadow_pass)
     view = data->main_view;
   else
     view = data->identity;
@@ -107,7 +108,7 @@ camera_update_view (RigData *data, RutEntity *camera, RigPass pass)
   cogl_matrix_get_inverse (&transform, &inverse_transform);
   cogl_matrix_multiply (&view, &view, &inverse_transform);
 
-  if (pass == RIG_PASS_SHADOW)
+  if (shadow_pass)
     {
       CoglMatrix flipped_view;
       cogl_matrix_init_identity (&flipped_view);
@@ -418,7 +419,8 @@ get_entity_mask_pipeline (RigData *data,
 static CoglPipeline *
 get_entity_color_pipeline (RigData *data,
                            RutEntity *entity,
-                           RutComponent *geometry)
+                           RutComponent *geometry,
+                           CoglBool blended)
 {
   CoglSnippet *snippet;
   CoglDepthState depth_state;
@@ -429,7 +431,12 @@ get_entity_color_pipeline (RigData *data,
   CoglPipeline *pipeline;
   CoglFramebuffer *shadow_fb;
 
-  pipeline = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_COLOR);
+  if (blended)
+    pipeline = rut_entity_get_pipeline_cache (entity,
+                                              CACHE_SLOT_COLOR_BLENDED);
+  else
+    pipeline = rut_entity_get_pipeline_cache (entity,
+                                              CACHE_SLOT_COLOR_UNBLENDED);
   if (pipeline)
     {
       cogl_object_ref (pipeline);
@@ -479,6 +486,10 @@ get_entity_color_pipeline (RigData *data,
   /* enable depth testing */
   cogl_depth_state_init (&depth_state);
   cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+
+  if (blended)
+    cogl_depth_state_set_write_enabled (&depth_state, FALSE);
+
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   /* Vertex shader setup for lighting */
@@ -749,7 +760,17 @@ get_entity_color_pipeline (RigData *data,
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
     rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
 
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR, pipeline);
+  if (!blended)
+    {
+      cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
+      rut_entity_set_pipeline_cache (entity,
+                                     CACHE_SLOT_COLOR_UNBLENDED, pipeline);
+    }
+  else
+    {
+      rut_entity_set_pipeline_cache (entity,
+                                     CACHE_SLOT_COLOR_BLENDED, pipeline);
+    }
 
 FOUND:
 
@@ -796,8 +817,10 @@ get_entity_pipeline (RigData *data,
                      RutComponent *geometry,
                      RigPass pass)
 {
-  if (pass == RIG_PASS_COLOR)
-    return get_entity_color_pipeline (data, entity, geometry);
+  if (pass == RIG_PASS_COLOR_UNBLENDED)
+    return get_entity_color_pipeline (data, entity, geometry, FALSE);
+  else if (pass == RIG_PASS_COLOR_BLENDED)
+    return get_entity_color_pipeline (data, entity, geometry, TRUE);
   else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
     return get_entity_mask_pipeline (data, entity, geometry);
 
@@ -873,7 +896,8 @@ entitygraph_pre_paint_cb (RutObject *object,
                                       geometry,
                                       paint_ctx->pass);
 
-      if (paint_ctx->pass == RIG_PASS_COLOR)
+      if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
+          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
         {
           int location;
           RutLight *light = rut_entity_get_component (paint_ctx->data->light,
@@ -936,7 +960,7 @@ paint_scene (RigPaintContext *paint_ctx)
   CoglContext *ctx = data->ctx->cogl_context;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
 
-  if (paint_ctx->pass == RIG_PASS_COLOR)
+  if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
       cogl_pipeline_set_color4f (pipeline, 0, 0, 0, 1.0);
@@ -963,144 +987,12 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
   RutCamera *save_camera = rut_paint_ctx->camera;
   RutCamera *camera_component =
     rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
-  RigData *data = paint_ctx->data;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera_component);
-  //CoglFramebuffer *shadow_fb;
 
   rut_paint_ctx->camera = camera_component;
 
-  if (rut_entity_get_component (camera, RUT_COMPONENT_TYPE_LIGHT))
-    paint_ctx->pass = RIG_PASS_SHADOW;
-  else
-    paint_ctx->pass = RIG_PASS_COLOR;
-
-  camera_update_view (data, camera, paint_ctx->pass);
-
-  if (paint_ctx->pass != RIG_PASS_SHADOW &&
-      data->enable_dof)
-    {
-      const float *viewport = rut_camera_get_viewport (camera_component);
-      int width = viewport[2];
-      int height = viewport[3];
-      int save_viewport_x = viewport[0];
-      int save_viewport_y = viewport[1];
-      RigPass save_pass = paint_ctx->pass;
-      CoglFramebuffer *pass_fb;
-
-      rut_camera_set_viewport (camera_component, 0, 0, width, height);
-
-      rut_dof_effect_set_framebuffer_size (data->dof, width, height);
-
-      pass_fb = rut_dof_effect_get_depth_pass_fb (data->dof);
-      rut_camera_set_framebuffer (camera_component, pass_fb);
-
-      rut_camera_flush (camera_component);
-      cogl_framebuffer_clear4f (pass_fb,
-                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                                1, 1, 1, 1);
-
-      paint_ctx->pass = RIG_PASS_DOF_DEPTH;
-      paint_scene (paint_ctx);
-      paint_ctx->pass = save_pass;
-
-      rut_camera_end_frame (camera_component);
-
-      pass_fb = rut_dof_effect_get_color_pass_fb (data->dof);
-      rut_camera_set_framebuffer (camera_component, pass_fb);
-
-      rut_camera_flush (camera_component);
-      cogl_framebuffer_clear4f (pass_fb,
-                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                                0.22, 0.22, 0.22, 1);
-
-      paint_ctx->pass = RIG_PASS_COLOR;
-      paint_scene (paint_ctx);
-      paint_ctx->pass = save_pass;
-
-      rut_camera_end_frame (camera_component);
-
-      rut_camera_set_framebuffer (camera_component, fb);
-      rut_camera_set_clear (camera_component, FALSE);
-
-      rut_camera_flush (camera_component);
-
-      rut_camera_end_frame (camera_component);
-
-      rut_camera_set_viewport (camera_component,
-                               save_viewport_x,
-                               save_viewport_y,
-                               width, height);
-      rut_paint_ctx->camera = save_camera;
-      rut_camera_flush (save_camera);
-      rut_dof_effect_draw_rectangle (data->dof,
-                                     rut_camera_get_framebuffer (save_camera),
-                                     data->main_x,
-                                     data->main_y,
-                                     data->main_x + data->main_width,
-                                     data->main_y + data->main_height);
-      rut_camera_end_frame (save_camera);
-    }
-  else
-    {
-      rut_camera_set_framebuffer (camera_component, fb);
-
-      rut_camera_flush (camera_component);
-
-      paint_scene (paint_ctx);
-
-      rut_camera_end_frame (camera_component);
-    }
-
-  if (paint_ctx->pass == RIG_PASS_COLOR)
-    {
-      rut_camera_flush (camera_component);
-
-      /* Use this to visualize the depth-of-field alpha buffer... */
-#if 0
-      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-      cogl_pipeline_set_layer_texture (pipeline, 0, data->dof.depth_pass);
-      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-      cogl_framebuffer_draw_rectangle (fb,
-                                       pipeline,
-                                       0, 0,
-                                       200, 200);
-#endif
-
-      /* Use this to visualize the shadow_map */
-#if 0
-      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-      cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_map);
-      //cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_color);
-      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-      cogl_framebuffer_draw_rectangle (fb,
-                                       pipeline,
-                                       0, 0,
-                                       200, 200);
-#endif
-
-      if (data->debug_pick_ray && data->picking_ray)
-      //if (data->picking_ray)
-        {
-          cogl_framebuffer_draw_primitive (fb,
-                                           data->picking_ray_color,
-                                           data->picking_ray);
-        }
-
-#ifdef RIG_EDITOR_ENABLED
-      if (!_rig_in_device_mode && !data->play_mode)
-        {
-          draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
-
-          if (data->selected_entity)
-            {
-              rut_tool_update (data->tool, data->selected_entity);
-              rut_tool_draw (data->tool, fb);
-            }
-        }
-#endif /* RIG_EDITOR_ENABLED */
-
-      rut_camera_end_frame (camera_component);
-    }
+  rut_camera_flush (camera_component);
+  paint_scene (paint_ctx);
+  rut_camera_end_frame (camera_component);
 
   rut_paint_ctx->camera = save_camera;
 }
@@ -1108,6 +1000,7 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
 void
 rig_dirty_entity_pipelines (RutEntity *entity)
 {
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
 }

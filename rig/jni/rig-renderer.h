@@ -23,7 +23,8 @@
 
 typedef enum _RigPass
 {
-  RIG_PASS_COLOR,
+  RIG_PASS_COLOR_UNBLENDED,
+  RIG_PASS_COLOR_BLENDED,
   RIG_PASS_SHADOW,
   RIG_PASS_DOF_DEPTH
 } RigPass;
@@ -40,11 +41,21 @@ typedef struct _RigPaintContext
 
 } RigPaintContext;
 
+void
+rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass);
 
 void
 rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
 
 void
 rig_dirty_entity_pipelines (RutEntity *entity);
+
+void
+rig_draw_jittered_primitive4f (RigData *data,
+                               CoglFramebuffer *fb,
+                               CoglPrimitive *prim,
+                               float red,
+                               float green,
+                               float blue);
 
 #endif /* _RIG_RENDERER_H_ */

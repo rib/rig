@@ -185,8 +185,7 @@ paint (RutShell *shell, void *user_data)
                             0.22, 0.22, 0.22, 1);
 
   paint_ctx.data = data;
-  paint_ctx.pass = RIG_PASS_COLOR;
-
+  paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
   rut_paint_ctx->camera = data->camera;
 
 #ifdef RIG_EDITOR_ENABLED
@@ -205,21 +204,126 @@ paint (RutShell *shell, void *user_data)
     }
 #endif
 
-  rut_paint_ctx->camera = data->camera;
+  paint_ctx.pass = RIG_PASS_SHADOW;
+  rig_camera_update_view (data, data->light, TRUE);
   rig_paint_camera_entity (data->light, &paint_ctx);
 
-  rut_paint_ctx->camera = data->camera;
-  rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+  rig_camera_update_view (data, data->editor_camera, FALSE);
 
+  if (data->enable_dof)
+    {
+      RutCamera *camera_component =
+        rut_entity_get_component (data->editor_camera,
+                                  RUT_COMPONENT_TYPE_CAMERA);
+      const float *viewport = rut_camera_get_viewport (camera_component);
+      int width = viewport[2];
+      int height = viewport[3];
+      int save_viewport_x = viewport[0];
+      int save_viewport_y = viewport[1];
+      CoglFramebuffer *pass_fb;
+
+      rut_dof_effect_set_framebuffer_size (data->dof, width, height);
+
+      pass_fb = rut_dof_effect_get_depth_pass_fb (data->dof);
+      rut_camera_set_framebuffer (camera_component, pass_fb);
+      rut_camera_set_viewport (camera_component, 0, 0, width, height);
+
+      rut_camera_flush (camera_component);
+      cogl_framebuffer_clear4f (pass_fb,
+                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+                                1, 1, 1, 1);
+      rut_camera_end_frame (camera_component);
+
+      paint_ctx.pass = RIG_PASS_DOF_DEPTH;
+      rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+
+      pass_fb = rut_dof_effect_get_color_pass_fb (data->dof);
+      rut_camera_set_framebuffer (camera_component, pass_fb);
+
+      rut_camera_flush (camera_component);
+      cogl_framebuffer_clear4f (pass_fb,
+                                COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
+                                0.22, 0.22, 0.22, 1);
+      rut_camera_end_frame (camera_component);
+
+      paint_ctx.pass = RIG_PASS_COLOR_UNBLENDED;
+      rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+
+      paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
+      rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+
+      rut_camera_set_framebuffer (camera_component, fb);
+      rut_camera_set_viewport (camera_component,
+                               save_viewport_x,
+                               save_viewport_y,
+                               width, height);
+
+      rut_camera_flush (data->camera);
+      rut_dof_effect_draw_rectangle (data->dof,
+                                     fb,
+                                     data->main_x,
+                                     data->main_y,
+                                     data->main_x + data->main_width,
+                                     data->main_y + data->main_height);
+      rut_camera_end_frame (data->camera);
+    }
+  else
+    {
+      paint_ctx.pass = RIG_PASS_COLOR_UNBLENDED;
+      rut_paint_ctx->camera = data->camera;
+      rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+
+      paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
+      rut_paint_ctx->camera = data->camera;
+      rig_paint_camera_entity (data->editor_camera, &paint_ctx);
+    }
+
+  rut_camera_flush (data->editor_camera_component);
+
+  /* Use this to visualize the depth-of-field alpha buffer... */
 #if 0
-  rut_paint_ctx->camera = data->editor_camera;
-
-  rut_graphable_traverse (data->editor_camera,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          scenegraph_pre_paint_cb,
-                          scenegraph_post_paint_cb,
-                          &paint_ctx);
+  CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+  cogl_pipeline_set_layer_texture (pipeline, 0, data->dof.depth_pass);
+  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+  cogl_framebuffer_draw_rectangle (fb,
+                                   pipeline,
+                                   0, 0,
+                                   200, 200);
 #endif
+
+  /* Use this to visualize the shadow_map */
+#if 0
+  CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+  cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_map);
+  //cogl_pipeline_set_layer_texture (pipeline, 0, data->shadow_color);
+  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+  cogl_framebuffer_draw_rectangle (fb,
+                                   pipeline,
+                                   0, 0,
+                                   200, 200);
+#endif
+
+  if (data->debug_pick_ray && data->picking_ray)
+    {
+      cogl_framebuffer_draw_primitive (fb,
+                                       data->picking_ray_color,
+                                       data->picking_ray);
+    }
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode && !data->play_mode)
+    {
+      rig_draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
+
+      if (data->selected_entity)
+        {
+          rut_tool_update (data->tool, data->selected_entity);
+          rut_tool_draw (data->tool, fb);
+        }
+    }
+#endif /* RIG_EDITOR_ENABLED */
+
+  rut_camera_end_frame (data->editor_camera_component);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
 
