@@ -35,7 +35,7 @@
  * It can internally be composed of multiple extra controls for
  * example to toggle whether the property is animatable or not */
 
-#define RUT_PROP_INSPECTOR_MAX_N_CONTROLS 2
+#define RUT_PROP_INSPECTOR_MAX_N_CONTROLS 3
 
 typedef struct
 {
@@ -326,11 +326,14 @@ _rut_prop_inspector_init_type (void)
 static RutObject *
 rut_prop_inspector_create_control_for_property (RutContext *context,
                                                 RutProperty *prop,
-                                                RutProperty **control_prop)
+                                                RutProperty **control_prop,
+                                                const char **label_text)
 {
   const RutPropertySpec *spec = prop->spec;
   const char *name;
   RutText *label;
+
+  *label_text = NULL;
 
   if (spec->nick)
     name = spec->nick;
@@ -563,15 +566,30 @@ add_control (RutPropInspector *inspector,
 {
   RutProperty *control_prop;
   RutObject *control;
+  const char *label_text;
 
   control = rut_prop_inspector_create_control_for_property (inspector->context,
                                                             prop,
-                                                            &control_prop);
+                                                            &control_prop,
+                                                            &label_text);
 
   if (control)
     {
       RutPropInspectorControl *control_data =
         inspector->controls + inspector->n_controls++;
+
+      if (label_text)
+        {
+          control_data->control =
+            rut_text_new_with_text (inspector->context,
+                                    NULL, /* font_name */
+                                    label_text);
+          control_data->transform =
+            rut_transform_new (inspector->context, control_data->control, NULL);
+          rut_graphable_add_child (inspector, control_data->transform);
+
+          control_data = inspector->controls + inspector->n_controls++;
+        }
 
       control_data->control = control;
       control_data->expand = TRUE;
