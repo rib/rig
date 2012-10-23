@@ -41,7 +41,7 @@ typedef enum _UndoRedoOp
 
 typedef struct _UndoRedoConstPropertyChange
 {
-  RutEntity *entity;
+  RutObject *object;
   RutProperty *property;
   RutBoxed value0;
   RutBoxed value1;
@@ -49,7 +49,7 @@ typedef struct _UndoRedoConstPropertyChange
 
 typedef struct _UndoRedoPathAddRemove
 {
-  RutEntity *entity;
+  RutObject *object;
   RutProperty *property;
   float t;
   RutBoxed value;
@@ -57,7 +57,7 @@ typedef struct _UndoRedoPathAddRemove
 
 typedef struct _UndoRedoPathModify
 {
-  RutEntity *entity;
+  RutObject *object;
   RutProperty *property;
   float t;
   RutBoxed value0;
@@ -66,7 +66,7 @@ typedef struct _UndoRedoPathModify
 
 typedef struct _UndoRedoSetAnimated
 {
-  RutEntity *entity;
+  RutObject *object;
   RutProperty *property;
   CoglBool value;
 } UndoRedoSetAnimated;
@@ -117,7 +117,6 @@ typedef struct _RigUndoJournal
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        CoglBool mergable,
-                                       RutEntity *entity,
                                        const RutBoxed *value,
                                        RutProperty *property);
 
@@ -136,7 +135,6 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
 
 void
 rig_undo_journal_log_set_animated (RigUndoJournal *journal,
-                                   RutEntity *entity,
                                    RutProperty *property,
                                    CoglBool value);
 

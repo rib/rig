@@ -416,7 +416,6 @@ inspector_property_changed_cb (RutProperty *target_property,
 
   rig_undo_journal_set_property_and_log (data->undo_journal,
                                          TRUE, /* mergable */
-                                         data->selected_entity,
                                          &new_value,
                                          target_property);
 
@@ -431,7 +430,6 @@ inspector_animated_changed_cb (RutProperty *property,
   RigData *data = user_data;
 
   rig_undo_journal_log_set_animated (data->undo_journal,
-                                     data->selected_entity,
                                      property,
                                      value);
 }
@@ -1007,7 +1005,6 @@ tool_rotation_event_cb (RutTool *tool,
 
         rig_undo_journal_set_property_and_log (data->undo_journal,
                                                FALSE /* mergable */,
-                                               data->selected_entity,
                                                &value,
                                                rotation_prop);
       }

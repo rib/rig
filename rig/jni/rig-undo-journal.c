@@ -151,7 +151,6 @@ rig_undo_journal_find_recent_property_change (RigUndoJournal *journal,
 static void
 rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
                                                 CoglBool mergable,
-                                                RutEntity *entity,
                                                 const RutBoxed *value,
                                                 RutProperty *property)
 {
@@ -188,7 +187,7 @@ rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
       rut_boxed_copy (&prop_change->value0, &prop_data->constant_value);
       rut_boxed_copy (&prop_change->value1, value);
 
-      prop_change->entity = rut_refable_ref (entity);
+      prop_change->object = rut_refable_ref (property->object);
       prop_change->property = property;
 
       rut_property_set_boxed (&journal->data->ctx->property_ctx,
@@ -231,7 +230,6 @@ rig_undo_journal_find_recent_timeline_property_change (RigUndoJournal *journal,
 static void
 rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
                                                 CoglBool mergable,
-                                                RutEntity *entity,
                                                 const RutBoxed *value,
                                                 RutProperty *property)
 {
@@ -280,7 +278,7 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
           UndoRedoPathModify *modify = &undo_redo->d.path_modify;
 
           undo_redo->op = UNDO_REDO_PATH_MODIFY_OP;
-          modify->entity = rut_refable_ref (entity);
+          modify->object = rut_refable_ref (property->object);
           modify->property = property;
           modify->t = t;
           modify->value0 = old_value;
@@ -291,7 +289,7 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
           UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
 
           undo_redo->op = UNDO_REDO_PATH_ADD_OP;
-          add_remove->entity = rut_refable_ref (entity);
+          add_remove->object = rut_refable_ref (property->object);
           add_remove->property = property;
           add_remove->t = t;
           rut_boxed_copy (&add_remove->value, value);
@@ -311,20 +309,17 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        CoglBool mergable,
-                                       RutEntity *entity,
                                        const RutBoxed *value,
                                        RutProperty *property)
 {
   if (property->animated)
     rig_undo_journal_set_timeline_property_and_log (journal,
                                                     mergable,
-                                                    entity,
                                                     value,
                                                     property);
   else
     rig_undo_journal_set_constant_property_and_log (journal,
                                                     mergable,
-                                                    entity,
                                                     value,
                                                     property);
 }
@@ -348,7 +343,6 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
 
   rig_undo_journal_set_property_and_log (journal,
                                          mergable,
-                                         entity,
                                          &value,
                                          position);
 }
@@ -374,7 +368,7 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
 
       undo_redo->op = UNDO_REDO_PATH_REMOVE_OP;
       undo_redo->mergable = FALSE;
-      add_remove->entity = rut_refable_ref (property->object);
+      add_remove->object = rut_refable_ref (property->object);
       add_remove->property = property;
       add_remove->t = t;
       add_remove->value = old_value;
@@ -388,7 +382,6 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
 
 void
 rig_undo_journal_log_set_animated (RigUndoJournal *journal,
-                                   RutEntity *entity,
                                    RutProperty *property,
                                    CoglBool value)
 {
@@ -401,7 +394,7 @@ rig_undo_journal_log_set_animated (RigUndoJournal *journal,
 
   set_animated = &undo_redo->d.set_animated;
 
-  set_animated->entity = rut_refable_ref (entity);
+  set_animated->object = rut_refable_ref (property->object);
   set_animated->property = property;
   set_animated->value = value;
 
@@ -454,7 +447,7 @@ undo_redo_const_prop_change_invert (UndoRedo *undo_redo_src)
   undo_redo_inverse->op = undo_redo_src->op;
   undo_redo_inverse->mergable = FALSE;
 
-  inverse->entity = rut_refable_ref (src->entity);
+  inverse->object = rut_refable_ref (src->object);
   inverse->property = src->property;
   inverse->value0 = src->value1;
   inverse->value1 = src->value0;
@@ -466,7 +459,7 @@ static void
 undo_redo_const_prop_change_free (UndoRedo *undo_redo)
 {
   UndoRedoConstPropertyChange *prop_change = &undo_redo->d.const_prop_change;
-  rut_refable_unref (prop_change->entity);
+  rut_refable_unref (prop_change->object);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -496,7 +489,7 @@ undo_redo_path_add_invert (UndoRedo *undo_redo_src)
   inverse->op = UNDO_REDO_PATH_REMOVE_OP;
   rut_boxed_copy (&inverse->d.path_add_remove.value,
                   &undo_redo_src->d.path_add_remove.value);
-  rut_refable_ref (inverse->d.path_add_remove.entity);
+  rut_refable_ref (inverse->d.path_add_remove.object);
 
   return inverse;
 }
@@ -527,7 +520,7 @@ undo_redo_path_remove_invert (UndoRedo *undo_redo_src)
   inverse->op = UNDO_REDO_PATH_ADD_OP;
   rut_boxed_copy (&inverse->d.path_add_remove.value,
                   &undo_redo_src->d.path_add_remove.value);
-  rut_refable_ref (inverse->d.path_add_remove.entity);
+  rut_refable_ref (inverse->d.path_add_remove.object);
 
   return inverse;
 }
@@ -537,7 +530,7 @@ undo_redo_path_add_remove_free (UndoRedo *undo_redo)
 {
   UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
   rut_boxed_destroy (&add_remove->value);
-  rut_refable_unref (add_remove->entity);
+  rut_refable_unref (add_remove->object);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -568,7 +561,7 @@ undo_redo_path_modify_invert (UndoRedo *undo_redo_src)
                   &undo_redo_src->d.path_modify.value1);
   rut_boxed_copy (&inverse->d.path_modify.value1,
                   &undo_redo_src->d.path_modify.value0);
-  rut_refable_ref (inverse->d.path_modify.entity);
+  rut_refable_ref (inverse->d.path_modify.object);
 
   return inverse;
 }
@@ -579,7 +572,7 @@ undo_redo_path_modify_free (UndoRedo *undo_redo)
   UndoRedoPathModify *modify = &undo_redo->d.path_modify;
   rut_boxed_destroy (&modify->value0);
   rut_boxed_destroy (&modify->value1);
-  rut_refable_unref (modify->entity);
+  rut_refable_unref (modify->object);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -604,7 +597,7 @@ undo_redo_set_animated_invert (UndoRedo *undo_redo_src)
 
   inverse->d.set_animated.value = !inverse->d.set_animated.value;
 
-  rut_refable_ref (inverse->d.set_animated.entity);
+  rut_refable_ref (inverse->d.set_animated.object);
 
   return inverse;
 }
@@ -613,7 +606,7 @@ static void
 undo_redo_set_animated_free (UndoRedo *undo_redo)
 {
   UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
-  rut_refable_unref (set_animated->entity);
+  rut_refable_unref (set_animated->object);
   g_slice_free (UndoRedo, undo_redo);
 }
 
