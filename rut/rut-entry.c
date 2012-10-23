@@ -49,6 +49,7 @@ struct _RutEntry
   CoglPipeline *border_circle_pipeline;
 
   RutText *text;
+  RutTransform *text_transform;
 
   CoglPrimitive *prim;
 
@@ -93,6 +94,9 @@ _rut_entry_free (void *object)
 
   rut_graphable_remove_child (entry->text);
   rut_refable_unref (entry->text);
+
+  rut_graphable_remove_child (entry->text_transform);
+  rut_refable_unref (entry->text_transform);
 
   rut_graphable_destroy (entry);
 
@@ -160,19 +164,29 @@ _rut_entry_paint (RutObject *object,
 
   /* NB ctx->circle_texture is padded such that the texture itself is twice as
    * wide as the circle */
-  cogl_framebuffer_draw_rectangle (fb,
-                                   entry->circle_pipeline,
-                                   -height, -half_height, height, height + half_height);
-
-  cogl_framebuffer_draw_rectangle (fb,
-                                   entry->circle_pipeline,
-                                   width - height, -half_height, width + height, height + half_height);
-
   cogl_framebuffer_draw_textured_rectangle (fb,
                                             entry->circle_pipeline,
-                                            0, -half_height, width, height + half_height,
-                                            0.5, 0, 0.5, 1);
-
+                                            -half_height,
+                                            -half_height,
+                                            half_height,
+                                            height + half_height,
+                                            0.0f, 0.0f,
+                                            0.5f, 1.0f);
+  cogl_framebuffer_draw_textured_rectangle (fb,
+                                            entry->circle_pipeline,
+                                            width - half_height,
+                                            -half_height,
+                                            width + half_height,
+                                            height + half_height,
+                                            0.5f, 0.0f,
+                                            1.0f, 1.0f);
+  cogl_framebuffer_draw_textured_rectangle (fb,
+                                            entry->circle_pipeline,
+                                            half_height,
+                                            -half_height,
+                                            width - half_height,
+                                            height + half_height,
+                                            0.5f, 0.0f, 0.5f, 1.0f);
 
 #if 0
   cogl_framebuffer_draw_rectangle (fb,
@@ -200,7 +214,15 @@ rut_entry_set_size (RutEntry *entry,
       entry->prim = NULL;
     }
 
-  rut_sizable_set_size (entry->text, width, height);
+  rut_transform_init_identity (entry->text_transform);
+  rut_transform_translate (entry->text_transform,
+                           (int) (height / 2.0f),
+                           0.0f,
+                           0.0f);
+
+  rut_sizable_set_size (entry->text,
+                        width - height,
+                        height);
 
   entry->width = width;
   entry->height = height;
@@ -226,8 +248,27 @@ _rut_entry_get_preferred_width (RutObject *object,
                                 float *natural_width_p)
 {
   RutEntry *entry = RUT_ENTRY (object);
-  rut_sizable_get_preferred_width (entry->text, for_height,
-                                   min_width_p, natural_width_p);
+  float min_width, natural_width;
+  float natural_height;
+
+  rut_sizable_get_preferred_width (entry->text,
+                                   for_height,
+                                   &min_width,
+                                   &natural_width);
+  rut_sizable_get_preferred_height (entry->text,
+                                    natural_width,
+                                    NULL,
+                                    &natural_height);
+
+  /* The entry will add a half circle with a diameter of the height of
+   * the control to either side of the text widget */
+  min_width += natural_height;
+  natural_width += natural_height;
+
+  if (min_width_p)
+    *min_width_p = min_width;
+  if (natural_width_p)
+    *natural_width_p = natural_width;
 }
 
 static void
@@ -237,7 +278,10 @@ _rut_entry_get_preferred_height (RutObject *object,
                                  float *natural_height_p)
 {
   RutEntry *entry = RUT_ENTRY (object);
-  rut_sizable_get_preferred_height (entry->text, for_width,
+  /* We can't pass on the for_width parameter because the width that
+   * the text widget will actually get depends on the height that it
+   * returns */
+  rut_sizable_get_preferred_height (entry->text, -1,
                                     min_height_p, natural_height_p);
 }
 
@@ -310,6 +354,7 @@ rut_entry_new (RutContext *ctx)
 {
   RutEntry *entry = g_slice_new0 (RutEntry);
   static CoglBool initialized = FALSE;
+  float width, height;
 
   if (initialized == FALSE)
     {
@@ -344,15 +389,20 @@ rut_entry_new (RutContext *ctx)
 
   entry->text = rut_text_new (ctx);
   rut_text_set_editable (entry->text, TRUE);
-  rut_graphable_add_child (entry, entry->text);
 
-  rut_sizable_get_size (entry->text, &entry->width, &entry->height);
-  rut_property_set_copy_binding (&ctx->property_ctx,
-                                 &entry->properties[RUT_ENTRY_PROP_WIDTH],
-                                 rut_introspectable_lookup_property (entry->text, "width"));
-  rut_property_set_copy_binding (&ctx->property_ctx,
-                                 &entry->properties[RUT_ENTRY_PROP_HEIGHT],
-                                 rut_introspectable_lookup_property (entry->text, "height"));
+  entry->text_transform = rut_transform_new (ctx, entry->text, NULL);
+  rut_graphable_add_child (entry, entry->text_transform);
+
+  rut_sizable_get_preferred_width (entry,
+                                   -1, /* for_height */
+                                   NULL, /* min_width */
+                                   &width);
+  rut_sizable_get_preferred_height (entry,
+                                    width, /* for_width */
+                                    NULL, /* min_height */
+                                    &height);
+  rut_sizable_set_size (entry, width, height);
+
   return entry;
 }
 
