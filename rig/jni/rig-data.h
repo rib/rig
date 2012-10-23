@@ -191,6 +191,9 @@ struct _RigData
   CoglPrimitive *picking_ray;
   CoglBool debug_pick_ray;
 
+  /* The transparency grid widget that is displayed behind the assets list */
+  RutImage *transparency_grid;
+
   //Path *path;
   //float path_t;
   //RutProperty path_property;

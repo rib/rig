@@ -1928,6 +1928,9 @@ rig_search_asset_list (RigData *data, const char *search)
 
   data->assets_list = rut_graph_new (data->ctx, NULL);
 
+  if (data->transparency_grid)
+    rut_graphable_add_child (data->assets_list, data->transparency_grid);
+
   doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
   rut_graphable_add_child (doc_node, data->assets_list);
   rut_refable_unref (data->assets_list);
@@ -1960,6 +1963,38 @@ asset_search_update_cb (RutText *text,
   if (!rig_search_asset_list (user_data, rut_text_get_text (text)))
     rig_search_asset_list (user_data, NULL);
 }
+
+
+#ifdef RIG_EDITOR_ENABLED
+
+static RutImage *
+load_transparency_grid (RutContext *ctx)
+{
+  CoglError *error = NULL;
+  CoglTexture *texture =
+    rut_load_texture (ctx, RIG_SHARE_DIR "/transparency-grid.png", &error);
+  RutImage *ret;
+
+  if (texture == NULL)
+    {
+      g_warning ("Failed to load transparency-grid.png: %s",
+                 error->message);
+      cogl_error_free (error);
+    }
+  else
+    {
+      ret = rut_image_new (ctx, texture);
+
+      rut_image_set_draw_mode (ret, RUT_IMAGE_DRAW_MODE_REPEAT);
+      rut_sizable_set_size (ret, 1000000.0f, 1000000.0f);
+
+      cogl_object_unref (texture);
+    }
+
+  return ret;
+}
+
+#endif /* RIG_EDITOR_ENABLED */
 
 static void
 init (RutShell *shell, void *user_data)
@@ -2496,6 +2531,8 @@ init (RutShell *shell, void *user_data)
       rut_split_view_set_split_offset (data->splits[2], 500);
       rut_split_view_set_split_offset (data->splits[3], 470);
       rut_split_view_set_split_offset (data->splits[4], 150);
+
+      data->transparency_grid = load_transparency_grid (data->ctx);
     }
 #endif
 
@@ -2686,6 +2723,9 @@ fini (RutShell *shell, void *user_data)
       rut_refable_unref (data->transition_view);
       cogl_object_unref (data->grid_prim);
       cogl_object_unref (data->light_icon);
+
+      if (data->transparency_grid)
+        rut_refable_unref (data->transparency_grid);
     }
 #endif
 }
