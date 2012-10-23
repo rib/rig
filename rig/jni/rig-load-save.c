@@ -198,7 +198,7 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
         g_warning ("Failed to find id of parent entity\n");
     }
 
-  if (label)
+  if (label && *label)
     fprintf (state->file, "%*s        label=\"%s\"\n",
              state->indent, "",
              label);

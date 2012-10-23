@@ -267,7 +267,7 @@ rut_entity_set_label (RutEntity *entity,
 const char *
 rut_entity_get_label (RutEntity *entity)
 {
-  return entity->label;
+  return entity->label ? entity->label : "";
 }
 
 float
