@@ -151,6 +151,8 @@ _rut_entity_free (void *object)
   CoglPipeline **pipeline_caches = entity->pipeline_caches;
   int i;
 
+  g_free (entity->label);
+
   g_ptr_array_free (entity->components, TRUE);
 
   rut_graphable_destroy (entity);
@@ -256,10 +258,10 @@ void
 rut_entity_set_label (RutEntity *entity,
                       const char *label)
 {
-  if (entity->label)
-    g_free (entity->label);
-
+  g_free (entity->label);
   entity->label = g_strdup (label);
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[PROP_LABEL]);
 }
 
 const char *
