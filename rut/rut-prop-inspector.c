@@ -451,6 +451,19 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
         }
       break;
 
+    case RUT_PROPERTY_TYPE_TEXT:
+      {
+        RutEntry *entry = rut_entry_new (context);
+        RutText *text = rut_entry_get_text (entry);
+
+        rut_text_set_single_line_mode (text, TRUE);
+        *control_prop = rut_introspectable_lookup_property (text, "text");
+        *label_text = name;
+
+        return entry;
+      }
+      break;
+
     default:
       break;
     }
