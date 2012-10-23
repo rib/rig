@@ -1870,7 +1870,7 @@ add_asset_icon (RigData *data,
 {
   AssetInputClosure *closure;
   CoglTexture *texture;
-  RutNineSlice *nine_slice;
+  RutImage *image;
   RutInputRegion *region;
   RutTransform *transform;
 
@@ -1887,16 +1887,15 @@ add_asset_icon (RigData *data,
 
   transform =
     rut_transform_new (data->ctx,
-                       (nine_slice = rut_nine_slice_new (data->ctx,
-                                                         texture,
-                                                         0, 0, 0, 0,
-                                                         100, 100)),
+                       (image = rut_image_new (data->ctx, texture)),
                        (region =
                         rut_input_region_new_rectangle (0, 0, 100, 100,
                                                         asset_input_cb,
                                                         closure)),
                        NULL);
   rut_graphable_add_child (data->assets_list, transform);
+
+  rut_sizable_set_size (image, 100, 100);
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
@@ -1908,7 +1907,7 @@ add_asset_icon (RigData *data,
   //rut_input_region_set_graphable (region, nine_slice);
 
   rut_refable_unref (transform);
-  rut_refable_unref (nine_slice);
+  rut_refable_unref (image);
   rut_refable_unref (region);
 }
 
