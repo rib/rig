@@ -2445,7 +2445,6 @@ init (RutShell *shell, void *user_data)
           rut_graphable_add_child (data->assets_vp, transform);
 
           text = rut_entry_get_text (entry);
-          rut_text_set_editable (text, TRUE);
           rut_text_set_single_line_mode (text, TRUE);
           rut_text_set_text (text, "Search...");
 

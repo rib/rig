@@ -343,6 +343,7 @@ rut_entry_new (RutContext *ctx)
   rut_graphable_init (RUT_OBJECT (entry));
 
   entry->text = rut_text_new (ctx);
+  rut_text_set_editable (entry->text, TRUE);
   rut_graphable_add_child (entry, entry->text);
 
   rut_sizable_get_size (entry->text, &entry->width, &entry->height);
