@@ -104,6 +104,8 @@ _rut_prop_inspector_free (void *object)
   RutPropInspector *inspector = object;
   int i;
 
+  rut_property_destroy (&inspector->dummy_prop);
+
   rut_refable_unref (inspector->context);
 
   for (i = 0; i < inspector->n_controls; i++)
