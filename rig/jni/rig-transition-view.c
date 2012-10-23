@@ -454,27 +454,31 @@ _rig_transition_view_paint (RutObject *object,
    * drawn as points which are always sized in framebuffer pixels
    * regardless of the transformation */
 
-  cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_push_rectangle_clip (fb,
                                         view->controls_width,
                                         0.0f,
                                         view->total_width,
-                                        view->row_height * 10000.0f);
+                                        view->total_height);
 
-  cogl_framebuffer_translate (fb,
-                              view->controls_width,
-                              view->row_height * 0.5f,
-                              0.0f);
-  cogl_framebuffer_scale (fb,
-                          view->total_width - view->controls_width,
-                          view->row_height,
-                          1.0f);
+  if (view->n_dots > 0)
+    {
+      cogl_framebuffer_push_matrix (fb);
 
-  cogl_framebuffer_draw_primitive (fb,
-                                   view->dots_pipeline,
-                                   view->dots_primitive);
+      cogl_framebuffer_translate (fb,
+                                  view->controls_width,
+                                  view->row_height * 0.5f,
+                                  0.0f);
+      cogl_framebuffer_scale (fb,
+                              view->total_width - view->controls_width,
+                              view->row_height,
+                              1.0f);
 
-  cogl_framebuffer_pop_matrix (fb);
+      cogl_framebuffer_draw_primitive (fb,
+                                       view->dots_pipeline,
+                                       view->dots_primitive);
+
+      cogl_framebuffer_pop_matrix (fb);
+    }
 
   {
     float progress_x =
@@ -631,11 +635,12 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                                   view->controls_width, /* x0 */
                                   0.0f, /* y0 */
                                   view->total_width,
-                                  row_height * row_num /* y1 */);
+                                  view->total_height /* y1 */);
 
   view->row_height = nearbyintf (row_height);
 
-  cogl_pipeline_set_point_size (view->dots_pipeline, row_height);
+  if (view->row_height > 0)
+    cogl_pipeline_set_point_size (view->dots_pipeline, row_height);
 }
 
 static void
