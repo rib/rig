@@ -41,6 +41,9 @@ typedef struct _RigPaintContext
 
 } RigPaintContext;
 
+GArray *
+rig_journal_new (void);
+
 void
 rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass);
 

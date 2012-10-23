@@ -60,6 +60,8 @@ struct _RigData
   RutContext *ctx;
   CoglOnscreen *onscreen;
 
+  GArray *journal;
+
   RigUndoJournal *undo_journal;
 
   /* shadow mapping */

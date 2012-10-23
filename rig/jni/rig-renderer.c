@@ -55,92 +55,58 @@ static const float jitter_offsets[32] =
   0.625f, 0.8125f
 };
 
-/* XXX: This assumes that the primitive is being drawn in pixel coordinates,
- * since we jitter the modelview not the projection.
- */
-void
-rig_draw_jittered_primitive4f (RigData *data,
-                               CoglFramebuffer *fb,
-                               CoglPrimitive *prim,
-                               float red,
-                               float green,
-                               float blue)
+typedef struct _RigJournalEntry
 {
-  CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-  int i;
+  RutEntity *entity;
+  CoglMatrix matrix;
+} RigJournalEntry;
 
-  cogl_pipeline_set_color4f (pipeline,
-                             red / 16.0f,
-                             green / 16.0f,
-                             blue / 16.0f,
-                             1.0f / 16.0f);
+static void
+rig_journal_log (GArray *journal,
+                 RigPaintContext *paint_ctx,
+                 RutEntity *entity,
+                 const CoglMatrix *matrix)
+{
 
-  for (i = 0; i < 16; i++)
-    {
-      const float *offset = jitter_offsets + 2 * i;
+  RigJournalEntry *entry;
 
-      cogl_framebuffer_push_matrix (fb);
-      cogl_framebuffer_translate (fb, offset[0], offset[1], 0);
-      cogl_framebuffer_draw_primitive (fb, pipeline, prim);
-      cogl_framebuffer_pop_matrix (fb);
-    }
+  g_array_set_size (journal, journal->len + 1);
+  entry = &g_array_index (journal, RigJournalEntry, journal->len - 1);
 
-  cogl_object_unref (pipeline);
+  entry->entity = rut_refable_ref (entity);
+  entry->matrix = *matrix;
 }
 
-void
-rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
+GArray *
+rig_journal_new (void)
 {
-  RutCamera *camera_component =
-    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
-  CoglMatrix transform;
-  CoglMatrix inverse_transform;
-  CoglMatrix view;
+  return g_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
+}
 
-  /* translate to z_2d and scale */
-  if (!shadow_pass)
-    view = data->main_view;
-  else
-    view = data->identity;
+static int
+sort_entry_cb (const RigJournalEntry *entry0,
+               const RigJournalEntry *entry1)
+{
+  float z0 = entry0->matrix.zw;
+  float z1 = entry1->matrix.zw;
 
-  /* apply the camera viewing transform */
-  rut_graphable_get_transform (camera, &transform);
-  cogl_matrix_get_inverse (&transform, &inverse_transform);
-  cogl_matrix_multiply (&view, &view, &inverse_transform);
+  /* TODO: also sort based on the state */
 
-  if (shadow_pass)
-    {
-      CoglMatrix flipped_view;
-      cogl_matrix_init_identity (&flipped_view);
-      cogl_matrix_scale (&flipped_view, 1, -1, 1);
-      cogl_matrix_multiply (&flipped_view, &flipped_view, &view);
-      rut_camera_set_view_transform (camera_component, &flipped_view);
-    }
-  else
-    rut_camera_set_view_transform (camera_component, &view);
+  if (z0 < z1)
+    return -1;
+  else if (z0 > z1)
+    return 1;
+
+  return 0;
 }
 
 static void
-get_normal_matrix (const CoglMatrix *matrix,
-                   float *normal_matrix)
+reshape_cb (RutShape *shape, void *user_data)
 {
-  CoglMatrix inverse_matrix;
-
-  /* Invert the matrix */
-  cogl_matrix_get_inverse (matrix, &inverse_matrix);
-
-  /* Transpose it while converting it to 3x3 */
-  normal_matrix[0] = inverse_matrix.xx;
-  normal_matrix[1] = inverse_matrix.xy;
-  normal_matrix[2] = inverse_matrix.xz;
-
-  normal_matrix[3] = inverse_matrix.yx;
-  normal_matrix[4] = inverse_matrix.yy;
-  normal_matrix[5] = inverse_matrix.yz;
-
-  normal_matrix[6] = inverse_matrix.zx;
-  normal_matrix[7] = inverse_matrix.zy;
-  normal_matrix[8] = inverse_matrix.zz;
+  RutComponentableProps *componentable =
+    rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
+  RutEntity *entity = componentable->entity;
+  rig_dirty_entity_pipelines (entity);
 }
 
 static void
@@ -170,44 +136,6 @@ set_focal_parameters (CoglPipeline *pipeline,
                                    location,
                                    1 /* n_components */, 1 /* count */,
                                    &depth_of_field);
-}
-
-static void
-get_light_modelviewprojection (const CoglMatrix *model_transform,
-                               RutEntity  *light,
-                               const CoglMatrix *light_projection,
-                               CoglMatrix *light_mvp)
-{
-  const CoglMatrix *light_transform;
-  CoglMatrix light_view;
-
-  /* TODO: cache the bias * light_projection * light_view matrix! */
-
-  /* Move the unit data from [-1,1] to [0,1], column major order */
-  float bias[16] = {
-    .5f, .0f, .0f, .0f,
-    .0f, .5f, .0f, .0f,
-    .0f, .0f, .5f, .0f,
-    .5f, .5f, .5f, 1.f
-  };
-
-  light_transform = rut_entity_get_transform (light);
-  cogl_matrix_get_inverse (light_transform, &light_view);
-
-  cogl_matrix_init_from_array (light_mvp, bias);
-  cogl_matrix_multiply (light_mvp, light_mvp, light_projection);
-  cogl_matrix_multiply (light_mvp, light_mvp, &light_view);
-
-  cogl_matrix_multiply (light_mvp, light_mvp, model_transform);
-}
-
-static void
-reshape_cb (RutShape *shape, void *user_data)
-{
-  RutComponentableProps *componentable =
-    rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
-  RutEntity *entity = componentable->entity;
-  rig_dirty_entity_pipelines (entity);
 }
 
 static CoglPipeline *
@@ -414,6 +342,35 @@ get_entity_mask_pipeline (RigData *data,
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
 
   return pipeline;
+}
+
+static void
+get_light_modelviewprojection (const CoglMatrix *model_transform,
+                               RutEntity  *light,
+                               const CoglMatrix *light_projection,
+                               CoglMatrix *light_mvp)
+{
+  const CoglMatrix *light_transform;
+  CoglMatrix light_view;
+
+  /* TODO: cache the bias * light_projection * light_view matrix! */
+
+  /* Move the unit data from [-1,1] to [0,1], column major order */
+  float bias[16] = {
+    .5f, .0f, .0f, .0f,
+    .0f, .5f, .0f, .0f,
+    .0f, .0f, .5f, .0f,
+    .5f, .5f, .5f, 1.f
+  };
+
+  light_transform = rut_entity_get_transform (light);
+  cogl_matrix_get_inverse (light_transform, &light_view);
+
+  cogl_matrix_init_from_array (light_mvp, bias);
+  cogl_matrix_multiply (light_mvp, light_mvp, light_projection);
+  cogl_matrix_multiply (light_mvp, light_mvp, &light_view);
+
+  cogl_matrix_multiply (light_mvp, light_mvp, model_transform);
 }
 
 static CoglPipeline *
@@ -876,6 +833,186 @@ get_entity_pipeline (RigData *data,
   g_warn_if_reached ();
   return NULL;
 }
+static void
+get_normal_matrix (const CoglMatrix *matrix,
+                   float *normal_matrix)
+{
+  CoglMatrix inverse_matrix;
+
+  /* Invert the matrix */
+  cogl_matrix_get_inverse (matrix, &inverse_matrix);
+
+  /* Transpose it while converting it to 3x3 */
+  normal_matrix[0] = inverse_matrix.xx;
+  normal_matrix[1] = inverse_matrix.xy;
+  normal_matrix[2] = inverse_matrix.xz;
+
+  normal_matrix[3] = inverse_matrix.yx;
+  normal_matrix[4] = inverse_matrix.yy;
+  normal_matrix[5] = inverse_matrix.yz;
+
+  normal_matrix[6] = inverse_matrix.zx;
+  normal_matrix[7] = inverse_matrix.zy;
+  normal_matrix[8] = inverse_matrix.zz;
+}
+
+static void
+rig_journal_flush (GArray *journal,
+                   RigPaintContext *paint_ctx)
+{
+  RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
+  RutCamera *camera = rut_paint_ctx->camera;
+  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  int start, dir, end;
+  int i;
+
+  /* TODO: use an inline qsort implementation */
+  g_array_sort (journal, (void *)sort_entry_cb);
+
+  /* We draw opaque geometry front-to-back so we are more likely to be
+   * able to discard later fragments earlier by depth testing.
+   *
+   * We draw transparent geometry back-to-front so it blends
+   * correctly.
+   */
+  if ( paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+    {
+      start = 0;
+      dir = 1;
+      end = journal->len;
+    }
+  else
+    {
+      start = journal->len - 1;
+      dir = -1;
+      end = -1;
+    }
+
+  cogl_framebuffer_push_matrix (fb);
+
+  for (i = start; i != end; i += dir)
+    {
+      RigJournalEntry *entry = &g_array_index (journal, RigJournalEntry, i);
+      RutEntity *entity = entry->entity;
+      RutComponent *geometry =
+        rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+      CoglPipeline *pipeline;
+      CoglPrimitive *primitive;
+      float normal_matrix[9];
+      RutMaterial *material;
+
+      pipeline = get_entity_pipeline (paint_ctx->data,
+                                      entity,
+                                      geometry,
+                                      paint_ctx->pass);
+
+      if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
+          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+        {
+          int location;
+          RutLight *light = rut_entity_get_component (paint_ctx->data->light,
+                                                      RUT_COMPONENT_TYPE_LIGHT);
+          /* FIXME: only update the lighting uniforms when the light has
+           * actually moved! */
+          rut_light_set_uniforms (light, pipeline);
+
+          /* FIXME: only update the material uniforms when the material has
+           * actually changed! */
+          material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+          if (material)
+            rut_material_flush_uniforms (material, pipeline);
+
+          get_normal_matrix (&entry->matrix, normal_matrix);
+
+          location = cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
+          cogl_pipeline_set_uniform_matrix (pipeline,
+                                            location,
+                                            3, /* dimensions */
+                                            1, /* count */
+                                            FALSE, /* don't transpose again */
+                                            normal_matrix);
+        }
+
+      primitive = rut_primable_get_primitive (geometry);
+      cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+      cogl_framebuffer_draw_primitive (fb,
+                                       pipeline,
+                                       primitive);
+
+      cogl_object_unref (pipeline);
+
+      rut_refable_unref (entry->entity);
+    }
+
+  cogl_framebuffer_pop_matrix (fb);
+
+  g_array_set_size (journal, 0);
+}
+
+/* XXX: This assumes that the primitive is being drawn in pixel coordinates,
+ * since we jitter the modelview not the projection.
+ */
+void
+rig_draw_jittered_primitive4f (RigData *data,
+                               CoglFramebuffer *fb,
+                               CoglPrimitive *prim,
+                               float red,
+                               float green,
+                               float blue)
+{
+  CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+  int i;
+
+  cogl_pipeline_set_color4f (pipeline,
+                             red / 16.0f,
+                             green / 16.0f,
+                             blue / 16.0f,
+                             1.0f / 16.0f);
+
+  for (i = 0; i < 16; i++)
+    {
+      const float *offset = jitter_offsets + 2 * i;
+
+      cogl_framebuffer_push_matrix (fb);
+      cogl_framebuffer_translate (fb, offset[0], offset[1], 0);
+      cogl_framebuffer_draw_primitive (fb, pipeline, prim);
+      cogl_framebuffer_pop_matrix (fb);
+    }
+
+  cogl_object_unref (pipeline);
+}
+
+void
+rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
+{
+  RutCamera *camera_component =
+    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
+  CoglMatrix transform;
+  CoglMatrix inverse_transform;
+  CoglMatrix view;
+
+  /* translate to z_2d and scale */
+  if (!shadow_pass)
+    view = data->main_view;
+  else
+    view = data->identity;
+
+  /* apply the camera viewing transform */
+  rut_graphable_get_transform (camera, &transform);
+  cogl_matrix_get_inverse (&transform, &inverse_transform);
+  cogl_matrix_multiply (&view, &view, &inverse_transform);
+
+  if (shadow_pass)
+    {
+      CoglMatrix flipped_view;
+      cogl_matrix_init_identity (&flipped_view);
+      cogl_matrix_scale (&flipped_view, 1, -1, 1);
+      cogl_matrix_multiply (&flipped_view, &flipped_view, &view);
+      rut_camera_set_view_transform (camera_component, &flipped_view);
+    }
+  else
+    rut_camera_set_view_transform (camera_component, &view);
+}
 
 static void
 draw_entity_camera_frustum (RigData *data,
@@ -919,12 +1056,8 @@ entitygraph_pre_paint_cb (RutObject *object,
   if (rut_object_get_type (object) == &rut_entity_type)
     {
       RutEntity *entity = RUT_ENTITY (object);
-      RutComponent *geometry;
-      CoglPipeline *pipeline;
-      CoglPrimitive *primitive;
-      CoglMatrix modelview_matrix;
-      float normal_matrix[9];
-      RutMaterial *material;
+      RutObject *geometry;
+      CoglMatrix matrix;
 
       if (!rut_entity_get_visible (entity) ||
           (paint_ctx->pass == RIG_PASS_SHADOW && !rut_entity_get_cast_shadow (entity)))
@@ -940,45 +1073,11 @@ entitygraph_pre_paint_cb (RutObject *object,
           return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
-      pipeline = get_entity_pipeline (paint_ctx->data,
-                                      object,
-                                      geometry,
-                                      paint_ctx->pass);
-
-      if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
-          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-        {
-          int location;
-          RutLight *light = rut_entity_get_component (paint_ctx->data->light,
-                                                      RUT_COMPONENT_TYPE_LIGHT);
-          /* FIXME: only update the lighting uniforms when the light has
-           * actually moved! */
-          rut_light_set_uniforms (light, pipeline);
-
-          /* FIXME: only update the material uniforms when the material has
-           * actually changed! */
-          material = rut_entity_get_component (object, RUT_COMPONENT_TYPE_MATERIAL);
-          if (material)
-            rut_material_flush_uniforms (material, pipeline);
-
-          cogl_framebuffer_get_modelview_matrix (fb, &modelview_matrix);
-          get_normal_matrix (&modelview_matrix, normal_matrix);
-
-          location = cogl_pipeline_get_uniform_location (pipeline, "normal_matrix");
-          cogl_pipeline_set_uniform_matrix (pipeline,
-                                            location,
-                                            3, /* dimensions */
-                                            1, /* count */
-                                            FALSE, /* don't transpose again */
-                                            normal_matrix);
-        }
-
-      primitive = rut_primable_get_primitive (geometry);
-      cogl_framebuffer_draw_primitive (fb,
-                                       pipeline,
-                                       primitive);
-
-      cogl_object_unref (pipeline);
+      cogl_framebuffer_get_modelview_matrix (fb, &matrix);
+      rig_journal_log (paint_ctx->data->journal,
+                       paint_ctx,
+                       entity,
+                       &matrix);
 
       return RUT_TRAVERSE_VISIT_CONTINUE;
     }
@@ -1027,6 +1126,7 @@ paint_scene (RigPaintContext *paint_ctx)
                           entitygraph_post_paint_cb,
                           paint_ctx);
 
+  rig_journal_flush (data->journal, paint_ctx);
 }
 
 void

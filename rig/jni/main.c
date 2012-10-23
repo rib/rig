@@ -2123,6 +2123,8 @@ init (RutShell *shell, void *user_data)
   data->device_width = DEVICE_WIDTH;
   data->device_height = DEVICE_HEIGHT;
 
+  data->journal = rig_journal_new ();
+
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
