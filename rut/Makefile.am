@@ -54,7 +54,8 @@ source_h = \
     rut-mesh.h \
     rut-mesh-ply.h \
     rut-ui-viewport.h \
-    rut-scroll-bar.h
+    rut-scroll-bar.h \
+    rut-image.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -113,6 +114,7 @@ librut_la_SOURCES = \
     rut-mesh-ply.c \
     rut-ui-viewport.c \
     rut-scroll-bar.c \
+    rut-image.c \
     $(source_h)
 
 if !HAVE_ANDROID

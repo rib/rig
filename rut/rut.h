@@ -42,6 +42,7 @@
 #include "rut-mesh.h"
 #include "rut-mesh-ply.h"
 #include "rut-ui-viewport.h"
+#include "rut-image.h"
 
 /* entity/components system */
 #include "rut-entity.h"
