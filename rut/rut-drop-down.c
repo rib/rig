@@ -181,7 +181,7 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
         {
           g_warning ("Failed to load drop-down-background.png: %s",
                      error->message);
-          g_clear_error (&error);
+          cogl_error_free (error);
         }
 
       /* When the last drop down is destroyed the pipeline will be

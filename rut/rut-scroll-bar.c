@@ -379,7 +379,7 @@ update_handle_length (RutScrollBar *scroll_bar)
       if (!handle_texture)
         {
           g_warning ("Failed to load slider-handle.png: %s", error->message);
-          g_error_free (error);
+          cogl_error_free (error);
           return;
         }
     }
@@ -439,7 +439,7 @@ update_geometry (RutScrollBar *scroll_bar)
       if (!bg_texture)
         {
           g_warning ("Failed to load slider-background.png: %s", error->message);
-          g_error_free (error);
+          cogl_error_free (error);
         }
     }
 

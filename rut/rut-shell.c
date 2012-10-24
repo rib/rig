@@ -2088,14 +2088,14 @@ rut_slider_new (RutContext *ctx,
   if (!bg_texture)
     {
       g_warning ("Failed to load slider-background.png: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   handle_texture = rut_load_texture (ctx, RIG_DATA_DIR "slider-handle.png", &error);
   if (!handle_texture)
     {
       g_warning ("Failed to load slider-handle.png: %s", error->message);
-      g_error_free (error);
+      cogl_error_free (error);
     }
 
   if (axis == RUT_AXIS_X)

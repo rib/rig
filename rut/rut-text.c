@@ -1544,7 +1544,7 @@ rut_text_set_markup_internal (RutText *text,
           g_warning ("Failed to set the markup of RutText object %p: %s",
                      text,
                      error->message);
-          g_error_free (error);
+          cogl_error_free (error);
         }
       else
         g_warning ("Failed to set the markup of RutText object %p",

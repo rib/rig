@@ -196,7 +196,7 @@ rut_number_slider_create_bg_pipeline (RutContext *context)
         {
           g_warning ("Failed to load number-slider-background.png: %s",
                      error->message);
-          g_clear_error (&error);
+          cogl_error_free (error);
         }
 
       /* When the last slider is destroyed the pipeline will be
