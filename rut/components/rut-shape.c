@@ -437,8 +437,9 @@ rut_shape_get_shape_texture (RutShape *shape)
 }
 
 RutMesh *
-rut_shape_get_pick_mesh (RutShape *shape)
+rut_shape_get_pick_mesh (RutObject *self)
 {
+  RutShape *shape = self;
   RutShapeModel *model = rut_shape_get_model (shape);
   return model->pick_mesh;
 }

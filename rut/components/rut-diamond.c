@@ -443,7 +443,8 @@ rut_diamond_apply_mask (RutDiamond *diamond,
 }
 
 RutMesh *
-rut_diamond_get_pick_mesh (RutDiamond *diamond)
+rut_diamond_get_pick_mesh (RutObject *self)
 {
+  RutDiamond *diamond = self;
   return diamond->pick_mesh;
 }

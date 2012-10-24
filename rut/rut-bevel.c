@@ -230,10 +230,11 @@ _rut_bevel_init_type (void)
 }
 
 void
-rut_bevel_set_size (RutBevel *bevel,
+rut_bevel_set_size (RutObject *self,
                     float width,
                     float height)
 {
+  RutBevel *bevel = self;
   if (bevel->prim)
     {
       cogl_object_unref (bevel->prim);
@@ -250,10 +251,11 @@ rut_bevel_set_size (RutBevel *bevel,
 }
 
 void
-rut_bevel_get_size (RutBevel *bevel,
+rut_bevel_get_size (RutObject *self,
                     float *width,
                     float *height)
 {
+  RutBevel *bevel = self;
   *width = bevel->width;
   *height = bevel->height;
 }

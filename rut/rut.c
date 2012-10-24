@@ -920,8 +920,9 @@ rut_transform_init_identity (RutTransform *transform)
 }
 
 const CoglMatrix *
-rut_transform_get_matrix (RutTransform *transform)
+rut_transform_get_matrix (RutObject *self)
 {
+  RutTransform *transform = self;
   return &transform->matrix;
 }
 
@@ -1072,19 +1073,21 @@ rut_rectangle_set_height (RutRectangle *rectangle, float height)
 }
 
 void
-rut_rectangle_set_size (RutRectangle *rectangle,
+rut_rectangle_set_size (RutObject *self,
                         float width,
                         float height)
 {
+  RutRectangle *rectangle = self;
   rectangle->width = width;
   rectangle->height = height;
 }
 
 void
-rut_rectangle_get_size (RutRectangle *rectangle,
+rut_rectangle_get_size (RutObject *self,
                         float *width,
                         float *height)
 {
+  RutRectangle *rectangle = self;
   *width = rectangle->width;
   *height = rectangle->height;
 }

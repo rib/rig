@@ -451,9 +451,10 @@ rut_entity_get_scales (RutObject *entity)
   return scales;
 }
 
-CoglMatrix *
-rut_entity_get_transform (RutEntity *entity)
+const CoglMatrix *
+rut_entity_get_transform (RutObject *self)
 {
+  RutEntity *entity = self;
   CoglMatrix rotation;
 
   if (!entity->dirty)

@@ -78,6 +78,7 @@ list_splice (GList *list, GList *after, GList *head, GList *tail)
     }
 }
 
+#if 0
 static void
 _assert_list_is (GList *list, unsigned int length, unsigned int value)
 {
@@ -146,6 +147,7 @@ _rut_test_list_splice (void)
   _assert_list_is (list, 3, 123);
   _assert_list_is (l2, 2, 78);
 }
+#endif
 
 /* A display-list is a list of sequential drawing commands including
  * transformation commands and primitive drawing commands.

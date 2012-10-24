@@ -13,7 +13,7 @@ typedef struct _Vector4
   float x, y, z, w;
 } Vector4;
 
-static void
+void
 rut_get_eye_planes_for_screen_poly (float *polygon,
                                     int n_vertices,
                                     float *viewport,

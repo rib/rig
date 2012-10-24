@@ -15,7 +15,7 @@ rut_bevel_new (RutContext *context,
                const RutColor *reference);
 
 void
-rut_bevel_set_size (RutBevel *bevel,
+rut_bevel_set_size (RutObject *self,
                     float width,
                     float height);
 
@@ -28,7 +28,7 @@ rut_bevel_set_height (RutBevel *bevel,
                       float height);
 
 void
-rut_bevel_get_size (RutBevel *bevel,
+rut_bevel_get_size (RutObject *self,
                     float *width,
                     float *height);
 

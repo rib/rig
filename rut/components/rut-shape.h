@@ -100,7 +100,7 @@ CoglTexture *
 rut_shape_get_shape_texture (RutShape *shape);
 
 RutMesh *
-rut_shape_get_pick_mesh (RutShape *shape);
+rut_shape_get_pick_mesh (RutObject *self);
 
 void
 rut_shape_set_shaped (RutShape *shape,

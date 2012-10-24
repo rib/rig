@@ -388,8 +388,9 @@ void rut_model_free (RutModel *model)
 }
 
 RutMesh *
-rut_model_get_mesh (RutModel *model)
+rut_model_get_mesh (RutObject *self)
 {
+  RutModel *model = self;
   return model->mesh;
 }
 

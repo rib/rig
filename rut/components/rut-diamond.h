@@ -83,6 +83,6 @@ rut_diamond_apply_mask (RutDiamond *diamond,
                         CoglPipeline *pipeline);
 
 RutMesh *
-rut_diamond_get_pick_mesh (RutDiamond *diamond);
+rut_diamond_get_pick_mesh (RutObject *self);
 
 #endif /* __RUT_DIAMOND_H__ */

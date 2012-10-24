@@ -75,7 +75,7 @@ void
 rut_model_free (RutModel *renderer);
 
 RutMesh *
-rut_model_get_mesh (RutModel *model);
+rut_model_get_mesh (RutObject *self);
 
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);

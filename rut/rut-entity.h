@@ -149,8 +149,8 @@ rut_entity_set_scale (RutEntity *entity,
 float
 rut_entity_get_scales (RutObject *entity);
 
-CoglMatrix *
-rut_entity_get_transform (RutEntity *entity);
+const CoglMatrix *
+rut_entity_get_transform (RutObject *self);
 
 void
 rut_entity_add_component (RutEntity *entity,

@@ -114,6 +114,9 @@ _rut_buffer_init_type (void);
 RutBuffer *
 rut_buffer_new (size_t buffer_size);
 
+void
+_rut_attribute_init_type (void);
+
 RutAttribute *
 rut_attribute_new (RutBuffer *buffer,
                    const char *name,
@@ -121,6 +124,9 @@ rut_attribute_new (RutBuffer *buffer,
                    size_t offset,
                    int n_components,
                    RutAttributeType type);
+
+void
+_rut_mesh_init_type (void);
 
 RutMesh *
 rut_mesh_new (CoglVerticesMode mode,
