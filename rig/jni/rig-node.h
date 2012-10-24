@@ -162,12 +162,6 @@ GList *
 rig_nodes_find_greater_than (GList *start, float t);
 
 GList *
-rig_nodes_find_first (GList *pos);
-
-GList *
-rig_nodes_find_last (GList *pos);
-
-GList *
 rig_nodes_find_greater_than_equal (GList *start, float t);
 
 #endif /* _RUT_NODE_H_ */

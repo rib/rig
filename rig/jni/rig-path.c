@@ -98,7 +98,7 @@ path_find_control_links2 (RigPath *path,
           GList *tmp = rig_nodes_find_less_than_equal (pos, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = rig_nodes_find_first (pos);
+              *n0 = *n1 = path->pos = path->nodes.head;
               return TRUE;
             }
           pos = tmp;
@@ -109,7 +109,7 @@ path_find_control_links2 (RigPath *path,
           GList *tmp = rig_nodes_find_greater_than (pos, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = rig_nodes_find_last (pos);
+              *n0 = *n1 = path->pos = path->nodes.tail;
               return TRUE;
             }
           pos = tmp->prev;
@@ -126,7 +126,7 @@ path_find_control_links2 (RigPath *path,
           GList *tmp = rig_nodes_find_less_than (pos, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = rig_nodes_find_first (pos);
+              *n0 = *n1 = path->pos = path->nodes.head;
               return TRUE;
             }
           pos = tmp->next;
@@ -137,7 +137,7 @@ path_find_control_links2 (RigPath *path,
           GList *tmp = rig_nodes_find_greater_than_equal (pos, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = rig_nodes_find_last (pos);
+              *n0 = *n1 = path->pos = path->nodes.tail;
               return TRUE;
             }
           pos = tmp;

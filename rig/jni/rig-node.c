@@ -354,28 +354,6 @@ rig_nodes_find_greater_than (GList *start, float t)
 }
 
 GList *
-rig_nodes_find_first (GList *pos)
-{
-  GList *l;
-
-  for (l = pos; l->prev; l = l->prev)
-    ;
-
-  return l;
-}
-
-GList *
-rig_nodes_find_last (GList *pos)
-{
-  GList *l;
-
-  for (l = pos; l->next; l = l->next)
-    ;
-
-  return l;
-}
-
-GList *
 rig_nodes_find_greater_than_equal (GList *start, float t)
 {
   GList *l;
