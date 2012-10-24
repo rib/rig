@@ -590,24 +590,13 @@ rig_save (RigData *data,
   for (l = data->assets; l; l = l->next)
     {
       RutAsset *asset = l->data;
-      const char *type;
-
-      if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_TEXTURE)
-        type = "texture";
-      else if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_NORMAL_MAP)
-        type = "normal-map";
-      else if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_ALPHA_MASK)
-        type = "alpha-mask";
-      else
-        continue;
 
       g_hash_table_insert (state.id_map, asset, GINT_TO_POINTER (state.next_id));
 
       state.indent += INDENT_LEVEL;
-      fprintf (file, "%*s<asset id=\"%d\" type=\"%s\" path=\"%s\" />\n",
+      fprintf (file, "%*s<asset id=\"%d\" path=\"%s\" />\n",
                state.indent, "",
                state.next_id++,
-               type,
                rut_asset_get_path (asset));
       state.indent -= INDENT_LEVEL;
     }
@@ -1031,9 +1020,11 @@ parse_start_element (GMarkupParseContext *context,
       strcmp (element_name, "asset") == 0)
     {
       const char *id_str;
-      const char *type;
       const char *path;
       uint32_t id;
+      char *full_path;
+      GFile *asset_file;
+      GFileInfo *info;
       RutAsset *asset = NULL;
 
       if (!g_markup_collect_attributes (element_name,
@@ -1043,9 +1034,6 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_STRING,
                                         "id",
                                         &id_str,
-                                        G_MARKUP_COLLECT_STRING,
-                                        "type",
-                                        &type,
                                         G_MARKUP_COLLECT_STRING,
                                         "path",
                                         &path,
@@ -1064,26 +1052,26 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      if (strcmp (type, "texture") == 0)
+      full_path = g_build_filename (data->ctx->assets_location, path, NULL);
+      asset_file = g_file_new_for_path (full_path);
+      info = g_file_query_info (asset_file,
+                                "standard::*",
+                                G_FILE_QUERY_INFO_NONE,
+                                NULL,
+                                NULL);
+      if (info)
         {
-          asset = rut_asset_new_texture (data->ctx, path);
+          asset = rig_load_asset (data, info, asset_file);
+          if (asset)
+            {
+              loader->assets = g_list_prepend (loader->assets, asset);
+              g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
+            }
+          g_object_unref (info);
         }
-      else if (strcmp (type, "normal-map") == 0)
-        {
-          asset = rut_asset_new_normal_map (data->ctx, path);
-        }
-      else if (strcmp (type, "alpha-mask") == 0)
-        {
-          asset = rut_asset_new_alpha_mask (data->ctx, path);
-        }
-      else
-        g_warning ("Ignoring unknown asset type: %s\n", type);
 
-      if (asset)
-        {
-          loader->assets = g_list_prepend (loader->assets, asset);
-          g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), asset);
-        }
+      g_object_unref (asset_file);
+      g_free (full_path);
     }
   else if (state == LOADER_STATE_NONE &&
            strcmp (element_name, "entity") == 0)
@@ -1826,8 +1814,7 @@ rig_load (RigData *data, const char *file)
 
   data->transitions = loader.transitions;
 
-  if (_rig_in_device_mode)
-    data->assets = loader.assets;
+  data->assets = loader.assets;
 
   rut_shell_queue_redraw (data->ctx->shell);
 

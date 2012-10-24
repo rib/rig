@@ -25,6 +25,7 @@
 #include "rut-context.h"
 #include "rut-interfaces.h"
 #include "rut-asset.h"
+#include "rut-util.h"
 
 #if 0
 enum {
@@ -189,13 +190,14 @@ rut_asset_get_texture (RutAsset *asset)
 }
 
 static GList *
-copy_tags (GList *tags)
+copy_tags (const GList *tags)
 {
-  GList *l, *copy = NULL;
+  const GList *l;
+  GList *copy = NULL;
   for (l = tags; l; l = l->next)
     {
-      char *tag = g_intern_string (l->data);
-      copy = g_list_prepend (copy, tag);
+      const char *tag = g_intern_string (l->data);
+      copy = g_list_prepend (copy, (char *)tag);
     }
   return copy;
 }
@@ -223,3 +225,57 @@ rut_asset_has_tag (RutAsset *asset, const char *tag)
       return TRUE;
   return FALSE;
 }
+
+GList *
+rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
+{
+  GFile *assets_dir = g_file_new_for_path (ctx->assets_location);
+  GFile *dir = g_file_get_parent (asset_file);
+  const char *content_type = g_file_info_get_content_type (info);
+  char *mime_type = g_content_type_get_mime_type (content_type);
+  GList *inferred_tags = NULL;
+
+  while (dir && !g_file_equal (assets_dir, dir))
+    {
+      char *basename = g_file_get_basename (dir);
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string (basename));
+      g_free (basename);
+      dir = g_file_get_parent (dir);
+    }
+
+  if (mime_type)
+    {
+      if (strncmp (mime_type, "image/", 6) == 0)
+        inferred_tags =
+          g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
+    }
+
+  if (rut_util_find_tag (inferred_tags, "normal-maps"))
+    {
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("map"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("normal-map"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("bump-map"));
+    }
+  else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
+    {
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("alpha-mask"));
+      inferred_tags =
+        g_list_prepend (inferred_tags,
+                        (char *)g_intern_string ("mask"));
+    }
+
+  return inferred_tags;
+}
+
+

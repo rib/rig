@@ -426,4 +426,16 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
   cogl_object_unref (pipeline);
 }
 
+CoglBool
+rut_util_find_tag (const GList *tags,
+                   const char *tag)
+{
+  const GList *l;
 
+  for (l = tags; l; l = l->next)
+    {
+      if (strcmp (tag, l->data) == 0)
+        return TRUE;
+    }
+  return FALSE;
+}

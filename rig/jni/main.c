@@ -2920,82 +2920,57 @@ add_light_cb (RutInputRegion *region,
 }
 #endif
 
-CoglBool
-find_tag (GList *tags,
-          const char *tag)
-{
-  GList *l;
-
-  for (l = tags; l; l = l->next)
-    {
-      if (strcmp (tag, l->data) == 0)
-        return TRUE;
-    }
-  return FALSE;
-}
-
-static void
-add_asset (RigData *data, GFile *asset_file)
+RutAsset *
+rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *inferred_tags = NULL;
-  GList *l;
-  RutAsset *asset;
+  RutAsset *asset = NULL;
 
-  while (!g_file_equal (assets_dir, dir))
-    {
-      char *basename = g_file_get_basename (dir);
-      inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string (basename));
-      g_free (basename);
-      dir = g_file_get_parent (dir);
-    }
+  inferred_tags = rut_infer_asset_tags (data->ctx, info, asset_file);
 
-  inferred_tags =
-    g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
-  inferred_tags =
-    g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
-
-  if (find_tag (inferred_tags, "normal-maps"))
-    {
-      asset = rut_asset_new_normal_map (data->ctx, path);
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("map"));
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("normal-map"));
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("bump-map"));
-    }
-  else if (find_tag (inferred_tags, "alpha-masks"))
-    {
-      asset = rut_asset_new_alpha_mask (data->ctx, path);
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("alpha-mask"));
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("mask"));
-    }
-  else
+  if (rut_util_find_tag (inferred_tags, "normal-maps"))
+    asset = rut_asset_new_normal_map (data->ctx, path);
+  else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
+    asset = rut_asset_new_alpha_mask (data->ctx, path);
+  else if (rut_util_find_tag (inferred_tags, "image"))
     asset = rut_asset_new_texture (data->ctx, path);
 
-  if (!asset)
-    return;
-
-  data->assets = g_list_prepend (data->assets, asset);
-
-  rut_asset_set_inferred_tags (asset, inferred_tags);
+  if (asset)
+    rut_asset_set_inferred_tags (asset, inferred_tags);
 
   g_list_free (inferred_tags);
 
   g_object_unref (assets_dir);
   g_object_unref (dir);
   g_free (path);
+
+  return asset;
+}
+
+static void
+add_asset (RigData *data, GFileInfo *info, GFile *asset_file)
+{
+  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  GFile *dir = g_file_get_parent (asset_file);
+  char *path = g_file_get_relative_path (assets_dir, asset_file);
+  GList *l;
+  RutAsset *asset;
+
+  /* Avoid loading duplicate assets... */
+  for (l = data->assets; l; l = l->next)
+    {
+      RutAsset *existing = l->data;
+
+      if (strcmp (rut_asset_get_path (existing), path) == 0)
+        return;
+    }
+
+  asset = rig_load_asset (data, info, asset_file);
+  if (asset)
+    data->assets = g_list_prepend (data->assets, asset);
 }
 
 #if 0
@@ -3043,7 +3018,7 @@ enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
           if (strncmp (mime_type, "image/", 6) == 0)
             {
               GFile *image = g_file_get_child (parent, name);
-              add_asset (data, image);
+              add_asset (data, info, image);
               g_object_unref (image);
             }
           g_free (mime_type);

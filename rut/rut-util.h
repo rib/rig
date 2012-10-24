@@ -137,4 +137,8 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                                     float green,
                                     float blue);
 
+CoglBool
+rut_util_find_tag (const GList *tags,
+                   const char *tag);
+
 #endif /* _RUT_UTIL_H_ */

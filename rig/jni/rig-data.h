@@ -215,4 +215,7 @@ rig_create_transition (RigData *data,
 void
 rig_free_ux (RigData *data);
 
+RutAsset *
+rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file);
+
 #endif /* _RUT_DATA_H_ */

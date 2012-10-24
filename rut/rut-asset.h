@@ -1,6 +1,8 @@
 #ifndef _RUT_ASSET_H_
 #define _RUT_ASSET_H_
 
+#include <gio/gio.h>
+
 typedef enum _RutAssetType {
   RUT_ASSET_TYPE_TEXTURE,
   RUT_ASSET_TYPE_NORMAL_MAP,
@@ -43,5 +45,8 @@ rut_asset_get_inferred_tags (RutAsset *asset);
 
 CoglBool
 rut_asset_has_tag (RutAsset *asset, const char *tag);
+
+GList *
+rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file);
 
 #endif /* _RUT_ASSET_H_ */
