@@ -313,7 +313,7 @@ paint (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode && !data->play_mode)
     {
-      rig_draw_jittered_primitive4f (data, fb, data->grid_prim, 0.5, 0.5, 0.5);
+      rut_util_draw_jittered_primitive3f (fb, data->grid_prim, 0.5, 0.5, 0.5);
 
       if (data->selected_entity)
         {

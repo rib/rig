@@ -349,3 +349,81 @@ rut_util_create_texture_pipeline (CoglTexture *texture)
 
   return new_pipeline;
 }
+
+static const float jitter_offsets[32] =
+{
+  0.375f, 0.4375f,
+  0.625f, 0.0625f,
+  0.875f, 0.1875f,
+  0.125f, 0.0625f,
+
+  0.375f, 0.6875f,
+  0.875f, 0.4375f,
+  0.625f, 0.5625f,
+  0.375f, 0.9375f,
+
+  0.625f, 0.3125f,
+  0.125f, 0.5625f,
+  0.125f, 0.8125f,
+  0.375f, 0.1875f,
+
+  0.875f, 0.9375f,
+  0.875f, 0.6875f,
+  0.125f, 0.3125f,
+  0.625f, 0.8125f
+};
+
+/* XXX: This assumes that the primitive is being drawn in pixel coordinates,
+ * since we jitter the modelview not the projection.
+ */
+void
+rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
+                                    CoglPrimitive *prim,
+                                    float red,
+                                    float green,
+                                    float blue)
+{
+  CoglContext *cogl_ctx = cogl_framebuffer_get_context (fb);
+  CoglPipeline *pipeline = cogl_pipeline_new (cogl_ctx);
+  float viewport[4];
+  CoglMatrix projection;
+  float pixel_dx, pixel_dy;
+  int i;
+
+
+  cogl_pipeline_set_color4f (pipeline,
+                             red / 16.0f,
+                             green / 16.0f,
+                             blue / 16.0f,
+                             1.0f / 16.0f);
+
+  cogl_framebuffer_get_viewport4fv (fb, viewport);
+  cogl_framebuffer_get_projection_matrix (fb, &projection);
+
+  pixel_dx = 2.0 / viewport[2];
+  pixel_dy = 2.0 / viewport[3];
+
+  for (i = 0; i < 16; i++)
+    {
+      CoglMatrix tmp = projection;
+      CoglMatrix jitter;
+      CoglMatrix jittered_projection;
+
+      const float *offset = jitter_offsets + 2 * i;
+
+      cogl_matrix_init_identity (&jitter);
+      cogl_matrix_translate (&jitter,
+                             offset[0] * pixel_dx,
+                             offset[1] * pixel_dy,
+                             0);
+      cogl_matrix_multiply (&jittered_projection, &jitter, &tmp);
+      cogl_framebuffer_set_projection_matrix (fb, &jittered_projection);
+      cogl_framebuffer_draw_primitive (fb, pipeline, prim);
+    }
+
+  cogl_framebuffer_set_projection_matrix (fb, &projection);
+
+  cogl_object_unref (pipeline);
+}
+
+

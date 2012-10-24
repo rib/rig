@@ -53,12 +53,4 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
 void
 rig_dirty_entity_pipelines (RutEntity *entity);
 
-void
-rig_draw_jittered_primitive4f (RigData *data,
-                               CoglFramebuffer *fb,
-                               CoglPrimitive *prim,
-                               float red,
-                               float green,
-                               float blue);
-
 #endif /* _RIG_RENDERER_H_ */

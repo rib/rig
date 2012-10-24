@@ -30,8 +30,7 @@
 typedef struct
 {
   float x, y, z, w;
-  float r, g, b, a;
-} RutVertex4C4;
+} RutVertex4;
 
 static CoglUserDataKey fb_camera_key;
 
@@ -156,21 +155,21 @@ static RutTransformableVTable _rut_camera_transformable_vtable = {
 CoglPrimitive *
 rut_camera_create_frustum_primitive (RutCamera *camera)
 {
-  RutVertex4C4 vertices[8] = {
+  RutVertex4 vertices[8] = {
     /* near plane in projection space */
-    {-1, -1, -1, 1, /* position */ .8, .8, .8, .8 /* color */ },
-    { 1, -1, -1, 1,                .8, .8, .8, .8             },
-    { 1,  1, -1, 1,                .8, .8, .8, .8             },
-    {-1,  1, -1, 1,                .8, .8, .8, .8             },
+    {-1, -1, -1, 1, },
+    { 1, -1, -1, 1, },
+    { 1,  1, -1, 1, },
+    {-1,  1, -1, 1, },
     /* far plane in projection space */
-    {-1, -1, 1, 1,  /* position */ .3, .3, .3, .3 /* color */ },
-    { 1, -1, 1, 1,                 .3, .3, .3, .3             },
-    { 1,  1, 1, 1,                 .3, .3, .3, .3             },
-    {-1,  1, 1, 1,                 .3, .3, .3, .3             }
+    {-1, -1, 1, 1, },
+    { 1, -1, 1, 1, },
+    { 1,  1, 1, 1, },
+    {-1,  1, 1, 1, }
   };
   const CoglMatrix *projection_inv;
   CoglAttributeBuffer *attribute_buffer;
-  CoglAttribute *attributes[2];
+  CoglAttribute *attributes[1];
   CoglPrimitive *primitive;
   CoglIndices *indices;
   unsigned char indices_data[24] = {
@@ -196,21 +195,14 @@ rut_camera_create_frustum_primitive (RutCamera *camera)
     }
 
   attribute_buffer = cogl_attribute_buffer_new (rut_cogl_context,
-                                                8 * sizeof (RutVertex4C4),
+                                                8 * sizeof (RutVertex4),
                                                 vertices);
 
   attributes[0] = cogl_attribute_new (attribute_buffer,
                                       "cogl_position_in",
-                                      sizeof (RutVertex4C4),
-                                      offsetof (RutVertex4C4, x),
+                                      sizeof (RutVertex4),
+                                      offsetof (RutVertex4, x),
                                       3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_color_in",
-                                      sizeof (RutVertex4C4),
-                                      offsetof (RutVertex4C4, r),
-                                      4,
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
 
   indices = cogl_indices_new (rut_cogl_context,
@@ -219,13 +211,12 @@ rut_camera_create_frustum_primitive (RutCamera *camera)
                               G_N_ELEMENTS (indices_data));
 
   primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_LINES,
-                                                  8, attributes, 2);
+                                                  8, attributes, 1);
 
   cogl_primitive_set_indices (primitive, indices, G_N_ELEMENTS(indices_data));
 
   cogl_object_unref (attribute_buffer);
   cogl_object_unref (attributes[0]);
-  cogl_object_unref (attributes[1]);
   cogl_object_unref (indices);
 
   return primitive;

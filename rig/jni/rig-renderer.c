@@ -32,29 +32,6 @@ typedef enum _CacheSlot
   CACHE_SLOT_COLOR_UNBLENDED,
 } CacheSlot;
 
-static const float jitter_offsets[32] =
-{
-  0.375f, 0.4375f,
-  0.625f, 0.0625f,
-  0.875f, 0.1875f,
-  0.125f, 0.0625f,
-
-  0.375f, 0.6875f,
-  0.875f, 0.4375f,
-  0.625f, 0.5625f,
-  0.375f, 0.9375f,
-
-  0.625f, 0.3125f,
-  0.125f, 0.5625f,
-  0.125f, 0.8125f,
-  0.375f, 0.1875f,
-
-  0.875f, 0.9375f,
-  0.875f, 0.6875f,
-  0.125f, 0.3125f,
-  0.625f, 0.8125f
-};
-
 typedef struct _RigJournalEntry
 {
   RutEntity *entity;
@@ -949,39 +926,6 @@ rig_journal_flush (GArray *journal,
   g_array_set_size (journal, 0);
 }
 
-/* XXX: This assumes that the primitive is being drawn in pixel coordinates,
- * since we jitter the modelview not the projection.
- */
-void
-rig_draw_jittered_primitive4f (RigData *data,
-                               CoglFramebuffer *fb,
-                               CoglPrimitive *prim,
-                               float red,
-                               float green,
-                               float blue)
-{
-  CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
-  int i;
-
-  cogl_pipeline_set_color4f (pipeline,
-                             red / 16.0f,
-                             green / 16.0f,
-                             blue / 16.0f,
-                             1.0f / 16.0f);
-
-  for (i = 0; i < 16; i++)
-    {
-      const float *offset = jitter_offsets + 2 * i;
-
-      cogl_framebuffer_push_matrix (fb);
-      cogl_framebuffer_translate (fb, offset[0], offset[1], 0);
-      cogl_framebuffer_draw_primitive (fb, pipeline, prim);
-      cogl_framebuffer_pop_matrix (fb);
-    }
-
-  cogl_object_unref (pipeline);
-}
-
 void
 rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
 {
@@ -1030,7 +974,7 @@ draw_entity_camera_frustum (RigData *data,
   cogl_depth_state_set_test_enabled (&depth_state, TRUE);
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
-  cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+  rut_util_draw_jittered_primitive3f (fb, primitive, 0.8, 0.6, 0.1);
 
   cogl_object_unref (primitive);
   cogl_object_unref (pipeline);

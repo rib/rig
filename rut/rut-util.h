@@ -130,4 +130,11 @@ rut_util_one_at_a_time_mix (unsigned int hash);
 CoglPipeline *
 rut_util_create_texture_pipeline (CoglTexture *texture);
 
+void
+rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
+                                    CoglPrimitive *prim,
+                                    float red,
+                                    float green,
+                                    float blue);
+
 #endif /* _RUT_UTIL_H_ */
