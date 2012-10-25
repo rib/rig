@@ -29,6 +29,7 @@ extern RutType rut_light_type;
 struct _RutLight
 {
   RutObjectProps _parent;
+  int ref_count;
   RutComponentableProps component;
   RutColor ambient;
   RutColor diffuse;

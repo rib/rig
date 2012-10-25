@@ -90,10 +90,27 @@ static RutComponentableVTable _rut_light_componentable_vtable = {
   .update = rut_light_update
 };
 
+static void
+_rut_light_free (void *object)
+{
+  RutLight *light = object;
+  g_slice_free (RutLight, light);
+}
+
+static RutRefCountableVTable _rut_light_ref_countable_vtable = {
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
+  _rut_light_free
+};
+
 void
 _rut_light_init_type (void)
 {
   rut_type_init (&rut_light_type);
+  rut_type_add_interface (&rut_light_type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RutLight, ref_count),
+                          &_rut_light_ref_countable_vtable);
   rut_type_add_interface (&rut_light_type,
                            RUT_INTERFACE_ID_COMPONENTABLE,
                            offsetof (RutLight, component),
@@ -107,6 +124,7 @@ rut_light_new (void)
 
   light = g_slice_new0 (RutLight);
   rut_object_init (&light->_parent, &rut_light_type);
+  light->ref_count = 1;
   light->component.type = RUT_COMPONENT_TYPE_LIGHT;
   rut_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
   rut_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
