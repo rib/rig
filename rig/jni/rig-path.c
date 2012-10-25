@@ -761,19 +761,24 @@ rig_path_remove (RigPath *path,
   node = rig_path_find_node (path, t);
 
   if (node)
-    {
-      rut_closure_list_invoke (&path->operation_cb_list,
-                               RigPathOperationCallback,
-                               path,
-                               RIG_PATH_OPERATION_REMOVED,
-                               node);
-      rut_list_remove (&node->list_node);
-      rig_node_free (path->type, node);
-      path->length--;
+    rig_path_remove_node (path, node);
+}
 
-      if (path->pos == node)
-        path->pos = NULL;
-    }
+void
+rig_path_remove_node (RigPath *path,
+                      RigNode *node)
+{
+  rut_closure_list_invoke (&path->operation_cb_list,
+                           RigPathOperationCallback,
+                           path,
+                           RIG_PATH_OPERATION_REMOVED,
+                           node);
+  rut_list_remove (&node->list_node);
+  rig_node_free (path->type, node);
+  path->length--;
+
+  if (path->pos == node)
+    path->pos = NULL;
 }
 
 RutClosure *

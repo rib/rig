@@ -122,6 +122,10 @@ void
 rig_path_remove (RigPath *path,
                  float t);
 
+void
+rig_path_remove_node (RigPath *path,
+                      RigNode *node);
+
 RutClosure *
 rig_path_add_operation_callback (RigPath *path,
                                  RigPathOperationCallback callback,
