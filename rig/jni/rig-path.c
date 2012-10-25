@@ -267,9 +267,9 @@ notify_node_modified (RigPath *path,
                            node);
 }
 
-static RigNode *
-find_node (RigPath *path,
-           float t)
+RigNode *
+rig_path_find_node (RigPath *path,
+                    float t)
 {
   RigNode *node;
 
@@ -311,7 +311,7 @@ rig_path_insert_float (RigPath *path,
   path_print (path);
 #endif
 
-  node = (RigNodeFloat *) find_node (path, t);
+  node = (RigNodeFloat *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -338,7 +338,7 @@ rig_path_insert_vec3 (RigPath *path,
 {
   RigNodeVec3 *node;
 
-  node = (RigNodeVec3 *) find_node (path, t);
+  node = (RigNodeVec3 *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -360,7 +360,7 @@ rig_path_insert_vec4 (RigPath *path,
 {
   RigNodeVec4 *node;
 
-  node = (RigNodeVec4 *) find_node (path, t);
+  node = (RigNodeVec4 *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -387,7 +387,7 @@ rig_path_insert_quaternion (RigPath *path,
   path_print (path);
 #endif
 
-  node = (RigNodeQuaternion *) find_node (path, t);
+  node = (RigNodeQuaternion *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -414,7 +414,7 @@ rig_path_insert_double (RigPath *path,
 {
   RigNodeDouble *node;
 
-  node = (RigNodeDouble *) find_node (path, t);
+  node = (RigNodeDouble *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -436,7 +436,7 @@ rig_path_insert_integer (RigPath *path,
 {
   RigNodeInteger *node;
 
-  node = (RigNodeInteger *) find_node (path, t);
+  node = (RigNodeInteger *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -458,7 +458,7 @@ rig_path_insert_uint32 (RigPath *path,
 {
   RigNodeUint32 *node;
 
-  node = (RigNodeUint32 *) find_node (path, t);
+  node = (RigNodeUint32 *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -480,7 +480,7 @@ rig_path_insert_color (RigPath *path,
 {
   RigNodeColor *node;
 
-  node = (RigNodeColor *) find_node (path, t);
+  node = (RigNodeColor *) rig_path_find_node (path, t);
 
   if (node)
     {
@@ -604,7 +604,7 @@ rig_path_get_boxed (RigPath *path,
 {
   RigNode *node;
 
-  node = find_node (path, t);
+  node = rig_path_find_node (path, t);
 
   if (node == NULL)
     return FALSE;
@@ -758,7 +758,7 @@ rig_path_remove (RigPath *path,
 {
   RigNode *node;
 
-  node = find_node (path, t);
+  node = rig_path_find_node (path, t);
 
   if (node)
     {

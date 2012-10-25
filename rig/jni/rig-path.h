@@ -128,4 +128,18 @@ rig_path_add_operation_callback (RigPath *path,
                                  void *user_data,
                                  RutClosureDestroyCallback destroy_cb);
 
+/**
+ * rig_path_find_node:
+ * @path: A #RigPath
+ * @t: The time to search for
+ *
+ * Finds and returns a node which has exactly the time @t. The
+ * returned node is owned by the path but is guaranteed to remain
+ * alive until either the path is destroyed or the operation
+ * %RIG_PATH_OPERATION_REMOVED is reported with the node's timestamp.
+ */
+RigNode *
+rig_path_find_node (RigPath *path,
+                    float t);
+
 #endif /* _RUT_PATH_H_ */
