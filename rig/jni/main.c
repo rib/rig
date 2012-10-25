@@ -2413,17 +2413,52 @@ init (RutShell *shell, void *user_data)
 
   data->current_camera = data->editor_camera;
 
-  data->light = rut_entity_new (data->ctx);
-  rut_entity_set_label (data->light, "rig:light");
-#if 1
-  vector3[0] = 0;
-  vector3[1] = 0;
-  vector3[2] = 500;
-  rut_entity_set_position (data->light, vector3);
+  /* Note: we currently require having exactly one scene light, so if
+   * we didn't already load one we create a default light...
+   */
 
-  rut_entity_rotate_x_axis (data->light, 20);
-  rut_entity_rotate_y_axis (data->light, -20);
-#endif
+  if (!data->light)
+    {
+      data->light = rut_entity_new (data->ctx);
+      rut_entity_set_label (data->light, "light");
+
+      vector3[0] = 0;
+      vector3[1] = 0;
+      vector3[2] = 500;
+      rut_entity_set_position (data->light, vector3);
+
+      rut_entity_rotate_x_axis (data->light, 20);
+      rut_entity_rotate_y_axis (data->light, -20);
+
+      light = rut_light_new ();
+      rut_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+      rut_light_set_ambient (light, &color);
+      rut_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+      rut_light_set_diffuse (light, &color);
+      rut_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+      rut_light_set_specular (light, &color);
+
+      rut_entity_add_component (data->light, light);
+
+      rut_graphable_add_child (data->scene, data->light);
+    }
+
+  /*
+   * TODO: support saving and loading the camera state for lights
+   */
+
+  camera = rut_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
+  data->shadow_map_camera = camera;
+
+  rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
+  rut_camera_set_projection_mode (camera,
+                                  RUT_PROJECTION_ORTHOGRAPHIC);
+  rut_camera_set_orthographic_coordinates (camera,
+                                           -1000, -1000, 1000, 1000);
+  rut_camera_set_near_plane (camera, 1.1f);
+  rut_camera_set_far_plane (camera, 1500.f);
+
+  rut_entity_add_component (data->light, camera);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -2444,31 +2479,6 @@ init (RutShell *shell, void *user_data)
       rut_entity_set_cast_shadow (data->light_handle, FALSE);
     }
 #endif
-
-  light = rut_light_new ();
-  rut_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
-  rut_light_set_ambient (light, &color);
-  rut_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
-  rut_light_set_diffuse (light, &color);
-  rut_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
-  rut_light_set_specular (light, &color);
-
-  rut_entity_add_component (data->light, light);
-
-  camera = rut_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
-  data->shadow_map_camera = camera;
-
-  rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
-  rut_camera_set_projection_mode (camera,
-                                  RUT_PROJECTION_ORTHOGRAPHIC);
-  rut_camera_set_orthographic_coordinates (camera,
-                                           -1000, -1000, 1000, 1000);
-  rut_camera_set_near_plane (camera, 1.1f);
-  rut_camera_set_far_plane (camera, 1500.f);
-
-  rut_entity_add_component (data->light, camera);
-
-  rut_graphable_add_child (data->scene, data->light);
 
   data->root =
     rut_graph_new (data->ctx,

@@ -656,6 +656,7 @@ typedef struct _Loader
 
   GList *assets;
   GList *entities;
+  RutEntity *light;
   GList *transitions;
 
   RutColor material_ambient;
@@ -670,6 +671,7 @@ typedef struct _Loader
   CoglBool shaped;
   float diamond_size;
   RutEntity *current_entity;
+  CoglBool is_light;
 
   RigTransition *current_transition;
   RigTransitionPropData *current_property;
@@ -1203,6 +1205,8 @@ parse_start_element (GMarkupParseContext *context,
         }
 
       loader->current_entity = entity;
+      loader->is_light = FALSE;
+
       g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), entity);
 
       loader_push_state (loader, LOADER_STATE_LOADING_ENTITY);
@@ -1319,6 +1323,8 @@ parse_start_element (GMarkupParseContext *context,
       rut_light_set_specular (light, &specular);
 
       rut_entity_add_component (loader->current_entity, light);
+
+      loader->is_light = TRUE;
 
       //loader_push_state (loader, LOADER_STATE_LOADING_LIGHT_COMPONENT);
     }
@@ -1616,6 +1622,9 @@ parse_end_element (GMarkupParseContext *context,
   if (state == LOADER_STATE_LOADING_ENTITY &&
       strcmp (element_name, "entity") == 0)
     {
+      if (loader->is_light && loader->light == NULL)
+        loader->light = rut_refable_ref (loader->current_entity);
+
       loader->entities =
         g_list_prepend (loader->entities, loader->current_entity);
 
@@ -1811,6 +1820,9 @@ rig_load (RigData *data, const char *file)
       if (rut_graphable_get_parent (l->data) == NULL)
         rut_graphable_add_child (data->scene, l->data);
     }
+
+  if (loader.light)
+    data->light = loader.light;
 
   data->transitions = loader.transitions;
 
