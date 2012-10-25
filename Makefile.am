@@ -1,4 +1,4 @@
-SUBDIRS = rut data
+SUBDIRS = rut tools data
 
 if !HAVE_ANDROID
 SUBDIRS += rig

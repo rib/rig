@@ -317,6 +317,7 @@ Makefile
 rut/Makefile
 data/Makefile
 rig/Makefile
+tools/Makefile
 )
 
 echo ""
