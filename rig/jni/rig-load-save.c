@@ -180,7 +180,6 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
 
   g_hash_table_insert (state->id_map, entity, GINT_TO_POINTER (state->next_id));
 
-  state->indent += INDENT_LEVEL;
   fprintf (state->file, "%*s<entity id=\"%d\"\n",
            state->indent, "",
            state->next_id++);
@@ -230,7 +229,6 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
                                 state);
 
   fprintf (state->file, "%*s</entity>\n", state->indent, "");
-  state->indent -= INDENT_LEVEL;
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -585,6 +583,17 @@ rig_save (RigData *data,
    * id_map fail. */
   state.next_id = 1;
 
+  state.indent += INDENT_LEVEL;
+
+  fprintf (file, "%*s<device width=\"%d\" height=\"%d\" background=\"#%02x%02x%02x%02x\" />\n",
+           state.indent, "",
+           (int)data->device_width,
+           (int)data->device_height,
+           rut_color_get_red_byte (&data->background_color),
+           rut_color_get_green_byte (&data->background_color),
+           rut_color_get_blue_byte (&data->background_color),
+           rut_color_get_alpha_byte (&data->background_color));
+
   /* Assets */
 
   for (l = data->assets; l; l = l->next)
@@ -593,12 +602,10 @@ rig_save (RigData *data,
 
       g_hash_table_insert (state.id_map, asset, GINT_TO_POINTER (state.next_id));
 
-      state.indent += INDENT_LEVEL;
       fprintf (file, "%*s<asset id=\"%d\" path=\"%s\" />\n",
                state.indent, "",
                state.next_id++,
                rut_asset_get_path (asset));
-      state.indent -= INDENT_LEVEL;
     }
 
   rut_graphable_traverse (data->scene,
@@ -612,7 +619,6 @@ rig_save (RigData *data,
       RigTransition *transition = l->data;
       //int i;
 
-      state.indent += INDENT_LEVEL;
       fprintf (file, "%*s<transition id=\"%d\">\n", state.indent, "", transition->id);
 
       rig_transition_foreach_property (transition,
@@ -621,6 +627,8 @@ rig_save (RigData *data,
 
       fprintf (file, "%*s</transition>\n", state.indent, "");
     }
+
+  state.indent -= INDENT_LEVEL;
 
   fprintf (file, "</ui>\n");
 
@@ -653,6 +661,12 @@ typedef struct _Loader
   uint32_t id;
   CoglBool texture_specified;
   uint32_t texture_asset_id;
+
+  CoglBool device_found;
+  int device_width;
+  int device_height;
+  RutColor background;
+  CoglBool background_set;
 
   GList *assets;
   GList *entities;
@@ -1019,7 +1033,44 @@ parse_start_element (GMarkupParseContext *context,
   int state = loader_get_state (loader);
 
   if (state == LOADER_STATE_NONE &&
-      strcmp (element_name, "asset") == 0)
+      strcmp (element_name, "device") == 0)
+    {
+      const char *width_str;
+      const char *height_str;
+      const char *background_str;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "width",
+                                        &width_str,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "height",
+                                        &height_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "background",
+                                        &background_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        {
+          return;
+        }
+
+      loader->device_found = TRUE;
+      loader->device_width = g_ascii_strtoull (width_str, NULL, 10);
+      loader->device_height = g_ascii_strtoull (height_str, NULL, 10);
+
+      if (background_str)
+        {
+          rut_color_init_from_string (loader->data->ctx,
+                                      &loader->background,
+                                      background_str);
+          loader->background_set = TRUE;
+        }
+    }
+  else if (state == LOADER_STATE_NONE &&
+           strcmp (element_name, "asset") == 0)
     {
       const char *id_str;
       const char *path;
@@ -1814,6 +1865,15 @@ rig_load (RigData *data, const char *file)
   g_queue_clear (&loader.state);
 
   rig_free_ux (data);
+
+  if (loader.device_found)
+    {
+      data->device_width = loader.device_width;
+      data->device_height = loader.device_height;
+
+      if (loader.background_set)
+        data->background_color = loader.background;
+    }
 
   for (l = loader.entities; l; l = l->next)
     {

@@ -2134,6 +2134,10 @@ init (RutShell *shell, void *user_data)
 
   data->scene = rut_graph_new (data->ctx, NULL);
 
+  data->device_width = DEVICE_WIDTH;
+  data->device_height = DEVICE_HEIGHT;
+  rut_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
+
 #ifndef __ANDROID__
   if (_rig_handset_remaining_args &&
       _rig_handset_remaining_args[0])
@@ -2151,9 +2155,6 @@ init (RutShell *shell, void *user_data)
         }
     }
 #endif
-
-  data->device_width = DEVICE_WIDTH;
-  data->device_height = DEVICE_HEIGHT;
 
   data->journal = rig_journal_new ();
 

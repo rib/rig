@@ -1055,7 +1055,11 @@ paint_scene (RigPaintContext *paint_ctx)
   if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
-      cogl_pipeline_set_color4f (pipeline, 0, 0, 0, 1.0);
+      cogl_pipeline_set_color4f (pipeline,
+                                 data->background_color.red,
+                                 data->background_color.green,
+                                 data->background_color.blue,
+                                 data->background_color.alpha);
       cogl_framebuffer_draw_rectangle (fb,
                                        pipeline,
                                        0, 0,
