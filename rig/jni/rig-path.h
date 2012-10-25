@@ -22,6 +22,7 @@
 
 #include <rut.h>
 #include "rig-node.h"
+#include "rut-list.h"
 
 typedef struct _RigPath RigPath;
 
@@ -29,8 +30,9 @@ struct _RigPath
 {
   RutContext *ctx;
   RutPropertyType type;
-  GQueue nodes;
-  GList *pos;
+  RutList nodes;
+  int length;
+  RigNode *pos;
   RutList operation_cb_list;
 };
 

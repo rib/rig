@@ -359,7 +359,7 @@ save_path (SaveState *state,
            RigPath *path)
 {
   FILE *file = state->file;
-  GList *l;
+  RigNode *node;
 
   fprintf (file,
            "%*s<path>\n",
@@ -367,10 +367,8 @@ save_path (SaveState *state,
 
   state->indent += INDENT_LEVEL;
 
-  for (l = path->nodes.head; l; l = l->next)
+  rut_list_for_each (node, &path->nodes, list_node)
     {
-      RigNode *node = l->data;
-
       fprintf (file,
                "%*s<node t=\"%f\" value=\"",
                state->indent, "",
@@ -380,50 +378,50 @@ save_path (SaveState *state,
         {
         case RUT_PROPERTY_TYPE_FLOAT:
           {
-            RigNodeFloat *node = l->data;
-            save_float (state, node->value);
+            RigNodeFloat *float_node = (RigNodeFloat *) node;
+            save_float (state, float_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_DOUBLE:
           {
-            RigNodeDouble *node = l->data;
-            save_double (state, node->value);
+            RigNodeDouble *double_node = (RigNodeDouble *) node;
+            save_double (state, double_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_VEC3:
           {
-            RigNodeVec3 *node = l->data;
-            save_vec3 (state, node->value);
+            RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
+            save_vec3 (state, vec3_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_VEC4:
           {
-            RigNodeVec4 *node = l->data;
-            save_vec4 (state, node->value);
+            RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
+            save_vec4 (state, vec4_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_COLOR:
           {
-            RigNodeColor *node = l->data;
-            save_color (state, &node->value);
+            RigNodeColor *color_node = (RigNodeColor *) node;
+            save_color (state, &color_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_QUATERNION:
           {
-            RigNodeQuaternion *node = l->data;
-            save_quaternion (state, &node->value);
+            RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
+            save_quaternion (state, &quaternion_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_INTEGER:
           {
-            RigNodeInteger *node = l->data;
-            save_uint32 (state, node->value);
+            RigNodeInteger *integer_node = (RigNodeInteger *) node;
+            save_uint32 (state, integer_node->value);
             goto handled;
           }
         case RUT_PROPERTY_TYPE_UINT32:
           {
-            RigNodeUint32 *node = l->data;
-            save_uint32 (state, node->value);
+            RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
+            save_uint32 (state, uint32_node->value);
             goto handled;
           }
 

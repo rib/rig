@@ -24,21 +24,16 @@
 #include "rig-path.h"
 #include "rig-node.h"
 
-static void
-node_free_cb (void *node,
-              void *user_data)
-{
-  rig_node_free (GPOINTER_TO_UINT (user_data), node);
-}
-
 void
 rig_path_free (RigPath *path)
 {
+  RigNode *node, *t;
+
   rut_closure_list_disconnect_all (&path->operation_cb_list);
-  g_queue_foreach (&path->nodes,
-                   node_free_cb,
-                   GUINT_TO_POINTER (path->type));
-  g_queue_clear (&path->nodes);
+
+  rut_list_for_each_safe (node, t, &path->nodes, list_node)
+    rig_node_free (path->type, node);
+
   rut_refable_unref (path->ctx);
   g_slice_free (RigPath, path);
 }
@@ -53,8 +48,9 @@ rig_path_new (RutContext *ctx,
 
   path->type = type;
 
-  g_queue_init (&path->nodes);
+  rut_list_init (&path->nodes);
   path->pos = NULL;
+  path->length = 0;
 
   rut_list_init (&path->operation_cb_list);
 
@@ -65,23 +61,21 @@ rig_path_new (RutContext *ctx,
  * which points to choose if t corresponds to a specific node.
  */
 static CoglBool
-path_find_control_links2 (RigPath *path,
-                          float t,
-                          int direction,
-                          GList **n0,
-                          GList **n1)
+path_find_control_points2 (RigPath *path,
+                           float t,
+                           int direction,
+                           RigNode **n0,
+                           RigNode **n1)
 {
-  GList *pos;
-  RigNode *pos_node;
+  RigNode *pos;
 
-  if (G_UNLIKELY (path->nodes.head == NULL))
+  if (G_UNLIKELY (rut_list_empty (&path->nodes)))
     return FALSE;
 
   if (G_UNLIKELY (path->pos == NULL))
-    path->pos = path->nodes.head;
+    path->pos = rut_container_of (path->nodes.next, path->pos, list_node);
 
   pos = path->pos;
-  pos_node = pos->data;
 
   /*
    * Note:
@@ -92,13 +86,14 @@ path_find_control_links2 (RigPath *path,
 
   if (direction > 0)
     {
-      if (pos_node->t > t)
+      if (pos->t > t)
         {
           /* > --- T -------- Pos ---- */
-          GList *tmp = rig_nodes_find_less_than_equal (pos, t);
+          RigNode *tmp = rig_nodes_find_less_than_equal (pos, &path->nodes, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = path->nodes.head;
+              *n0 = *n1 = path->pos =
+                rut_container_of (path->nodes.next, path->pos, list_node);
               return TRUE;
             }
           pos = tmp;
@@ -106,69 +101,60 @@ path_find_control_links2 (RigPath *path,
       else
         {
           /* > --- Pos -------- T ---- */
-          GList *tmp = rig_nodes_find_greater_than (pos, t);
+          RigNode *tmp = rig_nodes_find_greater_than (pos, &path->nodes, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = path->nodes.tail;
+              *n0 = *n1 = path->pos =
+                rut_container_of (path->nodes.prev, path->pos, list_node);
               return TRUE;
             }
-          pos = tmp->prev;
+          pos = rut_container_of (tmp->list_node.prev, pos, list_node);
         }
 
       *n0 = pos;
-      *n1 = pos->next ? pos->next : pos;
+      if (pos->list_node.next == &path->nodes)
+        *n1 = pos;
+      else
+        *n1 = rut_container_of (pos->list_node.next, *n1, list_node);
     }
   else
     {
-      if (pos_node->t > t)
+      if (pos->t > t)
         {
           /* < --- T -------- Pos ---- */
-          GList *tmp = rig_nodes_find_less_than (pos, t);
+          RigNode *tmp = rig_nodes_find_less_than (pos, &path->nodes, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = path->nodes.head;
+              *n0 = *n1 = path->pos =
+                rut_container_of (path->nodes.next, path->pos, list_node);
               return TRUE;
             }
-          pos = tmp->next;
+          pos = rut_container_of (tmp->list_node.next, pos, list_node);
         }
       else
         {
           /* < --- Pos -------- T ---- */
-          GList *tmp = rig_nodes_find_greater_than_equal (pos, t);
+          RigNode *tmp =
+            rig_nodes_find_greater_than_equal (pos, &path->nodes, t);
           if (!tmp)
             {
-              *n0 = *n1 = path->pos = path->nodes.tail;
+              *n0 = *n1 = path->pos =
+                rut_container_of (path->nodes.prev, path->pos, list_node);
               return TRUE;
             }
           pos = tmp;
         }
 
       *n0 = pos;
-      *n1 = pos->prev ? pos->prev : pos;
+      if (pos->list_node.prev == &path->nodes)
+        *n1 = pos;
+      else
+        *n1 = rut_container_of (pos->list_node.prev, *n1, list_node);
     }
 
   path->pos = pos;
 
   return TRUE;
-}
-
-static CoglBool
-path_find_control_points2 (RigPath *path,
-                           float t,
-                           int direction,
-                           RigNode **n0,
-                           RigNode **n1)
-{
-  GList *l0, *l1;
-
-  if (path_find_control_links2 (path, t, direction, &l0, &l1))
-    {
-      *n0 = l0->data;
-      *n1 = l1->data;
-      return TRUE;
-    }
-  else
-    return FALSE;
 }
 
 /* Finds 2 points either side of the given t using the direction to resolve
@@ -212,79 +198,51 @@ path_find_control_points4 (RigPath *path,
 }
 #endif
 
-static void
-node_print (void *node, void *user_data)
-{
-  RutPropertyType type = GPOINTER_TO_UINT (user_data);
-  switch (type)
-    {
-      case RUT_PROPERTY_TYPE_FLOAT:
-	{
-	  RigNodeFloat *f_node = (RigNodeFloat *)node;
-
-	  g_print (" t = %f value = %f\n", f_node->t, f_node->value);
-          break;
-	}
-
-      case RUT_PROPERTY_TYPE_VEC3:
-	{
-	  RigNodeVec3 *vec3_node = (RigNodeVec3 *)node;
-
-	  g_print (" t = %f value.x = %f .y = %f .z = %f\n",
-                   vec3_node->t,
-                   vec3_node->value[0],
-                   vec3_node->value[1],
-                   vec3_node->value[2]);
-          break;
-	}
-
-      case RUT_PROPERTY_TYPE_QUATERNION:
-	{
-	  RigNodeQuaternion *q_node = (RigNodeQuaternion *)node;
-	  const CoglQuaternion *q = &q_node->value;
-	  g_print (" t = %f [%f (%f, %f, %f)]\n",
-                   q_node->t,
-                   q->w, q->x, q->y, q->z);
-	  break;
-	}
-
-      default:
-        g_warn_if_reached ();
-    }
-}
-
 void
 rig_path_print (RigPath *path)
 {
+  RutPropertyType type = path->type;
+  RigNode *node;
+
   g_print ("path=%p\n", path);
-  g_queue_foreach (&path->nodes,
-                   node_print,
-                   GUINT_TO_POINTER (path->type));
-}
+  rut_list_for_each (node, &path->nodes, list_node)
+    {
+      switch (type)
+        {
+        case RUT_PROPERTY_TYPE_FLOAT:
+          {
+            RigNodeFloat *f_node = (RigNodeFloat *)node;
 
-static int
-path_find_t_cb (gconstpointer a, gconstpointer b)
-{
-  const RigNode *node = a;
-  const float *t = b;
+            g_print (" t = %f value = %f\n", f_node->base.t, f_node->value);
+            break;
+          }
 
-  if (node->t == *t)
-    return 0;
+        case RUT_PROPERTY_TYPE_VEC3:
+          {
+            RigNodeVec3 *vec3_node = (RigNodeVec3 *)node;
 
-  return 1;
-}
+            g_print (" t = %f value.x = %f .y = %f .z = %f\n",
+                     vec3_node->base.t,
+                     vec3_node->value[0],
+                     vec3_node->value[1],
+                     vec3_node->value[2]);
+            break;
+          }
 
-static int
-path_node_sort_t_func (const RigNode *a,
-                       const RigNode *b,
-                       void *user_data)
-{
-  if (a->t == b->t)
-    return 0;
-  else if (a->t < b->t)
-    return -1;
-  else
-    return 1;
+        case RUT_PROPERTY_TYPE_QUATERNION:
+          {
+            RigNodeQuaternion *q_node = (RigNodeQuaternion *)node;
+            const CoglQuaternion *q = &q_node->value;
+            g_print (" t = %f [%f (%f, %f, %f)]\n",
+                     q_node->base.t,
+                     q->w, q->x, q->y, q->z);
+            break;
+          }
+
+        default:
+          g_warn_if_reached ();
+        }
+    }
 }
 
 static void
@@ -309,12 +267,43 @@ notify_node_modified (RigPath *path,
                            node);
 }
 
+static RigNode *
+find_node (RigPath *path,
+           float t)
+{
+  RigNode *node;
+
+  rut_list_for_each (node, &path->nodes, list_node)
+    if (node->t == t)
+      return node;
+
+  return NULL;
+}
+
+static void
+insert_sorted_node (RigPath *path,
+                    RigNode *node)
+{
+  RigNode *insertion_point;
+
+  rut_list_for_each (insertion_point, &path->nodes, list_node)
+    if (insertion_point->t >= node->t)
+      break;
+
+  /* If no node was found then insertion_point will be pointing to an
+   * imaginary node containing the list head which is what we want
+   * anyway */
+
+  rut_list_insert (insertion_point->list_node.prev, &node->list_node);
+
+  path->length++;
+}
+
 void
 rig_path_insert_float (RigPath *path,
                        float t,
                        float value)
 {
-  GList *link;
   RigNodeFloat *node;
 
 #if 0
@@ -322,20 +311,17 @@ rig_path_insert_float (RigPath *path,
   path_print (path);
 #endif
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeFloat *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_float (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 
@@ -350,23 +336,19 @@ rig_path_insert_vec3 (RigPath *path,
                       float t,
                       const float value[3])
 {
-  GList *link;
   RigNodeVec3 *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeVec3 *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       memcpy (node->value, value, sizeof (node->value));
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_vec3 (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -376,23 +358,19 @@ rig_path_insert_vec4 (RigPath *path,
                       float t,
                       const float value[4])
 {
-  GList *link;
   RigNodeVec4 *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeVec4 *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       memcpy (node->value, value, sizeof (node->value));
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_vec4 (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -402,7 +380,6 @@ rig_path_insert_quaternion (RigPath *path,
                             float t,
                             const CoglQuaternion *value)
 {
-  GList *link;
   RigNodeQuaternion *node;
 
 #if 0
@@ -410,19 +387,17 @@ rig_path_insert_quaternion (RigPath *path,
   path_print (path);
 #endif
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeQuaternion *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = *value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_quaternion (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func, NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 
@@ -437,23 +412,19 @@ rig_path_insert_double (RigPath *path,
                         float t,
                         double value)
 {
-  GList *link;
   RigNodeDouble *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeDouble *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_double (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -463,23 +434,19 @@ rig_path_insert_integer (RigPath *path,
                          float t,
                          int value)
 {
-  GList *link;
   RigNodeInteger *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeInteger *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_integer (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -489,23 +456,19 @@ rig_path_insert_uint32 (RigPath *path,
                         float t,
                         uint32_t value)
 {
-  GList *link;
   RigNodeUint32 *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeUint32 *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_uint32 (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func,
-                             NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -515,22 +478,19 @@ rig_path_insert_color (RigPath *path,
                        float t,
                        const RutColor *value)
 {
-  GList *link;
   RigNodeColor *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = (RigNodeColor *) find_node (path, t);
 
-  if (link)
+  if (node)
     {
-      node = link->data;
       node->value = *value;
       notify_node_modified (path, (RigNode *) node);
     }
   else
     {
       node = rig_node_new_for_color (t, value);
-      g_queue_insert_sorted (&path->nodes, node,
-                             (GCompareDataFunc)path_node_sort_t_func, NULL);
+      insert_sorted_node (path, &node->base);
       notify_node_added (path, (RigNode *) node);
     }
 }
@@ -642,84 +602,84 @@ rig_path_get_boxed (RigPath *path,
                     float t,
                     RutBoxed *value)
 {
-  GList *link;
+  RigNode *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = find_node (path, t);
 
-  if (link == NULL)
+  if (node == NULL)
     return FALSE;
 
   switch (path->type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
       {
-        RigNodeFloat *node = link->data;
+        RigNodeFloat *float_node = (RigNodeFloat *) node;
 
         value->type = RUT_PROPERTY_TYPE_FLOAT;
-        value->d.float_val = node->value;
+        value->d.float_val = float_node->value;
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_DOUBLE:
       {
-        RigNodeDouble *node = link->data;
+        RigNodeDouble *double_node = (RigNodeDouble *) node;
 
         value->type = RUT_PROPERTY_TYPE_DOUBLE;
-        value->d.double_val = node->value;
+        value->d.double_val = double_node->value;
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_INTEGER:
       {
-        RigNodeInteger *node = link->data;
+        RigNodeInteger *integer_node = (RigNodeInteger *) node;
 
         value->type = RUT_PROPERTY_TYPE_INTEGER;
-        value->d.integer_val = node->value;
+        value->d.integer_val = integer_node->value;
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_UINT32:
       {
-        RigNodeUint32 *node = link->data;
+        RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
 
         value->type = RUT_PROPERTY_TYPE_UINT32;
-        value->d.uint32_val = node->value;
+        value->d.uint32_val = uint32_node->value;
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_VEC3:
       {
-        RigNodeVec3 *node = link->data;
+        RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
 
         value->type = RUT_PROPERTY_TYPE_VEC3;
-        memcpy (value->d.vec3_val, node->value, sizeof (float) * 3);
+        memcpy (value->d.vec3_val, vec3_node->value, sizeof (float) * 3);
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_VEC4:
       {
-        RigNodeVec4 *node = link->data;
+        RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
 
         value->type = RUT_PROPERTY_TYPE_VEC4;
-        memcpy (value->d.vec4_val, node->value, sizeof (float) * 4);
+        memcpy (value->d.vec4_val, vec4_node->value, sizeof (float) * 4);
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_COLOR:
       {
-        RigNodeColor *node = link->data;
+        RigNodeColor *color_node = (RigNodeColor *) node;
 
         value->type = RUT_PROPERTY_TYPE_COLOR;
-        value->d.color_val = node->value;
+        value->d.color_val = color_node->value;
       }
       return TRUE;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
       {
-        RigNodeQuaternion *node = link->data;
+        RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
 
         value->type = RUT_PROPERTY_TYPE_QUATERNION;
-        value->d.quaternion_val = node->value;
+        value->d.quaternion_val = quaternion_node->value;
       }
       return TRUE;
 
@@ -796,21 +756,22 @@ void
 rig_path_remove (RigPath *path,
                  float t)
 {
-  GList *link;
+  RigNode *node;
 
-  link = g_queue_find_custom (&path->nodes, &t, path_find_t_cb);
+  node = find_node (path, t);
 
-  if (link)
+  if (node)
     {
       rut_closure_list_invoke (&path->operation_cb_list,
                                RigPathOperationCallback,
                                path,
                                RIG_PATH_OPERATION_REMOVED,
-                               link->data);
-      rig_node_free (path->type, link->data);
-      g_queue_delete_link (&path->nodes, link);
+                               node);
+      rut_list_remove (&node->list_node);
+      rig_node_free (path->type, node);
+      path->length--;
 
-      if (path->pos == link)
+      if (path->pos == node)
         path->pos = NULL;
     }
 }

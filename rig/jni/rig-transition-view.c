@@ -308,11 +308,9 @@ typedef struct
 } RigTransitionViewDotData;
 
 static void
-rig_transition_view_add_dot_unselected_cb (void *data,
-                                           void *user_data)
+rig_transition_view_add_dot_unselected (RigTransitionViewDotData *dot_data,
+                                        RigNode *node)
 {
-  RigNode *node = data;
-  RigTransitionViewDotData *dot_data = user_data;
   RigTransitionViewDotVertex *v = dot_data->v;
 
   v->x = node->t;
@@ -323,11 +321,9 @@ rig_transition_view_add_dot_unselected_cb (void *data,
 }
 
 static void
-rig_transition_view_add_dot_selected_cb (void *data,
-                                         void *user_data)
+rig_transition_view_add_dot_selected (RigTransitionViewDotData *dot_data,
+                                      RigNode *node)
 {
-  RigNode *node = data;
-  RigTransitionViewDotData *dot_data = user_data;
   RigTransitionViewDotVertex *v = dot_data->v;
   uint32_t color = RIG_TRANSITION_VIEW_UNSELECTED_COLOR;
   RigTransitionViewSelectedNode *selected_node;
@@ -385,12 +381,16 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
           RigPath *path =
             rig_transition_get_path_for_property (view->transition,
                                                   dot_data.prop_data->property);
+          RigNode *node;
 
-          g_queue_foreach (&path->nodes,
-                           dot_data.prop_data->has_selected_nodes ?
-                           rig_transition_view_add_dot_selected_cb :
-                           rig_transition_view_add_dot_unselected_cb,
-                           &dot_data);
+          if (dot_data.prop_data->has_selected_nodes)
+            rut_list_for_each (node, &path->nodes, list_node)
+              rig_transition_view_add_dot_selected (&dot_data,
+                                                    node);
+          else
+            rut_list_for_each (node, &path->nodes, list_node)
+              rig_transition_view_add_dot_unselected (&dot_data,
+                                                      node);
 
           dot_data.row_pos++;
         }
@@ -1088,7 +1088,7 @@ rig_transition_view_property_added (RigTransitionView *view,
                                      prop_data,
                                      NULL /* destroy_cb */);
 
-  view->n_dots += path->nodes.length;
+  view->n_dots += path->length;
 
   prop_data->path = path;
 
@@ -1179,7 +1179,7 @@ rig_transition_view_property_removed (RigTransitionView *view,
   rut_shell_queue_redraw (view->context->shell);
 
   view->dots_dirty = TRUE;
-  view->n_dots -= prop_data->path->nodes.length;
+  view->n_dots -= prop_data->path->length;
 
   g_slice_free (RigTransitionViewProperty, prop_data);
 
@@ -1325,12 +1325,10 @@ rig_transition_view_find_node_in_path (RigTransitionView *view,
                                        float max_progress,
                                        float *t_out)
 {
-  GList *l;
+  RigNode *node;
 
-  for (l = path->nodes.head; l; l = l->next)
+  rut_list_for_each (node, &path->nodes, list_node)
     {
-      RigNode *node = l->data;
-
       if (node->t >= min_progress && node->t <= max_progress)
         {
           *t_out = node->t;

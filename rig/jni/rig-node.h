@@ -25,54 +25,55 @@
 
 typedef struct
 {
+  RutList list_node;
   float t;
 } RigNode;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   float value;
 } RigNodeFloat;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   double value;
 } RigNodeDouble;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   int value;
 } RigNodeInteger;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   uint32_t value;
 } RigNodeUint32;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   float value[3];
 } RigNodeVec3;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   float value[4];
 } RigNodeVec4;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   RutColor value;
 } RigNodeColor;
 
 typedef struct
 {
-  float t;
+  RigNode base;
   CoglQuaternion value;
 } RigNodeQuaternion;
 
@@ -152,16 +153,16 @@ rig_node_new_for_quaternion (float t, const CoglQuaternion *value);
 RigNodeColor *
 rig_node_new_for_color (float t, const RutColor *value);
 
-GList *
-rig_nodes_find_less_than (GList *start, float t);
+RigNode *
+rig_nodes_find_less_than (RigNode *start, RutList *end, float t);
 
-GList *
-rig_nodes_find_less_than_equal (GList *start, float t);
+RigNode *
+rig_nodes_find_less_than_equal (RigNode *start, RutList *end, float t);
 
-GList *
-rig_nodes_find_greater_than (GList *start, float t);
+RigNode *
+rig_nodes_find_greater_than (RigNode *start, RutList *end, float t);
 
-GList *
-rig_nodes_find_greater_than_equal (GList *start, float t);
+RigNode *
+rig_nodes_find_greater_than_equal (RigNode *start, RutList *end, float t);
 
 #endif /* _RUT_NODE_H_ */

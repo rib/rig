@@ -31,10 +31,10 @@ rig_node_integer_lerp (RigNodeInteger *a,
                        float t,
                        int *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       *value = nearbyint (a->value + (b->value - a->value) * factor);
@@ -49,10 +49,10 @@ rig_node_uint32_lerp (RigNodeUint32 *a,
                       float t,
                       uint32_t *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       *value = nearbyint (a->value + (b->value - a->value) * factor);
@@ -67,10 +67,10 @@ rig_node_float_lerp (RigNodeFloat *a,
                      float t,
                      float *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       *value = a->value + (b->value - a->value) * factor;
@@ -85,10 +85,10 @@ rig_node_double_lerp (RigNodeDouble *a,
                       float t,
                       double *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       *value = a->value + (b->value - a->value) * factor;
@@ -103,11 +103,11 @@ rig_node_vec3_lerp (RigNodeVec3 *a,
                     float t,
                     float value[3])
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
 
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
@@ -124,11 +124,11 @@ rig_node_vec4_lerp (RigNodeVec4 *a,
                     float t,
                     float value[4])
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
 
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
@@ -146,11 +146,11 @@ rig_node_color_lerp (RigNodeColor *a,
                      float t,
                      RutColor *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
 
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       value->red =
@@ -172,10 +172,10 @@ rig_node_quaternion_lerp (RigNodeQuaternion *a,
                           float t,
                           CoglQuaternion *value)
 {
-  float range = b->t - a->t;
+  float range = b->base.t - a->base.t;
   if (range)
     {
-      float offset = t - a->t;
+      float offset = t - a->base.t;
       float factor = offset / range;
 
       cogl_quaternion_nlerp (value, &a->value, &b->value, factor);
@@ -238,7 +238,7 @@ RigNodeInteger *
 rig_node_new_for_integer (float t, int value)
 {
   RigNodeInteger *node = g_slice_new (RigNodeInteger);
-  node->t = t;
+  node->base.t = t;
   node->value = value;
   return node;
 }
@@ -247,7 +247,7 @@ RigNodeUint32 *
 rig_node_new_for_uint32 (float t, uint32_t value)
 {
   RigNodeUint32 *node = g_slice_new (RigNodeUint32);
-  node->t = t;
+  node->base.t = t;
   node->value = value;
   return node;
 }
@@ -256,7 +256,7 @@ RigNodeFloat *
 rig_node_new_for_float (float t, float value)
 {
   RigNodeFloat *node = g_slice_new (RigNodeFloat);
-  node->t = t;
+  node->base.t = t;
   node->value = value;
   return node;
 }
@@ -265,7 +265,7 @@ RigNodeDouble *
 rig_node_new_for_double (float t, double value)
 {
   RigNodeDouble *node = g_slice_new (RigNodeDouble);
-  node->t = t;
+  node->base.t = t;
   node->value = value;
   return node;
 }
@@ -274,7 +274,7 @@ RigNodeVec3 *
 rig_node_new_for_vec3 (float t, const float value[3])
 {
   RigNodeVec3 *node = g_slice_new (RigNodeVec3);
-  node->t = t;
+  node->base.t = t;
   memcpy (node->value, value, sizeof (float) * 3);
   return node;
 }
@@ -283,7 +283,7 @@ RigNodeVec4 *
 rig_node_new_for_vec4 (float t, const float value[4])
 {
   RigNodeVec4 *node = g_slice_new (RigNodeVec4);
-  node->t = t;
+  node->base.t = t;
   memcpy (node->value, value, sizeof (float) * 4);
   return node;
 }
@@ -292,7 +292,7 @@ RigNodeQuaternion *
 rig_node_new_for_quaternion (float t, const CoglQuaternion *value)
 {
   RigNodeQuaternion *node = g_slice_new (RigNodeQuaternion);
-  node->t = t;
+  node->base.t = t;
   node->value = *value;
 
   return node;
@@ -302,68 +302,64 @@ RigNodeColor *
 rig_node_new_for_color (float t, const RutColor *value)
 {
   RigNodeColor *node = g_slice_new (RigNodeColor);
-  node->t = t;
+  node->base.t = t;
   node->value = *value;
 
   return node;
 }
 
-GList *
-rig_nodes_find_less_than (GList *start, float t)
+RigNode *
+rig_nodes_find_less_than (RigNode *start, RutList *end, float t)
 {
-  GList *l;
+  RigNode *node;
 
-  for (l = start; l; l = l->prev)
-    {
-      RigNode *node = l->data;
-      if (node->t < t)
-        return l;
-    }
+  for (node = start;
+       node != rut_container_of (end, node, list_node);
+       node = rut_container_of (node->list_node.prev, node, list_node))
+    if (node->t < t)
+      return node;
 
   return NULL;
 }
 
-GList *
-rig_nodes_find_less_than_equal (GList *start, float t)
+RigNode *
+rig_nodes_find_less_than_equal (RigNode *start, RutList *end, float t)
 {
-  GList *l;
+  RigNode *node;
 
-  for (l = start; l; l = l->prev)
-    {
-      RigNode *node = l->data;
-      if (node->t <= t)
-        return l;
-    }
+  for (node = start;
+       node != rut_container_of (end, node, list_node);
+       node = rut_container_of (node->list_node.prev, node, list_node))
+    if (node->t <= t)
+      return node;
 
   return NULL;
 }
 
-GList *
-rig_nodes_find_greater_than (GList *start, float t)
+RigNode *
+rig_nodes_find_greater_than (RigNode *start, RutList *end, float t)
 {
-  GList *l;
+  RigNode *node;
 
-  for (l = start; l; l = l->next)
-    {
-      RigNode *node = l->data;
-      if (node->t > t)
-        return l;
-    }
+  for (node = start;
+       node != rut_container_of (end, node, list_node);
+       node = rut_container_of (node->list_node.next, node, list_node))
+    if (node->t > t)
+      return node;
 
   return NULL;
 }
 
-GList *
-rig_nodes_find_greater_than_equal (GList *start, float t)
+RigNode *
+rig_nodes_find_greater_than_equal (RigNode *start, RutList *end, float t)
 {
-  GList *l;
+  RigNode *node;
 
-  for (l = start; l; l = l->next)
-    {
-      RigNode *node = l->data;
-      if (node->t >= t)
-        return l;
-    }
+  for (node = start;
+       node != rut_container_of (end, node, list_node);
+       node = rut_container_of (node->list_node.prev, node, list_node))
+    if (node->t >= t)
+      return node;
 
   return NULL;
 }
