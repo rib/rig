@@ -125,6 +125,11 @@ rig_node_color_lerp (RigNodeColor *a,
                      float t,
                      RutColor *value);
 
+CoglBool
+rig_node_box (RutPropertyType type,
+              RigNode *node,
+              RutBoxed *value);
+
 void
 rig_node_free (RutPropertyType type,
                void *node);

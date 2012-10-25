@@ -184,6 +184,100 @@ rig_node_quaternion_lerp (RigNodeQuaternion *a,
     *value = a->value;
 }
 
+CoglBool
+rig_node_box (RutPropertyType type,
+              RigNode *node,
+              RutBoxed *value)
+{
+  switch (type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      {
+        RigNodeFloat *float_node = (RigNodeFloat *) node;
+
+        value->type = RUT_PROPERTY_TYPE_FLOAT;
+        value->d.float_val = float_node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      {
+        RigNodeDouble *double_node = (RigNodeDouble *) node;
+
+        value->type = RUT_PROPERTY_TYPE_DOUBLE;
+        value->d.double_val = double_node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      {
+        RigNodeInteger *integer_node = (RigNodeInteger *) node;
+
+        value->type = RUT_PROPERTY_TYPE_INTEGER;
+        value->d.integer_val = integer_node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      {
+        RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
+
+        value->type = RUT_PROPERTY_TYPE_UINT32;
+        value->d.uint32_val = uint32_node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_VEC3:
+      {
+        RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
+
+        value->type = RUT_PROPERTY_TYPE_VEC3;
+        memcpy (value->d.vec3_val, vec3_node->value, sizeof (float) * 3);
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      {
+        RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
+
+        value->type = RUT_PROPERTY_TYPE_VEC4;
+        memcpy (value->d.vec4_val, vec4_node->value, sizeof (float) * 4);
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      {
+        RigNodeColor *color_node = (RigNodeColor *) node;
+
+        value->type = RUT_PROPERTY_TYPE_COLOR;
+        value->d.color_val = color_node->value;
+      }
+      return TRUE;
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      {
+        RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
+
+        value->type = RUT_PROPERTY_TYPE_QUATERNION;
+        value->d.quaternion_val = quaternion_node->value;
+      }
+      return TRUE;
+
+      /* These types of properties can't be interoplated so they
+       * probably shouldn't end up in a path */
+    case RUT_PROPERTY_TYPE_ENUM:
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+    case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+
+  return FALSE;
+}
+
 void
 rig_node_free (RutPropertyType type,
                void *node)
