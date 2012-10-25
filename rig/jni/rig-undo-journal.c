@@ -350,33 +350,31 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
                                            RutProperty *property,
-                                           float t)
+                                           RigNode *node)
 {
   RigData *data = journal->data;
-  UndoRedo *undo_redo;
   RutBoxed old_value;
   RigPath *path =
     rig_transition_get_path_for_property (data->selected_transition,
                                           property);
 
-  if (rig_path_get_boxed (path, t, &old_value))
+  if (rig_node_box (path->type, node, &old_value))
     {
       UndoRedoPathAddRemove *add_remove;
-
-      undo_redo = g_slice_new (UndoRedo);
+      UndoRedo *undo_redo = g_slice_new (UndoRedo);
       add_remove = &undo_redo->d.path_add_remove;
 
       undo_redo->op = UNDO_REDO_PATH_REMOVE_OP;
       undo_redo->mergable = FALSE;
       add_remove->object = rut_refable_ref (property->object);
       add_remove->property = property;
-      add_remove->t = t;
+      add_remove->t = node->t;
       add_remove->value = old_value;
 
-      rig_path_remove (path, t);
-    }
+      rig_path_remove_node (path, node);
 
-  rig_undo_journal_insert (journal, undo_redo);
+      rig_undo_journal_insert (journal, undo_redo);
+    }
 }
 
 

@@ -27,6 +27,7 @@
 
 #include "rig-types.h"
 #include "rut-list.h"
+#include "rig-node.h"
 
 typedef enum _UndoRedoOp
 {
@@ -131,7 +132,7 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
                                            RutProperty *property,
-                                           float t);
+                                           RigNode *node);
 
 void
 rig_undo_journal_log_set_animated (RigUndoJournal *journal,

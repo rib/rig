@@ -143,7 +143,7 @@ typedef struct
   RutList list_node;
 
   RigTransitionViewProperty *prop_data;
-  float t;
+  RigNode *node;
 } RigTransitionViewSelectedNode;
 
 typedef CoglVertexP2C4 RigTransitionViewDotVertex;
@@ -331,7 +331,7 @@ rig_transition_view_add_dot_selected (RigTransitionViewDotData *dot_data,
   rut_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
     {
       if (selected_node->prop_data == dot_data->prop_data &&
-          selected_node->t == node->t)
+          selected_node->node == node)
         {
           color = RIG_TRANSITION_VIEW_SELECTED_COLOR;
           break;
@@ -899,7 +899,7 @@ rig_transition_view_create_label_control (RigTransitionView *view,
 static CoglBool
 rig_transition_view_select_node (RigTransitionView *view,
                                  RigTransitionViewProperty *prop_data,
-                                 float t)
+                                 RigNode *node)
 {
   RigTransitionViewSelectedNode *selected_node;
 
@@ -909,14 +909,14 @@ rig_transition_view_select_node (RigTransitionView *view,
       rut_list_for_each (selected_node, &view->selected_nodes, list_node)
         {
           if (selected_node->prop_data == prop_data &&
-              selected_node->t == t)
+              selected_node->node == node)
             return TRUE;
         }
     }
 
   selected_node = g_slice_new (RigTransitionViewSelectedNode);
   selected_node->prop_data = prop_data;
-  selected_node->t = t;
+  selected_node->node = node;
 
   prop_data->has_selected_nodes = TRUE;
   view->dots_dirty = TRUE;
@@ -929,7 +929,7 @@ rig_transition_view_select_node (RigTransitionView *view,
 static void
 rig_transition_view_unselect_node (RigTransitionView *view,
                                    RigTransitionViewProperty *prop_data,
-                                   float t)
+                                   RigNode *node)
 {
   if (prop_data->has_selected_nodes)
     {
@@ -943,7 +943,7 @@ rig_transition_view_unselect_node (RigTransitionView *view,
         {
           if (selected_node->prop_data == prop_data)
             {
-              if (selected_node->t == t)
+              if (selected_node->node == node)
                 {
                   rut_list_remove (&selected_node->list_node);
                   g_slice_free (RigTransitionViewSelectedNode, selected_node);
@@ -983,7 +983,7 @@ rig_transition_view_path_operation_cb (RigPath *path,
       break;
 
     case RIG_PATH_OPERATION_REMOVED:
-      rig_transition_view_unselect_node (view, prop_data, node->t);
+      rig_transition_view_unselect_node (view, prop_data, node);
 
       view->n_dots--;
       view->dots_dirty = TRUE;
@@ -1318,32 +1318,26 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-static CoglBool
+static RigNode *
 rig_transition_view_find_node_in_path (RigTransitionView *view,
                                        RigPath *path,
                                        float min_progress,
-                                       float max_progress,
-                                       float *t_out)
+                                       float max_progress)
 {
   RigNode *node;
 
   rut_list_for_each (node, &path->nodes, list_node)
-    {
-      if (node->t >= min_progress && node->t <= max_progress)
-        {
-          *t_out = node->t;
-          return TRUE;
-        }
-    }
+    if (node->t >= min_progress && node->t <= max_progress)
+      return node;
 
-  return FALSE;
+  return NULL;
 }
 
 static CoglBool
 rig_transition_view_find_node (RigTransitionView *view,
                                RutInputEvent *event,
                                RigTransitionViewProperty **prop_data_out,
-                               float *t_out)
+                               RigNode **node_out)
 {
   float x = rut_motion_event_get_x (event);
   float y = rut_motion_event_get_y (event);
@@ -1376,15 +1370,18 @@ rig_transition_view_find_node (RigTransitionView *view,
               float scaled_dot_size =
                 view->row_height /
                 (float) (view->total_width - view->controls_width);
+              RigNode *node;
 
-              if (rig_transition_view_find_node_in_path (view,
-                                                         prop_data->path,
-                                                         progress -
-                                                         scaled_dot_size / 2.0f,
-                                                         progress +
-                                                         scaled_dot_size / 2.0f,
-                                                         t_out))
+              node =
+                rig_transition_view_find_node_in_path (view,
+                                                       prop_data->path,
+                                                       progress -
+                                                       scaled_dot_size / 2.0f,
+                                                       progress +
+                                                       scaled_dot_size / 2.0f);
+              if (node)
                 {
+                  *node_out = node;
                   *prop_data_out = prop_data;
                   return TRUE;
                 }
@@ -1409,7 +1406,7 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
 
       rig_undo_journal_delete_path_node_and_log (view->undo_journal,
                                                  node->prop_data->property,
-                                                 node->t);
+                                                 node->node);
     }
 }
 
@@ -1427,9 +1424,9 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
           !view->have_grab)
         {
           RigTransitionViewProperty *prop_data;
-          float t;
+          RigNode *node;
 
-          if (rig_transition_view_find_node (view, event, &prop_data, &t))
+          if (rig_transition_view_find_node (view, event, &prop_data, &node))
             {
               if ((rut_motion_event_get_modifier_state (event) &
                    (RUT_MODIFIER_LEFT_SHIFT_ON |
@@ -1442,10 +1439,10 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
                * If shift wasn't down then it definetely won't be selected
                * because we'll have just cleared the selection above so it
                * doesn't matter if we toggle it */
-              if (rig_transition_view_select_node (view, prop_data, t))
-                rig_transition_view_unselect_node (view, prop_data, t);
+              if (rig_transition_view_select_node (view, prop_data, node))
+                rig_transition_view_unselect_node (view, prop_data, node);
 
-              rut_timeline_set_progress (view->timeline, t);
+              rut_timeline_set_progress (view->timeline, node->t);
 
               rut_shell_queue_redraw (view->context->shell);
             }
