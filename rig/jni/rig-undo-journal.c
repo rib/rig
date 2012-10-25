@@ -325,6 +325,45 @@ rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
 }
 
 void
+rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
+                                          float offset,
+                                          const RigUndoJournalPathNode *nodes,
+                                          int n_nodes)
+{
+  UndoRedo *undo_redo;
+  UndoRedoMovePathNodes *move_path_nodes;
+  RigData *data = journal->data;
+  int i;
+
+  undo_redo = g_slice_new (UndoRedo);
+
+  undo_redo->op = UNDO_REDO_MOVE_PATH_NODES_OP;
+  undo_redo->mergable = FALSE;
+
+  move_path_nodes = &undo_redo->d.move_path_nodes;
+  move_path_nodes->nodes = g_malloc (sizeof (UndoRedoMovedPathNode) * n_nodes);
+  move_path_nodes->n_nodes = n_nodes;
+
+  for (i = 0; i < n_nodes; i++)
+    {
+      const RigUndoJournalPathNode *node = nodes + i;
+      UndoRedoMovedPathNode *moved_node = move_path_nodes->nodes + i;
+      RigTransitionPropData *prop_data =
+        rig_transition_get_prop_data_for_property (data->selected_transition,
+                                                   node->property);
+
+      moved_node->object = rut_refable_ref (node->property->object);
+      moved_node->property = node->property;
+      moved_node->old_time = node->node->t;
+      moved_node->new_time = node->node->t + offset;
+
+      rig_path_move_node (prop_data->path, node->node, moved_node->new_time);
+    }
+
+  rig_undo_journal_insert (journal, undo_redo);
+}
+
+void
 rig_undo_journal_move_and_log (RigUndoJournal *journal,
                                CoglBool mergable,
                                RutEntity *entity,
@@ -646,6 +685,76 @@ undo_redo_delete_entity_free (UndoRedo *undo_redo)
   g_slice_free (UndoRedo, undo_redo);
 }
 
+static void
+undo_redo_move_path_nodes_apply (RigUndoJournal *journal,
+                                 UndoRedo *undo_redo)
+{
+  UndoRedoMovePathNodes *move_path_nodes = &undo_redo->d.move_path_nodes;
+  RigData *data = journal->data;
+  int i;
+
+  g_print ("Move path nodes APPLY\n");
+
+  for (i = 0; i < move_path_nodes->n_nodes; i++)
+    {
+      UndoRedoMovedPathNode *node = move_path_nodes->nodes + i;
+      RigPath *path;
+      RigNode *path_node;
+
+      path = rig_transition_get_path_for_property (data->selected_transition,
+                                                   node->property);
+
+      path_node = rig_path_find_node (path, node->old_time);
+      if (path_node)
+        rig_path_move_node (path, path_node, node->new_time);
+
+      rig_transition_update_property (data->selected_transition,
+                                      node->property);
+    }
+}
+
+static UndoRedo *
+undo_redo_move_path_nodes_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedoMovePathNodes *move_path_nodes = &inverse->d.move_path_nodes;
+  int i;
+
+  move_path_nodes->nodes =
+    g_memdup (undo_redo_src->d.move_path_nodes.nodes,
+              sizeof (UndoRedoMovedPathNode) * move_path_nodes->n_nodes);
+
+  for (i = 0; i < move_path_nodes->n_nodes; i++)
+    {
+      UndoRedoMovedPathNode *node = move_path_nodes->nodes + i;
+      float tmp;
+
+      rut_refable_ref (node->object);
+      tmp = node->old_time;
+      node->old_time = node->new_time;
+      node->new_time = tmp;
+    }
+
+  return inverse;
+}
+
+static void
+undo_redo_move_path_nodes_free (UndoRedo *undo_redo)
+{
+  UndoRedoMovePathNodes *move_path_nodes = &undo_redo->d.move_path_nodes;
+  int i;
+
+  for (i = 0; i < move_path_nodes->n_nodes; i++)
+    {
+      UndoRedoMovedPathNode *node = move_path_nodes->nodes + i;
+      rut_refable_ref (node->object);
+    }
+
+  g_free (move_path_nodes->nodes);
+
+  g_slice_free (UndoRedo, undo_redo);
+}
+
 static UndoRedoOpImpl undo_redo_ops[] =
   {
     {
@@ -677,6 +786,11 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_delete_entity_apply,
       undo_redo_delete_entity_invert,
       undo_redo_delete_entity_free
+    },
+    {
+      undo_redo_move_path_nodes_apply,
+      undo_redo_move_path_nodes_invert,
+      undo_redo_move_path_nodes_free
     }
   };
 

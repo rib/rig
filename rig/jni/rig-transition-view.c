@@ -57,6 +57,21 @@ typedef struct
   RutObject *control;
 } RigTransitionViewControl;
 
+/* When the user clicks on the area with the dots then we'll delay
+ * deciding what action to take until the next mouse event. This enum
+ * tracks whether we've decided the action or not */
+typedef enum
+{
+  /* The mouse button isn't down and we're not grabbing input */
+  RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB,
+  /* There hasn't been an event yet since the button press event */
+  RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED,
+  /* We've decided to grab the selected nodes */
+  RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES,
+  /* We've decided to move the timeline position */
+  RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE
+} RigTransitionViewGrabState;
+
 typedef struct _RigTransitionViewObject RigTransitionViewObject;
 
 typedef struct
@@ -108,7 +123,15 @@ struct _RigTransitionView
   RutList preferred_size_cb_list;
 
   RutInputRegion *input_region;
-  CoglBool have_grab;
+  RigTransitionViewGrabState grab_state;
+  /* Position that the mouse was over when the drag was start */
+  float drag_start_position;
+  /* Current offset in time that the selected nodes are being dragged to */
+  float drag_offset;
+  /* Maximum offset range that we can drag to without making the nodes
+   * overlap a neighbour */
+  float min_drag_offset;
+  float max_drag_offset;
 
   RutObject *graph;
   RutClosure *modified_closure;
@@ -144,6 +167,10 @@ typedef struct
 
   RigTransitionViewProperty *prop_data;
   RigNode *node;
+
+  /* While dragging nodes, this will be used to store the original
+   * time that the node had */
+  float original_time;
 } RigTransitionViewSelectedNode;
 
 typedef CoglVertexP2C4 RigTransitionViewDotVertex;
@@ -161,12 +188,12 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
 static void
 rig_transition_view_ungrab_input (RigTransitionView *view)
 {
-  if (view->have_grab)
+  if (view->grab_state != RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB)
     {
       rut_shell_ungrab_input (view->context->shell,
                               rig_transition_view_grab_input_cb,
                               view);
-      view->have_grab = FALSE;
+      view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB;
     }
 }
 
@@ -1276,51 +1303,27 @@ rig_transition_view_create_progress_pipeline (RigTransitionView *view)
   return pipeline;
 }
 
-static void
-rig_transition_view_update_timeline_progress (RigTransitionView *view,
-                                              RutInputEvent *event)
+static float
+rig_transition_view_get_time_from_event (RigTransitionView *view,
+                                         RutInputEvent *event)
 {
   float x = rut_motion_event_get_x (event);
   float y = rut_motion_event_get_y (event);
-  float progress;
 
   if (!rut_motion_event_unproject (event, view, &x, &y))
     g_error ("Failed to get inverse transform");
 
-  progress = ((x - view->controls_width) /
-              (view->total_width - view->controls_width));
-
-  rut_timeline_set_progress (view->timeline, progress);
-  rut_shell_queue_redraw (view->context->shell);
+  return ((x - view->controls_width) /
+          (view->total_width - view->controls_width));
 }
 
-static RutInputEventStatus
-rig_transition_view_grab_input_cb (RutInputEvent *event,
-                                   void *user_data)
+static void
+rig_transition_view_update_timeline_progress (RigTransitionView *view,
+                                              RutInputEvent *event)
 {
-  RigTransitionView *view = user_data;
-
-  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
-    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
-
-  if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
-    {
-      RutButtonState state = rut_motion_event_get_button_state (event);
-
-      if ((state & RUT_BUTTON_STATE_1) &&
-          rut_list_empty (&view->selected_nodes))
-        {
-          rig_transition_view_update_timeline_progress (view, event);
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-    }
-  else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
-    {
-      rig_transition_view_ungrab_input (view);
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
-    }
-
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  float progress = rig_transition_view_get_time_from_event (view, event);
+  rut_timeline_set_progress (view->timeline, progress);
+  rut_shell_queue_redraw (view->context->shell);
 }
 
 static RigNode *
@@ -1402,6 +1405,282 @@ rig_transition_view_find_node (RigTransitionView *view,
 }
 
 static void
+rig_transition_view_handle_select_event (RigTransitionView *view,
+                                         RutInputEvent *event)
+{
+  RigTransitionViewProperty *prop_data;
+  RigNode *node;
+
+  if (rig_transition_view_find_node (view, event, &prop_data, &node))
+    {
+      if ((rut_motion_event_get_modifier_state (event) &
+           (RUT_MODIFIER_LEFT_SHIFT_ON |
+            RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
+        rig_transition_view_clear_selected_nodes (view);
+
+      /* If shift is down then we actually want to toggle the node. If
+       * the node is already selected then trying to select it again
+       * will return TRUE so we know to remove it. If shift wasn't
+       * down then it definitely won't be selected because we'll have
+       * just cleared the selection above so it doesn't matter if we
+       * toggle it */
+      if (rig_transition_view_select_node (view, prop_data, node))
+        rig_transition_view_unselect_node (view, prop_data, node);
+
+      rut_timeline_set_progress (view->timeline, node->t);
+
+      rut_shell_queue_redraw (view->context->shell);
+    }
+  else
+    {
+      rig_transition_view_clear_selected_nodes (view);
+      rig_transition_view_update_timeline_progress (view, event);
+    }
+}
+
+static RigNode *
+rig_transition_view_get_unselected_neighbour (RigTransitionView *view,
+                                              RutList *head,
+                                              RigNode *node,
+                                              CoglBool direction)
+{
+  while (TRUE)
+    {
+      RutList *next_link;
+      RigNode *next_node;
+      RigTransitionViewSelectedNode *selected_node;
+
+      if (direction)
+        next_link = node->list_node.next;
+      else
+        next_link = node->list_node.prev;
+
+      if (next_link == head)
+        return NULL;
+
+      next_node = rut_container_of (next_link, next_node, list_node);
+
+      /* Ignore this node if it is also selected */
+      rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+        {
+          if (selected_node->node == next_node)
+            goto node_is_selected;
+        }
+
+      return next_node;
+
+    node_is_selected:
+      node = next_node;
+    }
+}
+
+static void
+rig_transition_view_calculate_drag_offset_range (RigTransitionView *view)
+{
+  float min_drag_offset = -G_MAXFLOAT;
+  float max_drag_offset = G_MAXFLOAT;
+  RigTransitionViewSelectedNode *selected_node;
+
+  /* We want to limit the range that the user can drag the selected
+   * nodes to so that it won't change the order of any of the nodes */
+
+  rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+    {
+      RutList *node_list = &selected_node->prop_data->path->nodes;
+      RigNode *node = selected_node->node, *next_node;
+      float node_min, node_max;
+
+      selected_node->original_time = node->t;
+
+      next_node =
+        rig_transition_view_get_unselected_neighbour (view,
+                                                      node_list,
+                                                      node,
+                                                      FALSE /* direction */);
+
+      if (next_node == NULL)
+        node_min = 0.0f;
+      else
+        node_min = next_node->t + 0.0001;
+
+      if (node_min > node->t)
+        node_min = node->t;
+
+      next_node =
+        rig_transition_view_get_unselected_neighbour (view,
+                                                      node_list,
+                                                      node,
+                                                      TRUE /* direction */);
+
+      if (next_node == NULL)
+        node_max = 1.0f;
+      else
+        node_max = next_node->t - 0.0001;
+
+      if (node_max < node->t)
+        node_max = node->t;
+
+      if (node_min - node->t > min_drag_offset)
+        min_drag_offset = node_min - node->t;
+      if (node_max - node->t < max_drag_offset)
+        max_drag_offset = node_max - node->t;
+    }
+
+  view->min_drag_offset = min_drag_offset;
+  view->max_drag_offset = max_drag_offset;
+  view->drag_offset = 0.0f;
+}
+
+static void
+rig_transition_view_decide_grab_state (RigTransitionView *view,
+                                       RutInputEvent *event)
+{
+  RigTransitionViewProperty *prop_data;
+  RigNode *node;
+
+  /* FIXME: if shift is down this should start drawing a bounding box
+   * to select multiple nodes. */
+
+  if (rig_transition_view_find_node (view, event, &prop_data, &node))
+    {
+      if (!rig_transition_view_select_node (view, prop_data, node))
+        {
+          /* If the node wasn't already selected then we only want
+           * this node to be selected */
+          rig_transition_view_clear_selected_nodes (view);
+          rig_transition_view_select_node (view, prop_data, node);
+        }
+
+      view->drag_start_position =
+        rig_transition_view_get_time_from_event (view, event);
+
+      rig_transition_view_calculate_drag_offset_range (view);
+
+      rut_shell_queue_redraw (view->context->shell);
+
+      view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES;
+    }
+  else
+    {
+      rig_transition_view_clear_selected_nodes (view);
+
+      view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE;
+    }
+}
+
+static void
+rig_transition_view_drag_nodes (RigTransitionView *view,
+                                RutInputEvent *event)
+{
+  RigTransitionViewSelectedNode *selected_node;
+  float position = rig_transition_view_get_time_from_event (view, event);
+  float offset = position - view->drag_start_position;
+  RigTransitionViewObject *object_data;
+
+  offset = CLAMP (offset, view->min_drag_offset, view->max_drag_offset);
+
+  rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+    rig_path_move_node (selected_node->prop_data->path,
+                        selected_node->node,
+                        selected_node->original_time + offset);
+
+  view->drag_offset = offset;
+
+  /* Update all the properties that have selected nodes according to
+   * the new node positions */
+  rut_list_for_each (object_data, &view->objects, list_node)
+    {
+      RigTransitionViewProperty *prop_data;
+
+      rut_list_for_each (prop_data, &object_data->properties, list_node)
+        {
+          if (prop_data->has_selected_nodes)
+            rig_transition_update_property (view->transition,
+                                            prop_data->property);
+        }
+    }
+}
+
+static void
+rig_transition_view_commit_dragged_nodes (RigTransitionView *view)
+{
+  RigTransitionViewSelectedNode *selected_node;
+  int n_nodes, i;
+  RigUndoJournalPathNode *nodes;
+
+  n_nodes = rut_list_length (&view->selected_nodes);
+
+  nodes = g_alloca (sizeof (RigUndoJournalPathNode) * n_nodes);
+
+  i = 0;
+  rut_list_for_each (selected_node, &view->selected_nodes, list_node)
+    {
+      /* Reset all of the nodes to their original position so that the
+       * undo journal can see it */
+      selected_node->node->t = selected_node->original_time;
+
+      nodes[i].property = selected_node->prop_data->property;
+      nodes[i].node = selected_node->node;
+
+      i++;
+    }
+
+  rig_undo_journal_move_path_nodes_and_log (view->undo_journal,
+                                            view->drag_offset,
+                                            nodes,
+                                            n_nodes);
+}
+
+static RutInputEventStatus
+rig_transition_view_grab_input_cb (RutInputEvent *event,
+                                   void *user_data)
+{
+  RigTransitionView *view = user_data;
+
+  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+
+  if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
+    {
+      if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED)
+        rig_transition_view_decide_grab_state (view, event);
+
+      switch (view->grab_state)
+        {
+	case RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB:
+	case RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED:
+          g_assert_not_reached ();
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES:
+          rig_transition_view_drag_nodes (view, event);
+          break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE:
+          rig_transition_view_update_timeline_progress (view, event);
+          break;
+        }
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+  else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP &&
+           (rut_motion_event_get_button_state (event) &
+            RUT_BUTTON_STATE_1) == 0)
+    {
+      if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED)
+        rig_transition_view_handle_select_event (view, event);
+      else if (view->grab_state ==
+               RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES)
+        rig_transition_view_commit_dragged_nodes (view);
+
+      rig_transition_view_ungrab_input (view);
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
+  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static void
 rig_transition_view_delete_selected_nodes (RigTransitionView *view)
 {
   while (!rut_list_empty (&view->selected_nodes))
@@ -1426,38 +1705,13 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
     {
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
           (rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) &&
-          !view->have_grab)
+          view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB)
         {
-          RigTransitionViewProperty *prop_data;
-          RigNode *node;
-
-          if (rig_transition_view_find_node (view, event, &prop_data, &node))
-            {
-              if ((rut_motion_event_get_modifier_state (event) &
-                   (RUT_MODIFIER_LEFT_SHIFT_ON |
-                    RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
-                rig_transition_view_clear_selected_nodes (view);
-
-              /* If shift is down then we actually want to toggle the
-               * node. If the node is already selected then trying to
-               * select it again will return TRUE so we know to remove it.
-               * If shift wasn't down then it definetely won't be selected
-               * because we'll have just cleared the selection above so it
-               * doesn't matter if we toggle it */
-              if (rig_transition_view_select_node (view, prop_data, node))
-                rig_transition_view_unselect_node (view, prop_data, node);
-
-              rut_timeline_set_progress (view->timeline, node->t);
-
-              rut_shell_queue_redraw (view->context->shell);
-            }
-          else
-            {
-              rig_transition_view_clear_selected_nodes (view);
-              rig_transition_view_update_timeline_progress (view, event);
-            }
-
-          view->have_grab = TRUE;
+          /* We want to delay doing anything in response to the click
+           * until the grab callback because we will do different
+           * things depending on whether the next event is a move or a
+           * release */
+          view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED;
           rut_shell_grab_input (view->context->shell,
                                 rut_input_event_get_camera (event),
                                 rig_transition_view_grab_input_cb,

@@ -37,6 +37,7 @@ typedef enum _UndoRedoOp
   UNDO_REDO_PATH_MODIFY_OP,
   UNDO_REDO_SET_ANIMATED_OP,
   UNDO_REDO_DELETE_ENTITY_OP,
+  UNDO_REDO_MOVE_PATH_NODES_OP,
   UNDO_REDO_N_OPS
 } UndoRedoOp;
 
@@ -65,6 +66,20 @@ typedef struct _UndoRedoPathModify
   RutBoxed value1;
 } UndoRedoPathModify;
 
+typedef struct _UndoRedoMovedPathNode
+{
+  RutObject *object;
+  RutProperty *property;
+  float old_time;
+  float new_time;
+} UndoRedoMovedPathNode;
+
+typedef struct _UndoRedoMovePathNodes
+{
+  UndoRedoMovedPathNode *nodes;
+  int n_nodes;
+} UndoRedoMovePathNodes;
+
 typedef struct _UndoRedoSetAnimated
 {
   RutObject *object;
@@ -92,6 +107,7 @@ typedef struct _UndoRedo
       UndoRedoPathModify path_modify;
       UndoRedoSetAnimated set_animated;
       UndoRedoDeleteEntity delete_entity;
+      UndoRedoMovePathNodes move_path_nodes;
     } d;
 } UndoRedo;
 
@@ -120,6 +136,18 @@ rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        CoglBool mergable,
                                        const RutBoxed *value,
                                        RutProperty *property);
+
+typedef struct
+{
+  RutProperty *property;
+  RigNode *node;
+} RigUndoJournalPathNode;
+
+void
+rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
+                                          float offset,
+                                          const RigUndoJournalPathNode *nodes,
+                                          int n_path_nodes);
 
 void
 rig_undo_journal_move_and_log (RigUndoJournal *journal,
