@@ -39,6 +39,9 @@ enum {
 struct _RutMaterial
 {
   RutObjectProps _parent;
+
+  int ref_count;
+
   RutComponentableProps component;
   RutAsset *texture_asset;
   RutAsset *normal_map_asset;

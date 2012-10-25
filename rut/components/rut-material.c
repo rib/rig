@@ -87,10 +87,39 @@ static RutIntrospectableVTable _rut_material_introspectable_vtable = {
   rut_simple_introspectable_foreach_property
 };
 
+static void
+_rut_material_free (void *object)
+{
+  RutMaterial *material = object;
+
+  if (material->texture_asset)
+    rut_refable_unref (material->texture_asset);
+
+  if (material->normal_map_asset)
+    rut_refable_unref (material->normal_map_asset);
+
+  if (material->alpha_mask_asset)
+    rut_refable_unref (material->alpha_mask_asset);
+
+  rut_simple_introspectable_destroy (material);
+
+  g_slice_free (RutMaterial, material);
+}
+
+static RutRefCountableVTable _rut_material_ref_countable_vtable = {
+  rut_refable_simple_ref,
+  rut_refable_simple_unref,
+  _rut_material_free
+};
+
 void
 _rut_material_init_type (void)
 {
   rut_type_init (&rut_material_type);
+  rut_type_add_interface (&rut_material_type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RutMaterial, ref_count),
+                          &_rut_material_ref_countable_vtable);
   rut_type_add_interface (&rut_material_type,
                            RUT_INTERFACE_ID_COMPONENTABLE,
                            offsetof (RutMaterial, component),
@@ -114,6 +143,9 @@ rut_material_new_full (RutContext *ctx,
   RutMaterial *material = g_slice_new0 (RutMaterial);
 
   rut_object_init (&material->_parent, &rut_material_type);
+
+  material->ref_count = 1;
+
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
   rut_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
