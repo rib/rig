@@ -695,6 +695,20 @@ rig_path_remove_node (RigPath *path,
     path->pos = NULL;
 }
 
+void
+rig_path_move_node (RigPath *path,
+                    RigNode *node,
+                    float new_value)
+{
+  node->t = new_value;
+
+  rut_closure_list_invoke (&path->operation_cb_list,
+                           RigPathOperationCallback,
+                           path,
+                           RIG_PATH_OPERATION_MOVED,
+                           node);
+}
+
 RutClosure *
 rig_path_add_operation_callback (RigPath *path,
                                  RigPathOperationCallback callback,

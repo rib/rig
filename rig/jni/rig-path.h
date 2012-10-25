@@ -40,7 +40,8 @@ typedef enum
 {
   RIG_PATH_OPERATION_ADDED,
   RIG_PATH_OPERATION_REMOVED,
-  RIG_PATH_OPERATION_MODIFIED
+  RIG_PATH_OPERATION_MODIFIED,
+  RIG_PATH_OPERATION_MOVED
 } RigPathOperation;
 
 typedef void
@@ -125,6 +126,21 @@ rig_path_remove (RigPath *path,
 void
 rig_path_remove_node (RigPath *path,
                       RigNode *node);
+
+/**
+ * rig_path_move_node:
+ * @path: A #RigPath
+ * @node: A node to move
+ * @t: The new value
+ *
+ * Moves the given node to a new time position. Note that this
+ * shouldn't be used to move a node to a location that would require
+ * changing the order of the nodes
+ */
+void
+rig_path_move_node (RigPath *path,
+                    RigNode *node,
+                    float new_value);
 
 RutClosure *
 rig_path_add_operation_callback (RigPath *path,

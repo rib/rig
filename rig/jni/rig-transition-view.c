@@ -989,6 +989,11 @@ rig_transition_view_path_operation_cb (RigPath *path,
       view->dots_dirty = TRUE;
       rut_shell_queue_redraw (view->context->shell);
       break;
+
+    case RIG_PATH_OPERATION_MOVED:
+      view->dots_dirty = TRUE;
+      rut_shell_queue_redraw (view->context->shell);
+      break;
     }
 }
 
