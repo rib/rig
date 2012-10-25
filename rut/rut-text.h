@@ -1228,6 +1228,9 @@ rut_text_set_width (RutText *text, float width);
 void
 rut_text_set_height (RutText *text, float height);
 
+RutMesh *
+rut_text_get_pick_mesh (RutText *text);
+
 G_END_DECLS
 
 #endif /* __RUT_TEXT_H__ */

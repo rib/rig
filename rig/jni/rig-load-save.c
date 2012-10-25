@@ -145,6 +145,24 @@ save_component_cb (RutComponent *component,
 
       fprintf (state->file, " />\n");
     }
+  else if (type == &rut_text_type)
+    {
+      RutText *text = RUT_TEXT (component);
+      RutColor color;
+
+      rut_text_get_color (text, &color);
+
+      fprintf (state->file,
+               "%*s<text text=\"%s\" font=\"%s\" "
+               "color=\"#%02x%02x%02x%02x\" />\n",
+               state->indent, "",
+               rut_text_get_text (text),
+               rut_text_get_font_name (text),
+               rut_color_get_red_byte (&color),
+               rut_color_get_green_byte (&color),
+               rut_color_get_blue_byte (&color),
+               rut_color_get_alpha_byte (&color));
+    }
 
   state->indent -= INDENT_LEVEL;
 }
@@ -1483,6 +1501,39 @@ parse_start_element (GMarkupParseContext *context,
 
       if (model)
         rut_entity_add_component (loader->current_entity, model);
+    }
+  else if (state == LOADER_STATE_LOADING_ENTITY &&
+           strcmp (element_name, "text") == 0)
+    {
+      const char *text_str, *font_str, *color_str;
+      RutText *text;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "text",
+                                        &text_str,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "font",
+                                        &font_str,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "color",
+                                        &color_str,
+                                        G_MARKUP_COLLECT_INVALID))
+          return;
+
+      text = rut_text_new_with_text (data->ctx, font_str, text_str);
+
+      if (color_str)
+        {
+          RutColor color;
+          rut_color_init_from_string (data->ctx, &color, color_str);
+          rut_text_set_color (text, &color);
+        }
+
+      rut_entity_add_component (loader->current_entity, text);
     }
   else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
            strcmp (element_name, "texture") == 0)

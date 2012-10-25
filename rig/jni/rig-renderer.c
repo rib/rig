@@ -910,11 +910,20 @@ rig_journal_flush (GArray *journal,
                                             normal_matrix);
         }
 
-      primitive = rut_primable_get_primitive (geometry);
-      cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
-      cogl_framebuffer_draw_primitive (fb,
-                                       pipeline,
-                                       primitive);
+      if (rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
+        {
+          primitive = rut_primable_get_primitive (geometry);
+          cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+          cogl_framebuffer_draw_primitive (fb,
+                                           pipeline,
+                                           primitive);
+        }
+      else if (rut_object_get_type (geometry) == &rut_text_type &&
+               paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+        {
+          cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+          rut_paintable_paint (geometry, rut_paint_ctx);
+        }
 
       cogl_object_unref (pipeline);
 

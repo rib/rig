@@ -134,6 +134,8 @@ struct _RutText
 
   int ref_count;
 
+  RutComponentableProps component;
+
   RutContext *ctx;
 
   float width;
@@ -146,6 +148,7 @@ struct _RutText
   RutTextDirection direction;
 
   RutInputRegion *input_region;
+  RutMesh *pick_mesh;
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[N_PROPS];
@@ -3024,6 +3027,7 @@ _rut_text_set_size (RutObject *object,
                     float height)
 {
   RutText *text = RUT_TEXT (object);
+  CoglVertexP3 *pick_vertices;
 
   if (text->width == width && text->height == height)
     return;
@@ -3048,6 +3052,18 @@ _rut_text_set_size (RutObject *object,
                                     0, 0,
                                     width,
                                     height);
+
+  pick_vertices = (CoglVertexP3 *)text->pick_mesh->attributes[0]->buffer->data;
+  pick_vertices[0].x = 0;
+  pick_vertices[0].y = 0;
+  pick_vertices[1].x = 0;
+  pick_vertices[1].y = height;
+  pick_vertices[2].x = width;
+  pick_vertices[2].y = height;
+  pick_vertices[3] = pick_vertices[0];
+  pick_vertices[4] = pick_vertices[2];
+  pick_vertices[5].x = width;
+  pick_vertices[5].y = 0;
 
   rut_property_dirty (&text->ctx->property_ctx,
                       &text->properties[PROP_WIDTH]);
@@ -3152,6 +3168,14 @@ static RutSizableVTable _rut_text_sizable_vtable = {
   NULL /* add_preferred_size_callback */
 };
 
+static RutComponentableVTable _rut_text_componentable_vtable = {
+    0
+};
+
+static RutPickableVTable _rut_text_pickable_vtable = {
+  .get_mesh = rut_text_get_pick_mesh
+};
+
 RutType rut_text_type;
 
 void
@@ -3163,6 +3187,10 @@ _rut_text_init_type (void)
                           offsetof (RutText, ref_count),
                           &_rut_text_ref_countable_vtable);
   rut_type_add_interface (&rut_text_type,
+                          RUT_INTERFACE_ID_COMPONENTABLE,
+                          offsetof (RutText, component),
+                          &_rut_text_componentable_vtable);
+  rut_type_add_interface (&rut_text_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutText, graphable),
                           &_rut_text_graphable_vtable);
@@ -3170,6 +3198,10 @@ _rut_text_init_type (void)
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutText, paintable),
                           &_rut_text_paintable_vtable);
+  rut_type_add_interface (&rut_text_type,
+                          RUT_INTERFACE_ID_PICKABLE,
+                          0, /* no associated properties */
+                          &_rut_text_pickable_vtable);
   rut_type_add_interface (&rut_text_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
@@ -3191,9 +3223,14 @@ rut_text_new_full (RutContext *ctx,
                    RutTextBuffer *buffer)
 {
   RutText *text = g_slice_new0 (RutText);
+  RutBuffer *mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  RutMesh *pick_mesh =
+    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES, 6, mesh_buffer);
   int i, password_hint_time;
 
   rut_object_init (&text->_parent, &rut_text_type);
+
+  text->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
   text->ref_count = 1;
 
@@ -3222,6 +3259,7 @@ rut_text_new_full (RutContext *ctx,
   text->use_markup = FALSE;
   text->justify = FALSE;
   text->activatable = TRUE;
+  text->pick_mesh = pick_mesh;
 
   for (i = 0; i < N_CACHED_LAYOUTS; i++)
     text->cached_layouts[i].layout = NULL;
@@ -4505,4 +4543,10 @@ RutContext *
 rut_text_get_context (RutText *text)
 {
   return text->ctx;
+}
+
+RutMesh *
+rut_text_get_pick_mesh (RutText *text)
+{
+  return text->pick_mesh;
 }
