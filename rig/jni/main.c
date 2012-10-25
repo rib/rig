@@ -2120,6 +2120,38 @@ init (RutShell *shell, void *user_data)
                        &rut_data_property_specs[i],
                        data);
 
+  data->timeline = rut_timeline_new (data->ctx, 20.0);
+  rut_timeline_stop (data->timeline);
+
+  data->timeline_elapsed =
+    rut_introspectable_lookup_property (data->timeline, "elapsed");
+  data->timeline_progress =
+    rut_introspectable_lookup_property (data->timeline, "progress");
+
+  data->circle_texture = rut_create_circle_texture (data->ctx,
+                                                    CIRCLE_TEX_RADIUS,
+                                                    CIRCLE_TEX_PADDING);
+
+  data->scene = rut_graph_new (data->ctx, NULL);
+
+#ifndef __ANDROID__
+  if (_rig_handset_remaining_args &&
+      _rig_handset_remaining_args[0])
+    {
+      if (_rig_handset_remaining_args[0])
+        {
+          struct stat st;
+
+          _rut_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
+          rut_set_assets_location (data->ctx, _rut_project_dir);
+
+          stat (_rig_handset_remaining_args[0], &st);
+          if (S_ISREG (st.st_mode))
+            rig_load (data, _rig_handset_remaining_args[0]);
+        }
+    }
+#endif
+
   data->device_width = DEVICE_WIDTH;
   data->device_height = DEVICE_HEIGHT;
 
@@ -2232,10 +2264,6 @@ init (RutShell *shell, void *user_data)
   data->dof = rut_dof_effect_new (data->ctx);
   data->enable_dof = FALSE;
 
-  data->circle_texture = rut_create_circle_texture (data->ctx,
-                                                    CIRCLE_TEX_RADIUS /* radius */,
-                                                    CIRCLE_TEX_PADDING /* padding */);
-
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
@@ -2275,8 +2303,6 @@ init (RutShell *shell, void *user_data)
    * be used when handling input events in device coordinates.
    */
   rut_shell_set_window_camera (shell, data->camera);
-
-  data->scene = rut_graph_new (data->ctx, NULL);
 
   /* Conceptually we rig the camera to an armature with a pivot fixed
    * at the current origin. This setup makes it straight forward to
@@ -2701,27 +2727,6 @@ init (RutShell *shell, void *user_data)
 
     }
 
-#if 0
-  data->slider_transform =
-    rut_transform_new (data->ctx,
-                       data->slider = rut_slider_new (data->ctx,
-                                                      RUT_AXIS_X,
-                                                      0, 1,
-                                                      data->main_width));
-  rut_graphable_add_child (data->bottom_bar_transform, data->slider_transform);
-
-  data->slider_progress =
-    rut_introspectable_lookup_property (data->slider, "progress");
-#endif
-
-  data->timeline = rut_timeline_new (data->ctx, 20.0);
-  rut_timeline_stop (data->timeline);
-
-  data->timeline_elapsed =
-    rut_introspectable_lookup_property (data->timeline, "elapsed");
-  data->timeline_progress =
-    rut_introspectable_lookup_property (data->timeline, "progress");
-
   /* tool */
   data->tool = rut_tool_new (data->shell);
   rut_tool_add_rotation_event_callback (data->tool,
@@ -2740,24 +2745,6 @@ init (RutShell *shell, void *user_data)
   else
 #endif
     set_play_mode_enabled (data, TRUE);
-
-#ifndef __ANDROID__
-  if (_rig_handset_remaining_args &&
-      _rig_handset_remaining_args[0])
-    {
-      if (_rig_handset_remaining_args[0])
-        {
-          struct stat st;
-
-          _rut_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
-          rut_set_assets_location (data->ctx, _rut_project_dir);
-
-          stat (_rig_handset_remaining_args[0], &st);
-          if (S_ISREG (st.st_mode))
-            rig_load (data, _rig_handset_remaining_args[0]);
-        }
-    }
-#endif
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
