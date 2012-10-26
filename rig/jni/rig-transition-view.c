@@ -134,7 +134,6 @@ struct _RigTransitionView
   float max_drag_offset;
 
   RutObject *graph;
-  RutClosure *modified_closure;
 
   RutPaintableProps paintable;
   RutGraphableProps graphable;
@@ -229,7 +228,6 @@ _rig_transition_view_free (void *object)
 
   rut_closure_disconnect (view->animated_closure);
 
-  rut_closure_disconnect (view->modified_closure);
   rut_refable_unref (view->graph);
 
   while (!rut_list_empty (&view->objects))
