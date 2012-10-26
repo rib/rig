@@ -537,9 +537,6 @@ save_property_cb (RutProperty *property,
   RutEntity *entity;
   int id;
 
-  if (path == NULL)
-    return;
-
   entity = property->object;
 
   id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, entity));
