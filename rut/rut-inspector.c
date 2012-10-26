@@ -465,3 +465,19 @@ rut_inspector_reload_property (RutInspector *inspector,
         rut_prop_inspector_reload_property (prop_data->control);
     }
 }
+
+void
+rut_inspector_set_property_animated (RutInspector *inspector,
+                                     RutProperty *property,
+                                     CoglBool animated)
+{
+  int i;
+
+  for (i = 0; i < inspector->n_props; i++)
+    {
+      RutInspectorPropertyData *prop_data = inspector->prop_data + i;
+
+      if (prop_data->target_prop == property)
+        rut_prop_inspector_set_animated (prop_data->control, animated);
+    }
+}

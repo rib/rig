@@ -418,9 +418,9 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
 
 
 void
-rig_undo_journal_log_set_animated (RigUndoJournal *journal,
-                                   RutProperty *property,
-                                   CoglBool value)
+rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
+                                       RutProperty *property,
+                                       CoglBool value)
 {
   UndoRedo *undo_redo;
   UndoRedoSetAnimated *set_animated;
@@ -434,6 +434,10 @@ rig_undo_journal_log_set_animated (RigUndoJournal *journal,
   set_animated->object = rut_refable_ref (property->object);
   set_animated->property = property;
   set_animated->value = value;
+
+  rut_property_set_animated (&journal->data->ctx->property_ctx,
+                             property,
+                             value);
 
   rig_undo_journal_insert (journal, undo_redo);
 }

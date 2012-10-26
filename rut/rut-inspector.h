@@ -37,4 +37,9 @@ rut_inspector_reload_property (RutInspector *inspector,
 void
 rut_inspector_reload_properties (RutInspector *inspector);
 
+void
+rut_inspector_set_property_animated (RutInspector *inspector,
+                                     RutProperty *property,
+                                     CoglBool animated);
+
 #endif /* _RUT_INSPECTOR_H_ */

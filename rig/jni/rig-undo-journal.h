@@ -163,9 +163,9 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
                                            RigNode *node);
 
 void
-rig_undo_journal_log_set_animated (RigUndoJournal *journal,
-                                   RutProperty *property,
-                                   CoglBool value);
+rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
+                                       RutProperty *property,
+                                       CoglBool value);
 
 void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,

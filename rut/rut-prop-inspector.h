@@ -31,4 +31,8 @@ rut_prop_inspector_new (RutContext *ctx,
 void
 rut_prop_inspector_reload_property (RutPropInspector *inspector);
 
+void
+rut_prop_inspector_set_animated (RutPropInspector *inspector,
+                                 CoglBool animated);
+
 #endif /* _RUT_PROP_INSPECTOR_H_ */

@@ -535,9 +535,38 @@ inspector_animated_changed_cb (RutProperty *property,
 {
   RigData *data = user_data;
 
-  rig_undo_journal_log_set_animated (data->undo_journal,
-                                     property,
-                                     value);
+  rig_undo_journal_set_animated_and_log (data->undo_journal,
+                                         property,
+                                         value);
+}
+
+static void
+init_property_animated_state_cb (RutProperty *property,
+                                 void *user_data)
+{
+  RutInspector *inspector = user_data;
+
+  if (property->animated)
+    rut_inspector_set_property_animated (inspector, property, TRUE);
+}
+
+static RutInspector *
+create_inspector (RigData *data,
+                  void *object)
+{
+  RutInspector *inspector =
+    rut_inspector_new (data->ctx,
+                       object,
+                       inspector_property_changed_cb,
+                       inspector_animated_changed_cb,
+                       data);
+
+  if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
+    rut_introspectable_foreach_property (object,
+                                         init_property_animated_state_cb,
+                                         inspector);
+
+  return inspector;
 }
 
 typedef struct _AddComponentState
@@ -552,11 +581,7 @@ add_component_inspector_cb (RutComponent *component,
 {
   AddComponentState *state = user_data;
   RigData *data = state->data;
-  RutInspector *inspector = rut_inspector_new (data->ctx,
-                                               component,
-                                               inspector_property_changed_cb,
-                                               inspector_animated_changed_cb,
-                                               data);
+  RutInspector *inspector = create_inspector (data, component);
   RutTransform *transform = rut_transform_new (data->ctx, inspector, NULL);
   float width, height;
   RutObject *doc_node;
@@ -610,11 +635,7 @@ update_inspector (RigData *data)
       float width, height;
       AddComponentState component_add_state;
 
-      data->inspector = rut_inspector_new (data->ctx,
-                                           data->selected_entity,
-                                           inspector_property_changed_cb,
-                                           inspector_animated_changed_cb,
-                                           data);
+      data->inspector = create_inspector (data, data->selected_entity);
 
       rut_sizable_get_preferred_width (data->inspector,
                                        -1, /* for height */

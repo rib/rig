@@ -69,7 +69,6 @@ struct _RutPropInspector
   RutProperty *target_prop;
 
   RutToggle *animated_toggle;
-  RutClosure *animated_closure;
 
   /* This dummy property is used so that we can listen to changes on
    * the source property without having to directly make the target
@@ -121,9 +120,6 @@ _rut_prop_inspector_free (void *object)
       rut_refable_unref (control->control);
       rut_refable_unref (control->transform);
     }
-
-  if (inspector->animated_closure)
-    rut_closure_disconnect (inspector->animated_closure);
 
   rut_graphable_destroy (inspector);
 
@@ -516,23 +512,9 @@ animated_toggle_cb (RutToggle *toggle,
   if (inspector->reloading_property)
     return;
 
-  rut_property_set_animated (&inspector->context->property_ctx,
-                             inspector->target_prop,
-                             value);
-
   inspector->animated_changed_cb (inspector->target_prop,
                                   value,
                                   inspector->user_data);
-}
-
-static void
-animated_property_toggle_cb (RutProperty *property,
-                             void *user_data)
-{
-  RutPropInspector *inspector = user_data;
-
-  if (property == inspector->target_prop)
-    rut_prop_inspector_reload_property (inspector);
 }
 
 static void
@@ -553,13 +535,9 @@ add_animatable_toggle (RutPropInspector *inspector,
                                                       "");
       RutPropInspectorControl *control_data =
         inspector->controls + inspector->n_controls++;
-      RutPropertyContext *property_ctx =
-        &inspector->context->property_ctx;
 
       g_free (unselected_icon);
       g_free (selected_icon);
-
-      rut_toggle_set_state (control, prop->animated);
 
       rut_toggle_add_on_toggle_callback (control,
                                          animated_toggle_cb,
@@ -572,11 +550,6 @@ add_animatable_toggle (RutPropInspector *inspector,
       rut_graphable_add_child (inspector, control_data->transform);
 
       inspector->animated_toggle = control;
-      inspector->animated_closure =
-        rut_property_context_add_animated_callback (property_ctx,
-                                                    animated_property_toggle_cb,
-                                                    inspector,
-                                                    NULL /* destroy */);
     }
 }
 
@@ -683,6 +656,8 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
 {
   if (inspector->target_prop)
     {
+      CoglBool old_reloading = inspector->reloading_property;
+
       inspector->reloading_property = TRUE;
 
       if (inspector->source_prop)
@@ -709,10 +684,23 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
                                      inspector->target_prop);
         }
 
-      if (inspector->animated_toggle)
-        rut_toggle_set_state (inspector->animated_toggle,
-                              inspector->target_prop->animated);
+      inspector->reloading_property = old_reloading;
+    }
+}
 
-      inspector->reloading_property = FALSE;
+void
+rut_prop_inspector_set_animated (RutPropInspector *inspector,
+                                 CoglBool animated)
+{
+  if (inspector->animated_toggle)
+    {
+      CoglBool old_reloading = inspector->reloading_property;
+
+      inspector->reloading_property = TRUE;
+
+      rut_toggle_set_state (inspector->animated_toggle,
+                            animated);
+
+      inspector->reloading_property = old_reloading;
     }
 }
