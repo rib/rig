@@ -540,14 +540,29 @@ inspector_animated_changed_cb (RutProperty *property,
                                          value);
 }
 
+typedef struct
+{
+  RigData *data;
+  RutInspector *inspector;
+} InitAnimatedStateData;
+
 static void
 init_property_animated_state_cb (RutProperty *property,
                                  void *user_data)
 {
-  RutInspector *inspector = user_data;
+  InitAnimatedStateData *data = user_data;
 
-  if (property->animated)
-    rut_inspector_set_property_animated (inspector, property, TRUE);
+  if (property->spec->animatable)
+    {
+      RigTransitionPropData *prop_data;
+      RigTransition *transition = data->data->selected_transition;
+
+      prop_data =
+        rig_transition_find_prop_data_for_property (transition, property);
+
+      if (prop_data && prop_data->animated)
+        rut_inspector_set_property_animated (data->inspector, property, TRUE);
+    }
 }
 
 static RutInspector *
@@ -562,9 +577,16 @@ create_inspector (RigData *data,
                        data);
 
   if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
-    rut_introspectable_foreach_property (object,
-                                         init_property_animated_state_cb,
-                                         inspector);
+    {
+      InitAnimatedStateData animated_data;
+
+      animated_data.data = data;
+      animated_data.inspector = inspector;
+
+      rut_introspectable_foreach_property (object,
+                                           init_property_animated_state_cb,
+                                           &animated_data);
+    }
 
   return inspector;
 }

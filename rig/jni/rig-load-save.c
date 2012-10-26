@@ -546,7 +546,7 @@ save_property_cb (RigTransitionPropData *prop_data,
            state->indent, "",
            id,
            prop_data->property->spec->name,
-           prop_data->property->animated ? "yes" : "no");
+           prop_data->animated ? "yes" : "no");
 
   state->indent += INDENT_LEVEL;
 
@@ -1616,9 +1616,10 @@ parse_start_element (GMarkupParseContext *context,
 
       if (prop_data->property->spec->animatable)
         {
-          rut_property_set_animated (&data->ctx->property_ctx,
-                                     prop_data->property,
-                                     animated);
+          if (animated)
+            rig_transition_set_property_animated (loader->current_transition,
+                                                  prop_data->property,
+                                                  TRUE);
         }
       else if (animated)
         {

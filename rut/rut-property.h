@@ -13,10 +13,6 @@
 typedef struct _RutPropertyContext
 {
   RutMemoryStack *prop_update_stack;
-
-  /* List of callbacks to invoke whenever any property changes its
-   * animated flag */
-  RutList animated_changed_cb_list;
 } RutPropertyContext;
 
 typedef enum _RutPropertyType
@@ -40,9 +36,6 @@ typedef struct _RutProperty RutProperty;
 
 typedef void (*RutPropertyUpdateCallback) (RutProperty *property,
                                            void *user_data);
-
-typedef void (*RutPropertyAnimatedChangedCb) (RutProperty *property,
-                                              void *user_data);
 
 typedef union _RutPropertyDefault
 {
@@ -184,12 +177,6 @@ struct _RutProperty
   void *object;
   uint16_t queued_count;
   uint16_t magic_marker;
-
-  /* Whether this property being animated. If this is TRUE, then any
-   * changes to the property should be considered to be changes only
-   * to the current frame in the timeline, otherwise it is a change to
-   * the property throughout the entire timeline */
-  CoglBool animated;
 };
 
 #if 0
@@ -287,12 +274,6 @@ rut_property_context_init (RutPropertyContext *context);
 
 void
 rut_property_context_destroy (RutPropertyContext *context);
-
-RutClosure *
-rut_property_context_add_animated_callback (RutPropertyContext *context,
-                                            RutPropertyAnimatedChangedCb cb,
-                                            void *user_data,
-                                            RutClosureDestroyCallback destroy);
 
 void
 rut_property_destroy (RutProperty *property);
@@ -441,11 +422,6 @@ void
 rut_property_copy_value (RutPropertyContext *ctx,
                          RutProperty *target_property,
                          RutProperty *source_property);
-
-void
-rut_property_set_animated (RutPropertyContext *context,
-                           RutProperty *property,
-                           CoglBool value);
 
 void
 rut_property_box (RutProperty *property,

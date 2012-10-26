@@ -89,6 +89,8 @@ rig_transition_new (RutContext *context,
 
   rut_object_init (&transition->_parent, &rig_transition_type);
 
+  rut_list_init (&transition->operation_cb_list);
+
   rut_simple_introspectable_init (transition, _rig_transition_prop_specs, transition->props);
 
   transition->progress = 0;
@@ -112,6 +114,8 @@ rig_transition_new (RutContext *context,
 void
 rig_transition_free (RigTransition *transition)
 {
+  rut_closure_list_disconnect_all (&transition->operation_cb_list);
+
   rut_simple_introspectable_destroy (transition);
 
   g_hash_table_destroy (transition->properties);
@@ -139,6 +143,7 @@ rig_transition_get_prop_data_for_property (RigTransition *transition,
   if (prop_data == NULL)
     {
       prop_data = g_slice_new (RigTransitionPropData);
+      prop_data->animated = FALSE;
       prop_data->property = property;
       prop_data->path = NULL;
 
@@ -147,6 +152,12 @@ rig_transition_get_prop_data_for_property (RigTransition *transition,
       g_hash_table_insert (transition->properties,
                            property,
                            prop_data);
+
+      rut_closure_list_invoke (&transition->operation_cb_list,
+                               RigTransitionOperationCallback,
+                               transition,
+                               RIG_TRANSITION_OPERATION_ADDED,
+                               prop_data);
     }
 
   return prop_data;
@@ -222,7 +233,7 @@ update_progress_cb (RigTransitionPropData *prop_data,
 {
   RigTransition *transition = user_data;
 
-  if (prop_data->property->animated && prop_data->path)
+  if (prop_data->animated && prop_data->path)
     rig_path_lerp_property (prop_data->path,
                             prop_data->property,
                             transition->progress);
@@ -288,7 +299,7 @@ rig_transition_update_property (RigTransition *transition,
 
   if (prop_data)
     {
-      if (property->animated)
+      if (prop_data->animated)
         {
           if (prop_data->path)
             rig_path_lerp_property (prop_data->path,
@@ -299,5 +310,51 @@ rig_transition_update_property (RigTransition *transition,
         rut_property_set_boxed (&transition->context->property_ctx,
                                 property,
                                 &prop_data->constant_value);
+    }
+}
+
+RutClosure *
+rig_transition_add_operation_callback (RigTransition *transition,
+                                       RigTransitionOperationCallback callback,
+                                       void *user_data,
+                                       RutClosureDestroyCallback destroy_cb)
+{
+  return rut_closure_list_add (&transition->operation_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
+}
+
+void
+rig_transition_set_property_animated (RigTransition *transition,
+                                      RutProperty *property,
+                                      CoglBool animated)
+{
+  RigTransitionPropData *prop_data;
+
+  if (animated)
+    {
+      prop_data =
+        rig_transition_get_prop_data_for_property (transition, property);
+    }
+  else
+    {
+      /* If the animated state is being disabled then we don't want to
+       * create the property state if doesn't already exist */
+      prop_data =
+        rig_transition_find_prop_data_for_property (transition, property);
+
+      if (prop_data == NULL)
+        return;
+    }
+
+  if (animated != prop_data->animated)
+    {
+      prop_data->animated = animated;
+      rut_closure_list_invoke (&transition->operation_cb_list,
+                               RigTransitionOperationCallback,
+                               transition,
+                               RIG_TRANSITION_OPERATION_ANIMATED_CHANGED,
+                               prop_data);
     }
 }

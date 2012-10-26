@@ -22,6 +22,7 @@
 
 #include <rut.h>
 #include "rig-path.h"
+#include "rut-list.h"
 
 extern RutType rig_transition_type;
 
@@ -45,6 +46,8 @@ typedef struct
    * However both states are retained so that if the user toggles the
    * animated button for a property information won't be lost. */
 
+  CoglBool animated;
+
   /* path may be NULL */
   RigPath *path;
   RutBoxed constant_value;
@@ -65,9 +68,23 @@ struct _RigTransition
 
   RutContext *context;
 
+  RutList operation_cb_list;
+
   RutProperty props[RUT_TRANSITION_N_PROPS];
   RutSimpleIntrospectableProps introspectable;
 };
+
+typedef enum
+{
+  RIG_TRANSITION_OPERATION_ADDED,
+  RIG_TRANSITION_OPERATION_ANIMATED_CHANGED
+} RigTransitionOperation;
+
+typedef void
+(* RigTransitionOperationCallback) (RigTransition *transition,
+                                    RigTransitionOperation op,
+                                    RigTransitionPropData *prop_data,
+                                    void *user_data);
 
 void
 rig_transition_set_progress (RigTransition *transition,
@@ -114,5 +131,16 @@ rig_transition_free (RigTransition *transition);
 void
 rig_transition_update_property (RigTransition *transition,
                                 RutProperty *property);
+
+RutClosure *
+rig_transition_add_operation_callback (RigTransition *transition,
+                                       RigTransitionOperationCallback callback,
+                                       void *user_data,
+                                       RutClosureDestroyCallback destroy_cb);
+
+void
+rig_transition_set_property_animated (RigTransition *transition,
+                                      RutProperty *property,
+                                      CoglBool animated);
 
 #endif /* _RUT_TRANSITION_H_ */

@@ -539,6 +539,8 @@ add_animatable_toggle (RutPropInspector *inspector,
       g_free (unselected_icon);
       g_free (selected_icon);
 
+      rut_toggle_set_state (control, FALSE);
+
       rut_toggle_add_on_toggle_callback (control,
                                          animated_toggle_cb,
                                          inspector,

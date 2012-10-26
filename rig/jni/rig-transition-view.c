@@ -117,6 +117,7 @@ struct _RigTransitionView
 
   RutContext *context;
   RigTransition *transition;
+  RutClosure *transition_op_closure;
   RutTimeline *timeline;
   RigUndoJournal *undo_journal;
 
@@ -154,8 +155,6 @@ struct _RigTransitionView
   int n_dots;
 
   CoglPipeline *progress_pipeline;
-
-  RutClosure *animated_closure;
 
   int ref_count;
 };
@@ -225,8 +224,6 @@ _rig_transition_view_free (void *object)
   rig_transition_view_ungrab_input (view);
 
   rig_transition_view_clear_selected_nodes (view);
-
-  rut_closure_disconnect (view->animated_closure);
 
   rut_refable_unref (view->graph);
 
@@ -1735,15 +1732,27 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
 }
 
 static void
-rig_transition_view_animated_cb (RutProperty *property,
-                                 void *user_data)
+transition_operation_cb (RigTransition *transition,
+                         RigTransitionOperation op,
+                         RigTransitionPropData *prop_data,
+                         void *user_data)
 {
   RigTransitionView *view = user_data;
 
-  if (property->animated)
-    rig_transition_view_property_added (view, property);
-  else
-    rig_transition_view_property_removed (view, property);
+  switch (op)
+    {
+    case RIG_TRANSITION_OPERATION_ADDED:
+      if (prop_data->animated)
+        rig_transition_view_property_added (view, prop_data->property);
+      break;
+
+    case RIG_TRANSITION_OPERATION_ANIMATED_CHANGED:
+      if (prop_data->animated)
+        rig_transition_view_property_added (view, prop_data->property);
+      else
+        rig_transition_view_property_removed (view, prop_data->property);
+      break;
+    }
 }
 
 static void
@@ -1752,7 +1761,7 @@ rig_transition_view_add_property_cb (RigTransitionPropData *prop_data,
 {
   RigTransitionView *view = user_data;
 
-  if (prop_data->property->animated)
+  if (prop_data->animated)
     rig_transition_view_property_added (view, prop_data->property);
 }
 
@@ -1810,11 +1819,11 @@ rig_transition_view_new (RutContext *ctx,
 
   /* Listen for properties that become animated or not so we can
    * update the list */
-  view->animated_closure =
-    rut_property_context_add_animated_callback (&ctx->property_ctx,
-                                                rig_transition_view_animated_cb,
-                                                view,
-                                                NULL /* destroy */);
+  view->transition_op_closure =
+    rig_transition_add_operation_callback (transition,
+                                           transition_operation_cb,
+                                           view,
+                                           NULL /* destroy */);
 
   rig_transition_view_queue_allocation (view);
 

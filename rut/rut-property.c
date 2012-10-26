@@ -8,26 +8,12 @@ void
 rut_property_context_init (RutPropertyContext *context)
 {
   context->prop_update_stack = rut_memory_stack_new (4096);
-  rut_list_init (&context->animated_changed_cb_list);
 }
 
 void
 rut_property_context_destroy (RutPropertyContext *context)
 {
   rut_memory_stack_free (context->prop_update_stack);
-  rut_closure_list_disconnect_all (&context->animated_changed_cb_list);
-}
-
-RutClosure *
-rut_property_context_add_animated_callback (RutPropertyContext *context,
-                                            RutPropertyAnimatedChangedCb cb,
-                                            void *user_data,
-                                            RutClosureDestroyCallback destroy)
-{
-  return rut_closure_list_add (&context->animated_changed_cb_list,
-                               cb,
-                               user_data,
-                               destroy);
 }
 
 void
@@ -53,7 +39,6 @@ rut_property_init (RutProperty *property,
   property->object = object;
   property->queued_count = 0;
   property->magic_marker = 0;
-  property->animated = FALSE;
 }
 
 static void
@@ -129,23 +114,6 @@ rut_property_copy_value (RutPropertyContext *ctx,
     }
 
   g_warn_if_reached ();
-}
-
-void
-rut_property_set_animated (RutPropertyContext *context,
-                           RutProperty *property,
-                           CoglBool value)
-{
-  g_return_if_fail (property->spec->animatable);
-
-  if (value != property->animated)
-    {
-      property->animated = value;
-
-      rut_closure_list_invoke (&context->animated_changed_cb_list,
-                               RutPropertyAnimatedChangedCb,
-                               property);
-    }
 }
 
 static void

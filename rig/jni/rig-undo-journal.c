@@ -312,7 +312,14 @@ rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        const RutBoxed *value,
                                        RutProperty *property)
 {
-  if (property->animated)
+  RigData *data = journal->data;
+  RigTransitionPropData *prop_data;
+
+  prop_data =
+    rig_transition_get_prop_data_for_property (data->selected_transition,
+                                               property);
+
+  if (prop_data && prop_data->animated)
     rig_undo_journal_set_timeline_property_and_log (journal,
                                                     mergable,
                                                     value,
@@ -435,9 +442,9 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
   set_animated->property = property;
   set_animated->value = value;
 
-  rut_property_set_animated (&journal->data->ctx->property_ctx,
-                             property,
-                             value);
+  rig_transition_set_property_animated (journal->data->selected_transition,
+                                        property,
+                                        value);
 
   rig_undo_journal_insert (journal, undo_redo);
 }
@@ -626,9 +633,9 @@ undo_redo_set_animated_apply (RigUndoJournal *journal,
 
   g_print ("Set animated APPLY\n");
 
-  rut_property_set_animated (&data->ctx->property_ctx,
-                             set_animated->property,
-                             set_animated->value);
+  rig_transition_set_property_animated (data->selected_transition,
+                                        set_animated->property,
+                                        set_animated->value);
 }
 
 static UndoRedo *
