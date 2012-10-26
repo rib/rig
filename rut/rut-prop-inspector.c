@@ -571,10 +571,11 @@ add_animatable_toggle (RutPropInspector *inspector,
       rut_graphable_add_child (inspector, control_data->transform);
 
       inspector->animated_toggle = control;
-      rut_property_context_add_animated_callback (property_ctx,
-                                                  animated_property_toggle_cb,
-                                                  inspector,
-                                                  NULL /* destroy */);
+      inspector->animated_closure =
+        rut_property_context_add_animated_callback (property_ctx,
+                                                    animated_property_toggle_cb,
+                                                    inspector,
+                                                    NULL /* destroy */);
     }
 }
 
