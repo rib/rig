@@ -122,8 +122,8 @@ rig_transition_free (RigTransition *transition)
 }
 
 RigTransitionPropData *
-rig_transition_find_prop_data (RigTransition *transition,
-                               RutProperty *property)
+rig_transition_find_prop_data_for_property (RigTransition *transition,
+                                            RutProperty *property)
 {
   return g_hash_table_lookup (transition->properties, property);
 }
@@ -134,7 +134,7 @@ rig_transition_get_prop_data_for_property (RigTransition *transition,
 {
   RigTransitionPropData *prop_data;
 
-  prop_data = rig_transition_find_prop_data (transition, property);
+  prop_data = rig_transition_find_prop_data_for_property (transition, property);
 
   if (prop_data == NULL)
     {
@@ -172,7 +172,7 @@ rig_transition_find_path (RigTransition *transition,
 {
   RigTransitionPropData *prop_data;
 
-  prop_data = rig_transition_find_prop_data (transition, property);
+  prop_data = rig_transition_find_prop_data_for_property (transition, property);
 
   return prop_data ? prop_data->path : NULL;
 }
@@ -279,7 +279,7 @@ rig_transition_update_property (RigTransition *transition,
                                 RutProperty *property)
 {
   RigTransitionPropData *prop_data =
-    rig_transition_find_prop_data (transition, property);
+    rig_transition_find_prop_data_for_property (transition, property);
 
   /* Update the given property depending on what the transition thinks
    * it should currently be. This will either be calculated by
