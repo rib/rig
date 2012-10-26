@@ -24,9 +24,12 @@
 #include "rig-path.h"
 #include "rig-node.h"
 
-void
-rig_path_free (RigPath *path)
+RutType rig_path_type;
+
+static void
+_rig_path_free (void *object)
 {
+  RigPath *path = RIG_PATH (object);
   RigNode *node, *t;
 
   rut_closure_list_disconnect_all (&path->operation_cb_list);
@@ -38,13 +41,42 @@ rig_path_free (RigPath *path)
   g_slice_free (RigPath, path);
 }
 
+static RutRefCountableVTable
+_rig_path_ref_countable_vtable =
+  {
+    rut_refable_simple_ref,
+    rut_refable_simple_unref,
+    _rig_path_free
+  };
+
+void
+_rig_path_init_type (void)
+{
+  rut_type_init (&rig_path_type);
+  rut_type_add_interface (&rig_path_type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (RigPath, ref_count),
+                          &_rig_path_ref_countable_vtable);
+}
+
 RigPath *
 rig_path_new (RutContext *ctx,
               RutPropertyType type)
 {
   RigPath *path = g_slice_new (RigPath);
+  static CoglBool initialized = FALSE;
+
+  if (initialized == FALSE)
+    {
+      _rig_path_init_type ();
+
+      initialized = TRUE;
+    }
+
+  rut_object_init (&path->_parent, &rig_path_type);
 
   path->ctx = rut_refable_ref (ctx);
+  path->ref_count = 1;
 
   path->type = type;
 

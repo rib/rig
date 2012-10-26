@@ -28,12 +28,16 @@ typedef struct _RigPath RigPath;
 
 struct _RigPath
 {
+  RutObjectProps _parent;
+
   RutContext *ctx;
   RutPropertyType type;
   RutList nodes;
   int length;
   RigNode *pos;
   RutList operation_cb_list;
+
+  int ref_count;
 };
 
 typedef enum
@@ -52,10 +56,7 @@ typedef void
 
 extern RutType rig_path_type;
 
-#define RUT_PATH(x) ((RigPath *) x)
-
-void
-rig_path_free (RigPath *path);
+#define RIG_PATH(x) ((RigPath *) x)
 
 RutProperty *
 rig_path_get_property (RigPath *path);

@@ -60,7 +60,7 @@ free_prop_data_cb (void *data)
   RigTransitionPropData *prop_data = data;
 
   if (prop_data->path)
-    rig_path_free (prop_data->path);
+    rut_refable_unref (prop_data->path);
 
   rut_boxed_destroy (&prop_data->constant_value);
 

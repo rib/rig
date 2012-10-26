@@ -1122,7 +1122,7 @@ rig_transition_view_property_added (RigTransitionView *view,
 
   view->n_dots += path->length;
 
-  prop_data->path = path;
+  prop_data->path = rut_refable_ref (path);
 
   rut_list_insert (&object_data->properties, &prop_data->list_node);
 
@@ -1207,6 +1207,8 @@ rig_transition_view_property_removed (RigTransitionView *view,
 
       g_slice_free (RigTransitionViewObject, object_data);
     }
+
+  rut_refable_unref (prop_data->path);
 
   rut_shell_queue_redraw (view->context->shell);
 
