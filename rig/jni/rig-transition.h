@@ -96,9 +96,7 @@ rig_transition_new (RutContext *context,
                     uint32_t id);
 
 typedef void
-(* RigTransitionForeachPropertyCb) (RutProperty *property,
-                                    RigPath *path,
-                                    const RutBoxed *constant_value,
+(* RigTransitionForeachPropertyCb) (RigTransitionPropData *prop_data,
                                     void *user_data);
 
 void

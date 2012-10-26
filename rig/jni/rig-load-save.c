@@ -527,9 +527,7 @@ save_boxed_value (SaveState *state,
 }
 
 static void
-save_property_cb (RutProperty *property,
-                  RigPath *path,
-                  const RutBoxed *constant_value,
+save_property_cb (RigTransitionPropData *prop_data,
                   void *user_data)
 {
   SaveState *state = user_data;
@@ -537,7 +535,7 @@ save_property_cb (RutProperty *property,
   RutEntity *entity;
   int id;
 
-  entity = property->object;
+  entity = prop_data->property->object;
 
   id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, entity));
   if (!id)
@@ -547,16 +545,16 @@ save_property_cb (RutProperty *property,
   fprintf (file, "%*s<property entity=\"%d\" name=\"%s\" animated=\"%s\">\n",
            state->indent, "",
            id,
-           property->spec->name,
-           property->animated ? "yes" : "no");
+           prop_data->property->spec->name,
+           prop_data->property->animated ? "yes" : "no");
 
   state->indent += INDENT_LEVEL;
 
-  if (path)
-    save_path (state, path);
+  if (prop_data->path)
+    save_path (state, prop_data->path);
 
   fprintf (file, "%*s<constant value=\"", state->indent, "");
-  save_boxed_value (state, constant_value);
+  save_boxed_value (state, &prop_data->constant_value);
   fprintf (file, "\" />\n");
 
   state->indent -= INDENT_LEVEL;

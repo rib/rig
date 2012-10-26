@@ -1749,15 +1749,13 @@ rig_transition_view_animated_cb (RutProperty *property,
 }
 
 static void
-rig_transition_view_add_property_cb (RutProperty *property,
-                                     RigPath *path,
-                                     const RutBoxed *constant_value,
+rig_transition_view_add_property_cb (RigTransitionPropData *prop_data,
                                      void *user_data)
 {
   RigTransitionView *view = user_data;
 
-  if (property->animated)
-    rig_transition_view_property_added (view, property);
+  if (prop_data->property->animated)
+    rig_transition_view_property_added (view, prop_data->property);
 }
 
 RigTransitionView *

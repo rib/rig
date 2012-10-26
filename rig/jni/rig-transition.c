@@ -217,15 +217,15 @@ rig_transition_get_path (RigTransition *transition,
 }
 
 static void
-update_progress_cb (RutProperty *property,
-                    RigPath *path,
-                    const RutBoxed *constant_value,
+update_progress_cb (RigTransitionPropData *prop_data,
                     void *user_data)
 {
   RigTransition *transition = user_data;
 
-  if (property->animated && path)
-    rig_path_lerp_property (path, property, transition->progress);
+  if (prop_data->property->animated && prop_data->path)
+    rig_path_lerp_property (prop_data->path,
+                            prop_data->property,
+                            transition->progress);
 }
 
 void
@@ -255,9 +255,7 @@ foreach_path_cb (void *key,
   RigTransitionPropData *prop_data = value;
   ForeachPathData *data = user_data;
 
-  data->callback (prop_data->property,
-                  prop_data->path,
-                  &prop_data->constant_value,
+  data->callback (prop_data,
                   data->user_data);
 }
 
