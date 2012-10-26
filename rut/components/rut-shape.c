@@ -29,6 +29,7 @@ static RutPropertySpec _rut_shape_prop_specs[] = {
     .name = "shaped",
     .nick = "Shaped",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .data_offset = G_STRUCT_OFFSET (RutShape, shaped),
     .setter = rut_shape_set_shaped,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
   },
