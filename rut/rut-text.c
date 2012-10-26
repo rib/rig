@@ -428,7 +428,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .nick = "Cursor Color Set",
     .blurb = "Whether the cursor color has been set",
-    .flags = RUT_PROPERTY_FLAG_READABLE
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+    .getter = rut_text_get_cursor_color_set
   },
 
   /**
@@ -512,7 +513,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .nick = "Selection Color Set",
     .blurb = "Whether the selection color has been set",
-    .flags = RUT_PROPERTY_FLAG_READABLE
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+    .getter = rut_text_get_selection_color_set
   },
 
   /**
@@ -721,6 +723,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Selected Text Color Set",
     .blurb = "Whether the selected text color has been set",
     .flags = RUT_PROPERTY_FLAG_READABLE,
+    .getter = rut_text_get_selected_text_color_set,
     .default_value = { .boolean = TRUE }
   },
 
@@ -741,6 +744,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
 
   {
     .name = "width",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutText, width),
     .setter = rut_text_set_width
@@ -748,6 +752,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
 
   {
     .name = "height",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutText, height),
     .setter = rut_text_set_height
@@ -3638,6 +3643,12 @@ rut_text_get_cursor_color (RutText  *text,
   *color = text->cursor_color;
 }
 
+CoglBool
+rut_text_get_cursor_color_set (RutText *text)
+{
+  return !!text->cursor_color_set;
+}
+
 void
 rut_text_set_selection (RutText *text,
                         int start_pos,
@@ -3754,6 +3765,12 @@ rut_text_get_selection_color (RutText  *text,
   *color = text->selection_color;
 }
 
+CoglBool
+rut_text_get_selection_color_set (RutText *text)
+{
+  return !!text->selection_color_set;
+}
+
 void
 rut_text_set_selected_text_color (RutText *text,
                                   const RutColor *color)
@@ -3791,6 +3808,12 @@ rut_text_get_selected_text_color (RutText *text,
   g_return_if_fail (color != NULL);
 
   *color = text->selected_text_color;
+}
+
+CoglBool
+rut_text_get_selected_text_color_set (RutText *text)
+{
+  return !!text->selected_text_color_set;
 }
 
 void

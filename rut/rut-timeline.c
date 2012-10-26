@@ -35,12 +35,14 @@ struct _RutTimeline
 static RutPropertySpec _rut_timeline_prop_specs[] = {
   {
     .name = "elapsed",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_DOUBLE,
     .data_offset = offsetof (RutTimeline, elapsed),
     .setter = rut_timeline_set_elapsed
   },
   {
     .name = "progress",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_DOUBLE,
     .getter = rut_timeline_get_progress,
     .setter = rut_timeline_set_progress

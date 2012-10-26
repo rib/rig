@@ -93,6 +93,7 @@ static RutPropertySpec
 dummy_property_spec =
   {
     .name = "dummy",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutPropInspector, ref_count),
     .setter = abort,

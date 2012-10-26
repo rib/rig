@@ -62,6 +62,7 @@ struct _RutTextBuffer
 static RutPropertySpec _rut_text_buffer_prop_specs[] = {
   {
     .name = "text",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_TEXT,
     .data_offset = offsetof (RutTextBuffer, simple_text),
     .getter = rut_text_buffer_get_text,
@@ -69,11 +70,13 @@ static RutPropertySpec _rut_text_buffer_prop_specs[] = {
   },
   {
     .name = "length",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_INTEGER,
     .data_offset = offsetof (RutTextBuffer, simple_text_chars),
   },
   {
     .name = "max-length",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_INTEGER,
     .data_offset = offsetof (RutTextBuffer, max_length),
     .setter = rut_text_buffer_set_max_length

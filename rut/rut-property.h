@@ -114,9 +114,12 @@ typedef union _RutPropertyValidation
 
 typedef enum _RutPropertyFlags
 {
-  RUT_PROPERTY_FLAG_READWRITE = 1<<0,
-  RUT_PROPERTY_FLAG_READABLE = 1<<1,
+  RUT_PROPERTY_FLAG_READABLE = 1<<0,
+  RUT_PROPERTY_FLAG_WRITABLE = 1<<1,
   RUT_PROPERTY_FLAG_VALIDATE = 1<<2,
+
+  RUT_PROPERTY_FLAG_READWRITE = (RUT_PROPERTY_FLAG_READABLE |
+                                 RUT_PROPERTY_FLAG_WRITABLE)
 } RutPropertyFlags;
 
 typedef struct _RutPropertySpec
@@ -224,6 +227,7 @@ typedef struct _Flibble
 static RutPropertySpec flibble_prop_specs[] = {
   {
     .name = "x";
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT;
     .data_offset = offsetof (RutSlider, x);
     .getter = flibble_get_x; /* optional: for non-trivial properties */

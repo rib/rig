@@ -97,24 +97,28 @@ struct _RutToggle
 static RutPropertySpec _rut_toggle_prop_specs[] = {
   {
     .name = "state",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutToggle, state),
     .setter = rut_toggle_set_state
   },
   {
     .name = "enabled",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutToggle, state),
     .setter = rut_toggle_set_enabled
   },
   {
     .name = "tick",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_TEXT,
     .setter = rut_toggle_set_tick,
     .getter = rut_toggle_get_tick
   },
   {
     .name = "tick_color",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_COLOR,
     .setter = rut_toggle_set_tick_color,
     .getter = rut_toggle_get_tick_color

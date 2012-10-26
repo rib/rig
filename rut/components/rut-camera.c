@@ -48,6 +48,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
   {
     .name = "viewport_x",
     .nick = "Viewport X",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[0]),
     .setter = rut_camera_set_viewport_x
@@ -55,6 +56,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
   {
     .name = "viewport_y",
     .nick = "Viewport Y",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[1]),
     .setter = rut_camera_set_viewport_y
@@ -62,6 +64,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
   {
     .name = "viewport_width",
     .nick = "Viewport Width",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[2]),
     .setter = rut_camera_set_viewport_width
@@ -69,6 +72,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
   {
     .name = "viewport_height",
     .nick = "Viewport Height",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[3]),
     .setter = rut_camera_set_viewport_height

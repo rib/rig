@@ -96,48 +96,56 @@ struct _RutUIViewport
 static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
   {
     .name = "width",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, width),
     .setter = rut_ui_viewport_set_width
   },
   {
     .name = "height",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, height),
     .setter = rut_ui_viewport_set_height
   },
   {
     .name = "doc-width",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_width),
     .setter = rut_ui_viewport_set_doc_width
   },
   {
     .name = "doc-height",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_height),
     .setter = rut_ui_viewport_set_doc_height
   },
   {
     .name = "doc-x",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_x),
     .setter = rut_ui_viewport_set_doc_x
   },
   {
     .name = "doc-y",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_y),
     .setter = rut_ui_viewport_set_doc_y
   },
   {
     .name = "sync-widget",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_OBJECT,
     .data_offset = offsetof (RutUIViewport, sync_widget),
     .setter = rut_ui_viewport_set_sync_widget
   },
   {
     .name = "x-pannable",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, x_pannable),
     .getter = rut_ui_viewport_get_x_pannable,
@@ -145,6 +153,7 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
   },
   {
     .name = "y-pannable",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, y_pannable),
     .getter = rut_ui_viewport_get_y_pannable,
@@ -152,12 +161,14 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
   },
   {
     .name = "x-expand",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, x_expand),
     .setter = rut_ui_viewport_set_x_expand
   },
   {
     .name = "y-expand",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, y_expand),
     .setter = rut_ui_viewport_set_y_expand

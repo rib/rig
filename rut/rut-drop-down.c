@@ -115,6 +115,7 @@ _rut_drop_down_prop_specs[] =
   {
     {
       .name = "value",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_INTEGER,
       .getter = rut_drop_down_get_value,
       .setter = rut_drop_down_set_value

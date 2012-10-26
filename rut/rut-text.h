@@ -845,6 +845,9 @@ void
 rut_text_get_cursor_color (RutText *text,
                            RutColor *color);
 
+CoglBool
+rut_text_get_cursor_color_set (RutText *text);
+
 /**
  * rut_text_set_cursor_size:
  * @text: a #RutText
@@ -980,6 +983,9 @@ void
 rut_text_get_selection_color (RutText *text,
                               RutColor *color);
 
+CoglBool
+rut_text_get_selection_color_set (RutText *text);
+
 /**
  * rut_text_delete_selection:
  * @text: a #RutText
@@ -1111,6 +1117,9 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 void
 rut_text_get_selected_text_color (RutText *text,
                                   RutColor *color);
+
+CoglBool
+rut_text_get_selected_text_color_set (RutText *text);
 
 /**
  * rut_text_activate:

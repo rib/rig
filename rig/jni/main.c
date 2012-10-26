@@ -38,21 +38,25 @@
 static RutPropertySpec rut_data_property_specs[] = {
   {
     .name = "width",
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RigData, width)
   },
   {
     .name = "height",
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RigData, height)
   },
   {
     .name = "device_width",
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RigData, device_width)
   },
   {
     .name = "device_height",
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RigData, device_height)
   },

@@ -79,6 +79,7 @@ _rut_vec3_slider_prop_specs[] =
   {
     {
       .name = "value",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_VEC3,
       .data_offset = offsetof (RutVec3Slider, value),
       .setter = rut_vec3_slider_set_value,

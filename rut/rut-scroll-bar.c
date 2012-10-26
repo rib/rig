@@ -80,24 +80,28 @@ struct _RutScrollBar
 static RutPropertySpec _rut_scroll_bar_prop_specs[] = {
   {
     .name = "length",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, length),
     .setter = rut_scroll_bar_set_length
   },
   {
     .name = "virtual_length",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, virtual_length),
     .setter = rut_scroll_bar_set_virtual_length
   },
   {
     .name = "virtual_viewport",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, viewport_length),
     .setter = rut_scroll_bar_set_virtual_viewport
   },
   {
     .name = "virtual_offset",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, offset),
     .setter = rut_scroll_bar_set_virtual_offset

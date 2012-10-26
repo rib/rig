@@ -130,6 +130,7 @@ _rut_number_slider_prop_specs[] =
   {
     {
       .name = "value",
+      .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = offsetof (RutNumberSlider, value),
       .setter = rut_number_slider_set_value
