@@ -1961,6 +1961,59 @@ asset_input_cb (RutInputRegion *region,
                 rut_shell_queue_redraw (data->ctx->shell);
                 return RUT_INPUT_EVENT_STATUS_HANDLED;
               }
+            case RUT_ASSET_TYPE_PLY_MODEL:
+              {
+                RutObject *geom = NULL;
+                RutModel *model;
+                float x_range, y_range, z_range, max_range;
+
+                if (data->selected_entity)
+                  entity = data->selected_entity;
+                else
+                  {
+                    entity = rut_entity_new (data->ctx);
+                    data->selected_entity = entity;
+                    rut_graphable_add_child (data->scene, entity);
+                  }
+
+                geom = rut_entity_get_component (entity,
+                                                 RUT_COMPONENT_TYPE_GEOMETRY);
+
+                if (geom && rut_object_get_type (geom) == &rut_model_type)
+                  {
+                    model = geom;
+                    if (rut_model_get_asset (model) == asset)
+                      return RUT_INPUT_EVENT_STATUS_HANDLED;
+                  }
+                else if (geom)
+                  {
+                    RutMaterial *material =
+                      rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                    rut_entity_remove_component (entity, geom);
+                    if (material)
+                      rut_entity_remove_component (entity, material);
+                  }
+
+                model = rut_model_new_from_asset (data->ctx, asset);
+                rut_entity_add_component (entity, model);
+
+                x_range = model->max_x - model->min_x;
+                y_range = model->max_y - model->min_y;
+                z_range = model->max_z - model->min_z;
+
+                max_range = x_range;
+                if (y_range > max_range)
+                  max_range = y_range;
+                if (z_range > max_range)
+                  max_range = z_range;
+
+                rut_entity_set_scale (entity, 200.0 / max_range);
+
+                rig_dirty_entity_pipelines (entity);
+                update_inspector (data);
+
+                return RUT_INPUT_EVENT_STATUS_HANDLED;
+              }
             }
         }
     }
@@ -2026,28 +2079,44 @@ add_asset_icon (RigData *data,
   RutInputRegion *region;
   RutTransform *transform;
 
-  if (rut_asset_get_type (asset) != RUT_ASSET_TYPE_TEXTURE &&
-      rut_asset_get_type (asset) != RUT_ASSET_TYPE_NORMAL_MAP &&
-      rut_asset_get_type (asset) != RUT_ASSET_TYPE_ALPHA_MASK)
-    return;
-
   closure = g_slice_new (AssetInputClosure);
   closure->asset = asset;
   closure->data = data;
 
   texture = rut_asset_get_texture (asset);
 
-  transform =
-    rut_transform_new (data->ctx,
-                       (image = rut_image_new (data->ctx, texture)),
-                       (region =
-                        rut_input_region_new_rectangle (0, 0, 100, 100,
-                                                        asset_input_cb,
-                                                        closure)),
-                       NULL);
-  rut_graphable_add_child (data->assets_list, transform);
+  transform = rut_transform_new (data->ctx, NULL);
 
-  rut_sizable_set_size (image, 100, 100);
+  switch (rut_asset_get_type (asset))
+    {
+    case RUT_ASSET_TYPE_TEXTURE:
+    case RUT_ASSET_TYPE_NORMAL_MAP:
+    case RUT_ASSET_TYPE_ALPHA_MASK:
+      image = rut_image_new (data->ctx, texture);
+      rut_sizable_set_size (image, 100, 100);
+      rut_graphable_add_child (transform, image);
+      rut_refable_unref (image);
+      break;
+    default:
+      {
+        char *basename = g_path_get_basename (rut_asset_get_path (asset));
+        RutText *text = rut_text_new_with_text (data->ctx, NULL, basename);
+        rut_sizable_set_size (text, 100, 100);
+        g_free (basename);
+        rut_graphable_add_child (transform, text);
+        rut_refable_unref (text);
+        break;
+      }
+    }
+
+  region = rut_input_region_new_rectangle (0, 0, 100, 100,
+                                           asset_input_cb,
+                                           closure);
+  rut_graphable_add_child (transform, region);
+  rut_refable_unref (region);
+
+  rut_graphable_add_child (data->assets_list, transform);
+  rut_refable_unref (transform);
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
@@ -2057,10 +2126,6 @@ add_asset_icon (RigData *data,
   rut_transform_translate (transform, 10, y_pos, 0);
 
   //rut_input_region_set_graphable (region, nine_slice);
-
-  rut_refable_unref (transform);
-  rut_refable_unref (image);
-  rut_refable_unref (region);
 }
 
 static CoglBool
@@ -2144,6 +2209,68 @@ load_transparency_grid (RutContext *ctx)
 }
 
 #endif /* RIG_EDITOR_ENABLED */
+
+/* These should be sorted in descending order of size to
+ * avoid gaps due to attributes being naturally aligned. */
+static RutPLYAttribute ply_attributes[] =
+{
+  {
+    .name = "cogl_position_in",
+    .properties = {
+      { "x" },
+      { "y" },
+      { "z" },
+    },
+    .n_properties = 3,
+    .min_components = 1,
+  },
+  {
+    .name = "cogl_normal_in",
+    .properties = {
+      { "nx" },
+      { "ny" },
+      { "nz" },
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_tex_coord0_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+  },
+  {
+    .name = "tangent",
+    .properties = {
+      { "tanx" },
+      { "tany" },
+      { "tanz" }
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_color_in",
+    .properties = {
+      { "red" },
+      { "green" },
+      { "blue" },
+      { "alpha" }
+    },
+    .n_properties = 4,
+    .normalized = TRUE,
+    .min_components = 3,
+  }
+};
 
 static void
 init (RutShell *shell, void *user_data)
@@ -2518,20 +2645,32 @@ init (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
+      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
       char *full_path = g_build_filename (RIG_SHARE_DIR, "light.ply", NULL);
-      RutModel *model = rut_model_new_from_file (data->ctx, full_path);
+      GError *error = NULL;
+      RutMesh *mesh = rut_mesh_new_from_ply (data->ctx,
+                                             full_path,
+                                             ply_attributes,
+                                             G_N_ELEMENTS (ply_attributes),
+                                             padding_status,
+                                             &error);
+      RutModel *model;
+      if (mesh)
+        {
+          model = rut_model_new_from_mesh (data->ctx, mesh);
+
+          data->light_handle = rut_entity_new (data->ctx);
+          rut_entity_set_label (data->light_handle, "rig:light_handle");
+          rut_entity_add_component (data->light_handle, model);
+          rut_entity_set_receive_shadow (data->light_handle, FALSE);
+          rut_graphable_add_child (data->light, data->light_handle);
+          rut_entity_set_scale (data->light_handle, 100);
+          rut_entity_set_cast_shadow (data->light_handle, FALSE);
+        }
+      else
+        g_critical ("could not load model %s: %s", full_path, error->message);
+
       g_free (full_path);
-
-      if (!model)
-        model = rut_model_new_from_template (data->ctx, "cube");
-
-      data->light_handle = rut_entity_new (data->ctx);
-      rut_entity_set_label (data->light_handle, "rig:light_handle");
-      rut_entity_add_component (data->light_handle, model);
-      rut_entity_set_receive_shadow (data->light_handle, FALSE);
-      rut_graphable_add_child (data->light, data->light_handle);
-      rut_entity_set_scale (data->light_handle, 100);
-      rut_entity_set_cast_shadow (data->light_handle, FALSE);
     }
 #endif
 
@@ -3000,6 +3139,8 @@ rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file)
     asset = rut_asset_new_alpha_mask (data->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "image"))
     asset = rut_asset_new_texture (data->ctx, path);
+  else if (rut_util_find_tag (inferred_tags, "ply"))
+    asset = rut_asset_new_ply_model (data->ctx, path);
 
   if (asset)
     rut_asset_set_inferred_tags (asset, inferred_tags);
@@ -3074,17 +3215,11 @@ enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
   else if (type == G_FILE_TYPE_REGULAR ||
            type == G_FILE_TYPE_SYMBOLIC_LINK)
     {
-      const char *content_type = g_file_info_get_content_type (info);
-      char *mime_type = g_content_type_get_mime_type (content_type);
-      if (mime_type)
+      if (rut_file_info_is_asset (info, name))
         {
-          if (strncmp (mime_type, "image/", 6) == 0)
-            {
-              GFile *image = g_file_get_child (parent, name);
-              add_asset (data, info, image);
-              g_object_unref (image);
-            }
-          g_free (mime_type);
+          GFile *image = g_file_get_child (parent, name);
+          add_asset (data, info, image);
+          g_object_unref (image);
         }
     }
 }

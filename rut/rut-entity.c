@@ -481,7 +481,19 @@ rut_entity_add_component (RutEntity *entity,
   RutComponentableProps *component =
     rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
   component->entity = entity;
+  rut_refable_ref (object);
   g_ptr_array_add (entity->components, object);
+}
+
+void
+rut_entity_remove_component (RutEntity *entity,
+                             RutObject *object)
+{
+  RutComponentableProps *component =
+    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+  component->entity = NULL;
+  rut_refable_unref (object);
+  g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
 }
 
 void

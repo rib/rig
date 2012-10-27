@@ -715,3 +715,18 @@ rut_mesh_create_primitive (RutContext *ctx,
 
   return primitive;
 }
+
+RutAttribute *
+rut_mesh_find_attribute (RutMesh *mesh,
+                         const char *attribute_name)
+{
+  int i;
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      RutAttribute *attribute = mesh->attributes[i];
+      if (strcmp (attribute->name, attribute_name) == 0)
+        return attribute;
+    }
+  return NULL;
+}

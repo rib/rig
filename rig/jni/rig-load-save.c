@@ -150,24 +150,13 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_model_type)
     {
       RutModel *model = RUT_MODEL (component);
-
-      fprintf (state->file, "%*s<model", state->indent, "");
-
-      switch (rut_model_get_type (model))
+      RutAsset *asset = rut_model_get_asset (model);
+      int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
+      if (id)
         {
-        case RUT_MODEL_TYPE_TEMPLATE:
-          fprintf (state->file, " type=\"template\" template=\"%s\"",
-                   rut_model_get_path (model));
-          break;
-        case RUT_MODEL_TYPE_FILE:
-          fprintf (state->file, " type=\"file\" path=\"%s\"",
-                   rut_model_get_path (model));
-          break;
-        default:
-          g_warn_if_reached ();
+          fprintf (state->file, "%*s<model asset=\"%d\" />",
+                   state->indent, "", id);
         }
-
-      fprintf (state->file, " />\n");
     }
   else if (type == &rut_text_type)
     {
@@ -1469,9 +1458,9 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "model") == 0)
     {
-      const char *type_str;
-      const char *template_str;
-      const char *path_str;
+      const char *id_str;
+      uint32_t id;
+      RutAsset *asset;
       RutModel *model;
 
       if (!g_markup_collect_attributes (element_name,
@@ -1479,53 +1468,28 @@ parse_start_element (GMarkupParseContext *context,
                                         attribute_values,
                                         error,
                                         G_MARKUP_COLLECT_STRING,
-                                        "type",
-                                        &type_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "template",
-                                        &template_str,
-                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
-                                        "path",
-                                        &path_str,
+                                        "asset",
+                                        &id_str,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      if (strcmp (type_str, "template") == 0)
-        {
-          if (!template_str)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing model template name");
-              return;
-            }
-          model = rut_model_new_from_template (loader->data->ctx,
-                                             template_str);
-        }
-      else if (strcmp (type_str, "file") == 0)
-        {
-          if (!path_str)
-            {
-              g_set_error (error,
-                           G_MARKUP_ERROR,
-                           G_MARKUP_ERROR_INVALID_CONTENT,
-                           "Missing model path name");
-              return;
-            }
-          model = rut_model_new_from_asset (loader->data->ctx, path_str);
-        }
-      else
+      id = g_ascii_strtoull (id_str, NULL, 10);
+      asset = loader_find_asset (loader, id);
+      if (!asset)
         {
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid model type \"%s\"", type_str);
+                       "Invalid asset id");
           return;
         }
 
+      model = rut_model_new_from_asset (loader->data->ctx, asset);
       if (model)
-        rut_entity_add_component (loader->current_entity, model);
+        {
+          rut_refable_unref (asset);
+          rut_entity_add_component (loader->current_entity, model);
+        }
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "text") == 0)

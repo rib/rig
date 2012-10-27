@@ -41,14 +41,23 @@ typedef enum _RutModelType
 struct _RutModel
 {
   RutObjectProps _parent;
-  RutComponentableProps component;
 
+  int ref_count;
   RutContext *ctx;
 
-  RutModelType type;
-  char *path;
+  RutComponentableProps component;
 
+  RutModelType type;
+
+  RutAsset *asset;
   RutMesh *mesh;
+
+  float min_x;
+  float max_x;
+  float min_y;
+  float max_y;
+  float min_z;
+  float max_z;
 
   CoglPrimitive *primitive;
 
@@ -60,19 +69,10 @@ void
 _rut_model_init_type (void);
 
 RutModel *
-rut_model_new_from_file (RutContext *ctx,
-                         const char *file);
+rut_model_new_from_mesh (RutContext *ctx, RutMesh *mesh);
 
 RutModel *
-rut_model_new_from_asset (RutContext *ctx,
-                         const char *file);
-
-RutModel *
-rut_model_new_from_template (RutContext *ctx,
-                             const char *name);
-
-void
-rut_model_free (RutModel *renderer);
+rut_model_new_from_asset (RutContext *ctx, RutAsset *asset);
 
 RutMesh *
 rut_model_get_mesh (RutObject *self);
@@ -80,10 +80,7 @@ rut_model_get_mesh (RutObject *self);
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);
 
-RutModelType
-rut_model_get_type (RutModel *renderer);
-
-const char *
-rut_model_get_path (RutModel *renderer);
+RutAsset *
+rut_model_get_asset (RutModel *model);
 
 #endif /* _RUT_MODEL_H_ */

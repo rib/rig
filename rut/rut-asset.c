@@ -26,6 +26,7 @@
 #include "rut-interfaces.h"
 #include "rut-asset.h"
 #include "rut-util.h"
+#include "rut-mesh-ply.h"
 
 #if 0
 enum {
@@ -48,6 +49,7 @@ typedef struct _RutAsset
 
   char *path;
   CoglTexture *texture;
+  RutMesh  *mesh;
 
   GList *inferred_tags;
 
@@ -111,14 +113,81 @@ _rut_asset_type_init (void)
 #endif
 }
 
-RutAsset *
-rut_asset_new_texture_full (RutContext *ctx,
-                            const char *path,
-                            RutAssetType type)
+/* These should be sorted in descending order of size to
+ * avoid gaps due to attributes being naturally aligned. */
+static RutPLYAttribute ply_attributes[] =
 {
-  RutAsset *asset = g_slice_new (RutAsset);
-  char *full_path;
-  CoglError *error = NULL;
+  {
+    .name = "cogl_position_in",
+    .properties = {
+      { "x" },
+      { "y" },
+      { "z" },
+    },
+    .n_properties = 3,
+    .min_components = 1,
+  },
+  {
+    .name = "cogl_normal_in",
+    .properties = {
+      { "nx" },
+      { "ny" },
+      { "nz" },
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_tex_coord0_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+  },
+  {
+    .name = "tangent",
+    .properties = {
+      { "tanx" },
+      { "tany" },
+      { "tanz" }
+    },
+    .n_properties = 3,
+    .min_components = 3,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_color_in",
+    .properties = {
+      { "red" },
+      { "green" },
+      { "blue" },
+      { "alpha" }
+    },
+    .n_properties = 4,
+    .normalized = TRUE,
+    .min_components = 3,
+  }
+};
+
+static RutAsset *
+rut_asset_new_full (RutContext *ctx,
+                    const char *path,
+                    RutAssetType type)
+{
+  RutAsset *asset = g_slice_new0 (RutAsset);
+  const char *real_path;
+#ifndef __ANDROID__
+  char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+  real_path = full_path;
+#else
+  real_path = path;
+#endif
 
   rut_object_init (&asset->_parent, &rut_asset_type);
 
@@ -126,26 +195,61 @@ rut_asset_new_texture_full (RutContext *ctx,
 
   asset->type = type;
 
-#ifndef __ANDROID__
-  /* TODO: move this non-android logic into rut_load_texture() */
-  full_path = g_build_filename (ctx->assets_location, path, NULL);
-  asset->texture = rut_load_texture (ctx, full_path, &error);
-  g_free (full_path);
-#else
-  asset->texture = rut_load_texture (ctx, path, &error);
-#endif
-
-  if (!asset->texture)
+  switch (type)
     {
-      g_slice_free (RutAsset, asset);
-      g_warning ("Failed to load asset texture: %s", error->message);
-      cogl_error_free (error);
-      return NULL;
-    }
+    case RUT_ASSET_TYPE_TEXTURE:
+    case RUT_ASSET_TYPE_NORMAL_MAP:
+    case RUT_ASSET_TYPE_ALPHA_MASK:
+      {
+        CoglError *error = NULL;
 
+        asset->texture = rut_load_texture (ctx, real_path, &error);
+
+        if (!asset->texture)
+          {
+            g_slice_free (RutAsset, asset);
+            g_warning ("Failed to load asset texture: %s", error->message);
+            cogl_error_free (error);
+            asset = NULL;
+            goto DONE;
+          }
+
+        break;
+      }
+    case RUT_ASSET_TYPE_PLY_MODEL:
+      {
+        RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+        GError *error = NULL;
+
+        asset->mesh = rut_mesh_new_from_ply (ctx,
+                                             real_path,
+                                             ply_attributes,
+                                             G_N_ELEMENTS (ply_attributes),
+                                             padding_status,
+                                             &error);
+        if (!asset->mesh)
+          {
+            g_slice_free (RutAsset, asset);
+            g_warning ("could not load model %s: %s", path, error->message);
+            g_error_free (error);
+            asset = NULL;
+            goto DONE;
+          }
+
+        break;
+      }
+    default:
+      g_warn_if_reached ();
+    }
   asset->path = g_strdup (path);
 
   //rut_simple_introspectable_init (asset);
+
+DONE:
+
+#ifndef __ANDROID__
+  g_free (full_path);
+#endif
 
   return asset;
 }
@@ -154,21 +258,28 @@ RutAsset *
 rut_asset_new_texture (RutContext *ctx,
                        const char *path)
 {
-  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_TEXTURE);
+  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_TEXTURE);
 }
 
 RutAsset *
 rut_asset_new_normal_map (RutContext *ctx,
                           const char *path)
 {
-  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_NORMAL_MAP);
+  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_NORMAL_MAP);
 }
 
 RutAsset *
 rut_asset_new_alpha_mask (RutContext *ctx,
                           const char *path)
 {
-  return rut_asset_new_texture_full (ctx, path, RUT_ASSET_TYPE_ALPHA_MASK);
+  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_ALPHA_MASK);
+}
+
+RutAsset *
+rut_asset_new_ply_model (RutContext *ctx,
+                         const char *path)
+{
+  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_PLY_MODEL);
 }
 
 RutAssetType
@@ -187,6 +298,12 @@ CoglTexture *
 rut_asset_get_texture (RutAsset *asset)
 {
   return asset->texture;
+}
+
+RutMesh *
+rut_asset_get_mesh (RutAsset *asset)
+{
+  return asset->mesh;
 }
 
 static GList *
@@ -226,18 +343,50 @@ rut_asset_has_tag (RutAsset *asset, const char *tag)
   return FALSE;
 }
 
+static const char *
+get_extension (const char *path)
+{
+  const char *ext = strrchr (path, '.');
+  return ext ? ext + 1 : NULL;
+}
+
+CoglBool
+rut_file_info_is_asset (GFileInfo *info, const char *name)
+{
+  const char *content_type = g_file_info_get_content_type (info);
+  char *mime_type = g_content_type_get_mime_type (content_type);
+  const char *ext;
+  if (mime_type)
+    {
+      if (strncmp (mime_type, "image/", 6) == 0)
+        {
+          g_free (mime_type);
+          return TRUE;
+        }
+      g_free (mime_type);
+    }
+
+  ext = get_extension (name);
+  if (ext && strcmp (ext, "ply") == 0)
+    return TRUE;
+
+  return FALSE;
+}
+
 GList *
 rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
+  char *basename;
   const char *content_type = g_file_info_get_content_type (info);
   char *mime_type = g_content_type_get_mime_type (content_type);
+  const char *ext;
   GList *inferred_tags = NULL;
 
   while (dir && !g_file_equal (assets_dir, dir))
     {
-      char *basename = g_file_get_basename (dir);
+      basename = g_file_get_basename (dir);
       inferred_tags =
         g_list_prepend (inferred_tags, (char *)g_intern_string (basename));
       g_free (basename);
@@ -251,29 +400,42 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
           g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
       inferred_tags =
         g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
+
+      if (rut_util_find_tag (inferred_tags, "normal-maps"))
+        {
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                            (char *)g_intern_string ("map"));
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                            (char *)g_intern_string ("normal-map"));
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                            (char *)g_intern_string ("bump-map"));
+        }
+      else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
+        {
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                            (char *)g_intern_string ("alpha-mask"));
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                            (char *)g_intern_string ("mask"));
+        }
     }
 
-  if (rut_util_find_tag (inferred_tags, "normal-maps"))
+  basename = g_file_get_basename (asset_file);
+  ext = get_extension (basename);
+  if (ext && strcmp (ext, "ply") == 0)
     {
       inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("map"));
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("ply"));
       inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("normal-map"));
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("mesh"));
       inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("bump-map"));
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("model"));
     }
-  else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-    {
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("alpha-mask"));
-      inferred_tags =
-        g_list_prepend (inferred_tags,
-                        (char *)g_intern_string ("mask"));
-    }
+  g_free (basename);
 
   return inferred_tags;
 }

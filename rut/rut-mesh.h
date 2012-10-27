@@ -159,6 +159,10 @@ CoglPrimitive *
 rut_mesh_create_primitive (RutContext *ctx,
                            RutMesh *mesh);
 
+RutAttribute *
+rut_mesh_find_attribute (RutMesh *mesh,
+                         const char *attribute_name);
+
 typedef CoglBool (*RutMeshVertexCallback) (void **attribute_data,
                                            int vertex_index,
                                            void *user_data);

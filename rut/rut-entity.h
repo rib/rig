@@ -155,6 +155,11 @@ rut_entity_get_transform (RutObject *self);
 void
 rut_entity_add_component (RutEntity *entity,
                           RutObject *component);
+
+void
+rut_entity_remove_component (RutEntity *entity,
+                             RutObject *component);
+
 void
 rut_entity_update (RutEntity *entity,
                    int64_t time);
