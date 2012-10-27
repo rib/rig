@@ -59,7 +59,7 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_material_type)
     {
       RutMaterial *material = RUT_MATERIAL (component);
-      RutAsset *asset = rut_material_get_texture_asset (material);
+      RutAsset *asset;
       const RutColor *ambient, *diffuse, *specular;
 
       fprintf (state->file, "%*s<material", state->indent, "");
@@ -95,6 +95,7 @@ save_component_cb (RutComponent *component,
 
       state->indent += INDENT_LEVEL;
 
+      asset = rut_material_get_texture_asset (material);
       if (asset)
         {
           int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
@@ -106,6 +107,29 @@ save_component_cb (RutComponent *component,
             }
         }
 
+      asset = rut_material_get_normal_map_asset (material);
+      if (asset)
+        {
+          int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
+          if (id)
+            {
+              fprintf (state->file, "%*s<normal_map asset=\"%d\"/>\n",
+                       state->indent, "",
+                       id);
+            }
+        }
+
+      asset = rut_material_get_alpha_mask_asset (material);
+      if (asset)
+        {
+          int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
+          if (id)
+            {
+              fprintf (state->file, "%*s<alpha_mask asset=\"%d\"/>\n",
+                       state->indent, "",
+                       id);
+            }
+        }
 
       state->indent -= INDENT_LEVEL;
       fprintf (state->file, "%*s</material>\n", state->indent, "");
@@ -671,7 +695,11 @@ typedef struct _Loader
   GQueue state;
   uint32_t id;
   CoglBool texture_specified;
+  CoglBool normal_map_specified;
+  CoglBool alpha_mask_specified;
   uint32_t texture_asset_id;
+  uint32_t normal_map_asset_id;
+  uint32_t alpha_mask_asset_id;
 
   CoglBool device_found;
   int device_width;
@@ -1280,6 +1308,8 @@ parse_start_element (GMarkupParseContext *context,
       const char *shininess_str;
 
       loader->texture_specified = FALSE;
+      loader->normal_map_specified = FALSE;
+      loader->alpha_mask_specified = FALSE;
       loader_push_state (loader, LOADER_STATE_LOADING_MATERIAL_COMPONENT);
 
       g_markup_collect_attributes (element_name,
@@ -1548,6 +1578,42 @@ parse_start_element (GMarkupParseContext *context,
       loader->texture_specified = TRUE;
       loader->texture_asset_id = g_ascii_strtoull (id_str, NULL, 10);
     }
+  else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
+           strcmp (element_name, "normal_map") == 0)
+    {
+      const char *id_str;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "asset",
+                                        &id_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        return;
+
+      loader->normal_map_specified = TRUE;
+      loader->normal_map_asset_id = g_ascii_strtoull (id_str, NULL, 10);
+    }
+  else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
+           strcmp (element_name, "alpha_mask") == 0)
+    {
+      const char *id_str;
+
+      if (!g_markup_collect_attributes (element_name,
+                                        attribute_names,
+                                        attribute_values,
+                                        error,
+                                        G_MARKUP_COLLECT_STRING,
+                                        "asset",
+                                        &id_str,
+                                        G_MARKUP_COLLECT_INVALID))
+        return;
+
+      loader->alpha_mask_specified = TRUE;
+      loader->alpha_mask_asset_id = g_ascii_strtoull (id_str, NULL, 10);
+    }
   else if (state == LOADER_STATE_NONE &&
            strcmp (element_name, "transition") == 0)
     {
@@ -1802,12 +1868,14 @@ parse_end_element (GMarkupParseContext *context,
            strcmp (element_name, "material") == 0)
     {
       RutMaterial *material;
-      RutAsset *texture_asset;
+      RutAsset *asset;
+
+      material = rut_material_new (loader->data->ctx, NULL);
 
       if (loader->texture_specified)
         {
-          texture_asset = loader_find_asset (loader, loader->texture_asset_id);
-          if (!texture_asset)
+          asset = loader_find_asset (loader, loader->texture_asset_id);
+          if (!asset)
             {
               g_set_error (error,
                            G_MARKUP_ERROR,
@@ -1815,12 +1883,36 @@ parse_end_element (GMarkupParseContext *context,
                            "Invalid asset id");
               return;
             }
+          rut_material_set_texture_asset (material, asset);
         }
-      else
-        texture_asset = NULL;
 
-      material = rut_material_new (loader->data->ctx,
-                                   texture_asset);
+      if (loader->normal_map_specified)
+        {
+          asset = loader_find_asset (loader, loader->normal_map_asset_id);
+          if (!asset)
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Invalid asset id");
+              return;
+            }
+          rut_material_set_normal_map_asset (material, asset);
+        }
+
+      if (loader->alpha_mask_specified)
+        {
+          asset = loader_find_asset (loader, loader->alpha_mask_asset_id);
+          if (!asset)
+            {
+              g_set_error (error,
+                           G_MARKUP_ERROR,
+                           G_MARKUP_ERROR_INVALID_CONTENT,
+                           "Invalid asset id");
+              return;
+            }
+          rut_material_set_alpha_mask_asset (material, asset);
+        }
 
       if (loader->ambient_set)
         rut_material_set_ambient (material, &loader->material_ambient);
