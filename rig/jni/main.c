@@ -652,6 +652,8 @@ update_inspector (RigData *data)
         }
     }
 
+  rut_ui_viewport_set_doc_height (data->tool_vp, 0);
+
   if (data->selected_entity)
     {
       float width, height;
@@ -678,6 +680,9 @@ update_inspector (RigData *data)
       rut_entity_foreach_component (data->selected_entity,
                                     add_component_inspector_cb,
                                     &component_add_state);
+
+      rut_ui_viewport_set_doc_height (data->tool_vp,
+                                      component_add_state.y_offset);
     }
 }
 
