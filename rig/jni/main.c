@@ -2944,6 +2944,17 @@ shell_input_handler (RutInputEvent *event, void *user_data)
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
               break;
+
+            /* HACK: FIXME: provide a handle in the scene for
+             * selecting the camera entity */
+            case RUT_KEY_c:
+              if ((rut_key_event_get_modifier_state (event) &
+                   RUT_MODIFIER_CTRL_ON))
+                {
+                  data->selected_entity = data->editor_camera;
+                  update_inspector (data);
+                  return RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
             }
         }
 #endif

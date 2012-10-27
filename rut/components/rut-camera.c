@@ -115,6 +115,25 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
+  {
+    .name = "focal_distance",
+    .nick = "Focal Distance",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .setter = rut_camera_set_focal_distance,
+    .data_offset = offsetof (RutCamera, focal_distance),
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
+    .name = "depth_of_field",
+    .nick = "Depth Of Field",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .setter = rut_camera_set_depth_of_field,
+    .data_offset = offsetof (RutCamera, depth_of_field),
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+
   /* FIXME: Figure out how to expose the orthographic coordinates as
    * properties? */
   { 0 }
@@ -357,6 +376,9 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   camera->y2 = height;
   camera->near = -1;
   camera->far = 100;
+
+  camera->focal_distance = 30;
+  camera->depth_of_field = 3;
 
   camera->projection_cache_age = -1;
   camera->inverse_projection_age = -1;
@@ -885,4 +907,44 @@ rut_camera_end_frame (RutCamera *camera)
     }
 }
 
+void
+rut_camera_set_focal_distance (RutCamera *camera,
+                               float focal_distance)
+{
+  if (camera->focal_distance == focal_distance)
+    return;
 
+  camera->focal_distance = focal_distance;
+
+  rut_shell_queue_redraw (camera->ctx->shell);
+
+  rut_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RUT_CAMERA_PROP_FOCAL_DISTANCE]);
+}
+
+float
+rut_camera_get_focal_distance (RutCamera *camera)
+{
+  return camera->focal_distance;
+}
+
+void
+rut_camera_set_depth_of_field (RutCamera *camera,
+                               float depth_of_field)
+{
+  if (camera->depth_of_field == depth_of_field)
+    return;
+
+  camera->depth_of_field = depth_of_field;
+
+  rut_shell_queue_redraw (camera->ctx->shell);
+
+  rut_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RUT_CAMERA_PROP_FOCAL_DISTANCE]);
+}
+
+float
+rut_camera_get_depth_of_field (RutCamera *camera)
+{
+  return camera->depth_of_field;
+}

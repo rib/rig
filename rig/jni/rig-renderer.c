@@ -209,8 +209,6 @@ get_entity_mask_pipeline (RigData *data,
       cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      set_focal_parameters (dof_diamond_pipeline, 30.f, 3.0f);
-
       data->dof_diamond_pipeline = dof_diamond_pipeline;
     }
 
@@ -234,8 +232,6 @@ get_entity_mask_pipeline (RigData *data,
       cogl_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      set_focal_parameters (dof_unshaped_pipeline, 30.f, 3.0f);
-
       data->dof_unshaped_pipeline = dof_unshaped_pipeline;
     }
 
@@ -254,8 +250,6 @@ get_entity_mask_pipeline (RigData *data,
       );
       cogl_pipeline_add_snippet (dof_pipeline, snippet);
       cogl_object_unref (snippet);
-
-      set_focal_parameters (dof_pipeline, 30.f, 3.0f);
 
       data->dof_pipeline = dof_pipeline;
     }
@@ -883,8 +877,17 @@ rig_journal_flush (GArray *journal,
                                       geometry,
                                       paint_ctx->pass);
 
-      if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
-          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+      if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
+          paint_ctx->pass == RIG_PASS_SHADOW)
+        {
+          /* FIXME: avoid updating these uniforms for every primitive if
+           * the focal parameters haven't change! */
+          set_focal_parameters (pipeline,
+                                camera->focal_distance,
+                                camera->depth_of_field);
+        }
+      else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
+               paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
         {
           int location;
           RutLight *light = rut_entity_get_component (paint_ctx->data->light,

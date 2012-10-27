@@ -177,4 +177,18 @@ rut_camera_unproject_coord (RutCamera *camera,
 CoglPrimitive *
 rut_camera_create_frustum_primitive (RutCamera *camera);
 
+void
+rut_camera_set_focal_distance (RutCamera *camera,
+                               float focal_distance);
+
+float
+rut_camera_get_focal_distance (RutCamera *camera);
+
+void
+rut_camera_set_depth_of_field (RutCamera *camera,
+                               float depth_of_field);
+
+float
+rut_camera_get_depth_of_field (RutCamera *camera);
+
 #endif /* __RUT_CAMERA_H__ */

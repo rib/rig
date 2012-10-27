@@ -20,6 +20,8 @@ enum {
   RUT_CAMERA_PROP_NEAR,
   RUT_CAMERA_PROP_FAR,
   RUT_CAMERA_PROP_BG_COLOR,
+  RUT_CAMERA_PROP_FOCAL_DISTANCE,
+  RUT_CAMERA_PROP_DEPTH_OF_FIELD,
   RUT_CAMERA_N_PROPS
 };
 
@@ -44,6 +46,9 @@ struct _RutCamera
   float fov; /* perspective */
 
   float x1, y1, x2, y2; /* orthographic */
+
+  float focal_distance;
+  float depth_of_field;
 
   CoglMatrix projection;
   unsigned int projection_age;
