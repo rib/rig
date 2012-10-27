@@ -97,8 +97,6 @@ scenegraph_pre_paint_cb (RutObject *object,
   RutPaintContext *rut_paint_ctx = user_data;
   RutCamera *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
-  RutPaintableVTable *vtable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_PAINTABLE);
 
 #if 0
   if (rut_object_get_type (object) == &rut_camera_type)
@@ -135,7 +133,11 @@ scenegraph_pre_paint_cb (RutObject *object,
     }
 
   if (rut_object_is (object, RUT_INTERFACE_ID_PAINTABLE))
-    vtable->paint (object, rut_paint_ctx);
+    {
+      RutPaintableVTable *vtable =
+        rut_object_get_vtable (object, RUT_INTERFACE_ID_PAINTABLE);
+      vtable->paint (object, rut_paint_ctx);
+    }
 
   /* XXX:
    * How can we maintain state between the pre and post stages?  Is it
