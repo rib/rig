@@ -136,9 +136,8 @@ _rut_material_init_type (void)
 }
 
 RutMaterial *
-rut_material_new_full (RutContext *ctx,
-                       RutAsset *texture_asset,
-                       CoglPipeline *pipeline)
+rut_material_new (RutContext *ctx,
+                  RutAsset *asset)
 {
   RutMaterial *material = g_slice_new0 (RutMaterial);
 
@@ -160,17 +159,27 @@ rut_material_new_full (RutContext *ctx,
 
   material->uniforms_flush_age = -1;
 
-  if (texture_asset)
-    material->texture_asset = rut_refable_ref (texture_asset);
+  material->texture_asset = NULL;
+  material->normal_map_asset = NULL;
+  material->alpha_mask_asset = NULL;
+
+  if (asset)
+    {
+      switch (rut_asset_get_type (asset))
+        {
+        case RUT_ASSET_TYPE_TEXTURE:
+          material->texture_asset = rut_refable_ref (asset);
+          break;
+        case RUT_ASSET_TYPE_NORMAL_MAP:
+          material->normal_map_asset = rut_refable_ref (asset);
+          break;
+        case RUT_ASSET_TYPE_ALPHA_MASK:
+          material->alpha_mask_asset = rut_refable_ref (asset);
+          break;
+        }
+    }
 
   return material;
-}
-
-RutMaterial *
-rut_material_new (RutContext *ctx,
-                  RutAsset *texture_asset)
-{
-  return rut_material_new_full (ctx, texture_asset, NULL);
 }
 
 void
