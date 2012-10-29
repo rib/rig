@@ -219,4 +219,8 @@ rig_free_ux (RigData *data);
 RutAsset *
 rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file);
 
+void
+rig_set_selected_entity (RigData *data,
+                         RutEntity *entity);
+
 #endif /* _RUT_DATA_H_ */

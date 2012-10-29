@@ -1202,6 +1202,21 @@ set_play_mode_enabled (RigData *data, CoglBool enabled)
   rut_shell_queue_redraw (data->ctx->shell);
 }
 
+void
+rig_set_selected_entity (RigData *data,
+                         RutEntity *entity)
+{
+  data->selected_entity = entity;
+
+  if (entity == NULL)
+    rut_tool_update (data->tool, NULL);
+  else if (entity == data->light_handle)
+    data->selected_entity = data->light;
+
+  rut_shell_queue_redraw (data->ctx->shell);
+  update_inspector (data);
+}
+
 static RutInputEventStatus
 main_input_cb (RutInputEvent *event,
                void *user_data)
@@ -1233,6 +1248,7 @@ main_input_cb (RutInputEvent *event,
           //CoglMatrix *camera_transform;
           const CoglMatrix *camera_view;
           CoglMatrix camera_transform;
+          RutObject *picked_entity;
 
           camera = rut_entity_get_component (data->editor_camera,
                                              RUT_COMPONENT_TYPE_CAMERA);
@@ -1284,19 +1300,13 @@ main_input_cb (RutInputEvent *event,
                                                       len);
             }
 
-          data->selected_entity = pick (data,
-                                        camera,
-                                        rut_camera_get_framebuffer (camera),
-                                        ray_position,
-                                        ray_direction);
+          picked_entity = pick (data,
+                                camera,
+                                rut_camera_get_framebuffer (camera),
+                                ray_position,
+                                ray_direction);
 
-          rut_shell_queue_redraw (data->ctx->shell);
-          if (data->selected_entity == NULL)
-            rut_tool_update (data->tool, NULL);
-          else if (data->selected_entity == data->light_handle)
-            data->selected_entity = data->light;
-
-          update_inspector (data);
+          rig_set_selected_entity (data, picked_entity);
 
           /* If we have selected an entity then initiate a grab so the
            * entity can be moved with the mouse...
@@ -1470,8 +1480,11 @@ main_input_cb (RutInputEvent *event,
           break;
         case RUT_KEY_Delete:
           if (data->selected_entity)
-            rig_undo_journal_delete_entity_and_log (data->undo_journal,
-                                                    data->selected_entity);
+            {
+              rig_undo_journal_delete_entity_and_log (data->undo_journal,
+                                                      data->selected_entity);
+              rig_set_selected_entity (data, NULL);
+            }
           break;
         }
     }
@@ -1907,7 +1920,7 @@ asset_input_cb (RutInputRegion *region,
               rig_undo_journal_add_entity_and_log (data->undo_journal,
                                                    data->scene,
                                                    entity);
-              data->selected_entity = entity;
+              rig_set_selected_entity (data, entity);
             }
 
           switch (type)
@@ -3174,7 +3187,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  data->selected_entity = data->editor_camera;
+                  rig_set_selected_entity (data, data->editor_camera);
                   update_inspector (data);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
