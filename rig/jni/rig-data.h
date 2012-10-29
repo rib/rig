@@ -72,9 +72,6 @@ struct _RigData
 
   CoglTexture *circle_texture;
 
-  CoglTexture *light_icon;
-  CoglTexture *clip_plane_icon;
-
   float device_width;
   float device_height;
   RutColor background_color;
@@ -126,6 +123,9 @@ struct _RigData
 
   RutUIViewport *assets_vp;
   RutGraph *assets_list;
+  RutAsset *text_builtin_asset;
+  RutAsset *circle_builtin_asset;
+  RutAsset *diamond_builtin_asset;
   float assets_list_tail_pos;
   GList *asset_input_closures;
   GList *asset_enumerators;

@@ -17,5 +17,8 @@ assets_DATA = \
 	scroll-button-right-active.png \
 	scroll-button-up-active.png \
 	scroll-button-down-active.png \
-	transparency-grid.png
+	transparency-grid.png \
+	fonts.png \
+	circle.png \
+	diamond.png
 

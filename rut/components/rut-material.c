@@ -176,6 +176,8 @@ rut_material_new (RutContext *ctx,
         case RUT_ASSET_TYPE_ALPHA_MASK:
           material->alpha_mask_asset = rut_refable_ref (asset);
           break;
+        default:
+          g_warn_if_reached ();
         }
     }
 

@@ -4,6 +4,7 @@
 #include <gio/gio.h>
 
 typedef enum _RutAssetType {
+  RUT_ASSET_TYPE_BUILTIN,
   RUT_ASSET_TYPE_TEXTURE,
   RUT_ASSET_TYPE_NORMAL_MAP,
   RUT_ASSET_TYPE_ALPHA_MASK,
@@ -18,6 +19,10 @@ void _rut_asset_type_init (void);
 
 CoglBool
 rut_file_info_is_asset (GFileInfo *info, const char *name);
+
+RutAsset *
+rut_asset_new_builtin (RutContext *ctx,
+                       const char *icon_path);
 
 RutAsset *
 rut_asset_new_texture (RutContext *ctx,
@@ -59,5 +64,8 @@ rut_asset_has_tag (RutAsset *asset, const char *tag);
 
 GList *
 rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file);
+
+void
+rut_asset_add_inferred_tag (RutAsset *asset, const char *tag);
 
 #endif /* _RUT_ASSET_H_ */

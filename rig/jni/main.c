@@ -1884,10 +1884,13 @@ asset_input_cb (RutInputRegion *region,
                 void *user_data)
 {
   AssetInputClosure *closure = user_data;
+  RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   RutAsset *asset = closure->asset;
   RigData *data = closure->data;
   RutEntity *entity;
   RutMaterial *material;
+  CoglTexture *texture;
+  RutObject *geom;
   RutShape *shape;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
@@ -1896,85 +1899,78 @@ asset_input_cb (RutInputRegion *region,
         {
           RutAssetType type = rut_asset_get_type (asset);
 
+          if (data->selected_entity)
+            entity = data->selected_entity;
+          else
+            {
+              entity = rut_entity_new (data->ctx);
+              data->selected_entity = entity;
+              rut_graphable_add_child (data->scene, entity);
+            }
+
           switch (type)
             {
             case RUT_ASSET_TYPE_TEXTURE:
             case RUT_ASSET_TYPE_NORMAL_MAP:
             case RUT_ASSET_TYPE_ALPHA_MASK:
               {
-                if (data->selected_entity)
-                  {
-                    entity = data->selected_entity;
+                int width, height;
 
-                    material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                    if (!material)
-                      return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+                material =
+                  rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                if (material)
+                  {
+                    if (type == RUT_ASSET_TYPE_TEXTURE)
+                      rut_material_set_texture_asset (material, asset);
+                    else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
+                      rut_material_set_normal_map_asset (material, asset);
+                    else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
+                      rut_material_set_alpha_mask_asset (material, asset);
                   }
                 else
                   {
-                    CoglTexture *texture;
-
-                    entity = rut_entity_new (data->ctx);
-                    texture = rut_asset_get_texture (asset);
-                    if (type == RUT_ASSET_TYPE_TEXTURE)
-                      material = rut_material_new (data->ctx, asset);
-                    else
-                      material = rut_material_new (data->ctx, NULL);
-                    shape = rut_shape_new (data->ctx,
-                                           TRUE,
-                                           cogl_texture_get_width (texture),
-                                           cogl_texture_get_height (texture));
+                    material = rut_material_new (data->ctx, asset);
                     rut_entity_add_component (entity, material);
-                    rut_entity_add_component (entity, shape);
+                  }
 
-                    data->selected_entity = entity;
-                    rut_graphable_add_child (data->scene, entity);
+                texture = rut_asset_get_texture (asset);
+                width = cogl_texture_get_width (texture);
+                height = cogl_texture_get_height (texture);
+
+                geom = rut_entity_get_component (entity,
+                                                 RUT_COMPONENT_TYPE_GEOMETRY);
+                if (!geom)
+                  {
+                    shape = rut_shape_new (data->ctx, TRUE, width, height);
+                    rut_entity_add_component (entity, shape);
+                    geom = shape;
                   }
 
                 if (type == RUT_ASSET_TYPE_TEXTURE)
                   {
-                    RutObject *geom =
-                      rut_entity_get_component (entity,
-                                                RUT_COMPONENT_TYPE_GEOMETRY);
-
-                    if (geom && rut_object_get_type (geom) == &rut_shape_type)
+                    if (rut_object_get_type (geom) == &rut_shape_type)
                       {
-                        CoglTexture *tex = rut_asset_get_texture (asset);
-                        rut_shape_set_texture_size (RUT_SHAPE (geom),
-                                                    cogl_texture_get_width (tex),
-                                                    cogl_texture_get_height (tex));
+                        if (rut_object_get_type (geom) == &rut_shape_type)
+                          rut_shape_set_texture_size (RUT_SHAPE (geom),
+                                                      width, height);
                       }
+                    else if (rut_object_get_type (geom) == &rut_diamond_type)
+                      {
+                        RutDiamond *diamond = geom;
+                        float size = rut_diamond_get_size (diamond);
 
-                    rut_material_set_texture_asset (material, asset);
+                        rut_entity_remove_component (entity, geom);
+                        diamond = rut_diamond_new (data->ctx, size, width, height);
+                      }
                   }
-                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-                  rut_material_set_normal_map_asset (material, asset);
-                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-                  rut_material_set_alpha_mask_asset (material, asset);
-                else
-                  g_warn_if_reached ();
 
-                rig_dirty_entity_pipelines (entity);
-
-                update_inspector (data);
-
-                rut_shell_queue_redraw (data->ctx->shell);
-                return RUT_INPUT_EVENT_STATUS_HANDLED;
+                status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                break;
               }
             case RUT_ASSET_TYPE_PLY_MODEL:
               {
-                RutObject *geom = NULL;
                 RutModel *model;
                 float x_range, y_range, z_range, max_range;
-
-                if (data->selected_entity)
-                  entity = data->selected_entity;
-                else
-                  {
-                    entity = rut_entity_new (data->ctx);
-                    data->selected_entity = entity;
-                    rut_graphable_add_child (data->scene, entity);
-                  }
 
                 geom = rut_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_GEOMETRY);
@@ -1983,16 +1979,24 @@ asset_input_cb (RutInputRegion *region,
                   {
                     model = geom;
                     if (rut_model_get_asset (model) == asset)
-                      return RUT_INPUT_EVENT_STATUS_HANDLED;
+                      {
+                        status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                        break;
+                      }
                   }
                 else if (geom)
-                  {
-                    RutMaterial *material =
-                      rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                    rut_entity_remove_component (entity, geom);
-                    if (material)
-                      rut_entity_remove_component (entity, material);
-                  }
+                  rut_entity_remove_component (entity, geom);
+
+                /* XXX: For now we forcibly remove any material from
+                 * the entity when adding a ply model geometry
+                 * component since it's likely the model doesn't have
+                 * texture coordinates and if the material has an
+                 * associated texture with a transparent top-left
+                 * pixel the model won't be visible. */
+                material =
+                  rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                if (material)
+                  rut_entity_remove_component (entity, material);
 
                 model = rut_model_new_from_asset (data->ctx, asset);
                 rut_entity_add_component (entity, model);
@@ -2009,16 +2013,116 @@ asset_input_cb (RutInputRegion *region,
 
                 rut_entity_set_scale (entity, 200.0 / max_range);
 
-                rig_dirty_entity_pipelines (entity);
-                update_inspector (data);
-
-                return RUT_INPUT_EVENT_STATUS_HANDLED;
+                status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                break;
               }
+            case RUT_ASSET_TYPE_BUILTIN:
+              if (asset == data->text_builtin_asset)
+                {
+                  RutText *text;
+                  RutColor color;
+
+                  geom = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_GEOMETRY);
+
+                  if (geom && rut_object_get_type (geom) == &rut_text_type)
+                    return RUT_INPUT_EVENT_STATUS_HANDLED;
+                  else if (geom)
+                    rut_entity_remove_component (entity, geom);
+
+                  text = rut_text_new_with_text (data->ctx, "Sans 60px", "text");
+                  rut_color_init_from_4f (&color, 1, 1, 1, 1);
+                  rut_text_set_color (text, &color);
+                  rut_entity_add_component (entity, text);
+
+                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+              else if (asset == data->circle_builtin_asset)
+                {
+                  RutShape *shape;
+                  int tex_width = 200, tex_height = 200;
+
+                  geom = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_GEOMETRY);
+
+                  if (geom && rut_object_get_type (geom) == &rut_shape_type)
+                    {
+                      status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                      break;
+                    }
+                  else if (geom)
+                    rut_entity_remove_component (entity, geom);
+
+                  material =
+                    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+                  if (material)
+                    {
+                      RutAsset *texture_asset =
+                        rut_material_get_texture_asset (material);
+                      if (texture_asset)
+                        {
+                          CoglTexture *texture = rut_asset_get_texture (texture_asset);
+                          tex_width = cogl_texture_get_width (texture);
+                          tex_height = cogl_texture_get_height (texture);
+                        }
+                    }
+
+                  shape = rut_shape_new (data->ctx, TRUE, tex_width, tex_height);
+                  rut_entity_add_component (entity, shape);
+
+                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+              else if (asset == data->diamond_builtin_asset)
+                {
+                  RutDiamond *diamond;
+                  int tex_width = 200, tex_height = 200;
+
+                  geom = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_GEOMETRY);
+
+                  if (geom && rut_object_get_type (geom) == &rut_diamond_type)
+                    {
+                      status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                      break;
+                    }
+                  else if (geom)
+                    rut_entity_remove_component (entity, geom);
+
+                  material =
+                    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+                  if (material)
+                    {
+                      RutAsset *texture_asset =
+                        rut_material_get_texture_asset (material);
+                      if (texture_asset)
+                        {
+                          CoglTexture *texture = rut_asset_get_texture (texture_asset);
+                          tex_width = cogl_texture_get_width (texture);
+                          tex_height = cogl_texture_get_height (texture);
+                        }
+                    }
+
+                  diamond = rut_diamond_new (data->ctx, 200, tex_width, tex_height);
+                  rut_entity_add_component (entity, diamond);
+
+                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+
+              break;
+            }
+
+          if (status = RUT_INPUT_EVENT_STATUS_HANDLED)
+            {
+              rig_dirty_entity_pipelines (entity);
+              update_inspector (data);
+              rut_shell_queue_redraw (data->ctx->shell);
             }
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  return status;
 }
 
 static CoglBool
@@ -2083,30 +2187,24 @@ add_asset_icon (RigData *data,
   closure->asset = asset;
   closure->data = data;
 
-  texture = rut_asset_get_texture (asset);
-
   transform = rut_transform_new (data->ctx, NULL);
 
-  switch (rut_asset_get_type (asset))
+  texture = rut_asset_get_texture (asset);
+  if (texture)
     {
-    case RUT_ASSET_TYPE_TEXTURE:
-    case RUT_ASSET_TYPE_NORMAL_MAP:
-    case RUT_ASSET_TYPE_ALPHA_MASK:
       image = rut_image_new (data->ctx, texture);
       rut_sizable_set_size (image, 100, 100);
       rut_graphable_add_child (transform, image);
       rut_refable_unref (image);
-      break;
-    default:
-      {
-        char *basename = g_path_get_basename (rut_asset_get_path (asset));
-        RutText *text = rut_text_new_with_text (data->ctx, NULL, basename);
-        rut_sizable_set_size (text, 100, 100);
-        g_free (basename);
-        rut_graphable_add_child (transform, text);
-        rut_refable_unref (text);
-        break;
-      }
+    }
+  else
+    {
+      char *basename = g_path_get_basename (rut_asset_get_path (asset));
+      RutText *text = rut_text_new_with_text (data->ctx, NULL, basename);
+      rut_sizable_set_size (text, 100, 100);
+      g_free (basename);
+      rut_graphable_add_child (transform, text);
+      rut_refable_unref (text);
     }
 
   region = rut_input_region_new_rectangle (0, 0, 100, 100,
@@ -2459,21 +2557,6 @@ init (RutShell *shell, void *user_data)
 
   data->circle_node_attribute =
     rut_create_circle_fan_p2 (data->ctx, 20, &data->circle_node_n_verts);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      full_path = g_build_filename (RIG_SHARE_DIR, "light-bulb.png", NULL);
-      //full_path = g_build_filename (RUT_HANDSET_SHARE_DIR, "nine-slice-test.png", NULL);
-      data->light_icon = rut_load_texture (data->ctx, full_path, &error);
-      g_free (full_path);
-      if (!data->light_icon)
-        {
-          g_warning ("Failed to load light-bulb texture: %s", error->message);
-          cogl_error_free (error);
-        }
-    }
-#endif
 
   data->device_transform = rut_transform_new (data->ctx, NULL);
 
@@ -3010,7 +3093,6 @@ fini (RutShell *shell, void *user_data)
       rut_refable_unref (data->timeline_vp);
       rut_refable_unref (data->transition_view);
       cogl_object_unref (data->grid_prim);
-      cogl_object_unref (data->light_icon);
 
       if (data->transparency_grid)
         rut_refable_unref (data->transparency_grid);
@@ -3369,8 +3451,32 @@ static void
 rig_load_asset_list (RigData *data)
 {
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  RutAsset *asset;
 
   enumerate_dir_for_assets (data, assets_dir);
+
+  data->diamond_builtin_asset = rut_asset_new_builtin (data->ctx, "diamond.png");
+  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "diamond");
+  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "geometry");
+  data->assets = g_list_prepend (data->assets, data->diamond_builtin_asset);
+
+  data->circle_builtin_asset = rut_asset_new_builtin (data->ctx, "circle.png");
+  rut_asset_add_inferred_tag (data->circle_builtin_asset, "shape");
+  rut_asset_add_inferred_tag (data->circle_builtin_asset, "circle");
+  rut_asset_add_inferred_tag (data->circle_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (data->circle_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (data->circle_builtin_asset, "geometry");
+  data->assets = g_list_prepend (data->assets, data->circle_builtin_asset);
+
+  data->text_builtin_asset = rut_asset_new_builtin (data->ctx, "fonts.png");
+  rut_asset_add_inferred_tag (data->text_builtin_asset, "text");
+  rut_asset_add_inferred_tag (data->text_builtin_asset, "label");
+  rut_asset_add_inferred_tag (data->text_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (data->text_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (data->text_builtin_asset, "geometry");
+  data->assets = g_list_prepend (data->assets, data->text_builtin_asset);
 
   g_object_unref (assets_dir);
 

@@ -182,8 +182,13 @@ rut_asset_new_full (RutContext *ctx,
 {
   RutAsset *asset = g_slice_new0 (RutAsset);
   const char *real_path;
+  char *full_path;
+
 #ifndef __ANDROID__
-  char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+  if (type == RUT_ASSET_TYPE_BUILTIN)
+    full_path = g_build_filename (RIG_DATA_DIR, path, NULL);
+  else
+    full_path = g_build_filename (ctx->assets_location, path, NULL);
   real_path = full_path;
 #else
   real_path = path;
@@ -197,6 +202,7 @@ rut_asset_new_full (RutContext *ctx,
 
   switch (type)
     {
+    case RUT_ASSET_TYPE_BUILTIN:
     case RUT_ASSET_TYPE_TEXTURE:
     case RUT_ASSET_TYPE_NORMAL_MAP:
     case RUT_ASSET_TYPE_ALPHA_MASK:
@@ -238,8 +244,6 @@ rut_asset_new_full (RutContext *ctx,
 
         break;
       }
-    default:
-      g_warn_if_reached ();
     }
   asset->path = g_strdup (path);
 
@@ -252,6 +256,13 @@ DONE:
 #endif
 
   return asset;
+}
+
+RutAsset *
+rut_asset_new_builtin (RutContext *ctx,
+                       const char *path)
+{
+  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_BUILTIN);
 }
 
 RutAsset *
@@ -323,7 +334,8 @@ void
 rut_asset_set_inferred_tags (RutAsset *asset,
                              const GList *inferred_tags)
 {
-  asset->inferred_tags = copy_tags (inferred_tags);
+  asset->inferred_tags = g_list_concat (asset->inferred_tags,
+                                        copy_tags (inferred_tags));
 }
 
 const GList *
@@ -440,4 +452,10 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
   return inferred_tags;
 }
 
-
+void
+rut_asset_add_inferred_tag (RutAsset *asset,
+                            const char *tag)
+{
+  asset->inferred_tags =
+    g_list_prepend (asset->inferred_tags, (char *)g_intern_string (tag));
+}
