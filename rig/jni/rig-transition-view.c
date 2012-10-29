@@ -1747,6 +1747,11 @@ transition_operation_cb (RigTransition *transition,
         rig_transition_view_property_added (view, prop_data->property);
       break;
 
+    case RIG_TRANSITION_OPERATION_REMOVED:
+      if (prop_data->animated)
+        rig_transition_view_property_removed (view, prop_data->property);
+      break;
+
     case RIG_TRANSITION_OPERATION_ANIMATED_CHANGED:
       if (prop_data->animated)
         rig_transition_view_property_added (view, prop_data->property);

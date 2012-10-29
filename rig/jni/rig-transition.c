@@ -358,3 +358,22 @@ rig_transition_set_property_animated (RigTransition *transition,
                                prop_data);
     }
 }
+
+void
+rig_transition_remove_property (RigTransition *transition,
+                                RutProperty *property)
+{
+  RigTransitionPropData *prop_data =
+    rig_transition_find_prop_data_for_property (transition, property);
+
+  if (prop_data)
+    {
+      rut_closure_list_invoke (&transition->operation_cb_list,
+                               RigTransitionOperationCallback,
+                               transition,
+                               RIG_TRANSITION_OPERATION_REMOVED,
+                               prop_data);
+
+      g_hash_table_remove (transition->properties, property);
+    }
+}

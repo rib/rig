@@ -77,6 +77,7 @@ struct _RigTransition
 typedef enum
 {
   RIG_TRANSITION_OPERATION_ADDED,
+  RIG_TRANSITION_OPERATION_REMOVED,
   RIG_TRANSITION_OPERATION_ANIMATED_CHANGED
 } RigTransitionOperation;
 
@@ -142,5 +143,9 @@ void
 rig_transition_set_property_animated (RigTransition *transition,
                                       RutProperty *property,
                                       CoglBool animated);
+
+void
+rig_transition_remove_property (RigTransition *transition,
+                                RutProperty *property);
 
 #endif /* _RUT_TRANSITION_H_ */
