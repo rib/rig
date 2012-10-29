@@ -429,6 +429,7 @@ typedef void (*EntityTranslateCallback)(RutEntity *entity,
                                         void *user_data);
 
 typedef void (*EntityTranslateDoneCallback)(RutEntity *entity,
+                                            CoglBool moved,
                                             float start[3],
                                             float rel[3],
                                             void *user_data);
@@ -444,6 +445,10 @@ typedef struct _EntityTranslateGrabClosure
   /* entity position at start of grab */
   float entity_grab_pos[3];
   RutEntity *entity;
+
+  /* set as soon as a move event is encountered so that we can detect
+   * situations where a grab is started but nothing actually moves */
+  CoglBool moved;
 
   float x_vec[3];
   float y_vec[3];
@@ -486,6 +491,7 @@ entity_translate_grab_input_cb (RutInputEvent *event,
         {
           if (closure->entity_translate_done_cb)
             closure->entity_translate_done_cb (entity,
+                                               closure->moved,
                                                closure->entity_grab_pos,
                                                rel,
                                                closure->user_data);
@@ -500,6 +506,8 @@ entity_translate_grab_input_cb (RutInputEvent *event,
         }
       else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
         {
+          closure->moved = TRUE;
+
           closure->entity_translate_cb (entity,
                                         closure->entity_grab_pos,
                                         rel,
@@ -1068,6 +1076,7 @@ translate_grab_entity (RigData *data,
   closure->entity = entity;
   closure->entity_translate_cb = translate_cb;
   closure->entity_translate_done_cb = done_cb;
+  closure->moved = FALSE;
   closure->user_data = user_data;
 
   memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
@@ -1096,22 +1105,29 @@ reload_position_inspector (RigData *data,
 
 static void
 entity_translate_done_cb (RutEntity *entity,
+                          CoglBool moved,
                           float start[3],
                           float rel[3],
                           void *user_data)
 {
   RigData *data = user_data;
 
-  rig_undo_journal_move_and_log (data->undo_journal,
-                                 FALSE, /* mergable */
-                                 entity,
-                                 start[0] + rel[0],
-                                 start[1] + rel[1],
-                                 start[2] + rel[2]);
+  /* If the entity hasn't actually moved then we'll ignore it. It that
+   * case the user is presumably just trying to select and entity we
+   * don't want it to modify the transition */
+  if (moved)
+    {
+      rig_undo_journal_move_and_log (data->undo_journal,
+                                     FALSE, /* mergable */
+                                     entity,
+                                     start[0] + rel[0],
+                                     start[1] + rel[1],
+                                     start[2] + rel[2]);
 
-  reload_position_inspector (data, entity);
+      reload_position_inspector (data, entity);
 
-  rut_shell_queue_redraw (data->ctx->shell);
+      rut_shell_queue_redraw (data->ctx->shell);
+    }
 }
 
 static void
