@@ -449,26 +449,137 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
   rig_undo_journal_insert (journal, undo_redo);
 }
 
+typedef struct
+{
+  RutObject *object;
+  UndoRedoAddDeleteEntity *delete_entity;
+} CopyPropertyClosure;
+
+static void
+copy_property_cb (RigTransitionPropData *prop_data,
+                  void *user_data)
+{
+  CopyPropertyClosure *data = user_data;
+  UndoRedoAddDeleteEntity *delete_entity = data->delete_entity;
+
+  if (prop_data->property->object == data->object)
+    {
+      UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
+
+      undo_prop_data->animated = prop_data->animated;
+      rut_boxed_copy (&undo_prop_data->constant_value,
+                      &prop_data->constant_value);
+      /* As the entity is about to be deleted we can safely just take
+       * ownership of the path without worrying about it later being
+       * modified */
+      undo_prop_data->path =
+        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
+      undo_prop_data->property = prop_data->property;
+
+      rut_list_insert (delete_entity->properties.prev,
+                       &undo_prop_data->link);
+    }
+}
+
+static void
+copy_object_properties (RigTransition *transition,
+                        UndoRedoAddDeleteEntity *delete_entity,
+                        RutObject *object)
+{
+  CopyPropertyClosure data;
+
+  data.delete_entity = delete_entity;
+  data.object = object;
+  rig_transition_foreach_property (transition,
+                                   copy_property_cb,
+                                   &data);
+}
+
+typedef struct
+{
+  RigTransition *transition;
+  UndoRedoAddDeleteEntity *delete_entity;
+} DeleteEntityComponentClosure;
+
+static void
+delete_entity_component_cb (RutComponent *component,
+                            void *user_data)
+{
+  DeleteEntityComponentClosure *data = user_data;
+
+  copy_object_properties (data->transition,
+                          data->delete_entity,
+                          component);
+}
+
+void
+rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
+                                     RutEntity *parent_entity,
+                                     RutEntity *entity)
+{
+  RigData *data = journal->data;
+  UndoRedo *undo_redo;
+  UndoRedoAddDeleteEntity *add_entity;
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_ADD_ENTITY_OP;
+  undo_redo->mergable = FALSE;
+
+  add_entity = &undo_redo->d.add_delete_entity;
+
+  add_entity->parent_entity = rut_refable_ref (parent_entity);
+  add_entity->deleted_entity = rut_refable_ref (entity);
+
+  /* There shouldn't be any properties in the transition so we don't
+   * need to bother copying them */
+  rut_list_init (&add_entity->properties);
+
+  rut_graphable_add_child (parent_entity, entity);
+  rut_shell_queue_redraw (data->ctx->shell);
+
+  rig_undo_journal_insert (journal, undo_redo);
+}
+
 void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
                                         RutEntity *entity)
 {
   UndoRedo *undo_redo;
-  UndoRedoDeleteEntity *delete_entity;
+  UndoRedoAddDeleteEntity *delete_entity;
   RutEntity *parent = rut_graphable_get_parent (entity);
+  UndoRedoPropData *prop_data;
+  DeleteEntityComponentClosure delete_component_data;
+  RigData *data = journal->data;
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
   undo_redo->mergable = FALSE;
 
-  delete_entity = &undo_redo->d.delete_entity;
+  delete_entity = &undo_redo->d.add_delete_entity;
 
   delete_entity->parent_entity = rut_refable_ref (parent);
   delete_entity->deleted_entity = rut_refable_ref (entity);
-  delete_entity->inverted = FALSE;
+
+  /* Grab a copy of the transition data for all the properties of the
+   * entity */
+  rut_list_init (&delete_entity->properties);
+  copy_object_properties (data->selected_transition,
+                          delete_entity,
+                          entity);
+
+  /* Also copy the property data of each component */
+  delete_component_data.transition = data->selected_transition;
+  delete_component_data.delete_entity = delete_entity;
+  rut_entity_foreach_component (entity,
+                                delete_entity_component_cb,
+                                &delete_component_data);
+
+  rut_list_for_each (prop_data, &delete_entity->properties, link)
+    rig_transition_remove_property (data->selected_transition,
+                                    prop_data->property);
 
   rut_graphable_remove_child (entity);
-  rut_shell_queue_redraw (journal->data->ctx->shell);
+  rut_shell_queue_redraw (data->ctx->shell);
 
   rig_undo_journal_insert (journal, undo_redo);
 }
@@ -658,41 +769,127 @@ undo_redo_set_animated_free (UndoRedo *undo_redo)
   g_slice_free (UndoRedo, undo_redo);
 }
 
+static UndoRedo *
+copy_add_delete_entity (UndoRedo *undo_redo)
+{
+  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedoAddDeleteEntity *add_delete_entity = &copy->d.add_delete_entity;
+  UndoRedoPropData *prop_data;
+
+  rut_refable_ref (add_delete_entity->parent_entity);
+  rut_refable_ref (add_delete_entity->deleted_entity);
+
+  rut_list_init (&add_delete_entity->properties);
+
+  rut_list_for_each (prop_data,
+                     &undo_redo->d.add_delete_entity.properties,
+                     link)
+    {
+      UndoRedoPropData *prop_data_copy = g_slice_new (UndoRedoPropData);
+
+      prop_data_copy->property = prop_data->property;
+      prop_data_copy->animated = prop_data->animated;
+      prop_data_copy->path =
+        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
+      rut_boxed_copy (&prop_data_copy->constant_value,
+                      &prop_data->constant_value);
+
+      rut_list_insert (add_delete_entity->properties.prev,
+                       &prop_data_copy->link);
+    }
+
+  return copy;
+}
+
 static void
 undo_redo_delete_entity_apply (RigUndoJournal *journal,
                                UndoRedo *undo_redo)
 {
-  UndoRedoDeleteEntity *delete_entity = &undo_redo->d.delete_entity;
+  UndoRedoAddDeleteEntity *delete_entity = &undo_redo->d.add_delete_entity;
+  UndoRedoPropData *prop_data;
 
   g_print ("Delete entity APPLY\n");
 
-  if (!delete_entity->inverted)
-    rut_graphable_remove_child (delete_entity->deleted_entity);
-  else
-    rut_graphable_add_child (delete_entity->parent_entity,
-                             delete_entity->deleted_entity);
+  rut_graphable_remove_child (delete_entity->deleted_entity);
+
+  rut_list_for_each (prop_data, &delete_entity->properties, link)
+    rig_transition_remove_property (journal->data->selected_transition,
+                                    prop_data->property);
 }
 
 static UndoRedo *
 undo_redo_delete_entity_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
-  UndoRedoDeleteEntity *inverse_delete_entity = &inverse->d.delete_entity;
+  UndoRedo *inverse = copy_add_delete_entity (undo_redo_src);
 
-  rut_refable_ref (inverse_delete_entity->parent_entity);
-  rut_refable_ref (inverse_delete_entity->deleted_entity);
-  inverse_delete_entity->inverted = !inverse_delete_entity->inverted;
+  inverse->op = UNDO_REDO_ADD_ENTITY_OP;
 
   return inverse;
 }
 
 static void
-undo_redo_delete_entity_free (UndoRedo *undo_redo)
+undo_redo_add_entity_apply (RigUndoJournal *journal,
+                            UndoRedo *undo_redo)
 {
-  UndoRedoDeleteEntity *delete_entity = &undo_redo->d.delete_entity;
+  UndoRedoAddDeleteEntity *add_entity = &undo_redo->d.add_delete_entity;
+  RigTransition *transition = journal->data->selected_transition;
+  UndoRedoPropData *undo_prop_data;
 
-  rut_refable_unref (delete_entity->parent_entity);
-  rut_refable_unref (delete_entity->deleted_entity);
+  g_print ("Add entity APPLY\n");
+
+  rut_graphable_add_child (add_entity->parent_entity,
+                           add_entity->deleted_entity);
+
+  rut_list_for_each (undo_prop_data, &add_entity->properties, link)
+    {
+      RigTransitionPropData *prop_data =
+        rig_transition_get_prop_data_for_property (transition,
+                                                   undo_prop_data->property);
+
+      if (prop_data->path)
+        rut_refable_unref (prop_data->path);
+      if (undo_prop_data->path)
+        prop_data->path = rig_path_copy (undo_prop_data->path);
+      else
+        prop_data->path = NULL;
+
+      rut_boxed_destroy (&prop_data->constant_value);
+      rut_boxed_copy (&prop_data->constant_value,
+                      &undo_prop_data->constant_value);
+
+      rig_transition_set_property_animated (transition,
+                                            undo_prop_data->property,
+                                            undo_prop_data->animated);
+    }
+}
+
+static UndoRedo *
+undo_redo_add_entity_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = copy_add_delete_entity (undo_redo_src);
+
+  inverse->op = UNDO_REDO_ADD_ENTITY_OP;
+
+  return inverse;
+}
+
+static void
+undo_redo_add_delete_entity_free (UndoRedo *undo_redo)
+{
+  UndoRedoAddDeleteEntity *add_delete_entity = &undo_redo->d.add_delete_entity;
+  UndoRedoPropData *prop_data, *tmp;
+
+  rut_refable_unref (add_delete_entity->parent_entity);
+  rut_refable_unref (add_delete_entity->deleted_entity);
+
+  rut_list_for_each_safe (prop_data, tmp, &add_delete_entity->properties, link)
+    {
+      if (prop_data->path)
+        rut_refable_unref (prop_data->path);
+
+      rut_boxed_destroy (&prop_data->constant_value);
+    }
+
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -794,9 +991,14 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_set_animated_free
     },
     {
+      undo_redo_add_entity_apply,
+      undo_redo_add_entity_invert,
+      undo_redo_add_delete_entity_free
+    },
+    {
       undo_redo_delete_entity_apply,
       undo_redo_delete_entity_invert,
-      undo_redo_delete_entity_free
+      undo_redo_add_delete_entity_free
     },
     {
       undo_redo_move_path_nodes_apply,

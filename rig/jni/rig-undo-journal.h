@@ -28,6 +28,7 @@
 #include "rig-types.h"
 #include "rut-list.h"
 #include "rig-node.h"
+#include "rig-path.h"
 
 typedef enum _UndoRedoOp
 {
@@ -36,6 +37,7 @@ typedef enum _UndoRedoOp
   UNDO_REDO_PATH_REMOVE_OP,
   UNDO_REDO_PATH_MODIFY_OP,
   UNDO_REDO_SET_ANIMATED_OP,
+  UNDO_REDO_ADD_ENTITY_OP,
   UNDO_REDO_DELETE_ENTITY_OP,
   UNDO_REDO_MOVE_PATH_NODES_OP,
   UNDO_REDO_N_OPS
@@ -87,12 +89,23 @@ typedef struct _UndoRedoSetAnimated
   CoglBool value;
 } UndoRedoSetAnimated;
 
-typedef struct _UndoRedoDeleteEntity
+typedef struct
+{
+  RutList link;
+
+  RutProperty *property;
+
+  CoglBool animated;
+  RigPath *path;
+  RutBoxed constant_value;
+} UndoRedoPropData;
+
+typedef struct _UndoRedoAddDeleteEntity
 {
   RutEntity *parent_entity;
   RutEntity *deleted_entity;
-  CoglBool inverted;
-} UndoRedoDeleteEntity;
+  RutList properties;
+} UndoRedoAddDeleteEntity;
 
 typedef struct _UndoRedo
 {
@@ -106,7 +119,7 @@ typedef struct _UndoRedo
       UndoRedoPathAddRemove path_add_remove;
       UndoRedoPathModify path_modify;
       UndoRedoSetAnimated set_animated;
-      UndoRedoDeleteEntity delete_entity;
+      UndoRedoAddDeleteEntity add_delete_entity;
       UndoRedoMovePathNodes move_path_nodes;
     } d;
 } UndoRedo;
@@ -166,6 +179,11 @@ void
 rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
                                        RutProperty *property,
                                        CoglBool value);
+
+void
+rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
+                                     RutEntity *parent_entity,
+                                     RutEntity *entity);
 
 void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,

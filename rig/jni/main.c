@@ -1904,8 +1904,10 @@ asset_input_cb (RutInputRegion *region,
           else
             {
               entity = rut_entity_new (data->ctx);
+              rig_undo_journal_add_entity_and_log (data->undo_journal,
+                                                   data->scene,
+                                                   entity);
               data->selected_entity = entity;
-              rut_graphable_add_child (data->scene, entity);
             }
 
           switch (type)
