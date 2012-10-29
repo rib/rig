@@ -65,6 +65,9 @@ RigPath *
 rig_path_new (RutContext *ctx,
               RutPropertyType type);
 
+RigPath *
+rig_path_copy (RigPath *path);
+
 void
 rig_path_insert_vec3 (RigPath *path,
                       float t,

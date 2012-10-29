@@ -89,6 +89,59 @@ rig_path_new (RutContext *ctx,
   return path;
 }
 
+static size_t
+get_type_size (RutPropertyType type)
+{
+  switch (type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      return sizeof (RigNodeFloat);
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      return sizeof (RigNodeDouble);
+    case RUT_PROPERTY_TYPE_INTEGER:
+      return sizeof (RigNodeInteger);
+    case RUT_PROPERTY_TYPE_UINT32:
+      return sizeof (RigNodeUint32);
+    case RUT_PROPERTY_TYPE_VEC3:
+      return sizeof (RigNodeVec3);
+    case RUT_PROPERTY_TYPE_VEC4:
+      return sizeof (RigNodeVec4);
+    case RUT_PROPERTY_TYPE_COLOR:
+      return sizeof (RigNodeColor);
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      return sizeof (RigNodeQuaternion);
+      /* These types of properties can't be interoplated so they
+       * probably shouldn't end up in a path */
+    case RUT_PROPERTY_TYPE_ENUM:
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+    case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      break;
+    }
+
+  g_warn_if_reached ();
+
+  return sizeof (RigNode);
+}
+
+RigPath *
+rig_path_copy (RigPath *old_path)
+{
+  RigPath *new_path = rig_path_new (old_path->ctx, old_path->type);
+  size_t node_size = get_type_size (old_path->type);
+  RigNode *node;
+
+  rut_list_for_each (node, &old_path->nodes, list_node)
+    {
+      RigNode *new_node = g_slice_copy (node_size, node);
+      rut_list_insert (new_path->nodes.prev, &new_node->list_node);
+    }
+  new_path->length = old_path->length;
+
+  return new_path;
+}
+
 /* Finds 1 point either side of the given t using the direction to resolve
  * which points to choose if t corresponds to a specific node.
  */
