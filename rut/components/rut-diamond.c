@@ -257,31 +257,35 @@ diamond_slice_new (RutContext *ctx,
         }
 
       cogl_matrix_init_identity (&matrix);
-      tex_aspect = (float)tex_width / (float)tex_height;
 
-      t = 0.5 / sinf (G_PI_4);
+      {
+        float s_scale = 1.0, t_scale = 1.0;
+        float s0, t0;
+        float diagonal_size_scale = 1.0 / (sinf (G_PI_4) * 2.0);
 
-      /* FIXME: hack */
-      cogl_matrix_translate (&matrix, 0.5, 0, 0);
+        tex_aspect = (float)tex_width / (float)tex_height;
 
-      if (tex_aspect < 1) /* taller than it is wide */
-        {
-          float s_scale = (1.0 / width) * t;
+        if (tex_aspect < 1) /* taller than it is wide */
+          t_scale *= tex_aspect;
+        else /* wider than it is tall */
+          {
+            float inverse_aspect = 1.0f / tex_aspect;
+            s_scale *= inverse_aspect;
+          }
 
-          float t_scale = s_scale * (1.0 / tex_aspect);
+        s_scale *= diagonal_size_scale;
+        t_scale *= diagonal_size_scale;
 
-          cogl_matrix_scale (&matrix, s_scale, t_scale, t_scale);
-        }
-      else /* wider than it is tall */
-        {
-          float t_scale = (1.0 / height) * t;
+        s0 = 0.5 - (s_scale / 2.0);
+        t0 = 0.5 - (t_scale / 2.0);
 
-          float s_scale = t_scale * tex_aspect;
+        cogl_matrix_translate (&matrix, s0, t0, 0);
+        cogl_matrix_scale (&matrix, s_scale / width, t_scale / height, 1);
 
-          cogl_matrix_scale (&matrix, s_scale, t_scale, t_scale);
-        }
-
-      cogl_matrix_rotate (&matrix, 45, 0, 0, 1);
+        cogl_matrix_translate (&matrix, width / 2.0, height / 2.0, 1);
+        cogl_matrix_rotate (&matrix, 45, 0, 0, 1);
+        cogl_matrix_translate (&matrix, -width / 2.0, -height / 2.0, 1);
+      }
 
       n_vertices = sizeof (vertices) / sizeof (VertexP2T2T2);
       for (i = 0; i < n_vertices; i++)
