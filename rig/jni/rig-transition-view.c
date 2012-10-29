@@ -1116,6 +1116,7 @@ rig_transition_view_property_added (RigTransitionView *view,
                                      NULL /* destroy_cb */);
 
   view->n_dots += path->length;
+  view->dots_dirty = TRUE;
 
   prop_data->path = rut_refable_ref (path);
 
