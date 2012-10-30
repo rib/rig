@@ -29,7 +29,6 @@ rig_SOURCES = \
 	jni/rig-path.h \
 	jni/rig-transition.c \
 	jni/rig-transition.h \
-	jni/rig-types-private.h \
 	jni/rig-load-save.h \
 	jni/rig-load-save.c \
 	jni/rig-transition-view.c \
