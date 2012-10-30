@@ -1,5 +1,5 @@
 assetsdir = $(datadir)
-assets_DATA = \
+dist_assets_DATA = \
 	dot.png \
 	button.png \
 	button-hover.png \
