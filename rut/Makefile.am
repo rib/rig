@@ -55,7 +55,9 @@ source_h = \
     rut-mesh-ply.h \
     rut-ui-viewport.h \
     rut-scroll-bar.h \
-    rut-image.h
+    rut-image.h \
+    rut-property-types.h \
+    rut-volume.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -119,7 +121,8 @@ librut_la_SOURCES = \
 
 if !HAVE_ANDROID
 librut_la_SOURCES += \
-    rut-sdl-keysyms.c
+    rut-sdl-keysyms.c \
+    rut-sdl-keysyms.h
 endif
 
 librut_la_LIBADD = \

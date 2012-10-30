@@ -35,7 +35,8 @@ rig_SOURCES = \
 	jni/rig-transition-view.h \
 	jni/rig-types.h \
 	jni/rig-renderer.h \
-	jni/rig-renderer.c
+	jni/rig-renderer.c \
+	jni/rig-data.h
 
 if EDITOR_ENABLED
 rig_SOURCES += \
