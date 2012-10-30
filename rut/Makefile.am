@@ -1,5 +1,5 @@
 
-lib_LTLIBRARIES = librut.la
+noinst_LTLIBRARIES = librut.la
 
 components_source_h = \
     components/rut-camera.h \
@@ -138,12 +138,11 @@ librut_la_CPPFLAGS = \
     -I$(top_srcdir)/rut \
     -DRIG_DATA_DIR=\""$(datadir)/"\"
 
+# rut_headersdir =  $(includedir)/rut
+# rut_headers_DATA = $(source_h)
 
-rut_headersdir =  $(includedir)/rut
-rut_headers_DATA = $(source_h)
-
-rut_components_headersdir =  $(includedir)/rut/components
-rut_components_headers_DATA = $(components_source_h)
+# rut_components_headersdir =  $(includedir)/rut/components
+# rut_components_headers_DATA = $(components_source_h)
 
 EXTRA_DIST = rut.pc.in
 DISTCLEANFILES = $(pc_files)
