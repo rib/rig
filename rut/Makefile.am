@@ -146,6 +146,3 @@ librut_la_CPPFLAGS = \
 
 # rut_components_headersdir =  $(includedir)/rut/components
 # rut_components_headers_DATA = $(components_source_h)
-
-EXTRA_DIST = rut.pc.in
-DISTCLEANFILES = $(pc_files)
