@@ -5,11 +5,7 @@ AC_PREREQ(2.59)
 dnl ================================================================
 dnl Package version (i.e. the pretty number that users see)
 dnl ================================================================
-m4_define([rig_major_version], [0])
-m4_define([rig_minor_version], [1])
-m4_define([rig_micro_version], [0])
-m4_define([rig_version],
-          [rig_major_version.rig_minor_version.rig_micro_version])
+m4_define([rig_version], 1)
 
 dnl ================================================================
 dnl Interface version details for libtool
@@ -54,7 +50,7 @@ dnl ================================================================
 # libtool version info we don't automatically derive this from the
 # pretty version number because we want to test the results of
 # updating the version number in advance of a release.
-m4_define([rig_release_status], [git])
+m4_define([rig_release_status], [release])
 
 
 dnl ================================================================
@@ -83,14 +79,8 @@ AM_SILENT_RULES([yes])
 dnl ================================================================
 dnl More version number stuff
 dnl ================================================================
-RIG_MAJOR_VERSION=rig_major_version
-RIG_MINOR_VERSION=rig_minor_version
-RIG_MICRO_VERSION=rig_micro_version
 RIG_VERSION=rig_version
 
-AC_SUBST(RIG_MAJOR_VERSION)
-AC_SUBST(RIG_MINOR_VERSION)
-AC_SUBST(RIG_MICRO_VERSION)
 AC_SUBST(RIG_VERSION)
 
 
