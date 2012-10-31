@@ -336,6 +336,31 @@ paint (RutShell *shell, void *user_data)
 }
 
 static void
+reload_animated_inspector_properties_cb (RigTransitionPropData *prop_data,
+                                         void *user_data)
+{
+  RigData *data = user_data;
+  GList *l;
+
+  if (prop_data->animated)
+    {
+      rut_inspector_reload_property (data->inspector, prop_data->property);
+
+      for (l = data->component_inspectors; l; l = l->next)
+        rut_inspector_reload_property (l->data, prop_data->property);
+    }
+}
+
+static void
+reload_animated_inspector_properties (RigData *data)
+{
+  if (data->inspector && data->selected_transition)
+    rig_transition_foreach_property (data->selected_transition,
+                                     reload_animated_inspector_properties_cb,
+                                     data);
+}
+
+static void
 update_transition_progress_cb (RutProperty *target_property,
                                RutProperty *source_property,
                                void *user_data)
@@ -345,6 +370,7 @@ update_transition_progress_cb (RutProperty *target_property,
   RigTransition *transition = target_property->object;
 
   rig_transition_set_progress (transition, progress);
+  reload_animated_inspector_properties (data);
 }
 
 RigTransition *
