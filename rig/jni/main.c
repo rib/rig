@@ -73,6 +73,7 @@ CoglBool _rig_in_device_mode = FALSE;
 #endif
 
 static char **_rig_handset_remaining_args = NULL;
+static const char *_rig_ui_filename = NULL;
 
 static const GOptionEntry rut_handset_entries[] =
 {
@@ -84,8 +85,6 @@ static const GOptionEntry rut_handset_entries[] =
     &_rig_handset_remaining_args, "Project" },
   { 0 }
 };
-
-static char *_rut_project_dir = NULL;
 
 #endif /* __ANDROID__ */
 
@@ -2449,20 +2448,13 @@ init (RutShell *shell, void *user_data)
   rut_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
 
 #ifndef __ANDROID__
-  if (_rig_handset_remaining_args &&
-      _rig_handset_remaining_args[0])
+  if (_rig_ui_filename)
     {
-      if (_rig_handset_remaining_args[0])
-        {
-          struct stat st;
+      struct stat st;
 
-          _rut_project_dir = g_path_get_dirname (_rig_handset_remaining_args[0]);
-          rut_set_assets_location (data->ctx, _rut_project_dir);
-
-          stat (_rig_handset_remaining_args[0], &st);
-          if (S_ISREG (st.st_mode))
-            rig_load (data, _rig_handset_remaining_args[0]);
-        }
+      stat (_rig_ui_filename, &st);
+      if (S_ISREG (st.st_mode))
+        rig_load (data, _rig_ui_filename);
     }
 #endif
 
@@ -3176,7 +3168,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_save (data, _rig_handset_remaining_args[0]);
+                  rig_save (data, _rig_ui_filename);
                   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
                 }
               break;
@@ -3576,6 +3568,7 @@ main (int argc, char **argv)
 {
   RigData data;
   GOptionContext *context = g_option_context_new (NULL);
+  char *assets_location;
   GError *error = NULL;
 
   g_option_context_add_main_entries (context, rut_handset_entries, NULL);
@@ -3586,6 +3579,16 @@ main (int argc, char **argv)
       exit(EXIT_FAILURE);
     }
 
+  if (_rig_handset_remaining_args == NULL ||
+      _rig_handset_remaining_args[0] == NULL)
+    {
+      g_error ("A filename argument for the UI description file is required. "
+               "Pass a non-existing file to create it.");
+      exit (EXIT_FAILURE);
+    }
+
+  _rig_ui_filename = _rig_handset_remaining_args[0];
+
   memset (&data, 0, sizeof (RigData));
 
   init_types ();
@@ -3593,6 +3596,10 @@ main (int argc, char **argv)
   data.shell = rut_shell_new (init, fini, paint, &data);
 
   data.ctx = rut_context_new (data.shell);
+
+  assets_location = g_path_get_dirname (_rig_ui_filename);
+  rut_set_assets_location (data.ctx, assets_location);
+  g_free (assets_location);
 
   rut_context_init (data.ctx);
 
