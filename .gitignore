@@ -44,3 +44,4 @@ stamp-marshal
 xmldocs.make
 
 /rig/rig
+/tools/bump-map-gen
