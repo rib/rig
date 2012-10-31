@@ -335,20 +335,41 @@ paint (RutShell *shell, void *user_data)
   return FALSE;
 }
 
+void
+rig_reload_inspector_property (RigData *data,
+                               RutProperty *property)
+{
+  if (data->inspector)
+    {
+      RigTransitionPropData *prop_data;
+      CoglBool animated;
+      GList *l;
+
+      prop_data =
+        rig_transition_find_prop_data_for_property (data->selected_transition,
+                                                    property);
+
+      animated = prop_data && prop_data->animated;
+
+      rut_inspector_reload_property (data->inspector, property);
+      rut_inspector_set_property_animated (data->inspector, property, animated);
+
+      for (l = data->component_inspectors; l; l = l->next)
+        {
+          rut_inspector_reload_property (l->data, property);
+          rut_inspector_set_property_animated (l->data, property, animated);
+        }
+    }
+}
+
 static void
 reload_animated_inspector_properties_cb (RigTransitionPropData *prop_data,
                                          void *user_data)
 {
   RigData *data = user_data;
-  GList *l;
 
   if (prop_data->animated)
-    {
-      rut_inspector_reload_property (data->inspector, prop_data->property);
-
-      for (l = data->component_inspectors; l; l = l->next)
-        rut_inspector_reload_property (l->data, prop_data->property);
-    }
+    rig_reload_inspector_property (data, prop_data->property);
 }
 
 static void

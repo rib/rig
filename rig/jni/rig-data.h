@@ -223,4 +223,8 @@ void
 rig_set_selected_entity (RigData *data,
                          RutEntity *entity);
 
+void
+rig_reload_inspector_property (RigData *data,
+                               RutProperty *property);
+
 #endif /* _RUT_DATA_H_ */

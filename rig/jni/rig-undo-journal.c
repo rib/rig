@@ -621,6 +621,8 @@ undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   rut_boxed_copy (&prop_data->constant_value, &prop_change->value1);
   rig_transition_update_property (transition,
                                   prop_change->property);
+
+  rig_reload_inspector_property (data, prop_change->property);
 }
 
 static UndoRedo *
@@ -666,6 +668,8 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
 
   rig_transition_update_property (data->selected_transition,
                                   add_remove->property);
+
+  rig_reload_inspector_property (data, add_remove->property);
 }
 
 static UndoRedo *
@@ -697,6 +701,8 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
 
   rig_transition_update_property (data->selected_transition,
                                   add_remove->property);
+
+  rig_reload_inspector_property (data, add_remove->property);
 }
 
 static UndoRedo *
@@ -737,6 +743,7 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
 
   rig_transition_update_property (data->selected_transition,
                                   modify->property);
+  rig_reload_inspector_property (data, modify->property);
 }
 
 static UndoRedo *
@@ -794,6 +801,8 @@ undo_redo_set_animated_apply (RigUndoJournal *journal,
                              set_animated->path_time,
                              &set_animated->node_value);
     }
+
+  rig_reload_inspector_property (data, set_animated->property);
 }
 
 static UndoRedo *
@@ -974,6 +983,8 @@ undo_redo_move_path_nodes_apply (RigUndoJournal *journal,
 
       rig_transition_update_property (data->selected_transition,
                                       node->property);
+
+      rig_reload_inspector_property (data, node->property);
     }
 }
 
