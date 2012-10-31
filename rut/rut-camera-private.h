@@ -72,9 +72,6 @@ struct _RutCamera
   CoglMatrix input_transform;
   GList *input_regions;
 
-  int frame;
-  GTimer *timer;
-
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_CAMERA_N_PROPS];
 

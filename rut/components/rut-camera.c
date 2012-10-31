@@ -395,10 +395,6 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
 
   camera->fb = cogl_object_ref (framebuffer);
 
-  camera->frame = 0;
-  camera->timer = g_timer_new ();
-  g_timer_start (camera->timer);
-
   rut_simple_introspectable_init (camera,
                                   _rut_camera_prop_specs,
                                   camera->properties);
@@ -893,17 +889,6 @@ rut_camera_end_frame (RutCamera *camera)
         g_warning ("Un-balanced rut_camera_flush/end frame calls. "
                    "_end before _flush");
       state->in_frame = FALSE;
-    }
-  camera->frame++;
-
-  elapsed = g_timer_elapsed (camera->timer, NULL);
-  if (elapsed > 1.0)
-    {
-      g_print ("fps = %f (camera = %p)\n",
-               camera->frame / elapsed,
-               camera);
-      g_timer_start (camera->timer);
-      camera->frame = 0;
     }
 }
 
