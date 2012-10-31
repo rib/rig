@@ -115,6 +115,256 @@ set_focal_parameters (CoglPipeline *pipeline,
                                    &depth_of_field);
 }
 
+void
+rig_renderer_init (RigData *data)
+{
+  /* We always want to use exactly the same snippets when creating
+   * similar pipelines so that we can take advantage of Cogl's program
+   * caching. The program cache only compares the snippet pointers,
+   * not the contents of the snippets. Therefore we just create the
+   * snippets we're going to use upfront and retain them */
+
+  data->alpha_mask_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* definitions */
+                      "uniform float material_alpha_threshold;\n",
+                      /* post */
+                      "if (texture2D(cogl_sampler2,\n"
+                      "              cogl_tex_coord2_in.st).a <= \n"
+                      "    material_alpha_threshold)\n"
+                      "  discard;\n");
+
+  data->lighting_vertex_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+                      /* definitions */
+                      "uniform mat3 normal_matrix;\n"
+                      "varying vec3 normal, eye_direction;\n",
+                      /* post */
+                      "normal = normalize(normal_matrix * cogl_normal_in);\n"
+                      "eye_direction = -vec3(cogl_modelview_matrix *\n"
+                      "                      cogl_position_in);\n"
+                      );
+
+  data->normal_map_vertex_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+                      /* definitions */
+                      "uniform vec3 light0_direction_norm;\n"
+                      "attribute vec3 tangent_in;\n"
+                      "varying vec3 light_direction;\n",
+
+                      /* post */
+                      "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
+                      "vec3 binormal = cross(normal, tangent);\n"
+
+                      /* Transform the light direction into tangent space */
+                      "vec3 v;\n"
+                      "v.x = dot (light0_direction_norm, tangent);\n"
+                      "v.y = dot (light0_direction_norm, binormal);\n"
+                      "v.z = dot (light0_direction_norm, normal);\n"
+                      "light_direction = normalize (v);\n"
+
+                      /* Transform the eye direction into tangent space */
+                      "v.x = dot (eye_direction, tangent);\n"
+                      "v.y = dot (eye_direction, binormal);\n"
+                      "v.z = dot (eye_direction, normal);\n"
+                      "eye_direction = normalize (v);\n");
+
+
+  /* Vertex shader setup for shadow mapping */
+  data->shadow_mapping_vertex_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+                      /* definitions */
+                      "uniform mat4 light_shadow_matrix;\n"
+                      "varying vec4 shadow_coords;\n",
+
+                      /* post */
+                      "shadow_coords = light_shadow_matrix *\n"
+                      "                cogl_position_in;\n");
+
+  data->blended_discard_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* definitions */
+                      NULL,
+
+                      /* post */
+                      "if (cogl_color_out.a <= 0.0 ||\n"
+                      "    cogl_color_out.a == 1.0)\n"
+                      "  discard;\n");
+
+  data->unblended_discard_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* definitions */
+                      NULL,
+
+                      /* post */
+                      "if (cogl_color_out.a != 1.0)\n"
+                      "  discard;\n");
+
+  data->premultiply_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* definitions */
+                      NULL,
+
+                      /* post */
+
+                      /* FIXME: Avoid premultiplying here by fiddling the
+                       * blend mode instead which should be more efficient */
+                      "cogl_color_out.rgb *= cogl_color_out.a;\n");
+
+  data->unpremultiply_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* definitions */
+                      NULL,
+
+                      /* post */
+
+                      /* FIXME: We need to unpremultiply our colour at this
+                       * point to perform lighting, but this is obviously not
+                       * ideal and we should instead avoid being premultiplied
+                       * at this stage by not premultiplying our textures on
+                       * load for example. */
+                      "cogl_color_out.rgb /= cogl_color_out.a;\n");
+
+  data->normal_map_fragment_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+         /* definitions */
+         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+         "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+         "uniform float material_shininess;\n"
+         "varying vec3 light_direction, eye_direction;\n",
+
+         /* post */
+         "vec4 final_color;\n"
+
+         "vec3 L = normalize(light_direction);\n"
+
+         "vec3 N = texture2D(cogl_sampler5, cogl_tex_coord5_in.st).rgb;\n"
+         "N = 2.0 * N - 1.0;\n"
+         "N = normalize(N);\n"
+
+         "vec4 ambient = light0_ambient * material_ambient;\n"
+
+         "final_color = ambient * cogl_color_out;\n"
+         "float lambert = dot(N, L);\n"
+
+         "if (lambert > 0.0)\n"
+         "{\n"
+         "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+         "  vec4 specular = light0_specular * material_specular;\n"
+
+         "  final_color += cogl_color_out * diffuse * lambert;\n"
+
+         "  vec3 E = normalize(eye_direction);\n"
+         "  vec3 R = reflect (-L, N);\n"
+         "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
+         "                               material_shininess);\n"
+         "  final_color += specular * specular_factor;\n"
+         "}\n"
+
+         "cogl_color_out.rgb = final_color.rgb;\n");
+
+
+  data->material_lighting_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+         /* definitions */
+         "varying vec3 normal, eye_direction;\n"
+         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+         "uniform vec3 light0_direction_norm;\n"
+         "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
+         "uniform float material_shininess;\n",
+
+         /* post */
+         "vec4 final_color;\n"
+
+         "vec3 L = light0_direction_norm;\n"
+         "vec3 N = normalize(normal);\n"
+
+         "vec4 ambient = light0_ambient * material_ambient;\n"
+
+         "final_color = ambient * cogl_color_out;\n"
+         "float lambert = dot(N, L);\n"
+
+         "if (lambert > 0.0)\n"
+         "{\n"
+         "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
+         "  vec4 specular = light0_specular * material_specular;\n"
+
+         "  final_color += cogl_color_out * diffuse * lambert;\n"
+
+         "  vec3 E = normalize(eye_direction);\n"
+         "  vec3 R = reflect (-L, N);\n"
+         "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
+         "                               material_shininess);\n"
+         "  final_color += specular * specular_factor;\n"
+         "}\n"
+
+         "cogl_color_out.rgb = final_color.rgb;\n");
+
+  data->simple_lighting_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+         /* definitions */
+         "varying vec3 normal, eye_direction;\n"
+         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+         "uniform vec3 light0_direction_norm;\n",
+
+         /* post */
+         "vec4 final_color;\n"
+
+         "vec3 L = light0_direction_norm;\n"
+         "vec3 N = normalize(normal);\n"
+
+         "final_color = light0_ambient * cogl_color_out;\n"
+         "float lambert = dot(N, L);\n"
+
+         "if (lambert > 0.0)\n"
+         "{\n"
+         "  final_color += cogl_color_out * light0_diffuse * lambert;\n"
+
+         "  vec3 E = normalize(eye_direction);\n"
+         "  vec3 R = reflect (-L, N);\n"
+         "  float specular = pow (max(dot(R, E), 0.0),\n"
+         "                        2.);\n"
+         "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) *\n"
+         "                 specular;\n"
+         "}\n"
+
+         "cogl_color_out.rgb = final_color.rgb;\n");
+
+
+  data->shadow_mapping_fragment_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* declarations */
+                      "varying vec4 shadow_coords;\n",
+
+                      /* post */
+                      "vec4 texel7 = texture2D (cogl_sampler7,\n"
+                      "                         shadow_coords.xy);\n"
+                      "float distance_from_light = texel7.z + 0.0005;\n"
+                      "float shadow = 1.0;\n"
+                      "if (distance_from_light < shadow_coords.z)\n"
+                      "  shadow = 0.5;\n"
+
+                      "cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n");
+}
+
+void
+rig_renderer_fini (RigData *data)
+{
+  cogl_object_unref (data->alpha_mask_snippet);
+  cogl_object_unref (data->lighting_vertex_snippet);
+  cogl_object_unref (data->normal_map_vertex_snippet);
+  cogl_object_unref (data->shadow_mapping_vertex_snippet);
+  cogl_object_unref (data->blended_discard_snippet);
+  cogl_object_unref (data->unblended_discard_snippet);
+  cogl_object_unref (data->premultiply_snippet);
+  cogl_object_unref (data->unpremultiply_snippet);
+  cogl_object_unref (data->normal_map_fragment_snippet);
+  cogl_object_unref (data->material_lighting_snippet);
+  cogl_object_unref (data->simple_lighting_snippet);
+  cogl_object_unref (data->shadow_mapping_fragment_snippet);
+}
+
 static CoglPipeline *
 get_entity_mask_pipeline (RigData *data,
                           RutEntity *entity,
@@ -262,7 +512,6 @@ get_entity_mask_pipeline (RigData *data,
     {
       RutMaterial *material =
         rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-      CoglSnippet *snippet;
 
       pipeline = cogl_pipeline_copy (data->dof_unshaped_pipeline);
 
@@ -293,17 +542,7 @@ get_entity_mask_pipeline (RigData *data,
               cogl_pipeline_set_layer_texture (pipeline, 2,
                                                rut_asset_get_texture (alpha_mask_asset));
 
-              snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                          /* definitions */
-                                          "uniform float material_alpha_threshold;\n",
-
-                                          /* post */
-                                          "if (texture2D(cogl_sampler2, cogl_tex_coord2_in.st).a <= \n"
-                                          "    material_alpha_threshold)\n"
-                                          "  discard;\n");
-
-              cogl_pipeline_add_snippet (pipeline, snippet);
-              cogl_object_unref (snippet);
+              cogl_pipeline_add_snippet (pipeline, data->alpha_mask_snippet);
             }
         }
     }
@@ -421,66 +660,13 @@ get_entity_color_pipeline (RigData *data,
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   /* Vertex shader setup for lighting */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-
-      /* definitions */
-      "uniform mat3 normal_matrix;\n"
-      "varying vec3 normal, eye_direction;\n",
-
-      /* post */
-      "normal = normalize(normal_matrix * cogl_normal_in);\n"
-      "eye_direction = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
-  );
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cogl_pipeline_add_snippet (pipeline, data->lighting_vertex_snippet);
 
   if (normal_map)
-    {
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-          /* definitions */
-          "uniform vec3 light0_direction_norm;\n"
-          "attribute vec3 tangent_in;\n"
-          "varying vec3 light_direction;\n",
-
-          /* post */
-          "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
-          "vec3 binormal = cross(normal, tangent);\n"
-
-          /* Transform the light direction into tangent space */
-          "vec3 v;\n"
-          "v.x = dot (light0_direction_norm, tangent);\n"
-          "v.y = dot (light0_direction_norm, binormal);\n"
-          "v.z = dot (light0_direction_norm, normal);\n"
-          "light_direction = normalize (v);\n"
-
-          /* Transform the eye direction into tangent space */
-          "v.x = dot (eye_direction, tangent);\n"
-          "v.y = dot (eye_direction, binormal);\n"
-          "v.z = dot (eye_direction, normal);\n"
-          "eye_direction = normalize (v);\n"
-      );
-
-      cogl_pipeline_add_snippet (pipeline, snippet);
-      cogl_object_unref (snippet);
-    }
+    cogl_pipeline_add_snippet (pipeline, data->normal_map_vertex_snippet);
 
   if (rut_entity_get_receive_shadow (entity))
-    {
-      /* Vertex shader setup for shadow mapping */
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-
-          /* definitions */
-          "uniform mat4 light_shadow_matrix;\n"
-          "varying vec4 shadow_coords;\n",
-
-          /* post */
-          "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
-      );
-
-      cogl_pipeline_add_snippet (pipeline, snippet);
-      cogl_object_unref (snippet);
-    }
+    cogl_pipeline_add_snippet (pipeline, data->shadow_mapping_vertex_snippet);
 
   /* and fragment shader */
 
@@ -489,44 +675,12 @@ get_entity_color_pipeline (RigData *data,
    * regions and instead we should let users mark out opaque regions
    * in geometry.
    */
-  if (blended)
-    {
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  /* definitions */
-                                  NULL,
+  cogl_pipeline_add_snippet (pipeline,
+                             blended ?
+                             data->blended_discard_snippet :
+                             data->unblended_discard_snippet);
 
-                                  /* post */
-                                  "if (cogl_color_out.a <= 0.0 || cogl_color_out.a == 1.0)\n"
-                                  "  discard;\n");
-    }
-  else
-    {
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  /* definitions */
-                                  NULL,
-
-                                  /* post */
-                                  "if (cogl_color_out.a != 1.0)\n"
-                                  "  discard;\n");
-    }
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
-
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              /* definitions */
-                              NULL,
-
-                              /* post */
-
-                              /* FIXME: We need to unpremultiply our colour at this
-                               * point to perform lighting, but this is obviously not
-                               * ideal and we should instead avoid being premultiplied
-                               * at this stage by not premultiplying our textures on
-                               * load for example. */
-                              "cogl_color_out.rgb /= cogl_color_out.a;\n");
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cogl_pipeline_add_snippet (pipeline, data->unpremultiply_snippet);
 
   if (material)
     {
@@ -538,17 +692,7 @@ get_entity_color_pipeline (RigData *data,
           cogl_pipeline_set_layer_combine (pipeline, 2, "RGBA=REPLACE(PREVIOUS)", NULL);
           cogl_pipeline_set_layer_texture (pipeline, 2, alpha_mask);
 
-          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                      /* definitions */
-                                      "uniform float material_alpha_threshold;\n",
-
-                                      /* post */
-                                      "if (texture2D(cogl_sampler2, cogl_tex_coord2_in.st).a <= \n"
-                                      "    material_alpha_threshold)\n"
-                                      "  discard;\n");
-
-          cogl_pipeline_add_snippet (pipeline, snippet);
-          cogl_object_unref (snippet);
+          cogl_pipeline_add_snippet (pipeline, data->alpha_mask_snippet);
         }
 
       if (normal_map)
@@ -559,116 +703,19 @@ get_entity_color_pipeline (RigData *data,
           cogl_pipeline_set_layer_combine (pipeline, 5, "RGBA=REPLACE(PREVIOUS)", NULL);
           cogl_pipeline_set_layer_texture (pipeline, 5, normal_map);
 
-          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-              /* definitions */
-              "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-              "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-              "uniform float material_shininess;\n"
-              "varying vec3 light_direction, eye_direction;\n",
-
-              /* post */
-              "vec4 final_color;\n"
-
-              "vec3 L = normalize(light_direction);\n"
-
-	      "vec3 N = texture2D(cogl_sampler5, cogl_tex_coord5_in.st).rgb;\n"
-	      "N = 2.0 * N - 1.0;\n"
-              "N = normalize(N);\n"
-
-              "vec4 ambient = light0_ambient * material_ambient;\n"
-
-              "final_color = ambient * cogl_color_out;\n"
-              "float lambert = dot(N, L);\n"
-
-              "if (lambert > 0.0)\n"
-              "{\n"
-              "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
-              "  vec4 specular = light0_specular * material_specular;\n"
-
-              "  final_color += cogl_color_out * diffuse * lambert;\n"
-
-              "  vec3 E = normalize(eye_direction);\n"
-              "  vec3 R = reflect (-L, N);\n"
-              "  float specular_factor = pow (max(dot(R, E), 0.0), material_shininess);\n"
-              "  final_color += specular * specular_factor;\n"
-              "}\n"
-
-              "cogl_color_out.rgb = final_color.rgb;\n"
-          );
+          snippet = data->normal_map_fragment_snippet;
         }
       else
         {
-          snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-              /* definitions */
-              "varying vec3 normal, eye_direction;\n"
-              "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-              "uniform vec3 light0_direction_norm;\n"
-              "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-              "uniform float material_shininess;\n",
-
-              /* post */
-              "vec4 final_color;\n"
-
-              "vec3 L = light0_direction_norm;\n"
-              "vec3 N = normalize(normal);\n"
-
-              "vec4 ambient = light0_ambient * material_ambient;\n"
-
-              "final_color = ambient * cogl_color_out;\n"
-              "float lambert = dot(N, L);\n"
-
-              "if (lambert > 0.0)\n"
-              "{\n"
-              "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
-              "  vec4 specular = light0_specular * material_specular;\n"
-
-              "  final_color += cogl_color_out * diffuse * lambert;\n"
-
-              "  vec3 E = normalize(eye_direction);\n"
-              "  vec3 R = reflect (-L, N);\n"
-              "  float specular_factor = pow (max(dot(R, E), 0.0), material_shininess);\n"
-              "  final_color += specular * specular_factor;\n"
-              "}\n"
-
-              "cogl_color_out.rgb = final_color.rgb;\n"
-          );
+          snippet = data->material_lighting_snippet;
         }
     }
   else
     {
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-          /* definitions */
-          "varying vec3 normal, eye_direction;\n"
-          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-          "uniform vec3 light0_direction_norm;\n",
-
-          /* post */
-          "vec4 final_color;\n"
-
-          "vec3 L = light0_direction_norm;\n"
-          "vec3 N = normalize(normal);\n"
-
-          "final_color = light0_ambient * cogl_color_out;\n"
-          "float lambert = dot(N, L);\n"
-
-          "if (lambert > 0.0)\n"
-          "{\n"
-          "  final_color += cogl_color_out * light0_diffuse * lambert;\n"
-
-          "  vec3 E = normalize(eye_direction);\n"
-          "  vec3 R = reflect (-L, N);\n"
-          "  float specular = pow (max(dot(R, E), 0.0),\n"
-          "                        2.);\n"
-          "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
-          "}\n"
-
-          "cogl_color_out.rgb = final_color.rgb;\n"
-      );
+      snippet = data->simple_lighting_snippet;
     }
 
   cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
-
 
   if (rut_entity_get_receive_shadow (entity))
     {
@@ -685,38 +732,11 @@ get_entity_color_pipeline (RigData *data,
       cogl_pipeline_set_layer_combine (pipeline, 7, "RGBA=REPLACE(PREVIOUS)", NULL);
 
       /* Handle shadow mapping */
-
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-          /* declarations */
-          "varying vec4 shadow_coords;\n",
-
-          /* post */
-          "vec4 texel7 =  texture2D (cogl_sampler7, shadow_coords.xy);\n"
-          "float distance_from_light = texel7.z + 0.0005;\n"
-          "float shadow = 1.0;\n"
-          "if (distance_from_light < shadow_coords.z)\n"
-          "  shadow = 0.5;\n"
-
-          "cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n"
-      );
-
-      cogl_pipeline_add_snippet (pipeline, snippet);
-      cogl_object_unref (snippet);
+      cogl_pipeline_add_snippet (pipeline,
+                                 data->shadow_mapping_fragment_snippet);
     }
 
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              /* definitions */
-                              NULL,
-
-                              /* post */
-
-                              /* FIXME: Avoid premultiplying here by fiddling the
-                               * blend mode instead which should be more efficient */
-                              "cogl_color_out.rgb *= cogl_color_out.a;\n"
-  );
-
-  cogl_pipeline_add_snippet (pipeline, snippet);
-  cogl_object_unref (snippet);
+  cogl_pipeline_add_snippet (pipeline, data->premultiply_snippet);
 
   if (rut_object_get_type (geometry) == &rut_shape_type)
     {

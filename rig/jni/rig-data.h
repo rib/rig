@@ -202,6 +202,19 @@ struct _RigData
   //float path_t;
   //RutProperty path_property;
 
+  CoglSnippet *alpha_mask_snippet;
+  CoglSnippet *lighting_vertex_snippet;
+  CoglSnippet *normal_map_vertex_snippet;
+  CoglSnippet *shadow_mapping_vertex_snippet;
+  CoglSnippet *blended_discard_snippet;
+  CoglSnippet *unblended_discard_snippet;
+  CoglSnippet *premultiply_snippet;
+  CoglSnippet *unpremultiply_snippet;
+  CoglSnippet *normal_map_fragment_snippet;
+  CoglSnippet *material_lighting_snippet;
+  CoglSnippet *simple_lighting_snippet;
+  CoglSnippet *shadow_mapping_fragment_snippet;
+
   RutProperty properties[RIG_DATA_N_PROPS];
 };
 

@@ -3135,6 +3135,8 @@ init (RutShell *shell, void *user_data)
 #endif
 
   allocate (data);
+
+  rig_renderer_init (data);
 }
 
 static void
@@ -3142,6 +3144,8 @@ fini (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
   int i;
+
+  rig_renderer_fini (data);
 
   rut_refable_unref (data->camera);
   rut_refable_unref (data->root);
