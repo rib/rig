@@ -18,7 +18,7 @@ AM_CPPFLAGS = \
 common_ldadd = \
 	$(RIG_DEP_LIBS)
 
-bin_PROGRAMS = bump-map-gen
+bin_PROGRAMS = rig-bump-map-gen
 
-bump_map_gen_SOURCES = bump-map-gen.c
-bump_map_gen_LDADD = $(common_ldadd)
+rig_bump_map_gen_SOURCES = bump-map-gen.c
+rig_bump_map_gen_LDADD = $(common_ldadd)
