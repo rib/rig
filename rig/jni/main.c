@@ -3575,15 +3575,16 @@ main (int argc, char **argv)
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      g_error ("option parsing failed: %s\n", error->message);
-      exit(EXIT_FAILURE);
+      fprintf (stderr, "option parsing failed: %s\n", error->message);
+      exit (EXIT_FAILURE);
     }
 
   if (_rig_handset_remaining_args == NULL ||
       _rig_handset_remaining_args[0] == NULL)
     {
-      g_error ("A filename argument for the UI description file is required. "
-               "Pass a non-existing file to create it.");
+      fprintf (stderr,
+               "A filename argument for the UI description file is required. "
+               "Pass a non-existing file to create it.\n");
       exit (EXIT_FAILURE);
     }
 
