@@ -20,5 +20,6 @@ dist_assets_DATA = \
 	transparency-grid.png \
 	fonts.png \
 	circle.png \
-	diamond.png
+	diamond.png \
+	color-picker-dot.png
 

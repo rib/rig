@@ -30,6 +30,7 @@
 #include "rut-vec3-slider.h"
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
+#include "rut-color-button.h"
 
 /* A RutPropInspector represents a control to manipulate a property.
  * It can internally be composed of multiple extra controls for
@@ -463,6 +464,17 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
         *label_text = name;
 
         return entry;
+      }
+      break;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      {
+        RutColorButton *button = rut_color_button_new (context);
+
+        *control_prop = rut_introspectable_lookup_property (button, "color");
+        *label_text = name;
+
+        return button;
       }
       break;
 
