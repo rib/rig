@@ -609,11 +609,18 @@ static void
 undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoConstPropertyChange *prop_change = &undo_redo->d.const_prop_change;
+  RigData *data = journal->data;
+  RigTransition *transition = data->selected_transition;
+  RigTransitionPropData *prop_data;
 
   g_print ("Property change APPLY\n");
 
-  rut_property_set_boxed (&journal->data->ctx->property_ctx,
-                          prop_change->property, &prop_change->value1);
+  prop_data = rig_transition_get_prop_data_for_property (transition,
+                                                         prop_change->property);
+  rut_boxed_destroy (&prop_data->constant_value);
+  rut_boxed_copy (&prop_data->constant_value, &prop_change->value1);
+  rig_transition_update_property (transition,
+                                  prop_change->property);
 }
 
 static UndoRedo *
