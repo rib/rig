@@ -2190,7 +2190,7 @@ asset_input_cb (RutInputRegion *region,
               break;
             }
 
-          if (status = RUT_INPUT_EVENT_STATUS_HANDLED)
+          if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
             {
               rig_dirty_entity_pipelines (entity);
               update_inspector (data);
