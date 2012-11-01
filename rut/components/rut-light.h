@@ -26,6 +26,14 @@ typedef struct _RutLight RutLight;
 extern RutType rut_light_type;
 #define RUT_LIGHT(p) ((RutLight *)(p))
 
+enum {
+  RUT_LIGHT_PROP_AMBIENT,
+  RUT_LIGHT_PROP_DIFFUSE,
+  RUT_LIGHT_PROP_SPECULAR,
+  RUT_LIGHT_N_PROPS
+};
+
+
 struct _RutLight
 {
   RutObjectProps _parent;
@@ -34,34 +42,39 @@ struct _RutLight
   CoglColor ambient;
   CoglColor diffuse;
   CoglColor specular;
+
+  RutContext *context;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_LIGHT_N_PROPS];
 };
 
 void
 _rut_light_init_type (void);
 
 RutLight *
-rut_light_new (void);
+rut_light_new (RutContext *context);
 
 void
 rut_light_free (RutLight *light);
 
 void
-rut_light_set_ambient (RutLight *light,
-                       CoglColor *ambient);
+rut_light_set_ambient (RutObject *light,
+                       const CoglColor *ambient);
 
 const CoglColor *
-rut_light_get_ambient (RutLight *light);
+rut_light_get_ambient (RutObject *light);
 
 void
-rut_light_set_diffuse (RutLight *light,
-                       CoglColor *diffuse);
+rut_light_set_diffuse (RutObject *light,
+                       const CoglColor *diffuse);
 
 const CoglColor *
 rut_light_get_diffuse (RutLight *light);
 
 void
-rut_light_set_specular (RutLight *light,
-                        CoglColor *specular);
+rut_light_set_specular (RutObject *light,
+                        const CoglColor *specular);
 
 const CoglColor *
 rut_light_get_specular (RutLight *light);

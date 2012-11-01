@@ -20,6 +20,38 @@
 #include "rut-light.h"
 #include "rut-color.h"
 
+static RutPropertySpec
+_rut_light_prop_specs[] = {
+  {
+    .name = "ambient",
+    .nick = "Ambient",
+    .type = RUT_PROPERTY_TYPE_COLOR,
+    .data_offset = offsetof (RutLight, ambient),
+    .setter.color_type = rut_light_set_ambient,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
+    .name = "diffuse",
+    .nick = "Diffuse",
+    .type = RUT_PROPERTY_TYPE_COLOR,
+    .data_offset = offsetof (RutLight, diffuse),
+    .setter.color_type = rut_light_set_diffuse,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
+    .name = "specular",
+    .nick = "Specular",
+    .type = RUT_PROPERTY_TYPE_COLOR,
+    .data_offset = offsetof (RutLight, specular),
+    .setter.color_type = rut_light_set_specular,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  { 0 }
+};
+
 static float *
 get_color_array (CoglColor *color)
 {
@@ -103,6 +135,11 @@ static RutRefCountableVTable _rut_light_ref_countable_vtable = {
   _rut_light_free
 };
 
+static RutIntrospectableVTable _rut_light_introspectable_vtable = {
+  rut_simple_introspectable_lookup_property,
+  rut_simple_introspectable_foreach_property
+};
+
 void
 _rut_light_init_type (void)
 {
@@ -115,17 +152,32 @@ _rut_light_init_type (void)
                            RUT_INTERFACE_ID_COMPONENTABLE,
                            offsetof (RutLight, component),
                            &_rut_light_componentable_vtable);
+  rut_type_add_interface (&rut_light_type,
+                          RUT_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rut_light_introspectable_vtable);
+  rut_type_add_interface (&rut_light_type,
+                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RutLight, introspectable),
+                          NULL); /* no implied vtable */
 }
 
 RutLight *
-rut_light_new (void)
+rut_light_new (RutContext *context)
 {
   RutLight *light;
 
   light = g_slice_new0 (RutLight);
   rut_object_init (&light->_parent, &rut_light_type);
+
   light->ref_count = 1;
   light->component.type = RUT_COMPONENT_TYPE_LIGHT;
+  light->context = rut_refable_ref (context);
+
+  rut_simple_introspectable_init (light,
+                                  _rut_light_prop_specs,
+                                  light->properties);
+
   cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
@@ -136,27 +188,43 @@ rut_light_new (void)
 void
 rut_light_free (RutLight *light)
 {
+  rut_refable_unref (light->context);
+
+  rut_simple_introspectable_destroy (light);
+
   g_slice_free (RutLight, light);
 }
 
 void
-rut_light_set_ambient (RutLight  *light,
-                       CoglColor *ambient)
+rut_light_set_ambient (RutObject *obj,
+                       const CoglColor *ambient)
 {
+  RutLight *light = RUT_LIGHT (obj);
+
   light->ambient = *ambient;
+
+  rut_property_dirty (&light->context->property_ctx,
+                      &light->properties[RUT_LIGHT_PROP_AMBIENT]);
 }
 
 const CoglColor *
-rut_light_get_ambient (RutLight *light)
+rut_light_get_ambient (RutObject *obj)
 {
+  RutLight *light = RUT_LIGHT (obj);
+
   return &light->ambient;
 }
 
 void
-rut_light_set_diffuse (RutLight  *light,
-                       CoglColor *diffuse)
+rut_light_set_diffuse (RutObject *obj,
+                       const CoglColor *diffuse)
 {
+  RutLight *light = RUT_LIGHT (obj);
+
   light->diffuse = *diffuse;
+
+  rut_property_dirty (&light->context->property_ctx,
+                      &light->properties[RUT_LIGHT_PROP_DIFFUSE]);
 }
 
 const CoglColor *
@@ -166,10 +234,15 @@ rut_light_get_diffuse (RutLight *light)
 }
 
 void
-rut_light_set_specular (RutLight  *light,
-                        CoglColor *specular)
+rut_light_set_specular (RutObject *obj,
+                        const CoglColor *specular)
 {
+  RutLight *light = RUT_LIGHT (obj);
+
   light->specular = *specular;
+
+  rut_property_dirty (&light->context->property_ctx,
+                      &light->properties[RUT_LIGHT_PROP_SPECULAR]);
 }
 
 const CoglColor *

@@ -1398,7 +1398,7 @@ parse_start_element (GMarkupParseContext *context,
       rut_color_init_from_string (loader->data->ctx, &diffuse, diffuse_str);
       rut_color_init_from_string (loader->data->ctx, &specular, specular_str);
 
-      light = rut_light_new ();
+      light = rut_light_new (loader->data->ctx);
       rut_light_set_ambient (light, &ambient);
       rut_light_set_diffuse (light, &diffuse);
       rut_light_set_specular (light, &specular);

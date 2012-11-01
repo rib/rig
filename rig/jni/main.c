@@ -2765,7 +2765,7 @@ init (RutShell *shell, void *user_data)
       rut_entity_rotate_x_axis (data->light, 20);
       rut_entity_rotate_y_axis (data->light, -20);
 
-      light = rut_light_new ();
+      light = rut_light_new (data->ctx);
       cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
       rut_light_set_ambient (light, &color);
       cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
