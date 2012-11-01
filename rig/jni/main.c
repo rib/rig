@@ -2097,7 +2097,7 @@ asset_input_cb (RutInputRegion *region,
               if (asset == data->text_builtin_asset)
                 {
                   RutText *text;
-                  RutColor color;
+                  CoglColor color;
 
                   geom = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_GEOMETRY);
@@ -2108,7 +2108,7 @@ asset_input_cb (RutInputRegion *region,
                     rut_entity_remove_component (entity, geom);
 
                   text = rut_text_new_with_text (data->ctx, "Sans 60px", "text");
-                  rut_color_init_from_4f (&color, 1, 1, 1, 1);
+                  cogl_color_init_from_4f (&color, 1, 1, 1, 1);
                   rut_text_set_color (text, &color);
                   rut_entity_add_component (entity, text);
 
@@ -2457,12 +2457,12 @@ init (RutShell *shell, void *user_data)
   char *full_path;
   CoglError *error = NULL;
   CoglTexture2D *color_buffer;
-  RutColor color;
+  CoglColor color;
   RutModel *model;
   RutMaterial *material;
   RutLight *light;
   RutCamera *camera;
-  RutColor top_bar_ref_color, main_area_ref_color, right_bar_ref_color;
+  CoglColor top_bar_ref_color, main_area_ref_color, right_bar_ref_color;
 
   /* A unit test for the list_splice/list_unsplice functions */
 #if 0
@@ -2492,7 +2492,7 @@ init (RutShell *shell, void *user_data)
 
   data->device_width = DEVICE_WIDTH;
   data->device_height = DEVICE_HEIGHT;
-  rut_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
+  cogl_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
 
 #ifndef __ANDROID__
   if (_rig_ui_filename)
@@ -2766,11 +2766,11 @@ init (RutShell *shell, void *user_data)
       rut_entity_rotate_y_axis (data->light, -20);
 
       light = rut_light_new ();
-      rut_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+      cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
       rut_light_set_ambient (light, &color);
-      rut_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+      cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
       rut_light_set_diffuse (light, &color);
-      rut_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+      cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
       rut_light_set_specular (light, &color);
 
       rut_entity_add_component (data->light, light);
@@ -2841,9 +2841,9 @@ init (RutShell *shell, void *user_data)
       float x = 10;
       float width, height;
 
-      rut_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
-      rut_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
-      rut_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
+      cogl_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
+      cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
+      cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
 
       data->splits[0] =
         rut_split_view_new (data->ctx,

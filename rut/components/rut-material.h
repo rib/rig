@@ -47,9 +47,9 @@ struct _RutMaterial
   RutAsset *normal_map_asset;
   RutAsset *alpha_mask_asset;
 
-  RutColor ambient;
-  RutColor diffuse;
-  RutColor specular;
+  CoglColor ambient;
+  CoglColor diffuse;
+  CoglColor specular;
   float shininess;
 
   float alpha_mask_threshold;
@@ -91,23 +91,23 @@ rut_material_get_alpha_mask_asset (RutMaterial *material);
 
 void
 rut_material_set_ambient (RutMaterial *material,
-                          const RutColor *color);
+                          const CoglColor *color);
 
-const RutColor *
+const CoglColor *
 rut_material_get_ambient (RutMaterial *material);
 
 void
 rut_material_set_diffuse (RutMaterial *material,
-                          const RutColor *color);
+                          const CoglColor *color);
 
-const RutColor *
+const CoglColor *
 rut_material_get_diffuse (RutMaterial *material);
 
 void
 rut_material_set_specular (RutMaterial *material,
-                           const RutColor *color);
+                           const CoglColor *color);
 
-const RutColor *
+const CoglColor *
 rut_material_get_specular (RutMaterial *material);
 
 void

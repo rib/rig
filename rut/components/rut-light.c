@@ -21,7 +21,7 @@
 #include "rut-color.h"
 
 static float *
-get_color_array (RutColor *color)
+get_color_array (CoglColor *color)
 {
   static float array[4];
 
@@ -126,9 +126,9 @@ rut_light_new (void)
   rut_object_init (&light->_parent, &rut_light_type);
   light->ref_count = 1;
   light->component.type = RUT_COMPONENT_TYPE_LIGHT;
-  rut_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
-  rut_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
-  rut_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
+  cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
+  cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
+  cogl_color_init_from_4f (&light->specular, 1.0, 1.0, 1.0, 1.0);
 
   return light;
 }
@@ -141,12 +141,12 @@ rut_light_free (RutLight *light)
 
 void
 rut_light_set_ambient (RutLight  *light,
-                       RutColor *ambient)
+                       CoglColor *ambient)
 {
   light->ambient = *ambient;
 }
 
-const RutColor *
+const CoglColor *
 rut_light_get_ambient (RutLight *light)
 {
   return &light->ambient;
@@ -154,12 +154,12 @@ rut_light_get_ambient (RutLight *light)
 
 void
 rut_light_set_diffuse (RutLight  *light,
-                       RutColor *diffuse)
+                       CoglColor *diffuse)
 {
   light->diffuse = *diffuse;
 }
 
-const RutColor *
+const CoglColor *
 rut_light_get_diffuse (RutLight *light)
 {
   return &light->diffuse;
@@ -167,12 +167,12 @@ rut_light_get_diffuse (RutLight *light)
 
 void
 rut_light_set_specular (RutLight  *light,
-                        RutColor *specular)
+                        CoglColor *specular)
 {
   light->specular = *specular;
 }
 
-const RutColor *
+const CoglColor *
 rut_light_get_specular (RutLight *light)
 {
   return &light->specular;

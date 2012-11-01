@@ -88,10 +88,10 @@ rut_toggle_get_tick (RutToggle *toggle);
  */
 void
 rut_toggle_set_tick_color (RutToggle *toggle,
-                           const RutColor *color);
+                           const CoglColor *color);
 
 void
 rut_toggle_get_tick_color (RutToggle *toggle,
-                           RutColor *color);
+                           CoglColor *color);
 
 #endif /* _RUT_TOGGLE_H_ */

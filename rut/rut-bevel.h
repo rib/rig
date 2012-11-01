@@ -12,7 +12,7 @@ RutBevel *
 rut_bevel_new (RutContext *context,
                float width,
                float height,
-               const RutColor *reference);
+               const CoglColor *reference);
 
 void
 rut_bevel_set_size (RutObject *self,

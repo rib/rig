@@ -53,7 +53,7 @@ struct _RutEntry
 
   CoglPrimitive *prim;
 
-  RutColor colors[4];
+  CoglColor colors[4];
 
   float width;
   float height;

@@ -68,7 +68,7 @@ typedef struct
 typedef struct
 {
   RigNode base;
-  RutColor value;
+  CoglColor value;
 } RigNodeColor;
 
 typedef struct
@@ -123,7 +123,7 @@ void
 rig_node_color_lerp (RigNodeColor *a,
                      RigNodeColor *b,
                      float t,
-                     RutColor *value);
+                     CoglColor *value);
 
 CoglBool
 rig_node_box (RutPropertyType type,
@@ -156,7 +156,7 @@ RigNodeQuaternion *
 rig_node_new_for_quaternion (float t, const CoglQuaternion *value);
 
 RigNodeColor *
-rig_node_new_for_color (float t, const RutColor *value);
+rig_node_new_for_color (float t, const CoglColor *value);
 
 RigNode *
 rig_nodes_find_less_than (RigNode *start, RutList *end, float t);

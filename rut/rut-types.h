@@ -78,9 +78,4 @@ typedef enum _RutAxis
   RUT_AXIS_Z
 } RutAxis;
 
-typedef struct _RutColor
-{
-  float red, green, blue, alpha;
-} RutColor;
-
 #endif /* _RUT_TYPES_H_ */

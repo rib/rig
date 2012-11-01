@@ -74,7 +74,7 @@ struct _RigData
 
   float device_width;
   float device_height;
-  RutColor background_color;
+  CoglColor background_color;
 
   //float width;
   //RutProperty width_property;

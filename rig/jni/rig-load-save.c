@@ -33,9 +33,9 @@ save_component_cb (RutComponent *component,
   if (type == &rut_light_type)
     {
       RutLight *light = RUT_LIGHT (component);
-      const RutColor *ambient = rut_light_get_ambient (light);
-      const RutColor *diffuse = rut_light_get_diffuse (light);
-      const RutColor *specular = rut_light_get_specular (light);
+      const CoglColor *ambient = rut_light_get_ambient (light);
+      const CoglColor *diffuse = rut_light_get_diffuse (light);
+      const CoglColor *specular = rut_light_get_specular (light);
 
       fprintf (state->file,
                "%*s<light "
@@ -43,49 +43,49 @@ save_component_cb (RutComponent *component,
                "diffuse=\"#%02x%02x%02x%02x\" "
                "specular=\"#%02x%02x%02x%02x\"/>\n",
                state->indent, "",
-               rut_color_get_red_byte (ambient),
-               rut_color_get_green_byte (ambient),
-               rut_color_get_blue_byte (ambient),
-               rut_color_get_alpha_byte (ambient),
-               rut_color_get_red_byte (diffuse),
-               rut_color_get_green_byte (diffuse),
-               rut_color_get_blue_byte (diffuse),
-               rut_color_get_alpha_byte (diffuse),
-               rut_color_get_red_byte (specular),
-               rut_color_get_green_byte (specular),
-               rut_color_get_blue_byte (specular),
-               rut_color_get_alpha_byte (specular));
+               cogl_color_get_red_byte (ambient),
+               cogl_color_get_green_byte (ambient),
+               cogl_color_get_blue_byte (ambient),
+               cogl_color_get_alpha_byte (ambient),
+               cogl_color_get_red_byte (diffuse),
+               cogl_color_get_green_byte (diffuse),
+               cogl_color_get_blue_byte (diffuse),
+               cogl_color_get_alpha_byte (diffuse),
+               cogl_color_get_red_byte (specular),
+               cogl_color_get_green_byte (specular),
+               cogl_color_get_blue_byte (specular),
+               cogl_color_get_alpha_byte (specular));
     }
   else if (type == &rut_material_type)
     {
       RutMaterial *material = RUT_MATERIAL (component);
       RutAsset *asset;
-      const RutColor *ambient, *diffuse, *specular;
+      const CoglColor *ambient, *diffuse, *specular;
 
       fprintf (state->file, "%*s<material", state->indent, "");
 
       ambient = rut_material_get_ambient (material);
       fprintf (state->file, " ambient=\"#%02x%02x%02x%02x\"\n",
-               rut_color_get_red_byte (ambient),
-               rut_color_get_green_byte (ambient),
-               rut_color_get_blue_byte (ambient),
-               rut_color_get_alpha_byte (ambient));
+               cogl_color_get_red_byte (ambient),
+               cogl_color_get_green_byte (ambient),
+               cogl_color_get_blue_byte (ambient),
+               cogl_color_get_alpha_byte (ambient));
 
       diffuse = rut_material_get_diffuse (material);
       fprintf (state->file, "%*s          diffuse=\"#%02x%02x%02x%02x\"\n",
                state->indent, "",
-               rut_color_get_red_byte (diffuse),
-               rut_color_get_green_byte (diffuse),
-               rut_color_get_blue_byte (diffuse),
-               rut_color_get_alpha_byte (diffuse));
+               cogl_color_get_red_byte (diffuse),
+               cogl_color_get_green_byte (diffuse),
+               cogl_color_get_blue_byte (diffuse),
+               cogl_color_get_alpha_byte (diffuse));
 
       specular = rut_material_get_specular (material);
       fprintf (state->file, "%*s          specular=\"#%02x%02x%02x%02x\"\n",
                state->indent, "",
-               rut_color_get_red_byte (specular),
-               rut_color_get_green_byte (specular),
-               rut_color_get_blue_byte (specular),
-               rut_color_get_alpha_byte (specular));
+               cogl_color_get_red_byte (specular),
+               cogl_color_get_green_byte (specular),
+               cogl_color_get_blue_byte (specular),
+               cogl_color_get_alpha_byte (specular));
 
       fprintf (state->file, "%*s          shininess=\"%f\"",
                state->indent, "",
@@ -161,7 +161,7 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_text_type)
     {
       RutText *text = RUT_TEXT (component);
-      RutColor color;
+      CoglColor color;
 
       rut_text_get_color (text, &color);
 
@@ -171,10 +171,10 @@ save_component_cb (RutComponent *component,
                state->indent, "",
                rut_text_get_text (text),
                rut_text_get_font_name (text),
-               rut_color_get_red_byte (&color),
-               rut_color_get_green_byte (&color),
-               rut_color_get_blue_byte (&color),
-               rut_color_get_alpha_byte (&color));
+               cogl_color_get_red_byte (&color),
+               cogl_color_get_green_byte (&color),
+               cogl_color_get_blue_byte (&color),
+               cogl_color_get_alpha_byte (&color));
     }
 
   state->indent -= INDENT_LEVEL;
@@ -361,7 +361,7 @@ save_vec4 (SaveState *state,
 
 static void
 save_color (SaveState *state,
-            const RutColor *value)
+            const CoglColor *value)
 {
   fprintf (state->file, "(%f, %f, %f, %f)",
            value->red,
@@ -613,10 +613,10 @@ rig_save (RigData *data,
            state.indent, "",
            (int)data->device_width,
            (int)data->device_height,
-           rut_color_get_red_byte (&data->background_color),
-           rut_color_get_green_byte (&data->background_color),
-           rut_color_get_blue_byte (&data->background_color),
-           rut_color_get_alpha_byte (&data->background_color));
+           cogl_color_get_red_byte (&data->background_color),
+           cogl_color_get_green_byte (&data->background_color),
+           cogl_color_get_blue_byte (&data->background_color),
+           cogl_color_get_alpha_byte (&data->background_color));
 
   /* Assets */
 
@@ -693,7 +693,7 @@ typedef struct _Loader
   CoglBool device_found;
   int device_width;
   int device_height;
-  RutColor background;
+  CoglColor background;
   CoglBool background_set;
 
   GList *assets;
@@ -701,11 +701,11 @@ typedef struct _Loader
   RutEntity *light;
   GList *transitions;
 
-  RutColor material_ambient;
+  CoglColor material_ambient;
   CoglBool ambient_set;
-  RutColor material_diffuse;
+  CoglColor material_diffuse;
   CoglBool diffuse_set;
-  RutColor material_specular;
+  CoglColor material_specular;
   CoglBool specular_set;
   float material_shininess;
   CoglBool shininess_set;
@@ -850,7 +850,7 @@ load_vec4 (float *value,
 }
 
 static CoglBool
-load_color (RutColor *value,
+load_color (CoglColor *value,
             const char *str)
 {
   return sscanf (str, "(%f, %f, %f, %f)",
@@ -1012,7 +1012,7 @@ load_path_node (RigPath *path,
       }
     case RUT_PROPERTY_TYPE_COLOR:
       {
-        RutColor value;
+        CoglColor value;
         if (!load_color (&value, value_str))
           goto error;
         rig_path_insert_color (path, t, &value);
@@ -1371,9 +1371,9 @@ parse_start_element (GMarkupParseContext *context,
       const char *ambient_str;
       const char *diffuse_str;
       const char *specular_str;
-      RutColor ambient;
-      RutColor diffuse;
-      RutColor specular;
+      CoglColor ambient;
+      CoglColor diffuse;
+      CoglColor specular;
       RutLight *light;
 
       if (!g_markup_collect_attributes (element_name,
@@ -1517,7 +1517,7 @@ parse_start_element (GMarkupParseContext *context,
 
       if (color_str)
         {
-          RutColor color;
+          CoglColor color;
           rut_color_init_from_string (data->ctx, &color, color_str);
           rut_text_set_color (text, &color);
         }

@@ -561,7 +561,7 @@ rig_path_insert_uint32 (RigPath *path,
 void
 rig_path_insert_color (RigPath *path,
                        float t,
-                       const RutColor *value)
+                       const CoglColor *value)
 {
   RigNodeColor *node;
 
@@ -653,7 +653,7 @@ rig_path_lerp_property (RigPath *path,
       }
     case RUT_PROPERTY_TYPE_COLOR:
       {
-        RutColor value;
+        CoglColor value;
         rig_node_color_lerp ((RigNodeColor *)n0, (RigNodeColor *)n1, t, &value);
         rut_property_set_color (&path->ctx->property_ctx, property, &value);
         break;

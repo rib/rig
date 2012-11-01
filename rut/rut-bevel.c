@@ -47,7 +47,7 @@ struct _RutBevel
 
   CoglPrimitive *prim;
 
-  RutColor colors[4];
+  CoglColor colors[4];
 
   int width;
   int height;
@@ -280,7 +280,7 @@ RutBevel *
 rut_bevel_new (RutContext *context,
                float width,
                float height,
-               const RutColor *reference)
+               const CoglColor *reference)
 {
   RutBevel *bevel = g_slice_new0 (RutBevel);
   static CoglBool initialized = FALSE;

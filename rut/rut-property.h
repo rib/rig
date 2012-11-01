@@ -59,7 +59,7 @@ typedef struct _RutBoxed
       CoglQuaternion quaternion_val;
       float vec3_val[3];
       float vec4_val[4];
-      RutColor color_val;
+      CoglColor color_val;
       RutObject *object_val;
       void *pointer_val;
     } d;

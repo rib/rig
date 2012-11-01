@@ -162,7 +162,7 @@ struct _RutText
 
   char *preedit_str;
 
-  RutColor text_color;
+  CoglColor text_color;
 
   LayoutCache cached_layouts[N_CACHED_LAYOUTS];
   unsigned int cache_age;
@@ -204,15 +204,15 @@ struct _RutText
 
   /* Where to draw the cursor */
   RutRectangleInt cursor_pos;
-  RutColor cursor_color;
+  CoglColor cursor_color;
   unsigned int cursor_size;
 
   unsigned int preedit_cursor_pos;
   int preedit_n_chars;
 
-  RutColor selection_color;
+  CoglColor selection_color;
 
-  RutColor selected_text_color;
+  CoglColor selected_text_color;
 
   uint32_t password_char;
 
@@ -1752,7 +1752,7 @@ selection_paint (RutText *text,
 
   if (text->editable && text->cursor_visible)
     {
-      const RutColor *color;
+      const CoglColor *color;
       int position;
 
       position = text->position;
@@ -2736,7 +2736,7 @@ rut_text_paint (RutText *text,
   g_object_get (text, "background-color-set", &bg_color_set, NULL);
   if (bg_color_set)
     {
-      RutColor bg_color;
+      CoglColor bg_color;
 
       rut_actor_get_background_color (text, &bg_color);
       bg_color.alpha = rut_text_get_paint_opacity (text)
@@ -3644,7 +3644,7 @@ rut_text_get_cursor_visible (RutText *text)
 
 void
 rut_text_set_cursor_color (RutText *text,
-                           const RutColor *color)
+                           const CoglColor *color)
 {
   if (color)
     {
@@ -3666,7 +3666,7 @@ void
 rut_text_set_cursor_color_u32 (RutText *text,
                                uint32_t u32)
 {
-  RutColor color;
+  CoglColor color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_cursor_color (text, &color);
@@ -3674,7 +3674,7 @@ rut_text_set_cursor_color_u32 (RutText *text,
 
 void
 rut_text_get_cursor_color (RutText  *text,
-                           RutColor *color)
+                           CoglColor *color)
 {
   g_return_if_fail (color != NULL);
 
@@ -3766,7 +3766,7 @@ rut_text_get_selection_bound (RutText *text)
 
 void
 rut_text_set_selection_color (RutText *text,
-                              const RutColor *color)
+                              const CoglColor *color)
 {
   if (color)
     {
@@ -3788,7 +3788,7 @@ void
 rut_text_set_selection_color_u32 (RutText *text,
                                   uint32_t u32)
 {
-  RutColor color;
+  CoglColor color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_selection_color (text, &color);
@@ -3796,7 +3796,7 @@ rut_text_set_selection_color_u32 (RutText *text,
 
 void
 rut_text_get_selection_color (RutText  *text,
-                              RutColor *color)
+                              CoglColor *color)
 {
   g_return_if_fail (color != NULL);
 
@@ -3811,7 +3811,7 @@ rut_text_get_selection_color_set (RutText *text)
 
 void
 rut_text_set_selected_text_color (RutText *text,
-                                  const RutColor *color)
+                                  const CoglColor *color)
 {
   if (color)
     {
@@ -3833,7 +3833,7 @@ void
 rut_text_set_selected_text_color_u32 (RutText *text,
                                       uint32_t u32)
 {
-  RutColor color;
+  CoglColor color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_selected_text_color (text, &color);
@@ -3841,7 +3841,7 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 
 void
 rut_text_get_selected_text_color (RutText *text,
-                                  RutColor *color)
+                                  CoglColor *color)
 {
   g_return_if_fail (color != NULL);
 
@@ -4005,7 +4005,7 @@ rut_text_get_layout (RutText *text)
 
 void
 rut_text_set_color (RutText *text,
-                    const RutColor *color)
+                    const CoglColor *color)
 {
   g_return_if_fail (color != NULL);
 
@@ -4021,7 +4021,7 @@ void
 rut_text_set_color_u32 (RutText *text,
                         uint32_t u32)
 {
-  RutColor color;
+  CoglColor color;
 
   rut_color_init_from_uint32 (&color, u32);
   rut_text_set_color (text, &color);
@@ -4029,7 +4029,7 @@ rut_text_set_color_u32 (RutText *text,
 
 void
 rut_text_get_color (RutText *text,
-                    RutColor *color)
+                    CoglColor *color)
 {
   g_return_if_fail (color != NULL);
 

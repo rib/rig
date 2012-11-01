@@ -31,9 +31,9 @@ struct _RutLight
   RutObjectProps _parent;
   int ref_count;
   RutComponentableProps component;
-  RutColor ambient;
-  RutColor diffuse;
-  RutColor specular;
+  CoglColor ambient;
+  CoglColor diffuse;
+  CoglColor specular;
 };
 
 void
@@ -47,23 +47,23 @@ rut_light_free (RutLight *light);
 
 void
 rut_light_set_ambient (RutLight *light,
-                       RutColor *ambient);
+                       CoglColor *ambient);
 
-const RutColor *
+const CoglColor *
 rut_light_get_ambient (RutLight *light);
 
 void
 rut_light_set_diffuse (RutLight *light,
-                       RutColor *diffuse);
+                       CoglColor *diffuse);
 
-const RutColor *
+const CoglColor *
 rut_light_get_diffuse (RutLight *light);
 
 void
 rut_light_set_specular (RutLight *light,
-                        RutColor *specular);
+                        CoglColor *specular);
 
-const RutColor *
+const CoglColor *
 rut_light_get_specular (RutLight *light);
 
 void

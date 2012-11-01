@@ -338,7 +338,7 @@ rut_text_set_markup (RutText *text,
 /**
  * rut_text_set_color:
  * @text: a #RutText
- * @color: a #RutColor
+ * @color: a #CoglColor
  *
  * Sets the color of the contents of a #RutText actor.
  *
@@ -349,7 +349,7 @@ rut_text_set_markup (RutText *text,
  */
 void
 rut_text_set_color (RutText *text,
-                    const RutColor *color);
+                    const CoglColor *color);
 
 void
 rut_text_set_color_u32 (RutText *text,
@@ -358,13 +358,13 @@ rut_text_set_color_u32 (RutText *text,
 /**
  * rut_text_get_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #RutColor
+ * @color: (out caller-allocates): return location for a #CoglColor
  *
  * Retrieves the text color as set by rut_text_set_color().
  */
 void
 rut_text_get_color (RutText *text,
-                    RutColor *color);
+                    CoglColor *color);
 
 /**
  * rut_text_set_font_name:
@@ -828,7 +828,7 @@ rut_text_get_cursor_visible (RutText *text);
  */
 void
 rut_text_set_cursor_color (RutText *text,
-                           const RutColor *color);
+                           const CoglColor *color);
 
 void
 rut_text_set_cursor_color_u32 (RutText *text,
@@ -837,13 +837,13 @@ rut_text_set_cursor_color_u32 (RutText *text,
 /**
  * rut_text_get_cursor_color:
  * @text: a #RutText
- * @color: (out): return location for a #RutColor
+ * @color: (out): return location for a #CoglColor
  *
  * Retrieves the color of the cursor of a #RutText actor.
  */
 void
 rut_text_get_cursor_color (RutText *text,
-                           RutColor *color);
+                           CoglColor *color);
 
 CoglBool
 rut_text_get_cursor_color_set (RutText *text);
@@ -966,7 +966,7 @@ rut_text_get_selection (RutText *text);
  */
 void
 rut_text_set_selection_color (RutText *text,
-                              const RutColor *color);
+                              const CoglColor *color);
 
 void
 rut_text_set_selection_color_u32 (RutText *text,
@@ -975,13 +975,13 @@ rut_text_set_selection_color_u32 (RutText *text,
 /**
  * rut_text_get_selection_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #RutColor
+ * @color: (out caller-allocates): return location for a #CoglColor
  *
  * Retrieves the color of the selection of a #RutText actor.
  */
 void
 rut_text_get_selection_color (RutText *text,
-                              RutColor *color);
+                              CoglColor *color);
 
 CoglBool
 rut_text_get_selection_color_set (RutText *text);
@@ -1101,7 +1101,7 @@ rut_text_get_single_line_mode (RutText *text);
  */
 void
 rut_text_set_selected_text_color (RutText *text,
-                                  const RutColor *color);
+                                  const CoglColor *color);
 
 void
 rut_text_set_selected_text_color_u32 (RutText *text,
@@ -1110,13 +1110,13 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 /**
  * rut_text_get_selected_text_color:
  * @text: a #RutText
- * @color: (out caller-allocates): return location for a #RutColor
+ * @color: (out caller-allocates): return location for a #CoglColor
  *
  * Retrieves the color of selected text of a #RutText actor.
  */
 void
 rut_text_get_selected_text_color (RutText *text,
-                                  RutColor *color);
+                                  CoglColor *color);
 
 CoglBool
 rut_text_get_selected_text_color_set (RutText *text);

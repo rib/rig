@@ -33,19 +33,6 @@
 #include "rut-context.h"
 #include "rut-color.h"
 
-void
-rut_color_init_from_4ub (RutColor *color,
-                         uint8_t red,
-                         uint8_t green,
-                         uint8_t blue,
-                         uint8_t alpha)
-{
-  color->red = red / 255.0;
-  color->green = green / 255.0;
-  color->blue = blue / 255.0;
-  color->alpha = alpha / 255.0;
-}
-
 static inline void
 skip_whitespace (char **str)
 {
@@ -80,7 +67,7 @@ parse_rgb_value (char *str,
 }
 
 static gboolean
-parse_rgba (RutColor *color,
+parse_rgba (CoglColor *color,
             char *str,
             gboolean has_alpha)
 {
@@ -135,13 +122,13 @@ parse_rgba (RutColor *color,
   if (*str != ')')
     return FALSE;
 
-  rut_color_init_from_4f (color, red, green, blue, alpha);
+  cogl_color_init_from_4f (color, red, green, blue, alpha);
 
   return TRUE;
 }
 
 void
-rut_color_init_from_hls (RutColor *color,
+rut_color_init_from_hls (CoglColor *color,
                          float hue,
                          float luminance,
                          float saturation)
@@ -155,7 +142,7 @@ rut_color_init_from_hls (RutColor *color,
 
   if (saturation == 0)
     {
-      rut_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
+      cogl_color_init_from_4f (color, luminance, luminance, luminance, 1.0);
       return;
     }
 
@@ -195,7 +182,7 @@ rut_color_init_from_hls (RutColor *color,
 }
 
 static gboolean
-parse_hsla (RutColor *color,
+parse_hsla (CoglColor *color,
             char *str,
             gboolean has_alpha)
 {
@@ -282,7 +269,7 @@ parse_hsla (RutColor *color,
 
 gboolean
 rut_color_init_from_string (RutContext *ctx,
-                            RutColor *color,
+                            CoglColor *color,
                             const char *str)
 {
   void *color_index_ptr;
@@ -338,7 +325,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = result & 0xff;
 
-              rut_color_init_from_4ub (color, red, green, blue, alpha);
+              cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -349,7 +336,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = 0xff;
 
-              rut_color_init_from_4ub (color, red, green, blue, alpha);
+              cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -364,7 +351,7 @@ rut_color_init_from_string (RutContext *ctx,
               blue  = (blue  << 4) | blue;
               alpha = (alpha << 4) | alpha;
 
-              rut_color_init_from_4ub (color, red, green, blue, alpha);
+              cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -379,7 +366,7 @@ rut_color_init_from_string (RutContext *ctx,
 
               alpha = 0xff;
 
-              rut_color_init_from_4ub (color, red, green, blue, alpha);
+              cogl_color_init_from_4ub (color, red, green, blue, alpha);
 
               return TRUE;
 
@@ -416,7 +403,7 @@ rut_color_init_from_string (RutContext *ctx,
        * when retrieving the value back the indices stored are all offset by
        * one. */
       int color_index = GPOINTER_TO_INT (color_index_ptr) - 1;
-      rut_color_init_from_4ub (color,
+      cogl_color_init_from_4ub (color,
                                color_entries[color_index].red,
                                color_entries[color_index].green,
                                color_entries[color_index].blue,
@@ -428,9 +415,9 @@ rut_color_init_from_string (RutContext *ctx,
 }
 
 void
-rut_color_add (const RutColor *a,
-		   const RutColor *b,
-		   RutColor       *result)
+rut_color_add (const CoglColor *a,
+               const CoglColor *b,
+               CoglColor *result)
 {
   g_return_if_fail (a != NULL);
   g_return_if_fail (b != NULL);
@@ -444,9 +431,9 @@ rut_color_add (const RutColor *a,
 }
 
 void
-rut_color_subtract (const RutColor *a,
-                    const RutColor *b,
-                    RutColor *result)
+rut_color_subtract (const CoglColor *a,
+                    const CoglColor *b,
+                    CoglColor *result)
 {
   g_return_if_fail (a != NULL);
   g_return_if_fail (b != NULL);
@@ -460,22 +447,22 @@ rut_color_subtract (const RutColor *a,
 }
 
 void
-rut_color_lighten (const RutColor *color,
-		       RutColor       *result)
+rut_color_lighten (const CoglColor *color,
+                   CoglColor *result)
 {
   rut_color_shade (color, 1.3, result);
 }
 
 void
-rut_color_darken (const RutColor *color,
-		      RutColor       *result)
+rut_color_darken (const CoglColor *color,
+                  CoglColor *result)
 {
   rut_color_shade (color, 0.7, result);
 }
 
 /**
  * rut_color_to_hls:
- * @color: a #RutColor
+ * @color: a #CoglColor
  * @hue: (out): return location for the hue value or %NULL
  * @luminance: (out): return location for the luminance value or %NULL
  * @saturation: (out): return location for the saturation value or %NULL
@@ -486,7 +473,7 @@ rut_color_darken (const RutColor *color,
  * @saturation values are in the 0 .. 1 range.
  */
 void
-rut_color_to_hls (const RutColor *color,
+rut_color_to_hls (const CoglColor *color,
                   float *hue,
                   float *luminance,
                   float *saturation)
@@ -563,9 +550,9 @@ rut_color_to_hls (const RutColor *color,
 }
 
 void
-rut_color_shade (const RutColor *color,
+rut_color_shade (const CoglColor *color,
                  float factor,
-                 RutColor *result)
+                 CoglColor *result)
 {
   float h, l, s;
 
@@ -592,7 +579,7 @@ rut_color_shade (const RutColor *color,
 }
 
 gchar *
-rut_color_to_string (const RutColor *color)
+rut_color_to_string (const CoglColor *color)
 {
   g_return_val_if_fail (color != NULL, NULL);
 
@@ -604,10 +591,10 @@ rut_color_to_string (const RutColor *color)
 }
 
 void
-rut_color_interpolate (const RutColor *initial,
-                       const RutColor *final,
+rut_color_interpolate (const CoglColor *initial,
+                       const CoglColor *final,
                        float progress,
-                       RutColor *result)
+                       CoglColor *result)
 {
   g_return_if_fail (initial != NULL);
   g_return_if_fail (final != NULL);
@@ -618,4 +605,3 @@ rut_color_interpolate (const RutColor *initial,
   result->blue  = initial->blue  + (final->blue  - initial->blue)  * progress;
   result->alpha = initial->alpha + (final->alpha - initial->alpha) * progress;
 }
-

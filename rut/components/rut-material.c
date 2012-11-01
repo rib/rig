@@ -147,9 +147,9 @@ rut_material_new (RutContext *ctx,
 
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
-  rut_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
-  rut_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
-  rut_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
+  cogl_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
+  cogl_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
+  cogl_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
 
   material->shininess = 100;
 
@@ -246,13 +246,13 @@ rut_material_get_alpha_mask_asset (RutMaterial *material)
 
 void
 rut_material_set_ambient (RutMaterial *material,
-                          const RutColor *color)
+                          const CoglColor *color)
 {
   material->ambient = *color;
   material->uniforms_age++;
 }
 
-const RutColor *
+const CoglColor *
 rut_material_get_ambient (RutMaterial *material)
 {
   return &material->ambient;
@@ -260,14 +260,14 @@ rut_material_get_ambient (RutMaterial *material)
 
 void
 rut_material_set_diffuse (RutMaterial *material,
-                          const RutColor *color)
+                          const CoglColor *color)
 {
   material->diffuse = *color;
   material->uniforms_age++;
 
 }
 
-const RutColor *
+const CoglColor *
 rut_material_get_diffuse (RutMaterial *material)
 {
   return &material->diffuse;
@@ -275,13 +275,13 @@ rut_material_get_diffuse (RutMaterial *material)
 
 void
 rut_material_set_specular (RutMaterial *material,
-                           const RutColor *color)
+                           const CoglColor *color)
 {
   material->specular = *color;
   material->uniforms_age++;
 }
 
-const RutColor *
+const CoglColor *
 rut_material_get_specular (RutMaterial *material)
 {
   return &material->specular;

@@ -712,7 +712,7 @@ rut_toggle_get_tick (RutToggle *toggle)
 
 void
 rut_toggle_set_tick_color (RutToggle *toggle,
-                           const RutColor *color)
+                           const CoglColor *color)
 {
   toggle->tick_color.red = color->red;
   toggle->tick_color.green = color->green;
@@ -723,7 +723,7 @@ rut_toggle_set_tick_color (RutToggle *toggle,
 
 void
 rut_toggle_get_tick_color (RutToggle *toggle,
-                           RutColor *color)
+                           CoglColor *color)
 {
   color->red = toggle->tick_color.red;
   color->green = toggle->tick_color.green;

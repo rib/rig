@@ -236,6 +236,6 @@ CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 
 void
-rut_color_init_from_uint32 (RutColor *color, uint32_t value);
+rut_color_init_from_uint32 (CoglColor *color, uint32_t value);
 
 #endif /* _RUT_CONTEXT_H_ */

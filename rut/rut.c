@@ -1460,7 +1460,7 @@ _rut_init (void)
 }
 
 void
-rut_color_init_from_uint32 (RutColor *color, uint32_t value)
+rut_color_init_from_uint32 (CoglColor *color, uint32_t value)
 {
   color->red = RUT_UINT32_RED_AS_FLOAT (value);
   color->green = RUT_UINT32_GREEN_AS_FLOAT (value);

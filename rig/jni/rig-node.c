@@ -144,7 +144,7 @@ void
 rig_node_color_lerp (RigNodeColor *a,
                      RigNodeColor *b,
                      float t,
-                     RutColor *value)
+                     CoglColor *value)
 {
   float range = b->base.t - a->base.t;
 
@@ -163,7 +163,7 @@ rig_node_color_lerp (RigNodeColor *a,
         a->value.alpha + (b->value.alpha - a->value.alpha) * factor;
     }
   else
-    memcpy (value, &a->value, sizeof (RutColor));
+    memcpy (value, &a->value, sizeof (CoglColor));
 }
 
 void
@@ -393,7 +393,7 @@ rig_node_new_for_quaternion (float t, const CoglQuaternion *value)
 }
 
 RigNodeColor *
-rig_node_new_for_color (float t, const RutColor *value)
+rig_node_new_for_color (float t, const CoglColor *value)
 {
   RigNodeColor *node = g_slice_new (RigNodeColor);
   node->base.t = t;
