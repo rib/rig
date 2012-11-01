@@ -50,7 +50,7 @@ G_BEGIN_DECLS
 #define RUT_TEXT_BUFFER_MAX_SIZE        G_MAXUSHORT
 
 typedef struct _RutTextBuffer RutTextBuffer;
-#define RUT_TEXT_BUFFER(x) ((RutTextBuffer *)X)
+#define RUT_TEXT_BUFFER(x) ((RutTextBuffer *) x)
 extern RutType rut_text_buffer_type;
 
 /* PRIVATE */
@@ -120,7 +120,7 @@ rut_text_buffer_get_length (RutTextBuffer *buffer);
  *      stored.
  */
 const char *
-rut_text_buffer_get_text (RutTextBuffer *buffer);
+rut_text_buffer_get_text (RutObject *buffer);
 
 /**
  * rut_text_buffer_set_text:
@@ -133,7 +133,7 @@ rut_text_buffer_get_text (RutTextBuffer *buffer);
  * and rut_text_buffer_insert_text().
  */
 void
-rut_text_buffer_set_text (RutTextBuffer *buffer,
+rut_text_buffer_set_text (RutObject *buffer,
                           const char *chars);
 
 /**
@@ -166,7 +166,7 @@ rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
  * will be truncated to fit.
  */
 void
-rut_text_buffer_set_max_length (RutTextBuffer *buffer,
+rut_text_buffer_set_max_length (RutObject *buffer,
                                 int max_length);
 
 /**

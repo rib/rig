@@ -27,7 +27,7 @@ rut_vec3_slider_set_max_value (RutVec3Slider *slider,
                                float max_value);
 
 void
-rut_vec3_slider_set_value (RutVec3Slider *slider,
+rut_vec3_slider_set_value (RutObject *slider,
                            const float *value);
 
 void

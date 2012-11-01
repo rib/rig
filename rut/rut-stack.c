@@ -64,14 +64,14 @@ static RutPropertySpec _rut_stack_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutStack, width),
-    .setter = rut_stack_set_width
+    .setter.float_type = rut_stack_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutStack, height),
-    .setter = rut_stack_set_height
+    .setter.float_type = rut_stack_set_height
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -263,16 +263,20 @@ rut_stack_set_size (RutStack *stack,
 }
 
 void
-rut_stack_set_width (RutStack *stack,
+rut_stack_set_width (RutObject *obj,
                      float width)
 {
+  RutStack *stack = RUT_STACK (obj);
+
   rut_stack_set_size (stack, width, stack->height);
 }
 
 void
-rut_stack_set_height (RutStack *stack,
+rut_stack_set_height (RutObject *obj,
                       float height)
 {
+  RutStack *stack = RUT_STACK (obj);
+
   rut_stack_set_size (stack, stack->width, height);
 }
 

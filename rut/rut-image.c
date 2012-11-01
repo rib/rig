@@ -97,7 +97,7 @@ _rut_image_prop_specs[] =
       .name = "draw_mode",
       .type = RUT_PROPERTY_TYPE_ENUM,
       .data_offset = offsetof (RutImage, draw_mode),
-      .setter = rut_image_set_draw_mode,
+      .setter.any_type = rut_image_set_draw_mode,
       .flags = (RUT_PROPERTY_FLAG_READWRITE |
                 RUT_PROPERTY_FLAG_VALIDATE),
       .validation = { .ui_enum = &_rut_image_draw_mode_ui_enum }

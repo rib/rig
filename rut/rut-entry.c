@@ -68,14 +68,14 @@ static RutPropertySpec _rut_entry_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutEntry, width),
-    .setter = rut_entry_set_width
+    .setter.float_type = rut_entry_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutEntry, height),
-    .setter = rut_entry_set_height
+    .setter.float_type = rut_entry_set_height
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -338,16 +338,20 @@ _rut_entry_init_type (void)
 
 
 void
-rut_entry_set_width (RutEntry *entry,
+rut_entry_set_width (RutObject *obj,
                      float width)
 {
+  RutEntry *entry = RUT_ENTRY (obj);
+
   rut_entry_set_size (entry, width, entry->height);
 }
 
 void
-rut_entry_set_height (RutEntry *entry,
+rut_entry_set_height (RutObject *obj,
                       float height)
 {
+  RutEntry *entry = RUT_ENTRY (obj);
+
   rut_entry_set_size (entry, entry->width, height);
 }
 

@@ -103,11 +103,11 @@ RutMesh *
 rut_shape_get_pick_mesh (RutObject *self);
 
 void
-rut_shape_set_shaped (RutShape *shape,
+rut_shape_set_shaped (RutObject *shape,
                       CoglBool shaped);
 
 CoglBool
-rut_shape_get_shaped (RutShape *shape);
+rut_shape_get_shaped (RutObject *shape);
 
 typedef void (*RutShapeReShapedCallback) (RutShape *shape,
                                           void *user_data);

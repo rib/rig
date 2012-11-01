@@ -54,11 +54,11 @@ rut_toggle_add_on_toggle_callback (RutToggle *toggle,
                                    RutClosureDestroyCallback destroy_cb);
 
 void
-rut_toggle_set_enabled (RutToggle *toggle,
+rut_toggle_set_enabled (RutObject *toggle,
                         CoglBool enabled);
 
 void
-rut_toggle_set_state (RutToggle *toggle,
+rut_toggle_set_state (RutObject *toggle,
                       CoglBool state);
 
 RutProperty *
@@ -72,11 +72,11 @@ rut_toggle_get_enabled_property (RutToggle *toggle);
  * Sets the string used to display the tick character. This defaults to ‘✔’.
  */
 void
-rut_toggle_set_tick (RutToggle *toggle,
+rut_toggle_set_tick (RutObject *toggle,
                      const char *tick);
 
 const char *
-rut_toggle_get_tick (RutToggle *toggle);
+rut_toggle_get_tick (RutObject *toggle);
 
 /**
  * rut_toggle_set_tick_color:
@@ -87,11 +87,10 @@ rut_toggle_get_tick (RutToggle *toggle);
  * This defaults to black
  */
 void
-rut_toggle_set_tick_color (RutToggle *toggle,
+rut_toggle_set_tick_color (RutObject *toggle,
                            const CoglColor *color);
 
-void
-rut_toggle_get_tick_color (RutToggle *toggle,
-                           CoglColor *color);
+const CoglColor *
+rut_toggle_get_tick_color (RutObject *toggle);
 
 #endif /* _RUT_TOGGLE_H_ */

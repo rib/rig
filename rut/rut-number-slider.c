@@ -133,7 +133,7 @@ _rut_number_slider_prop_specs[] =
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_FLOAT,
       .data_offset = offsetof (RutNumberSlider, value),
-      .setter = rut_number_slider_set_value
+      .setter.float_type = rut_number_slider_set_value
     },
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
@@ -974,9 +974,11 @@ rut_number_slider_set_max_value (RutNumberSlider *slider,
 }
 
 void
-rut_number_slider_set_value (RutNumberSlider *slider,
+rut_number_slider_set_value (RutObject *obj,
                              float value)
 {
+  RutNumberSlider *slider = RUT_NUMBER_SLIDER (obj);
+
   value = CLAMP (value, slider->min_value, slider->max_value);
 
   if (value == slider->value)

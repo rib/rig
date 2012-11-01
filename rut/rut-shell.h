@@ -327,7 +327,7 @@ rut_slider_set_length (RutSlider *slider,
                        float length);
 
 void
-rut_slider_set_progress (RutSlider *slider,
+rut_slider_set_progress (RutObject *slider,
                          float progress);
 RutClosure *
 rut_shell_add_input_callback (RutShell *shell,

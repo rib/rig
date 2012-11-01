@@ -82,8 +82,7 @@ _rut_vec3_slider_prop_specs[] =
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_VEC3,
       .data_offset = offsetof (RutVec3Slider, value),
-      .setter = rut_vec3_slider_set_value,
-      .getter = NULL
+      .setter.vec3_type = rut_vec3_slider_set_value,
     },
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
@@ -483,9 +482,11 @@ rut_vec3_slider_set_max_value (RutVec3Slider *slider,
 }
 
 void
-rut_vec3_slider_set_value (RutVec3Slider *slider,
+rut_vec3_slider_set_value (RutObject *obj,
                            const float *value)
 {
+  RutVec3Slider *slider = RUT_VEC3_SLIDER (obj);
+
   int i;
 
   /* This value will get updated anyway as the notifications for the

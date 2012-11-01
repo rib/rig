@@ -42,21 +42,21 @@ rut_scroll_bar_new (RutContext *ctx,
 
 /* Set the length of the scroll bar widget itself */
 void
-rut_scroll_bar_set_length (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_length (RutObject *scroll_bar,
                            float length);
 
 /* How long is virtual length of the document being scrolled */
 void
-rut_scroll_bar_set_virtual_length (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_length (RutObject *scroll_bar,
                                    float virtual_length);
 
 /* What is the length of the viewport into the document being scrolled */
 void
-rut_scroll_bar_set_virtual_viewport (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_viewport (RutObject *scroll_bar,
                                      float viewport_length);
 
 void
-rut_scroll_bar_set_virtual_offset (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_offset (RutObject *scroll_bar,
                                    float viewport_offset);
 
 float

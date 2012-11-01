@@ -20,11 +20,11 @@ rut_stack_set_size (RutStack *stack,
                     float height);
 
 void
-rut_stack_set_width (RutStack *stack,
+rut_stack_set_width (RutObject *stack,
                      float width);
 
 void
-rut_stack_set_height (RutStack *stack,
+rut_stack_set_height (RutObject *stack,
                       float height);
 
 void

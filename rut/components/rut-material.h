@@ -90,38 +90,38 @@ RutAsset *
 rut_material_get_alpha_mask_asset (RutMaterial *material);
 
 void
-rut_material_set_ambient (RutMaterial *material,
+rut_material_set_ambient (RutObject *material,
                           const CoglColor *color);
 
 const CoglColor *
-rut_material_get_ambient (RutMaterial *material);
+rut_material_get_ambient (RutObject *material);
 
 void
-rut_material_set_diffuse (RutMaterial *material,
+rut_material_set_diffuse (RutObject *material,
                           const CoglColor *color);
 
 const CoglColor *
-rut_material_get_diffuse (RutMaterial *material);
+rut_material_get_diffuse (RutObject *material);
 
 void
-rut_material_set_specular (RutMaterial *material,
+rut_material_set_specular (RutObject *material,
                            const CoglColor *color);
 
 const CoglColor *
-rut_material_get_specular (RutMaterial *material);
+rut_material_get_specular (RutObject *material);
 
 void
-rut_material_set_shininess (RutMaterial *material,
+rut_material_set_shininess (RutObject *material,
                             float shininess);
 
 float
-rut_material_get_shininess (RutMaterial *material);
+rut_material_get_shininess (RutObject *material);
 
 float
-rut_material_get_alpha_mask_threshold (RutMaterial *material);
+rut_material_get_alpha_mask_threshold (RutObject *material);
 
 void
-rut_material_set_alpha_mask_threshold (RutMaterial *material,
+rut_material_set_alpha_mask_threshold (RutObject *material,
                                        float alpha_mask_threshold);
 
 void

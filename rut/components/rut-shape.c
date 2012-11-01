@@ -30,7 +30,7 @@ static RutPropertySpec _rut_shape_prop_specs[] = {
     .nick = "Shaped",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = G_STRUCT_OFFSET (RutShape, shaped),
-    .setter = rut_shape_set_shaped,
+    .setter.boolean_type = rut_shape_set_shaped,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
   },
   { NULL }
@@ -446,9 +446,11 @@ rut_shape_get_pick_mesh (RutObject *self)
 }
 
 void
-rut_shape_set_shaped (RutShape *shape,
+rut_shape_set_shaped (RutObject *obj,
                       CoglBool shaped)
 {
+  RutShape *shape = RUT_SHAPE (obj);
+
   if (shape->shaped == shaped)
     return;
 
@@ -469,8 +471,10 @@ rut_shape_set_shaped (RutShape *shape,
 }
 
 CoglBool
-rut_shape_get_shaped (RutShape *shape)
+rut_shape_get_shaped (RutObject *obj)
 {
+  RutShape *shape = RUT_SHAPE (obj);
+
   return shape->shaped;
 }
 

@@ -20,11 +20,11 @@ rut_bevel_set_size (RutObject *self,
                     float height);
 
 void
-rut_bevel_set_width (RutBevel *bevel,
+rut_bevel_set_width (RutObject *bevel,
                      float width);
 
 void
-rut_bevel_set_height (RutBevel *bevel,
+rut_bevel_set_height (RutObject *bevel,
                       float height);
 
 void

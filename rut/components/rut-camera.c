@@ -39,8 +39,8 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "mode",
     .nick = "Mode",
     .type = RUT_PROPERTY_TYPE_ENUM,
-    .getter = rut_camera_get_projection_mode,
-    .setter = rut_camera_set_projection_mode,
+    .getter.any_type = rut_camera_get_projection_mode,
+    .setter.any_type = rut_camera_set_projection_mode,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .ui_enum = &_rut_projection_ui_enum }
@@ -51,7 +51,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[0]),
-    .setter = rut_camera_set_viewport_x
+    .setter.float_type = rut_camera_set_viewport_x
   },
   {
     .name = "viewport_y",
@@ -59,7 +59,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[1]),
-    .setter = rut_camera_set_viewport_y
+    .setter.float_type = rut_camera_set_viewport_y
   },
   {
     .name = "viewport_width",
@@ -67,7 +67,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[2]),
-    .setter = rut_camera_set_viewport_width
+    .setter.float_type = rut_camera_set_viewport_width
   },
   {
     .name = "viewport_height",
@@ -75,14 +75,14 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutCamera, viewport[3]),
-    .setter = rut_camera_set_viewport_height
+    .setter.float_type = rut_camera_set_viewport_height
   },
   {
     .name = "fov",
     .nick = "Field Of View",
-    .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_camera_get_field_of_view,
-    .setter = rut_camera_set_field_of_view,
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .getter.float_type = rut_camera_get_field_of_view,
+    .setter.float_type = rut_camera_set_field_of_view,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .int_range = { .min = 1, .max = 135}},
@@ -92,8 +92,8 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "near",
     .nick = "Near Plane",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter = rut_camera_get_near_plane,
-    .setter = rut_camera_set_near_plane,
+    .getter.float_type = rut_camera_get_near_plane,
+    .setter.float_type = rut_camera_set_near_plane,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -101,8 +101,8 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "far",
     .nick = "Far Plane",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter = rut_camera_get_far_plane,
-    .setter = rut_camera_set_far_plane,
+    .getter.float_type = rut_camera_get_far_plane,
+    .setter.float_type = rut_camera_set_far_plane,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -110,8 +110,8 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "background_color",
     .nick = "Background Color",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_camera_get_background_color,
-    .setter = rut_camera_set_background_color,
+    .getter.color_type = rut_camera_get_background_color,
+    .setter.color_type = rut_camera_set_background_color,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -119,7 +119,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "focal_distance",
     .nick = "Focal Distance",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .setter = rut_camera_set_focal_distance,
+    .setter.float_type = rut_camera_set_focal_distance,
     .data_offset = offsetof (RutCamera, focal_distance),
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
@@ -128,7 +128,7 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .name = "depth_of_field",
     .nick = "Depth Of Field",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .setter = rut_camera_set_depth_of_field,
+    .setter.float_type = rut_camera_set_depth_of_field,
     .data_offset = offsetof (RutCamera, depth_of_field),
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
@@ -416,19 +416,22 @@ rut_camera_set_background_color4f (RutCamera *camera,
 }
 
 void
-rut_camera_set_background_color (RutCamera *camera,
+rut_camera_set_background_color (RutObject *obj,
                                  const CoglColor *color)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   camera->bg_color = *color;
   rut_property_dirty (&camera->ctx->property_ctx,
                       &camera->properties[RUT_CAMERA_PROP_BG_COLOR]);
 }
 
-void
-rut_camera_get_background_color (RutCamera *camera,
-                                 CoglColor *color)
+const CoglColor *
+rut_camera_get_background_color (RutObject *obj)
 {
-  *color = camera->bg_color;
+  RutCamera *camera = RUT_CAMERA (obj);
+
+  return &camera->bg_color;
 }
 
 void
@@ -504,9 +507,11 @@ rut_camera_set_viewport (RutCamera *camera,
 }
 
 void
-rut_camera_set_viewport_x (RutCamera *camera,
+rut_camera_set_viewport_x (RutObject *obj,
                            float x)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   _rut_camera_set_viewport (camera,
                             x,
                             camera->viewport[1],
@@ -517,9 +522,11 @@ rut_camera_set_viewport_x (RutCamera *camera,
 }
 
 void
-rut_camera_set_viewport_y (RutCamera *camera,
+rut_camera_set_viewport_y (RutObject *obj,
                            float y)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   _rut_camera_set_viewport (camera,
                             camera->viewport[0],
                             y,
@@ -530,9 +537,11 @@ rut_camera_set_viewport_y (RutCamera *camera,
 }
 
 void
-rut_camera_set_viewport_width (RutCamera *camera,
+rut_camera_set_viewport_width (RutObject *obj,
                                float width)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   _rut_camera_set_viewport (camera,
                             camera->viewport[0],
                             camera->viewport[1],
@@ -543,9 +552,11 @@ rut_camera_set_viewport_width (RutCamera *camera,
 }
 
 void
-rut_camera_set_viewport_height (RutCamera *camera,
+rut_camera_set_viewport_height (RutObject *obj,
                                 float height)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   _rut_camera_set_viewport (camera,
                             camera->viewport[0],
                             camera->viewport[1],
@@ -595,9 +606,11 @@ rut_camera_get_projection (RutCamera *camera)
 }
 
 void
-rut_camera_set_near_plane (RutCamera *camera,
+rut_camera_set_near_plane (RutObject *obj,
                            float near)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   if (camera->near == near)
     return;
 
@@ -609,15 +622,19 @@ rut_camera_set_near_plane (RutCamera *camera,
 }
 
 float
-rut_camera_get_near_plane (RutCamera *camera)
+rut_camera_get_near_plane (RutObject *obj)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   return camera->near;
 }
 
 void
-rut_camera_set_far_plane (RutCamera *camera,
+rut_camera_set_far_plane (RutObject *obj,
                           float far)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   if (camera->far == far)
     return;
 
@@ -629,8 +646,10 @@ rut_camera_set_far_plane (RutCamera *camera,
 }
 
 float
-rut_camera_get_far_plane (RutCamera *camera)
+rut_camera_get_far_plane (RutObject *obj)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   return camera->far;
 }
 
@@ -665,9 +684,11 @@ rut_camera_set_projection_mode (RutCamera  *camera,
 }
 
 void
-rut_camera_set_field_of_view (RutCamera *camera,
+rut_camera_set_field_of_view (RutObject *obj,
                               float fov)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   if (camera->fov == fov)
     return;
 
@@ -682,8 +703,10 @@ rut_camera_set_field_of_view (RutCamera *camera,
 }
 
 float
-rut_camera_get_field_of_view (RutCamera *camera)
+rut_camera_get_field_of_view (RutObject *obj)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   return camera->fov;
 }
 
@@ -893,9 +916,11 @@ rut_camera_end_frame (RutCamera *camera)
 }
 
 void
-rut_camera_set_focal_distance (RutCamera *camera,
+rut_camera_set_focal_distance (RutObject *obj,
                                float focal_distance)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   if (camera->focal_distance == focal_distance)
     return;
 
@@ -908,15 +933,19 @@ rut_camera_set_focal_distance (RutCamera *camera,
 }
 
 float
-rut_camera_get_focal_distance (RutCamera *camera)
+rut_camera_get_focal_distance (RutObject *obj)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   return camera->focal_distance;
 }
 
 void
-rut_camera_set_depth_of_field (RutCamera *camera,
+rut_camera_set_depth_of_field (RutObject *obj,
                                float depth_of_field)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   if (camera->depth_of_field == depth_of_field)
     return;
 
@@ -929,7 +958,9 @@ rut_camera_set_depth_of_field (RutCamera *camera,
 }
 
 float
-rut_camera_get_depth_of_field (RutCamera *camera)
+rut_camera_get_depth_of_field (RutObject *obj)
 {
+  RutCamera *camera = RUT_CAMERA (obj);
+
   return camera->depth_of_field;
 }

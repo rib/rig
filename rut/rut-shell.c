@@ -1886,7 +1886,7 @@ static RutPropertySpec _rut_slider_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutSlider, progress),
-    .setter = rut_slider_set_progress
+    .setter.float_type = rut_slider_set_progress
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -2158,9 +2158,10 @@ rut_slider_set_length (RutSlider *slider,
 }
 
 void
-rut_slider_set_progress (RutSlider *slider,
+rut_slider_set_progress (RutObject *obj,
                          float progress)
 {
+  RutSlider *slider = RUT_SLIDER (obj);
   float translation;
 
   if (slider->progress == progress)

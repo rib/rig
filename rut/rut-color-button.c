@@ -83,7 +83,7 @@ _rut_color_button_prop_specs[] =
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_COLOR,
       .data_offset = offsetof (RutColorButton, color),
-      .setter = rut_color_button_set_color
+      .setter.color_type = rut_color_button_set_color
     },
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
@@ -667,9 +667,11 @@ rut_color_button_new (RutContext *context)
 }
 
 void
-rut_color_button_set_color (RutColorButton *button,
+rut_color_button_set_color (RutObject *obj,
                             const CoglColor *color)
 {
+  RutColorButton *button = RUT_COLOR_BUTTON (obj);
+
   if (memcmp (&button->color, color, sizeof (CoglColor)))
     {
       button->color = *color;

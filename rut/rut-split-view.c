@@ -95,14 +95,14 @@ static RutPropertySpec _rut_split_view_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutSplitView, width),
-    .setter = rut_split_view_set_width
+    .setter.float_type = rut_split_view_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutSplitView, height),
-    .setter = rut_split_view_set_height
+    .setter.float_type = rut_split_view_set_height
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -446,16 +446,20 @@ rut_split_view_set_size (RutSplitView *split_view,
 }
 
 void
-rut_split_view_set_width (RutSplitView *split_view,
+rut_split_view_set_width (RutObject *obj,
                           float width)
 {
+  RutSplitView *split_view = RUT_SPLIT_VIEW (obj);
+
   rut_split_view_set_size (split_view, width, split_view->height);
 }
 
 void
-rut_split_view_set_height (RutSplitView *split_view,
+rut_split_view_set_height (RutObject *obj,
                            float height)
 {
+  RutSplitView *split_view = RUT_SPLIT_VIEW (obj);
+
   rut_split_view_set_size (split_view, split_view->width, height);
 }
 

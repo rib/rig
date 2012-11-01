@@ -27,7 +27,7 @@ rut_number_slider_set_max_value (RutNumberSlider *slider,
                                  float max_value);
 
 void
-rut_number_slider_set_value (RutNumberSlider *slider,
+rut_number_slider_set_value (RutObject *slider,
                              float value);
 
 float

@@ -77,8 +77,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "label",
     .type = RUT_PROPERTY_TYPE_TEXT,
-    .getter = rut_entity_get_label,
-    .setter = rut_entity_set_label,
+    .getter.text_type = rut_entity_get_label,
+    .setter.text_type = rut_entity_set_label,
     .nick = "Label",
     .blurb = "A label for the entity",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -86,8 +86,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "visible",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_entity_get_visible,
-    .setter = rut_entity_set_visible,
+    .getter.boolean_type = rut_entity_get_visible,
+    .setter.boolean_type = rut_entity_set_visible,
     .nick = "Visible",
     .blurb = "Whether the entity is visible or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -95,8 +95,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "position",
     .type = RUT_PROPERTY_TYPE_VEC3,
-    .getter = rut_entity_get_position,
-    .setter = rut_entity_set_position,
+    .getter.vec3_type = rut_entity_get_position,
+    .setter.vec3_type = rut_entity_set_position,
     .nick = "Position",
     .blurb = "The entity's position",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -105,8 +105,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "rotation",
     .type = RUT_PROPERTY_TYPE_QUATERNION,
-    .getter = rut_entity_get_rotation,
-    .setter = rut_entity_set_rotation,
+    .getter.quaternion_type = rut_entity_get_rotation,
+    .setter.quaternion_type = rut_entity_set_rotation,
     .nick = "Rotation",
     .blurb = "The entity's rotation",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -115,8 +115,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "scale",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter = rut_entity_get_scale,
-    .setter = rut_entity_set_scale,
+    .getter.float_type = rut_entity_get_scale,
+    .setter.float_type = rut_entity_set_scale,
     .nick = "Scale",
     .blurb = "The entity's uniform scale factor",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -125,8 +125,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "cast_shadow",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_entity_get_cast_shadow,
-    .setter = rut_entity_set_cast_shadow,
+    .getter.boolean_type = rut_entity_get_cast_shadow,
+    .setter.boolean_type = rut_entity_set_cast_shadow,
     .nick = "Cast Shadow",
     .blurb = "Whether the entity casts shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -134,8 +134,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "receive_shadow",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_entity_get_receive_shadow,
-    .setter = rut_entity_set_receive_shadow,
+    .getter.boolean_type = rut_entity_get_receive_shadow,
+    .setter.boolean_type = rut_entity_set_receive_shadow,
     .nick = "Receive Shadow",
     .blurb = "Whether the entity receives shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -255,9 +255,11 @@ rut_entity_get_context (RutEntity *entity)
 }
 
 void
-rut_entity_set_label (RutEntity *entity,
+rut_entity_set_label (RutObject *obj,
                       const char *label)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   g_free (entity->label);
   entity->label = g_strdup (label);
   rut_property_dirty (&entity->ctx->property_ctx,
@@ -265,62 +267,81 @@ rut_entity_set_label (RutEntity *entity,
 }
 
 const char *
-rut_entity_get_label (RutEntity *entity)
+rut_entity_get_label (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->label ? entity->label : "";
 }
 
 float
-rut_entity_get_x (RutEntity *entity)
+rut_entity_get_x (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->position[0];
 }
 
 void
-rut_entity_set_x (RutEntity *entity,
-                 float   x)
+rut_entity_set_x (RutObject *obj,
+                  float x)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->position[0] = x;
   entity->dirty = TRUE;
 }
 
 float
-rut_entity_get_y (RutEntity *entity)
+rut_entity_get_y (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->position[1];
 }
 
 void
-rut_entity_set_y (RutEntity *entity,
-                  float      y)
+rut_entity_set_y (RutObject *obj,
+                  float y)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->position[1] = y;
   entity->dirty = TRUE;
 }
 
 float
-rut_entity_get_z (RutEntity *entity)
+rut_entity_get_z (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->position[2];
 }
 
 void
-rut_entity_set_z (RutEntity *entity,
-                  float      z)
+rut_entity_set_z (RutObject *obj,
+                  float z)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->position[2] = z;
   entity->dirty = TRUE;
 }
 
 const float *
-rut_entity_get_position (RutEntity *entity)
+rut_entity_get_position (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->position;
 }
 
-void rut_entity_set_position (RutEntity *entity,
-                              float      position[3])
+void
+rut_entity_set_position (RutObject *obj,
+                         const float position[3])
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->position[0] = position[0];
   entity->position[1] = position[1];
   entity->position[2] = position[2];
@@ -343,16 +364,20 @@ rut_entity_get_transformed_position (RutEntity *entity,
                                &w);
 }
 
-CoglQuaternion *
-rut_entity_get_rotation (RutEntity *entity)
+const CoglQuaternion *
+rut_entity_get_rotation (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return &entity->rotation;
 }
 
 void
-rut_entity_set_rotation (RutEntity *entity,
+rut_entity_set_rotation (RutObject *obj,
                          const CoglQuaternion *rotation)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->rotation = *rotation;
   entity->dirty = TRUE;
 }
@@ -418,15 +443,19 @@ rut_entity_get_view_rotations (RutObject *entity,
 }
 
 float
-rut_entity_get_scale (RutEntity *entity)
+rut_entity_get_scale (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->scale;
 }
 
 void
-rut_entity_set_scale (RutEntity *entity,
-                      float      scale)
+rut_entity_set_scale (RutObject *obj,
+                      float scale)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->scale = scale;
   entity->dirty = TRUE;
 }
@@ -605,14 +634,19 @@ rut_entity_rotate_z_axis (RutEntity *entity,
 }
 
 CoglBool
-rut_entity_get_cast_shadow (RutEntity *entity)
+rut_entity_get_cast_shadow (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->cast_shadow;
 }
 
-void rut_entity_set_cast_shadow (RutEntity *entity,
-                                 gboolean cast_shadow)
+void
+rut_entity_set_cast_shadow (RutObject *obj,
+                            CoglBool cast_shadow)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   if (entity->cast_shadow == cast_shadow)
     return;
 
@@ -623,15 +657,19 @@ void rut_entity_set_cast_shadow (RutEntity *entity,
 }
 
 CoglBool
-rut_entity_get_receive_shadow (RutEntity *entity)
+rut_entity_get_receive_shadow (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->receive_shadow;
 }
 
 void
-rut_entity_set_receive_shadow (RutEntity *entity,
+rut_entity_set_receive_shadow (RutObject *obj,
                                gboolean receive_shadow)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   if (entity->receive_shadow == receive_shadow)
     return;
 
@@ -691,13 +729,17 @@ rut_entity_get_pipeline_cache (RutEntity *entity,
 }
 
 CoglBool
-rut_entity_get_visible (RutEntity *entity)
+rut_entity_get_visible (RutObject *obj)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   return entity->visible;
 }
 
 void
-rut_entity_set_visible (RutEntity *entity, CoglBool visible)
+rut_entity_set_visible (RutObject *obj, CoglBool visible)
 {
+  RutEntity *entity = RUT_ENTITY (obj);
+
   entity->visible = visible;
 }

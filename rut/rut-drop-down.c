@@ -117,8 +117,8 @@ _rut_drop_down_prop_specs[] =
       .name = "value",
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_INTEGER,
-      .getter = rut_drop_down_get_value,
-      .setter = rut_drop_down_set_value
+      .getter.integer_type = rut_drop_down_get_value,
+      .setter.integer_type = rut_drop_down_set_value
     },
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
@@ -982,9 +982,11 @@ rut_drop_down_new (RutContext *context)
 }
 
 void
-rut_drop_down_set_value (RutDropDown *drop,
+rut_drop_down_set_value (RutObject *obj,
                          int value)
 {
+  RutDropDown *drop = RUT_DROP_DOWN (obj);
+
   int i;
 
   value = CLAMP (value, 0, drop->n_values - 1);
@@ -1005,8 +1007,10 @@ rut_drop_down_set_value (RutDropDown *drop,
 }
 
 int
-rut_drop_down_get_value (RutDropDown *drop)
+rut_drop_down_get_value (RutObject *obj)
 {
+  RutDropDown *drop = RUT_DROP_DOWN (obj);
+
   return drop->values[drop->value_index].value;
 }
 

@@ -32,7 +32,7 @@ RutColorButton *
 rut_color_button_new (RutContext *ctx);
 
 void
-rut_color_button_set_color (RutColorButton *picker,
+rut_color_button_set_color (RutObject *picker,
                             const CoglColor *color);
 
 const CoglColor *

@@ -83,28 +83,28 @@ static RutPropertySpec _rut_scroll_bar_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, length),
-    .setter = rut_scroll_bar_set_length
+    .setter.float_type = rut_scroll_bar_set_length
   },
   {
     .name = "virtual_length",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, virtual_length),
-    .setter = rut_scroll_bar_set_virtual_length
+    .setter.float_type = rut_scroll_bar_set_virtual_length
   },
   {
     .name = "virtual_viewport",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, viewport_length),
-    .setter = rut_scroll_bar_set_virtual_viewport
+    .setter.float_type = rut_scroll_bar_set_virtual_viewport
   },
   {
     .name = "virtual_offset",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutScrollBar, offset),
-    .setter = rut_scroll_bar_set_virtual_offset
+    .setter.float_type = rut_scroll_bar_set_virtual_offset
   },
 
 
@@ -531,9 +531,11 @@ rut_scroll_bar_new (RutContext *ctx,
 }
 
 void
-rut_scroll_bar_set_length (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_length (RutObject *obj,
                            float length)
 {
+  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
+
   if (scroll_bar->length == length)
     return;
 
@@ -543,9 +545,11 @@ rut_scroll_bar_set_length (RutScrollBar *scroll_bar,
 }
 
 void
-rut_scroll_bar_set_virtual_length (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_length (RutObject *obj,
                                    float virtual_length)
 {
+  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
+
   if (scroll_bar->virtual_length == virtual_length)
     return;
 
@@ -556,9 +560,11 @@ rut_scroll_bar_set_virtual_length (RutScrollBar *scroll_bar,
 }
 
 void
-rut_scroll_bar_set_virtual_viewport (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_viewport (RutObject *obj,
                                     float viewport_length)
 {
+  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
+
   if (scroll_bar->viewport_length == viewport_length)
     return;
 
@@ -569,9 +575,11 @@ rut_scroll_bar_set_virtual_viewport (RutScrollBar *scroll_bar,
 }
 
 void
-rut_scroll_bar_set_virtual_offset (RutScrollBar *scroll_bar,
+rut_scroll_bar_set_virtual_offset (RutObject *obj,
                                    float viewport_offset)
 {
+  RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
+
   if (scroll_bar->offset == viewport_offset)
     return;
 

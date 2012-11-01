@@ -27,11 +27,11 @@ rut_property_init (RutProperty *property,
   /* If the property is readable there should be some way to read it */
   g_warn_if_fail ((spec->flags & RUT_PROPERTY_FLAG_READABLE) == 0 ||
                   spec->data_offset != 0 ||
-                  spec->getter);
+                  spec->getter.any_type);
   /* Same for writable properties */
   g_warn_if_fail ((spec->flags & RUT_PROPERTY_FLAG_WRITABLE) == 0 ||
                   spec->data_offset != 0 ||
-                  spec->setter);
+                  spec->setter.any_type);
 
   property->spec = spec;
   property->dependants = NULL;

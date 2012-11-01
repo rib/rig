@@ -265,8 +265,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "buffer",
     .type = RUT_PROPERTY_TYPE_OBJECT,
-    .getter = rut_text_get_buffer,
-    .setter = rut_text_set_buffer,
+    .getter.object_type = rut_text_get_buffer,
+    .setter.object_type = rut_text_set_buffer,
     .nick = "Buffer",
     .blurb = "The buffer for the text",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -283,8 +283,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "font-name",
     .type = RUT_PROPERTY_TYPE_TEXT,
-    .getter = rut_text_get_font_name,
-    .setter = rut_text_set_font_name,
+    .getter.text_type = rut_text_get_font_name,
+    .setter.text_type = rut_text_set_font_name,
     .nick = "Font Name",
     .blurb = "The font to be used by the text",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -301,8 +301,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "font-description",
     .type = RUT_PROPERTY_TYPE_POINTER,
-    .getter = rut_text_get_font_description,
-    .setter = rut_text_set_font_description,
+    .getter.any_type = rut_text_get_font_description,
+    .setter.any_type = rut_text_set_font_description,
     .nick = "Font Description",
     .blurb = "The font description to be used",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -316,8 +316,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "text",
     .type = RUT_PROPERTY_TYPE_TEXT,
-    .getter = rut_text_get_text,
-    .setter = rut_text_set_text,
+    .getter.text_type = rut_text_get_text,
+    .setter.text_type = rut_text_set_text,
     .nick = "Text",
     .blurb = "The text to render",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -331,8 +331,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "color",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_text_get_color,
-    .setter = rut_text_set_color,
+    .getter.color_type = rut_text_get_color,
+    .setter.color_type = rut_text_set_color,
     .nick = "Font Color",
     .blurb = "Color of the font used by the text",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -347,8 +347,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "editable",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_editable,
-    .setter = rut_text_set_editable,
+    .getter.boolean_type = rut_text_get_editable,
+    .setter.boolean_type = rut_text_set_editable,
     .nick = "Editable",
     .blurb = "Whether the text is editable",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -363,8 +363,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "selectable",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_selectable,
-    .setter = rut_text_set_selectable,
+    .getter.boolean_type = rut_text_get_selectable,
+    .setter.boolean_type = rut_text_set_selectable,
     .nick = "Selectable",
     .blurb = "Whether the text is selectable",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -379,8 +379,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "activatable",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_activatable,
-    .setter = rut_text_set_activatable,
+    .getter.boolean_type = rut_text_get_activatable,
+    .setter.boolean_type = rut_text_set_activatable,
     .nick = "Activatable",
     .blurb = "Whether pressing return causes the activate signal to be emitted",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -397,8 +397,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "cursor-visible",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_cursor_visible,
-    .setter = rut_text_set_cursor_visible,
+    .getter.boolean_type = rut_text_get_cursor_visible,
+    .setter.boolean_type = rut_text_set_cursor_visible,
     .nick = "Cursor Visible",
     .blurb = "Whether the input cursor is visible",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -413,8 +413,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "cursor-color",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_text_get_cursor_color,
-    .setter = rut_text_set_cursor_color,
+    .getter.color_type = rut_text_get_cursor_color,
+    .setter.color_type = rut_text_set_cursor_color,
     .nick = "Cursor Color",
     .blurb = "Cursor Color",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -432,7 +432,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Cursor Color Set",
     .blurb = "Whether the cursor color has been set",
     .flags = RUT_PROPERTY_FLAG_READABLE,
-    .getter = rut_text_get_cursor_color_set
+    .getter.boolean_type = rut_text_get_cursor_color_set
   },
 
   /**
@@ -444,8 +444,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "cursor-size",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_cursor_size,
-    .setter = rut_text_set_cursor_size,
+    .getter.integer_type = rut_text_get_cursor_size,
+    .setter.integer_type = rut_text_set_cursor_size,
     .nick = "Cursor Size",
     .blurb = "The width of the cursor, in pixels",
     .flags = RUT_PROPERTY_FLAG_READWRITE |
@@ -462,8 +462,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "position",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_cursor_position,
-    .setter = rut_text_set_cursor_position,
+    .getter.integer_type = rut_text_get_cursor_position,
+    .setter.integer_type = rut_text_set_cursor_position,
     .nick = "Cursor Position",
     .blurb = "The cursor position",
     .flags = RUT_PROPERTY_FLAG_READWRITE |
@@ -480,8 +480,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "selection-bound",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_selection_bound,
-    .setter = rut_text_set_selection_bound,
+    .getter.integer_type = rut_text_get_selection_bound,
+    .setter.integer_type = rut_text_set_selection_bound,
     .nick = "Selection-bound",
     .blurb = "The cursor position of the other end of the selection",
     .flags = RUT_PROPERTY_FLAG_READWRITE |
@@ -498,8 +498,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "selection-color",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_text_get_selection_color,
-    .setter = rut_text_set_selection_color,
+    .getter.color_type = rut_text_get_selection_color,
+    .setter.color_type = rut_text_set_selection_color,
     .nick = "Selection Color",
     .blurb = "Selection Color",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -517,7 +517,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Selection Color Set",
     .blurb = "Whether the selection color has been set",
     .flags = RUT_PROPERTY_FLAG_READABLE,
-    .getter = rut_text_get_selection_color_set
+    .getter.boolean_type = rut_text_get_selection_color_set
   },
 
   /**
@@ -529,8 +529,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "attributes",
     .type = RUT_PROPERTY_TYPE_POINTER,
-    .getter = rut_text_get_attributes,
-    .setter = rut_text_set_attributes,
+    .getter.any_type = rut_text_get_attributes,
+    .setter.any_type = rut_text_set_attributes,
     .nick = "Attributes",
     .blurb = "A list of style attributes to apply to the contents of the actor",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -552,8 +552,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "use-markup",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_use_markup,
-    .setter = rut_text_set_use_markup,
+    .getter.boolean_type = rut_text_get_use_markup,
+    .setter.boolean_type = rut_text_set_use_markup,
     .nick = "Use markup",
     .blurb = "Whether or not the text includes Pango markup",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -569,8 +569,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "line-wrap",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_line_wrap,
-    .setter = rut_text_set_line_wrap,
+    .getter.boolean_type = rut_text_get_line_wrap,
+    .setter.boolean_type = rut_text_set_line_wrap,
     .nick = "Line wrap",
     .blurb = "If set, wrap the lines if the text becomes too wide",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -585,8 +585,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "line-wrap-mode",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_line_wrap_mode,
-    .setter = rut_text_set_line_wrap_mode,
+    .getter.any_type = rut_text_get_line_wrap_mode,
+    .setter.any_type = rut_text_set_line_wrap_mode,
     .nick = "Line wrap mode",
     .blurb = "Control how line-wrapping is done",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -602,8 +602,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "ellipsize",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_ellipsize,
-    .setter = rut_text_set_ellipsize,
+    .getter.any_type = rut_text_get_ellipsize,
+    .setter.any_type = rut_text_set_ellipsize,
     .nick = "Ellipsize",
     .blurb = "The preferred place to ellipsize the string",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -619,8 +619,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "line-alignment",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_line_alignment,
-    .setter = rut_text_set_line_alignment,
+    .getter.any_type = rut_text_get_line_alignment,
+    .setter.any_type = rut_text_set_line_alignment,
     .nick = "Line Alignment",
     .blurb = "The preferred alignment for the string, for multi-line text",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -635,8 +635,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "justify",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_justify,
-    .setter = rut_text_set_justify,
+    .getter.boolean_type = rut_text_get_justify,
+    .setter.boolean_type = rut_text_set_justify,
     .nick = "Justify",
     .blurb = "Whether the text should be justified",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -651,8 +651,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "password-char",
     .type = RUT_PROPERTY_TYPE_UINT32,
-    .getter = rut_text_get_password_char,
-    .setter = rut_text_set_password_char,
+    .getter.uint32_type = rut_text_get_password_char,
+    .setter.uint32_type = rut_text_set_password_char,
     .nick = "Password Character",
     .blurb = "If non-zero, use this character to display the text contents",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -666,8 +666,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "max-length",
     .type = RUT_PROPERTY_TYPE_INTEGER,
-    .getter = rut_text_get_max_length,
-    .setter = rut_text_set_max_length,
+    .getter.integer_type = rut_text_get_max_length,
+    .setter.integer_type = rut_text_set_max_length,
     .nick = "Max Length",
     .blurb = "Maximum length of the text inside the actor",
     .flags = RUT_PROPERTY_FLAG_READWRITE |
@@ -692,8 +692,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "single-line-mode",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter = rut_text_get_single_line_mode,
-    .setter = rut_text_set_single_line_mode,
+    .getter.boolean_type = rut_text_get_single_line_mode,
+    .setter.boolean_type = rut_text_set_single_line_mode,
     .nick = "Single Line Mode",
     .blurb = "Whether the text should be a single line",
     .flags = RUT_PROPERTY_FLAG_READWRITE
@@ -707,8 +707,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
   {
     .name = "selected-text-color",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_text_get_selected_text_color,
-    .setter = rut_text_set_selected_text_color,
+    .getter.color_type = rut_text_get_selected_text_color,
+    .setter.color_type = rut_text_set_selected_text_color,
     .nick = "Selected Text Color",
     .blurb = "Selected Text Color",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -726,7 +726,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Selected Text Color Set",
     .blurb = "Whether the selected text color has been set",
     .flags = RUT_PROPERTY_FLAG_READABLE,
-    .getter = rut_text_get_selected_text_color_set,
+    .getter.boolean_type = rut_text_get_selected_text_color_set,
     .default_value = { .boolean = TRUE }
   },
 
@@ -742,6 +742,8 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .nick = "Text Direction",
     .blurb = "Direction of the text",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .getter.any_type = rut_text_get_direction,
+    .setter.any_type = rut_text_set_direction,
     .default_value = { .integer = RUT_TEXT_DIRECTION_LEFT_TO_RIGHT }
   },
 
@@ -750,7 +752,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutText, width),
-    .setter = rut_text_set_width
+    .setter.float_type = rut_text_set_width
   },
 
   {
@@ -758,7 +760,7 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutText, height),
-    .setter = rut_text_set_height
+    .setter.float_type = rut_text_set_height
   },
 
   { 0 }
@@ -3072,14 +3074,18 @@ _rut_text_set_size (RutObject *object,
 }
 
 void
-rut_text_set_width (RutText *text, float width)
+rut_text_set_width (RutObject *obj, float width)
 {
+  RutText *text = RUT_TEXT (obj);
+
   _rut_text_set_size (text, width, text->height);
 }
 
 void
-rut_text_set_height (RutText *text, float height)
+rut_text_set_height (RutObject *obj, float height)
 {
+  RutText *text = RUT_TEXT (obj);
+
   _rut_text_set_size (text, text->width, height);
 }
 
@@ -3510,16 +3516,20 @@ rut_text_new_with_buffer (RutContext *ctx,
   return rut_text_new_full (ctx, NULL, "", buffer);
 }
 
-RutTextBuffer*
-rut_text_get_buffer (RutText *text)
+RutObject *
+rut_text_get_buffer (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return get_buffer (text);
 }
 
 void
-rut_text_set_buffer (RutText *text,
-                     RutTextBuffer *buffer)
+rut_text_set_buffer (RutObject *obj,
+                     RutObject *buffer)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (buffer)
     rut_refable_simple_ref (buffer);
 
@@ -3543,9 +3553,11 @@ rut_text_set_buffer (RutText *text,
 }
 
 void
-rut_text_set_editable (RutText *text,
+rut_text_set_editable (RutObject *obj,
                        CoglBool editable)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->editable != editable)
     {
       text->editable = editable;
@@ -3558,15 +3570,19 @@ rut_text_set_editable (RutText *text,
 }
 
 CoglBool
-rut_text_get_editable (RutText *text)
+rut_text_get_editable (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->editable;
 }
 
 void
-rut_text_set_selectable (RutText *text,
-                             CoglBool     selectable)
+rut_text_set_selectable (RutObject *obj,
+                         CoglBool selectable)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->selectable != selectable)
     {
       text->selectable = selectable;
@@ -3579,15 +3595,19 @@ rut_text_set_selectable (RutText *text,
 }
 
 CoglBool
-rut_text_get_selectable (RutText *text)
+rut_text_get_selectable (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->selectable;
 }
 
 void
-rut_text_set_activatable (RutText *text,
+rut_text_set_activatable (RutObject *obj,
                           CoglBool activatable)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->activatable != activatable)
     {
       text->activatable = activatable;
@@ -3600,8 +3620,10 @@ rut_text_set_activatable (RutText *text,
 }
 
 CoglBool
-rut_text_get_activatable (RutText *text)
+rut_text_get_activatable (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->activatable;
 }
 
@@ -3622,9 +3644,11 @@ rut_text_activate (RutText *text)
 }
 
 void
-rut_text_set_cursor_visible (RutText *text,
+rut_text_set_cursor_visible (RutObject *obj,
                              CoglBool cursor_visible)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->cursor_visible != cursor_visible)
     {
       text->cursor_visible = cursor_visible;
@@ -3637,15 +3661,19 @@ rut_text_set_cursor_visible (RutText *text,
 }
 
 CoglBool
-rut_text_get_cursor_visible (RutText *text)
+rut_text_get_cursor_visible (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->cursor_visible;
 }
 
 void
-rut_text_set_cursor_color (RutText *text,
+rut_text_set_cursor_color (RutObject *obj,
                            const CoglColor *color)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (color)
     {
       text->cursor_color = *color;
@@ -3672,18 +3700,19 @@ rut_text_set_cursor_color_u32 (RutText *text,
   rut_text_set_cursor_color (text, &color);
 }
 
-void
-rut_text_get_cursor_color (RutText  *text,
-                           CoglColor *color)
+const CoglColor *
+rut_text_get_cursor_color (RutObject *obj)
 {
-  g_return_if_fail (color != NULL);
+  RutText *text = RUT_TEXT (obj);
 
-  *color = text->cursor_color;
+  return &text->cursor_color;
 }
 
 CoglBool
-rut_text_get_cursor_color_set (RutText *text)
+rut_text_get_cursor_color_set (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return !!text->cursor_color_set;
 }
 
@@ -3739,9 +3768,11 @@ rut_text_get_selection (RutText *text)
 }
 
 void
-rut_text_set_selection_bound (RutText *text,
+rut_text_set_selection_bound (RutObject *obj,
                               int selection_bound)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->selection_bound != selection_bound)
     {
       int len = rut_text_buffer_get_length (get_buffer (text));;
@@ -3759,15 +3790,19 @@ rut_text_set_selection_bound (RutText *text,
 }
 
 int
-rut_text_get_selection_bound (RutText *text)
+rut_text_get_selection_bound (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->selection_bound;
 }
 
 void
-rut_text_set_selection_color (RutText *text,
+rut_text_set_selection_color (RutObject *obj,
                               const CoglColor *color)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (color)
     {
       text->selection_color = *color;
@@ -3794,25 +3829,28 @@ rut_text_set_selection_color_u32 (RutText *text,
   rut_text_set_selection_color (text, &color);
 }
 
-void
-rut_text_get_selection_color (RutText  *text,
-                              CoglColor *color)
+const CoglColor *
+rut_text_get_selection_color (RutObject *obj)
 {
-  g_return_if_fail (color != NULL);
+  RutText *text = RUT_TEXT (obj);
 
-  *color = text->selection_color;
+  return &text->selection_color;
 }
 
 CoglBool
-rut_text_get_selection_color_set (RutText *text)
+rut_text_get_selection_color_set (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return !!text->selection_color_set;
 }
 
 void
-rut_text_set_selected_text_color (RutText *text,
+rut_text_set_selected_text_color (RutObject *obj,
                                   const CoglColor *color)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (color)
     {
       text->selected_text_color = *color;
@@ -3839,18 +3877,19 @@ rut_text_set_selected_text_color_u32 (RutText *text,
   rut_text_set_selected_text_color (text, &color);
 }
 
-void
-rut_text_get_selected_text_color (RutText *text,
-                                  CoglColor *color)
+const CoglColor *
+rut_text_get_selected_text_color (RutObject *obj)
 {
-  g_return_if_fail (color != NULL);
+  RutText *text = RUT_TEXT (obj);
 
-  *color = text->selected_text_color;
+  return &text->selected_text_color;
 }
 
 CoglBool
-rut_text_get_selected_text_color_set (RutText *text)
+rut_text_get_selected_text_color_set (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return !!text->selected_text_color_set;
 }
 
@@ -3871,15 +3910,18 @@ rut_text_get_font_description (RutText *text)
 }
 
 const char *
-rut_text_get_font_name (RutText *text)
+rut_text_get_font_name (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->font_name;
 }
 
 void
-rut_text_set_font_name (RutText *text,
+rut_text_set_font_name (RutObject *obj,
                         const char *font_name)
 {
+  RutText *text = RUT_TEXT (obj);
   PangoFontDescription *desc;
   CoglBool is_default_font;
 
@@ -3928,8 +3970,10 @@ out:
 }
 
 const char *
-rut_text_get_text (RutText *text)
+rut_text_get_text (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return rut_text_buffer_get_text (get_buffer (text));
 }
 
@@ -3962,9 +4006,11 @@ rut_text_set_use_markup_internal (RutText *text,
 }
 
 void
-rut_text_set_text (RutText *text,
+rut_text_set_text (RutObject *obj,
                    const char *text_str)
 {
+  RutText *text = RUT_TEXT (obj);
+
   /* if the text is editable (i.e. there is not markup flag to reset) then
    * changing the contents will result in selection and cursor changes that
    * we should avoid
@@ -4004,9 +4050,11 @@ rut_text_get_layout (RutText *text)
 }
 
 void
-rut_text_set_color (RutText *text,
+rut_text_set_color (RutObject *obj,
                     const CoglColor *color)
 {
+  RutText *text = RUT_TEXT (obj);
+
   g_return_if_fail (color != NULL);
 
   text->text_color = *color;
@@ -4027,13 +4075,12 @@ rut_text_set_color_u32 (RutText *text,
   rut_text_set_color (text, &color);
 }
 
-void
-rut_text_get_color (RutText *text,
-                    CoglColor *color)
+const CoglColor *
+rut_text_get_color (RutObject *obj)
 {
-  g_return_if_fail (color != NULL);
+  RutText *text = RUT_TEXT (obj);
 
-  *color = text->text_color;
+  return &text->text_color;
 }
 
 void
@@ -4063,15 +4110,19 @@ rut_text_get_ellipsize (RutText *text)
 }
 
 CoglBool
-rut_text_get_line_wrap (RutText *text)
+rut_text_get_line_wrap (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->wrap;
 }
 
 void
-rut_text_set_line_wrap (RutText *text,
+rut_text_set_line_wrap (RutObject *obj,
                         CoglBool line_wrap)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->wrap != line_wrap)
     {
       text->wrap = line_wrap;
@@ -4166,9 +4217,10 @@ rut_text_get_line_alignment (RutText *text)
 }
 
 void
-rut_text_set_use_markup (RutText *text,
+rut_text_set_use_markup (RutObject *obj,
 			 CoglBool setting)
 {
+  RutText *text = RUT_TEXT (obj);
   const char *text_str;
 
   text_str = rut_text_buffer_get_text (get_buffer (text));
@@ -4184,15 +4236,19 @@ rut_text_set_use_markup (RutText *text,
 }
 
 CoglBool
-rut_text_get_use_markup (RutText *text)
+rut_text_get_use_markup (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->use_markup;
 }
 
 void
-rut_text_set_justify (RutText *text,
+rut_text_set_justify (RutObject *obj,
                       CoglBool justify)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->justify != justify)
     {
       text->justify = justify;
@@ -4207,21 +4263,26 @@ rut_text_set_justify (RutText *text,
 }
 
 CoglBool
-rut_text_get_justify (RutText *text)
+rut_text_get_justify (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->justify;
 }
 
 int
-rut_text_get_cursor_position (RutText *text)
+rut_text_get_cursor_position (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->position;
 }
 
 void
-rut_text_set_cursor_position (RutText *text,
+rut_text_set_cursor_position (RutObject *obj,
                               int position)
 {
+  RutText *text = RUT_TEXT (obj);
   int len;
 
   if (text->position == position)
@@ -4245,9 +4306,11 @@ rut_text_set_cursor_position (RutText *text,
 }
 
 void
-rut_text_set_cursor_size (RutText *text,
+rut_text_set_cursor_size (RutObject *obj,
                           int size)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->cursor_size != size)
     {
       if (size < 0)
@@ -4262,16 +4325,20 @@ rut_text_set_cursor_size (RutText *text,
     }
 }
 
-unsigned int
-rut_text_get_cursor_size (RutText *text)
+int
+rut_text_get_cursor_size (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->cursor_size;
 }
 
 void
-rut_text_set_password_char (RutText *text,
+rut_text_set_password_char (RutObject *obj,
                             uint32_t wc)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->password_char != wc)
     {
       text->password_char = wc;
@@ -4286,21 +4353,27 @@ rut_text_set_password_char (RutText *text,
 }
 
 uint32_t
-rut_text_get_password_char (RutText *text)
+rut_text_get_password_char (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->password_char;
 }
 
 void
-rut_text_set_max_length (RutText *text,
-                             int         max)
+rut_text_set_max_length (RutObject *obj,
+                         int max)
 {
+  RutText *text = RUT_TEXT (obj);
+
   rut_text_buffer_set_max_length (get_buffer (text), max);
 }
 
 int
-rut_text_get_max_length (RutText *text)
+rut_text_get_max_length (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return rut_text_buffer_get_max_length (get_buffer (text));
 }
 
@@ -4373,9 +4446,11 @@ rut_text_get_chars (RutText *text,
 }
 
 void
-rut_text_set_single_line_mode (RutText *text,
+rut_text_set_single_line_mode (RutObject *obj,
                                CoglBool single_line)
 {
+  RutText *text = RUT_TEXT (obj);
+
   if (text->single_line_mode != single_line)
     {
       text->single_line_mode = single_line;
@@ -4397,8 +4472,10 @@ rut_text_set_single_line_mode (RutText *text,
 }
 
 CoglBool
-rut_text_get_single_line_mode (RutText *text)
+rut_text_get_single_line_mode (RutObject *obj)
 {
+  RutText *text = RUT_TEXT (obj);
+
   return text->single_line_mode;
 }
 

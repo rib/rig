@@ -42,12 +42,11 @@ rut_camera_set_background_color4f (RutCamera *camera,
                                    float alpha);
 
 void
-rut_camera_set_background_color (RutCamera *camera,
+rut_camera_set_background_color (RutObject *camera,
                                  const CoglColor *color);
 
-void
-rut_camera_get_background_color (RutCamera *camera,
-                                 CoglColor *color);
+const CoglColor *
+rut_camera_get_background_color (RutObject *camera);
 
 void
 rut_camera_set_clear (RutCamera *camera,
@@ -68,19 +67,19 @@ rut_camera_set_viewport (RutCamera *camera,
                          float height);
 
 void
-rut_camera_set_viewport_x (RutCamera *camera,
+rut_camera_set_viewport_x (RutObject *camera,
                            float x);
 
 void
-rut_camera_set_viewport_y (RutCamera *camera,
+rut_camera_set_viewport_y (RutObject *camera,
                            float y);
 
 void
-rut_camera_set_viewport_width (RutCamera *camera,
+rut_camera_set_viewport_width (RutObject *camera,
                                float width);
 
 void
-rut_camera_set_viewport_height (RutCamera *camera,
+rut_camera_set_viewport_height (RutObject *camera,
                                 float height);
 
 const float *
@@ -90,18 +89,18 @@ const CoglMatrix *
 rut_camera_get_projection (RutCamera *camera);
 
 void
-rut_camera_set_near_plane (RutCamera *camera,
+rut_camera_set_near_plane (RutObject *camera,
                            float near);
 
 float
-rut_camera_get_near_plane (RutCamera *camera);
+rut_camera_get_near_plane (RutObject *camera);
 
 void
-rut_camera_set_far_plane (RutCamera *camera,
+rut_camera_set_far_plane (RutObject *camera,
                           float far);
 
 float
-rut_camera_get_far_plane (RutCamera *camera);
+rut_camera_get_far_plane (RutObject *camera);
 
 RutProjection
 rut_camera_get_projection_mode (RutCamera *camera);
@@ -111,11 +110,11 @@ rut_camera_set_projection_mode (RutCamera *camera,
                                 RutProjection projection);
 
 void
-rut_camera_set_field_of_view (RutCamera *camera,
+rut_camera_set_field_of_view (RutObject *camera,
                               float fov);
 
 float
-rut_camera_get_field_of_view (RutCamera *camera);
+rut_camera_get_field_of_view (RutObject *camera);
 
 void
 rut_camera_set_orthographic_coordinates (RutCamera *camera,
@@ -178,17 +177,17 @@ CoglPrimitive *
 rut_camera_create_frustum_primitive (RutCamera *camera);
 
 void
-rut_camera_set_focal_distance (RutCamera *camera,
+rut_camera_set_focal_distance (RutObject *camera,
                                float focal_distance);
 
 float
-rut_camera_get_focal_distance (RutCamera *camera);
+rut_camera_get_focal_distance (RutObject *camera);
 
 void
-rut_camera_set_depth_of_field (RutCamera *camera,
+rut_camera_set_depth_of_field (RutObject *camera,
                                float depth_of_field);
 
 float
-rut_camera_get_depth_of_field (RutCamera *camera);
+rut_camera_get_depth_of_field (RutObject *camera);
 
 #endif /* __RUT_CAMERA_H__ */

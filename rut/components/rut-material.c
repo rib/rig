@@ -28,8 +28,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .name = "ambient",
     .nick = "Ambient",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_material_get_ambient,
-    .setter = rut_material_set_ambient,
+    .getter.color_type = rut_material_get_ambient,
+    .setter.color_type = rut_material_set_ambient,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -37,8 +37,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .name = "diffuse",
     .nick = "Diffuse",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_material_get_diffuse,
-    .setter = rut_material_set_diffuse,
+    .getter.color_type = rut_material_get_diffuse,
+    .setter.color_type = rut_material_set_diffuse,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -46,8 +46,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .name = "specular",
     .nick = "Specular",
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .getter = rut_material_get_specular,
-    .setter = rut_material_set_specular,
+    .getter.color_type = rut_material_get_specular,
+    .setter.color_type = rut_material_set_specular,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -55,8 +55,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .name = "shininess",
     .nick = "Shininess",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter = rut_material_get_shininess,
-    .setter = rut_material_set_shininess,
+    .getter.float_type = rut_material_get_shininess,
+    .setter.float_type = rut_material_set_shininess,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1000 }},
@@ -66,8 +66,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .name = "alpha-mask-threshold",
     .nick = "Alpha Threshold",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter = rut_material_get_alpha_mask_threshold,
-    .setter = rut_material_set_alpha_mask_threshold,
+    .getter.float_type = rut_material_get_alpha_mask_threshold,
+    .setter.float_type = rut_material_set_alpha_mask_threshold,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
     .validation = { .float_range = { 0, 1 }},
@@ -245,72 +245,91 @@ rut_material_get_alpha_mask_asset (RutMaterial *material)
 }
 
 void
-rut_material_set_ambient (RutMaterial *material,
+rut_material_set_ambient (RutObject *obj,
                           const CoglColor *color)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   material->ambient = *color;
   material->uniforms_age++;
 }
 
 const CoglColor *
-rut_material_get_ambient (RutMaterial *material)
+rut_material_get_ambient (RutObject *obj)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   return &material->ambient;
 }
 
 void
-rut_material_set_diffuse (RutMaterial *material,
+rut_material_set_diffuse (RutObject *obj,
                           const CoglColor *color)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   material->diffuse = *color;
   material->uniforms_age++;
 
 }
 
 const CoglColor *
-rut_material_get_diffuse (RutMaterial *material)
+rut_material_get_diffuse (RutObject *obj)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   return &material->diffuse;
 }
 
 void
-rut_material_set_specular (RutMaterial *material,
+rut_material_set_specular (RutObject *obj,
                            const CoglColor *color)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   material->specular = *color;
   material->uniforms_age++;
 }
 
 const CoglColor *
-rut_material_get_specular (RutMaterial *material)
+rut_material_get_specular (RutObject *obj)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   return &material->specular;
 }
 
 void
-rut_material_set_shininess (RutMaterial *material,
+rut_material_set_shininess (RutObject *obj,
                             float shininess)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   material->shininess = shininess;
   material->uniforms_age++;
 }
 
 float
-rut_material_get_shininess (RutMaterial *material)
+rut_material_get_shininess (RutObject *obj)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   return material->shininess;
 }
 
 float
-rut_material_get_alpha_mask_threshold (RutMaterial *material)
+rut_material_get_alpha_mask_threshold (RutObject *obj)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
+
   return material->alpha_mask_threshold;
 }
 
 void
-rut_material_set_alpha_mask_threshold (RutMaterial *material,
+rut_material_set_alpha_mask_threshold (RutObject *obj,
                                        float threshold)
 {
+  RutMaterial *material = RUT_MATERIAL (obj);
   RutEntity *entity;
   RutContext *ctx;
   if (material->alpha_mask_threshold == threshold)

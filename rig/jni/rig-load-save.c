@@ -161,9 +161,9 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_text_type)
     {
       RutText *text = RUT_TEXT (component);
-      CoglColor color;
+      const CoglColor *color;
 
-      rut_text_get_color (text, &color);
+      color = rut_text_get_color (text);
 
       fprintf (state->file,
                "%*s<text text=\"%s\" font=\"%s\" "
@@ -171,10 +171,10 @@ save_component_cb (RutComponent *component,
                state->indent, "",
                rut_text_get_text (text),
                rut_text_get_font_name (text),
-               cogl_color_get_red_byte (&color),
-               cogl_color_get_green_byte (&color),
-               cogl_color_get_blue_byte (&color),
-               cogl_color_get_alpha_byte (&color));
+               cogl_color_get_red_byte (color),
+               cogl_color_get_green_byte (color),
+               cogl_color_get_blue_byte (color),
+               cogl_color_get_alpha_byte (color));
     }
 
   state->indent -= INDENT_LEVEL;
@@ -189,7 +189,7 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
   const RutType *type = rut_object_get_type (object);
   RutObject *parent = rut_graphable_get_parent (object);
   RutEntity *entity;
-  CoglQuaternion *q;
+  const CoglQuaternion *q;
   float angle;
   float axis[3];
   const char *label;

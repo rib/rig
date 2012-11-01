@@ -96,8 +96,8 @@ dummy_property_spec =
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutPropInspector, ref_count),
-    .setter = abort,
-    .getter = abort
+    .setter.any_type = abort,
+    .getter.any_type = abort
   };
 
 RutType rut_prop_inspector_type;

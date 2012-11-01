@@ -72,7 +72,7 @@ void
 _rut_entity_init_type (void);
 
 CoglBool
-rut_entity_get_cast_shadow (RutEntity *entity);
+rut_entity_get_cast_shadow (RutObject *entity);
 
 RutEntity *
 rut_entity_new (RutContext *ctx);
@@ -81,49 +81,49 @@ RutContext *
 rut_entity_get_context (RutEntity *entity);
 
 const char *
-rut_entity_get_label (RutEntity *entity);
+rut_entity_get_label (RutObject *entity);
 
 void
-rut_entity_set_label (RutEntity *entity,
+rut_entity_set_label (RutObject *entity,
                       const char *label);
 
 float
-rut_entity_get_x (RutEntity *entity);
+rut_entity_get_x (RutObject *entity);
 
 void
-rut_entity_set_x (RutEntity *entity,
+rut_entity_set_x (RutObject *entity,
                   float x);
 
 float
-rut_entity_get_y (RutEntity *entity);
+rut_entity_get_y (RutObject *entity);
 
 void
-rut_entity_set_y (RutEntity *entity,
+rut_entity_set_y (RutObject *entity,
                   float y);
 
 float
-rut_entity_get_z (RutEntity *entity);
+rut_entity_get_z (RutObject *entity);
 
 void
-rut_entity_set_z (RutEntity *entity,
+rut_entity_set_z (RutObject *entity,
                   float z);
 
 const float *
-rut_entity_get_position (RutEntity *entity);
+rut_entity_get_position (RutObject *entity);
 
 void
-rut_entity_set_position (RutEntity *entity,
-                         float position[3]);
+rut_entity_set_position (RutObject *entity,
+                         const float position[3]);
 
 void
 rut_entity_get_transformed_position (RutEntity *entity,
                                      float position[3]);
 
-CoglQuaternion *
-rut_entity_get_rotation (RutEntity *entity);
+const CoglQuaternion *
+rut_entity_get_rotation (RutObject *entity);
 
 void
-rut_entity_set_rotation (RutEntity *entity,
+rut_entity_set_rotation (RutObject *entity,
                          const CoglQuaternion *rotation);
 
 void
@@ -140,10 +140,10 @@ rut_entity_get_view_rotations (RutObject *entity,
                                CoglQuaternion *rotation);
 
 float
-rut_entity_get_scale (RutEntity *entity);
+rut_entity_get_scale (RutObject *entity);
 
 void
-rut_entity_set_scale (RutEntity *entity,
+rut_entity_set_scale (RutObject *entity,
                       float scale);
 
 float
@@ -193,14 +193,14 @@ rut_entity_get_component (RutEntity *entity,
                           RutComponentType type);
 
 void
-rut_entity_set_cast_shadow (RutEntity *entity,
+rut_entity_set_cast_shadow (RutObject *entity,
                             gboolean cast_shadow);
 
 CoglBool
-rut_entity_get_receive_shadow (RutEntity *entity);
+rut_entity_get_receive_shadow (RutObject *entity);
 
 void
-rut_entity_set_receive_shadow (RutEntity *entity,
+rut_entity_set_receive_shadow (RutObject *entity,
                                gboolean receive_shadow);
 
 typedef void (*RutComponentCallback) (RutComponent *component,
@@ -221,9 +221,9 @@ rut_entity_get_pipeline_cache (RutEntity *entity,
                                int slot);
 
 CoglBool
-rut_entity_get_visible (RutEntity *entity);
+rut_entity_get_visible (RutObject *entity);
 
 void
-rut_entity_set_visible (RutEntity *entity, CoglBool visible);
+rut_entity_set_visible (RutObject *entity, CoglBool visible);
 
 #endif /* __RUT_ENTITY_H__ */

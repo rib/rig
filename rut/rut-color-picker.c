@@ -114,7 +114,7 @@ _rut_color_picker_prop_specs[] =
       .flags = RUT_PROPERTY_FLAG_READWRITE,
       .type = RUT_PROPERTY_TYPE_COLOR,
       .data_offset = offsetof (RutColorPicker, color),
-      .setter = rut_color_picker_set_color
+      .setter.color_type = rut_color_picker_set_color
     },
     { 0 } /* XXX: Needed for runtime counting of the number of properties */
   };
@@ -909,9 +909,11 @@ rut_color_picker_new (RutContext *context)
 }
 
 void
-rut_color_picker_set_color (RutColorPicker *picker,
+rut_color_picker_set_color (RutObject *obj,
                             const CoglColor *color)
 {
+  RutColorPicker *picker = RUT_COLOR_PICKER (obj);
+
   if (memcmp (&picker->color, color, sizeof (CoglColor)))
     {
       float hsv[3];

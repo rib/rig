@@ -100,28 +100,28 @@ static RutPropertySpec _rut_toggle_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutToggle, state),
-    .setter = rut_toggle_set_state
+    .setter.boolean_type = rut_toggle_set_state
   },
   {
     .name = "enabled",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutToggle, state),
-    .setter = rut_toggle_set_enabled
+    .setter.boolean_type = rut_toggle_set_enabled
   },
   {
     .name = "tick",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_TEXT,
-    .setter = rut_toggle_set_tick,
-    .getter = rut_toggle_get_tick
+    .setter.text_type = rut_toggle_set_tick,
+    .getter.text_type = rut_toggle_get_tick
   },
   {
     .name = "tick_color",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_COLOR,
-    .setter = rut_toggle_set_tick_color,
-    .getter = rut_toggle_get_tick_color
+    .setter.color_type = rut_toggle_set_tick_color,
+    .getter.color_type = rut_toggle_get_tick_color
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -665,9 +665,11 @@ rut_toggle_add_on_toggle_callback (RutToggle *toggle,
 }
 
 void
-rut_toggle_set_enabled (RutToggle *toggle,
+rut_toggle_set_enabled (RutObject *obj,
                         CoglBool enabled)
 {
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
   if (toggle->enabled == enabled)
     return;
 
@@ -678,9 +680,11 @@ rut_toggle_set_enabled (RutToggle *toggle,
 }
 
 void
-rut_toggle_set_state (RutToggle *toggle,
+rut_toggle_set_state (RutObject *obj,
                       CoglBool state)
 {
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
   if (toggle->state == state)
     return;
 
@@ -697,36 +701,37 @@ rut_toggle_get_enabled_property (RutToggle *toggle)
 }
 
 void
-rut_toggle_set_tick (RutToggle *toggle,
+rut_toggle_set_tick (RutObject *obj,
                      const char *tick)
 {
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
   pango_layout_set_text (toggle->tick, tick, -1);
   rut_shell_queue_redraw (toggle->ctx->shell);
 }
 
 const char *
-rut_toggle_get_tick (RutToggle *toggle)
+rut_toggle_get_tick (RutObject *obj)
 {
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
   return pango_layout_get_text (toggle->tick);
 }
 
 void
-rut_toggle_set_tick_color (RutToggle *toggle,
+rut_toggle_set_tick_color (RutObject *obj,
                            const CoglColor *color)
 {
-  toggle->tick_color.red = color->red;
-  toggle->tick_color.green = color->green;
-  toggle->tick_color.blue = color->blue;
-  toggle->tick_color.alpha = color->alpha;
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
+  toggle->tick_color = *color;
   rut_shell_queue_redraw (toggle->ctx->shell);
 }
 
-void
-rut_toggle_get_tick_color (RutToggle *toggle,
-                           CoglColor *color)
+const CoglColor *
+rut_toggle_get_tick_color (RutObject *obj)
 {
-  color->red = toggle->tick_color.red;
-  color->green = toggle->tick_color.green;
-  color->blue = toggle->tick_color.blue;
-  color->alpha = toggle->tick_color.alpha;
+  RutToggle *toggle = RUT_TOGGLE (obj);
+
+  return &toggle->tick_color;
 }

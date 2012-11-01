@@ -40,10 +40,10 @@ rut_ui_viewport_new (RutContext *ctx,
                      ...);
 
 void
-rut_ui_viewport_set_width (RutUIViewport *ui_viewport, float width);
+rut_ui_viewport_set_width (RutObject *ui_viewport, float width);
 
 void
-rut_ui_viewport_set_height (RutUIViewport *ui_viewport, float height);
+rut_ui_viewport_set_height (RutObject *ui_viewport, float height);
 
 void
 rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
@@ -56,16 +56,16 @@ rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
                           float *height);
 
 void
-rut_ui_viewport_set_doc_x (RutUIViewport *ui_viewport, float doc_x);
+rut_ui_viewport_set_doc_x (RutObject *ui_viewport, float doc_x);
 
 void
-rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y);
+rut_ui_viewport_set_doc_y (RutObject *ui_viewport, float doc_y);
 
 void
-rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width);
+rut_ui_viewport_set_doc_width (RutObject *ui_viewport, float doc_width);
 
 void
-rut_ui_viewport_set_doc_height (RutUIViewport *ui_viewport, float doc_height);
+rut_ui_viewport_set_doc_height (RutObject *ui_viewport, float doc_height);
 
 void
 rut_ui_viewport_set_doc_scale_x (RutUIViewport *ui_viewport, float doc_scale_x);
@@ -98,18 +98,18 @@ RutObject *
 rut_ui_viewport_get_doc_node (RutUIViewport *ui_viewport);
 
 void
-rut_ui_viewport_set_x_pannable (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_x_pannable (RutObject *ui_viewport,
                                 CoglBool pannable);
 
 CoglBool
-rut_ui_viewport_get_x_pannable (RutUIViewport *ui_viewport);
+rut_ui_viewport_get_x_pannable (RutObject *ui_viewport);
 
 void
-rut_ui_viewport_set_y_pannable (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_y_pannable (RutObject *ui_viewport,
                                 CoglBool pannable);
 
 CoglBool
-rut_ui_viewport_get_y_pannable (RutUIViewport *ui_viewport);
+rut_ui_viewport_get_y_pannable (RutObject *ui_viewport);
 
 /**
  * rut_ui_viewport_set_sync_widget:
@@ -123,7 +123,7 @@ rut_ui_viewport_get_y_pannable (RutUIViewport *ui_viewport);
  * widget should typically be a child of the doc.
  */
 void
-rut_ui_viewport_set_sync_widget (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_sync_widget (RutObject *ui_viewport,
                                  RutObject *widget);
 
 /**
@@ -136,7 +136,7 @@ rut_ui_viewport_set_sync_widget (RutUIViewport *ui_viewport,
  * This only has any effect if the sync_widget property is set.
  */
 void
-rut_ui_viewport_set_x_expand (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_x_expand (RutObject *ui_viewport,
                               CoglBool expand);
 
 /**
@@ -149,7 +149,7 @@ rut_ui_viewport_set_x_expand (RutUIViewport *ui_viewport,
  * This only has any effect if the sync_doc_size property is enabled.
  */
 void
-rut_ui_viewport_set_y_expand (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_y_expand (RutObject *ui_viewport,
                               CoglBool expand);
 
 #endif /* _RUT_UI_VIEWPORT_H_ */

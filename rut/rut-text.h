@@ -256,8 +256,8 @@ rut_text_new_with_buffer (RutContext *ctx,
  *
  * Returns: (transfer none): A #RutTextBuffer object.
  */
-RutTextBuffer *
-rut_text_get_buffer (RutText *text);
+RutObject *
+rut_text_get_buffer (RutObject *text);
 
 /**
  * rut_text_set_buffer:
@@ -268,8 +268,8 @@ rut_text_get_buffer (RutText *text);
  * this widget.
  */
 void
-rut_text_set_buffer (RutText *text,
-                     RutTextBuffer *buffer);
+rut_text_set_buffer (RutObject *text,
+                     RutObject *buffer);
 
 /**
  * rut_text_get_text:
@@ -295,7 +295,7 @@ rut_text_set_buffer (RutText *text,
  *   or freed
  */
 const char *
-rut_text_get_text (RutText *text);
+rut_text_get_text (RutObject *text);
 
 /**
  * rut_text_set_text:
@@ -311,7 +311,7 @@ rut_text_get_text (RutText *text);
  * rut_text_set_markup() function instead
  */
 void
-rut_text_set_text (RutText *text,
+rut_text_set_text (RutObject *text,
                    const char *text_str);
 
 /**
@@ -348,7 +348,7 @@ rut_text_set_markup (RutText *text,
  * by rut_actor_get_paint_opacity().
  */
 void
-rut_text_set_color (RutText *text,
+rut_text_set_color (RutObject *text,
                     const CoglColor *color);
 
 void
@@ -362,9 +362,8 @@ rut_text_set_color_u32 (RutText *text,
  *
  * Retrieves the text color as set by rut_text_set_color().
  */
-void
-rut_text_get_color (RutText *text,
-                    CoglColor *color);
+const CoglColor *
+rut_text_get_color (RutObject *text);
 
 /**
  * rut_text_set_font_name:
@@ -384,7 +383,7 @@ rut_text_get_color (RutText *text,
  * ]|
  */
 void
-rut_text_set_font_name (RutText *text,
+rut_text_set_font_name (RutObject *text,
                         const char *font_name);
 
 /**
@@ -398,7 +397,7 @@ rut_text_set_font_name (RutText *text,
  *   modified or freed
  */
 const char *
-rut_text_get_font_name (RutText *text);
+rut_text_get_font_name (RutObject *text);
 
 /**
  * rut_text_set_font_description:
@@ -461,7 +460,7 @@ rut_text_get_ellipsize (RutText *text);
  * if they don't fit the size assigned to the actor.
  */
 void
-rut_text_set_line_wrap (RutText *text,
+rut_text_set_line_wrap (RutObject *text,
                         CoglBool line_wrap);
 
 /**
@@ -474,7 +473,7 @@ rut_text_set_line_wrap (RutText *text,
  *   its contents
  */
 CoglBool
-rut_text_get_line_wrap (RutText *text);
+rut_text_get_line_wrap (RutObject *text);
 
 /**
  * rut_text_set_line_wrap_mode:
@@ -556,7 +555,7 @@ rut_text_get_attributes (RutText *text);
  * See also #RutText:use-markup.
  */
 void
-rut_text_set_use_markup (RutText *text,
+rut_text_set_use_markup (RutObject *text,
                          CoglBool setting);
 
 /**
@@ -569,7 +568,7 @@ rut_text_set_use_markup (RutText *text,
  * Return value: %TRUE if the contents will be parsed for markup
  */
 CoglBool
-rut_text_get_use_markup (RutText *text);
+rut_text_get_use_markup (RutObject *text);
 
 /**
  * rut_text_set_line_alignment:
@@ -609,7 +608,7 @@ rut_text_get_line_alignment (RutText *text);
  * against Pango &lt; 1.18.
  */
 void
-rut_text_set_justify (RutText *text,
+rut_text_set_justify (RutObject *text,
                       CoglBool justify);
 
 /**
@@ -622,7 +621,7 @@ rut_text_set_justify (RutText *text,
  * Return value: %TRUE if the text should be justified
  */
 CoglBool
-rut_text_get_justify (RutText *text);
+rut_text_get_justify (RutObject *text);
 
 /**
  * rut_text_insert_unichar:
@@ -718,7 +717,7 @@ rut_text_get_chars (RutText *text,
  * will receive key events and will update its contents accordingly.
  */
 void
-rut_text_set_editable (RutText *text,
+rut_text_set_editable (RutObject *text,
                        CoglBool editable);
 
 /**
@@ -730,7 +729,7 @@ rut_text_set_editable (RutText *text,
  * Return value: %TRUE if the actor is editable
  */
 CoglBool
-rut_text_get_editable (RutText *text);
+rut_text_get_editable (RutObject *text);
 
 /**
  * rut_text_set_activatable:
@@ -747,7 +746,7 @@ rut_text_get_editable (RutText *text);
  * rut_text_set_editable().
  */
 void
-rut_text_set_activatable (RutText *text,
+rut_text_set_activatable (RutObject *text,
                           CoglBool activatable);
 
 /**
@@ -759,7 +758,7 @@ rut_text_set_activatable (RutText *text,
  * Return value: %TRUE if the actor is activatable
  */
 CoglBool
-rut_text_get_activatable (RutText *text);
+rut_text_get_activatable (RutObject *text);
 
 /**
  * rut_text_get_cursor_position:
@@ -770,7 +769,7 @@ rut_text_get_activatable (RutText *text);
  * Return value: the cursor position, in characters
  */
 int
-rut_text_get_cursor_position (RutText *text);
+rut_text_get_cursor_position (RutObject *text);
 
 /**
  * rut_text_set_cursor_position:
@@ -782,7 +781,7 @@ rut_text_get_cursor_position (RutText *text);
  * The position is expressed in characters, not in bytes.
  */
 void
-rut_text_set_cursor_position (RutText *text,
+rut_text_set_cursor_position (RutObject *text,
                               int position);
 
 /**
@@ -802,7 +801,7 @@ rut_text_set_cursor_position (RutText *text,
  * rut_text_set_cursor_position().
  */
 void
-rut_text_set_cursor_visible (RutText *text,
+rut_text_set_cursor_visible (RutObject *text,
                              CoglBool cursor_visible);
 
 /**
@@ -814,7 +813,7 @@ rut_text_set_cursor_visible (RutText *text,
  * Return value: %TRUE if the cursor is visible
  */
 CoglBool
-rut_text_get_cursor_visible (RutText *text);
+rut_text_get_cursor_visible (RutObject *text);
 
 /**
  * rut_text_set_cursor_color:
@@ -827,7 +826,7 @@ rut_text_get_cursor_visible (RutText *text);
  * text color.
  */
 void
-rut_text_set_cursor_color (RutText *text,
+rut_text_set_cursor_color (RutObject *text,
                            const CoglColor *color);
 
 void
@@ -841,12 +840,11 @@ rut_text_set_cursor_color_u32 (RutText *text,
  *
  * Retrieves the color of the cursor of a #RutText actor.
  */
-void
-rut_text_get_cursor_color (RutText *text,
-                           CoglColor *color);
+const CoglColor *
+rut_text_get_cursor_color (RutObject *text);
 
 CoglBool
-rut_text_get_cursor_color_set (RutText *text);
+rut_text_get_cursor_color_set (RutObject *text);
 
 /**
  * rut_text_set_cursor_size:
@@ -859,7 +857,7 @@ rut_text_get_cursor_color_set (RutText *text);
  * is set to %TRUE.
  */
 void
-rut_text_set_cursor_size (RutText *text,
+rut_text_set_cursor_size (RutObject *text,
                           int size);
 
 /**
@@ -870,8 +868,8 @@ rut_text_set_cursor_size (RutText *text,
  *
  * Return value: the size of the cursor, in pixels
  */
-unsigned int
-rut_text_get_cursor_size (RutText *text);
+int
+rut_text_get_cursor_size (RutObject *text);
 
 /**
  * rut_text_set_selectable:
@@ -884,7 +882,7 @@ rut_text_get_cursor_size (RutText *text);
  * the pointer or the keyboard.
  */
 void
-rut_text_set_selectable (RutText *text,
+rut_text_set_selectable (RutObject *text,
                          CoglBool selectable);
 
 /**
@@ -896,7 +894,7 @@ rut_text_set_selectable (RutText *text,
  * Return value: %TRUE if the actor is selectable
  */
 CoglBool
-rut_text_get_selectable (RutText *text);
+rut_text_get_selectable (RutObject *text);
 
 /**
  * rut_text_set_selection_bound:
@@ -909,7 +907,7 @@ rut_text_get_selectable (RutText *text);
  * If @selection_bound is -1, the selection unset.
  */
 void
-rut_text_set_selection_bound (RutText *text,
+rut_text_set_selection_bound (RutObject *text,
                               int selection_bound);
 
 /**
@@ -922,7 +920,7 @@ rut_text_set_selection_bound (RutText *text,
  * Return value: the position of the other end of the selection
  */
 int
-rut_text_get_selection_bound (RutText *text);
+rut_text_get_selection_bound (RutObject *text);
 
 /**
  * rut_text_set_selection:
@@ -965,7 +963,7 @@ rut_text_get_selection (RutText *text);
  * the same as the text color.
  */
 void
-rut_text_set_selection_color (RutText *text,
+rut_text_set_selection_color (RutObject *text,
                               const CoglColor *color);
 
 void
@@ -979,12 +977,11 @@ rut_text_set_selection_color_u32 (RutText *text,
  *
  * Retrieves the color of the selection of a #RutText actor.
  */
-void
-rut_text_get_selection_color (RutText *text,
-                              CoglColor *color);
+const CoglColor *
+rut_text_get_selection_color (RutObject *text);
 
 CoglBool
-rut_text_get_selection_color_set (RutText *text);
+rut_text_get_selection_color_set (RutObject *text);
 
 /**
  * rut_text_delete_selection:
@@ -1012,7 +1009,7 @@ rut_text_delete_selection (RutText *text);
  * #RutText actor.
  */
 void
-rut_text_set_password_char (RutText *text,
+rut_text_set_password_char (RutObject *text,
                             uint32_t wc);
 
 /**
@@ -1026,7 +1023,7 @@ rut_text_set_password_char (RutText *text,
  *   character is not set
  */
 uint32_t
-rut_text_get_password_char (RutText *text);
+rut_text_get_password_char (RutObject *text);
 
 /**
  * rut_text_set_max_length:
@@ -1039,7 +1036,7 @@ rut_text_get_password_char (RutText *text);
  * truncated to fit.
  */
 void
-rut_text_set_max_length (RutText *text,
+rut_text_set_max_length (RutObject *text,
                          int max);
 
 /**
@@ -1053,7 +1050,7 @@ rut_text_set_max_length (RutText *text,
  * Return value: the maximum number of characters.
  */
 int
-rut_text_get_max_length (RutText *text);
+rut_text_get_max_length (RutObject *text);
 
 /**
  * rut_text_set_single_line_mode:
@@ -1075,7 +1072,7 @@ rut_text_get_max_length (RutText *text);
  * signal.
  */
 void
-rut_text_set_single_line_mode (RutText *text,
+rut_text_set_single_line_mode (RutObject *text,
                                CoglBool single_line);
 
 /**
@@ -1087,7 +1084,7 @@ rut_text_set_single_line_mode (RutText *text,
  * Return value: %TRUE if the #RutText actor is in single line mode
  */
 CoglBool
-rut_text_get_single_line_mode (RutText *text);
+rut_text_get_single_line_mode (RutObject *text);
 
 /**
  * rut_text_set_selected_text_color:
@@ -1100,7 +1097,7 @@ rut_text_get_single_line_mode (RutText *text);
  * selection color, which then falls back to cursor, and then text color.
  */
 void
-rut_text_set_selected_text_color (RutText *text,
+rut_text_set_selected_text_color (RutObject *text,
                                   const CoglColor *color);
 
 void
@@ -1114,12 +1111,11 @@ rut_text_set_selected_text_color_u32 (RutText *text,
  *
  * Retrieves the color of selected text of a #RutText actor.
  */
-void
-rut_text_get_selected_text_color (RutText *text,
-                                  CoglColor *color);
+const CoglColor *
+rut_text_get_selected_text_color (RutObject *text);
 
 CoglBool
-rut_text_get_selected_text_color_set (RutText *text);
+rut_text_get_selected_text_color_set (RutObject *text);
 
 /**
  * rut_text_activate:
@@ -1223,10 +1219,10 @@ void
 rut_text_ungrab_key_focus (RutText *text);
 
 void
-rut_text_set_width (RutText *text, float width);
+rut_text_set_width (RutObject *text, float width);
 
 void
-rut_text_set_height (RutText *text, float height);
+rut_text_set_height (RutObject *text, float height);
 
 RutMesh *
 rut_text_get_pick_mesh (RutText *text);

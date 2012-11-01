@@ -65,8 +65,8 @@ static RutPropertySpec _rut_text_buffer_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_TEXT,
     .data_offset = offsetof (RutTextBuffer, simple_text),
-    .getter = rut_text_buffer_get_text,
-    .setter = rut_text_buffer_set_text
+    .getter.text_type = rut_text_buffer_get_text,
+    .setter.text_type = rut_text_buffer_set_text
   },
   {
     .name = "length",
@@ -79,7 +79,7 @@ static RutPropertySpec _rut_text_buffer_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_INTEGER,
     .data_offset = offsetof (RutTextBuffer, max_length),
-    .setter = rut_text_buffer_set_max_length
+    .setter.integer_type = rut_text_buffer_set_max_length
   },
 
   { 0 }
@@ -365,8 +365,10 @@ rut_text_buffer_get_bytes (RutTextBuffer *buffer)
 }
 
 const char*
-rut_text_buffer_get_text (RutTextBuffer *buffer)
+rut_text_buffer_get_text (RutObject *obj)
 {
+  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+
   return _rut_simple_text_buffer_get_text (buffer, NULL);
 }
 
@@ -382,16 +384,20 @@ rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
 }
 
 void
-rut_text_buffer_set_text (RutTextBuffer *buffer,
+rut_text_buffer_set_text (RutObject *obj,
                           const char *chars)
 {
+  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+
   rut_text_buffer_set_text_with_length (buffer, chars, -1);
 }
 
 void
-rut_text_buffer_set_max_length (RutTextBuffer *buffer,
+rut_text_buffer_set_max_length (RutObject *obj,
                                 int max_length)
 {
+  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+
   max_length = CLAMP (max_length, 0, RUT_TEXT_BUFFER_MAX_SIZE);
 
   if (max_length > 0 && rut_text_buffer_get_length (buffer) > max_length)

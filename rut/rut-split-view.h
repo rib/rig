@@ -34,11 +34,11 @@ rut_split_view_set_size (RutSplitView *split_view,
                          float width,
                          float height);
 void
-rut_split_view_set_width (RutSplitView *split_view,
+rut_split_view_set_width (RutObject *split_view,
                           float width);
 
 void
-rut_split_view_set_height (RutSplitView *split_view,
+rut_split_view_set_height (RutObject *split_view,
                            float height);
 
 void

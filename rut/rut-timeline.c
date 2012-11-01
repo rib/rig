@@ -38,14 +38,14 @@ static RutPropertySpec _rut_timeline_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_DOUBLE,
     .data_offset = offsetof (RutTimeline, elapsed),
-    .setter = rut_timeline_set_elapsed
+    .setter.double_type = rut_timeline_set_elapsed
   },
   {
     .name = "progress",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_DOUBLE,
-    .getter = rut_timeline_get_progress,
-    .setter = rut_timeline_set_progress
+    .getter.double_type = rut_timeline_get_progress,
+    .setter.double_type = rut_timeline_set_progress
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -150,8 +150,10 @@ rut_timeline_is_running (RutTimeline *timeline)
 }
 
 double
-rut_timeline_get_elapsed (RutTimeline *timeline)
+rut_timeline_get_elapsed (RutObject *obj)
 {
+  RutTimeline *timeline = RUT_TIMELINE (obj);
+
   return timeline->elapsed;
 }
 
@@ -232,9 +234,11 @@ _rut_timeline_validate_elapsed (RutTimeline *timeline,
 }
 
 void
-rut_timeline_set_elapsed (RutTimeline *timeline,
+rut_timeline_set_elapsed (RutObject *obj,
                           double elapsed)
 {
+  RutTimeline *timeline = RUT_TIMELINE (obj);
+
   CoglBool should_stop;
   CoglBool should_restart_with_offset;
 
@@ -261,15 +265,19 @@ rut_timeline_set_elapsed (RutTimeline *timeline,
 }
 
 double
-rut_timeline_get_progress (RutTimeline *timeline)
+rut_timeline_get_progress (RutObject *obj)
 {
+  RutTimeline *timeline = RUT_TIMELINE (obj);
+
   return timeline->elapsed / timeline->length;
 }
 
 void
-rut_timeline_set_progress (RutTimeline *timeline,
+rut_timeline_set_progress (RutObject *obj,
                            double progress)
 {
+  RutTimeline *timeline = RUT_TIMELINE (obj);
+
   double elapsed = timeline->length * progress;
   rut_timeline_set_elapsed (timeline, elapsed);
 }

@@ -5,7 +5,7 @@ void
 _rut_timeline_init_type (void);
 
 typedef struct _RutTimeline RutTimeline;
-#define RUT_TIMELINE(x) ((RutTimeline *)X)
+#define RUT_TIMELINE(x) ((RutTimeline *)x)
 
 RutTimeline *
 rut_timeline_new (RutContext *ctx,
@@ -21,17 +21,17 @@ CoglBool
 rut_timeline_is_running (RutTimeline *timeline);
 
 double
-rut_timeline_get_elapsed (RutTimeline *timeline);
+rut_timeline_get_elapsed (RutObject *timeline);
 
 void
-rut_timeline_set_elapsed (RutTimeline *timeline,
+rut_timeline_set_elapsed (RutObject *timeline,
                           double elapsed);
 
 double
-rut_timeline_get_progress (RutTimeline *timeline);
+rut_timeline_get_progress (RutObject *timeline);
 
 void
-rut_timeline_set_progress (RutTimeline *timeline,
+rut_timeline_set_progress (RutObject *timeline,
                            double elapsed);
 
 void

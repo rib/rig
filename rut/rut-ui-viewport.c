@@ -99,79 +99,79 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, width),
-    .setter = rut_ui_viewport_set_width
+    .setter.float_type = rut_ui_viewport_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, height),
-    .setter = rut_ui_viewport_set_height
+    .setter.float_type = rut_ui_viewport_set_height
   },
   {
     .name = "doc-width",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_width),
-    .setter = rut_ui_viewport_set_doc_width
+    .setter.float_type = rut_ui_viewport_set_doc_width
   },
   {
     .name = "doc-height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_height),
-    .setter = rut_ui_viewport_set_doc_height
+    .setter.float_type = rut_ui_viewport_set_doc_height
   },
   {
     .name = "doc-x",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_x),
-    .setter = rut_ui_viewport_set_doc_x
+    .setter.float_type = rut_ui_viewport_set_doc_x
   },
   {
     .name = "doc-y",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, doc_y),
-    .setter = rut_ui_viewport_set_doc_y
+    .setter.float_type = rut_ui_viewport_set_doc_y
   },
   {
     .name = "sync-widget",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_OBJECT,
     .data_offset = offsetof (RutUIViewport, sync_widget),
-    .setter = rut_ui_viewport_set_sync_widget
+    .setter.object_type = rut_ui_viewport_set_sync_widget
   },
   {
     .name = "x-pannable",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, x_pannable),
-    .getter = rut_ui_viewport_get_x_pannable,
-    .setter = rut_ui_viewport_set_x_pannable
+    .getter.boolean_type = rut_ui_viewport_get_x_pannable,
+    .setter.boolean_type = rut_ui_viewport_set_x_pannable
   },
   {
     .name = "y-pannable",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, y_pannable),
-    .getter = rut_ui_viewport_get_y_pannable,
-    .setter = rut_ui_viewport_set_y_pannable
+    .getter.boolean_type = rut_ui_viewport_get_y_pannable,
+    .setter.boolean_type = rut_ui_viewport_set_y_pannable
   },
   {
     .name = "x-expand",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, x_expand),
-    .setter = rut_ui_viewport_set_x_expand
+    .setter.boolean_type = rut_ui_viewport_set_x_expand
   },
   {
     .name = "y-expand",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
     .data_offset = offsetof (RutUIViewport, y_expand),
-    .setter = rut_ui_viewport_set_y_expand
+    .setter.boolean_type = rut_ui_viewport_set_y_expand
   },
 
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
@@ -791,20 +791,26 @@ rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
 }
 
 void
-rut_ui_viewport_set_width (RutUIViewport *ui_viewport, float width)
+rut_ui_viewport_set_width (RutObject *obj, float width)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   rut_ui_viewport_set_size (ui_viewport, width, ui_viewport->height);
 }
 
 void
-rut_ui_viewport_set_height (RutUIViewport *ui_viewport, float height)
+rut_ui_viewport_set_height (RutObject *obj, float height)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   rut_ui_viewport_set_size (ui_viewport, ui_viewport->width, height);
 }
 
 void
-rut_ui_viewport_set_doc_x (RutUIViewport *ui_viewport, float doc_x)
+rut_ui_viewport_set_doc_x (RutObject *obj, float doc_x)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->doc_x = doc_x;
   maybe_clamp_position (ui_viewport);
 
@@ -815,8 +821,10 @@ rut_ui_viewport_set_doc_x (RutUIViewport *ui_viewport, float doc_x)
 }
 
 void
-rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y)
+rut_ui_viewport_set_doc_y (RutObject *obj, float doc_y)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->doc_y = doc_y;
   maybe_clamp_position (ui_viewport);
 
@@ -827,8 +835,10 @@ rut_ui_viewport_set_doc_y (RutUIViewport *ui_viewport, float doc_y)
 }
 
 void
-rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width)
+rut_ui_viewport_set_doc_width (RutObject *obj, float doc_width)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->doc_width = doc_width;
   rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_x,
                                      doc_width * (1.0 / ui_viewport->doc_scale_x));
@@ -840,8 +850,10 @@ rut_ui_viewport_set_doc_width (RutUIViewport *ui_viewport, float doc_width)
 }
 
 void
-rut_ui_viewport_set_doc_height (RutUIViewport *ui_viewport, float doc_height)
+rut_ui_viewport_set_doc_height (RutObject *obj, float doc_height)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->doc_height = doc_height;
   rut_scroll_bar_set_virtual_length (ui_viewport->scroll_bar_y,
                                      doc_height * (1.0 / ui_viewport->doc_scale_y));
@@ -915,28 +927,36 @@ rut_ui_viewport_get_doc_node (RutUIViewport *ui_viewport)
 }
 
 void
-rut_ui_viewport_set_x_pannable (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_x_pannable (RutObject *obj,
                                 CoglBool pannable)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->x_pannable = pannable;
 }
 
 CoglBool
-rut_ui_viewport_get_x_pannable (RutUIViewport *ui_viewport)
+rut_ui_viewport_get_x_pannable (RutObject *obj)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   return ui_viewport->x_pannable;
 }
 
 void
-rut_ui_viewport_set_y_pannable (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_y_pannable (RutObject *obj,
                                 CoglBool pannable)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   ui_viewport->y_pannable = pannable;
 }
 
 CoglBool
-rut_ui_viewport_get_y_pannable (RutUIViewport *ui_viewport)
+rut_ui_viewport_get_y_pannable (RutObject *obj)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   return ui_viewport->y_pannable;
 }
 
@@ -952,9 +972,10 @@ preferred_size_change_cb (RutObject *child,
 }
 
 void
-rut_ui_viewport_set_sync_widget (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_sync_widget (RutObject *obj,
                                  RutObject *widget)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
   RutClosure *preferred_size_closure = NULL;
   RutProperty *property =
     &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_SYNC_WIDGET];
@@ -984,9 +1005,11 @@ rut_ui_viewport_set_sync_widget (RutUIViewport *ui_viewport,
 }
 
 void
-rut_ui_viewport_set_x_expand (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_x_expand (RutObject *obj,
                               CoglBool expand)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   if (ui_viewport->x_expand != expand)
     {
       RutProperty *property =
@@ -1002,9 +1025,11 @@ rut_ui_viewport_set_x_expand (RutUIViewport *ui_viewport,
 }
 
 void
-rut_ui_viewport_set_y_expand (RutUIViewport *ui_viewport,
+rut_ui_viewport_set_y_expand (RutObject *obj,
                               CoglBool expand)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
+
   if (ui_viewport->y_expand != expand)
     {
       RutProperty *property =

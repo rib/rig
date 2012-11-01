@@ -133,8 +133,46 @@ typedef struct _RutPropertySpec
    * need validation then the setter can be left as NULL
    * and if the value is always up to date the getter can
    * also be left as NULL. */
-  void *getter;
-  void *setter;
+  union
+  {
+    float (* float_type) (void *object);
+    double (* double_type) (void *object);
+    int (* integer_type) (void *object);
+    int (* enum_type) (void *object);
+    uint32_t (* uint32_type) (void *object);
+    CoglBool (* boolean_type) (void *object);
+    const char *(* text_type) (void *object);
+    const CoglQuaternion *(* quaternion_type) (void *object);
+    const CoglColor *(* color_type) (void *object);
+    const float *(* vec3_type) (void *object);
+    const float *(* vec4_type) (void *object);
+    void *(* object_type) (void *object);
+    void *(* pointer_type) (void *object);
+
+    /* This is just used to check the pointer against NULL */
+    void *any_type;
+  } getter;
+  union
+  {
+    void (* float_type) (void *object, float value);
+    void (* double_type) (void *object, double value);
+    void (* integer_type) (void *object, int value);
+    void (* enum_type) (void *object, int value);
+    void (* uint32_type) (void *object, uint32_t value);
+    void (* boolean_type) (void *object, CoglBool value);
+    void (* text_type) (void *object, const char *value);
+    void (* quaternion_type) (void *object,
+                              const CoglQuaternion *quaternion);
+    void (* color_type) (void *object,
+                         const CoglColor *color);
+    void (* vec3_type) (void *object, const float value[3]);
+    void (* vec4_type) (void *object, const float value[4]);
+    void (* object_type) (void *object, void *value);
+    void (* pointer_type) (void *object, void *value);
+
+    /* This is just used to check the pointer against NULL */
+    void *any_type;
+  } setter;
 
   const char *nick;
   const char *blurb;
@@ -217,8 +255,10 @@ static RutPropertySpec flibble_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT;
     .data_offset = offsetof (RutSlider, x);
-    .getter = flibble_get_x; /* optional: for non-trivial properties */
-    .setter = flibble_set_x; /* optional: for non-trivial properties */
+    /* optional: for non-trivial properties */
+    .getter.float_type = flibble_get_x;
+    /* optional: for non-trivial properties */
+    .setter.float_type = flibble_set_x;
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties
                 if you use the RutSimpleIntrospectable interface */
@@ -450,13 +490,12 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
  \
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
-  if (property->spec->getter == NULL && *data == value) \
+  if (property->spec->getter.any_type == NULL && *data == value) \
     return; \
  \
-  if (property->spec->setter) \
+  if (property->spec->setter.any_type) \
     { \
-      void (*setter) (RutProperty *, CTYPE) = property->spec->setter; \
-      setter (property->object, value); \
+      property->spec->setter.SUFFIX ## _type (property->object, value); \
     } \
   else \
     { \
@@ -471,10 +510,9 @@ rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
   g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
-  if (property->spec->getter) \
+  if (property->spec->getter.any_type) \
     { \
-      CTYPE (*getter) (RutProperty *property) = property->spec->getter; \
-      return getter (property->object); \
+      return property->spec->getter.SUFFIX ## _type (property->object); \
     } \
   else \
     { \
@@ -498,10 +536,9 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
  \
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
-  if (property->spec->setter) \
+  if (property->spec->setter.any_type) \
     { \
-      void (*setter) (RutProperty *, const CTYPE *) = property->spec->setter; \
-      setter (property->object, value); \
+      property->spec->setter.SUFFIX ## _type (property->object, value); \
     } \
   else \
     { \
@@ -516,10 +553,9 @@ rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
   g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
-  if (property->spec->getter) \
+  if (property->spec->getter.any_type) \
     { \
-      CTYPE *(*getter) (RutProperty *property) = property->spec->getter; \
-      return getter (property->object); \
+      return property->spec->getter.SUFFIX ## _type (property->object); \
     } \
   else \
     { \
@@ -540,11 +576,9 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
  \
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
-  if (property->spec->setter) \
+  if (property->spec->setter.any_type) \
     { \
-      void (*setter) (RutProperty *, const CTYPE[LEN]) = \
-        property->spec->setter; \
-      setter (property->object, value); \
+      property->spec->setter.SUFFIX ## _type (property->object, value); \
     } \
   else \
     { \
@@ -559,10 +593,9 @@ rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
   g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
-  if (property->spec->getter) \
+  if (property->spec->getter.any_type) \
     { \
-      const CTYPE *(*getter) (RutProperty *property) = property->spec->getter; \
-      return getter (property->object); \
+      return property->spec->getter.SUFFIX ## _type (property->object); \
     } \
   else \
     { \
@@ -589,10 +622,9 @@ rut_property_set_text (RutPropertyContext *ctx,
 
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT);
 
-  if (property->spec->setter)
+  if (property->spec->setter.any_type)
     {
-      void (*setter) (RutProperty *, const char *) = property->spec->setter;
-      setter (property->object, value);
+      property->spec->setter.text_type (property->object, value);
     }
   else
     {
@@ -609,10 +641,9 @@ rut_property_get_text (RutProperty *property)
 {
   g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT, 0);
 
-  if (property->spec->getter)
+  if (property->spec->getter.any_type)
     {
-      const char *(*getter) (RutProperty *property) = property->spec->getter;
-      return getter (property->object);
+      return property->spec->getter.text_type (property->object);
     }
   else
     {

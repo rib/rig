@@ -21,11 +21,11 @@ RutDropDown *
 rut_drop_down_new (RutContext *ctx);
 
 void
-rut_drop_down_set_value (RutDropDown *slider,
+rut_drop_down_set_value (RutObject *slider,
                          int value);
 
 int
-rut_drop_down_get_value (RutDropDown *slider);
+rut_drop_down_get_value (RutObject *slider);
 
 void
 rut_drop_down_set_values (RutDropDown *drop,

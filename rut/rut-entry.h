@@ -17,11 +17,11 @@ rut_entry_set_size (RutEntry *entry,
                     float height);
 
 void
-rut_entry_set_width (RutEntry *entry,
+rut_entry_set_width (RutObject *entry,
                      float width);
 
 void
-rut_entry_set_height (RutEntry *entry,
+rut_entry_set_height (RutObject *entry,
                       float height);
 
 void

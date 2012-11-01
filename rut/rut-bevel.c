@@ -62,14 +62,14 @@ static RutPropertySpec _rut_bevel_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutBevel, width),
-    .setter = rut_bevel_set_width
+    .setter.float_type = rut_bevel_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutBevel, height),
-    .setter = rut_bevel_set_height
+    .setter.float_type = rut_bevel_set_height
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
@@ -263,16 +263,20 @@ rut_bevel_get_size (RutObject *self,
 }
 
 void
-rut_bevel_set_width (RutBevel *bevel,
+rut_bevel_set_width (RutObject *obj,
                      float width)
 {
+  RutBevel *bevel = RUT_BEVEL (obj);
+
   rut_bevel_set_size (bevel, width, bevel->height);
 }
 
 void
-rut_bevel_set_height (RutBevel *bevel,
+rut_bevel_set_height (RutObject *obj,
                       float height)
 {
+  RutBevel *bevel = RUT_BEVEL (obj);
+
   rut_bevel_set_size (bevel, bevel->width, height);
 }
 
