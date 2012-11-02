@@ -1117,6 +1117,8 @@ parse_and_set_id (Loader *loader,
 
       return check_and_set_id (loader, id, object, error);
     }
+  else
+    return TRUE;
 }
 
 static void
@@ -1484,7 +1486,7 @@ parse_start_element (GMarkupParseContext *context,
       rut_light_set_diffuse (light, &diffuse);
       rut_light_set_specular (light, &specular);
 
-      if (parse_and_set_id (loader, id_str, light, error))
+      if (!parse_and_set_id (loader, id_str, light, error))
         return;
 
       rut_entity_add_component (loader->current_entity, light);
