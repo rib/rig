@@ -1923,6 +1923,16 @@ parse_error (GMarkupParseContext *context,
 
 }
 
+static void
+update_transition_property_cb (RigTransitionPropData *prop_data,
+                               void *user_data)
+{
+  RigData *data = user_data;
+
+  rig_transition_update_property (data->transitions->data,
+                                  prop_data->property);
+}
+
 void
 rig_load (RigData *data, const char *file)
 {
@@ -1988,6 +1998,13 @@ rig_load (RigData *data, const char *file)
   data->transitions = loader.transitions;
 
   data->assets = loader.assets;
+
+  /* Reset all of the property values to their current value according
+   * to the first transition */
+  if (data->transitions)
+    rig_transition_foreach_property (data->transitions->data,
+                                     update_transition_property_cb,
+                                     data);
 
   rut_shell_queue_redraw (data->ctx->shell);
 
