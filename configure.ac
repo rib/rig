@@ -244,7 +244,7 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 cogl2 cogl-pango2"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2"
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
