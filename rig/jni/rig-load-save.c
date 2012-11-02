@@ -27,8 +27,14 @@ save_component_cb (RutComponent *component,
 {
   const RutType *type = rut_object_get_type (component);
   SaveState *state = user_data;
+  int component_id;
 
   state->indent += INDENT_LEVEL;
+
+  g_hash_table_insert (state->id_map,
+                       component,
+                       GINT_TO_POINTER (state->next_id));
+  component_id = state->next_id++;
 
   if (type == &rut_light_type)
     {
@@ -39,10 +45,12 @@ save_component_cb (RutComponent *component,
 
       fprintf (state->file,
                "%*s<light "
+               "id=\"%i\" "
                "ambient=\"#%02x%02x%02x%02x\" "
                "diffuse=\"#%02x%02x%02x%02x\" "
                "specular=\"#%02x%02x%02x%02x\"/>\n",
                state->indent, "",
+               component_id,
                cogl_color_get_red_byte (ambient),
                cogl_color_get_green_byte (ambient),
                cogl_color_get_blue_byte (ambient),
@@ -62,10 +70,13 @@ save_component_cb (RutComponent *component,
       RutAsset *asset;
       const CoglColor *ambient, *diffuse, *specular;
 
-      fprintf (state->file, "%*s<material", state->indent, "");
+      fprintf (state->file, "%*s<material id=\"%i\"\n",
+               state->indent, "",
+               component_id);
 
       ambient = rut_material_get_ambient (material);
-      fprintf (state->file, " ambient=\"#%02x%02x%02x%02x\"\n",
+      fprintf (state->file, "%*s          ambient=\"#%02x%02x%02x%02x\"\n",
+               state->indent, "",
                cogl_color_get_red_byte (ambient),
                cogl_color_get_green_byte (ambient),
                cogl_color_get_blue_byte (ambient),
@@ -137,25 +148,30 @@ save_component_cb (RutComponent *component,
   else if (type == &rut_shape_type)
     {
       CoglBool shaped = rut_shape_get_shaped (RUT_SHAPE (component));
-      fprintf (state->file, "%*s<shape shaped=\"%s\"/>\n",
+      fprintf (state->file, "%*s<shape id=\"%i\" shaped=\"%s\"/>\n",
                state->indent, "",
+               component_id,
                shaped ? "true" : "false");
     }
   else if (type == &rut_diamond_type)
     {
-      fprintf (state->file, "%*s<diamond size=\"%f\"/>\n",
+      fprintf (state->file, "%*s<diamond id=\"%i\" size=\"%f\"/>\n",
                state->indent, "",
+               component_id,
                rut_diamond_get_size (RUT_DIAMOND (component)));
     }
   else if (type == &rut_model_type)
     {
       RutModel *model = RUT_MODEL (component);
       RutAsset *asset = rut_model_get_asset (model);
-      int id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
-      if (id)
+      int asset_id =
+        GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, asset));
+      if (asset_id)
         {
-          fprintf (state->file, "%*s<model asset=\"%d\" />",
-                   state->indent, "", id);
+          fprintf (state->file, "%*s<model id=\"%i\" asset=\"%d\" />",
+                   state->indent, "",
+                   component_id,
+                   asset_id);
         }
     }
   else if (type == &rut_text_type)
@@ -166,9 +182,10 @@ save_component_cb (RutComponent *component,
       color = rut_text_get_color (text);
 
       fprintf (state->file,
-               "%*s<text text=\"%s\" font=\"%s\" "
+               "%*s<text id=\"%i\" text=\"%s\" font=\"%s\" "
                "color=\"#%02x%02x%02x%02x\" />\n",
                state->indent, "",
+               component_id,
                rut_text_get_text (text),
                rut_text_get_font_name (text),
                cogl_color_get_red_byte (color),
@@ -545,12 +562,12 @@ save_property_cb (RigTransitionPropData *prop_data,
 {
   SaveState *state = user_data;
   FILE *file = state->file;
-  RutEntity *entity;
+  RutObject *object;
   int id;
 
-  entity = prop_data->property->object;
+  object = prop_data->property->object;
 
-  id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, entity));
+  id = GPOINTER_TO_INT (g_hash_table_lookup (state->id_map, object));
   if (!id)
     g_warning ("Failed to find id of entity\n");
 
@@ -701,6 +718,8 @@ typedef struct _Loader
   RutEntity *light;
   GList *transitions;
 
+  int component_id;
+
   CoglColor material_ambient;
   CoglBool ambient_set;
   CoglColor material_diffuse;
@@ -759,6 +778,18 @@ loader_find_asset (Loader *loader, uint32_t id)
   if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
     return NULL;
   return RUT_ASSET (object);
+}
+
+static RutEntity *
+loader_find_introspectable (Loader *loader, uint32_t id)
+{
+  RutObject *object =
+    g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id));
+  if (object == NULL ||
+      !rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE) ||
+      !rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
+    return NULL;
+  return RUT_ENTITY (object);
 }
 
 static CoglBool
@@ -1048,6 +1079,46 @@ load_path_node (RigPath *path,
   return FALSE;
 }
 
+static CoglBool
+check_and_set_id (Loader *loader,
+                  int id,
+                  void *object,
+                  GError **error)
+{
+  if (id != 0)
+    {
+      if (g_hash_table_lookup (loader->id_map, GUINT_TO_POINTER (id)))
+        {
+          g_set_error (error,
+                       G_MARKUP_ERROR,
+                       G_MARKUP_ERROR_INVALID_CONTENT,
+                       "Duplicate id %d", id);
+          return FALSE;
+        }
+
+      g_hash_table_insert (loader->id_map, GUINT_TO_POINTER (id), object);
+    }
+
+  return TRUE;
+}
+
+static CoglBool
+parse_and_set_id (Loader *loader,
+                  const char *id_str,
+                  void *object,
+                  GError **error)
+{
+  /* FIXME: XML COMPATIBILITY: The id for components shouldn't be
+   * optional. This is to retain compatibility with version 1 of Rig
+   * which didn't add an id */
+  if (id_str)
+    {
+      int id = g_ascii_strtoull (id_str, NULL, 10);
+
+      return check_and_set_id (loader, id, object, error);
+    }
+}
+
 static void
 parse_start_element (GMarkupParseContext *context,
                      const char *element_name,
@@ -1293,7 +1364,7 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "material") == 0)
     {
-      const char *color_str, *ambient_str, *diffuse_str, *specular_str;
+      const char *id_str, *color_str, *ambient_str, *diffuse_str, *specular_str;
       const char *shininess_str;
 
       loader->texture_specified = FALSE;
@@ -1305,6 +1376,9 @@ parse_start_element (GMarkupParseContext *context,
                                    attribute_names,
                                    attribute_values,
                                    error,
+                                   G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                   "id",
+                                   &id_str,
                                    G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
                                    "color",
                                    &color_str,
@@ -1321,6 +1395,8 @@ parse_start_element (GMarkupParseContext *context,
                                    "shininess",
                                    &shininess_str,
                                    G_MARKUP_COLLECT_INVALID);
+
+      loader->component_id = id_str ? g_ascii_strtoull (id_str, NULL, 10) : 0;
 
       /* XXX: This is a depecated attribute, remove once existing xml
        * files have stopped using it... */
@@ -1368,6 +1444,7 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "light") == 0)
     {
+      const char *id_str;
       const char *ambient_str;
       const char *diffuse_str;
       const char *specular_str;
@@ -1380,6 +1457,10 @@ parse_start_element (GMarkupParseContext *context,
                                         attribute_names,
                                         attribute_values,
                                         error,
+                                        G_MARKUP_COLLECT_STRING |
+                                        G_MARKUP_COLLECT_OPTIONAL,
+                                        "id",
+                                        &id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "ambient",
                                         &ambient_str,
@@ -1403,6 +1484,9 @@ parse_start_element (GMarkupParseContext *context,
       rut_light_set_diffuse (light, &diffuse);
       rut_light_set_specular (light, &specular);
 
+      if (parse_and_set_id (loader, id_str, light, error))
+        return;
+
       rut_entity_add_component (loader->current_entity, light);
 
       loader->is_light = TRUE;
@@ -1412,17 +1496,23 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "shape") == 0)
     {
-      const char *shaped_str;
+      const char *id_str, *shaped_str;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
                                         attribute_values,
                                         error,
+                                        G_MARKUP_COLLECT_STRING |
+                                        G_MARKUP_COLLECT_OPTIONAL,
+                                        "id",
+                                        &id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "shaped",
                                         &shaped_str,
                                         G_MARKUP_COLLECT_INVALID))
         return;
+
+      loader->component_id = id_str ? g_ascii_strtoull (id_str, NULL, 10) : 0;
 
       if (strcmp (shaped_str, "true") == 0)
         loader->shaped = TRUE;
@@ -1439,17 +1529,23 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "diamond") == 0)
     {
-      const char *size_str;
+      const char *id_str, *size_str;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
                                         attribute_values,
                                         error,
+                                        G_MARKUP_COLLECT_STRING |
+                                        G_MARKUP_COLLECT_OPTIONAL,
+                                        "id",
+                                        &id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "size",
                                         &size_str,
                                         G_MARKUP_COLLECT_INVALID))
         return;
+
+      loader->component_id = id_str ? g_ascii_strtoull (id_str, NULL, 10) : 0;
 
       loader->diamond_size = g_ascii_strtod (size_str, NULL);
 
@@ -1458,8 +1554,8 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "model") == 0)
     {
-      const char *id_str;
-      uint32_t id;
+      const char *id_str, *asset_id_str;
+      uint32_t asset_id;
       RutAsset *asset;
       RutModel *model;
 
@@ -1467,14 +1563,18 @@ parse_start_element (GMarkupParseContext *context,
                                         attribute_names,
                                         attribute_values,
                                         error,
+                                        G_MARKUP_COLLECT_STRING |
+                                        G_MARKUP_COLLECT_OPTIONAL,
+                                        "id",
+                                        &id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "asset",
-                                        &id_str,
+                                        &asset_id_str,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      id = g_ascii_strtoull (id_str, NULL, 10);
-      asset = loader_find_asset (loader, id);
+      asset_id = g_ascii_strtoull (asset_id_str, NULL, 10);
+      asset = loader_find_asset (loader, asset_id);
       if (!asset)
         {
           g_set_error (error,
@@ -1490,17 +1590,23 @@ parse_start_element (GMarkupParseContext *context,
           rut_refable_unref (asset);
           rut_entity_add_component (loader->current_entity, model);
         }
+
+      if (!parse_and_set_id (loader, id_str, model, error))
+        return;
     }
   else if (state == LOADER_STATE_LOADING_ENTITY &&
            strcmp (element_name, "text") == 0)
     {
-      const char *text_str, *font_str, *color_str;
+      const char *id_str, *text_str, *font_str, *color_str;
       RutText *text;
 
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
                                         attribute_values,
                                         error,
+                                        G_MARKUP_COLLECT_STRING|G_MARKUP_COLLECT_OPTIONAL,
+                                        "id",
+                                        &id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "text",
                                         &text_str,
@@ -1514,6 +1620,9 @@ parse_start_element (GMarkupParseContext *context,
           return;
 
       text = rut_text_new_with_text (data->ctx, font_str, text_str);
+
+      if (!parse_and_set_id (loader, id_str, text, error))
+        return;
 
       if (color_str)
         {
@@ -1604,20 +1713,22 @@ parse_start_element (GMarkupParseContext *context,
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
            strcmp (element_name, "property") == 0)
     {
-      const char *entity_id_str;
-      uint32_t entity_id;
-      RutEntity *entity;
+      const char *object_id_str;
+      uint32_t object_id;
+      RutEntity *object;
       const char *property_name;
       CoglBool animated;
       RigTransitionPropData *prop_data;
 
+      /* FIXME: the entity attribute should be renamed because not
+         everything being animated is necessarily an entity */
       if (!g_markup_collect_attributes (element_name,
                                         attribute_names,
                                         attribute_values,
                                         error,
                                         G_MARKUP_COLLECT_STRING,
                                         "entity",
-                                        &entity_id_str,
+                                        &object_id_str,
                                         G_MARKUP_COLLECT_STRING,
                                         "name",
                                         &property_name,
@@ -1627,21 +1738,21 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      entity_id = g_ascii_strtoull (entity_id_str, NULL, 10);
+      object_id = g_ascii_strtoull (object_id_str, NULL, 10);
 
-      entity = loader_find_entity (loader, entity_id);
-      if (!entity)
+      object = loader_find_introspectable (loader, object_id);
+      if (!object)
         {
           g_set_error (error,
                        G_MARKUP_ERROR,
                        G_MARKUP_ERROR_INVALID_CONTENT,
-                       "Invalid Entity id %d referenced in path element",
-                       entity_id);
+                       "Invalid object id %d referenced in property element",
+                       object_id);
           return;
         }
 
       prop_data = rig_transition_get_prop_data (loader->current_transition,
-                                                entity,
+                                                object,
                                                 property_name);
 
       if (prop_data->property->spec->animatable)
@@ -1790,6 +1901,9 @@ parse_end_element (GMarkupParseContext *context,
       rut_entity_add_component (loader->current_entity,
                                 shape);
 
+      if (!check_and_set_id (loader, loader->component_id, shape, error))
+        return;
+
       loader_pop_state (loader);
     }
   else if (state == LOADER_STATE_LOADING_DIAMOND_COMPONENT &&
@@ -1826,6 +1940,9 @@ parse_end_element (GMarkupParseContext *context,
       rut_entity_add_component (loader->current_entity,
                                 diamond);
 
+      if (!check_and_set_id (loader, loader->component_id, diamond, error))
+        return;
+
       loader_pop_state (loader);
     }
   else if (state == LOADER_STATE_LOADING_MATERIAL_COMPONENT &&
@@ -1835,6 +1952,9 @@ parse_end_element (GMarkupParseContext *context,
       RutAsset *asset;
 
       material = rut_material_new (loader->data->ctx, NULL);
+
+      if (!check_and_set_id (loader, loader->component_id, material, error))
+        return;
 
       if (loader->texture_specified)
         {
