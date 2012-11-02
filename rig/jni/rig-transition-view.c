@@ -69,7 +69,9 @@ typedef enum
   /* We've decided to grab the selected nodes */
   RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES,
   /* We've decided to move the timeline position */
-  RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE
+  RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE,
+  /* The user is drawing a bounding box to select nodes */
+  RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX
 } RigTransitionViewGrabState;
 
 typedef struct _RigTransitionViewObject RigTransitionViewObject;
@@ -133,6 +135,15 @@ struct _RigTransitionView
    * overlap a neighbour */
   float min_drag_offset;
   float max_drag_offset;
+
+  /* Position and size of the current bounding box. The x positions
+   * are in normalised time and the y positions are an integer row
+   * number */
+  float box_x1, box_x2;
+  int box_y1, box_y2;
+
+  CoglPipeline *box_pipeline;
+  CoglPath *box_path;
 
   RutObject *graph;
 
@@ -222,6 +233,11 @@ _rig_transition_view_free (void *object)
   rut_closure_list_disconnect_all (&view->preferred_size_cb_list);
 
   rig_transition_view_ungrab_input (view);
+
+  if (view->box_pipeline)
+    cogl_object_unref (view->box_pipeline);
+  if (view->box_path)
+    cogl_object_unref (view->box_path);
 
   rig_transition_view_clear_selected_nodes (view);
 
@@ -433,6 +449,33 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
 }
 
 static void
+rig_transition_view_draw_box (RigTransitionView *view,
+                              CoglFramebuffer *fb)
+{
+  if (view->box_pipeline == NULL)
+    {
+      view->box_pipeline = cogl_pipeline_new (view->context->cogl_context);
+      cogl_pipeline_set_color4ub (view->box_pipeline, 0, 0, 0, 255);
+    }
+
+  if (view->box_path == NULL)
+    {
+      view->box_path = cogl_path_new (view->context->cogl_context);
+      cogl_path_rectangle (view->box_path,
+                           view->controls_width +
+                           view->box_x1 *
+                           (view->total_width - view->controls_width),
+                           view->box_y1 * view->row_height,
+                           view->controls_width +
+                           view->box_x2 *
+                           (view->total_width - view->controls_width),
+                           view->box_y2 * view->row_height);
+    }
+
+  cogl_framebuffer_stroke_path (fb, view->box_pipeline, view->box_path);
+}
+
+static void
 _rig_transition_view_paint (RutObject *object,
                             RutPaintContext *paint_ctx)
 {
@@ -517,6 +560,9 @@ _rig_transition_view_paint (RutObject *object,
                                      RIG_TRANSITION_VIEW_PROGRESS_WIDTH / 2.0f,
                                      10000.0f);
   }
+
+  if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX)
+    rig_transition_view_draw_box (view, fb);
 
   cogl_framebuffer_pop_clip (fb);
 }
@@ -1301,9 +1347,11 @@ rig_transition_view_create_progress_pipeline (RigTransitionView *view)
   return pipeline;
 }
 
-static float
+static void
 rig_transition_view_get_time_from_event (RigTransitionView *view,
-                                         RutInputEvent *event)
+                                         RutInputEvent *event,
+                                         float *time,
+                                         int *row)
 {
   float x = rut_motion_event_get_x (event);
   float y = rut_motion_event_get_y (event);
@@ -1311,15 +1359,19 @@ rig_transition_view_get_time_from_event (RigTransitionView *view,
   if (!rut_motion_event_unproject (event, view, &x, &y))
     g_error ("Failed to get inverse transform");
 
-  return ((x - view->controls_width) /
-          (view->total_width - view->controls_width));
+  if (time)
+    *time = ((x - view->controls_width) /
+             (view->total_width - view->controls_width));
+  if (row)
+    *row = nearbyintf (y / view->row_height);
 }
 
 static void
 rig_transition_view_update_timeline_progress (RigTransitionView *view,
                                               RutInputEvent *event)
 {
-  float progress = rig_transition_view_get_time_from_event (view, event);
+  float progress;
+  rig_transition_view_get_time_from_event (view, event, &progress, NULL);
   rut_timeline_set_progress (view->timeline, progress);
   rut_shell_queue_redraw (view->context->shell);
 }
@@ -1536,10 +1588,20 @@ rig_transition_view_decide_grab_state (RigTransitionView *view,
   RigTransitionViewProperty *prop_data;
   RigNode *node;
 
-  /* FIXME: if shift is down this should start drawing a bounding box
-   * to select multiple nodes. */
+  if ((rut_motion_event_get_modifier_state (event) &
+       (RUT_MODIFIER_LEFT_SHIFT_ON |
+        RUT_MODIFIER_RIGHT_SHIFT_ON)))
+    {
+      rig_transition_view_get_time_from_event (view,
+                                               event,
+                                               &view->box_x1,
+                                               &view->box_y1);
+      view->box_x2 = view->box_x1;
+      view->box_y2 = view->box_y1;
 
-  if (rig_transition_view_find_node (view, event, &prop_data, &node))
+      view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX;
+    }
+  else if (rig_transition_view_find_node (view, event, &prop_data, &node))
     {
       if (!rig_transition_view_select_node (view, prop_data, node))
         {
@@ -1549,8 +1611,10 @@ rig_transition_view_decide_grab_state (RigTransitionView *view,
           rig_transition_view_select_node (view, prop_data, node);
         }
 
-      view->drag_start_position =
-        rig_transition_view_get_time_from_event (view, event);
+      rig_transition_view_get_time_from_event (view,
+                                               event,
+                                               &view->drag_start_position,
+                                               NULL);
 
       rig_transition_view_calculate_drag_offset_range (view);
 
@@ -1571,9 +1635,12 @@ rig_transition_view_drag_nodes (RigTransitionView *view,
                                 RutInputEvent *event)
 {
   RigTransitionViewSelectedNode *selected_node;
-  float position = rig_transition_view_get_time_from_event (view, event);
-  float offset = position - view->drag_start_position;
+  float position;
+  float offset;
   RigTransitionViewObject *object_data;
+
+  rig_transition_view_get_time_from_event (view, event, &position, NULL);
+  offset = position - view->drag_start_position;
 
   offset = CLAMP (offset, view->min_drag_offset, view->max_drag_offset);
 
@@ -1629,6 +1696,80 @@ rig_transition_view_commit_dragged_nodes (RigTransitionView *view)
                                             n_nodes);
 }
 
+static void
+rig_transition_view_update_box (RigTransitionView *view,
+                                RutInputEvent *event)
+{
+  rig_transition_view_get_time_from_event (view,
+                                           event,
+                                           &view->box_x2,
+                                           &view->box_y2);
+
+  if (view->box_path)
+    {
+      cogl_object_unref (view->box_path);
+      view->box_path = NULL;
+    }
+
+  rut_shell_queue_redraw (view->context->shell);
+}
+
+static void
+rig_transition_view_commit_box (RigTransitionView *view)
+{
+  RigTransitionViewObject *object;
+  RigTransitionViewProperty *prop_data;
+  float x1, x2;
+  int y1, y2;
+  int row_pos;
+
+  if (view->box_x2 < view->box_x1)
+    {
+      x1 = view->box_x2;
+      x2 = view->box_x1;
+    }
+  else
+    {
+      x1 = view->box_x1;
+      x2 = view->box_x2;
+    }
+
+  if (view->box_y2 < view->box_y1)
+    {
+      y1 = view->box_y2;
+      y2 = view->box_y1;
+    }
+  else
+    {
+      y1 = view->box_y1;
+      y2 = view->box_y2;
+    }
+
+  rut_list_for_each (object, &view->objects, list_node)
+    {
+      row_pos++;
+
+      rut_list_for_each (prop_data, &object->properties, list_node)
+        {
+          if (row_pos >= y1 && row_pos < y2)
+            {
+              RigNode *node;
+              RigPath *path =
+                rig_transition_get_path_for_property (view->transition,
+                                                      prop_data->property);
+
+              rut_list_for_each (node, &path->nodes, list_node)
+                if (node->t >= x1 && node->t < x2)
+                  rig_transition_view_select_node (view, prop_data, node);
+            }
+
+          row_pos++;
+        }
+    }
+
+  rut_shell_queue_redraw (view->context->shell);
+}
+
 static RutInputEventStatus
 rig_transition_view_grab_input_cb (RutInputEvent *event,
                                    void *user_data)
@@ -1656,6 +1797,10 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
         case RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE:
           rig_transition_view_update_timeline_progress (view, event);
           break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX:
+          rig_transition_view_update_box (view, event);
+          break;
         }
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -1664,11 +1809,27 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
            (rut_motion_event_get_button_state (event) &
             RUT_BUTTON_STATE_1) == 0)
     {
-      if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED)
-        rig_transition_view_handle_select_event (view, event);
-      else if (view->grab_state ==
-               RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES)
-        rig_transition_view_commit_dragged_nodes (view);
+      switch (view->grab_state)
+        {
+	case RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB:
+          g_assert_not_reached ();
+          break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE:
+          break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED:
+          rig_transition_view_handle_select_event (view, event);
+          break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES:
+          rig_transition_view_commit_dragged_nodes (view);
+          break;
+
+        case RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX:
+          rig_transition_view_commit_box (view);
+          break;
+        }
 
       rig_transition_view_ungrab_input (view);
 
