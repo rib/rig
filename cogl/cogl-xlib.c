@@ -44,32 +44,6 @@
 
 #include "cogl-xlib.h"
 
-/* FIXME: when we remove the last X11 based Clutter backend then we
- * will get rid of these functions and instead rely on the equivalent
- * _cogl_xlib_renderer API
- */
-
-/* This can't be in the Cogl context because it can be set before
-   context is created */
-static Display *_cogl_xlib_display = NULL;
-
-Display *
-cogl_xlib_get_display (void)
-{
-  _COGL_GET_CONTEXT (ctx, NULL);
-
-  return cogl_xlib_renderer_get_display (ctx->display->renderer);
-}
-
-void
-cogl_xlib_set_display (Display *display)
-{
-  /* This can only be called once before the Cogl context is created */
-  g_assert (_cogl_xlib_display == NULL);
-
-  _cogl_xlib_display = display;
-}
-
 /* These three functions are wrappers around the equivalent renderer
    functions. They can be removed once all xlib-based backends in
    Clutter know about the renderer */

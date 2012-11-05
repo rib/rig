@@ -36,30 +36,6 @@
 COGL_BEGIN_DECLS
 
 /*
- * cogl_xlib_get_display:
- *
- * Return value: the Xlib display that will be used by the Xlib winsys
- * backend. The display needs to be set with _cogl_xlib_set_display()
- * before this function is called.
- *
- * Stability: Unstable
- */
-Display *
-cogl_xlib_get_display (void);
-
-/*
- * cogl_xlib_set_display:
- *
- * Sets the Xlib display that Cogl will use for the Xlib winsys
- * backend. This function should eventually go away when Cogl gains a
- * more complete winsys abstraction.
- *
- * Stability: Unstable
- */
-void
-cogl_xlib_set_display (Display *display);
-
-/*
  * cogl_xlib_handle_event:
  * @xevent: pointer to XEvent structure
  *
