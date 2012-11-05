@@ -47,9 +47,11 @@
 #define RIG_TRANSITION_VIEW_PROGRESS_WIDTH 4.0f
 
 #define RIG_TRANSITION_VIEW_UNSELECTED_COLOR \
-  GUINT32_TO_BE (0xff0000ff)
+  GUINT32_TO_BE (0x000000ff)
 #define RIG_TRANSITION_VIEW_SELECTED_COLOR \
-  GUINT32_TO_BE (0xffffffff)
+  GUINT32_TO_BE (0x007dc4ff)
+
+#define RIG_TRANSITION_VIEW_PADDING 2
 
 typedef struct
 {
@@ -169,6 +171,12 @@ struct _RigTransitionView
 
   CoglPipeline *progress_pipeline;
 
+  CoglPipeline *separator_pipeline;
+  int separator_width;
+
+  CoglPipeline *nodes_bg_pipeline;
+  int nodes_grid_size;
+
   int ref_count;
 };
 
@@ -236,6 +244,10 @@ _rig_transition_view_free (void *object)
 
   rig_transition_view_ungrab_input (view);
 
+  if (view->separator_pipeline)
+    cogl_object_unref (view->separator_pipeline);
+  if (view->nodes_bg_pipeline)
+    cogl_object_unref (view->nodes_bg_pipeline);
   if (view->box_pipeline)
     cogl_object_unref (view->box_pipeline);
   if (view->box_path)
@@ -474,11 +486,109 @@ rig_transition_view_draw_box (RigTransitionView *view,
 }
 
 static void
+rig_transition_view_draw_nodes_background (RigTransitionView *view,
+                                           CoglFramebuffer *fb)
+{
+  int tex_size = view->row_height;
+
+  if (tex_size < 1)
+    return;
+
+  if (view->row_height != tex_size &&
+      view->nodes_bg_pipeline)
+    {
+      cogl_object_unref (view->nodes_bg_pipeline);
+      view->nodes_bg_pipeline = NULL;
+    }
+
+  if (view->nodes_bg_pipeline == NULL)
+    {
+      CoglPipeline *pipeline;
+      int rowstride;
+      int y;
+      CoglBitmap *bitmap;
+      CoglPixelBuffer *buffer;
+      CoglTexture *texture;
+      uint8_t *tex_data;
+
+      pipeline = cogl_pipeline_new (view->context->cogl_context);
+
+      bitmap = cogl_bitmap_new_with_size (view->context->cogl_context,
+                                          tex_size, tex_size,
+                                          COGL_PIXEL_FORMAT_RGB_888);
+      buffer = cogl_bitmap_get_buffer (bitmap);
+
+      rowstride = cogl_bitmap_get_rowstride (bitmap);
+      tex_data = cogl_buffer_map (COGL_BUFFER (buffer),
+                                  COGL_BUFFER_ACCESS_WRITE,
+                                  COGL_BUFFER_MAP_HINT_DISCARD);
+
+      for (y = 0; y < tex_size - 1; y++)
+        {
+          uint8_t *p = tex_data + y * rowstride;
+
+          memset (p, 0x91, 3 * (tex_size - 1));
+          memset (p + (tex_size - 1) * 3, 0x74, 3);
+        }
+      memset (tex_data + rowstride * (tex_size - 1), 0x74, tex_size * 3);
+
+      cogl_buffer_unmap (COGL_BUFFER (buffer));
+
+      texture = cogl_texture_new_from_bitmap (bitmap,
+                                              COGL_TEXTURE_NO_ATLAS,
+                                              COGL_PIXEL_FORMAT_ANY);
+
+      cogl_pipeline_set_layer_texture (pipeline,
+                                       0, /* layer_num */
+                                       COGL_TEXTURE (texture));
+      cogl_pipeline_set_layer_filters
+        (pipeline,
+         0, /* layer_num */
+         COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
+         COGL_PIPELINE_FILTER_LINEAR);
+      cogl_pipeline_set_layer_wrap_mode
+        (pipeline,
+         0, /* layer_num */
+         COGL_PIPELINE_WRAP_MODE_REPEAT);
+
+      cogl_object_unref (bitmap);
+      cogl_object_unref (texture);
+
+      view->nodes_grid_size = tex_size;
+
+      view->nodes_bg_pipeline = pipeline;
+    }
+
+  cogl_framebuffer_draw_textured_rectangle (fb,
+                                            view->nodes_bg_pipeline,
+                                            view->nodes_x,
+                                            0,
+                                            view->nodes_x + view->nodes_width,
+                                            view->total_height,
+                                            0, 0, /* s1, t1 */
+                                            view->nodes_width /
+                                            (float) tex_size,
+                                            view->total_height /
+                                            (float) tex_size);
+}
+
+static void
 _rig_transition_view_paint (RutObject *object,
                             RutPaintContext *paint_ctx)
 {
   RigTransitionView *view = object;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
+
+  if (view->separator_pipeline)
+    cogl_framebuffer_draw_rectangle (fb,
+                                     view->separator_pipeline,
+                                     view->nodes_x -
+                                     view->separator_width,
+                                     0,
+                                     view->nodes_x,
+                                     view->total_height);
+
+  rig_transition_view_draw_nodes_background (view, fb);
 
   if (view->dots_dirty)
     {
@@ -604,7 +714,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                                             &height);
 
           if (width > column_widths[i])
-            column_widths[i] = width;
+            column_widths[i] = width + RIG_TRANSITION_VIEW_PADDING;
           if (height > row_height)
             row_height = height;
         }
@@ -629,7 +739,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                 width += RIG_TRANSITION_VIEW_PROPERTY_INDENTATION;
 
               if (width > column_widths[i])
-                column_widths[i] = width;
+                column_widths[i] = width + RIG_TRANSITION_VIEW_PADDING;
               if (height > row_height)
                 row_height = height;
             }
@@ -649,7 +759,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
 
           rut_transform_init_identity (control->transform);
           rut_transform_translate (control->transform,
-                                   nearbyintf (x),
+                                   nearbyintf (x + RIG_TRANSITION_VIEW_PADDING),
                                    nearbyintf (row_num * row_height),
                                    0.0f);
           rut_sizable_set_size (control->control,
@@ -676,9 +786,10 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                   width -= RIG_TRANSITION_VIEW_PROPERTY_INDENTATION;
                 }
 
+              x = nearbyintf (x + RIG_TRANSITION_VIEW_PADDING);
               rut_transform_init_identity (control->transform);
               rut_transform_translate (control->transform,
-                                       nearbyintf (x),
+                                       x,
                                        nearbyintf (row_num * row_height),
                                        0.0f);
               rut_sizable_set_size (control->control,
@@ -694,9 +805,9 @@ rig_transition_view_allocate_cb (RutObject *graphable,
     float controls_width = 0;
     for (i = 0; i < RIG_TRANSITION_VIEW_N_COLUMNS; i++)
       controls_width += column_widths[i];
-    controls_width = nearbyintf (controls_width);
+    controls_width = nearbyintf (controls_width + RIG_TRANSITION_VIEW_PADDING);
 
-    view->nodes_x = controls_width;
+    view->nodes_x = controls_width + view->separator_width;
     view->nodes_width = view->total_width - view->nodes_x;
   }
 
@@ -707,7 +818,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                                   view->total_height /* y1 */);
 
   view->row_height = nearbyintf (row_height);
-  view->node_size = nearbyintf (view->row_height);
+  view->node_size = nearbyintf (view->row_height * 0.8f);
 
   if (view->node_size > 0)
     cogl_pipeline_set_point_size (view->dots_pipeline, view->node_size);
@@ -1102,6 +1213,9 @@ rig_transition_view_create_object_data (RigTransitionView *view,
                                             object_data->controls + 0,
                                             NULL);
 
+  rut_text_set_font_name (RUT_TEXT (object_data->controls[0].control),
+                          "Sans Bold");
+
   label_property = rut_introspectable_lookup_property (object, "label");
   buffer = rut_text_get_buffer (object_data->controls[0].control);
   text_property = rut_introspectable_lookup_property (buffer, "text");
@@ -1386,6 +1500,45 @@ rig_transition_view_create_dots_pipeline (RigTransitionView *view)
   g_free (dot_filename);
 
   return pipeline;
+}
+
+static void
+rig_transition_view_create_separator_pipeline (RigTransitionView *view)
+{
+  CoglError *error = NULL;
+  CoglTexture *texture;
+
+  texture = rut_load_texture (view->context,
+                              RIG_SHARE_DIR "/transition-view-separator.png",
+                              &error);
+
+  if (texture)
+    {
+      CoglPipeline *pipeline = cogl_pipeline_new (view->context->cogl_context);
+
+      view->separator_pipeline = pipeline;
+      view->separator_width = cogl_texture_get_width (texture);
+
+      cogl_pipeline_set_layer_texture (pipeline,
+                                       0, /* layer_num */
+                                       COGL_TEXTURE (texture));
+      cogl_pipeline_set_layer_filters
+        (pipeline,
+         0, /* layer_num */
+         COGL_PIPELINE_FILTER_LINEAR_MIPMAP_NEAREST,
+         COGL_PIPELINE_FILTER_LINEAR);
+      cogl_pipeline_set_layer_wrap_mode
+        (pipeline,
+         0, /* layer_num */
+         COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+
+      cogl_object_unref (texture);
+    }
+  else
+    {
+      g_warning ("%s", error->message);
+      cogl_error_free (error);
+    }
 }
 
 static CoglPipeline *
@@ -2015,6 +2168,8 @@ rig_transition_view_new (RutContext *ctx,
   view->dots_pipeline = rig_transition_view_create_dots_pipeline (view);
 
   view->progress_pipeline = rig_transition_view_create_progress_pipeline (view);
+
+  rig_transition_view_create_separator_pipeline (view);
 
   rut_object_init (&view->_parent, &rig_transition_view_type);
 

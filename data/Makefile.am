@@ -1,6 +1,8 @@
 assetsdir = $(datadir)
 dist_assets_DATA = \
 	dot.png \
+	transition-view-separator.png \
+	transition-view-bg.png \
 	button.png \
 	button-hover.png \
 	button-active.png \
