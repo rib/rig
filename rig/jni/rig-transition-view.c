@@ -152,6 +152,7 @@ struct _RigTransitionView
 
   int nodes_x;
   int nodes_width;
+  int node_size;
   int total_width;
   int total_height;
   int row_height;
@@ -706,9 +707,10 @@ rig_transition_view_allocate_cb (RutObject *graphable,
                                   view->total_height /* y1 */);
 
   view->row_height = nearbyintf (row_height);
+  view->node_size = nearbyintf (view->row_height);
 
-  if (view->row_height > 0)
-    cogl_pipeline_set_point_size (view->dots_pipeline, row_height);
+  if (view->node_size > 0)
+    cogl_pipeline_set_point_size (view->dots_pipeline, view->node_size);
 }
 
 static void
@@ -1477,7 +1479,7 @@ rig_transition_view_find_node (RigTransitionView *view,
           if (row_num == (int) (y / view->row_height))
             {
               float scaled_dot_size =
-                view->row_height / (float) view->nodes_width;
+                view->node_size / (float) view->nodes_width;
               RigNode *node;
 
               node =
