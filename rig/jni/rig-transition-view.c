@@ -150,7 +150,8 @@ struct _RigTransitionView
   RutPaintableProps paintable;
   RutGraphableProps graphable;
 
-  int controls_width;
+  int nodes_x;
+  int nodes_width;
   int total_width;
   int total_height;
   int row_height;
@@ -462,13 +463,9 @@ rig_transition_view_draw_box (RigTransitionView *view,
     {
       view->box_path = cogl_path_new (view->context->cogl_context);
       cogl_path_rectangle (view->box_path,
-                           view->controls_width +
-                           view->box_x1 *
-                           (view->total_width - view->controls_width),
+                           view->nodes_x + view->box_x1 * view->nodes_width,
                            view->box_y1 * view->row_height,
-                           view->controls_width +
-                           view->box_x2 *
-                           (view->total_width - view->controls_width),
+                           view->nodes_x + view->box_x2 * view->nodes_width,
                            view->box_y2 * view->row_height);
     }
 
@@ -520,9 +517,9 @@ _rig_transition_view_paint (RutObject *object,
    * regardless of the transformation */
 
   cogl_framebuffer_push_rectangle_clip (fb,
-                                        view->controls_width,
+                                        view->nodes_x,
                                         0.0f,
-                                        view->total_width,
+                                        view->nodes_x + view->nodes_width,
                                         view->total_height);
 
   if (view->n_dots > 0)
@@ -530,11 +527,11 @@ _rig_transition_view_paint (RutObject *object,
       cogl_framebuffer_push_matrix (fb);
 
       cogl_framebuffer_translate (fb,
-                                  view->controls_width,
+                                  view->nodes_x,
                                   view->row_height * 0.5f,
                                   0.0f);
       cogl_framebuffer_scale (fb,
-                              view->total_width - view->controls_width,
+                              view->nodes_width,
                               view->row_height,
                               1.0f);
 
@@ -547,9 +544,9 @@ _rig_transition_view_paint (RutObject *object,
 
   {
     float progress_x =
-      view->controls_width +
+      view->nodes_x +
       rut_timeline_get_progress (view->timeline) *
-      (view->total_width - view->controls_width);
+      view->nodes_width;
 
     cogl_framebuffer_draw_rectangle (fb,
                                      view->progress_pipeline,
@@ -696,13 +693,16 @@ rig_transition_view_allocate_cb (RutObject *graphable,
     float controls_width = 0;
     for (i = 0; i < RIG_TRANSITION_VIEW_N_COLUMNS; i++)
       controls_width += column_widths[i];
-    view->controls_width = nearbyintf (controls_width);
+    controls_width = nearbyintf (controls_width);
+
+    view->nodes_x = controls_width;
+    view->nodes_width = view->total_width - view->nodes_x;
   }
 
   rut_input_region_set_rectangle (view->input_region,
-                                  view->controls_width, /* x0 */
+                                  view->nodes_x, /* x0 */
                                   0.0f, /* y0 */
-                                  view->total_width,
+                                  view->nodes_x + view->nodes_width,
                                   view->total_height /* y1 */);
 
   view->row_height = nearbyintf (row_height);
@@ -1413,8 +1413,7 @@ rig_transition_view_get_time_from_event (RigTransitionView *view,
     g_error ("Failed to get inverse transform");
 
   if (time)
-    *time = ((x - view->controls_width) /
-             (view->total_width - view->controls_width));
+    *time = (x - view->nodes_x) / view->nodes_width;
   if (row)
     *row = nearbyintf (y / view->row_height);
 }
@@ -1462,8 +1461,7 @@ rig_transition_view_find_node (RigTransitionView *view,
       return FALSE;
     }
 
-  progress = ((x - view->controls_width) /
-              (view->total_width - view->controls_width));
+  progress = (x - view->nodes_x) / view->nodes_width;
 
   if (progress < 0.0f || progress > 1.0f)
     return FALSE;
@@ -1479,8 +1477,7 @@ rig_transition_view_find_node (RigTransitionView *view,
           if (row_num == (int) (y / view->row_height))
             {
               float scaled_dot_size =
-                view->row_height /
-                (float) (view->total_width - view->controls_width);
+                view->row_height / (float) view->nodes_width;
               RigNode *node;
 
               node =
