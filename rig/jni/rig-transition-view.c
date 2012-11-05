@@ -1128,16 +1128,31 @@ rig_transition_view_property_added (RigTransitionView *view,
                                     RutProperty *property)
 {
   RigTransitionViewProperty *prop_data;
+  RigTransitionViewProperty *insert_pos;
   RigTransitionViewObject *object_data;
   const RutPropertySpec *spec = property->spec;
+  RutObject *object;
   RigPath *path;
+
+  object = property->object;
+
+  /* If the property belongs to a component then we'll group the
+   * property according to the component's object instead */
+  if (rut_object_is (object, RUT_INTERFACE_ID_COMPONENTABLE))
+    {
+      RutComponentableProps *component =
+        rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+
+      if (component->entity)
+        object = component->entity;
+    }
 
   /* Check if we already have this object */
   rut_list_for_each (object_data, &view->objects, list_node)
-    if (object_data->object == property->object)
+    if (object_data->object == object)
       goto have_object;
 
-  object_data = rig_transition_view_create_object_data (view, property->object);
+  object_data = rig_transition_view_create_object_data (view, object);
 
  have_object:
 
@@ -1166,7 +1181,33 @@ rig_transition_view_property_added (RigTransitionView *view,
 
   prop_data->path = rut_refable_ref (path);
 
-  rut_list_insert (&object_data->properties, &prop_data->list_node);
+  /* Insert the property in a sorted position */
+  rut_list_for_each (insert_pos, &object_data->properties, list_node)
+    {
+      /* If the property belongs to the same object then sort it
+       * according to the property name */
+      if (property->object == insert_pos->property->object)
+        {
+          if (strcmp (property->spec->nick ?
+                      property->spec->nick :
+                      property->spec->name,
+                      insert_pos->property->spec->nick ?
+                      insert_pos->property->spec->nick :
+                      insert_pos->property->spec->name) < 0)
+            break;
+        }
+      /* Make sure the entities properties are first */
+      else if (property->object == object_data->object)
+        break;
+      else if (insert_pos->property->object == object_data->object)
+        continue;
+      /* Otherwise we'll just sort by the object pointer so that at
+       * least the component properties are grouped */
+      else if (property->object < insert_pos->property->object)
+        break;
+    }
+
+  rut_list_insert (insert_pos->list_node.prev, &prop_data->list_node);
 
   rig_transition_view_queue_allocation (view);
   rig_transition_view_preferred_size_changed (view);
@@ -1186,9 +1227,21 @@ rig_transition_view_find_property (RigTransitionView *view,
                                    RutProperty *property)
 {
   RigTransitionViewObject *object_data;
+  RutObject *object = property->object;
+
+  /* If the property belongs to a component then it is grouped by
+   * component's entity instead */
+  if (rut_object_is (object, RUT_INTERFACE_ID_COMPONENTABLE))
+    {
+      RutComponentableProps *component =
+        rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+
+      if (component->entity)
+        object = component->entity;
+    }
 
   rut_list_for_each (object_data, &view->objects, list_node)
-    if (object_data->object == property->object)
+    if (object_data->object == object)
       {
         RigTransitionViewProperty *prop_data;
 
