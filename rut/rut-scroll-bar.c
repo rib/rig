@@ -544,6 +544,36 @@ rut_scroll_bar_set_length (RutObject *obj,
   update_geometry (scroll_bar);
 }
 
+static float
+clamp_offset (RutScrollBar *scroll_bar,
+              float offset)
+{
+  if (offset + scroll_bar->viewport_length > scroll_bar->virtual_length)
+    offset = scroll_bar->virtual_length - scroll_bar->viewport_length;
+
+  if (offset < 0.0f)
+    offset = 0.0f;
+
+  return offset;
+}
+
+static void
+reclamp_offset (RutScrollBar *scroll_bar)
+{
+  float offset = clamp_offset (scroll_bar, scroll_bar->offset);
+
+  if (offset != scroll_bar->offset)
+    {
+      RutProperty *property =
+        &scroll_bar->properties[RUT_SCROLL_BAR_PROP_VIRTUAL_OFFSET];
+
+      scroll_bar->offset = offset;
+
+      rut_property_dirty (&scroll_bar->ctx->property_ctx,
+                          property);
+    }
+}
+
 void
 rut_scroll_bar_set_virtual_length (RutObject *obj,
                                    float virtual_length)
@@ -555,13 +585,14 @@ rut_scroll_bar_set_virtual_length (RutObject *obj,
 
   scroll_bar->virtual_length = virtual_length;
 
+  reclamp_offset (scroll_bar);
   update_handle_length (scroll_bar);
   update_handle_position (scroll_bar);
 }
 
 void
 rut_scroll_bar_set_virtual_viewport (RutObject *obj,
-                                    float viewport_length)
+                                     float viewport_length)
 {
   RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
 
@@ -570,6 +601,7 @@ rut_scroll_bar_set_virtual_viewport (RutObject *obj,
 
   scroll_bar->viewport_length = viewport_length;
 
+  reclamp_offset (scroll_bar);
   update_handle_length (scroll_bar);
   update_handle_position (scroll_bar);
 }
@@ -580,16 +612,12 @@ rut_scroll_bar_set_virtual_offset (RutObject *obj,
 {
   RutScrollBar *scroll_bar = RUT_SCROLL_BAR (obj);
 
+  viewport_offset = clamp_offset (scroll_bar, viewport_offset);
+
   if (scroll_bar->offset == viewport_offset)
     return;
 
-  scroll_bar->offset = MAX (viewport_offset, 0);
-
-  if ((scroll_bar->offset + scroll_bar->viewport_length) >
-      scroll_bar->virtual_length)
-    {
-      scroll_bar->offset = scroll_bar->virtual_length - scroll_bar->viewport_length;
-    }
+  scroll_bar->offset = viewport_offset;
 
   update_handle_position (scroll_bar);
 
