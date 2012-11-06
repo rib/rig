@@ -456,39 +456,6 @@ maybe_clamp_position (RutUIViewport *ui_viewport)
 }
 
 static void
-update_scroll_bars (RutUIViewport *ui_viewport)
-{
-  float doc_view_x = ui_viewport->width * (1.0 / ui_viewport->doc_scale_x);
-  float doc_view_y = ui_viewport->height * (1.0 / ui_viewport->doc_scale_y);
-
-  if (ui_viewport->doc_width > 0)
-    {
-      if (ui_viewport->doc_x < 0)
-        rut_ui_viewport_set_doc_x (ui_viewport, 0);
-      else if ((ui_viewport->doc_x + doc_view_x) > ui_viewport->doc_width)
-        rut_ui_viewport_set_doc_x (ui_viewport,
-                                   ui_viewport->doc_x + doc_view_x);
-
-      rut_graphable_add_child (ui_viewport, ui_viewport->scroll_bar_x);
-    }
-  else
-    rut_graphable_remove_child (ui_viewport->scroll_bar_x);
-
-  if (ui_viewport->doc_height > 0)
-    {
-      if (ui_viewport->doc_y < 0)
-        rut_ui_viewport_set_doc_y (ui_viewport, 0);
-      else if ((ui_viewport->doc_y + doc_view_y) > ui_viewport->doc_height)
-        rut_ui_viewport_set_doc_y (ui_viewport,
-                                   ui_viewport->doc_y + doc_view_y);
-
-      rut_graphable_add_child (ui_viewport, ui_viewport->scroll_bar_y_transform);
-    }
-  else
-    rut_graphable_remove_child (ui_viewport->scroll_bar_y_transform);
-}
-
-static void
 position_scroll_bars (RutUIViewport *ui_viewport)
 {
   CoglBool need_scroll_bar_x, need_scroll_bar_y;
