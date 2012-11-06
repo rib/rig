@@ -24,6 +24,7 @@
 #include "rig-transition-view.h"
 #include "rig-types.h"
 #include "rig-undo-journal.h"
+#include "rut-box-layout.h"
 
 enum {
   RIG_DATA_PROP_WIDTH,
@@ -131,8 +132,9 @@ struct _RigData
   GList *asset_enumerators;
 
   RutUIViewport *tool_vp;
+  RutBoxLayout *inspector_box_layout;
   RutObject *inspector;
-  GList *component_inspectors;
+  GList *all_inspectors;
 
   RutUIViewport *timeline_vp;
   RigTransitionView *transition_view;

@@ -351,10 +351,7 @@ rig_reload_inspector_property (RigData *data,
 
       animated = prop_data && prop_data->animated;
 
-      rut_inspector_reload_property (data->inspector, property);
-      rut_inspector_set_property_animated (data->inspector, property, animated);
-
-      for (l = data->component_inspectors; l; l = l->next)
+      for (l = data->all_inspectors; l; l = l->next)
         {
           rut_inspector_reload_property (l->data, property);
           rut_inspector_set_property_animated (l->data, property, animated);
@@ -647,98 +644,45 @@ create_inspector (RigData *data,
   return inspector;
 }
 
-typedef struct _AddComponentState
-{
-  RigData *data;
-  int y_offset;
-} AddComponentState;
-
 static void
 add_component_inspector_cb (RutComponent *component,
                             void *user_data)
 {
-  AddComponentState *state = user_data;
-  RigData *data = state->data;
+  RigData *data = user_data;
   RutInspector *inspector = create_inspector (data, component);
-  RutTransform *transform = rut_transform_new (data->ctx, inspector, NULL);
-  float width, height;
-  RutObject *doc_node;
 
-  rut_refable_unref (inspector);
+  rut_box_layout_add (data->inspector_box_layout, inspector);
 
-  rut_sizable_get_preferred_width (inspector,
-                                   -1, /* for height */
-                                   NULL, /* min_width */
-                                   &width);
-  rut_sizable_get_preferred_height (inspector,
-                                    -1, /* for width */
-                                    NULL, /* min_height */
-                                    &height);
-  rut_sizable_set_size (inspector, width, height);
-
-  doc_node = rut_ui_viewport_get_doc_node (data->tool_vp);
-
-  rut_transform_translate (transform, 0, state->y_offset, 0);
-  state->y_offset += height;
-  rut_graphable_add_child (doc_node, transform);
-  rut_refable_unref (transform);
-
-  data->component_inspectors =
-    g_list_prepend (data->component_inspectors, inspector);
+  data->all_inspectors =
+    g_list_prepend (data->all_inspectors, inspector);
 }
 
 static void
 update_inspector (RigData *data)
 {
-  RutObject *doc_node;
+  GList *l;
 
-  if (data->inspector)
+  for (l = data->all_inspectors; l; l = l->next)
     {
-      rut_graphable_remove_child (data->inspector);
-      data->inspector = NULL;
-
-      if (data->component_inspectors)
-        {
-          GList *l;
-
-          for (l = data->component_inspectors; l; l = l->next)
-            rut_graphable_remove_child (l->data);
-          g_list_free (data->component_inspectors);
-          data->component_inspectors = NULL;
-        }
+      rut_box_layout_remove (data->inspector_box_layout, l->data);
+      rut_refable_unref (l->data);
     }
 
-  rut_ui_viewport_set_doc_height (data->tool_vp, 0);
+  data->inspector = NULL;
+  g_list_free (data->all_inspectors);
+  data->all_inspectors = NULL;
 
   if (data->selected_entity)
     {
-      float width, height;
-      AddComponentState component_add_state;
-
       data->inspector = create_inspector (data, data->selected_entity);
 
-      rut_sizable_get_preferred_width (data->inspector,
-                                       -1, /* for height */
-                                       NULL, /* min_width */
-                                       &width);
-      rut_sizable_get_preferred_height (data->inspector,
-                                        -1, /* for width */
-                                        NULL, /* min_height */
-                                        &height);
-      rut_sizable_set_size (data->inspector, width, height);
+      rut_box_layout_add (data->inspector_box_layout, data->inspector);
+      data->all_inspectors =
+        g_list_prepend (data->all_inspectors, data->inspector);
 
-      doc_node = rut_ui_viewport_get_doc_node (data->tool_vp);
-      rut_graphable_add_child (doc_node, data->inspector);
-      rut_refable_unref (data->inspector);
-
-      component_add_state.data = data;
-      component_add_state.y_offset = height + 10;
       rut_entity_foreach_component (data->selected_entity,
                                     add_component_inspector_cb,
-                                    &component_add_state);
-
-      rut_ui_viewport_set_doc_height (data->tool_vp,
-                                      component_add_state.y_offset);
+                                    data);
     }
 }
 
@@ -2991,17 +2935,27 @@ init (RutShell *shell, void *user_data)
       rut_split_view_set_child0 (data->splits[2], data->splits[3]);
       rut_split_view_set_child1 (data->splits[2], data->bottom_bar_stack);
 
+      data->inspector_box_layout =
+        rut_box_layout_new (data->ctx,
+                            RUT_BOX_LAYOUT_ORIENTATION_VERTICAL);
+
       data->right_bar_stack =
         rut_stack_new (data->ctx, 100, 100,
                        (data->right_bar_rect =
                         rut_rectangle_new4f (data->ctx, 0, 0,
                                              0.57, 0.57, 0.57, 1)),
                        (data->tool_vp =
-                        rut_ui_viewport_new (data->ctx, 0, 0, NULL)),
+                        rut_ui_viewport_new (data->ctx,
+                                             0, 0,
+                                             data->inspector_box_layout,
+                                             NULL)),
                        rut_bevel_new (data->ctx, 0, 0, &right_bar_ref_color),
                        NULL);
 
       rut_ui_viewport_set_x_pannable (data->tool_vp, FALSE);
+      rut_ui_viewport_set_y_pannable (data->tool_vp, TRUE);
+      rut_ui_viewport_set_sync_widget (data->tool_vp,
+                                       data->inspector_box_layout);
 
       rut_split_view_set_child0 (data->splits[1], data->splits[2]);
       rut_split_view_set_child1 (data->splits[1], data->right_bar_stack);
