@@ -40,17 +40,6 @@ rut_ui_viewport_new (RutContext *ctx,
                      ...);
 
 void
-rut_ui_viewport_set_width (RutObject *ui_viewport, float width);
-
-void
-rut_ui_viewport_set_height (RutObject *ui_viewport, float height);
-
-void
-rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
-                          float width,
-                          float height);
-
-void
 rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
                           float *width,
                           float *height);

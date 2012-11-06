@@ -98,17 +98,15 @@ struct _RutUIViewport
 static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
   {
     .name = "width",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, width),
-    .setter.float_type = rut_ui_viewport_set_width
   },
   {
     .name = "height",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
     .data_offset = offsetof (RutUIViewport, height),
-    .setter.float_type = rut_ui_viewport_set_height
   },
   {
     .name = "doc-width",
@@ -180,6 +178,16 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
 };
 
 static void
+_rut_ui_viewport_set_size (RutObject *object,
+                           float width,
+                           float height);
+
+static void
+_rut_ui_viewport_get_size (RutObject *object,
+                           float *width,
+                           float *height);
+
+static void
 _rut_ui_viewport_free (void *object)
 {
   RutUIViewport *ui_viewport = object;
@@ -207,8 +215,8 @@ static RutGraphableVTable _rut_ui_viewport_graphable_vtable = {
 };
 
 static RutSizableVTable _rut_ui_viewport_sizable_vtable = {
-  rut_ui_viewport_set_size,
-  rut_ui_viewport_get_size,
+  _rut_ui_viewport_set_size,
+  _rut_ui_viewport_get_size,
   NULL,
   NULL,
   NULL /* add_preferred_size_callback */
@@ -721,11 +729,12 @@ rut_ui_viewport_new (RutContext *ctx,
   return ui_viewport;
 }
 
-void
-rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
-                          float width,
-                          float height)
+static void
+_rut_ui_viewport_set_size (RutObject *object,
+                           float width,
+                           float height)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
   float spacing;
 
   ui_viewport->width = width;
@@ -760,29 +769,15 @@ rut_ui_viewport_set_size (RutUIViewport *ui_viewport,
                       &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_HEIGHT]);
 }
 
-void
-rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
-                          float *width,
-                          float *height)
+static void
+_rut_ui_viewport_get_size (RutObject *object,
+                           float *width,
+                           float *height)
 {
+  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+
   *width = ui_viewport->width;
   *height = ui_viewport->height;
-}
-
-void
-rut_ui_viewport_set_width (RutObject *obj, float width)
-{
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
-
-  rut_ui_viewport_set_size (ui_viewport, width, ui_viewport->height);
-}
-
-void
-rut_ui_viewport_set_height (RutObject *obj, float height)
-{
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
-
-  rut_ui_viewport_set_size (ui_viewport, ui_viewport->width, height);
 }
 
 void
