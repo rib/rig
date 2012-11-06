@@ -604,6 +604,12 @@ rut_scroll_bar_get_virtual_offset (RutScrollBar *scroll_bar)
 }
 
 float
+rut_scroll_bar_get_virtual_viewport (RutScrollBar *scroll_bar)
+{
+  return scroll_bar->viewport_length;
+}
+
+float
 rut_scroll_bar_get_thickness (RutScrollBar *scroll_bar)
 {
   return scroll_bar->thickness;
