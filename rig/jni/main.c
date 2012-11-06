@@ -197,11 +197,10 @@ paint (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode)
     {
       rut_camera_flush (data->camera);
-      rut_graphable_traverse (data->root,
-                              RUT_TRAVERSE_DEPTH_FIRST,
-                              scenegraph_pre_paint_cb,
-                              scenegraph_post_paint_cb,
-                              &paint_ctx);
+      rut_paint_graph_with_layers (data->root,
+                                   scenegraph_pre_paint_cb,
+                                   scenegraph_post_paint_cb,
+                                   rut_paint_ctx);
       /* FIXME: this should be moved to the end of this function but we
        * currently get warnings about unbalanced _flush()/_end_frame()
        * pairs. */
