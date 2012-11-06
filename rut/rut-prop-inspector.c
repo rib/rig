@@ -449,6 +449,7 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
           rut_drop_down_set_values_array (drop, values, n_values);
 
           *control_prop = rut_introspectable_lookup_property (drop, "value");
+          *label_text = name;
 
           return drop;
         }
