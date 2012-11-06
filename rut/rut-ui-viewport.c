@@ -636,7 +636,7 @@ rut_ui_viewport_new (RutContext *ctx,
 
   va_start (ap, height);
   while ((object = va_arg (ap, RutObject *)))
-    rut_graphable_add_child (RUT_OBJECT (ui_viewport), object);
+    rut_graphable_add_child (RUT_OBJECT (ui_viewport->doc_transform), object);
   va_end (ap);
 
   queue_allocation (ui_viewport);
