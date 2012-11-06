@@ -69,10 +69,10 @@ float
 rut_ui_viewport_get_height (RutUIViewport *ui_viewport);
 
 float
-rut_ui_viewport_get_doc_x (RutUIViewport *ui_viewport);
+rut_ui_viewport_get_doc_x (RutObject *ui_viewport);
 
 float
-rut_ui_viewport_get_doc_y (RutUIViewport *ui_viewport);
+rut_ui_viewport_get_doc_y (RutObject *ui_viewport);
 
 float
 rut_ui_viewport_get_doc_scale_x (RutUIViewport *ui_viewport);
