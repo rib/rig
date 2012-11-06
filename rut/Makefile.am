@@ -59,7 +59,8 @@ source_h = \
     rut-property-types.h \
     rut-volume.h \
     rut-color-picker.h \
-    rut-color-button.h
+    rut-color-button.h \
+    rut-box-layout.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -121,6 +122,7 @@ librut_la_SOURCES = \
     rut-image.c \
     rut-color-picker.c \
     rut-color-button.c \
+    rut-box-layout.c \
     $(source_h)
 
 if !HAVE_ANDROID
