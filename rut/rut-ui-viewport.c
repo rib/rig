@@ -25,6 +25,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "rut-context.h"
 #include "rut-interfaces.h"
 #include "rut-ui-viewport.h"
@@ -252,10 +254,20 @@ _rut_ui_viewport_init_type (void)
 static void
 _rut_ui_viewport_update_doc_matrix (RutUIViewport *ui_viewport)
 {
+  float doc_x = ui_viewport->doc_x;
+  float doc_y = ui_viewport->doc_y;
+
+  /* Align the translation to a pixel if the scale is 1 so that it
+   * won't needlessly start misaligning text */
+  if (ui_viewport->doc_scale_x == 1.0f)
+    doc_x = nearbyintf (doc_x);
+  if (ui_viewport->doc_scale_y == 1.0f)
+    doc_y = nearbyintf (doc_y);
+
   rut_transform_init_identity (ui_viewport->doc_transform);
   rut_transform_translate (ui_viewport->doc_transform,
-                           -ui_viewport->doc_x,
-                           -ui_viewport->doc_y,
+                           -doc_x,
+                           -doc_y,
                            0);
   rut_transform_scale (ui_viewport->doc_transform,
                        ui_viewport->doc_scale_x,
