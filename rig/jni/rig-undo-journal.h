@@ -207,4 +207,7 @@ rig_undo_journal_redo (RigUndoJournal *journal);
 RigUndoJournal *
 rig_undo_journal_new (RigData *data);
 
+void
+rig_undo_journal_free (RigUndoJournal *journal);
+
 #endif /* _RUT_UNDO_JOURNAL_H_ */

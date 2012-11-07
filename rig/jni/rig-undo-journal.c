@@ -1221,3 +1221,16 @@ rig_undo_journal_new (RigData *data)
 
   return journal;
 }
+
+void
+rig_undo_journal_free (RigUndoJournal *journal)
+{
+  UndoRedo *node, *tmp;
+
+  rut_list_for_each_safe (node, tmp, &journal->undo_ops, list_node)
+    undo_redo_free (node);
+  rut_list_for_each_safe (node, tmp, &journal->redo_ops, list_node)
+    undo_redo_free (node);
+
+  g_free (journal);
+}
