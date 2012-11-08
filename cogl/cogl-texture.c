@@ -587,20 +587,12 @@ do_texture_draw_and_read (CoglFramebuffer *fb,
   return TRUE;
 }
 
-/* Reads back the contents of a texture by rendering it to the framebuffer
- * and reading back the resulting pixels.
- *
- * NB: Normally this approach isn't normally used since we can just use
- * glGetTexImage, but may be used as a fallback in some circumstances.
- */
-static CoglBool
-_cogl_texture_draw_and_read (CoglTexture *texture,
-                             CoglBitmap *target_bmp,
-                             GLuint target_gl_format,
-                             GLuint target_gl_type,
-                             CoglError **error)
+CoglBool
+cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
+                                      CoglFramebuffer *framebuffer,
+                                      CoglBitmap *target_bmp,
+                                      CoglError **error)
 {
-  CoglFramebuffer *framebuffer = cogl_get_draw_framebuffer ();
   CoglContext *ctx = framebuffer->context;
   float save_viewport[4];
   float viewport[4];
@@ -1060,25 +1052,13 @@ cogl_texture_get_data (CoglTexture *texture,
       tg_data.success = FALSE;
     }
 
-  /* XXX: In some cases _cogl_texture_2d_download_from_gl may fail
-   * to read back the texture data; such as for GLES which doesn't
-   * support glGetTexImage, so here we fallback to drawing the
-   * texture and reading the pixels from the framebuffer. */
+  /* XXX: In some cases this api may fail to read back the texture
+   * data; such as for GLES which doesn't support glGetTexImage
+   */
   if (!tg_data.success)
     {
-      if (!_cogl_texture_draw_and_read (texture, target_bmp,
-                                        closest_gl_format,
-                                        closest_gl_type,
-                                        &ignore_error))
-        {
-          /* We have no more fallbacks so we just give up and
-           * hope for the best */
-          g_warning ("Failed to read texture since draw-and-read "
-                     "fallback failed: %s", ignore_error->message);
-          cogl_error_free (ignore_error);
-          cogl_object_unref (target_bmp);
-          return 0;
-        }
+      cogl_object_unref (target_bmp);
+      return 0;
     }
 
   /* Was intermediate used? */

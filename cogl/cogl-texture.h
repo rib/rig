@@ -37,6 +37,7 @@ typedef struct _CoglTexture CoglTexture;
 #include <cogl/cogl-defines.h>
 #include <cogl/cogl-pixel-buffer.h>
 #include <cogl/cogl-bitmap.h>
+#include <cogl/cogl-framebuffer.h>
 
 COGL_BEGIN_DECLS
 
@@ -361,6 +362,41 @@ cogl_texture_get_data (CoglTexture *texture,
                        CoglPixelFormat format,
                        unsigned int rowstride,
                        uint8_t *data);
+
+/**
+ * cogl_texture_draw_and_read_to_bitmap:
+ * @texture: The #CoglTexture to read
+ * @framebuffer: The intermediate framebuffer needed to render the
+ *               texture
+ * @target_bmp: The destination bitmap
+ * @error: A #CoglError to catch any exceptional errors
+ *
+ * Only to be used in exceptional circumstances, this api reads back
+ * the contents of a @texture by rendering it to the given
+ * @framebuffer and reading back the resulting pixels to be stored in
+ * @bitmap. If the @texture is larger than the given @framebuffer then
+ * multiple renders will be done to read the texture back in chunks.
+ *
+ * Any viewport, projection or modelview matrix state associated with
+ * @framebuffer will be saved and restored, but other state such as
+ * the color mask state is ignored and may affect the result of
+ * reading back the texture.
+ *
+ * This API should only be used in exceptional circumstances when
+ * alternative apis such as cogl_texture_get_data() have failed. For
+ * example compressed textures can not be read back directly and so
+ * a render is required if you want read back the image data. Ideally
+ * applications should aim to avoid needing to read back textures in
+ * the first place and perhaps only use this api for debugging
+ * purposes.
+ *
+ * Stability: unstable
+ */
+CoglBool
+cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
+                                      CoglFramebuffer *framebuffer,
+                                      CoglBitmap *target_bmp,
+                                      CoglError **error);
 
 /**
  * cogl_texture_set_region:

@@ -32,6 +32,11 @@
 #include <windows.h>
 #endif /* COGL_HAS_WIN32_SUPPORT */
 
+/* We forward declare the CoglFramebuffer type here to avoid some circular
+ * dependency issues with the following headers.
+ */
+typedef struct _CoglFramebuffer CoglFramebuffer;
+
 #include <cogl/cogl-path.h>
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-indices.h>
@@ -79,8 +84,6 @@ COGL_BEGIN_DECLS
  * also catch any possible errors that may arise from your
  * configuration.
  */
-
-typedef struct _CoglFramebuffer CoglFramebuffer;
 
 #define COGL_FRAMEBUFFER(X) ((CoglFramebuffer *)(X))
 
