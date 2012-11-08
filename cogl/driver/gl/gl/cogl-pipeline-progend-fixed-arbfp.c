@@ -65,6 +65,11 @@ _cogl_pipeline_progend_fixed_arbfp_start (CoglPipeline *pipeline)
   if (_cogl_pipeline_has_fragment_snippets (pipeline))
     return FALSE;
 
+  /* The ARBfp progend can't handle the per-vertex point size
+   * attribute */
+  if (cogl_pipeline_get_per_vertex_point_size (pipeline))
+    return FALSE;
+
   return TRUE;
 }
 
