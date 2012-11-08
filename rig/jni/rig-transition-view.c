@@ -1927,7 +1927,7 @@ rig_transition_view_commit_box (RigTransitionView *view)
   RigTransitionViewProperty *prop_data;
   float x1, x2;
   int y1, y2;
-  int row_pos;
+  int row_pos = 0;
 
   if (view->box_x2 < view->box_x1)
     {
