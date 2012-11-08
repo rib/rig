@@ -129,9 +129,6 @@ _cogl_onscreen_free (CoglOnscreen *onscreen)
       g_slice_free (CoglSwapBuffersNotifyEntry, swap_entry);
     }
 
-  if (framebuffer->context->window_buffer == COGL_FRAMEBUFFER (onscreen))
-    framebuffer->context->window_buffer = NULL;
-
   winsys->onscreen_deinit (onscreen);
   _COGL_RETURN_IF_FAIL (onscreen->winsys == NULL);
 

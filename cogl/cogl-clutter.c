@@ -75,21 +75,6 @@ cogl_clutter_winsys_has_feature (CoglWinsysFeature feature)
   return _cogl_winsys_has_feature (feature);
 }
 
-void
-cogl_onscreen_clutter_backend_set_size (int width, int height)
-{
-  CoglFramebuffer *framebuffer;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  if (_cogl_context_get_winsys (ctx) != _cogl_winsys_stub_get_vtable ())
-    return;
-
-  framebuffer = COGL_FRAMEBUFFER (ctx->window_buffer);
-
-  _cogl_framebuffer_winsys_update_size (framebuffer, width, height);
-}
-
 #ifdef COGL_HAS_XLIB_SUPPORT
 XVisualInfo *
 cogl_clutter_winsys_xlib_get_visual_info (void)

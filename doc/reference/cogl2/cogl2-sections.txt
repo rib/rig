@@ -417,12 +417,6 @@ cogl_framebuffer_push_scissor_clip
 cogl_framebuffer_push_rectangle_clip
 cogl_framebuffer_push_primitive_clip
 cogl_framebuffer_pop_clip
-
-<SUBSECTION>
-cogl_get_draw_framebuffer
-cogl_set_framebuffer
-cogl_push_framebuffer
-cogl_pop_framebuffer
 </SECTION>
 
 <SECTION>

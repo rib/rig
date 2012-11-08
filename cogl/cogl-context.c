@@ -327,20 +327,6 @@ cogl_context_new (CoglDisplay *display,
   for (i = 0; i < COGL_BUFFER_BIND_TARGET_COUNT; i++)
     context->current_buffer[i] = NULL;
 
-  context->window_buffer = NULL;
-  context->framebuffer_stack = _cogl_create_framebuffer_stack ();
-
-  /* XXX: In this case the Clutter backend is still responsible for
-   * the OpenGL binding API and for creating onscreen framebuffers and
-   * so we have to add a dummy framebuffer to represent the backend
-   * owned window... */
-  if (_cogl_context_get_winsys (context) == _cogl_winsys_stub_get_vtable ())
-    {
-      CoglOnscreen *window = _cogl_onscreen_new ();
-      cogl_set_framebuffer (COGL_FRAMEBUFFER (window));
-      cogl_object_unref (COGL_FRAMEBUFFER (window));
-    }
-
   context->stencil_pipeline = cogl_pipeline_new (context);
 
   context->rectangle_byte_indices = NULL;
@@ -445,8 +431,6 @@ _cogl_context_free (CoglContext *context)
   const CoglWinsysVtable *winsys = _cogl_context_get_winsys (context);
 
   winsys->context_deinit (context);
-
-  _cogl_free_framebuffer_stack (context->framebuffer_stack);
 
   if (context->default_gl_texture_2d_tex)
     cogl_object_unref (context->default_gl_texture_2d_tex);

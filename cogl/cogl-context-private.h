@@ -165,8 +165,6 @@ struct _CoglContext
   CoglBuffer       *current_buffer[COGL_BUFFER_BIND_TARGET_COUNT];
 
   /* Framebuffers */
-  GSList           *framebuffer_stack;
-  CoglFramebuffer  *window_buffer;
   unsigned long     current_draw_buffer_state_flushed;
   unsigned long     current_draw_buffer_changes;
   CoglFramebuffer  *current_draw_buffer;

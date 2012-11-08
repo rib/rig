@@ -281,15 +281,6 @@ _cogl_framebuffer_flush_state (CoglFramebuffer *draw_buffer,
                                CoglFramebuffer *read_buffer,
                                CoglFramebufferState state);
 
-CoglFramebuffer *
-_cogl_get_read_framebuffer (void);
-
-GSList *
-_cogl_create_framebuffer_stack (void);
-
-void
-_cogl_free_framebuffer_stack (GSList *stack);
-
 /*
  * _cogl_offscreen_new_to_texture_full:
  * @texture: A #CoglTexture pointer

@@ -190,7 +190,6 @@ main (int argc, char **argv)
     }
 
   fb = COGL_FRAMEBUFFER (onscreen);
-  cogl_push_framebuffer (fb);
 
   for (;;)
     {
