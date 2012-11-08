@@ -204,7 +204,11 @@ _cogl_texture_driver_upload_subregion_to_gl (CoglContext *ctx,
       slice_bmp =
         _cogl_bitmap_new_with_malloc_buffer (ctx,
                                              width, height,
-                                             source_format);
+                                             source_format,
+                                             error);
+      if (!slice_bmp)
+        return FALSE;
+
       if (!_cogl_bitmap_copy_subregion (source_bmp,
                                         slice_bmp,
                                         src_x, src_y,
@@ -386,7 +390,10 @@ _cogl_texture_driver_upload_to_gl_3d (CoglContext *ctx,
       bmp = _cogl_bitmap_new_with_malloc_buffer (ctx,
                                                  bmp_width,
                                                  height,
-                                                 source_bmp_format);
+                                                 source_bmp_format,
+                                                 error);
+      if (!bmp)
+        return FALSE;
 
       for (i = 0; i < depth; i++)
         {
