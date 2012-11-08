@@ -1276,6 +1276,7 @@ rig_transition_view_property_added (RigTransitionView *view,
 
   prop_data->object = object_data;
   prop_data->property = property;
+  prop_data->has_selected_nodes = FALSE;
 
   rig_transition_view_create_label_control (view,
                                             prop_data->controls + 0,
