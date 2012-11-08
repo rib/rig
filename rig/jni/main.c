@@ -3499,6 +3499,8 @@ enumerate_dir_for_assets (RigData *data,
     {
       enumerate_file_info (data, file, file_info);
     }
+
+  g_object_unref (enumerator);
 }
 #endif /* USE_ASYNC_IO */
 
