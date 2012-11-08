@@ -99,10 +99,12 @@ main (int argc, char **argv)
     data.pipeline = cogl_pipeline_new (data.ctx);
 
     data.offscreen_texture =
-      cogl_texture_new_with_size (OFFSCREEN_WIDTH,
+      cogl_texture_new_with_size (data.ctx,
+                                  OFFSCREEN_WIDTH,
                                   OFFSCREEN_HEIGHT,
                                   COGL_TEXTURE_NO_SLICING,
-                                  COGL_PIXEL_FORMAT_ANY);
+                                  COGL_PIXEL_FORMAT_ANY,
+                                  NULL);
     data.offscreen = cogl_offscreen_new_to_texture (data.offscreen_texture);
 
     data.gles2_ctx = cogl_gles2_context_new (data.ctx, &error);

@@ -500,15 +500,18 @@ _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
   if (tex_pixmap->tex == NULL)
     {
       CoglPixelFormat texture_format;
+      CoglContext *ctx = COGL_TEXTURE (tex_pixmap)->context;
 
       texture_format = (tex_pixmap->depth >= 32
                         ? COGL_PIXEL_FORMAT_RGBA_8888_PRE
                         : COGL_PIXEL_FORMAT_RGB_888);
 
-      tex_pixmap->tex = cogl_texture_new_with_size (tex_pixmap->width,
+      tex_pixmap->tex = cogl_texture_new_with_size (ctx,
+                                                    tex_pixmap->width,
                                                     tex_pixmap->height,
                                                     COGL_TEXTURE_NONE,
-                                                    texture_format);
+                                                    texture_format,
+                                                    NULL);
     }
 
   if (tex_pixmap->image == NULL)

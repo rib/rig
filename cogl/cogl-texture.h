@@ -102,11 +102,13 @@ uint32_t cogl_texture_error_domain (void);
 
 /**
  * cogl_texture_new_with_size:
+ * @context: A #CoglContext
  * @width: width of texture in pixels.
  * @height: height of texture in pixels.
  * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
  * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
  *    texture.
+ * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a new #CoglTexture with the specified dimensions and pixel format.
  *
@@ -115,13 +117,16 @@ uint32_t cogl_texture_error_domain (void);
  * Since: 0.8
  */
 CoglTexture *
-cogl_texture_new_with_size (unsigned int width,
-                            unsigned int height,
+cogl_texture_new_with_size (CoglContext *ctx,
+                            int width,
+                            int height,
                             CoglTextureFlags flags,
-                            CoglPixelFormat internal_format);
+                            CoglPixelFormat internal_format,
+                            CoglError **error);
 
 /**
  * cogl_texture_new_from_file:
+ * @context: A #CoglContext
  * @filename: the file to load
  * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
  * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
@@ -132,7 +137,7 @@ cogl_texture_new_with_size (unsigned int width,
  *    have non-premultiplied source data and are going to adjust the blend
  *    mode (see cogl_material_set_blend()) or use the data for something
  *    other than straight blending.
- * @error: return location for a #CoglError or %NULL
+ * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a #CoglTexture from an image file.
  *
@@ -141,13 +146,15 @@ cogl_texture_new_with_size (unsigned int width,
  * Since: 0.8
  */
 CoglTexture *
-cogl_texture_new_from_file (const char       *filename,
-                            CoglTextureFlags   flags,
-                            CoglPixelFormat    internal_format,
-                            CoglError           **error);
+cogl_texture_new_from_file (CoglContext *context,
+                            const char *filename,
+                            CoglTextureFlags flags,
+                            CoglPixelFormat internal_format,
+                            CoglError **error);
 
 /**
  * cogl_texture_new_from_data:
+ * @context: A #CoglContext
  * @width: width of texture in pixels
  * @height: height of texture in pixels
  * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
@@ -163,7 +170,7 @@ cogl_texture_new_from_file (const char       *filename,
  * @rowstride: the memory offset in bytes between the starts of
  *    scanlines in @data
  * @data: pointer the memory region where the source buffer resides
- * @error: A #CoglError for returning exceptional errors
+ * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a new #CoglTexture based on data residing in memory.
  *
@@ -183,7 +190,8 @@ cogl_texture_new_from_data (CoglContext *ctx,
                             CoglError **error);
 
 /**
- * cogl_texture_new_from_foreign:
+ * cogl_texture_gl_new_from_foreign:
+ * @context: A #CoglContext
  * @gl_handle: opengl handle of foreign texture.
  * @gl_target: opengl target type of foreign texture
  * @width: width of foreign texture
@@ -191,6 +199,7 @@ cogl_texture_new_from_data (CoglContext *ctx,
  * @x_pot_waste: horizontal waste on the right hand edge of the texture.
  * @y_pot_waste: vertical waste on the bottom edge of the texture.
  * @format: format of the foreign texture.
+ * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a #CoglTexture based on an existing OpenGL texture; the
  * width, height and format are passed along since it is not always
@@ -208,13 +217,15 @@ cogl_texture_new_from_data (CoglContext *ctx,
  * Since: 0.8
  */
 CoglTexture *
-cogl_texture_new_from_foreign (unsigned int gl_handle,
-                               unsigned int gl_target,
-                               unsigned int width,
-                               unsigned int height,
-                               unsigned int x_pot_waste,
-                               unsigned int y_pot_waste,
-                               CoglPixelFormat format);
+cogl_texture_gl_new_from_foreign (CoglContext *context,
+                                  unsigned int gl_handle,
+                                  unsigned int gl_target,
+                                  int width,
+                                  int height,
+                                  int x_pot_waste,
+                                  int y_pot_waste,
+                                  CoglPixelFormat format,
+                                  CoglError **error);
 
 /**
  * cogl_texture_new_from_bitmap:
@@ -222,6 +233,7 @@ cogl_texture_new_from_foreign (unsigned int gl_handle,
  * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
  * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
  * texture
+ * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a #CoglTexture from a #CoglBitmap.
  *

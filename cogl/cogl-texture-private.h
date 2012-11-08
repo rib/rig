@@ -295,4 +295,8 @@ _cogl_texture_spans_foreach_in_region (CoglSpan *x_spans,
 CoglTextureType
 _cogl_texture_get_type (CoglTexture *texture);
 
+CoglBool
+_cogl_texture_needs_premult_conversion (CoglPixelFormat src_format,
+                                        CoglPixelFormat dst_format);
+
 #endif /* __COGL_TEXTURE_PRIVATE_H */

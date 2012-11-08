@@ -81,9 +81,10 @@ test_color_mask (void)
 
   for (i = 0; i < NUM_FBOS; i++)
     {
-      state.tex[i] = cogl_texture_new_with_size (128, 128,
+      state.tex[i] = cogl_texture_new_with_size (test_ctx, 128, 128,
                                                  COGL_TEXTURE_NO_ATLAS,
-                                                 COGL_PIXEL_FORMAT_RGB_888);
+                                                 COGL_PIXEL_FORMAT_RGB_888,
+                                                 NULL);
 
 
       state.fbo[i] = COGL_FRAMEBUFFER (

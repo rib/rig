@@ -238,9 +238,11 @@ test_backface_culling (void)
 
   state.texture = make_texture ();
 
-  tex = cogl_texture_new_with_size (state.width, state.height,
+  tex = cogl_texture_new_with_size (test_ctx,
+                                    state.width, state.height,
                                     COGL_TEXTURE_NO_SLICING,
-                                    COGL_PIXEL_FORMAT_ANY); /* internal fmt */
+                                    COGL_PIXEL_FORMAT_ANY, /* internal fmt */
+                                    NULL); /* don't catch errors */
   state.offscreen = COGL_FRAMEBUFFER (cogl_offscreen_new_to_texture (tex));
   state.offscreen_tex = tex;
 
