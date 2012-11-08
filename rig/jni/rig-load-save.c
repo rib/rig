@@ -2090,10 +2090,9 @@ rig_load (RigData *data, const char *file)
   context = g_markup_parse_context_new (&parser, 0, &loader, NULL);
 
   if (!g_markup_parse_context_parse (context, contents, len, &error))
-    {
-      g_warning ("Failed to parse ui description: %s", error->message);
-      g_markup_parse_context_free (context);
-    }
+    g_warning ("Failed to parse ui description: %s", error->message);
+
+  g_markup_parse_context_free (context);
 
   g_queue_clear (&loader.state);
 
