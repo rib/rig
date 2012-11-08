@@ -30,8 +30,11 @@
 #include "rig-node.h"
 #include "rig-path.h"
 
+typedef struct _RigUndoJournal RigUndoJournal;
+
 typedef enum _UndoRedoOp
 {
+  UNDO_REDO_SUBJOURNAL_OP,
   UNDO_REDO_CONST_PROPERTY_CHANGE_OP,
   UNDO_REDO_PATH_ADD_OP,
   UNDO_REDO_PATH_REMOVE_OP,
@@ -130,10 +133,11 @@ typedef struct _UndoRedo
       UndoRedoSetAnimated set_animated;
       UndoRedoAddDeleteEntity add_delete_entity;
       UndoRedoMovePathNodes move_path_nodes;
+      RigUndoJournal *subjournal;
     } d;
 } UndoRedo;
 
-typedef struct _RigUndoJournal
+struct _RigUndoJournal
 {
   RigData *data;
 
@@ -151,7 +155,7 @@ typedef struct _RigUndoJournal
    * so it will not need to be inverted before redoing the
    * operation. */
   RutList redo_ops;
-} RigUndoJournal;
+};
 
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
@@ -197,6 +201,22 @@ rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
                                         RutEntity *entity);
+
+/**
+ * rig_undo_journal_log_subjournal:
+ * @journal: The main journal
+ * @subjournal: A subjournal to add to @journal
+ *
+ * Logs a collection of undo entries as a single meta-entry in
+ * @journal. The collection is stored in @subjournal which can be
+ * built up using the existing journal logging commands. When an undo
+ * is performed on the main journal, all of the entries in the
+ * subjournal will be performed as a single action. The main journal
+ * will take ownership of @subjournal.
+ */
+void
+rig_undo_journal_log_subjournal (RigUndoJournal *journal,
+                                 RigUndoJournal *subjournal);
 
 CoglBool
 rig_undo_journal_undo (RigUndoJournal *journal);

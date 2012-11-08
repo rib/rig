@@ -605,6 +605,61 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   rig_undo_journal_insert (journal, undo_redo);
 }
 
+void
+rig_undo_journal_log_subjournal (RigUndoJournal *journal,
+                                 RigUndoJournal *subjournal)
+{
+  UndoRedo *undo_redo;
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_SUBJOURNAL_OP;
+  undo_redo->mergable = FALSE;
+
+  undo_redo->d.subjournal = subjournal;
+
+  rig_undo_journal_insert (journal, undo_redo);
+}
+
+static void
+undo_redo_subjournal_apply (RigUndoJournal *journal,
+                            UndoRedo *undo_redo)
+{
+  RigUndoJournal *subjournal = undo_redo->d.subjournal;
+
+  rut_list_for_each (undo_redo, &subjournal->undo_ops, list_node)
+    undo_redo_apply (journal, undo_redo);
+}
+
+static UndoRedo *
+undo_redo_subjournal_invert (UndoRedo *undo_redo_src)
+{
+  RigUndoJournal *subjournal_src = undo_redo_src->d.subjournal;
+  RigUndoJournal *subjournal_dst;
+  UndoRedo *inverse, *sub_undo_redo;
+
+  subjournal_dst = rig_undo_journal_new (subjournal_src->data);
+
+  rut_list_for_each (sub_undo_redo, &subjournal_src->undo_ops, list_node)
+    {
+      UndoRedo *subinverse = undo_redo_invert (sub_undo_redo);
+      /* Insert at the beginning so that the list will end up in the
+       * reverse order */
+      rut_list_insert (&subjournal_dst->undo_ops, &subinverse->list_node);
+    }
+
+  inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  inverse->d.subjournal= subjournal_dst;
+
+  return inverse;
+}
+
+static void
+undo_redo_subjournal_free (UndoRedo *undo_redo)
+{
+  rig_undo_journal_free (undo_redo->d.subjournal);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
 static void
 undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
@@ -1033,6 +1088,11 @@ undo_redo_move_path_nodes_free (UndoRedo *undo_redo)
 static UndoRedoOpImpl undo_redo_ops[] =
   {
     {
+      undo_redo_subjournal_apply,
+      undo_redo_subjournal_invert,
+      undo_redo_subjournal_free
+    },
+    {
       undo_redo_const_prop_change_apply,
       undo_redo_const_prop_change_invert,
       undo_redo_const_prop_change_free
@@ -1213,7 +1273,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 RigUndoJournal *
 rig_undo_journal_new (RigData *data)
 {
-  RigUndoJournal *journal = g_new0 (RigUndoJournal, 1);
+  RigUndoJournal *journal = g_slice_new0 (RigUndoJournal);
 
   journal->data = data;
   rut_list_init (&journal->undo_ops);
@@ -1232,5 +1292,5 @@ rig_undo_journal_free (RigUndoJournal *journal)
   rut_list_for_each_safe (node, tmp, &journal->redo_ops, list_node)
     undo_redo_free (node);
 
-  g_free (journal);
+  g_slice_free (RigUndoJournal, journal);
 }
