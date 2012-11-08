@@ -129,9 +129,7 @@ struct _CoglContext
   int               active_texture_unit;
 
   /* Pipelines */
-  CoglPipeline     *opaque_color_pipeline; /* used for set_source_color */
-  CoglPipeline     *blended_color_pipeline; /* used for set_source_color */
-  CoglPipeline     *texture_pipeline; /* used for set_source_texture */
+  CoglPipeline     *opaque_color_pipeline; /* to check for simple pipelines */
   GString          *codegen_header_buffer;
   GString          *codegen_source_buffer;
 
@@ -149,8 +147,6 @@ struct _CoglContext
   /* Global journal buffers */
   GArray           *journal_flush_attributes_array;
   GArray           *journal_clip_bounds;
-
-  GArray           *polygon_vertices;
 
   /* Some simple caching, to minimize state changes... */
   CoglPipeline     *current_pipeline;
@@ -187,15 +183,9 @@ struct _CoglContext
 
   /* Pre-generated VBOs containing indices to generate GL_TRIANGLES
      out of a vertex array of quads */
-  CoglIndices      *quad_buffer_indices_byte;
-  unsigned int      quad_buffer_indices_len;
-  CoglIndices      *quad_buffer_indices;
-
   CoglIndices      *rectangle_byte_indices;
   CoglIndices      *rectangle_short_indices;
   int               rectangle_short_indices_len;
-
-  CoglBool          in_begin_gl_block;
 
   CoglPipeline     *texture_download_pipeline;
   CoglPipeline     *blit_texture_pipeline;
@@ -212,7 +202,6 @@ struct _CoglContext
   /* Cached values for GL_MAX_TEXTURE_[IMAGE_]UNITS to avoid calling
      glGetInteger too often */
   GLint             max_texture_units;
-  GLint             max_texture_image_units;
   GLint             max_activateable_texture_units;
 
   CoglPipelineProgramType current_fragment_program_type;
@@ -225,10 +214,6 @@ struct _CoglContext
   /* List of types that will be considered a subclass of CoglTexture in
      cogl_is_texture */
   GSList           *texture_types;
-
-  /* List of types that will be considered a subclass of CoglBuffer in
-     cogl_is_buffer */
-  GSList           *buffer_types;
 
   /* Clipping */
   /* TRUE if we have a valid clipping stack flushed. In that case
@@ -246,11 +231,6 @@ struct _CoglContext
      same state multiple times. When the clip state is flushed this
      will hold a reference */
   CoglClipStack    *current_clip_stack;
-  /* Whether the stencil buffer was used as part of the current clip
-     state. If TRUE then any further use of the stencil buffer (such
-     as for drawing paths) would need to be merged with the existing
-     stencil buffer */
-  CoglBool          current_clip_stack_uses_stencil;
 
   /* This is used as a temporary buffer to fill a CoglBuffer when
      cogl_buffer_map fails and we only want to map to fill it with new

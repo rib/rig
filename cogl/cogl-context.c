@@ -165,7 +165,6 @@ cogl_context_new (CoglDisplay *display,
   context->private_feature_flags = 0;
 
   context->texture_types = NULL;
-  context->buffer_types = NULL;
 
   context->rectangle_state = COGL_WINSYS_RECTANGLE_STATE_UNKNOWN;
 
@@ -274,8 +273,6 @@ cogl_context_new (CoglDisplay *display,
     }
 
   context->opaque_color_pipeline = cogl_pipeline_new (context);
-  context->blended_color_pipeline = cogl_pipeline_new (context);
-  context->texture_pipeline = cogl_pipeline_new (context);
   context->codegen_header_buffer = g_string_new ("");
   context->codegen_source_buffer = g_string_new ("");
 
@@ -294,8 +291,6 @@ cogl_context_new (CoglDisplay *display,
   context->journal_flush_attributes_array =
     g_array_new (TRUE, FALSE, sizeof (CoglAttribute *));
   context->journal_clip_bounds = NULL;
-
-  context->polygon_vertices = g_array_new (FALSE, FALSE, sizeof (float));
 
   context->current_pipeline = NULL;
   context->current_pipeline_changes_since_flush = 0;
@@ -347,12 +342,6 @@ cogl_context_new (CoglDisplay *display,
     }
 
   context->stencil_pipeline = cogl_pipeline_new (context);
-
-  context->in_begin_gl_block = FALSE;
-
-  context->quad_buffer_indices_byte = NULL;
-  context->quad_buffer_indices = NULL;
-  context->quad_buffer_indices_len = 0;
 
   context->rectangle_byte_indices = NULL;
   context->rectangle_short_indices = NULL;
@@ -468,10 +457,6 @@ _cogl_context_free (CoglContext *context)
 
   if (context->opaque_color_pipeline)
     cogl_object_unref (context->opaque_color_pipeline);
-  if (context->blended_color_pipeline)
-    cogl_object_unref (context->blended_color_pipeline);
-  if (context->texture_pipeline)
-    cogl_object_unref (context->texture_pipeline);
 
   if (context->blit_texture_pipeline)
     cogl_object_unref (context->blit_texture_pipeline);
@@ -482,14 +467,6 @@ _cogl_context_free (CoglContext *context)
     g_array_free (context->journal_flush_attributes_array, TRUE);
   if (context->journal_clip_bounds)
     g_array_free (context->journal_clip_bounds, TRUE);
-
-  if (context->polygon_vertices)
-    g_array_free (context->polygon_vertices, TRUE);
-
-  if (context->quad_buffer_indices_byte)
-    cogl_object_unref (context->quad_buffer_indices_byte);
-  if (context->quad_buffer_indices)
-    cogl_object_unref (context->quad_buffer_indices);
 
   if (context->rectangle_byte_indices)
     cogl_object_unref (context->rectangle_byte_indices);
@@ -521,7 +498,6 @@ _cogl_context_free (CoglContext *context)
   _cogl_bitmask_destroy (&context->changed_bits_tmp);
 
   g_slist_free (context->texture_types);
-  g_slist_free (context->buffer_types);
 
   if (context->current_modelview_entry)
     _cogl_matrix_entry_unref (context->current_modelview_entry);
