@@ -90,15 +90,6 @@ typedef struct _UndoRedoSetAnimated
   RutObject *object;
   RutProperty *property;
   CoglBool value;
-
-  /* Initially toggle the animated state to TRUE also creates an
-   * initial path node at the current timeline position unless there
-   * already is one. We want to be able to undo that in the same
-   * action so the values for that initial node are also stored
-   * here. */
-  CoglBool creates_path_node;
-  float path_time;
-  RutBoxed node_value;
 } UndoRedoSetAnimated;
 
 typedef struct

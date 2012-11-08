@@ -431,7 +431,6 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
 {
   UndoRedo *undo_redo;
   UndoRedoSetAnimated *set_animated;
-  RigTransition *transition;
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SET_ANIMATED_OP;
@@ -442,30 +441,10 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
   set_animated->object = rut_refable_ref (property->object);
   set_animated->property = property;
   set_animated->value = value;
-  set_animated->creates_path_node = FALSE;
 
-  transition = journal->data->selected_transition;
-
-  rig_transition_set_property_animated (transition,
+  rig_transition_set_property_animated (journal->data->selected_transition,
                                         property,
                                         value);
-
-  if (value)
-    {
-      RigPath *path =
-        rig_transition_get_path_for_property (transition, property);
-
-      if (path->length == 0)
-        {
-          set_animated->creates_path_node = TRUE;
-          set_animated->path_time = transition->progress;
-          rut_property_box (property, &set_animated->node_value);
-
-          rig_path_insert_boxed (path,
-                                 set_animated->path_time,
-                                 &set_animated->node_value);
-        }
-    }
 
   rig_undo_journal_insert (journal, undo_redo);
 }
@@ -831,31 +810,12 @@ undo_redo_set_animated_apply (RigUndoJournal *journal,
 {
   UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
   RigData *data = journal->data;
-  RigTransition *transition = data->selected_transition;
 
   g_print ("Set animated APPLY\n");
 
-  if (!set_animated->value && set_animated->creates_path_node)
-    {
-      RigPath *path =
-        rig_transition_get_path_for_property (transition,
-                                              set_animated->property);
-      rig_path_remove (path, set_animated->path_time);
-    }
-
-  rig_transition_set_property_animated (transition,
+  rig_transition_set_property_animated (data->selected_transition,
                                         set_animated->property,
                                         set_animated->value);
-
-  if (set_animated->value && set_animated->creates_path_node)
-    {
-      RigPath *path =
-        rig_transition_get_path_for_property (transition,
-                                              set_animated->property);
-      rig_path_insert_boxed (path,
-                             set_animated->path_time,
-                             &set_animated->node_value);
-    }
 
   rig_reload_inspector_property (data, set_animated->property);
 }
@@ -869,10 +829,6 @@ undo_redo_set_animated_invert (UndoRedo *undo_redo_src)
 
   rut_refable_ref (inverse->d.set_animated.object);
 
-  if (inverse->d.set_animated.creates_path_node)
-    rut_boxed_copy (&inverse->d.set_animated.node_value,
-                    &undo_redo_src->d.set_animated.node_value);
-
   return inverse;
 }
 
@@ -880,10 +836,6 @@ static void
 undo_redo_set_animated_free (UndoRedo *undo_redo)
 {
   UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
-
-  if (set_animated->creates_path_node)
-    rut_boxed_destroy (&set_animated->node_value);
-
   rut_refable_unref (set_animated->object);
   g_slice_free (UndoRedo, undo_redo);
 }

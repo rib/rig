@@ -586,10 +586,38 @@ inspector_animated_changed_cb (RutProperty *property,
                                void *user_data)
 {
   RigData *data = user_data;
+  RigPath *path;
 
-  rig_undo_journal_set_animated_and_log (data->undo_journal,
-                                         property,
-                                         value);
+  /* If the property is being initially marked as animated and the
+   * path is empty then for convenience we want to create a node for
+   * the current time. We want this to be undone as a single action so
+   * we'll represent the pair of actions in a subjournal */
+  if (value &&
+      (path = rig_transition_get_path_for_property (data->selected_transition,
+                                                    property)) &&
+      path->length == 0)
+    {
+      RigUndoJournal *subjournal = rig_undo_journal_new (data);
+      RutBoxed property_value;
+
+      rut_property_box (property, &property_value);
+
+      rig_undo_journal_set_animated_and_log (subjournal,
+                                             property,
+                                             value);
+      rig_undo_journal_set_property_and_log (subjournal,
+                                             FALSE /* mergable */,
+                                             &property_value,
+                                             property);
+
+      rig_undo_journal_log_subjournal (data->undo_journal, subjournal);
+
+      rut_boxed_destroy (&property_value);
+    }
+  else
+    rig_undo_journal_set_animated_and_log (data->undo_journal,
+                                           property,
+                                           value);
 }
 
 typedef struct
