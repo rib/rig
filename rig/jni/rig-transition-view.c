@@ -2047,14 +2047,31 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
 static void
 rig_transition_view_delete_selected_nodes (RigTransitionView *view)
 {
-  while (!rut_list_empty (&view->selected_nodes))
+  if (!rut_list_empty (&view->selected_nodes))
     {
-      RigTransitionViewSelectedNode *node =
-        rut_container_of (view->selected_nodes.next, node, list_node);
+      RigUndoJournal *journal;
 
-      rig_undo_journal_delete_path_node_and_log (view->undo_journal,
-                                                 node->prop_data->property,
-                                                 node->node);
+      /* If there is only one selected node then we'll just make a
+       * single entry directly in the main undo journal. Otherwise
+       * we'll create a subjournal to lump together all of the deletes
+       * as one action */
+      if (view->selected_nodes.next == view->selected_nodes.prev)
+        journal = view->undo_journal;
+      else
+        journal = rig_undo_journal_new (view->undo_journal->data);
+
+      while (!rut_list_empty (&view->selected_nodes))
+        {
+          RigTransitionViewSelectedNode *node =
+            rut_container_of (view->selected_nodes.next, node, list_node);
+
+          rig_undo_journal_delete_path_node_and_log (journal,
+                                                     node->prop_data->property,
+                                                     node->node);
+        }
+
+      if (journal != view->undo_journal)
+        rig_undo_journal_log_subjournal (view->undo_journal, journal);
     }
 }
 
