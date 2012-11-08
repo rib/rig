@@ -41,6 +41,7 @@
 #include "cogl-object-private.h"
 #include "cogl-util-gl-private.h"
 #include "cogl-error-private.h"
+#include "cogl-texture-gl-private.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -114,7 +115,7 @@ prep_gl_for_pixels_upload_full (CoglContext *ctx,
       g_assert (pixels_src_y == 0);
     }
 
-  _cogl_texture_prep_gl_alignment_for_pixels_upload (pixels_rowstride);
+  _cogl_texture_gl_prep_alignment_for_pixels_upload (ctx, pixels_rowstride);
 }
 
 static void
@@ -134,7 +135,8 @@ _cogl_texture_driver_prep_gl_for_pixels_download (CoglContext *ctx,
                                                   int image_width,
                                                   int pixels_bpp)
 {
-  _cogl_texture_prep_gl_alignment_for_pixels_download (pixels_bpp,
+  _cogl_texture_gl_prep_alignment_for_pixels_download (ctx,
+                                                       pixels_bpp,
                                                        image_width,
                                                        pixels_rowstride);
 }
