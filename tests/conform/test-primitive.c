@@ -170,12 +170,14 @@ test_paint (TestState *state)
   tex_data[3] = (TEX_COLOR >> 24) & 0xff;
   tex_data[4] = (TEX_COLOR >> 16) & 0xff;
   tex_data[5] = (TEX_COLOR >> 8) & 0xff;
-  tex = cogl_texture_new_from_data (2, 1, /* size */
+  tex = cogl_texture_new_from_data (test_ctx,
+                                    2, 1, /* size */
                                     COGL_TEXTURE_NO_ATLAS,
                                     COGL_PIXEL_FORMAT_RGB_888,
                                     COGL_PIXEL_FORMAT_ANY,
                                     6, /* rowstride */
-                                    tex_data);
+                                    tex_data,
+                                    NULL); /* don't catch errors */
   pipeline = cogl_pipeline_new (test_ctx);
   cogl_pipeline_set_color4ub (pipeline,
                               (PRIM_COLOR >> 24) & 0xff,
@@ -234,7 +236,7 @@ test_copy (TestState *state)
 {
   static const uint16_t indices_data[2] = { 1, 2 };
   CoglAttributeBuffer *buffer =
-    cogl_attribute_buffer_new (test_ctx, 100, NULL);
+    cogl_attribute_buffer_new_with_size (test_ctx, 100);
   CoglAttribute *attributes[N_ATTRIBS];
   CoglAttribute *attributes_a[N_ATTRIBS], *attributes_b[N_ATTRIBS];
   CoglAttribute **p;

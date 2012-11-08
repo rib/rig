@@ -272,17 +272,21 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
       CoglAttribute *attributes[2];
       CoglPrimitive *prim;
       int i;
+      CoglError *ignore_error = NULL;
 
       n_verts = node->d.texture.rectangles->len * 4;
 
       buffer
-        = cogl_attribute_buffer_new (ctx,
-                                     n_verts * sizeof (CoglVertexP2T2), NULL);
+        = cogl_attribute_buffer_new_with_size (ctx,
+                                               n_verts *
+                                               sizeof (CoglVertexP2T2));
 
       if ((verts = cogl_buffer_map (COGL_BUFFER (buffer),
                                     COGL_BUFFER_ACCESS_WRITE,
-                                    COGL_BUFFER_MAP_HINT_DISCARD)) == NULL)
+                                    COGL_BUFFER_MAP_HINT_DISCARD,
+                                    &ignore_error)) == NULL)
         {
+          cogl_error_free (ignore_error);
           verts = g_new (CoglVertexP2T2, n_verts);
           allocated = TRUE;
         }
@@ -324,7 +328,8 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
           cogl_buffer_set_data (COGL_BUFFER (buffer),
                                 0, /* offset */
                                 verts,
-                                sizeof (CoglVertexP2T2) * n_verts);
+                                sizeof (CoglVertexP2T2) * n_verts,
+                                NULL);
           g_free (verts);
         }
       else

@@ -44,7 +44,8 @@ test_write_byte (CoglPixelFormat format,
                            1, 1, /* width / height */
                            format,
                            1, /* rowstride */
-                           &byte);
+                           &byte,
+                           NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
 
@@ -65,7 +66,8 @@ test_write_short (CoglPixelFormat format,
                            1, 1, /* width / height */
                            format,
                            2, /* rowstride */
-                           (uint8_t *) &value);
+                           (uint8_t *) &value,
+                           NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
 
@@ -88,7 +90,8 @@ test_write_bytes (CoglPixelFormat format,
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
-                           (uint8_t *) &value);
+                           (uint8_t *) &value,
+                           NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
 
@@ -127,7 +130,8 @@ test_write_int (CoglPixelFormat format,
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
-                           (uint8_t *) &tex_data);
+                           (uint8_t *) &tex_data,
+                           NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
 

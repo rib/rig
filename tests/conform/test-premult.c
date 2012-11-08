@@ -74,7 +74,8 @@ set_region (CoglTexture *tex,
                            QUAD_WIDTH, QUAD_WIDTH, /* src width, height */
                            format,
                            0, /* auto compute row stride */
-                           tex_data);
+                           tex_data,
+                           NULL); /* don't catch errors */
 }
 
 static void

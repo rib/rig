@@ -45,14 +45,16 @@ struct _CoglBufferVtable
                         size_t offset,
                         size_t size,
                         CoglBufferAccess access,
-                        CoglBufferMapHint hints);
+                        CoglBufferMapHint hints,
+                        CoglError **error);
 
   void (* unmap) (CoglBuffer *buffer);
 
-  CoglBool (* set_data) (CoglBuffer   *buffer,
-                         unsigned int  offset,
-                         const void   *data,
-                         unsigned int  size);
+  CoglBool (* set_data) (CoglBuffer *buffer,
+                         unsigned int offset,
+                         const void *data,
+                         unsigned int size,
+                         CoglError **error);
 };
 
 typedef enum _CoglBufferFlags

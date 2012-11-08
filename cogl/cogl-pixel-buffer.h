@@ -46,6 +46,7 @@ typedef struct _CoglPixelBuffer CoglPixelBuffer;
  * @context: A #CoglContext
  * @size: The number of bytes to allocate for the pixel data.
  * @data: An optional pointer to vertex data to upload immediately
+ * @error: A #CoglError for catching exceptional errors
  *
  * Declares a new #CoglPixelBuffer of @size bytes to contain arrays of
  * pixels. Once declared, data can be set using cogl_buffer_set_data()
@@ -61,7 +62,8 @@ typedef struct _CoglPixelBuffer CoglPixelBuffer;
 CoglPixelBuffer *
 cogl_pixel_buffer_new (CoglContext *context,
                        size_t size,
-                       const void *data);
+                       const void *data,
+                       CoglError **error);
 
 /**
  * cogl_is_pixel_buffer:

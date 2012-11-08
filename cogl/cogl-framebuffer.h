@@ -1658,6 +1658,7 @@ cogl_framebuffer_finish (CoglFramebuffer *framebuffer);
  * @source: Identifies which auxillary buffer you want to read
  *          (only COGL_READ_PIXELS_COLOR_BUFFER supported currently)
  * @bitmap: The bitmap to store the results in.
+ * @error: A #CoglError to catch exceptional errors
  *
  * This reads a rectangle of pixels from the given framebuffer where
  * position (0, 0) is the top left. The pixel at (x, y) is the first
@@ -1681,7 +1682,8 @@ cogl_framebuffer_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
                                           int x,
                                           int y,
                                           CoglReadPixelsFlags source,
-                                          CoglBitmap *bitmap);
+                                          CoglBitmap *bitmap,
+                                          CoglError **error);
 
 /**
  * cogl_framebuffer_read_pixels:

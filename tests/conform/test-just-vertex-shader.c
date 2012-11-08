@@ -16,12 +16,14 @@ create_dummy_texture (void)
      vertex shader */
   static const uint8_t data[4] = { 0x00, 0xff, 0x00, 0xff };
 
-  return cogl_texture_new_from_data (1, 1, /* size */
+  return cogl_texture_new_from_data (test_ctx,
+                                     1, 1, /* size */
                                      COGL_TEXTURE_NONE,
                                      COGL_PIXEL_FORMAT_RGB_888,
                                      COGL_PIXEL_FORMAT_ANY,
                                      4, /* rowstride */
-                                     data);
+                                     data,
+                                     NULL); /* don't catch errors */
 }
 
 static void

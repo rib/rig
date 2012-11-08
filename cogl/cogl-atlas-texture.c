@@ -44,6 +44,7 @@
 #include "cogl-atlas.h"
 #include "cogl1-context.h"
 #include "cogl-sub-texture.h"
+#include "cogl-error-private.h"
 
 #include <stdlib.h>
 
@@ -433,13 +434,14 @@ _cogl_atlas_texture_ensure_non_quad_rendering (CoglTexture *tex)
 
 static CoglBool
 _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
-                                            int             src_x,
-                                            int             src_y,
-                                            int             dst_x,
-                                            int             dst_y,
-                                            unsigned int    dst_width,
-                                            unsigned int    dst_height,
-                                            CoglBitmap     *bmp)
+                                            int src_x,
+                                            int src_y,
+                                            int dst_x,
+                                            int dst_y,
+                                            int dst_width,
+                                            int dst_height,
+                                            CoglBitmap *bmp,
+                                            CoglError **error)
 {
   CoglAtlas *atlas = atlas_tex->atlas;
 
@@ -450,7 +452,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             dst_y + atlas_tex->rectangle.y + 1,
                                             dst_width,
                                             dst_height,
-                                            bmp))
+                                            bmp,
+                                            error))
     return FALSE;
 
   /* Update the left edge pixels */
@@ -460,7 +463,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             atlas_tex->rectangle.x,
                                             dst_y + atlas_tex->rectangle.y + 1,
                                             1, dst_height,
-                                            bmp))
+                                            bmp,
+                                            error))
     return FALSE;
   /* Update the right edge pixels */
   if (dst_x + dst_width == atlas_tex->rectangle.width - 2 &&
@@ -470,7 +474,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             atlas_tex->rectangle.width - 1,
                                             dst_y + atlas_tex->rectangle.y + 1,
                                             1, dst_height,
-                                            bmp))
+                                            bmp,
+                                            error))
     return FALSE;
   /* Update the top edge pixels */
   if (dst_y == 0 &&
@@ -479,7 +484,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             dst_x + atlas_tex->rectangle.x + 1,
                                             atlas_tex->rectangle.y,
                                             dst_width, 1,
-                                            bmp))
+                                            bmp,
+                                            error))
     return FALSE;
   /* Update the bottom edge pixels */
   if (dst_y + dst_height == atlas_tex->rectangle.height - 2 &&
@@ -489,7 +495,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
                                             atlas_tex->rectangle.y +
                                             atlas_tex->rectangle.height - 1,
                                             dst_width, 1,
-                                            bmp))
+                                            bmp,
+                                            error))
     return FALSE;
 
   return TRUE;
@@ -497,7 +504,8 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
 
 static CoglBitmap *
 _cogl_atlas_texture_prepare_for_upload (CoglAtlasTexture *atlas_tex,
-                                        CoglBitmap *bmp)
+                                        CoglBitmap *bmp,
+                                        CoglError **error)
 {
   CoglPixelFormat internal_format;
   CoglBitmap *converted_bmp;
@@ -519,7 +527,8 @@ _cogl_atlas_texture_prepare_for_upload (CoglAtlasTexture *atlas_tex,
                                                     NULL, /* dst_format_out */
                                                     NULL, /* glintformat */
                                                     NULL, /* glformat */
-                                                    NULL /* gltype */);
+                                                    NULL, /* gltype */
+                                                    error);
 
   if (converted_bmp == NULL)
     return NULL;
@@ -542,14 +551,15 @@ _cogl_atlas_texture_prepare_for_upload (CoglAtlasTexture *atlas_tex,
 }
 
 static CoglBool
-_cogl_atlas_texture_set_region (CoglTexture    *tex,
-                                int             src_x,
-                                int             src_y,
-                                int             dst_x,
-                                int             dst_y,
-                                unsigned int    dst_width,
-                                unsigned int    dst_height,
-                                CoglBitmap     *bmp)
+_cogl_atlas_texture_set_region (CoglTexture *tex,
+                                int src_x,
+                                int src_y,
+                                int dst_x,
+                                int dst_y,
+                                int dst_width,
+                                int dst_height,
+                                CoglBitmap *bmp,
+                                CoglError **error)
 {
   CoglAtlasTexture  *atlas_tex = COGL_ATLAS_TEXTURE (tex);
 
@@ -560,14 +570,18 @@ _cogl_atlas_texture_set_region (CoglTexture    *tex,
       CoglBool ret;
 
       bmp = _cogl_atlas_texture_prepare_for_upload (atlas_tex,
-                                                    bmp);
+                                                    bmp,
+                                                    error);
+      if (!bmp)
+        return FALSE;
 
       /* Upload the data ignoring the premult bit */
       ret = _cogl_atlas_texture_set_region_with_border (atlas_tex,
                                                         src_x, src_y,
                                                         dst_x, dst_y,
                                                         dst_width, dst_height,
-                                                        bmp);
+                                                        bmp,
+                                                        error);
 
       cogl_object_unref (bmp);
 
@@ -579,7 +593,8 @@ _cogl_atlas_texture_set_region (CoglTexture    *tex,
                                                 src_x, src_y,
                                                 dst_x, dst_y,
                                                 dst_width, dst_height,
-                                                bmp);
+                                                bmp,
+                                                error);
 }
 
 static CoglPixelFormat
@@ -727,9 +742,10 @@ _cogl_atlas_texture_new_with_size (unsigned int width,
 }
 
 CoglAtlasTexture *
-_cogl_atlas_texture_new_from_bitmap (CoglBitmap      *bmp,
+_cogl_atlas_texture_new_from_bitmap (CoglBitmap *bmp,
                                      CoglTextureFlags flags,
-                                     CoglPixelFormat  internal_format)
+                                     CoglPixelFormat internal_format,
+                                     CoglError **error)
 {
   CoglAtlasTexture *atlas_tex;
   CoglBitmap *dst_bmp;
@@ -750,11 +766,17 @@ _cogl_atlas_texture_new_from_bitmap (CoglBitmap      *bmp,
                                                  flags, internal_format);
 
   if (atlas_tex == NULL)
-    return NULL;
+    {
+      _cogl_set_error (error,
+                       COGL_SYSTEM_ERROR,
+                       COGL_SYSTEM_ERROR_UNSUPPORTED,
+                       "Texture type not compatible with atlas");
+      return NULL;
+    }
 
   dst_bmp = _cogl_atlas_texture_prepare_for_upload (atlas_tex,
-                                                    bmp);
-
+                                                    bmp,
+                                                    error);
   if (dst_bmp == NULL)
     {
       cogl_object_unref (atlas_tex);
@@ -763,14 +785,20 @@ _cogl_atlas_texture_new_from_bitmap (CoglBitmap      *bmp,
 
   /* Defer to set_region so that we can share the code for copying the
      edge pixels to the border. */
-  _cogl_atlas_texture_set_region_with_border (atlas_tex,
-                                              0, /* src_x */
-                                              0, /* src_y */
-                                              0, /* dst_x */
-                                              0, /* dst_y */
-                                              bmp_width, /* dst_width */
-                                              bmp_height, /* dst_height */
-                                              dst_bmp);
+  if (!_cogl_atlas_texture_set_region_with_border (atlas_tex,
+                                                   0, /* src_x */
+                                                   0, /* src_y */
+                                                   0, /* dst_x */
+                                                   0, /* dst_y */
+                                                   bmp_width, /* dst_width */
+                                                   bmp_height, /* dst_height */
+                                                   dst_bmp,
+                                                   error))
+    {
+      cogl_object_unref (dst_bmp);
+      cogl_object_unref (atlas_tex);
+      return NULL;
+    }
 
   cogl_object_unref (dst_bmp);
 

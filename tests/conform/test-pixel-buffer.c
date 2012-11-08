@@ -35,7 +35,8 @@ create_texture_from_bitmap (CoglBitmap *bitmap)
 
   texture = cogl_texture_new_from_bitmap (bitmap,
                                           COGL_TEXTURE_NONE,
-                                          COGL_PIXEL_FORMAT_RGBA_8888);
+                                          COGL_PIXEL_FORMAT_RGBA_8888,
+                                          NULL); /* don't catch errors */
 
   g_assert (texture != NULL);
 
@@ -70,7 +71,8 @@ create_map_tile (CoglContext *context,
 
   map = cogl_buffer_map (buffer,
                          COGL_BUFFER_ACCESS_WRITE,
-                         COGL_BUFFER_MAP_HINT_DISCARD);
+                         COGL_BUFFER_MAP_HINT_DISCARD,
+                         NULL); /* don't catch errors */
   g_assert (map);
 
   line = g_alloca (TILE_SIZE * 4);
@@ -169,7 +171,7 @@ create_set_data_tile (CoglContext *context,
       memcpy (data + i, tile->color, 4);
 
   /* FIXME: this doesn't consider the rowstride */
-  res = cogl_buffer_set_data (buffer, 0, data, TILE_SIZE * TILE_SIZE * 4);
+  res = cogl_buffer_set_data (buffer, 0, data, TILE_SIZE * TILE_SIZE * 4, NULL);
   g_assert (res);
 
   g_free (data);

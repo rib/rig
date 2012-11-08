@@ -70,7 +70,8 @@ test_alpha_textures (void)
                            1, 1, /* width / height */
                            COGL_PIXEL_FORMAT_A_8,
                            1, /* rowstride */
-                           replacement_data);
+                           replacement_data,
+                           NULL); /* abort on error */
 
   cogl_framebuffer_draw_rectangle (test_fb,
                                    pipeline2,

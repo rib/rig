@@ -39,28 +39,49 @@ static void _cogl_attribute_buffer_free (CoglAttributeBuffer *array);
 COGL_BUFFER_DEFINE (AttributeBuffer, attribute_buffer);
 
 CoglAttributeBuffer *
-cogl_attribute_buffer_new (CoglContext *context,
-                           size_t bytes,
-                           const void *data)
+cogl_attribute_buffer_new_with_size (CoglContext *context,
+                                     size_t bytes)
 {
-  CoglAttributeBuffer *array = g_slice_new (CoglAttributeBuffer);
+  CoglAttributeBuffer *buffer = g_slice_new (CoglAttributeBuffer);
 
   /* parent's constructor */
-  _cogl_buffer_initialize (COGL_BUFFER (array),
+  _cogl_buffer_initialize (COGL_BUFFER (buffer),
                            context,
                            bytes,
                            COGL_BUFFER_BIND_TARGET_ATTRIBUTE_BUFFER,
                            COGL_BUFFER_USAGE_HINT_ATTRIBUTE_BUFFER,
                            COGL_BUFFER_UPDATE_HINT_STATIC);
 
-  _cogl_attribute_buffer_object_new (array);
+  return _cogl_attribute_buffer_object_new (buffer);
+}
 
-  if (data)
-    cogl_buffer_set_data (COGL_BUFFER (array),
-                          0,
-                          data,
-                          bytes);
-  return array;
+CoglAttributeBuffer *
+cogl_attribute_buffer_new (CoglContext *context,
+                           size_t bytes,
+                           const void *data)
+{
+  CoglAttributeBuffer *buffer;
+
+  _COGL_RETURN_VAL_IF_FAIL (data, NULL);
+
+  buffer = cogl_attribute_buffer_new_with_size (context, bytes);
+
+  /* Note: to keep the common cases simple this API doesn't throw
+   * CoglErrors, so developers can assume this function never returns
+   * NULL and we will simply abort on error.
+   *
+   * Developers wanting to catch errors can use
+   * cogl_attribute_buffer_new_with_size() and catch errors when later
+   * calling cogl_buffer_set_data() or cogl_buffer_map().
+   */
+
+  cogl_buffer_set_data (COGL_BUFFER (buffer),
+                        0,
+                        data,
+                        bytes,
+                        NULL);
+
+  return buffer;
 }
 
 static void

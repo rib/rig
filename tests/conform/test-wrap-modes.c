@@ -28,11 +28,13 @@ create_texture (CoglTextureFlags flags)
         *(p++) = 255;
       }
 
-  tex = cogl_texture_new_from_data (TEX_SIZE, TEX_SIZE, flags,
+  tex = cogl_texture_new_from_data (test_ctx,
+                                    TEX_SIZE, TEX_SIZE, flags,
                                     COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                     COGL_PIXEL_FORMAT_ANY,
                                     TEX_SIZE * 4,
-                                    data);
+                                    data,
+                                    NULL); /* don't catch errors */
   g_free (data);
 
   return tex;

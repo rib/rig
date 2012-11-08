@@ -163,6 +163,7 @@ cogl_texture_new_from_file (const char       *filename,
  * @rowstride: the memory offset in bytes between the starts of
  *    scanlines in @data
  * @data: pointer the memory region where the source buffer resides
+ * @error: A #CoglError for returning exceptional errors
  *
  * Creates a new #CoglTexture based on data residing in memory.
  *
@@ -171,13 +172,15 @@ cogl_texture_new_from_file (const char       *filename,
  * Since: 0.8
  */
 CoglTexture *
-cogl_texture_new_from_data (unsigned int      width,
-                            unsigned int      height,
-                            CoglTextureFlags  flags,
-                            CoglPixelFormat   format,
-                            CoglPixelFormat   internal_format,
-                            unsigned int      rowstride,
-                            const uint8_t     *data);
+cogl_texture_new_from_data (CoglContext *ctx,
+                            int width,
+                            int height,
+                            CoglTextureFlags flags,
+                            CoglPixelFormat format,
+                            CoglPixelFormat internal_format,
+                            int rowstride,
+                            const uint8_t *data,
+                            CoglError **error);
 
 /**
  * cogl_texture_new_from_foreign:
@@ -229,7 +232,8 @@ cogl_texture_new_from_foreign (unsigned int gl_handle,
 CoglTexture *
 cogl_texture_new_from_bitmap (CoglBitmap *bitmap,
                               CoglTextureFlags flags,
-                              CoglPixelFormat internal_format);
+                              CoglPixelFormat internal_format,
+                              CoglError **error);
 
 /**
  * cogl_is_texture:
@@ -363,6 +367,7 @@ cogl_texture_get_data (CoglTexture *texture,
  * @rowstride: rowstride of source buffer (computed from width if none
  * specified)
  * @data: the actual pixel data.
+ * @error: A #CoglError to return exceptional errors
  *
  * Sets the pixels in a rectangular subregion of @texture from an in-memory
  * buffer containing pixel data.
@@ -384,7 +389,8 @@ cogl_texture_set_region (CoglTexture *texture,
                          int height,
                          CoglPixelFormat format,
                          unsigned int rowstride,
-                         const uint8_t *data);
+                         const uint8_t *data,
+                         CoglError **error);
 
 /**
  * cogl_texture_set_region_from_bitmap:
@@ -398,6 +404,7 @@ cogl_texture_set_region (CoglTexture *texture,
  * @dst_height: height of destination region to write. (Must be less
  *   than or equal to the bitmap height)
  * @bitmap: The source bitmap to read from
+ * @error: A #CoglError to return exceptional errors
  *
  * Copies a specified source region from @bitmap to the position
  * (@src_x, @src_y) of the given destination texture @handle.
@@ -419,7 +426,8 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      int dst_y,
                                      unsigned int dst_width,
                                      unsigned int dst_height,
-                                     CoglBitmap *bitmap);
+                                     CoglBitmap *bitmap,
+                                     CoglError **error);
 
 COGL_END_DECLS
 

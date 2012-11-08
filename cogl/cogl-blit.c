@@ -284,6 +284,7 @@ _cogl_blit_get_tex_data_blit (CoglBlitData *data,
                               unsigned int width,
                               unsigned int height)
 {
+  CoglError *ignore = NULL;
   cogl_texture_set_region (data->dst_tex,
                            src_x, src_y,
                            dst_x, dst_y,
@@ -291,7 +292,9 @@ _cogl_blit_get_tex_data_blit (CoglBlitData *data,
                            data->src_width, data->src_height,
                            data->format,
                            data->src_width * data->bpp,
-                           data->image_data);
+                           data->image_data,
+                           &ignore);
+  /* TODO: support chaining up errors during the blit */
 }
 
 static void

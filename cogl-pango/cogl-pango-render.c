@@ -580,7 +580,8 @@ cogl_pango_renderer_set_dirty_glyph (PangoFont *font,
                            value->draw_height, /* height */
                            format_cogl,
                            cairo_image_surface_get_stride (surface),
-                           cairo_image_surface_get_data (surface));
+                           cairo_image_surface_get_data (surface),
+                           NULL); /* don't catch errors */
 
   cairo_surface_destroy (surface);
 }

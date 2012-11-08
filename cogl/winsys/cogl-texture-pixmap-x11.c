@@ -480,6 +480,7 @@ _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
   XImage *image;
   int src_x, src_y;
   int x, y, width, height;
+  CoglError *ignore = NULL;
 
   display = cogl_xlib_get_display ();
   visual = tex_pixmap->visual;
@@ -591,7 +592,8 @@ _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
                            image->height,
                            image_format,
                            image->bytes_per_line,
-                           (const uint8_t *) image->data);
+                           (const uint8_t *) image->data,
+                           &ignore);
 
   /* If we have a shared memory segment then the XImage would be a
      temporary one with no data allocated so we can just XFree it */
@@ -677,17 +679,22 @@ _cogl_texture_pixmap_x11_get_texture (CoglTexturePixmapX11 *tex_pixmap)
 }
 
 static CoglBool
-_cogl_texture_pixmap_x11_set_region (CoglTexture     *tex,
-                                     int              src_x,
-                                     int              src_y,
-                                     int              dst_x,
-                                     int              dst_y,
-                                     unsigned int     dst_width,
-                                     unsigned int     dst_height,
-                                     CoglBitmap      *bmp)
+_cogl_texture_pixmap_x11_set_region (CoglTexture *tex,
+                                     int src_x,
+                                     int src_y,
+                                     int dst_x,
+                                     int dst_y,
+                                     int dst_width,
+                                     int dst_height,
+                                     CoglBitmap *bmp,
+                                     CoglError **error)
 {
   /* This doesn't make much sense for texture from pixmap so it's not
      supported */
+  _cogl_set_error (error,
+                   COGL_SYSTEM_ERROR,
+                   COGL_SYSTEM_ERROR_UNSUPPORTED,
+                   "Explicitly setting a region of a TFP texture unsupported");
   return FALSE;
 }
 

@@ -22,12 +22,14 @@ create_texture_pipeline (TestState *state)
       0x00, 0x00, 0xff, 0xff, /* blue */ 0xff, 0xff, 0x00, 0xff, /* yellow */
     };
 
-  tex = cogl_texture_new_from_data (2, 2, /* width/height */
+  tex = cogl_texture_new_from_data (test_ctx,
+                                    2, 2, /* width/height */
                                     COGL_TEXTURE_NO_ATLAS,
                                     COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                                     COGL_PIXEL_FORMAT_ANY,
                                     8, /* rowstride */
-                                    tex_data);
+                                    tex_data,
+                                    NULL); /* don't catch errors */
 
   pipeline = cogl_pipeline_new (test_ctx);
 

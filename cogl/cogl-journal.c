@@ -658,7 +658,8 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
          do but this will only happen during debugging so it probably
          doesn't matter */
       verts = ((uint8_t *)cogl_buffer_map (COGL_BUFFER (state->attribute_buffer),
-                                          COGL_BUFFER_ACCESS_READ, 0) +
+                                           COGL_BUFFER_ACCESS_READ, 0,
+                                           NULL) +
                state->array_offset);
 
       _cogl_journal_dump_quad_batch (verts,
@@ -1056,14 +1057,14 @@ create_attribute_buffer (CoglJournal *journal,
 
   if (vbo == NULL)
     {
-      vbo = cogl_attribute_buffer_new (ctx, n_bytes, NULL);
+      vbo = cogl_attribute_buffer_new_with_size (ctx, n_bytes);
       journal->vbo_pool[journal->next_vbo_in_pool] = vbo;
     }
   else if (cogl_buffer_get_size (COGL_BUFFER (vbo)) < n_bytes)
     {
       /* If the buffer is too small then we'll just recreate it */
       cogl_object_unref (vbo);
-      vbo = cogl_attribute_buffer_new (ctx, n_bytes, NULL);
+      vbo = cogl_attribute_buffer_new_with_size (ctx, n_bytes);
       journal->vbo_pool[journal->next_vbo_in_pool] = vbo;
     }
 
@@ -1709,10 +1710,9 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
                               CoglBitmap *bitmap,
                               CoglBool *found_intersection)
 {
+  CoglContext *ctx;
   CoglPixelFormat format;
   int i;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
 
   /* XXX: this number has been plucked out of thin air, but the idea
    * is that if so many pixels are being read from the same un-changed
@@ -1730,6 +1730,8 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
   if (format != COGL_PIXEL_FORMAT_RGBA_8888_PRE &&
       format != COGL_PIXEL_FORMAT_RGBA_8888)
     return FALSE;
+
+  ctx = _cogl_bitmap_get_context (bitmap);
 
   *found_intersection = FALSE;
 
@@ -1750,6 +1752,7 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
       float poly[16];
       CoglFramebuffer *framebuffer = journal->framebuffer;
       uint8_t *pixel;
+      CoglError *ignore_error;
 
       entry_to_screen_polygon (framebuffer, entry, vertices, poly);
 
@@ -1790,9 +1793,13 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
 
       pixel = _cogl_bitmap_map (bitmap,
                                 COGL_BUFFER_ACCESS_WRITE,
-                                COGL_BUFFER_MAP_HINT_DISCARD);
+                                COGL_BUFFER_MAP_HINT_DISCARD,
+                                &ignore_error);
       if (pixel == NULL)
-        return FALSE;
+        {
+          cogl_error_free (ignore_error);
+          return FALSE;
+        }
 
       pixel[0] = color[0];
       pixel[1] = color[1];
