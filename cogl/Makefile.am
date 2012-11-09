@@ -106,7 +106,6 @@ cogl_public_h = \
 	$(srcdir)/cogl-vector.h 		\
 	$(srcdir)/cogl-version.h		\
 	$(srcdir)/cogl.h			\
-	$(srcdir)/cogl1-context.h 		\
 	$(NULL)
 
 # experimental api headers

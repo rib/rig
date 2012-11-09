@@ -45,7 +45,6 @@
 #include "cogl-matrix-private.h"
 #include "cogl-primitive-private.h"
 #include "cogl-offscreen.h"
-#include "cogl1-context.h"
 #include "cogl-private.h"
 #include "cogl-primitives-private.h"
 #include "cogl-path-private.h"
@@ -552,6 +551,12 @@ _cogl_framebuffer_flush_journal (CoglFramebuffer *framebuffer)
 }
 
 void
+_cogl_framebuffer_flush (CoglFramebuffer *framebuffer)
+{
+  _cogl_framebuffer_flush_journal (framebuffer);
+}
+
+void
 _cogl_framebuffer_flush_dependency_journals (CoglFramebuffer *framebuffer)
 {
   GList *l;
@@ -918,7 +923,8 @@ cogl_framebuffer_set_dither_enabled (CoglFramebuffer *framebuffer,
   if (framebuffer->dither_enabled == dither_enabled)
     return;
 
-  cogl_flush (); /* Currently dithering changes aren't tracked in the journal */
+  _cogl_framebuffer_flush_journal (framebuffer);
+
   framebuffer->dither_enabled = dither_enabled;
 
   if (framebuffer->context->current_draw_buffer == framebuffer)

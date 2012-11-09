@@ -46,7 +46,6 @@
 #include "cogl-onscreen-private.h"
 #include "cogl-path.h"
 #include "cogl-attribute-private.h"
-#include "cogl1-context.h"
 #include "cogl-gpu-info-private.h"
 #include "cogl-config-private.h"
 #include "cogl-error-private.h"

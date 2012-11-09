@@ -42,10 +42,10 @@
 #include "cogl-journal-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-atlas.h"
-#include "cogl1-context.h"
 #include "cogl-sub-texture.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
+#include "cogl-private.h"
 
 #include <stdlib.h>
 
@@ -110,6 +110,8 @@ _cogl_atlas_texture_pre_reorganize_cb (void *data)
 {
   CoglAtlas *atlas = data;
 
+  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
+
   /* We don't know if any journal entries currently depend on OpenGL
    * texture coordinates that would be invalidated by reorganizing
    * this atlas so we flush all journals before migrating.
@@ -117,7 +119,7 @@ _cogl_atlas_texture_pre_reorganize_cb (void *data)
    * We are assuming that texture atlas migration never happens
    * during a flush so we don't have to consider recursion here.
    */
-  cogl_flush ();
+  _cogl_flush (ctx);
 
   if (atlas->map)
     _cogl_rectangle_map_foreach (atlas->map,
@@ -379,7 +381,7 @@ _cogl_atlas_texture_migrate_out_of_atlas (CoglAtlasTexture *atlas_tex)
    * We are assuming that texture atlas migration never happens
    * during a flush so we don't have to consider recursion here.
    */
-  cogl_flush ();
+  _cogl_flush (ctx);
 
   standalone_tex =
     _cogl_atlas_copy_rectangle (atlas_tex->atlas,

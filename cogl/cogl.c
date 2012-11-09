@@ -48,7 +48,6 @@
 #include "cogl-renderer-private.h"
 #include "cogl-config-private.h"
 #include "cogl-private.h"
-#include "cogl1-context.h"
 #include "cogl-offscreen.h"
 
 #ifdef COGL_GL_DEBUG
@@ -134,11 +133,9 @@ cogl_foreach_feature (CoglContext *ctx,
 }
 
 void
-cogl_flush (void)
+_cogl_flush (CoglContext *ctx)
 {
   GList *l;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   for (l = ctx->framebuffers; l; l = l->next)
     _cogl_framebuffer_flush_journal (l->data);

@@ -37,7 +37,6 @@
 #include "cogl-private.h"
 #include "cogl-meta-texture.h"
 #include "cogl-framebuffer-private.h"
-#include "cogl1-context.h"
 #include "cogl-primitives-private.h"
 
 #include <string.h>

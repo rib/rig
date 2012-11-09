@@ -45,7 +45,7 @@
 #include "cogl-util.h"
 #include "cogl-profile.h"
 #include "cogl-depth-state-private.h"
-#include "cogl1-context.h"
+#include "cogl-private.h"
 
 #include <glib.h>
 #include <glib/gprintf.h>
@@ -1101,10 +1101,10 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
 
       if (!skip_journal_flush)
         {
-          /* XXX: note we use cogl_flush() not _cogl_flush_journal() so
-           * we will flush *all* known journals that might reference the
-           * current pipeline. */
-          cogl_flush ();
+          /* XXX: note we need to use _cogl_flush() so we will flush
+           * *all* journals that might reference the current pipeline.
+           */
+          _cogl_flush (ctx);
         }
     }
 

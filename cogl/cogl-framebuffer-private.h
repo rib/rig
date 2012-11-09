@@ -448,5 +448,40 @@ _cogl_framebuffer_get_projection_entry (CoglFramebuffer *framebuffer)
   return projection_stack->last_entry;
 }
 
+/*
+ * _cogl_framebuffer_flush:
+ * @framebuffer: A #CoglFramebuffer
+ *
+ * This function should only need to be called in exceptional circumstances.
+ *
+ * As an optimization Cogl drawing functions may batch up primitives
+ * internally, so if you are trying to use native drawing apis
+ * directly to a Cogl onscreen framebuffer or raw OpenGL outside of
+ * Cogl you stand a better chance of being successful if you ask Cogl
+ * to flush any batched drawing before issuing your own drawing
+ * commands.
+ *
+ * This api only ensure that the underlying driver is issued all the
+ * commands necessary to draw the batched primitives. It provides no
+ * guarantees about when the driver will complete the rendering.
+ *
+ * This provides no guarantees about native graphics state or OpenGL
+ * state upon returning and to avoid confusing Cogl you should aim to
+ * save and restore any changes you make before resuming use of Cogl.
+ *
+ * Note: If you make OpenGL state changes with the intention of
+ * affecting Cogl drawing primitives you stand a high chance of
+ * conflicting with Cogl internals which can change so this is not
+ * supported.
+ *
+ * XXX: We considered making this api public, but actually for the
+ * direct use of OpenGL usecase this api isn't really enough since
+ * it would leave GL in a completely undefined state which would
+ * basically make it inpractical for applications to use. To really
+ * support mixing raw GL with Cogl we'd probabably need to guarantee
+ * that we reset all GL state to defaults.
+ */
+void
+_cogl_framebuffer_flush (CoglFramebuffer *framebuffer);
 
 #endif /* __COGL_FRAMEBUFFER_PRIVATE_H */

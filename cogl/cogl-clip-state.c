@@ -39,7 +39,6 @@
 #include "cogl-util.h"
 #include "cogl-matrix-private.h"
 #include "cogl-clip-state.h"
-#include "cogl1-context.h"
 
 void
 _cogl_clip_state_init (CoglClipState *clip_state)

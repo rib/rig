@@ -31,7 +31,6 @@
 #include "cogl-onscreen-template-private.h"
 #include "cogl-context-private.h"
 #include "cogl-object-private.h"
-#include "cogl1-context.h"
 
 static void _cogl_onscreen_free (CoglOnscreen *onscreen);
 
@@ -118,8 +117,8 @@ cogl_onscreen_swap_buffers (CoglOnscreen *onscreen)
 
   _COGL_RETURN_IF_FAIL  (framebuffer->type == COGL_FRAMEBUFFER_TYPE_ONSCREEN);
 
-  /* FIXME: we shouldn't need to flush *all* journals here! */
-  cogl_flush ();
+  _cogl_framebuffer_flush_journal (framebuffer);
+
   winsys = _cogl_framebuffer_get_winsys (framebuffer);
   winsys->onscreen_swap_buffers (COGL_ONSCREEN (framebuffer));
   cogl_framebuffer_discard_buffers (framebuffer,
@@ -138,8 +137,7 @@ cogl_onscreen_swap_region (CoglOnscreen *onscreen,
 
   _COGL_RETURN_IF_FAIL  (framebuffer->type == COGL_FRAMEBUFFER_TYPE_ONSCREEN);
 
-  /* FIXME: we shouldn't need to flush *all* journals here! */
-  cogl_flush ();
+  _cogl_framebuffer_flush_journal (framebuffer);
 
   winsys = _cogl_framebuffer_get_winsys (framebuffer);
 

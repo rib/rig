@@ -87,7 +87,7 @@ test_push_pop_single_context (void)
    * of textures and so we explicitly flush the drawn rectangle to the
    * framebuffer now otherwise it may be batched until after the
    * offscreen texture has been modified again. */
-  cogl_flush ();
+  cogl_framebuffer_finish (test_fb);
 
   /* Clear the offscreen framebuffer to blue using GLES2 before
    * reading back from the onscreen framebuffer in case we mistakenly

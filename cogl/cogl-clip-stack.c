@@ -44,7 +44,6 @@
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-attribute-private.h"
 #include "cogl-primitive-private.h"
-#include "cogl1-context.h"
 #include "cogl-offscreen.h"
 #include "cogl-matrix-stack.h"
 
