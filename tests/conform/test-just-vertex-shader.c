@@ -95,16 +95,9 @@ test_just_vertex_shader (void)
                                  -1,
                                  100);
 
-  /* If GLSL isn't supported then we can't run the test */
-  if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_GLSL))
-    {
-      paint (&state);
-      validate_result (test_fb);
+  paint (&state);
+  validate_result (test_fb);
 
-      if (cogl_test_verbose ())
-        g_print ("OK\n");
-    }
-  else if (cogl_test_verbose ())
-    g_print ("Skipping\n");
+  if (cogl_test_verbose ())
+    g_print ("OK\n");
 }
-
