@@ -72,6 +72,7 @@ struct _CoglTextureVtable
                            int dst_y,
                            int dst_width,
                            int dst_height,
+                           int level,
                            CoglBitmap *bitmap,
                            CoglError **error);
 
@@ -142,6 +143,7 @@ struct _CoglTexture
   CoglObject _parent;
   CoglContext *context;
   GList *framebuffers;
+  int max_level;
   const CoglTextureVtable *vtable;
 };
 
@@ -279,5 +281,15 @@ _cogl_texture_get_type (CoglTexture *texture);
 CoglBool
 _cogl_texture_needs_premult_conversion (CoglPixelFormat src_format,
                                         CoglPixelFormat dst_format);
+
+int
+_cogl_texture_get_n_levels (CoglTexture *texture);
+
+void
+_cogl_texture_get_level_size (CoglTexture *texture,
+                              int level,
+                              int *width,
+                              int *height,
+                              int *depth);
 
 #endif /* __COGL_TEXTURE_PRIVATE_H */

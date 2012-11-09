@@ -572,17 +572,14 @@ cogl_pango_renderer_set_dirty_glyph (PangoFont *font,
 
   /* Copy the glyph to the texture */
   cogl_texture_set_region (value->texture,
-                           0, /* src_x */
-                           0, /* src_y */
-                           value->tx_pixel, /* dst_x */
-                           value->ty_pixel, /* dst_y */
-                           value->draw_width, /* dst_width */
-                           value->draw_height, /* dst_height */
-                           value->draw_width, /* width */
-                           value->draw_height, /* height */
+                           value->draw_width,
+                           value->draw_height,
                            format_cogl,
                            cairo_image_surface_get_stride (surface),
                            cairo_image_surface_get_data (surface),
+                           value->tx_pixel, /* dst_x */
+                           value->ty_pixel, /* dst_y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 
   cairo_surface_destroy (surface);

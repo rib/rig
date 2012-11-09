@@ -64,13 +64,12 @@ test_alpha_textures (void)
   create_pipeline (&tex2, &pipeline2);
 
   cogl_texture_set_region (tex2,
-                           0, 0, /* src_x/y */
-                           1, 1, /* dst_x/y */
-                           1, 1, /* dst_width / dst_height */
                            1, 1, /* width / height */
                            COGL_PIXEL_FORMAT_A_8,
                            1, /* rowstride */
                            replacement_data,
+                           1, 1, /* dst_x/y */
+                           0, /* level */
                            NULL); /* abort on error */
 
   cogl_framebuffer_draw_rectangle (test_fb,

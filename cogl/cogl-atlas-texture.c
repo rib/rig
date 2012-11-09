@@ -459,11 +459,12 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
   /* Copy the central data */
   if (!cogl_texture_set_region_from_bitmap (atlas->texture,
                                             src_x, src_y,
-                                            dst_x + atlas_tex->rectangle.x + 1,
-                                            dst_y + atlas_tex->rectangle.y + 1,
                                             dst_width,
                                             dst_height,
                                             bmp,
+                                            dst_x + atlas_tex->rectangle.x + 1,
+                                            dst_y + atlas_tex->rectangle.y + 1,
+                                            0, /* level 0 */
                                             error))
     return FALSE;
 
@@ -471,42 +472,46 @@ _cogl_atlas_texture_set_region_with_border (CoglAtlasTexture *atlas_tex,
   if (dst_x == 0 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
                                             src_x, src_y,
-                                            atlas_tex->rectangle.x,
-                                            dst_y + atlas_tex->rectangle.y + 1,
                                             1, dst_height,
                                             bmp,
+                                            atlas_tex->rectangle.x,
+                                            dst_y + atlas_tex->rectangle.y + 1,
+                                            0, /* level 0 */
                                             error))
     return FALSE;
   /* Update the right edge pixels */
   if (dst_x + dst_width == atlas_tex->rectangle.width - 2 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
                                             src_x + dst_width - 1, src_y,
+                                            1, dst_height,
+                                            bmp,
                                             atlas_tex->rectangle.x +
                                             atlas_tex->rectangle.width - 1,
                                             dst_y + atlas_tex->rectangle.y + 1,
-                                            1, dst_height,
-                                            bmp,
+                                            0, /* level 0 */
                                             error))
     return FALSE;
   /* Update the top edge pixels */
   if (dst_y == 0 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
                                             src_x, src_y,
-                                            dst_x + atlas_tex->rectangle.x + 1,
-                                            atlas_tex->rectangle.y,
                                             dst_width, 1,
                                             bmp,
+                                            dst_x + atlas_tex->rectangle.x + 1,
+                                            atlas_tex->rectangle.y,
+                                            0, /* level 0 */
                                             error))
     return FALSE;
   /* Update the bottom edge pixels */
   if (dst_y + dst_height == atlas_tex->rectangle.height - 2 &&
       !cogl_texture_set_region_from_bitmap (atlas->texture,
                                             src_x, src_y + dst_height - 1,
+                                            dst_width, 1,
+                                            bmp,
                                             dst_x + atlas_tex->rectangle.x + 1,
                                             atlas_tex->rectangle.y +
                                             atlas_tex->rectangle.height - 1,
-                                            dst_width, 1,
-                                            bmp,
+                                            0, /* level 0 */
                                             error))
     return FALSE;
 
@@ -569,10 +574,14 @@ _cogl_atlas_texture_set_region (CoglTexture *tex,
                                 int dst_y,
                                 int dst_width,
                                 int dst_height,
+                                int level,
                                 CoglBitmap *bmp,
                                 CoglError **error)
 {
   CoglAtlasTexture  *atlas_tex = COGL_ATLAS_TEXTURE (tex);
+
+  if (level != 0 && atlas_tex->atlas)
+    _cogl_atlas_texture_migrate_out_of_atlas (atlas_tex);
 
   /* If the texture is in the atlas then we need to copy the edge
      pixels to the border */
@@ -602,9 +611,10 @@ _cogl_atlas_texture_set_region (CoglTexture *tex,
     /* Otherwise we can just forward on to the sub texture */
     return cogl_texture_set_region_from_bitmap (atlas_tex->sub_texture,
                                                 src_x, src_y,
-                                                dst_x, dst_y,
                                                 dst_width, dst_height,
                                                 bmp,
+                                                dst_x, dst_y,
+                                                level,
                                                 error);
 }
 

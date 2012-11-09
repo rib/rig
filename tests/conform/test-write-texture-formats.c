@@ -38,13 +38,12 @@ test_write_byte (CoglPixelFormat format,
   CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   cogl_texture_set_region (texture,
-                           0, 0, /* src_x / src_y */
-                           0, 0, /* dst_x / dst_y */
-                           1, 1, /* dst_w / dst_h */
                            1, 1, /* width / height */
                            format,
                            1, /* rowstride */
                            &byte,
+                           0, 0, /* dst_x, dst_y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
@@ -60,13 +59,12 @@ test_write_short (CoglPixelFormat format,
   CoglTexture *texture = test_utils_create_color_texture (test_ctx, 0);
 
   cogl_texture_set_region (texture,
-                           0, 0, /* src_x / src_y */
-                           0, 0, /* dst_x / dst_y */
-                           1, 1, /* dst_w / dst_h */
                            1, 1, /* width / height */
                            format,
                            2, /* rowstride */
                            (uint8_t *) &value,
+                           0, 0, /* dst_x, dst_y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
@@ -84,13 +82,12 @@ test_write_bytes (CoglPixelFormat format,
   value = GUINT32_TO_BE (value);
 
   cogl_texture_set_region (texture,
-                           0, 0, /* src_x / src_y */
-                           0, 0, /* dst_x / dst_y */
-                           1, 1, /* dst_w / dst_h */
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
                            (uint8_t *) &value,
+                           0, 0, /* dst_x, dst_y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);
@@ -124,13 +121,12 @@ test_write_int (CoglPixelFormat format,
   va_end (ap);
 
   cogl_texture_set_region (texture,
-                           0, 0, /* src_x / src_y */
-                           0, 0, /* dst_x / dst_y */
-                           1, 1, /* dst_w / dst_h */
                            1, 1, /* width / height */
                            format,
                            4, /* rowstride */
                            (uint8_t *) &tex_data,
+                           0, 0, /* dst_x, dst_y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 
   test_color (texture, expected_pixel);

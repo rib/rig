@@ -266,10 +266,14 @@ validate_result (TestState *state)
   /* Update the center half of the sub texture */
   texture_data = create_update_data ();
   cogl_texture_set_region (COGL_TEXTURE (sub_texture),
-                           0, 0, 32, 32, 64, 64, 256, 256,
-                           COGL_PIXEL_FORMAT_RGBA_8888_PRE, 256 * 4,
+                           64, 64,
+                           COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                           256 * 4,
                            texture_data,
+                           32, 32, /* dst x, y */
+                           0, /* level */
                            NULL); /* don't catch errors */
+
   g_free (texture_data);
   cogl_object_unref (sub_texture);
   /* Get the texture data */

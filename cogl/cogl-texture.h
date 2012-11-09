@@ -401,64 +401,111 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
 /**
  * cogl_texture_set_region:
  * @texture a #CoglTexture.
- * @src_x: upper left coordinate to use from source data.
- * @src_y: upper left coordinate to use from source data.
- * @dst_x: upper left destination horizontal coordinate.
- * @dst_y: upper left destination vertical coordinate.
- * @dst_width: width of destination region to write. (Must be less
- *   than or equal to @width)
- * @dst_height: height of destination region to write. (Must be less
- *   than or equal to @height)
- * @width: width of source data buffer.
- * @height: height of source data buffer.
- * @format: the #CoglPixelFormat used in the source buffer.
- * @rowstride: rowstride of source buffer (computed from width if none
- * specified)
- * @data: the actual pixel data.
+ * @width: width of the region to set.
+ * @height: height of the region to set.
+ * @format: the #CoglPixelFormat used in the source @data buffer.
+ * @rowstride: rowstride in bytes of the source @data buffer (computed
+ *             from @width and @format if it equals 0)
+ * @data: the source data, pointing to the first top-left pixel to set
+ * @dst_x: upper left destination x coordinate.
+ * @dst_y: upper left destination y coordinate.
+ * @level: The mipmap level to update (Normally 0 for the largest,
+ *         base image)
  * @error: A #CoglError to return exceptional errors
  *
- * Sets the pixels in a rectangular subregion of @texture from an in-memory
- * buffer containing pixel data.
+ * Sets the pixels in a rectangular subregion of @texture from an
+ * in-memory buffer containing pixel @data.
  *
- * <note>The region set can't be larger than the source @data</note>
+ * @data should point to the first pixel to copy corresponding
+ * to the top left of the region being set.
+ *
+ * The rowstride determines how many bytes between the first pixel of
+ * a row of @data and the first pixel of the next row. If @rowstride
+ * equals 0 then it will be automatically calculated from @width and
+ * the bytes-per-pixel for the given @format.
+ *
+ * A mipmap @level of 0 corresponds to the largest, base image of a
+ * texture and @level 1 is half the width and height of level 0. The
+ * size of any level can be calculated from the size of the base
+ * level as follows:
+ *
+ * |[
+ *  width = MAX (1, floor (base_width / 2 ^ level));
+ *  height = MAX (1, floor (base_height / 2 ^ level));
+ * ]|
+ *
+ * Or more succinctly put using C:
+ *
+ * |[
+ *  width = MAX (1, base_width >> level);
+ *  height = MAX (1, base_height >> level);
+ * ]|
+ *
+ * You can get the size of the base level using
+ * cogl_texture_get_width() and cogl_texture_get_height().
+ *
+ * You can determine the number of mipmap levels for a given texture
+ * like this:
+ *
+ * |[
+ *  n_levels = 1 + floor (log2 (max_dimension));
+ * ]|
+ *
+ * Or more succinctly in C using the fls() - "Find Last Set" - function:
+ *
+ * |[
+ *  n_levels = fls (max_dimension);
+ * ]|
+
+ * Where %max_dimension is the larger of cogl_texture_get_width() and
+ * cogl_texture_get_height().
+ *
+ * It is an error to pass a @level number >= the number of levels that
+ * @texture can have according to the above calculation.
+ *
+ * <note>Since the storage for a #CoglTexture is allocated lazily then
+ * if the given @texture has not previously been allocated then this
+ * api can return %FALSE and throw an exceptional @error if there is
+ * not enough memory to allocate storage for @texture.</note>
  *
  * Return value: %TRUE if the subregion upload was successful, and
  *   %FALSE otherwise
  */
 CoglBool
 cogl_texture_set_region (CoglTexture *texture,
-                         int src_x,
-                         int src_y,
-                         int dst_x,
-                         int dst_y,
-                         unsigned int dst_width,
-                         unsigned int dst_height,
                          int width,
                          int height,
                          CoglPixelFormat format,
-                         unsigned int rowstride,
+                         int rowstride,
                          const uint8_t *data,
+			 int dst_x,
+			 int dst_y,
+                         int level,
                          CoglError **error);
 
 /**
  * cogl_texture_set_region_from_bitmap:
  * @texture a #CoglTexture pointer
- * @src_x: upper left coordinate to use from the source bitmap.
- * @src_y: upper left coordinate to use from the source bitmap
- * @dst_x: upper left destination horizontal coordinate.
- * @dst_y: upper left destination vertical coordinate.
- * @dst_width: width of destination region to write. (Must be less
- *   than or equal to the bitmap width)
- * @dst_height: height of destination region to write. (Must be less
- *   than or equal to the bitmap height)
- * @bitmap: The source bitmap to read from
- * @error: A #CoglError to return exceptional errors
+ * @src_x: upper left x coordinate of the region in the source bitmap.
+ * @src_y: upper left y coordinate of the region in the source bitmap
+ * @width: width of the region to copy. (Must be less than or equal to
+ *         the bitmap width)
+ * @height: height of the region to copy. (Must be less than or equal
+ *          to the bitmap height)
+ * @bitmap: The source bitmap to copy from
+ * @dst_x: upper left destination x coordinate to copy to.
+ * @dst_y: upper left destination y coordinate to copy to.
+ * @error: A #CoglError to return exceptional errors or %NULL
  *
- * Copies a specified source region from @bitmap to the position
- * (@src_x, @src_y) of the given destination texture @handle.
+ * Copies a rectangular region from @bitmap to the position
+ * (@dst_x, @dst_y) of the given destination @texture.
  *
- * <note>The region updated can't be larger than the source
- * bitmap</note>
+ * The source region's top left coordinate is (@src_x, @src_y) within
+ * the source @bitmap and the region is @width pixels wide and @height
+ * pixels high.
+ *
+ * <note>The source region must not extend outside the bounds of the
+ * source @bitmap.</note>
  *
  * Return value: %TRUE if the subregion upload was successful, and
  *   %FALSE otherwise
@@ -470,11 +517,12 @@ CoglBool
 cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      int src_x,
                                      int src_y,
+                                     int width,
+                                     int height,
+                                     CoglBitmap *bitmap,
                                      int dst_x,
                                      int dst_y,
-                                     unsigned int dst_width,
-                                     unsigned int dst_height,
-                                     CoglBitmap *bitmap,
+                                     int level,
                                      CoglError **error);
 
 COGL_END_DECLS

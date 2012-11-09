@@ -68,13 +68,12 @@ set_region (CoglTexture *tex,
   guchar *tex_data = gen_tex_data (color);
 
   cogl_texture_set_region (tex,
-                           0, 0, /* src x, y */
-                           0, 0, /* dst x, y */
-                           QUAD_WIDTH, QUAD_WIDTH, /* dst width, height */
-                           QUAD_WIDTH, QUAD_WIDTH, /* src width, height */
+                           QUAD_WIDTH, QUAD_WIDTH, /* height */
                            format,
                            0, /* auto compute row stride */
                            tex_data,
+                           0, 0, /* dst x,y */
+                           0, /* level */
                            NULL); /* don't catch errors */
 }
 

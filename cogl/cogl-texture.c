@@ -43,6 +43,7 @@
 #include "cogl-texture-2d-sliced-private.h"
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-2d-gl.h"
+#include "cogl-texture-3d-private.h"
 #include "cogl-texture-rectangle-private.h"
 #include "cogl-sub-texture-private.h"
 #include "cogl-atlas-texture-private.h"
@@ -103,6 +104,7 @@ _cogl_texture_init (CoglTexture *texture,
                     const CoglTextureVtable *vtable)
 {
   texture->context = context;
+  texture->max_level = 0;
   texture->vtable = vtable;
   texture->framebuffers = NULL;
 }
@@ -271,6 +273,61 @@ cogl_texture_get_max_waste (CoglTexture *texture)
   return texture->vtable->get_max_waste (texture);
 }
 
+int
+_cogl_texture_get_n_levels (CoglTexture *texture)
+{
+  int width = cogl_texture_get_width (texture);
+  int height = cogl_texture_get_height (texture);
+  int max_dimension = MAX (width, height);
+
+  if (cogl_is_texture_3d (texture))
+    {
+      CoglTexture3D *tex_3d = COGL_TEXTURE_3D (texture);
+      max_dimension = MAX (max_dimension, tex_3d->depth);
+    }
+
+  return _cogl_util_fls (max_dimension);
+}
+
+void
+_cogl_texture_get_level_size (CoglTexture *texture,
+                              int level,
+                              int *width,
+                              int *height,
+                              int *depth)
+{
+  int current_width = cogl_texture_get_width (texture);
+  int current_height = cogl_texture_get_height (texture);
+  int current_depth;
+  int i;
+
+  if (cogl_is_texture_3d (texture))
+    {
+      CoglTexture3D *tex_3d = COGL_TEXTURE_3D (texture);
+      current_depth = tex_3d->depth;
+    }
+  else
+    current_depth = 0;
+
+  /* NB: The OpenGL spec (like D3D) uses a floor() convention to
+   * round down the size of a mipmap level when dividing the size
+   * of the previous level results in a fraction...
+   */
+  for (i = 0; i < level; i++)
+    {
+      current_width = MAX (1, current_width >> 1);
+      current_height = MAX (1, current_height >> 1);
+      current_depth = MAX (1, current_depth >> 1);
+    }
+
+  if (width)
+    *width = current_width;
+  if (height)
+    *height = current_height;
+  if (depth)
+    *depth = current_depth;
+}
+
 CoglBool
 cogl_texture_is_sliced (CoglTexture *texture)
 {
@@ -342,22 +399,21 @@ CoglBool
 cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      int src_x,
                                      int src_y,
+                                     int width,
+                                     int height,
+                                     CoglBitmap *bmp,
                                      int dst_x,
                                      int dst_y,
-                                     unsigned int dst_width,
-                                     unsigned int dst_height,
-                                     CoglBitmap *bmp,
+                                     int level,
                                      CoglError **error)
 {
-  CoglBool ret;
-
   _COGL_RETURN_VAL_IF_FAIL ((cogl_bitmap_get_width (bmp) - src_x)
-                            >= dst_width, FALSE);
+                            >= width, FALSE);
   _COGL_RETURN_VAL_IF_FAIL ((cogl_bitmap_get_height (bmp) - src_y)
-                            >= dst_height, FALSE);
+                            >= height, FALSE);
 
   /* Shortcut out early if the image is empty */
-  if (dst_width == 0 || dst_height == 0)
+  if (width == 0 || height == 0)
     return TRUE;
 
   /* Note that we don't prepare the bitmap for upload here because
@@ -367,41 +423,32 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
      always stored in an RGBA texture even if the texture format is
      advertised as RGB. */
 
-  ret = texture->vtable->set_region (texture,
-                                     src_x, src_y,
-                                     dst_x, dst_y,
-                                     dst_width, dst_height,
-                                     bmp,
-                                     error);
-
-  return ret;
+  return texture->vtable->set_region (texture,
+                                      src_x, src_y,
+                                      dst_x, dst_y,
+                                      width, height,
+                                      level,
+                                      bmp,
+                                      error);
 }
 
 CoglBool
 cogl_texture_set_region (CoglTexture *texture,
-			 int src_x,
-			 int src_y,
+                         int width,
+                         int height,
+                         CoglPixelFormat format,
+                         int rowstride,
+                         const uint8_t *data,
 			 int dst_x,
 			 int dst_y,
-			 unsigned int dst_width,
-			 unsigned int dst_height,
-			 int width,
-			 int height,
-			 CoglPixelFormat format,
-			 unsigned int rowstride,
-			 const uint8_t *data,
+                         int level,
                          CoglError **error)
 {
   CoglContext *ctx = texture->context;
   CoglBitmap *source_bmp;
   CoglBool ret;
 
-  _COGL_RETURN_VAL_IF_FAIL ((width - src_x) >= dst_width, FALSE);
-  _COGL_RETURN_VAL_IF_FAIL ((height - src_y) >= dst_height, FALSE);
-
-  /* Check for valid format */
-  if (format == COGL_PIXEL_FORMAT_ANY)
-    return FALSE;
+  _COGL_RETURN_VAL_IF_FAIL (format != COGL_PIXEL_FORMAT_ANY, FALSE);
 
   /* Rowstride from width if none specified */
   if (rowstride == 0)
@@ -415,10 +462,11 @@ cogl_texture_set_region (CoglTexture *texture,
                                          (uint8_t *) data);
 
   ret = cogl_texture_set_region_from_bitmap (texture,
-                                             src_x, src_y,
-                                             dst_x, dst_y,
-                                             dst_width, dst_height,
+                                             0, 0,
+                                             width, height,
                                              source_bmp,
+                                             dst_x, dst_y,
+                                             level,
                                              error);
 
   cogl_object_unref (source_bmp);
