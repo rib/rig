@@ -781,10 +781,10 @@ can_software_clip_entry (CoglJournalEntry *journal_entry,
      entries using the same pipeline as the previous entry */
   if (prev_journal_entry == NULL || pipeline != prev_journal_entry->pipeline)
     {
-      /* If there is a custom texture transform; either due to custom shader
-       * snippets or a custom texture matrix then we can't reliably modify the
+      /* If there are any snippets then we can't reliably modify the
        * texture coordinates. */
-      if (_cogl_pipeline_maybe_has_custom_texture_transform (pipeline))
+      if (_cogl_pipeline_has_vertex_snippets (pipeline) ||
+          _cogl_pipeline_has_fragment_snippets (pipeline))
         return FALSE;
     }
 

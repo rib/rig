@@ -168,7 +168,6 @@ _cogl_pipeline_layer_init_multi_property_sparse_state (
     case COGL_PIPELINE_LAYER_STATE_TEXTURE_TYPE:
     case COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA:
     case COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS:
-    case COGL_PIPELINE_LAYER_STATE_USER_MATRIX:
     case COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT:
     case COGL_PIPELINE_LAYER_STATE_SAMPLER:
       g_return_if_reached ();
@@ -593,12 +592,6 @@ _cogl_pipeline_layer_equal (CoglPipelineLayer *layer0,
                           _cogl_pipeline_layer_sampler_equal))
     return FALSE;
 
-  if (layers_difference & COGL_PIPELINE_LAYER_STATE_USER_MATRIX &&
-      !layer_state_equal (COGL_PIPELINE_LAYER_STATE_USER_MATRIX_INDEX,
-                          authorities0, authorities1,
-                          _cogl_pipeline_layer_user_matrix_equal))
-    return FALSE;
-
   if (layers_difference & COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS &&
       !layer_state_equal (COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
                           authorities0, authorities1,
@@ -692,8 +685,6 @@ _cogl_pipeline_init_default_layers (void)
     COGL_PIPELINE_COMBINE_OP_SRC_ALPHA;
 
   big_state->point_sprite_coords = FALSE;
-
-  cogl_matrix_init_identity (&big_state->matrix);
 
   ctx->default_layer_0 = _cogl_pipeline_layer_object_new (layer);
 

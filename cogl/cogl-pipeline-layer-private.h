@@ -54,7 +54,6 @@ typedef enum
   COGL_PIPELINE_LAYER_STATE_SAMPLER_INDEX,
   COGL_PIPELINE_LAYER_STATE_COMBINE_INDEX,
   COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
-  COGL_PIPELINE_LAYER_STATE_USER_MATRIX_INDEX,
   COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
   COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS_INDEX,
   COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS_INDEX,
@@ -87,8 +86,6 @@ typedef enum
     1L<<COGL_PIPELINE_LAYER_STATE_COMBINE_INDEX,
   COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT =
     1L<<COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX,
-  COGL_PIPELINE_LAYER_STATE_USER_MATRIX =
-    1L<<COGL_PIPELINE_LAYER_STATE_USER_MATRIX_INDEX,
 
   COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS =
     1L<<COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX,
@@ -115,7 +112,6 @@ typedef enum
 #define COGL_PIPELINE_LAYER_STATE_NEEDS_BIG_STATE \
   (COGL_PIPELINE_LAYER_STATE_COMBINE | \
    COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT | \
-   COGL_PIPELINE_LAYER_STATE_USER_MATRIX | \
    COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS | \
    COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS | \
    COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS)
@@ -175,9 +171,6 @@ typedef struct
   CoglPipelineCombineOp texture_combine_alpha_op[3];
 
   float texture_combine_constant[4];
-
-  /* The texture matrix dscribes how to transform texture coordinates */
-  CoglMatrix matrix;
 
   CoglBool point_sprite_coords;
 
@@ -294,10 +287,6 @@ _cogl_pipeline_layer_prune_redundant_ancestry (CoglPipelineLayer *layer);
 
 CoglBool
 _cogl_pipeline_layer_has_alpha (CoglPipelineLayer *layer);
-
-CoglBool
-_cogl_pipeline_layer_has_user_matrix (CoglPipeline *pipeline,
-                                      int layer_index);
 
 /*
  * Calls the pre_paint method on the layer texture if there is

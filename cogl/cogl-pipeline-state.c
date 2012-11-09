@@ -1252,58 +1252,6 @@ _cogl_pipeline_has_fragment_snippets (CoglPipeline *pipeline)
   return found_fragment_snippet;
 }
 
-static CoglBool
-check_maybe_has_custom_texture_transform  (CoglPipelineLayer *layer,
-                                           void *user_data)
-{
-  CoglBool *maybe_has_custom_texture_transform = user_data;
-  unsigned long matrix_state = COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
-  unsigned long frag_state = COGL_PIPELINE_LAYER_STATE_FRAGMENT_SNIPPETS;
-  unsigned long vert_state = COGL_PIPELINE_LAYER_STATE_VERTEX_SNIPPETS;
-  CoglPipelineLayer *matrix_authority;
-  CoglPipelineLayer *frag_authority;
-  CoglPipelineLayer *vert_authority;
-
-  matrix_authority = _cogl_pipeline_layer_get_authority (layer, matrix_state);
-  if (!_cogl_pipeline_layer_get_parent (matrix_authority))
-    {
-      *maybe_has_custom_texture_transform = TRUE;
-      return FALSE;
-    }
-
-  frag_authority = _cogl_pipeline_layer_get_authority (layer, frag_state);
-  if (!COGL_LIST_EMPTY (&frag_authority->big_state->fragment_snippets))
-    {
-      *maybe_has_custom_texture_transform = TRUE;
-      return FALSE;
-    }
-
-  vert_authority = _cogl_pipeline_layer_get_authority (layer, vert_state);
-  if (!COGL_LIST_EMPTY (&vert_authority->big_state->vertex_snippets))
-    {
-      *maybe_has_custom_texture_transform = TRUE;
-      return FALSE;
-    }
-
-  return TRUE;
-}
-
-CoglBool
-_cogl_pipeline_maybe_has_custom_texture_transform (CoglPipeline *pipeline)
-{
-  CoglBool maybe_has_custom_texture_transform = FALSE;
-
-  if (_cogl_pipeline_has_non_layer_fragment_snippets (pipeline))
-    return TRUE;
-
-  _cogl_pipeline_foreach_layer_internal (
-                                       pipeline,
-                                       check_maybe_has_custom_texture_transform,
-                                       &maybe_has_custom_texture_transform);
-
-  return maybe_has_custom_texture_transform;
-}
-
 void
 _cogl_pipeline_hash_color_state (CoglPipeline *authority,
                                  CoglPipelineHashState *state)

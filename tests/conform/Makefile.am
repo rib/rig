@@ -35,7 +35,6 @@ test_sources = \
 	test-backface-culling.c \
 	test-just-vertex-shader.c \
 	test-path.c \
-	test-pipeline-user-matrix.c \
 	test-pipeline-uniforms.c \
 	test-pixel-buffer.c \
 	test-premult.c \

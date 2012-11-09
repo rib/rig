@@ -46,9 +46,6 @@ _cogl_pipeline_get_colorubv (CoglPipeline *pipeline,
 }
 
 CoglBool
-_cogl_pipeline_maybe_has_custom_texture_transform (CoglPipeline *pipeline);
-
-CoglBool
 _cogl_pipeline_has_vertex_snippets (CoglPipeline *pipeline);
 
 CoglBool

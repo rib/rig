@@ -57,29 +57,6 @@ _cogl_pipeline_vertend_fixed_add_layer (CoglPipeline *pipeline,
                                         unsigned long layers_difference,
                                         CoglFramebuffer *framebuffer)
 {
-  CoglContext *ctx = framebuffer->context;
-  int unit_index = _cogl_pipeline_layer_get_unit_index (layer);
-  CoglTextureUnit *unit = _cogl_get_texture_unit (unit_index);
-
-  if (layers_difference & COGL_PIPELINE_LAYER_STATE_USER_MATRIX)
-    {
-      CoglPipelineLayerState state = COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
-      CoglPipelineLayer *authority =
-        _cogl_pipeline_layer_get_authority (layer, state);
-      CoglMatrixEntry *matrix_entry;
-
-      _cogl_matrix_stack_set (unit->matrix_stack,
-                              &authority->big_state->matrix);
-
-      _cogl_set_active_texture_unit (unit_index);
-
-      matrix_entry = unit->matrix_stack->last_entry;
-      _cogl_matrix_entry_flush_to_gl_builtins (ctx, matrix_entry,
-                                               COGL_MATRIX_TEXTURE,
-                                               framebuffer,
-                                               FALSE /* enable flip */);
-    }
-
   return TRUE;
 }
 

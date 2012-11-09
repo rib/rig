@@ -249,33 +249,23 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
     return TRUE;
 
   g_string_append_printf (shader_state->header,
-                          "uniform mat4 cogl_texture_matrix%i;\n"
                           "attribute vec4 cogl_tex_coord%i_in;\n"
                           "varying vec4 _cogl_tex_coord%i;\n"
                           "#define cogl_tex_coord%i_out _cogl_tex_coord%i\n",
                           layer_index,
                           layer_index,
                           layer_index,
-                          layer_index,
                           layer_index);
 
-  /* Transform the texture coordinates by the layer's user matrix.
-   *
-   * FIXME: this should avoid doing the transform if there is no user
-   * matrix set. This might need a separate layer state flag for
-   * whether there is a user matrix
-   *
-   * FIXME: we could be more clever here and try to detect if the
-   * fragment program is going to use the texture coordinates and
-   * avoid setting them if not
+  /* Hook to transform the texture coordinates. By default this just
+   * directly uses the texture coordinates.
    */
 
   g_string_append_printf (shader_state->header,
                           "vec4\n"
-                          "cogl_real_transform_layer%i (mat4 matrix, "
-                          "vec4 tex_coord)\n"
+                          "cogl_real_transform_layer%i (vec4 tex_coord)\n"
                           "{\n"
-                          "  return matrix * tex_coord;\n"
+                          "  return tex_coord;\n"
                           "}\n",
                           layer_index);
 
@@ -292,8 +282,8 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
   snippet_data.return_type = "vec4";
   snippet_data.return_variable = "cogl_tex_coord";
   snippet_data.return_variable_is_argument = TRUE;
-  snippet_data.arguments = "cogl_matrix, cogl_tex_coord";
-  snippet_data.argument_declarations = "mat4 cogl_matrix, vec4 cogl_tex_coord";
+  snippet_data.arguments = "cogl_tex_coord";
+  snippet_data.argument_declarations = "vec4 cogl_tex_coord";
   snippet_data.source_buf = shader_state->header;
 
   _cogl_pipeline_snippet_generate_code (&snippet_data);
@@ -304,10 +294,7 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
 
   g_string_append_printf (shader_state->source,
                           "  cogl_tex_coord%i_out = "
-                          "cogl_transform_layer%i (cogl_texture_matrix%i,\n"
-                          "                           "
-                          "                        cogl_tex_coord%i_in);\n",
-                          layer_index,
+                          "cogl_transform_layer%i (cogl_tex_coord%i_in);\n",
                           layer_index,
                           layer_index,
                           layer_index);

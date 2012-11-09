@@ -2338,8 +2338,6 @@ _cogl_pipeline_init_layer_state_hash_functions (void)
     _cogl_pipeline_layer_hash_combine_state;
   layer_state_hash_functions[COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT_INDEX] =
     _cogl_pipeline_layer_hash_combine_constant_state;
-  layer_state_hash_functions[COGL_PIPELINE_LAYER_STATE_USER_MATRIX_INDEX] =
-    _cogl_pipeline_layer_hash_user_matrix_state;
   _index = COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS_INDEX;
   layer_state_hash_functions[_index] =
     _cogl_pipeline_layer_hash_point_sprite_state;
@@ -2352,7 +2350,7 @@ _cogl_pipeline_init_layer_state_hash_functions (void)
 
   {
   /* So we get a big error if we forget to update this code! */
-  _COGL_STATIC_ASSERT (COGL_PIPELINE_LAYER_STATE_SPARSE_COUNT == 10,
+  _COGL_STATIC_ASSERT (COGL_PIPELINE_LAYER_STATE_SPARSE_COUNT == 9,
                        "Don't forget to install a hash function for new "
                        "pipeline state and update assert at end of "
                        "_cogl_pipeline_init_state_hash_functions");

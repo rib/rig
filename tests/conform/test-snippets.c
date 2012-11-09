@@ -430,14 +430,9 @@ test_modify_vertex_layer (TestState *state)
 {
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
-  CoglMatrix matrix;
 
   /* Test modifying the vertex layer code */
   pipeline = create_texture_pipeline (state);
-
-  cogl_matrix_init_identity (&matrix);
-  cogl_matrix_translate (&matrix, 0.0f, 1.0f, 0.0f);
-  cogl_pipeline_set_layer_matrix (pipeline, 0, &matrix);
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM,
                               NULL,
@@ -448,7 +443,7 @@ test_modify_vertex_layer (TestState *state)
   cogl_framebuffer_draw_textured_rectangle (test_fb,
                                             pipeline,
                                             130, 0, 140, 10,
-                                            0, 0, 0, 0);
+                                            0, 1, 0, 1);
   cogl_object_unref (pipeline);
 
   test_utils_check_pixel (test_fb, 135, 5, 0xffff00ff);
@@ -459,26 +454,21 @@ test_replace_vertex_layer (TestState *state)
 {
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
-  CoglMatrix matrix;
 
   /* Test replacing the vertex layer code */
   pipeline = create_texture_pipeline (state);
 
-  cogl_matrix_init_identity (&matrix);
-  cogl_matrix_translate (&matrix, 0.0f, 1.0f, 0.0f);
-  cogl_pipeline_set_layer_matrix (pipeline, 0, &matrix);
-
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM,
                               NULL,
                               NULL);
-  cogl_snippet_set_replace (snippet, "cogl_tex_coord.x = 1.0;\n");
+  cogl_snippet_set_replace (snippet, "cogl_tex_coord.xy = vec2 (1.0, 0.0);\n");
   cogl_pipeline_add_layer_snippet (pipeline, 0, snippet);
   cogl_object_unref (snippet);
 
   cogl_framebuffer_draw_textured_rectangle (test_fb,
                                             pipeline,
                                             140, 0, 150, 10,
-                                            0, 0, 0, 0);
+                                            1, 1, 1, 1);
   cogl_object_unref (pipeline);
 
   test_utils_check_pixel (test_fb, 145, 5, 0x00ff00ff);

@@ -1043,19 +1043,6 @@ _cogl_pipeline_layer_sampler_equal (CoglPipelineLayer *authority0,
 }
 
 CoglBool
-_cogl_pipeline_layer_user_matrix_equal (CoglPipelineLayer *authority0,
-                                        CoglPipelineLayer *authority1)
-{
-  CoglPipelineLayerBigState *big_state0 = authority0->big_state;
-  CoglPipelineLayerBigState *big_state1 = authority1->big_state;
-
-  if (!cogl_matrix_equal (&big_state0->matrix, &big_state1->matrix))
-    return FALSE;
-
-  return TRUE;
-}
-
-CoglBool
 _cogl_pipeline_layer_point_sprite_coords_equal (CoglPipelineLayer *authority0,
                                                 CoglPipelineLayer *authority1)
 {
@@ -1381,117 +1368,12 @@ _cogl_pipeline_get_layer_combine_constant (CoglPipeline *pipeline,
           sizeof (float) * 4);
 }
 
-/* We should probably make a public API version of this that has a
-   matrix out-param. For an internal API it's good to be able to avoid
-   copying the matrix */
-const CoglMatrix *
-_cogl_pipeline_get_layer_matrix (CoglPipeline *pipeline, int layer_index)
-{
-  CoglPipelineLayerState       change =
-    COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
-  CoglPipelineLayer *layer;
-  CoglPipelineLayer *authority;
-
-  _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), NULL);
-
-  layer = _cogl_pipeline_get_layer (pipeline, layer_index);
-
-  authority = _cogl_pipeline_layer_get_authority (layer, change);
-  return &authority->big_state->matrix;
-}
-
-void
-cogl_pipeline_set_layer_matrix (CoglPipeline *pipeline,
-				int layer_index,
-                                const CoglMatrix *matrix)
-{
-  CoglPipelineLayerState state = COGL_PIPELINE_LAYER_STATE_USER_MATRIX;
-  CoglPipelineLayer     *layer;
-  CoglPipelineLayer     *authority;
-  CoglPipelineLayer     *new;
-
-  _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
-
-  /* Note: this will ensure that the layer exists, creating one if it
-   * doesn't already.
-   *
-   * Note: If the layer already existed it's possibly owned by another
-   * pipeline. If the layer is created then it will be owned by
-   * pipeline. */
-  layer = _cogl_pipeline_get_layer (pipeline, layer_index);
-
-  /* Now find the ancestor of the layer that is the authority for the
-   * state we want to change */
-  authority = _cogl_pipeline_layer_get_authority (layer, state);
-
-  if (cogl_matrix_equal (matrix, &authority->big_state->matrix))
-    return;
-
-  new = _cogl_pipeline_layer_pre_change_notify (pipeline, layer, state);
-  if (new != layer)
-    layer = new;
-  else
-    {
-      /* If the original layer we found is currently the authority on
-       * the state we are changing see if we can revert to one of our
-       * ancestors being the authority. */
-      if (layer == authority &&
-          _cogl_pipeline_layer_get_parent (authority) != NULL)
-        {
-          CoglPipelineLayer *parent =
-            _cogl_pipeline_layer_get_parent (authority);
-          CoglPipelineLayer *old_authority =
-            _cogl_pipeline_layer_get_authority (parent, state);
-
-          if (cogl_matrix_equal (matrix, &old_authority->big_state->matrix))
-            {
-              layer->differences &= ~state;
-
-              g_assert (layer->owner == pipeline);
-              if (layer->differences == 0)
-                _cogl_pipeline_prune_empty_layer_difference (pipeline,
-                                                             layer);
-              return;
-            }
-        }
-    }
-
-  layer->big_state->matrix = *matrix;
-
-  /* If we weren't previously the authority on this state then we need
-   * to extended our differences mask and so it's possible that some
-   * of our ancestry will now become redundant, so we aim to reparent
-   * ourselves if that's true... */
-  if (layer != authority)
-    {
-      layer->differences |= state;
-      _cogl_pipeline_layer_prune_redundant_ancestry (layer);
-    }
-}
-
 CoglTexture *
 _cogl_pipeline_layer_get_texture (CoglPipelineLayer *layer)
 {
   _COGL_RETURN_VAL_IF_FAIL (_cogl_is_pipeline_layer (layer), NULL);
 
   return _cogl_pipeline_layer_get_texture_real (layer);
-}
-
-CoglBool
-_cogl_pipeline_layer_has_user_matrix (CoglPipeline *pipeline,
-                                      int layer_index)
-{
-  CoglPipelineLayer *layer;
-  CoglPipelineLayer *authority;
-
-  layer = _cogl_pipeline_get_layer (pipeline, layer_index);
-
-  authority =
-    _cogl_pipeline_layer_get_authority (layer,
-                                        COGL_PIPELINE_LAYER_STATE_USER_MATRIX);
-
-  /* If the authority is the default pipeline then no, otherwise yes */
-  return _cogl_pipeline_layer_get_parent (authority) ? TRUE : FALSE;
 }
 
 void
@@ -1763,16 +1645,6 @@ done:
       state->hash = _cogl_util_one_at_a_time_hash (state->hash, constant,
                                                    sizeof (float) * 4);
     }
-}
-
-void
-_cogl_pipeline_layer_hash_user_matrix_state (CoglPipelineLayer *authority,
-                                             CoglPipelineLayer **authorities,
-                                             CoglPipelineHashState *state)
-{
-  CoglPipelineLayerBigState *big_state = authority->big_state;
-  state->hash = _cogl_util_one_at_a_time_hash (state->hash, &big_state->matrix,
-                                               sizeof (float) * 16);
 }
 
 void

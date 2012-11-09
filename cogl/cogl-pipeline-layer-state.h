@@ -318,23 +318,6 @@ cogl_pipeline_set_layer_combine_constant (CoglPipeline    *pipeline,
                                           const CoglColor *constant);
 
 /**
- * cogl_pipeline_set_layer_matrix:
- * @pipeline: A #CoglPipeline object
- * @layer_index: the index for the layer inside @pipeline
- * @matrix: the transformation matrix for the layer
- *
- * This function lets you set a matrix that can be used to e.g. translate
- * and rotate a single layer of a pipeline used to fill your geometry.
- *
- * Since: 1.10
- * Stability: unstable
- */
-void
-cogl_pipeline_set_layer_matrix (CoglPipeline     *pipeline,
-				int               layer_index,
-				const CoglMatrix *matrix);
-
-/**
  * cogl_pipeline_get_n_layers:
  * @pipeline: A #CoglPipeline object
  *

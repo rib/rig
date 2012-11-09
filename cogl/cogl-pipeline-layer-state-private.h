@@ -67,10 +67,6 @@ _cogl_pipeline_layer_sampler_equal (CoglPipelineLayer *authority0,
                                     CoglPipelineLayer *authority1);
 
 CoglBool
-_cogl_pipeline_layer_user_matrix_equal (CoglPipelineLayer *authority0,
-                                        CoglPipelineLayer *authority1);
-
-CoglBool
 _cogl_pipeline_layer_point_sprite_coords_equal (CoglPipelineLayer *authority0,
                                                 CoglPipelineLayer *authority1);
 
@@ -111,11 +107,6 @@ void
 _cogl_pipeline_layer_hash_combine_constant_state (CoglPipelineLayer *authority,
                                                   CoglPipelineLayer **authorities,
                                                   CoglPipelineHashState *state);
-
-void
-_cogl_pipeline_layer_hash_user_matrix_state (CoglPipelineLayer *authority,
-                                             CoglPipelineLayer **authorities,
-                                             CoglPipelineHashState *state);
 
 void
 _cogl_pipeline_layer_hash_point_sprite_state (CoglPipelineLayer *authority,

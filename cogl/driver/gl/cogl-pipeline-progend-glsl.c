@@ -91,11 +91,8 @@ const CoglPipelineProgend _cogl_pipeline_glsl_progend;
 typedef struct _UnitState
 {
   unsigned int dirty_combine_constant:1;
-  unsigned int dirty_texture_matrix:1;
 
   GLint combine_constant_uniform;
-
-  GLint texture_matrix_uniform;
 } UnitState;
 
 typedef struct
@@ -370,16 +367,6 @@ get_uniform_cb (CoglPipeline *pipeline,
 
   unit_state->combine_constant_uniform = uniform_location;
 
-  g_string_set_size (ctx->codegen_source_buffer, 0);
-  g_string_append_printf (ctx->codegen_source_buffer,
-                          "cogl_texture_matrix%i", layer_index);
-
-  GE_RET( uniform_location,
-          ctx, glGetUniformLocation (state->gl_program,
-                                     ctx->codegen_source_buffer->str) );
-
-  unit_state->texture_matrix_uniform = uniform_location;
-
   state->unit++;
 
   return TRUE;
@@ -406,19 +393,6 @@ update_constants_cb (CoglPipeline *pipeline,
       GE (ctx, glUniform4fv (unit_state->combine_constant_uniform,
                              1, constant));
       unit_state->dirty_combine_constant = FALSE;
-    }
-
-  if (unit_state->texture_matrix_uniform != -1 &&
-      (state->update_all || unit_state->dirty_texture_matrix))
-    {
-      const CoglMatrix *matrix;
-      const float *array;
-
-      matrix = _cogl_pipeline_get_layer_matrix (pipeline, layer_index);
-      array = cogl_matrix_get_array (matrix);
-      GE (ctx, glUniformMatrix4fv (unit_state->texture_matrix_uniform,
-                                   1, FALSE, array));
-      unit_state->dirty_texture_matrix = FALSE;
     }
 
   return TRUE;
@@ -831,16 +805,6 @@ _cogl_pipeline_progend_glsl_layer_pre_change_notify (
         {
           int unit_index = _cogl_pipeline_layer_get_unit_index (layer);
           program_state->unit_state[unit_index].dirty_combine_constant = TRUE;
-        }
-    }
-
-  if (change & COGL_PIPELINE_LAYER_STATE_USER_MATRIX)
-    {
-      CoglPipelineProgramState *program_state = get_program_state (owner);
-      if (program_state)
-        {
-          int unit_index = _cogl_pipeline_layer_get_unit_index (layer);
-          program_state->unit_state[unit_index].dirty_texture_matrix = TRUE;
         }
     }
 }

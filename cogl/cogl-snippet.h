@@ -144,14 +144,6 @@ G_BEGIN_DECLS
  *    equivalent to #gl_ModelViewProjectionMatrix.
  *   </para></glossdef>
  *  </glossentry>
- *  <glossentry>
- *   <glossterm>uniform mat4
- *         <emphasis>cogl_texture_matrix</emphasis>[]</glossterm>
- *   <glossdef><para>
- *    An array of matrices for transforming the texture
- *    coordinates. This is equivalent to #gl_TextureMatrix.
- *   </para></glossdef>
- *  </glossentry>
  * </glosslist>
  *
  * In a vertex shader, the following are also available:
@@ -317,8 +309,8 @@ typedef struct _CoglSnippet CoglSnippet;
  * @COGL_SNIPPET_HOOK_VERTEX_TRANSFORM: A hook for the vertex transformation.
  * @COGL_SNIPPET_HOOK_FRAGMENT: A hook for the entire fragment
  *   processing stage of the pipeline.
- * @COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM: A hook for applying the
- *   layer matrix to a texture coordinate for a layer.
+ * @COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM: A hook for transforming
+ *   the texture coordinates for a layer.
  * @COGL_SNIPPET_HOOK_LAYER_FRAGMENT: A hook for the fragment
  *   processing of a particular layer.
  * @COGL_SNIPPET_HOOK_TEXTURE_LOOKUP: A hook for the texture lookup
@@ -433,16 +425,13 @@ typedef struct _CoglSnippet CoglSnippet;
  * the processing for a layer or to modify the results.
  * </para>
  * <para>
- * Within the snippet code for this hook there are two extra
- * variables. The first is a mat4 called cogl_matrix which represents
- * the user matrix for this layer. The second is called cogl_tex_coord
- * and represents the incoming and outgoing texture coordinate. On
- * entry to the hook, cogl_tex_coord contains the value of the
- * corresponding texture coordinate attribute for this layer. The hook
- * is expected to modify this variable. The output will be passed as a
- * varying to the fragment processing stage. The default code will
- * just multiply cogl_matrix by cogl_tex_coord and store the result in
- * cogl_tex_coord.
+ * Within the snippet code for this hook there is an extra variable
+ * called cogl_tex_coord and represents the incoming and outgoing
+ * texture coordinate. On entry to the hook, cogl_tex_coord contains
+ * the value of the corresponding texture coordinate attribute for
+ * this layer. The hook is expected to modify this variable. The
+ * output will be passed as a varying to the fragment processing
+ * stage. The default code will leave cogl_tex_coord untouched.
  * </para>
  * <para>
  * The ‘declarations’ string in @snippet will be inserted in the

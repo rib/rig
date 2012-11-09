@@ -589,31 +589,6 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
         }
     }
 
-#ifdef COGL_ENABLE_DEBUG
-  /* If the texture can't be repeated with the GPU (e.g. because it has
-   * waste or if using GL_TEXTURE_RECTANGLE_ARB) then if a texture matrix
-   * is also in use we don't know if the result will end up trying
-   * to texture from the waste area.
-   *
-   * Note: we check can_hardware_repeat() first since it's cheaper.
-   *
-   * Note: cases where the texture coordinates will require repeating
-   * will be caught by later validation.
-   */
-  if (!_cogl_texture_can_hardware_repeat (texture) &&
-      _cogl_pipeline_layer_has_user_matrix (pipeline, layer_index))
-    {
-      static CoglBool warning_seen = FALSE;
-      if (!warning_seen)
-        g_warning ("layer %d of your pipeline uses a custom "
-                   "texture matrix but because the texture doesn't "
-                   "support hardware repeating you may see artefacts "
-                   "due to sampling beyond the texture's bounds.",
-                   state->i);
-      warning_seen = TRUE;
-    }
-#endif
-
   return TRUE;
 }
 
