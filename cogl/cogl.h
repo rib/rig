@@ -76,6 +76,7 @@
 #include <cogl/cogl-snippet.h>
 #include <cogl/cogl-framebuffer.h>
 #include <cogl/cogl-onscreen.h>
+#include <cogl/cogl-frame-info.h>
 #include <cogl/cogl-poll.h>
 #if defined (COGL_HAS_EGL_PLATFORM_KMS_SUPPORT)
 #include <cogl/cogl-kms-renderer.h>

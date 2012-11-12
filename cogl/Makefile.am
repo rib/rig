@@ -82,6 +82,7 @@ cogl_public_h = \
 	$(srcdir)/cogl-object.h 		\
 	$(srcdir)/cogl-offscreen.h 		\
 	$(srcdir)/cogl-onscreen-template.h 	\
+	$(srcdir)/cogl-frame-info.h		\
 	$(srcdir)/cogl-onscreen.h		\
 	$(srcdir)/cogl-path.h 			\
 	$(srcdir)/cogl-pipeline-layer-state.h 	\
@@ -353,6 +354,8 @@ cogl_sources_c = \
 	$(srcdir)/cogl-spans.c				\
 	$(srcdir)/cogl-journal-private.h		\
 	$(srcdir)/cogl-journal.c			\
+	$(srcdir)/cogl-frame-info-private.h		\
+	$(srcdir)/cogl-frame-info.c			\
 	$(srcdir)/cogl-framebuffer-private.h		\
 	$(srcdir)/cogl-framebuffer.c 			\
 	$(srcdir)/cogl-onscreen-private.h		\
