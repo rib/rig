@@ -91,6 +91,7 @@ cogl_public_h = \
 	$(srcdir)/cogl-poll.h			\
 	$(srcdir)/cogl-primitive-texture.h	\
 	$(srcdir)/cogl-primitive.h 		\
+	$(srcdir)/cogl-output.h			\
 	$(srcdir)/cogl-quaternion.h 		\
 	$(srcdir)/cogl-matrix-stack.h		\
 	$(srcdir)/cogl-renderer.h 		\
@@ -356,6 +357,8 @@ cogl_sources_c = \
 	$(srcdir)/cogl-framebuffer.c 			\
 	$(srcdir)/cogl-onscreen-private.h		\
 	$(srcdir)/cogl-onscreen.c 			\
+	$(srcdir)/cogl-output-private.h			\
+	$(srcdir)/cogl-output.c				\
 	$(srcdir)/cogl-profile.h 			\
 	$(srcdir)/cogl-profile.c 			\
 	$(srcdir)/cogl-flags.h				\
