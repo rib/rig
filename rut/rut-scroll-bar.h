@@ -28,7 +28,7 @@
 typedef struct _RutScrollBar RutScrollBar;
 #define RUT_SCROLL_BAR(X) ((RutScrollBar *)X)
 
-RutType rut_scroll_bar_type;
+extern RutType rut_scroll_bar_type;
 
 void
 _rut_scroll_bar_init_type (void);

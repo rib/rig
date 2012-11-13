@@ -42,7 +42,7 @@
 #define RUT_STATIC_COUNTER(A,B,C,D) extern void G_PASTE (_rut_dummy_decl, __COUNTER__) (void)
 #else
 #define RUT_STATIC_TIMER(A,B,C,D,E) extern void G_PASTE (_rut_dummy_decl, __LINE__) (void)
-#define RUT_STATIC_COUNTER(A,B,C,D,E) extern void G_PASTE (_rut_dummy_decl, __LINE__) (void)
+#define RUT_STATIC_COUNTER(A,B,C,D) extern void G_PASTE (_rut_dummy_decl, __LINE__) (void)
 #endif
 #define RUT_COUNTER_INC(A,B) G_STMT_START { } G_STMT_END
 #define RUT_COUNTER_DEC(A,B) G_STMT_START { } G_STMT_END

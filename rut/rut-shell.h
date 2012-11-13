@@ -309,7 +309,7 @@ rut_input_region_set_hud_mode (RutInputRegion *region,
 typedef struct _RutSlider RutSlider;
 #define RUT_SLIDER(X) ((RutSlider *)X)
 
-RutType rut_slider_type;
+extern RutType rut_slider_type;
 
 RutSlider *
 rut_slider_new (RutContext *ctx,
