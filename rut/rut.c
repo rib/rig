@@ -223,6 +223,8 @@ typedef struct _RutTextureCacheEntry
 } RutTextureCacheEntry;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((RutTextureCacheEntry *)X)
 
+CoglContext *rut_cogl_context;
+
 static CoglUserDataKey texture_cache_key;
 
 uint8_t _rut_nine_slice_indices_data[] = {
