@@ -26,7 +26,7 @@ typedef struct _RutDiamondSlice RutDiamondSlice;
 #define RUT_DIAMOND_SLICE(X) ((RutDiamondSlice *)X)
 extern RutType _rut_diamond_slice_type;
 
-typedef struct _RutDiamondSlice
+struct _RutDiamondSlice
 {
   RutObjectProps _parent;
   int ref_count;
@@ -37,7 +37,7 @@ typedef struct _RutDiamondSlice
 
   CoglPrimitive *primitive;
 
-} RutDiamondSlice;
+};
 
 void
 _rut_diamond_slice_init_type (void);

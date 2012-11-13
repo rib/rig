@@ -27,7 +27,7 @@ typedef struct _RutShapeModel RutShapeModel;
 #define RUT_SHAPE_SLICE(X) ((RutShapeModel *)X)
 extern RutType _rut_shape_model_type;
 
-typedef struct _RutShapeModel
+struct _RutShapeModel
 {
   RutObjectProps _parent;
   int ref_count;
@@ -43,7 +43,7 @@ typedef struct _RutShapeModel
 
   CoglPrimitive *primitive;
 
-} RutShapeModel;
+};
 
 void
 _rut_shape_model_init_type (void);

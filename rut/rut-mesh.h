@@ -86,7 +86,7 @@ typedef struct _RutMesh RutMesh;
 extern RutType rut_mesh_type;
 
 /* This kind of mesh is optimized for size and use by a GPU */
-typedef struct _RutMesh
+struct _RutMesh
 {
   RutObjectProps _parent;
 
@@ -106,7 +106,7 @@ typedef struct _RutMesh
   CoglIndicesType indices_type;
   int n_indices;
   RutBuffer *indices_buffer;
-} RutMesh;
+};
 
 void
 _rut_buffer_init_type (void);

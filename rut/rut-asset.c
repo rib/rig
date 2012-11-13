@@ -34,7 +34,7 @@ enum {
 };
 #endif
 
-typedef struct _RutAsset
+struct _RutAsset
 {
   RutObjectProps _parent;
 
@@ -53,7 +53,7 @@ typedef struct _RutAsset
 
   GList *inferred_tags;
 
-} RutAsset;
+};
 
 #if 0
 static RutPropertySpec _asset_prop_specs[] = {
