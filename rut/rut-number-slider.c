@@ -173,12 +173,12 @@ rut_number_slider_create_bg_pipeline (RutContext *context)
       CoglPipeline *pipeline = cogl_pipeline_new (context->cogl_context);
       static CoglUserDataKey bg_pipeline_destroy_key;
       CoglTexture *bg_texture;
-      CoglError *error = NULL;
+      GError *error = NULL;
 
-      bg_texture = rut_load_texture (context,
-                                     RIG_DATA_DIR
-                                     "number-slider-background.png",
-                                     &error);
+      bg_texture =
+        rut_load_texture_from_data_file (context,
+                                         "number-slider-background.png",
+                                         &error);
       if (bg_texture)
         {
           const CoglPipelineWrapMode wrap_mode =
@@ -197,7 +197,7 @@ rut_number_slider_create_bg_pipeline (RutContext *context)
         {
           g_warning ("Failed to load number-slider-background.png: %s",
                      error->message);
-          cogl_error_free (error);
+          g_error_free (error);
         }
 
       /* When the last slider is destroyed the pipeline will be

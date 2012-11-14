@@ -1,4 +1,4 @@
-assetsdir = $(datadir)
+assetsdir = $(datadir)/rig
 dist_assets_DATA = \
 	dot.png \
 	transition-view-separator.png \

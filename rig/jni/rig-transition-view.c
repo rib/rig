@@ -1441,11 +1441,20 @@ rig_transition_view_create_dots_pipeline (RigTransitionView *view)
   CoglBitmap *bitmap;
   CoglError *error = NULL;
 
-  dot_filename = g_build_filename (RIG_SHARE_DIR, "dot.png", NULL);
+  dot_filename = rut_find_data_file ("dot.png");
 
-  bitmap = cogl_bitmap_new_from_file (view->context->cogl_context,
-                                      dot_filename,
-                                      &error);
+  if (dot_filename == NULL)
+    {
+      g_warning ("Couldn't find dot.png");
+      bitmap = NULL;
+    }
+  else
+    {
+      bitmap = cogl_bitmap_new_from_file (view->context->cogl_context,
+                                          dot_filename,
+                                          &error);
+      g_free (dot_filename);
+    }
 
   if (bitmap == NULL)
     {
@@ -1498,20 +1507,18 @@ rig_transition_view_create_dots_pipeline (RigTransitionView *view)
       cogl_object_unref (bitmap);
     }
 
-  g_free (dot_filename);
-
   return pipeline;
 }
 
 static void
 rig_transition_view_create_separator_pipeline (RigTransitionView *view)
 {
-  CoglError *error = NULL;
+  GError *error = NULL;
   CoglTexture *texture;
 
-  texture = rut_load_texture (view->context,
-                              RIG_SHARE_DIR "/transition-view-separator.png",
-                              &error);
+  texture = rut_load_texture_from_data_file (view->context,
+                                             "transition-view-separator.png",
+                                             &error);
 
   if (texture)
     {
@@ -1538,7 +1545,7 @@ rig_transition_view_create_separator_pipeline (RigTransitionView *view)
   else
     {
       g_warning ("%s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 }
 

@@ -144,8 +144,7 @@ librut_la_CFLAGS = \
     @RIG_EXTRA_CFLAGS@
 librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
-    -I$(top_srcdir)/rut \
-    -DRIG_DATA_DIR=\""$(datadir)/"\"
+    -I$(top_srcdir)/rut
 
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)

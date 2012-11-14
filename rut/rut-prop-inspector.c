@@ -538,10 +538,8 @@ add_animatable_toggle (RutPropInspector *inspector,
 
   if (spec->animatable)
     {
-      char *unselected_icon =
-        g_build_filename (RIG_DATA_DIR, "record-button.png", NULL);
-      char *selected_icon =
-        g_build_filename (RIG_DATA_DIR, "record-button-selected.png", NULL);
+      char *unselected_icon = rut_find_data_file ("record-button.png");
+      char *selected_icon = rut_find_data_file ("record-button-selected.png");
       RutObject *control = rut_toggle_new_with_icons (inspector->context,
                                                       unselected_icon,
                                                       selected_icon,

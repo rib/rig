@@ -397,6 +397,26 @@ texture_destroyed_cb (void *user_data)
   _rut_texture_cache_entry_free (entry);
 }
 
+char *
+rut_find_data_file (const char *base_filename)
+{
+  const gchar *const *dirs = g_get_system_data_dirs ();
+  const gchar *const *dir;
+
+  for (dir = dirs; *dir; dir++)
+    {
+      char *full_path =
+        g_build_filename (*dir, "rig", base_filename, NULL);
+
+      if (g_file_test (full_path, G_FILE_TEST_EXISTS))
+        return full_path;
+
+      g_free (full_path);
+    }
+
+  return NULL;
+}
+
 CoglTexture *
 rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
 {
@@ -429,6 +449,30 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
                              texture_destroyed_cb);
 
   return texture;
+}
+
+CoglTexture *
+rut_load_texture_from_data_file (RutContext *ctx,
+                                 const char *filename,
+                                 GError **error)
+{
+  char *full_path = rut_find_data_file (filename);
+  CoglTexture *tex;
+
+  if (full_path == NULL)
+    {
+      g_set_error (error,
+                   G_FILE_ERROR,
+                   G_FILE_ERROR_NOENT,
+                   "File not found");
+      return NULL;
+    }
+
+  tex = rut_load_texture (ctx, full_path, (CoglError **) error);
+
+  g_free (full_path);
+
+  return tex;
 }
 
 RutContext *
@@ -1306,7 +1350,7 @@ rut_button_new (RutContext *ctx,
   CoglTexture *hover_texture;
   CoglTexture *active_texture;
   CoglTexture *disabled_texture;
-  CoglError *error = NULL;
+  GError *error = NULL;
   PangoRectangle label_size;
 
   rut_object_init (RUT_OBJECT (button), &rut_button_type);
@@ -1322,38 +1366,42 @@ rut_button_new (RutContext *ctx,
 
   button->state = BUTTON_STATE_NORMAL;
 
-  normal_texture = rut_load_texture (ctx, RIG_DATA_DIR "button.png", &error);
+  normal_texture =
+    rut_load_texture_from_data_file (ctx, "button.png", &error);
   if (!normal_texture)
     {
       g_warning ("Failed to load button texture: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
-  hover_texture = rut_load_texture (ctx, RIG_DATA_DIR "button-hover.png", &error);
+  hover_texture =
+    rut_load_texture_from_data_file (ctx, "button-hover.png", &error);
   if (!hover_texture)
     {
       cogl_object_unref (normal_texture);
       g_warning ("Failed to load button-hover texture: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
-  active_texture = rut_load_texture (ctx, RIG_DATA_DIR "button-active.png", &error);
+  active_texture =
+    rut_load_texture_from_data_file (ctx, "button-active.png", &error);
   if (!active_texture)
     {
       cogl_object_unref (normal_texture);
       cogl_object_unref (hover_texture);
       g_warning ("Failed to load button-active texture: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
-  disabled_texture = rut_load_texture (ctx, RIG_DATA_DIR "button-disabled.png", &error);
+  disabled_texture =
+    rut_load_texture_from_data_file (ctx, "button-disabled.png", &error);
   if (!disabled_texture)
     {
       cogl_object_unref (normal_texture);
       cogl_object_unref (hover_texture);
       cogl_object_unref (active_texture);
       g_warning ("Failed to load button-disabled texture: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
   button->label = pango_layout_new (ctx->pango_context);

@@ -101,6 +101,14 @@ rut_settings_get_font_name (RutSettings *settings);
 CoglTexture *
 rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 
+CoglTexture *
+rut_load_texture_from_data_file (RutContext *ctx,
+                                 const char *filename,
+                                 GError **error);
+
+char *
+rut_find_data_file (const char *base_filename);
+
 typedef struct _RutGraph RutGraph;
 #define RUT_GRAPH(X) ((RutGraph *)X)
 

@@ -7,9 +7,7 @@ INCLUDES = \
 
 AM_CFLAGS = \
 	$(RIG_DEP_CFLAGS) \
-	$(RIG_EXTRA_CFLAGS) \
-	-DRIG_EXAMPLES_DATA=\""$(abs_top_srcdir)/examples/"\" \
-	-DRIG_SHARE_DIR=\"$(datadir)/\"
+	$(RIG_EXTRA_CFLAGS)
 
 AM_CPPFLAGS = \
 	-DG_DISABLE_SINGLE_INCLUDES \

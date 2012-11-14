@@ -2065,7 +2065,7 @@ rut_slider_new (RutContext *ctx,
   RutSlider *slider = g_slice_new0 (RutSlider);
   CoglTexture *bg_texture;
   CoglTexture *handle_texture;
-  CoglError *error = NULL;
+  GError *error = NULL;
   //PangoRectangle label_size;
   float width;
   float height;
@@ -2085,18 +2085,20 @@ rut_slider_new (RutContext *ctx,
   slider->length = length;
   slider->progress = 0;
 
-  bg_texture = rut_load_texture (ctx, RIG_DATA_DIR "slider-background.png", &error);
+  bg_texture =
+    rut_load_texture_from_data_file (ctx, "slider-background.png", &error);
   if (!bg_texture)
     {
       g_warning ("Failed to load slider-background.png: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
-  handle_texture = rut_load_texture (ctx, RIG_DATA_DIR "slider-handle.png", &error);
+  handle_texture =
+    rut_load_texture_from_data_file (ctx, "slider-handle.png", &error);
   if (!handle_texture)
     {
       g_warning ("Failed to load slider-handle.png: %s", error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
 
   if (axis == RUT_AXIS_X)

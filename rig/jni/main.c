@@ -2330,16 +2330,16 @@ asset_search_update_cb (RutText *text,
 static RutImage *
 load_transparency_grid (RutContext *ctx)
 {
-  CoglError *error = NULL;
+  GError *error = NULL;
   CoglTexture *texture =
-    rut_load_texture (ctx, RIG_SHARE_DIR "/transparency-grid.png", &error);
+    rut_load_texture_from_data_file (ctx, "transparency-grid.png", &error);
   RutImage *ret;
 
   if (texture == NULL)
     {
       g_warning ("Failed to load transparency-grid.png: %s",
                  error->message);
-      cogl_error_free (error);
+      g_error_free (error);
     }
   else
     {
@@ -2770,14 +2770,19 @@ init (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode)
     {
       RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-      char *full_path = g_build_filename (RIG_SHARE_DIR, "light.ply", NULL);
+      char *full_path = rut_find_data_file ("light.ply");
       GError *error = NULL;
-      RutMesh *mesh = rut_mesh_new_from_ply (data->ctx,
-                                             full_path,
-                                             ply_attributes,
-                                             G_N_ELEMENTS (ply_attributes),
-                                             padding_status,
-                                             &error);
+      RutMesh *mesh;
+
+      if (full_path == NULL)
+        g_critical ("could not find model \"light.ply\"");
+
+      mesh = rut_mesh_new_from_ply (data->ctx,
+                                    full_path,
+                                    ply_attributes,
+                                    G_N_ELEMENTS (ply_attributes),
+                                    padding_status,
+                                    &error);
       RutModel *model;
       if (mesh)
         {

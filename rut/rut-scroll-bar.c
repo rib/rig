@@ -365,7 +365,7 @@ static void
 update_handle_length (RutScrollBar *scroll_bar)
 {
   CoglTexture *handle_texture;
-  CoglError *error = NULL;
+  GError *error = NULL;
   float width, height;
   float trough_len;
   float handle_len;
@@ -377,13 +377,13 @@ update_handle_length (RutScrollBar *scroll_bar)
     }
   else
     {
-      handle_texture = rut_load_texture (scroll_bar->ctx,
-                                         RIG_DATA_DIR "slider-handle.png",
-                                         &error);
+      handle_texture = rut_load_texture_from_data_file (scroll_bar->ctx,
+                                                        "slider-handle.png",
+                                                        &error);
       if (!handle_texture)
         {
           g_warning ("Failed to load slider-handle.png: %s", error->message);
-          cogl_error_free (error);
+          g_error_free (error);
           return;
         }
     }
@@ -425,7 +425,7 @@ static void
 update_geometry (RutScrollBar *scroll_bar)
 {
   CoglTexture *bg_texture;
-  CoglError *error = NULL;
+  GError *error = NULL;
   float width, height;
 
   rut_scroll_bar_get_size (scroll_bar, &width, &height);
@@ -437,13 +437,13 @@ update_geometry (RutScrollBar *scroll_bar)
     }
   else
     {
-      bg_texture = rut_load_texture (scroll_bar->ctx,
-                                     RIG_DATA_DIR "slider-background.png",
-                                     &error);
+      bg_texture = rut_load_texture_from_data_file (scroll_bar->ctx,
+                                                    "slider-background.png",
+                                                    &error);
       if (!bg_texture)
         {
           g_warning ("Failed to load slider-background.png: %s", error->message);
-          cogl_error_free (error);
+          g_error_free (error);
         }
     }
 
@@ -494,9 +494,13 @@ rut_scroll_bar_new (RutContext *ctx,
   if (axis == RUT_AXIS_X)
     {
       arrow0 =
-        rut_load_texture (ctx, RIG_DATA_DIR "scroll-button-right-active.png", NULL);
+        rut_load_texture_from_data_file (ctx,
+                                         "scroll-button-right-active.png",
+                                         NULL);
       arrow1 =
-        rut_load_texture (ctx, RIG_DATA_DIR "scroll-button-left-active.png", NULL);
+        rut_load_texture_from_data_file (ctx,
+                                         "scroll-button-left-active.png",
+                                         NULL);
 
       scroll_bar->thickness = cogl_texture_get_height (arrow0);
       scroll_bar->arrow_len = cogl_texture_get_width (arrow0);
@@ -504,9 +508,13 @@ rut_scroll_bar_new (RutContext *ctx,
   else
     {
       arrow0 =
-        rut_load_texture (ctx, RIG_DATA_DIR "scroll-button-down-active.png", NULL);
+        rut_load_texture_from_data_file (ctx,
+                                         "scroll-button-down-active.png",
+                                         NULL);
       arrow1 =
-        rut_load_texture (ctx, RIG_DATA_DIR "scroll-button-up-active.png", NULL);
+        rut_load_texture_from_data_file (ctx,
+                                         "scroll-button-up-active.png",
+                                         NULL);
 
       scroll_bar->thickness = cogl_texture_get_width (arrow0);
       scroll_bar->arrow_len = cogl_texture_get_height (arrow0);

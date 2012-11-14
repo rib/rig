@@ -625,13 +625,13 @@ static void
 create_dot_pipeline (RutColorPicker *picker)
 {
   CoglTexture *texture;
-  CoglError *error = NULL;
+  GError *error = NULL;
 
   picker->dot_pipeline = cogl_pipeline_new (picker->context->cogl_context);
 
-  texture = rut_load_texture (picker->context,
-                              RIG_DATA_DIR "color-picker-dot.png",
-                              &error);
+  texture = rut_load_texture_from_data_file (picker->context,
+                                             "color-picker-dot.png",
+                                             &error);
 
   if (texture == NULL)
     {

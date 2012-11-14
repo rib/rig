@@ -183,10 +183,15 @@ rut_asset_new_full (RutContext *ctx,
   RutAsset *asset = g_slice_new0 (RutAsset);
   const char *real_path;
   char *full_path;
+  CoglBool built_path = FALSE;
 
 #ifndef __ANDROID__
   if (type == RUT_ASSET_TYPE_BUILTIN)
-    full_path = g_build_filename (RIG_DATA_DIR, path, NULL);
+    {
+      full_path = rut_find_data_file (path);
+      if (full_path == NULL)
+        full_path = g_strdup (path);
+    }
   else
     full_path = g_build_filename (ctx->assets_location, path, NULL);
   real_path = full_path;
