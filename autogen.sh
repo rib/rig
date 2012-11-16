@@ -24,7 +24,6 @@ which gnome-autogen.sh || {
 REQUIRED_AUTOMAKE_VERSION=1.9 
 GNOME_DATADIR="$gnome_datadir"
 USE_GNOME2_MACROS=1
-USE_COMMON_DOC_BUILD=yes
 
 . gnome-autogen.sh
 

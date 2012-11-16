@@ -222,17 +222,6 @@ LT_PREREQ([2.2.6])
 LT_INIT([disable-static])
 
 dnl ================================================================
-dnl Documentation stuff.
-dnl ================================================================
-# gtkdocize greps for ^GTK_DOC_CHECK and parses it, so you need to have
-# it on it's own line.
-m4_ifdef([GTK_DOC_CHECK], [
-GTK_DOC_CHECK([gtk_doc_req_version], [--flavour no-tmpl])
-])
-AM_CONDITIONAL([BUILD_GTK_DOC], [test "x$enable_gtk_doc" = "xyes"])
-
-
-dnl ================================================================
 dnl Check for dependency packages.
 dnl ================================================================
 
