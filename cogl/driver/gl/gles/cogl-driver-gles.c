@@ -266,7 +266,8 @@ _cogl_driver_update_features (CoglContext *context,
                       COGL_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM);
 
   private_flags |= (COGL_PRIVATE_FEATURE_VBOS |
-                    COGL_PRIVATE_FEATURE_ANY_GL);
+                    COGL_PRIVATE_FEATURE_ANY_GL |
+                    COGL_PRIVATE_FEATURE_ALPHA_TEXTURES);
 
   /* Both GLES 1.1 and GLES 2.0 support point sprites in core */
   COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
