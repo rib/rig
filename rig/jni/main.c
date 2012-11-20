@@ -2485,17 +2485,16 @@ init (RutShell *shell, void *user_data)
 #endif
     data->onscreen = cogl_onscreen_new (data->ctx->cogl_context,
                                         data->device_width / 2, data->device_height / 2);
-  cogl_onscreen_show (data->onscreen);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      /* FIXME: On SDL this isn't taking affect if set before allocating
-       * the framebuffer. */
       cogl_onscreen_set_resizable (data->onscreen, TRUE);
       cogl_onscreen_add_resize_handler (data->onscreen, data_onscreen_resize, data);
     }
 #endif
+
+  cogl_onscreen_show (data->onscreen);
 
   fb = COGL_FRAMEBUFFER (data->onscreen);
   data->width = cogl_framebuffer_get_width (fb);
