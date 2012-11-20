@@ -483,9 +483,9 @@ _cogl_context_free (CoglContext *context)
   g_slist_free (context->texture_types);
 
   if (context->current_modelview_entry)
-    _cogl_matrix_entry_unref (context->current_modelview_entry);
+    cogl_matrix_entry_unref (context->current_modelview_entry);
   if (context->current_projection_entry)
-    _cogl_matrix_entry_unref (context->current_projection_entry);
+    cogl_matrix_entry_unref (context->current_projection_entry);
   _cogl_matrix_entry_cache_destroy (&context->builtin_flushed_projection);
   _cogl_matrix_entry_cache_destroy (&context->builtin_flushed_modelview);
 
@@ -545,9 +545,9 @@ void
 _cogl_context_set_current_projection_entry (CoglContext *context,
                                             CoglMatrixEntry *entry)
 {
-  _cogl_matrix_entry_ref (entry);
+  cogl_matrix_entry_ref (entry);
   if (context->current_projection_entry)
-    _cogl_matrix_entry_unref (context->current_projection_entry);
+    cogl_matrix_entry_unref (context->current_projection_entry);
   context->current_projection_entry = entry;
 }
 
@@ -555,9 +555,9 @@ void
 _cogl_context_set_current_modelview_entry (CoglContext *context,
                                            CoglMatrixEntry *entry)
 {
-  _cogl_matrix_entry_ref (entry);
+  cogl_matrix_entry_ref (entry);
   if (context->current_modelview_entry)
-    _cogl_matrix_entry_unref (context->current_modelview_entry);
+    cogl_matrix_entry_unref (context->current_modelview_entry);
   context->current_modelview_entry = entry;
 }
 

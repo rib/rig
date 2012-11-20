@@ -108,8 +108,8 @@ _cogl_framebuffer_init (CoglFramebuffer *framebuffer,
   framebuffer->viewport_age_for_scissor_workaround = -1;
   framebuffer->dither_enabled = TRUE;
 
-  framebuffer->modelview_stack = _cogl_matrix_stack_new ();
-  framebuffer->projection_stack = _cogl_matrix_stack_new ();
+  framebuffer->modelview_stack = cogl_matrix_stack_new (ctx);
+  framebuffer->projection_stack = cogl_matrix_stack_new (ctx);
 
   framebuffer->dirty_bitmasks = TRUE;
 
@@ -1630,7 +1630,7 @@ cogl_framebuffer_push_matrix (CoglFramebuffer *framebuffer)
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_push (modelview_stack);
+  cogl_matrix_stack_push (modelview_stack);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1642,7 +1642,7 @@ cogl_framebuffer_pop_matrix (CoglFramebuffer *framebuffer)
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_pop (modelview_stack);
+  cogl_matrix_stack_pop (modelview_stack);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1654,7 +1654,7 @@ cogl_framebuffer_identity_matrix (CoglFramebuffer *framebuffer)
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_load_identity (modelview_stack);
+  cogl_matrix_stack_load_identity (modelview_stack);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1669,7 +1669,7 @@ cogl_framebuffer_scale (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_scale (modelview_stack, x, y, z);
+  cogl_matrix_stack_scale (modelview_stack, x, y, z);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1684,7 +1684,7 @@ cogl_framebuffer_translate (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_translate (modelview_stack, x, y, z);
+  cogl_matrix_stack_translate (modelview_stack, x, y, z);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1700,7 +1700,7 @@ cogl_framebuffer_rotate (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_rotate (modelview_stack, angle, x, y, z);
+  cogl_matrix_stack_rotate (modelview_stack, angle, x, y, z);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1713,7 +1713,7 @@ cogl_framebuffer_rotate_quaternion (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_rotate_quaternion (modelview_stack, quaternion);
+  cogl_matrix_stack_rotate_quaternion (modelview_stack, quaternion);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1726,7 +1726,7 @@ cogl_framebuffer_rotate_euler (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_rotate_euler (modelview_stack, euler);
+  cogl_matrix_stack_rotate_euler (modelview_stack, euler);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1739,7 +1739,7 @@ cogl_framebuffer_transform (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_multiply (modelview_stack, matrix);
+  cogl_matrix_stack_multiply (modelview_stack, matrix);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1784,15 +1784,15 @@ cogl_framebuffer_frustum (CoglFramebuffer *framebuffer,
    * so we need to flush all journaled primitives first... */
   _cogl_framebuffer_flush_journal (framebuffer);
 
-  _cogl_matrix_stack_load_identity (projection_stack);
+  cogl_matrix_stack_load_identity (projection_stack);
 
-  _cogl_matrix_stack_frustum (projection_stack,
-                              left,
-                              right,
-                              bottom,
-                              top,
-                              z_near,
-                              z_far);
+  cogl_matrix_stack_frustum (projection_stack,
+                             left,
+                             right,
+                             bottom,
+                             top,
+                             z_near,
+                             z_far);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1818,7 +1818,7 @@ cogl_framebuffer_orthographic (CoglFramebuffer *framebuffer,
 
   cogl_matrix_init_identity (&ortho);
   cogl_matrix_orthographic (&ortho, x_1, y_1, x_2, y_2, near, far);
-  _cogl_matrix_stack_set (projection_stack, &ortho);
+  cogl_matrix_stack_set (projection_stack, &ortho);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1830,7 +1830,7 @@ _cogl_framebuffer_push_projection (CoglFramebuffer *framebuffer)
 {
   CoglMatrixStack *projection_stack =
     _cogl_framebuffer_get_projection_stack (framebuffer);
-  _cogl_matrix_stack_push (projection_stack);
+  cogl_matrix_stack_push (projection_stack);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1842,7 +1842,7 @@ _cogl_framebuffer_pop_projection (CoglFramebuffer *framebuffer)
 {
   CoglMatrixStack *projection_stack =
     _cogl_framebuffer_get_projection_stack (framebuffer);
-  _cogl_matrix_stack_pop (projection_stack);
+  cogl_matrix_stack_pop (projection_stack);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1855,7 +1855,7 @@ cogl_framebuffer_get_modelview_matrix (CoglFramebuffer *framebuffer,
 {
   CoglMatrixEntry *modelview_entry =
     _cogl_framebuffer_get_modelview_entry (framebuffer);
-  _cogl_matrix_entry_get (modelview_entry, matrix);
+  cogl_matrix_entry_get (modelview_entry, matrix);
   _COGL_MATRIX_DEBUG_PRINT (matrix);
 }
 
@@ -1865,7 +1865,7 @@ cogl_framebuffer_set_modelview_matrix (CoglFramebuffer *framebuffer,
 {
   CoglMatrixStack *modelview_stack =
     _cogl_framebuffer_get_modelview_stack (framebuffer);
-  _cogl_matrix_stack_set (modelview_stack, matrix);
+  cogl_matrix_stack_set (modelview_stack, matrix);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=
@@ -1880,7 +1880,7 @@ cogl_framebuffer_get_projection_matrix (CoglFramebuffer *framebuffer,
 {
   CoglMatrixEntry *projection_entry =
     _cogl_framebuffer_get_projection_entry (framebuffer);
-  _cogl_matrix_entry_get (projection_entry, matrix);
+  cogl_matrix_entry_get (projection_entry, matrix);
   _COGL_MATRIX_DEBUG_PRINT (matrix);
 }
 
@@ -1895,7 +1895,7 @@ cogl_framebuffer_set_projection_matrix (CoglFramebuffer *framebuffer,
    * so we need to flush all journaled primitives first... */
   _cogl_framebuffer_flush_journal (framebuffer);
 
-  _cogl_matrix_stack_set (projection_stack, matrix);
+  cogl_matrix_stack_set (projection_stack, matrix);
 
   if (framebuffer->context->current_draw_buffer == framebuffer)
     framebuffer->context->current_draw_buffer_changes |=

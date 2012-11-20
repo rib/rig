@@ -188,10 +188,10 @@ _cogl_clip_stack_push_rectangle (CoglClipStack *stack,
   entry->x1 = x_2;
   entry->y1 = y_2;
 
-  entry->matrix_entry = _cogl_matrix_entry_ref (modelview_entry);
+  entry->matrix_entry = cogl_matrix_entry_ref (modelview_entry);
 
-  _cogl_matrix_entry_get (modelview_entry, &modelview);
-  _cogl_matrix_entry_get (projection_entry, &projection);
+  cogl_matrix_entry_get (modelview_entry, &modelview);
+  cogl_matrix_entry_get (projection_entry, &projection);
 
   cogl_matrix_multiply (&modelview_projection,
                         &projection,
@@ -282,10 +282,10 @@ _cogl_clip_stack_push_from_path (CoglClipStack *stack,
 
       entry->path = cogl_path_copy (path);
 
-      entry->matrix_entry = _cogl_matrix_entry_ref (modelview_entry);
+      entry->matrix_entry = cogl_matrix_entry_ref (modelview_entry);
 
-      _cogl_matrix_entry_get (modelview_entry, &modelview);
-      _cogl_matrix_entry_get (projection_entry, &projection);
+      cogl_matrix_entry_get (modelview_entry, &modelview);
+      cogl_matrix_entry_get (projection_entry, &projection);
 
       get_transformed_corners (x_1, y_1, x_2, y_2,
                                &modelview,
@@ -321,15 +321,15 @@ _cogl_clip_stack_push_primitive (CoglClipStack *stack,
 
   entry->primitive = cogl_object_ref (primitive);
 
-  entry->matrix_entry = _cogl_matrix_entry_ref (modelview_entry);
+  entry->matrix_entry = cogl_matrix_entry_ref (modelview_entry);
 
   entry->bounds_x1 = bounds_x1;
   entry->bounds_y1 = bounds_y1;
   entry->bounds_x2 = bounds_x2;
   entry->bounds_y2 = bounds_y2;
 
-  _cogl_matrix_entry_get (modelview_entry, &modelview);
-  _cogl_matrix_entry_get (modelview_entry, &projection);
+  cogl_matrix_entry_get (modelview_entry, &modelview);
+  cogl_matrix_entry_get (modelview_entry, &projection);
 
   get_transformed_corners (bounds_x1, bounds_y1, bounds_x2, bounds_y2,
                            &modelview,
@@ -370,7 +370,7 @@ _cogl_clip_stack_unref (CoglClipStack *entry)
         case COGL_CLIP_STACK_RECT:
           {
             CoglClipStackRect *rect = (CoglClipStackRect *) entry;
-            _cogl_matrix_entry_unref (rect->matrix_entry);
+            cogl_matrix_entry_unref (rect->matrix_entry);
             g_slice_free1 (sizeof (CoglClipStackRect), entry);
             break;
           }
@@ -381,7 +381,7 @@ _cogl_clip_stack_unref (CoglClipStack *entry)
         case COGL_CLIP_STACK_PATH:
           {
             CoglClipStackPath *path_entry = (CoglClipStackPath *) entry;
-            _cogl_matrix_entry_unref (path_entry->matrix_entry);
+            cogl_matrix_entry_unref (path_entry->matrix_entry);
             cogl_object_unref (path_entry->path);
             g_slice_free1 (sizeof (CoglClipStackPath), entry);
             break;
@@ -390,7 +390,7 @@ _cogl_clip_stack_unref (CoglClipStack *entry)
           {
             CoglClipStackPrimitive *primitive_entry =
               (CoglClipStackPrimitive *) entry;
-            _cogl_matrix_entry_unref (primitive_entry->matrix_entry);
+            cogl_matrix_entry_unref (primitive_entry->matrix_entry);
             cogl_object_unref (primitive_entry->primitive);
             g_slice_free1 (sizeof (CoglClipStackPrimitive), entry);
             break;

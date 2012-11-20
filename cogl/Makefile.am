@@ -92,6 +92,7 @@ cogl_public_h = \
 	$(srcdir)/cogl-primitive-texture.h	\
 	$(srcdir)/cogl-primitive.h 		\
 	$(srcdir)/cogl-quaternion.h 		\
+	$(srcdir)/cogl-matrix-stack.h		\
 	$(srcdir)/cogl-renderer.h 		\
 	$(srcdir)/cogl-snippet.h		\
 	$(srcdir)/cogl-sub-texture.h            \
@@ -298,7 +299,7 @@ cogl_sources_c = \
 	$(srcdir)/cogl-quaternion.c			\
 	$(srcdir)/cogl-matrix-private.h			\
 	$(srcdir)/cogl-matrix-stack.c			\
-	$(srcdir)/cogl-matrix-stack.h			\
+	$(srcdir)/cogl-matrix-stack-private.h		\
 	$(srcdir)/cogl-depth-state.c			\
 	$(srcdir)/cogl-depth-state-private.h		\
 	$(srcdir)/cogl-node.c				\
