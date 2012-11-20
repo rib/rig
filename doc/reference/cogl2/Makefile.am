@@ -77,7 +77,6 @@ IGNORE_HFILES=\
 	cogl-gles2-types.h			\
 	cogl-gl-header.h			\
 	cogl-glsl-shader-boilerplate.h		\
-	cogl-internal.h 			\
 	cogl-profile.h				\
 	cogl-queue.h				\
 	cogl-rectangle-map.h			\
