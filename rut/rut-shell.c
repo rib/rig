@@ -194,6 +194,7 @@ _rut_shell_fini (RutShell *shell)
 
 struct _RutInputEvent
 {
+  RutInputEventType type;
   void *native;
   RutCamera *camera;
   const CoglMatrix *input_transform;
@@ -667,36 +668,7 @@ rut_input_event_get_camera (RutInputEvent *event)
 RutInputEventType
 rut_input_event_get_type (RutInputEvent *event)
 {
-#ifdef __ANDROID__
-  AInputEvent *android_event = event->native;
-  switch (AInputEvent_getType (android_event))
-    {
-    case AINPUT_EVENT_TYPE_MOTION:
-      return RUT_INPUT_EVENT_TYPE_MOTION;
-    case AINPUT_EVENT_TYPE_KEY:
-      return RUT_INPUT_EVENT_TYPE_KEY;
-    default:
-      g_warn_if_reached (); /* Un-supported input type */
-      return 0;
-    }
-#elif defined (USE_SDL)
-  SDL_Event *sdl_event = event->native;
-  switch (sdl_event->type)
-    {
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-    case SDL_MOUSEMOTION:
-      return RUT_INPUT_EVENT_TYPE_MOTION;
-    case SDL_KEYUP:
-    case SDL_KEYDOWN:
-      return RUT_INPUT_EVENT_TYPE_KEY;
-    default:
-      g_warn_if_reached (); /* Un-supported input type */
-      return 0;
-    }
-#else
-#error "Unknown input system"
-#endif
+  return event->type;
 }
 
 int32_t
@@ -707,19 +679,6 @@ rut_key_event_get_keysym (RutInputEvent *event)
   SDL_Event *sdl_event = event->native;
 
   return _rut_keysym_from_sdl_keysym (sdl_event->key.keysym.sym);
-#else
-#error "Unknown input system"
-#endif
-}
-
-uint32_t
-rut_key_event_get_unicode (RutInputEvent *event)
-{
-#ifdef __ANDROID__
-#elif defined (USE_SDL)
-  SDL_Event *sdl_event = event->native;
-
-  return sdl_event->key.keysym.unicode;
 #else
 #error "Unknown input system"
 #endif
@@ -1054,6 +1013,33 @@ rut_motion_event_unproject (RutInputEvent *event,
   return TRUE;
 }
 
+const char *
+rut_text_event_get_text (RutInputEvent *event)
+{
+#ifdef __ANDROID__
+
+  return "";
+
+#elif defined (USE_SDL)
+
+  SDL_Event *sdl_event = event->native;
+
+#if SDL_MAJOR_VERSION < 2
+
+  /* The UTF-8 representation of the single unicode character will
+   * have been stuffed into the space for the keysym */
+  return (char *) &sdl_event->key.keysym;
+
+#else /* SDL_MAJOR_VERSION */
+
+  return sdl_event->text.text;
+
+#endif /* SDL_MAJOR_VERSION */
+
+#else
+#error "Unknown input system"
+#endif
+}
 
 typedef struct _CameraPickState
 {
@@ -1120,7 +1106,8 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
    * whichever object the pointer is over to implement a kind of
    * sloppy focus as a fallback */
   if (shell->keyboard_focus_object &&
-      rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
+      (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY ||
+       rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_TEXT))
     return shell->keyboard_focus_object;
 
   for (l = shell->input_cameras; l; l = l->next)
@@ -1279,6 +1266,20 @@ android_handle_input (struct android_app* app, AInputEvent *event)
 
   rut_event.native = event;
   rut_event.input_transform = NULL;
+
+  switch (AInputEvent_getType (event))
+    {
+    case AINPUT_EVENT_TYPE_MOTION:
+      rut_event.type = RUT_INPUT_EVENT_TYPE_MOTION;
+      break;
+
+    case AINPUT_EVENT_TYPE_KEY:
+      rut_event.type = RUT_INPUT_EVENT_TYPE_KEY;
+      break;
+
+    default:
+      return 0;
+    }
 
   if (_rut_shell_handle_input (shell, &rut_event) ==
       RUT_INPUT_EVENT_STATUS_HANDLED)
@@ -1625,6 +1626,11 @@ _rut_shell_paint (RutShell *shell)
 static void
 sdl_handle_event (RutShell *shell, SDL_Event *event)
 {
+  RutInputEvent rut_event;
+
+  rut_event.native = event;
+  rut_event.input_transform = NULL;
+
   switch (event->type)
     {
 #if SDL_MAJOR_VERSION < 2
@@ -1649,17 +1655,63 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
     case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
+      rut_event.type = RUT_INPUT_EVENT_TYPE_MOTION;
+      _rut_shell_handle_input (shell, &rut_event);
+      break;
+
     case SDL_KEYUP:
+#if SDL_MAJOR_VERSION >= 2
+    case SDL_KEYDOWN:
+#endif
+      rut_event.type = RUT_INPUT_EVENT_TYPE_KEY;
+      _rut_shell_handle_input (shell, &rut_event);
+      break;
+
+#if SDL_MAJOR_VERSION >= 2
+
+    case SDL_TEXTINPUT:
+      rut_event.type = RUT_INPUT_EVENT_TYPE_TEXT;
+      _rut_shell_handle_input (shell, &rut_event);
+      break;
+
+#else /* SDL_MAJOR_VERSION */
+
     case SDL_KEYDOWN:
       {
-        RutInputEvent rut_event;
+        RutInputEventStatus status;
 
-        rut_event.native = event;
-        rut_event.input_transform = NULL;
+        rut_event.type = RUT_INPUT_EVENT_TYPE_KEY;
+        status = _rut_shell_handle_input (shell, &rut_event);
 
-        _rut_shell_handle_input (shell, &rut_event);
-        break;
+        if (status == RUT_INPUT_EVENT_STATUS_UNHANDLED &&
+            event->key.keysym.unicode > 0)
+          {
+            gunichar unicode;
+            char *utf8_data;
+            int utf8_len;
+
+            /* Also treat the event as a text event. We'll stuff the
+             * UTF-8 representation of the unicode character over the
+             * top of the keysym field. For this to work, the size of
+             * the event union needs to have at least 7 extra bytes
+             * after the key sym data */
+            G_STATIC_ASSERT (sizeof (SDL_Event) -
+                             (offsetof (SDL_Event, key.keysym) >= 7));
+
+            unicode = event->key.keysym.unicode;
+            utf8_data = (char *) &event->key.keysym;
+            utf8_len = g_unichar_to_utf8 (unicode, utf8_data);
+            utf8_data[utf8_len] = '\0';
+
+            rut_event.type = RUT_INPUT_EVENT_TYPE_TEXT;
+            rut_event.input_transform = NULL;
+            _rut_shell_handle_input (shell, &rut_event);
+          }
       }
+      break;
+
+#endif /* SDL_MAJOR_VERSION */
+
     case SDL_QUIT:
       shell->quit = TRUE;
       break;

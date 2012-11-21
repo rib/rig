@@ -3239,6 +3239,9 @@ shell_input_handler (RutInputEvent *event, void *user_data)
         }
 #endif
       break;
+ 
+    case RUT_INPUT_EVENT_TYPE_TEXT:
+      break;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;

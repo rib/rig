@@ -2528,25 +2528,18 @@ rut_text_input_cb (RutInputEvent *event,
 }
 
 static RutInputEventStatus
-rut_text_key_press (RutInputEvent *event,
-                    void *user_data)
+rut_text_handle_key_event (RutText *text,
+                           RutInputEvent *event)
 {
-  RutText *text = user_data;
   //RutBindingPool *pool;
   //CoglBool res;
-  RutModifierState modifiers;
   CoglBool handled = FALSE;
-
-  if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_KEY)
-    return rut_text_input_cb (event, user_data);
 
   if (rut_key_event_get_action (event) != RUT_KEY_EVENT_ACTION_DOWN)
     return RUT_INPUT_EVENT_STATUS_HANDLED;
 
   if (!text->editable)
     return RUT_INPUT_EVENT_STATUS_HANDLED;
-
-  modifiers = rut_key_event_get_modifier_state (event);
 
 #if 0
   /* we need to use the RutText type name to find our own
@@ -2630,45 +2623,86 @@ rut_text_key_press (RutInputEvent *event,
       break;
     }
 
-  if (handled)
-    return RUT_INPUT_EVENT_STATUS_HANDLED;
+  return (handled ?
+          RUT_INPUT_EVENT_STATUS_HANDLED :
+          RUT_INPUT_EVENT_STATUS_UNHANDLED);
+}
 
-  /* Skip keys when control is pressed */
-  if ((modifiers & RUT_MODIFIER_CTRL_ON) == 0)
+static RutInputEventStatus
+rut_text_handle_text_event (RutText *text,
+                            RutInputEvent *event)
+{
+  const char *text_str = rut_text_event_get_text (event);
+  const char *next;
+  char *text_buf = g_alloca (strlen (text_str) + 1);
+  char *p;
+
+  /* Ignore text events when the control key is down */
+  if ((rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON))
+    return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+
+  for (p = text_buf; *text_str; text_str = next)
     {
-      uint32_t key_unichar = rut_key_event_get_unicode (event);
+      gunichar key_unichar = g_utf8_get_char (text_str);
+
+      next = g_utf8_next_char (text_str);
 
       /* return is reported as CR, but we want LF */
-      if (key_unichar == '\r')
-        key_unichar = '\n';
-
-      if (key_unichar == '\n' ||
-          (g_unichar_validate (key_unichar) &&
-           !g_unichar_iscntrl (key_unichar)))
+      if (key_unichar == '\r' || key_unichar == '\n')
+        *(p++) = '\n';
+      else if (g_unichar_validate (key_unichar) &&
+               !g_unichar_iscntrl (key_unichar))
         {
-          /* truncate the eventual selection so that the
-           * Unicode character can replace it
-           */
-          rut_text_delete_selection (text);
-          rut_text_insert_unichar (text, key_unichar);
-
-          if (text->show_password_hint)
-            {
-              if (text->password_hint_id != 0)
-                g_source_remove (text->password_hint_id);
-
-              text->password_hint_visible = TRUE;
-              text->password_hint_id =
-                g_timeout_add (text->password_hint_timeout,
-                               rut_text_remove_password_hint,
-                               text);
-            }
-
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+          memcpy (p, text_str, next - text_str);
+          p += next - text_str;
         }
     }
 
+  if (p > text_buf)
+    {
+      *p = '\0';
+
+      /* truncate the eventual selection so that the
+       * Unicode character can replace it
+       */
+      rut_text_delete_selection (text);
+      rut_text_insert_text (text, text_buf, text->position);
+
+      if (text->show_password_hint)
+        {
+          if (text->password_hint_id != 0)
+            g_source_remove (text->password_hint_id);
+
+          text->password_hint_visible = TRUE;
+          text->password_hint_id =
+            g_timeout_add (text->password_hint_timeout,
+                           rut_text_remove_password_hint,
+                           text);
+        }
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
   return RUT_INPUT_EVENT_STATUS_HANDLED;
+}
+
+static RutInputEventStatus
+rut_text_key_press (RutInputEvent *event,
+                    void *user_data)
+{
+  RutText *text = user_data;
+
+  switch (rut_input_event_get_type (event))
+    {
+    case RUT_INPUT_EVENT_TYPE_KEY:
+      return rut_text_handle_key_event (text, event);
+
+    case RUT_INPUT_EVENT_TYPE_TEXT:
+      return rut_text_handle_text_event (text, event);
+
+    default:
+      return rut_text_input_cb (event, user_data);
+    }
 }
 
 void
