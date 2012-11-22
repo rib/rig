@@ -73,6 +73,7 @@ main (int argc, char **argv)
   ADD_TEST (test_wrap_modes, 0, 0);
   UNPORTED_TEST (test_texture_pixmap_x11);
   ADD_TEST (test_texture_get_set_data, 0, TEST_REQUIREMENT_NPOT);
+  ADD_TEST (test_texture_mipmap_get_set, 0, 0);
   ADD_TEST (test_atlas_migration, 0, 0);
   ADD_TEST (test_read_texture_formats, 0, 0);
   ADD_TEST (test_write_texture_formats, 0, 0);

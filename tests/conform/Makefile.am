@@ -59,6 +59,7 @@ test_sources = \
 	test-npot-texture.c \
 	test-alpha-textures.c \
 	test-texture-get-set-data.c \
+	test-texture-mipmap-get-set.c \
 	$(NULL)
 
 test_conformance_SOURCES = $(common_sources) $(test_sources)
