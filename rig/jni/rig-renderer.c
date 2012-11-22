@@ -38,6 +38,31 @@ typedef struct _RigJournalEntry
   CoglMatrix matrix;
 } RigJournalEntry;
 
+/* In the shaders, any alpha value greater than or equal to this is
+ * considered to be fully opaque. We can't just compare for equality
+ * against 1.0 because at least on a Mac Mini there seems to be some
+ * fuzziness in the interpolation of the alpha value across the
+ * primitive so that it is sometimes slightly less than 1.0 even
+ * though all of the vertices in the triangle are 1.0. This means some
+ * of the pixels of the geometry would be painted with the blended
+ * pipeline. The blended pipeline doesn't write to the depth value so
+ * depending on the order of the triangles within the model it might
+ * paint the back or the front of the model which causes weird sparkly
+ * artifacts.
+ *
+ * I think it doesn't really make sense to paint models that have any
+ * depth using the blended pipeline. In that case you would also need
+ * to sort individual triangles of the model according to depth.
+ * Perhaps the real solution to this problem is to avoid using the
+ * blended pipeline at all for 3D models.
+ *
+ * However even for flat quad shapes it is probably good to have this
+ * threshold because if a pixel is close enough to opaque that the
+ * appearance will be the same then it is chaper to render it without
+ * blending.
+ */
+#define OPAQUE_THRESHOLD 0.9999
+
 static void
 rig_journal_log (GArray *journal,
                  RigPaintContext *paint_ctx,
@@ -189,7 +214,8 @@ rig_renderer_init (RigData *data)
 
                       /* post */
                       "if (cogl_color_out.a <= 0.0 ||\n"
-                      "    cogl_color_out.a == 1.0)\n"
+                      "    cogl_color_out.a >= "
+                      G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
   data->unblended_discard_snippet =
@@ -198,7 +224,8 @@ rig_renderer_init (RigData *data)
                       NULL,
 
                       /* post */
-                      "if (cogl_color_out.a != 1.0)\n"
+                      "if (cogl_color_out.a < "
+                      G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
   data->premultiply_snippet =
