@@ -26,11 +26,9 @@
 
 #define __COGL_H_INSIDE__
 
-#include <glib.h>
-
 #include <cogl/cogl-context.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-texture-pixmap-x11
@@ -183,6 +181,6 @@ cogl_texture_pixmap_x11_set_damage_object (CoglTexturePixmapX11 *texture,
 CoglBool
 cogl_is_texture_pixmap_x11 (void *object);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_TEXTURE_PIXMAP_X11_H */

@@ -43,7 +43,7 @@ typedef struct _CoglContext CoglContext;
 #include <android/native_window.h>
 #endif
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-context
@@ -310,7 +310,7 @@ cogl_foreach_feature (CoglContext *context,
                       CoglFeatureCallback callback,
                       void *user_data);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_CONTEXT_H__ */
 

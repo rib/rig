@@ -30,8 +30,8 @@
 
 #include <cogl/cogl-types.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_CLIP_STATE_H */

@@ -27,11 +27,14 @@
 #ifndef __COGL_MATRIX_H
 #define __COGL_MATRIX_H
 
-#include <glib.h>
+#ifdef COGL_HAS_GTYPE_SUPPORT
+#include <glib-object.h>
+#endif /* COGL_HAS_GTYPE_SUPPORT */
+
 #include "cogl-types.h"
 #include "cogl-quaternion.h"
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-matrix
@@ -770,7 +773,7 @@ cogl_gtype_matrix_get_type (void);
 
 #endif /* COGL_HAS_GTYPE_SUPPORT */
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_MATRIX_H */
 

@@ -31,7 +31,7 @@
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-context.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-paths
@@ -450,7 +450,7 @@ cogl_path_set_fill_rule (CoglPath *path, CoglPathFillRule fill_rule);
 CoglPathFillRule
 cogl_path_get_fill_rule (CoglPath *path);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_PATH_H__ */
 

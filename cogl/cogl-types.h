@@ -29,11 +29,20 @@
 #define __COGL_TYPES_H__
 
 #include <stdint.h>
-#include <glib-object.h>
+#include <stddef.h>
 
 #include <cogl/cogl-defines.h>
 
-G_BEGIN_DECLS
+/* Guard C code in headers, while including them from C++ */
+#ifdef  __cplusplus
+#define COGL_BEGIN_DECLS  extern "C" {
+#define COGL_END_DECLS    }
+#else
+#define COGL_BEGIN_DECLS
+#define COGL_END_DECLS
+#endif
+
+COGL_BEGIN_DECLS
 
 /**
  * CoglBool:
@@ -72,6 +81,19 @@ typedef int CoglBool;
 #ifndef FALSE
 #define FALSE 0
 #endif
+
+#if __GNUC__ >= 4
+#define COGL_GNUC_NULL_TERMINATED __attribute__((__sentinel__))
+#else
+#define COGL_GNUC_NULL_TERMINATED
+#endif
+
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1)
+#define COGL_GNUC_DEPRECATED                       \
+  __attribute__((__deprecated__))
+#else
+#define COGL_GNUC_DEPRECATED
+#endif /* __GNUC__ */
 
 /* Some structures are meant to be opaque but they have public
    definitions because we want the size to be public so they can be
@@ -687,6 +709,6 @@ typedef enum { /*< prefix=COGL_READ_PIXELS >*/
   COGL_READ_PIXELS_COLOR_BUFFER = 1L << 0
 } CoglReadPixelsFlags;
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_TYPES_H__ */

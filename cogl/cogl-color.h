@@ -40,7 +40,7 @@
 
 #include <cogl/cogl-types.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * cogl_color_init_from_4ub:
@@ -485,6 +485,6 @@ cogl_color_copy (const CoglColor *color);
 void
 cogl_color_free (CoglColor *color);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_COLOR_H__ */

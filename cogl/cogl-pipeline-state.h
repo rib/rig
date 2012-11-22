@@ -31,9 +31,8 @@
 #include <cogl/cogl-pipeline.h>
 #include <cogl/cogl-color.h>
 #include <cogl/cogl-depth-state.h>
-#include <glib.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * cogl_pipeline_set_color:
@@ -662,6 +661,6 @@ void
 cogl_pipeline_add_snippet (CoglPipeline *pipeline,
                            CoglSnippet *snippet);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_PIPELINE_STATE_H__ */

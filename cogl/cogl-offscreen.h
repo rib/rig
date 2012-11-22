@@ -31,7 +31,7 @@
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-texture.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-offscreen
@@ -82,6 +82,6 @@ cogl_offscreen_new_to_texture (CoglTexture *texture);
 CoglBool
 cogl_is_offscreen (void *object);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_OFFSCREEN_H__ */

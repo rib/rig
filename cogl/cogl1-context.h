@@ -31,13 +31,11 @@
 #ifndef __COGL_1_CONTEXT_H__
 #define __COGL_1_CONTEXT_H__
 
-#include <glib.h>
-
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-texture.h>
 #include <cogl/cogl-framebuffer.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 /**
  * cogl_set_framebuffer:
@@ -154,7 +152,7 @@ cogl_pop_framebuffer (void);
  * Deprecated: 1.2: The draw buffer API was replaced with a framebuffer API
  */
 void
-cogl_push_draw_buffer (void) G_GNUC_DEPRECATED;
+cogl_push_draw_buffer (void) COGL_GNUC_DEPRECATED;
 
 /**
  * cogl_pop_draw_buffer:
@@ -164,7 +162,7 @@ cogl_push_draw_buffer (void) G_GNUC_DEPRECATED;
  * Deprecated: 1.2: The draw buffer API was replaced with a framebuffer API
  */
 void
-cogl_pop_draw_buffer (void) G_GNUC_DEPRECATED;
+cogl_pop_draw_buffer (void) COGL_GNUC_DEPRECATED;
 
 #endif /* COGL_DISABLE_DEPRECATED */
 
@@ -197,6 +195,6 @@ cogl_pop_draw_buffer (void) G_GNUC_DEPRECATED;
 void
 cogl_flush (void);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_1_CONTEXT_H__ */

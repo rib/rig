@@ -32,7 +32,7 @@
 
 #include "cogl-pango.h"
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 #define COGL_PANGO_TYPE_RENDERER                (_cogl_pango_renderer_get_type ())
 #define COGL_PANGO_RENDERER(obj)		(G_TYPE_CHECK_INSTANCE_CAST ((obj), COGL_PANGO_TYPE_RENDERER, CoglPangoRenderer))
@@ -68,6 +68,6 @@ _cogl_pango_font_map_get_cogl_context (CoglPangoFontMap *fm);
 PangoRenderer *
 _cogl_pango_font_map_get_renderer (CoglPangoFontMap *fm);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_PANGO_PRIVATE_H__ */

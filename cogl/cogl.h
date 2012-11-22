@@ -25,8 +25,6 @@
 #ifndef __COGL_H__
 #define __COGL_H__
 
-#include <glib.h>
-
 #define __COGL_H_INSIDE__
 
 /*
