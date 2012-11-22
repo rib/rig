@@ -47,8 +47,7 @@ test_paint (TestState *state)
   tex_2d = cogl_texture_2d_new_with_size (test_ctx,
                                           state->fb_width,
                                           state->fb_height,
-                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
-                                          NULL);
+                                          COGL_PIXEL_FORMAT_RGBA_8888_PRE);
   tex = COGL_TEXTURE (tex_2d);
 
   offscreen = COGL_FRAMEBUFFER (cogl_offscreen_new_to_texture (tex));
@@ -128,8 +127,7 @@ test_flush (TestState *state)
 
       tex_2d = cogl_texture_2d_new_with_size (test_ctx,
                                               16, 16, /* width/height */
-                                              COGL_PIXEL_FORMAT_RGBA_8888_PRE,
-                                              NULL);
+                                              COGL_PIXEL_FORMAT_RGBA_8888_PRE);
       tex = COGL_TEXTURE (tex_2d);
 
       offscreen = COGL_FRAMEBUFFER (cogl_offscreen_new_to_texture (tex));

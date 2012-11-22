@@ -50,8 +50,7 @@ cogl_texture_new_with_size (CoglContext *ctx,
                             int width,
 			    int height,
                             CoglTextureFlags flags,
-			    CoglPixelFormat internal_format,
-                            CoglError **error)
+			    CoglPixelFormat internal_format)
 {
   CoglTexture *tex;
   CoglError *skip_error = NULL;
@@ -63,8 +62,18 @@ cogl_texture_new_with_size (CoglContext *ctx,
       /* First try creating a fast-path non-sliced texture */
       tex = COGL_TEXTURE (cogl_texture_2d_new_with_size (ctx,
                                                          width, height,
-                                                         internal_format,
-                                                         &skip_error));
+                                                         internal_format));
+
+      /* TODO: instead of allocating storage here it would be better
+       * if we had some api that let us just check that the size is
+       * supported by the hardware so storage could be allocated
+       * lazily when uploading data. */
+      if (!cogl_texture_allocate (tex, &skip_error))
+        {
+          cogl_error_free (skip_error);
+          cogl_object_unref (tex);
+          tex = NULL;
+        }
     }
   else
     tex = NULL;
@@ -84,8 +93,7 @@ cogl_texture_new_with_size (CoglContext *ctx,
                                                                 width,
                                                                 height,
                                                                 max_waste,
-                                                                internal_format,
-                                                                error));
+                                                                internal_format));
     }
 
   return tex;

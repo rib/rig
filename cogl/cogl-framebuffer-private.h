@@ -297,7 +297,7 @@ _cogl_framebuffer_flush_state (CoglFramebuffer *draw_buffer,
 CoglOffscreen *
 _cogl_offscreen_new_to_texture_full (CoglTexture *texture,
                                      CoglOffscreenFlags create_flags,
-                                     unsigned int level);
+                                     int level);
 
 /*
  * _cogl_push_framebuffers:

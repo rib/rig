@@ -82,12 +82,11 @@ cogl_is_texture_rectangle (void *object);
  * @width: The texture width to allocate
  * @height: The texture height to allocate
  * @internal_format: The desired internal texture format
- * @error: An optional CoglError pointer for reporting exceptions
  *
- * Allocates a new #CoglTextureRectangle texture with a given @width, @height
- * and @internal_format. This texture is a low-level texture that
- * the GPU can sample from directly unlike high-level textures such
- * as #CoglTexture2DSliced and #CoglAtlasTexture.
+ * Creates a new #CoglTextureRectangle texture with a given @width,
+ * @height and @internal_format. This texture is a low-level texture
+ * that the GPU can sample from directly unlike high-level textures
+ * such as #CoglTexture2DSliced and #CoglAtlasTexture.
  *
  * <note>Unlike for #CoglTexture2D textures, coordinates for
  * #CoglTextureRectangle textures should not be normalized. So instead
@@ -102,9 +101,15 @@ cogl_is_texture_rectangle (void *object);
  * first check for the %COGL_FEATURE_ID_TEXTURE_RECTANGLE feature
  * using cogl_has_feature().</note>
  *
- * Returns: A pointer to a newly allocated #CoglTextureRectangle texture
- *          or if the size was too large or there wasn't enough memory
- *          %NULL is returned and @error set.
+ * The storage for the texture is not allocated before this function
+ * returns. You can call cogl_texture_allocate() to explicitly
+ * allocate the underlying storage or preferably let Cogl
+ * automatically allocate storage lazily when it may know more about
+ * how the texture is going to be used and can optimize how it is
+ * allocated.
+ *
+ * Returns: A pointer to a new #CoglTextureRectangle object with no
+ *          storage allocated yet.
  *
  * Since: 1.10
  * Stability: unstable
@@ -113,8 +118,7 @@ CoglTextureRectangle *
 cogl_texture_rectangle_new_with_size (CoglContext *ctx,
                                       int width,
                                       int height,
-                                      CoglPixelFormat internal_format,
-                                      CoglError **error);
+                                      CoglPixelFormat internal_format);
 
 /**
  * cogl_texture_rectangle_new_from_bitmap:

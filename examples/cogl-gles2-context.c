@@ -103,8 +103,7 @@ main (int argc, char **argv)
                                   OFFSCREEN_WIDTH,
                                   OFFSCREEN_HEIGHT,
                                   COGL_TEXTURE_NO_SLICING,
-                                  COGL_PIXEL_FORMAT_ANY,
-                                  NULL);
+                                  COGL_PIXEL_FORMAT_ANY);
     data.offscreen = cogl_offscreen_new_to_texture (data.offscreen_texture);
 
     data.gles2_ctx = cogl_gles2_context_new (data.ctx, &error);

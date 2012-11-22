@@ -301,6 +301,9 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
       tex = cogl_texture_2d_new_from_bitmap (clear_bmp,
                                              atlas->texture_format,
                                              &ignore_error);
+      if (!tex)
+        cogl_error_free (ignore_error);
+
       cogl_object_unref (clear_bmp);
 
       g_free (clear_data);
@@ -309,12 +312,14 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
     {
       tex = cogl_texture_2d_new_with_size (ctx,
                                            width, height,
-                                           atlas->texture_format,
-                                           &ignore_error);
+                                           atlas->texture_format);
+      if (!cogl_texture_allocate (COGL_TEXTURE (tex), &ignore_error))
+        {
+          cogl_error_free (ignore_error);
+          cogl_object_unref (tex);
+          tex = NULL;
+        }
     }
-
-  if (!tex)
-    cogl_error_free (ignore_error);
 
   return tex;
 }
@@ -552,11 +557,11 @@ _cogl_atlas_copy_rectangle (CoglAtlas *atlas,
   _COGL_GET_CONTEXT (ctx, NULL);
 
   /* Create a new texture at the right size */
-  tex = cogl_texture_new_with_size (ctx, width, height, flags, format,
-                                    &ignore_error);
-  if (!tex)
+  tex = cogl_texture_new_with_size (ctx, width, height, flags, format);
+  if (!cogl_texture_allocate (tex, &ignore_error))
     {
       cogl_error_free (ignore_error);
+      cogl_object_unref (tex);
       return NULL;
     }
 

@@ -361,7 +361,16 @@ cogl_texture_pixmap_x11_new (CoglContext *ctxt,
   if (!tex_pixmap->use_winsys_texture)
     tex_pixmap->winsys = NULL;
 
+  _cogl_texture_set_allocated (tex, TRUE);
+
   return _cogl_texture_pixmap_x11_object_new (tex_pixmap);
+}
+
+static CoglBool
+_cogl_texture_pixmap_x11_allocate (CoglTexture *tex,
+                                   CoglError **error)
+{
+  return TRUE;
 }
 
 /* Tries to allocate enough shared mem to handle a full size
@@ -524,8 +533,7 @@ _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
                                                     tex->width,
                                                     tex->height,
                                                     COGL_TEXTURE_NONE,
-                                                    texture_format,
-                                                    NULL);
+                                                    texture_format);
     }
 
   if (tex_pixmap->image == NULL)
@@ -1004,6 +1012,7 @@ static const CoglTextureVtable
 cogl_texture_pixmap_x11_vtable =
   {
     FALSE, /* not primitive */
+    _cogl_texture_pixmap_x11_allocate,
     _cogl_texture_pixmap_x11_set_region,
     _cogl_texture_pixmap_x11_get_data,
     _cogl_texture_pixmap_x11_foreach_sub_texture_in_region,

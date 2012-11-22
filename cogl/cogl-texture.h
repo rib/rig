@@ -109,11 +109,17 @@ uint32_t cogl_texture_error_domain (void);
  * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
  * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
  *    texture.
- * @error: A #CoglError to catch exceptional errors or %NULL
  *
  * Creates a new #CoglTexture with the specified dimensions and pixel format.
  *
- * Return value: A newly created #CoglTexture or %NULL on failure
+ * The storage for the texture is not necesarily created before this
+ * function returns. The storage can be explicitly allocated using
+ * cogl_texture_allocate() or preferably you can let Cogl
+ * automatically allocate the storage lazily when uploading data when
+ * Cogl may know more about how the texture will be used and can
+ * optimize how it is allocated.
+ *
+ * Return value: A newly created #CoglTexture
  *
  * Since: 0.8
  */
@@ -122,8 +128,7 @@ cogl_texture_new_with_size (CoglContext *ctx,
                             int width,
                             int height,
                             CoglTextureFlags flags,
-                            CoglPixelFormat internal_format,
-                            CoglError **error);
+                            CoglPixelFormat internal_format);
 
 /**
  * cogl_texture_new_from_file:
@@ -524,6 +529,28 @@ cogl_texture_set_region_from_bitmap (CoglTexture *texture,
                                      int dst_y,
                                      int level,
                                      CoglError **error);
+
+/**
+ * cogl_texture_allocate:
+ * @texture: A #CoglTexture
+ * @error: A #CoglError to return exceptional errors or %NULL
+ *
+ * Explicitly allocates the storage for the given @texture which
+ * allows you to be sure that there is enough memory for the
+ * texture and if not then the error can be handled gracefully.
+ *
+ * <note>Normally applications don't need to use this api directly
+ * since the texture will be implicitly allocated when data is set on
+ * the texture, or if the texture is attached to a #CoglOffscreen
+ * framebuffer and rendered too.</note>
+ *
+ * Return value: %TRUE if the texture was successfully allocated,
+ *               otherwise %FALSE and @error will be updated if it
+ *               wasn't %NULL.
+ */
+CoglBool
+cogl_texture_allocate (CoglTexture *texture,
+                       CoglError **error);
 
 COGL_END_DECLS
 
