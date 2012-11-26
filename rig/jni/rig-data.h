@@ -82,12 +82,10 @@ struct _RigData
   //float height;
   //RutProperty height_property;
 
-  RutSplitView *splits[5];
+  RutSplitView *splits[4];
 
   RutBevel *main_area_bevel;
-  RutStack *top_bar_stack;
   RutStack *icon_bar_stack;
-  //RutTransform *top_bar_transform;
   RutStack *left_bar_stack;
   //RutTransform *left_bar_transform;
   //RutTransform *right_bar_transform;
@@ -116,7 +114,6 @@ struct _RigData
   float screen_area_width;
   float screen_area_height;
 
-  RutRectangle *top_bar_rect;
   RutRectangle *icon_bar_rect;
   RutRectangle *left_bar_rect;
   RutRectangle *right_bar_rect;
