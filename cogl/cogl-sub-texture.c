@@ -274,14 +274,6 @@ cogl_sub_texture_get_parent (CoglSubTexture *sub_texture)
   return sub_texture->next_texture;
 }
 
-static int
-_cogl_sub_texture_get_max_waste (CoglTexture *tex)
-{
-  CoglSubTexture *sub_tex = COGL_SUB_TEXTURE (tex);
-
-  return cogl_texture_get_max_waste (sub_tex->full_texture);
-}
-
 static CoglBool
 _cogl_sub_texture_is_sliced (CoglTexture *tex)
 {
@@ -446,7 +438,6 @@ cogl_sub_texture_vtable =
     _cogl_sub_texture_set_region,
     NULL, /* get_data */
     _cogl_sub_texture_foreach_sub_texture_in_region,
-    _cogl_sub_texture_get_max_waste,
     _cogl_sub_texture_is_sliced,
     _cogl_sub_texture_can_hardware_repeat,
     _cogl_sub_texture_transform_coords_to_gl,

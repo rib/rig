@@ -364,12 +364,6 @@ _cogl_texture_2d_copy_from_framebuffer (CoglTexture2D *tex_2d,
   tex_2d->mipmaps_dirty = TRUE;
 }
 
-static int
-_cogl_texture_2d_get_max_waste (CoglTexture *tex)
-{
-  return -1;
-}
-
 static CoglBool
 _cogl_texture_2d_is_sliced (CoglTexture *tex)
 {
@@ -553,7 +547,6 @@ cogl_texture_2d_vtable =
     _cogl_texture_2d_set_region,
     _cogl_texture_2d_get_data,
     NULL, /* foreach_sub_texture_in_region */
-    _cogl_texture_2d_get_max_waste,
     _cogl_texture_2d_is_sliced,
     _cogl_texture_2d_can_hardware_repeat,
     _cogl_texture_2d_transform_coords_to_gl,

@@ -284,15 +284,6 @@ _cogl_atlas_texture_free (CoglAtlasTexture *atlas_tex)
   _cogl_texture_free (COGL_TEXTURE (atlas_tex));
 }
 
-static int
-_cogl_atlas_texture_get_max_waste (CoglTexture *tex)
-{
-  CoglAtlasTexture *atlas_tex = COGL_ATLAS_TEXTURE (tex);
-
-  /* Forward on to the sub texture */
-  return cogl_texture_get_max_waste (atlas_tex->sub_texture);
-}
-
 static CoglBool
 _cogl_atlas_texture_is_sliced (CoglTexture *tex)
 {
@@ -897,7 +888,6 @@ cogl_atlas_texture_vtable =
     _cogl_atlas_texture_set_region,
     NULL, /* get_data */
     _cogl_atlas_texture_foreach_sub_texture_in_region,
-    _cogl_atlas_texture_get_max_waste,
     _cogl_atlas_texture_is_sliced,
     _cogl_atlas_texture_can_hardware_repeat,
     _cogl_atlas_texture_transform_coords_to_gl,

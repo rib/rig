@@ -468,12 +468,6 @@ cogl_texture_3d_new_from_data (CoglContext *context,
   return ret;
 }
 
-static int
-_cogl_texture_3d_get_max_waste (CoglTexture *tex)
-{
-  return -1;
-}
-
 static CoglBool
 _cogl_texture_3d_is_sliced (CoglTexture *tex)
 {
@@ -668,7 +662,6 @@ cogl_texture_3d_vtable =
     _cogl_texture_3d_set_region,
     _cogl_texture_3d_get_data,
     NULL, /* foreach_sub_texture_in_region */
-    _cogl_texture_3d_get_max_waste,
     _cogl_texture_3d_is_sliced,
     _cogl_texture_3d_can_hardware_repeat,
     _cogl_texture_3d_transform_coords_to_gl,

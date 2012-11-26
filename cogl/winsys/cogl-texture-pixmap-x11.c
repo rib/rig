@@ -824,15 +824,6 @@ _cogl_texture_pixmap_x11_foreach_sub_texture_in_region
                                          user_data);
 }
 
-static int
-_cogl_texture_pixmap_x11_get_max_waste (CoglTexture *tex)
-{
-  CoglTexturePixmapX11 *tex_pixmap = COGL_TEXTURE_PIXMAP_X11 (tex);
-  CoglTexture *child_tex = _cogl_texture_pixmap_x11_get_texture (tex_pixmap);
-
-  return cogl_texture_get_max_waste (child_tex);
-}
-
 static CoglBool
 _cogl_texture_pixmap_x11_is_sliced (CoglTexture *tex)
 {
@@ -1016,7 +1007,6 @@ cogl_texture_pixmap_x11_vtable =
     _cogl_texture_pixmap_x11_set_region,
     _cogl_texture_pixmap_x11_get_data,
     _cogl_texture_pixmap_x11_foreach_sub_texture_in_region,
-    _cogl_texture_pixmap_x11_get_max_waste,
     _cogl_texture_pixmap_x11_is_sliced,
     _cogl_texture_pixmap_x11_can_hardware_repeat,
     _cogl_texture_pixmap_x11_transform_coords_to_gl,

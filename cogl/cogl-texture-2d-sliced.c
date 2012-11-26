@@ -1157,14 +1157,6 @@ _cogl_texture_2d_sliced_is_foreign (CoglTexture *tex)
   return _cogl_texture_is_foreign (COGL_TEXTURE (slice_tex));
 }
 
-static int
-_cogl_texture_2d_sliced_get_max_waste (CoglTexture *tex)
-{
-  CoglTexture2DSliced *tex_2ds = COGL_TEXTURE_2D_SLICED (tex);
-
-  return tex_2ds->max_waste;
-}
-
 static CoglBool
 _cogl_texture_2d_sliced_is_sliced (CoglTexture *tex)
 {
@@ -1421,7 +1413,6 @@ cogl_texture_2d_sliced_vtable =
     _cogl_texture_2d_sliced_set_region,
     NULL, /* get_data */
     _cogl_texture_2d_sliced_foreach_sub_texture_in_region,
-    _cogl_texture_2d_sliced_get_max_waste,
     _cogl_texture_2d_sliced_is_sliced,
     _cogl_texture_2d_sliced_can_hardware_repeat,
     _cogl_texture_2d_sliced_transform_coords_to_gl,

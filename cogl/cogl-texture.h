@@ -299,18 +299,6 @@ CoglPixelFormat
 cogl_texture_get_format (CoglTexture *texture);
 
 /**
- * cogl_texture_get_max_waste:
- * @texture: a #CoglTexture pointer.
- *
- * Queries the maximum wasted (unused) pixels in one dimension of a GPU side
- * texture.
- *
- * Return value: the maximum waste
- */
-int
-cogl_texture_get_max_waste (CoglTexture *texture);
-
-/**
  * cogl_texture_is_sliced:
  * @texture: a #CoglTexture pointer.
  *

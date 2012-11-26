@@ -97,8 +97,6 @@ struct _CoglTextureVtable
                                           CoglMetaTextureCallback callback,
                                           void *user_data);
 
-  int (* get_max_waste) (CoglTexture *tex);
-
   CoglBool (* is_sliced) (CoglTexture *tex);
 
   CoglBool (* can_hardware_repeat) (CoglTexture *tex);

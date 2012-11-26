@@ -453,12 +453,6 @@ cogl_texture_rectangle_new_from_foreign (CoglContext *ctx,
   return tex_rect;
 }
 
-static int
-_cogl_texture_rectangle_get_max_waste (CoglTexture *tex)
-{
-  return -1;
-}
-
 static CoglBool
 _cogl_texture_rectangle_is_sliced (CoglTexture *tex)
 {
@@ -670,7 +664,6 @@ cogl_texture_rectangle_vtable =
     _cogl_texture_rectangle_set_region,
     _cogl_texture_rectangle_get_data,
     NULL, /* foreach_sub_texture_in_region */
-    _cogl_texture_rectangle_get_max_waste,
     _cogl_texture_rectangle_is_sliced,
     _cogl_texture_rectangle_can_hardware_repeat,
     _cogl_texture_rectangle_transform_coords_to_gl,

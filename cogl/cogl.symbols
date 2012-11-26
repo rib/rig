@@ -550,7 +550,6 @@ cogl_texture_get_data
 cogl_texture_get_format
 cogl_texture_get_gl_texture
 cogl_texture_get_height
-cogl_texture_get_max_waste
 cogl_texture_get_width
 cogl_texture_is_sliced
 cogl_texture_new_from_bitmap

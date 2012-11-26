@@ -272,12 +272,6 @@ cogl_texture_get_format (CoglTexture *texture)
 }
 
 int
-cogl_texture_get_max_waste (CoglTexture *texture)
-{
-  return texture->vtable->get_max_waste (texture);
-}
-
-int
 _cogl_texture_get_n_levels (CoglTexture *texture)
 {
   int width = cogl_texture_get_width (texture);
