@@ -6,12 +6,13 @@ INCLUDES = \
 	-I$(top_builddir)/rut
 
 AM_CFLAGS = \
-	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CFLAGS)
 
 AM_CPPFLAGS = \
 	-DG_DISABLE_SINGLE_INCLUDES \
-	-DCOGL_DISABLE_DEPRECATED
+	-DCOGL_DISABLE_DEPRECATED \
+	$(RIG_DEP_CFLAGS) \
+	$(RIG_EXTRA_CPPFLAGS)
 
 common_ldadd = \
 	$(RIG_DEP_LIBS) \
@@ -34,12 +35,18 @@ rig_SOURCES = \
 	jni/rig-types.h \
 	jni/rig-renderer.h \
 	jni/rig-renderer.c \
-	jni/rig-data.h
+	jni/rig-data.h \
+	jni/rig-osx.h
 
 if EDITOR_ENABLED
 rig_SOURCES += \
 	jni/rig-undo-journal.h \
 	jni/rig-undo-journal.c
+endif
+
+if HAVE_OSX
+rig_SOURCES += \
+	jni/rig-osx.m
 endif
 
 rig_LDADD = $(common_ldadd)

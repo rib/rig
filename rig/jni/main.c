@@ -18,6 +18,7 @@
 #include "rig-load-save.h"
 #include "rig-undo-journal.h"
 #include "rig-renderer.h"
+#include "rig-osx.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -1847,7 +1848,20 @@ allocate (RigData *data)
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    rut_split_view_set_size (data->splits[0], data->width, data->height);
+    {
+      rut_split_view_set_size (data->splits[0], data->width, data->height);
+
+      if (data->resize_handle_transform)
+        {
+          RutTransform *transform = data->resize_handle_transform;
+
+          rut_transform_init_identity (transform);
+          rut_transform_translate (transform,
+                                   data->width - 18.0f,
+                                   data->height - 18.0f,
+                                   0.0f);
+        }
+    }
 #endif
 
   allocate_main_area (data);
@@ -2418,6 +2432,46 @@ static RutPLYAttribute ply_attributes[] =
   }
 };
 
+#ifdef RIG_EDITOR_ENABLED
+
+static void
+init_resize_handle (RigData *data)
+{
+#ifdef __APPLE__
+  CoglTexture *resize_handle_texture;
+  GError *error = NULL;
+
+  resize_handle_texture =
+    rut_load_texture_from_data_file (data->ctx,
+                                     "resize-handle.png",
+                                     &error);
+
+  if (resize_handle_texture == NULL)
+    {
+      g_warning ("Failed to load resize-handle.png: %s", error->message);
+      g_error_free (error);
+    }
+  else
+    {
+      RutImage *resize_handle;
+
+      resize_handle = rut_image_new (data->ctx, resize_handle_texture);
+
+      data->resize_handle_transform =
+        rut_transform_new (data->ctx, resize_handle, NULL);
+
+      rut_graphable_add_child (data->root, data->resize_handle_transform);
+
+      rut_refable_unref (data->resize_handle_transform);
+      rut_refable_unref (resize_handle);
+      cogl_object_unref (resize_handle_texture);
+    }
+
+#endif /* __APPLE__ */
+}
+
+#endif /* RIG_EDITOR_ENABLED */
+
 static void
 init (RutShell *shell, void *user_data)
 {
@@ -2495,6 +2549,10 @@ init (RutShell *shell, void *user_data)
 #endif
 
   cogl_onscreen_show (data->onscreen);
+
+#ifdef __APPLE__
+  rig_osx_init_onscreen (data->onscreen);
+#endif
 
   fb = COGL_FRAMEBUFFER (data->onscreen);
   data->width = cogl_framebuffer_get_width (fb);
@@ -2938,6 +2996,8 @@ init (RutShell *shell, void *user_data)
       rut_graphable_add_child (data->root, data->splits[0]);
 
       data->transparency_grid = load_transparency_grid (data->ctx);
+
+      init_resize_handle (data);
     }
 #endif
 

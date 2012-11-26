@@ -23,5 +23,6 @@ dist_assets_DATA = \
 	fonts.png \
 	circle.png \
 	diamond.png \
-	color-picker-dot.png
+	color-picker-dot.png \
+	resize-handle.png
 

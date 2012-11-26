@@ -197,6 +197,8 @@ struct _RigData
   /* The transparency grid widget that is displayed behind the assets list */
   RutImage *transparency_grid;
 
+  RutTransform *resize_handle_transform;
+
   //Path *path;
   //float path_t;
   //RutProperty path_property;

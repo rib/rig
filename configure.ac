@@ -75,7 +75,6 @@ AM_INIT_AUTOMAKE([1.11 foreign -Wno-portability no-define no-dist-gzip
                   dist-bzip2])
 AM_SILENT_RULES([yes])
 
-
 dnl ================================================================
 dnl More version number stuff
 dnl ================================================================
@@ -120,7 +119,6 @@ AS_CASE([$host],
 AC_MSG_RESULT([$platform_win32])
 AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
 
-
 dnl ================================================================
 dnl Handle extra configure options
 dnl ================================================================
@@ -137,11 +135,11 @@ AS_CASE(
   [yes],
   [
     test "$cflags_set" = set || CFLAGS="$CFLAGS -g -O0"
-    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG"
+    RIG_EXTRA_CPPFLAGS="$RIG_EXTRA_CPPFLAGS -DRIG_ENABLE_DEBUG"
   ],
   [no],
   [
-    RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DRIG_ENABLE_DEBUG -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
+    RIG_EXTRA_CPPFLAGS="$RIG_EXTRA_CPPFLAGS -DRIG_ENABLE_DEBUG -DG_DISABLE_CHECKS -DG_DISABLE_CAST_CHECKS"
   ],
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
@@ -211,7 +209,7 @@ AC_PROG_CPP
 AM_PROG_CC_C_O
 AC_ISC_POSIX
 AC_C_CONST
-
+AC_PROG_OBJC
 
 dnl ================================================================
 dnl Libtool stuff.
@@ -258,6 +256,10 @@ AS_IF([test "x$have_android" = "xyes"],
                            [glib-android])
       CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS $GLIB_ANDROID_CFLAGS"])
 
+dnl Check whether we are building for OSX
+AC_CHECK_DECL([__APPLE__], [have_osx=yes], [have_osx=no])
+AM_CONDITIONAL([HAVE_OSX], [test "x$have_osx" = "xyes"])
+
 dnl ================================================================
 dnl GObject-Introspection check
 dnl ================================================================
@@ -283,6 +285,7 @@ dnl What needs to be substituted in other files
 dnl ================================================================
 AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_CFLAGS)
+AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_LDFLAGS)
 AC_SUBST(RIG_DEP_CFLAGS)
 AC_SUBST(RIG_DEP_LIBS)
@@ -307,5 +310,6 @@ echo ""
 echo " • Compiler options:"
 echo "        Rig debug: ${enable_debug}"
 echo "        Compiler flags: ${CFLAGS} ${RIG_EXTRA_CFLAGS}"
+echo "        Preprocessor flags: ${CPPFLAGS} ${RIG_EXTRA_CPPFLAGS}"
 echo "        Linker flags: ${LDFLAGS} ${RIG_EXTRA_LDFLAGS}"
 echo ""
