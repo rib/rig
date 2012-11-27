@@ -247,11 +247,12 @@ test_pixel_buffer_sub_region (void)
   cogl_texture_set_region_from_bitmap (texture,
                                        BITMAP_SIZE / 2, /* src_x */
                                        BITMAP_SIZE / 2, /* src_y */
+                                       BITMAP_SIZE / 2, /* width */
+                                       BITMAP_SIZE / 2, /* height */
+                                       bitmap,
                                        BITMAP_SIZE / 2, /* dst_x */
                                        0, /* dst_y */
-                                       BITMAP_SIZE / 2, /* dst_width */
-                                       BITMAP_SIZE / 2, /* dst_height */
-                                       bitmap,
+                                       0, /* level */
                                        NULL /* don't catch errors */);
 
   pipeline = create_pipeline_from_texture (texture);
