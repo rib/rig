@@ -298,6 +298,7 @@ AC_OUTPUT(
 Makefile
 rut/Makefile
 data/Makefile
+data/Info.plist
 rig/Makefile
 tools/Makefile
 )

@@ -42,6 +42,6 @@ stamp-enum-types
 stamp-h1
 stamp-marshal
 xmldocs.make
-
+/data/Info.plist
 /rig/rig
 /tools/rig-bump-map-gen

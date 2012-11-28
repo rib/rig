@@ -26,3 +26,5 @@ dist_assets_DATA = \
 	color-picker-dot.png \
 	resize-handle.png
 
+EXTRA_DIST = \
+	Info.plist.in
