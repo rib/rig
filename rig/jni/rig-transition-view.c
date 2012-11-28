@@ -312,12 +312,10 @@ static RutGraphableVTable _rig_transition_view_graphable_vtable = {
 static CoglAttributeBuffer *
 rig_transition_view_create_dots_buffer (RigTransitionView *view)
 {
-  int n_vertices = MAX (8, view->n_dots);
+  size_t size = MAX (8, view->n_dots) * sizeof (RigTransitionViewDotVertex);
 
-  return cogl_attribute_buffer_new (view->context->cogl_context,
-                                    n_vertices *
-                                    sizeof (RigTransitionViewDotVertex),
-                                    NULL);
+  return cogl_attribute_buffer_new_with_size (view->context->cogl_context,
+                                              size);
 }
 
 static CoglPrimitive *
@@ -405,17 +403,20 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
   RigTransitionViewDotVertex *buffer_data;
   RigTransitionViewDotData dot_data;
   size_t map_size = sizeof (RigTransitionViewDotVertex) * view->n_dots;
+  CoglError *ignore_error = NULL;
 
   buffer_data = cogl_buffer_map_range (COGL_BUFFER (view->dots_buffer),
                                        0, /* offset */
                                        map_size,
                                        COGL_BUFFER_ACCESS_WRITE,
-                                       COGL_BUFFER_MAP_HINT_DISCARD);
+                                       COGL_BUFFER_MAP_HINT_DISCARD,
+                                       &ignore_error);
 
   if (buffer_data == NULL)
     {
       buffer_data = g_malloc (map_size);
       buffer_is_mapped = FALSE;
+      cogl_error_free (ignore_error);
     }
   else
     buffer_is_mapped = TRUE;
@@ -455,7 +456,8 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
       cogl_buffer_set_data (COGL_BUFFER (view->dots_buffer),
                             0, /* offset */
                             buffer_data,
-                            map_size);
+                            map_size,
+                            NULL);
       g_free (buffer_data);
     }
 
@@ -521,7 +523,8 @@ rig_transition_view_draw_nodes_background (RigTransitionView *view,
       rowstride = cogl_bitmap_get_rowstride (bitmap);
       tex_data = cogl_buffer_map (COGL_BUFFER (buffer),
                                   COGL_BUFFER_ACCESS_WRITE,
-                                  COGL_BUFFER_MAP_HINT_DISCARD);
+                                  COGL_BUFFER_MAP_HINT_DISCARD,
+                                  NULL);
 
       for (y = 0; y < tex_size - 1; y++)
         {
@@ -536,7 +539,8 @@ rig_transition_view_draw_nodes_background (RigTransitionView *view,
 
       texture = cogl_texture_new_from_bitmap (bitmap,
                                               COGL_TEXTURE_NO_ATLAS,
-                                              COGL_PIXEL_FORMAT_ANY);
+                                              COGL_PIXEL_FORMAT_ANY,
+                                              NULL);
 
       cogl_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */

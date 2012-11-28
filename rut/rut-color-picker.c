@@ -278,7 +278,8 @@ ensure_hs_pipeline (RutColorPicker *picker)
   CoglPipeline *pipeline;
   CoglTexture2D *texture;
   int rowstride;
-  uint8_t *data;
+  uint8_t *data, *p;
+  int x, y;
 
   if (!picker->hs_pipeline_dirty)
     return;
@@ -292,66 +293,63 @@ ensure_hs_pipeline (RutColorPicker *picker)
 
   data = cogl_buffer_map (COGL_BUFFER (buffer),
                           COGL_BUFFER_ACCESS_WRITE,
-                          COGL_BUFFER_MAP_HINT_DISCARD);
+                          COGL_BUFFER_MAP_HINT_DISCARD,
+                          NULL);
 
-  if (data)
+  p = data;
+
+  for (y = 0; y < RUT_COLOR_PICKER_HS_SIZE; y++)
     {
-      uint8_t *p = data;
-      int x, y;
-
-      for (y = 0; y < RUT_COLOR_PICKER_HS_SIZE; y++)
+      for (x = 0; x < RUT_COLOR_PICKER_HS_SIZE; x++)
         {
-          for (x = 0; x < RUT_COLOR_PICKER_HS_SIZE; x++)
+          float dx = x * 2.0f / RUT_COLOR_PICKER_HS_SIZE - 1.0f;
+          float dy = y * 2.0f / RUT_COLOR_PICKER_HS_SIZE - 1.0f;
+          float hsv[3];
+
+          hsv[1] = sqrtf (dx * dx + dy * dy);
+
+          if (hsv[1] >= 1.0f)
             {
-              float dx = x * 2.0f / RUT_COLOR_PICKER_HS_SIZE - 1.0f;
-              float dy = y * 2.0f / RUT_COLOR_PICKER_HS_SIZE - 1.0f;
-              float hsv[3];
+              /* Outside of the circle the texture will be fully
+               * transparent */
+              p[0] = 0;
+              p[1] = 0;
+              p[2] = 0;
+              p[3] = 0;
+            }
+          else
+            {
+              float rgb[3];
+              float alpha;
 
-              hsv[1] = sqrtf (dx * dx + dy * dy);
+              hsv[2] = picker->value;
+              hsv[0] = atan2f (dy, dx) + G_PI;
 
-              if (hsv[1] >= 1.0f)
-                {
-                  /* Outside of the circle the texture will be fully
-                   * transparent */
-                  p[0] = 0;
-                  p[1] = 0;
-                  p[2] = 0;
-                  p[3] = 0;
-                }
+              hsv_to_rgb (hsv, rgb);
+
+              /* Blend the edges of the circle a bit so that it
+               * looks anti-aliased */
+              if (hsv[1] >= RUT_COLOR_PICKER_HS_BLEND_EDGE)
+                alpha = (((RUT_COLOR_PICKER_HS_BLEND_EDGE - hsv[1]) /
+                          (1.0f - RUT_COLOR_PICKER_HS_BLEND_EDGE) +
+                          1.0f) *
+                         255.0f);
               else
-                {
-                  float rgb[3];
-                  float alpha;
+                alpha = 255.0f;
 
-                  hsv[2] = picker->value;
-                  hsv[0] = atan2f (dy, dx) + G_PI;
-
-                  hsv_to_rgb (hsv, rgb);
-
-                  /* Blend the edges of the circle a bit so that it
-                   * looks anti-aliased */
-                  if (hsv[1] >= RUT_COLOR_PICKER_HS_BLEND_EDGE)
-                    alpha = (((RUT_COLOR_PICKER_HS_BLEND_EDGE - hsv[1]) /
-                              (1.0f - RUT_COLOR_PICKER_HS_BLEND_EDGE) +
-                              1.0f) *
-                             255.0f);
-                  else
-                    alpha = 255.0f;
-
-                  p[0] = nearbyintf (rgb[0] * alpha);
-                  p[1] = nearbyintf (rgb[1] * alpha);
-                  p[2] = nearbyintf (rgb[2] * alpha);
-                  p[3] = alpha;
-                }
-
-              p += 4;
+              p[0] = nearbyintf (rgb[0] * alpha);
+              p[1] = nearbyintf (rgb[1] * alpha);
+              p[2] = nearbyintf (rgb[2] * alpha);
+              p[3] = alpha;
             }
 
-          p += rowstride - RUT_COLOR_PICKER_HS_SIZE * 4;
+          p += 4;
         }
 
-      cogl_buffer_unmap (COGL_BUFFER (buffer));
+      p += rowstride - RUT_COLOR_PICKER_HS_SIZE * 4;
     }
+
+  cogl_buffer_unmap (COGL_BUFFER (buffer));
 
   texture = cogl_texture_2d_new_from_bitmap (bitmap,
                                              COGL_PIXEL_FORMAT_ANY,
@@ -378,7 +376,9 @@ ensure_v_pipeline (RutColorPicker *picker)
   CoglPipeline *pipeline;
   CoglTexture2D *texture;
   int rowstride;
-  uint8_t *data;
+  uint8_t *data, *p;
+  float hsv[3];
+  int y;
 
   if (!picker->v_pipeline_dirty)
     return;
@@ -392,34 +392,30 @@ ensure_v_pipeline (RutColorPicker *picker)
 
   data = cogl_buffer_map (COGL_BUFFER (buffer),
                           COGL_BUFFER_ACCESS_WRITE,
-                          COGL_BUFFER_MAP_HINT_DISCARD);
+                          COGL_BUFFER_MAP_HINT_DISCARD,
+                          NULL);
 
-  if (data)
+  p = data;
+
+  hsv[0] = picker->hue;
+  hsv[1] = picker->saturation;
+
+  for (y = 0; y < RUT_COLOR_PICKER_HS_SIZE; y++)
     {
-      float hsv[3];
-      uint8_t *p = data;
-      int y;
+      float rgb[3];
 
-      hsv[0] = picker->hue;
-      hsv[1] = picker->saturation;
+      hsv[2] = 1.0f - y / (RUT_COLOR_PICKER_HS_SIZE - 1.0f);
 
-      for (y = 0; y < RUT_COLOR_PICKER_HS_SIZE; y++)
-        {
-          float rgb[3];
+      hsv_to_rgb (hsv, rgb);
 
-          hsv[2] = 1.0f - y / (RUT_COLOR_PICKER_HS_SIZE - 1.0f);
+      p[0] = nearbyintf (rgb[0] * 255.0f);
+      p[1] = nearbyintf (rgb[1] * 255.0f);
+      p[2] = nearbyintf (rgb[2] * 255.0f);
 
-          hsv_to_rgb (hsv, rgb);
-
-          p[0] = nearbyintf (rgb[0] * 255.0f);
-          p[1] = nearbyintf (rgb[1] * 255.0f);
-          p[2] = nearbyintf (rgb[2] * 255.0f);
-
-          p += rowstride;
-        }
-
-      cogl_buffer_unmap (COGL_BUFFER (buffer));
+      p += rowstride;
     }
+
+  cogl_buffer_unmap (COGL_BUFFER (buffer));
 
   texture = cogl_texture_2d_new_from_bitmap (bitmap,
                                              COGL_PIXEL_FORMAT_ANY,
