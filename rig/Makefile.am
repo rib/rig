@@ -3,7 +3,8 @@ include $(top_srcdir)/build/autotools/Makefile.am.silent
 INCLUDES = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
-	-I$(top_builddir)/rut
+	-I$(top_builddir)/rut \
+	-I$(top_builddir)/rig/jni
 
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)

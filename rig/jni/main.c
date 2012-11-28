@@ -18,6 +18,7 @@
 #include "rig-load-save.h"
 #include "rig-undo-journal.h"
 #include "rig-renderer.h"
+#include "rig-defines.h"
 #include "rig-osx.h"
 
 //#define DEVICE_WIDTH 480.0
@@ -2473,6 +2474,19 @@ init_resize_handle (RigData *data)
 #endif /* RIG_EDITOR_ENABLED */
 
 static void
+init_title (CoglOnscreen *onscreen)
+{
+#ifdef USE_SDL
+#if SDL_MAJOR_VERSION < 2
+  SDL_WM_SetCaption ("Rig", "Rig " G_STRINGIFY (RIG_VERSION));
+#else /* SDL_MAJOR_VERSION */
+  SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
+  SDL_SetWindowTitle (window, "Rig " G_STRINGIFY (RIG_VERSION));
+#endif /* SDL_MAJOR_VERSION */
+#endif /* USE_SDL */
+}
+
+static void
 init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
@@ -2553,6 +2567,8 @@ init (RutShell *shell, void *user_data)
 #ifdef __APPLE__
   rig_osx_init_onscreen (data->onscreen);
 #endif
+
+  init_title (data->onscreen);
 
   fb = COGL_FRAMEBUFFER (data->onscreen);
   data->width = cogl_framebuffer_get_width (fb);

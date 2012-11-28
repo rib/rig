@@ -300,6 +300,7 @@ rut/Makefile
 data/Makefile
 data/Info.plist
 rig/Makefile
+rig/jni/rig-defines.h
 tools/Makefile
 )
 
