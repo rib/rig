@@ -75,7 +75,6 @@ CoglBool _rig_in_device_mode = FALSE;
 #endif
 
 static char **_rig_handset_remaining_args = NULL;
-static const char *_rig_ui_filename = NULL;
 
 static const GOptionEntry rut_handset_entries[] =
 {
@@ -2534,13 +2533,13 @@ init (RutShell *shell, void *user_data)
   cogl_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
 
 #ifndef __ANDROID__
-  if (_rig_ui_filename)
+  if (data->ui_filename)
     {
       struct stat st;
 
-      stat (_rig_ui_filename, &st);
+      stat (data->ui_filename, &st);
       if (S_ISREG (st.st_mode))
-        rig_load (data, _rig_ui_filename);
+        rig_load (data, data->ui_filename);
     }
 #endif
 
@@ -2565,7 +2564,7 @@ init (RutShell *shell, void *user_data)
   cogl_onscreen_show (data->onscreen);
 
 #ifdef __APPLE__
-  rig_osx_init_onscreen (data->onscreen);
+  rig_osx_init (data);
 #endif
 
   init_title (data->onscreen);
@@ -3220,7 +3219,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_save (data, _rig_ui_filename);
+                  rig_save (data, data->ui_filename);
                   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
                 }
               break;
@@ -3645,9 +3644,9 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
-  _rig_ui_filename = _rig_handset_remaining_args[0];
-
   memset (&data, 0, sizeof (RigData));
+
+  data.ui_filename = g_strdup (_rig_handset_remaining_args[0]);
 
   init_types ();
 
@@ -3655,7 +3654,7 @@ main (int argc, char **argv)
 
   data.ctx = rut_context_new (data.shell);
 
-  assets_location = g_path_get_dirname (_rig_ui_filename);
+  assets_location = g_path_get_dirname (data.ui_filename);
   rut_set_assets_location (data.ctx, assets_location);
   g_free (assets_location);
 

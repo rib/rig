@@ -26,19 +26,152 @@
 #include <SDL_syswm.h>
 #include <cogl/cogl.h>
 #include <Cocoa/Cocoa.h>
+#include <glib.h>
 
 #include "rig-osx.h"
+#include "rig-data.h"
+#include "rig-load-save.h"
+
+@interface Controller : NSObject
+{
+  RigData *data;
+}
+
+@end
+
+@implementation Controller
+
+- (id) init:(RigData *) data_in
+{
+  self = [super init];
+
+  if (self)
+    self->data = data_in;
+
+  return self;
+}
+
+- (void) newFileAction:(id) sender
+{
+}
+
+- (void) openAction:(id) sender
+{
+  NSOpenPanel *dialog = [NSOpenPanel openPanel];
+  char *dir;
+  NSString *dir_string;
+  NSURL *url;
+
+  [dialog setCanChooseFiles:YES];
+  [dialog setCanChooseDirectories:NO];
+  [dialog setAllowsMultipleSelection:NO];
+
+  dir = g_path_get_dirname (data->ui_filename);
+  dir_string = [[NSString alloc] initWithUTF8String:dir];
+  url = [NSURL fileURLWithPath:dir_string];
+  [dialog setDirectoryURL:url];
+  [dir_string release];
+  g_free (dir);
+
+  if ([dialog runModal] == NSOKButton)
+    {
+      NSArray *files = [dialog filenames];
+
+      if ([files count] == 1)
+	{
+	  NSString *filename = [files objectAtIndex:0];
+
+	  g_free (data->ui_filename);
+	  data->ui_filename = g_strdup ([filename UTF8String]);
+	  rig_load (data, data->ui_filename);
+	}
+    }
+}
+
+- (void) saveAction:(id) sender
+{
+  rig_save (data, data->ui_filename);
+}
+
+- (void) saveAsAction:(id) sender
+{
+}
+
+- (BOOL) validateMenuItem:(NSMenuItem *) item
+{
+  return YES;
+}
+
+@end
+
+typedef struct
+{
+  NSString *name;
+  NSString *key;
+  const char *selector;
+} RigOSXMenuItem;
+
+static const RigOSXMenuItem
+menu_items[] =
+  {
+    { @"New File...", @"n", "newFileAction:" },
+    { @"Open...", @"o", "openAction:" },
+    { NULL, NULL },
+    { @"Save", @"s", "saveAction:" },
+    { @"Save As...", @"S", "saveAsAction:" }
+  };
 
 void
-rig_osx_init_onscreen (CoglOnscreen *onscreen)
+rig_osx_init (RigData *data)
 {
+  CoglOnscreen *onscreen = data->onscreen;
   SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
   SDL_SysWMinfo info;
+  NSMenuItem *file_item, *item;
+  NSMenu *file_menu;
+  Controller *controller;
+  NSAutoreleasePool *pool;
+  int i;
 
   SDL_VERSION (&info.version);
 
   if (!SDL_GetWindowWMInfo (window, &info))
     return;
 
+  pool = [[NSAutoreleasePool alloc] init];
+
+  controller = [[Controller alloc] init:data];
+
   [info.info.cocoa.window setShowsResizeIndicator:YES];
+
+  file_item = [[NSMenuItem allocWithZone:[NSMenu menuZone]]
+                initWithTitle:@"File"
+                action:NULL
+                keyEquivalent:@""];
+  file_menu = [[NSMenu allocWithZone:[NSMenu menuZone]]
+                initWithTitle:@"File"];
+
+  [file_item setSubmenu:file_menu];
+  [[NSApp mainMenu] insertItem:file_item atIndex:1];
+
+  for (i = 0; i < G_N_ELEMENTS (menu_items); i++)
+    if (menu_items[i].name)
+      {
+        SEL selector = sel_registerName (menu_items[i].selector);
+        NSMenuItem *item =
+          [[NSMenuItem allocWithZone:[NSMenu menuZone]]
+            initWithTitle:menu_items[i].name
+            action:selector
+            keyEquivalent:menu_items[i].key];
+
+        [item setTarget:controller];
+
+        [file_menu addItem:item];
+        [item release];
+      }
+    else
+      [file_menu addItem:[NSMenuItem separatorItem]];
+
+  [file_menu release];
+  [file_item release];
 }

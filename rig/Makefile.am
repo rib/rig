@@ -17,6 +17,7 @@ AM_CPPFLAGS = \
 
 common_ldadd = \
 	$(RIG_DEP_LIBS) \
+	$(RIG_EXTRA_LDFLAGS) \
 	$(top_builddir)/rut/librut.la
 
 bin_PROGRAMS = rig

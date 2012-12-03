@@ -39,6 +39,8 @@ struct _RigData
 {
   CoglBool play_mode;
 
+  char *ui_filename;
+
   RutCamera *camera;
   RutObject *root;
   RutObject *scene;

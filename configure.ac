@@ -259,6 +259,8 @@ AS_IF([test "x$have_android" = "xyes"],
 dnl Check whether we are building for OSX
 AC_CHECK_DECL([__APPLE__], [have_osx=yes], [have_osx=no])
 AM_CONDITIONAL([HAVE_OSX], [test "x$have_osx" = "xyes"])
+AS_IF([test "x$have_osx" = "xyes"],
+      [RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"])
 
 dnl ================================================================
 dnl GObject-Introspection check

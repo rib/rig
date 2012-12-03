@@ -21,8 +21,9 @@
 #define _RUT_OSX_H_
 
 #include <cogl/cogl.h>
+#include "rig-data.h"
 
 void
-rig_osx_init_onscreen (CoglOnscreen *onscreen);
+rig_osx_init (RigData *data);
 
 #endif /* _RUT_OSX_H_ */
