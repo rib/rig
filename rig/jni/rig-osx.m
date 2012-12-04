@@ -26,6 +26,8 @@
 #include <SDL_syswm.h>
 #include <cogl/cogl.h>
 #include <Cocoa/Cocoa.h>
+#include <mach-o/dyld.h>
+#include <unistd.h>
 #include <glib.h>
 
 #include "rig-osx.h"
@@ -121,13 +123,95 @@ menu_items[] =
     { @"Save As...", @"S", "saveAsAction:" }
   };
 
+static char *
+get_package_root (void)
+{
+  uint32_t size = 4;
+  int i;
+
+  for (i = 0; i < 2; i++)
+    {
+      char *buf = g_malloc (size + 1);
+      if (_NSGetExecutablePath (buf, &size) == -1)
+	g_free (buf);
+      else
+	{
+	  char *dn = g_path_get_dirname (buf);
+	  char *pkg_root = g_build_filename (dn, "..", NULL);
+	  g_free (dn);
+	  g_free (buf);
+	  return pkg_root;
+	}
+    }
+
+  g_warn_if_reached ();
+
+  return NULL;
+}
+
+static void
+check_update_messages (void)
+{
+  char *pkg_root = get_package_root ();
+  char *error_message;
+  char *file_path;
+
+  file_path = g_build_filename (pkg_root,
+				"Resources",
+				"update-fail-message.txt",
+				NULL);
+  if (g_file_get_contents (file_path,
+			   &error_message,
+			   NULL, /* length */
+			   NULL /* error */))
+    {
+      NSString *error_message_str =
+	[[NSString alloc] initWithUTF8String:error_message];
+      NSString *full_message =
+	[@"A previous automatic update failed with the following error:\n\n"
+	  stringByAppendingString:error_message_str];
+
+      NSRunAlertPanel (@"Automatic update error",
+		       full_message,
+		       @"Ok",
+		       NULL, /* alternateButton */
+		       NULL /* otherButton */);
+
+      [full_message release];
+      [error_message_str release];
+      g_free (error_message);
+
+      unlink (file_path);
+    }
+  g_free (file_path);
+
+  file_path = g_build_filename (pkg_root,
+				"Resources",
+				"rig-updated",
+				NULL);
+  if (g_file_test (file_path, G_FILE_TEST_EXISTS))
+    {
+      NSRunAlertPanel (@"Automatic update",
+		       @"Rig has been automatically updated to "
+		       "the latest version",
+		       @"Ok",
+		       NULL, /* alternateButton */
+		       NULL /* otherButton */);
+
+      unlink (file_path);
+    }
+  g_free (file_path);
+
+  g_free (pkg_root);
+}
+
 void
 rig_osx_init (RigData *data)
 {
   CoglOnscreen *onscreen = data->onscreen;
   SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
   SDL_SysWMinfo info;
-  NSMenuItem *file_item, *item;
+  NSMenuItem *file_item;
   NSMenu *file_menu;
   Controller *controller;
   NSAutoreleasePool *pool;
@@ -174,4 +258,6 @@ rig_osx_init (RigData *data)
 
   [file_menu release];
   [file_item release];
+
+  check_update_messages ();
 }
