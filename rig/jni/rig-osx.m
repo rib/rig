@@ -105,6 +105,14 @@
 
 @end
 
+struct _RigOSXData
+{
+  NSMenuItem *file_item;
+  NSMenu *file_menu;
+  Controller *controller;
+  NSAutoreleasePool *pool;
+};
+
 typedef struct
 {
   NSString *name;
@@ -207,35 +215,35 @@ check_update_messages (void)
 void
 rig_osx_init (RigData *data)
 {
+  RigOSXData *osx_data;
   CoglOnscreen *onscreen = data->onscreen;
   SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
   SDL_SysWMinfo info;
-  NSMenuItem *file_item;
-  NSMenu *file_menu;
-  Controller *controller;
-  NSAutoreleasePool *pool;
   int i;
+
+  osx_data = g_new0 (RigOSXData, 1);
+  data->osx_data = osx_data;
 
   SDL_VERSION (&info.version);
 
   if (!SDL_GetWindowWMInfo (window, &info))
     return;
 
-  pool = [[NSAutoreleasePool alloc] init];
+  osx_data->pool = [[NSAutoreleasePool alloc] init];
 
-  controller = [[Controller alloc] init:data];
+  osx_data->controller = [[Controller alloc] init:data];
 
   [info.info.cocoa.window setShowsResizeIndicator:YES];
 
-  file_item = [[NSMenuItem allocWithZone:[NSMenu menuZone]]
-                initWithTitle:@"File"
-                action:NULL
-                keyEquivalent:@""];
-  file_menu = [[NSMenu allocWithZone:[NSMenu menuZone]]
-                initWithTitle:@"File"];
+  osx_data->file_item = [[NSMenuItem allocWithZone:[NSMenu menuZone]]
+                          initWithTitle:@"File"
+                                 action:NULL
+                          keyEquivalent:@""];
+  osx_data->file_menu = [[NSMenu allocWithZone:[NSMenu menuZone]]
+                          initWithTitle:@"File"];
 
-  [file_item setSubmenu:file_menu];
-  [[NSApp mainMenu] insertItem:file_item atIndex:1];
+  [osx_data->file_item setSubmenu:osx_data->file_menu];
+  [[NSApp mainMenu] insertItem:osx_data->file_item atIndex:1];
 
   for (i = 0; i < G_N_ELEMENTS (menu_items); i++)
     if (menu_items[i].name)
@@ -247,16 +255,32 @@ rig_osx_init (RigData *data)
             action:selector
             keyEquivalent:menu_items[i].key];
 
-        [item setTarget:controller];
+        [item setTarget:osx_data->controller];
 
-        [file_menu addItem:item];
+        [osx_data->file_menu addItem:item];
         [item release];
       }
     else
-      [file_menu addItem:[NSMenuItem separatorItem]];
-
-  [file_menu release];
-  [file_item release];
+      [osx_data->file_menu addItem:[NSMenuItem separatorItem]];
 
   check_update_messages ();
+}
+
+void
+rig_osx_deinit (RigData *data)
+{
+  RigOSXData *osx_data = data->osx_data;
+
+  if (osx_data->file_menu)
+    [osx_data->file_menu release];
+  if (osx_data->file_item)
+    {
+      [[NSApp mainMenu] removeItem:osx_data->file_item];
+      [osx_data->file_item release];
+    }
+
+  [osx_data->controller release];
+  [osx_data->pool release];
+
+  g_free (osx_data);
 }

@@ -25,6 +25,7 @@
 #include "rig-types.h"
 #include "rig-undo-journal.h"
 #include "rut-box-layout.h"
+#include "rig-osx.h"
 
 enum {
   RIG_DATA_PROP_WIDTH,
@@ -205,6 +206,10 @@ struct _RigData
   //Path *path;
   //float path_t;
   //RutProperty path_property;
+
+#ifdef __APPLE__
+  RigOSXData *osx_data;
+#endif
 
   CoglSnippet *alpha_mask_snippet;
   CoglSnippet *lighting_vertex_snippet;

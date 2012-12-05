@@ -21,9 +21,14 @@
 #define _RUT_OSX_H_
 
 #include <cogl/cogl.h>
-#include "rig-data.h"
+#include "rig-types.h"
+
+typedef struct _RigOSXData RigOSXData;
 
 void
 rig_osx_init (RigData *data);
+
+void
+rig_osx_deinit (RigData *osx_data);
 
 #endif /* _RUT_OSX_H_ */

@@ -3203,6 +3203,10 @@ fini (RutShell *shell, void *user_data)
 #endif
 
   cogl_object_unref (data->onscreen);
+
+#ifdef __APPLE__
+  rig_osx_deinit (data);
+#endif
 }
 
 static RutInputEventStatus
