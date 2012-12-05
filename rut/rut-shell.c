@@ -2306,3 +2306,9 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
         }
     }
 }
+
+void
+rut_shell_quit (RutShell *shell)
+{
+  shell->quit = TRUE;
+}

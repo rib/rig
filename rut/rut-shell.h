@@ -386,4 +386,14 @@ void
 rut_shell_remove_pre_paint_callback (RutShell *shell,
                                      RutObject *graphable);
 
+/**
+ * rut_shell_quit:
+ * @shell: The #RutShell
+ *
+ * Informs the shell that at the next time it returns to the main loop
+ * it should quit the loop.
+ */
+void
+rut_shell_quit (RutShell *shell);
+
 #endif /* _RUT_SHELL_H_ */
