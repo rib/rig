@@ -192,6 +192,8 @@ _rut_ui_viewport_free (void *object)
 
   rut_ui_viewport_set_sync_widget (ui_viewport, NULL);
 
+  rut_refable_unref (ui_viewport->doc_transform);
+
   rut_refable_simple_unref (ui_viewport->inputable.input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
