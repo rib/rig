@@ -153,6 +153,10 @@ _rut_entity_free (void *object)
 
   g_free (entity->label);
 
+  while (entity->components->len)
+    rut_entity_remove_component (entity,
+                                 g_ptr_array_index (entity->components, 0));
+
   g_ptr_array_free (entity->components, TRUE);
 
   rut_graphable_destroy (entity);
