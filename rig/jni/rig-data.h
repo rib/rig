@@ -40,6 +40,7 @@ struct _RigData
   CoglBool play_mode;
 
   char *ui_filename;
+  char *next_ui_filename;
 
   RutCamera *camera;
   RutObject *root;

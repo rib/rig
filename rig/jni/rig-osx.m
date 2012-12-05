@@ -83,9 +83,8 @@
 	{
 	  NSString *filename = [files objectAtIndex:0];
 
-	  g_free (data->ui_filename);
-	  data->ui_filename = g_strdup ([filename UTF8String]);
-	  rig_load (data, data->ui_filename);
+          data->next_ui_filename = g_strdup ([filename UTF8String]);
+          rut_shell_quit (data->shell);
 	}
     }
 }

@@ -3655,7 +3655,6 @@ main (int argc, char **argv)
 {
   RigData data;
   GOptionContext *context = g_option_context_new (NULL);
-  char *assets_location;
   GError *error = NULL;
 
   g_option_context_add_main_entries (context, rut_handset_entries, NULL);
@@ -3685,15 +3684,30 @@ main (int argc, char **argv)
 
   data.ctx = rut_context_new (data.shell);
 
-  assets_location = g_path_get_dirname (data.ui_filename);
-  rut_set_assets_location (data.ctx, assets_location);
-  g_free (assets_location);
-
   rut_context_init (data.ctx);
 
   rut_shell_add_input_callback (data.shell, shell_input_handler, &data, NULL);
 
-  rut_shell_main (data.shell);
+  while (TRUE)
+    {
+      char *assets_location = g_path_get_dirname (data.ui_filename);
+      rut_set_assets_location (data.ctx, assets_location);
+      g_free (assets_location);
+
+      data.selected_entity = NULL;
+      data.selected_transition = NULL;
+
+      rut_shell_main (data.shell);
+
+      if (data.next_ui_filename)
+        {
+          g_free (data.ui_filename);
+          data.ui_filename = data.next_ui_filename;
+          data.next_ui_filename = NULL;
+        }
+      else
+        break;
+    }
 
   return 0;
 }
