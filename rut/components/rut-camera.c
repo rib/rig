@@ -144,13 +144,11 @@ static void
 _rut_camera_free (void *object)
 {
   RutCamera *camera = object;
-  GList *l;
 
   cogl_object_unref (camera->fb);
 
-  for (l = camera->input_regions; l; l = l->next)
-    rut_refable_unref (l->data);
-  g_list_free (camera->input_regions);
+  while (camera->input_regions)
+    rut_camera_remove_input_region (camera, camera->input_regions->data);
 
   rut_simple_introspectable_destroy (camera);
 
@@ -798,6 +796,7 @@ rut_camera_add_input_region (RutCamera *camera,
                              RutInputRegion *region)
 {
   g_print ("add input region %p, %p\n", camera, region);
+  rut_refable_ref (region);
   camera->input_regions = g_list_prepend (camera->input_regions, region);
 }
 
@@ -805,7 +804,15 @@ void
 rut_camera_remove_input_region (RutCamera *camera,
                                 RutInputRegion *region)
 {
-  camera->input_regions = g_list_remove (camera->input_regions, region);
+  GList *l;
+
+  for (l = camera->input_regions; l; l = l->next)
+    if (l->data == region)
+      {
+        rut_refable_unref (region);
+        camera->input_regions = g_list_delete_link (camera->input_regions, l);
+        break;
+      }
 }
 
 CoglBool
