@@ -3147,8 +3147,29 @@ fini (RutShell *shell, void *user_data)
 
   rig_renderer_fini (data);
 
+  rut_refable_unref (data->light);
+  data->light = NULL;
+
+  rut_shell_remove_input_camera (shell,
+                                 data->editor_camera_component,
+                                 data->scene);
+
+  rut_refable_unref (data->editor_camera_to_origin);
+  rut_refable_unref (data->editor_camera_rotate);
+  rut_refable_unref (data->editor_camera_armature);
+  rut_refable_unref (data->editor_camera_origin_offset);
+  rut_refable_unref (data->editor_camera_dev_scale);
+  rut_refable_unref (data->editor_camera_screen_pos);
+  rut_refable_unref (data->editor_camera_2d_view);
+  rut_refable_unref (data->editor_camera);
+  rut_refable_unref (data->editor_camera_component);
+
+  rut_shell_remove_input_camera (shell, data->camera, data->root);
+
   rut_refable_unref (data->camera);
+  rut_refable_unref (data->shadow_map_camera);
   rut_refable_unref (data->root);
+  rut_refable_unref (data->scene);
 
   for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rut_property_destroy (&data->properties[i]);
@@ -3164,6 +3185,14 @@ fini (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
+      for (i = 0; i < G_N_ELEMENTS (data->splits); i++)
+        rut_refable_unref (data->splits[i]);
+
+      rut_refable_unref (data->left_bar_stack);
+      rut_refable_unref (data->right_bar_stack);
+      rut_refable_unref (data->icon_bar_stack);
+      rut_refable_unref (data->bottom_bar_stack);
+
       rut_refable_unref (data->timeline_vp);
       rut_refable_unref (data->transition_view);
       cogl_object_unref (data->grid_prim);
@@ -3172,6 +3201,8 @@ fini (RutShell *shell, void *user_data)
         rut_refable_unref (data->transparency_grid);
     }
 #endif
+
+  cogl_object_unref (data->onscreen);
 }
 
 static RutInputEventStatus
