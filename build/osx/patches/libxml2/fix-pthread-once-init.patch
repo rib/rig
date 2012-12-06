@@ -1,0 +1,15 @@
+diff -u -r libxml2-2.9.0/threads.c libxml2-new/threads.c
+--- libxml2-2.9.0/threads.c	2012-09-11 04:52:46.000000000 +0100
++++ libxml2-new/threads.c	2012-11-14 15:28:06.293895872 +0000
+@@ -915,7 +915,10 @@
+ #ifdef HAVE_PTHREAD_H
+     if ((libxml_is_threaded)  && (pthread_key_delete != NULL))
+         pthread_key_delete(globalkey);
+-    once_control = PTHREAD_ONCE_INIT;
++    {
++      static const pthread_once_t once_init = PTHREAD_ONCE_INIT;
++      once_control = once_init;
++    }
+ #elif defined(HAVE_WIN32_THREADS) && !defined(HAVE_COMPILER_TLS) && (!defined(LIBXML_STATIC) || defined(LIBXML_STATIC_FOR_DLL))
+     if (globalkey != TLS_OUT_OF_INDEXES) {
+         xmlGlobalStateCleanupHelperParams *p;

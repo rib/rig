@@ -1,0 +1,32 @@
+#!/bin/bash
+
+exe_dir=`dirname "$0"`
+pkg_dir=`cd "$exe_dir/../.." && pwd`
+prefix="$pkg_dir/Contents/Resources"
+
+# If there is a complete update ready then switch to that instead
+if test -f "$prefix/rig-update.tar.gz"; then
+    # Exit on error
+    set -e
+    # Backup the current version
+    rm -rf "$pkg_dir/update-backup"
+    mv "$pkg_dir/Contents" "$pkg_dir/update-backup"
+    # Extract the new version
+    tar -zxf "$pkg_dir/update-backup/Resources/rig-update.tar.gz" \
+        -C "$pkg_dir/.."
+    # Create a file so that Rig will report that it has been updated
+    touch "$prefix/rig-updated"
+    # Run the new version of the program instead
+    exec "$pkg_dir/Contents/MacOS/rig"
+    exit 1
+fi
+
+# Check for an update in the background
+bash "$pkg_dir/Contents/MacOS/auto-update.sh" &
+
+export DYLD_LIBRARY_PATH="$prefix/lib"
+export XDG_DATA_DIRS="$prefix/share"
+
+mkdir -p "$HOME/Documents/rig"
+
+exec "$exe_dir/rig-bin" "$HOME/Documents/rig/ui.xml"

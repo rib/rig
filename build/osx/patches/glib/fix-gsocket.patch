@@ -1,0 +1,17 @@
+diff -u -r glib-2.34.2/gio/gsocket.c glib-new/gio/gsocket.c
+--- glib-2.34.2/gio/gsocket.c	2012-11-10 03:27:29.000000000 +0000
++++ glib-new/gio/gsocket.c	2012-11-12 15:43:54.178196487 +0000
+@@ -2381,10 +2381,10 @@
+ gssize
+ g_socket_get_available_bytes (GSocket *socket)
+ {
+-#ifndef G_OS_WIN32
+-  gulong avail = 0;
+-#else
++#ifdef G_OS_WIN32
+   gint avail = 0;
++#else
++  gulong avail = 0;
+   gsize avail_len = sizeof (avail);
+ #endif
+ 
