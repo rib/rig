@@ -19,6 +19,7 @@ enum {
   RUT_CAMERA_PROP_FOV,
   RUT_CAMERA_PROP_NEAR,
   RUT_CAMERA_PROP_FAR,
+  RUT_CAMERA_PROP_ZOOM,
   RUT_CAMERA_PROP_BG_COLOR,
   RUT_CAMERA_PROP_FOCAL_DISTANCE,
   RUT_CAMERA_PROP_DEPTH_OF_FIELD,
@@ -48,6 +49,8 @@ struct _RutCamera
   float fov; /* perspective */
 
   float x1, y1, x2, y2; /* orthographic */
+
+  float zoom;
 
   float focal_distance;
   float depth_of_field;

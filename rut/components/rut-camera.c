@@ -21,6 +21,7 @@
 #include <glib.h>
 
 #include <cogl/cogl.h>
+#include <math.h>
 
 #include "rut-camera.h"
 #include "rut-context.h"
@@ -105,6 +106,14 @@ static RutPropertySpec _rut_camera_prop_specs[] = {
     .setter.float_type = rut_camera_set_far_plane,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
+  },
+  {
+    .name = "zoom",
+    .nick = "Zoom",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutCamera, zoom),
+    .setter.float_type = rut_camera_set_zoom
   },
   {
     .name = "background_color",
@@ -377,6 +386,8 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   camera->near = -1;
   camera->far = 100;
 
+  camera->zoom = 1;
+
   camera->focal_distance = 30;
   camera->depth_of_field = 3;
 
@@ -572,6 +583,26 @@ rut_camera_get_viewport (RutCamera *camera)
   return camera->viewport;
 }
 
+void
+_matrix_scaled_perspective (CoglMatrix *matrix,
+                            float fov_y,
+                            float aspect,
+                            float z_near,
+                            float z_far,
+                            float scale)
+{
+  float ymax = z_near * tanf (fov_y * G_PI / 360.0);
+  float inverse_scale = 1.0 / scale;
+
+  cogl_matrix_frustum (matrix,
+                       -ymax * aspect * inverse_scale,/* left */
+                       ymax * aspect * inverse_scale, /* right */
+                       -ymax * inverse_scale, /* bottom */
+                       ymax * inverse_scale, /* top */
+                       z_near,
+                       z_far);
+}
+
 const CoglMatrix *
 rut_camera_get_projection (RutCamera *camera)
 {
@@ -581,22 +612,43 @@ rut_camera_get_projection (RutCamera *camera)
 
       if (camera->orthographic)
         {
+          float x1, x2, y1, y2;
+
+          if (camera->zoom != 1)
+            {
+              float center_x = camera->x1 + (camera->x2 - camera->x1) / 2.0;
+              float center_y = camera->y1 + (camera->y2 - camera->y1) / 2.0;
+              float inverse_scale = 1.0 / camera->zoom;
+              float dx = (camera->x2 - center_x) * inverse_scale;
+              float dy = (camera->y2 - center_y) * inverse_scale;
+
+              camera->x1 = center_x - dx;
+              camera->x2 = center_x + dx;
+              camera->y1 = center_y - dy;
+              camera->y2 = center_y + dy;
+            }
+          else
+            {
+              x1 = camera->x1;
+              x2 = camera->x2;
+              y1 = camera->y1;
+              y2 = camera->y2;
+            }
+
           cogl_matrix_orthographic (&camera->projection,
-                                    camera->x1,
-                                    camera->y1,
-                                    camera->x2,
-                                    camera->y2,
+                                    x1, y1, x2, y2,
                                     camera->near,
                                     camera->far);
         }
       else
         {
           float aspect_ratio = camera->viewport[2] / camera->viewport[3];
-          cogl_matrix_perspective (&camera->projection,
-                                   camera->fov,
-                                   aspect_ratio,
-                                   camera->near,
-                                   camera->far);
+          _matrix_scaled_perspective (&camera->projection,
+                                      camera->fov,
+                                      aspect_ratio,
+                                      camera->near,
+                                      camera->far,
+                                      camera->zoom);
         }
 
       camera->projection_cache_age = camera->projection_age;
@@ -1039,4 +1091,32 @@ rut_camera_resume (RutCamera *camera)
 done:
   camera->in_frame = TRUE;
   camera->suspended = FALSE;
+}
+
+void
+rut_camera_set_zoom (RutObject *obj,
+                     float zoom)
+{
+  RutCamera *camera = RUT_CAMERA (obj);
+
+  if (camera->zoom == zoom)
+    return;
+
+  camera->zoom = zoom;
+
+  rut_shell_queue_redraw (camera->ctx->shell);
+
+  rut_property_dirty (&camera->ctx->property_ctx,
+                      &camera->properties[RUT_CAMERA_PROP_ZOOM]);
+
+  camera->projection_age++;
+  camera->transform_age++;
+}
+
+float
+rut_camera_get_zoom (RutObject *obj)
+{
+  RutCamera *camera = RUT_CAMERA (obj);
+
+  return camera->zoom;
 }

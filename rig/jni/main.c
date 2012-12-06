@@ -1502,17 +1502,32 @@ main_input_cb (RutInputEvent *event,
       switch (rut_key_event_get_keysym (event))
         {
         case RUT_KEY_minus:
-          if (data->editor_camera_z)
-            data->editor_camera_z *= 1.2f;
-          else
-            data->editor_camera_z = 0.1;
+          {
+            float zoom = rut_camera_get_zoom (data->editor_camera_component);
 
-          update_camera_position (data);
-          break;
+            zoom *= 0.8;
+
+            rut_camera_set_zoom (data->editor_camera_component, zoom);
+
+            rut_shell_queue_redraw (data->ctx->shell);
+
+            break;
+          }
         case RUT_KEY_equal:
-          data->editor_camera_z *= 0.8;
-          update_camera_position (data);
-          break;
+          {
+            float zoom = rut_camera_get_zoom (data->editor_camera_component);
+
+            if (zoom)
+              zoom *= 1.2;
+            else
+              zoom = 0.1;
+
+            rut_camera_set_zoom (data->editor_camera_component, zoom);
+
+            rut_shell_queue_redraw (data->ctx->shell);
+
+            break;
+          }
         case RUT_KEY_p:
           set_play_mode_enabled (data, !data->play_mode);
           break;
@@ -1808,6 +1823,8 @@ allocate_main_area (RigData *data)
     data->editor_camera_z = z_2d / device_scale;
     rut_entity_set_translate (data->editor_camera_armature, 0, 0, data->editor_camera_z);
     //rut_entity_set_translate (data->editor_camera_armature, 0, 0, 0);
+
+    rut_camera_set_zoom (data->editor_camera_component, 1);
 
     {
       float dx, dy, dz, scale;
@@ -3310,7 +3327,7 @@ shell_input_handler (RutInputEvent *event, void *user_data)
         }
 #endif
       break;
- 
+
     case RUT_INPUT_EVENT_TYPE_TEXT:
       break;
     }
