@@ -50,7 +50,7 @@ dnl ================================================================
 # libtool version info we don't automatically derive this from the
 # pretty version number because we want to test the results of
 # updating the version number in advance of a release.
-m4_define([rig_release_status], [release])
+m4_define([rig_release_status], [git])
 
 
 dnl ================================================================
