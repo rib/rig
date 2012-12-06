@@ -196,4 +196,11 @@ rut_camera_set_depth_of_field (RutObject *camera,
 float
 rut_camera_get_depth_of_field (RutObject *camera);
 
+void
+rut_camera_set_zoom (RutObject *obj,
+                     float zoom);
+
+float
+rut_camera_get_zoom (RutObject *camera);
+
 #endif /* __RUT_CAMERA_H__ */
