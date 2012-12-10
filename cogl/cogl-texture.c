@@ -1218,6 +1218,7 @@ _cogl_texture_spans_foreach_in_region (CoglSpan *x_spans,
   CoglSpanIter iter_x;
   CoglSpanIter iter_y;
   float slice_coords[4];
+  float span_virtual_coords[4];
 
   /* Iterate the y axis of the virtual rectangle */
   for (_cogl_span_iter_begin (&iter_y,
@@ -1234,11 +1235,15 @@ _cogl_texture_spans_foreach_in_region (CoglSpan *x_spans,
         {
           slice_coords[1] = iter_y.intersect_end;
           slice_coords[3] = iter_y.intersect_start;
+          span_virtual_coords[1] = iter_y.intersect_end;
+          span_virtual_coords[3] = iter_y.intersect_start;
         }
       else
         {
           slice_coords[1] = iter_y.intersect_start;
           slice_coords[3] = iter_y.intersect_end;
+          span_virtual_coords[1] = iter_y.intersect_start;
+          span_virtual_coords[3] = iter_y.intersect_end;
         }
 
       /* Map the current intersection to normalized slice coordinates */
@@ -1257,17 +1262,20 @@ _cogl_texture_spans_foreach_in_region (CoglSpan *x_spans,
 	   _cogl_span_iter_next (&iter_x))
         {
           CoglTexture *span_tex;
-          float span_virtual_coords[4];
 
           if (iter_x.flipped)
             {
               slice_coords[0] = iter_x.intersect_end;
               slice_coords[2] = iter_x.intersect_start;
+              span_virtual_coords[0] = iter_x.intersect_end;
+              span_virtual_coords[2] = iter_x.intersect_start;
             }
           else
             {
               slice_coords[0] = iter_x.intersect_start;
               slice_coords[2] = iter_x.intersect_end;
+              span_virtual_coords[0] = iter_x.intersect_start;
+              span_virtual_coords[2] = iter_x.intersect_end;
             }
 
           /* Map the current intersection to normalized slice coordinates */
@@ -1276,11 +1284,6 @@ _cogl_texture_spans_foreach_in_region (CoglSpan *x_spans,
 
 	  /* Pluck out the cogl texture for this span */
           span_tex = textures[iter_y.index * n_x_spans + iter_x.index];
-
-          span_virtual_coords[0] = iter_x.intersect_start;
-          span_virtual_coords[1] = iter_y.intersect_start;
-          span_virtual_coords[2] = iter_x.intersect_end;
-          span_virtual_coords[3] = iter_y.intersect_end;
 
           callback (COGL_TEXTURE (span_tex),
                     slice_coords,
