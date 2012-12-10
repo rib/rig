@@ -58,6 +58,7 @@ test_sources = \
 	test-map-buffer-range.c \
 	test-npot-texture.c \
 	test-alpha-textures.c \
+	test-wrap-rectangle-textures.c \
 	test-texture-get-set-data.c \
 	test-texture-mipmap-get-set.c \
 	$(NULL)
