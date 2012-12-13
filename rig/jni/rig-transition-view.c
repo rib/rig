@@ -405,6 +405,9 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
   size_t map_size = sizeof (RigTransitionViewDotVertex) * view->n_dots;
   CoglError *ignore_error = NULL;
 
+  if (view->n_dots == 0)
+    return;
+
   buffer_data = cogl_buffer_map_range (COGL_BUFFER (view->dots_buffer),
                                        0, /* offset */
                                        map_size,
