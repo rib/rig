@@ -11,8 +11,8 @@ msgstr ""
 "Project-Id-Version: cogl\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?"
 "product=clutter\n"
-"POT-Creation-Date: 2012-09-01 21:20+0200\n"
-"PO-Revision-Date: 2012-09-01 21:21+0200\n"
+"POT-Creation-Date: 2012-12-16 03:44+0100\n"
+"PO-Revision-Date: 2012-12-16 03:45+0100\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <gnomepl@aviary.pl>\n"
 "Language: pl\n"
@@ -24,28 +24,28 @@ msgstr ""
 "X-Poedit-Language: Polish\n"
 "X-Poedit-Country: Poland\n"
 
-#: ../cogl/cogl-debug.c:174
+#: ../cogl/cogl-debug.c:173
 msgid "Supported debug values:"
 msgstr "Obsługiwane wartości debugowania:"
 
-#: ../cogl/cogl-debug.c:179
+#: ../cogl/cogl-debug.c:178
 msgid "Special debug values:"
 msgstr "Specjalne wartości debugowania:"
 
-#: ../cogl/cogl-debug.c:181 ../cogl/cogl-debug.c:183
+#: ../cogl/cogl-debug.c:180 ../cogl/cogl-debug.c:182
 msgid "Enables all non-behavioural debug options"
 msgstr "Włącza wszystkie opcje debugowania nie wpływające na zachowanie"
 
-#: ../cogl/cogl-debug.c:190
+#: ../cogl/cogl-debug.c:189
 msgid "Additional environment variables:"
 msgstr "Dodatkowe zmienne środowiskowe:"
 
-#: ../cogl/cogl-debug.c:191
+#: ../cogl/cogl-debug.c:190
 msgid "Comma-separated list of GL extensions to pretend are disabled"
 msgstr ""
 "Lista rozszerzeń GL oddzielonych przecinkami, które mają udawać wyłączone"
 
-#: ../cogl/cogl-debug.c:193
+#: ../cogl/cogl-debug.c:192
 msgid "Override the GL version that Cogl will assume the driver supports"
 msgstr "Zastępuje wersję GL obsługiwaną przez sterownik"
 
@@ -357,3 +357,175 @@ msgstr "Śledzenie spadków wydajności"
 #: ../cogl/cogl-debug-options.h:192
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Próbuje wyróżnić nieoptymalne użycie biblioteki Cogl."
+
+#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
+#, c-format
+msgid "Could not allocate %lu bytes to read file \"%s\""
+msgstr "Nie można przydzielić %lu bajtów do odczytu pliku \"%s\""
+
+#: ../deps/glib/gfileutils.c:557
+#, c-format
+msgid "Error reading file '%s': %s"
+msgstr "Błąd podczas odczytu pliku \"%s\": %s"
+
+#: ../deps/glib/gfileutils.c:571
+#, c-format
+msgid "File \"%s\" is too large"
+msgstr "Plik \"%s\" jest za duży"
+
+#: ../deps/glib/gfileutils.c:654
+#, c-format
+msgid "Failed to read from file '%s': %s"
+msgstr "Odczytanie z pliku \"%s\" się nie powiodło: %s"
+
+#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
+#, c-format
+msgid "Failed to open file '%s': %s"
+msgstr "Otwarcie pliku \"%s\" się nie powiodło: %s"
+
+#: ../deps/glib/gfileutils.c:722
+#, c-format
+msgid "Failed to get attributes of file '%s': fstat() failed: %s"
+msgstr ""
+"Uzyskanie atrybutów pliku \"%s\" się nie powiodło: funkcja fstat() zwróciła "
+"błąd: %s"
+
+#: ../deps/glib/gfileutils.c:756
+#, c-format
+msgid "Failed to open file '%s': fdopen() failed: %s"
+msgstr ""
+"Otwarcie pliku \"%s\" się nie powiodło: funkcja fdopen() zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:864
+#, c-format
+msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
+msgstr ""
+"Zmiana nazwy pliku \"%s\" na \"%s\" się nie powiodła: funkcja g_rename() "
+"zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
+#, c-format
+msgid "Failed to create file '%s': %s"
+msgstr "Utworzenie pliku \"%s\" się nie powiodło: %s"
+
+#: ../deps/glib/gfileutils.c:920
+#, c-format
+msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
+msgstr ""
+"Otwarcie pliku \"%s\" do zapisu się nie powiodło: funkcja fdopen() zwróciła "
+"błąd: %s"
+
+#: ../deps/glib/gfileutils.c:945
+#, c-format
+msgid "Failed to write file '%s': fwrite() failed: %s"
+msgstr ""
+"Zapisanie pliku \"%s\" się nie powiodło: funkcja fwrite() zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:964
+#, c-format
+msgid "Failed to write file '%s': fflush() failed: %s"
+msgstr ""
+"Zapisanie pliku \"%s\" się nie powiodło: funkcja fflush() zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:1008
+#, c-format
+msgid "Failed to write file '%s': fsync() failed: %s"
+msgstr ""
+"Zapisanie pliku \"%s\" się nie powiodło: funkcja fsync() zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:1032
+#, c-format
+msgid "Failed to close file '%s': fclose() failed: %s"
+msgstr ""
+"Zamknięcie pliku \"%s\" się nie powiodło: funkcja fclose() zwróciła błąd: %s"
+
+#: ../deps/glib/gfileutils.c:1154
+#, c-format
+msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
+msgstr ""
+"Nie można usunąć istniejącego pliku \"%s\": funkcja g_unlink() zwróciła "
+"błąd: %s"
+
+#: ../deps/glib/gfileutils.c:1414
+#, c-format
+msgid "Template '%s' invalid, should not contain a '%s'"
+msgstr "Szablon \"%s\" jest nieprawidłowy, nie powinien on zawierać \"%s\""
+
+#: ../deps/glib/gfileutils.c:1427
+#, c-format
+msgid "Template '%s' doesn't contain XXXXXX"
+msgstr "Szablon \"%s\" nie zawiera XXXXXX"
+
+#: ../deps/glib/gfileutils.c:2009
+#, c-format
+msgid "%.1f KiB"
+msgstr "%.1f KiB"
+
+#: ../deps/glib/gfileutils.c:2012
+#, c-format
+msgid "%.1f MiB"
+msgstr "%.1f MiB"
+
+#: ../deps/glib/gfileutils.c:2015
+#, c-format
+msgid "%.1f GiB"
+msgstr "%.1f GiB"
+
+#: ../deps/glib/gfileutils.c:2018
+#, c-format
+msgid "%.1f TiB"
+msgstr "%.1f TiB"
+
+#: ../deps/glib/gfileutils.c:2021
+#, c-format
+msgid "%.1f PiB"
+msgstr "%.1f PiB"
+
+#: ../deps/glib/gfileutils.c:2024
+#, c-format
+msgid "%.1f EiB"
+msgstr "%.1f EiB"
+
+#: ../deps/glib/gfileutils.c:2037
+#, c-format
+msgid "%.1f kB"
+msgstr "%.1f kB"
+
+#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
+#, c-format
+msgid "%.1f MB"
+msgstr "%.1f MB"
+
+#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
+#, c-format
+msgid "%.1f GB"
+msgstr "%.1f GB"
+
+#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
+#, c-format
+msgid "%.1f TB"
+msgstr "%.1f TB"
+
+#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
+#, c-format
+msgid "%.1f PB"
+msgstr "%.1f PB"
+
+#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
+#, c-format
+msgid "%.1f EB"
+msgstr "%.1f EB"
+
+#: ../deps/glib/gfileutils.c:2144
+#, c-format
+msgid "%.1f KB"
+msgstr "%.1f KB"
+
+#: ../deps/glib/gfileutils.c:2212
+#, c-format
+msgid "Failed to read the symbolic link '%s': %s"
+msgstr "Odczytanie dowiązania symbolicznego \"%s\" się nie powiodło: %s"
+
+#: ../deps/glib/gfileutils.c:2233
+msgid "Symbolic links not supported"
+msgstr "Dowiązania symboliczne nie są obsługiwane"
