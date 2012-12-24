@@ -10,8 +10,9 @@
     <DebugLibBuildDefines>_DEBUG;$(LibBuildDefines);COGL_GL_DEBUG;COGL_OBJECT_DEBUG;COGL_HANDLE_DEBUG</DebugLibBuildDefines>
     <CoglBuildDefines>G_LOG_DOMAIN="Cogl";COGL_HAS_WIN32_SUPPORT;COGL_BUILD_EXP;COGL_GL_LIBNAME="";COGL_LOCALEDIR="/some/random/dir"</CoglBuildDefines>
     <CoglPangoBuildDefines>G_LOG_DOMAIN="Cogl-Pango"</CoglPangoBuildDefines>
-    <TestProgDef>COGL_COMPILATION;TESTS_DATADIR="../share/cogl-$(CoglApiVersion)/tests"</TestProgDef>
+    <TestProgDef>COGL_COMPILATION</TestProgDef>
     <CopyDir>$(GlibEtcInstallRoot)</CopyDir>
+    <DefDir>$(SolutionDir)$(Configuration)\$(PlatformName)\obj\$(ProjectName)\</DefDir>
     <DoDefinesSDL>
 if exist ..\..\..\cogl\SDL_DEFINES goto DONE_COGL_DEFINES_H
 if not exist ..\..\..\cogl\WGL_DEFINES goto DO_COGL_DEFINES_H
@@ -49,7 +50,7 @@ gen-enums.bat $(GlibMkEnumsPath)
 cd .\vs10
 
 
-</PreBuildCmd>
+    </PreBuildCmd>
     <CoglDoInstall>
 mkdir $(CopyDir)
 
@@ -90,6 +91,8 @@ copy ..\..\..\cogl\cogl-buffer.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-color.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
+copy ..\..\..\cogl\cogl-deprecated.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+
 copy ..\..\..\cogl\cogl-depth-state.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-euler.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
@@ -97,6 +100,8 @@ copy ..\..\..\cogl\cogl-euler.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 copy ..\..\..\cogl\cogl-fixed.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-glib-source.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+
+copy ..\..\..\cogl\cogl-material-compat.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-pipeline.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
@@ -109,6 +114,8 @@ copy ..\..\..\cogl\cogl-offscreen.h $(CopyDir)\include\cogl-$(CoglApiVersion)\co
 copy ..\..\..\cogl\cogl-onscreen.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-primitives.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+
+copy ..\..\..\cogl\cogl-primitive-texture.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-path.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
@@ -144,6 +151,8 @@ copy ..\..\..\cogl\cogl-texture-3d.h $(CopyDir)\include\cogl-$(CoglApiVersion)\c
 
 copy ..\..\..\cogl\cogl-types.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
+copy ..\..\..\cogl\cogl-vertex-buffer.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+
 copy ..\..\..\cogl\cogl-index-buffer.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-indices.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
@@ -175,6 +184,8 @@ copy ..\..\..\cogl\cogl-display.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl-context.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
+copy ..\..\..\cogl\cogl-version.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+
 copy ..\..\..\cogl\cogl-win32-renderer.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl1-context.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
@@ -183,23 +194,28 @@ copy ..\..\..\cogl\cogl2-path.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
 copy ..\..\..\cogl\cogl2-experimental.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
-</CoglDoInstall>
-    <GenerateCoglDef>
-         echo EXPORTS &gt; ..\..\..\cogl\cogl.def
+copy ..\..\..\cogl\cogl2-compatibility.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
 
-         cl -EP -D_COGL_SUPPORTS_GTYPE_INTEGRATION -DCOGL_HAS_WIN32_SUPPORT -DCOGL_HAS_GLIB_SUPPORT -DCOGL_ENABLE_EXPERIMENTAL_API ..\..\..\cogl\cogl.symbols &gt;&gt; ..\..\..\cogl\cogl.def
+    </CoglDoInstall>
+    <CoglDoInstallSDL>
+copy ..\..\..\cogl\cogl-sdl.h $(CopyDir)\include\cogl-$(CoglApiVersion)\cogl
+    </CoglDoInstallSDL>
+    <GenerateCoglDef>
+         echo EXPORTS &gt; $(DefDir)\cogl.def
+
+         cl -EP -D_COGL_SUPPORTS_GTYPE_INTEGRATION -DCOGL_HAS_WIN32_SUPPORT -DCOGL_HAS_GLIB_SUPPORT -DCOGL_ENABLE_EXPERIMENTAL_API ..\..\..\cogl\cogl.symbols &gt;&gt; $(DefDir)\cogl.def
 
     </GenerateCoglDef>
     <GenerateCoglSDLDef>
-         echo EXPORTS &gt; ..\..\..\cogl\cogl.def
+         echo EXPORTS &gt; $(DefDir)\cogl.def
 
-         cl -EP -D_COGL_SUPPORTS_GTYPE_INTEGRATION -DCOGL_HAS_WIN32_SUPPORT -DCOGL_HAS_GLIB_SUPPORT -DCOGL_HAS_SDL_SUPPORT -DCOGL_ENABLE_EXPERIMENTAL_API ..\..\..\cogl\cogl.symbols &gt;&gt; ..\..\..\cogl\cogl.def
+         cl -EP -D_COGL_SUPPORTS_GTYPE_INTEGRATION -DCOGL_HAS_WIN32_SUPPORT -DCOGL_HAS_GLIB_SUPPORT -DCOGL_HAS_SDL_SUPPORT -DCOGL_ENABLE_EXPERIMENTAL_API ..\..\..\cogl\cogl.symbols &gt;&gt; $(DefDir)\cogl.def
 
     </GenerateCoglSDLDef>
     <GenerateCoglPangoDef>
-         echo EXPORTS &gt; ..\..\..\cogl-pango\cogl-pango.def
+         echo EXPORTS &gt; $(DefDir)\cogl-pango.def
 
-      cl -EP ..\..\..\cogl-pango\cogl-pango.symbols &gt;&gt; ..\..\..\cogl-pango\cogl-pango.def
+      cl -EP ..\..\..\cogl-pango\cogl-pango.symbols &gt;&gt; $(DefDir)\cogl-pango.def
 
      </GenerateCoglPangoDef>
     <CoglLibtoolCompatibleDllPrefix>lib</CoglLibtoolCompatibleDllPrefix>
@@ -229,6 +245,12 @@ copy ..\..\..\cogl\cogl2-experimental.h $(CopyDir)\include\cogl-$(CoglApiVersion
   <ItemGroup>
     <BuildMacro Include="GlibEtcInstallRoot">
       <Value>$(GlibEtcInstallRoot)</Value>
+    </BuildMacro>
+    <BuildMacro Include="CopyDir">
+      <Value>$(CopyDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="DefDir">
+      <Value>$(DefDir)</Value>
     </BuildMacro>
     <BuildMacro Include="GlibEtcInstallRoot">
       <Value>$(GlibMkEnumsPath)</Value>
@@ -268,6 +290,9 @@ copy ..\..\..\cogl\cogl2-experimental.h $(CopyDir)\include\cogl-$(CoglApiVersion
     </BuildMacro>
     <BuildMacro Include="CoglDoInstall">
       <Value>$(CoglDoInstall)</Value>
+    </BuildMacro>
+    <BuildMacro Include="CoglDoInstallSDL">
+      <Value>$(CoglDoInstallSDL)</Value>
     </BuildMacro>
     <BuildMacro Include="GenerateCoglDef">
       <Value>$(GenerateCoglDef)</Value>
