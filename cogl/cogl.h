@@ -100,13 +100,6 @@
 #include <cogl/cogl-sdl.h>
 #endif
 
-/**
- * SECTION:cogl
- * @short_description: General purpose API
- *
- * General utility functions for COGL.
- */
-
 #undef __COGL_H_INSIDE__
 
 #endif /* __COGL_H__ */
