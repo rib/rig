@@ -117,7 +117,6 @@ cogl_color_get_red_float
 cogl_color_init_from_4f
 cogl_color_init_from_4fv
 cogl_color_init_from_4ub
-cogl_color_new
 cogl_color_premultiply
 cogl_color_set_alpha
 cogl_color_set_alpha_byte

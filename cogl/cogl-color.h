@@ -478,7 +478,7 @@ cogl_color_copy (const CoglColor *color);
  * cogl_color_free:
  * @color: the color to free
  *
- * Frees the resources allocated by cogl_color_new() and cogl_color_copy()
+ * Frees the resources allocated by cogl_color_copy().
  *
  * Since: 1.0
  */
