@@ -282,6 +282,9 @@ typedef struct _CoglColor               CoglColor;
  * @COGL_PIXEL_FORMAT_BGRA_1010102_PRE: Premultiplied BGRA, 32 bits, 10 bpc
  * @COGL_PIXEL_FORMAT_ARGB_2101010_PRE: Premultiplied ARGB, 32 bits, 10 bpc
  * @COGL_PIXEL_FORMAT_ABGR_2101010_PRE: Premultiplied ABGR, 32 bits, 10 bpc
+ * @COGL_PIXEL_FORMAT_DEPTH_16: Depth, 16 bits
+ * @COGL_PIXEL_FORMAT_DEPTH_32: Depth, 32 bits
+ * @COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8: Depth/Stencil, 24/8 bits
  *
  * Pixel formats used by Cogl. For the formats with a byte per
  * component, the order of the components specify the order in
