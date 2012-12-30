@@ -292,12 +292,16 @@ COGL_TEXTURE_MAX_WASTE
 <SECTION>
 <FILE>cogl-texture-2d</FILE>
 <TITLE>2D textures</TITLE>
+
+<SUBSECTION>
 CoglTexture2D
+cogl_is_texture_2d
+
+<SUBSECTION>
 cogl_texture_2d_new_with_size
 cogl_texture_2d_new_from_bitmap
 cogl_texture_2d_new_from_data
 cogl_texture_2d_gl_new_from_foreign
-cogl_is_texture_rectangle
 </SECTION>
 
 <SECTION>
