@@ -361,6 +361,10 @@ typedef enum
 
 /**
  * CoglColor:
+ * @red: amount of red
+ * @green: amount of green
+ * @blue: amount of green
+ * @alpha: alpha
  *
  * A structure for holding a single color definition.
  *
