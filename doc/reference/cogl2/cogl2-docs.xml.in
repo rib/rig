@@ -7,7 +7,7 @@
 
   <bookinfo>
     <title>Cogl 2.0 Reference Manual</title>
-    <releaseinfo>for Cogl 2.0;</releaseinfo>
+    <releaseinfo>for Cogl &version;</releaseinfo>
 
     <copyright>
       <year>2008</year>
