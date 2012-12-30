@@ -262,7 +262,7 @@ cogl_is_texture (void *object);
 
 /**
  * cogl_texture_get_width:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  *
  * Queries the width of a cogl texture.
  *
@@ -273,7 +273,7 @@ cogl_texture_get_width (CoglTexture *texture);
 
 /**
  * cogl_texture_get_height:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  *
  * Queries the height of a cogl texture.
  *
@@ -284,7 +284,7 @@ cogl_texture_get_height (CoglTexture *texture);
 
 /**
  * cogl_texture_get_format:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  *
  * Queries the #CoglPixelFormat of a cogl texture.
  *
@@ -295,7 +295,7 @@ cogl_texture_get_format (CoglTexture *texture);
 
 /**
  * cogl_texture_get_max_waste:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  *
  * Queries the maximum wasted (unused) pixels in one dimension of a GPU side
  * texture.
@@ -307,7 +307,7 @@ cogl_texture_get_max_waste (CoglTexture *texture);
 
 /**
  * cogl_texture_is_sliced:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  *
  * Queries if a texture is sliced (stored as multiple GPU side tecture
  * objects).
@@ -320,7 +320,7 @@ cogl_texture_is_sliced (CoglTexture *texture);
 
 /**
  * cogl_texture_get_gl_texture:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  * @out_gl_handle: (out) (allow-none): pointer to return location for the
  *   textures GL handle, or %NULL.
  * @out_gl_target: (out) (allow-none): pointer to return location for the
@@ -341,7 +341,7 @@ cogl_texture_get_gl_texture (CoglTexture *texture,
 
 /**
  * cogl_texture_get_data:
- * @texture a #CoglTexture pointer.
+ * @texture: a #CoglTexture pointer.
  * @format: the #CoglPixelFormat to store the texture as.
  * @rowstride: the rowstride of @data in bytes or pass 0 to calculate
  *             from the bytes-per-pixel of @format multiplied by the
@@ -400,7 +400,7 @@ cogl_texture_draw_and_read_to_bitmap (CoglTexture *texture,
 
 /**
  * cogl_texture_set_region:
- * @texture a #CoglTexture.
+ * @texture: a #CoglTexture.
  * @width: width of the region to set.
  * @height: height of the region to set.
  * @format: the #CoglPixelFormat used in the source @data buffer.
@@ -485,7 +485,7 @@ cogl_texture_set_region (CoglTexture *texture,
 
 /**
  * cogl_texture_set_region_from_bitmap:
- * @texture a #CoglTexture pointer
+ * @texture: a #CoglTexture pointer
  * @src_x: upper left x coordinate of the region in the source bitmap.
  * @src_y: upper left y coordinate of the region in the source bitmap
  * @width: width of the region to copy. (Must be less than or equal to
