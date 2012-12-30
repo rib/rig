@@ -67,7 +67,6 @@ IGNORE_HFILES=\
 	cogl-defines.h 				\
 	cogl-internal.h 			\
 	cogl-matrix-mesa.h 			\
-	cogl-matrix-stack.h 			\
 	cogl-spans.h 				\
 	cogl-profile.h				\
 	cogl-util.h 				\
