@@ -105,6 +105,7 @@ cogl_is_path (void *object);
 
 /**
  * cogl_path_move_to:
+ * @path: A #CoglPath
  * @x: X coordinate of the pen location to move to.
  * @y: Y coordinate of the pen location to move to.
  *
@@ -120,6 +121,7 @@ cogl_path_move_to (CoglPath *path,
 
 /**
  * cogl_path_rel_move_to:
+ * @path: A #CoglPath
  * @x: X offset from the current pen location to move the pen to.
  * @y: Y offset from the current pen location to move the pen to.
  *
@@ -136,6 +138,7 @@ cogl_path_rel_move_to (CoglPath *path,
 
 /**
  * cogl_path_line_to:
+ * @path: A #CoglPath
  * @x: X coordinate of the end line vertex
  * @y: Y coordinate of the end line vertex
  *
@@ -151,6 +154,7 @@ cogl_path_line_to (CoglPath *path,
 
 /**
  * cogl_path_rel_line_to:
+ * @path: A #CoglPath
  * @x: X offset from the current pen location of the end line vertex
  * @y: Y offset from the current pen location of the end line vertex
  *
@@ -166,6 +170,7 @@ cogl_path_rel_line_to (CoglPath *path,
 
 /**
  * cogl_path_arc:
+ * @path: A #CoglPath
  * @center_x: X coordinate of the elliptical arc center
  * @center_y: Y coordinate of the elliptical arc center
  * @radius_x: X radius of the elliptical arc
@@ -197,6 +202,7 @@ cogl_path_arc (CoglPath *path,
 
 /**
  * cogl_path_curve_to:
+ * @path: A #CoglPath
  * @x_1: X coordinate of the second bezier control point
  * @y_1: Y coordinate of the second bezier control point
  * @x_2: X coordinate of the third bezier control point
@@ -221,6 +227,7 @@ cogl_path_curve_to (CoglPath *path,
 
 /**
  * cogl_path_rel_curve_to:
+ * @path: A #CoglPath
  * @x_1: X coordinate of the second bezier control point
  * @y_1: Y coordinate of the second bezier control point
  * @x_2: X coordinate of the third bezier control point
@@ -246,6 +253,7 @@ cogl_path_rel_curve_to (CoglPath *path,
 
 /**
  * cogl_path_close:
+ * @path: A #CoglPath
  *
  * Closes the path being constructed by adding a straight line segment
  * to it that ends at the first vertex of the path.
@@ -257,6 +265,7 @@ cogl_path_close (CoglPath *path);
 
 /**
  * cogl_path_line:
+ * @path: A #CoglPath
  * @x_1: X coordinate of the start line vertex
  * @y_1: Y coordinate of the start line vertex
  * @x_2: X coordinate of the end line vertex
@@ -277,6 +286,7 @@ cogl_path_line (CoglPath *path,
 
 /**
  * cogl_path_polyline:
+ * @path: A #CoglPath
  * @coords: (in) (array) (transfer none): A pointer to the first element of an
  * array of fixed-point values that specify the vertex coordinates.
  * @num_points: The total number of vertices.
@@ -302,6 +312,7 @@ cogl_path_polyline (CoglPath *path,
 
 /**
  * cogl_path_polygon:
+ * @path: A #CoglPath
  * @coords: (in) (array) (transfer none): A pointer to the first element of
  * an array of fixed-point values that specify the vertex coordinates.
  * @num_points: The total number of vertices.
@@ -323,6 +334,7 @@ cogl_path_polygon (CoglPath *path,
 
 /**
  * cogl_path_rectangle:
+ * @path: A #CoglPath
  * @x_1: X coordinate of the top-left corner.
  * @y_1: Y coordinate of the top-left corner.
  * @x_2: X coordinate of the bottom-right corner.
@@ -342,6 +354,7 @@ cogl_path_rectangle (CoglPath *path,
 
 /**
  * cogl_path_ellipse:
+ * @path: A #CoglPath
  * @center_x: X coordinate of the ellipse center
  * @center_y: Y coordinate of the ellipse center
  * @radius_x: X radius of the ellipse
@@ -361,6 +374,7 @@ cogl_path_ellipse (CoglPath *path,
 
 /**
  * cogl_path_round_rectangle:
+ * @path: A #CoglPath
  * @x_1: X coordinate of the top-left corner.
  * @y_1: Y coordinate of the top-left corner.
  * @x_2: X coordinate of the bottom-right corner.
@@ -427,6 +441,7 @@ typedef enum {
 
 /**
  * cogl_path_set_fill_rule:
+ * @path: A #CoglPath
  * @fill_rule: The new fill rule.
  *
  * Sets the fill rule of the current path to @fill_rule. This will
@@ -440,6 +455,7 @@ cogl_path_set_fill_rule (CoglPath *path, CoglPathFillRule fill_rule);
 
 /**
  * cogl_path_get_fill_rule:
+ * @path: A #CoglPath
  *
  * Retrieves the fill rule set using cogl_path_set_fill_rule().
  *

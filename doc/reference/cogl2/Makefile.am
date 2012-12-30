@@ -59,7 +59,6 @@ cogl_private_headers := \
 IGNORE_HFILES=\
 	$(cogl_private_headers)			\
 	cogl-atlas.h				\
-	cogl-path.h				\
 	cogl-program.h				\
 	cogl-shader.h				\
 	cogl-blend-string.h 			\
