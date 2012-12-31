@@ -64,10 +64,10 @@ cogl_color_init_from_4ub (CoglColor *color,
 /**
  * cogl_color_init_from_4f:
  * @color: A pointer to a #CoglColor to initialize
- * @red: value of the red channel, between 0 and %1.0
- * @green: value of the green channel, between 0 and %1.0
- * @blue: value of the blue channel, between 0 and %1.0
- * @alpha: value of the alpha channel, between 0 and %1.0
+ * @red: value of the red channel, between 0 and 1.0
+ * @green: value of the green channel, between 0 and 1.0
+ * @blue: value of the blue channel, between 0 and 1.0
+ * @alpha: value of the alpha channel, between 0 and 1.0
  *
  * Sets the values of the passed channels into a #CoglColor
  *
@@ -210,7 +210,7 @@ cogl_color_get_alpha_float (const CoglColor *color);
  * @color: a #CoglColor
  *
  * Retrieves the red channel of @color as a fixed point
- * value between 0 and %1.0.
+ * value between 0 and 1.0.
  *
  * Return value: the red channel of the passed color
  *
@@ -224,7 +224,7 @@ cogl_color_get_red (const CoglColor *color);
  * @color: a #CoglColor
  *
  * Retrieves the green channel of @color as a fixed point
- * value between 0 and %1.0.
+ * value between 0 and 1.0.
  *
  * Return value: the green channel of the passed color
  *
@@ -238,7 +238,7 @@ cogl_color_get_green (const CoglColor *color);
  * @color: a #CoglColor
  *
  * Retrieves the blue channel of @color as a fixed point
- * value between 0 and %1.0.
+ * value between 0 and 1.0.
  *
  * Return value: the blue channel of the passed color
  *
@@ -252,7 +252,7 @@ cogl_color_get_blue (const CoglColor *color);
  * @color: a #CoglColor
  *
  * Retrieves the alpha channel of @color as a fixed point
- * value between 0 and %1.0.
+ * value between 0 and 1.0.
  *
  * Return value: the alpha channel of the passed color
  *

@@ -417,10 +417,7 @@ cogl_path_round_rectangle (CoglPath *path,
  * as if there was an extra line joining the first point and the last
  * point.
  *
- * The default fill rule is %COGL_PATH_FILL_RULE_EVEN_ODD. The fill
- * rule is attached to the current path so preserving a path with
- * cogl_get_path() also preserves the fill rule. Calling
- * cogl_path_new() resets the current fill rule to the default.
+ * The default fill rule when creating a path is %COGL_PATH_FILL_RULE_EVEN_ODD.
  *
  * <figure id="fill-rule-non-zero">
  *   <title>Example of filling various paths using the non-zero rule</title>
