@@ -247,7 +247,7 @@ cogl_android_onscreen_update_size (CoglOnscreen *onscreen,
 
 /**
  * cogl_onscreen_set_swap_throttled:
- * @onscreen: A #CoglOncsreen framebuffer
+ * @onscreen: A #CoglOnscreen framebuffer
  * @throttled: Whether swap throttling is wanted or not.
  *
  * Requests that the given @onscreen framebuffer should have swap buffer
