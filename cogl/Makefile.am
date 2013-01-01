@@ -539,14 +539,8 @@ libcogl2_la_LDFLAGS = \
 libcogl2_la_SOURCES = $(cogl_sources_c)
 nodist_libcogl2_la_SOURCES = $(BUILT_SOURCES)
 
-# Cogl installed headers
-cogl_headers = \
-	$(cogl_public_h) \
-	$(srcdir)/cogl-pango.h \
-	$(NULL)
-
 coglincludedir = $(includedir)/cogl2/cogl
-coglinclude_HEADERS = $(cogl_headers) $(cogl_experimental_h)
+coglinclude_HEADERS = $(cogl_public_h) $(cogl_experimental_h)
 nodist_coglinclude_HEADERS = $(cogl_nodist_experimental_h) cogl-defines.h
 if USE_GLIB
 nodist_coglinclude_HEADERS += cogl-enum-types.h
