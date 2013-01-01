@@ -321,7 +321,7 @@ cogl_context_new (CoglDisplay *display,
   context->depth_range_near_cache = 0;
   context->depth_range_far_cache = 1;
 
-  context->pipeline_cache = cogl_pipeline_cache_new ();
+  context->pipeline_cache = _cogl_pipeline_cache_new ();
 
   for (i = 0; i < COGL_BUFFER_BIND_TARGET_COUNT; i++)
     context->current_buffer[i] = NULL;
@@ -489,7 +489,7 @@ _cogl_context_free (CoglContext *context)
   _cogl_matrix_entry_cache_destroy (&context->builtin_flushed_projection);
   _cogl_matrix_entry_cache_destroy (&context->builtin_flushed_modelview);
 
-  cogl_pipeline_cache_free (context->pipeline_cache);
+  _cogl_pipeline_cache_free (context->pipeline_cache);
 
   _cogl_sampler_cache_free (context->sampler_cache);
 
