@@ -57,9 +57,11 @@ cogl_x11_tfp_LDADD = $(common_ldadd)
 endif
 
 if SUPPORT_WAYLAND_EGL_SERVER
+if WAYLAND_0_85_X_SERVER
 programs += cogland2
 cogland2_SOURCES = cogland.c
 cogland2_LDADD = $(common_ldadd)
+endif
 endif
 
 cogl_gles2_context_SOURCES = cogl-gles2-context.c
