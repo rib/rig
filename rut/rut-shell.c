@@ -37,6 +37,12 @@ typedef struct
   void *user_data;
 } RutShellPrePaintEntry;
 
+#ifdef USE_SDL
+typedef void (*RutSDLEventHandler) (RutShell *shell,
+                                    SDL_Event *event,
+                                    void *user_data);
+#endif
+
 struct _RutShell
 {
   RutObjectProps _parent;
@@ -1718,7 +1724,85 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
     }
 }
 
-#elif defined (USE_GLIB)
+typedef struct _SDLSource
+{
+  GSource source;
+
+  RutShell *shell;
+
+} SDLSource;
+
+static gboolean
+sdl_glib_source_prepare (GSource *source, int *timeout)
+{
+  if (SDL_PollEvent (NULL))
+    return TRUE;
+
+  *timeout = 8;
+
+  return FALSE;
+}
+
+static gboolean
+sdl_glib_source_check (GSource *source)
+{
+  if (SDL_PollEvent (NULL))
+    return TRUE;
+
+  return FALSE;
+}
+
+static gboolean
+sdl_glib_source_dispatch (GSource *source,
+                           GSourceFunc callback,
+                           void *user_data)
+{
+  SDLSource *sdl_source = (SDLSource *) source;
+  SDL_Event event;
+
+  while (SDL_PollEvent (&event))
+    {
+      cogl_sdl_handle_event (sdl_source->shell->rut_ctx->cogl_context,
+                             &event);
+
+      sdl_handle_event (sdl_source->shell, &event);
+    }
+
+  return TRUE;
+}
+
+static GSourceFuncs
+sdl_glib_source_funcs =
+  {
+    sdl_glib_source_prepare,
+    sdl_glib_source_check,
+    sdl_glib_source_dispatch,
+    NULL
+  };
+
+static GSource *
+sdl_glib_source_new (RutShell *shell, int priority)
+{
+  GSource *source = g_source_new (&sdl_glib_source_funcs, sizeof (SDLSource));
+  SDLSource *sdl_source = (SDLSource *)source;
+
+  sdl_source->shell = shell;
+
+  return source;
+}
+
+static GPollFunc rut_sdl_original_poll;
+
+int
+sdl_poll_wrapper (GPollFD *ufds,
+                  guint nfsd,
+                  gint timeout_)
+{
+  cogl_sdl_idle (rut_cogl_context);
+
+  return rut_sdl_original_poll (ufds, nfsd, timeout_);
+}
+#endif
 
 static CoglBool
 glib_paint_cb (void *user_data)
@@ -1727,25 +1811,8 @@ glib_paint_cb (void *user_data)
 
   shell->redraw_queued = _rut_shell_paint (shell);
 
-  /* If the driver can deliver swap complete events then we can remove
-   * the idle paint callback until we next get a swap complete event
-   * otherwise we keep the idle paint callback installed and simply
-   * paint as fast as the driver will allow... */
-  if (cogl_has_feature (shell->rut_ctx->cogl_context, COGL_FEATURE_ID_SWAP_BUFFERS_EVENT))
-    return FALSE; /* remove the callback */
-  else
-    return TRUE;
+  return TRUE;
 }
-
-static void
-swap_complete_cb (CoglFramebuffer *framebuffer, void *user_data)
-{
-  RutShell *shell = user_data;
-
-  if (shell->redraw_queued)
-    g_idle_add (glib_paint_cb, user_data);
-}
-#endif
 
 void
 rut_shell_main (RutShell *shell)
@@ -1792,50 +1859,30 @@ rut_shell_main (RutShell *shell)
       shell->redraw_queued = _rut_shell_paint (shell);
     }
 
-#elif defined(USE_SDL)
+#else
 
-  shell->init_cb (shell, shell->user_data);
-
-  shell->quit = FALSE;
-  shell->redraw_queued = TRUE;
-  while (!shell->quit)
-    {
-      SDL_Event event;
-
-      while (!shell->quit)
-        {
-          if (!SDL_PollEvent (&event))
-            {
-              if (shell->redraw_queued)
-                break;
-
-              cogl_sdl_idle (shell->rut_ctx->cogl_context);
-              if (!SDL_WaitEvent (&event))
-                g_error ("Error waiting for SDL events");
-            }
-
-          sdl_handle_event (shell, &event);
-          cogl_sdl_handle_event (shell->rut_ctx->cogl_context, &event);
-        }
-
-      shell->redraw_queued = _rut_shell_paint (shell);
-    }
-
-  shell->fini_cb (shell, shell->user_data);
-
-#elif defined (USE_GLIB)
   GSource *cogl_source;
   GMainLoop *loop;
 
   shell->init_cb (shell, shell->user_data);
 
-  cogl_source = cogl_glib_source_new (shell->ctx, G_PRIORITY_DEFAULT);
-
+  cogl_source = cogl_glib_source_new (shell->rut_ctx->cogl_context,
+                                      G_PRIORITY_DEFAULT);
   g_source_attach (cogl_source, NULL);
 
-  if (cogl_has_feature (shell->ctx, COGL_FEATURE_ID_SWAP_BUFFERS_EVENT))
-    cogl_onscreen_add_swap_buffers_callback (COGL_ONSCREEN (shell->fb),
-                                             swap_complete_cb, shell);
+#ifdef USE_SDL
+
+  {
+    GSource *sdl_source;
+
+    rut_sdl_original_poll =
+      g_main_context_get_poll_func (g_main_context_default ());
+    g_main_context_set_poll_func (g_main_context_default (),
+                                  sdl_poll_wrapper);
+    sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
+    g_source_attach (sdl_source, NULL);
+  }
+#endif
 
   g_idle_add (glib_paint_cb, shell);
 
@@ -1843,10 +1890,6 @@ rut_shell_main (RutShell *shell)
   g_main_loop_run (loop);
 
   shell->fini_cb (shell, shell->user_data);
-
-#else
-
-#error "No platform mainloop provided"
 
 #endif
 }
