@@ -292,8 +292,7 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,
                                        src_w,
                                        src_h,
-                                       format,
-                                       &error);
+                                       format);
       if (error)
         {
           g_warning ("blurrer: could not create x pass texture: %s",
@@ -310,19 +309,12 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
 
   if (!blurrer->y_pass)
     {
-      CoglError *error = NULL;
       /* create the second FBO (final destination) to render the y pass */
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,
                                        src_w,
                                        src_h,
-                                       format,
-                                       &error);
-      if (error)
-        {
-          g_warning ("blurrer: could not create destination texture: %s",
-                     error->message);
-        }
+                                       format);
       blurrer->destination = COGL_TEXTURE (texture_2d);
       blurrer->y_pass = blurrer->destination;
 

@@ -103,8 +103,7 @@ generate_bump_map (CoglContext *ctx,
     cogl_texture_2d_new_with_size (ctx,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_ANY,
-                                   NULL));
+                                   COGL_PIXEL_FORMAT_ANY));
 
   CoglOffscreen *offscreen = cogl_offscreen_new_to_texture (dst);
   CoglFramebuffer *fb = COGL_FRAMEBUFFER (offscreen);
@@ -172,8 +171,7 @@ generate_normal_map (CoglContext *ctx,
     cogl_texture_2d_new_with_size (ctx,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_ANY,
-                                   NULL));
+                                   COGL_PIXEL_FORMAT_ANY));
 
   CoglOffscreen *offscreen = cogl_offscreen_new_to_texture (dst);
   CoglFramebuffer *fb = COGL_FRAMEBUFFER (offscreen);

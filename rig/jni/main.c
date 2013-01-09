@@ -2493,7 +2493,6 @@ init (RutShell *shell, void *user_data)
   float vector3[3];
   int i;
   char *full_path;
-  CoglError *error = NULL;
   CoglTexture2D *color_buffer;
   CoglColor color;
   RutModel *model;
@@ -2598,8 +2597,7 @@ init (RutShell *shell, void *user_data)
       data->gradient = COGL_TEXTURE (
         cogl_texture_2d_new_with_size (rut_cogl_context,
                                        200, 200,
-                                       COGL_PIXEL_FORMAT_ANY,
-                                       NULL));
+                                       COGL_PIXEL_FORMAT_ANY));
 
       offscreen = cogl_offscreen_new_to_texture (data->gradient);
 
@@ -2628,10 +2626,7 @@ init (RutShell *shell, void *user_data)
   /* TODO: reallocate if the onscreen framebuffer is resized */
   color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
                                                 data->width * 2, data->height * 2,
-                                                COGL_PIXEL_FORMAT_ANY,
-                                                &error);
-  if (error)
-    g_critical ("could not create texture: %s", error->message);
+                                                COGL_PIXEL_FORMAT_ANY);
 
   data->shadow_color = color_buffer;
 

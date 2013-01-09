@@ -134,8 +134,6 @@ rut_dof_effect_get_depth_pass_fb (RutDepthOfField *dof)
 {
   if (!dof->depth_pass)
     {
-      CoglError *error = NULL;
-
       /*
        * Offscreen render for post-processing
        */
@@ -143,13 +141,7 @@ rut_dof_effect_get_depth_pass_fb (RutDepthOfField *dof)
         cogl_texture_2d_new_with_size (dof->ctx->cogl_context,
                                        dof->width,
                                        dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888,
-                                       &error));
-      if (error)
-        {
-          g_critical ("could not create texture: %s", error->message);
-          return NULL;
-        }
+                                       COGL_PIXEL_FORMAT_RGBA_8888));
 
       dof->depth_pass_fb = COGL_FRAMEBUFFER (
         cogl_offscreen_new_to_texture (dof->depth_pass));
@@ -163,8 +155,6 @@ rut_dof_effect_get_color_pass_fb (RutDepthOfField *dof)
 {
   if (!dof->color_pass)
     {
-      CoglError *error = NULL;
-
       /*
        * Offscreen render for post-processing
        */
@@ -172,13 +162,7 @@ rut_dof_effect_get_color_pass_fb (RutDepthOfField *dof)
         cogl_texture_2d_new_with_size (dof->ctx->cogl_context,
                                        dof->width,
                                        dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888,
-                                       &error));
-      if (error)
-        {
-          g_critical ("could not create texture: %s", error->message);
-          return NULL;
-        }
+                                       COGL_PIXEL_FORMAT_RGBA_8888));
 
       dof->color_pass_fb = COGL_FRAMEBUFFER (
         cogl_offscreen_new_to_texture (dof->color_pass));

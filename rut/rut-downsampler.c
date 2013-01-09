@@ -103,20 +103,12 @@ rut_downsampler_downsample (RutDownsampler *downsampler,
       cogl_texture_get_height (downsampler->dest) != dest_height ||
       cogl_texture_get_format (downsampler->dest) != format)
     {
-      CoglError *error = NULL;
       CoglOffscreen *offscreen;
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (downsampler->ctx->cogl_context,
                                        dest_width,
                                        dest_height,
-                                       format,
-                                       &error);
-      if (error)
-        {
-          g_warning ("downsample: could not create destination texture: %s",
-                     error->message);
-        }
-
+                                       format);
       _rut_downsampler_reset (downsampler);
 
       downsampler->dest = COGL_TEXTURE (texture_2d);
