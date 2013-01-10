@@ -12,6 +12,7 @@
 #include <cogl/cogl.h>
 
 #include <rut.h>
+#include <rut-bin.h>
 
 #include "rig-data.h"
 #include "rig-transition.h"
@@ -2928,15 +2929,20 @@ init (RutShell *shell, void *user_data)
       rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
 
         {
+          RutBin *bin;
           RutEntry *entry;
           RutText *text;
-          RutTransform *transform;
-          float width, min_height;
 
-          transform = rut_transform_new (data->ctx,
-                                         (entry = rut_entry_new (data->ctx)), NULL);
-          rut_transform_translate (transform, 20, 10, 0);
-          rut_graphable_add_child (data->assets_vp, transform);
+          bin = rut_bin_new (data->ctx);
+          rut_graphable_add_child (data->left_bar_stack, bin);
+          rut_bin_set_top_padding (bin, 10);
+          rut_bin_set_left_padding (bin, 5);
+          rut_bin_set_right_padding (bin, 24 + 5);
+          rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
+          rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
+
+          entry = rut_entry_new (data->ctx);
+          rut_bin_set_child (bin, entry);
 
           text = rut_entry_get_text (entry);
           rut_text_set_single_line_mode (text, TRUE);
@@ -2946,10 +2952,6 @@ init (RutShell *shell, void *user_data)
                                               asset_search_update_cb,
                                               data,
                                               NULL);
-
-          rut_sizable_get_preferred_height (entry, -1, &min_height, NULL);
-          rut_sizable_get_preferred_width (entry, min_height, NULL, &width);
-          rut_sizable_set_size (entry, width, min_height);
         }
 
 
