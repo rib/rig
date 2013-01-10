@@ -97,6 +97,7 @@ enum
   PROP_FONT_NAME,
   PROP_FONT_DESCRIPTION,
   PROP_TEXT,
+  PROP_HINT_TEXT,
   PROP_COLOR,
   PROP_USE_MARKUP,
   PROP_ATTRIBUTES,
@@ -161,6 +162,9 @@ struct _RutText
   char *font_name;
 
   char *preedit_str;
+
+  char *hint_text;
+  PangoLayout *hint_text_layout;
 
   CoglColor text_color;
 
@@ -320,6 +324,22 @@ static RutPropertySpec _rut_text_prop_specs[] = {
     .setter.text_type = rut_text_set_text,
     .nick = "Text",
     .blurb = "The text to render",
+    .flags = RUT_PROPERTY_FLAG_READWRITE
+  },
+
+  /**
+   * RutText:hint-text:
+   *
+   * The text to show as a hint when the entry box is empty and it
+   * doesn't have keyboard focus.
+   */
+  {
+    .name = "hint-text",
+    .type = RUT_PROPERTY_TYPE_TEXT,
+    .getter.text_type = rut_text_get_hint_text,
+    .setter.text_type = rut_text_set_hint_text,
+    .nick = "Hint Text",
+    .blurb = "The text to show as a hint",
     .flags = RUT_PROPERTY_FLAG_READWRITE
   },
 
@@ -954,6 +974,19 @@ rut_text_ensure_effective_attributes (RutText *text)
 }
 
 static PangoLayout *
+rut_text_create_hint_text_layout (RutText *text)
+{
+  PangoLayout *layout;
+
+  layout = pango_layout_new (text->ctx->pango_context);
+  pango_layout_set_font_description (layout, text->font_desc);
+  pango_layout_set_single_paragraph_mode (layout, TRUE);
+  pango_layout_set_text (layout, text->hint_text, -1);
+
+  return layout;
+}
+
+static PangoLayout *
 rut_text_create_layout_no_cache (RutText  *text,
                                  int width,
                                  int height,
@@ -1048,6 +1081,16 @@ rut_text_dirty_cache (RutText *text)
       }
 }
 
+static void
+rut_text_dirty_hint_text_layout (RutText *text)
+{
+  if (text->hint_text_layout)
+    {
+      g_object_unref (text->hint_text_layout);
+      text->hint_text_layout = NULL;
+    }
+}
+
 /*
  * rut_text_set_font_description_internal:
  * @text: a #RutText
@@ -1079,6 +1122,7 @@ rut_text_set_font_description_internal (RutText *text,
   text->font_name = pango_font_description_to_string (text->font_desc);
 
   rut_text_dirty_cache (text);
+  rut_text_dirty_hint_text_layout (text);
 
   if (rut_text_buffer_get_length (get_buffer (text)) != 0)
     rut_text_notify_preferred_size_changed (text);
@@ -1117,6 +1161,7 @@ rut_text_settings_changed_cb (RutSettings *settings,
     }
 
   rut_text_dirty_cache (text);
+  rut_text_dirty_hint_text_layout (text);
   rut_text_notify_preferred_size_changed (text);
 }
 
@@ -1625,6 +1670,9 @@ _rut_text_free (void *object)
     pango_attr_list_unref (text->effective_attrs);
   if (text->preedit_attrs)
     pango_attr_list_unref (text->preedit_attrs);
+
+  g_free (text->hint_text);
+  rut_text_dirty_hint_text_layout (text);
 
   rut_text_set_buffer (text, NULL);
   g_free (text->font_name);
@@ -2787,7 +2835,17 @@ rut_text_paint (RutText *text,
 #endif
 
   if (text->editable && text->single_line_mode)
-    layout = rut_text_create_layout (text, -1, -1);
+    {
+      if (n_chars == 0 && text->hint_text && !text->has_focus)
+        {
+          if (text->hint_text_layout == NULL)
+            text->hint_text_layout = rut_text_create_hint_text_layout (text);
+
+          layout = text->hint_text_layout;
+        }
+      else
+        layout = rut_text_create_layout (text, -1, -1);
+    }
   else
     {
       /* the only time when we create the PangoLayout using the full
@@ -4057,6 +4115,32 @@ rut_text_set_text (RutObject *obj,
 
   rut_text_set_use_markup_internal (text, FALSE);
   rut_text_buffer_set_text (get_buffer (text), text_str);
+}
+
+const char *
+rut_text_get_hint_text (RutObject *obj)
+{
+  RutText *text = RUT_TEXT (obj);
+
+  return text->hint_text ? text->hint_text : "";
+}
+
+void
+rut_text_set_hint_text (RutObject *obj,
+                        const char *hint_str)
+{
+  RutText *text = RUT_TEXT (obj);
+
+  g_free (text->hint_text);
+  text->hint_text = g_strdup (hint_str);
+
+  if (!text->has_focus &&
+      (text->buffer == NULL ||
+       rut_text_buffer_get_length (text->buffer) == 0))
+    rut_shell_queue_redraw (text->ctx->shell);
+
+  rut_property_dirty (&text->ctx->property_ctx,
+                      &text->properties[PROP_HINT_TEXT]);
 }
 
 void

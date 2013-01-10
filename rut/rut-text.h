@@ -315,6 +315,36 @@ rut_text_set_text (RutObject *text,
                    const char *text_str);
 
 /**
+ * rut_text_get_hint_text:
+ * @text: a #RutText
+ *
+ * Retrieves the hint text that will be displayed in the entry box
+ * when the text is empty and the entry does not have keyboard focus.
+ *
+ * Return value: (transfer none): the hint text. The returned
+ *   string is owned by the #RutText actor and should never be modified
+ *   or freed
+ */
+const char *
+rut_text_get_hint_text (RutObject *text);
+
+/**
+ * rut_text_set_hint_text:
+ * @text: a #RutText
+ * @hint_str: (allow-none): the text to set. Passing %NULL is the same
+ *   as passing "" (the empty string)
+ *
+ * Sets the hint text of a #RutText actor.
+ *
+ * The hint text is shown when the entry box is empty and it does not
+ * have a keyboard focus. It can be used to give a hint to the user
+ * about what should be typed in the box.
+ */
+void
+rut_text_set_hint_text (RutObject *text,
+                        const char *hint_str);
+
+/**
  * rut_text_set_markup:
  * @text: a #RutText
  * @markup: (allow-none): a string containing Pango markup.
