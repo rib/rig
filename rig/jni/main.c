@@ -2946,7 +2946,7 @@ init (RutShell *shell, void *user_data)
 
           text = rut_entry_get_text (entry);
           rut_text_set_single_line_mode (text, TRUE);
-          rut_text_set_text (text, "Search...");
+          rut_text_set_hint_text (text, "Search...");
 
           rut_text_add_text_changed_callback (text,
                                               asset_search_update_cb,
