@@ -107,6 +107,7 @@ cogl_public_h = \
 	$(srcdir)/cogl-texture.h 		\
 	$(srcdir)/cogl-types.h 			\
 	$(srcdir)/cogl-vector.h 		\
+	$(srcdir)/cogl-fence.h       		\
 	$(srcdir)/cogl-version.h		\
 	$(srcdir)/cogl.h			\
 	$(NULL)
@@ -403,6 +404,8 @@ cogl_sources_c = \
 	$(srcdir)/cogl-error.c				\
 	$(srcdir)/cogl-closure-list-private.h		\
 	$(srcdir)/cogl-closure-list.c			\
+	$(srcdir)/cogl-fence.c				\
+	$(srcdir)/cogl-fence-private.h			\
 	$(NULL)
 
 if USE_GLIB

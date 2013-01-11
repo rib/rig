@@ -675,3 +675,7 @@ _cogl_texture_gl_flush_legacy_texobj_wrap_modes
 _cogl_texture_transform_coords_to_gl
 _cogl_texture_transform_quad_coords_to_gl
 #endif
+
+cogl_fence_closure_get_user_data
+cogl_framebuffer_add_fence_callback
+cogl_framebuffer_cancel_fence_callback
