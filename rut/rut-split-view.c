@@ -385,12 +385,12 @@ sync_child_sizes (RutSplitView *split_view)
 
   if (split_view->child1)
     {
+      update_child1_transform (split_view);
+
       if (rut_object_is (split_view->child1, RUT_INTERFACE_ID_SIZABLE))
         rut_sizable_set_size (split_view->child1,
                               split_view->child1_geom.width,
                               split_view->child1_geom.height);
-
-      update_child1_transform (split_view);
     }
 
   if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
