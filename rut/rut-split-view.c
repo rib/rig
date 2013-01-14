@@ -29,11 +29,6 @@
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
 
-#define RUT_SPLIT_VIEW_EDGE_GAP 5
-#define RUT_SPLIT_VIEW_PROPERTY_GAP 5
-
-#define RUT_SPLIT_VIEW_N_COLUMNS 1
-
 enum {
   RUT_SPLIT_VIEW_PROP_WIDTH,
   RUT_SPLIT_VIEW_PROP_HEIGHT,
