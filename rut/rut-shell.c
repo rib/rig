@@ -191,6 +191,16 @@ typedef struct
   RutList link;
 
   CoglOnscreen *onscreen;
+
+  RutCursor current_cursor;
+  /* This is used to record whether anything set a cursor while
+   * handling a mouse motion event. If nothing sets one then the shell
+   * will put the cursor back to the default pointer. */
+  CoglBool cursor_set;
+
+#if defined(USE_SDL) && SDL_MAJOR_VERSION >= 2
+  SDL_Cursor *cursor_image;
+#endif
 } RutShellOnscreen;
 
 static void
@@ -1247,6 +1257,19 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
   return picked_object;
 }
 
+static RutShellOnscreen *
+get_shell_onscreen (RutShell *shell,
+                    CoglOnscreen *onscreen)
+{
+  RutShellOnscreen *shell_onscreen;
+
+  rut_list_for_each (shell_onscreen, &shell->onscreens, link)
+    if (shell_onscreen->onscreen == onscreen)
+      return shell_onscreen;
+
+  return NULL;
+}
+
 static RutInputEventStatus
 _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
 {
@@ -1255,14 +1278,26 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
   RutClosure *c, *tmp;
   RutObject *target;
   RutShellGrab *grab;
+  CoglOnscreen *onscreen = NULL;
+  RutShellOnscreen *shell_onscreen = NULL;
+
+  onscreen = rut_input_event_get_onscreen (event);
+
+  if (onscreen)
+    shell_onscreen = get_shell_onscreen (shell, onscreen);
 
   /* Keep track of the last known position of the mouse so that we can
    * send key events to whatever is under the mouse when there is no
    * key focus */
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-     shell->mouse_x = rut_motion_event_get_x (event);
-     shell->mouse_y = rut_motion_event_get_y (event);
+      shell->mouse_x = rut_motion_event_get_x (event);
+      shell->mouse_y = rut_motion_event_get_y (event);
+
+      /* Keep track of whether any handlers set a cursor in response to
+       * the motion event */
+      if (shell_onscreen)
+        shell_onscreen->cursor_set = FALSE;
     }
 
   event->camera = shell->window_camera;
@@ -1273,7 +1308,7 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
 
       status = cb (event, c->user_data);
       if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-        return status;
+        goto handled;
     }
 
   rut_list_for_each_safe (grab, shell->next_grab, &shell->grabs, list_node)
@@ -1289,7 +1324,10 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
       event->camera = old_camera;
 
       if (grab_status == RUT_INPUT_EVENT_STATUS_HANDLED)
-        return RUT_INPUT_EVENT_STATUS_HANDLED;
+        {
+          status = RUT_INPUT_EVENT_STATUS_HANDLED;
+          goto handled;
+        }
     }
 
   for (l = shell->input_cameras; l; l = l->next)
@@ -1313,7 +1351,7 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
               status = region->callback (region, event, region->user_data);
 
               if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-                return status;
+                goto handled;
             }
         }
     }
@@ -1342,6 +1380,15 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
 
       target = rut_graphable_get_parent (target);
     }
+
+ handled:
+
+  /* If nothing set a cursor in response to the motion event then
+   * we'll reset it back to the default pointer */
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+      shell_onscreen &&
+      !shell_onscreen->cursor_set)
+    rut_shell_set_cursor (shell, onscreen, RUT_CURSOR_ARROW);
 
   return status;
 }
@@ -1612,6 +1659,60 @@ rut_shell_ungrab_key_focus (RutShell *shell)
       shell->keyboard_focus_object = NULL;
       shell->keyboard_ungrab_cb = NULL;
     }
+}
+
+void
+rut_shell_set_cursor (RutShell *shell,
+                      CoglOnscreen *onscreen,
+                      RutCursor cursor)
+{
+  RutShellOnscreen *shell_onscreen;
+
+  shell_onscreen = get_shell_onscreen (shell, onscreen);
+
+  if (shell_onscreen == NULL)
+    return;
+
+  if (shell_onscreen->current_cursor != cursor)
+    {
+#if defined(USE_SDL) && SDL_MAJOR_VERSION >= 2
+      SDL_Cursor *cursor_image;
+      SDL_SystemCursor system_cursor;
+
+      switch (cursor)
+        {
+        case RUT_CURSOR_ARROW:
+          system_cursor = SDL_SYSTEM_CURSOR_ARROW;
+          break;
+        case RUT_CURSOR_IBEAM:
+          system_cursor = SDL_SYSTEM_CURSOR_IBEAM;
+          break;
+        case RUT_CURSOR_WAIT:
+          system_cursor = SDL_SYSTEM_CURSOR_WAIT;
+          break;
+        case RUT_CURSOR_CROSSHAIR:
+          system_cursor = SDL_SYSTEM_CURSOR_CROSSHAIR;
+          break;
+        case RUT_CURSOR_SIZE_WE:
+          system_cursor = SDL_SYSTEM_CURSOR_SIZEWE;
+          break;
+        case RUT_CURSOR_SIZE_NS:
+          system_cursor = SDL_SYSTEM_CURSOR_SIZENS;
+          break;
+        }
+
+      cursor_image = SDL_CreateSystemCursor (system_cursor);
+      SDL_SetCursor (cursor_image);
+
+      if (shell_onscreen->cursor_image)
+        SDL_FreeCursor (shell_onscreen->cursor_image);
+      shell_onscreen->cursor_image = cursor_image;
+#endif
+
+      shell_onscreen->current_cursor = cursor;
+    }
+
+  shell_onscreen->cursor_set = TRUE;
 }
 
 static void

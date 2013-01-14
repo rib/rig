@@ -1,7 +1,7 @@
 /*
  * Rut
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012, 2013 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -133,6 +133,16 @@ typedef enum _RutModifierState
 
 } RutModifierState;
 
+typedef enum
+{
+  RUT_CURSOR_ARROW,
+  RUT_CURSOR_IBEAM,
+  RUT_CURSOR_WAIT,
+  RUT_CURSOR_CROSSHAIR,
+  RUT_CURSOR_SIZE_WE,
+  RUT_CURSOR_SIZE_NS
+} RutCursor;
+
 #define RUT_MODIFIER_ALT_ON (RUT_MODIFIER_LEFT_ALT_ON|RUT_MODIFIER_RIGHT_ALT_ON)
 #define RUT_MODIFIER_SHIFT_ON (RUT_MODIFIER_LEFT_SHIFT_ON|RUT_MODIFIER_RIGHT_SHIFT_ON)
 #define RUT_MODIFIER_CTRL_ON (RUT_MODIFIER_LEFT_CTRL_ON|RUT_MODIFIER_RIGHT_CTRL_ON)
@@ -216,6 +226,16 @@ rut_input_event_get_camera (RutInputEvent *event);
 
 RutInputEventType
 rut_input_event_get_type (RutInputEvent *event);
+
+/**
+ * rut_input_event_get_onscreen:
+ * @event: A #RutInputEvent
+ *
+ * Return value: the onscreen window that this event was generated for
+ *   or %NULL if the event does not correspond to a window.
+ */
+CoglOnscreen *
+rut_input_event_get_onscreen (RutInputEvent *event);
 
 RutKeyEventAction
 rut_key_event_get_action (RutInputEvent *event);
@@ -397,6 +417,24 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
 void
 rut_shell_add_onscreen (RutShell *shell,
                         CoglOnscreen *onscreen);
+
+/**
+ * rut_shell_set_cursor:
+ * @shell: The #RutShell
+ * @onscreen: An onscreen window to set the cursor for
+ * @cursor: The new cursor
+ *
+ * Attempts to set the mouse cursor image to @cursor. The shell will
+ * automatically reset the cursor back to the default pointer on every
+ * mouse motion event if nothing else sets it. The expected usage is
+ * that a widget which wants a particular cursor will listen for
+ * motion events and always change the cursor when the pointer is over
+ * a certain area.
+ */
+void
+rut_shell_set_cursor (RutShell *shell,
+                      CoglOnscreen *onscreen,
+                      RutCursor cursor);
 
 /**
  * rut_shell_quit:
