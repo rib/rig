@@ -29,6 +29,10 @@
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
 
+/* The width of the area which can be clicked on to change the size of
+ * the split view */
+#define RUT_SPLIT_VIEW_GRABBER_SIZE 2
+
 enum {
   RUT_SPLIT_VIEW_PROP_WIDTH,
   RUT_SPLIT_VIEW_PROP_HEIGHT,
@@ -167,6 +171,7 @@ _rut_split_view_paint (RutObject *object,
   RutSplitView *split_view = (RutSplitView *) object;
   RutCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
+  int split_start = split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
 
 #if 0
   if (split_view->child0 == NULL)
@@ -196,15 +201,16 @@ _rut_split_view_paint (RutObject *object,
     cogl_framebuffer_draw_rectangle (fb,
                                      split_view->split_pipeline,
                                      0,
-                                     split_view->split_offset,
+                                     split_start,
                                      split_view->width,
-                                     split_view->split_offset + 1);
+                                     split_start + RUT_SPLIT_VIEW_GRABBER_SIZE);
   else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
     cogl_framebuffer_draw_rectangle (fb,
                                      split_view->split_pipeline,
-                                     split_view->split_offset,
+                                     split_view->split_offset -
+                                     RUT_SPLIT_VIEW_GRABBER_SIZE / 2,
                                      0,
-                                     split_view->split_offset + 1,
+                                     split_start + RUT_SPLIT_VIEW_GRABBER_SIZE,
                                      split_view->height);
 }
 
@@ -352,21 +358,25 @@ update_child_geometry (RutSplitView *split_view)
 
   if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
     {
-      geom0->width = split_view->split_offset;
-      geom1->width = width - geom0->width - 1;
-      geom1->x = geom0->width + 1;
+      geom0->width =
+        split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
+      geom1->x = geom0->width + RUT_SPLIT_VIEW_GRABBER_SIZE;
+      geom1->width = width - geom1->x;
     }
   else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
     {
-      geom0->height = split_view->split_offset;
-      geom1->height = height - geom0->height - 1;
-      geom1->y = geom0->height + 1;
+      geom0->height =
+        split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
+      geom1->y = geom0->height + RUT_SPLIT_VIEW_GRABBER_SIZE;
+      geom1->height = height - geom1->y;
     }
 }
 
 static void
 sync_child_sizes (RutSplitView *split_view)
 {
+  int split_start = split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
+
   if (split_view->child0 &&
       rut_object_is (split_view->child0, RUT_INTERFACE_ID_SIZABLE))
     rut_sizable_set_size (split_view->child0,
@@ -387,16 +397,18 @@ sync_child_sizes (RutSplitView *split_view)
     {
       rut_input_region_set_rectangle (split_view->input_region,
                                       0,
-                                      split_view->split_offset - 1,
+                                      split_start,
                                       split_view->width,
-                                      split_view->split_offset + 2);
+                                      split_start +
+                                      RUT_SPLIT_VIEW_GRABBER_SIZE);
     }
   else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
     {
       rut_input_region_set_rectangle (split_view->input_region,
-                                      split_view->split_offset - 1,
+                                      split_start,
                                       0,
-                                      split_view->split_offset + 2,
+                                      split_start +
+                                      RUT_SPLIT_VIEW_GRABBER_SIZE,
                                       split_view->height);
     }
 }
