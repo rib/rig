@@ -1,7 +1,7 @@
 /*
  * Rut
  *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012, 2013 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -524,6 +524,32 @@ typedef struct _GrabState
   int grab_offset;
 } GrabState;
 
+static void
+set_resize_cursor (CoglOnscreen *onscreen,
+                   RutSplitView *split_view)
+{
+  if (onscreen == NULL)
+    return;
+
+  switch (split_view->split)
+    {
+    case RUT_SPLIT_VIEW_SPLIT_NONE:
+      break;
+
+    case RUT_SPLIT_VIEW_SPLIT_HORIZONTAL:
+      rut_shell_set_cursor (split_view->context->shell,
+                            onscreen,
+                            RUT_CURSOR_SIZE_NS);
+      break;
+
+    case RUT_SPLIT_VIEW_SPLIT_VERTICAL:
+      rut_shell_set_cursor (split_view->context->shell,
+                            onscreen,
+                            RUT_CURSOR_SIZE_WE);
+      break;
+    }
+}
+
 static RutInputEventStatus
 _rut_split_view_grab_input_cb (RutInputEvent *event,
                                void *user_data)
@@ -547,6 +573,9 @@ _rut_split_view_grab_input_cb (RutInputEvent *event,
         {
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
+
+          set_resize_cursor (rut_input_event_get_onscreen (event),
+                             split_view);
 
           if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
             {
@@ -577,38 +606,44 @@ _rut_split_view_input_cb (RutInputRegion *region,
 {
   RutSplitView *split_view = user_data;
 
-  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-     rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      RutShell *shell = split_view->context->shell;
-      GrabState *state = g_slice_new (GrabState);
-      const CoglMatrix *view;
+      set_resize_cursor (rut_input_event_get_onscreen (event),
+                         split_view);
 
-      state->split_view = split_view;
-      state->camera = rut_input_event_get_camera (event);
-      state->grab_x = rut_motion_event_get_x (event);
-      state->grab_y = rut_motion_event_get_y (event);
-      state->grab_offset = split_view->split_offset;
-
-      view = rut_camera_get_view_transform (state->camera);
-      state->transform = *view;
-      rut_graphable_apply_transform (split_view, &state->transform);
-      if (!cogl_matrix_get_inverse (&state->transform,
-                                    &state->inverse_transform))
+      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
         {
-          g_warning ("Failed to calculate inverse of split_view transform\n");
-          g_slice_free (GrabState, state);
-          return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+          RutShell *shell = split_view->context->shell;
+          GrabState *state = g_slice_new (GrabState);
+          const CoglMatrix *view;
+
+          state->split_view = split_view;
+          state->camera = rut_input_event_get_camera (event);
+          state->grab_x = rut_motion_event_get_x (event);
+          state->grab_y = rut_motion_event_get_y (event);
+          state->grab_offset = split_view->split_offset;
+
+          view = rut_camera_get_view_transform (state->camera);
+          state->transform = *view;
+          rut_graphable_apply_transform (split_view, &state->transform);
+          if (!cogl_matrix_get_inverse (&state->transform,
+                                        &state->inverse_transform))
+            {
+              g_warning ("Failed to calculate inverse of split_view "
+                         "transform\n");
+              g_slice_free (GrabState, state);
+              return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+            }
+
+          rut_shell_grab_input (shell,
+                                state->camera,
+                                _rut_split_view_grab_input_cb,
+                                state);
+
+          rut_shell_queue_redraw (split_view->context->shell);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
-
-      rut_shell_grab_input (shell,
-                            state->camera,
-                            _rut_split_view_grab_input_cb,
-                            state);
-
-      rut_shell_queue_redraw (split_view->context->shell);
-
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
