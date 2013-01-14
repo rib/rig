@@ -49,7 +49,11 @@ struct _RutShell
 
   int ref_count;
 
+#ifdef __ANDROID__
   CoglBool quit;
+#else
+  GMainLoop *main_loop;
+#endif
 
 #ifdef __ANDROID__
   struct android_app* app;
@@ -1652,7 +1656,7 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
           break;
 
         case SDL_WINDOWEVENT_CLOSE:
-          shell->quit = TRUE;
+          rut_shell_quit (shell);
           break;
         }
       break;
@@ -1719,7 +1723,7 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
 #endif /* SDL_MAJOR_VERSION */
 
     case SDL_QUIT:
-      shell->quit = TRUE;
+      rut_shell_quit (shell);
       break;
     }
 }
@@ -1862,7 +1866,6 @@ rut_shell_main (RutShell *shell)
 #else
 
   GSource *cogl_source;
-  GMainLoop *loop;
 
   shell->init_cb (shell, shell->user_data);
 
@@ -1886,8 +1889,9 @@ rut_shell_main (RutShell *shell)
 
   g_idle_add (glib_paint_cb, shell);
 
-  loop = g_main_loop_new (NULL, TRUE);
-  g_main_loop_run (loop);
+  shell->main_loop = g_main_loop_new (NULL, TRUE);
+  g_main_loop_run (shell->main_loop);
+  g_main_loop_unref (shell->main_loop);
 
   shell->fini_cb (shell, shell->user_data);
 
@@ -2353,5 +2357,9 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
 void
 rut_shell_quit (RutShell *shell)
 {
+#ifdef __ANDROID__
   shell->quit = TRUE;
+#else
+  g_main_loop_quit (shell->main_loop);
+#endif
 }
