@@ -387,6 +387,18 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
                                      RutObject *graphable);
 
 /**
+ * rut_shell_add_onscreen:
+ * @shell: The #RutShell
+ * @onscreen: A #CoglOnscreen
+ *
+ * This should be called for everything onscreen that is going to be
+ * used by the shell so that Rut can keep track of them.
+ */
+void
+rut_shell_add_onscreen (RutShell *shell,
+                        CoglOnscreen *onscreen);
+
+/**
  * rut_shell_quit:
  * @shell: The #RutShell
  *

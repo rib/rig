@@ -98,6 +98,9 @@ struct _RutShell
    * will the queue is being flushed */
   RutList pre_paint_callbacks;
   CoglBool flushing_pre_paints;
+
+  /* A list of onscreen windows that the shell is manipulating */
+  RutList onscreens;
 };
 
 /* PRIVATE */
@@ -183,6 +186,12 @@ struct _RutInputRegion
   void *user_data;
 };
 
+typedef struct
+{
+  RutList link;
+
+  CoglOnscreen *onscreen;
+} RutShellOnscreen;
 
 static void
 _rut_slider_init_type (void);
@@ -1433,6 +1442,7 @@ rut_shell_new (RutShellInitCallback init,
 
   rut_list_init (&shell->input_cb_list);
   rut_list_init (&shell->grabs);
+  rut_list_init (&shell->onscreens);
 
   shell->init_cb = init;
   shell->fini_cb = fini;
@@ -1816,6 +1826,29 @@ glib_paint_cb (void *user_data)
   shell->redraw_queued = _rut_shell_paint (shell);
 
   return TRUE;
+}
+
+static void
+destroy_onscreen_cb (void *user_data)
+{
+  RutShellOnscreen *shell_onscreen = user_data;
+
+  rut_list_remove (&shell_onscreen->link);
+}
+
+void
+rut_shell_add_onscreen (RutShell *shell,
+                        CoglOnscreen *onscreen)
+{
+  RutShellOnscreen *shell_onscreen = g_slice_new (RutShellOnscreen);
+  static CoglUserDataKey data_key;
+
+  shell_onscreen->onscreen = onscreen;
+  cogl_object_set_user_data (COGL_OBJECT (onscreen),
+                             &data_key,
+                             shell_onscreen,
+                             destroy_onscreen_cb);
+  rut_list_insert (&shell->onscreens, &shell_onscreen->link);
 }
 
 void

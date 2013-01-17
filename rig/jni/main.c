@@ -2563,6 +2563,8 @@ init (RutShell *shell, void *user_data)
 
   cogl_onscreen_show (data->onscreen);
 
+  rut_shell_add_onscreen (data->shell, data->onscreen);
+
 #ifdef __APPLE__
   rig_osx_init (data);
 #endif
