@@ -520,9 +520,6 @@ endif
 lib_LTLIBRARIES += libcogl2.la
 
 libcogl2_la_LIBADD = -lm $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
-if SUPPORT_GLX
-libcogl2_la_LIBADD += -ldl
-endif
 if !USE_GLIB
 libcogl2_la_LIBADD += $(top_builddir)/deps/glib/libglib.la
 libcogl2_la_LIBADD += $(top_builddir)/deps/gmodule/libgmodule.la
