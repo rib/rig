@@ -1,14 +1,14 @@
 # Serbian translation for cogl.
 # Copyright (C) 2011 cogl's COPYRIGHT HOLDER
 # This file is distributed under the same license as the cogl package.
-# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2011, 2012.
+# Мирослав Николић <miroslavnikolic@rocketmail.com>, 2011, 2012, 2013.
 msgid ""
 msgstr ""
 "Project-Id-Version: cogl master\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?product=cogl&k"
 "eywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2012-09-25 23:19+0000\n"
-"PO-Revision-Date: 2012-09-27 05:41+0200\n"
+"POT-Creation-Date: 2012-09-28 16:20+0000\n"
+"PO-Revision-Date: 2013-01-17 09:34+0200\n"
 "Last-Translator: Мирослав Николић <miroslavnikolic@rocketmail.com>\n"
 "Language-Team: Serbian <gnom@prevod.org>\n"
 "Language: sr\n"
@@ -44,22 +44,6 @@ msgid "Override the GL version that Cogl will assume the driver supports"
 msgstr ""
 "Превазилази ГЛ издање за које ће Когл сматрати да га подржавају управљачки "
 "програми"
-
-#: ../cogl/cogl-debug.c:237
-msgid "Cogl debugging flags to set"
-msgstr "Коглове опције прочишћавања за постављање"
-
-#: ../cogl/cogl-debug.c:239
-msgid "Cogl debugging flags to unset"
-msgstr "Коглове опције прочишћавања за уклањање"
-
-#: ../cogl/cogl-debug.c:288
-msgid "Cogl Options"
-msgstr "Опције Когла"
-
-#: ../cogl/cogl-debug.c:289
-msgid "Show Cogl options"
-msgstr "Приказује опције Когла"
 
 #: ../cogl/cogl-debug-options.h:25 ../cogl/cogl-debug-options.h:30
 #: ../cogl/cogl-debug-options.h:35 ../cogl/cogl-debug-options.h:40
@@ -365,3 +349,174 @@ msgstr "Прати уделе учинка"
 #: ../cogl/cogl-debug-options.h:192
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr "Покушава да истакне подоптимално коришћење Когла."
+
+#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
+#, c-format
+msgid "Could not allocate %lu bytes to read file \"%s\""
+msgstr "Не могу да обезбедим %lu бајтова за читање датотеке „%s“"
+
+#: ../deps/glib/gfileutils.c:557
+#, c-format
+msgid "Error reading file '%s': %s"
+msgstr "Грешка читања датотеке „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:571
+#, c-format
+msgid "File \"%s\" is too large"
+msgstr "Датотека „%s“ је превелика"
+
+#: ../deps/glib/gfileutils.c:654
+#, c-format
+msgid "Failed to read from file '%s': %s"
+msgstr "Не могу да прочитам из датотеке „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
+#, c-format
+msgid "Failed to open file '%s': %s"
+msgstr "Не могу да отворим датотеку „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:722
+#, c-format
+msgid "Failed to get attributes of file '%s': fstat() failed: %s"
+msgstr "Не могу да сазнам особине датотеке „%s“: неуспешан „fstat()“: %s"
+
+#: ../deps/glib/gfileutils.c:756
+#, c-format
+msgid "Failed to open file '%s': fdopen() failed: %s"
+msgstr "Не могу да отворим датотеку „%s“: неуспешан „fdopen()“: %s"
+
+#: ../deps/glib/gfileutils.c:864
+#, c-format
+msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
+msgstr "Не могу да преименујем датотеку „%s“ у „%s“: неуспешан „g_rename()“: %s"
+
+#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
+#, c-format
+msgid "Failed to create file '%s': %s"
+msgstr "Не могу да направим датотеку „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:920
+#, c-format
+msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
+msgstr "Не могу да отворим датотеку „%s“ ради уписа: неуспешан „fdopen()“: %s"
+
+#: ../deps/glib/gfileutils.c:945
+#, c-format
+msgid "Failed to write file '%s': fwrite() failed: %s"
+msgstr "Не могу да упишем у датотеку „%s“: неуспешан „fwrite()“: %s"
+
+#: ../deps/glib/gfileutils.c:964
+#, c-format
+msgid "Failed to write file '%s': fflush() failed: %s"
+msgstr "Не могу да упишем у датотеку „%s“: неуспешан „fflush()“: %s"
+
+#: ../deps/glib/gfileutils.c:1008
+#, c-format
+msgid "Failed to write file '%s': fsync() failed: %s"
+msgstr "Не могу да упишем у датотеку „%s“: неуспешан „fsync()“: %s"
+
+#: ../deps/glib/gfileutils.c:1032
+#, c-format
+msgid "Failed to close file '%s': fclose() failed: %s"
+msgstr "Не могу да затворим датотеку „%s“: неуспешан „fclose()“: %s"
+
+#: ../deps/glib/gfileutils.c:1154
+#, c-format
+msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
+msgstr "Постојећа датотека „%s“ се не може уклонити: неуспешан „g_unlink()“: %s"
+
+#: ../deps/glib/gfileutils.c:1414
+#, c-format
+msgid "Template '%s' invalid, should not contain a '%s'"
+msgstr "Неисправан шаблон „%s“, не сме садржати „%s“"
+
+#: ../deps/glib/gfileutils.c:1427
+#, c-format
+msgid "Template '%s' doesn't contain XXXXXX"
+msgstr "Шаблон „%s“ не садржи XXXXXX"
+
+#: ../deps/glib/gfileutils.c:2009
+#, c-format
+msgid "%.1f KiB"
+msgstr "%.1f KiB"
+
+#: ../deps/glib/gfileutils.c:2012
+#, c-format
+msgid "%.1f MiB"
+msgstr "%.1f MiB"
+
+#: ../deps/glib/gfileutils.c:2015
+#, c-format
+msgid "%.1f GiB"
+msgstr "%.1f GiB"
+
+#: ../deps/glib/gfileutils.c:2018
+#, c-format
+msgid "%.1f TiB"
+msgstr "%.1f TiB"
+
+#: ../deps/glib/gfileutils.c:2021
+#, c-format
+msgid "%.1f PiB"
+msgstr "%.1f PiB"
+
+#: ../deps/glib/gfileutils.c:2024
+#, c-format
+msgid "%.1f EiB"
+msgstr "%.1f EiB"
+
+#: ../deps/glib/gfileutils.c:2037
+#, c-format
+msgid "%.1f kB"
+msgstr "%.1f kB"
+
+#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
+#, c-format
+msgid "%.1f MB"
+msgstr "%.1f MB"
+
+#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
+#, c-format
+msgid "%.1f GB"
+msgstr "%.1f GB"
+
+#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
+#, c-format
+msgid "%.1f TB"
+msgstr "%.1f TB"
+
+#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
+#, c-format
+msgid "%.1f PB"
+msgstr "%.1f PB"
+
+#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
+#, c-format
+msgid "%.1f EB"
+msgstr "%.1f EB"
+
+#: ../deps/glib/gfileutils.c:2144
+#, c-format
+msgid "%.1f KB"
+msgstr "%.1f KB"
+
+#: ../deps/glib/gfileutils.c:2212
+#, c-format
+msgid "Failed to read the symbolic link '%s': %s"
+msgstr "Не могу да прочитам симболичку везу „%s“: %s"
+
+#: ../deps/glib/gfileutils.c:2233
+msgid "Symbolic links not supported"
+msgstr "Симболичке везе нису подржане"
+
+#~ msgid "Cogl debugging flags to set"
+#~ msgstr "Коглове опције прочишћавања за постављање"
+
+#~ msgid "Cogl debugging flags to unset"
+#~ msgstr "Коглове опције прочишћавања за уклањање"
+
+#~ msgid "Cogl Options"
+#~ msgstr "Опције Когла"
+
+#~ msgid "Show Cogl options"
+#~ msgstr "Приказује опције Когла"
