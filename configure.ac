@@ -232,15 +232,6 @@ AM_PATH_GLIB_2_0([glib_req_version],
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
 RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2"
-AC_SUBST(RIG_PKG_REQUIRES)
-PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
-
-
-dnl ================================================================
-dnl Misc program dependencies.
-dnl ================================================================
-AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
-AC_PROG_INSTALL
 
 dnl Check whether we are building for Android
 AC_CHECK_DECL([__ANDROID__], [have_android=yes], [have_android=no])
@@ -261,6 +252,34 @@ AC_CHECK_DECL([__APPLE__], [have_osx=yes], [have_osx=no])
 AM_CONDITIONAL([HAVE_OSX], [test "x$have_osx" = "xyes"])
 AS_IF([test "x$have_osx" = "xyes"],
       [RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"])
+
+AC_ARG_ENABLE([gtk],
+              AS_HELP_STRING([--enable-gtk],
+                             [Use a GTK/X11 backend instead of SDL]),
+              [enable_gtk="$enableval"],
+              [enable_gtk="auto"])
+AS_IF([test "x$enable_gtk" = "xauto" -a \
+            "x$have_android" = "xno" -a "x$have_osx" = "xno"],
+      [PKG_CHECK_MODULES([GTK],
+                         [gtk+-x11-3.0],
+                         [enable_gtk=yes],
+                         [enable_gtk=no])])
+AS_CASE([$enable_gtk],
+        [yes],
+        [RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gtk+-x11-3.0"
+         AC_DEFINE([USE_GTK], [1], [Defined if the GTK backend should be used])
+        ],
+        [no], [],
+        [AC_MSG_ERROR([Invalid value for --enable-gtk])])
+
+AC_SUBST(RIG_PKG_REQUIRES)
+PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
+
+dnl ================================================================
+dnl Misc program dependencies.
+dnl ================================================================
+AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
+AC_PROG_INSTALL
 
 dnl ================================================================
 dnl GObject-Introspection check

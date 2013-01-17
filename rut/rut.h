@@ -6,7 +6,9 @@
 #include <glib.h>
 
 #ifndef __ANDROID__
+#ifndef USE_GTK
 #define USE_SDL
+#endif
 //#define USE_GLIB
 #endif
 
