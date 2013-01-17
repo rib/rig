@@ -36,7 +36,7 @@ libcogl_pango2_la_LDFLAGS = \
 	-no-undefined \
 	-version-info @COGL_LT_CURRENT@:@COGL_LT_REVISION@:@COGL_LT_AGE@
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-DCOGL_COMPILATION		\
 	-DG_LOG_DOMAIN=\"CoglPango\"	\
 	-I$(top_srcdir)/cogl		\
@@ -105,7 +105,7 @@ CoglPango_2_0_gir_NAMESPACE = CoglPango
 CoglPango_2_0_gir_VERSION = 2.0
 CoglPango_2_0_gir_LIBS = $(top_builddir)/cogl/libcogl2.la libcogl-pango2.la
 CoglPango_2_0_gir_FILES = $(source_h) $(source_c)
-CoglPango_2_0_gir_CFLAGS = $(INCLUDES) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
+CoglPango_2_0_gir_CFLAGS = $(AM_CPPFLAGS) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) $(COGL_PANGO_DEP_CFLAGS)
 CoglPango_2_0_gir_INCLUDES = Pango-1.0 PangoCairo-1.0
 CoglPango_2_0_gir_EXPORT_PACKAGES = cogl-pango2
 CoglPango_2_0_gir_SCANNERFLAGS = \
