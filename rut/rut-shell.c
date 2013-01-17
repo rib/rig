@@ -214,6 +214,7 @@ _rut_shell_fini (RutShell *shell)
 struct _RutInputEvent
 {
   RutInputEventType type;
+  RutShell *shell;
   void *native;
   RutCamera *camera;
   const CoglMatrix *input_transform;
@@ -688,6 +689,80 @@ RutInputEventType
 rut_input_event_get_type (RutInputEvent *event)
 {
   return event->type;
+}
+
+CoglOnscreen *
+rut_input_event_get_onscreen (RutInputEvent *event)
+{
+  RutShell *shell = event->shell;
+
+#if defined(USE_SDL) && SDL_MAJOR_VERSION >= 2
+
+  {
+    RutShellOnscreen *shell_onscreen;
+    SDL_Event *sdl_event = event->native;
+    Uint32 window_id;
+
+    switch ((SDL_EventType) sdl_event->type)
+      {
+      case SDL_KEYDOWN:
+      case SDL_KEYUP:
+        window_id = sdl_event->key.windowID;
+        break;
+
+      case SDL_TEXTEDITING:
+        window_id = sdl_event->edit.windowID;
+        break;
+
+      case SDL_TEXTINPUT:
+        window_id = sdl_event->text.windowID;
+        break;
+
+      case SDL_MOUSEMOTION:
+        window_id = sdl_event->motion.windowID;
+        break;
+
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        window_id = sdl_event->button.windowID;
+        break;
+
+      case SDL_MOUSEWHEEL:
+        window_id = sdl_event->wheel.windowID;
+        break;
+
+      default:
+        return NULL;
+      }
+
+    rut_list_for_each (shell_onscreen, &shell->onscreens, link)
+      {
+        SDL_Window *sdl_window =
+          cogl_sdl_onscreen_get_window (shell_onscreen->onscreen);
+
+        if (SDL_GetWindowID (sdl_window) == window_id)
+          return shell_onscreen->onscreen;
+      }
+
+    return NULL;
+  }
+
+#else
+
+  /* If there is only onscreen then we'll assume that all events are
+   * related to that. This will be the case when using Android or
+   * SDL1 */
+  if (shell->onscreens.next != &shell->onscreens &&
+      shell->onscreens.next->next == &shell->onscreens)
+    {
+      RutShellOnscreen *shell_onscreen =
+        rut_container_of (shell->onscreens.next, shell_onscreen, link);
+      return shell_onscreen->onscreen;
+    }
+  else
+    return NULL;
+
+#endif
 }
 
 int32_t
@@ -1284,6 +1359,7 @@ android_handle_input (struct android_app* app, AInputEvent *event)
   RutShell *shell = (RutShell *)app->userData;
 
   rut_event.native = event;
+  rut_event.shell = shell;
   rut_event.input_transform = NULL;
 
   switch (AInputEvent_getType (event))
@@ -1649,6 +1725,7 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
   RutInputEvent rut_event;
 
   rut_event.native = event;
+  rut_event.shell = shell;
   rut_event.input_transform = NULL;
 
   switch (event->type)
