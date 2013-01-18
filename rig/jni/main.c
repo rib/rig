@@ -2474,19 +2474,6 @@ init_resize_handle (RigData *data)
 #endif /* RIG_EDITOR_ENABLED */
 
 static void
-init_title (CoglOnscreen *onscreen)
-{
-#ifdef USE_SDL
-#if SDL_MAJOR_VERSION < 2
-  SDL_WM_SetCaption ("Rig", "Rig " G_STRINGIFY (RIG_VERSION));
-#else /* SDL_MAJOR_VERSION */
-  SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
-  SDL_SetWindowTitle (window, "Rig " G_STRINGIFY (RIG_VERSION));
-#endif /* SDL_MAJOR_VERSION */
-#endif /* USE_SDL */
-}
-
-static void
 init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
@@ -2569,7 +2556,9 @@ init (RutShell *shell, void *user_data)
   rig_osx_init (data);
 #endif
 
-  init_title (data->onscreen);
+  rut_shell_set_title (data->shell,
+                       data->onscreen,
+                       "Rig " G_STRINGIFY (RIG_VERSION));
 
   fb = COGL_FRAMEBUFFER (data->onscreen);
   data->width = cogl_framebuffer_get_width (fb);

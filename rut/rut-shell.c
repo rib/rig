@@ -2023,6 +2023,28 @@ rut_shell_set_cursor (RutShell *shell,
   shell_onscreen->cursor_set = TRUE;
 }
 
+void
+rut_shell_set_title (RutShell *shell,
+                     CoglOnscreen *onscreen,
+                     const char *title)
+{
+#if defined(USE_SDL)
+#if SDL_MAJOR_VERSION < 2
+  SDL_WM_SetCaption (title, title);
+#else /* SDL_MAJOR_VERSION */
+  SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
+  SDL_SetWindowTitle (window, title);
+#endif /* SDL_MAJOR_VERSION */
+#elif defined(USE_GTK)
+  {
+    RutShellOnscreen *shell_onscreen = get_shell_onscreen (shell, onscreen);
+
+    if (shell_onscreen)
+      gdk_window_set_title (shell_onscreen->gdk_window, title);
+  }
+#endif /* USE_SDL */
+}
+
 static void
 update_pre_paint_entry_depth (RutShellPrePaintEntry *entry)
 {

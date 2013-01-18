@@ -436,6 +436,11 @@ rut_shell_set_cursor (RutShell *shell,
                       CoglOnscreen *onscreen,
                       RutCursor cursor);
 
+void
+rut_shell_set_title (RutShell *shell,
+                     CoglOnscreen *onscreen,
+                     const char *title);
+
 /**
  * rut_shell_quit:
  * @shell: The #RutShell
