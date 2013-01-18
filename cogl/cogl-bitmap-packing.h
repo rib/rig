@@ -42,7 +42,7 @@
                        511) / 1023)
 
 inline static void
-G_PASTE (_cogl_unpack_a_8_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_a_8_, component_size) (const uint8_t *src,
                                              component_type *dst,
                                              int width)
 {
@@ -58,7 +58,7 @@ G_PASTE (_cogl_unpack_a_8_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_g_8_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_g_8_, component_size) (const uint8_t *src,
                                              component_type *dst,
                                              int width)
 {
@@ -79,7 +79,7 @@ G_PASTE (_cogl_unpack_g_8_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgb_888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgb_888_, component_size) (const uint8_t *src,
                                                  component_type *dst,
                                                  int width)
 {
@@ -95,7 +95,7 @@ G_PASTE (_cogl_unpack_rgb_888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_bgr_888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_bgr_888_, component_size) (const uint8_t *src,
                                                  component_type *dst,
                                                  int width)
 {
@@ -111,7 +111,7 @@ G_PASTE (_cogl_unpack_bgr_888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_bgra_8888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_bgra_8888_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -127,7 +127,7 @@ G_PASTE (_cogl_unpack_bgra_8888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_argb_8888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_argb_8888_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -143,7 +143,7 @@ G_PASTE (_cogl_unpack_argb_8888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_abgr_8888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_abgr_8888_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -159,7 +159,7 @@ G_PASTE (_cogl_unpack_abgr_8888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgba_8888_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgba_8888_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -175,7 +175,7 @@ G_PASTE (_cogl_unpack_rgba_8888_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgb_565_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgb_565_, component_size) (const uint8_t *src,
                                                  component_type *dst,
                                                  int width)
 {
@@ -193,7 +193,7 @@ G_PASTE (_cogl_unpack_rgb_565_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgba_4444_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgba_4444_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -211,7 +211,7 @@ G_PASTE (_cogl_unpack_rgba_4444_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgba_5551_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgba_5551_, component_size) (const uint8_t *src,
                                                    component_type *dst,
                                                    int width)
 {
@@ -229,7 +229,7 @@ G_PASTE (_cogl_unpack_rgba_5551_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_rgba_1010102_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_rgba_1010102_, component_size) (const uint8_t *src,
                                                       component_type *dst,
                                                       int width)
 {
@@ -247,7 +247,7 @@ G_PASTE (_cogl_unpack_rgba_1010102_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_bgra_1010102_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_bgra_1010102_, component_size) (const uint8_t *src,
                                                       component_type *dst,
                                                       int width)
 {
@@ -265,7 +265,7 @@ G_PASTE (_cogl_unpack_bgra_1010102_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_argb_2101010_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_argb_2101010_, component_size) (const uint8_t *src,
                                                       component_type *dst,
                                                       int width)
 {
@@ -283,7 +283,7 @@ G_PASTE (_cogl_unpack_argb_2101010_, component_type) (const uint8_t *src,
 }
 
 inline static void
-G_PASTE (_cogl_unpack_abgr_2101010_, component_type) (const uint8_t *src,
+G_PASTE (_cogl_unpack_abgr_2101010_, component_size) (const uint8_t *src,
                                                       component_type *dst,
                                                       int width)
 {
@@ -308,7 +308,7 @@ G_PASTE (_cogl_unpack_abgr_2101010_, component_type) (const uint8_t *src,
 #undef UNPACK_10
 
 inline static void
-G_PASTE (_cogl_unpack_, component_type) (CoglPixelFormat format,
+G_PASTE (_cogl_unpack_, component_size) (CoglPixelFormat format,
                                          const uint8_t *src,
                                          component_type *dst,
                                          int width)
@@ -316,59 +316,59 @@ G_PASTE (_cogl_unpack_, component_type) (CoglPixelFormat format,
   switch (format)
     {
     case COGL_PIXEL_FORMAT_A_8:
-      G_PASTE (_cogl_unpack_a_8_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_a_8_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_G_8:
-      G_PASTE (_cogl_unpack_g_8_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_g_8_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGB_888:
-      G_PASTE (_cogl_unpack_rgb_888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgb_888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGR_888:
-      G_PASTE (_cogl_unpack_bgr_888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_bgr_888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_8888:
     case COGL_PIXEL_FORMAT_RGBA_8888_PRE:
-      G_PASTE (_cogl_unpack_rgba_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgba_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGRA_8888:
     case COGL_PIXEL_FORMAT_BGRA_8888_PRE:
-      G_PASTE (_cogl_unpack_bgra_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_bgra_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ARGB_8888:
     case COGL_PIXEL_FORMAT_ARGB_8888_PRE:
-      G_PASTE (_cogl_unpack_argb_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_argb_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ABGR_8888:
     case COGL_PIXEL_FORMAT_ABGR_8888_PRE:
-      G_PASTE (_cogl_unpack_abgr_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_abgr_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGB_565:
-      G_PASTE (_cogl_unpack_rgb_565_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgb_565_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_4444:
     case COGL_PIXEL_FORMAT_RGBA_4444_PRE:
-      G_PASTE (_cogl_unpack_rgba_4444_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgba_4444_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_5551:
     case COGL_PIXEL_FORMAT_RGBA_5551_PRE:
-      G_PASTE (_cogl_unpack_rgba_5551_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgba_5551_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_1010102:
     case COGL_PIXEL_FORMAT_RGBA_1010102_PRE:
-      G_PASTE (_cogl_unpack_rgba_1010102_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_rgba_1010102_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGRA_1010102:
     case COGL_PIXEL_FORMAT_BGRA_1010102_PRE:
-      G_PASTE (_cogl_unpack_bgra_1010102_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_bgra_1010102_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ARGB_2101010:
     case COGL_PIXEL_FORMAT_ARGB_2101010_PRE:
-      G_PASTE (_cogl_unpack_argb_2101010_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_argb_2101010_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ABGR_2101010:
     case COGL_PIXEL_FORMAT_ABGR_2101010_PRE:
-      G_PASTE (_cogl_unpack_abgr_2101010_, component_type) (src, dst, width);
+      G_PASTE (_cogl_unpack_abgr_2101010_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_DEPTH_16:
     case COGL_PIXEL_FORMAT_DEPTH_32:
@@ -393,7 +393,7 @@ G_PASTE (_cogl_unpack_, component_type) (CoglPixelFormat format,
 #define PACK_10(b) PACK_SIZE (b, 1023)
 
 inline static void
-G_PASTE (_cogl_pack_a_8_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_a_8_, component_size) (const component_type *src,
                                            uint8_t *dst,
                                            int width)
 {
@@ -406,7 +406,7 @@ G_PASTE (_cogl_pack_a_8_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_g_8_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_g_8_, component_size) (const component_type *src,
                                            uint8_t *dst,
                                            int width)
 {
@@ -424,7 +424,7 @@ G_PASTE (_cogl_pack_g_8_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgb_888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgb_888_, component_size) (const component_type *src,
                                                uint8_t *dst,
                                                int width)
 {
@@ -439,7 +439,7 @@ G_PASTE (_cogl_pack_rgb_888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_bgr_888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_bgr_888_, component_size) (const component_type *src,
                                                uint8_t *dst,
                                                int width)
 {
@@ -454,7 +454,7 @@ G_PASTE (_cogl_pack_bgr_888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_bgra_8888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_bgra_8888_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -470,7 +470,7 @@ G_PASTE (_cogl_pack_bgra_8888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_argb_8888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_argb_8888_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -486,7 +486,7 @@ G_PASTE (_cogl_pack_argb_8888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_abgr_8888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_abgr_8888_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -502,7 +502,7 @@ G_PASTE (_cogl_pack_abgr_8888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgba_8888_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgba_8888_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -518,7 +518,7 @@ G_PASTE (_cogl_pack_rgba_8888_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgb_565_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgb_565_, component_size) (const component_type *src,
                                                uint8_t *dst,
                                                int width)
 {
@@ -535,7 +535,7 @@ G_PASTE (_cogl_pack_rgb_565_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgba_4444_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgba_4444_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -553,7 +553,7 @@ G_PASTE (_cogl_pack_rgba_4444_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgba_5551_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgba_5551_, component_size) (const component_type *src,
                                                  uint8_t *dst,
                                                  int width)
 {
@@ -571,7 +571,7 @@ G_PASTE (_cogl_pack_rgba_5551_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_rgba_1010102_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_rgba_1010102_, component_size) (const component_type *src,
                                                     uint8_t *dst,
                                                     int width)
 {
@@ -589,7 +589,7 @@ G_PASTE (_cogl_pack_rgba_1010102_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_bgra_1010102_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_bgra_1010102_, component_size) (const component_type *src,
                                                     uint8_t *dst,
                                                     int width)
 {
@@ -607,7 +607,7 @@ G_PASTE (_cogl_pack_bgra_1010102_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_argb_2101010_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_argb_2101010_, component_size) (const component_type *src,
                                                     uint8_t *dst,
                                                     int width)
 {
@@ -625,7 +625,7 @@ G_PASTE (_cogl_pack_argb_2101010_, component_type) (const component_type *src,
 }
 
 inline static void
-G_PASTE (_cogl_pack_abgr_2101010_, component_type) (const component_type *src,
+G_PASTE (_cogl_pack_abgr_2101010_, component_size) (const component_type *src,
                                                     uint8_t *dst,
                                                     int width)
 {
@@ -651,7 +651,7 @@ G_PASTE (_cogl_pack_abgr_2101010_, component_type) (const component_type *src,
 #undef PACK_10
 
 inline static void
-G_PASTE (_cogl_pack_, component_type) (CoglPixelFormat format,
+G_PASTE (_cogl_pack_, component_size) (CoglPixelFormat format,
                                        const component_type *src,
                                        uint8_t *dst,
                                        int width)
@@ -659,59 +659,59 @@ G_PASTE (_cogl_pack_, component_type) (CoglPixelFormat format,
   switch (format)
     {
     case COGL_PIXEL_FORMAT_A_8:
-      G_PASTE (_cogl_pack_a_8_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_a_8_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_G_8:
-      G_PASTE (_cogl_pack_g_8_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_g_8_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGB_888:
-      G_PASTE (_cogl_pack_rgb_888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgb_888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGR_888:
-      G_PASTE (_cogl_pack_bgr_888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_bgr_888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_8888:
     case COGL_PIXEL_FORMAT_RGBA_8888_PRE:
-      G_PASTE (_cogl_pack_rgba_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgba_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGRA_8888:
     case COGL_PIXEL_FORMAT_BGRA_8888_PRE:
-      G_PASTE (_cogl_pack_bgra_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_bgra_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ARGB_8888:
     case COGL_PIXEL_FORMAT_ARGB_8888_PRE:
-      G_PASTE (_cogl_pack_argb_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_argb_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ABGR_8888:
     case COGL_PIXEL_FORMAT_ABGR_8888_PRE:
-      G_PASTE (_cogl_pack_abgr_8888_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_abgr_8888_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGB_565:
-      G_PASTE (_cogl_pack_rgb_565_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgb_565_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_4444:
     case COGL_PIXEL_FORMAT_RGBA_4444_PRE:
-      G_PASTE (_cogl_pack_rgba_4444_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgba_4444_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_5551:
     case COGL_PIXEL_FORMAT_RGBA_5551_PRE:
-      G_PASTE (_cogl_pack_rgba_5551_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgba_5551_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_RGBA_1010102:
     case COGL_PIXEL_FORMAT_RGBA_1010102_PRE:
-      G_PASTE (_cogl_pack_rgba_1010102_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_rgba_1010102_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_BGRA_1010102:
     case COGL_PIXEL_FORMAT_BGRA_1010102_PRE:
-      G_PASTE (_cogl_pack_bgra_1010102_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_bgra_1010102_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ARGB_2101010:
     case COGL_PIXEL_FORMAT_ARGB_2101010_PRE:
-      G_PASTE (_cogl_pack_argb_2101010_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_argb_2101010_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_ABGR_2101010:
     case COGL_PIXEL_FORMAT_ABGR_2101010_PRE:
-      G_PASTE (_cogl_pack_abgr_2101010_, component_type) (src, dst, width);
+      G_PASTE (_cogl_pack_abgr_2101010_, component_size) (src, dst, width);
       break;
     case COGL_PIXEL_FORMAT_DEPTH_16:
     case COGL_PIXEL_FORMAT_DEPTH_32:
