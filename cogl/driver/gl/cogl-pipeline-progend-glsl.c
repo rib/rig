@@ -756,8 +756,11 @@ _cogl_pipeline_progend_glsl_pre_change_notify (CoglPipeline *pipeline,
 {
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
-  if ((change & _cogl_pipeline_get_state_for_fragment_codegen (ctx)))
-    dirty_program_state (pipeline);
+  if ((change & (_cogl_pipeline_get_state_for_fragment_codegen (ctx) |
+                 COGL_PIPELINE_STATE_AFFECTS_VERTEX_CODEGEN)))
+    {
+      dirty_program_state (pipeline);
+    }
   else
     {
       int i;
@@ -792,13 +795,12 @@ _cogl_pipeline_progend_glsl_layer_pre_change_notify (
 {
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
-  if ((change & _cogl_pipeline_get_state_for_fragment_codegen (ctx)))
+  if ((change & (_cogl_pipeline_get_layer_state_for_fragment_codegen (ctx) |
+                 COGL_PIPELINE_LAYER_STATE_AFFECTS_VERTEX_CODEGEN)))
     {
       dirty_program_state (owner);
-      return;
     }
-
-  if (change & COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT)
+  else if (change & COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT)
     {
       CoglPipelineProgramState *program_state = get_program_state (owner);
       if (program_state)
