@@ -3653,11 +3653,6 @@ rig_free_ux (RigData *data)
   free_asset_input_closures (data);
 }
 
-static void
-init_types (void)
-{
-}
-
 #ifdef __ANDROID__
 
 void
@@ -3672,8 +3667,6 @@ android_main (struct android_app *application)
 
   memset (&data, 0, sizeof (RigData));
   data.app = application;
-
-  init_types ();
 
   data.shell = rut_android_shell_new (application,
                                       init,
@@ -3719,8 +3712,6 @@ main (int argc, char **argv)
   memset (&data, 0, sizeof (RigData));
 
   data.ui_filename = g_strdup (_rig_handset_remaining_args[0]);
-
-  init_types ();
 
   data.shell = rut_shell_new (init, fini, paint, &data);
 
