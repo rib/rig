@@ -1,24 +1,17 @@
 include $(top_srcdir)/build/autotools/Makefile.am.silent
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
-	-I$(top_builddir)/rig/jni
-
-AM_CFLAGS = \
-	$(RIG_EXTRA_CFLAGS)
-
-AM_CPPFLAGS = \
+	-I$(top_builddir)/rig/jni \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CPPFLAGS)
 
-common_ldadd = \
-	$(RIG_DEP_LIBS) \
-	$(RIG_EXTRA_LDFLAGS) \
-	$(top_builddir)/rut/librut.la
+AM_CFLAGS = \
+	$(RIG_EXTRA_CFLAGS)
 
 bin_PROGRAMS = rig
 
