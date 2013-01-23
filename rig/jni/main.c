@@ -72,26 +72,9 @@ static RutPropertySpec rut_data_property_specs[] = {
 static void
 rig_load_asset_list (RigData *data);
 
-#ifndef __ANDROID__
-
 #ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
 #endif
-
-static char **_rig_handset_remaining_args = NULL;
-
-static const GOptionEntry rut_handset_entries[] =
-{
-#ifdef RIG_EDITOR_ENABLED
-  { "device-mode", 'd', 0, 0,
-    &_rig_in_device_mode, "Run in Device Mode" },
-#endif
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
-    &_rig_handset_remaining_args, "Project" },
-  { 0 }
-};
-
-#endif /* __ANDROID__ */
 
 static RutTraverseVisitFlags
 scenegraph_pre_paint_cb (RutObject *object,
@@ -182,8 +165,8 @@ scenegraph_post_paint_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static CoglBool
-paint (RutShell *shell, void *user_data)
+CoglBool
+rig_engine_paint (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (data->camera);
@@ -2493,8 +2476,8 @@ init_resize_handle (RigData *data)
 
 #endif /* RIG_EDITOR_ENABLED */
 
-static void
-init (RutShell *shell, void *user_data)
+void
+rig_engine_init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
   CoglFramebuffer *fb;
@@ -3170,8 +3153,8 @@ init (RutShell *shell, void *user_data)
   rig_renderer_init (data);
 }
 
-static void
-fini (RutShell *shell, void *user_data)
+void
+rig_engine_fini (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
   int i;
@@ -3247,8 +3230,8 @@ fini (RutShell *shell, void *user_data)
 #endif /* USE_GTK */
 }
 
-static RutInputEventStatus
-shell_input_handler (RutInputEvent *event, void *user_data)
+RutInputEventStatus
+rig_engine_input_handler (RutInputEvent *event, void *user_data)
 {
   RigData *data = user_data;
 
@@ -3652,97 +3635,3 @@ rig_free_ux (RigData *data)
 
   free_asset_input_closures (data);
 }
-
-#ifdef __ANDROID__
-
-void
-android_main (struct android_app *application)
-{
-  RigData data;
-
-  /* Make sure glue isn't stripped */
-  app_dummy ();
-
-  g_android_init ();
-
-  memset (&data, 0, sizeof (RigData));
-  data.app = application;
-
-  data.shell = rut_android_shell_new (application,
-                                      init,
-                                      fini,
-                                      paint,
-                                      &data);
-
-  data.ctx = rut_context_new (data.shell);
-
-  rut_context_init (data.ctx);
-
-  rut_shell_set_input_callback (data.shell, shell_input_handler, &data);
-
-  rut_shell_main (data.shell);
-}
-
-#else
-
-int
-main (int argc, char **argv)
-{
-  RigData data;
-  GOptionContext *context = g_option_context_new (NULL);
-  GError *error = NULL;
-
-  g_option_context_add_main_entries (context, rut_handset_entries, NULL);
-
-  if (!g_option_context_parse (context, &argc, &argv, &error))
-    {
-      fprintf (stderr, "option parsing failed: %s\n", error->message);
-      exit (EXIT_FAILURE);
-    }
-
-  if (_rig_handset_remaining_args == NULL ||
-      _rig_handset_remaining_args[0] == NULL)
-    {
-      fprintf (stderr,
-               "A filename argument for the UI description file is required. "
-               "Pass a non-existing file to create it.\n");
-      exit (EXIT_FAILURE);
-    }
-
-  memset (&data, 0, sizeof (RigData));
-
-  data.ui_filename = g_strdup (_rig_handset_remaining_args[0]);
-
-  data.shell = rut_shell_new (init, fini, paint, &data);
-
-  data.ctx = rut_context_new (data.shell);
-
-  rut_context_init (data.ctx);
-
-  rut_shell_add_input_callback (data.shell, shell_input_handler, &data, NULL);
-
-  while (TRUE)
-    {
-      char *assets_location = g_path_get_dirname (data.ui_filename);
-      rut_set_assets_location (data.ctx, assets_location);
-      g_free (assets_location);
-
-      data.selected_entity = NULL;
-      data.selected_transition = NULL;
-
-      rut_shell_main (data.shell);
-
-      if (data.next_ui_filename)
-        {
-          g_free (data.ui_filename);
-          data.ui_filename = data.next_ui_filename;
-          data.next_ui_filename = NULL;
-        }
-      else
-        break;
-    }
-
-  return 0;
-}
-
-#endif
