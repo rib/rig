@@ -13,9 +13,10 @@ AM_CPPFLAGS = \
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
-bin_PROGRAMS = rig
+noinst_LTLIBRARIES = librig.la
+bin_PROGRAMS = rig rig-slave
 
-rig_SOURCES = \
+librig_la_SOURCES = \
 	jni/main.c \
 	jni/rig-node.c \
 	jni/rig-node.h \
@@ -34,20 +35,34 @@ rig_SOURCES = \
 	jni/rig-osx.h
 
 if EDITOR_ENABLED
-rig_SOURCES += \
+librig_la_SOURCES += \
 	jni/rig-undo-journal.h \
 	jni/rig-undo-journal.c
 endif
 
 if HAVE_OSX
-rig_SOURCES += \
+librig_la_SOURCES += \
 	jni/rig-osx.m
 endif
 
 if HAVE_GTK
-rig_SOURCES += \
+librig_la_SOURCES += \
 	jni/rig-application.h \
 	jni/rig-application.c
 endif
 
+common_ldadd = \
+	$(RIG_DEP_LIBS) \
+	$(RIG_EXTRA_LDFLAGS) \
+	librig.la \
+	$(top_builddir)/rut/librut.la
+
+librig_la_LIBS = $(common_ldadd)
+
+rig_SOURCES = \
+	jni/rig-editor.c
 rig_LDADD = $(common_ldadd)
+
+rig_slave_SOURCES = \
+	jni/rig-slave.c
+rig_slave_LDADD = $(common_ldadd)
