@@ -21,6 +21,9 @@
 #include "rig-renderer.h"
 #include "rig-defines.h"
 #include "rig-osx.h"
+#ifdef USE_GTK
+#include "rig-application.h"
+#endif /* USE_GTK */
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -2548,9 +2551,32 @@ init (RutShell *shell, void *user_data)
     }
 #endif
 
-  cogl_onscreen_show (data->onscreen);
+  cogl_framebuffer_allocate (data->onscreen, NULL);
 
   rut_shell_add_onscreen (data->shell, data->onscreen);
+
+#ifdef USE_GTK
+  {
+    RigApplication *application = rig_application_new (data);
+
+    /* We need to register the application before showing the onscreen
+     * because we need to set the dbus paths before the window is
+     * mapped. FIXME: Eventually it might be nice to delay creating
+     * the windows until the ‘activate’ or ‘open’ signal is emitted so
+     * that we can support the single process properly. In that case
+     * we could let g_application_run handle the registration
+     * itself */
+    if (!g_application_register (G_APPLICATION (application),
+                                 NULL, /* cancellable */
+                                 NULL /* error */))
+      /* Another instance of the application is already running */
+      rut_shell_quit (shell);
+
+    rig_application_add_onscreen (application, data->onscreen);
+  }
+#endif
+
+  cogl_onscreen_show (data->onscreen);
 
 #ifdef __APPLE__
   rig_osx_init (data);
@@ -3195,6 +3221,13 @@ fini (RutShell *shell, void *user_data)
 #ifdef __APPLE__
   rig_osx_deinit (data);
 #endif
+
+#ifdef USE_GTK
+  {
+    GApplication *application = g_application_get_default ();
+    g_object_unref (application);
+  }
+#endif /* USE_GTK */
 }
 
 static RutInputEventStatus

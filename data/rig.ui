@@ -1,0 +1,35 @@
+<interface>
+  <menu id='app-menu'>
+    <section>
+      <item>
+        <attribute name='label' translatable='yes'>_New File</attribute>
+        <attribute name='action'>app.new</attribute>
+        <attribute name='accel'>&lt;Primary&gt;n</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>_Open…</attribute>
+        <attribute name='action'>app.open</attribute>
+        <attribute name='accel'>&lt;Primary&gt;o</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name='label' translatable='yes'>_Save</attribute>
+        <attribute name='action'>app.save</attribute>
+        <attribute name='accel'>&lt;Primary&gt;s</attribute>
+      </item>
+      <item>
+        <attribute name='label' translatable='yes'>_Save As…</attribute>
+        <attribute name='action'>app.save_as</attribute>
+        <attribute name='accel'>&lt;Primary&gt;S</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name='label' translatable='yes'>_Quit</attribute>
+        <attribute name='action'>app.quit</attribute>
+        <attribute name='accel'>&lt;Primary&gt;q</attribute>
+      </item>
+    </section>
+  </menu>
+</interface>

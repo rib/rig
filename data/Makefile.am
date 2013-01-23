@@ -26,5 +26,10 @@ dist_assets_DATA = \
 	color-picker-dot.png \
 	resize-handle.png
 
+if HAVE_GTK
+dist_assets_DATA += \
+	rig.ui
+endif
+
 EXTRA_DIST = \
 	Info.plist.in

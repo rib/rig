@@ -2045,6 +2045,17 @@ rut_shell_set_title (RutShell *shell,
 #endif /* USE_SDL */
 }
 
+#ifdef USE_GTK
+GdkWindow *
+rut_shell_get_gdk_window (RutShell *shell,
+                          CoglOnscreen *onscreen)
+{
+  RutShellOnscreen *shell_onscreen = get_shell_onscreen (shell, onscreen);
+
+  return shell_onscreen ? shell_onscreen->gdk_window : NULL;
+}
+#endif /* USE_GTK */
+
 static void
 update_pre_paint_entry_depth (RutShellPrePaintEntry *entry)
 {
@@ -2352,7 +2363,7 @@ void
 rut_shell_add_onscreen (RutShell *shell,
                         CoglOnscreen *onscreen)
 {
-  RutShellOnscreen *shell_onscreen = g_slice_new (RutShellOnscreen);
+  RutShellOnscreen *shell_onscreen = g_slice_new0 (RutShellOnscreen);
   static CoglUserDataKey data_key;
 
   shell_onscreen->onscreen = onscreen;
@@ -2472,7 +2483,16 @@ rut_shell_main (RutShell *shell)
 
 #ifdef USE_GTK
 
-  gtk_main ();
+  {
+    GApplication *application = g_application_get_default ();
+
+    /* If the application has created a GApplication then we'll run
+     * that instead of running GTK's mainloop directly */
+    if (application)
+      g_application_run (application, 0, NULL);
+    else
+      gtk_main ();
+  }
 
 #else
 
@@ -2949,7 +2969,16 @@ rut_shell_quit (RutShell *shell)
 #ifdef __ANDROID__
   shell->quit = TRUE;
 #elif defined(USE_GTK)
-  gtk_main_quit ();
+  {
+    GApplication *application = g_application_get_default ();
+
+    /* If the application has created a GApplication then we'll quit
+     * that instead of GTK's mainloop */
+    if (application)
+      g_application_quit (application);
+    else
+      gtk_main_quit ();
+  }
 #else
   g_main_loop_quit (shell->main_loop);
 #endif

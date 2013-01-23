@@ -271,6 +271,7 @@ AS_CASE([$enable_gtk],
         ],
         [no], [],
         [AC_MSG_ERROR([Invalid value for --enable-gtk])])
+AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
 
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])

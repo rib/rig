@@ -51,4 +51,10 @@ rig_SOURCES += \
 	jni/rig-osx.m
 endif
 
+if HAVE_GTK
+rig_SOURCES += \
+	jni/rig-application.h \
+	jni/rig-application.c
+endif
+
 rig_LDADD = $(common_ldadd)
