@@ -75,7 +75,9 @@ main (int argc, char **argv)
   ADD_TEST (test_wrap_modes, 0, 0);
   UNPORTED_TEST (test_texture_pixmap_x11);
   ADD_TEST (test_texture_get_set_data, 0, 0);
-  ADD_TEST (test_texture_mipmap_get_set, 0, 0);
+  /* This test won't work on GLES because that doesn't support setting
+   * the maximum texture level. */
+  ADD_TEST (test_texture_mipmap_get_set, TEST_REQUIREMENT_GL, 0);
   ADD_TEST (test_atlas_migration, 0, 0);
   ADD_TEST (test_read_texture_formats, 0, 0);
   ADD_TEST (test_write_texture_formats, 0, 0);
