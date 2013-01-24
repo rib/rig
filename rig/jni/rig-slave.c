@@ -4,6 +4,7 @@
 #include <rut.h>
 #include <rig-data.h>
 #include <rig-engine.h>
+#include <rig-avahi.h>
 
 #if 0
 static const GOptionEntry rut_handset_entries[] =
@@ -18,6 +19,8 @@ void
 rig_preview_init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
+
+  rig_avahi_register_service (data);
 
   rig_engine_init (shell, data);
 }
