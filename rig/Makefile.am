@@ -32,7 +32,9 @@ librig_la_SOURCES = \
 	jni/rig-renderer.h \
 	jni/rig-renderer.c \
 	jni/rig-data.h \
-	jni/rig-osx.h
+	jni/rig-osx.h \
+	jni/rig-avahi.h \
+	jni/rig-avahi.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \

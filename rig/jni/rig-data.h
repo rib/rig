@@ -20,6 +20,9 @@
 #ifndef _RUT_DATA_H_
 #define _RUT_DATA_H_
 
+#include <avahi-client/client.h>
+#include <avahi-client/publish.h>
+
 #include "rig-transition.h"
 #include "rig-transition-view.h"
 #include "rig-types.h"
@@ -223,6 +226,11 @@ struct _RigData
   CoglSnippet *material_lighting_snippet;
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;
+
+  const AvahiPoll *avahi_poll_api;
+  char *avahi_service_name;
+  AvahiClient *avahi_client;
+  AvahiEntryGroup *avahi_group;
 
   RutProperty properties[RIG_DATA_N_PROPS];
 };
