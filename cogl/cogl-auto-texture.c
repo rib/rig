@@ -258,7 +258,7 @@ cogl_texture_gl_new_from_foreign (CoglContext *ctx,
                                   CoglPixelFormat format,
                                   CoglError **error)
 {
-#if HAVE_COGL_GL
+#ifdef HAVE_COGL_GL
   if (gl_target == GL_TEXTURE_RECTANGLE_ARB)
     {
       CoglTextureRectangle *texture_rectangle;
