@@ -4,6 +4,7 @@
 #include <rut.h>
 #include <rig-data.h>
 #include <rig-engine.h>
+#include <rig-avahi.h>
 
 static char **_rig_editor_remaining_args = NULL;
 
@@ -18,6 +19,8 @@ void
 rig_editor_init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
+
+  rig_avahi_run_browser (data);
 
   rig_engine_init (shell, data);
 }
