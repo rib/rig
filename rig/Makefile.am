@@ -16,6 +16,15 @@ AM_CFLAGS = \
 noinst_LTLIBRARIES = librig.la
 bin_PROGRAMS = rig rig-slave
 
+%.pb-c.c %.pb-c.h: %.proto
+	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
+
+PROTOBUF_C_FILES = jni/rig.pb-c.c jni/rig.pb-c.h
+
+BUILT_SOURCES = $(PROTOBUF_C_FILES)
+DISTCLEANFILES = $(PROTOBUF_C_FILES)
+EXTRA_DIST = $(PROTOBUF_C_FILES)
+
 librig_la_SOURCES = \
 	jni/main.c \
 	jni/rig-node.c \
@@ -34,7 +43,9 @@ librig_la_SOURCES = \
 	jni/rig-data.h \
 	jni/rig-osx.h \
 	jni/rig-avahi.h \
-	jni/rig-avahi.c
+	jni/rig-avahi.c \
+	jni/rig-rpc-network.h \
+	jni/rig-rpc-network.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
