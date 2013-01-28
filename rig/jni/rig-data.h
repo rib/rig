@@ -22,6 +22,7 @@
 
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
+#include <avahi-client/lookup.h>
 
 #include "rig-transition.h"
 #include "rig-transition-view.h"
@@ -38,6 +39,13 @@ enum {
 
   RIG_DATA_N_PROPS
 };
+
+typedef struct _RigSlaveAddress
+{
+  char *name;
+  char *hostname;
+  int port;
+} RigSlaveAddress;
 
 struct _RigData
 {
@@ -231,6 +239,9 @@ struct _RigData
   char *avahi_service_name;
   AvahiClient *avahi_client;
   AvahiEntryGroup *avahi_group;
+  AvahiServiceBrowser *avahi_browser;
+
+  GList *slave_addresses;
 
   RutProperty properties[RIG_DATA_N_PROPS];
 };

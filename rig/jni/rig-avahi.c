@@ -126,17 +126,30 @@ create_service (RigData *data)
 
   if (avahi_entry_group_is_empty (data->avahi_group))
     {
+      char *user_name;
+      const char *user = g_get_real_name ();
+
+      if (strcmp (user, "Unknown") == 0)
+        user = g_get_user_name ();
+
+      user_name = g_strconcat ("user=", user, NULL);
+
       g_message ("Adding Avahi service '%s'\n", data->avahi_service_name);
 
-      if ((ret = avahi_entry_group_add_service (data->avahi_group,
-                                                AVAHI_IF_UNSPEC,
-                                                AVAHI_PROTO_UNSPEC,
-                                                0,
-                                                data->avahi_service_name,
-                                                "_rig._tcp",
-#warning "FIXME: hacky 12345 port number"
-                                                NULL, NULL, 12345 /* FIXME: port */,
-                                                NULL)) < 0)
+      ret = avahi_entry_group_add_service (data->avahi_group,
+                                           AVAHI_IF_UNSPEC,
+                                           AVAHI_PROTO_UNSPEC,
+                                           0,
+                                           data->avahi_service_name,
+                                           "_rig._tcp",
+                                           NULL, NULL,
+                                           data->network_port,
+                                           "version=1.0",
+                                           user_name,
+                                           NULL);
+      g_free (user_name);
+
+      if (ret < 0)
         {
           if (ret == AVAHI_ERR_COLLISION)
             goto collision;
@@ -174,9 +187,9 @@ collision:
 }
 
 static void
-client_callback (AvahiClient *client,
-                 AvahiClientState state,
-                 void *user_data)
+service_client_callback (AvahiClient *client,
+                         AvahiClientState state,
+                         void *user_data)
 {
   RigData *data = user_data;
 
@@ -254,7 +267,7 @@ rig_avahi_register_service (RigData *data)
 
   client = avahi_client_new (poll_api,
                              0,
-                             client_callback,
+                             service_client_callback,
                              data,
                              &error);
   if (client == NULL)
@@ -268,4 +281,244 @@ rig_avahi_register_service (RigData *data)
 
   data->avahi_client = client;
   data->avahi_poll_api = poll_api;
+}
+
+static void
+resolve_callback(AvahiServiceResolver *resolver,
+                 AVAHI_GCC_UNUSED AvahiIfIndex interface,
+                 AVAHI_GCC_UNUSED AvahiProtocol protocol,
+                 AvahiResolverEvent event,
+                 const char *name,
+                 const char *type,
+                 const char *domain,
+                 const char *host_name,
+                 const AvahiAddress *address,
+                 uint16_t port,
+                 AvahiStringList *txt,
+                 AvahiLookupResultFlags flags,
+                 void* user_data)
+{
+  RigData *data = user_data;
+  AvahiClient *client = avahi_service_resolver_get_client (resolver);
+
+  /* Called whenever a service has been resolved successfully or timed out */
+
+  switch (event)
+    {
+    case AVAHI_RESOLVER_FAILURE:
+
+      g_warning ("(Resolver) Failed to resolve service "
+                 "'%s' of type '%s' in domain '%s': %s\n",
+                 name, type, domain,
+                 avahi_strerror (avahi_client_errno (client)));
+      break;
+
+    case AVAHI_RESOLVER_FOUND:
+    {
+      char a[AVAHI_ADDRESS_STR_MAX], *t;
+      RigSlaveAddress *slave_address;
+      GList *l;
+
+      g_message ("Service '%s' of type '%s' in domain '%s':\n",
+                 name, type, domain);
+
+      avahi_address_snprint (a, sizeof (a), address);
+      t = avahi_string_list_to_string (txt);
+      g_message (
+              "\t%s:%u (%s)\n"
+              "\tTXT=%s\n"
+              "\tcookie is %u\n"
+              "\tis_local: %i\n"
+              "\tour_own: %i\n"
+              "\twide_area: %i\n"
+              "\tmulticast: %i\n"
+              "\tcached: %i\n",
+              host_name, port, a,
+              t,
+              avahi_string_list_get_service_cookie (txt),
+              !!(flags & AVAHI_LOOKUP_RESULT_LOCAL),
+              !!(flags & AVAHI_LOOKUP_RESULT_OUR_OWN),
+              !!(flags & AVAHI_LOOKUP_RESULT_WIDE_AREA),
+              !!(flags & AVAHI_LOOKUP_RESULT_MULTICAST),
+              !!(flags & AVAHI_LOOKUP_RESULT_CACHED));
+
+        avahi_free (t);
+
+        slave_address = g_slice_new0 (RigSlaveAddress);
+        slave_address->name = g_strdup (name);
+        slave_address->hostname = g_strdup (host_name);
+        slave_address->port = port;
+
+        data->slave_addresses =
+          g_list_prepend (data->slave_addresses, slave_address);
+
+        for (l = data->slave_addresses; l; l = l->next)
+          {
+            RigSlaveAddress *address = l->data;
+            g_print ("Slave = %s\n", address->hostname);
+          }
+      }
+  }
+
+  avahi_service_resolver_free (resolver);
+}
+
+static void
+free_slave_address (RigSlaveAddress *slave_address)
+{
+  g_free (slave_address->name);
+  g_free (slave_address->hostname);
+  g_slice_free (RigSlaveAddress, slave_address);
+}
+
+static void
+browse_callback (AvahiServiceBrowser *browser,
+                 AvahiIfIndex interface,
+                 AvahiProtocol protocol,
+                 AvahiBrowserEvent event,
+                 const char *name,
+                 const char *type,
+                 const char *domain,
+                 AvahiLookupResultFlags flags,
+                 void *user_data)
+{
+  RigData *data = user_data;
+  AvahiClient *client = avahi_service_browser_get_client (browser);
+  GList *l;
+
+  switch (event)
+    {
+    case AVAHI_BROWSER_FAILURE:
+
+      g_warning ("(Browser) %s\n",
+                 avahi_strerror (avahi_client_errno (client)));
+      return;
+
+    case AVAHI_BROWSER_NEW:
+
+      g_message ("(Browser) NEW: service '%s' of type '%s' in domain '%s'\n",
+                 name, type, domain);
+
+      /* We ignore the returned resolver object. In the callback
+         function we free it. If the server is terminated before
+         the callback function is called the server will free
+         the resolver for us. */
+
+      if (!(avahi_service_resolver_new (client,
+                                        interface,
+                                        protocol,
+                                        name,
+                                        type,
+                                        domain,
+                                        AVAHI_PROTO_UNSPEC,
+                                        0,
+                                        resolve_callback,
+                                        data)))
+        {
+          g_warning ("Failed to resolve service '%s': %s\n",
+                     name, avahi_strerror (avahi_client_errno (client)));
+        }
+
+      break;
+
+    case AVAHI_BROWSER_REMOVE:
+
+      for (l = data->slave_addresses; l; l = l->next)
+        {
+          RigSlaveAddress *slave_address = l->data;
+
+          if (strcmp (slave_address->name, name) == 0)
+            {
+              free_slave_address (slave_address);
+              data->slave_addresses =
+                g_list_remove_link (data->slave_addresses, l);
+              g_message ("(Browser) REMOVE: service '%s' of type '%s' "
+                         "in domain '%s'\n",
+                         name, type, domain);
+              break;
+            }
+        }
+
+      break;
+
+    case AVAHI_BROWSER_ALL_FOR_NOW:
+    case AVAHI_BROWSER_CACHE_EXHAUSTED:
+      g_message ("(Browser) %s\n",
+                 event == AVAHI_BROWSER_CACHE_EXHAUSTED ?
+                 "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+      break;
+  }
+}
+
+static void
+browser_client_callback (AvahiClient *client,
+                         AvahiClientState state,
+                         void *user_data)
+{
+  //RigData *data = user_data;
+
+  if (state == AVAHI_CLIENT_FAILURE)
+    {
+      g_warning ("Server connection failure: %s\n",
+                 avahi_strerror (avahi_client_errno (client)));
+
+      /* XXX: what should we do?
+       *
+       * We could install a timeout that tries re-initializing avahi from
+       * scratch?
+       */
+    }
+}
+
+void
+rig_avahi_run_browser (RigData *data)
+{
+  const AvahiPoll *poll_api;
+  AvahiGLibPoll *glib_poll;
+  AvahiClient *client;
+  AvahiServiceBrowser *browser;
+  int error;
+
+  avahi_set_allocator (avahi_glib_allocator ());
+
+  /* Note: An AvahiGlibPoll is a GSource, but note that avahi_glib_poll_new()
+   * will automatically add the source to the GMainContext so we don't have to
+   * do that explicitly.
+   */
+  glib_poll = avahi_glib_poll_new (NULL, G_PRIORITY_DEFAULT);
+  poll_api = avahi_glib_poll_get (glib_poll);
+
+  client = avahi_client_new (poll_api,
+                             0,
+                             browser_client_callback,
+                             data,
+                             &error);
+  if (client == NULL)
+    {
+      g_warning ("Error initializing Avahi: %s", avahi_strerror (error));
+
+      avahi_glib_poll_free (glib_poll);
+      return;
+    }
+
+  browser = avahi_service_browser_new (client,
+                                       AVAHI_IF_UNSPEC,
+                                       AVAHI_PROTO_UNSPEC,
+                                       "_rig._tcp",
+                                       NULL, 0,
+                                       browse_callback,
+                                       data);
+  if (browser == NULL)
+    {
+      g_warning ("Failed to create service browser: %s\n",
+                 avahi_strerror (avahi_client_errno (client)));
+
+      avahi_client_free (client);
+      avahi_glib_poll_free (glib_poll);
+      return;
+    }
+
+  data->avahi_client = client;
+  data->avahi_poll_api = poll_api;
+  data->avahi_browser = browser;
 }
