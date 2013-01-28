@@ -1,0 +1,21 @@
+Generate the public/private key pair with this command:
+
+openssl genpkey -algorithm RSA -out rig-key.pem -des3
+
+Pick a password to encrypt the private key with.
+
+Extract the public key with this command:
+
+openssl rsa -in rig-key.pem -pubout -out rig-key-pub.pem
+
+Sign the data file with the following command:
+
+openssl sha256 -binary < rig-release.tgz | \
+  openssl pkeyutl -sign \
+          -out rig-sig \
+          -inkey rig-key.pem \
+          -pkeyopt digest:sha256
+
+Prefix the signed result to the distribution using cat:
+
+cat rig-sig rig-release.tgz > rig-release.tgz.signed

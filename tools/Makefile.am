@@ -22,3 +22,18 @@ bin_PROGRAMS = rig-bump-map-gen
 
 rig_bump_map_gen_SOURCES = bump-map-gen.c
 rig_bump_map_gen_LDADD = $(common_ldadd)
+
+noinst_PROGRAMS =
+
+if HAVE_LIBCRYPTO
+noinst_PROGRAMS += rig-check-signature
+endif
+
+rig_check_signature_SOURCES = \
+	check-signature.c
+rig_check_signature_LDADD = \
+	$(GLIB_LIBS) \
+	$(LIBCRYPTO_LIBS)
+rig_check_signatures_CFLAGS = \
+	$(GLIB_CFLAGS) \
+	$(LIBCRYPTO_CFLAGS)

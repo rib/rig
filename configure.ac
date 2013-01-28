@@ -277,6 +277,12 @@ AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
+PKG_CHECK_MODULES([LIBCRYPTO],
+                  [libcrypto],
+                  [have_libcrypto=yes],
+                  [have_libcrypto=no])
+AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
+
 dnl ================================================================
 dnl Misc program dependencies.
 dnl ================================================================

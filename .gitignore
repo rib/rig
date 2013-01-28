@@ -46,3 +46,4 @@ xmldocs.make
 /rig/rig
 /rig/jni/rig-defines.h
 /tools/rig-bump-map-gen
+/tools/rig-check-signature

@@ -31,5 +31,10 @@ dist_assets_DATA += \
 	rig.ui
 endif
 
+if HAVE_OSX
+dist_assets_DATA += \
+	rig-key-pub.pem
+endif
+
 EXTRA_DIST = \
 	Info.plist.in

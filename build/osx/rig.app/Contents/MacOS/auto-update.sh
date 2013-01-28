@@ -7,6 +7,7 @@ EXE_DIR=`dirname $0`
 BASE_DIR=`cd "$EXE_DIR"/.. && pwd`
 UPDATE_FILE="$BASE_DIR"/Resources/rig-update.tar.gz
 LOCK_FILE="$BASE_DIR/Resources/update-lock-file"
+KEY_FILE="$BASE_DIR/Resources/share/rig/rig-key-pub.pem"
 
 # Try to exclusively create a lock file so that we don't run the
 # script again if it's already running
@@ -64,15 +65,32 @@ if test "$CURRENT_VERSION" -ge "$LATEST_VERSION"; then
 fi
 
 # Download the latest version
-if ! curl -f -s -L "$BASE_URL/rig-osx-$LATEST_VERSION.tar.gz" \
-          > "$UPDATE_FILE.tmp"; then
+if ! curl -f -s -L "$BASE_URL/rig-osx-$LATEST_VERSION.tar.gz.signed" \
+          > "$UPDATE_FILE.tmp.signed"; then
     fail_message "Failed to download the latest Rig update.";
 fi
 
-if ! test -f "$UPDATE_FILE.tmp"; then
+if ! test -f "$UPDATE_FILE.tmp.signed"; then
     fail_message "Something went wrong while downloading the latest" \
         "Rig update."
 fi
+
+# Verify the signature
+"$EXE_DIR"/rig-check-signature \
+    -k "$KEY_FILE" \
+    -d "$UPDATE_FILE.tmp.signed" \
+    -o "$UPDATE_FILE.tmp"
+sign_result="$?"
+
+# rig-check-signature returns an error code of 6 if it failed
+# specifically because the signature was invalid
+if test "$sign_result" = "6"; then
+    fail_message "The signature for the update was invalid"
+elif test "$sign_result" != "0"; then
+    fail_message "Failed to check the signature of the update"
+fi
+
+rm "$UPDATE_FILE.tmp.signed"
 
 # If we make it here then the download worked so we'll atomically
 # rename the file so that the next time Rig starts it will recognise

@@ -203,6 +203,7 @@ function build_source ()
     local project_dir
     local prefix
     local commit
+    local config_name="configure"
     local jobs=4
 
     while true; do
@@ -210,6 +211,7 @@ function build_source ()
             -p) shift; prefix="$1"; shift ;;
             -d) shift; project_dir="$1"; shift ;;
             -c) shift; commit="$1"; shift ;;
+            -C) shift; config_name="$1"; shift ;;
 	    -j) shift; jobs="$1"; shift ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
@@ -257,7 +259,7 @@ function build_source ()
         NOCONFIGURE=1 ./autogen.sh
     fi
 
-    ./configure --prefix="$prefix" "$@"
+    ./"$config_name" --prefix="$prefix" "$@"
     make -j"$jobs"
     make install
 
@@ -362,6 +364,19 @@ build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
 
 build_tool "ftp://ftp.gnome.org/pub/gnome/sources/gnome-common/3.6/gnome-common-3.6.0.tar.xz"
 
+build_dep -C Configure -j 1 \
+    "https://www.openssl.org/source/openssl-1.0.1c.tar.gz" \
+    darwin64-x86_64-cc \
+    no-shared
+
+# At least on OSX, ld seems to prefer to load .dylib files instead of .a files
+# regardless of the load path. As a bodge to work around this, we'll rename the
+# library file it installs and hack the .pc file
+if test -f "$ROOT_DIR"/lib/libcrypto.a; then
+ mv -v "$ROOT_DIR"/lib/libcrypto{,-static}.a 
+ sed -i .tmp s/-lcrypto/-lcrypto-static/g "$ROOT_DIR"/lib/pkgconfig/libcrypto.pc
+fi
+
 build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
 build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.1.1.tar.gz"
 build_dep \
@@ -449,6 +464,7 @@ done
 mkdir -p "$PKG_DIR"
 
 cp -vR "$BUILD_DIR/rig/build/osx/rig.app/Contents/MacOS/"{auto-update.sh,rig} \
+    "$BUILD_DIR/rig/tools/rig-check-signature" \
     "$PKG_DIR"/Contents/MacOS
 
 mkdir -p "$PKG_DATADIR/rig"
