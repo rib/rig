@@ -131,12 +131,15 @@ paint (Data *data)
 }
 
 static void
-swap_notify_cb (CoglFramebuffer *framebuffer,
+frame_event_cb (CoglOnscreen *onscreen,
+                CoglFrameEvent event,
+                CoglFrameInfo *info,
                 void *user_data)
 {
   Data *data = user_data;
 
-  data->swap_ready = TRUE;
+  if (event == COGL_FRAME_EVENT_SYNC)
+    data->swap_ready = TRUE;
 }
 
 int
@@ -150,7 +153,6 @@ main (int argc, char **argv)
   PangoRectangle hello_label_size;
   float fovy, aspect, z_near, z_2d, z_far;
   CoglDepthState depth_state;
-  CoglBool has_swap_notify;
 
   ctx = cogl_context_new (NULL, &error);
   if (!ctx) {
@@ -269,13 +271,10 @@ main (int argc, char **argv)
 
   data.swap_ready = TRUE;
 
-  has_swap_notify =
-    cogl_has_feature (ctx, COGL_FEATURE_ID_SWAP_BUFFERS_EVENT);
-
-  if (has_swap_notify)
-    cogl_onscreen_add_swap_buffers_callback (COGL_ONSCREEN (fb),
-                                             swap_notify_cb,
-                                             &data);
+  cogl_onscreen_add_frame_callback (COGL_ONSCREEN (fb),
+                                    frame_event_cb,
+                                    &data,
+                                    NULL); /* destroy notify */
 
   while (1)
     {
@@ -290,14 +289,6 @@ main (int argc, char **argv)
         }
 
       cogl_poll_get_info (ctx, &poll_fds, &n_poll_fds, &timeout);
-
-      if (!has_swap_notify)
-        {
-          /* If the winsys doesn't support swap event notification
-             then we'll just redraw constantly */
-          data.swap_ready = TRUE;
-          timeout = 0;
-        }
 
       g_poll ((GPollFD *) poll_fds, n_poll_fds,
               timeout == -1 ? -1 : timeout / 1000);
