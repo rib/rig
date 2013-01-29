@@ -33,6 +33,11 @@ _rut_init (void);
 #define CIRCLE_TEX_RADIUS 256
 #define CIRCLE_TEX_PADDING 256
 
+typedef enum
+{
+  RUT_TEXT_DIRECTION_LEFT_TO_RIGHT = 1,
+  RUT_TEXT_DIRECTION_RIGHT_TO_LEFT
+} RutTextDirection;
 
 typedef struct _RutSettings RutSettings;
 
@@ -74,6 +79,9 @@ rut_context_new (RutShell *shell /* optional */);
 
 void
 rut_context_init (RutContext *context);
+
+RutTextDirection
+rut_get_text_direction (RutContext *context);
 
 void
 rut_set_assets_location (RutContext *context,

@@ -3373,7 +3373,7 @@ rut_text_new_full (RutContext *ctx,
   rut_color_init_from_uint32 (&text->selection_color, default_selection_color);
   rut_color_init_from_uint32 (&text->selected_text_color, default_selected_text_color);
 
-  text->direction = RUT_TEXT_DIRECTION_LEFT_TO_RIGHT;
+  text->direction = rut_get_text_direction (ctx);
 
   /* get the default font name from the context; we don't use
    * set_font_description() here because we are initializing
