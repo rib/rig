@@ -590,6 +590,12 @@ rut_context_init (RutContext *context)
     _rut_shell_init (context->shell);
 }
 
+RutTextDirection
+rut_get_text_direction (RutContext *context)
+{
+  return RUT_TEXT_DIRECTION_LEFT_TO_RIGHT;
+}
+
 void
 rut_set_assets_location (RutContext *context,
                          const char *assets_location)

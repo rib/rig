@@ -666,7 +666,7 @@ add_component_inspector_cb (RutComponent *component,
   RigData *data = user_data;
   RutInspector *inspector = create_inspector (data, component);
 
-  rut_box_layout_add (data->inspector_box_layout, inspector);
+  rut_box_layout_add (data->inspector_box_layout, FALSE, inspector);
 
   data->all_inspectors =
     g_list_prepend (data->all_inspectors, inspector);
@@ -691,7 +691,7 @@ update_inspector (RigData *data)
     {
       data->inspector = create_inspector (data, data->selected_entity);
 
-      rut_box_layout_add (data->inspector_box_layout, data->inspector);
+      rut_box_layout_add (data->inspector_box_layout, FALSE, data->inspector);
       data->all_inspectors =
         g_list_prepend (data->all_inspectors, data->inspector);
 
@@ -2994,7 +2994,8 @@ rig_engine_init (RutShell *shell, void *user_data)
 
       data->inspector_box_layout =
         rut_box_layout_new (data->ctx,
-                            RUT_BOX_LAYOUT_ORIENTATION_VERTICAL);
+                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
+                            NULL);
 
       data->right_bar_stack =
         rut_stack_new (data->ctx, 100, 100,

@@ -57,13 +57,6 @@ extern RutType rut_text_type;
 RutContext *
 rut_text_get_context (RutText *text);
 
-typedef enum _RutTextDirection
-{
-  RUT_TEXT_DIRECTION_DEFAULT,
-  RUT_TEXT_DIRECTION_LEFT_TO_RIGHT,
-  RUT_TEXT_DIRECTION_RIGHT_TO_LEFT
-} RutTextDirection;
-
 RutTextDirection
 rut_text_get_direction (RutText *text);
 

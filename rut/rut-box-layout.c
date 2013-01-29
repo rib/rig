@@ -26,30 +26,81 @@
 #include "rut.h"
 #include "rut-box-layout.h"
 
+enum {
+  RUT_BOX_LAYOUT_PROP_PACKING,
+  RUT_BOX_LAYOUT_PROP_HOMOGENEOUS,
+  RUT_BOX_LAYOUT_PROP_SPACING,
+  RUT_BOX_LAYOUT_N_PROPS
+};
+
 typedef struct
 {
   RutList link;
   RutObject *transform;
   RutObject *widget;
   RutClosure *preferred_size_closure;
+  CoglBool expand;
 } RutBoxLayoutChild;
 
 struct _RutBoxLayout
 {
   RutObjectProps _parent;
 
-  RutContext *context;
+  RutContext *ctx;
 
   RutList preferred_size_cb_list;
   RutList children;
+  int n_children;
 
-  RutBoxLayoutOrientation orientation;
+  RutBoxLayoutPacking packing;
+  int spacing;
+  CoglBool homogeneous;
 
   float width, height;
 
   RutGraphableProps graphable;
 
   int ref_count;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_BOX_LAYOUT_N_PROPS];
+};
+
+static RutPropertySpec _rut_box_layout_prop_specs[] = {
+
+  {
+    .name = "packing",
+    .type = RUT_PROPERTY_TYPE_INTEGER,
+    .getter.integer_type = (void *)rut_box_layout_get_packing,
+    .setter.integer_type = (void *)rut_box_layout_set_packing,
+    .nick = "Packing",
+    .blurb = "The packing direction",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .default_value = { .integer = RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT }
+  },
+
+  {
+    .name = "homogeneous",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.integer_type = rut_box_layout_get_homogeneous,
+    .setter.integer_type = rut_box_layout_set_homogeneous,
+    .nick = "Homogeneous",
+    .blurb = "Pack children with the same size",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .default_value = { .boolean = FALSE }
+  },
+
+  {
+    .name = "spacing",
+    .type = RUT_PROPERTY_TYPE_INTEGER,
+    .getter.integer_type = rut_box_layout_get_spacing,
+    .setter.integer_type = rut_box_layout_set_spacing,
+    .nick = "Spacing",
+    .blurb = "The spacing between children",
+    .flags = RUT_PROPERTY_FLAG_READWRITE
+  },
+
+  { 0 }
 };
 
 RutType rut_box_layout_type;
@@ -69,9 +120,9 @@ _rut_box_layout_free (void *object)
       rut_box_layout_remove (box, child->widget);
     }
 
-  rut_shell_remove_pre_paint_callback (box->context->shell, box);
+  rut_shell_remove_pre_paint_callback (box->ctx->shell, box);
 
-  rut_refable_unref (box->context);
+  rut_refable_unref (box->ctx);
 
   rut_graphable_destroy (box);
 
@@ -90,58 +141,322 @@ static RutGraphableVTable _rut_box_layout_graphable_vtable = {
   NULL /* parent changed */
 };
 
+typedef struct _PreferredSize
+{
+  float natural_size;
+  float minimum_size;
+} PreferredSize;
+
+/* Pulled from gtksizerequest.c from Gtk+ */
+static int
+compare_gap (const void *p1,
+             const void *p2,
+             void *data)
+{
+  PreferredSize *sizes = data;
+  const unsigned int *c1 = p1;
+  const unsigned int *c2 = p2;
+
+  const int d1 = MAX (sizes[*c1].natural_size -
+                      sizes[*c1].minimum_size,
+                      0);
+  const int d2 = MAX (sizes[*c2].natural_size -
+                      sizes[*c2].minimum_size,
+                      0);
+
+  int delta = (d2 - d1);
+
+  if (0 == delta)
+    delta = (*c2 - *c1);
+
+  return delta;
+}
+
+/**
+ * @extra_space: Extra space to redistribute among children after subtracting
+ *               minimum sizes and any child padding from the overall allocation
+ * @n_requested_sizes: Number of requests to fit into the allocation
+ * @sizes: An array of structs with a client pointer and a minimum/natural size
+ *         in the orientation of the allocation.
+ *
+ * Distributes @extra_space to child @sizes by bringing smaller
+ * children up to natural size first.
+ *
+ * The remaining space will be added to the @minimum_size member of the
+ * GtkRequestedSize struct. If all sizes reach their natural size then
+ * the remaining space is returned.
+ *
+ * Returns: The remainder of @extra_space after redistributing space
+ * to @sizes.
+ *
+ * Pulled from gtksizerequest.c from Gtk+
+ */
+static int
+distribute_natural_allocation (int extra_space,
+                               unsigned int n_requested_sizes,
+			       PreferredSize *sizes)
+{
+  unsigned int *spreading;
+  int i;
+
+  g_return_val_if_fail (extra_space >= 0, 0);
+
+  spreading = g_newa (unsigned int, n_requested_sizes);
+
+  for (i = 0; i < n_requested_sizes; i++)
+    spreading[i] = i;
+
+  /* Distribute the container's extra space c_gap. We want to assign
+   * this space such that the sum of extra space assigned to children
+   * (c^i_gap) is equal to c_cap. The case that there's not enough
+   * space for all children to take their natural size needs some
+   * attention. The goals we want to achieve are:
+   *
+   *   a) Maximize number of children taking their natural size.
+   *   b) The allocated size of children should be a continuous
+   *   function of c_gap.  That is, increasing the container size by
+   *   one pixel should never make drastic changes in the distribution.
+   *   c) If child i takes its natural size and child j doesn't,
+   *   child j should have received at least as much gap as child i.
+   *
+   * The following code distributes the additional space by following
+   * these rules.
+   */
+
+  /* Sort descending by gap and position. */
+  g_qsort_with_data (spreading,
+		     n_requested_sizes, sizeof (unsigned int),
+		     compare_gap, sizes);
+
+  /* Distribute available space.
+   * This master piece of a loop was conceived by Behdad Esfahbod.
+   */
+  for (i = n_requested_sizes - 1; extra_space > 0 && i >= 0; --i)
+    {
+      /* Divide remaining space by number of remaining children.
+       * Sort order and reducing remaining space by assigned space
+       * ensures that space is distributed equally.
+       */
+      int glue = (extra_space + i) / (i + 1);
+      int gap = sizes[(spreading[i])].natural_size
+        - sizes[(spreading[i])].minimum_size;
+
+      int extra = MIN (glue, gap);
+
+      sizes[spreading[i]].minimum_size += extra;
+
+      extra_space -= extra;
+    }
+
+  return extra_space;
+}
+
 static void
 allocate_cb (RutObject *graphable,
              void *user_data)
 {
   RutBoxLayout *box = RUT_BOX_LAYOUT (graphable);
   RutBoxLayoutChild *child;
-  /* The position along whichever axis is the orientation */
-  float pos = 0.0f;
+  CoglBool horizontal;
+  int n_children = box->n_children;
+  int n_expand_children;
 
-  /* FIXME: This is currently just ignoring its allocated size. It
-   * should probably squish the children to fix or expand them as
-   * necessary. */
+  RutTextDirection text_direction;
+  int child_x, child_y, child_width, child_height;
+  int child_size;
+  PreferredSize *sizes;
 
-  /* FIXME: It should be configurable whether it expands its children
-   * on the axis that isn't the orientation */
+  int size;
+  int extra;
+  int n_extra_px_widgets;
+  int x, y;
+  int i;
+
+  if (!n_children)
+    return;
+
+  sizes = g_newa (PreferredSize, n_children);
+
+  switch (box->packing)
+    {
+    case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+    case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
+      size = box->width - (n_children - 1) * box->spacing;
+      text_direction = rut_get_text_direction (box->ctx);
+      horizontal = TRUE;
+      break;
+    case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+    case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
+      size = box->height - (n_children - 1) * box->spacing;
+      horizontal = FALSE;
+      break;
+    }
 
   /* Allocate the children using the calculated max size */
+  i = 0;
+  n_expand_children = 0;
   rut_list_for_each (child, &box->children, link)
     {
-      float size;
-
       rut_transform_init_identity (child->transform);
 
-      switch (box->orientation)
+      if (horizontal)
         {
-        case RUT_BOX_LAYOUT_ORIENTATION_HORIZONTAL:
           rut_sizable_get_preferred_width (child->widget,
                                            box->height, /* for_height */
-                                           NULL, /* min_width_p */
-                                           &size);
-          rut_sizable_set_size (child->widget, size, box->height);
-          rut_transform_translate (child->transform, pos, 0.0f, 0.0f);
-          break;
-
-        case RUT_BOX_LAYOUT_ORIENTATION_VERTICAL:
+                                           &sizes[i].minimum_size,
+                                           &sizes[i].natural_size);
+        }
+      else
+        {
           rut_sizable_get_preferred_height (child->widget,
                                             box->width, /* for_width */
-                                            NULL, /* min_heighth_p */
-                                            &size);
-          rut_sizable_set_size (child->widget, box->width, size);
-          rut_transform_translate (child->transform, 0.0f, pos, 0.0f);
+                                            &sizes[i].minimum_size,
+                                            &sizes[i].natural_size);
+        }
+
+      if (child->expand)
+        n_expand_children++;
+
+      size -= sizes[i].minimum_size;
+      i++;
+    }
+
+  if (box->homogeneous)
+    {
+      /* If were homogenous we still need to run the above loop to get the
+       * minimum sizes for children that are not going to fill
+       */
+      if (horizontal)
+        size = box->width - (n_children - 1) * box->spacing;
+      else
+        size = box->height - (n_children - 1) * box->spacing;
+
+      extra = size / n_children;
+      n_extra_px_widgets = size % n_children;
+    }
+  else
+    {
+      /* Bring children up to size first */
+      size = distribute_natural_allocation (MAX (0, size), n_children, sizes);
+
+      /* Calculate space which hasn't distributed yet,
+       * and is available for expanding children.
+       */
+      if (n_expand_children > 0)
+	{
+	  extra = size / n_expand_children;
+	  n_extra_px_widgets = size % n_expand_children;
+	}
+      else
+        {
+	  extra = 0;
+          n_extra_px_widgets = 0;
+        }
+    }
+
+  /* Allocate child positions. */
+  if (horizontal)
+    {
+      child_y = 0;
+      child_height = MAX (1, box->height);
+    }
+  else
+    {
+      child_x = 0;
+      child_width = MAX (1, box->width);
+    }
+
+  switch (box->packing)
+    {
+    case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+      x = 0;
+      break;
+    case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
+      x = box->width;
+      break;
+    case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+      y = 0;
+      break;
+    case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
+      y = box->height;
+      break;
+    }
+
+  i = x = y = 0;
+  rut_list_for_each (child, &box->children, link)
+    {
+      /* Assign the child's size. */
+      if (box->homogeneous)
+        {
+          child_size = extra;
+
+          if (n_extra_px_widgets > 0)
+            {
+              child_size++;
+              n_extra_px_widgets--;
+            }
+        }
+      else
+        {
+          child_size = sizes[i].minimum_size;
+
+          if (child->expand)
+            {
+              child_size += extra;
+
+              if (n_extra_px_widgets > 0)
+                {
+                  child_size++;
+                  n_extra_px_widgets--;
+                }
+            }
+        }
+
+      /* Assign the child's position. */
+      if (horizontal)
+        {
+          child_width = MAX (1, child_size);
+          child_x = x;
+
+          if (text_direction == RUT_TEXT_DIRECTION_RIGHT_TO_LEFT)
+            child_x = box->width - child_x - child_width;
+        }
+      else
+        {
+          child_height = MAX (1, child_size);
+          child_y = y;
+        }
+
+      switch (box->packing)
+        {
+        case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+          x += child_size + box->spacing;
+          break;
+        case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
+          x -= child_size + box->spacing;
+          child_x -= child_size;
+          break;
+        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+          y += child_size + box->spacing;
+          break;
+        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
+          y -= child_size + box->spacing;
+          child_y -= child_size;
           break;
         }
 
-      pos += size;
+      rut_sizable_set_size (child->widget, child_width, child_height);
+      rut_transform_init_identity (child->transform);
+      rut_transform_translate (child->transform, child_x, child_y, 0.0f);
+
+      i++;
     }
 }
 
 static void
 queue_allocation (RutBoxLayout *box)
 {
-  rut_shell_add_pre_paint_callback (box->context->shell,
+  rut_shell_add_pre_paint_callback (box->ctx->shell,
                                     box,
                                     allocate_cb,
                                     NULL /* user_data */);
@@ -185,9 +500,10 @@ get_main_preferred_size (RutBoxLayout *box,
     {
       float min_size = 0.0f, natural_size = 0.0f;
 
-      switch (box->orientation)
+      switch (box->packing)
         {
-        case RUT_BOX_LAYOUT_ORIENTATION_HORIZONTAL:
+        case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+        case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
           rut_sizable_get_preferred_width (child->widget,
                                            for_size, /* for_height */
                                            min_size_p ?
@@ -198,7 +514,8 @@ get_main_preferred_size (RutBoxLayout *box,
                                            NULL);
           break;
 
-        case RUT_BOX_LAYOUT_ORIENTATION_VERTICAL:
+        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
           rut_sizable_get_preferred_height (child->widget,
                                             for_size, /* for_width */
                                             min_size_p ?
@@ -234,9 +551,10 @@ get_other_preferred_size (RutBoxLayout *box,
     {
       float min_size = 0.0f, natural_size = 0.0f;
 
-      switch (box->orientation)
+      switch (box->packing)
         {
-        case RUT_BOX_LAYOUT_ORIENTATION_HORIZONTAL:
+        case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+        case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
           rut_sizable_get_preferred_width (child->widget,
                                            -1, /* for_height */
                                            min_size_p ?
@@ -247,7 +565,8 @@ get_other_preferred_size (RutBoxLayout *box,
                                            NULL);
           break;
 
-        case RUT_BOX_LAYOUT_ORIENTATION_VERTICAL:
+        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
           rut_sizable_get_preferred_height (child->widget,
                                             -1, /* for_width */
                                             min_size_p ?
@@ -279,13 +598,15 @@ rut_box_layout_get_preferred_width (void *sizable,
 {
   RutBoxLayout *box = RUT_BOX_LAYOUT (sizable);
 
-  switch (box->orientation)
+  switch (box->packing)
     {
-    case RUT_BOX_LAYOUT_ORIENTATION_HORIZONTAL:
+    case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+    case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
       get_main_preferred_size (box, for_height, min_width_p, natural_width_p);
       break;
 
-    case RUT_BOX_LAYOUT_ORIENTATION_VERTICAL:
+    case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+    case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
       get_other_preferred_size (box, for_height, min_width_p, natural_width_p);
       break;
     }
@@ -299,13 +620,15 @@ rut_box_layout_get_preferred_height (void *sizable,
 {
   RutBoxLayout *box = RUT_BOX_LAYOUT (sizable);
 
-  switch (box->orientation)
+  switch (box->packing)
     {
-    case RUT_BOX_LAYOUT_ORIENTATION_HORIZONTAL:
+    case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
+    case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
       get_other_preferred_size (box, for_width, min_height_p, natural_height_p);
       break;
 
-    case RUT_BOX_LAYOUT_ORIENTATION_VERTICAL:
+    case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+    case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
       get_main_preferred_size (box, for_width, min_height_p, natural_height_p);
       break;
     }
@@ -344,6 +667,11 @@ static RutSizableVTable _rut_box_layout_sizable_vtable = {
   rut_box_layout_add_preferred_size_callback
 };
 
+static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {
+  rut_simple_introspectable_lookup_property,
+  rut_simple_introspectable_foreach_property
+};
+
 static void
 _rut_box_layout_init_type (void)
 {
@@ -360,14 +688,25 @@ _rut_box_layout_init_type (void)
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
                           &_rut_box_layout_sizable_vtable);
+  rut_type_add_interface (&rut_box_layout_type,
+                          RUT_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &_rut_ui_viewport_introspectable_vtable);
+  rut_type_add_interface (&rut_box_layout_type,
+                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (RutBoxLayout, introspectable),
+                          NULL); /* no implied vtable */
 }
 
 RutBoxLayout *
 rut_box_layout_new (RutContext *ctx,
-                    RutBoxLayoutOrientation orientation)
+                    RutBoxLayoutPacking packing,
+                    ...)
 {
   RutBoxLayout *box = g_slice_new0 (RutBoxLayout);
   static CoglBool initialized = FALSE;
+  va_list ap;
+  RutObject *object;
 
   if (initialized == FALSE)
     {
@@ -377,8 +716,8 @@ rut_box_layout_new (RutContext *ctx,
     }
 
   box->ref_count = 1;
-  box->context = rut_refable_ref (ctx);
-  box->orientation = orientation;
+  box->ctx = rut_refable_ref (ctx);
+  box->packing = packing;
 
   rut_list_init (&box->preferred_size_cb_list);
   rut_list_init (&box->children);
@@ -386,6 +725,20 @@ rut_box_layout_new (RutContext *ctx,
   rut_object_init (&box->_parent, &rut_box_layout_type);
 
   rut_graphable_init (RUT_OBJECT (box));
+
+  rut_simple_introspectable_init (box,
+                                  _rut_box_layout_prop_specs,
+                                  box->properties);
+
+  va_start (ap, packing);
+  while ((object = va_arg (ap, RutObject *)))
+    {
+      rut_box_layout_add (box, FALSE, object);
+      rut_refable_unref (object);
+    }
+  va_end (ap);
+
+  queue_allocation (box);
 
   return box;
 }
@@ -402,17 +755,20 @@ child_preferred_size_cb (RutObject *sizable,
 
 void
 rut_box_layout_add (RutBoxLayout *box,
+                    CoglBool expand,
                     RutObject *child_widget)
 {
   RutBoxLayoutChild *child = g_slice_new (RutBoxLayoutChild);
 
   child->widget = rut_refable_ref (child_widget);
+  child->expand = expand;
 
-  child->transform = rut_transform_new (box->context,
+  child->transform = rut_transform_new (box->ctx,
                                         child_widget,
                                         NULL);
 
   rut_graphable_add_child (box, child->transform);
+  box->n_children++;
 
   child->preferred_size_closure =
     rut_sizable_add_preferred_size_callback (child_widget,
@@ -432,6 +788,8 @@ rut_box_layout_remove (RutBoxLayout *box,
 {
   RutBoxLayoutChild *child;
 
+  g_return_if_fail (box->n_children > 0);
+
   rut_list_for_each (child, &box->children, link)
     {
       if (child->widget == child_widget)
@@ -450,7 +808,82 @@ rut_box_layout_remove (RutBoxLayout *box,
           preferred_size_changed (box);
           queue_allocation (box);
 
+          box->n_children--;
+
           break;
         }
     }
+}
+
+CoglBool
+rut_box_layout_get_homogeneous (RutObject *obj)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  return box->homogeneous;
+}
+
+void
+rut_box_layout_set_homogeneous (RutObject *obj,
+                                CoglBool homogeneous)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+
+  if (box->homogeneous == homogeneous)
+    return;
+
+  box->homogeneous = homogeneous;
+
+  rut_property_dirty (&box->ctx->property_ctx,
+                      &box->properties[RUT_BOX_LAYOUT_PROP_HOMOGENEOUS]);
+
+  queue_allocation (box);
+}
+
+int
+rut_box_layout_get_spacing (RutObject *obj)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+
+  return box->spacing;
+}
+
+void
+rut_box_layout_set_spacing (RutObject *obj,
+                            int spacing)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+
+  if (box->spacing == spacing)
+    return;
+
+  box->spacing = spacing;
+
+  rut_property_dirty (&box->ctx->property_ctx,
+                      &box->properties[RUT_BOX_LAYOUT_PROP_SPACING]);
+
+  queue_allocation (box);
+}
+
+int
+rut_box_layout_get_packing (RutObject *obj)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  return box->packing;
+}
+
+void
+rut_box_layout_set_packing (RutObject *obj,
+                            RutBoxLayoutPacking packing)
+{
+  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+
+  if (box->packing == packing)
+    return;
+
+  box->packing = packing;
+
+  rut_property_dirty (&box->ctx->property_ctx,
+                      &box->properties[RUT_BOX_LAYOUT_PROP_PACKING]);
+
+  queue_allocation (box);
 }
