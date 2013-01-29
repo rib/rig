@@ -258,12 +258,13 @@ AC_ARG_ENABLE([gtk],
                              [Use a GTK/X11 backend instead of SDL]),
               [enable_gtk="$enableval"],
               [enable_gtk="auto"])
-AS_IF([test "x$enable_gtk" = "xauto" -a \
-            "x$have_android" = "xno" -a "x$have_osx" = "xno"],
-      [PKG_CHECK_MODULES([GTK],
-                         [gtk+-x11-3.0],
-                         [enable_gtk=yes],
-                         [enable_gtk=no])])
+AS_IF([test "x$enable_gtk" = "xauto"],
+      AS_IF([test "x$have_android" = "xno" -a "x$have_osx" = "xno"],
+            [PKG_CHECK_MODULES([GTK],
+                               [gtk+-x11-3.0],
+                               [enable_gtk=yes],
+                               [enable_gtk=no])],
+            [enable_gtk=no]))
 AS_CASE([$enable_gtk],
         [yes],
         [RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gtk+-x11-3.0"
