@@ -44,7 +44,6 @@ source_h = \
     rut-closure.h \
     rut-asset.h \
     rut-bevel.h \
-    rut-split-view.h \
     rut-stack.h \
     rut-entry.h \
     rut-gaussian-blurrer.h \
@@ -109,7 +108,6 @@ librut_la_SOURCES = \
     rut-closure.c \
     rut-asset.c \
     rut-bevel.c \
-    rut-split-view.c \
     rut-stack.c \
     rut-entry.c \
     rut-gaussian-blurrer.c \

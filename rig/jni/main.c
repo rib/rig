@@ -24,6 +24,7 @@
 #ifdef USE_GTK
 #include "rig-application.h"
 #endif /* USE_GTK */
+#include "rig-split-view.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -1853,7 +1854,7 @@ allocate (RigData *data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      rut_split_view_set_size (data->splits[0], data->width, data->height);
+      rut_sizable_set_size (data->splits[0], data->width, data->height);
 
       if (data->resize_handle_transform)
         {
@@ -2900,26 +2901,30 @@ rig_engine_init (RutShell *shell, void *user_data)
       cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
       cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
 
-      data->splits[0] = rut_split_view_new (data->ctx,
-                                            RUT_SPLIT_VIEW_SPLIT_VERTICAL,
+      /* properties on the right, everything else on the left */
+      data->splits[0] = rig_split_view_new (data,
+                                            RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100,
                                             NULL);
 
-      data->splits[1] = rut_split_view_new (data->ctx,
-                                            RUT_SPLIT_VIEW_SPLIT_HORIZONTAL,
+      /* timeline on the bottom, everything else above */
+      data->splits[1] = rig_split_view_new (data,
+                                            RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
                                             100,
                                             NULL);
 
-      data->splits[2] = rut_split_view_new (data->ctx,
-                                            RUT_SPLIT_VIEW_SPLIT_HORIZONTAL,
+      /* tool bar on the bottom, main area above*/
+      data->splits[2] = rig_split_view_new (data,
+                                            RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
                                             100,
                                             NULL);
 
-      data->splits[3] = rut_split_view_new (data->ctx,
-                                            RUT_SPLIT_VIEW_SPLIT_VERTICAL,
+      /* assets on the left, main area on the gith */
+      data->splits[3] = rig_split_view_new (data,
+                                            RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100,
                                             NULL);
@@ -2929,8 +2934,8 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                                   0.41, 0.41, 0.41, 1)),
                                             rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
                                             NULL);
-      rut_split_view_set_child0 (data->splits[2], data->splits[3]);
-      rut_split_view_set_child1 (data->splits[2], data->icon_bar_stack);
+      rig_split_view_set_child0 (data->splits[2], data->splits[3]);
+      rig_split_view_set_child1 (data->splits[2], data->icon_bar_stack);
 
       data->left_bar_stack = rut_stack_new (data->ctx, 0, 0,
                                             (data->left_bar_rect =
@@ -2974,8 +2979,8 @@ rig_engine_init (RutShell *shell, void *user_data)
 
       data->main_area_bevel = rut_bevel_new (data->ctx, 0, 0, &main_area_ref_color),
 
-      rut_split_view_set_child0 (data->splits[3], data->left_bar_stack);
-      rut_split_view_set_child1 (data->splits[3], data->main_area_bevel);
+      rig_split_view_set_child0 (data->splits[3], data->left_bar_stack);
+      rig_split_view_set_child1 (data->splits[3], data->main_area_bevel);
 
       data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
       rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
@@ -2989,8 +2994,8 @@ rig_engine_init (RutShell *shell, void *user_data)
                                               data->timeline_vp,
                                               NULL);
 
-      rut_split_view_set_child0 (data->splits[1], data->splits[2]);
-      rut_split_view_set_child1 (data->splits[1], data->bottom_bar_stack);
+      rig_split_view_set_child0 (data->splits[1], data->splits[2]);
+      rig_split_view_set_child1 (data->splits[1], data->bottom_bar_stack);
 
       data->inspector_box_layout =
         rut_box_layout_new (data->ctx,
@@ -3015,13 +3020,13 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_ui_viewport_set_sync_widget (data->tool_vp,
                                        data->inspector_box_layout);
 
-      rut_split_view_set_child0 (data->splits[0], data->splits[1]);
-      rut_split_view_set_child1 (data->splits[0], data->right_bar_stack);
+      rig_split_view_set_child0 (data->splits[0], data->splits[1]);
+      rig_split_view_set_child1 (data->splits[0], data->right_bar_stack);
 
-      rut_split_view_set_split_offset (data->splits[0], 850);
-      rut_split_view_set_split_offset (data->splits[1], 500);
-      rut_split_view_set_split_offset (data->splits[2], 470);
-      rut_split_view_set_split_offset (data->splits[3], 150);
+      rig_split_view_set_split_offset (data->splits[0], 850);
+      rig_split_view_set_split_offset (data->splits[1], 500);
+      rig_split_view_set_split_offset (data->splits[2], 470);
+      rig_split_view_set_split_offset (data->splits[3], 150);
 
       rut_graphable_add_child (data->root, data->splits[0]);
 
