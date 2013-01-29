@@ -23,23 +23,22 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut.h"
-#include "rut-split-view.h"
-#include "rut-vec3-slider.h"
-#include "rut-number-slider.h"
-#include "rut-drop-down.h"
+#include <rut.h>
+
+#include "rig-data.h"
+#include "rig-split-view.h"
 
 /* The width of the area which can be clicked on to change the size of
  * the split view */
-#define RUT_SPLIT_VIEW_GRABBER_SIZE 2
+#define RIG_SPLIT_VIEW_GRABBER_SIZE 2
 
 enum {
-  RUT_SPLIT_VIEW_PROP_WIDTH,
-  RUT_SPLIT_VIEW_PROP_HEIGHT,
-  RUT_SPLIT_VIEW_N_PROPS
+  RIG_SPLIT_VIEW_PROP_WIDTH,
+  RIG_SPLIT_VIEW_PROP_HEIGHT,
+  RIG_SPLIT_VIEW_N_PROPS
 };
 
-struct _RutSplitView
+struct _RigSplitView
 {
   RutObjectProps _parent;
 
@@ -55,7 +54,7 @@ struct _RutSplitView
   int width;
   int height;
 
-  RutSplitViewSplit split;
+  RigSplitViewSplit split;
 
   /* Most of the time we should use the floating point split fraction as the
    * basis for positioning the divider since it doesn't have to be pixel
@@ -85,53 +84,53 @@ struct _RutSplitView
   int ref_count;
 
   RutSimpleIntrospectableProps introspectable;
-  RutProperty properties[RUT_SPLIT_VIEW_N_PROPS];
+  RutProperty properties[RIG_SPLIT_VIEW_N_PROPS];
 };
 
-static RutPropertySpec _rut_split_view_prop_specs[] = {
+static RutPropertySpec _rig_split_view_prop_specs[] = {
   {
     .name = "width",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutSplitView, width),
-    .setter.float_type = rut_split_view_set_width
+    .data_offset = offsetof (RigSplitView, width),
+    .setter.float_type = rig_split_view_set_width
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutSplitView, height),
-    .setter.float_type = rut_split_view_set_height
+    .data_offset = offsetof (RigSplitView, height),
+    .setter.float_type = rig_split_view_set_height
   },
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
-RutType rut_split_view_type;
+RutType rig_split_view_type;
 
 static void
-set_offset_from_fraction (RutSplitView *split_view)
+set_offset_from_fraction (RigSplitView *split_view)
 {
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     split_view->split_offset = split_view->split_fraction * split_view->height;
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     split_view->split_offset = split_view->split_fraction * split_view->width;
 }
 
 static void
-set_fraction_from_offset (RutSplitView *split_view)
+set_fraction_from_offset (RigSplitView *split_view)
 {
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     split_view->split_fraction =
       (float)split_view->split_offset / split_view->height;
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     split_view->split_fraction =
       (float)split_view->split_offset / split_view->width;
 }
 
 static void
-_rut_split_view_free (void *object)
+_rig_split_view_free (void *object)
 {
-  RutSplitView *split_view = object;
+  RigSplitView *split_view = object;
 
   rut_refable_unref (split_view->context);
 
@@ -140,8 +139,8 @@ _rut_split_view_free (void *object)
 #endif
   cogl_object_unref (split_view->split_pipeline);
 
-  rut_split_view_set_child0 (split_view, NULL);
-  rut_split_view_set_child1 (split_view, NULL);
+  rig_split_view_set_child0 (split_view, NULL);
+  rig_split_view_set_child1 (split_view, NULL);
 
   rut_graphable_remove_child (split_view->child1_transform);
   rut_refable_unref (split_view->child1_transform);
@@ -149,29 +148,29 @@ _rut_split_view_free (void *object)
   rut_simple_introspectable_destroy (split_view);
   rut_graphable_destroy (split_view);
 
-  g_slice_free (RutSplitView, split_view);
+  g_slice_free (RigSplitView, split_view);
 }
 
-RutRefCountableVTable _rut_split_view_ref_countable_vtable = {
+RutRefCountableVTable _rig_split_view_ref_countable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
-  _rut_split_view_free
+  _rig_split_view_free
 };
 
-static RutGraphableVTable _rut_split_view_graphable_vtable = {
+static RutGraphableVTable _rig_split_view_graphable_vtable = {
   NULL, /* child removed */
   NULL, /* child addded */
   NULL /* parent changed */
 };
 
 static void
-_rut_split_view_paint (RutObject *object,
+_rig_split_view_paint (RutObject *object,
                       RutPaintContext *paint_ctx)
 {
-  RutSplitView *split_view = (RutSplitView *) object;
+  RigSplitView *split_view = (RigSplitView *) object;
   RutCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
-  int split_start = split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
+  int split_start = split_view->split_offset - RIG_SPLIT_VIEW_GRABBER_SIZE / 2;
 
 #if 0
   if (split_view->child0 == NULL)
@@ -197,41 +196,41 @@ _rut_split_view_paint (RutObject *object,
     }
 #endif
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     cogl_framebuffer_draw_rectangle (fb,
                                      split_view->split_pipeline,
                                      0,
                                      split_start,
                                      split_view->width,
-                                     split_start + RUT_SPLIT_VIEW_GRABBER_SIZE);
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+                                     split_start + RIG_SPLIT_VIEW_GRABBER_SIZE);
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     cogl_framebuffer_draw_rectangle (fb,
                                      split_view->split_pipeline,
                                      split_view->split_offset -
-                                     RUT_SPLIT_VIEW_GRABBER_SIZE / 2,
+                                     RIG_SPLIT_VIEW_GRABBER_SIZE / 2,
                                      0,
-                                     split_start + RUT_SPLIT_VIEW_GRABBER_SIZE,
+                                     split_start + RIG_SPLIT_VIEW_GRABBER_SIZE,
                                      split_view->height);
 }
 
-RutPaintableVTable _rut_split_view_paintable_vtable = {
-  _rut_split_view_paint
+RutPaintableVTable _rig_split_view_paintable_vtable = {
+  _rig_split_view_paint
 };
 
 static void
-rut_split_view_get_preferred_width (void *object,
+rig_split_view_get_preferred_width (void *object,
                                    float for_height,
                                    float *min_width_p,
                                    float *natural_width_p)
 {
-  RutSplitView *split_view = RUT_SPLIT_VIEW (object);
+  RigSplitView *split_view = RIG_SPLIT_VIEW (object);
   float max_min_width = 0.0f;
   float max_natural_width = 0.0f;
 
   float for_child0_height = for_height;
   float for_child1_height = for_height;
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     {
       float split_fraction = split_view->split_offset / split_view->height;
       for_child0_height *= split_fraction;
@@ -271,19 +270,19 @@ rut_split_view_get_preferred_width (void *object,
 }
 
 static void
-rut_split_view_get_preferred_height (void *object,
+rig_split_view_get_preferred_height (void *object,
                                      float for_width,
                                      float *min_height_p,
                                      float *natural_height_p)
 {
-  RutSplitView *split_view = RUT_SPLIT_VIEW (object);
+  RigSplitView *split_view = RIG_SPLIT_VIEW (object);
   float max_min_height = 0.0f;
   float max_natural_height = 0.0f;
 
   float for_child0_width = for_width;
   float for_child1_width = for_width;
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     {
       float split_fraction = split_view->split_offset / split_view->width;
       for_child0_width *= split_fraction;
@@ -323,18 +322,18 @@ rut_split_view_get_preferred_height (void *object,
 }
 
 void
-rut_split_view_get_size (void *object,
+rig_split_view_get_size (void *object,
                          float *width,
                          float *height)
 {
-  RutSplitView *split_view = RUT_SPLIT_VIEW (object);
+  RigSplitView *split_view = RIG_SPLIT_VIEW (object);
 
   *width = split_view->width;
   *height = split_view->height;
 }
 
 static void
-update_child1_transform (RutSplitView *split_view)
+update_child1_transform (RigSplitView *split_view)
 {
   rut_transform_init_identity (split_view->child1_transform);
 
@@ -345,7 +344,7 @@ update_child1_transform (RutSplitView *split_view)
 }
 
 static void
-update_child_geometry (RutSplitView *split_view)
+update_child_geometry (RigSplitView *split_view)
 {
   int width = split_view->width;
   int height = split_view->height;
@@ -356,26 +355,26 @@ update_child_geometry (RutSplitView *split_view)
   geom0->width = geom1->width = width;
   geom0->height = geom1->height = height;
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     {
       geom0->width =
-        split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
-      geom1->x = geom0->width + RUT_SPLIT_VIEW_GRABBER_SIZE;
+        split_view->split_offset - RIG_SPLIT_VIEW_GRABBER_SIZE / 2;
+      geom1->x = geom0->width + RIG_SPLIT_VIEW_GRABBER_SIZE;
       geom1->width = width - geom1->x;
     }
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     {
       geom0->height =
-        split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
-      geom1->y = geom0->height + RUT_SPLIT_VIEW_GRABBER_SIZE;
+        split_view->split_offset - RIG_SPLIT_VIEW_GRABBER_SIZE / 2;
+      geom1->y = geom0->height + RIG_SPLIT_VIEW_GRABBER_SIZE;
       geom1->height = height - geom1->y;
     }
 }
 
 static void
-sync_child_sizes (RutSplitView *split_view)
+sync_child_sizes (RigSplitView *split_view)
 {
-  int split_start = split_view->split_offset - RUT_SPLIT_VIEW_GRABBER_SIZE / 2;
+  int split_start = split_view->split_offset - RIG_SPLIT_VIEW_GRABBER_SIZE / 2;
 
   if (split_view->child0 &&
       rut_object_is (split_view->child0, RUT_INTERFACE_ID_SIZABLE))
@@ -393,28 +392,28 @@ sync_child_sizes (RutSplitView *split_view)
                               split_view->child1_geom.height);
     }
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     {
       rut_input_region_set_rectangle (split_view->input_region,
                                       0,
                                       split_start,
                                       split_view->width,
                                       split_start +
-                                      RUT_SPLIT_VIEW_GRABBER_SIZE);
+                                      RIG_SPLIT_VIEW_GRABBER_SIZE);
     }
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     {
       rut_input_region_set_rectangle (split_view->input_region,
                                       split_start,
                                       0,
                                       split_start +
-                                      RUT_SPLIT_VIEW_GRABBER_SIZE,
+                                      RIG_SPLIT_VIEW_GRABBER_SIZE,
                                       split_view->height);
     }
 }
 
 void
-set_size (RutSplitView *split_view,
+set_size (RigSplitView *split_view,
           float width,
           float height)
 {
@@ -427,7 +426,7 @@ set_size (RutSplitView *split_view,
 }
 
 void
-set_split_offset (RutSplitView *split_view,
+set_split_offset (RigSplitView *split_view,
                   int split_offset)
 {
   split_view->split_offset = split_offset;
@@ -438,7 +437,7 @@ set_split_offset (RutSplitView *split_view,
 }
 
 void
-rut_split_view_set_size (RutSplitView *split_view,
+rig_split_view_set_size (RigSplitView *split_view,
                          float width,
                          float height)
 {
@@ -447,76 +446,76 @@ rut_split_view_set_size (RutSplitView *split_view,
             height);
 
   rut_property_dirty (&split_view->context->property_ctx,
-                      &split_view->properties[RUT_SPLIT_VIEW_PROP_WIDTH]);
+                      &split_view->properties[RIG_SPLIT_VIEW_PROP_WIDTH]);
   rut_property_dirty (&split_view->context->property_ctx,
-                      &split_view->properties[RUT_SPLIT_VIEW_PROP_HEIGHT]);
+                      &split_view->properties[RIG_SPLIT_VIEW_PROP_HEIGHT]);
 }
 
 void
-rut_split_view_set_width (RutObject *obj,
+rig_split_view_set_width (RutObject *obj,
                           float width)
 {
-  RutSplitView *split_view = RUT_SPLIT_VIEW (obj);
+  RigSplitView *split_view = RIG_SPLIT_VIEW (obj);
 
-  rut_split_view_set_size (split_view, width, split_view->height);
+  rig_split_view_set_size (split_view, width, split_view->height);
 }
 
 void
-rut_split_view_set_height (RutObject *obj,
+rig_split_view_set_height (RutObject *obj,
                            float height)
 {
-  RutSplitView *split_view = RUT_SPLIT_VIEW (obj);
+  RigSplitView *split_view = RIG_SPLIT_VIEW (obj);
 
-  rut_split_view_set_size (split_view, split_view->width, height);
+  rig_split_view_set_size (split_view, split_view->width, height);
 }
 
-static RutSizableVTable _rut_split_view_sizable_vtable = {
-  rut_split_view_set_size,
-  rut_split_view_get_size,
-  rut_split_view_get_preferred_width,
-  rut_split_view_get_preferred_height,
+static RutSizableVTable _rig_split_view_sizable_vtable = {
+  rig_split_view_set_size,
+  rig_split_view_get_size,
+  rig_split_view_get_preferred_width,
+  rig_split_view_get_preferred_height,
   NULL /* add_preferred_size_callback */
 };
 
-static RutIntrospectableVTable _rut_split_view_introspectable_vtable = {
+static RutIntrospectableVTable _rig_split_view_introspectable_vtable = {
   rut_simple_introspectable_lookup_property,
   rut_simple_introspectable_foreach_property
 };
 
 static void
-_rut_split_view_init_type (void)
+_rig_split_view_init_type (void)
 {
-  rut_type_init (&rut_split_view_type);
-  rut_type_add_interface (&rut_split_view_type,
+  rut_type_init (&rig_split_view_type);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutSplitView, ref_count),
-                          &_rut_split_view_ref_countable_vtable);
-  rut_type_add_interface (&rut_split_view_type,
+                          offsetof (RigSplitView, ref_count),
+                          &_rig_split_view_ref_countable_vtable);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutSplitView, paintable),
-                          &_rut_split_view_paintable_vtable);
-  rut_type_add_interface (&rut_split_view_type,
+                          offsetof (RigSplitView, paintable),
+                          &_rig_split_view_paintable_vtable);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutSplitView, graphable),
-                          &_rut_split_view_graphable_vtable);
-  rut_type_add_interface (&rut_split_view_type,
+                          offsetof (RigSplitView, graphable),
+                          &_rig_split_view_graphable_vtable);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_split_view_sizable_vtable);
-  rut_type_add_interface (&rut_split_view_type,
+                          &_rig_split_view_sizable_vtable);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_split_view_introspectable_vtable);
-  rut_type_add_interface (&rut_split_view_type,
+                          &_rig_split_view_introspectable_vtable);
+  rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutSplitView, introspectable),
+                          offsetof (RigSplitView, introspectable),
                           NULL); /* no implied vtable */
 }
 
 typedef struct _GrabState
 {
   RutCamera *camera;
-  RutSplitView *split_view;
+  RigSplitView *split_view;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
   float grab_x;
@@ -526,23 +525,23 @@ typedef struct _GrabState
 
 static void
 set_resize_cursor (CoglOnscreen *onscreen,
-                   RutSplitView *split_view)
+                   RigSplitView *split_view)
 {
   if (onscreen == NULL)
     return;
 
   switch (split_view->split)
     {
-    case RUT_SPLIT_VIEW_SPLIT_NONE:
+    case RIG_SPLIT_VIEW_SPLIT_NONE:
       break;
 
-    case RUT_SPLIT_VIEW_SPLIT_HORIZONTAL:
+    case RIG_SPLIT_VIEW_SPLIT_HORIZONTAL:
       rut_shell_set_cursor (split_view->context->shell,
                             onscreen,
                             RUT_CURSOR_SIZE_NS);
       break;
 
-    case RUT_SPLIT_VIEW_SPLIT_VERTICAL:
+    case RIG_SPLIT_VIEW_SPLIT_VERTICAL:
       rut_shell_set_cursor (split_view->context->shell,
                             onscreen,
                             RUT_CURSOR_SIZE_WE);
@@ -551,18 +550,18 @@ set_resize_cursor (CoglOnscreen *onscreen,
 }
 
 static RutInputEventStatus
-_rut_split_view_grab_input_cb (RutInputEvent *event,
+_rig_split_view_grab_input_cb (RutInputEvent *event,
                                void *user_data)
 {
   GrabState *state = user_data;
-  RutSplitView *split_view = state->split_view;
+  RigSplitView *split_view = state->split_view;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       RutShell *shell = split_view->context->shell;
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
         {
-          rut_shell_ungrab_input (shell, _rut_split_view_grab_input_cb, user_data);
+          rut_shell_ungrab_input (shell, _rig_split_view_grab_input_cb, user_data);
           g_slice_free (GrabState, state);
 
           rut_shell_queue_redraw (split_view->context->shell);
@@ -577,13 +576,13 @@ _rut_split_view_grab_input_cb (RutInputEvent *event,
           set_resize_cursor (rut_input_event_get_onscreen (event),
                              split_view);
 
-          if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+          if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
             {
               float dy = y - state->grab_y;
               int offset = state->grab_offset + dy;
               set_split_offset (split_view, offset);
             }
-          else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+          else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
             {
               float dx = x - state->grab_x;
               int offset = state->grab_offset + dx;
@@ -600,11 +599,11 @@ _rut_split_view_grab_input_cb (RutInputEvent *event,
 }
 
 static RutInputEventStatus
-_rut_split_view_input_cb (RutInputRegion *region,
+_rig_split_view_input_cb (RutInputRegion *region,
                           RutInputEvent *event,
                           void *user_data)
 {
-  RutSplitView *split_view = user_data;
+  RigSplitView *split_view = user_data;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -637,7 +636,7 @@ _rut_split_view_input_cb (RutInputRegion *region,
 
           rut_shell_grab_input (shell,
                                 state->camera,
-                                _rut_split_view_grab_input_cb,
+                                _rig_split_view_grab_input_cb,
                                 state);
 
           rut_shell_queue_redraw (split_view->context->shell);
@@ -649,14 +648,15 @@ _rut_split_view_input_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-RutSplitView *
-rut_split_view_new (RutContext *context,
-                    RutSplitViewSplit split,
+RigSplitView *
+rig_split_view_new (RigData *data,
+                    RigSplitViewSplit split,
                     float width,
                     float height,
                     ...)
 {
-  RutSplitView *split_view = g_slice_new0 (RutSplitView);
+  RutContext *context = data->ctx;
+  RigSplitView *split_view = g_slice_new0 (RigSplitView);
   static CoglBool initialized = FALSE;
   RutObject *object;
   va_list ap;
@@ -664,15 +664,15 @@ rut_split_view_new (RutContext *context,
   if (initialized == FALSE)
     {
       _rut_init ();
-      _rut_split_view_init_type ();
+      _rig_split_view_init_type ();
 
       initialized = TRUE;
     }
 
-  rut_object_init (&split_view->_parent, &rut_split_view_type);
+  rut_object_init (&split_view->_parent, &rig_split_view_type);
 
   rut_simple_introspectable_init (split_view,
-                                  _rut_split_view_prop_specs,
+                                  _rig_split_view_prop_specs,
                                   split_view->properties);
 
   rut_paintable_init (RUT_OBJECT (split_view));
@@ -700,21 +700,21 @@ rut_split_view_new (RutContext *context,
 
   split_view->input_region =
     rut_input_region_new_rectangle (0, 0, 100, 100,
-                                    _rut_split_view_input_cb,
+                                    _rig_split_view_input_cb,
                                     split_view);
 
   if (split)
-    rut_split_view_split (split_view, split);
+    rig_split_view_split (split_view, split);
 
   va_start (ap, height);
 
   if ((object = va_arg (ap, RutObject *)))
     {
-      rut_split_view_set_child0 (split_view, object);
+      rig_split_view_set_child0 (split_view, object);
 
       if ((object = va_arg (ap, RutObject *)))
         {
-          rut_split_view_set_child1 (split_view, object);
+          rig_split_view_set_child1 (split_view, object);
 
           while ((object = va_arg (ap, RutObject *)))
             rut_graphable_add_child (split_view, object);
@@ -727,7 +727,7 @@ rut_split_view_new (RutContext *context,
 }
 
 void
-rut_split_view_set_split_offset (RutSplitView *split_view,
+rig_split_view_set_split_offset (RigSplitView *split_view,
                                  int offset)
 {
   g_return_if_fail (split_view->split != 0);
@@ -736,7 +736,7 @@ rut_split_view_set_split_offset (RutSplitView *split_view,
 }
 
 void
-rut_split_view_split (RutSplitView *split_view, RutSplitViewSplit split)
+rig_split_view_split (RigSplitView *split_view, RigSplitViewSplit split)
 {
   if (split_view->split)
     {
@@ -746,9 +746,9 @@ rut_split_view_split (RutSplitView *split_view, RutSplitViewSplit split)
 
   split_view->split = split;
 
-  if (split_view->split == RUT_SPLIT_VIEW_SPLIT_HORIZONTAL)
+  if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     split_view->split_offset = split_view->height / 2;
-  else if (split_view->split == RUT_SPLIT_VIEW_SPLIT_VERTICAL)
+  else if (split_view->split == RIG_SPLIT_VIEW_SPLIT_VERTICAL)
     split_view->split_offset = split_view->width / 2;
   set_fraction_from_offset (split_view);
 
@@ -756,7 +756,7 @@ rut_split_view_split (RutSplitView *split_view, RutSplitViewSplit split)
 }
 
 void
-rut_split_view_join (RutSplitView *split_view, RutSplitViewJoin join)
+rig_split_view_join (RigSplitView *split_view, RigSplitViewJoin join)
 {
   if (split_view->split == 0)
     return;
@@ -777,7 +777,7 @@ rut_split_view_join (RutSplitView *split_view, RutSplitViewJoin join)
 }
 
 void
-rut_split_view_set_child0 (RutSplitView *split_view,
+rig_split_view_set_child0 (RigSplitView *split_view,
                            RutObject *child0)
 {
   if (split_view->child0 == child0)
@@ -799,7 +799,7 @@ rut_split_view_set_child0 (RutSplitView *split_view,
 }
 
 void
-rut_split_view_set_child1 (RutSplitView *split_view,
+rig_split_view_set_child1 (RigSplitView *split_view,
                            RutObject *child1)
 {
   if (split_view->child1 == child1)
@@ -821,14 +821,14 @@ rut_split_view_set_child1 (RutSplitView *split_view,
 }
 
 void
-rut_split_view_set_child0_expandable (RutSplitView *split_view,
+rig_split_view_set_child0_expandable (RigSplitView *split_view,
                                       CoglBool expandable)
 {
   split_view->child0_expandable = expandable;
 }
 
 void
-rut_split_view_set_child1_expandable (RutSplitView *split_view,
+rig_split_view_set_child1_expandable (RigSplitView *split_view,
                                       CoglBool expandable)
 {
   split_view->child1_expandable = expandable;

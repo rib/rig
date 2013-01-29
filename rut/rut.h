@@ -33,7 +33,6 @@
 #include "rut-color.h"
 #include "rut-asset.h"
 #include "rut-bevel.h"
-#include "rut-split-view.h"
 #include "rut-stack.h"
 #include "rut-entry.h"
 #include "rut-downsampler.h"

@@ -32,6 +32,7 @@
 #include "rig-undo-journal.h"
 #include "rut-box-layout.h"
 #include "rig-osx.h"
+#include "rig-split-view.h"
 
 enum {
   RIG_DATA_PROP_WIDTH,
@@ -99,7 +100,7 @@ struct _RigData
   //float height;
   //RutProperty height_property;
 
-  RutSplitView *splits[4];
+  RigSplitView *splits[4];
 
   RutBevel *main_area_bevel;
   RutStack *icon_bar_stack;
