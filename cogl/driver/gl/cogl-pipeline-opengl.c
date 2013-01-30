@@ -662,7 +662,7 @@ get_max_activateable_texture_units (void)
              uploaded (but doesn't necessarily relate to how many texture
              images can be sampled) */
           if (cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL) ||
-              cogl_has_feature (ctx, COGL_FEATURE_ID_ARBFP))
+              (ctx->private_feature_flags & COGL_PRIVATE_FEATURE_ARBFP))
             /* Previously this code subtracted the value by one but there
                was no explanation for why it did this and it doesn't seem
                to make sense so it has been removed */

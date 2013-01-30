@@ -70,11 +70,6 @@ struct {
     "GLSL support"
   },
   {
-    COGL_FEATURE_ID_ARBFP,
-    "ARBFP support",
-    "ARBFP support"
-  },
-  {
     COGL_FEATURE_ID_UNSIGNED_INT_INDICES,
     "Unsigned integer indices",
     "COGL_RENDERER_INDICES_TYPE_UNSIGNED_INT is supported in cogl_indices_new()."

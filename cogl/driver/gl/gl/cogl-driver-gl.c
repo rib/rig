@@ -465,7 +465,7 @@ _cogl_driver_update_features (CoglContext *ctx,
     private_flags |= COGL_PRIVATE_FEATURE_BLEND_CONSTANT;
 
   if (ctx->glGenPrograms)
-    COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_ARBFP, TRUE);
+    private_flags |= COGL_PRIVATE_FEATURE_ARBFP;
 
   if (ctx->glCreateProgram)
     COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, TRUE);

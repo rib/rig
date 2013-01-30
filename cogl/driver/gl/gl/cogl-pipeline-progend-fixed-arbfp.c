@@ -58,7 +58,7 @@ _cogl_pipeline_progend_fixed_arbfp_start (CoglPipeline *pipeline)
   /* Validate that we can handle the fragment state using ARBfp
    */
 
-  if (!cogl_has_feature (ctx, COGL_FEATURE_ID_ARBFP))
+  if (!(ctx->private_feature_flags & COGL_PRIVATE_FEATURE_ARBFP))
     return FALSE;
 
   /* Fragment snippets are only supported in the GLSL fragend */
