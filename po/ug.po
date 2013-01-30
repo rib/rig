@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: cogl\n"
 "Report-Msgid-Bugs-To: http://bugzilla.gnome.org/enter_bug.cgi?product=cogl&keywords=I18N+L10N&component=general\n"
-"POT-Creation-Date: 2012-09-25 21:52+0000\n"
-"PO-Revision-Date: 2012-02-18 16:10+0900\n"
+"POT-Creation-Date: 2013-01-25 18:21+0000\n"
+"PO-Revision-Date: 2013-01-30 19:07+0900\n"
 "Last-Translator: Gheyret Kenji <gheyret@gmail.com>\n"
 "Language-Team: Uyghur Computer Science Association <UKIJ@yahoogroups.com>\n"
 "Language: \n"
@@ -34,11 +34,27 @@ msgstr "قوشۇمچە مۇھىت ئۆزگەرگۈچىلىرى:"
 
 #: ../cogl/cogl-debug.c:191
 msgid "Comma-separated list of GL extensions to pretend are disabled"
-msgstr ""
+msgstr "GL كېڭەيتىلمىسىدەك كۆرۈنىدىغان بىراق ئىشلەتكىلى بولمايدىغان، پەش ئارقىلىق ئايرىلغان تىزىم"
 
 #: ../cogl/cogl-debug.c:193
 msgid "Override the GL version that Cogl will assume the driver supports"
-msgstr ""
+msgstr "قوزغاتقۇ قوللايدۇ دەپ Cogl پەرەز قىلغان GL نىڭ نەشرىنى يېپىۋەت"
+
+#: ../cogl/cogl-debug.c:237
+msgid "Cogl debugging flags to set"
+msgstr "Cogl  نىڭ بەلگىلەيدىغان سازلاش تاللانمىلىرى"
+
+#: ../cogl/cogl-debug.c:239
+msgid "Cogl debugging flags to unset"
+msgstr "Cogl  نىڭ قىممىتى يوق قىلىنىدىغان سازلاش تاللانمىلىرى"
+
+#: ../cogl/cogl-debug.c:288
+msgid "Cogl Options"
+msgstr "Cogl  تاللانمىلىرى"
+
+#: ../cogl/cogl-debug.c:289
+msgid "Show Cogl options"
+msgstr "Cogl  تاللانمىلىرى كۆرسىتىش"
 
 #: ../cogl/cogl-debug-options.h:25 ../cogl/cogl-debug-options.h:30
 #: ../cogl/cogl-debug-options.h:35 ../cogl/cogl-debug-options.h:40
@@ -49,7 +65,7 @@ msgstr ""
 #: ../cogl/cogl-debug-options.h:168 ../cogl/cogl-debug-options.h:184
 #: ../cogl/cogl-debug-options.h:189
 msgid "Cogl Tracing"
-msgstr ""
+msgstr "Cogl ئىزلىشى"
 
 #: ../cogl/cogl-debug-options.h:27
 msgid "CoglObject references"
@@ -57,7 +73,7 @@ msgstr "CoglObject پايدىلانمىلىرى"
 
 #: ../cogl/cogl-debug-options.h:28
 msgid "Debug ref counting issues for CoglObjects"
-msgstr ""
+msgstr "CoglObjects پايدىلانمىلىرىنىڭ ساناش مەسىلىسىنى سازلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:32
 msgid "Trace Texture Slicing"
@@ -81,7 +97,7 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:43
 msgid "Debug CoglBlendString parsing"
-msgstr ""
+msgstr "CoglBlendString نى تەھلىل قىلىشنى سازلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:47
 msgid "Trace Journal"
@@ -93,7 +109,7 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:52
 msgid "Trace Batching"
-msgstr ""
+msgstr "توپ بىر تەرەپ قىلىشنى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:53
 msgid "Show how geometry is being batched in the journal"
@@ -101,35 +117,35 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:57
 msgid "Trace matrices"
-msgstr ""
+msgstr "ماترىتسانى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:58
 msgid "Trace all matrix manipulation"
-msgstr ""
+msgstr "بارلىق ماترىتسا مەشغۇلاتىنى ئىزلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:63
 msgid "Trace Misc Drawing"
-msgstr ""
+msgstr "باشقا سىزىشنى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:64
 msgid "Trace some misc drawing operations"
-msgstr ""
+msgstr "باشقا سىزىش مەشغۇلاتلىرىنى ئىزلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:68
 msgid "Trace Pango Renderer"
-msgstr ""
+msgstr "پانگو سىزغۇچىنى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:69
 msgid "Trace the Cogl Pango renderer"
-msgstr ""
+msgstr "Cogl پانگو سىزغۇچىنى ئىزلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:73
 msgid "Trace CoglTexturePixmap backend"
-msgstr ""
+msgstr "CoglTexturePixmap ئارقا ئۇچنى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:74
 msgid "Trace the Cogl texture pixmap backend"
-msgstr ""
+msgstr "Cogl Texture Pixmap ئارقا ئۇچىنى ئىزلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:76 ../cogl/cogl-debug-options.h:81
 msgid "Visualize"
@@ -172,31 +188,31 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:93
 msgid "Disable GL Vertex Buffers"
-msgstr ""
+msgstr "GL Vertex يىغلەكىنى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:94
 msgid "Disable use of OpenGL vertex buffer objects"
-msgstr ""
+msgstr "OpenGL نىڭ vertex يىغلەك نەڭلىرىنى ئىناۋەتسىز قىلىدۇ"
 
 #: ../cogl/cogl-debug-options.h:98
 msgid "Disable GL Pixel Buffers"
-msgstr ""
+msgstr "GL نىڭ پىكسېل يىغلەكىنى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:99
 msgid "Disable use of OpenGL pixel buffer objects"
-msgstr ""
+msgstr "\"OpenGL نىڭ پىكسېل يىغلەك نەڭلىرىنى ئىناۋەتسىز قىلىدۇ"
 
 #: ../cogl/cogl-debug-options.h:103
 msgid "Disable software rect transform"
-msgstr ""
+msgstr "يۇمشاق دېتالدا تىك تۆتبۇلۇڭ ئۆزگەرتىشنى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:104
 msgid "Use the GPU to transform rectangular geometry"
-msgstr ""
+msgstr "بۇنىڭ ئۈچۈن GPU نىڭ ئۆزگەرتىش ئىقتىدارىنى ئىشلىتىدۇ"
 
 #: ../cogl/cogl-debug-options.h:106
 msgid "Cogl Specialist"
-msgstr ""
+msgstr "Cogl مۇتەخەسسىسى"
 
 #: ../cogl/cogl-debug-options.h:108
 msgid "Dump atlas images"
@@ -234,7 +250,7 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:129
 msgid "Disable arbfp"
-msgstr ""
+msgstr "arbfp نى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:130
 msgid "Disable use of ARB fragment programs"
@@ -250,19 +266,19 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:139
 msgid "Disable GLSL"
-msgstr ""
+msgstr "GLSL نى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:140
 msgid "Disable use of GLSL"
-msgstr ""
+msgstr "GLSL نى ئىشلىتىشنى ئىناۋەتسىز قىلىدۇ"
 
 #: ../cogl/cogl-debug-options.h:144
 msgid "Disable blending"
-msgstr ""
+msgstr "ئارىلاشتۇرۇش(blending)نى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:145
 msgid "Disable use of blending"
-msgstr ""
+msgstr "ئارىلاشتۇرۇش(blending)نى ئىشلىتىشنى ئىناۋەتسىز قىلىدۇ"
 
 #: ../cogl/cogl-debug-options.h:149
 msgid "Disable non-power-of-two textures"
@@ -284,19 +300,19 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:160
 msgid "Show source"
-msgstr ""
+msgstr "ئەسلى كودىنى كۆرسەت"
 
 #: ../cogl/cogl-debug-options.h:161
 msgid "Show generated ARBfp/GLSL source code"
-msgstr ""
+msgstr "ھاسىللانغان ARBfp/GLSL ئەسلى كودىنى كۆرسىتىدۇ"
 
 #: ../cogl/cogl-debug-options.h:165
 msgid "Trace some OpenGL"
-msgstr ""
+msgstr "بىر قىسىم OpenGL نى ئىزلا"
 
 #: ../cogl/cogl-debug-options.h:166
 msgid "Traces some select OpenGL calls"
-msgstr ""
+msgstr "بىر قىسىم OpenGL چاقىرىشلىرىنى ئىزلايدۇ"
 
 #: ../cogl/cogl-debug-options.h:170
 msgid "Trace offscreen support"
@@ -308,15 +324,15 @@ msgstr ""
 
 #: ../cogl/cogl-debug-options.h:175
 msgid "Disable program caches"
-msgstr ""
+msgstr "پروگرامما غەملىكىنى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:176
 msgid "Disable fallback caches for arbfp and glsl programs"
-msgstr ""
+msgstr "بۇ، arbfp ۋە glsl پروگراممىلىرىنىڭ fallback غەملىكىنى ئىناۋەتسىز قىلىدۇ"
 
 #: ../cogl/cogl-debug-options.h:180
 msgid "Disable read pixel optimization"
-msgstr ""
+msgstr "پىكسېل ئوقۇشنى ئەلالاشتۇرۇشنى ئىناۋەتسىز قىل"
 
 #: ../cogl/cogl-debug-options.h:181
 msgid ""
@@ -338,174 +354,3 @@ msgstr ""
 #: ../cogl/cogl-debug-options.h:192
 msgid "Tries to highlight sub-optimal Cogl usage."
 msgstr ""
-
-#: ../deps/glib/gfileutils.c:542 ../deps/glib/gfileutils.c:630
-#, c-format
-msgid "Could not allocate %lu bytes to read file \"%s\""
-msgstr "%lu بايت تەقسىملىيەلمىدى(ھۆججەت «%s» نى ئوقۇش ئۈچۈن)"
-
-#: ../deps/glib/gfileutils.c:557
-#, c-format
-msgid "Error reading file '%s': %s"
-msgstr "ھۆججەت ‹%s› ئوقۇشتا خاتالىق كۆرۈلدى:  %s"
-
-#: ../deps/glib/gfileutils.c:571
-#, c-format
-msgid "File \"%s\" is too large"
-msgstr "ھۆججەت «%s» بەك چوڭ"
-
-#: ../deps/glib/gfileutils.c:654
-#, c-format
-msgid "Failed to read from file '%s': %s"
-msgstr "ھۆججەت ‹%s› دىن ئوقۇش مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:705 ../deps/glib/gfileutils.c:792
-#, c-format
-msgid "Failed to open file '%s': %s"
-msgstr "ھۆججەت «%s» نى ئاچالمىدى: %s"
-
-#: ../deps/glib/gfileutils.c:722
-#, c-format
-msgid "Failed to get attributes of file '%s': fstat() failed: %s"
-msgstr "ھۆججەت ‹%s› نىڭ خاسلىقلىرىغا ئېرىشىش مەغلۇپ بولدى:fstat() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:756
-#, c-format
-msgid "Failed to open file '%s': fdopen() failed: %s"
-msgstr "ھۆججەت ‹%s› نى ئېچىش مەغلۇپ بولدى: fdopen() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:864
-#, c-format
-msgid "Failed to rename file '%s' to '%s': g_rename() failed: %s"
-msgstr "ئاتىنى ‹%s› دىن ‹%s› غا ئۆزگەرتىش مەغلۇپ بولدى: g_rename()  مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:906 ../deps/glib/gfileutils.c:1451
-#, c-format
-msgid "Failed to create file '%s': %s"
-msgstr "ھۆججەت ‹%s› قۇرۇش مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:920
-#, c-format
-msgid "Failed to open file '%s' for writing: fdopen() failed: %s"
-msgstr "‹%s› ھۆججەتنى ئېچىپ يازالمىدى: fdopen() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:945
-#, c-format
-msgid "Failed to write file '%s': fwrite() failed: %s"
-msgstr "ھۆججەت ‹%s› نى يېزىش مەغلۇپ بولدى: fwrite() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:964
-#, c-format
-msgid "Failed to write file '%s': fflush() failed: %s"
-msgstr "ھۆججەت ‹%s› نى يېزىش مەغلۇپ بولدى: fflush() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:1008
-#, c-format
-msgid "Failed to write file '%s': fsync() failed: %s"
-msgstr "ھۆججەت ‹%s› نى يېزىش مەغلۇپ بولدى: fsync() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:1032
-#, c-format
-msgid "Failed to close file '%s': fclose() failed: %s"
-msgstr "ھۆججەت ‹%s› نى يېپىش مەغلۇپ بولدى: fclose() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:1154
-#, c-format
-msgid "Existing file '%s' could not be removed: g_unlink() failed: %s"
-msgstr "‹%s› مەۋجۇت ھۆججەتنى چىقىرىۋېتەلمەيدۇ: g_unlink() مەغلۇپ بولدى: %s"
-
-#: ../deps/glib/gfileutils.c:1414
-#, c-format
-msgid "Template '%s' invalid, should not contain a '%s'"
-msgstr "‹%s› قېلىپ ئىناۋەتسىز، ‹%s› نى ئۆز ئىچىگە ئالمايدۇ."
-
-#: ../deps/glib/gfileutils.c:1427
-#, c-format
-msgid "Template '%s' doesn't contain XXXXXX"
-msgstr "‹%s› قېلىپ XXXXXX نى ئۆز ئىچىگە ئالمايدۇ"
-
-#: ../deps/glib/gfileutils.c:2009
-#, c-format
-msgid "%.1f KiB"
-msgstr "%.1f كىلوبايت"
-
-#: ../deps/glib/gfileutils.c:2012
-#, c-format
-msgid "%.1f MiB"
-msgstr "%.1f مېگابايت"
-
-#: ../deps/glib/gfileutils.c:2015
-#, c-format
-msgid "%.1f GiB"
-msgstr "%.1f گىگابايت"
-
-#: ../deps/glib/gfileutils.c:2018
-#, c-format
-msgid "%.1f TiB"
-msgstr "%.1f تېرابايت"
-
-#: ../deps/glib/gfileutils.c:2021
-#, c-format
-msgid "%.1f PiB"
-msgstr "%.1f پېتابايت"
-
-#: ../deps/glib/gfileutils.c:2024
-#, c-format
-msgid "%.1f EiB"
-msgstr "%.1f ئېكسابايت"
-
-#: ../deps/glib/gfileutils.c:2037
-#, c-format
-msgid "%.1f kB"
-msgstr "%.1f كىلوبايت"
-
-#: ../deps/glib/gfileutils.c:2040 ../deps/glib/gfileutils.c:2149
-#, c-format
-msgid "%.1f MB"
-msgstr "%.1f مېگابايت"
-
-#: ../deps/glib/gfileutils.c:2043 ../deps/glib/gfileutils.c:2154
-#, c-format
-msgid "%.1f GB"
-msgstr "%.1f گىگابايت"
-
-#: ../deps/glib/gfileutils.c:2046 ../deps/glib/gfileutils.c:2159
-#, c-format
-msgid "%.1f TB"
-msgstr "%.1f تېرابايت"
-
-#: ../deps/glib/gfileutils.c:2049 ../deps/glib/gfileutils.c:2164
-#, c-format
-msgid "%.1f PB"
-msgstr "%.1f پېتابايت"
-
-#: ../deps/glib/gfileutils.c:2052 ../deps/glib/gfileutils.c:2169
-#, c-format
-msgid "%.1f EB"
-msgstr "%.1f ئېكسابايت"
-
-#: ../deps/glib/gfileutils.c:2144
-#, c-format
-msgid "%.1f KB"
-msgstr "%.1f كىلوبايت"
-
-#: ../deps/glib/gfileutils.c:2212
-#, c-format
-msgid "Failed to read the symbolic link '%s': %s"
-msgstr "بەلگە ئۇلانمىسى ‹%s› نى ئوقۇيالمىدى: %s"
-
-#: ../deps/glib/gfileutils.c:2233
-msgid "Symbolic links not supported"
-msgstr "بەلگە ئۇلانمىسىنى قوللىمايدۇ"
-
-#~ msgid "Cogl debugging flags to set"
-#~ msgstr "Cogl  نىڭ بەلگىلەيدىغان سازلاش تاللانمىلىرى"
-
-#~ msgid "Cogl debugging flags to unset"
-#~ msgstr "Cogl  نىڭ قىممىتى يوق قىلىنىدىغان سازلاش تاللانمىلىرى"
-
-#~ msgid "Cogl Options"
-#~ msgstr "Cogl  تاللانمىلىرى"
-
-#~ msgid "Show Cogl options"
-#~ msgstr "Cogl  تاللانمىلىرى كۆرسىتىش"
