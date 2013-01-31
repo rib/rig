@@ -726,10 +726,6 @@ update_winsys_features (CoglContext *context, CoglError **error)
 
   if (_cogl_winsys_has_feature (COGL_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT))
     {
-      /* TODO: remove this deprecated feature */
-      COGL_FLAGS_SET (context->features,
-                      COGL_FEATURE_ID_SWAP_BUFFERS_EVENT,
-                      TRUE);
       COGL_FLAGS_SET (context->features,
                       COGL_FEATURE_ID_PRESENTATION_TIME,
                       TRUE);

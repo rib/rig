@@ -639,10 +639,6 @@ typedef enum _CoglWinsysFeature
    * pixmaps to textures. */
   COGL_WINSYS_FEATURE_TEXTURE_FROM_PIXMAP,
 
-  /* Available if the window system supports reporting an event
-   * for swap buffer completions. */
-  COGL_WINSYS_FEATURE_SWAP_BUFFERS_EVENT,
-
   /* Available if it's possible to swap a list of sub rectangles
    * from the back buffer to the front buffer */
   COGL_WINSYS_FEATURE_SWAP_REGION,

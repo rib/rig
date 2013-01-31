@@ -752,12 +752,6 @@ static CoglBool
 _cogl_winsys_egl_context_init (CoglContext *context,
                                CoglError **error)
 {
-  COGL_FLAGS_SET (context->features,
-                  COGL_FEATURE_ID_SWAP_BUFFERS_EVENT, TRUE);
-  /* TODO: remove this deprecated feature */
-  COGL_FLAGS_SET (context->winsys_features,
-                  COGL_WINSYS_FEATURE_SWAP_BUFFERS_EVENT,
-                  TRUE);
   COGL_FLAGS_SET (context->winsys_features,
                   COGL_WINSYS_FEATURE_SYNC_AND_COMPLETE_EVENT,
                   TRUE);
