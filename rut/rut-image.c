@@ -288,7 +288,7 @@ static RutSizableVTable _rut_image_sizable_vtable = {
 static void
 _rut_image_init_type (void)
 {
-  rut_type_init (&rut_image_type);
+  rut_type_init (&rut_image_type, "RigImage");
   rut_type_add_interface (&rut_image_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutImage, ref_count),

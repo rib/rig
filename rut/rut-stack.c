@@ -216,7 +216,7 @@ RutType rut_stack_type;
 static void
 _rut_stack_init_type (void)
 {
-  rut_type_init (&rut_stack_type);
+  rut_type_init (&rut_stack_type, "RigStack");
   rut_type_add_interface (&rut_stack_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutStack, ref_count),

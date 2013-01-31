@@ -95,7 +95,7 @@ RutType rut_asset_type;
 void
 _rut_asset_type_init (void)
 {
-  rut_type_init (&rut_asset_type);
+  rut_type_init (&rut_asset_type, "RigAsset");
   rut_type_add_interface (&rut_asset_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutAsset, ref_count),

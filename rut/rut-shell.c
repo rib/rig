@@ -524,7 +524,7 @@ RutType rut_input_region_type;
 static void
 _rut_input_region_init_type (void)
 {
-  rut_type_init (&rut_input_region_type);
+  rut_type_init (&rut_input_region_type, "RigInputRegion");
   rut_type_add_interface (&rut_input_region_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutInputRegion, ref_count),
@@ -1698,7 +1698,7 @@ RutRefCountableVTable _rut_shell_ref_countable_vtable = {
 static void
 _rut_shell_init_types (void)
 {
-  rut_type_init (&rut_shell_type);
+  rut_type_init (&rut_shell_type, "RigShell");
   rut_type_add_interface (&rut_shell_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutShell, ref_count),
@@ -2673,7 +2673,7 @@ RutType rut_slider_type;
 static void
 _rut_slider_init_type (void)
 {
-  rut_type_init (&rut_slider_type);
+  rut_type_init (&rut_slider_type, "RigSlider");
   rut_type_add_interface (&rut_slider_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutSlider, ref_count),

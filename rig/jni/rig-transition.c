@@ -43,7 +43,7 @@ RutType rig_transition_type;
 static void
 _rig_transition_type_init (void)
 {
-  rut_type_init (&rig_transition_type);
+  rut_type_init (&rig_transition_type, "RigTransition");
   rut_type_add_interface (&rig_transition_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */

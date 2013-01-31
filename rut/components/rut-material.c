@@ -115,7 +115,7 @@ static RutRefCountableVTable _rut_material_ref_countable_vtable = {
 void
 _rut_material_init_type (void)
 {
-  rut_type_init (&rut_material_type);
+  rut_type_init (&rut_material_type, "RigMaterial");
   rut_type_add_interface (&rut_material_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutMaterial, ref_count),

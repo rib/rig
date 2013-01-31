@@ -314,7 +314,7 @@ static RutSizableVTable _rut_bin_sizable_vtable = {
 static void
 _rut_bin_init_type (void)
 {
-  rut_type_init (&rut_bin_type);
+  rut_type_init (&rut_bin_type, "RigBin");
   rut_type_add_interface (&rut_bin_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBin, ref_count),

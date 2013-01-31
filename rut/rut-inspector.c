@@ -307,7 +307,7 @@ static RutSizableVTable _rut_inspector_sizable_vtable = {
 static void
 _rut_inspector_init_type (void)
 {
-  rut_type_init (&rut_inspector_type);
+  rut_type_init (&rut_inspector_type, "RigInspector");
   rut_type_add_interface (&rut_inspector_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutInspector, ref_count),

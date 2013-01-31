@@ -326,7 +326,7 @@ static RutSizableVTable _rut_vec3_slider_sizable_vtable = {
 static void
 _rut_vec3_slider_init_type (void)
 {
-  rut_type_init (&rut_vec3_slider_type);
+  rut_type_init (&rut_vec3_slider_type, "RigVec3_slider");
   rut_type_add_interface (&rut_vec3_slider_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutVec3Slider, ref_count),

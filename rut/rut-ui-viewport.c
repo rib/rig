@@ -232,7 +232,7 @@ RutType rut_ui_viewport_type;
 void
 _rut_ui_viewport_init_type (void)
 {
-  rut_type_init (&rut_ui_viewport_type);
+  rut_type_init (&rut_ui_viewport_type, "RigUiViewport");
   rut_type_add_interface (&rut_ui_viewport_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutUIViewport, ref_count),

@@ -82,7 +82,7 @@ static RutType _rut_timeline_type;
 void
 _rut_timeline_init_type (void)
 {
-  rut_type_init (&_rut_timeline_type);
+  rut_type_init (&_rut_timeline_type, "RutTimeline");
   rut_type_add_interface (&_rut_timeline_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutTimeline, ref_count),
