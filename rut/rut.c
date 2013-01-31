@@ -379,7 +379,7 @@ RutType rut_context_type;
 static void
 _rut_context_init_type (void)
 {
-  rut_type_init (&rut_context_type);
+  rut_type_init (&rut_context_type, "RigContext");
   rut_type_add_interface (&rut_context_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutContext, ref_count),
@@ -651,7 +651,7 @@ RutType rut_nine_slice_type;
 static void
 _rut_nine_slice_init_type (void)
 {
-  rut_type_init (&rut_nine_slice_type);
+  rut_type_init (&rut_nine_slice_type, "RigNineSlice");
   rut_type_add_interface (&rut_nine_slice_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutNineSlice, ref_count),
@@ -860,7 +860,7 @@ RutType rut_graph_type;
 static void
 _rut_graph_init_type (void)
 {
-  rut_type_init (&rut_graph_type);
+  rut_type_init (&rut_graph_type, "RigGraph");
   rut_type_add_interface (&rut_graph_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutButton, ref_count),
@@ -923,7 +923,7 @@ RutType rut_transform_type;
 static void
 _rut_transform_init_type (void)
 {
-  rut_type_init (&rut_transform_type);
+  rut_type_init (&rut_transform_type, "RigTransform");
   rut_type_add_interface (&rut_transform_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutButton, ref_count),
@@ -1094,7 +1094,7 @@ RutType rut_rectangle_type;
 static void
 _rut_rectangle_init_type (void)
 {
-  rut_type_init (&rut_rectangle_type);
+  rut_type_init (&rut_rectangle_type, "RigRectangle");
   rut_type_add_interface (&rut_rectangle_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutRectangle, ref_count),
@@ -1255,7 +1255,7 @@ RutType rut_button_type;
 static void
 _rut_button_init_type (void)
 {
-  rut_type_init (&rut_button_type);
+  rut_type_init (&rut_button_type, "RigButton");
   rut_type_add_interface (&rut_button_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutButton, ref_count),

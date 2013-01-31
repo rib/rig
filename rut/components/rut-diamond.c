@@ -45,7 +45,7 @@ RutType rut_diamond_slice_type;
 void
 _rut_diamond_slice_init_type (void)
 {
-  rut_type_init (&rut_diamond_slice_type);
+  rut_type_init (&rut_diamond_slice_type, "RigDiamondSlice");
   rut_type_add_interface (&rut_diamond_slice_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutDiamondSlice, ref_count),
@@ -353,7 +353,7 @@ static RutPickableVTable _rut_diamond_pickable_vtable = {
 void
 _rut_diamond_init_type (void)
 {
-  rut_type_init (&rut_diamond_type);
+  rut_type_init (&rut_diamond_type, "RigDiamond");
   rut_type_add_interface (&rut_diamond_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutDiamond, ref_count),

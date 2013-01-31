@@ -143,7 +143,7 @@ static RutIntrospectableVTable _rut_light_introspectable_vtable = {
 void
 _rut_light_init_type (void)
 {
-  rut_type_init (&rut_light_type);
+  rut_type_init (&rut_light_type, "RigLight");
   rut_type_add_interface (&rut_light_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutLight, ref_count),

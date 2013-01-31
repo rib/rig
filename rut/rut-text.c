@@ -3279,7 +3279,7 @@ RutType rut_text_type;
 void
 _rut_text_init_type (void)
 {
-  rut_type_init (&rut_text_type);
+  rut_type_init (&rut_text_type, "RigText");
   rut_type_add_interface (&rut_text_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutText, ref_count),

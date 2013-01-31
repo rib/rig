@@ -1048,7 +1048,7 @@ static RutSizableVTable _rig_transition_view_sizable_vtable = {
 static void
 _rig_transition_view_init_type (void)
 {
-  rut_type_init (&rig_transition_view_type);
+  rut_type_init (&rig_transition_view_type, "RigTransitionView");
   rut_type_add_interface (&rig_transition_view_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RigTransitionView, ref_count),

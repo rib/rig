@@ -485,7 +485,7 @@ static RutIntrospectableVTable _rig_split_view_introspectable_vtable = {
 static void
 _rig_split_view_init_type (void)
 {
-  rut_type_init (&rig_split_view_type);
+  rut_type_init (&rig_split_view_type, "RigSplitView");
   rut_type_add_interface (&rig_split_view_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RigSplitView, ref_count),

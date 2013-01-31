@@ -571,7 +571,7 @@ static RutSizableVTable _rut_color_picker_sizable_vtable = {
 static void
 _rut_color_picker_init_type (void)
 {
-  rut_type_init (&rut_color_picker_type);
+  rut_type_init (&rut_color_picker_type, "RigColorPicker");
   rut_type_add_interface (&rut_color_picker_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutColorPicker, ref_count),

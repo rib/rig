@@ -197,7 +197,7 @@ RutType rut_entity_type;
 void
 _rut_entity_init_type (void)
 {
-  rut_type_init (&rut_entity_type);
+  rut_type_init (&rut_entity_type, "RigEntity");
   rut_type_add_interface (&rut_entity_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutEntity, ref_count),

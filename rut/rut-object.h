@@ -58,4 +58,11 @@ rut_object_is (void *object, RutInterfaceID interface)
   return _rut_bitmask_get (&obj->type->interfaces_mask, interface);
 }
 
+static inline const char *
+rut_object_get_type_name (void *object)
+{
+  RutObjectProps *obj = object;
+  return obj->type->name;
+}
+
 #endif /* _RUT_OBJECT_H_ */

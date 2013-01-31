@@ -82,7 +82,7 @@ static RutRefCountableVTable _rut_model_ref_countable_vtable = {
 void
 _rut_model_init_type (void)
 {
-  rut_type_init (&rut_model_type);
+  rut_type_init (&rut_model_type, "RigModel");
   rut_type_add_interface (&rut_model_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutModel, ref_count),

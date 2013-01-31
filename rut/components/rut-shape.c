@@ -59,7 +59,7 @@ RutType rut_shape_model_type;
 void
 _rut_shape_model_init_type (void)
 {
-  rut_type_init (&rut_shape_model_type);
+  rut_type_init (&rut_shape_model_type, "RigShapeModel");
   rut_type_add_interface (&rut_shape_model_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutShapeModel, ref_count),
@@ -350,7 +350,7 @@ static RutIntrospectableVTable _rut_shape_introspectable_vtable = {
 void
 _rut_shape_init_type (void)
 {
-  rut_type_init (&rut_shape_type);
+  rut_type_init (&rut_shape_type, "RigShape");
   rut_type_add_interface (&rut_shape_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutShape, ref_count),

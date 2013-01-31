@@ -309,7 +309,7 @@ RutType rut_entry_type;
 static void
 _rut_entry_init_type (void)
 {
-  rut_type_init (&rut_entry_type);
+  rut_type_init (&rut_entry_type, "RigEntry");
   rut_type_add_interface (&rut_entry_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutEntry, ref_count),

@@ -675,7 +675,7 @@ static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {
 static void
 _rut_box_layout_init_type (void)
 {
-  rut_type_init (&rut_box_layout_type);
+  rut_type_init (&rut_box_layout_type, "RigBoxLayout");
   rut_type_add_interface (&rut_box_layout_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBoxLayout, ref_count),

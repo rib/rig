@@ -39,8 +39,10 @@ rut_type_add_interface (RutType *type,
 }
 
 void
-rut_type_init (RutType *type)
+rut_type_init (RutType *type, const char *name)
 {
+  type->name = name;
+
   _rut_bitmask_init (&type->interfaces_mask);
 
   type->interfaces = NULL;
@@ -49,5 +51,3 @@ rut_type_init (RutType *type)
    * type->v8_template = FunctionTemplate::New();
    */
 }
-
-

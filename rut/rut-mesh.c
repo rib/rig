@@ -22,7 +22,7 @@ RutType rut_buffer_type;
 void
 _rut_buffer_init_type (void)
 {
-  rut_type_init (&rut_buffer_type);
+  rut_type_init (&rut_buffer_type, "RigBuffer");
   rut_type_add_interface (&rut_buffer_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBuffer, ref_count),
@@ -62,7 +62,7 @@ RutType rut_attribute_type;
 void
 _rut_attribute_init_type (void)
 {
-  rut_type_init (&rut_attribute_type);
+  rut_type_init (&rut_attribute_type, "RigAttribute");
   rut_type_add_interface (&rut_attribute_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutAttribute, ref_count),
@@ -115,7 +115,7 @@ RutType rut_mesh_type;
 void
 _rut_mesh_init_type (void)
 {
-  rut_type_init (&rut_mesh_type);
+  rut_type_init (&rut_mesh_type, "RigMesh");
   rut_type_add_interface (&rut_mesh_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutMesh, ref_count),

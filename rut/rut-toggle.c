@@ -344,7 +344,7 @@ RutType rut_toggle_type;
 static void
 _rut_toggle_init_type (void)
 {
-  rut_type_init (&rut_toggle_type);
+  rut_type_init (&rut_toggle_type, "RigToggle");
   rut_type_add_interface (&rut_toggle_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutToggle, ref_count),

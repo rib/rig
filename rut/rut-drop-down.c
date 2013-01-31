@@ -904,7 +904,7 @@ static RutSizableVTable _rut_drop_down_sizable_vtable = {
 static void
 _rut_drop_down_init_type (void)
 {
-  rut_type_init (&rut_drop_down_type);
+  rut_type_init (&rut_drop_down_type, "RigDropDown");
   rut_type_add_interface (&rut_drop_down_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutDropDown, ref_count),

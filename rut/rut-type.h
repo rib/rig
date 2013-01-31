@@ -47,12 +47,13 @@ typedef struct _RutInterface
 typedef struct _RutType
 {
   /* PRIVATE */
+  const char *name;
   RutBitmask interfaces_mask;
   RutInterface *interfaces;
 } RutType;
 
 void
-rut_type_init (RutType *type);
+rut_type_init (RutType *type, const char *name);
 
 void
 rut_type_add_interface (RutType *type,

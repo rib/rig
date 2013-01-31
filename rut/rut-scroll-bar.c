@@ -211,7 +211,7 @@ RutType rut_scroll_bar_type;
 void
 _rut_scroll_bar_init_type (void)
 {
-  rut_type_init (&rut_scroll_bar_type);
+  rut_type_init (&rut_scroll_bar_type, "RigScrollBar");
   rut_type_add_interface (&rut_scroll_bar_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutScrollBar, ref_count),

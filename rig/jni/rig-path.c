@@ -52,7 +52,7 @@ _rig_path_ref_countable_vtable =
 void
 _rig_path_init_type (void)
 {
-  rut_type_init (&rig_path_type);
+  rut_type_init (&rig_path_type, "RigPath");
   rut_type_add_interface (&rig_path_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RigPath, ref_count),

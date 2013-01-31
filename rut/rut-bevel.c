@@ -204,7 +204,7 @@ RutType rut_bevel_type;
 static void
 _rut_bevel_init_type (void)
 {
-  rut_type_init (&rut_bevel_type);
+  rut_type_init (&rut_bevel_type, "RigBevel");
   rut_type_add_interface (&rut_bevel_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBevel, ref_count),

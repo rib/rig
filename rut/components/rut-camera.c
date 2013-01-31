@@ -328,7 +328,7 @@ RutType rut_camera_type;
 void
 _rut_camera_init_type (void)
 {
-  rut_type_init (&rut_camera_type);
+  rut_type_init (&rut_camera_type, "RigCamera");
   rut_type_add_interface (&rut_camera_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutCamera, ref_count),

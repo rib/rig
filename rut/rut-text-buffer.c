@@ -296,7 +296,7 @@ RutType rut_text_buffer_type;
 void
 _rut_text_buffer_init_type (void)
 {
-  rut_type_init (&rut_text_buffer_type);
+  rut_type_init (&rut_text_buffer_type, "RigTextBuffer");
   rut_type_add_interface (&rut_text_buffer_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutTextBuffer, ref_count),
