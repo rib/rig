@@ -173,9 +173,6 @@ struct _CoglContext
   gboolean have_last_offscreen_allocate_flags;
   CoglOffscreenAllocateFlags last_offscreen_allocate_flags;
 
-  GHashTable *swap_callback_closures;
-  int next_swap_callback_id;
-
   CoglOnscreenEventList onscreen_events_queue;
 
   CoglGLES2Context *current_gles2_context;

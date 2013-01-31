@@ -551,9 +551,6 @@ cogl_onscreen_hide
 cogl_onscreen_swap_buffers
 cogl_onscreen_swap_region
 cogl_onscreen_set_swap_throttled
-CoglSwapBuffersNotify
-cogl_onscreen_add_swap_buffers_callback
-cogl_onscreen_remove_swap_buffers_callback
 </SECTION>
 
 <SECTION>
