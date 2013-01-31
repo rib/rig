@@ -1084,8 +1084,8 @@ static RutSimpleWidgetVTable _rut_rectangle_simple_widget_vtable = {
 static RutSizableVTable _rut_rectangle_sizable_vtable = {
   rut_rectangle_set_size,
   rut_rectangle_get_size,
-  NULL,
-  NULL,
+  rut_simple_sizable_get_preferred_width,
+  rut_simple_sizable_get_preferred_height,
   NULL /* add_preferred_size_callback */
 };
 

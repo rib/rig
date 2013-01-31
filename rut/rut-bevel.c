@@ -189,8 +189,8 @@ RutPaintableVTable _rut_bevel_paintable_vtable = {
 static RutSizableVTable _rut_bevel_sizable_vtable = {
   rut_bevel_set_size,
   rut_bevel_get_size,
-  NULL,
-  NULL,
+  rut_simple_sizable_get_preferred_width,
+  rut_simple_sizable_get_preferred_height,
   NULL /* add_preferred_size_callback */
 };
 
