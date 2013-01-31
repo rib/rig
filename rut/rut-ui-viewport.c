@@ -217,8 +217,8 @@ static RutGraphableVTable _rut_ui_viewport_graphable_vtable = {
 static RutSizableVTable _rut_ui_viewport_sizable_vtable = {
   _rut_ui_viewport_set_size,
   _rut_ui_viewport_get_size,
-  NULL,
-  NULL,
+  rut_simple_sizable_get_preferred_width,
+  rut_simple_sizable_get_preferred_height,
   NULL /* add_preferred_size_callback */
 };
 

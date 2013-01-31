@@ -261,6 +261,18 @@ rut_sizable_get_preferred_height (void *object,
                                   float *min_height_p,
                                   float *natural_height_p);
 
+void
+rut_simple_sizable_get_preferred_width (void *object,
+                                        float for_height,
+                                        float *min_width_p,
+                                        float *natural_width_p);
+
+void
+rut_simple_sizable_get_preferred_height (void *object,
+                                         float for_width,
+                                         float *min_height_p,
+                                         float *natural_height_p);
+
 /**
  * rut_sizable_add_preferred_size_callback:
  * @object: An object implementing the sizable interface
