@@ -248,6 +248,16 @@ rut_button_add_on_click_callback (RutButton *button,
                                   void *user_data,
                                   RutClosureDestroyCallback destroy_cb);
 
+void
+rut_button_set_size (RutObject *self,
+                     float width,
+                     float height);
+
+void
+rut_button_get_size (RutObject *self,
+                     float *width,
+                     float *height);
+
 CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 
