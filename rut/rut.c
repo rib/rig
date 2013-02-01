@@ -52,6 +52,9 @@
 #include "rut-geometry.h"
 #include "rut-scroll-bar.h"
 
+#define BUTTON_HPAD 10
+#define BUTTON_VPAD 23
+
 /*
  * Overall issues to keep in mind for the UI scenegraph support in Rut:
  * (in no particular order)
@@ -158,12 +161,16 @@ struct _RutButton
 
   ButtonState state;
 
-  PangoLayout *label;
-  int label_width;
-  int label_height;
+  RutTransform *text_transform;
+  RutText *text;
 
   float width;
   float height;
+
+  CoglTexture *normal_texture;
+  CoglTexture *hover_texture;
+  CoglTexture *active_texture;
+  CoglTexture *disabled_texture;
 
   RutNineSlice *background_normal;
   RutNineSlice *background_hover;
@@ -1178,18 +1185,71 @@ rut_rectangle_get_size (RutObject *self,
 }
 
 static void
+destroy_button_slices (RutButton *button)
+{
+  if (button->background_normal)
+    {
+      rut_refable_unref (button->background_normal);
+      button->background_normal = NULL;
+    }
+
+  if (button->background_hover)
+    {
+      rut_refable_unref (button->background_hover);
+      button->background_hover = NULL;
+    }
+
+  if (button->background_active)
+    {
+      rut_refable_unref (button->background_active);
+      button->background_active = NULL;
+    }
+
+  if (button->background_disabled)
+    {
+      rut_refable_unref (button->background_disabled);
+      button->background_disabled = NULL;
+    }
+}
+
+static void
 _rut_button_free (void *object)
 {
   RutButton *button = object;
 
   rut_closure_list_disconnect_all (&button->on_click_cb_list);
 
-  rut_refable_unref (button->background_normal);
-  rut_refable_unref (button->background_hover);
-  rut_refable_unref (button->background_active);
-  rut_refable_unref (button->background_disabled);
+  destroy_button_slices (button);
 
-  g_object_unref (button->label);
+  if (button->normal_texture)
+    {
+      rut_refable_unref (button->normal_texture);
+      button->normal_texture = NULL;
+    }
+
+  if (button->hover_texture)
+    {
+      rut_refable_unref (button->hover_texture);
+      button->hover_texture = NULL;
+    }
+
+  if (button->active_texture)
+    {
+      rut_refable_unref (button->active_texture);
+      button->active_texture = NULL;
+    }
+
+  if (button->disabled_texture)
+    {
+      rut_refable_unref (button->disabled_texture);
+      button->disabled_texture = NULL;
+    }
+
+  rut_graphable_remove_child (button->text);
+  rut_refable_unref (button->text);
+
+  rut_graphable_remove_child (button->text_transform);
+  rut_refable_unref (button->text_transform);
 
   rut_graphable_destroy (button);
 
@@ -1209,37 +1269,75 @@ static RutGraphableVTable _rut_button_graphable_vtable = {
 };
 
 static void
+ensure_button_slices (RutButton *button)
+{
+  RutContext *ctx = button->ctx;
+
+  if (button->background_normal)
+    return;
+
+  if (button->normal_texture)
+    {
+      button->background_normal =
+        rut_nine_slice_new (ctx, button->normal_texture, 11, 5, 13, 5,
+                            button->width,
+                            button->height);
+    }
+
+  if (button->hover_texture)
+    {
+      button->background_hover =
+        _rut_nine_slice_new_full (ctx, button->hover_texture, 11, 5, 13, 5,
+                                  button->width,
+                                  button->height,
+                                  button->background_normal->primitive);
+    }
+
+  if (button->active_texture)
+    {
+      button->background_active =
+        _rut_nine_slice_new_full (ctx, button->active_texture, 11, 5, 13, 5,
+                                  button->width,
+                                  button->height,
+                                  button->background_normal->primitive);
+    }
+
+  if (button->disabled_texture)
+    {
+      button->background_disabled =
+        _rut_nine_slice_new_full (ctx, button->disabled_texture, 11, 5, 13, 5,
+                                  button->width,
+                                  button->height,
+                                  button->background_normal->primitive);
+    }
+}
+
+static void
 _rut_button_paint (RutObject *object,
                    RutPaintContext *paint_ctx)
 {
   RutButton *button = RUT_BUTTON (object);
-  RutCamera *camera = paint_ctx->camera;
-  RutPaintableVTable *bg_paintable =
-    rut_object_get_vtable (button->background_normal, RUT_INTERFACE_ID_PAINTABLE);
+
+  ensure_button_slices (button);
 
   switch (button->state)
     {
     case BUTTON_STATE_NORMAL:
-      bg_paintable->paint (RUT_OBJECT (button->background_normal), paint_ctx);
+      rut_paintable_paint (button->background_normal, paint_ctx);
       break;
     case BUTTON_STATE_HOVER:
-      bg_paintable->paint (RUT_OBJECT (button->background_hover), paint_ctx);
+      rut_paintable_paint (button->background_hover, paint_ctx);
       break;
     case BUTTON_STATE_ACTIVE:
-      bg_paintable->paint (RUT_OBJECT (button->background_active), paint_ctx);
+      rut_paintable_paint (button->background_active, paint_ctx);
       break;
     case BUTTON_STATE_ACTIVE_CANCEL:
-      bg_paintable->paint (RUT_OBJECT (button->background_active), paint_ctx);
+      rut_paintable_paint (button->background_active, paint_ctx);
       break;
     case BUTTON_STATE_DISABLED:
-      bg_paintable->paint (RUT_OBJECT (button->background_disabled), paint_ctx);
+      rut_paintable_paint (button->background_disabled, paint_ctx);
       break;
     }
-
-  cogl_pango_show_layout (camera->fb,
-                          button->label,
-                          5, 11,
-                          &button->text_color);
 }
 
 static RutPaintableVTable _rut_button_paintable_vtable = {
@@ -1248,6 +1346,52 @@ static RutPaintableVTable _rut_button_paintable_vtable = {
 
 RutSimpleWidgetVTable _rut_button_simple_widget_vtable = {
  0
+};
+
+void
+rut_button_get_preferred_width (void *object,
+                                float for_height,
+                                float *min_width_p,
+                                float *natural_width_p)
+{
+  RutButton *button = object;
+
+  rut_sizable_get_preferred_width (button->text,
+                                   for_height,
+                                   min_width_p,
+                                   natural_width_p);
+
+  if (min_width_p)
+    *min_width_p += BUTTON_HPAD;
+  if (natural_width_p)
+    *natural_width_p += BUTTON_HPAD;
+}
+
+void
+rut_button_get_preferred_height (void *object,
+                                 float for_width,
+                                 float *min_height_p,
+                                 float *natural_height_p)
+{
+  RutButton *button = object;
+
+  rut_sizable_get_preferred_height (button->text,
+                                    for_width,
+                                    min_height_p,
+                                    natural_height_p);
+
+  if (min_height_p)
+    *min_height_p += BUTTON_VPAD;
+  if (natural_height_p)
+    *natural_height_p += BUTTON_VPAD;
+}
+
+static RutSizableVTable _rut_button_sizable_vtable = {
+  rut_button_set_size,
+  rut_button_get_size,
+  rut_button_get_preferred_width,
+  rut_button_get_preferred_height,
+  NULL /* add_preferred_size_callback */
 };
 
 RutType rut_button_type;
@@ -1272,6 +1416,10 @@ _rut_button_init_type (void)
                           RUT_INTERFACE_ID_SIMPLE_WIDGET,
                           offsetof (RutButton, simple_widget),
                           &_rut_button_simple_widget_vtable);
+  rut_type_add_interface (&rut_button_type,
+                          RUT_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rut_button_sizable_vtable);
 }
 
 typedef struct _ButtonGrabState
@@ -1382,17 +1530,61 @@ _rut_button_input_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
+static void
+rut_button_allocate_cb (RutObject *graphable,
+                        void *user_data)
+{
+  RutButton *button = RUT_BUTTON (graphable);
+  float text_min_width, text_natural_width;
+  float text_min_height, text_natural_height;
+  int text_width, text_height;
+  int text_x, text_y;
+
+  rut_sizable_get_preferred_width (button->text,
+                                   -1,
+                                   &text_min_width,
+                                   &text_natural_width);
+
+  rut_sizable_get_preferred_height (button->text,
+                                    -1,
+                                    &text_min_height,
+                                    &text_natural_height);
+
+  if (button->width > (BUTTON_HPAD + text_natural_width))
+    text_width = text_natural_width;
+  else
+    text_width = MAX (0, button->width - BUTTON_HPAD);
+
+  if (button->height > (BUTTON_VPAD + text_natural_height))
+    text_height = text_natural_height;
+  else
+    text_height = MAX (0, button->height - BUTTON_VPAD);
+
+  rut_sizable_set_size (button->text, text_width, text_height);
+
+  rut_transform_init_identity (button->text_transform);
+
+  text_x = (button->width / 2) - (text_width / 2.0);
+  text_y = (button->height / 2) - (text_height / 2.0);
+  rut_transform_translate (button->text_transform, text_x, text_y, 0);
+}
+
+static void
+queue_allocation (RutButton *button)
+{
+  rut_shell_add_pre_paint_callback (button->ctx->shell,
+                                    button,
+                                    rut_button_allocate_cb,
+                                    NULL /* user_data */);
+}
+
 RutButton *
 rut_button_new (RutContext *ctx,
                 const char *label)
 {
   RutButton *button = g_slice_new0 (RutButton);
-  CoglTexture *normal_texture;
-  CoglTexture *hover_texture;
-  CoglTexture *active_texture;
-  CoglTexture *disabled_texture;
   GError *error = NULL;
-  PangoRectangle label_size;
+  float text_width, text_height;
 
   rut_object_init (RUT_OBJECT (button), &rut_button_type);
 
@@ -1407,77 +1599,46 @@ rut_button_new (RutContext *ctx,
 
   button->state = BUTTON_STATE_NORMAL;
 
-  normal_texture =
+  button->normal_texture =
     rut_load_texture_from_data_file (ctx, "button.png", &error);
-  if (!normal_texture)
+  if (!button->normal_texture)
     {
       g_warning ("Failed to load button texture: %s", error->message);
       g_error_free (error);
     }
 
-  hover_texture =
+  button->hover_texture =
     rut_load_texture_from_data_file (ctx, "button-hover.png", &error);
-  if (!hover_texture)
+  if (!button->hover_texture)
     {
-      cogl_object_unref (normal_texture);
       g_warning ("Failed to load button-hover texture: %s", error->message);
       g_error_free (error);
     }
 
-  active_texture =
+  button->active_texture =
     rut_load_texture_from_data_file (ctx, "button-active.png", &error);
-  if (!active_texture)
+  if (!button->active_texture)
     {
-      cogl_object_unref (normal_texture);
-      cogl_object_unref (hover_texture);
       g_warning ("Failed to load button-active texture: %s", error->message);
       g_error_free (error);
     }
 
-  disabled_texture =
+  button->disabled_texture =
     rut_load_texture_from_data_file (ctx, "button-disabled.png", &error);
-  if (!disabled_texture)
+  if (!button->disabled_texture)
     {
-      cogl_object_unref (normal_texture);
-      cogl_object_unref (hover_texture);
-      cogl_object_unref (active_texture);
       g_warning ("Failed to load button-disabled texture: %s", error->message);
       g_error_free (error);
     }
 
-  button->label = pango_layout_new (ctx->pango_context);
-  pango_layout_set_font_description (button->label, ctx->pango_font_desc);
-  pango_layout_set_text (button->label, label, -1);
+  button->text = rut_text_new_with_text (ctx, NULL, label);
+  button->text_transform = rut_transform_new (ctx, NULL);
+  rut_graphable_add_child (button, button->text_transform);
+  rut_graphable_add_child (button->text_transform, button->text);
 
-  pango_layout_get_extents (button->label, NULL, &label_size);
-  button->label_width = PANGO_PIXELS (label_size.width);
-  button->label_height = PANGO_PIXELS (label_size.height);
-
-  button->width = button->label_width + 10;
-  button->height = button->label_height + 23;
-
-  button->background_normal =
-    rut_nine_slice_new (ctx, normal_texture, 11, 5, 13, 5,
-                        button->width,
-                        button->height);
-
-  button->background_hover =
-    _rut_nine_slice_new_full (ctx, hover_texture, 11, 5, 13, 5,
-                              button->width,
-                              button->height,
-                              button->background_normal->primitive);
-
-  button->background_active =
-    _rut_nine_slice_new_full (ctx, active_texture, 11, 5, 13, 5,
-                              button->width,
-                              button->height,
-                              button->background_normal->primitive);
-
-  button->background_disabled =
-    _rut_nine_slice_new_full (ctx, disabled_texture, 11, 5, 13, 5,
-                              button->width,
-                              button->height,
-                              button->background_normal->primitive);
+  rut_sizable_get_size (button->text, &text_width, &text_height);
+  button->width = text_width + BUTTON_HPAD;
+  button->height = text_height + BUTTON_VPAD;
 
   cogl_color_init_from_4f (&button->text_color, 0, 0, 0, 1);
 
@@ -1488,6 +1649,8 @@ rut_button_new (RutContext *ctx,
 
   //rut_input_region_set_graphable (button->input_region, button);
   rut_graphable_add_child (button, button->input_region);
+
+  queue_allocation (button);
 
   return button;
 }
@@ -1504,6 +1667,37 @@ rut_button_add_on_click_callback (RutButton *button,
                                callback,
                                user_data,
                                destroy_cb);
+}
+
+void
+rut_button_set_size (RutObject *self,
+                     float width,
+                     float height)
+{
+  RutButton *button = self;
+
+  if (button->width == width &&
+      button->height == height)
+    return;
+
+  button->width = width;
+  button->height = height;
+
+  rut_input_region_set_rectangle (button->input_region, 0, 0, button->width, button->height);
+
+  destroy_button_slices (button);
+
+  queue_allocation (button);
+}
+
+void
+rut_button_get_size (RutObject *self,
+                     float *width,
+                     float *height)
+{
+  RutButton *button = self;
+  *width = button->width;
+  *height = button->height;
 }
 
 void
