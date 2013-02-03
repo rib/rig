@@ -39,6 +39,8 @@ librig_la_SOURCES = \
 	jni/rig-transition-view.h \
     	jni/rig-split-view.h \
     	jni/rig-split-view.c \
+    	jni/rig-view.h \
+    	jni/rig-view.c \
 	jni/rig-types.h \
 	jni/rig-renderer.h \
 	jni/rig-renderer.c \
