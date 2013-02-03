@@ -381,6 +381,7 @@ rut_bin_set_child (RutBin *bin,
     {
       rut_graphable_remove_child (bin->child);
       rut_closure_disconnect (bin->child_preferred_size_closure);
+      bin->child_preferred_size_closure = NULL;
       rut_refable_unref (bin->child);
     }
 
@@ -388,10 +389,14 @@ rut_bin_set_child (RutBin *bin,
   rut_graphable_add_child (bin->child_transform, child_widget);
 
   if (child_widget)
-    rut_sizable_add_preferred_size_callback (child_widget,
-                                             child_preferred_size_cb,
-                                             bin,
-                                             NULL /* destroy */);
+    {
+      bin->child_preferred_size_closure =
+        rut_sizable_add_preferred_size_callback (child_widget,
+                                                 child_preferred_size_cb,
+                                                 bin,
+                                                 NULL /* destroy */);
+    }
+
   preferred_size_changed (bin);
   queue_allocation (bin);
 }
