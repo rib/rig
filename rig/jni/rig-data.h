@@ -33,6 +33,7 @@
 #include "rut-box-layout.h"
 #include "rig-osx.h"
 #include "rig-split-view.h"
+#include "rig-camera-view.h"
 
 enum {
   RIG_DATA_PROP_WIDTH,
@@ -104,7 +105,8 @@ struct _RigData
   RutBoxLayout *top_hbox_ltr;
   RigSplitView *splits[4];
 
-  RutBevel *main_area_bevel;
+  //RutBevel *main_area_bevel;
+  RigCameraView *main_camera_view;
   RutStack *icon_bar_stack;
   RutStack *left_bar_stack;
   //RutTransform *left_bar_transform;
@@ -127,10 +129,10 @@ struct _RigData
   RutRectangle *rect;
   float width;
   float height;
-  float main_x;
-  float main_y;
-  float main_width;
-  float main_height;
+  //float main_x;
+  //float main_y;
+  //float main_width;
+  //float main_height;
   float screen_area_width;
   float screen_area_height;
 
@@ -159,21 +161,6 @@ struct _RigData
   CoglMatrix main_view;
   float z_2d;
 
-  RutEntity *editor_camera_to_origin; /* move to origin */
-  RutEntity *editor_camera_rotate; /* armature rotate rotate */
-  RutEntity *editor_camera_origin_offset; /* negative offset */
-  RutEntity *editor_camera_armature; /* armature length */
-  RutEntity *editor_camera_dev_scale; /* scale to fit device coords */
-  RutEntity *editor_camera_screen_pos; /* position screen in edit view */
-  RutEntity *editor_camera_2d_view; /* setup 2d view, origin top-left */
-
-  RutEntity *current_camera;
-
-  RutEntity *editor_camera;
-  RutCamera *editor_camera_component;
-  float editor_camera_z;
-  RutInputRegion *editor_input_region;
-
   RutEntity *light;
   RutEntity *light_handle;
 
@@ -184,8 +171,6 @@ struct _RigData
 
   RutArcball arcball;
   CoglQuaternion saved_rotation;
-  float origin[3];
-  float saved_origin[3];
 
   //RutTransform *screen_area_transform;
   RutTransform *device_transform;
@@ -276,5 +261,12 @@ rig_set_selected_entity (RigData *data,
 void
 rig_reload_inspector_property (RigData *data,
                                RutProperty *property);
+
+void
+rig_reload_position_inspector (RigData *data,
+                               RutEntity *entity);
+
+void
+rig_set_play_mode_enabled (RigData *data, CoglBool enabled);
 
 #endif /* _RUT_DATA_H_ */
