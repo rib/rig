@@ -41,6 +41,8 @@ librig_la_SOURCES = \
     	jni/rig-split-view.c \
     	jni/rig-view.h \
     	jni/rig-view.c \
+    	jni/rig-camera-view.h \
+    	jni/rig-camera-view.c \
 	jni/rig-types.h \
 	jni/rig-renderer.h \
 	jni/rig-renderer.c \
