@@ -1077,7 +1077,7 @@ rig_transition_view_create_label_control (RigTransitionView *view,
   if (text)
     rut_text_set_text (label, text);
 
-  control->transform = rut_transform_new (view->context, NULL);
+  control->transform = rut_transform_new (view->context);
   control->control = label;
 
   rut_graphable_add_child (view, control->transform);

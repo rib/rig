@@ -692,7 +692,7 @@ rig_split_view_new (RigData *data,
   split_view->width = width;
   split_view->height = height;
 
-  split_view->child1_transform = rut_transform_new (context, NULL);
+  split_view->child1_transform = rut_transform_new (context);
   rut_graphable_add_child (split_view, split_view->child1_transform);
 
   split_view->input_region =

@@ -127,7 +127,7 @@ rut_graph_new (RutContext *ctx);
 
 
 RutTransform *
-rut_transform_new (RutContext *ctx, ...) G_GNUC_NULL_TERMINATED;
+rut_transform_new (RutContext *ctx);
 
 void
 rut_transform_translate (RutTransform *transform,
