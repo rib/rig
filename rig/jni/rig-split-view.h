@@ -26,8 +26,7 @@ RigSplitView *
 rig_split_view_new (RigData *data,
                     RigSplitViewSplit split,
                     float width,
-                    float height,
-                    ...);
+                    float height);
 
 void
 rig_split_view_set_size (RigSplitView *split_view,
