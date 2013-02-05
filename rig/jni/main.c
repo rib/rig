@@ -1854,7 +1854,7 @@ allocate (RigData *data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      rut_sizable_set_size (data->splits[0], data->width, data->height);
+      rut_sizable_set_size (data->top_vbox, data->width, data->height);
 
       if (data->resize_handle_transform)
         {
@@ -2897,6 +2897,8 @@ rig_engine_init (RutShell *shell, void *user_data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
+      RutObject *connect_button;
+
       cogl_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
       cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
       cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
@@ -3028,7 +3030,21 @@ rig_engine_init (RutShell *shell, void *user_data)
       rig_split_view_set_split_offset (data->splits[2], 470);
       rig_split_view_set_split_offset (data->splits[3], 150);
 
-      rut_graphable_add_child (data->root, data->splits[0]);
+      data->top_vbox = rut_box_layout_new (data->ctx,
+                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
+                                           NULL);
+      data->top_hbox_ltr = rut_box_layout_new (data->ctx,
+                                               RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT,
+                                               NULL);
+      rut_box_layout_add (data->top_vbox, FALSE, data->top_hbox_ltr);
+
+      connect_button = rut_button_new (data->ctx, "Connect");
+      rut_box_layout_add (data->top_hbox_ltr, FALSE, connect_button);
+      rut_refable_unref (connect_button);
+
+      rut_box_layout_add (data->top_vbox, TRUE, data->splits[0]);
+
+      rut_graphable_add_child (data->root, data->top_vbox);
 
       data->transparency_grid = load_transparency_grid (data->ctx);
 
