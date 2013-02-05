@@ -27,6 +27,8 @@
 
 #include <cogl/cogl.h>
 
+#include "rut-mesh.h"
+
 /* This is a replacement for the nearbyint function which always
  * rounds to the nearest integer. nearbyint is apparently a C99
  * function so it might not always be available but also it seems in
@@ -140,5 +142,12 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
 CoglBool
 rut_util_find_tag (const GList *tags,
                    const char *tag);
+
+bool
+rut_util_intersect_mesh (RutMesh *mesh,
+                         float ray_origin[3],
+                         float ray_direction[3],
+                         int *index,
+                         float *t_out);
 
 #endif /* _RUT_UTIL_H_ */
