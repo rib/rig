@@ -553,12 +553,9 @@ update_doc_xy_cb (RutProperty *target_property,
 RutUIViewport *
 rut_ui_viewport_new (RutContext *ctx,
                      float width,
-                     float height,
-                     ...)
+                     float height)
 {
   RutUIViewport *ui_viewport = g_slice_new0 (RutUIViewport);
-  va_list ap;
-  RutObject *object;
   static CoglBool initialized = FALSE;
 
   if (initialized == FALSE)
@@ -636,14 +633,16 @@ rut_ui_viewport_new (RutContext *ctx,
                                     _rut_ui_viewport_input_region_cb,
                                     ui_viewport);
 
-  va_start (ap, height);
-  while ((object = va_arg (ap, RutObject *)))
-    rut_graphable_add_child (RUT_OBJECT (ui_viewport->doc_transform), object);
-  va_end (ap);
-
   queue_allocation (ui_viewport);
 
   return ui_viewport;
+}
+
+void
+rut_ui_viewport_add (RutUIViewport *ui_viewport,
+                     RutObject *child)
+{
+  rut_graphable_add_child (ui_viewport->doc_transform, child);
 }
 
 static void
@@ -805,12 +804,6 @@ const CoglMatrix *
 rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport)
 {
   return rut_transform_get_matrix (ui_viewport->doc_transform);
-}
-
-RutObject *
-rut_ui_viewport_get_doc_node (RutUIViewport *ui_viewport)
-{
-  return ui_viewport->doc_transform;
 }
 
 void

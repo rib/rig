@@ -924,7 +924,6 @@ rig_search_asset_list (RigData *data, const char *search)
 {
   GList *l;
   int i;
-  RutObject *doc_node;
   CoglBool found = FALSE;
 
   if (data->assets_list)
@@ -938,9 +937,9 @@ rig_search_asset_list (RigData *data, const char *search)
   if (data->transparency_grid)
     rut_graphable_add_child (data->assets_list, data->transparency_grid);
 
-  doc_node = rut_ui_viewport_get_doc_node (data->assets_vp);
-  rut_graphable_add_child (doc_node, data->assets_list);
+  rut_ui_viewport_add (data->assets_vp, data->assets_list);
   rut_refable_unref (data->assets_list);
+
   data->assets_list_tail_pos = 70;
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
@@ -1468,7 +1467,7 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_stack_add (data->left_bar_stack, tmp);
       rut_refable_unref (tmp);
 
-      data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
+      data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0);
       rut_stack_add (data->left_bar_stack, data->assets_vp);
 
       tmp = rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color);
@@ -1510,7 +1509,7 @@ rig_engine_init (RutShell *shell, void *user_data)
       rig_split_view_set_child0 (data->splits[3], data->left_bar_stack);
       rig_split_view_set_child1 (data->splits[3], data->main_camera_view);
 
-      data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
+      data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0);
       rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
       rut_ui_viewport_set_x_expand (data->timeline_vp, TRUE);
       rut_ui_viewport_set_y_expand (data->timeline_vp, TRUE);
@@ -1542,10 +1541,9 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_stack_add (data->right_bar_stack, tmp);
       rut_refable_unref (tmp);
 
-      data->tool_vp = rut_ui_viewport_new (data->ctx,
-                                           0, 0,
-                                           data->inspector_box_layout,
-                                           NULL);
+      data->tool_vp = rut_ui_viewport_new (data->ctx, 0, 0);
+      rut_ui_viewport_add (data->tool_vp, data->inspector_box_layout);
+
       rut_stack_add (data->right_bar_stack, data->tool_vp);
 
       tmp = rut_bevel_new (data->ctx, 0, 0, &right_bar_ref_color);
@@ -1621,16 +1619,13 @@ rig_engine_init (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode &&
       data->selected_transition)
     {
-      RutObject *doc_node =
-        rut_ui_viewport_get_doc_node (data->timeline_vp);
-
       data->transition_view =
         rig_transition_view_new (data->ctx,
                                  data->scene,
                                  data->selected_transition,
                                  data->timeline,
                                  data->undo_journal);
-      rut_graphable_add_child (doc_node, data->transition_view);
+      rut_ui_viewport_add (data->timeline_vp, data->transition_view);
       rut_ui_viewport_set_sync_widget (data->timeline_vp,
                                        data->transition_view);
     }

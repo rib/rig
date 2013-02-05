@@ -36,8 +36,11 @@ extern RutType rut_ui_viewport_type;
 RutUIViewport *
 rut_ui_viewport_new (RutContext *ctx,
                      float width,
-                     float height,
-                     ...);
+                     float height);
+
+void
+rut_ui_viewport_add (RutUIViewport *ui_viewport,
+                     RutObject *child);
 
 void
 rut_ui_viewport_get_size (RutUIViewport *ui_viewport,
@@ -82,9 +85,6 @@ rut_ui_viewport_get_doc_scale_y (RutUIViewport *ui_viewport);
 
 const CoglMatrix *
 rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport);
-
-RutObject *
-rut_ui_viewport_get_doc_node (RutUIViewport *ui_viewport);
 
 void
 rut_ui_viewport_set_x_pannable (RutObject *ui_viewport,
