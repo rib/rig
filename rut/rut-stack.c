@@ -292,13 +292,10 @@ rut_stack_get_size (RutStack *stack,
 RutStack *
 rut_stack_new (RutContext *context,
                float width,
-               float height,
-               ...)
+               float height)
 {
   RutStack *stack = g_slice_new0 (RutStack);
   static CoglBool initialized = FALSE;
-  va_list ap;
-  RutObject *object;
 
   if (initialized == FALSE)
     {
@@ -322,10 +319,12 @@ rut_stack_new (RutContext *context,
 
   rut_stack_set_size (stack, width, height);
 
-  va_start (ap, height);
-  while ((object = va_arg (ap, RutObject *)))
-    rut_graphable_add_child (RUT_OBJECT (stack), object);
-  va_end (ap);
-
   return stack;
+}
+
+void
+rut_stack_add (RutStack *stack,
+               RutObject *child)
+{
+  rut_graphable_add_child (stack, child);
 }

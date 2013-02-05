@@ -136,11 +136,6 @@ struct _RigData
   float screen_area_width;
   float screen_area_height;
 
-  RutRectangle *icon_bar_rect;
-  RutRectangle *left_bar_rect;
-  RutRectangle *right_bar_rect;
-  RutRectangle *bottom_bar_rect;
-
   RutUIViewport *assets_vp;
   RutGraph *assets_list;
   RutAsset *text_builtin_asset;

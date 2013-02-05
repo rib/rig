@@ -1415,6 +1415,7 @@ rig_engine_init (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode)
     {
       RutObject *connect_button;
+      RutObject *tmp;
 
       cogl_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
       cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
@@ -1443,25 +1444,36 @@ rig_engine_init (RutShell *shell, void *user_data)
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100);
-      data->icon_bar_stack = rut_stack_new (data->ctx, 0, 0,
-                                            (data->icon_bar_rect =
-                                             rut_rectangle_new4f (data->ctx, 0, 0,
-                                                                  0.41, 0.41, 0.41, 1)),
-                                            rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
-                                            NULL);
+
+      /* Setup center toolbar stack
+       */
+      data->icon_bar_stack = rut_stack_new (data->ctx, 0, 0);
+
+      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.41, 0.41, 0.41, 1);
+      rut_stack_add (data->icon_bar_stack, tmp);
+      rut_refable_unref (tmp);
+
+      tmp = rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color);
+      rut_stack_add (data->icon_bar_stack, tmp);
+      rut_refable_unref (tmp);
+
       rig_split_view_set_child0 (data->splits[2], data->splits[3]);
       rig_split_view_set_child1 (data->splits[2], data->icon_bar_stack);
 
-      data->left_bar_stack = rut_stack_new (data->ctx, 0, 0,
-                                            (data->left_bar_rect =
-                                             rut_rectangle_new4f (data->ctx, 0, 0,
-                                                                  0.57, 0.57, 0.57, 1)),
-                                            (data->assets_vp =
-                                             rut_ui_viewport_new (data->ctx,
-                                                                  0, 0,
-                                                                  NULL)),
-                                            rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color),
-                                            NULL);
+      /* Setup the left assets bar
+       */
+      data->left_bar_stack = rut_stack_new (data->ctx, 0, 0);
+
+      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
+      rut_stack_add (data->left_bar_stack, tmp);
+      rut_refable_unref (tmp);
+
+      data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0, NULL);
+      rut_stack_add (data->left_bar_stack, data->assets_vp);
+
+      tmp = rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color);
+      rut_stack_add (data->left_bar_stack, tmp);
+      rut_refable_unref (tmp);
 
       rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
 
@@ -1503,12 +1515,16 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_ui_viewport_set_x_expand (data->timeline_vp, TRUE);
       rut_ui_viewport_set_y_expand (data->timeline_vp, TRUE);
 
-      data->bottom_bar_stack = rut_stack_new (data->ctx, 0, 0,
-                                              (data->bottom_bar_rect =
-                                               rut_rectangle_new4f (data->ctx, 0, 0,
-                                                                    0.57, 0.57, 0.57, 1)),
-                                              data->timeline_vp,
-                                              NULL);
+      /* Setup the bottom timeline stack
+       */
+
+      data->bottom_bar_stack = rut_stack_new (data->ctx, 0, 0);
+
+      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
+      rut_stack_add (data->bottom_bar_stack, tmp);
+      rut_refable_unref (tmp);
+
+      rut_stack_add (data->bottom_bar_stack, data->timeline_vp);
 
       rig_split_view_set_child0 (data->splits[1], data->splits[2]);
       rig_split_view_set_child1 (data->splits[1], data->bottom_bar_stack);
@@ -1517,18 +1533,24 @@ rig_engine_init (RutShell *shell, void *user_data)
         rut_box_layout_new (data->ctx,
                             RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
-      data->right_bar_stack =
-        rut_stack_new (data->ctx, 100, 100,
-                       (data->right_bar_rect =
-                        rut_rectangle_new4f (data->ctx, 0, 0,
-                                             0.57, 0.57, 0.57, 1)),
-                       (data->tool_vp =
-                        rut_ui_viewport_new (data->ctx,
-                                             0, 0,
-                                             data->inspector_box_layout,
-                                             NULL)),
-                       rut_bevel_new (data->ctx, 0, 0, &right_bar_ref_color),
-                       NULL);
+      /* Setup the right hand properties view stack
+       */
+
+      data->right_bar_stack = rut_stack_new (data->ctx, 100, 100);
+
+      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
+      rut_stack_add (data->right_bar_stack, tmp);
+      rut_refable_unref (tmp);
+
+      data->tool_vp = rut_ui_viewport_new (data->ctx,
+                                           0, 0,
+                                           data->inspector_box_layout,
+                                           NULL);
+      rut_stack_add (data->right_bar_stack, data->tool_vp);
+
+      tmp = rut_bevel_new (data->ctx, 0, 0, &right_bar_ref_color);
+      rut_stack_add (data->right_bar_stack, tmp);
+      rut_refable_unref (tmp);
 
       rut_ui_viewport_set_x_pannable (data->tool_vp, FALSE);
       rut_ui_viewport_set_y_pannable (data->tool_vp, TRUE);
