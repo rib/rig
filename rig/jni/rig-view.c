@@ -217,12 +217,10 @@ rig_view_new (RigData *data)
 
   rut_graphable_init (RUT_OBJECT (view));
 
-  view->vbox =
-    rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM, NULL);
+  view->vbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_graphable_add_child (view, view->vbox);
   rut_refable_unref (view->vbox);
-  view->hbox =
-    rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT, NULL);
+  view->hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_graphable_add_child (view->vbox, view->hbox);
   rut_refable_unref (view->hbox);
 
