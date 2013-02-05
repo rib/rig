@@ -1515,8 +1515,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 
       data->inspector_box_layout =
         rut_box_layout_new (data->ctx,
-                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
-                            NULL);
+                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
       data->right_bar_stack =
         rut_stack_new (data->ctx, 100, 100,
@@ -1545,11 +1544,9 @@ rig_engine_init (RutShell *shell, void *user_data)
       rig_split_view_set_split_offset (data->splits[3], 150);
 
       data->top_vbox = rut_box_layout_new (data->ctx,
-                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM,
-                                           NULL);
-      data->top_hbox_ltr = rut_box_layout_new (data->ctx,
-                                               RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT,
-                                               NULL);
+                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+      data->top_hbox_ltr =
+        rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
       rut_box_layout_add (data->top_vbox, FALSE, data->top_hbox_ltr);
 
       connect_button = rut_button_new (data->ctx, "Connect");

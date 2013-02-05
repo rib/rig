@@ -700,13 +700,10 @@ _rut_box_layout_init_type (void)
 
 RutBoxLayout *
 rut_box_layout_new (RutContext *ctx,
-                    RutBoxLayoutPacking packing,
-                    ...)
+                    RutBoxLayoutPacking packing)
 {
   RutBoxLayout *box = g_slice_new0 (RutBoxLayout);
   static CoglBool initialized = FALSE;
-  va_list ap;
-  RutObject *object;
 
   if (initialized == FALSE)
     {
@@ -729,14 +726,6 @@ rut_box_layout_new (RutContext *ctx,
   rut_simple_introspectable_init (box,
                                   _rut_box_layout_prop_specs,
                                   box->properties);
-
-  va_start (ap, packing);
-  while ((object = va_arg (ap, RutObject *)))
-    {
-      rut_box_layout_add (box, FALSE, object);
-      rut_refable_unref (object);
-    }
-  va_end (ap);
 
   queue_allocation (box);
 

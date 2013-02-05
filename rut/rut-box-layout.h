@@ -38,8 +38,7 @@ typedef enum
 
 RutBoxLayout *
 rut_box_layout_new (RutContext *ctx,
-                    RutBoxLayoutPacking packing,
-                    ...);
+                    RutBoxLayoutPacking packing);
 
 void
 rut_box_layout_add (RutBoxLayout *box,
