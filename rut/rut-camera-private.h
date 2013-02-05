@@ -36,6 +36,8 @@ struct _RutCamera
 
   RutContext *ctx;
 
+  RutCamera *child_camera;
+
   CoglColor bg_color;
   CoglBool clear_fb;
 
@@ -64,6 +66,7 @@ struct _RutCamera
   unsigned int inverse_view_age;
 
   unsigned int transform_age;
+  unsigned int at_suspend_transform_age;
 
   CoglFramebuffer *fb;
 
@@ -76,6 +79,8 @@ struct _RutCamera
   RutProperty properties[RUT_CAMERA_N_PROPS];
 
   unsigned int orthographic:1;
+  unsigned int in_frame:1;
+  unsigned int suspended:1;
 };
 
 #endif /* _RUT_CAMERA_PRIVATE_H_ */

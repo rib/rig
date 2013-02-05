@@ -144,6 +144,12 @@ void
 rut_camera_flush (RutCamera *camera);
 
 void
+rut_camera_suspend (RutCamera *camera);
+
+void
+rut_camera_resume (RutCamera *camera);
+
+void
 rut_camera_end_frame (RutCamera *camera);
 
 void

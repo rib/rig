@@ -247,7 +247,6 @@ typedef struct _CameraFlushState
 {
   RutCamera *current_camera;
   unsigned int transform_age;
-  CoglBool in_frame;
 } CameraFlushState;
 
 static void
@@ -262,12 +261,16 @@ _rut_camera_flush_transforms (RutCamera *camera)
 {
   const CoglMatrix *projection;
   CoglFramebuffer *fb = camera->fb;
-  CameraFlushState *state =
-    cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+  CameraFlushState *state;
+
+  /* While a camera is in a suspended state then we don't expect to
+   * _flush() and use that camera before it is restored. */
+  g_return_if_fail (camera->suspended == FALSE);
+
+  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
   if (!state)
     {
       state = g_slice_new (CameraFlushState);
-      state->in_frame = FALSE;
       cogl_object_set_user_data (COGL_OBJECT (fb),
                                  &fb_camera_key,
                                  state,
@@ -275,12 +278,9 @@ _rut_camera_flush_transforms (RutCamera *camera)
     }
   else if (state->current_camera == camera &&
            camera->transform_age == state->transform_age)
-    {
-      state->in_frame = TRUE;
-      return;
-    }
+    goto done;
 
-  if (state->in_frame)
+  if (camera->in_frame)
     {
       g_warning ("Un-balanced rut_camera_flush/_end calls: "
                  "repeat _flush() calls before _end()");
@@ -299,7 +299,9 @@ _rut_camera_flush_transforms (RutCamera *camera)
 
   state->current_camera = camera;
   state->transform_age = camera->transform_age;
-  state->in_frame = TRUE;
+
+done:
+  camera->in_frame = TRUE;
 }
 
 static RutComponentableVTable _rut_camera_componentable_vtable = {
@@ -910,16 +912,10 @@ rut_camera_flush (RutCamera *camera)
 void
 rut_camera_end_frame (RutCamera *camera)
 {
-  double elapsed;
-  CameraFlushState *state =
-    cogl_object_get_user_data (COGL_OBJECT (camera->fb), &fb_camera_key);
-  if (state)
-    {
-      if (state->in_frame != TRUE)
-        g_warning ("Un-balanced rut_camera_flush/end frame calls. "
-                   "_end before _flush");
-      state->in_frame = FALSE;
-    }
+  if (G_UNLIKELY (camera->in_frame != TRUE))
+    g_warning ("Un-balanced rut_camera_flush/end frame calls. "
+               "_end before _flush");
+  camera->in_frame = FALSE;
 }
 
 void
@@ -970,4 +966,77 @@ rut_camera_get_depth_of_field (RutObject *obj)
   RutCamera *camera = RUT_CAMERA (obj);
 
   return camera->depth_of_field;
+}
+
+void
+rut_camera_suspend (RutCamera *camera)
+{
+  CameraFlushState *state;
+
+  /* There's not point suspending a frame that hasn't been flushed */
+  g_return_if_fail (camera->in_frame == TRUE);
+
+  g_return_if_fail (camera->suspended == FALSE);
+
+  state = cogl_object_get_user_data (COGL_OBJECT (camera->fb), &fb_camera_key);
+
+  /* We only expect to be saving a camera that has been flushed */
+  g_return_if_fail (state != NULL);
+
+  /* While the camera is in a suspended state we aren't expecting the
+   * camera to be touched but we want to double check that at least
+   * the transform hasn't been touched when we come to resume the
+   * camera... */
+  camera->at_suspend_transform_age = camera->transform_age;
+
+  /* When we resume the camer we'll need to restore the modelview,
+   * projection and viewport transforms. The easiest way for us to
+   * handle restoring the modelview is to use the framebuffer's
+   * matrix stack... */
+  cogl_framebuffer_push_matrix (camera->fb);
+
+  camera->suspended = TRUE;
+  camera->in_frame = FALSE;
+}
+
+void
+rut_camera_resume (RutCamera *camera)
+{
+  CameraFlushState *state;
+  CoglFramebuffer *fb = camera->fb;
+
+  g_return_if_fail (camera->in_frame == FALSE);
+  g_return_if_fail (camera->suspended == TRUE);
+
+  /* While a camera is in a suspended state we don't expect the camera
+   * to be touched so its transforms shouldn't have changed... */
+  g_return_if_fail (camera->at_suspend_transform_age == camera->transform_age);
+
+  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+
+  /* We only expect to be restoring a camera that has been flushed
+   * before */
+  g_return_if_fail (state != NULL);
+
+  /* If the save turned out to be redundant then we have nothing
+   * to restore... */
+  if (state->current_camera == camera)
+    goto done;
+
+  cogl_framebuffer_set_viewport (fb,
+                                 camera->viewport[0],
+                                 camera->viewport[1],
+                                 camera->viewport[2],
+                                 camera->viewport[3]);
+
+  cogl_framebuffer_set_projection_matrix (fb, &camera->projection);
+
+  cogl_framebuffer_pop_matrix (fb);
+
+  state->current_camera = camera;
+  state->transform_age = camera->transform_age;
+
+done:
+  camera->in_frame = TRUE;
+  camera->suspended = FALSE;
 }
