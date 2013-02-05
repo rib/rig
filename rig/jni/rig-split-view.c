@@ -652,14 +652,11 @@ RigSplitView *
 rig_split_view_new (RigData *data,
                     RigSplitViewSplit split,
                     float width,
-                    float height,
-                    ...)
+                    float height)
 {
   RutContext *context = data->ctx;
   RigSplitView *split_view = g_slice_new0 (RigSplitView);
   static CoglBool initialized = FALSE;
-  RutObject *object;
-  va_list ap;
 
   if (initialized == FALSE)
     {
@@ -705,23 +702,6 @@ rig_split_view_new (RigData *data,
 
   if (split)
     rig_split_view_split (split_view, split);
-
-  va_start (ap, height);
-
-  if ((object = va_arg (ap, RutObject *)))
-    {
-      rig_split_view_set_child0 (split_view, object);
-
-      if ((object = va_arg (ap, RutObject *)))
-        {
-          rig_split_view_set_child1 (split_view, object);
-
-          while ((object = va_arg (ap, RutObject *)))
-            rut_graphable_add_child (split_view, object);
-        }
-    }
-
-  va_end (ap);
 
   return split_view;
 }

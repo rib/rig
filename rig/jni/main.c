@@ -1424,29 +1424,25 @@ rig_engine_init (RutShell *shell, void *user_data)
       data->splits[0] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
-                                            100,
-                                            NULL);
+                                            100);
 
       /* timeline on the bottom, everything else above */
       data->splits[1] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
-                                            100,
-                                            NULL);
+                                            100);
 
       /* tool bar on the bottom, main area + assets above*/
       data->splits[2] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
-                                            100,
-                                            NULL);
+                                            100);
 
       /* assets on the left, main area on the right */
       data->splits[3] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
-                                            100,
-                                            NULL);
+                                            100);
       data->icon_bar_stack = rut_stack_new (data->ctx, 0, 0,
                                             (data->icon_bar_rect =
                                              rut_rectangle_new4f (data->ctx, 0, 0,
