@@ -100,6 +100,8 @@ struct _RigData
   //float height;
   //RutProperty height_property;
 
+  RutBoxLayout *top_vbox;
+  RutBoxLayout *top_hbox_ltr;
   RigSplitView *splits[4];
 
   RutBevel *main_area_bevel;
