@@ -932,7 +932,7 @@ rig_search_asset_list (RigData *data, const char *search)
       free_asset_input_closures (data);
     }
 
-  data->assets_list = rut_graph_new (data->ctx, NULL);
+  data->assets_list = rut_graph_new (data->ctx);
 
   if (data->transparency_grid)
     rut_graphable_add_child (data->assets_list, data->transparency_grid);
@@ -1142,7 +1142,7 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                     CIRCLE_TEX_RADIUS,
                                                     CIRCLE_TEX_PADDING);
 
-  data->scene = rut_graph_new (data->ctx, NULL);
+  data->scene = rut_graph_new (data->ctx);
 
   data->device_width = DEVICE_WIDTH;
   data->device_height = DEVICE_HEIGHT;
@@ -1405,10 +1405,7 @@ rig_engine_init (RutShell *shell, void *user_data)
     }
 #endif
 
-  data->root =
-    rut_graph_new (data->ctx,
-                   //(data->main_transform = rut_transform_new (data->ctx, NULL)),
-                   NULL);
+  data->root = rut_graph_new (data->ctx);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)

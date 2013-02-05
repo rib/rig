@@ -879,22 +879,15 @@ _rut_graph_init_type (void)
 }
 
 RutGraph *
-rut_graph_new (RutContext *ctx, ...)
+rut_graph_new (RutContext *ctx)
 {
   RutGraph *graph = g_slice_new (RutGraph);
-  RutObject *object;
-  va_list ap;
 
   rut_object_init (&graph->_parent, &rut_graph_type);
 
   graph->ref_count = 1;
 
   rut_graphable_init (RUT_OBJECT (graph));
-
-  va_start (ap, ctx);
-  while ((object = va_arg (ap, RutObject *)))
-    rut_graphable_add_child (RUT_OBJECT (graph), object);
-  va_end (ap);
 
   return graph;
 }

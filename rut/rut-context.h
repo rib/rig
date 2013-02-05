@@ -123,7 +123,7 @@ typedef struct _RutGraph RutGraph;
 extern RutType rut_graph_type;
 
 RutGraph *
-rut_graph_new (RutContext *ctx, ...);
+rut_graph_new (RutContext *ctx);
 
 
 RutTransform *
