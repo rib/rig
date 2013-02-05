@@ -410,7 +410,7 @@ rut_vec3_slider_new (RutContext *context)
   slider->border_pipeline = cogl_pipeline_new (context->cogl_context);
   cogl_pipeline_set_color4ub (slider->border_pipeline, 0, 0, 0, 255);
 
-  slider->label_transform = rut_transform_new (context, NULL);
+  slider->label_transform = rut_transform_new (context);
   rut_graphable_add_child (slider, slider->label_transform);
   slider->label = rut_text_new (context);
   rut_text_set_font_name (slider->label, "Sans 15px");
@@ -421,7 +421,7 @@ rut_vec3_slider_new (RutContext *context)
       RutVec3SliderControl *control = slider->controls + i;
       char label[] = "X";
 
-      control->transform = rut_transform_new (context, NULL);
+      control->transform = rut_transform_new (context);
       rut_graphable_add_child (slider, control->transform);
       control->slider = rut_number_slider_new (context);
       rut_graphable_add_child (control->transform, control->slider);

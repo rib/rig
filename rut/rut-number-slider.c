@@ -638,7 +638,7 @@ rut_number_slider_handle_click (RutNumberSlider *slider,
       int len;
       char *text;
 
-      slider->text_transform = rut_transform_new (slider->context, NULL);
+      slider->text_transform = rut_transform_new (slider->context);
       rut_graphable_add_child (slider, slider->text_transform);
 
       slider->text = rut_text_new (slider->context);

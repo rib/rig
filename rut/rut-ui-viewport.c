@@ -588,25 +588,23 @@ rut_ui_viewport_new (RutContext *ctx,
   ui_viewport->x_pannable = TRUE;
   ui_viewport->y_pannable = TRUE;
 
-  ui_viewport->scroll_bar_x_transform =
-    rut_transform_new (ctx,
-                       (ui_viewport->scroll_bar_x =
-                        rut_scroll_bar_new (ctx,
-                                            RUT_AXIS_X,
-                                            width, /* len */
-                                            width * 2, /* virtual len */
-                                            width)), /* viewport len */
-                       NULL);
+  ui_viewport->scroll_bar_x_transform = rut_transform_new (ctx);
+  ui_viewport->scroll_bar_x = rut_scroll_bar_new (ctx,
+                                                  RUT_AXIS_X,
+                                                  width, /* len */
+                                                  width * 2, /* virtual len */
+                                                  width); /* viewport len */
+  rut_graphable_add_child (ui_viewport->scroll_bar_x_transform,
+                           ui_viewport->scroll_bar_x);
 
-  ui_viewport->scroll_bar_y_transform =
-    rut_transform_new (ctx,
-                       (ui_viewport->scroll_bar_y =
-                        rut_scroll_bar_new (ctx,
-                                            RUT_AXIS_Y,
-                                            height, /* len */
-                                            height * 2, /* virtual len */
-                                            height)), /* viewport len */
-                       NULL);
+  ui_viewport->scroll_bar_y_transform = rut_transform_new (ctx);
+  ui_viewport->scroll_bar_y = rut_scroll_bar_new (ctx,
+                                                  RUT_AXIS_Y,
+                                                  height, /* len */
+                                                  height * 2, /* virtual len */
+                                                  height); /* viewport len */
+  rut_graphable_add_child (ui_viewport->scroll_bar_y_transform,
+                           ui_viewport->scroll_bar_y);
 
   rut_property_set_binding (&ui_viewport->properties[RUT_UI_VIEWPORT_PROP_DOC_X],
                             update_doc_xy_cb,
@@ -621,7 +619,7 @@ rut_ui_viewport_new (RutContext *ctx,
                                                                 "virtual_offset"),
                             NULL);
 
-  ui_viewport->doc_transform = rut_transform_new (ctx, NULL);
+  ui_viewport->doc_transform = rut_transform_new (ctx);
   rut_graphable_add_child (ui_viewport, ui_viewport->doc_transform);
 
   _rut_ui_viewport_update_doc_matrix (ui_viewport);

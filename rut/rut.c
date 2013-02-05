@@ -939,12 +939,9 @@ _rut_transform_init_type (void)
 }
 
 RutTransform *
-rut_transform_new (RutContext *ctx,
-                   ...)
+rut_transform_new (RutContext *ctx)
 {
   RutTransform *transform = g_slice_new (RutTransform);
-  RutObject *object;
-  va_list ap;
 
   rut_object_init (&transform->_parent, &rut_transform_type);
 
@@ -953,11 +950,6 @@ rut_transform_new (RutContext *ctx,
   rut_graphable_init (RUT_OBJECT (transform));
 
   cogl_matrix_init_identity (&transform->matrix);
-
-  va_start (ap, ctx);
-  while ((object = va_arg (ap, RutObject *)))
-    rut_graphable_add_child (RUT_OBJECT (transform), object);
-  va_end (ap);
 
   return transform;
 }
@@ -1625,7 +1617,7 @@ rut_button_new (RutContext *ctx,
     }
 
   button->text = rut_text_new_with_text (ctx, NULL, label);
-  button->text_transform = rut_transform_new (ctx, NULL);
+  button->text_transform = rut_transform_new (ctx);
   rut_graphable_add_child (button, button->text_transform);
   rut_graphable_add_child (button->text_transform, button->text);
 

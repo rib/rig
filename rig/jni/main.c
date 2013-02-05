@@ -880,7 +880,7 @@ add_asset_icon (RigData *data,
   closure->asset = asset;
   closure->data = data;
 
-  transform = rut_transform_new (data->ctx, NULL);
+  transform = rut_transform_new (data->ctx);
 
   texture = rut_asset_get_texture (asset);
   if (texture)
@@ -1088,7 +1088,7 @@ init_resize_handle (RigData *data)
       resize_handle = rut_image_new (data->ctx, resize_handle_texture);
 
       data->resize_handle_transform =
-        rut_transform_new (data->ctx, resize_handle, NULL);
+        rut_transform_new (data->ctx, resize_handle);
 
       rut_graphable_add_child (data->root, data->resize_handle_transform);
 
@@ -1310,7 +1310,7 @@ rig_engine_init (RutShell *shell, void *user_data)
   data->circle_node_attribute =
     rut_create_circle_fan_p2 (data->ctx, 20, &data->circle_node_n_verts);
 
-  data->device_transform = rut_transform_new (data->ctx, NULL);
+  data->device_transform = rut_transform_new (data->ctx);
 
   data->camera = rut_camera_new (data->ctx, COGL_FRAMEBUFFER (data->onscreen));
   rut_camera_set_clear (data->camera, FALSE);

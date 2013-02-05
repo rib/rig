@@ -477,9 +477,8 @@ show_picker (RutColorButton *button,
 
   rut_sizable_set_size (button->picker, picker_width, picker_height);
 
-  button->picker_transform = rut_transform_new (button->context,
-                                                button->picker,
-                                                NULL);
+  button->picker_transform = rut_transform_new (button->context);
+  rut_graphable_add_child (button->picker_transform, button->picker);
 
   rut_graphable_get_transform (button, &model_transform);
 

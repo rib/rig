@@ -354,7 +354,7 @@ rut_bin_new (RutContext *ctx)
 
   rut_graphable_init (RUT_OBJECT (bin));
 
-  bin->child_transform = rut_transform_new (ctx, NULL);
+  bin->child_transform = rut_transform_new (ctx);
   rut_graphable_add_child (bin, bin->child_transform);
 
   return bin;

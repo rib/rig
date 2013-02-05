@@ -396,7 +396,9 @@ rut_entry_new (RutContext *ctx)
   entry->text = rut_text_new (ctx);
   rut_text_set_editable (entry->text, TRUE);
 
-  entry->text_transform = rut_transform_new (ctx, entry->text, NULL);
+  entry->text_transform = rut_transform_new (ctx);
+  rut_graphable_add_child (entry->text_transform, entry->text);
+
   rut_graphable_add_child (entry, entry->text_transform);
 
   rut_sizable_get_preferred_width (entry,

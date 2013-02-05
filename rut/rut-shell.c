@@ -2828,13 +2828,12 @@ rut_slider_new (RutContext *ctx,
   else
     height = 20;
 
-  slider->handle_transform =
-    rut_transform_new (ctx,
-                       slider->handle = rut_nine_slice_new (ctx,
-                                                            handle_texture,
-                                                            4, 5, 6, 5,
-                                                            width, height),
-                       NULL);
+  slider->handle_transform = rut_transform_new (ctx);
+  slider->handle = rut_nine_slice_new (ctx,
+                                       handle_texture,
+                                       4, 5, 6, 5,
+                                       width, height);
+  rut_graphable_add_child (slider->handle_transform, slider->handle);
   rut_graphable_add_child (slider, slider->handle_transform);
 
   slider->input_region =

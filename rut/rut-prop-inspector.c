@@ -558,7 +558,7 @@ add_animatable_toggle (RutPropInspector *inspector,
                                          NULL /* destroy_cb */);
 
       control_data->control = control;
-      control_data->transform = rut_transform_new (inspector->context, NULL);
+      control_data->transform = rut_transform_new (inspector->context);
       rut_graphable_add_child (control_data->transform, control);
       rut_graphable_add_child (inspector, control_data->transform);
 
@@ -590,8 +590,8 @@ add_control (RutPropInspector *inspector,
             rut_text_new_with_text (inspector->context,
                                     NULL, /* font_name */
                                     label_text);
-          control_data->transform =
-            rut_transform_new (inspector->context, control_data->control, NULL);
+          control_data->transform = rut_transform_new (inspector->context);
+          rut_graphable_add_child (control_data->transform, control_data->control);
           rut_graphable_add_child (inspector, control_data->transform);
 
           control_data = inspector->controls + inspector->n_controls++;
@@ -600,7 +600,7 @@ add_control (RutPropInspector *inspector,
       control_data->control = control;
       control_data->expand = TRUE;
 
-      control_data->transform = rut_transform_new (inspector->context, NULL);
+      control_data->transform = rut_transform_new (inspector->context);
       rut_graphable_add_child (control_data->transform, control);
       rut_graphable_add_child (inspector, control_data->transform);
 

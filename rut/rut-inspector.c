@@ -405,7 +405,7 @@ create_property_controls (RutInspector *inspector)
                                         prop_data);
 
       prop_data->control = control;
-      prop_data->transform = rut_transform_new (inspector->context, NULL);
+      prop_data->transform = rut_transform_new (inspector->context);
       rut_graphable_add_child (prop_data->transform, control);
       rut_graphable_add_child (inspector, prop_data->transform);
     }

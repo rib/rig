@@ -752,9 +752,8 @@ rut_box_layout_add (RutBoxLayout *box,
   child->widget = rut_refable_ref (child_widget);
   child->expand = expand;
 
-  child->transform = rut_transform_new (box->ctx,
-                                        child_widget,
-                                        NULL);
+  child->transform = rut_transform_new (box->ctx);
+  rut_graphable_add_child (child->transform, child_widget);
 
   rut_graphable_add_child (box, child->transform);
   box->n_children++;
