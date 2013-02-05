@@ -11,8 +11,11 @@ typedef struct _RutStack RutStack;
 RutStack *
 rut_stack_new (RutContext *context,
                float width,
-               float height,
-               ...);
+               float height);
+
+void
+rut_stack_add (RutStack *stack,
+               RutObject *child);
 
 void
 rut_stack_set_size (RutStack *stack,
