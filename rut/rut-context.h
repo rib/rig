@@ -71,6 +71,8 @@ struct _RutContext
 
   RutPropertyContext property_ctx;
 
+  CoglPipeline *single_texture_2d_template;
+
   GSList *timelines;
 };
 
@@ -172,6 +174,16 @@ rut_nine_slice_new (RutContext *ctx,
                     float left,
                     float width,
                     float height);
+
+void
+rut_nine_slice_set_size (RutObject *self,
+                         float width,
+                         float height);
+
+void
+rut_nine_slice_get_size (RutObject *self,
+                         float *width,
+                         float *height);
 
 CoglTexture *
 rut_nine_slice_get_texture (RutNineSlice *nine_slice);

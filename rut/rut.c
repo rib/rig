@@ -136,11 +136,9 @@ struct _RutNineSlice
   float height;
 
   CoglPipeline *pipeline;
-  CoglPrimitive *primitive;
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;
-
 };
 
 typedef enum _ButtonState
@@ -559,6 +557,11 @@ rut_context_new (RutShell *shell)
                       sizeof (_rut_nine_slice_indices_data) /
                       sizeof (_rut_nine_slice_indices_data[0]));
 
+  context->single_texture_2d_template =
+    cogl_pipeline_new (context->cogl_context);
+  cogl_pipeline_set_layer_null_texture (context->single_texture_2d_template,
+                                        0, COGL_TEXTURE_TYPE_2D);
+
   context->circle_texture =
     rut_create_circle_texture (context,
                                CIRCLE_TEX_RADIUS /* radius */,
@@ -618,7 +621,6 @@ _rut_nine_slice_free (void *object)
   cogl_object_unref (nine_slice->texture);
 
   cogl_object_unref (nine_slice->pipeline);
-  cogl_object_unref (nine_slice->primitive);
 
   rut_graphable_destroy (nine_slice);
 
@@ -643,15 +645,126 @@ _rut_nine_slice_paint (RutObject *object,
 {
   RutNineSlice *nine_slice = RUT_NINE_SLICE (object);
   RutCamera *camera = paint_ctx->camera;
+  CoglFramebuffer *fb = camera->fb;
 
-  cogl_framebuffer_draw_primitive (camera->fb,
-                                   nine_slice->pipeline,
-                                   nine_slice->primitive);
+  float left = nine_slice->left;
+  float right = nine_slice->right;
+  float top = nine_slice->top;
+  float bottom = nine_slice->bottom;
+
+  /* simple stretch */
+  if (left == 0 && right == 0 && top == 0 && bottom == 0)
+    {
+      cogl_framebuffer_draw_rectangle (fb,
+                                       nine_slice->pipeline,
+                                       0, 0,
+                                       nine_slice->width,
+                                       nine_slice->height);
+    }
+  else
+    {
+      float width = nine_slice->width;
+      float height = nine_slice->height;
+      CoglTexture *texture = nine_slice->texture;
+      float tex_width = cogl_texture_get_width (texture);
+      float tex_height = cogl_texture_get_height (texture);
+
+      /* s0,t0,s1,t1 define the texture coordinates for the center
+       * rectangle... */
+      float s0 = left / tex_width;
+      float t0 = top / tex_height;
+      float s1 = (tex_width - right) / tex_width;
+      float t1 = (tex_height - bottom) / tex_height;
+
+      float ex;
+      float ey;
+
+      ex = width - right;
+      if (ex < left)
+        ex = left;
+
+      ey = height - bottom;
+      if (ey < top)
+        ey = top;
+
+      {
+        float rectangles[] =
+          {
+            /* top left corner */
+            0, 0,
+            left, top,
+            0.0, 0.0,
+            s0, t0,
+
+            /* top middle */
+            left, 0,
+            MAX (left, ex), top,
+            s0, 0.0,
+            s1, t0,
+
+            /* top right */
+            ex, 0,
+            MAX (ex + right, width), top,
+            s1, 0.0,
+            1.0, t0,
+
+            /* mid left */
+            0, top,
+            left,  ey,
+            0.0, t0,
+            s0, t1,
+
+            /* center */
+            left, top,
+            ex, ey,
+            s0, t0,
+            s1, t1,
+
+            /* mid right */
+            ex, top,
+            MAX (ex + right, width), ey,
+            s1, t0,
+            1.0, t1,
+
+            /* bottom left */
+            0, ey,
+            left, MAX (ey + bottom, height),
+            0.0, t1,
+            s0, 1.0,
+
+            /* bottom center */
+            left, ey,
+            ex, MAX (ey + bottom, height),
+            s0, t1,
+            s1, 1.0,
+
+            /* bottom right */
+            ex, ey,
+            MAX (ex + right, width), MAX (ey + bottom, height),
+            s1, t1,
+            1.0, 1.0
+          };
+
+          cogl_framebuffer_draw_textured_rectangles (fb,
+                                                     nine_slice->pipeline,
+                                                     rectangles,
+                                                     9);
+      }
+    }
 }
 
 static RutPaintableVTable _rut_nine_slice_paintable_vtable = {
   _rut_nine_slice_paint
 };
+
+static RutSizableVTable _rut_nine_slice_sizable_vtable = {
+  rut_nine_slice_set_size,
+  rut_nine_slice_get_size,
+  rut_simple_sizable_get_preferred_width,
+  rut_simple_sizable_get_preferred_height,
+  NULL /* add_preferred_size_callback */
+};
+
 
 RutType rut_nine_slice_type;
 
@@ -671,42 +784,21 @@ _rut_nine_slice_init_type (void)
                            RUT_INTERFACE_ID_PAINTABLE,
                            offsetof (RutNineSlice, paintable),
                            &_rut_nine_slice_paintable_vtable);
+  rut_type_add_interface (&rut_nine_slice_type,
+                          RUT_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &_rut_nine_slice_sizable_vtable);
 }
 
-static CoglPrimitive *
-primitive_new_textured_rectangle (RutContext *ctx,
-                                  float x0,
-                                  float y0,
-                                  float x1,
-                                  float y1,
-                                  float s0,
-                                  float t0,
-                                  float s1,
-                                  float t1)
-{
-  CoglVertexP2T2 vertices[8] = {
-        {x0, y0, s0, t0},
-        {x0, y1, s0, t1},
-        {x1, y1, s1, t1},
-        {x1, y0, s1, t0}
-  };
-
-  return cogl_primitive_new_p2t2 (ctx->cogl_context,
-                                  COGL_VERTICES_MODE_TRIANGLE_STRIP,
-                                  8,
-                                  vertices);
-}
-
-static RutNineSlice *
-_rut_nine_slice_new_full (RutContext *ctx,
-                          CoglTexture *texture,
-                          float top,
-                          float right,
-                          float bottom,
-                          float left,
-                          float width,
-                          float height,
-                          CoglPrimitive *shared_prim)
+RutNineSlice *
+rut_nine_slice_new (RutContext *ctx,
+                    CoglTexture *texture,
+                    float top,
+                    float right,
+                    float bottom,
+                    float left,
+                    float width,
+                    float height)
 {
   RutNineSlice *nine_slice = g_slice_new (RutNineSlice);
 
@@ -726,118 +818,36 @@ _rut_nine_slice_new_full (RutContext *ctx,
   nine_slice->width = width;
   nine_slice->height = height;
 
-  nine_slice->pipeline = cogl_pipeline_new (ctx->cogl_context);
+  nine_slice->pipeline = cogl_pipeline_copy (ctx->single_texture_2d_template);
   cogl_pipeline_set_layer_texture (nine_slice->pipeline, 0, texture);
 
-  /* simple stretch */
-  if (left == 0 && right == 0 && top == 0 && bottom == 0)
-    {
-      nine_slice->primitive =
-        primitive_new_textured_rectangle (ctx,
-                                          0, 0, width, height,
-                                          0, 0, 1, 1);
-    }
-  else if (shared_prim)
-    {
-      nine_slice->primitive = cogl_object_ref (shared_prim);
-    }
-  else
-    {
-      float tex_width = cogl_texture_get_width (texture);
-      float tex_height = cogl_texture_get_height (texture);
-
-      /* x0,y0,x1,y1 and s0,t0,s1,t1 define the postion and texture
-       * coordinates for the center rectangle... */
-      float x0 = left;
-      float y0 = top;
-      float x1 = width - right;
-      float y1 = height - bottom;
-
-      float s0 = left / tex_width;
-      float t0 = top / tex_height;
-      float s1 = (tex_width - right) / tex_width;
-      float t1 = (tex_height - bottom) / tex_height;
-
-      /*
-       * 0,0      x0,0      x1,0      width,0
-       * 0,0      s0,0      s1,0      1,0
-       * 0        1         2         3
-       *
-       * 0,y0     x0,y0     x1,y0     width,y0
-       * 0,t0     s0,t0     s1,t0     1,t0
-       * 4        5         6         7
-       *
-       * 0,y1     x0,y1     x1,y1     width,y1
-       * 0,t1     s0,t1     s1,t1     1,t1
-       * 8        9         10        11
-       *
-       * 0,height x0,height x1,height width,height
-       * 0,1      s0,1      s1,1      1,1
-       * 12       13        14        15
-       */
-
-      CoglVertexP2T2 vertices[] =
-        {
-            { 0, 0, 0, 0 },
-            { x0, 0, s0, 0},
-            { x1, 0, s1, 0},
-            { width, 0, 1, 0},
-
-            { 0, y0, 0, t0},
-            { x0, y0, s0, t0},
-            { x1, y0, s1, t0},
-            { width, y0, 1, t0},
-
-            { 0, y1, 0, t1},
-            { x0, y1, s0, t1},
-            { x1, y1, s1, t1},
-            { width, y1, 1, t1},
-
-            { 0, height, 0, 1},
-            { x0, height, s0, 1},
-            { x1, height, s1, 1},
-            { width, height, 1, 1},
-        };
-
-      nine_slice->primitive =
-        cogl_primitive_new_p2t2 (ctx->cogl_context,
-                                 COGL_VERTICES_MODE_TRIANGLES,
-                                 sizeof (vertices) / sizeof (CoglVertexP2T2),
-                                 vertices);
-
-      /* The vertices uploaded only map to the key intersection points of the
-       * 9-slice grid which isn't a topology that GPUs can handle directly so
-       * this specifies an array of indices that allow the GPU to interpret the
-       * vertices as a list of triangles... */
-      cogl_primitive_set_indices (nine_slice->primitive,
-                                  ctx->nine_slice_indices,
-                                  sizeof (_rut_nine_slice_indices_data) /
-                                  sizeof (_rut_nine_slice_indices_data[0]));
-    }
-
   return nine_slice;
-}
-
-RutNineSlice *
-rut_nine_slice_new (RutContext *ctx,
-                    CoglTexture *texture,
-                    float top,
-                    float right,
-                    float bottom,
-                    float left,
-                    float width,
-                    float height)
-{
-  return _rut_nine_slice_new_full (ctx, texture,
-                                   top, right, bottom, left,
-                                   width, height,
-                                   NULL);
 }
 
 CoglTexture *
 rut_nine_slice_get_texture (RutNineSlice *nine_slice)
 {
   return nine_slice->texture;
+}
+
+void
+rut_nine_slice_set_size (RutObject *self,
+                         float width,
+                         float height)
+{
+  RutNineSlice *nine_slice = self;
+  nine_slice->width = width;
+  nine_slice->height = height;
+}
+
+void
+rut_nine_slice_get_size (RutObject *self,
+                         float *width,
+                         float *height)
+{
+  RutNineSlice *nine_slice = self;
+  *width = nine_slice->width;
+  *height = nine_slice->height;
 }
 
 static void
@@ -1254,72 +1264,41 @@ static RutGraphableVTable _rut_button_graphable_vtable = {
 };
 
 static void
-ensure_button_slices (RutButton *button)
-{
-  RutContext *ctx = button->ctx;
-
-  if (button->background_normal)
-    return;
-
-  if (button->normal_texture)
-    {
-      button->background_normal =
-        rut_nine_slice_new (ctx, button->normal_texture, 11, 5, 13, 5,
-                            button->width,
-                            button->height);
-    }
-
-  if (button->hover_texture)
-    {
-      button->background_hover =
-        _rut_nine_slice_new_full (ctx, button->hover_texture, 11, 5, 13, 5,
-                                  button->width,
-                                  button->height,
-                                  button->background_normal->primitive);
-    }
-
-  if (button->active_texture)
-    {
-      button->background_active =
-        _rut_nine_slice_new_full (ctx, button->active_texture, 11, 5, 13, 5,
-                                  button->width,
-                                  button->height,
-                                  button->background_normal->primitive);
-    }
-
-  if (button->disabled_texture)
-    {
-      button->background_disabled =
-        _rut_nine_slice_new_full (ctx, button->disabled_texture, 11, 5, 13, 5,
-                                  button->width,
-                                  button->height,
-                                  button->background_normal->primitive);
-    }
-}
-
-static void
 _rut_button_paint (RutObject *object,
                    RutPaintContext *paint_ctx)
 {
   RutButton *button = RUT_BUTTON (object);
 
-  ensure_button_slices (button);
-
   switch (button->state)
     {
     case BUTTON_STATE_NORMAL:
+      rut_nine_slice_set_size (button->background_normal,
+                               button->width,
+                               button->height);
       rut_paintable_paint (button->background_normal, paint_ctx);
       break;
     case BUTTON_STATE_HOVER:
+      rut_nine_slice_set_size (button->background_hover,
+                               button->width,
+                               button->height);
       rut_paintable_paint (button->background_hover, paint_ctx);
       break;
     case BUTTON_STATE_ACTIVE:
+      rut_nine_slice_set_size (button->background_active,
+                               button->width,
+                               button->height);
       rut_paintable_paint (button->background_active, paint_ctx);
       break;
     case BUTTON_STATE_ACTIVE_CANCEL:
+      rut_nine_slice_set_size (button->background_active,
+                               button->width,
+                               button->height);
       rut_paintable_paint (button->background_active, paint_ctx);
       break;
     case BUTTON_STATE_DISABLED:
+      rut_nine_slice_set_size (button->background_disabled,
+                               button->width,
+                               button->height);
       rut_paintable_paint (button->background_disabled, paint_ctx);
       break;
     }
@@ -1586,7 +1565,14 @@ rut_button_new (RutContext *ctx,
 
   button->normal_texture =
     rut_load_texture_from_data_file (ctx, "button.png", &error);
-  if (!button->normal_texture)
+  if (button->normal_texture)
+    {
+      button->background_normal =
+        rut_nine_slice_new (ctx, button->normal_texture, 11, 5, 13, 5,
+                            button->width,
+                            button->height);
+    }
+  else
     {
       g_warning ("Failed to load button texture: %s", error->message);
       g_error_free (error);
@@ -1594,7 +1580,14 @@ rut_button_new (RutContext *ctx,
 
   button->hover_texture =
     rut_load_texture_from_data_file (ctx, "button-hover.png", &error);
-  if (!button->hover_texture)
+  if (button->hover_texture)
+    {
+      button->background_hover =
+        rut_nine_slice_new (ctx, button->hover_texture, 11, 5, 13, 5,
+                            button->width,
+                            button->height);
+    }
+  else
     {
       g_warning ("Failed to load button-hover texture: %s", error->message);
       g_error_free (error);
@@ -1602,7 +1595,14 @@ rut_button_new (RutContext *ctx,
 
   button->active_texture =
     rut_load_texture_from_data_file (ctx, "button-active.png", &error);
-  if (!button->active_texture)
+  if (button->active_texture)
+    {
+      button->background_active =
+        rut_nine_slice_new (ctx, button->active_texture, 11, 5, 13, 5,
+                            button->width,
+                            button->height);
+    }
+  else
     {
       g_warning ("Failed to load button-active texture: %s", error->message);
       g_error_free (error);
@@ -1610,7 +1610,14 @@ rut_button_new (RutContext *ctx,
 
   button->disabled_texture =
     rut_load_texture_from_data_file (ctx, "button-disabled.png", &error);
-  if (!button->disabled_texture)
+  if (button->disabled_texture)
+    {
+      button->background_disabled =
+        rut_nine_slice_new (ctx, button->disabled_texture, 11, 5, 13, 5,
+                            button->width,
+                            button->height);
+    }
+  else
     {
       g_warning ("Failed to load button-disabled texture: %s", error->message);
       g_error_free (error);
@@ -1669,8 +1676,6 @@ rut_button_set_size (RutObject *self,
   button->height = height;
 
   rut_input_region_set_rectangle (button->input_region, 0, 0, button->width, button->height);
-
-  destroy_button_slices (button);
 
   queue_allocation (button);
 }
