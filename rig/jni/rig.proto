@@ -1,0 +1,14 @@
+package rig;
+
+message Query
+{
+  required int32 a=1;
+}
+
+message TestResult
+{
+}
+
+service Slave {
+    rpc Test (Query) returns (TestResult);
+}

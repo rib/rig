@@ -176,7 +176,7 @@ rig_engine_paint (RutShell *shell, void *user_data)
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                            0.22, 0.22, 0.22, 1);
+                            0.9, 0.9, 0.9, 1);
 
   paint_ctx.data = data;
   paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
@@ -510,7 +510,7 @@ allocate (RigData *data)
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      rut_sizable_set_size (data->top_vbox, data->width, data->height);
+      rut_sizable_set_size (data->top_bin, data->width, data->height);
 
       if (data->resize_handle_transform)
         {
@@ -867,56 +867,54 @@ asset_matches_search (RutAsset *asset,
 
 static void
 add_asset_icon (RigData *data,
-                RutAsset *asset,
-                float y_pos)
+                RutAsset *asset)
 {
   AssetInputClosure *closure;
+  RutStack *stack;
+  RutBin *bin;
   CoglTexture *texture;
   RutImage *image;
   RutInputRegion *region;
-  RutTransform *transform;
 
   closure = g_slice_new (AssetInputClosure);
   closure->asset = asset;
   closure->data = data;
 
-  transform = rut_transform_new (data->ctx);
+  bin = rut_bin_new (data->ctx);
+
+  stack = rut_stack_new (data->ctx, 0, 0);
+  rut_bin_set_child (bin, stack);
+  rut_refable_unref (stack);
 
   texture = rut_asset_get_texture (asset);
   if (texture)
     {
       image = rut_image_new (data->ctx, texture);
-      rut_sizable_set_size (image, 100, 100);
-      rut_graphable_add_child (transform, image);
+      rut_stack_add (stack, image);
       rut_refable_unref (image);
     }
   else
     {
       char *basename = g_path_get_basename (rut_asset_get_path (asset));
       RutText *text = rut_text_new_with_text (data->ctx, NULL, basename);
-      rut_sizable_set_size (text, 100, 100);
-      g_free (basename);
-      rut_graphable_add_child (transform, text);
+      rut_stack_add (stack, text);
       rut_refable_unref (text);
+      g_free (basename);
     }
 
   region = rut_input_region_new_rectangle (0, 0, 100, 100,
                                            asset_input_cb,
                                            closure);
-  rut_graphable_add_child (transform, region);
+  rut_stack_add (stack, region);
   rut_refable_unref (region);
 
-  rut_graphable_add_child (data->assets_list, transform);
-  rut_refable_unref (transform);
+  rut_flow_layout_add (data->assets_flow, bin);
+  rut_refable_unref (bin);
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
   data->asset_input_closures = g_list_prepend (data->asset_input_closures,
                                                closure);
-
-  rut_transform_translate (transform, 10, y_pos, 0);
-
-  //rut_input_region_set_graphable (region, nine_slice);
 }
 
 static CoglBool
@@ -926,21 +924,27 @@ rig_search_asset_list (RigData *data, const char *search)
   int i;
   CoglBool found = FALSE;
 
-  if (data->assets_list)
+  if (data->assets_flow)
     {
-      rut_graphable_remove_child (data->assets_list);
+      rut_graphable_remove_child (data->assets_flow);
       free_asset_input_closures (data);
     }
 
-  data->assets_list = rut_graph_new (data->ctx);
+  data->assets_flow =
+    rut_flow_layout_new (data->ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
+  rut_flow_layout_set_x_padding (data->assets_flow, 5);
+  rut_flow_layout_set_y_padding (data->assets_flow, 5);
+  rut_flow_layout_set_max_child_height (data->assets_flow, 100);
+
+#if 0
   if (data->transparency_grid)
     rut_graphable_add_child (data->assets_list, data->transparency_grid);
+#endif
 
-  rut_ui_viewport_add (data->assets_vp, data->assets_list);
-  rut_refable_unref (data->assets_list);
-
-  data->assets_list_tail_pos = 70;
+  rut_ui_viewport_add (data->assets_vp, data->assets_flow);
+  rut_ui_viewport_set_sync_widget (data->assets_vp, data->assets_flow);
+  rut_refable_unref (data->assets_flow);
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
     {
@@ -950,11 +954,7 @@ rig_search_asset_list (RigData *data, const char *search)
         continue;
 
       found = TRUE;
-      add_asset_icon (data, asset, data->assets_list_tail_pos);
-      data->assets_list_tail_pos += 110;
-
-      rut_ui_viewport_set_doc_height (data->assets_vp,
-                                      data->assets_list_tail_pos);
+      add_asset_icon (data, asset);
     }
 
   return found;
@@ -1100,6 +1100,309 @@ init_resize_handle (RigData *data)
 #endif /* __APPLE__ */
 }
 
+RutNineSlice *
+load_gradient_image (RutContext *ctx,
+                     const char *filename)
+{
+  GError *error = NULL;
+  CoglTexture *gradient =
+    rut_load_texture_from_data_file (ctx,
+                                     filename,
+                                     &error);
+  if (gradient)
+    {
+      return rut_nine_slice_new (ctx,
+                                 gradient,
+                                 0, 0, 0, 0, 0, 0);
+    }
+  else
+    {
+      g_error ("Failed to load gradient %s: %s", filename, error->message);
+      g_error_free (error);
+      return NULL;
+    }
+}
+
+static void
+create_top_bar (RigData *data)
+{
+  RutStack *top_bar_stack = rut_stack_new (data->ctx, 123, 0);
+  RutButton *connect_button = rut_button_new (data->ctx, "Connect");
+  RutIcon *icon = rut_icon_new (data->ctx, "settings-icon.png");
+  RutNineSlice *gradient =
+    load_gradient_image (data->ctx, "top-bar-gradient.png");
+
+  rut_box_layout_add (data->top_vbox, FALSE, top_bar_stack);
+
+  rut_stack_add (top_bar_stack, gradient);
+  rut_refable_unref (gradient);
+
+  data->top_bar_hbox =
+    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  data->top_bar_hbox_ltr =
+    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_box_layout_add (data->top_bar_hbox, TRUE, data->top_bar_hbox_ltr);
+
+  data->top_bar_hbox_rtl =
+    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
+  rut_box_layout_add (data->top_bar_hbox, TRUE, data->top_bar_hbox_rtl);
+
+  rut_box_layout_add (data->top_bar_hbox_rtl, FALSE, icon);
+
+  rut_stack_add (top_bar_stack, data->top_bar_hbox);
+
+  rut_box_layout_add (data->top_bar_hbox_ltr, FALSE, connect_button);
+  rut_refable_unref (connect_button);
+}
+
+static void
+create_camera_view (RigData *data)
+{
+  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
+  RutBin *bin = rut_bin_new (data->ctx);
+  RutNineSlice *gradient =
+    load_gradient_image (data->ctx, "document-bg-gradient.png");
+  CoglTexture *left_drop_shadow;
+  CoglTexture *bottom_drop_shadow;
+  RutBoxLayout *hbox = rut_box_layout_new (data->ctx,
+                                           RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  RutBoxLayout *vbox = rut_box_layout_new (data->ctx,
+                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  RutNineSlice *left_drop;
+  RutStack *left_stack;
+  RutBin *left_shim;
+  RutNineSlice *bottom_drop;
+  RutStack *bottom_stack;
+  RutBin *bottom_shim;
+
+
+  rut_stack_add (stack, gradient);
+  rut_stack_add (stack, bin);
+
+  data->main_camera_view = rig_camera_view_new (data);
+
+  left_drop_shadow =
+    rut_load_texture_from_data_file (data->ctx,
+                                     "left-drop-shadow.png",
+                                     NULL);
+  bottom_drop_shadow =
+    rut_load_texture_from_data_file (data->ctx,
+                                     "bottom-drop-shadow.png",
+                                     NULL);
+
+      /* Instead of creating one big drop-shadow that extends
+       * underneath the document we simply create a thin drop
+       * shadow for the left and bottom where the shadow is
+       * actually visible...
+       */
+
+  left_drop = rut_nine_slice_new (data->ctx,
+                                  left_drop_shadow,
+                                  10 /* top */,
+                                  0, /* right */
+                                  10, /* bottom */
+                                  0, /* left */
+                                  0, 0);
+  left_stack = rut_stack_new (data->ctx, 0, 0);
+  left_shim = rut_bin_new (data->ctx);
+  bottom_drop = rut_nine_slice_new (data->ctx,
+                                    bottom_drop_shadow,
+                                    0, 10, 0, 0, 0, 0);
+  bottom_stack = rut_stack_new (data->ctx, 0, 0);
+  bottom_shim = rut_bin_new (data->ctx);
+
+  rut_bin_set_left_padding (left_shim, 10);
+  rut_bin_set_bottom_padding (bottom_shim, 10);
+
+  rut_bin_set_child (bin, hbox);
+  rut_box_layout_add (hbox, FALSE, left_stack);
+
+  rut_stack_add (left_stack, left_shim);
+  rut_stack_add (left_stack, left_drop);
+
+  rut_box_layout_add (hbox, TRUE, vbox);
+  rut_box_layout_add (vbox, TRUE, data->main_camera_view);
+  rut_box_layout_add (vbox, FALSE, bottom_stack);
+
+  rut_stack_add (bottom_stack, bottom_shim);
+  rut_stack_add (bottom_stack, bottom_drop);
+
+  rut_bin_set_top_padding (bin, 5);
+
+  rig_split_view_set_child1 (data->splits[2], stack);
+}
+
+static void
+create_toolbar (RigData *data)
+{
+  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
+  RutNineSlice *gradient = load_gradient_image (data->ctx, "toolbar-bg-gradient.png");
+  RutIcon *icon = rut_icon_new (data->ctx, "chevron-icon.png");
+  RutBin *bin = rut_bin_new (data->ctx);
+
+  rut_stack_add (stack, gradient);
+  rut_refable_unref (gradient);
+
+  data->toolbar_vbox = rut_box_layout_new (data->ctx,
+                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  rut_bin_set_child (bin, data->toolbar_vbox);
+
+  rut_bin_set_left_padding (bin, 5);
+  rut_bin_set_right_padding (bin, 5);
+  rut_bin_set_top_padding (bin, 5);
+
+  rut_box_layout_add (data->toolbar_vbox, FALSE, icon);
+
+  rut_stack_add (stack, bin);
+
+  rut_box_layout_add (data->top_hbox, FALSE, stack);
+}
+
+static void
+create_properties_bar (RigData *data)
+{
+  RutStack *stack0 = rut_stack_new (data->ctx, 0, 0);
+  RutStack *stack1 = rut_stack_new (data->ctx, 0, 0);
+  RutBin *bin = rut_bin_new (data->ctx);
+  RutNineSlice *gradient = load_gradient_image (data->ctx, "document-bg-gradient.png");
+  RutUIViewport *properties_vp;
+  RutRectangle *bg;
+
+  rut_stack_add (stack0, gradient);
+  rut_refable_unref (gradient);
+
+  rut_bin_set_left_padding (bin, 10);
+  rut_bin_set_right_padding (bin, 5);
+  rut_bin_set_bottom_padding (bin, 10);
+  rut_bin_set_top_padding (bin, 5);
+  rut_stack_add (stack0, bin);
+  rut_refable_unref (bin);
+
+  rut_bin_set_child (bin, stack1);
+
+  bg = rut_rectangle_new4f (data->ctx,
+                            0, 0, /* size */
+                            1, 1, 1, 1);
+  rut_stack_add (stack1, bg);
+  rut_refable_unref (bg);
+
+  data->inspector_box_layout =
+    rut_box_layout_new (data->ctx,
+                        RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+
+  properties_vp = rut_ui_viewport_new (data->ctx, 0, 0);
+  rut_ui_viewport_add (properties_vp, data->inspector_box_layout);
+
+  rut_stack_add (stack1, properties_vp);
+  rut_refable_unref (properties_vp);
+
+  rut_ui_viewport_set_x_pannable (properties_vp, FALSE);
+  rut_ui_viewport_set_y_pannable (properties_vp, TRUE);
+  rut_ui_viewport_set_sync_widget (properties_vp,
+                                   data->inspector_box_layout);
+
+  rut_box_layout_add (data->properties_hbox, FALSE, stack0);
+  rut_refable_unref (stack0);
+}
+
+static void
+create_assets_view (RigData *data)
+{
+  RutBoxLayout *vbox =
+    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  RutStack *search_stack = rut_stack_new (data->ctx, 0, 0);
+  RutBin *search_bin = rut_bin_new (data->ctx);
+  RutStack *icons_stack = rut_stack_new (data->ctx, 0, 0);
+  RutBin *icons_bin = rut_bin_new (data->ctx);
+  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
+  RutNineSlice *gradient = load_gradient_image (data->ctx, "toolbar-bg-gradient.png");
+  RutRectangle *bg;
+  RutBin *bin;
+  RutEntry *entry;
+  RutText *text;
+
+  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
+  rut_stack_add (search_stack, bg);
+  rut_refable_unref (bg);
+
+  entry = rut_entry_new (data->ctx);
+
+  text = rut_entry_get_text (entry);
+  rut_text_set_single_line_mode (text, TRUE);
+  rut_text_set_hint_text (text, "Search...");
+
+  rut_text_add_text_changed_callback (text,
+                                      asset_search_update_cb,
+                                      data,
+                                      NULL);
+
+  rut_bin_set_child (search_bin, entry);
+  rut_refable_unref (entry);
+
+  rut_stack_add (search_stack, search_bin);
+  rut_bin_set_left_padding (search_bin, 10);
+  rut_bin_set_right_padding (search_bin, 10);
+  rut_bin_set_top_padding (search_bin, 2);
+  rut_bin_set_bottom_padding (search_bin, 2);
+  rut_refable_unref (search_bin);
+
+  rut_box_layout_add (vbox, FALSE, search_stack);
+  rut_refable_unref (search_stack);
+
+  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
+  rut_stack_add (icons_stack, bg);
+  rut_refable_unref (bg);
+  rut_stack_add (icons_stack, icons_bin);
+  rut_refable_unref (icons_bin);
+  rut_bin_set_top_padding (icons_bin, 75);
+
+  rut_box_layout_add (vbox, FALSE, icons_stack);
+  rut_refable_unref (icons_stack);
+
+  rut_box_layout_add (vbox, TRUE, stack);
+  rut_refable_unref (stack);
+
+  rut_stack_add (stack, gradient);
+  rut_refable_unref (gradient);
+
+
+  data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0);
+  rut_stack_add (stack, data->assets_vp);
+
+  rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
+
+  bin = rut_bin_new (data->ctx);
+  rut_graphable_add_child (stack, bin);
+  rut_bin_set_top_padding (bin, 10);
+  rut_bin_set_left_padding (bin, 5);
+  rut_bin_set_right_padding (bin, 24 + 5);
+  rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
+  rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
+
+  rig_split_view_set_child0 (data->splits[2], vbox);
+  rut_refable_unref (vbox);
+}
+
+static void
+create_timeline_view (RigData *data)
+{
+  RutStack *stack;
+  RutRectangle *bg;
+
+  data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0);
+  rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
+
+  stack = rut_stack_new (data->ctx, 0, 0);
+
+  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
+  rut_stack_add (stack, bg);
+  rut_refable_unref (bg);
+
+  rut_stack_add (stack, data->timeline_vp);
+
+  rig_split_view_set_child1 (data->splits[1], stack);
+  rut_refable_unref (stack);
+}
 #endif /* RIG_EDITOR_ENABLED */
 
 void
@@ -1116,7 +1419,7 @@ rig_engine_init (RutShell *shell, void *user_data)
   RutMaterial *material;
   RutLight *light;
   RutCamera *camera;
-  CoglColor top_bar_ref_color, main_area_ref_color, right_bar_ref_color;
+  CoglColor main_area_ref_color, right_bar_ref_color;
 
   /* A unit test for the list_splice/list_unsplice functions */
 #if 0
@@ -1406,22 +1709,16 @@ rig_engine_init (RutShell *shell, void *user_data)
 #endif
 
   data->root = rut_graph_new (data->ctx);
+  data->top_bin = rut_bin_new (data->ctx);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      RutObject *connect_button;
-      RutObject *tmp;
-
-      cogl_color_init_from_4f (&top_bar_ref_color, 0.41, 0.41, 0.41, 1.0);
       cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
       cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
 
-      /* properties on the right, everything else on the left */
-      data->splits[0] = rig_split_view_new (data,
-                                            RIG_SPLIT_VIEW_SPLIT_VERTICAL,
-                                            100,
-                                            100);
+      data->properties_hbox = rut_box_layout_new (data->ctx,
+                                                  RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
       /* timeline on the bottom, everything else above */
       data->splits[1] = rig_split_view_new (data,
@@ -1429,154 +1726,54 @@ rig_engine_init (RutShell *shell, void *user_data)
                                             100,
                                             100);
 
-      /* tool bar on the bottom, main area + assets above*/
-      data->splits[2] = rig_split_view_new (data,
-                                            RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
-                                            100,
-                                            100);
-
       /* assets on the left, main area on the right */
-      data->splits[3] = rig_split_view_new (data,
+      data->splits[2] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100);
 
-      /* Setup center toolbar stack
-       */
-      data->icon_bar_stack = rut_stack_new (data->ctx, 0, 0);
+      create_assets_view (data);
 
-      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.41, 0.41, 0.41, 1);
-      rut_stack_add (data->icon_bar_stack, tmp);
-      rut_refable_unref (tmp);
+      create_camera_view (data);
 
-      tmp = rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color);
-      rut_stack_add (data->icon_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      rig_split_view_set_child0 (data->splits[2], data->splits[3]);
-      rig_split_view_set_child1 (data->splits[2], data->icon_bar_stack);
-
-      /* Setup the left assets bar
-       */
-      data->left_bar_stack = rut_stack_new (data->ctx, 0, 0);
-
-      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
-      rut_stack_add (data->left_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-      rut_stack_add (data->left_bar_stack, data->assets_vp);
-
-      tmp = rut_bevel_new (data->ctx, 0, 0, &top_bar_ref_color);
-      rut_stack_add (data->left_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
-
-        {
-          RutBin *bin;
-          RutEntry *entry;
-          RutText *text;
-
-          bin = rut_bin_new (data->ctx);
-          rut_graphable_add_child (data->left_bar_stack, bin);
-          rut_bin_set_top_padding (bin, 10);
-          rut_bin_set_left_padding (bin, 5);
-          rut_bin_set_right_padding (bin, 24 + 5);
-          rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
-          rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
-
-          entry = rut_entry_new (data->ctx);
-          rut_bin_set_child (bin, entry);
-
-          text = rut_entry_get_text (entry);
-          rut_text_set_single_line_mode (text, TRUE);
-          rut_text_set_hint_text (text, "Search...");
-
-          rut_text_add_text_changed_callback (text,
-                                              asset_search_update_cb,
-                                              data,
-                                              NULL);
-        }
-
-
-      //data->main_area_bevel = rut_bevel_new (data->ctx, -1, 0, &main_area_ref_color);
-      data->main_camera_view = rig_camera_view_new (data);
-
-      rig_split_view_set_child0 (data->splits[3], data->left_bar_stack);
-      rig_split_view_set_child1 (data->splits[3], data->main_camera_view);
-
-      data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-      rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
-
-      /* Setup the bottom timeline stack
-       */
-
-      data->bottom_bar_stack = rut_stack_new (data->ctx, 0, 0);
-
-      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
-      rut_stack_add (data->bottom_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      rut_stack_add (data->bottom_bar_stack, data->timeline_vp);
+      create_timeline_view (data);
 
       rig_split_view_set_child0 (data->splits[1], data->splits[2]);
-      rig_split_view_set_child1 (data->splits[1], data->bottom_bar_stack);
 
-      data->inspector_box_layout =
-        rut_box_layout_new (data->ctx,
-                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+      rut_box_layout_add (data->properties_hbox, TRUE, data->splits[1]);
+      create_properties_bar (data);
 
-      /* Setup the right hand properties view stack
-       */
-
-      data->right_bar_stack = rut_stack_new (data->ctx, 100, 100);
-
-      tmp = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
-      rut_stack_add (data->right_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      data->tool_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-      rut_ui_viewport_add (data->tool_vp, data->inspector_box_layout);
-
-      rut_stack_add (data->right_bar_stack, data->tool_vp);
-
-      tmp = rut_bevel_new (data->ctx, 0, 0, &right_bar_ref_color);
-      rut_stack_add (data->right_bar_stack, tmp);
-      rut_refable_unref (tmp);
-
-      rut_ui_viewport_set_x_pannable (data->tool_vp, FALSE);
-      rut_ui_viewport_set_y_pannable (data->tool_vp, TRUE);
-      rut_ui_viewport_set_sync_widget (data->tool_vp,
-                                       data->inspector_box_layout);
-
-      rig_split_view_set_child0 (data->splits[0], data->splits[1]);
-      rig_split_view_set_child1 (data->splits[0], data->right_bar_stack);
-
-      rig_split_view_set_split_offset (data->splits[0], 850);
       rig_split_view_set_split_offset (data->splits[1], 500);
-      rig_split_view_set_split_offset (data->splits[2], 470);
-      rig_split_view_set_split_offset (data->splits[3], 150);
+      rig_split_view_set_split_offset (data->splits[2], 150);
 
       data->top_vbox = rut_box_layout_new (data->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-      data->top_hbox_ltr =
-        rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-      rut_box_layout_add (data->top_vbox, FALSE, data->top_hbox_ltr);
+      create_top_bar (data);
 
-      connect_button = rut_button_new (data->ctx, "Connect");
-      rut_box_layout_add (data->top_hbox_ltr, FALSE, connect_button);
-      rut_refable_unref (connect_button);
+      /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
+       * layout but it didn't work so I guess I guess there is a bug
+       * in the box-layout allocate code. */
+      data->top_hbox = rut_box_layout_new (data->ctx,
+                                           RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+      rut_box_layout_add (data->top_vbox, TRUE, data->top_hbox);
 
-      rut_box_layout_add (data->top_vbox, TRUE, data->splits[0]);
+      rut_box_layout_add (data->top_hbox, TRUE, data->properties_hbox);
+      create_toolbar (data);
 
-      rut_graphable_add_child (data->root, data->top_vbox);
+      rut_bin_set_child (data->top_bin, data->top_vbox);
 
       data->transparency_grid = load_transparency_grid (data->ctx);
 
       init_resize_handle (data);
     }
+  else
 #endif
+    {
+      data->main_camera_view = rig_camera_view_new (data);
+      rut_bin_set_child (data->top_bin, data->main_camera_view);
+    }
+
+  rut_graphable_add_child (data->root, data->top_bin);
 
   rut_shell_add_input_camera (shell, data->camera, data->root);
 
@@ -1665,11 +1862,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
     {
       for (i = 0; i < G_N_ELEMENTS (data->splits); i++)
         rut_refable_unref (data->splits[i]);
-
-      rut_refable_unref (data->left_bar_stack);
-      rut_refable_unref (data->right_bar_stack);
-      rut_refable_unref (data->icon_bar_stack);
-      rut_refable_unref (data->bottom_bar_stack);
 
       rut_refable_unref (data->timeline_vp);
       rut_refable_unref (data->transition_view);

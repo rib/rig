@@ -46,6 +46,8 @@ struct _RigCameraView
 
   float width, height;
 
+  CoglPipeline *bg_pipeline;
+
   float origin[3];
   //float saved_origin[3];
 
@@ -197,6 +199,13 @@ _rut_camera_view_paint (RutObject *object,
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   float x, y, z;
 
+
+  cogl_framebuffer_draw_rectangle (fb,
+                                   view->bg_pipeline,
+                                   0, 0,
+                                   view->width,
+                                   view->height);
+
   rut_camera_suspend (suspended_camera);
 
   rig_paint_ctx->pass = RIG_PASS_SHADOW;
@@ -261,7 +270,7 @@ _rut_camera_view_paint (RutObject *object,
       rut_camera_flush (camera_component);
       cogl_framebuffer_clear4f (pass_fb,
                                 COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                                0.22, 0.22, 0.22, 1);
+                                1, 1, 1, 1);
       rut_camera_end_frame (camera_component);
 
       rig_paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
@@ -1627,6 +1636,8 @@ rig_camera_view_new (RigData *data)
 
   rut_graphable_init (view);
   rut_paintable_init (view);
+
+  view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
 
   view->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);

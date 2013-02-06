@@ -347,7 +347,12 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
     {
     case RUT_PROPERTY_TYPE_BOOLEAN:
       {
-        RutToggle *toggle = rut_toggle_new (context, name);
+        char *unselected_icon = rut_find_data_file ("toggle-unselected.png");
+        char *selected_icon = rut_find_data_file ("toggle-selected.png");
+        RutToggle *toggle = rut_toggle_new_with_icons (context,
+                                                       unselected_icon,
+                                                       selected_icon,
+                                                       name);
 
         *control_prop = rut_introspectable_lookup_property (toggle, "state");
         return toggle;

@@ -24,7 +24,16 @@ dist_assets_DATA = \
 	circle.png \
 	diamond.png \
 	color-picker-dot.png \
-	resize-handle.png
+	resize-handle.png \
+	top-bar-gradient.png \
+	toggle-unselected.png \
+	toggle-selected.png \
+	document-bg-gradient.png \
+	toolbar-bg-gradient.png \
+	settings-icon.png \
+	chevron-icon.png \
+	left-drop-shadow.png \
+	bottom-drop-shadow.png
 
 if HAVE_GTK
 dist_assets_DATA += \

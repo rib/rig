@@ -1077,6 +1077,8 @@ rig_transition_view_create_label_control (RigTransitionView *view,
   if (text)
     rut_text_set_text (label, text);
 
+  rut_text_set_color_u32 (label, 0xffffffff);
+
   control->transform = rut_transform_new (view->context);
   control->control = label;
 

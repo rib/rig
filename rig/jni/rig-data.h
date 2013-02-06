@@ -101,8 +101,14 @@ struct _RigData
   //float height;
   //RutProperty height_property;
 
+  RutBin *top_bin;
   RutBoxLayout *top_vbox;
-  RutBoxLayout *top_hbox_ltr;
+  RutBoxLayout *top_hbox;
+  RutBoxLayout *top_bar_hbox;
+  RutBoxLayout *top_bar_hbox_ltr;
+  RutBoxLayout *top_bar_hbox_rtl;
+  RutBoxLayout *toolbar_vbox;
+  RutBoxLayout *properties_hbox;
   RigSplitView *splits[4];
 
   //RutBevel *main_area_bevel;
@@ -137,11 +143,10 @@ struct _RigData
   float screen_area_height;
 
   RutUIViewport *assets_vp;
-  RutGraph *assets_list;
+  RutFlowLayout *assets_flow;
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *diamond_builtin_asset;
-  float assets_list_tail_pos;
   GList *asset_input_closures;
   GList *asset_enumerators;
 
