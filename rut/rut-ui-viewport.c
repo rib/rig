@@ -42,8 +42,6 @@ enum {
   RUT_UI_VIEWPORT_PROP_SYNC_WIDGET,
   RUT_UI_VIEWPORT_PROP_X_PANNABLE,
   RUT_UI_VIEWPORT_PROP_Y_PANNABLE,
-  RUT_UI_VIEWPORT_PROP_X_EXPAND,
-  RUT_UI_VIEWPORT_PROP_Y_EXPAND,
   RUT_UI_VIEWPORT_N_PROPS
 };
 
@@ -70,8 +68,6 @@ struct _RutUIViewport
 
   CoglBool x_pannable;
   CoglBool y_pannable;
-  CoglBool x_expand;
-  CoglBool y_expand;
 
   RutTransform *scroll_bar_x_transform;
   RutScrollBar *scroll_bar_x;
@@ -156,20 +152,6 @@ static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
     .data_offset = offsetof (RutUIViewport, y_pannable),
     .getter.boolean_type = rut_ui_viewport_get_y_pannable,
     .setter.boolean_type = rut_ui_viewport_set_y_pannable
-  },
-  {
-    .name = "x-expand",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .data_offset = offsetof (RutUIViewport, x_expand),
-    .setter.boolean_type = rut_ui_viewport_set_x_expand
-  },
-  {
-    .name = "y-expand",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .data_offset = offsetof (RutUIViewport, y_expand),
-    .setter.boolean_type = rut_ui_viewport_set_y_expand
   },
 
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
@@ -410,7 +392,7 @@ _rut_ui_viewport_input_region_cb (RutInputRegion *region,
 }
 
 static void
-pre_paint_cb (RutObject *graphable,
+allocate_cb (RutObject *graphable,
               void *user_data)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (graphable);
@@ -471,9 +453,9 @@ pre_paint_cb (RutObject *graphable,
 
   if (ui_viewport->sync_widget)
     {
-      if (ui_viewport->x_expand && doc_width < viewport_width)
+      if (!ui_viewport->x_pannable)
         doc_width = viewport_width;
-      if (ui_viewport->y_expand && doc_height < viewport_height)
+      if (!ui_viewport->y_pannable)
         doc_height = viewport_height;
 
       rut_sizable_set_size (ui_viewport->sync_widget, doc_width, doc_height);
@@ -536,7 +518,7 @@ queue_allocation (RutUIViewport *ui_viewport)
 {
   rut_shell_add_pre_paint_callback (ui_viewport->ctx->shell,
                                     ui_viewport,
-                                    pre_paint_cb,
+                                    allocate_cb,
                                     NULL /* user_data */);
 }
 
@@ -884,44 +866,4 @@ rut_ui_viewport_set_sync_widget (RutObject *obj,
   ui_viewport->sync_widget = widget;
 
   rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
-}
-
-void
-rut_ui_viewport_set_x_expand (RutObject *obj,
-                              CoglBool expand)
-{
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
-
-  if (ui_viewport->x_expand != expand)
-    {
-      RutProperty *property =
-        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_X_EXPAND];
-
-      ui_viewport->x_expand = expand;
-
-      if (ui_viewport->sync_widget)
-        queue_allocation (ui_viewport);
-
-      rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
-    }
-}
-
-void
-rut_ui_viewport_set_y_expand (RutObject *obj,
-                              CoglBool expand)
-{
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
-
-  if (ui_viewport->y_expand != expand)
-    {
-      RutProperty *property =
-        &ui_viewport->properties[RUT_UI_VIEWPORT_PROP_Y_EXPAND];
-
-      ui_viewport->y_expand = expand;
-
-      if (ui_viewport->sync_widget)
-        queue_allocation (ui_viewport);
-
-      rut_property_dirty (&ui_viewport->ctx->property_ctx, property);
-    }
 }

@@ -107,38 +107,18 @@ rut_ui_viewport_get_y_pannable (RutObject *ui_viewport);
  *
  * Sets a widget to use to specify the doc size. The viewport will
  * track the preferred size of the widget and set the doc to the same
- * size whenever it changes. It will also then set the widget to its
- * preferred size, or larger if the expand properties are enabled. The
- * widget should typically be a child of the doc.
+ * size whenever it changes.
+ *
+ * If the viewport is not pannable on the x-axis then the width of
+ * this widget will kept in sync with the width of the viewport.
+ * Similarly if the viewport is not pannable on the y-axis then the
+ * height of this widget will kept in sync with the height of the
+ * viewport.
+ *
+ * The sync widget should typically be a child of the doc.
  */
 void
 rut_ui_viewport_set_sync_widget (RutObject *ui_viewport,
                                  RutObject *widget);
-
-/**
- * rut_ui_viewport_set_x_expand:
- * @ui_viewport: The viewport object
- * @expand: The new value
- *
- * Sets whether the viewport should set the doc size to be wider than
- * the sync widget's preferred size if the viewport itself is wider.
- * This only has any effect if the sync_widget property is set.
- */
-void
-rut_ui_viewport_set_x_expand (RutObject *ui_viewport,
-                              CoglBool expand);
-
-/**
- * rut_ui_viewport_set_y_expand:
- * @ui_viewport: The viewport object
- * @expand: The new value
- *
- * Sets whether the viewport should set the doc size to be taller than
- * the sync widget's preferred size if the viewport itself is taller.
- * This only has any effect if the sync_doc_size property is enabled.
- */
-void
-rut_ui_viewport_set_y_expand (RutObject *ui_viewport,
-                              CoglBool expand);
 
 #endif /* _RUT_UI_VIEWPORT_H_ */

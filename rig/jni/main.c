@@ -1508,8 +1508,6 @@ rig_engine_init (RutShell *shell, void *user_data)
 
       data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0);
       rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
-      rut_ui_viewport_set_x_expand (data->timeline_vp, TRUE);
-      rut_ui_viewport_set_y_expand (data->timeline_vp, TRUE);
 
       /* Setup the bottom timeline stack
        */
