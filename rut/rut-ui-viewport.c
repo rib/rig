@@ -65,6 +65,7 @@ struct _RutUIViewport
 
   RutObject *sync_widget;
   RutClosure *sync_widget_preferred_size_closure;
+  RutList preferred_size_cb_list;
 
   CoglBool x_pannable;
   CoglBool y_pannable;
@@ -174,6 +175,8 @@ _rut_ui_viewport_free (void *object)
 
   rut_ui_viewport_set_sync_widget (ui_viewport, NULL);
 
+  rut_closure_list_disconnect_all (&ui_viewport->preferred_size_cb_list);
+
   rut_refable_unref (ui_viewport->doc_transform);
 
   rut_refable_simple_unref (ui_viewport->inputable.input_region);
@@ -196,12 +199,70 @@ static RutGraphableVTable _rut_ui_viewport_graphable_vtable = {
   NULL, /* parent_changed */
 };
 
+static void
+rut_ui_viewport_get_preferred_width (void *sizable,
+                                     float for_height,
+                                     float *min_width_p,
+                                     float *natural_width_p)
+{
+  RutUIViewport *ui_viewport = sizable;
+
+  if (ui_viewport->sync_widget)
+    {
+      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
+                                       for_height,
+                                       min_width_p,
+                                       natural_width_p);
+    }
+  else
+    {
+      *min_width_p = 0;
+      *natural_width_p = ui_viewport->doc_width;
+    }
+}
+
+static void
+rut_ui_viewport_get_preferred_height (void *sizable,
+                                      float for_width,
+                                      float *min_height_p,
+                                      float *natural_height_p)
+{
+  RutUIViewport *ui_viewport = sizable;
+
+  if (ui_viewport->sync_widget)
+    {
+      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
+                                        for_width,
+                                        min_height_p,
+                                        natural_height_p);
+    }
+  else
+    {
+      *min_height_p = 0;
+      *natural_height_p = ui_viewport->doc_height;
+    }
+}
+
+static RutClosure *
+rut_ui_viewport_add_preferred_size_callback (void *object,
+                                             RutSizablePreferredSizeCallback cb,
+                                             void *user_data,
+                                             RutClosureDestroyCallback destroy)
+{
+  RutUIViewport *ui_viewport = object;
+
+  return rut_closure_list_add (&ui_viewport->preferred_size_cb_list,
+                               cb,
+                               user_data,
+                               destroy);
+}
+
 static RutSizableVTable _rut_ui_viewport_sizable_vtable = {
   _rut_ui_viewport_set_size,
   _rut_ui_viewport_get_size,
-  rut_simple_sizable_get_preferred_width,
-  rut_simple_sizable_get_preferred_height,
-  NULL /* add_preferred_size_callback */
+  rut_ui_viewport_get_preferred_width,
+  rut_ui_viewport_get_preferred_height,
+  rut_ui_viewport_add_preferred_size_callback
 };
 
 static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {
@@ -567,6 +628,8 @@ rut_ui_viewport_new (RutContext *ctx,
   ui_viewport->doc_scale_x = 1;
   ui_viewport->doc_scale_y = 1;
 
+  rut_list_init (&ui_viewport->preferred_size_cb_list);
+
   ui_viewport->x_pannable = TRUE;
   ui_viewport->y_pannable = TRUE;
 
@@ -825,6 +888,14 @@ rut_ui_viewport_get_y_pannable (RutObject *obj)
 }
 
 static void
+preferred_size_changed (RutUIViewport *ui_viewport)
+{
+  rut_closure_list_invoke (&ui_viewport->preferred_size_cb_list,
+                           RutSizablePreferredSizeCallback,
+                           ui_viewport);
+}
+
+static void
 preferred_size_change_cb (RutObject *child,
                           void *user_data)
 {
@@ -832,6 +903,7 @@ preferred_size_change_cb (RutObject *child,
 
   g_warn_if_fail (ui_viewport->sync_widget == child);
 
+  preferred_size_changed (ui_viewport);
   queue_allocation (ui_viewport);
 }
 
