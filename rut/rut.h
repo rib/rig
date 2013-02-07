@@ -46,6 +46,7 @@
 #include "rut-image.h"
 #include "rut-box-layout.h"
 #include "rut-bin.h"
+#include "rut-icon.h"
 
 /* entity/components system */
 #include "rut-entity.h"

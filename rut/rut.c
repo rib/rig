@@ -485,6 +485,9 @@ rut_load_texture_from_data_file (RutContext *ctx,
       return NULL;
     }
 
+#ifndef COGL_HAS_GLIB_SUPPORT
+#warning "Rig relies on Cogl being built with glib support, assuming CoglError == GError"
+#endif
   tex = rut_load_texture (ctx, full_path, (CoglError **) error);
 
   g_free (full_path);
