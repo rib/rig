@@ -18,7 +18,7 @@ rut_stack_add (RutStack *stack,
                RutObject *child);
 
 void
-rut_stack_set_size (RutStack *stack,
+rut_stack_set_size (RutObject *stack,
                     float width,
                     float height);
 
@@ -31,7 +31,7 @@ rut_stack_set_height (RutObject *stack,
                       float height);
 
 void
-rut_stack_get_size (RutStack *stack,
+rut_stack_get_size (RutObject *stack,
                     float *width,
                     float *height);
 
