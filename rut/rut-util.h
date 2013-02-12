@@ -150,4 +150,29 @@ rut_util_intersect_mesh (RutMesh *mesh,
                          int *index,
                          float *t_out);
 
+/**
+ * @extra_space: Extra space to redistribute among children after
+ *               subtracting minimum sizes and any child padding from
+ *               the overall allocation
+ * @n_requested_sizes: Number of requests to fit into the allocation
+ * @sizes: An array of structs with a client pointer and a
+ *         minimum/natural size in the orientation of the allocation.
+ *
+ * Distributes @extra_space to child @sizes by bringing smaller
+ * children up to natural size first.
+ *
+ * The remaining space will be added to the @minimum_size member of
+ * the GtkRequestedSize struct. If all sizes reach their natural size
+ * then the remaining space is returned.
+ *
+ * Returns: The remainder of @extra_space after redistributing space
+ *          to @sizes.
+ *
+ * Pulled from gtksizerequest.c from Gtk+
+ */
+int
+rut_util_distribute_natural_allocation (int extra_space,
+                                        unsigned int n_requested_sizes,
+                                        RutPreferredSize *sizes);
+
 #endif /* _RUT_UTIL_H_ */

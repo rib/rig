@@ -78,4 +78,10 @@ typedef enum _RutAxis
   RUT_AXIS_Z
 } RutAxis;
 
+typedef struct _RutPreferredSize
+{
+  float natural_size;
+  float minimum_size;
+} RutPreferredSize;
+
 #endif /* _RUT_TYPES_H_ */
