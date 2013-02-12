@@ -220,11 +220,11 @@ typedef struct _RutSizableVTable
   void (* get_size) (void *object,
                      float *width,
                      float *height);
-  void (* get_preferred_width) (void *object,
+  void (* get_preferred_width) (RutObject *object,
                                 float for_height,
                                 float *min_width_p,
                                 float *natural_width_p);
-  void (* get_preferred_height) (void *object,
+  void (* get_preferred_height) (RutObject *object,
                                  float for_width,
                                  float *min_height_p,
                                  float *natural_height_p);
@@ -234,7 +234,7 @@ typedef struct _RutSizableVTable
    * will be returned and it is assumed that the object's preferred
    * size never changes */
   RutClosure *
-  (* add_preferred_size_callback) (void *object,
+  (* add_preferred_size_callback) (RutObject *object,
                                    RutSizablePreferredSizeCallback callback,
                                    void *user_data,
                                    RutClosureDestroyCallback destroy_cb);

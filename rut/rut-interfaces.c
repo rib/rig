@@ -545,7 +545,7 @@ rut_sizable_get_size (void *object,
 }
 
 void
-rut_sizable_get_preferred_width (void *object,
+rut_sizable_get_preferred_width (RutObject *object,
                                  float for_height,
                                  float *min_width_p,
                                  float *natural_width_p)
@@ -560,7 +560,7 @@ rut_sizable_get_preferred_width (void *object,
 }
 
 void
-rut_sizable_get_preferred_height (void *object,
+rut_sizable_get_preferred_height (RutObject *object,
                                   float for_width,
                                   float *min_height_p,
                                   float *natural_height_p)
