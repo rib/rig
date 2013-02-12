@@ -453,6 +453,42 @@ _rut_ui_viewport_input_region_cb (RutInputRegion *region,
 }
 
 static void
+get_sync_widget_size_for_allocation (RutUIViewport *ui_viewport,
+                                     float allocation_width,
+                                     float allocation_height,
+                                     float *doc_width,
+                                     float *doc_height)
+{
+  if (!ui_viewport->x_pannable)
+    {
+      *doc_width = allocation_width;
+      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
+                                        allocation_width, /* for_width */
+                                        NULL, /* min_height */
+                                        doc_height);
+    }
+  else if (!ui_viewport->y_pannable)
+    {
+      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
+                                       allocation_height,
+                                       NULL, /* min_width */
+                                       doc_width);
+      *doc_height = allocation_height;
+    }
+  else
+    {
+      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
+                                       allocation_width,
+                                       NULL, /* min_width */
+                                       doc_width);
+      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
+                                        *doc_width, /* for_width */
+                                        NULL, /* min_height */
+                                        doc_height);
+    }
+}
+
+static void
 allocate_cb (RutObject *graphable,
               void *user_data)
 {
@@ -467,15 +503,11 @@ allocate_cb (RutObject *graphable,
    * taken from the widget's preferred size */
   if (ui_viewport->sync_widget)
     {
-      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
-                                       -1, /* for_height */
-                                       NULL, /* min_width */
-                                       &doc_width);
-
-      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
-                                        doc_width, /* for_width */
-                                        NULL, /* min_height */
-                                        &doc_height);
+      get_sync_widget_size_for_allocation (ui_viewport,
+                                           viewport_width,
+                                           viewport_height,
+                                           &doc_width,
+                                           &doc_height);
     }
   else
     {
@@ -492,7 +524,21 @@ allocate_cb (RutObject *graphable,
                        viewport_height < doc_height * ui_viewport->doc_scale_y);
 
   if (need_scroll_bar_y)
-    viewport_width -= y_scroll_bar_thickness;
+    {
+      viewport_width -= y_scroll_bar_thickness;
+
+      /* If the sync widget is being expanded to fit the width of the
+       * viewport then we we need to re-sync the document size now
+       * that the width has changed... */
+      if (ui_viewport->sync_widget && !ui_viewport->x_pannable)
+        {
+          get_sync_widget_size_for_allocation (ui_viewport,
+                                               viewport_width,
+                                               viewport_height,
+                                               &doc_width,
+                                               &doc_height);
+        }
+    }
 
   need_scroll_bar_x = (ui_viewport->x_pannable &&
                        viewport_width < doc_width * ui_viewport->doc_scale_x);
@@ -510,15 +556,22 @@ allocate_cb (RutObject *graphable,
           if (need_scroll_bar_y)
             viewport_width -= y_scroll_bar_thickness;
         }
+
+      /* If the sync widget is being expanded to fit the height of the
+       * viewport then we we need to re-sync the document size now
+       * that the height has changed... */
+      if (ui_viewport->sync_widget && !ui_viewport->y_pannable)
+        {
+          get_sync_widget_size_for_allocation (ui_viewport,
+                                               viewport_width,
+                                               viewport_height,
+                                               &doc_width,
+                                               &doc_height);
+        }
     }
 
   if (ui_viewport->sync_widget)
     {
-      if (!ui_viewport->x_pannable)
-        doc_width = viewport_width;
-      if (!ui_viewport->y_pannable)
-        doc_height = viewport_height;
-
       rut_sizable_set_size (ui_viewport->sync_widget, doc_width, doc_height);
       rut_ui_viewport_set_doc_width (ui_viewport, doc_width);
       rut_ui_viewport_set_doc_height (ui_viewport, doc_height);
