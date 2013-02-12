@@ -140,6 +140,11 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
   RutStack *stack = parent;
   RutStackChild *child_data;
 
+  /* non-sizable children are allowed but we don't track any
+   * child-data for them... */
+  if (!rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
+    return;
+
   rut_list_for_each (child_data, &stack->children, list_node)
     if (child_data->child == child)
       {
@@ -171,6 +176,11 @@ _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
 {
   RutStack *stack = parent;
   RutStackChild *child_data;
+
+  /* non-sizable children are allowed but we don't track any
+   * child-data for them... */
+  if (!rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
+    return;
 
   child_data = g_slice_new (RutStackChild);
   child_data->child = rut_refable_ref (child);
