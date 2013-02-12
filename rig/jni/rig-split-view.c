@@ -233,8 +233,11 @@ rig_split_view_get_preferred_width (void *object,
   if (split_view->split == RIG_SPLIT_VIEW_SPLIT_HORIZONTAL)
     {
       float split_fraction = split_view->split_offset / split_view->height;
-      for_child0_height *= split_fraction;
-      for_child1_height = for_height - for_child0_height;
+      if (for_child0_height >= 0)
+        {
+          for_child0_height *= split_fraction;
+          for_child1_height = for_height - for_child0_height;
+        }
     }
 
   if (split_view->child0 &&
