@@ -147,11 +147,11 @@ allocate_cb (RutObject *graphable,
 {
   RutBoxLayout *box = RUT_BOX_LAYOUT (graphable);
   RutBoxLayoutChild *child;
+  RutBoxLayoutPacking packing = box->packing;
   CoglBool horizontal;
   int n_children = box->n_children;
   int n_expand_children;
 
-  RutTextDirection text_direction;
   int child_x, child_y, child_width, child_height;
   int child_size;
   RutPreferredSize *sizes;
@@ -159,7 +159,7 @@ allocate_cb (RutObject *graphable,
   int size;
   int extra;
   int n_extra_px_widgets;
-  int x, y;
+  int pos;
   int i;
 
   if (!n_children)
@@ -167,18 +167,28 @@ allocate_cb (RutObject *graphable,
 
   sizes = g_newa (RutPreferredSize, n_children);
 
-  switch (box->packing)
+  switch (packing)
     {
     case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
     case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
       size = box->width - (n_children - 1) * box->spacing;
-      text_direction = rut_get_text_direction (box->ctx);
       horizontal = TRUE;
+      child_y = 0;
+      child_height = box->height;
+      if (rut_get_text_direction (box->ctx) == RUT_TEXT_DIRECTION_RIGHT_TO_LEFT)
+        {
+          if (packing == RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT)
+            packing = RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT;
+          else
+            packing = RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT;
+        }
       break;
     case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
     case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
       size = box->height - (n_children - 1) * box->spacing;
       horizontal = FALSE;
+      child_x = 0;
+      child_width = box->width;
       break;
     }
 
@@ -246,34 +256,8 @@ allocate_cb (RutObject *graphable,
     }
 
   /* Allocate child positions. */
-  if (horizontal)
-    {
-      child_y = 0;
-      child_height = MAX (1, box->height);
-    }
-  else
-    {
-      child_x = 0;
-      child_width = MAX (1, box->width);
-    }
 
-  switch (box->packing)
-    {
-    case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
-      x = 0;
-      break;
-    case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-      x = box->width;
-      break;
-    case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
-      y = 0;
-      break;
-    case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-      y = box->height;
-      break;
-    }
-
-  i = x = y = 0;
+  i = pos = 0;
   rut_list_for_each (child, &box->children, link)
     {
       /* Assign the child's size. */
@@ -304,37 +288,30 @@ allocate_cb (RutObject *graphable,
         }
 
       /* Assign the child's position. */
-      if (horizontal)
-        {
-          child_width = MAX (1, child_size);
-          child_x = x;
 
-          if (text_direction == RUT_TEXT_DIRECTION_RIGHT_TO_LEFT)
-            child_x = box->width - child_x - child_width;
-        }
-      else
-        {
-          child_height = MAX (1, child_size);
-          child_y = y;
-        }
+      child_size = MAX (1, child_size);
 
-      switch (box->packing)
+      switch (packing)
         {
         case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
-          x += child_size + box->spacing;
+          child_x = pos;
+          child_width = child_size;
           break;
         case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-          x -= child_size + box->spacing;
-          child_x -= child_size;
+          child_x = box->width - pos - child_size;
+          child_width = child_size;
           break;
         case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
-          y += child_size + box->spacing;
+          child_y = pos;
+          child_height = child_size;
           break;
         case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
-          y -= child_size + box->spacing;
-          child_y -= child_size;
+          child_y = box->height - pos - child_size;
+          child_height = child_size;
           break;
         }
+
+      pos += child_size + box->spacing;
 
       rut_sizable_set_size (child->widget, child_width, child_height);
       rut_transform_init_identity (child->transform);
