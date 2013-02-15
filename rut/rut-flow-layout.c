@@ -233,6 +233,24 @@ static RutPropertySpec _rut_flow_layout_prop_specs[] = {
 };
 
 static void
+rut_flow_layout_remove_child (RutFlowLayout *flow,
+                              RutFlowLayoutChild *child)
+{
+  rut_closure_disconnect (child->preferred_size_closure);
+
+  rut_graphable_remove_child (child->widget);
+  rut_refable_unref (child->widget);
+
+  rut_graphable_remove_child (child->transform);
+  rut_refable_unref (child->transform);
+
+  rut_list_remove (&child->link);
+  g_slice_free (RutFlowLayoutChild, child);
+
+  flow->n_children--;
+}
+
+static void
 _rut_flow_layout_free (void *object)
 {
   RutFlowLayout *flow = object;
@@ -244,7 +262,7 @@ _rut_flow_layout_free (void *object)
       RutFlowLayoutChild *child =
         rut_container_of (flow->children.next, child, link);
 
-      rut_flow_layout_remove (flow, child->widget);
+      rut_flow_layout_remove_child (flow, child);
     }
 
   rut_shell_remove_pre_paint_callback (flow->ctx->shell, flow);
@@ -815,22 +833,10 @@ rut_flow_layout_remove (RutFlowLayout *flow,
     {
       if (child->widget == child_widget)
         {
-          rut_closure_disconnect (child->preferred_size_closure);
-
-          rut_graphable_remove_child (child->widget);
-          rut_refable_unref (child->widget);
-
-          rut_graphable_remove_child (child->transform);
-          rut_refable_unref (child->transform);
-
-          rut_list_remove (&child->link);
-          g_slice_free (RutFlowLayoutChild, child);
+          rut_flow_layout_remove_child (flow, child);
 
           preferred_size_changed (flow);
           queue_allocation (flow);
-
-          flow->n_children--;
-
           break;
         }
     }
