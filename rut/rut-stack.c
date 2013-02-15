@@ -156,7 +156,8 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
         rut_refable_unref (child);
 
         preferred_size_changed (stack);
-        queue_allocation (stack);
+        if (!rut_list_empty (&stack->children))
+          queue_allocation (stack);
         return;
       }
 
