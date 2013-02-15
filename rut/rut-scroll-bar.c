@@ -30,6 +30,9 @@
 #include "rut-camera-private.h"
 #include "rut-scroll-bar.h"
 
+#define THICKNESS 20
+#define HANDLE_THICKNESS 15
+
 enum {
   RUT_SCROLL_BAR_PROP_LENGTH,
   RUT_SCROLL_BAR_PROP_VIRTUAL_LENGTH,
@@ -45,15 +48,12 @@ struct _RutScrollBar
 
   RutContext *ctx;
 
-  CoglPipeline *arrow_pipeline0;
-  CoglPipeline *arrow_pipeline1;
   int thickness;
-  int arrow_len;
 
-  RutNineSlice *background;
   float trough_range;
 
-  RutNineSlice *handle;
+  CoglPipeline *rounded_pipeline;
+  CoglPipeline *rect_pipeline;
   float handle_len;
   float handle_pos;
 
@@ -116,12 +116,6 @@ _rut_scroll_bar_free (void *object)
 {
   RutScrollBar *scroll_bar = object;
 
-  rut_refable_unref (scroll_bar->background);
-  rut_refable_unref (scroll_bar->handle);
-
-  rut_refable_unref (scroll_bar->arrow_pipeline0);
-  rut_refable_unref (scroll_bar->arrow_pipeline1);
-
   rut_graphable_destroy (scroll_bar);
 
   g_slice_free (RutScrollBar, object);
@@ -137,52 +131,39 @@ static void
 _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
 {
   RutScrollBar *scroll_bar = RUT_SCROLL_BAR (object);
-  RutPaintableVTable *bg_paintable =
-    rut_object_get_vtable (scroll_bar->background, RUT_INTERFACE_ID_PAINTABLE);
-  RutPaintableVTable *handle_paintable =
-    rut_object_get_vtable (scroll_bar->handle, RUT_INTERFACE_ID_PAINTABLE);
-
-  bg_paintable->paint (RUT_OBJECT (scroll_bar->background), paint_ctx);
-
-  if (scroll_bar->axis == RUT_AXIS_X)
-    {
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
-                                       scroll_bar->arrow_pipeline0,
-                                       0, 0,
-                                       scroll_bar->arrow_len,
-                                       scroll_bar->thickness);
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
-                                       scroll_bar->arrow_pipeline1,
-                                       scroll_bar->length - scroll_bar->arrow_len,
-                                       0,
-                                       scroll_bar->length,
-                                       scroll_bar->thickness);
-    }
-  else
-    {
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
-                                       scroll_bar->arrow_pipeline0,
-                                       0, 0,
-                                       scroll_bar->thickness,
-                                       scroll_bar->arrow_len);
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
-                                       scroll_bar->arrow_pipeline1,
-                                       0,
-                                       scroll_bar->length - scroll_bar->arrow_len,
-                                       scroll_bar->thickness,
-                                       scroll_bar->length);
-    }
 
   cogl_framebuffer_push_matrix (paint_ctx->camera->fb);
 
   if (scroll_bar->axis == RUT_AXIS_X)
-    cogl_framebuffer_translate (paint_ctx->camera->fb,
-                                scroll_bar->handle_pos, 0, 0);
+    {
+      cogl_framebuffer_translate (paint_ctx->camera->fb,
+                                  scroll_bar->handle_pos, 0, 0);
+    }
   else
-    cogl_framebuffer_translate (paint_ctx->camera->fb, 0,
-                                scroll_bar->handle_pos, 0);
+    {
+      cogl_framebuffer_translate (paint_ctx->camera->fb, 0,
+                                  scroll_bar->handle_pos, 0);
+      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
+                                       scroll_bar->rounded_pipeline,
+                                       0, 0,
+                                       HANDLE_THICKNESS,
+                                       HANDLE_THICKNESS);
 
-  handle_paintable->paint (RUT_OBJECT (scroll_bar->handle), paint_ctx);
+      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
+                                       scroll_bar->rounded_pipeline,
+                                       0,
+                                       scroll_bar->handle_len - HANDLE_THICKNESS,
+                                       HANDLE_THICKNESS,
+                                       scroll_bar->handle_len);
+
+      cogl_framebuffer_draw_textured_rectangle (paint_ctx->camera->fb,
+                                                scroll_bar->rounded_pipeline,
+                                                0,
+                                                HANDLE_THICKNESS / 2,
+                                                HANDLE_THICKNESS,
+                                                scroll_bar->handle_len - HANDLE_THICKNESS / 2,
+                                                0, 0.5, 1, 0.5);
+    }
 
   cogl_framebuffer_pop_matrix (paint_ctx->camera->fb);
 }
@@ -297,16 +278,8 @@ _rut_scroll_bar_input_cb (RutInputRegion *region,
       else
         pos = y;
 
-      if (pos < scroll_bar->arrow_len)
-        {
-          //g_print ("Scroll Bar: Arrow 0\n");
-        }
-      else if (pos > (scroll_bar->length - scroll_bar->arrow_len))
-        {
-          //g_print ("Scroll Bar: Arrow 1\n");
-        }
-      else if (pos > scroll_bar->handle_pos &&
-               pos < scroll_bar->handle_pos + scroll_bar->handle_len)
+      if (pos > scroll_bar->handle_pos &&
+          pos < scroll_bar->handle_pos + scroll_bar->handle_len)
         {
           if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
             {
@@ -353,8 +326,7 @@ rut_scroll_bar_get_size (RutScrollBar *scroll_bar,
 static void
 update_handle_position (RutScrollBar *scroll_bar)
 {
-  scroll_bar->handle_pos = scroll_bar->arrow_len +
-    (scroll_bar->offset /
+  scroll_bar->handle_pos = (scroll_bar->offset /
      (scroll_bar->virtual_length - scroll_bar->viewport_length)) *
     scroll_bar->trough_range;
 
@@ -364,52 +336,13 @@ update_handle_position (RutScrollBar *scroll_bar)
 static void
 update_handle_length (RutScrollBar *scroll_bar)
 {
-  CoglTexture *handle_texture;
-  GError *error = NULL;
-  float width, height;
-  float trough_len;
   float handle_len;
 
-  if (scroll_bar->handle)
-    {
-      handle_texture = rut_nine_slice_get_texture (scroll_bar->handle);
-      rut_refable_unref (scroll_bar->handle);
-    }
-  else
-    {
-      handle_texture = rut_load_texture_from_data_file (scroll_bar->ctx,
-                                                        "slider-handle.png",
-                                                        &error);
-      if (!handle_texture)
-        {
-          g_warning ("Failed to load slider-handle.png: %s", error->message);
-          g_error_free (error);
-          return;
-        }
-    }
-
-  trough_len = scroll_bar->length - scroll_bar->arrow_len * 2.0;
-
   handle_len = (scroll_bar->viewport_length /
-                scroll_bar->virtual_length) * trough_len;
+                scroll_bar->virtual_length) * scroll_bar->length;
   handle_len = MAX (scroll_bar->thickness, handle_len);
 
   scroll_bar->handle_len = handle_len;
-
-  if (scroll_bar->axis == RUT_AXIS_X)
-    {
-      width = handle_len;
-      height = scroll_bar->thickness;
-    }
-  else
-    {
-      width = scroll_bar->thickness;
-      height = handle_len;
-    }
-
-  scroll_bar->handle = rut_nine_slice_new (scroll_bar->ctx,
-                                           handle_texture, 4, 5, 6, 5,
-                                           width, height);
 
   /* The trough range is the range of motion for the handle taking into account
    * that the handle size might not reflect the relative size of the viewport
@@ -417,40 +350,15 @@ update_handle_length (RutScrollBar *scroll_bar)
    *
    * The trough_range maps to (virtual_length - viewport_length)
    */
-  scroll_bar->trough_range =
-    scroll_bar->length - scroll_bar->arrow_len * 2.0 - scroll_bar->handle_len;
+  scroll_bar->trough_range = scroll_bar->length - scroll_bar->handle_len;
 }
 
 static void
 update_geometry (RutScrollBar *scroll_bar)
 {
-  CoglTexture *bg_texture;
-  GError *error = NULL;
   float width, height;
 
   rut_scroll_bar_get_size (scroll_bar, &width, &height);
-
-  if (scroll_bar->background)
-    {
-      bg_texture = rut_nine_slice_get_texture (scroll_bar->background);
-      rut_refable_unref (scroll_bar->background);
-    }
-  else
-    {
-      bg_texture = rut_load_texture_from_data_file (scroll_bar->ctx,
-                                                    "slider-background.png",
-                                                    &error);
-      if (!bg_texture)
-        {
-          g_warning ("Failed to load slider-background.png: %s", error->message);
-          g_error_free (error);
-        }
-    }
-
-  if (bg_texture)
-    scroll_bar->background = rut_nine_slice_new (scroll_bar->ctx,
-                                                 bg_texture, 2, 3, 3, 3,
-                                                 width, height);
 
   rut_input_region_set_rectangle (scroll_bar->input_region,
                                   0, 0, width, height);
@@ -470,7 +378,6 @@ rut_scroll_bar_new (RutContext *ctx,
                     float viewport_length)
 {
   RutScrollBar *scroll_bar = g_slice_new0 (RutScrollBar);
-  CoglTexture *arrow0, *arrow1;
 
   rut_object_init (&scroll_bar->_parent, &rut_scroll_bar_type);
 
@@ -491,41 +398,16 @@ rut_scroll_bar_new (RutContext *ctx,
   scroll_bar->viewport_length = viewport_length;
   scroll_bar->offset = 0;
 
-  if (axis == RUT_AXIS_X)
-    {
-      arrow0 =
-        rut_load_texture_from_data_file (ctx,
-                                         "scroll-button-right-active.png",
-                                         NULL);
-      arrow1 =
-        rut_load_texture_from_data_file (ctx,
-                                         "scroll-button-left-active.png",
-                                         NULL);
+  scroll_bar->thickness = THICKNESS;
 
-      scroll_bar->thickness = cogl_texture_get_height (arrow0);
-      scroll_bar->arrow_len = cogl_texture_get_width (arrow0);
-    }
-  else
-    {
-      arrow0 =
-        rut_load_texture_from_data_file (ctx,
-                                         "scroll-button-down-active.png",
-                                         NULL);
-      arrow1 =
-        rut_load_texture_from_data_file (ctx,
-                                         "scroll-button-up-active.png",
-                                         NULL);
+  scroll_bar->rect_pipeline = cogl_pipeline_new (ctx->cogl_context);
+  cogl_pipeline_set_color4f (scroll_bar->rect_pipeline,
+                             0.2, 0.2, 0.2, 1.0);
 
-      scroll_bar->thickness = cogl_texture_get_width (arrow0);
-      scroll_bar->arrow_len = cogl_texture_get_height (arrow0);
-    }
-
-  scroll_bar->arrow_pipeline0 = cogl_pipeline_new (ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (scroll_bar->arrow_pipeline0, 0,
-                                   arrow0);
-  scroll_bar->arrow_pipeline1 = cogl_pipeline_copy (scroll_bar->arrow_pipeline0);
-  cogl_pipeline_set_layer_texture (scroll_bar->arrow_pipeline0, 0,
-                                   arrow1);
+  scroll_bar->rounded_pipeline = cogl_pipeline_copy (scroll_bar->rect_pipeline);
+  cogl_pipeline_set_layer_texture (scroll_bar->rounded_pipeline,
+                                   0,
+                                   ctx->circle_texture);
 
   scroll_bar->input_region =
     rut_input_region_new_rectangle (0, 0, 1, 1,
