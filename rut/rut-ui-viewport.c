@@ -207,17 +207,20 @@ rut_ui_viewport_get_preferred_width (void *sizable,
 {
   RutUIViewport *ui_viewport = sizable;
 
+  if (min_width_p)
+    *min_width_p = 0;
+
   if (ui_viewport->sync_widget)
     {
       rut_sizable_get_preferred_width (ui_viewport->sync_widget,
                                        for_height,
-                                       min_width_p,
+                                       NULL,
                                        natural_width_p);
     }
   else
     {
-      *min_width_p = 0;
-      *natural_width_p = ui_viewport->doc_width;
+      if (natural_width_p)
+        *natural_width_p = ui_viewport->doc_width;
     }
 }
 
@@ -229,17 +232,20 @@ rut_ui_viewport_get_preferred_height (void *sizable,
 {
   RutUIViewport *ui_viewport = sizable;
 
+  if (min_height_p)
+    *min_height_p = 0;
+
   if (ui_viewport->sync_widget)
     {
       rut_sizable_get_preferred_height (ui_viewport->sync_widget,
                                         for_width,
-                                        min_height_p,
+                                        NULL,
                                         natural_height_p);
     }
   else
     {
-      *min_height_p = 0;
-      *natural_height_p = ui_viewport->doc_height;
+      if (natural_height_p)
+        *natural_height_p = ui_viewport->doc_height;
     }
 }
 
