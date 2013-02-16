@@ -130,6 +130,7 @@ typedef struct _RutInputShapeCircle
 {
   RutInputShapeType type;
   float x, y;
+  float r;
   float r_squared;
 } RutInputShapeCircle;
 
@@ -507,41 +508,97 @@ _rut_input_region_free (void *object)
   g_slice_free (RutInputRegion, region);
 }
 
-static RutRefCountableVTable _rut_input_region_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_input_region_free
-};
+static void
+_rut_input_region_set_size (RutObject *self,
+                            float width,
+                            float height)
+{
+  RutInputRegion *region = self;
 
-static RutGraphableVTable _rut_input_region_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
+  switch (region->shape.any.type)
+    {
+    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
+      region->shape.rectangle.x1 = region->shape.rectangle.x0 + width;
+      region->shape.rectangle.y1 = region->shape.rectangle.y0 + height;
+      break;
+    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
+      region->shape.circle.r = MAX (width, height) / 2.0f;
+      region->shape.circle.r_squared =
+        region->shape.circle.r * region->shape.circle.r;
+      break;
+    }
+}
+
+static void
+_rut_input_region_get_size (RutObject *self,
+                            float *width,
+                            float *height)
+{
+  RutInputRegion *region = self;
+
+  switch (region->shape.any.type)
+    {
+    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
+      *width = region->shape.rectangle.x1 - region->shape.rectangle.x0;
+      *height = region->shape.rectangle.y1 - region->shape.rectangle.y0;
+      break;
+    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
+      *width = *height = region->shape.circle.r * 2;
+      break;
+    }
+}
 
 RutType rut_input_region_type;
 
 static void
 _rut_input_region_init_type (void)
 {
-  rut_type_init (&rut_input_region_type, "RigInputRegion");
-  rut_type_add_interface (&rut_input_region_type,
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_input_region_free
+  };
+
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child remove */
+      NULL, /* child add */
+      NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      _rut_input_region_set_size,
+      _rut_input_region_get_size,
+      rut_simple_sizable_get_preferred_width,
+      rut_simple_sizable_get_preferred_height,
+      NULL /* add_preferred_size_callback */
+  };
+
+  RutType *type = &rut_input_region_type;
+#define TYPE RutInputRegion
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutInputRegion, ref_count),
-                          &_rut_input_region_ref_countable_vtable);
-  rut_type_add_interface (&rut_input_region_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutInputRegion, graphable),
-                          &_rut_input_region_graphable_vtable);
-  rut_type_add_interface (&rut_input_region_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &sizable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INPUTABLE,
-                          offsetof (RutInputRegion, inputable),
+                          offsetof (TYPE, inputable),
                           NULL /* no vtable */);
+#undef TYPE
 }
 
 static RutInputRegion *
-rut_input_region_new_common (RutInputRegionCallback  callback,
-                             void                   *user_data)
+rut_input_region_new_common (RutInputRegionCallback callback,
+                             void *user_data)
 {
   RutInputRegion *region = g_slice_new0 (RutInputRegion);
 
@@ -549,7 +606,7 @@ rut_input_region_new_common (RutInputRegionCallback  callback,
 
   region->ref_count = 1;
 
-  rut_graphable_init (RUT_OBJECT (region));
+  rut_graphable_init (region);
   region->inputable.input_region = region;
 
   region->callback = callback;
@@ -615,6 +672,7 @@ rut_input_region_set_circle (RutInputRegion *region,
   region->shape.any.type = RUT_INPUT_SHAPE_TYPE_CIRCLE;
   region->shape.circle.x = x;
   region->shape.circle.y = y;
+  region->shape.circle.r = radius;
   region->shape.circle.r_squared = radius * radius;
 }
 
