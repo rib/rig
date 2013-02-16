@@ -249,10 +249,6 @@ static RutIntrospectableVTable _rut_toggle_introspectable_vtable = {
   rut_simple_introspectable_foreach_property
 };
 
-RutSimpleWidgetVTable _rut_toggle_simple_widget_vtable = {
- 0
-};
-
 static void
 _rut_toggle_set_size (RutObject *object,
                       float width,

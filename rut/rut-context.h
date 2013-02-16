@@ -188,31 +188,6 @@ rut_nine_slice_get_size (RutObject *self,
 CoglTexture *
 rut_nine_slice_get_texture (RutNineSlice *nine_slice);
 
-typedef struct _RutSimpleWidgetProps
-{
-  RutDisplayList display_list;
-} RutSimpleWidgetProps;
-
-typedef struct _RutSimpleWidgetVTable
-{
-  void (*set_camera) (RutObject *widget,
-                      RutCamera *camera);
-} RutSimpleWidgetVTable;
-
-void
-rut_simple_widget_graphable_parent_changed (RutObject *self,
-                                            RutObject *old_parent,
-                                            RutObject *new_parent);
-
-/* Use for widget that can't have children */
-void
-rut_simple_widget_graphable_child_removed_warn (RutObject *self,
-                                                RutObject *child);
-
-void
-rut_simple_widget_graphable_child_added_warn (RutObject *self,
-                                              RutObject *child);
-
 typedef struct _RutRectangle RutRectangle;
 #define RUT_RECTANGLE(X) ((RutRectangle *)X)
 

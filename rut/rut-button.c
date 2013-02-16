@@ -71,8 +71,6 @@ struct _RutButton
 
   RutList on_click_cb_list;
 
-  RutSimpleWidgetProps simple_widget;
-
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 };
@@ -250,10 +248,6 @@ _rut_button_init_type (void)
       _rut_button_paint
   };
 
-  static RutSimpleWidgetVTable simple_widget_vtable = {
-      0
-  };
-
   static RutSizableVTable sizable_vtable = {
       rut_button_set_size,
       rut_button_get_size,
@@ -278,10 +272,6 @@ _rut_button_init_type (void)
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (TYPE, paintable),
                           &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_WIDGET,
-                          offsetof (TYPE, simple_widget),
-                          &simple_widget_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */

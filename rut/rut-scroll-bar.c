@@ -59,7 +59,6 @@ struct _RutScrollBar
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;
-  RutSimpleWidgetProps simple_widget;
 
   RutInputRegion *input_region;
 
@@ -178,10 +177,6 @@ RutGraphableVTable _rut_scroll_bar_graphable_vtable = {
   NULL /* parent changed */
 };
 
-RutSimpleWidgetVTable _rut_scroll_bar_simple_widget_vtable = {
-  0,
-};
-
 static RutIntrospectableVTable _rut_scroll_bar_introspectable_vtable = {
   rut_simple_introspectable_lookup_property,
   rut_simple_introspectable_foreach_property
@@ -205,10 +200,6 @@ _rut_scroll_bar_init_type (void)
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutScrollBar, paintable),
                           &_rut_scroll_bar_paintable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_SIMPLE_WIDGET,
-                          offsetof (RutScrollBar, simple_widget),
-                          &_rut_scroll_bar_simple_widget_vtable);
   rut_type_add_interface (&rut_scroll_bar_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */

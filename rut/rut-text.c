@@ -3254,10 +3254,6 @@ static RutIntrospectableVTable _rut_text_introspectable_vtable = {
   rut_simple_introspectable_foreach_property
 };
 
-RutSimpleWidgetVTable _rut_text_simple_widget_vtable = {
- 0
-};
-
 static RutSizableVTable _rut_text_sizable_vtable = {
   _rut_text_set_size,
   _rut_text_get_size,

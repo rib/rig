@@ -146,8 +146,6 @@ struct _RutRectangle
   float width;
   float height;
 
-  RutSimpleWidgetProps simple_widget;
-
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
@@ -942,30 +940,6 @@ rut_transform_get_matrix (RutObject *self)
   return &transform->matrix;
 }
 
-void
-rut_simple_widget_graphable_parent_changed (RutObject *self,
-                                            RutObject *old_parent,
-                                            RutObject *new_parent)
-{
-  /* nop */
-}
-
-void
-rut_simple_widget_graphable_child_removed_warn (RutObject *self,
-                                                RutObject *child)
-{
-  /* You can't add children to a button currently */
-  g_warn_if_reached ();
-}
-
-void
-rut_simple_widget_graphable_child_added_warn (RutObject *self,
-                                              RutObject *child)
-{
-  /* You can't add children to a button currently */
-  g_warn_if_reached ();
-}
-
 static void
 _rut_rectangle_free (void *object)
 {
@@ -1008,10 +982,6 @@ static RutPaintableVTable _rut_rectangle_paintable_vtable = {
   _rut_rectangle_paint
 };
 
-static RutSimpleWidgetVTable _rut_rectangle_simple_widget_vtable = {
- 0
-};
-
 static RutSizableVTable _rut_rectangle_sizable_vtable = {
   rut_rectangle_set_size,
   rut_rectangle_get_size,
@@ -1038,10 +1008,6 @@ _rut_rectangle_init_type (void)
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutRectangle, paintable),
                           &_rut_rectangle_paintable_vtable);
-  rut_type_add_interface (&rut_rectangle_type,
-                          RUT_INTERFACE_ID_SIMPLE_WIDGET,
-                          offsetof (RutRectangle, simple_widget),
-                          &_rut_rectangle_simple_widget_vtable);
   rut_type_add_interface (&rut_rectangle_type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */

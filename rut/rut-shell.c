@@ -2625,7 +2625,6 @@ struct _RutSlider
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;
-  RutSimpleWidgetProps simple_widget;
   RutSimpleIntrospectableProps introspectable;
 
   RutNineSlice *background;
@@ -2722,10 +2721,6 @@ _rut_slider_set_camera (RutObject *object,
 }
 #endif
 
-RutSimpleWidgetVTable _rut_slider_simple_widget_vtable = {
-  0,
-};
-
 RutType rut_slider_type;
 
 static void
@@ -2744,10 +2739,6 @@ _rut_slider_init_type (void)
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutSlider, paintable),
                           &_rut_slider_paintable_vtable);
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_SIMPLE_WIDGET,
-                          offsetof (RutSlider, simple_widget),
-                          &_rut_slider_simple_widget_vtable);
   rut_type_add_interface (&rut_slider_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
