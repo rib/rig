@@ -243,33 +243,6 @@ rut_rectangle_get_size (RutObject *self,
                         float *width,
                         float *height);
 
-typedef struct _RutButton RutButton;
-#define RUT_BUTTON(X) ((RutButton *)X)
-
-extern RutType rut_button_type;
-
-RutButton *
-rut_button_new (RutContext *ctx,
-                const char *label);
-
-typedef void (*RutButtonClickCallback) (RutButton *button, void *user_data);
-
-RutClosure *
-rut_button_add_on_click_callback (RutButton *button,
-                                  RutButtonClickCallback callback,
-                                  void *user_data,
-                                  RutClosureDestroyCallback destroy_cb);
-
-void
-rut_button_set_size (RutObject *self,
-                     float width,
-                     float height);
-
-void
-rut_button_get_size (RutObject *self,
-                     float *width,
-                     float *height);
-
 CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 

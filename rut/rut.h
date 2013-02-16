@@ -48,6 +48,7 @@
 #include "rut-bin.h"
 #include "rut-icon.h"
 #include "rut-flow-layout.h"
+#include "rut-button.h"
 
 /* entity/components system */
 #include "rut-entity.h"
