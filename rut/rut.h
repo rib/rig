@@ -21,6 +21,7 @@
 #include "rut-shell.h"
 #include "rut-bitmask.h"
 #include "rut-memory-stack.h"
+#include "rut-graphables.h"
 #include "rut-timeline.h"
 #include "rut-display-list.h"
 #include "rut-arcball.h"

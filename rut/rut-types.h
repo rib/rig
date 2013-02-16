@@ -15,10 +15,6 @@ typedef struct _RutCamera RutCamera;
 #define RUT_CAMERA(X) ((RutCamera *)X)
 extern RutType rut_camera_type;
 
-typedef struct _RutTransform RutTransform;
-#define RUT_TRANSFORM(X) ((RutTransform *)X)
-extern RutType rut_transform_type;
-
 typedef struct _RutInputRegion RutInputRegion;
 #define RUT_INPUT_REGION(X) ((RutInputRegion *)X)
 extern RutType rut_input_region_type;
