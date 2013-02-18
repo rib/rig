@@ -654,3 +654,9 @@ rut_nine_slice_get_size (RutObject *self,
   *width = nine_slice->width;
   *height = nine_slice->height;
 }
+
+CoglPipeline *
+rut_nine_slice_get_pipeline (RutNineSlice *nine_slice)
+{
+  return nine_slice->pipeline;
+}

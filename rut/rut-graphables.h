@@ -124,4 +124,7 @@ rut_nine_slice_get_size (RutObject *self,
 CoglTexture *
 rut_nine_slice_get_texture (RutNineSlice *nine_slice);
 
+CoglPipeline *
+rut_nine_slice_get_pipeline (RutNineSlice *nine_slice);
+
 #endif /* __RUT_GRAPHABLES_H__ */
