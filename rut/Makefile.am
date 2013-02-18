@@ -64,7 +64,8 @@ source_h = \
     rut-icon.h \
     rut-flow-layout.h \
     rut-button.h \
-    rut-graphables.h
+    rut-graphables.h \
+    rut-fixed.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -131,6 +132,7 @@ librut_la_SOURCES = \
     rut-flow-layout.c \
     rut-button.c \
     rut-graphables.c \
+    rut-fixed.c \
     $(source_h)
 
 if !HAVE_ANDROID

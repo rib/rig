@@ -50,6 +50,7 @@
 #include "rut-icon.h"
 #include "rut-flow-layout.h"
 #include "rut-button.h"
+#include "rut-fixed.h"
 
 /* entity/components system */
 #include "rut-entity.h"
