@@ -52,63 +52,6 @@
 #include "rut-geometry.h"
 #include "rut-scroll-bar.h"
 
-/*
- * Overall issues to keep in mind for the UI scenegraph support in Rut:
- * (in no particular order)
- *
- * How does it handle batching geometry?
- * - How does it handle tiny primitives that can't be efficiently handled using
- *   the GPU.
- * - How does it reorder primitives to avoid state changes?
- * - How does it avoid redundant overdraw?
- * How does it handle culling?
- * How does it track damage regions?
- * How does it handle incremental screen updates?
- * How does it handle anti-aliasing?
- * How does it handle filter effects; blur, desaturate etc?
- * How does it integrate video efficiently?
- * How does it handle animations?
- * How does it ensure the GL driver can't block the application?
- * How does it ensure the application can't block animations?
- * How flexible is the rendering model?
- *  - Is cloning nodes a core part of the scene graph design?
- *  - Is the graph acyclic, or does it allow recursion?
- *
- * Note: Rut doesn't actually tackle any of these particularly well currently
- * and may never since it's currently just wanted as a minimal toolkit to
- * implement the UI of Rig and isn't intended to run on a real device. Never the
- * less they are things to keep in mind when shaping the code on the off-chance
- * that something interesting comes out of it.
- *
- * One quite nice thing about this code is the simple approach to interface
- * oriented programming:
- *
- * - Interfaces are defined by the combination of a struct typedef of function
- *   pointers (vtable) and a struct typedef of per-instance properties that are
- *   both optional.
- *
- * - Types are variables that have a bitmask of supported interfaces and an
- *   array indexable up to the highest offset bit in the bitmask. Each entry
- *   contains a pointer to an interface vtable and byte-offset that can be used
- *   to access interface properties associated with an instance.
- *
- * - The base object just contains a single "type" pointer (which could
- *   potentially be changed dynamically at runtime to add/remove interfaces).
- *
- * - Checking if an object implements an interface as well as calling through
- *   the interface vtable or accessing interface properties can be done in O(1)
- *   time.
- *
- * Some of the interfaces defined currently for Rut are:
- * "RefCountable"
- *  - implies an int ref_count property and ref, unref, free methods
- * "Graphable"
- *  - implies parent and children properties but no methods
- * "Paintable"
- *  - no properties implied, just a paint() method to draw with Cogl
- *
- */
-
 typedef struct _RutTextureCacheEntry
 {
   RutContext *ctx;
