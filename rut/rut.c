@@ -475,13 +475,3 @@ _rut_init (void)
       g_once_init_leave (&init_status, 1);
     }
 }
-
-void
-rut_color_init_from_uint32 (CoglColor *color, uint32_t value)
-{
-  color->red = RUT_UINT32_RED_AS_FLOAT (value);
-  color->green = RUT_UINT32_GREEN_AS_FLOAT (value);
-  color->blue = RUT_UINT32_BLUE_AS_FLOAT (value);
-  color->alpha = RUT_UINT32_ALPHA_AS_FLOAT (value);
-}
-

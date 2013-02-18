@@ -122,7 +122,4 @@ rut_find_data_file (const char *base_filename);
 CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 
-void
-rut_color_init_from_uint32 (CoglColor *color, uint32_t value);
-
 #endif /* _RUT_CONTEXT_H_ */

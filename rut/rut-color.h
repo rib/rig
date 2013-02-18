@@ -32,6 +32,9 @@ rut_color_init_from_string (RutContext *ctx,
                             CoglColor *color,
                             const char *str);
 
+void
+rut_color_init_from_uint32 (CoglColor *color, uint32_t value);
+
 /**
  * rut_color_add:
  * @a: a #CoglColor
