@@ -143,6 +143,7 @@ struct _RigData
   float screen_area_height;
 
   RutUIViewport *assets_vp;
+  RutFold *assets_results_fold;
   RutFlowLayout *assets_flow;
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;

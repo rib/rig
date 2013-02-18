@@ -382,11 +382,16 @@ add_component_inspector_cb (RutComponent *component,
 {
   RigData *data = user_data;
   RutInspector *inspector = create_inspector (data, component);
+  RutFold *fold = rut_fold_new (data->ctx, "Component");
 
-  rut_box_layout_add (data->inspector_box_layout, FALSE, inspector);
+  rut_fold_set_child (fold, inspector);
+  rut_refable_unref (inspector);
+
+  rut_box_layout_add (data->inspector_box_layout, FALSE, fold);
+  rut_refable_unref (fold);
 
   data->all_inspectors =
-    g_list_prepend (data->all_inspectors, inspector);
+    g_list_prepend (data->all_inspectors, fold);
 }
 
 static void
@@ -395,10 +400,7 @@ update_inspector (RigData *data)
   GList *l;
 
   for (l = data->all_inspectors; l; l = l->next)
-    {
-      rut_box_layout_remove (data->inspector_box_layout, l->data);
-      rut_refable_unref (l->data);
-    }
+    rut_box_layout_remove (data->inspector_box_layout, l->data);
 
   data->inspector = NULL;
   g_list_free (data->all_inspectors);
@@ -926,7 +928,7 @@ rig_search_asset_list (RigData *data, const char *search)
 
   if (data->assets_flow)
     {
-      rut_graphable_remove_child (data->assets_flow);
+      rut_fold_set_child (data->assets_results_fold, NULL);
       free_asset_input_closures (data);
     }
 
@@ -942,8 +944,7 @@ rig_search_asset_list (RigData *data, const char *search)
     rut_graphable_add_child (data->assets_list, data->transparency_grid);
 #endif
 
-  rut_ui_viewport_add (data->assets_vp, data->assets_flow);
-  rut_ui_viewport_set_sync_widget (data->assets_vp, data->assets_flow);
+  rut_fold_set_child (data->assets_results_fold, data->assets_flow);
   rut_refable_unref (data->assets_flow);
 
   for (l = data->assets, i= 0; l; l = l->next, i++)
@@ -1368,6 +1369,10 @@ create_assets_view (RigData *data)
 
   data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0);
   rut_stack_add (stack, data->assets_vp);
+
+  data->assets_results_fold = rut_fold_new (data->ctx, "Results");
+  rut_ui_viewport_add (data->assets_vp, data->assets_results_fold);
+  rut_ui_viewport_set_sync_widget (data->assets_vp, data->assets_results_fold);
 
   rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
 
