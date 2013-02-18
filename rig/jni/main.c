@@ -31,8 +31,6 @@
 #define DEVICE_WIDTH 720.0
 #define DEVICE_HEIGHT 1280.0
 
-#define N_CUBES 5
-
 static RutPropertySpec rut_data_property_specs[] = {
   {
     .name = "width",
