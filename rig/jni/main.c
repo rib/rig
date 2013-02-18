@@ -31,15 +31,6 @@
 #define DEVICE_WIDTH 720.0
 #define DEVICE_HEIGHT 1280.0
 
-/*
- * Note: The size and padding for this circle texture have been carefully
- * chosen so it has a power of two size and we have enough padding to scale
- * down the circle to a size of 2 pixels and still have a 1 texel transparent
- * border which we rely on for anti-aliasing.
- */
-#define CIRCLE_TEX_RADIUS 16
-#define CIRCLE_TEX_PADDING 16
-
 #define N_CUBES 5
 
 static RutPropertySpec rut_data_property_specs[] = {
@@ -1446,10 +1437,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   data->timeline_progress =
     rut_introspectable_lookup_property (data->timeline, "progress");
 
-  data->circle_texture = rut_create_circle_texture (data->ctx,
-                                                    CIRCLE_TEX_RADIUS,
-                                                    CIRCLE_TEX_PADDING);
-
   data->scene = rut_graph_new (data->ctx);
 
   data->device_width = DEVICE_WIDTH;
@@ -1853,8 +1840,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
   for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rut_property_destroy (&data->properties[i]);
-
-  cogl_object_unref (data->circle_texture);
 
   cogl_object_unref (data->circle_node_attribute);
 

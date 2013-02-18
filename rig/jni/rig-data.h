@@ -90,8 +90,6 @@ struct _RigData
   CoglTexture *shadow_map;
   RutCamera *shadow_map_camera;
 
-  CoglTexture *circle_texture;
-
   float device_width;
   float device_height;
   CoglColor background_color;
