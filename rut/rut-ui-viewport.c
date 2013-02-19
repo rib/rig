@@ -31,7 +31,7 @@
 #include "rut-interfaces.h"
 #include "rut-ui-viewport.h"
 #include "rut-scroll-bar.h"
-#include "rut-graphables.h"
+#include "rut-transform.h"
 
 enum {
   RUT_UI_VIEWPORT_PROP_WIDTH,

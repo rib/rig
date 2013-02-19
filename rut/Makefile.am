@@ -64,7 +64,10 @@ source_h = \
     rut-icon.h \
     rut-flow-layout.h \
     rut-button.h \
-    rut-graphables.h \
+    rut-graph.h \
+    rut-transform.h \
+    rut-rectangle.h \
+    rut-nine-slice.h \
     rut-fixed.h \
     rut-fold.h
 
@@ -132,7 +135,10 @@ librut_la_SOURCES = \
     rut-icon.c \
     rut-flow-layout.c \
     rut-button.c \
-    rut-graphables.c \
+    rut-graph.c \
+    rut-transform.c \
+    rut-rectangle.c \
+    rut-nine-slice.c \
     rut-fixed.c \
     rut-fold.c \
     $(source_h)

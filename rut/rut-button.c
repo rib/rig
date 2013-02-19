@@ -26,7 +26,8 @@
 #include "rut-text.h"
 #include "rut-paintable.h"
 #include "components/rut-camera.h"
-#include "rut-graphables.h"
+#include "rut-transform.h"
+#include "rut-nine-slice.h"
 #include "rut-button.h"
 
 #define BUTTON_HPAD 10
