@@ -1406,11 +1406,8 @@ rig_engine_init (RutShell *shell, void *user_data)
   CoglFramebuffer *fb;
   float vector3[3];
   int i;
-  char *full_path;
   CoglTexture2D *color_buffer;
   CoglColor color;
-  RutModel *model;
-  RutMaterial *material;
   RutLight *light;
   RutCamera *camera;
   CoglColor main_area_ref_color, right_bar_ref_color;
@@ -2018,7 +2015,6 @@ static void
 add_asset (RigData *data, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
-  GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *l;
   RutAsset *asset;
@@ -2231,7 +2227,6 @@ static void
 rig_load_asset_list (RigData *data)
 {
   GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
-  RutAsset *asset;
 
   enumerate_dir_for_assets (data, assets_dir);
 
