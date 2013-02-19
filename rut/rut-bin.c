@@ -23,6 +23,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "rut.h"
 #include "rut-bin.h"
 
