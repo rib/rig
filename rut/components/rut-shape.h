@@ -118,4 +118,9 @@ rut_shape_add_reshaped_callback (RutShape *shape,
                                  void *user_data,
                                  RutClosureDestroyCallback destroy_cb);
 
+void
+rut_shape_set_texture_size (RutShape *shape,
+                            int tex_width,
+                            int tex_height);
+
 #endif /* __RUT_SHAPE_H__ */
