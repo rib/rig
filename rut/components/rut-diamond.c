@@ -163,7 +163,6 @@ diamond_slice_new (RutContext *ctx,
 #define DIAMOND_SLICE_CORNER_RADIUS 20
   CoglMatrix matrix;
   float tex_aspect;
-  float t;
 
   rut_object_init (&diamond_slice->_parent, &rut_diamond_slice_type);
 
