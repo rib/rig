@@ -1678,10 +1678,9 @@ rig_engine_init (RutShell *shell, void *user_data)
                                     G_N_ELEMENTS (ply_attributes),
                                     padding_status,
                                     &error);
-      RutModel *model;
       if (mesh)
         {
-          model = rut_model_new_from_mesh (data->ctx, mesh);
+          RutModel *model = rut_model_new_from_mesh (data->ctx, mesh);
 
           data->light_handle = rut_entity_new (data->ctx);
           rut_entity_set_label (data->light_handle, "rig:light_handle");
