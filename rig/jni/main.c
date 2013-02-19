@@ -833,7 +833,7 @@ asset_matches_search (RutAsset *asset,
 
   for (i = 0; tags[i]; i++)
     {
-      GList *l;
+      const GList *l;
       CoglBool found = FALSE;
 
       for (l = inferred_tags; l; l = l->next)
