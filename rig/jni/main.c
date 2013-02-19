@@ -1470,7 +1470,7 @@ rig_engine_init (RutShell *shell, void *user_data)
     }
 #endif
 
-  cogl_framebuffer_allocate (data->onscreen, NULL);
+  cogl_framebuffer_allocate (COGL_FRAMEBUFFER (data->onscreen), NULL);
 
   rut_shell_add_onscreen (data->shell, data->onscreen);
 
