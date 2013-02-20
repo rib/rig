@@ -19,11 +19,6 @@
 #include <glib-android/glib-android.h>
 #elif defined (USE_SDL)
 #include "rut-sdl-keysyms.h"
-#elif defined (USE_GTK)
-#include <gtk/gtk.h>
-#include <gdk/gdk.h>
-#include <gdk/gdkx.h>
-#include <cogl/cogl-xlib.h>
 #endif
 
 typedef struct
@@ -59,7 +54,7 @@ struct _RutShell
 
 #ifdef __ANDROID__
   CoglBool quit;
-#elif !defined(USE_GTK)
+#else
   GMainLoop *main_loop;
 #endif
 
@@ -209,11 +204,6 @@ typedef struct
 
 #if defined(USE_SDL) && SDL_MAJOR_VERSION >= 2
   SDL_Cursor *cursor_image;
-#endif
-
-#ifdef USE_GTK
-  GdkWindow *gdk_window;
-  GdkCursor *gdk_cursor;
 #endif
 } RutShellOnscreen;
 
@@ -828,19 +818,6 @@ rut_input_event_get_onscreen (RutInputEvent *event)
     return NULL;
   }
 
-#elif defined(USE_GTK)
-
-  {
-    RutShellOnscreen *shell_onscreen;
-    GdkEvent *gdk_event = event->native;
-
-    rut_list_for_each (shell_onscreen, &shell->onscreens, link)
-      if (gdk_event->any.window == shell_onscreen->gdk_window)
-        return shell_onscreen->onscreen;
-
-    return NULL;
-  }
-
 #else
 
   /* If there is only onscreen then we'll assume that all events are
@@ -867,9 +844,6 @@ rut_key_event_get_keysym (RutInputEvent *event)
   SDL_Event *sdl_event = event->native;
 
   return _rut_keysym_from_sdl_keysym (sdl_event->key.keysym.sym);
-#elif defined (USE_GTK)
-  GdkEvent *gdk_event = event->native;
-  return gdk_event->key.keyval;
 #else
 #error "Unknown input system"
 #endif
@@ -906,18 +880,6 @@ rut_key_event_get_action (RutInputEvent *event)
       g_warn_if_reached ();
       return RUT_KEY_EVENT_ACTION_UP;
     }
-#elif defined (USE_GTK)
-  GdkEvent *gdk_event = event->native;
-  switch (gdk_event->type)
-    {
-    case GDK_KEY_PRESS:
-      return RUT_KEY_EVENT_ACTION_DOWN;
-    case GDK_KEY_RELEASE:
-      return RUT_KEY_EVENT_ACTION_UP;
-    default:
-      g_warn_if_reached ();
-      return RUT_KEY_EVENT_ACTION_UP;
-    }
 #else
 #error "Unknown input system"
 #endif
@@ -948,20 +910,6 @@ rut_motion_event_get_action (RutInputEvent *event)
       return RUT_MOTION_EVENT_ACTION_MOVE;
     default:
       g_warn_if_reached (); /* Not a motion event */
-      return RUT_MOTION_EVENT_ACTION_MOVE;
-    }
-#elif defined (USE_GTK)
-  GdkEvent *gdk_event = event->native;
-  switch (gdk_event->type)
-    {
-    case GDK_BUTTON_PRESS:
-      return RUT_MOTION_EVENT_ACTION_DOWN;
-    case GDK_BUTTON_RELEASE:
-      return RUT_MOTION_EVENT_ACTION_UP;
-    default:
-      g_warn_if_reached ();
-      /* flow through */
-    case GDK_MOTION_NOTIFY:
       return RUT_MOTION_EVENT_ACTION_MOVE;
     }
 #else
@@ -1009,63 +957,6 @@ rut_button_state_for_sdl_state (SDL_Event *event,
 }
 #endif /* USE_SDL */
 
-#ifdef USE_GTK
-static RutButtonState
-rut_button_state_for_gdk_state (GdkEvent *event)
-{
-  GdkModifierType state;
-  RutButtonState rut_state = 0;
-
-  if (gdk_event_get_state (event, &state))
-    {
-      if ((state & GDK_BUTTON1_MASK))
-        rut_state |= RUT_BUTTON_STATE_1;
-      if ((state & GDK_BUTTON2_MASK))
-        rut_state |= RUT_BUTTON_STATE_2;
-      if ((state & GDK_BUTTON2_MASK))
-        rut_state |= RUT_BUTTON_STATE_3;
-    }
-
-  switch (event->type)
-    {
-    case GDK_BUTTON_PRESS:
-      switch (event->button.button)
-        {
-        case 1:
-          rut_state |= RUT_BUTTON_STATE_1;
-          break;
-        case 2:
-          rut_state |= RUT_BUTTON_STATE_2;
-          break;
-        case 3:
-          rut_state |= RUT_BUTTON_STATE_3;
-          break;
-        }
-      break;
-
-    case GDK_BUTTON_RELEASE:
-      switch (event->button.button)
-        {
-        case 1:
-          rut_state &= ~RUT_BUTTON_STATE_1;
-          break;
-        case 2:
-          rut_state &= ~RUT_BUTTON_STATE_2;
-          break;
-        case 3:
-          rut_state &= ~RUT_BUTTON_STATE_3;
-          break;
-        }
-      break;
-
-    default:
-      break;
-    }
-
-  return rut_state;
-}
-#endif /* USE_GTK */
-
 RutButtonState
 rut_motion_event_get_button_state (RutInputEvent *event)
 {
@@ -1111,9 +1002,6 @@ rut_motion_event_get_button_state (RutInputEvent *event)
       return 0;
     }
 #endif
-#elif defined (USE_GTK)
-  GdkEvent *gdk_event = event->native;
-  return rut_button_state_for_gdk_state (gdk_event);
 #else
 #error "Unknown input system"
 #endif
@@ -1179,27 +1067,6 @@ rut_sdl_get_modifier_state (void)
 }
 #endif
 
-#ifdef USE_GTK
-static RutModifierState
-rut_gdk_get_modifier_state (GdkEvent *event)
-{
-  RutModifierState rut_state = 0;
-  GdkModifierType state;
-
-  if (gdk_event_get_state (event, &state))
-    {
-      if (state & GDK_SHIFT_MASK)
-        rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
-      if (state & GDK_CONTROL_MASK)
-        rut_state |= RUT_MODIFIER_LEFT_CTRL_ON;
-      if (state & GDK_MOD1_MASK)
-        rut_state |= RUT_MODIFIER_LEFT_ALT_ON;
-    }
-
-  return rut_state;
-}
-#endif /* USE_GTK */
-
 RutModifierState
 rut_key_event_get_modifier_state (RutInputEvent *event)
 {
@@ -1208,8 +1075,6 @@ rut_key_event_get_modifier_state (RutInputEvent *event)
   return rut_modifier_state_for_android_meta (meta);
 #elif defined (USE_SDL)
   return rut_sdl_get_modifier_state ();
-#elif defined (USE_GTK)
-  return rut_gdk_get_modifier_state (event->native);
 #else
 #error "Unknown input system"
   return 0;
@@ -1224,8 +1089,6 @@ rut_motion_event_get_modifier_state (RutInputEvent *event)
   return rut_modifier_state_for_android_meta (meta);
 #elif defined (USE_SDL)
   return rut_sdl_get_modifier_state ();
-#elif defined (USE_GTK)
-  return rut_gdk_get_modifier_state (event->native);
 #else
 #error "Unknown input system"
   return 0;
@@ -1259,15 +1122,6 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
       g_warn_if_reached (); /* Not a motion event */
       return;
     }
-#elif defined (USE_GTK)
-  double dx, dy;
-  if (gdk_event_get_coords (event->native, &dx, &dy))
-    {
-      *x = dx;
-      *y = dy;
-    }
-  else
-    g_warn_if_reached ();
 #else
 #error "Unknown input system"
 #endif
@@ -1326,16 +1180,6 @@ rut_motion_event_unproject (RutInputEvent *event,
   return TRUE;
 }
 
-#ifdef USE_GTK
-
-typedef struct
-{
-  GdkEvent parent_event;
-  char text[7];
-} RutGdkTextEvent;
-
-#endif /* USE_GTK */
-
 const char *
 rut_text_event_get_text (RutInputEvent *event)
 {
@@ -1358,11 +1202,6 @@ rut_text_event_get_text (RutInputEvent *event)
   return sdl_event->text.text;
 
 #endif /* SDL_MAJOR_VERSION */
-
-#elif defined (USE_GTK)
-
-  RutGdkTextEvent *text_event = event->native;
-  return text_event->text;
 
 #else
 #error "Unknown input system"
@@ -1766,102 +1605,6 @@ _rut_shell_init_types (void)
   _rut_input_region_init_type ();
 }
 
-#ifdef USE_GTK
-
-static GdkFilterReturn
-cogl_gdk_event_filter (GdkXEvent *xevent,
-                       GdkEvent *event,
-                       void *user_data)
-{
-  RutShell *shell = user_data;
-  RutContext *rut_context = shell->rut_ctx;
-  CoglDisplay *display = cogl_context_get_display (rut_context->cogl_context);
-  CoglRenderer *renderer = cogl_display_get_renderer (display);
-
-  if (cogl_xlib_renderer_handle_event (renderer, (XEvent *) xevent) ==
-      COGL_FILTER_REMOVE)
-    return GDK_FILTER_REMOVE;
-
-  return GDK_FILTER_CONTINUE;
-}
-
-static void
-handle_gdk_event (GdkEvent *event,
-                  void *user_data)
-{
-  RutShell *shell = user_data;
-  RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  RutShellOnscreen *shell_onscreen;
-
-  rut_list_for_each (shell_onscreen, &shell->onscreens, link)
-    {
-      if (shell_onscreen->gdk_window == event->any.window)
-        {
-          RutInputEvent rut_event;
-
-          rut_event.native = event;
-          rut_event.shell = shell;
-          rut_event.input_transform = NULL;
-
-          switch (event->type)
-            {
-            case GDK_EXPOSE:
-              shell->redraw_queued = TRUE;
-              break;
-
-            case GDK_DELETE:
-              rut_shell_quit (shell);
-              break;
-
-            case GDK_MOTION_NOTIFY:
-            case GDK_BUTTON_PRESS:
-            case GDK_BUTTON_RELEASE:
-              rut_event.type = RUT_INPUT_EVENT_TYPE_MOTION;
-              status = _rut_shell_handle_input (shell, &rut_event);
-              break;
-
-            case GDK_KEY_PRESS:
-              {
-                uint32_t unichar = gdk_keyval_to_unicode (event->key.keyval);
-
-                if (unichar)
-                  {
-                    RutGdkTextEvent text_event;
-                    int len;
-
-                    text_event.parent_event = *event;
-                    len = g_unichar_to_utf8 (unichar, text_event.text);
-                    text_event.text[len] = '\0';
-                    rut_event.type = RUT_INPUT_EVENT_TYPE_TEXT;
-                    rut_event.native = &text_event;
-                    status = _rut_shell_handle_input (shell, &rut_event);
-                    rut_event.native = event;
-                    rut_event.input_transform = NULL;
-                  }
-              }
-              /* flow through */
-            case GDK_KEY_RELEASE:
-              rut_event.type = RUT_INPUT_EVENT_TYPE_KEY;
-              if (_rut_shell_handle_input (shell, &rut_event) ==
-                  RUT_INPUT_EVENT_STATUS_HANDLED)
-                status = RUT_INPUT_EVENT_STATUS_HANDLED;
-              break;
-
-            default:
-              break;
-            }
-
-          break;
-        }
-    }
-
-  if (status != RUT_INPUT_EVENT_STATUS_HANDLED)
-    /* Give GTK a chance to see the event if we didn't want it */
-    gtk_main_do_event (event);
-}
-
-#endif /* USE_GTK */
-
 RutShell *
 rut_shell_new (RutShellInitCallback init,
                RutShellFiniCallback fini,
@@ -1877,19 +1620,7 @@ rut_shell_new (RutShellInitCallback init,
   shell = g_new0 (RutShell, 1);
 
   if (G_UNLIKELY (initialized == FALSE))
-    {
-      _rut_shell_init_types ();
-
-#ifdef USE_GTK
-      gtk_init (NULL, NULL);
-      gdk_window_add_filter (NULL, /* all windows */
-                             cogl_gdk_event_filter,
-                             shell);
-      gdk_event_handler_set (handle_gdk_event,
-                             shell,
-                             NULL /* destroy_cb */);
-#endif
-    }
+    _rut_shell_init_types ();
 
   shell->ref_count = 1;
 
@@ -2039,40 +1770,6 @@ rut_shell_set_cursor (RutShell *shell,
       if (shell_onscreen->cursor_image)
         SDL_FreeCursor (shell_onscreen->cursor_image);
       shell_onscreen->cursor_image = cursor_image;
-
-#elif defined(USE_GTK)
-      GdkCursorType cursor_type;
-      GdkCursor *gdk_cursor;
-
-      switch (cursor)
-        {
-        case RUT_CURSOR_ARROW:
-          cursor_type = GDK_ARROW;
-          break;
-        case RUT_CURSOR_IBEAM:
-          cursor_type = GDK_XTERM;
-          break;
-        case RUT_CURSOR_WAIT:
-          cursor_type = GDK_WATCH;
-          break;
-        case RUT_CURSOR_CROSSHAIR:
-          cursor_type = GDK_CROSSHAIR;
-          break;
-        case RUT_CURSOR_SIZE_WE:
-          cursor_type = GDK_SB_H_DOUBLE_ARROW;
-          break;
-        case RUT_CURSOR_SIZE_NS:
-          cursor_type = GDK_SB_V_DOUBLE_ARROW;
-          break;
-        }
-
-      gdk_cursor = gdk_cursor_new_for_display (gdk_display_get_default (),
-                                               cursor_type);
-      gdk_window_set_cursor (shell_onscreen->gdk_window, gdk_cursor);
-
-      if (shell_onscreen->gdk_cursor)
-        g_object_unref (gdk_cursor);
-      shell_onscreen->gdk_cursor = gdk_cursor;
 #endif
 
       shell_onscreen->current_cursor = cursor;
@@ -2093,26 +1790,8 @@ rut_shell_set_title (RutShell *shell,
   SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
   SDL_SetWindowTitle (window, title);
 #endif /* SDL_MAJOR_VERSION */
-#elif defined(USE_GTK)
-  {
-    RutShellOnscreen *shell_onscreen = get_shell_onscreen (shell, onscreen);
-
-    if (shell_onscreen)
-      gdk_window_set_title (shell_onscreen->gdk_window, title);
-  }
 #endif /* USE_SDL */
 }
-
-#ifdef USE_GTK
-GdkWindow *
-rut_shell_get_gdk_window (RutShell *shell,
-                          CoglOnscreen *onscreen)
-{
-  RutShellOnscreen *shell_onscreen = get_shell_onscreen (shell, onscreen);
-
-  return shell_onscreen ? shell_onscreen->gdk_window : NULL;
-}
-#endif /* USE_GTK */
 
 static void
 update_pre_paint_entry_depth (RutShellPrePaintEntry *entry)
@@ -2410,10 +2089,6 @@ destroy_onscreen_cb (void *user_data)
 {
   RutShellOnscreen *shell_onscreen = user_data;
 
-#ifdef USE_GTK
-  gdk_window_destroy (shell_onscreen->gdk_window);
-#endif
-
   rut_list_remove (&shell_onscreen->link);
 }
 
@@ -2430,42 +2105,6 @@ rut_shell_add_onscreen (RutShell *shell,
                              shell_onscreen,
                              destroy_onscreen_cb);
   rut_list_insert (&shell->onscreens, &shell_onscreen->link);
-
-#ifdef USE_GTK
-  {
-    GdkDisplay *gdk_display = gdk_display_get_default ();
-    Window x_window = cogl_x11_onscreen_get_window_xid (onscreen);
-    GdkWindow *gdk_window =
-      gdk_x11_window_foreign_new_for_display (gdk_display, x_window);
-    Atom protocols[1];
-    GdkEventMask event_mask;
-    int n = 0;
-
-    protocols[n++] = gdk_x11_get_xatom_by_name_for_display (gdk_display,
-                                                            "WM_DELETE_WINDOW");
-    XSetWMProtocols (GDK_DISPLAY_XDISPLAY (gdk_display),
-                     x_window,
-                     protocols,
-                     n);
-
-    event_mask = gdk_window_get_events (gdk_window);
-    event_mask |= (GDK_STRUCTURE_MASK |
-                   GDK_FOCUS_CHANGE_MASK |
-                   GDK_EXPOSURE_MASK |
-                   GDK_PROPERTY_CHANGE_MASK |
-                   GDK_ENTER_NOTIFY_MASK |
-                   GDK_LEAVE_NOTIFY_MASK |
-                   GDK_KEY_PRESS_MASK |
-                   GDK_KEY_RELEASE_MASK |
-                   GDK_BUTTON_PRESS_MASK |
-                   GDK_BUTTON_RELEASE_MASK |
-                   GDK_POINTER_MOTION_MASK |
-                   GDK_SCROLL_MASK);
-    gdk_window_set_events (gdk_window, event_mask);
-
-    shell_onscreen->gdk_window = gdk_window;
-  }
-#endif
 }
 
 void
@@ -2539,26 +2178,20 @@ rut_shell_main (RutShell *shell)
 
   g_idle_add (glib_paint_cb, shell);
 
-#ifdef USE_GTK
-
   {
     GApplication *application = g_application_get_default ();
 
     /* If the application has created a GApplication then we'll run
-     * that instead of running GTK's mainloop directly */
+     * that instead of running our own mainloop directly */
     if (application)
       g_application_run (application, 0, NULL);
     else
-      gtk_main ();
+      {
+        shell->main_loop = g_main_loop_new (NULL, TRUE);
+        g_main_loop_run (shell->main_loop);
+        g_main_loop_unref (shell->main_loop);
+      }
   }
-
-#else
-
-  shell->main_loop = g_main_loop_new (NULL, TRUE);
-  g_main_loop_run (shell->main_loop);
-  g_main_loop_unref (shell->main_loop);
-
-#endif
 
   shell->fini_cb (shell, shell->user_data);
 
@@ -3016,18 +2649,16 @@ rut_shell_quit (RutShell *shell)
 {
 #ifdef __ANDROID__
   shell->quit = TRUE;
-#elif defined(USE_GTK)
+#else
   {
     GApplication *application = g_application_get_default ();
 
     /* If the application has created a GApplication then we'll quit
-     * that instead of GTK's mainloop */
+     * that instead of the mainloop */
     if (application)
       g_application_quit (application);
     else
-      gtk_main_quit ();
+      g_main_loop_quit (shell->main_loop);
   }
-#else
-  g_main_loop_quit (shell->main_loop);
 #endif
 }

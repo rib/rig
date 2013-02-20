@@ -255,7 +255,7 @@ AS_IF([test "x$have_osx" = "xyes"],
 
 AC_ARG_ENABLE([gtk],
               AS_HELP_STRING([--enable-gtk],
-                             [Use a GTK/X11 backend instead of SDL]),
+                             [Use GTK/X11 for menus and dialog boxes]),
               [enable_gtk="$enableval"],
               [enable_gtk="auto"])
 AS_IF([test "x$enable_gtk" = "xauto"],
@@ -268,7 +268,7 @@ AS_IF([test "x$enable_gtk" = "xauto"],
 AS_CASE([$enable_gtk],
         [yes],
         [RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gtk+-x11-3.0"
-         AC_DEFINE([USE_GTK], [1], [Defined if the GTK backend should be used])
+         AC_DEFINE([USE_GTK], [1], [Defined if GTK should be used])
         ],
         [no], [],
         [AC_MSG_ERROR([Invalid value for --enable-gtk])])

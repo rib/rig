@@ -27,10 +27,6 @@
 #include "rut-types.h"
 #include "rut-closure.h"
 
-#ifdef USE_GTK
-#include <gdk/gdk.h>
-#endif /* USE_GTK */
-
 #ifdef __ANDROID__
 #include <android_native_app_glue.h>
 #endif
@@ -444,12 +440,6 @@ void
 rut_shell_set_title (RutShell *shell,
                      CoglOnscreen *onscreen,
                      const char *title);
-
-#ifdef USE_GTK
-GdkWindow *
-rut_shell_get_gdk_window (RutShell *shell,
-                          CoglOnscreen *onscreen);
-#endif /* USE_GTK */
 
 /**
  * rut_shell_quit:

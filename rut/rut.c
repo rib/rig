@@ -30,11 +30,6 @@
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
 
-#ifdef USE_GTK
-#include <gdk/gdkx.h>
-#include <cogl/cogl-xlib.h>
-#endif
-
 /* FIXME: we should have a config.h where things like USE_SDL would
  * be defined instead of defining that in rut.h */
 #include "rut.h"
@@ -332,29 +327,6 @@ rut_context_new (RutShell *shell)
 
 #ifdef USE_SDL
   context->cogl_context = cogl_sdl_context_new (SDL_USEREVENT, &error);
-#elif defined (USE_GTK)
-  {
-    /* We need to force Cogl to use xlib if we're using GTK */
-    CoglRenderer *renderer;
-    GdkDisplay *gdk_display;
-    Display *xlib_display;
-    CoglDisplay *display;
-
-    gdk_display = gdk_display_get_default ();
-    xlib_display = gdk_x11_display_get_xdisplay (gdk_display);
-
-    renderer = cogl_renderer_new ();
-    cogl_renderer_add_constraint (renderer, COGL_RENDERER_CONSTRAINT_USES_XLIB);
-    cogl_xlib_renderer_set_foreign_display (renderer,
-                                            xlib_display);
-
-    display = cogl_display_new (renderer, NULL /* no onscreen template */);
-
-    context->cogl_context = cogl_context_new (display, &error);
-
-    cogl_object_unref (display);
-    cogl_object_unref (renderer);
-  }
 #else
   context->cogl_context = cogl_context_new (NULL, &error);
 #endif

@@ -28,6 +28,11 @@
 #include "rig-load-save.h"
 #include "rut-box-layout.h"
 
+#ifdef USE_SDL
+#include <SDL.h>
+#include <SDL_syswm.h>
+#endif
+
 G_DEFINE_TYPE (RigApplication, rig_application, G_TYPE_APPLICATION);
 
 #define RIG_APPLICATION_GET_PRIVATE(obj) \
@@ -52,14 +57,57 @@ new_activated (GSimpleAction *action,
 {
 }
 
+static CoglBool
+get_xwindow_from_onscreen (CoglOnscreen *onscreen,
+                           Window *xwindow)
+{
+#ifdef USE_SDL
+
+  SDL_SysWMinfo parent_window_info;
+
+  SDL_VERSION (&parent_window_info.version);
+
+#if (SDL_MAJOR_VERSION >= 2)
+  {
+    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (onscreen);
+
+    if (!SDL_GetWindowWMInfo (sdl_window, &parent_window_info))
+      return FALSE;
+  }
+#else /* SDL_MAJOR_VERSION */
+  {
+    if (!SDL_GetWMInfo (&parent_window_info))
+      return FALSE;
+  }
+#endif /* SDL_MAJOR_VERSION */
+
+  if (parent_window_info.subsystem != SDL_SYSWM_X11)
+    return FALSE;
+
+  *xwindow = parent_window_info.info.x11.window;
+
+  return TRUE;
+
+#else /* USE_SDL */
+
+  return FALSE;
+
+#endif /* USE_SDL */
+}
+
 static void
 dialog_realized_cb (GtkWidget *dialog,
-                    GdkWindow *parent_window)
+                    CoglOnscreen *onscreen)
 {
-  GdkWindow *window = gtk_widget_get_window (dialog);
+  GdkWindow *dialog_window = gtk_widget_get_window (dialog);
+  Window xwindow;
 
-  if (window)
-    gdk_window_set_transient_for (window, parent_window);
+  if (!get_xwindow_from_onscreen (onscreen, &xwindow))
+    return;
+
+  XSetTransientForHint (GDK_WINDOW_XDISPLAY (dialog_window),
+                        GDK_WINDOW_XID (dialog_window),
+                        xwindow);
 }
 
 static void
@@ -70,7 +118,6 @@ open_activated (GSimpleAction *action,
   RigApplication *app = user_data;
   RigData *data = app->priv->data;
   GtkWidget *dialog;
-  GdkWindow *parent_window;
 
   dialog = gtk_file_chooser_dialog_new ("Open",
                                         NULL, /* parent */
@@ -79,21 +126,12 @@ open_activated (GSimpleAction *action,
                                         GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
                                         NULL);
 
-  parent_window = rut_shell_get_gdk_window (data->shell, data->onscreen);
-
-  if (parent_window)
-    {
-      GdkScreen *screen = gdk_window_get_screen (parent_window);
-
-      gtk_window_set_screen (GTK_WINDOW (dialog), screen);
-
-      /* Listen to the realize so we can set our GdkWindow to be transient
-       * for Rig's GdkWindow */
-      g_signal_connect_after (dialog,
-                              "realize",
-                              G_CALLBACK (dialog_realized_cb),
-                              parent_window);
-    }
+  /* Listen to the realize so we can set our GdkWindow to be transient
+   * for Rig's GdkWindow */
+  g_signal_connect_after (dialog,
+                          "realize",
+                          G_CALLBACK (dialog_realized_cb),
+                          data->onscreen);
 
   if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
@@ -152,20 +190,20 @@ rig_application_activate (GApplication *application)
 }
 
 static void
-set_window_property (GdkWindow *window,
+set_window_property (CoglOnscreen *onscreen,
                      const char *name,
                      const char *value)
 {
   GdkDisplay *display;
+  Window xwindow;
 
-  /* It would be nice to be able to do this with
-     gdk_x11_window_set_utf8_property instead, but that rejects
-     foreign windows */
+  if (!get_xwindow_from_onscreen (onscreen, &xwindow))
+    return;
 
-  display = gdk_window_get_display (window);
+  display = gdk_display_get_default ();
 
   XChangeProperty (GDK_DISPLAY_XDISPLAY (display),
-                   GDK_WINDOW_XID (window),
+                   xwindow,
                    gdk_x11_get_xatom_by_name_for_display (display, name),
                    gdk_x11_get_xatom_by_name_for_display (display,
                                                           "UTF8_STRING"),
@@ -188,8 +226,6 @@ rig_application_add_onscreen (RigApplication *app,
                               CoglOnscreen *onscreen)
 {
   RigApplicationPrivate *priv = app->priv;
-  RutShell *shell = priv->data->shell;
-  GdkWindow *window = rut_shell_get_gdk_window (shell, onscreen);
   static CoglUserDataKey data_key;
   const char *value;
 
@@ -203,26 +239,26 @@ rig_application_add_onscreen (RigApplication *app,
 
   /* These properties are copied from what GtkApplicationWindow sets */
   value = g_application_get_application_id (G_APPLICATION (app));
-  set_window_property (window,
+  set_window_property (onscreen,
                        "_GTK_APPLICATION_ID",
                        value);
 
   if (priv->dbus_connection)
     {
       value = g_dbus_connection_get_unique_name (priv->dbus_connection);
-      set_window_property (window,
+      set_window_property (onscreen,
                            "_GTK_UNIQUE_BUS_NAME",
                            value);
     }
 
   value = g_application_get_dbus_object_path (G_APPLICATION (app));
   if (value)
-    set_window_property (window,
+    set_window_property (onscreen,
                          "_GTK_APPLICATION_OBJECT_PATH",
                          value);
 
   if (priv->export_menu_id)
-    set_window_property (window,
+    set_window_property (onscreen,
                          "_GTK_APP_MENU_OBJECT_PATH",
                          RIG_APPLICATION_MENU_PATH);
 }

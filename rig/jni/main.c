@@ -23,6 +23,7 @@
 #include "rig-osx.h"
 #ifdef USE_GTK
 #include "rig-application.h"
+#include <gtk/gtk.h>
 #endif /* USE_GTK */
 #include "rig-split-view.h"
 
@@ -1474,6 +1475,8 @@ rig_engine_init (RutShell *shell, void *user_data)
 #ifdef USE_GTK
   {
     RigApplication *application = rig_application_new (data);
+
+    gtk_init (NULL, NULL);
 
     /* We need to register the application before showing the onscreen
      * because we need to set the dbus paths before the window is
