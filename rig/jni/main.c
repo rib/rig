@@ -498,11 +498,11 @@ allocate (RigData *data)
   //data->main_width = data->width - data->left_bar_width - data->right_bar_width;
   //data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
 
+  rut_sizable_set_size (data->top_bin, data->width, data->height);
+
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      rut_sizable_set_size (data->top_bin, data->width, data->height);
-
       if (data->resize_handle_transform)
         {
           RutTransform *transform = data->resize_handle_transform;
