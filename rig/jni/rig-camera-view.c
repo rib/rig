@@ -1530,7 +1530,8 @@ input_cb (RutInputEvent *event,
 static RutInputEventStatus
 device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
 {
-  RigData *data = user_data;
+  RigCameraView *view = user_data;
+  RigData *data = view->data;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -1568,7 +1569,8 @@ static RutInputEventStatus
 device_mode_input_cb (RutInputEvent *event,
                       void *user_data)
 {
-  RigData *data = user_data;
+  RigCameraView *view = user_data;
+  RigData *data = view->data;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -1586,7 +1588,7 @@ device_mode_input_cb (RutInputEvent *event,
              * the grab for you */
             rut_shell_grab_input (data->ctx->shell,
                                   rut_input_event_get_camera (event),
-                                  device_mode_grab_input_cb, data);
+                                  device_mode_grab_input_cb, view);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
 
         }
