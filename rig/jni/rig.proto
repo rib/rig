@@ -7,6 +7,7 @@ message Query
 
 message TestResult
 {
+  required int32 a=1;
 }
 
 service Slave {

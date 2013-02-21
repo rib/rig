@@ -22,7 +22,7 @@
 #define _RIG_RPC_NETWORK_H_
 
 void
-rig_start_rpc_server (RigData *data, int port);
+rig_start_rpc_server (RigData *data);
 
 void
 rig_start_rpc_client (RigData *data,

@@ -106,6 +106,9 @@ ProtobufC_RPC_Server *
                                        ProtobufCDispatch       *dispatch /* or NULL */
                                       );
 
+int
+rig_protobuf_c_rpc_server_get_fd (ProtobufC_RPC_Server *server);
+
 ProtobufCService *
      rig_protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server     *server,
                                         protobuf_c_boolean        free_underlying_service);

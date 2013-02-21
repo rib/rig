@@ -61,6 +61,11 @@
  */
 
 #include "protobuf-c/rig-protobuf-c-rpc.h"
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include <glib.h>
 
 #include <rig-data.h>
@@ -312,23 +317,29 @@ static Rig__Slave_Service rig_slave_service =
   RIG__SLAVE__INIT(example__);
 
 void
-rig_start_rpc_server (RigData *data, int port)
+rig_start_rpc_server (RigData *data)
 {
-  char *port_str = g_strdup_printf ("%d", port);
   GSource *source;
+  int fd;
+  struct sockaddr_in addr;
+  socklen_t addr_len = sizeof (addr);
 
   data->rpc_server =
     rig_protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                                   port_str,
+                                   "0",
                                    (ProtobufCService *) &rig_slave_service,
                                    NULL);
 
-  g_free (port_str);
+  fd = rig_protobuf_c_rpc_server_get_fd (data->rpc_server);
+  getsockname (fd, (struct sockaddr *)&addr, &addr_len);
+
+  if (addr.sin_family == AF_INET)
+    data->network_port = ntohs (addr.sin_port);
+  else
+    data->network_port = 0;
 
   source = protobuf_source_new (data);
   g_source_attach (source, NULL);
-
-  data->network_port = port;
 
   rig_avahi_register_service (data);
 }
@@ -344,7 +355,7 @@ rig_start_rpc_client (RigData *data,
   GSource *source;
   ProtobufSource *protobuf_source;
 
-  client =
+  client = (ProtobufC_RPC_Client *)
     rig_protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
                                    addr_str,
                                    &rig__slave__descriptor,

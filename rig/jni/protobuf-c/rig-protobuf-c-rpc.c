@@ -1398,6 +1398,12 @@ rig_protobuf_c_rpc_server_new (ProtobufC_RPC_AddressType type,
   return server_new_from_fd (fd, type, name, service, dispatch);
 }
 
+int
+rig_protobuf_c_rpc_server_get_fd (ProtobufC_RPC_Server *server)
+{
+  return server->listening_fd;
+}
+
 ProtobufCService *
 rig_protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
                                    protobuf_c_boolean    destroy_underlying)

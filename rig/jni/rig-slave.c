@@ -21,7 +21,7 @@ rig_preview_init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
 
-  rig_start_rpc_server (data, 52637);
+  rig_start_rpc_server (data);
 
   rig_engine_init (shell, data);
 }
