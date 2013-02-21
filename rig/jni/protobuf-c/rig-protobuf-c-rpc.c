@@ -133,7 +133,8 @@ handle_autoreconnect_timeout (ProtobufCDispatch *dispatch,
 
 static void
 client_failed (ProtobufC_RPC_Client *client,
-               const char           *format_str,
+               ProtobufC_RPC_Error_Code code,
+               const char *format_str,
                ...)
 {
   va_list args;
@@ -196,6 +197,9 @@ client_failed (ProtobufC_RPC_Client *client,
       client->state = PROTOBUF_C_CLIENT_STATE_FAILED;
       client->info.failed.error_message = msg;
     }
+
+  if (client->error_handler)
+    client->error_handler (code, msg, client->error_handler_data);
 
   /* we defer calling the closures to avoid
      any re-entrancy issues (e.g. people further RPC should
@@ -268,9 +272,17 @@ handle_client_fd_connect_events (int         fd,
     }
   else
     {
+      ProtobufC_RPC_Error_Code code;
+
       /* Call error handler */
       protobuf_c_dispatch_close_fd (client->dispatch, client->fd);
+      if (fd_errno == ECONNREFUSED)
+        code = PROTOBUF_C_ERROR_CODE_CONNECTION_REFUSED;
+      else
+        code = PROTOBUF_C_ERROR_CODE_CONNECTION_FAILED;
+
       client_failed (client,
+                     code,
                      "failed connecting to server: %s",
                      strerror (fd_errno));
     }
@@ -287,7 +299,9 @@ begin_connecting (ProtobufC_RPC_Client *client,
   client->fd = socket (address->sa_family, SOCK_STREAM, 0);
   if (client->fd < 0)
     {
-      client_failed (client, "error creating socket: %s", strerror (errno));
+      client_failed (client,
+                     PROTOBUF_C_ERROR_CODE_CONNECTION_FAILED,
+                     "error creating socket: %s", strerror (errno));
       return;
     }
   set_fd_nonblocking (client->fd);
@@ -305,7 +319,9 @@ begin_connecting (ProtobufC_RPC_Client *client,
         }
       close (client->fd);
       client->fd = -1;
-      client_failed (client, "error connecting to remote host: %s", strerror (errno));
+      client_failed (client,
+                     PROTOBUF_C_ERROR_CODE_CONNECTION_FAILED,
+                     "error connecting to remote host: %s", strerror (errno));
       return;
     }
 
@@ -345,7 +361,9 @@ handle_name_lookup_failure (const char    *error_message,
       destroy_client_rpc (&client->base_service);
       return;
     }
-  client_failed (client, "name lookup failed (for name from %s): %s", client->name, error_message);
+  client_failed (client,
+                 PROTOBUF_C_ERROR_CODE_CONNECTION_FAILED,
+                 "name lookup failed (for name from %s): %s", client->name, error_message);
 }
 
 static void
@@ -377,6 +395,7 @@ begin_name_lookup (ProtobufC_RPC_Client *client)
         if (colon == NULL)
           {
             client_failed (client,
+                           PROTOBUF_C_ERROR_CODE_CONNECTION_FAILED,
                            "name '%s' does not have a : in it (supposed to be HOST:PORT)",
                            client->name);
             return;
@@ -523,6 +542,7 @@ handle_client_fd_events (int                fd,
       if (write_rv < 0 && !errno_is_ignorable (errno))
         {
           client_failed (client,
+                         PROTOBUF_C_ERROR_CODE_IO_ERROR,
                          "writing to file-descriptor: %s",
                          strerror (errno));
           return;
@@ -543,6 +563,7 @@ handle_client_fd_events (int                fd,
           if (!errno_is_ignorable (errno))
             {
               client_failed (client,
+                             PROTOBUF_C_ERROR_CODE_IO_ERROR,
                              "reading from file-descriptor: %s",
                              strerror (errno));
             }
@@ -551,6 +572,7 @@ handle_client_fd_events (int                fd,
         {
           /* handle eof */
           client_failed (client,
+                         PROTOBUF_C_ERROR_CODE_IO_ERROR,
                          "got end-of-file from server [%u bytes incoming, %u bytes outgoing]",
                          client->incoming.size, client->outgoing.size);
         }
@@ -578,7 +600,9 @@ handle_client_fd_events (int                fd,
                || request_id == 0
                || client->info.connected.closures[request_id-1].response_type == NULL)
                 {
-                  client_failed (client, "bad request-id in response from server");
+                  client_failed (client,
+                                 PROTOBUF_C_ERROR_CODE_BAD_REQUEST,
+                                 "bad request-id in response from server");
                   return;
                 }
               closure = client->info.connected.closures + (request_id - 1);
@@ -596,7 +620,9 @@ handle_client_fd_events (int                fd,
               if (msg == NULL)
                 {
                   fprintf(stderr, "unable to unpack msg of length %u", message_length);
-                  client_failed (client, "failed to unpack message");
+                  client_failed (client,
+                                 PROTOBUF_C_ERROR_CODE_UNPACK_ERROR,
+                                 "failed to unpack message");
                   client->allocator->free (client->allocator, packed_data);
                   return;
                 }
