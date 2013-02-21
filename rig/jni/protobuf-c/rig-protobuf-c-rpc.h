@@ -109,6 +109,44 @@ ProtobufC_RPC_Server *
 int
 rig_protobuf_c_rpc_server_get_fd (ProtobufC_RPC_Server *server);
 
+typedef struct _ProtobufC_RPC_ServerConnection ProtobufC_RPC_ServerConnection;
+
+typedef void (*ProtobufC_RPC_Client_Connect_Func) (ProtobufC_RPC_Server *server,
+                                                   ProtobufC_RPC_ServerConnection *conn,
+                                                   void *user_data);
+
+void
+rig_protobuf_c_rpc_server_set_client_connect_handler (ProtobufC_RPC_Server *server,
+                                                      ProtobufC_RPC_Client_Connect_Func callback,
+                                                      void *user_data);
+
+typedef void (*ProtobufC_RPC_Client_Close_Func) (ProtobufC_RPC_Server *server,
+                                                 ProtobufC_RPC_ServerConnection *conn,
+                                                 void *user_data);
+
+void
+rig_protobuf_c_rpc_server_set_client_close_handler (ProtobufC_RPC_Server *server,
+                                                    ProtobufC_RPC_Client_Close_Func callback,
+                                                    void *user_data);
+
+typedef void (*ProtobufC_RPC_ServerConnection_Close_Func) (ProtobufC_RPC_ServerConnection *conn,
+                                                           void *user_data);
+
+void
+rig_protobuf_c_rpc_server_connection_set_close_handler (ProtobufC_RPC_ServerConnection *conn,
+                                                        ProtobufC_RPC_ServerConnection_Close_Func func,
+                                                        void *user_data);
+
+typedef void (*ProtobufC_RPC_ServerConnection_Error_Func) (ProtobufC_RPC_ServerConnection *conn,
+                                                           ProtobufC_RPC_Error_Code error,
+                                                           const char *message,
+                                                           void *user_data);
+
+void
+rig_protobuf_c_rpc_server_connection_set_error_handler (ProtobufC_RPC_ServerConnection *conn,
+                                                        ProtobufC_RPC_ServerConnection_Error_Func func,
+                                                        void *user_data);
+
 ProtobufCService *
      rig_protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server     *server,
                                         protobuf_c_boolean        free_underlying_service);

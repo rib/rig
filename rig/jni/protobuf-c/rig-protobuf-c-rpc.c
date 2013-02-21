@@ -797,12 +797,11 @@ rig_protobuf_c_rpc_client_disable_autoreconnect (ProtobufC_RPC_Client *client)
 
 /* === Server === */
 typedef struct _ServerRequest ServerRequest;
-typedef struct _ServerConnection ServerConnection;
 struct _ServerRequest
 {
   uint32_t request_id;                  /* in little-endian */
   uint32_t method_index;                /* in native-endian */
-  ServerConnection *conn;
+  ProtobufC_RPC_ServerConnection *conn;
   ProtobufC_RPC_Server *server;
   union {
     /* if conn != NULL, then the request is alive: */
@@ -815,16 +814,23 @@ struct _ServerRequest
     struct { ServerRequest *next; } recycled;
   } info;
 };
-struct _ServerConnection
+struct _ProtobufC_RPC_ServerConnection
 {
   int fd;
+
   ProtobufCDataBuffer incoming, outgoing;
 
   ProtobufC_RPC_Server *server;
-  ServerConnection *prev, *next;
+  ProtobufC_RPC_ServerConnection *prev, *next;
 
   unsigned n_pending_requests;
   ServerRequest *first_pending_request, *last_pending_request;
+
+  ProtobufC_RPC_ServerConnection_Close_Func close_handler;
+  void *close_handler_data;
+
+  ProtobufC_RPC_ServerConnection_Error_Func error_handler;
+  void *error_handler_data;
 };
 
 
@@ -846,7 +852,7 @@ struct _ProtobufC_RPC_Server
   ProtobufCService *underlying;
   ProtobufC_RPC_AddressType address_type;
   char *bind_name;
-  ServerConnection *first_connection, *last_connection;
+  ProtobufC_RPC_ServerConnection *first_connection, *last_connection;
   ProtobufC_FD listening_fd;
 
   ServerRequest *recycled_requests;
@@ -861,6 +867,12 @@ struct _ProtobufC_RPC_Server
   ProtobufC_RPC_Error_Func error_handler;
   void *error_handler_data;
 
+  ProtobufC_RPC_Client_Connect_Func client_connect_handler;
+  void *client_connect_handler_data;
+
+  ProtobufC_RPC_Client_Close_Func client_close_handler;
+  void *client_close_handler_data;
+
   /* configuration */
   unsigned max_pending_requests_per_connection;
 };
@@ -868,12 +880,22 @@ struct _ProtobufC_RPC_Server
 #define GET_PENDING_REQUEST_LIST(conn) \
   ServerRequest *, conn->first_pending_request, conn->last_pending_request, info.alive.prev, info.alive.next
 #define GET_CONNECTION_LIST(server) \
-  ServerConnection *, server->first_connection, server->last_connection, prev, next
+  ProtobufC_RPC_ServerConnection *, server->first_connection, server->last_connection, prev, next
 
 static void
-server_connection_close (ServerConnection *conn)
+server_connection_close (ProtobufC_RPC_ServerConnection *conn)
 {
   ProtobufCAllocator *allocator = conn->server->allocator;
+
+  if (conn->server->client_close_handler)
+    {
+      conn->server->client_close_handler (conn->server,
+                                          conn,
+                                          conn->server->client_close_handler_data);
+    }
+
+  if (conn->close_handler)
+    conn->close_handler (conn, conn->close_handler_data);
 
   /* general cleanup */
   protobuf_c_dispatch_close_fd (conn->server->dispatch, conn->fd);
@@ -945,7 +967,7 @@ address_to_name (const struct sockaddr *addr,
 }
 
 static void
-server_connection_failed (ServerConnection *conn,
+server_connection_failed (ProtobufC_RPC_ServerConnection *conn,
                           ProtobufC_RPC_Error_Code code,
                           const char       *format,
                           ...)
@@ -975,6 +997,9 @@ server_connection_failed (ServerConnection *conn,
   va_end (args);
   msg[sizeof(msg)-1] = 0;
 
+  if (conn->error_handler)
+    conn->error_handler (conn, code, msg, conn->error_handler_data);
+
   /* invoke server error hook */
   server_failed_literal (conn->server, code, msg);
 
@@ -982,7 +1007,7 @@ server_connection_failed (ServerConnection *conn,
 }
 
 static ServerRequest *
-create_server_request (ServerConnection *conn,
+create_server_request (ProtobufC_RPC_ServerConnection *conn,
                        uint32_t          request_id,
                        uint32_t          method_index)
 {
@@ -1100,7 +1125,7 @@ retry_write:
     }
   else
     {
-      ServerConnection *conn = request->conn;
+      ProtobufC_RPC_ServerConnection *conn = request->conn;
       protobuf_c_boolean must_set_output_watch = (conn->outgoing.size == 0);
       rig_protobuf_c_data_buffer_append (&conn->outgoing, buffer_simple.data, buffer_simple.len);
       if (must_set_output_watch)
@@ -1122,7 +1147,7 @@ handle_server_connection_events (int fd,
                                  unsigned events,
                                  void *data)
 {
-  ServerConnection *conn = data;
+  ProtobufC_RPC_ServerConnection *conn = data;
   ProtobufCService *service = conn->server->underlying;
   ProtobufCAllocator *allocator = conn->server->allocator;
   if (events & PROTOBUF_C_EVENT_READABLE)
@@ -1227,7 +1252,7 @@ handle_server_listener_readable (int fd,
   struct sockaddr addr;
   socklen_t addr_len = sizeof (addr);
   int new_fd = accept (fd, &addr, &addr_len);
-  ServerConnection *conn;
+  ProtobufC_RPC_ServerConnection *conn;
   ProtobufCAllocator *allocator = server->allocator;
   if (new_fd < 0)
     {
@@ -1237,16 +1262,27 @@ handle_server_listener_readable (int fd,
                strerror (errno));
       return;
     }
-  conn = allocator->alloc (allocator, sizeof (ServerConnection));
+  conn = allocator->alloc (allocator, sizeof (ProtobufC_RPC_ServerConnection));
   conn->fd = new_fd;
   rig_protobuf_c_data_buffer_init (&conn->incoming, server->allocator);
   rig_protobuf_c_data_buffer_init (&conn->outgoing, server->allocator);
   conn->n_pending_requests = 0;
   conn->first_pending_request = conn->last_pending_request = NULL;
   conn->server = server;
+  conn->close_handler = NULL;
+  conn->close_handler_data = NULL;
+  conn->error_handler = NULL;
+  conn->error_handler_data = NULL;
   GSK_LIST_APPEND (GET_CONNECTION_LIST (server), conn);
   protobuf_c_dispatch_watch_fd (server->dispatch, conn->fd, PROTOBUF_C_EVENT_READABLE,
                                 handle_server_connection_events, conn);
+
+  if (server->client_connect_handler)
+    {
+      server->client_connect_handler (server,
+                                      conn,
+                                      server->client_connect_handler_data);
+    }
 }
 
 static ProtobufC_RPC_Server *
@@ -1266,6 +1302,10 @@ server_new_from_fd (ProtobufC_FD              listening_fd,
   server->max_pending_requests_per_connection = 32;
   server->address_type = address_type;
   server->bind_name = allocator->alloc (allocator, strlen (bind_name) + 1);
+  server->client_connect_handler = NULL;
+  server->client_connect_handler_data = NULL;
+  server->client_close_handler = NULL;
+  server->client_close_handler_data = NULL;
   server->error_handler = error_handler;
   server->error_handler_data = "protobuf-c rpc server";
   server->listening_fd = listening_fd;
@@ -1404,6 +1444,42 @@ rig_protobuf_c_rpc_server_get_fd (ProtobufC_RPC_Server *server)
   return server->listening_fd;
 }
 
+void
+rig_protobuf_c_rpc_server_set_client_connect_handler (ProtobufC_RPC_Server *server,
+                                                      ProtobufC_RPC_Client_Connect_Func func,
+                                                      void *user_data)
+{
+  server->client_connect_handler = func;
+  server->client_connect_handler_data = user_data;
+}
+
+void
+rig_protobuf_c_rpc_server_set_client_close_handler (ProtobufC_RPC_Server *server,
+                                                    ProtobufC_RPC_Client_Close_Func func,
+                                                    void *user_data)
+{
+  server->client_close_handler = func;
+  server->client_close_handler_data = user_data;
+}
+
+void
+rig_protobuf_c_rpc_server_connection_set_close_handler (ProtobufC_RPC_ServerConnection *conn,
+                                                        ProtobufC_RPC_ServerConnection_Close_Func func,
+                                                        void *user_data)
+{
+  conn->close_handler = func;
+  conn->close_handler_data = user_data;
+}
+
+void
+rig_protobuf_c_rpc_server_connection_set_error_handler (ProtobufC_RPC_ServerConnection *conn,
+                                                        ProtobufC_RPC_ServerConnection_Error_Func func,
+                                                        void *user_data)
+{
+  conn->error_handler = func;
+  conn->error_handler_data = user_data;
+}
+
 ProtobufCService *
 rig_protobuf_c_rpc_server_destroy (ProtobufC_RPC_Server *server,
                                    protobuf_c_boolean    destroy_underlying)
@@ -1464,7 +1540,7 @@ handle_proxy_pipe_readable (ProtobufC_FD   fd,
         }
       else
         {
-          ServerConnection *conn = request->conn;
+          ProtobufC_RPC_ServerConnection *conn = request->conn;
           protobuf_c_boolean must_set_output_watch = (conn->outgoing.size == 0);
           rig_protobuf_c_data_buffer_append (&conn->outgoing, (uint8_t*)(pr+1), pr->len);
           if (must_set_output_watch)
