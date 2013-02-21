@@ -60,7 +60,7 @@
  *
  */
 
-#include <google/protobuf-c/protobuf-c-rpc.h>
+#include "protobuf-c/rig-protobuf-c-rpc.h"
 #include <glib.h>
 
 #include <rig-data.h>
@@ -145,7 +145,7 @@ protobuf_source_prepare (GSource *source, int *timeout)
   ProtobufCDispatch *dispatch = protobuf_source->dispatch;
 
   if (protobuf_source->client &&
-      protobuf_c_rpc_client_is_connected (protobuf_source->client))
+      rig_protobuf_c_rpc_client_is_connected (protobuf_source->client))
     {
       return TRUE;
     }
@@ -230,7 +230,7 @@ protobuf_source_dispatch (GSource *source,
 
 
   if (protobuf_source->client &&
-      protobuf_c_rpc_client_is_connected (protobuf_source->client))
+      rig_protobuf_c_rpc_client_is_connected (protobuf_source->client))
     {
       if (protobuf_source->connected)
         {
@@ -316,10 +316,10 @@ rig_start_rpc_server (RigData *data, int port)
   GSource *source;
 
   data->rpc_server =
-    protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                               port_str,
-                               (ProtobufCService *) &rig_slave_service,
-                               NULL);
+    rig_protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
+                                   port_str,
+                                   (ProtobufCService *) &rig_slave_service,
+                                   NULL);
 
   g_free (port_str);
 
@@ -343,10 +343,10 @@ rig_start_rpc_client (RigData *data,
   ProtobufSource *protobuf_source;
 
   client =
-    protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                               addr_str,
-                               &rig__slave__descriptor,
-                               NULL);
+    rig_protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
+                                   addr_str,
+                                   &rig__slave__descriptor,
+                                   NULL);
 
   g_free (addr_str);
 

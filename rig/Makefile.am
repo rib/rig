@@ -5,6 +5,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
 	-I$(top_builddir)/rig/jni \
+	-I$(top_builddir)/rig/jni/protobuf-c \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
@@ -25,7 +26,16 @@ BUILT_SOURCES = $(PROTOBUF_C_FILES)
 DISTCLEANFILES = $(PROTOBUF_C_FILES)
 EXTRA_DIST = $(PROTOBUF_C_FILES)
 
+rig_protobuf_c_sources = \
+	jni/protobuf-c/rig-protobuf-c-data-buffer.h \
+	jni/protobuf-c/rig-protobuf-c-data-buffer.c \
+	jni/protobuf-c/rig-protobuf-c-rpc.h \
+	jni/protobuf-c/rig-protobuf-c-rpc.c \
+	jni/protobuf-c/gsklistmacros.h
+EXTRA_DIST += jni/protobuf-c/README
+
 librig_la_SOURCES = \
+	$(rig_protobuf_c_sources) \
 	jni/main.c \
 	jni/rig-node.c \
 	jni/rig-node.h \
