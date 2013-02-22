@@ -81,7 +81,7 @@ typedef struct _ProtobufSource
 
   ProtobufCDispatch *dispatch;
 
-  ProtobufC_RPC_Client *client;
+  PB_RPC_Client *client;
 
   CoglBool pollfds_changed;
 
@@ -201,7 +201,7 @@ protobuf_source_prepare (GSource *source, int *timeout)
   ProtobufCDispatch *dispatch = protobuf_source->dispatch;
 
   if (protobuf_source->client &&
-      rig_protobuf_c_rpc_client_is_connected (protobuf_source->client))
+      rig_pb_rpc_client_is_connected (protobuf_source->client))
     {
       return TRUE;
     }
@@ -271,7 +271,7 @@ protobuf_source_dispatch (GSource *source,
 
 
   if (protobuf_source->client &&
-      rig_protobuf_c_rpc_client_is_connected (protobuf_source->client))
+      rig_pb_rpc_client_is_connected (protobuf_source->client))
     {
       if (protobuf_source->connected)
         {
@@ -360,22 +360,22 @@ example__test (Rig__Slave_Service *service,
 }
 
 static void
-client_close_handler (ProtobufC_RPC_ServerConnection *conn,
+client_close_handler (PB_RPC_ServerConnection *conn,
                       void *user_data)
 {
   g_warning ("Client connected %p", conn);
 }
 
 static void
-new_client_handler (ProtobufC_RPC_Server *server,
-                    ProtobufC_RPC_ServerConnection *conn,
+new_client_handler (PB_RPC_Server *server,
+                    PB_RPC_ServerConnection *conn,
                     void *user_data)
 {
   RigData *data = user_data;
 
-  rig_protobuf_c_rpc_server_connection_set_close_handler (conn,
-                                                          client_close_handler,
-                                                          user_data);
+  rig_pb_rpc_server_connection_set_close_handler (conn,
+                                                  client_close_handler,
+                                                  user_data);
 
   g_warning ("Client connected %p", conn);
 }
@@ -387,7 +387,7 @@ rig_stop_rpc_server (RigData *data)
 
   g_warning ("Stopping RPC server");
 
-  rig_protobuf_c_rpc_server_destroy (data->rpc_server, TRUE);
+  rig_pb_rpc_server_destroy (data->rpc_server, TRUE);
   data->rpc_server = NULL;
 
   rig_avahi_unregister_service (data);
@@ -396,7 +396,7 @@ rig_stop_rpc_server (RigData *data)
 }
 
 static void
-server_error_handler (ProtobufC_RPC_Error_Code code,
+server_error_handler (PB_RPC_Error_Code code,
                       const char *message,
                       void *user_data)
 {
@@ -419,12 +419,12 @@ rig_start_rpc_server (RigData *data)
   socklen_t addr_len = sizeof (addr);
 
   data->rpc_server =
-    rig_protobuf_c_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                                   "0",
-                                   (ProtobufCService *) &rig_slave_service,
-                                   NULL);
+    rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
+                           "0",
+                           (ProtobufCService *) &rig_slave_service,
+                           NULL);
 
-  fd = rig_protobuf_c_rpc_server_get_fd (data->rpc_server);
+  fd = rig_pb_rpc_server_get_fd (data->rpc_server);
   getsockname (fd, (struct sockaddr *)&addr, &addr_len);
 
   if (addr.sin_family == AF_INET)
@@ -432,13 +432,13 @@ rig_start_rpc_server (RigData *data)
   else
     data->network_port = 0;
 
-  rig_protobuf_c_rpc_server_set_error_handler (data->rpc_server,
-                                               server_error_handler,
-                                               data);
+  rig_pb_rpc_server_set_error_handler (data->rpc_server,
+                                       server_error_handler,
+                                       data);
 
-  rig_protobuf_c_rpc_server_set_client_connect_handler (data->rpc_server,
-                                                        new_client_handler,
-                                                        data);
+  rig_pb_rpc_server_set_client_connect_handler (data->rpc_server,
+                                                new_client_handler,
+                                                data);
 
   source = protobuf_source_new (data);
   data->protobuf_source_id = g_source_attach (source, NULL);
@@ -447,7 +447,7 @@ rig_start_rpc_server (RigData *data)
 }
 
 static void
-client_error_handler (ProtobufC_RPC_Error_Code code,
+client_error_handler (PB_RPC_Error_Code code,
                       const char *message,
                       void *user_data)
 {
@@ -468,17 +468,17 @@ rig_start_rpc_client (RigData *data,
                       void (*connected) (RigData *data))
 {
   char *addr_str = g_strdup_printf ("%s:%d", hostname, port);
-  ProtobufC_RPC_Client *client;
+  PB_RPC_Client *client;
   GSource *source;
   ProtobufSource *protobuf_source;
 
   g_return_if_fail (data->rpc_client == NULL);
 
-  client = (ProtobufC_RPC_Client *)
-    rig_protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                                   addr_str,
-                                   &rig__slave__descriptor,
-                                   NULL);
+  client = (PB_RPC_Client *)
+    rig_pb_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
+                           addr_str,
+                           &rig__slave__descriptor,
+                           NULL);
 
   g_free (addr_str);
 
@@ -488,8 +488,7 @@ rig_start_rpc_client (RigData *data,
   protobuf_source->client = client;
   protobuf_source->connected = connected;
 
-  rig_protobuf_c_rpc_client_set_error_handler (client,
-                                               client_error_handler, data);
+  rig_pb_rpc_client_set_error_handler (client, client_error_handler, data);
 
   g_source_attach (source, NULL);
 

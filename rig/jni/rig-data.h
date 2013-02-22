@@ -24,7 +24,7 @@
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
 
-#include <google/protobuf-c/protobuf-c-rpc.h>
+#include "rig-protobuf-c-rpc.h"
 
 #include "rig-transition.h"
 #include "rig-transition-view.h"
@@ -225,8 +225,8 @@ struct _RigData
   CoglSnippet *shadow_mapping_fragment_snippet;
 
   int network_port;
-  ProtobufC_RPC_Server *rpc_server;
-  ProtobufC_RPC_Client *rpc_client;
+  PB_RPC_Server *rpc_server;
+  PB_RPC_Client *rpc_client;
   int protobuf_source_id;
 
   const AvahiPoll *avahi_poll_api;
