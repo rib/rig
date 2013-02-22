@@ -313,6 +313,54 @@ example__test (Rig__Slave_Service *service,
   closure (&result, closure_data);
 }
 
+static void
+client_close_handler (ProtobufC_RPC_ServerConnection *conn,
+                      void *user_data)
+{
+  g_warning ("Client connected %p", conn);
+}
+
+static void
+new_client_handler (ProtobufC_RPC_Server *server,
+                    ProtobufC_RPC_ServerConnection *conn,
+                    void *user_data)
+{
+  RigData *data = user_data;
+
+  rig_protobuf_c_rpc_server_connection_set_close_handler (conn,
+                                                          client_close_handler,
+                                                          user_data);
+
+  g_warning ("Client connected %p", conn);
+}
+
+void
+rig_stop_rpc_server (RigData *data)
+{
+  g_return_if_fail (data->rpc_server != NULL);
+
+  g_warning ("Stopping RPC server");
+
+  rig_protobuf_c_rpc_server_destroy (data->rpc_server, TRUE);
+  data->rpc_server = NULL;
+
+  rig_avahi_unregister_service (data);
+
+  g_source_remove (data->protobuf_source_id);
+}
+
+static void
+server_error_handler (ProtobufC_RPC_Error_Code code,
+                      const char *message,
+                      void *user_data)
+{
+  RigData *data = user_data;
+
+  g_warning ("Server error: %s", message);
+
+  rig_stop_rpc_server (data);
+}
+
 static Rig__Slave_Service rig_slave_service =
   RIG__SLAVE__INIT(example__);
 
@@ -338,10 +386,33 @@ rig_start_rpc_server (RigData *data)
   else
     data->network_port = 0;
 
+  rig_protobuf_c_rpc_server_set_error_handler (data->rpc_server,
+                                               server_error_handler,
+                                               data);
+
+  rig_protobuf_c_rpc_server_set_client_connect_handler (data->rpc_server,
+                                                        new_client_handler,
+                                                        data);
+
   source = protobuf_source_new (data);
-  g_source_attach (source, NULL);
+  data->protobuf_source_id = g_source_attach (source, NULL);
 
   rig_avahi_register_service (data);
+}
+
+static void
+client_error_handler (ProtobufC_RPC_Error_Code code,
+                      const char *message,
+                      void *user_data)
+{
+  RigData *data = user_data;
+
+  g_return_if_fail (data->rpc_client);
+
+  g_warning ("RPC Client error: %s", message);
+
+  protobuf_c_service_destroy ((ProtobufCService *)data->rpc_client);
+  data->rpc_client = NULL;
 }
 
 void
@@ -354,6 +425,8 @@ rig_start_rpc_client (RigData *data,
   ProtobufC_RPC_Client *client;
   GSource *source;
   ProtobufSource *protobuf_source;
+
+  g_return_if_fail (data->rpc_client == NULL);
 
   client = (ProtobufC_RPC_Client *)
     rig_protobuf_c_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
@@ -368,6 +441,9 @@ rig_start_rpc_client (RigData *data,
 
   protobuf_source->client = client;
   protobuf_source->connected = connected;
+
+  rig_protobuf_c_rpc_client_set_error_handler (client,
+                                               client_error_handler, data);
 
   g_source_attach (source, NULL);
 

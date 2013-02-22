@@ -25,6 +25,9 @@ void
 rig_avahi_register_service (RigData *data);
 
 void
+rig_avahi_unregister_service (RigData *data);
+
+void
 rig_avahi_run_browser (RigData *data);
 
 #endif /* _RIG_AVAHI_H_ */

@@ -283,6 +283,18 @@ rig_avahi_register_service (RigData *data)
   data->avahi_poll_api = poll_api;
 }
 
+void
+rig_avahi_unregister_service (RigData *data)
+{
+  if (!data->avahi_client)
+    return;
+
+  avahi_client_free (data->avahi_client);
+  data->avahi_client = NULL;
+  avahi_glib_poll_free (data->avahi_poll_api);
+  data->avahi_poll_api = NULL;
+}
+
 static void
 resolve_callback(AvahiServiceResolver *resolver,
                  AVAHI_GCC_UNUSED AvahiIfIndex interface,

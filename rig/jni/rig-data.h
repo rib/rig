@@ -227,6 +227,7 @@ struct _RigData
   int network_port;
   ProtobufC_RPC_Server *rpc_server;
   ProtobufC_RPC_Client *rpc_client;
+  int protobuf_source_id;
 
   const AvahiPoll *avahi_poll_api;
   char *avahi_service_name;

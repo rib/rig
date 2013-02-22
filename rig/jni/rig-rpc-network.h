@@ -25,6 +25,9 @@ void
 rig_start_rpc_server (RigData *data);
 
 void
+rig_stop_rpc_server (RigData *data);
+
+void
 rig_start_rpc_client (RigData *data,
                       const char *hostname,
                       int port,
