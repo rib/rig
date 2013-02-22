@@ -1414,6 +1414,8 @@ rig_protobuf_c_rpc_server_new (ProtobufC_RPC_AddressType type,
   socklen_t address_len;
   struct sockaddr_un addr_un;
   struct sockaddr_in addr_in;
+  protobuf_c_boolean need_bind = TRUE;
+
   switch (type)
     {
     case PROTOBUF_C_RPC_ADDRESS_LOCAL:
@@ -1437,6 +1439,8 @@ rig_protobuf_c_rpc_server_new (ProtobufC_RPC_AddressType type,
       }
       address_len = sizeof (addr_in);
       address = (struct sockaddr *) (&addr_in);
+      if (addr_in.sin_port == 0)
+        need_bind = FALSE;
       break;
     default:
     protobuf_c_assert (0);
@@ -1449,7 +1453,8 @@ rig_protobuf_c_rpc_server_new (ProtobufC_RPC_AddressType type,
                strerror (errno));
       return NULL;
     }
-  if (bind (fd, address, address_len) < 0)
+  if (need_bind &&
+      bind (fd, address, address_len) < 0)
     {
       fprintf (stderr, "protobuf_c_rpc_server_new: error binding to port: %s\n",
                strerror (errno));
