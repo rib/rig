@@ -143,6 +143,57 @@ get_timeout (ProtobufSource *protobuf_source)
   return -1;
 }
 
+static CoglBool
+pollfds_up_to_date (ProtobufSource *protobuf_source)
+{
+  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  int i;
+
+  if (dispatch->n_notifies_desired != protobuf_source->n_pollfds)
+    return FALSE;
+
+  for (i = 0; i < protobuf_source->n_pollfds; i++)
+    {
+      ProtobufC_FDNotify *notify = &dispatch->notifies_desired[i];
+      GPollFD *pollfd = &protobuf_source->pollfds[i];
+
+      if (notify->fd != pollfd->fd)
+        return FALSE;
+
+      if (protobuf_events_to_gpollfd_events (notify->events) !=
+          pollfd->events)
+        return FALSE;
+    }
+
+  return TRUE;
+}
+
+static void
+sync_pollfds (ProtobufSource *protobuf_source)
+{
+  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  GSource *source = &protobuf_source->source;
+  int i;
+
+  if (pollfds_up_to_date (protobuf_source))
+    return;
+
+  for (i = 0; i < protobuf_source->n_pollfds; i++)
+    g_source_remove_poll (source, &protobuf_source->pollfds[i]);
+  g_free (protobuf_source->pollfds);
+
+  protobuf_source->n_pollfds = dispatch->n_notifies_desired;
+  protobuf_source->pollfds = g_new (GPollFD, dispatch->n_notifies_desired);
+  for (i = 0; i < protobuf_source->n_pollfds; i++)
+    {
+      protobuf_source->pollfds[i].fd = dispatch->notifies_desired[i].fd;
+      protobuf_source->pollfds[i].events =
+        protobuf_events_to_gpollfd_events (dispatch->notifies_desired[i].events);
+
+      g_source_add_poll (source, &protobuf_source->pollfds[i]);
+    }
+}
+
 static gboolean
 protobuf_source_prepare (GSource *source, int *timeout)
 {
@@ -163,8 +214,6 @@ protobuf_source_prepare (GSource *source, int *timeout)
       protobuf_source->pollfds_changed ||
       dispatch->n_changes)
     {
-      int i;
-
       /* XXX: it's possible that we could hit this path redundantly if
        * some other GSource reports that it can dispatch immediately
        * and so we will be asked to _prepare() again later and
@@ -172,20 +221,7 @@ protobuf_source_prepare (GSource *source, int *timeout)
        * any api to clear the dispatch->changes[].
        */
 
-      for (i = 0; i < protobuf_source->n_pollfds; i++)
-        g_source_remove_poll (source, &protobuf_source->pollfds[i]);
-      g_free (protobuf_source->pollfds);
-
-      protobuf_source->n_pollfds = dispatch->n_notifies_desired;
-      protobuf_source->pollfds = g_new (GPollFD, dispatch->n_notifies_desired);
-      for (i = 0; i < protobuf_source->n_pollfds; i++)
-        {
-          protobuf_source->pollfds[i].fd = dispatch->notifies_desired[i].fd;
-          protobuf_source->pollfds[i].events =
-            protobuf_events_to_gpollfd_events (dispatch->notifies_desired[i].events);
-
-          g_source_add_poll (source, &protobuf_source->pollfds[i]);
-        }
+      sync_pollfds (protobuf_source);
     }
 
   protobuf_source->pollfds_changed = FALSE;
@@ -269,6 +305,16 @@ protobuf_source_dispatch (GSource *source,
       }
 
   protobuf_c_dispatch_dispatch (protobuf_source->dispatch, n_events, events);
+
+  /* XXX: PROTOBUF-C BUG?
+   *
+   * protobuf_c_dispatch_dispatch can return with dispatch->n_changes
+   * == 0 even though the list of notifies may have changed during the
+   * dispatch itself which means we have to resort to explicitly comparing
+   * the gpollfds with dispatch->notifies_desired which is obviously
+   * not ideal!
+   */
+  sync_pollfds (protobuf_source);
 
   if (to_free)
     g_free (to_free);
