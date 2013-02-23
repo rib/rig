@@ -10,6 +10,165 @@ message TestResult
   required int32 a=1;
 }
 
+message Color
+{
+  optional string hex=1;
+}
+
+message Device
+{
+  optional int32 width=1;
+  optional int32 height=2;
+  optional Color background=3;
+}
+
+message Asset
+{
+  required int32 id=1;
+  required string path=2;
+}
+
+message Vec3
+{
+  required float x=1;
+  required float y=2;
+  required float z=3;
+}
+
+message Vec4
+{
+  required float x=1;
+  required float y=2;
+  required float z=3;
+  required float w=4;
+}
+
+message Quaternion
+{
+  required float w=1;
+  required float x=2;
+  required float y=3;
+  required float z=4;
+}
+
+message Texture
+{
+  optional int32 asset_id=1;
+}
+
+message Entity
+{
+  message Component
+    {
+      enum Type { MATERIAL=1; SHAPE=2; MODEL=3; }
+
+      message Material
+        {
+          optional Color ambient=1;
+          optional Color diffuse=2;
+          optional Color specular=3;
+          optional float shininess=4;
+          optional Texture texture=5;
+        }
+
+      message Shape
+        {
+          optional int32 id=1;
+          optional bool shaped=2;
+        }
+
+      message Model
+        {
+          optional int32 asset_id=1;
+        }
+
+      optional Type type=1;
+      optional Material material=2;
+      optional Shape shape=3;
+      optional Model model=4;
+    }
+
+  optional int32 id=1;
+  optional string label=2;
+  optional Vec3 position=3;
+  optional float scale=4;
+  optional Quaternion rotation=5;
+
+  repeated Component components=6;
+}
+
+enum PropertyType { FLOAT=1;
+                    DOUBLE=2;
+                    INTEGER=3;
+                    ENUM=4;
+                    UINT32=5;
+                    BOOLEAN=6;
+                    OBJECT=7;
+                    POINTER=8;
+                    QUATERNION=9;
+                    COLOR=10;
+                    VEC3=11;
+                    VEC4=12; }
+
+message PropertyValue
+{
+  optional float float_value=2;
+  optional double double_value=3;
+  optional int32 integer_value=4;
+  optional int32 enum_value=5;
+  optional bool boolean_value=6;
+  optional Quaternion quaternion_value=7;
+  optional Color color_value=8;
+  optional Vec3 vec3_value=9;
+  optional Vec4 vec4_value=10;
+}
+
+message Node
+{
+  optional float t=1;
+  optional PropertyValue value=2;
+}
+
+message Path
+{
+  repeated Node nodes=1;
+}
+
+message Constant
+{
+  optional PropertyValue value=1;
+}
+
+message Transition
+{
+  message Property
+    {
+      optional int32 entity_id=1;
+      optional bool animated=2;
+
+      optional string name=3;
+      optional PropertyType type=4;
+      optional Path path=5;
+      optional Constant constant=6;
+    }
+
+  optional int32 id=1;
+  repeated Property properties=2;
+}
+
+message UI
+{
+  optional Device device=1;
+  repeated Asset assets=2;
+  repeated Entity entities=3;
+  repeated Transition transitions=4;
+}
+
+message LoadResult
+{
+}
+
 service Slave {
+    //rpc Load (UI) returns (LoadResult);
     rpc Test (Query) returns (TestResult);
 }
