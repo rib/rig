@@ -155,6 +155,9 @@ void
 rig_pb_rpc_server_connection_set_error_handler (PB_RPC_ServerConnection *conn,
                                                 PB_RPC_ServerConnection_Error_Func func,
                                                 void *user_data);
+void
+rig_pb_rpc_server_connection_set_data (PB_RPC_ServerConnection *conn,
+                                       void *user_data);
 
 ProtobufCService *
 rig_pb_rpc_server_destroy (PB_RPC_Server *server,
@@ -188,5 +191,12 @@ void
 rig_pb_rpc_server_set_error_handler (PB_RPC_Server *server,
                                      PB_RPC_Error_Func func,
                                      void *error_func_data);
+
+/* XXX: this is quite hacky since it's not type safe, but for now
+ * this avoids up importing protoc-c into rig so that we can
+ * change the prototype of rpc service functions.
+ */
+void *
+rig_pb_rpc_closure_get_connection_data (void *closure_data);
 
 #endif

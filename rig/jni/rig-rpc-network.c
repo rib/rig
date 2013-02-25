@@ -351,6 +351,7 @@ example__test (Rig__Slave_Service *service,
                void *closure_data)
 {
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
+  RigData *data = rig_pb_rpc_closure_get_connection_data (closure_data);
 
   g_return_if_fail (query != NULL);
 
@@ -376,6 +377,8 @@ new_client_handler (PB_RPC_Server *server,
   rig_pb_rpc_server_connection_set_close_handler (conn,
                                                   client_close_handler,
                                                   user_data);
+
+  rig_pb_rpc_server_connection_set_data (conn, data);
 
   g_warning ("Client connected %p", conn);
 }

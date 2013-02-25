@@ -876,6 +876,8 @@ struct _PB_RPC_ServerConnection
 
   PB_RPC_ServerConnection_Error_Func error_handler;
   void *error_handler_data;
+
+  void *user_data;
 };
 
 
@@ -1671,4 +1673,18 @@ rig_pb_rpc_server_set_error_handler (PB_RPC_Server *server,
 {
   server->error_handler = func;
   server->error_handler_data = error_func_data;
+}
+
+void
+rig_pb_rpc_server_connection_set_data (PB_RPC_ServerConnection *conn,
+                                       void *user_data)
+{
+  conn->user_data = user_data;
+}
+
+void *
+rig_pb_rpc_closure_get_connection_data (void *closure_data)
+{
+  ServerRequest *request = closure_data;
+  return request->conn->user_data;
 }
