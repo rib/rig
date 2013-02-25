@@ -90,6 +90,7 @@ struct _RutShell
   RutObject *keyboard_focus_object;
   GDestroyNotify keyboard_ungrab_cb;
 
+  int glib_paint_idle;
   CoglBool redraw_queued;
 
   /* Queue of callbacks to be invoked before painting. If
@@ -1519,7 +1520,7 @@ android_handle_cmd (struct android_app *app,
       if (shell->app->window != NULL)
         {
           android_init (shell);
-          shell->redraw_queued = shell->paint_cb (shell, shell->user_data);
+          _rut_shell_paint (shell);
         }
       break;
 
@@ -1535,7 +1536,7 @@ android_handle_cmd (struct android_app *app,
 
     case APP_CMD_LOST_FOCUS:
       g_message ("command: LOST_FOCUS");
-      shell->redraw_queued = shell->paint_cb (shell, shell->user_data);
+      _rut_shell_paint (shell);
       break;
     }
 }
@@ -1875,11 +1876,18 @@ flush_pre_paint_callbacks (RutShell *shell)
   shell->flushing_pre_paints = FALSE;
 }
 
-static CoglBool
+static void
 _rut_shell_paint (RutShell *shell)
 {
   GSList *l;
-  //CoglBool status;
+
+  g_return_if_fail (shell->redraw_queued == TRUE);
+
+  shell->redraw_queued = FALSE;
+#ifndef __ANDROID__
+  g_source_remove (shell->glib_paint_idle);
+  shell->glib_paint_idle = 0;
+#endif
 
   for (l = shell->rut_ctx->timelines; l; l = l->next)
     _rut_timeline_update (l->data);
@@ -1887,13 +1895,16 @@ _rut_shell_paint (RutShell *shell)
   flush_pre_paint_callbacks (shell);
 
   if (shell->paint_cb (shell, shell->user_data))
-    return TRUE;
+    goto queue_redraw;
 
   for (l = shell->rut_ctx->timelines; l; l = l->next)
     if (rut_timeline_is_running (l->data))
-      return TRUE;
+      goto queue_redraw;
 
-  return FALSE;
+  return;
+
+queue_redraw:
+  rut_shell_queue_redraw (shell);
 }
 
 #ifdef USE_SDL
@@ -1911,14 +1922,14 @@ sdl_handle_event (RutShell *shell, SDL_Event *event)
     {
 #if SDL_MAJOR_VERSION < 2
     case SDL_VIDEOEXPOSE:
-      shell->redraw_queued = TRUE;
+      rut_shell_queue_redraw (shell);
       break;
 #else /* SDL_MAJOR_VERSION < 2 */
     case SDL_WINDOWEVENT:
       switch (event->window.event)
         {
         case SDL_WINDOWEVENT_EXPOSED:
-          shell->redraw_queued = TRUE;
+          rut_shell_queue_redraw (shell);
           break;
 
         case SDL_WINDOWEVENT_CLOSE:
@@ -2077,11 +2088,8 @@ sdl_poll_wrapper (GPollFD *ufds,
 static CoglBool
 glib_paint_cb (void *user_data)
 {
-  RutShell *shell = user_data;
-
-  shell->redraw_queued = _rut_shell_paint (shell);
-
-  return TRUE;
+  _rut_shell_paint (user_data);
+  return FALSE;
 }
 
 static void
@@ -2149,7 +2157,7 @@ rut_shell_main (RutShell *shell)
             source->process (shell->app, source);
         }
 
-      shell->redraw_queued = _rut_shell_paint (shell);
+      _rut_shell_paint (shell);
     }
 
 #else
@@ -2175,8 +2183,6 @@ rut_shell_main (RutShell *shell)
     g_source_attach (sdl_source, NULL);
   }
 #endif
-
-  g_idle_add (glib_paint_cb, shell);
 
   {
     GApplication *application = g_application_get_default ();
@@ -2236,6 +2242,11 @@ void
 rut_shell_queue_redraw (RutShell *shell)
 {
   shell->redraw_queued = TRUE;
+
+#ifndef __ANDROID__
+  if (shell->glib_paint_idle <= 0)
+    shell->glib_paint_idle = g_idle_add (glib_paint_cb, shell);
+#endif
 }
 
 enum {
