@@ -1460,6 +1460,10 @@ rig_engine_init (RutShell *shell, void *user_data)
   _rut_test_list_splice ();
 #endif
 
+#ifdef RIG_EDITOR_ENABLED
+  data->serialization_stack = rut_memory_stack_new (8192);
+#endif
+
   cogl_matrix_init_identity (&data->identity);
 
   for (i = 0; i < RIG_DATA_N_PROPS; i++)

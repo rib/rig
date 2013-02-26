@@ -24,8 +24,8 @@ message Device
 
 message Asset
 {
-  required int32 id=1;
-  required string path=2;
+  optional sint64 id=1;
+  optional string path=2;
 }
 
 message Vec3
@@ -43,9 +43,9 @@ message Vec4
   required float w=4;
 }
 
-message Quaternion
+message Rotation
 {
-  required float w=1;
+  required float angle=1;
   required float x=2;
   required float y=3;
   required float z=4;
@@ -53,14 +53,31 @@ message Quaternion
 
 message Texture
 {
-  optional int32 asset_id=1;
+  optional sint64 asset_id=1;
+}
+
+message NormalMap
+{
+  optional sint64 asset_id=1;
+}
+
+message AlphaMask
+{
+  optional sint64 asset_id=1;
 }
 
 message Entity
 {
   message Component
     {
-      enum Type { MATERIAL=1; SHAPE=2; MODEL=3; }
+      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; }
+
+      message Light
+        {
+          optional Color ambient=1;
+          optional Color diffuse=2;
+          optional Color specular=3;
+        }
 
       message Material
         {
@@ -69,32 +86,52 @@ message Entity
           optional Color specular=3;
           optional float shininess=4;
           optional Texture texture=5;
+          optional NormalMap normal_map=6;
+          optional AlphaMask alpha_mask=7;
         }
 
       message Shape
         {
-          optional int32 id=1;
           optional bool shaped=2;
+        }
+
+      message Diamond
+        {
+          optional float size=1;
         }
 
       message Model
         {
-          optional int32 asset_id=1;
+          optional sint64 asset_id=1;
         }
 
-      optional Type type=1;
-      optional Material material=2;
-      optional Shape shape=3;
-      optional Model model=4;
+      message Text
+        {
+          optional string text=1;
+          optional string font=2;
+          optional Color color=3;
+        }
+
+      optional sint64 id=1;
+      optional Type type=2;
+      optional Light light=3;
+      optional Material material=4;
+      optional Shape shape=5;
+      optional Diamond diamond=6;
+      optional Model model=7;
+      optional Text text=8;
     }
 
-  optional int32 id=1;
-  optional string label=2;
-  optional Vec3 position=3;
-  optional float scale=4;
-  optional Quaternion rotation=5;
+  optional sint64 id=1;
+  optional sint64 parent_id=2;
+  optional string label=3;
+  optional Vec3 position=4;
+  optional float scale=5;
+  optional Rotation rotation=6;
 
-  repeated Component components=6;
+  optional bool cast_shadow=7;
+
+  repeated Component components=8;
 }
 
 enum PropertyType { FLOAT=1;
@@ -114,13 +151,23 @@ message PropertyValue
 {
   optional float float_value=2;
   optional double double_value=3;
-  optional int32 integer_value=4;
+  optional sint32 integer_value=4;
   optional int32 enum_value=5;
-  optional bool boolean_value=6;
-  optional Quaternion quaternion_value=7;
-  optional Color color_value=8;
-  optional Vec3 vec3_value=9;
-  optional Vec4 vec4_value=10;
+  optional int32 uint32_value=6;
+  optional bool boolean_value=7;
+  optional sint64 object_value=8;
+  //XXX: we never expect to serialize a pointer
+  optional Rotation quaternion_value=9;
+  optional Color color_value=10;
+  optional Vec3 vec3_value=12;
+  optional Vec4 vec4_value=13;
+
+  optional string text_value=14;
+}
+
+message Constant
+{
+  optional PropertyValue value=1;
 }
 
 message Node
@@ -131,28 +178,24 @@ message Node
 
 message Path
 {
-  repeated Node nodes=1;
-}
-
-message Constant
-{
-  optional PropertyValue value=1;
+  repeated Node nodes=2;
 }
 
 message Transition
 {
   message Property
     {
-      optional int32 entity_id=1;
+
+      optional sint64 object_id=1;
       optional bool animated=2;
 
       optional string name=3;
       optional PropertyType type=4;
       optional Path path=5;
-      optional Constant constant=6;
+      optional PropertyValue constant=6;
     }
 
-  optional int32 id=1;
+  optional sint64 id=1;
   repeated Property properties=2;
 }
 

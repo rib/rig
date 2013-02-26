@@ -80,6 +80,10 @@ struct _RigData
   RutContext *ctx;
   CoglOnscreen *onscreen;
 
+#ifdef RIG_EDITOR_ENABLED
+  RutMemoryStack *serialization_stack;
+#endif
+
   GArray *journal;
 
   RigUndoJournal *undo_journal;
