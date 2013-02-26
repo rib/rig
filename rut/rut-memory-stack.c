@@ -121,8 +121,18 @@ rut_memory_stack_alloc (RutMemoryStack *stack, size_t bytes)
   /* If the stack has been rewound and then a large initial allocation
    * is made then we may need to skip over one or more of the
    * sub-stacks that are too small for the requested allocation
-   * size... */
-  rut_list_for_each (sub_stack, stack->sub_stack->list_node.next, list_node)
+   * size...
+   *
+   * XXX: note we don't use rut_list_for_each here because we need to be
+   * careful to iterate the list starting from our current position, but
+   * stopping if we loop back to the first sub_stack. (NB: A RutList
+   * is a circular list)
+   */
+  for (sub_stack = rut_container_of (stack->sub_stack->list_node.next,
+                                     sub_stack, list_node);
+       &sub_stack->list_node != &stack->sub_stacks;
+       sub_stack = rut_container_of (sub_stack->list_node.next,
+                                     sub_stack, list_node))
     {
       if (sub_stack->bytes >= bytes)
         {
@@ -173,12 +183,10 @@ rut_memory_sub_stack_free (RutMemorySubStack *sub_stack)
 void
 rut_memory_stack_free (RutMemoryStack *stack)
 {
-  RutMemorySubStack *sub_stack;
+  RutMemorySubStack *sub_stack, *tmp;
 
-  rut_list_for_each (sub_stack, &stack->sub_stacks, list_node)
-    {
-      rut_memory_sub_stack_free (sub_stack);
-    }
+  rut_list_for_each_safe (sub_stack, tmp, &stack->sub_stacks, list_node)
+    rut_memory_sub_stack_free (sub_stack);
 
   g_slice_free (RutMemoryStack, stack);
 }
