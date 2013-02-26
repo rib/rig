@@ -26,6 +26,8 @@
 #include <gtk/gtk.h>
 #endif /* USE_GTK */
 #include "rig-split-view.h"
+#include "rig-rpc-network.h"
+#include "rig.pb-c.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -1115,6 +1117,42 @@ load_gradient_image (RutContext *ctx,
 }
 
 static void
+handle_query_response (const Rig__TestResult *result,
+                       void *closure_data)
+{
+  g_print ("Response received\n");
+}
+
+void
+slave_connected (RigData *data)
+{
+  Rig__Query query = RIG__QUERY__INIT;
+
+  query.a = 100;
+
+  rig__slave__test (data->rpc_client, &query, handle_query_response, NULL);
+
+  g_print ("XXXXXXXXXXXX Slave Connected!");
+}
+
+void
+connect_pressed_cb (RutButton *button,
+                    void *user_data)
+{
+  RigData *data = user_data;
+
+  if (data->slave_addresses)
+    {
+      RigSlaveAddress *slave_address = data->slave_addresses->data;
+
+      rig_start_rpc_client (data,
+                            slave_address->hostname,
+                            slave_address->port,
+                            slave_connected);
+    }
+
+}
+static void
 create_top_bar (RigData *data)
 {
   RutStack *top_bar_stack = rut_stack_new (data->ctx, 123, 0);
@@ -1142,6 +1180,10 @@ create_top_bar (RigData *data)
 
   rut_stack_add (top_bar_stack, data->top_bar_hbox);
 
+  rut_button_add_on_click_callback (connect_button,
+                                    connect_pressed_cb,
+                                    data,
+                                    NULL); /* destroy callback */
   rut_box_layout_add (data->top_bar_hbox_ltr, FALSE, connect_button);
   rut_refable_unref (connect_button);
 }

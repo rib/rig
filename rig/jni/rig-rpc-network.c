@@ -303,6 +303,8 @@ example__test (Rig__Slave_Service *service,
 
   g_return_if_fail (query != NULL);
 
+  g_print ("Test Query\n");
+
   closure (&result, closure_data);
 }
 

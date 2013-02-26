@@ -61,7 +61,8 @@ librig_la_SOURCES = \
 	jni/rig-avahi.h \
 	jni/rig-avahi.c \
 	jni/rig-rpc-network.h \
-	jni/rig-rpc-network.c
+	jni/rig-rpc-network.c \
+	jni/rig.pb-c.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
