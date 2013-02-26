@@ -5,6 +5,7 @@
 #include <rig-data.h>
 #include <rig-engine.h>
 #include <rig-avahi.h>
+#include <rig-rpc-network.h>
 
 #if 0
 static const GOptionEntry rut_handset_entries[] =
@@ -20,7 +21,7 @@ rig_preview_init (RutShell *shell, void *user_data)
 {
   RigData *data = user_data;
 
-  rig_avahi_register_service (data);
+  rig_start_rpc_server (data, 52637);
 
   rig_engine_init (shell, data);
 }
