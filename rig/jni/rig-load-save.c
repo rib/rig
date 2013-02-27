@@ -12,13 +12,9 @@
 #include "rig.pb-c.h"
 #include "rig-data.h"
 
-#define INDENT_LEVEL 2
-
 typedef struct _SaveState
 {
   RigData *data;
-  FILE *file;
-  int indent;
 
   int n_pb_entities;
   GList *pb_entities;
@@ -160,8 +156,6 @@ save_component_cb (RutComponent *component,
   state->n_pb_components++;
   state->pb_components = g_list_prepend (state->pb_components, pb_component);
 
-  state->indent += INDENT_LEVEL;
-
   register_save_object (state, component, state->next_id);
   component_id = state->next_id++;
 
@@ -187,27 +181,6 @@ save_component_cb (RutComponent *component,
       pb_light->ambient = pb_color_new (data, ambient);
       pb_light->diffuse = pb_color_new (data, diffuse);
       pb_light->specular = pb_color_new (data, specular);
-
-      fprintf (state->file,
-               "%*s<light "
-               "id=\"%i\" "
-               "ambient=\"#%02x%02x%02x%02x\" "
-               "diffuse=\"#%02x%02x%02x%02x\" "
-               "specular=\"#%02x%02x%02x%02x\"/>\n",
-               state->indent, "",
-               component_id,
-               cogl_color_get_red_byte (ambient),
-               cogl_color_get_green_byte (ambient),
-               cogl_color_get_blue_byte (ambient),
-               cogl_color_get_alpha_byte (ambient),
-               cogl_color_get_red_byte (diffuse),
-               cogl_color_get_green_byte (diffuse),
-               cogl_color_get_blue_byte (diffuse),
-               cogl_color_get_alpha_byte (diffuse),
-               cogl_color_get_red_byte (specular),
-               cogl_color_get_green_byte (specular),
-               cogl_color_get_blue_byte (specular),
-               cogl_color_get_alpha_byte (specular));
     }
   else if (type == &rut_material_type)
     {
@@ -232,39 +205,6 @@ save_component_cb (RutComponent *component,
       pb_material->has_shininess = TRUE;
       pb_material->shininess = rut_material_get_shininess (material);
 
-      fprintf (state->file, "%*s<material id=\"%i\"\n",
-               state->indent, "",
-               component_id);
-
-      fprintf (state->file, "%*s          ambient=\"#%02x%02x%02x%02x\"\n",
-               state->indent, "",
-               cogl_color_get_red_byte (ambient),
-               cogl_color_get_green_byte (ambient),
-               cogl_color_get_blue_byte (ambient),
-               cogl_color_get_alpha_byte (ambient));
-
-      fprintf (state->file, "%*s          diffuse=\"#%02x%02x%02x%02x\"\n",
-               state->indent, "",
-               cogl_color_get_red_byte (diffuse),
-               cogl_color_get_green_byte (diffuse),
-               cogl_color_get_blue_byte (diffuse),
-               cogl_color_get_alpha_byte (diffuse));
-
-      fprintf (state->file, "%*s          specular=\"#%02x%02x%02x%02x\"\n",
-               state->indent, "",
-               cogl_color_get_red_byte (specular),
-               cogl_color_get_green_byte (specular),
-               cogl_color_get_blue_byte (specular),
-               cogl_color_get_alpha_byte (specular));
-
-      fprintf (state->file, "%*s          shininess=\"%f\"",
-               state->indent, "",
-               rut_material_get_shininess (material));
-
-      fprintf (state->file, ">\n");
-
-      state->indent += INDENT_LEVEL;
-
       asset = rut_material_get_texture_asset (material);
       if (asset)
         {
@@ -279,10 +219,6 @@ save_component_cb (RutComponent *component,
                                              rig__texture__init);
               pb_material->texture->has_asset_id = TRUE;
               pb_material->texture->asset_id = id;
-
-              fprintf (state->file, "%*s<texture asset=\"%d\"/>\n",
-                       state->indent, "",
-                       (int)id);
             }
         }
 
@@ -296,10 +232,6 @@ save_component_cb (RutComponent *component,
                                                 sizeof (Rig__NormalMap),
                                                 rig__normal_map__init);
               pb_material->normal_map->asset_id = id;
-
-              fprintf (state->file, "%*s<normal_map asset=\"%d\"/>\n",
-                       state->indent, "",
-                       (int)id);
             }
         }
 
@@ -313,15 +245,8 @@ save_component_cb (RutComponent *component,
                                                 sizeof (Rig__AlphaMask),
                                                 rig__alpha_mask__init);
               pb_material->alpha_mask->asset_id = id;
-
-              fprintf (state->file, "%*s<alpha_mask asset=\"%d\"/>\n",
-                       state->indent, "",
-                       (int)id);
             }
         }
-
-      state->indent -= INDENT_LEVEL;
-      fprintf (state->file, "%*s</material>\n", state->indent, "");
     }
   else if (type == &rut_shape_type)
     {
@@ -333,11 +258,6 @@ save_component_cb (RutComponent *component,
                                     rig__entity__component__shape__init);
       pb_component->shape->has_shaped = TRUE;
       pb_component->shape->shaped = shaped;
-
-      fprintf (state->file, "%*s<shape id=\"%i\" shaped=\"%s\"/>\n",
-               state->indent, "",
-               component_id,
-               shaped ? "true" : "false");
     }
   else if (type == &rut_diamond_type)
     {
@@ -347,11 +267,6 @@ save_component_cb (RutComponent *component,
                                       rig__entity__component__diamond__init);
       pb_component->diamond->has_size = TRUE;
       pb_component->diamond->size = rut_diamond_get_size (RUT_DIAMOND (component));
-
-      fprintf (state->file, "%*s<diamond id=\"%i\" size=\"%f\"/>\n",
-               state->indent, "",
-               component_id,
-               rut_diamond_get_size (RUT_DIAMOND (component)));
     }
   else if (type == &rut_model_type)
     {
@@ -371,11 +286,6 @@ save_component_cb (RutComponent *component,
         {
           pb_component->model->has_asset_id = TRUE;
           pb_component->model->asset_id = asset_id;
-
-          fprintf (state->file, "%*s<model id=\"%i\" asset=\"%d\" />",
-                   state->indent, "",
-                   component_id,
-                   (int)asset_id);
         }
     }
   else if (type == &rut_text_type)
@@ -395,21 +305,7 @@ save_component_cb (RutComponent *component,
       pb_text->text = rut_text_get_text (text);
       pb_text->font = rut_text_get_font_name (text);
       pb_text->color = pb_color_new (data, color);
-
-      fprintf (state->file,
-               "%*s<text id=\"%i\" text=\"%s\" font=\"%s\" "
-               "color=\"#%02x%02x%02x%02x\" />\n",
-               state->indent, "",
-               component_id,
-               rut_text_get_text (text),
-               rut_text_get_font_name (text),
-               cogl_color_get_red_byte (color),
-               cogl_color_get_green_byte (color),
-               cogl_color_get_blue_byte (color),
-               cogl_color_get_alpha_byte (color));
     }
-
-  state->indent -= INDENT_LEVEL;
 }
 
 static RutTraverseVisitFlags
@@ -459,10 +355,6 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
   pb_entity->has_id = TRUE;
   pb_entity->id = state->next_id++;
 
-  fprintf (state->file, "%*s<entity id=\"%d\"\n",
-           state->indent, "",
-           (int)pb_entity->id);
-
   if (parent && rut_object_get_type (parent) == &rut_entity_type)
     {
       uint64_t id = saver_lookup_object_id (state, parent);
@@ -470,10 +362,6 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
         {
           pb_entity->has_parent_id = TRUE;
           pb_entity->parent_id = id;
-
-          fprintf (state->file, "%*s        parent=\"%d\"\n",
-                   state->indent, "",
-                   (int)id);
         }
       else
         g_warning ("Failed to find id of parent entity\n");
@@ -482,10 +370,6 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
   if (label && *label)
     {
       pb_entity->label = label;
-
-      fprintf (state->file, "%*s        label=\"%s\"\n",
-               state->indent, "",
-               label);
     }
 
   q = rut_entity_get_rotation (entity);
@@ -510,24 +394,8 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
   pb_entity->has_cast_shadow = TRUE;
   pb_entity->cast_shadow = rut_entity_get_cast_shadow (entity);
 
-
   angle = cogl_quaternion_get_rotation_angle (q);
   cogl_quaternion_get_rotation_axis (q, axis);
-  fprintf (state->file,
-           "%*s        position=\"(%f, %f, %f)\"\n"
-           "%*s        scale=\"%f\"\n"
-           "%*s        rotation=\"[%f (%f, %f, %f)]]\"\n"
-           "%*s        cast_shadow=\"%s\">\n",
-           state->indent, "",
-           rut_entity_get_x (entity),
-           rut_entity_get_y (entity),
-           rut_entity_get_z (entity),
-           state->indent, "",
-           rut_entity_get_scale (entity),
-           state->indent, "",
-           angle, axis[0], axis[1], axis[2],
-           state->indent, "",
-           rut_entity_get_cast_shadow (entity) ? "yes" : "no");
 
   state->n_pb_components = 0;
   state->pb_components = NULL;
@@ -544,284 +412,7 @@ _rut_entitygraph_pre_save_cb (RutObject *object,
     pb_entity->components[i] = l->data;
   g_list_free (state->pb_components);
 
-  fprintf (state->file, "%*s</entity>\n", state->indent, "");
-
   return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
-static void
-save_float (SaveState *state,
-            float value)
-{
-  fprintf (state->file, "%f", value);
-}
-
-static void
-save_double (SaveState *state,
-             double value)
-{
-  fprintf (state->file, "%f", value);
-}
-
-static void
-save_integer (SaveState *state,
-              int value)
-{
-  fprintf (state->file, "%i", value);
-}
-
-static void
-save_uint32 (SaveState *state,
-             uint32_t value)
-{
-  fprintf (state->file, "%" G_GUINT32_FORMAT, value);
-}
-
-static void
-save_boolean (SaveState *state,
-              CoglBool value)
-{
-  fputs (value ? "yes" : "no", state->file);
-}
-
-static void
-save_text (SaveState *state,
-           const char *value)
-{
-  FILE *file = state->file;
-
-  while (*value)
-    {
-      gunichar ch = g_utf8_get_char (value);
-
-      switch (ch)
-        {
-        case '"':
-          fputs ("&quot;", file);
-          break;
-
-        case '\'':
-          fputs ("&apos;", file);
-          break;
-
-        case '<':
-          fputs ("&lt;", file);
-          break;
-
-        case '>':
-          fputs ("&gt;", file);
-          break;
-
-        default:
-          if (ch >= ' ' && ch <= 127)
-            fputc (ch, file);
-          else
-            fprintf (file, "&#%i;", ch);
-        }
-
-      value = g_utf8_next_char (value);
-    }
-}
-
-static void
-save_vec3 (SaveState *state,
-           const float *value)
-{
-  fprintf (state->file, "(%f, %f, %f)",
-           value[0],
-           value[1],
-           value[2]);
-}
-
-static void
-save_vec4 (SaveState *state,
-           const float *value)
-{
-  fprintf (state->file, "(%f, %f, %f, %f)",
-           value[0],
-           value[1],
-           value[2],
-           value[3]);
-}
-
-static void
-save_color (SaveState *state,
-            const CoglColor *value)
-{
-  fprintf (state->file, "(%f, %f, %f, %f)",
-           value->red,
-           value->green,
-           value->blue,
-           value->alpha);
-}
-
-static void
-save_quaternion (SaveState *state,
-                 const CoglQuaternion *value)
-{
-  float angle;
-  float axis[3];
-
-  angle = cogl_quaternion_get_rotation_angle (value);
-  cogl_quaternion_get_rotation_axis (value, axis);
-
-  fprintf (state->file,
-           "[%f (%f, %f, %f)]",
-           angle, axis[0], axis[1], axis[2]);
-}
-
-static void
-save_path (SaveState *state,
-           RigPath *path)
-{
-  FILE *file = state->file;
-  RigNode *node;
-
-  fprintf (file,
-           "%*s<path>\n",
-           state->indent, "");
-
-  state->indent += INDENT_LEVEL;
-
-  rut_list_for_each (node, &path->nodes, list_node)
-    {
-      fprintf (file,
-               "%*s<node t=\"%f\" value=\"",
-               state->indent, "",
-               node->t);
-
-      switch (path->type)
-        {
-        case RUT_PROPERTY_TYPE_FLOAT:
-          {
-            RigNodeFloat *float_node = (RigNodeFloat *) node;
-            save_float (state, float_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_DOUBLE:
-          {
-            RigNodeDouble *double_node = (RigNodeDouble *) node;
-            save_double (state, double_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_VEC3:
-          {
-            RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
-            save_vec3 (state, vec3_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_VEC4:
-          {
-            RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
-            save_vec4 (state, vec4_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_COLOR:
-          {
-            RigNodeColor *color_node = (RigNodeColor *) node;
-            save_color (state, &color_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_QUATERNION:
-          {
-            RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
-            save_quaternion (state, &quaternion_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_INTEGER:
-          {
-            RigNodeInteger *integer_node = (RigNodeInteger *) node;
-            save_uint32 (state, integer_node->value);
-            goto handled;
-          }
-        case RUT_PROPERTY_TYPE_UINT32:
-          {
-            RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
-            save_uint32 (state, uint32_node->value);
-            goto handled;
-          }
-
-          /* These types of properties can't be interoplated so they
-           * probably shouldn't end up in a path */
-        case RUT_PROPERTY_TYPE_ENUM:
-        case RUT_PROPERTY_TYPE_BOOLEAN:
-        case RUT_PROPERTY_TYPE_TEXT:
-        case RUT_PROPERTY_TYPE_OBJECT:
-        case RUT_PROPERTY_TYPE_POINTER:
-          break;
-        }
-
-      g_warn_if_reached ();
-
-    handled:
-      fprintf (file, "\" />\n");
-    }
-
-  state->indent -= INDENT_LEVEL;
-
-  fprintf (file,
-           "%*s</path>\n",
-           state->indent, "");
-}
-
-static void
-save_boxed_value (SaveState *state,
-                  const RutBoxed *value)
-{
-  switch (value->type)
-    {
-    case RUT_PROPERTY_TYPE_FLOAT:
-      save_float (state, value->d.float_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_DOUBLE:
-      save_double (state, value->d.double_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_INTEGER:
-      save_integer (state, value->d.integer_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_UINT32:
-      save_uint32 (state, value->d.uint32_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_BOOLEAN:
-      save_boolean (state, value->d.boolean_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_TEXT:
-      save_text (state, value->d.text_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_QUATERNION:
-      save_quaternion (state, &value->d.quaternion_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_VEC3:
-      save_vec3 (state, value->d.vec3_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_VEC4:
-      save_vec4 (state, value->d.vec4_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_COLOR:
-      save_color (state, &value->d.color_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_ENUM:
-      /* FIXME: this should probably save the string names rather than
-       * the integer value */
-      save_integer (state, value->d.enum_val);
-      return;
-
-    case RUT_PROPERTY_TYPE_OBJECT:
-    case RUT_PROPERTY_TYPE_POINTER:
-      break;
-    }
-
-  g_warn_if_reached ();
 }
 
 static Rig__Path *
@@ -1019,7 +610,6 @@ save_property_cb (RigTransitionPropData *prop_data,
 {
   SaveState *state = user_data;
   RigData *data = state->data;
-  FILE *file = state->file;
   RutObject *object;
   uint64_t id;
 
@@ -1048,31 +638,8 @@ save_property_cb (RigTransitionPropData *prop_data,
 
   pb_property->constant = pb_property_value_new (data, &prop_data->constant_value);
 
-  state->indent += INDENT_LEVEL;
-  fprintf (file, "%*s<property entity=\"%d\" name=\"%s\" animated=\"%s\">\n",
-           state->indent, "",
-           (int)id,
-           prop_data->property->spec->name,
-           prop_data->animated ? "yes" : "no");
-
-  state->indent += INDENT_LEVEL;
-
-  if (prop_data->path &&
-      prop_data->path->length)
-    {
-      pb_property->path = pb_path_new (data, prop_data->path);
-      save_path (state, prop_data->path);
-    }
-
-  fprintf (file, "%*s<constant value=\"", state->indent, "");
-  save_boxed_value (state, &prop_data->constant_value);
-  fprintf (file, "\" />\n");
-
-  state->indent -= INDENT_LEVEL;
-
-  fprintf (file, "%*s</property>\n", state->indent, "");
-
-  state->indent -= INDENT_LEVEL;
+  if (prop_data->path && prop_data->path->length)
+    pb_property->path = pb_path_new (data, prop_data->path);
 }
 
 static void
@@ -1086,7 +653,6 @@ rig_save (RigData *data,
           const char *path)
 {
   struct stat sb;
-  FILE *file;
   SaveState state;
   GList *l;
   int i;
@@ -1100,13 +666,6 @@ rig_save (RigData *data,
   if (stat (data->ctx->assets_location, &sb) == -1)
     mkdir (data->ctx->assets_location, 0777);
 
-  file = fopen (path, "w");
-  if (!file)
-    {
-      g_warning ("Failed to open %s file for saving\n", path);
-      return;
-    }
-
   state.data = data;
 
   /* This hash table maps object pointers to uint64_t ids while saving */
@@ -1114,16 +673,10 @@ rig_save (RigData *data,
                                         NULL, /* direct key equal */
                                         NULL,
                                         free_id_slice);
-  state.file = file;
-  state.indent = 0;
-
-  fprintf (file, "<ui>\n");
 
   /* NB: We have to reserve 0 here so we can tell if lookups into the
    * id_map fail. */
   state.next_id = 1;
-
-  state.indent += INDENT_LEVEL;
 
   ui.device = &device;
 
@@ -1132,15 +685,6 @@ rig_save (RigData *data,
   device.has_height = TRUE;
   device.height = data->device_height;
   device.background = pb_color_new (data, &data->background_color);
-
-  fprintf (file, "%*s<device width=\"%d\" height=\"%d\" background=\"#%02x%02x%02x%02x\" />\n",
-           state.indent, "",
-           (int)data->device_width,
-           (int)data->device_height,
-           cogl_color_get_red_byte (&data->background_color),
-           cogl_color_get_green_byte (&data->background_color),
-           cogl_color_get_blue_byte (&data->background_color),
-           cogl_color_get_alpha_byte (&data->background_color));
 
   /* Assets */
 
@@ -1163,11 +707,6 @@ rig_save (RigData *data,
           pb_asset->path = rut_asset_get_path (asset);
 
           ui.assets[i] = pb_asset;
-
-          fprintf (file, "%*s<asset id=\"%d\" path=\"%s\" />\n",
-                   state.indent, "",
-                   (int)pb_asset->id,
-                   rut_asset_get_path (asset));
         }
     }
 
@@ -1206,8 +745,6 @@ rig_save (RigData *data,
           pb_transition->has_id = TRUE;
           pb_transition->id = transition->id;
 
-          fprintf (file, "%*s<transition id=\"%d\">\n", state.indent, "", transition->id);
-
           state.n_pb_properties = 0;
           state.pb_properties = NULL;
           rig_transition_foreach_property (transition,
@@ -1221,16 +758,8 @@ rig_save (RigData *data,
           for (j = 0, l2 = state.pb_properties; l2; j++, l2 = l2->next)
             pb_transition->properties[j] = l2->data;
           g_list_free (state.pb_properties);
-
-          fprintf (file, "%*s</transition>\n", state.indent, "");
         }
     }
-
-  state.indent -= INDENT_LEVEL;
-
-  fprintf (file, "</ui>\n");
-
-  fclose (file);
 
   {
     size_t size = rig__ui__get_packed_size (&ui);
