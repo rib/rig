@@ -1258,7 +1258,7 @@ create_camera_view (RigData *data)
 
   rut_bin_set_top_padding (bin, 5);
 
-  rig_split_view_set_child1 (data->splits[2], stack);
+  rig_split_view_set_child1 (data->splits[1], stack);
 }
 
 static void
@@ -1412,7 +1412,7 @@ create_assets_view (RigData *data)
   rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
   rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
 
-  rig_split_view_set_child0 (data->splits[2], vbox);
+  rig_split_view_set_child0 (data->splits[1], vbox);
   rut_refable_unref (vbox);
 }
 
@@ -1433,7 +1433,7 @@ create_timeline_view (RigData *data)
 
   rut_stack_add (stack, data->timeline_vp);
 
-  rig_split_view_set_child1 (data->splits[1], stack);
+  rig_split_view_set_child1 (data->splits[0], stack);
   rut_refable_unref (stack);
 }
 #endif /* RIG_EDITOR_ENABLED */
@@ -1752,13 +1752,13 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                   RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
       /* timeline on the bottom, everything else above */
-      data->splits[1] = rig_split_view_new (data,
+      data->splits[0] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
                                             100);
 
       /* assets on the left, main area on the right */
-      data->splits[2] = rig_split_view_new (data,
+      data->splits[1] = rig_split_view_new (data,
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100);
@@ -1769,13 +1769,13 @@ rig_engine_init (RutShell *shell, void *user_data)
 
       create_timeline_view (data);
 
-      rig_split_view_set_child0 (data->splits[1], data->splits[2]);
+      rig_split_view_set_child0 (data->splits[0], data->splits[1]);
 
-      rut_box_layout_add (data->properties_hbox, TRUE, data->splits[1]);
+      rut_box_layout_add (data->properties_hbox, TRUE, data->splits[0]);
       create_properties_bar (data);
 
-      rig_split_view_set_split_offset (data->splits[1], 500);
-      rig_split_view_set_split_offset (data->splits[2], 150);
+      rig_split_view_set_split_offset (data->splits[0], 500);
+      rig_split_view_set_split_offset (data->splits[1], 150);
 
       data->top_vbox = rut_box_layout_new (data->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);

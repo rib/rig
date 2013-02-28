@@ -104,7 +104,7 @@ struct _RigData
   RutBoxLayout *top_bar_hbox_rtl;
   RutBoxLayout *toolbar_vbox;
   RutBoxLayout *properties_hbox;
-  RigSplitView *splits[4];
+  RigSplitView *splits[2];
 
   //RutBevel *main_area_bevel;
   RigCameraView *main_camera_view;
