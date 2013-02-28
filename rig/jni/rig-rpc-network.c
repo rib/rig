@@ -60,13 +60,15 @@
  *
  */
 
-#include "protobuf-c/rig-protobuf-c-rpc.h"
+#include <config.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include <glib.h>
+
+#include "protobuf-c/rig-protobuf-c-rpc.h"
 
 #include <rig-data.h>
 #include <rig-avahi.h>
