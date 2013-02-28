@@ -37,6 +37,7 @@
 #include <avahi-glib/glib-malloc.h>
 
 #include <rig-data.h>
+#include "rig-slave-address.h"
 
 static void
 create_service (RigData *data);
@@ -143,7 +144,7 @@ create_service (RigData *data)
                                            data->avahi_service_name,
                                            "_rig._tcp",
                                            NULL, NULL,
-                                           data->network_port,
+                                           data->rpc_server_port,
                                            "version=1.0",
                                            user_name,
                                            NULL);
@@ -356,10 +357,7 @@ resolve_callback(AvahiServiceResolver *resolver,
 
         avahi_free (t);
 
-        slave_address = g_slice_new0 (RigSlaveAddress);
-        slave_address->name = g_strdup (name);
-        slave_address->hostname = g_strdup (host_name);
-        slave_address->port = port;
+        slave_address = rig_slave_address_new (name, host_name, port);
 
         data->slave_addresses =
           g_list_prepend (data->slave_addresses, slave_address);
@@ -373,14 +371,6 @@ resolve_callback(AvahiServiceResolver *resolver,
   }
 
   avahi_service_resolver_free (resolver);
-}
-
-static void
-free_slave_address (RigSlaveAddress *slave_address)
-{
-  g_free (slave_address->name);
-  g_free (slave_address->hostname);
-  g_slice_free (RigSlaveAddress, slave_address);
 }
 
 static void
@@ -441,7 +431,7 @@ browse_callback (AvahiServiceBrowser *browser,
 
           if (strcmp (slave_address->name, name) == 0)
             {
-              free_slave_address (slave_address);
+              rut_refable_unref (slave_address);
               data->slave_addresses =
                 g_list_remove_link (data->slave_addresses, l);
               g_message ("(Browser) REMOVE: service '%s' of type '%s' "

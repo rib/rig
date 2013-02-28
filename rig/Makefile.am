@@ -66,6 +66,10 @@ librig_la_SOURCES = \
 	jni/rig-avahi.c \
 	jni/rig-rpc-network.h \
 	jni/rig-rpc-network.c \
+	jni/rig-slave-address.h \
+	jni/rig-slave-address.c \
+	jni/rig-slave-master.h \
+	jni/rig-slave-master.c \
 	jni/rig.pb-c.c
 
 if EDITOR_ENABLED

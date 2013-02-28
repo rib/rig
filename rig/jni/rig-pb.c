@@ -1598,7 +1598,7 @@ unserialize_transitions (UnSerializer *unserializer,
 }
 
 void
-rig_pb_unserialize_ui (RigData *data, Rig__UI *pb_ui)
+rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
 {
   UnSerializer unserializer;
 

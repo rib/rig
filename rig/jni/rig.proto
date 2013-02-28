@@ -212,6 +212,6 @@ message LoadResult
 }
 
 service Slave {
-    //rpc Load (UI) returns (LoadResult);
+    rpc Load (UI) returns (LoadResult);
     rpc Test (Query) returns (TestResult);
 }

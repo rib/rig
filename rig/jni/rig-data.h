@@ -44,13 +44,6 @@ enum {
   RIG_DATA_N_PROPS
 };
 
-typedef struct _RigSlaveAddress
-{
-  char *name;
-  char *hostname;
-  int port;
-} RigSlaveAddress;
-
 struct _RigData
 {
   CoglBool play_mode;
@@ -228,10 +221,9 @@ struct _RigData
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;
 
-  int network_port;
+  int rpc_server_port;
   PB_RPC_Server *rpc_server;
-  PB_RPC_Client *rpc_client;
-  int protobuf_source_id;
+  int rpc_server_source_id;
 
   const AvahiPoll *avahi_poll_api;
   char *avahi_service_name;
@@ -240,6 +232,8 @@ struct _RigData
   AvahiServiceBrowser *avahi_browser;
 
   GList *slave_addresses;
+
+  GList *slave_masters;
 
   RutProperty properties[RIG_DATA_N_PROPS];
 };

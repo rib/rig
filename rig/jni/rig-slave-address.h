@@ -1,12 +1,12 @@
 /*
- * Rig
+ * Rut.
  *
- * Copyright (C) 2013  Intel Corporation
+ * Copyright (C) 2013  Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * version 2 of the License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,17 +16,25 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
+ *
  */
 
-#ifndef __RIG_PB_H__
-#define __RIG_PB_H__
+#ifndef __RIG_SLAVE_ADDRESS_H__
+#define __RIG_SLAVE_ADDRESS_H__
 
-#include "rig.pb-c.h"
+typedef struct _RigSlaveAddress
+{
+  RutObjectProps _parent;
+  int ref_count;
 
-Rig__UI *
-rig_pb_serialize_ui (RigData *data);
+  char *name;
+  char *hostname;
+  int port;
+} RigSlaveAddress;
 
-void
-rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui);
+RigSlaveAddress *
+rig_slave_address_new (const char *name,
+                       const char *hostname,
+                       int port);
 
-#endif /* __RIG_PB_H__ */
+#endif /* __RIG_SLAVE_ADDRESS_H__ */

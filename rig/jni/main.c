@@ -46,6 +46,7 @@
 #include "rig-split-view.h"
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
+#include "rig-slave-master.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -1134,25 +1135,6 @@ load_gradient_image (RutContext *ctx,
     }
 }
 
-static void
-handle_query_response (const Rig__TestResult *result,
-                       void *closure_data)
-{
-  g_print ("Response received\n");
-}
-
-void
-slave_connected (RigData *data)
-{
-  Rig__Query query = RIG__QUERY__INIT;
-
-  query.a = 100;
-
-  rig__slave__test (data->rpc_client, &query, handle_query_response, NULL);
-
-  g_print ("XXXXXXXXXXXX Slave Connected!");
-}
-
 void
 connect_pressed_cb (RutButton *button,
                     void *user_data)
@@ -1162,14 +1144,10 @@ connect_pressed_cb (RutButton *button,
   if (data->slave_addresses)
     {
       RigSlaveAddress *slave_address = data->slave_addresses->data;
-
-      rig_start_rpc_client (data,
-                            slave_address->hostname,
-                            slave_address->port,
-                            slave_connected);
+      rig_connect_to_slave (data, slave_address);
     }
-
 }
+
 static void
 create_top_bar (RigData *data)
 {
