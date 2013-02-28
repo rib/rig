@@ -18,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+
 #include "rut-shape.h"
 #include "rut-global.h"
 #include "math.h"

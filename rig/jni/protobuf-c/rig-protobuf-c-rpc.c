@@ -2,6 +2,8 @@
     - server does not obey max_pending_requests_per_connection
     - no ipv6 support
  */
+#include <config.h>
+
 #include <string.h>
 #include <assert.h>
 #include <sys/stat.h>

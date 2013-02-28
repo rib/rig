@@ -1,7 +1,7 @@
 /*
  * Rut.
  *
- * Copyright (C) 2008,2012  Intel Corporation.
+ * Copyright (C) 2008,2012,2013  Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,6 +21,8 @@
  *   Emmanuele Bassi <ebassi@linux.intel.com>
  *   Robert Bragg <robert@linux.intel.com>
  */
+
+#include <config.h>
 
 #include <string.h>
 #include <math.h>

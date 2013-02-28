@@ -1,9 +1,7 @@
 /*
  * Rut
  *
- * A tiny toolkit
- *
- * Copyright (C) 2012 Intel Corporation.
+ * Copyright (C) 2012,2013 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  *
  */
+
+#include <config.h>
 
 #include "rut-toggle.h"
 #include "rut-interfaces.h"

@@ -18,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+
 #include "rut-diamond.h"
 #include "rut-global.h"
 #include "math.h"

@@ -18,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+
 #include "rut-material.h"
 #include "rut-global.h"
 #include "rut-asset.h"

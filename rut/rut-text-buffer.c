@@ -1,4 +1,6 @@
-/* rut-text-buffer.c
+/*
+ * Rut
+ *
  * Copyright (C) 2011 Collabora Ltd.
  *
  * This library is free software; you can redistribute it and/or
@@ -18,6 +20,8 @@
  *
  * Author: Stef Walter <stefw@collabora.co.uk>
  */
+
+#include <config.h>
 
 #include "rut-context.h"
 #include "rut-property.h"

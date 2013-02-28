@@ -1,8 +1,6 @@
 /*
  * Rut
  *
- * A tiny toolkit
- *
  * Copyright (C) 2012 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
@@ -20,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  *
  */
+
+#include <config.h>
 
 #include <cogl/cogl.h>
 #include <math.h>

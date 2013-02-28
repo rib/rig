@@ -18,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+
 #include <glib.h>
 
 #include <cogl/cogl.h>

@@ -1,7 +1,5 @@
 /*
- * Cogl
- *
- * An object oriented GL/GLES Abstraction/Utility Layer
+ * Rut
  *
  * Copyright (C) 2010 Intel Corporation.
  *
@@ -23,6 +21,8 @@
  * Authors:
  *   Neil Roberts <neil@linux.intel.com>
  */
+
+#include <config.h>
 
 #include <glib.h>
 #include <string.h>

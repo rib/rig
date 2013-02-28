@@ -1,8 +1,6 @@
 /*
  * Rut
  *
- * An Tiny experimental Toolkit
- *
  * Copyright (C) 2011 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
@@ -47,6 +45,8 @@
  * Authors:
  *   Robert Bragg <robert@linux.intel.com>
  */
+
+#include <config.h>
 
 #include "rut-memory-stack.h"
 #include "rut-list.h"
