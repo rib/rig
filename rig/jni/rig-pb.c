@@ -1,0 +1,1669 @@
+/*
+ * Rig
+ *
+ * Copyright (C) 2013  Intel Corporation
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+#include <config.h>
+
+#include "rig.pb-c.h"
+#include "rig-data.h"
+#include "rig-load-xml.h"
+
+typedef struct _Serializer
+{
+  RigData *data;
+
+  int n_pb_entities;
+  GList *pb_entities;
+
+  int n_pb_components;
+  GList *pb_components;
+
+  int n_pb_properties;
+  GList *pb_properties;
+
+  int next_id;
+  GHashTable *id_map;
+} Serializer;
+
+typedef void (*PBMessageInitFunc) (void *message);
+
+static void *
+pb_new (RigData *data,
+        size_t size,
+        void *_message_init)
+{
+  PBMessageInitFunc message_init = _message_init;
+
+  void *msg = rut_memory_stack_alloc (data->serialization_stack, size);
+  message_init (msg);
+  return msg;
+}
+
+static Rig__Color *
+pb_color_new (RigData *data, const CoglColor *color)
+{
+  Rig__Color *pb_color = pb_new (data, sizeof (Rig__Color), rig__color__init);
+  pb_color->hex = rut_memory_stack_alloc (data->serialization_stack,
+                                          10); /* #rrggbbaa */
+  snprintf (pb_color->hex, 10, "#%02x%02x%02x%02x",
+            cogl_color_get_red_byte (color),
+            cogl_color_get_green_byte (color),
+            cogl_color_get_blue_byte (color),
+            cogl_color_get_alpha_byte (color));
+
+  return pb_color;
+}
+
+static Rig__Rotation *
+pb_rotation_new (RigData *data, const CoglQuaternion *quaternion)
+{
+  Rig__Rotation *pb_rotation =
+    pb_new (data, sizeof (Rig__Rotation), rig__rotation__init);
+  float angle = cogl_quaternion_get_rotation_angle (quaternion);
+  float axis[3];
+
+  cogl_quaternion_get_rotation_axis (quaternion, axis);
+
+  pb_rotation->angle = angle;
+  pb_rotation->x = axis[0];
+  pb_rotation->y = axis[1];
+  pb_rotation->z = axis[2];
+
+  return pb_rotation;
+}
+
+static Rig__Vec3 *
+pb_vec3_new (RigData *data,
+             float x,
+             float y,
+             float z)
+{
+  Rig__Vec3 *pb_vec3 = pb_new (data, sizeof (Rig__Vec3), rig__vec3__init);
+
+  pb_vec3->x = x;
+  pb_vec3->y = y;
+  pb_vec3->z = z;
+
+  return pb_vec3;
+}
+
+static Rig__Vec4 *
+pb_vec4_new (RigData *data,
+             float x,
+             float y,
+             float z,
+             float w)
+{
+  Rig__Vec4 *pb_vec4 = pb_new (data, sizeof (Rig__Vec4), rig__vec4__init);
+
+  pb_vec4->x = x;
+  pb_vec4->y = y;
+  pb_vec4->z = z;
+  pb_vec4->w = w;
+
+  return pb_vec4;
+}
+
+static Rig__Path *
+pb_path_new (RigData *data, RigPath *path)
+{
+  Rig__Path *pb_path = pb_new (data, sizeof (Rig__Path), rig__path__init);
+  RigNode *node;
+  int i;
+
+  if (!path->length)
+    return pb_path;
+
+  pb_path->nodes = rut_memory_stack_alloc (data->serialization_stack,
+                                           sizeof (void *) * path->length);
+  pb_path->n_nodes = path->length;
+
+  i = 0;
+  rut_list_for_each (node, &path->nodes, list_node)
+    {
+      Rig__Node *pb_node =
+        pb_new (data, sizeof (Rig__Node), rig__node__init);
+
+      pb_path->nodes[i] = pb_node;
+
+      pb_node->has_t = TRUE;
+      pb_node->t = node->t;
+
+      pb_node->value = pb_new (data,
+                               sizeof (Rig__PropertyValue),
+                               rig__property_value__init);
+
+      switch (path->type)
+        {
+        case RUT_PROPERTY_TYPE_FLOAT:
+            {
+              RigNodeFloat *float_node = (RigNodeFloat *) node;
+              pb_node->value->has_float_value = TRUE;
+              pb_node->value->float_value = float_node->value;
+              break;
+            }
+        case RUT_PROPERTY_TYPE_DOUBLE:
+            {
+              RigNodeDouble *double_node = (RigNodeDouble *) node;
+              pb_node->value->has_double_value = TRUE;
+              pb_node->value->double_value = double_node->value;
+              break;
+            }
+        case RUT_PROPERTY_TYPE_VEC3:
+            {
+              RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
+              pb_node->value->vec3_value = pb_vec3_new (data,
+                                                        vec3_node->value[0],
+                                                        vec3_node->value[1],
+                                                        vec3_node->value[2]);
+              break;
+            }
+        case RUT_PROPERTY_TYPE_VEC4:
+            {
+              RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
+              pb_node->value->vec4_value = pb_vec4_new (data,
+                                                        vec4_node->value[0],
+                                                        vec4_node->value[1],
+                                                        vec4_node->value[2],
+                                                        vec4_node->value[3]);
+              break;
+            }
+        case RUT_PROPERTY_TYPE_COLOR:
+            {
+              RigNodeColor *color_node = (RigNodeColor *) node;
+              pb_node->value->color_value =
+                pb_color_new (data, &color_node->value);
+              break;
+            }
+        case RUT_PROPERTY_TYPE_QUATERNION:
+            {
+              RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
+              pb_node->value->quaternion_value =
+                pb_rotation_new (data, &quaternion_node->value);
+              break;
+            }
+        case RUT_PROPERTY_TYPE_INTEGER:
+            {
+              RigNodeInteger *integer_node = (RigNodeInteger *) node;
+              pb_node->value->has_integer_value = TRUE;
+              pb_node->value->integer_value = integer_node->value;
+              continue;
+              break;
+            }
+        case RUT_PROPERTY_TYPE_UINT32:
+            {
+              RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
+              pb_node->value->has_uint32_value = TRUE;
+              pb_node->value->uint32_value = uint32_node->value;
+              break;
+            }
+
+          /* These types of properties can't be interoplated so they
+           * probably shouldn't end up in a path */
+        case RUT_PROPERTY_TYPE_ENUM:
+        case RUT_PROPERTY_TYPE_BOOLEAN:
+        case RUT_PROPERTY_TYPE_TEXT:
+        case RUT_PROPERTY_TYPE_OBJECT:
+        case RUT_PROPERTY_TYPE_POINTER:
+          g_warn_if_reached ();
+          break;
+        }
+
+      i++;
+    }
+
+  return pb_path;
+}
+
+static Rig__PropertyValue *
+pb_property_value_new (RigData *data,
+                       const RutBoxed *value)
+{
+  Rig__PropertyValue *pb_value =
+    pb_new (data, sizeof (Rig__PropertyValue), rig__property_value__init);
+
+  switch (value->type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      pb_value->has_float_value = TRUE;
+      pb_value->float_value = value->d.float_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      pb_value->has_double_value = TRUE;
+      pb_value->double_value = value->d.double_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      pb_value->has_integer_value = TRUE;
+      pb_value->integer_value = value->d.integer_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      pb_value->has_uint32_value = TRUE;
+      pb_value->uint32_value = value->d.uint32_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+      pb_value->has_boolean_value = TRUE;
+      pb_value->boolean_value = value->d.boolean_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_TEXT:
+      pb_value->text_value = value->d.text_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      pb_value->quaternion_value =
+        pb_rotation_new (data, &value->d.quaternion_val);
+      break;
+
+    case RUT_PROPERTY_TYPE_VEC3:
+      pb_value->vec3_value = pb_vec3_new (data,
+                                          value->d.vec3_val[0],
+                                          value->d.vec3_val[1],
+                                          value->d.vec3_val[2]);
+      break;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      pb_value->vec4_value = pb_vec4_new (data,
+                                          value->d.vec4_val[0],
+                                          value->d.vec4_val[1],
+                                          value->d.vec4_val[2],
+                                          value->d.vec4_val[3]);
+      break;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      pb_value->color_value = pb_color_new (data, &value->d.color_val);
+      break;
+
+    case RUT_PROPERTY_TYPE_ENUM:
+      /* XXX: this should possibly save the string names rather than
+       * the integer value? */
+      pb_value->has_enum_value = TRUE;
+      pb_value->enum_value = value->d.enum_val;
+      break;
+
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      g_warn_if_reached ();
+      break;
+    }
+
+  return pb_value;
+}
+
+static void
+register_serializer_object (Serializer *serializer,
+                      void *object,
+                      uint64_t id)
+{
+  uint64_t *id_value = g_slice_new (uint64_t);
+
+  *id_value = id;
+
+  g_return_if_fail (id != 0);
+
+  if (g_hash_table_lookup (serializer->id_map, object))
+    {
+      g_critical ("Duplicate save object id %d", (int)id);
+      return;
+    }
+
+  g_hash_table_insert (serializer->id_map, object, id_value);
+}
+
+uint64_t
+serializer_lookup_object_id (Serializer *serializer, void *object)
+{
+  uint64_t *id = g_hash_table_lookup (serializer->id_map, object);
+
+  g_warn_if_fail (id);
+
+  return *id;
+}
+
+static void
+serialize_component_cb (RutComponent *component,
+                   void *user_data)
+{
+  const RutType *type = rut_object_get_type (component);
+  Serializer *serializer = user_data;
+  RigData *data = serializer->data;
+  int component_id;
+  Rig__Entity__Component *pb_component;
+
+  pb_component =
+    rut_memory_stack_alloc (data->serialization_stack,
+                            sizeof (Rig__Entity__Component));
+  rig__entity__component__init (pb_component);
+
+  serializer->n_pb_components++;
+  serializer->pb_components = g_list_prepend (serializer->pb_components, pb_component);
+
+  register_serializer_object (serializer, component, serializer->next_id);
+  component_id = serializer->next_id++;
+
+  pb_component->has_id = TRUE;
+  pb_component->id = component_id;
+
+  pb_component->has_type = TRUE;
+
+  if (type == &rut_light_type)
+    {
+      RutLight *light = RUT_LIGHT (component);
+      const CoglColor *ambient = rut_light_get_ambient (light);
+      const CoglColor *diffuse = rut_light_get_diffuse (light);
+      const CoglColor *specular = rut_light_get_specular (light);
+      Rig__Entity__Component__Light *pb_light;
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__LIGHT;
+      pb_light = pb_new (data,
+                         sizeof (Rig__Entity__Component__Light),
+                         rig__entity__component__light__init);
+      pb_component->light = pb_light;
+
+      pb_light->ambient = pb_color_new (data, ambient);
+      pb_light->diffuse = pb_color_new (data, diffuse);
+      pb_light->specular = pb_color_new (data, specular);
+    }
+  else if (type == &rut_material_type)
+    {
+      RutMaterial *material = RUT_MATERIAL (component);
+      RutAsset *asset;
+      const CoglColor *ambient = rut_material_get_ambient (material);
+      const CoglColor *diffuse = rut_material_get_diffuse (material);
+      const CoglColor *specular = rut_material_get_specular (material);
+      Rig__Entity__Component__Material *pb_material;
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MATERIAL;
+
+      pb_material = pb_new (data,
+                            sizeof (Rig__Entity__Component__Material),
+                            rig__entity__component__material__init);
+      pb_component->material = pb_material;
+
+      pb_material->ambient = pb_color_new (data, ambient);
+      pb_material->diffuse = pb_color_new (data, diffuse);
+      pb_material->specular = pb_color_new (data, specular);
+
+      pb_material->has_shininess = TRUE;
+      pb_material->shininess = rut_material_get_shininess (material);
+
+      asset = rut_material_get_texture_asset (material);
+      if (asset)
+        {
+          uint64_t id = serializer_lookup_object_id (serializer, asset);
+
+          g_warn_if_fail (id != 0);
+
+          if (id)
+            {
+              pb_material->texture = pb_new (data,
+                                             sizeof (Rig__Texture),
+                                             rig__texture__init);
+              pb_material->texture->has_asset_id = TRUE;
+              pb_material->texture->asset_id = id;
+            }
+        }
+
+      asset = rut_material_get_normal_map_asset (material);
+      if (asset)
+        {
+          uint64_t id = serializer_lookup_object_id (serializer, asset);
+          if (id)
+            {
+              pb_material->normal_map = pb_new (data,
+                                                sizeof (Rig__NormalMap),
+                                                rig__normal_map__init);
+              pb_material->normal_map->asset_id = id;
+            }
+        }
+
+      asset = rut_material_get_alpha_mask_asset (material);
+      if (asset)
+        {
+          uint64_t id = serializer_lookup_object_id (serializer, asset);
+          if (id)
+            {
+              pb_material->alpha_mask = pb_new (data,
+                                                sizeof (Rig__AlphaMask),
+                                                rig__alpha_mask__init);
+              pb_material->alpha_mask->asset_id = id;
+            }
+        }
+    }
+  else if (type == &rut_shape_type)
+    {
+      CoglBool shaped = rut_shape_get_shaped (RUT_SHAPE (component));
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
+      pb_component->shape = pb_new (data,
+                                    sizeof (Rig__Entity__Component__Shape),
+                                    rig__entity__component__shape__init);
+      pb_component->shape->has_shaped = TRUE;
+      pb_component->shape->shaped = shaped;
+    }
+  else if (type == &rut_diamond_type)
+    {
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
+      pb_component->diamond = pb_new (data,
+                                      sizeof (Rig__Entity__Component__Diamond),
+                                      rig__entity__component__diamond__init);
+      pb_component->diamond->has_size = TRUE;
+      pb_component->diamond->size = rut_diamond_get_size (RUT_DIAMOND (component));
+    }
+  else if (type == &rut_model_type)
+    {
+      RutModel *model = RUT_MODEL (component);
+      RutAsset *asset = rut_model_get_asset (model);
+      uint64_t asset_id = serializer_lookup_object_id (serializer, asset);
+
+      /* XXX: we don't support serializing a model loaded from a RutMesh */
+      g_warn_if_fail (asset_id != 0);
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MODEL;
+      pb_component->model = pb_new (data,
+                                    sizeof (Rig__Entity__Component__Model),
+                                    rig__entity__component__model__init);
+
+      if (asset_id)
+        {
+          pb_component->model->has_asset_id = TRUE;
+          pb_component->model->asset_id = asset_id;
+        }
+    }
+  else if (type == &rut_text_type)
+    {
+      RutText *text = RUT_TEXT (component);
+      const CoglColor *color;
+      Rig__Entity__Component__Text *pb_text;
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
+      pb_text = pb_new (data,
+                        sizeof (Rig__Entity__Component__Text),
+                        rig__entity__component__text__init);
+      pb_component->text = pb_text;
+
+      color = rut_text_get_color (text);
+
+      pb_text->text = rut_text_get_text (text);
+      pb_text->font = rut_text_get_font_name (text);
+      pb_text->color = pb_color_new (data, color);
+    }
+}
+
+static RutTraverseVisitFlags
+_rut_entitygraph_pre_serialize_cb (RutObject *object,
+                                   int depth,
+                                   void *user_data)
+{
+  Serializer *serializer = user_data;
+  RigData *data = serializer->data;
+  const RutType *type = rut_object_get_type (object);
+  RutObject *parent = rut_graphable_get_parent (object);
+  RutEntity *entity;
+  const CoglQuaternion *q;
+  const char *label;
+  Rig__Entity *pb_entity;
+  Rig__Vec3 *position;
+  float scale;
+  GList *l;
+  int i;
+
+  if (type != &rut_entity_type)
+    {
+      g_warning ("Can't save non-entity graphables\n");
+      return RUT_TRAVERSE_VISIT_CONTINUE;
+    }
+
+  entity = object;
+
+  /* NB: labels with a "rig:" prefix imply that this is an internal
+   * entity that shouldn't be saved (such as the editing camera
+   * entities) */
+  label = rut_entity_get_label (entity);
+  if (label && strncmp ("rig:", label, 4) == 0)
+    return RUT_TRAVERSE_VISIT_CONTINUE;
+
+
+  pb_entity = rut_memory_stack_alloc (data->serialization_stack,
+                                      sizeof (Rig__Entity));
+  rig__entity__init (pb_entity);
+
+  serializer->n_pb_entities++;
+  serializer->pb_entities = g_list_prepend (serializer->pb_entities, pb_entity);
+
+  register_serializer_object (serializer, entity, serializer->next_id);
+  pb_entity->has_id = TRUE;
+  pb_entity->id = serializer->next_id++;
+
+  if (parent && rut_object_get_type (parent) == &rut_entity_type)
+    {
+      uint64_t id = serializer_lookup_object_id (serializer, parent);
+      if (id)
+        {
+          pb_entity->has_parent_id = TRUE;
+          pb_entity->parent_id = id;
+        }
+      else
+        g_warning ("Failed to find id of parent entity\n");
+    }
+
+  if (label && *label)
+    {
+      pb_entity->label = label;
+    }
+
+  q = rut_entity_get_rotation (entity);
+
+  position = rut_memory_stack_alloc (data->serialization_stack,
+                                     sizeof (Rig__Vec3));
+  rig__vec3__init (position);
+  position->x = rut_entity_get_x (entity);
+  position->y = rut_entity_get_y (entity);
+  position->z = rut_entity_get_z (entity);
+  pb_entity->position = position;
+
+  scale = rut_entity_get_scale (entity);
+  if (scale != 1)
+    {
+      pb_entity->has_scale = TRUE;
+      pb_entity->scale = scale;
+    }
+
+  pb_entity->rotation = pb_rotation_new (data, q);
+
+  pb_entity->has_cast_shadow = TRUE;
+  pb_entity->cast_shadow = rut_entity_get_cast_shadow (entity);
+
+  serializer->n_pb_components = 0;
+  serializer->pb_components = NULL;
+  rut_entity_foreach_component (entity,
+                                serialize_component_cb,
+                                serializer);
+
+  pb_entity->n_components = serializer->n_pb_components;
+  pb_entity->components =
+    rut_memory_stack_alloc (data->serialization_stack,
+                            sizeof (void *) * pb_entity->n_components);
+
+  for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
+    pb_entity->components[i] = l->data;
+  g_list_free (serializer->pb_components);
+
+  return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+static void
+serialize_property_cb (RigTransitionPropData *prop_data,
+                  void *user_data)
+{
+  Serializer *serializer = user_data;
+  RigData *data = serializer->data;
+  RutObject *object;
+  uint64_t id;
+
+  Rig__Transition__Property *pb_property =
+    pb_new (data,
+            sizeof (Rig__Transition__Property),
+            rig__transition__property__init);
+
+  serializer->n_pb_properties++;
+  serializer->pb_properties = g_list_prepend (serializer->pb_properties, pb_property);
+
+  object = prop_data->property->object;
+
+  id = serializer_lookup_object_id (serializer, object);
+  if (!id)
+    g_warning ("Failed to find id of object\n");
+
+
+  pb_property->has_object_id = TRUE;
+  pb_property->object_id = id;
+
+  pb_property->name = prop_data->property->spec->name;
+
+  pb_property->has_animated = TRUE;
+  pb_property->animated = prop_data->animated;
+
+  pb_property->constant = pb_property_value_new (data, &prop_data->constant_value);
+
+  if (prop_data->path && prop_data->path->length)
+    pb_property->path = pb_path_new (data, prop_data->path);
+}
+
+static void
+free_id_slice (void *id)
+{
+  g_slice_free (uint64_t, id);
+}
+
+Rig__UI *
+rig_pb_serialize_ui (RigData *data)
+{
+  Serializer serializer;
+  GList *l;
+  int i;
+  Rig__UI *ui;
+  Rig__Device *device;
+
+  memset (&serializer, 0, sizeof (serializer));
+  rut_memory_stack_rewind (data->serialization_stack);
+
+  ui = pb_new (data, sizeof (Rig__UI), rig__ui__init);
+  device = pb_new (data, sizeof (Rig__Device), rig__device__init);
+
+  serializer.data = data;
+
+  /* This hash table maps object pointers to uint64_t ids while saving */
+  serializer.id_map = g_hash_table_new_full (NULL, /* direct hash */
+                                             NULL, /* direct key equal */
+                                             NULL,
+                                             free_id_slice);
+
+  /* NB: We have to reserve 0 here so we can tell if lookups into the
+   * id_map fail. */
+  serializer.next_id = 1;
+
+  ui->device = device;
+
+  device->has_width = TRUE;
+  device->width = data->device_width;
+  device->has_height = TRUE;
+  device->height = data->device_height;
+  device->background = pb_color_new (data, &data->background_color);
+
+  /* Assets */
+
+  ui->n_assets = g_list_length (data->assets);
+  if (ui->n_assets)
+    {
+      int i;
+      ui->assets = rut_memory_stack_alloc (data->serialization_stack,
+                                           ui->n_assets * sizeof (void *));
+      for (i = 0, l = data->assets; l; i++, l = l->next)
+        {
+          RutAsset *asset = l->data;
+          Rig__Asset *pb_asset =
+            pb_new (data, sizeof (Rig__Asset), rig__asset__init);
+
+          register_serializer_object (&serializer, asset, serializer.next_id);
+          pb_asset->has_id = TRUE;
+          pb_asset->id = serializer.next_id++;
+
+          pb_asset->path = rut_asset_get_path (asset);
+
+          ui->assets[i] = pb_asset;
+        }
+    }
+
+
+  serializer.n_pb_entities = 0;
+  rut_graphable_traverse (data->scene,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          _rut_entitygraph_pre_serialize_cb,
+                          NULL,
+                          &serializer);
+
+  ui->n_entities = serializer.n_pb_entities;
+  ui->entities = rut_memory_stack_alloc (data->serialization_stack,
+                                         sizeof (void *) * ui->n_entities);
+  for (i = 0, l = serializer.pb_entities; l; i++, l = l->next)
+    ui->entities[i] = l->data;
+  g_list_free (serializer.pb_entities);
+
+  ui->n_transitions = g_list_length (data->transitions);
+  if (ui->n_transitions)
+    {
+      ui->transitions =
+        rut_memory_stack_alloc (data->serialization_stack,
+                                sizeof (void *) * ui->n_transitions);
+
+      for (i = 0, l = data->transitions; l; i++, l = l->next)
+        {
+          RigTransition *transition = l->data;
+          Rig__Transition *pb_transition =
+            pb_new (data, sizeof (Rig__Transition), rig__transition__init);
+          GList *l2;
+          int j;
+
+          ui->transitions[i] = pb_transition;
+
+          pb_transition->has_id = TRUE;
+          pb_transition->id = transition->id;
+
+          serializer.n_pb_properties = 0;
+          serializer.pb_properties = NULL;
+          rig_transition_foreach_property (transition,
+                                           serialize_property_cb,
+                                           &serializer);
+
+          pb_transition->n_properties = serializer.n_pb_properties;
+          pb_transition->properties =
+            rut_memory_stack_alloc (data->serialization_stack,
+                                    sizeof (void *) * pb_transition->n_properties);
+          for (j = 0, l2 = serializer.pb_properties; l2; j++, l2 = l2->next)
+            pb_transition->properties[j] = l2->data;
+          g_list_free (serializer.pb_properties);
+        }
+    }
+
+  g_hash_table_destroy (serializer.id_map);
+
+  return ui;
+}
+
+typedef struct _UnSerializer
+{
+  RigData *data;
+
+  GList *assets;
+  GList *entities;
+  RutEntity *light;
+  GList *transitions;
+
+  GHashTable *id_map;
+} UnSerializer;
+
+static void
+pb_init_color (RutContext *ctx,
+               CoglColor *color,
+               Rig__Color *pb_color)
+{
+  if (pb_color && pb_color->hex)
+    rut_color_init_from_string (ctx, color, pb_color->hex);
+  else
+    cogl_color_init_from_4f (color, 0, 0, 0, 1);
+}
+
+static void
+pb_init_quaternion (CoglQuaternion *quaternion,
+                    Rig__Rotation *pb_rotation)
+{
+  if (pb_rotation)
+    {
+      cogl_quaternion_init (quaternion,
+                            pb_rotation->angle,
+                            pb_rotation->x,
+                            pb_rotation->y,
+                            pb_rotation->z);
+    }
+  else
+    cogl_quaternion_init (quaternion, 0, 1, 0, 0);
+}
+
+static void
+pb_init_boxed_vec3 (RutBoxed *boxed,
+                    Rig__Vec3 *pb_vec3)
+{
+  boxed->type = RUT_PROPERTY_TYPE_VEC3;
+  if (pb_vec3)
+    {
+      boxed->d.vec3_val[0] = pb_vec3->x;
+      boxed->d.vec3_val[1] = pb_vec3->y;
+      boxed->d.vec3_val[2] = pb_vec3->z;
+    }
+  else
+    {
+      boxed->d.vec3_val[0] = 0;
+      boxed->d.vec3_val[1] = 0;
+      boxed->d.vec3_val[2] = 0;
+    }
+}
+
+static void
+pb_init_boxed_vec4 (RutBoxed *boxed,
+                    Rig__Vec4 *pb_vec4)
+{
+  boxed->type = RUT_PROPERTY_TYPE_VEC4;
+  if (pb_vec4)
+    {
+      boxed->d.vec4_val[0] = pb_vec4->x;
+      boxed->d.vec4_val[1] = pb_vec4->y;
+      boxed->d.vec4_val[2] = pb_vec4->z;
+      boxed->d.vec4_val[3] = pb_vec4->w;
+    }
+  else
+    {
+      boxed->d.vec4_val[0] = 0;
+      boxed->d.vec4_val[1] = 0;
+      boxed->d.vec4_val[2] = 0;
+      boxed->d.vec4_val[3] = 0;
+    }
+}
+
+static void
+pb_init_boxed_value (UnSerializer *unserializer,
+                     RutBoxed *boxed,
+                     RutPropertyType type,
+                     Rig__PropertyValue *pb_value)
+{
+  boxed->type = type;
+
+  switch (type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      boxed->d.float_val = pb_value->float_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      boxed->d.double_val = pb_value->double_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_INTEGER:
+      boxed->d.integer_val = pb_value->integer_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_UINT32:
+      boxed->d.uint32_val = pb_value->uint32_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+      boxed->d.boolean_val = pb_value->boolean_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_TEXT:
+      boxed->d.text_val = pb_value->text_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      pb_init_quaternion (&boxed->d.quaternion_val, pb_value->quaternion_value);
+      break;
+
+    case RUT_PROPERTY_TYPE_VEC3:
+      pb_init_boxed_vec3 (boxed, pb_value->vec3_value);
+      break;
+
+    case RUT_PROPERTY_TYPE_VEC4:
+      pb_init_boxed_vec4 (boxed, pb_value->vec4_value);
+      break;
+
+    case RUT_PROPERTY_TYPE_COLOR:
+      pb_init_color (unserializer->data->ctx,
+                     &boxed->d.color_val, pb_value->color_value);
+      break;
+
+    case RUT_PROPERTY_TYPE_ENUM:
+      /* XXX: this should possibly work in terms of string names rather than
+       * the integer value? */
+      boxed->d.enum_val = pb_value->enum_value;
+      break;
+
+    case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_POINTER:
+      g_warn_if_reached ();
+      break;
+    }
+}
+
+static void
+collect_error (UnSerializer *unserializer,
+               const char *format,
+               ...)
+{
+  va_list ap;
+
+  va_start (ap, format);
+
+  /* XXX: The intention is that we shouldn't just immediately abort loading
+   * like this but rather we should collect the errors and try our best to
+   * continue loading. At the end we can report the errors to the user so the
+   * realize that their document may be corrupt.
+   */
+
+  g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, ap);
+
+  va_end (ap);
+}
+
+static void
+register_unserializer_object (UnSerializer *unserializer,
+                              void *object,
+                              uint64_t id)
+{
+  uint64_t *key = g_slice_new (uint64_t);
+
+  *key = id;
+
+  g_return_if_fail (id != 0);
+
+  if (g_hash_table_lookup (unserializer->id_map, key))
+    {
+      collect_error (unserializer, "Duplicate unserializer object id %ld", id);
+      return;
+    }
+
+  g_hash_table_insert (unserializer->id_map, key, object);
+}
+
+static RutEntity *
+unserializer_find_entity (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL || rut_object_get_type (object) != &rut_entity_type)
+    return NULL;
+  return RUT_ENTITY (object);
+}
+
+static RutAsset *
+unserializer_find_asset (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
+    return NULL;
+  return RUT_ASSET (object);
+}
+
+static RutEntity *
+unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL ||
+      !rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE) ||
+      !rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
+    return NULL;
+  return RUT_ENTITY (object);
+}
+
+
+static void
+unserialize_components (UnSerializer *unserializer,
+                        RutEntity *entity,
+                        Rig__Entity *pb_entity)
+{
+  int i;
+
+  /* First we add components which don't depend on any other components... */
+  for (i = 0; i < pb_entity->n_components; i++)
+    {
+      Rig__Entity__Component *pb_component = pb_entity->components[i];
+      uint64_t component_id;
+
+      if (!pb_component->has_id)
+        continue;
+
+      component_id = pb_component->id;
+
+      if (!pb_component->has_type)
+        continue;
+
+      switch (pb_component->type)
+        {
+        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
+          {
+            Rig__Entity__Component__Light *pb_light = pb_component->light;
+            RutLight *light;
+            CoglColor ambient;
+            CoglColor diffuse;
+            CoglColor specular;
+
+            light = rut_light_new (unserializer->data->ctx);
+
+            pb_init_color (unserializer->data->ctx,
+                           &ambient, pb_light->ambient);
+            pb_init_color (unserializer->data->ctx,
+                           &diffuse, pb_light->diffuse);
+            pb_init_color (unserializer->data->ctx,
+                           &specular, pb_light->specular);
+
+            rut_light_set_ambient (light, &ambient);
+            rut_light_set_diffuse (light, &diffuse);
+            rut_light_set_specular (light, &specular);
+
+            rut_entity_add_component (entity, light);
+
+            if (unserializer->light == NULL)
+              unserializer->light = rut_refable_ref (entity);
+
+            register_unserializer_object (unserializer, light, component_id);
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
+          {
+            Rig__Entity__Component__Material *pb_material =
+              pb_component->material;
+            RutMaterial *material;
+            CoglColor ambient;
+            CoglColor diffuse;
+            CoglColor specular;
+            RutAsset *asset;
+
+            material = rut_material_new (unserializer->data->ctx, NULL);
+
+            if (pb_material->texture &&
+                pb_material->texture->has_asset_id)
+              {
+                Rig__Texture *pb_texture = pb_material->texture;
+
+                asset = unserializer_find_asset (unserializer,
+                                                 pb_texture->asset_id);
+                if (!asset)
+                  {
+                    collect_error (unserializer, "Invalid asset id");
+                    rut_refable_unref (material);
+                    break;
+                  }
+                rut_material_set_texture_asset (material, asset);
+              }
+
+            if (pb_material->normal_map &&
+                pb_material->normal_map->has_asset_id)
+              {
+                Rig__NormalMap *pb_normal_map = pb_material->normal_map;
+
+                asset = unserializer_find_asset (unserializer,
+                                                 pb_normal_map->asset_id);
+                if (!asset)
+                  {
+                    collect_error (unserializer, "Invalid asset id");
+                    rut_refable_unref (material);
+                    break;
+                  }
+                rut_material_set_normal_map_asset (material, asset);
+              }
+
+            if (pb_material->alpha_mask &&
+                pb_material->alpha_mask->has_asset_id)
+              {
+                Rig__AlphaMask *pb_alpha_mask = pb_material->alpha_mask;
+
+                asset = unserializer_find_asset (unserializer,
+                                                 pb_alpha_mask->asset_id);
+                if (!asset)
+                  {
+                    collect_error (unserializer, "Invalid asset id");
+                    rut_refable_unref (material);
+                    return;
+                  }
+                rut_material_set_alpha_mask_asset (material, asset);
+              }
+
+            pb_init_color (unserializer->data->ctx,
+                           &ambient, pb_material->ambient);
+            pb_init_color (unserializer->data->ctx,
+                           &diffuse, pb_material->diffuse);
+            pb_init_color (unserializer->data->ctx,
+                           &specular, pb_material->specular);
+
+            rut_material_set_ambient (material, &ambient);
+            rut_material_set_diffuse (material, &diffuse);
+            rut_material_set_specular (material, &specular);
+            if (pb_material->has_shininess)
+              rut_material_set_shininess (material, pb_material->shininess);
+
+            rut_entity_add_component (entity, material);
+
+            register_unserializer_object (unserializer, material, component_id);
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
+        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
+          break;
+        case RIG__ENTITY__COMPONENT__TYPE__MODEL:
+          {
+            Rig__Entity__Component__Model *pb_model = pb_component->model;
+            RutAsset *asset;
+            RutModel *model;
+
+            if (!pb_model->has_asset_id)
+              break;
+
+            asset = unserializer_find_asset (unserializer, pb_model->asset_id);
+            if (!asset)
+              {
+                collect_error (unserializer, "Invalid asset id");
+                break;
+              }
+
+            model = rut_model_new_from_asset (unserializer->data->ctx, asset);
+            if (model)
+              {
+                rut_refable_unref (asset);
+                rut_entity_add_component (entity, model);
+                register_unserializer_object (unserializer, model, component_id);
+              }
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__TEXT:
+          {
+            Rig__Entity__Component__Text *pb_text = pb_component->text;
+            RutText *text =
+              rut_text_new_with_text (unserializer->data->ctx,
+                                      pb_text->font, pb_text->text);
+
+            if (pb_text->color)
+              {
+                CoglColor color;
+                pb_init_color (unserializer->data->ctx, &color, pb_text->color);
+                rut_text_set_color (text, &color);
+              }
+
+            rut_entity_add_component (entity, text);
+
+            register_unserializer_object (unserializer, text, component_id);
+            break;
+          }
+        case _RIG__ENTITY__COMPONENT__TYPE_IS_INT_SIZE:
+          g_warn_if_reached ();
+        }
+    }
+
+  /* Now we add components that may depend on a _MATERIAL... */
+  for (i = 0; i < pb_entity->n_components; i++)
+    {
+      Rig__Entity__Component *pb_component = pb_entity->components[i];
+      uint64_t component_id;
+
+      if (!pb_component->has_id)
+        continue;
+
+      component_id = pb_component->id;
+
+      if (!pb_component->has_type)
+        continue;
+
+      switch (pb_component->type)
+        {
+        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
+        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
+          break;
+
+        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
+          {
+            Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
+            RutMaterial *material;
+            RutAsset *asset = NULL;
+            CoglTexture *texture = NULL;
+            RutShape *shape;
+            CoglBool shaped = FALSE;
+
+            if (pb_shape->has_shaped)
+              shaped = pb_shape->shaped;
+
+            material = rut_entity_get_component (entity,
+                                                 RUT_COMPONENT_TYPE_MATERIAL);
+
+            /* We need to know the size of the texture before we can create
+             * a shape component */
+            if (material)
+              asset = rut_material_get_texture_asset (material);
+
+            if (asset)
+              texture = rut_asset_get_texture (asset);
+
+            if (!texture)
+              {
+                collect_error (unserializer,
+                               "Can't add shape component without a texture");
+                break;
+              }
+
+            shape = rut_shape_new (unserializer->data->ctx,
+                                   shaped,
+                                   cogl_texture_get_width (texture),
+                                   cogl_texture_get_height (texture));
+            rut_entity_add_component (entity, shape);
+
+            register_unserializer_object (unserializer, shape, component_id);
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
+          {
+            Rig__Entity__Component__Diamond *pb_diamond = pb_component->diamond;
+            float diamond_size = 100;
+            RutMaterial *material;
+            RutAsset *asset = NULL;
+            CoglTexture *texture = NULL;
+            RutDiamond *diamond;
+
+            if (pb_diamond->has_size)
+              diamond_size = pb_diamond->size;
+
+            material = rut_entity_get_component (entity,
+                                                 RUT_COMPONENT_TYPE_MATERIAL);
+
+            /* We need to know the size of the texture before we can create
+             * a diamond component */
+            if (material)
+              asset = rut_material_get_texture_asset (material);
+
+            if (asset)
+              texture = rut_asset_get_texture (asset);
+
+            if (!texture)
+              {
+                collect_error (unserializer,
+                               "Can't add diamond component without a texture");
+                rut_refable_unref (material);
+                break;
+              }
+
+            diamond = rut_diamond_new (unserializer->data->ctx,
+                                       diamond_size,
+                                       cogl_texture_get_width (texture),
+                                       cogl_texture_get_height (texture));
+            rut_entity_add_component (entity, diamond);
+
+            register_unserializer_object (unserializer, diamond, component_id);
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__MODEL:
+        case RIG__ENTITY__COMPONENT__TYPE__TEXT:
+          break;
+        case _RIG__ENTITY__COMPONENT__TYPE_IS_INT_SIZE:
+          g_warn_if_reached ();
+        }
+    }
+}
+
+static void
+unserialize_entities (UnSerializer *unserializer,
+                      int n_entities,
+                      Rig__Entity **entities)
+{
+  int i;
+
+  for (i = 0; i < n_entities; i++)
+    {
+      Rig__Entity *pb_entity = entities[i];
+      RutEntity *entity;
+      uint64_t id;
+
+      if (!pb_entity->has_id)
+        continue;
+
+      id = pb_entity->id;
+      if (g_hash_table_lookup (unserializer->id_map, &id))
+        {
+          collect_error (unserializer, "Duplicate entity id %d", (int)id);
+          continue;
+        }
+
+      entity = rut_entity_new (unserializer->data->ctx);
+
+      if (pb_entity->has_parent_id)
+        {
+          unsigned int parent_id = pb_entity->parent_id;
+          RutEntity *parent = unserializer_find_entity (unserializer, parent_id);
+
+          if (!parent)
+            {
+              collect_error (unserializer,
+                             "Invalid parent id referenced in entity element");
+              rut_refable_unref (entity);
+              continue;
+            }
+
+          rut_graphable_add_child (parent, entity);
+        }
+
+      if (pb_entity->label)
+        rut_entity_set_label (entity, pb_entity->label);
+
+      if (pb_entity->position)
+        {
+          Rig__Vec3 *pos = pb_entity->position;
+          float position[3] = {
+              pos->x,
+              pos->y,
+              pos->z
+          };
+          rut_entity_set_position (entity, position);
+        }
+      if (pb_entity->rotation)
+        {
+          CoglQuaternion q;
+
+          pb_init_quaternion (&q, pb_entity->rotation);
+
+          rut_entity_set_rotation (entity, &q);
+        }
+      if (pb_entity->has_scale)
+        rut_entity_set_scale (entity, pb_entity->scale);
+      if (pb_entity->has_cast_shadow)
+        rut_entity_set_cast_shadow (entity, pb_entity->cast_shadow);
+
+      unserialize_components (unserializer, entity, pb_entity);
+
+      register_unserializer_object (unserializer, entity, id);
+
+      unserializer->entities =
+        g_list_prepend (unserializer->entities, entity);
+    }
+}
+
+static void
+unserialize_assets (UnSerializer *unserializer,
+                    int n_assets,
+                    Rig__Asset **assets)
+{
+  int i;
+
+  for (i = 0; i < n_assets; i++)
+    {
+      Rig__Asset *pb_asset = assets[i];
+      uint64_t id;
+      char *full_path;
+      GFile *asset_file;
+      GFileInfo *info;
+      RutAsset *asset = NULL;
+
+      if (!pb_asset->has_id)
+        continue;
+
+      id = pb_asset->id;
+      if (g_hash_table_lookup (unserializer->id_map, &id))
+        {
+          collect_error (unserializer, "Duplicate asset id %d", (int)id);
+          return;
+        }
+
+      if (!pb_asset->path)
+        continue;
+
+      full_path = g_build_filename (unserializer->data->ctx->assets_location,
+                                    pb_asset->path, NULL);
+      asset_file = g_file_new_for_path (full_path);
+      info = g_file_query_info (asset_file,
+                                "standard::*",
+                                G_FILE_QUERY_INFO_NONE,
+                                NULL,
+                                NULL);
+      if (info)
+        {
+          asset = rig_load_asset (unserializer->data, info, asset_file);
+          if (asset)
+            {
+              unserializer->assets =
+                g_list_prepend (unserializer->assets, asset);
+              register_unserializer_object (unserializer, asset, id);
+            }
+          g_object_unref (info);
+        }
+
+      g_object_unref (asset_file);
+      g_free (full_path);
+    }
+}
+
+static void
+unserialize_path_nodes (UnSerializer *unserializer,
+                        RigPath *path,
+                        int n_nodes,
+                        Rig__Node **nodes)
+{
+  int i;
+
+  for (i = 0; i < n_nodes; i++)
+    {
+      Rig__Node *pb_node = nodes[i];
+      Rig__PropertyValue *pb_value;
+      float t;
+
+      if (!pb_node->has_t)
+        continue;
+      t = pb_node->t;
+
+      if (!pb_node->value)
+        continue;
+      pb_value = pb_node->value;
+
+      switch (path->type)
+        {
+        case RUT_PROPERTY_TYPE_FLOAT:
+          rig_path_insert_float (path, t, pb_value->float_value);
+          break;
+        case RUT_PROPERTY_TYPE_DOUBLE:
+          rig_path_insert_double (path, t, pb_value->double_value);
+          break;
+        case RUT_PROPERTY_TYPE_INTEGER:
+          rig_path_insert_integer (path, t, pb_value->integer_value);
+          break;
+        case RUT_PROPERTY_TYPE_UINT32:
+          rig_path_insert_uint32 (path, t, pb_value->uint32_value);
+          break;
+        case RUT_PROPERTY_TYPE_VEC3:
+          {
+            float vec3[3] = {
+                pb_value->vec3_value->x,
+                pb_value->vec3_value->y,
+                pb_value->vec3_value->z
+            };
+            rig_path_insert_vec3 (path, t, vec3);
+            break;
+          }
+        case RUT_PROPERTY_TYPE_VEC4:
+          {
+            float vec4[4] = {
+                pb_value->vec4_value->x,
+                pb_value->vec4_value->y,
+                pb_value->vec4_value->z,
+                pb_value->vec4_value->w
+            };
+            rig_path_insert_vec4 (path, t, vec4);
+            break;
+          }
+        case RUT_PROPERTY_TYPE_COLOR:
+          {
+            CoglColor color;
+            pb_init_color (unserializer->data->ctx, &color, pb_value->color_value);
+            rig_path_insert_color (path, t, &color);
+            break;
+          }
+        case RUT_PROPERTY_TYPE_QUATERNION:
+          {
+            CoglQuaternion quaternion;
+            pb_init_quaternion (&quaternion, pb_value->quaternion_value);
+            rig_path_insert_quaternion (path, t, &quaternion);
+            break;
+          }
+
+          /* These shouldn't be animatable */
+        case RUT_PROPERTY_TYPE_BOOLEAN:
+        case RUT_PROPERTY_TYPE_TEXT:
+        case RUT_PROPERTY_TYPE_ENUM:
+        case RUT_PROPERTY_TYPE_OBJECT:
+        case RUT_PROPERTY_TYPE_POINTER:
+          g_warn_if_reached ();
+        }
+    }
+}
+
+static void
+unserialize_transition_properties (UnSerializer *unserializer,
+                                   RigTransition *transition,
+                                   int n_properties,
+                                   Rig__Transition__Property **properties)
+{
+  int i;
+
+  for (i = 0; i < n_properties; i++)
+    {
+      Rig__Transition__Property *pb_property = properties[i];
+      uint64_t object_id;
+      RutObject *object;
+      CoglBool animated;
+      RigTransitionPropData *prop_data;
+
+      if (!pb_property->has_object_id ||
+          pb_property->name == NULL)
+        continue;
+
+      if (pb_property->has_animated)
+        animated = pb_property->animated;
+      else
+        animated = FALSE;
+
+      object_id = pb_property->object_id;
+
+      object = unserializer_find_introspectable (unserializer, object_id);
+      if (!object)
+        {
+          collect_error (unserializer,
+                         "Invalid object id %d referenced in property element",
+                         (int)object_id);
+          continue;
+        }
+
+      prop_data = rig_transition_get_prop_data (transition,
+                                                object,
+                                                pb_property->name);
+      if (!prop_data)
+        {
+          collect_error (unserializer,
+                         "Invalid object property name given for"
+                         "transition property");
+          continue;
+        }
+
+      if (prop_data->property->spec->animatable)
+        {
+          if (animated)
+            rig_transition_set_property_animated (transition,
+                                                  prop_data->property,
+                                                  TRUE);
+        }
+      else if (animated)
+        {
+          collect_error (unserializer,
+                         "A non-animatable property is marked as animated");
+        }
+
+      pb_init_boxed_value (unserializer,
+                           &prop_data->constant_value,
+                           prop_data->constant_value.type,
+                           pb_property->constant);
+
+      if (pb_property->path)
+        {
+          Rig__Path *pb_path = pb_property->path;
+
+          prop_data->path =
+            rig_path_new (unserializer->data->ctx,
+                          prop_data->property->spec->type);
+
+          unserialize_path_nodes (unserializer,
+                           prop_data->path,
+                           pb_path->n_nodes,
+                           pb_path->nodes);
+        }
+    }
+}
+
+static void
+unserialize_transitions (UnSerializer *unserializer,
+                         int n_transitions,
+                         Rig__Transition **transitions)
+{
+  int i;
+
+  for (i = 0; i < n_transitions; i++)
+    {
+      Rig__Transition *pb_transition = transitions[i];
+      RigTransition *transition;
+      uint64_t id;
+
+      if (!pb_transition->has_id)
+        continue;
+
+      id = pb_transition->id;
+
+      transition = rig_create_transition (unserializer->data, id);
+
+      unserialize_transition_properties (unserializer,
+                                  transition,
+                                  pb_transition->n_properties,
+                                  pb_transition->properties);
+
+      unserializer->transitions =
+        g_list_prepend (unserializer->transitions, transition);
+    }
+}
+
+static void
+ignore_free (void *allocator_data, void *ptr)
+{
+  /* NOP */
+}
+
+void
+rig_pb_unserialize_ui (RigData *data, void *buf, size_t len)
+{
+  UnSerializer unserializer;
+  Rig__UI *pb_ui;
+
+  /* We use a special allocator while unpacking protocol buffers
+   * that lets us use the serialization_stack. This means much
+   * less mucking about with the heap since the serialization_stack
+   * is a persistant, growable stack which we can just rewind
+   * very cheaply before unpacking */
+  ProtobufCAllocator protobuf_c_allocator =
+    {
+      rut_memory_stack_alloc,
+      ignore_free,
+      rut_memory_stack_alloc, /* tmp_alloc */
+      8192, /* max_alloca */
+      data->serialization_stack /* allocator_data */
+    };
+
+
+  memset (&unserializer, 0, sizeof (unserializer));
+  unserializer.data = data;
+
+  /* This hash table maps from uint64_t ids to objects while loading */
+  unserializer.id_map = g_hash_table_new_full (g_int64_hash,
+                                               g_int64_equal,
+                                               free_id_slice,
+                                               NULL);
+
+  rut_memory_stack_rewind (data->serialization_stack);
+
+  pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, buf);
+
+  if (pb_ui->device)
+    {
+      Rig__Device *device = pb_ui->device;
+      if (device->has_width)
+        data->device_width = device->width;
+      if (device->has_height)
+        data->device_height = device->height;
+
+      if (device->background)
+        pb_init_color (data->ctx,
+                       &data->background_color,
+                       device->background);
+    }
+
+  unserialize_assets (&unserializer,
+                      pb_ui->n_assets,
+                      pb_ui->assets);
+
+  unserialize_entities (&unserializer,
+                        pb_ui->n_entities,
+                        pb_ui->entities);
+
+  unserialize_transitions (&unserializer,
+                           pb_ui->n_transitions,
+                           pb_ui->transitions);
+
+  rig__ui__free_unpacked (pb_ui, &protobuf_c_allocator);
+
+  g_hash_table_destroy (unserializer.id_map);
+}

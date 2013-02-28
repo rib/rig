@@ -45,6 +45,8 @@ librig_la_SOURCES = \
 	jni/rig-transition.h \
 	jni/rig-load-xml.h \
 	jni/rig-load-xml.c \
+	jni/rig-pb.h \
+	jni/rig-pb.c \
 	jni/rig-load-save.h \
 	jni/rig-load-save.c \
 	jni/rig-transition-view.c \
