@@ -1597,32 +1597,10 @@ unserialize_transitions (UnSerializer *unserializer,
     }
 }
 
-static void
-ignore_free (void *allocator_data, void *ptr)
-{
-  /* NOP */
-}
-
 void
-rig_pb_unserialize_ui (RigData *data, void *buf, size_t len)
+rig_pb_unserialize_ui (RigData *data, Rig__UI *pb_ui)
 {
   UnSerializer unserializer;
-  Rig__UI *pb_ui;
-
-  /* We use a special allocator while unpacking protocol buffers
-   * that lets us use the serialization_stack. This means much
-   * less mucking about with the heap since the serialization_stack
-   * is a persistant, growable stack which we can just rewind
-   * very cheaply before unpacking */
-  ProtobufCAllocator protobuf_c_allocator =
-    {
-      rut_memory_stack_alloc,
-      ignore_free,
-      rut_memory_stack_alloc, /* tmp_alloc */
-      8192, /* max_alloca */
-      data->serialization_stack /* allocator_data */
-    };
-
 
   memset (&unserializer, 0, sizeof (unserializer));
   unserializer.data = data;
@@ -1634,8 +1612,6 @@ rig_pb_unserialize_ui (RigData *data, void *buf, size_t len)
                                                NULL);
 
   rut_memory_stack_rewind (data->serialization_stack);
-
-  pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, buf);
 
   if (pb_ui->device)
     {
@@ -1662,8 +1638,6 @@ rig_pb_unserialize_ui (RigData *data, void *buf, size_t len)
   unserialize_transitions (&unserializer,
                            pb_ui->n_transitions,
                            pb_ui->transitions);
-
-  rig__ui__free_unpacked (pb_ui, &protobuf_c_allocator);
 
   g_hash_table_destroy (unserializer.id_map);
 }

@@ -79,6 +79,12 @@ rig_save (RigData *data, const char *path)
   fclose (fp);
 }
 
+static void
+ignore_free (void *allocator_data, void *ptr)
+{
+  /* NOP */
+}
+
 void
 rig_load (RigData *data, const char *file)
 {
@@ -89,6 +95,22 @@ rig_load (RigData *data, const char *file)
   size_t len;
   GError *error = NULL;
   gboolean needs_munmap = FALSE;
+  Rig__UI *ui;
+
+  /* We use a special allocator while unpacking protocol buffers
+   * that lets us use the serialization_stack. This means much
+   * less mucking about with the heap since the serialization_stack
+   * is a persistant, growable stack which we can just rewind
+   * very cheaply before unpacking */
+  ProtobufCAllocator protobuf_c_allocator =
+    {
+      rut_memory_stack_alloc,
+      ignore_free,
+      rut_memory_stack_alloc, /* tmp_alloc */
+      8192, /* max_alloca */
+      data->serialization_stack /* allocator_data */
+    };
+
 
   /* XXX: For compatability with Rig 2 we support loading XML ui
    * descriptions, though the plan is to only maintain this for one
@@ -117,7 +139,11 @@ rig_load (RigData *data, const char *file)
       return;
     }
 
-  rig_pb_unserialize_ui (data, contents, len);
+  ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
+
+  rig_pb_unserialize_ui (data, ui);
+
+  rig__ui__free_unpacked (ui, &protobuf_c_allocator);
 
   if (needs_munmap)
     munmap (contents, len);

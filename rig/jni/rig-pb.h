@@ -21,10 +21,12 @@
 #ifndef __RIG_PB_H__
 #define __RIG_PB_H__
 
+#include "rig.pb-c.h"
+
 Rig__UI *
 rig_pb_serialize_ui (RigData *data);
 
 void
-rig_pb_unserialize_ui (RigData *data, void *buf, size_t len);
+rig_pb_unserialize_ui (RigData *data, Rig__UI *pb_ui);
 
 #endif /* __RIG_PB_H__ */
