@@ -26,6 +26,7 @@
 #include "rut-property.h"
 #include "rut-util.h"
 #include "components/rut-camera.h"
+#include "rut-refcount-debug.h"
 
 void *
 rut_refable_simple_ref (void *object)
@@ -59,6 +60,8 @@ rut_refable_ref (void *object)
   RutRefCountableVTable *vtable =
     type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
 
+  _rut_refcount_debug_ref (object);
+
   return vtable->ref (obj);
 }
 
@@ -69,6 +72,8 @@ rut_refable_unref (void *object)
   const RutType *type = rut_object_get_type (obj);
   RutRefCountableVTable *vtable =
     type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
+
+  _rut_refcount_debug_unref (object);
 
   vtable->unref (obj);
 }

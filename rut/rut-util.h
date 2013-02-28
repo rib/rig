@@ -3,7 +3,7 @@
  *
  * A rig of UI prototyping utilities
  *
- * Copyright (C) 2011  Intel Corporation.
+ * Copyright (C) 2011, 2013  Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -174,5 +174,8 @@ int
 rut_util_distribute_natural_allocation (int extra_space,
                                         unsigned int n_requested_sizes,
                                         RutPreferredSize *sizes);
+
+CoglBool
+rut_util_is_boolean_env_set (const char *variable);
 
 #endif /* _RUT_UTIL_H_ */

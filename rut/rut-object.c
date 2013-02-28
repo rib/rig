@@ -22,11 +22,14 @@
 
 #include "rut-type.h"
 #include "rut-object.h"
+#include "rut-refcount-debug.h"
 
 void
 rut_object_init (RutObjectProps *object, RutType *type)
 {
   object->type = type;
+
+  _rut_refcount_debug_object_created (object);
 }
 
 

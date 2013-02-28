@@ -545,3 +545,30 @@ rut_util_distribute_natural_allocation (int extra_space,
 
   return extra_space;
 }
+
+CoglBool
+rut_util_is_boolean_env_set (const char *variable)
+{
+  char *val = getenv (variable);
+  CoglBool ret;
+
+  if (!val)
+    return FALSE;
+
+  if (g_ascii_strcasecmp (val, "1") == 0 ||
+      g_ascii_strcasecmp (val, "on") == 0 ||
+      g_ascii_strcasecmp (val, "true") == 0)
+    ret = TRUE;
+  else if (g_ascii_strcasecmp (val, "0") == 0 ||
+           g_ascii_strcasecmp (val, "off") == 0 ||
+           g_ascii_strcasecmp (val, "false") == 0)
+    ret = FALSE;
+  else
+    {
+      g_critical ("Spurious boolean environment variable value (%s=%s)",
+                  variable, val);
+      ret = TRUE;
+    }
+
+  return ret;
+}

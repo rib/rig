@@ -69,7 +69,8 @@ source_h = \
     rut-rectangle.h \
     rut-nine-slice.h \
     rut-fixed.h \
-    rut-fold.h
+    rut-fold.h \
+    rut-refcount-debug.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -141,6 +142,7 @@ librut_la_SOURCES = \
     rut-nine-slice.c \
     rut-fixed.c \
     rut-fold.c \
+    rut-refcount-debug.c \
     $(source_h)
 
 if !HAVE_ANDROID

@@ -144,6 +144,35 @@ AS_CASE(
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
 
+AC_ARG_ENABLE(
+  [refcount_debug],
+  [AC_HELP_STRING([--enable-refcount-debug=@<:@no/yes@:>@],
+                  [Enable tracking refcounts @<:@default=]default[@:>@])],
+  [enable_refcount_debug="$enableval"],
+  [enable_refcount_debug="$enable_debug"]
+)
+AS_CASE(
+  [$enable_refcount_debug],
+  [yes],
+  [
+    AC_DEFINE([RUT_ENABLE_REFCOUNT_DEBUG], [1],
+              [Define to enable refcount debugging])
+  ],
+  [no], [],
+  [AC_MSG_ERROR([Unknown argument for --enable-refcount-debug])]
+)
+
+AS_IF([test "x$enable_refcount_debug" = "xyes"],
+      [AC_CHECK_HEADER([execinfo.h], [have_backtrace=yes], [have_backtrace=no])
+       AC_CHECK_FUNC([backtrace], [], [have_backtrace=no])
+       AC_CHECK_FUNC([backtrace_symbols], [], [have_backtrace=no])],
+      [have_backtrace=no])
+
+AS_IF([test "x$have_backtrace" = "xyes"],
+      [AC_DEFINE([RUT_ENABLE_BACKTRACE],
+                 [1],
+                 [Define if backtracing is available])])
+
 # use strict compiler flags only when building from git; the rules for
 # distcheck will take care of turning this on when making a release
 m4_define([default], [m4_if(rig_release_status, [git], [yes], [no])])
@@ -340,6 +369,7 @@ echo " • Editor: $enable_editor"
 echo ""
 echo " • Compiler options:"
 echo "        Rig debug: ${enable_debug}"
+echo "        Refcount debugging: ${enable_refcount_debug}"
 echo "        Compiler flags: ${CFLAGS} ${RIG_EXTRA_CFLAGS}"
 echo "        Preprocessor flags: ${CPPFLAGS} ${RIG_EXTRA_CPPFLAGS}"
 echo "        Linker flags: ${LDFLAGS} ${RIG_EXTRA_LDFLAGS}"
