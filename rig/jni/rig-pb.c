@@ -503,8 +503,8 @@ serialize_component_cb (RutComponent *component,
 
       color = rut_text_get_color (text);
 
-      pb_text->text = rut_text_get_text (text);
-      pb_text->font = rut_text_get_font_name (text);
+      pb_text->text = (char *)rut_text_get_text (text);
+      pb_text->font = (char *)rut_text_get_font_name (text);
       pb_text->color = pb_color_new (data, color);
     }
 }
@@ -568,7 +568,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 
   if (label && *label)
     {
-      pb_entity->label = label;
+      pb_entity->label = (char *)label;
     }
 
   q = rut_entity_get_rotation (entity);
@@ -638,7 +638,7 @@ serialize_property_cb (RigTransitionPropData *prop_data,
   pb_property->has_object_id = TRUE;
   pb_property->object_id = id;
 
-  pb_property->name = prop_data->property->spec->name;
+  pb_property->name = (char *)prop_data->property->spec->name;
 
   pb_property->has_animated = TRUE;
   pb_property->animated = prop_data->animated;
@@ -708,7 +708,7 @@ rig_pb_serialize_ui (RigData *data)
           pb_asset->has_id = TRUE;
           pb_asset->id = serializer.next_id++;
 
-          pb_asset->path = rut_asset_get_path (asset);
+          pb_asset->path = (char *)rut_asset_get_path (asset);
 
           ui->assets[i] = pb_asset;
         }
