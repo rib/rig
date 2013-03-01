@@ -49,7 +49,7 @@ typedef enum _CoglFramebufferType {
 
 typedef struct
 {
-  CoglSwapChain *swap_chain;
+  CoglBool has_alpha;
   CoglBool need_stencil;
   int samples_per_pixel;
   CoglBool swap_throttled;

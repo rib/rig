@@ -357,6 +357,7 @@ cogl_onscreen_show
 cogl_onscreen_swap_buffers
 cogl_onscreen_swap_region
 cogl_onscreen_template_new
+cogl_onscreen_template_set_has_alpha
 cogl_onscreen_template_set_samples_per_pixel
 cogl_onscreen_template_set_swap_throttled
 
@@ -539,10 +540,6 @@ cogl_snippet_set_replace
 
 cogl_sub_texture_get_parent
 cogl_sub_texture_new
-
-cogl_swap_chain_new
-cogl_swap_chain_set_has_alpha
-cogl_swap_chain_set_length
 
 cogl_texture_error_domain
 cogl_texture_flags_get_type

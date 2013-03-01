@@ -36,7 +36,6 @@
 #include "cogl-context-private.h"
 #include "cogl-framebuffer.h"
 #include "cogl-onscreen-private.h"
-#include "cogl-swap-chain-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-onscreen-template-private.h"
 #include "cogl-gles2-context-private.h"
@@ -246,7 +245,7 @@ egl_attributes_from_framebuffer_config (CoglDisplay *display,
   attributes[i++] = 1;
 
   attributes[i++] = EGL_ALPHA_SIZE;
-  attributes[i++] = config->swap_chain->has_alpha ? 1 : EGL_DONT_CARE;
+  attributes[i++] = config->has_alpha ? 1 : EGL_DONT_CARE;
 
   attributes[i++] = EGL_DEPTH_SIZE;
   attributes[i++] = 1;

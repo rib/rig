@@ -31,8 +31,6 @@
 #ifndef __COGL_ONSCREEN_TEMPLATE_H__
 #define __COGL_ONSCREEN_TEMPLATE_H__
 
-#include <cogl/cogl-swap-chain.h>
-
 COGL_BEGIN_DECLS
 
 typedef struct _CoglOnscreenTemplate	      CoglOnscreenTemplate;
@@ -40,11 +38,11 @@ typedef struct _CoglOnscreenTemplate	      CoglOnscreenTemplate;
 #define COGL_ONSCREEN_TEMPLATE(OBJECT) ((CoglOnscreenTemplate *)OBJECT)
 
 CoglOnscreenTemplate *
-cogl_onscreen_template_new (CoglSwapChain *swap_chain);
+cogl_onscreen_template_new (void);
 
 /**
  * cogl_onscreen_template_set_samples_per_pixel:
- * @onscreen: A #CoglOnscreenTemplate template framebuffer
+ * @onscreen_template: A #CoglOnscreenTemplate template framebuffer
  * @n: The minimum number of samples per pixel
  *
  * Requires that any future CoglOnscreen framebuffers derived from
@@ -86,6 +84,26 @@ void
 cogl_onscreen_template_set_swap_throttled (
                                           CoglOnscreenTemplate *onscreen_template,
                                           CoglBool throttled);
+
+/**
+ * cogl_onscreen_template_set_has_alpha:
+ * @onscreen_template: A #CoglOnscreenTemplate template framebuffer
+ * @has_alpha: Whether an alpha channel is required
+ *
+ * Requests that any future #CoglOnscreen framebuffers derived from
+ * this template should have an alpha channel if @has_alpha is %TRUE.
+ * If @has_alpha is FALSE then future framebuffers derived from this
+ * template aren't required to have an alpha channel, although Cogl
+ * may choose to ignore this and allocate a redundant alpha channel.
+ *
+ * By default a template does not request an alpha component.
+ *
+ * Since: 1.16
+ * Stability: unstable
+ */
+void
+cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
+                                      CoglBool has_alpha);
 
 /**
  * cogl_is_onscreen_template:

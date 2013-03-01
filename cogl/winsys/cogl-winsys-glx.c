@@ -34,7 +34,6 @@
 #include "cogl-feature-private.h"
 #include "cogl-context-private.h"
 #include "cogl-framebuffer.h"
-#include "cogl-swap-chain-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-glx-renderer-private.h"
 #include "cogl-onscreen-template-private.h"
@@ -46,7 +45,6 @@
 #include "cogl-frame-info-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-private.h"
-#include "cogl-swap-chain-private.h"
 #include "cogl-xlib-renderer.h"
 #include "cogl-util.h"
 #include "cogl-winsys-glx-private.h"
@@ -874,7 +872,7 @@ glx_attributes_from_framebuffer_config (CoglDisplay *display,
   attributes[i++] = GLX_BLUE_SIZE;
   attributes[i++] = 1;
   attributes[i++] = GLX_ALPHA_SIZE;
-  attributes[i++] = config->swap_chain->has_alpha ? 1 : GLX_DONT_CARE;
+  attributes[i++] = config->has_alpha ? 1 : GLX_DONT_CARE;
   attributes[i++] = GLX_DEPTH_SIZE;
   attributes[i++] = 1;
   attributes[i++] = GLX_STENCIL_SIZE;
@@ -927,7 +925,7 @@ find_fbconfig (CoglDisplay *display,
       goto done;
     }
 
-  if (config->swap_chain->has_alpha)
+  if (config->has_alpha)
     {
       int i;
 
@@ -1005,7 +1003,7 @@ create_context (CoglDisplay *display, CoglError **error)
     _cogl_xlib_renderer_get_data (display->renderer);
   CoglGLXRenderer *glx_renderer = display->renderer->winsys;
   CoglBool support_transparent_windows =
-    display->onscreen_template->config.swap_chain->has_alpha;
+    display->onscreen_template->config.has_alpha;
   GLXFBConfig config;
   CoglError *fbconfig_error = NULL;
   XSetWindowAttributes attrs;

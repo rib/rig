@@ -52,7 +52,6 @@ _cogl_onscreen_init_from_template (CoglOnscreen *onscreen,
   _cogl_list_init (&onscreen->dirty_closures);
 
   framebuffer->config = onscreen_template->config;
-  cogl_object_ref (framebuffer->config.swap_chain);
 }
 
 CoglOnscreen *

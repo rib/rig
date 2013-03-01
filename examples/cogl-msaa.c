@@ -22,7 +22,7 @@ main (int argc, char **argv)
     CoglFramebuffer *offscreen_fb;
     CoglPipeline *pipeline;
 
-    onscreen_template = cogl_onscreen_template_new (NULL);
+    onscreen_template = cogl_onscreen_template_new ();
     cogl_onscreen_template_set_samples_per_pixel (onscreen_template, 4);
     display = cogl_display_new (NULL, onscreen_template);
 

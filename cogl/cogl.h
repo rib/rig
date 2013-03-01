@@ -45,7 +45,6 @@
 #include <cogl/cogl-enum-types.h>
 #endif
 
-#include <cogl/cogl-swap-chain.h>
 #include <cogl/cogl-renderer.h>
 #include <cogl/cogl-output.h>
 #include <cogl/cogl-display.h>

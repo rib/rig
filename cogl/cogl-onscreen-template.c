@@ -46,16 +46,10 @@ _cogl_onscreen_template_free (CoglOnscreenTemplate *onscreen_template)
 }
 
 CoglOnscreenTemplate *
-cogl_onscreen_template_new (CoglSwapChain *swap_chain)
+cogl_onscreen_template_new (void)
 {
   CoglOnscreenTemplate *onscreen_template = g_slice_new0 (CoglOnscreenTemplate);
   char *user_config;
-
-  onscreen_template->config.swap_chain = swap_chain;
-  if (swap_chain)
-    cogl_object_ref (swap_chain);
-  else
-    onscreen_template->config.swap_chain = cogl_swap_chain_new ();
 
   onscreen_template->config.swap_throttled = TRUE;
   onscreen_template->config.need_stencil = TRUE;
@@ -87,4 +81,11 @@ cogl_onscreen_template_set_swap_throttled (
                                           CoglBool throttled)
 {
   onscreen_template->config.swap_throttled = throttled;
+}
+
+void
+cogl_onscreen_template_set_has_alpha (CoglOnscreenTemplate *onscreen_template,
+                                      CoglBool has_alpha)
+{
+  onscreen_template->config.has_alpha = has_alpha;
 }

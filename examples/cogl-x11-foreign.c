@@ -46,7 +46,6 @@ main (int argc, char **argv)
 {
   Display *xdpy;
   CoglRenderer *renderer;
-  CoglSwapChain *chain;
   CoglOnscreenTemplate *onscreen_template;
   CoglDisplay *display;
   CoglContext *ctx;
@@ -77,10 +76,8 @@ main (int argc, char **argv)
       return 1;
     }
 
-  /* Conceptually choose a GPU... */
+  /* Choose a means to render... */
   renderer = cogl_renderer_new ();
-  /* FIXME: This should conceptually be part of the configuration of
-   * a renderer. */
   cogl_xlib_renderer_set_foreign_display (renderer, xdpy);
   if (!cogl_renderer_connect (renderer, &error))
     {
@@ -88,17 +85,13 @@ main (int argc, char **argv)
                error->message);
     }
 
-  chain = cogl_swap_chain_new ();
-  cogl_swap_chain_set_has_alpha (chain, TRUE);
+  /* Create a template for onscreen framebuffers that requests an
+   * alpha component */
+  onscreen_template = cogl_onscreen_template_new ();
+  cogl_onscreen_template_set_has_alpha (onscreen_template, TRUE);
 
-  /* Conceptually declare upfront the kinds of windows we anticipate
-   * creating so that when we configure the display pipeline we can avoid
-   * having an impedance miss-match between the format of windows and the
-   * format the display pipeline expects. */
-  onscreen_template = cogl_onscreen_template_new (chain);
-  cogl_object_unref (chain);
-
-  /* Conceptually setup a display pipeline */
+  /* Give Cogl our template for onscreen framebuffers which can
+   * influence how the context will be setup */
   display = cogl_display_new (renderer, onscreen_template);
   cogl_object_unref (renderer);
   if (!cogl_display_setup (display, &error))

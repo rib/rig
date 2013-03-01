@@ -97,19 +97,6 @@ cogl_wayland_renderer_get_shell
 </SECTION>
 
 <SECTION>
-<FILE>cogl-swap-chain</FILE>
-<TITLE>CoglSwapChain: Describe a set of back buffers for flipping between</TITLE>
-<SUBSECTION>
-CoglSwapChain
-cogl_is_swap_chain
-
-<SUBSECTION>
-cogl_swap_chain_new
-cogl_swap_chain_set_has_alpha
-cogl_swap_chain_set_length
-</SECTION>
-
-<SECTION>
 <FILE>cogl-onscreen-template</FILE>
 <TITLE>CoglOnscreenTemplate: Describe a template for onscreen framebuffers</TITLE>
 <SUBSECTION>
@@ -118,6 +105,9 @@ cogl_is_onscreen_template
 
 <SUBSECTION>
 cogl_onscreen_template_new
+cogl_onscreen_template_set_has_alpha
+cogl_onscreen_template_set_swap_throttled
+cogl_onscreen_template_set_samples_per_pixel
 </SECTION>
 
 <SECTION>

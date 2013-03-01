@@ -37,7 +37,6 @@
 #include "cogl-context-private.h"
 #include "cogl-framebuffer.h"
 #include "cogl-onscreen-private.h"
-#include "cogl-swap-chain-private.h"
 #include "cogl-renderer-private.h"
 #include "cogl-display-private.h"
 #include "cogl-onscreen-template-private.h"
@@ -423,7 +422,7 @@ choose_pixel_format (CoglFramebufferConfig *config,
              already found */
           (best_pf == 0 || pixel_format_is_better (&best_pfd, pfd)))
         {
-          if (config->swap_chain->has_alpha && pfd->cAlphaBits == 0)
+          if (config->has_alpha && pfd->cAlphaBits == 0)
             continue;
           if (config->need_stencil && pfd->cStencilBits == 0)
             continue;

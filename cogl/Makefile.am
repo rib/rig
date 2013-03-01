@@ -96,7 +96,6 @@ cogl_public_h = \
 	$(srcdir)/cogl-renderer.h 		\
 	$(srcdir)/cogl-snippet.h		\
 	$(srcdir)/cogl-sub-texture.h            \
-	$(srcdir)/cogl-swap-chain.h 		\
 	$(srcdir)/cogl-texture-2d-gl.h 		\
 	$(srcdir)/cogl-texture-2d-sliced.h      \
 	$(srcdir)/cogl-texture-2d.h             \
@@ -210,9 +209,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-renderer-private.h		\
 	$(srcdir)/cogl-renderer.h			\
 	$(srcdir)/cogl-renderer.c			\
-	$(srcdir)/cogl-swap-chain-private.h		\
-	$(srcdir)/cogl-swap-chain.h			\
-	$(srcdir)/cogl-swap-chain.c			\
 	$(srcdir)/cogl-onscreen-template-private.h 	\
 	$(srcdir)/cogl-onscreen-template.h 		\
 	$(srcdir)/cogl-onscreen-template.c 		\

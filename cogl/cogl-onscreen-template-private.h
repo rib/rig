@@ -25,8 +25,8 @@
 #define __COGL_ONSCREEN_TEMPLATE_PRIVATE_H
 
 #include "cogl-object-private.h"
-#include "cogl-swap-chain.h"
 #include "cogl-framebuffer-private.h"
+#include "cogl-boxed-value.h"
 
 struct _CoglOnscreenTemplate
 {

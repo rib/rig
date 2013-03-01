@@ -35,7 +35,6 @@
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-private.h"
 #include "cogl-onscreen-template-private.h"
-#include "cogl-swap-chain-private.h"
 
 static const CoglWinsysEGLVtable _cogl_winsys_egl_vtable;
 
@@ -223,18 +222,8 @@ gdl_plane_init (CoglDisplay *display, CoglError **error)
   if (rc == GDL_SUCCESS)
     rc = gdl_plane_set_attr (GDL_PLANE_DST_RECT, &dstRect);
 
-  /* Default to triple buffering if the swap_chain doesn't have an explicit
-   * length */
   if (rc == GDL_SUCCESS)
-    {
-      if (display->onscreen_template->config.swap_chain &&
-          display->onscreen_template->config.swap_chain->length != -1)
-        rc = gdl_plane_set_uint (GDL_PLANE_NUM_GFX_SURFACES,
-                                 display->onscreen_template->
-                                 config.swap_chain->length);
-      else
-        rc = gdl_plane_set_uint (GDL_PLANE_NUM_GFX_SURFACES, 3);
-    }
+    rc = gdl_plane_set_uint (GDL_PLANE_NUM_GFX_SURFACES, 3);
 
   if (rc == GDL_SUCCESS)
     rc = gdl_plane_config_end (GDL_FALSE);
