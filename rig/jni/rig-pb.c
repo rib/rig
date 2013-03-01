@@ -1267,8 +1267,6 @@ unserialize_components (UnSerializer *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
           break;
-        case _RIG__ENTITY__COMPONENT__TYPE_IS_INT_SIZE:
-          g_warn_if_reached ();
         }
     }
 }
