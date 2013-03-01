@@ -1160,8 +1160,6 @@ unserialize_components (UnSerializer *unserializer,
             register_unserializer_object (unserializer, text, component_id);
             break;
           }
-        case _RIG__ENTITY__COMPONENT__TYPE_IS_INT_SIZE:
-          g_warn_if_reached ();
         }
     }
 
