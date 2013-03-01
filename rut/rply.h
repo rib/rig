@@ -63,6 +63,19 @@ typedef void (*p_ply_error_cb)(const char *message, gpointer data);
 p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data);
 
 /* ----------------------------------------------------------------------
+ * Prepare a ply buffer for reading (fails if buffer is not in ply format)
+ *
+ * buf: memory buffer in ply format
+ * size: length of buffer
+ * error_cb: error callback function
+ * name: file name
+ *
+ * Returns 1 if successful, 0 otherwise
+ * ---------------------------------------------------------------------- */
+p_ply ply_start(void *buf, size_t size,
+        p_ply_error_cb error_cb, gpointer cb_data);
+
+/* ----------------------------------------------------------------------
  * Reads and parses the header of a ply file returned by ply_open
  *
  * ply: handle returned by ply_open

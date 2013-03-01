@@ -291,19 +291,13 @@ static int BREFILL(p_ply ply) {
 /* ----------------------------------------------------------------------
  * Read support functions
  * ---------------------------------------------------------------------- */
-p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data) {
+static p_ply ply_start_fp(FILE *fp,
+        p_ply_error_cb error_cb, gpointer cb_data) {
     char magic[5] = "    ";
-    FILE *fp = NULL;
     p_ply ply = NULL;
     if (error_cb == NULL) error_cb = ply_error_cb;
     if (!ply_type_check()) {
         error_cb("Incompatible type system", cb_data);
-        return NULL;
-    }
-    assert(name);
-    fp = fopen(name, "rb");
-    if (!fp) {
-        error_cb("Unable to open file", cb_data);
         return NULL;
     }
     if (fread(magic, 1, 4, fp) < 4) {
@@ -327,6 +321,40 @@ p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data) {
     ply->error_cb = error_cb;
     ply->cb_data = cb_data;
     return ply;
+}
+
+p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data) {
+    FILE *fp = NULL;
+    if (error_cb == NULL) error_cb = ply_error_cb;
+    if (!ply_type_check()) {
+        error_cb("Incompatible type system", cb_data);
+        return NULL;
+    }
+    assert(name);
+    fp = fopen(name, "rb");
+    if (!fp) {
+        error_cb("Unable to open file", cb_data);
+        return NULL;
+    }
+    return ply_start_fp(fp, error_cb, cb_data);
+}
+
+p_ply ply_start(void *buf, size_t size,
+        p_ply_error_cb error_cb, gpointer cb_data) {
+    FILE *fp = NULL;
+    if (error_cb == NULL) error_cb = ply_error_cb;
+    if (!ply_type_check()) {
+        error_cb("Incompatible type system", cb_data);
+        return NULL;
+    }
+    assert(buf);
+    assert(size);
+    fp = fmemopen(buf, size, "r");
+        if (!fp) {
+        error_cb("Unable to open buffer with fmemopen", cb_data);
+        return NULL;
+    }
+    return ply_start_fp(fp, error_cb, cb_data);
 }
 
 int ply_read_header(p_ply ply) {
