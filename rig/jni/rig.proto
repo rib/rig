@@ -211,7 +211,18 @@ message LoadResult
 {
 }
 
+message SerializedAsset
+{
+  optional string name=1;
+  optional bytes data=2;
+}
+
+message LoadAssetResult
+{
+}
+
 service Slave {
+    rpc LoadAsset (SerializedAsset) returns (LoadAssetResult);
     rpc Load (UI) returns (LoadResult);
     rpc Test (Query) returns (TestResult);
 }

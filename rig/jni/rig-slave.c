@@ -20,6 +20,11 @@ static const GOptionEntry rut_handset_entries[] =
 };
 #endif
 
+typedef struct _RigSlave
+{
+  RigData *data;
+
+} RigSlave;
 
 static void
 slave__test (Rig__Slave_Service *service,
@@ -28,11 +33,27 @@ slave__test (Rig__Slave_Service *service,
              void *closure_data)
 {
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
-  //RigData *data = rig_pb_rpc_closure_get_connection_data (closure_data);
+  //RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
 
   g_return_if_fail (query != NULL);
 
   g_print ("Test Query\n");
+
+  closure (&result, closure_data);
+}
+
+static void
+slave__load_asset (Rig__Slave_Service *service,
+                   const Rig__SerializedAsset *query,
+                   Rig__LoadAssetResult_Closure closure,
+                   void *closure_data)
+{
+  Rig__LoadAssetResult result = RIG__LOAD_ASSET_RESULT__INIT;
+  //RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+
+  g_return_if_fail (query != NULL);
+
+  g_print ("Load Asset Request\n");
 
   closure (&result, closure_data);
 }
@@ -44,7 +65,8 @@ slave__load (Rig__Slave_Service *service,
              void *closure_data)
 {
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
-  RigData *data = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigData *data = slave->data;
 
   g_return_if_fail (ui != NULL);
 
@@ -71,13 +93,14 @@ new_client_handler (PB_RPC_Server *server,
                     PB_RPC_ServerConnection *conn,
                     void *user_data)
 {
-  RigData *data = user_data;
+  RigSlave *slave = user_data;
+  //RigData *data = slave->data;
 
   rig_pb_rpc_server_connection_set_close_handler (conn,
                                                   client_close_handler,
-                                                  user_data);
+                                                  slave);
 
-  rig_pb_rpc_server_connection_set_data (conn, data);
+  rig_pb_rpc_server_connection_set_data (conn, slave);
 
   g_message ("slave master connected %p", conn);
 }
@@ -87,7 +110,8 @@ server_error_handler (PB_RPC_Error_Code code,
                       const char *message,
                       void *user_data)
 {
-  RigData *data = user_data;
+  RigSlave *slave = user_data;
+  RigData *data = slave->data;
 
   g_warning ("Server error: %s", message);
 
@@ -97,15 +121,32 @@ server_error_handler (PB_RPC_Error_Code code,
 void
 rig_slave_init (RutShell *shell, void *user_data)
 {
-  RigData *data = user_data;
+  RigSlave *slave = user_data;
+  RigData *data = slave->data;
 
   rig_rpc_start_server (data,
                         &rig_slave_service.base,
                         server_error_handler,
                         new_client_handler,
-                        data);
+                        slave);
 
-  rig_engine_init (shell, data);
+  rig_engine_init (shell, slave->data);
+}
+
+void
+rig_slave_fini (RutShell *shell, void *user_data)
+{
+  RigSlave *slave = user_data;
+
+  rig_engine_fini (shell, slave->data);
+}
+
+CoglBool
+rig_slave_paint (RutShell *shell, void *user_data)
+{
+  RigSlave *slave = user_data;
+
+  return rig_engine_paint (slave->data->shell, user_data);
 }
 
 #ifdef __ANDROID__
@@ -113,6 +154,7 @@ rig_slave_init (RutShell *shell, void *user_data)
 void
 android_main (struct android_app *application)
 {
+  RigSlave slave;
   RigData data;
 
   /* Make sure glue isn't stripped */
@@ -120,14 +162,17 @@ android_main (struct android_app *application)
 
   g_android_init ();
 
+  memset (&slave, 0, sizeof (RigSlave));
+  slave.data = &data;
+
   memset (&data, 0, sizeof (RigData));
   data.app = application;
 
   data.shell = rut_android_shell_new (application,
                                       rig_slave_init,
-                                      rig_engine_fini,
-                                      rig_engine_paint,
-                                      &data);
+                                      rig_slave_fini,
+                                      rig_slave_paint,
+                                      &slave);
 
   data.ctx = rut_context_new (data.shell);
 
@@ -147,6 +192,7 @@ android_main (struct android_app *application)
 int
 main (int argc, char **argv)
 {
+  RigSlave slave;
   RigData data;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
@@ -159,12 +205,15 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
+  memset (&slave, 0, sizeof (RigSlave));
+  slave.data = &data;
+
   memset (&data, 0, sizeof (RigData));
 
   data.shell = rut_shell_new (rig_slave_init,
-                              rig_engine_fini,
-                              rig_engine_paint,
-                              &data);
+                              rig_slave_fini,
+                              rig_slave_paint,
+                              &slave);
 
   data.ctx = rut_context_new (data.shell);
 
