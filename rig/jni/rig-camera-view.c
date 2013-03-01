@@ -82,6 +82,10 @@ _rig_camera_view_free (void *object)
 
   rut_graphable_destroy (view);
 
+  rut_shell_remove_input_camera (view->context->shell,
+                                 view->view_camera_component,
+                                 view->data->scene);
+
   rut_refable_unref (view->view_camera_to_origin);
   rut_refable_unref (view->view_camera_rotate);
   rut_refable_unref (view->view_camera_armature);

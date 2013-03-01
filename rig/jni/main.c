@@ -1259,6 +1259,23 @@ create_camera_view (RigData *data)
   rut_bin_set_top_padding (bin, 5);
 
   rig_split_view_set_child1 (data->splits[1], stack);
+
+  rut_refable_unref (bottom_shim);
+  rut_refable_unref (bottom_stack);
+  rut_refable_unref (bottom_drop);
+
+  rut_refable_unref (left_shim);
+  rut_refable_unref (left_stack);
+  rut_refable_unref (left_drop);
+
+  cogl_object_unref (bottom_drop_shadow);
+  cogl_object_unref (left_drop_shadow);
+
+  rut_refable_unref (vbox);
+  rut_refable_unref (hbox);
+  rut_refable_unref (gradient);
+  rut_refable_unref (bin);
+  rut_refable_unref (stack);
 }
 
 static void
@@ -1876,6 +1893,8 @@ rig_engine_fini (RutShell *shell, void *user_data)
   rut_refable_unref (data->shadow_map_camera);
   rut_refable_unref (data->root);
   rut_refable_unref (data->scene);
+  rut_refable_unref (data->top_bin);
+  rut_refable_unref (data->main_camera_view);
 
   for (i = 0; i < RIG_DATA_N_PROPS; i++)
     rut_property_destroy (&data->properties[i]);
@@ -1894,6 +1913,9 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
       rut_refable_unref (data->timeline_vp);
       rut_refable_unref (data->transition_view);
+      rut_refable_unref (data->top_vbox);
+      rut_refable_unref (data->top_hbox);
+      rut_refable_unref (data->properties_hbox);
       cogl_object_unref (data->grid_prim);
 
       if (data->transparency_grid)
