@@ -279,7 +279,7 @@ _rut_text_buffer_free (void *object)
 
   rut_simple_introspectable_destroy (buffer);
 
-  rut_refable_simple_unref (buffer->ctx);
+  rut_refable_unref (buffer->ctx);
 
   g_slice_free (RutTextBuffer, buffer);
 }

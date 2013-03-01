@@ -241,7 +241,7 @@ rut_shell_get_context (RutShell *shell)
 static void
 _rut_shell_fini (RutShell *shell)
 {
-  rut_refable_simple_unref (shell->rut_ctx);
+  rut_refable_unref (shell->rut_ctx);
 }
 
 struct _RutInputEvent
@@ -2323,13 +2323,13 @@ _rut_slider_free (void *object)
 {
   RutSlider *slider = object;
 
-  rut_refable_simple_unref (slider->input_region);
+  rut_refable_unref (slider->input_region);
 
   rut_graphable_remove_child (slider->handle_transform);
 
-  rut_refable_simple_unref (slider->handle_transform);
-  rut_refable_simple_unref (slider->handle);
-  rut_refable_simple_unref (slider->background);
+  rut_refable_unref (slider->handle_transform);
+  rut_refable_unref (slider->handle);
+  rut_refable_unref (slider->background);
 
   rut_simple_introspectable_destroy (slider);
 

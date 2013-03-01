@@ -3448,7 +3448,7 @@ get_buffer (RutText *text)
       RutTextBuffer *buffer;
       buffer = rut_text_buffer_new (text->ctx);
       rut_text_set_buffer (text, buffer);
-      rut_refable_simple_unref (buffer);
+      rut_refable_unref (buffer);
     }
 
   return text->buffer;
@@ -3621,12 +3621,12 @@ rut_text_set_buffer (RutObject *obj,
   RutText *text = RUT_TEXT (obj);
 
   if (buffer)
-    rut_refable_simple_ref (buffer);
+    rut_refable_ref (buffer);
 
   if (text->buffer)
     {
       buffer_disconnect_signals (text);
-      rut_refable_simple_unref (text->buffer);
+      rut_refable_unref (text->buffer);
     }
 
   text->buffer = buffer;
