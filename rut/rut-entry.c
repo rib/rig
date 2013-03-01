@@ -86,7 +86,7 @@ _rut_entry_free (void *object)
 {
   RutEntry *entry = object;
 
-  rut_refable_ref (entry->ctx);
+  rut_refable_unref (entry->ctx);
 
   if (entry->pipeline)
     cogl_object_unref (entry->pipeline);
