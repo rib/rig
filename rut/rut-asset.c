@@ -42,6 +42,8 @@ struct _RutAsset
 
   int ref_count;
 
+  RutContext *ctx;
+
 #if 0
   RutSimpleIntrospectableProps introspectable;
   RutProperty props[ASSET_N_PROPS];
@@ -205,6 +207,8 @@ rut_asset_new_full (RutContext *ctx,
 
   asset->ref_count = 1;
 
+  asset->ctx = ctx;
+
   asset->type = type;
 
   switch (type)
@@ -310,6 +314,12 @@ const char *
 rut_asset_get_path (RutAsset *asset)
 {
   return asset->path;
+}
+
+RutContext *
+rut_asset_get_context (RutAsset *asset)
+{
+  return asset->ctx;
 }
 
 CoglTexture *

@@ -46,6 +46,9 @@ rut_asset_get_type (RutAsset *asset);
 const char *
 rut_asset_get_path (RutAsset *asset);
 
+RutContext *
+rut_asset_get_context (RutAsset *asset);
+
 CoglTexture *
 rut_asset_get_texture (RutAsset *asset);
 
