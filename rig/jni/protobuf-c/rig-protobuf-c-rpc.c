@@ -143,8 +143,6 @@ client_failed (PB_RPC_Client *client,
   char buf[MAX_FAILED_MSG_LENGTH];
   size_t msg_len;
   char *msg;
-  size_t n_closures = 0;
-  Closure *closures = NULL;
   switch (client->state)
     {
     case PB_RPC_CLIENT_STATE_NAME_LOOKUP:
@@ -154,8 +152,7 @@ client_failed (PB_RPC_Client *client,
       /* nothing to do */
       break;
     case PB_RPC_CLIENT_STATE_CONNECTED:
-      n_closures = client->info.connected.closures_alloced;
-      closures = client->info.connected.closures;
+      /* nothing to do */
       break;
 
       /* should not get here */
@@ -203,18 +200,24 @@ client_failed (PB_RPC_Client *client,
   if (client->error_handler)
     client->error_handler (code, msg, client->error_handler_data);
 
-  /* we defer calling the closures to avoid
-     any re-entrancy issues (e.g. people further RPC should
-     not see a socket in the "connected" state-- at least,
-     it shouldn't be accessing the array of closures that we are considering */
-  if (closures != NULL)
+  if (client->state == PB_RPC_CLIENT_STATE_CONNECTED)
     {
-      unsigned i;
+      int n_closures = client->info.connected.closures_alloced;
+      Closure *closures = client->info.connected.closures;
 
-      for (i = 0; i < n_closures; i++)
-        if (closures[i].response_type != NULL)
-          closures[i].closure (NULL, closures[i].closure_data);
-      client->allocator->free (client->allocator, closures);
+      /* we defer calling the closures to avoid
+         any re-entrancy issues (e.g. people further RPC should
+         not see a socket in the "connected" state-- at least,
+         it shouldn't be accessing the array of closures that we are considering */
+      if (closures != NULL)
+        {
+          unsigned i;
+
+          for (i = 0; i < n_closures; i++)
+            if (closures[i].response_type != NULL)
+              closures[i].closure (NULL, closures[i].closure_data);
+          client->allocator->free (client->allocator, closures);
+        }
     }
 }
 
