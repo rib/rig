@@ -146,7 +146,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
 
-  return rig_engine_paint (slave->data->shell, user_data);
+  return rig_engine_paint (slave->data->shell, slave->data);
 }
 
 #ifdef __ANDROID__
