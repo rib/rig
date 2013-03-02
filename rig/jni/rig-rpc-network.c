@@ -317,7 +317,8 @@ protobuf_source_dispatch (GSource *source,
    * the gpollfds with dispatch->notifies_desired which is obviously
    * not ideal!
    */
-  sync_pollfds (protobuf_source);
+  if (!g_source_is_destroyed (source))
+    sync_pollfds (protobuf_source);
 
   if (to_free)
     g_free (to_free);
