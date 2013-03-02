@@ -197,6 +197,8 @@ android_main (struct android_app *application)
   memset (&data, 0, sizeof (RigData));
   data.app = application;
 
+  _rig_in_device_mode = TRUE;
+
   data.shell = rut_android_shell_new (application,
                                       rig_slave_init,
                                       rig_slave_fini,
@@ -210,8 +212,6 @@ android_main (struct android_app *application)
   rut_shell_set_input_callback (data.shell,
                                 rig_engine_input_handler,
                                 &data);
-
-  _rig_in_device_mode = TRUE;
 
   rut_shell_main (data.shell);
 }

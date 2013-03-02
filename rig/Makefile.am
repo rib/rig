@@ -15,7 +15,7 @@ AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
 noinst_LTLIBRARIES = librig.la
-bin_PROGRAMS = rig rig-slave
+bin_PROGRAMS = rig rig-slave rig-device
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -104,3 +104,7 @@ rig_LDADD = $(common_ldadd)
 rig_slave_SOURCES = \
 	jni/rig-slave.c
 rig_slave_LDADD = $(common_ldadd)
+
+rig_device_SOURCES = \
+	jni/rig-device.c
+rig_device_LDADD = $(common_ldadd)
