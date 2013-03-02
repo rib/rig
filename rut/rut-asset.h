@@ -40,6 +40,13 @@ RutAsset *
 rut_asset_new_ply_model (RutContext *ctx,
                          const char *path);
 
+RutAsset *
+rut_asset_new_from_data (RutContext *ctx,
+                         const char *path,
+                         RutAssetType type,
+                         uint8_t *data,
+                         size_t len);
+
 RutAssetType
 rut_asset_get_type (RutAsset *asset);
 

@@ -49,11 +49,24 @@ slave__load_asset (Rig__Slave_Service *service,
                    void *closure_data)
 {
   Rig__LoadAssetResult result = RIG__LOAD_ASSET_RESULT__INIT;
-  //RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigData *data = slave->data;
 
   g_return_if_fail (query != NULL);
 
-  g_print ("Load Asset Request\n");
+  if (query->has_type)
+    {
+      RutAsset *asset =
+        rut_asset_new_from_data (data->ctx,
+                                 query->path,
+                                 query->type,
+                                 query->data.data,
+                                 query->data.len);
+
+      rig_register_asset (data, asset);
+
+      g_print ("Load Asset Request\n");
+    }
 
   closure (&result, closure_data);
 }
@@ -73,6 +86,22 @@ slave__load (Rig__Slave_Service *service,
   g_print ("UI Load Request\n");
 
   rig_pb_unserialize_ui (data, ui);
+
+  /* XXX: It's not ideal that Cogl doesn't differentiate the SDL and SDL2
+   * winsys because only the SDL2 winsys provides
+   * cogl_sdl_onscreen_get_window.
+   *
+   * XXX: This should ideally be done with some form of
+   * rut_shell_onscreen_resize() api.
+   */
+#ifdef COGL_HAS_SDL_SUPPORT
+  {
+    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (data->onscreen);
+    SDL_SetWindowSize (sdl_window,
+                       data->device_width / 2,
+                       data->device_height / 2);
+  }
+#endif
 
   closure (&result, closure_data);
 }

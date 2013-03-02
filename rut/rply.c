@@ -339,7 +339,7 @@ p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data) {
     return ply_start_fp(fp, error_cb, cb_data);
 }
 
-p_ply ply_start(void *buf, size_t size,
+p_ply ply_start(const void *buf, size_t size,
         p_ply_error_cb error_cb, gpointer cb_data) {
     FILE *fp = NULL;
     if (error_cb == NULL) error_cb = ply_error_cb;
@@ -349,7 +349,7 @@ p_ply ply_start(void *buf, size_t size,
     }
     assert(buf);
     assert(size);
-    fp = fmemopen(buf, size, "r");
+    fp = fmemopen((void *)buf, size, "r");
         if (!fp) {
         error_cb("Unable to open buffer with fmemopen", cb_data);
         return NULL;

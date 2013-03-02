@@ -21,12 +21,16 @@
 #include <config.h>
 
 #include "rig.pb-c.h"
+#include "rig-pb.h"
 #include "rig-data.h"
 #include "rig-load-xml.h"
 
 typedef struct _Serializer
 {
   RigData *data;
+
+  RigAssetReferenceCallback asset_callback;
+  void *user_data;
 
   int n_pb_entities;
   GList *pb_entities;
@@ -329,12 +333,18 @@ register_serializer_object (Serializer *serializer,
   g_hash_table_insert (serializer->id_map, object, id_value);
 }
 
-uint64_t
+static uint64_t
 serializer_lookup_object_id (Serializer *serializer, void *object)
 {
   uint64_t *id = g_hash_table_lookup (serializer->id_map, object);
 
   g_warn_if_fail (id);
+
+  if (rut_object_get_type (object) == &rut_asset_type)
+    {
+      if (serializer->asset_callback)
+        serializer->asset_callback (object, serializer->user_data);
+    }
 
   return *id;
 }
@@ -656,7 +666,9 @@ free_id_slice (void *id)
 }
 
 Rig__UI *
-rig_pb_serialize_ui (RigData *data)
+rig_pb_serialize_ui (RigData *data,
+                     RigAssetReferenceCallback asset_callback,
+                     void *user_data)
 {
   Serializer serializer;
   GList *l;
@@ -681,6 +693,9 @@ rig_pb_serialize_ui (RigData *data)
   /* NB: We have to reserve 0 here so we can tell if lookups into the
    * id_map fail. */
   serializer.next_id = 1;
+
+  serializer.asset_callback = asset_callback;
+  serializer.user_data = user_data;
 
   ui->device = device;
 
@@ -768,6 +783,99 @@ rig_pb_serialize_ui (RigData *data)
   g_hash_table_destroy (serializer.id_map);
 
   return ui;
+}
+
+static void
+_rig_serialized_asset_free (void *object)
+{
+  RigSerializedAsset *serialized_asset = object;
+
+  rut_refable_unref (serialized_asset->asset);
+  g_free (serialized_asset->pb_data.data.data);
+
+  g_slice_free (RigSerializedAsset, serialized_asset);
+}
+
+static RutType rig_serialized_asset_type;
+
+static void
+_rig_serialized_asset_init_type (void)
+{
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_serialized_asset_free
+  };
+
+  RutType *type = &rig_serialized_asset_type;
+#define TYPE RigSerializedAsset
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+
+#undef TYPE
+}
+
+RigSerializedAsset *
+rig_pb_serialize_asset (RutAsset *asset)
+{
+#ifdef __ANDROID__
+  g_warn_if_reached ();
+  return NULL;
+#else
+  RigSerializedAsset *serialized_asset;
+  static CoglBool initialized = FALSE;
+  RutContext *ctx = rut_asset_get_context (asset);
+  const char *path = rut_asset_get_path (asset);
+  char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+  GError *error = NULL;
+  char *contents;
+  size_t len;
+
+  if (initialized == FALSE)
+    {
+      _rig_serialized_asset_init_type ();
+      initialized = TRUE;
+    }
+
+  if (!g_file_get_contents (full_path,
+                            &contents,
+                            &len,
+                            &error))
+    {
+      g_warning ("Failed to read contents of asset: %s", error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return NULL;
+    }
+
+  g_free (full_path);
+
+  serialized_asset = g_slice_new (RigSerializedAsset);
+
+  rut_object_init (&serialized_asset->_parent, &rig_serialized_asset_type);
+
+  serialized_asset->ref_count = 1;
+
+  serialized_asset->asset = rut_refable_ref (asset);
+
+
+  rig__serialized_asset__init (&serialized_asset->pb_data);
+
+  serialized_asset->pb_data.path = (char *)rut_asset_get_path (asset);
+
+  serialized_asset->pb_data.has_type = TRUE;
+  serialized_asset->pb_data.type = rut_asset_get_type (asset);
+
+  serialized_asset->pb_data.has_data = TRUE;
+  serialized_asset->pb_data.data.data = (uint8_t *)contents;
+  serialized_asset->pb_data.data.len = len;
+
+  return serialized_asset;
+#endif
 }
 
 typedef struct _UnSerializer
@@ -1356,9 +1464,6 @@ unserialize_assets (UnSerializer *unserializer,
     {
       Rig__Asset *pb_asset = assets[i];
       uint64_t id;
-      char *full_path;
-      GFile *asset_file;
-      GFileInfo *info;
       RutAsset *asset = NULL;
 
       if (!pb_asset->has_id)
@@ -1374,28 +1479,42 @@ unserialize_assets (UnSerializer *unserializer,
       if (!pb_asset->path)
         continue;
 
-      full_path = g_build_filename (unserializer->data->ctx->assets_location,
-                                    pb_asset->path, NULL);
-      asset_file = g_file_new_for_path (full_path);
-      info = g_file_query_info (asset_file,
-                                "standard::*",
-                                G_FILE_QUERY_INFO_NONE,
-                                NULL,
-                                NULL);
-      if (info)
+      /* Check to see if something else has already loaded this asset.
+       *
+       * E.g. when running as a slave then assets actually get loaded
+       * separately and cached before loading a UI.
+       */
+      asset = rig_lookup_asset (unserializer->data, pb_asset->path);
+
+      if (!asset && unserializer->data->ctx->assets_location)
         {
-          asset = rig_load_asset (unserializer->data, info, asset_file);
-          if (asset)
+          char *full_path =
+            g_build_filename (unserializer->data->ctx->assets_location,
+                              pb_asset->path, NULL);
+          GFile *asset_file = g_file_new_for_path (full_path);
+          GFileInfo *info = g_file_query_info (asset_file,
+                                               "standard::*",
+                                               G_FILE_QUERY_INFO_NONE,
+                                               NULL,
+                                               NULL);
+          if (info)
             {
-              unserializer->assets =
-                g_list_prepend (unserializer->assets, asset);
-              register_unserializer_object (unserializer, asset, id);
+              asset = rig_load_asset (unserializer->data, info, asset_file);
+              g_object_unref (info);
             }
-          g_object_unref (info);
+
+          g_object_unref (asset_file);
+          g_free (full_path);
         }
 
-      g_object_unref (asset_file);
-      g_free (full_path);
+      if (asset)
+        {
+          unserializer->assets =
+            g_list_prepend (unserializer->assets, asset);
+          register_unserializer_object (unserializer, asset, id);
+        }
+      else
+        g_warning ("Failed to load \"%s\" asset", pb_asset->path);
     }
 }
 

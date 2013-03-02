@@ -23,6 +23,7 @@
 #include <glib.h>
 
 #include <cogl/cogl.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "rut-context.h"
 #include "rut-interfaces.h"
@@ -187,7 +188,6 @@ rut_asset_new_full (RutContext *ctx,
   RutAsset *asset = g_slice_new0 (RutAsset);
   const char *real_path;
   char *full_path;
-  CoglBool built_path = FALSE;
 
 #ifndef __ANDROID__
   if (type == RUT_ASSET_TYPE_BUILTIN)
@@ -265,6 +265,156 @@ DONE:
 #ifndef __ANDROID__
   g_free (full_path);
 #endif
+
+  return asset;
+}
+
+static CoglBitmap *
+bitmap_new_from_pixbuf (CoglContext *ctx,
+                        GdkPixbuf *pixbuf)
+{
+  CoglBool has_alpha;
+  GdkColorspace color_space;
+  CoglPixelFormat pixel_format;
+  int width;
+  int height;
+  int rowstride;
+  int bits_per_sample;
+  int n_channels;
+  CoglBitmap *bmp;
+
+  /* Get pixbuf properties */
+  has_alpha       = gdk_pixbuf_get_has_alpha (pixbuf);
+  color_space     = gdk_pixbuf_get_colorspace (pixbuf);
+  width           = gdk_pixbuf_get_width (pixbuf);
+  height          = gdk_pixbuf_get_height (pixbuf);
+  rowstride       = gdk_pixbuf_get_rowstride (pixbuf);
+  bits_per_sample = gdk_pixbuf_get_bits_per_sample (pixbuf);
+  n_channels      = gdk_pixbuf_get_n_channels (pixbuf);
+
+  /* According to current docs this should be true and so
+   * the translation to cogl pixel format below valid */
+  g_assert (bits_per_sample == 8);
+
+  if (has_alpha)
+    g_assert (n_channels == 4);
+  else
+    g_assert (n_channels == 3);
+
+  /* Translate to cogl pixel format */
+  switch (color_space)
+    {
+    case GDK_COLORSPACE_RGB:
+      /* The only format supported by GdkPixbuf so far */
+      pixel_format = has_alpha ?
+	COGL_PIXEL_FORMAT_RGBA_8888 :
+	COGL_PIXEL_FORMAT_RGB_888;
+      break;
+
+    default:
+      /* Ouch, spec changed! */
+      g_object_unref (pixbuf);
+      return FALSE;
+    }
+
+  /* We just use the data directly from the pixbuf so that we don't
+   * have to copy to a seperate buffer.
+   */
+  bmp = cogl_bitmap_new_for_data (ctx,
+                                  width,
+                                  height,
+                                  pixel_format,
+                                  rowstride,
+                                  gdk_pixbuf_get_pixels (pixbuf));
+
+  return bmp;
+}
+
+RutAsset *
+rut_asset_new_from_data (RutContext *ctx,
+                         const char *path,
+                         RutAssetType type,
+                         uint8_t *data,
+                         size_t len)
+{
+  RutAsset *asset = g_slice_new0 (RutAsset);
+
+  rut_object_init (&asset->_parent, &rut_asset_type);
+
+  asset->ref_count = 1;
+
+  asset->ctx = ctx;
+
+  asset->type = type;
+
+  switch (type)
+    {
+    case RUT_ASSET_TYPE_BUILTIN:
+    case RUT_ASSET_TYPE_TEXTURE:
+    case RUT_ASSET_TYPE_NORMAL_MAP:
+    case RUT_ASSET_TYPE_ALPHA_MASK:
+      {
+        GInputStream *istream = g_memory_input_stream_new_from_data (data, len, NULL);
+        GError *error = NULL;
+        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_stream (istream, NULL, &error);
+        CoglBitmap *bitmap;
+        CoglError *cogl_error = NULL;
+
+        if (!pixbuf)
+          {
+            g_slice_free (RutAsset, asset);
+            g_warning ("Failed to load asset texture: %s", error->message);
+            g_error_free (error);
+            return NULL;
+          }
+
+        g_object_unref (istream);
+
+        bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
+
+        asset->texture = COGL_TEXTURE (
+          cogl_texture_2d_new_from_bitmap (bitmap,
+                                           COGL_PIXEL_FORMAT_ANY,
+                                           &cogl_error));
+
+        cogl_object_unref (bitmap);
+        g_object_unref (pixbuf);
+
+        if (!asset->texture)
+          {
+            g_slice_free (RutAsset, asset);
+            g_warning ("Failed to load asset texture: %s", cogl_error->message);
+            cogl_error_free (cogl_error);
+            return NULL;
+          }
+
+        break;
+      }
+    case RUT_ASSET_TYPE_PLY_MODEL:
+      {
+        RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+        GError *error = NULL;
+
+        asset->mesh = rut_mesh_new_from_ply_data (ctx,
+                                                  data,
+                                                  len,
+                                                  ply_attributes,
+                                                  G_N_ELEMENTS (ply_attributes),
+                                                  padding_status,
+                                                  &error);
+        if (!asset->mesh)
+          {
+            g_slice_free (RutAsset, asset);
+            g_warning ("could not load model %s: %s", path, error->message);
+            g_error_free (error);
+            return NULL;
+          }
+
+        break;
+      }
+    }
+
+  asset->path = g_strdup (path);
 
   return asset;
 }

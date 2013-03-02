@@ -72,7 +72,7 @@ p_ply ply_open(const char *name, p_ply_error_cb error_cb, gpointer cb_data);
  *
  * Returns 1 if successful, 0 otherwise
  * ---------------------------------------------------------------------- */
-p_ply ply_start(void *buf, size_t size,
+p_ply ply_start(const void *buf, size_t size,
         p_ply_error_cb error_cb, gpointer cb_data);
 
 /* ----------------------------------------------------------------------

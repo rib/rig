@@ -213,8 +213,9 @@ message LoadResult
 
 message SerializedAsset
 {
-  optional string name=1;
-  optional bytes data=2;
+  optional string path=1;
+  optional uint32 type=2;
+  optional bytes data=3;
 }
 
 message LoadAssetResult

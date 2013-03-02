@@ -221,6 +221,8 @@ struct _RigData
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;
 
+  GHashTable *assets_registry;
+
   int rpc_server_port;
   PB_RPC_Server *rpc_server;
   int rpc_server_source_id;
@@ -248,6 +250,14 @@ rig_create_transition (RigData *data,
 
 void
 rig_free_ux (RigData *data);
+
+void
+rig_register_asset (RigData *data,
+                    RutAsset *asset);
+
+RutAsset *
+rig_lookup_asset (RigData *data,
+                  const char *path);
 
 RutAsset *
 rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file);

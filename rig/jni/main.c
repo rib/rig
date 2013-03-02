@@ -1492,6 +1492,11 @@ rig_engine_init (RutShell *shell, void *user_data)
   data->timeline_progress =
     rut_introspectable_lookup_property (data->timeline, "progress");
 
+  data->assets_registry = g_hash_table_new_full (g_str_hash,
+                                                 g_str_equal,
+                                                 g_free,
+                                                 rut_refable_unref);
+
   data->scene = rut_graph_new (data->ctx);
 
   data->device_width = DEVICE_WIDTH;
@@ -2045,6 +2050,24 @@ add_light_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 #endif
+
+void
+rig_register_asset (RigData *data,
+                    RutAsset *asset)
+{
+  char *key = g_strdup (rut_asset_get_path (asset));
+
+  g_hash_table_insert (data->assets_registry,
+                       key,
+                       rut_refable_ref (asset));
+}
+
+RutAsset *
+rig_lookup_asset (RigData *data,
+                  const char *path)
+{
+  return g_hash_table_lookup (data->assets_registry, path);
+}
 
 RutAsset *
 rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file)

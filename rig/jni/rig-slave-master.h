@@ -41,6 +41,9 @@ typedef struct _RigSlaveMaster
   RigRPCClient *rpc_client;
   gboolean connected;
   GHashTable *registry;
+
+  GList *required_assets;
+
 } RigSlaveMaster;
 
 void

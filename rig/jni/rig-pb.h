@@ -21,10 +21,32 @@
 #ifndef __RIG_PB_H__
 #define __RIG_PB_H__
 
+#include <rut.h>
+
+#include "rig-data.h"
 #include "rig.pb-c.h"
 
+typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
+                                           void *user_data);
+
 Rig__UI *
-rig_pb_serialize_ui (RigData *data);
+rig_pb_serialize_ui (RigData *data,
+                     RigAssetReferenceCallback asset_callback,
+                     void *user_data);
+
+typedef struct _RigSerializedAsset
+{
+  RutObjectProps _parent;
+  int ref_count;
+
+  RutAsset *asset;
+
+  Rig__SerializedAsset pb_data;
+
+} RigSerializedAsset;
+
+RigSerializedAsset *
+rig_pb_serialize_asset (RutAsset *asset);
 
 void
 rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui);

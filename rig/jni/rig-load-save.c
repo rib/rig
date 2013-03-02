@@ -72,7 +72,7 @@ rig_save (RigData *data, const char *path)
   if (stat (data->ctx->assets_location, &sb) == -1)
     mkdir (data->ctx->assets_location, 0777);
 
-  ui = rig_pb_serialize_ui (data);
+  ui = rig_pb_serialize_ui (data, NULL, NULL);
 
   rig__ui__pack_to_buffer (ui, &buffered_file.base );
 

@@ -100,6 +100,15 @@ rut_mesh_new_from_ply (RutContext *ctx,
                        RutPLYAttributeStatus *attribute_status_out,
                        GError **error);
 
+RutMesh *
+rut_mesh_new_from_ply_data (RutContext *ctx,
+                            const uint8_t *data,
+                            size_t len,
+                            RutPLYAttribute *attributes,
+                            int n_attributes,
+                            RutPLYAttributeStatus *load_status,
+                            GError **error);
+
 G_END_DECLS
 
 #endif /* _RUT_MESH_PLY_ */

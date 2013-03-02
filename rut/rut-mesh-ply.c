@@ -314,21 +314,21 @@ init_indices_array (Loader *loader,
   return TRUE;
 }
 
-RutMesh *
-rut_mesh_new_from_ply (RutContext *ctx,
-                       const char *filename,
-                       RutPLYAttribute *attributes,
-                       int n_attributes,
-                       RutPLYAttributeStatus *load_status,
-                       GError **error)
+static RutMesh *
+_rut_mesh_new_from_p_ply (RutContext *ctx,
+                          Loader *loader,
+                          p_ply ply,
+                          const char *display_name,
+                          RutPLYAttribute *attributes,
+                          int n_attributes,
+                          RutPLYAttributeStatus *load_status,
+                          GError **error)
 {
-  Loader loader;
   LoaderAttribute loader_attributes[n_attributes];
   int n_loader_attributes;
   LoaderProperty loader_properties[n_attributes *
                                    RUT_PLY_MAX_ATTRIBUTE_PROPERTIES];
   RutAttribute *rut_attributes[n_attributes];
-  char *display_name;
   p_ply_element vertex_element;
   RutBuffer *indices_buffer;
   RutMesh *mesh;
@@ -338,35 +338,24 @@ rut_mesh_new_from_ply (RutContext *ctx,
 
   memset (rut_attributes, 0, sizeof (void *) * n_attributes);
 
-  memset (&loader, 0, sizeof (Loader));
-  loader.ctx = ctx;
-  loader.loader_attributes = loader_attributes;
-  loader.loader_properties = loader_properties;
+  loader->ctx = ctx;
+  loader->loader_attributes = loader_attributes;
+  loader->loader_properties = loader_properties;
 
-  display_name = g_filename_display_name (filename);
+  loader->ply = ply;
 
-  if ((loader.ply = ply_open (filename,
-                              rut_mesh_ply_loader_error_cb,
-                              &loader)) == NULL)
+  if (!ply_read_header (loader->ply))
     {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
-                   RUT_MESH_PLY_ERROR_IO,
-                   "Failed to open PLY file %s", display_name);
-      goto EXIT;
-    }
-
-  if (!ply_read_header (loader.ply))
-    {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+      g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                    RUT_MESH_PLY_ERROR_UNKNOWN,
                    "Failed to parse header of PLY file %s", display_name);
       goto EXIT;
     }
 
-  vertex_element = find_element (&loader, "vertex");
+  vertex_element = find_element (loader, "vertex");
   if (!vertex_element)
     {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+      g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                    RUT_MESH_PLY_ERROR_MISSING_PROPERTY,
                    "PLY file %s is missing the vertex properties",
                    display_name);
@@ -375,7 +364,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
 
   ply_get_element_info (vertex_element, NULL, &n_vertices);
 
-  if (!init_indices_array (&loader, n_vertices, &loader.error))
+  if (!init_indices_array (loader, n_vertices, &loader->error))
     goto EXIT;
 
   /* Group properties into attributes */
@@ -407,7 +396,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
             ply_attribute_type = ply_property_type;
           else if (ply_property_type != ply_attribute_type)
             {
-              g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+              g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                            RUT_MESH_PLY_ERROR_INVALID,
                            "Mismatching attribute property types "
                            "in PLY file %s", display_name);
@@ -428,7 +417,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
       if (load_status[i] != RUT_PLY_ATTRIBUTE_STATUS_LOADED &&
           attribute->required)
         {
-          g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+          g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                        RUT_MESH_PLY_ERROR_INVALID,
                        "Required attribute properties not found in PLY file %s",
                        display_name);
@@ -449,7 +438,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
         {
           if (ply_attribute_type == PLY_LIST)
             {
-              g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+              g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                            RUT_MESH_PLY_ERROR_INVALID,
                            "List property given for vertex attribute "
                            "in PLY file %s", display_name);
@@ -479,22 +468,22 @@ rut_mesh_new_from_ply (RutContext *ctx,
 
       /* Align the offset according to the natural alignment of the
        * attribute type... */
-      loader.n_vertex_bytes =
-        (loader.n_vertex_bytes + component_size - 1) &
+      loader->n_vertex_bytes =
+        (loader->n_vertex_bytes + component_size - 1) &
         ~(unsigned int) (component_size - 1);
 
-      loader_attribute->offset = loader.n_vertex_bytes;
-      loader.n_vertex_bytes += loader_attribute->size;
+      loader_attribute->offset = loader->n_vertex_bytes;
+      loader->n_vertex_bytes += loader_attribute->size;
 
       n_loader_attributes++;
     }
 
   /* Align the size of a vertex to the size of the largest component type */
-  loader.n_vertex_bytes = ((loader.n_vertex_bytes + max_component_size - 1) &
+  loader->n_vertex_bytes = ((loader->n_vertex_bytes + max_component_size - 1) &
                            ~(unsigned int) (max_component_size - 1));
 
-  loader.vertex_buffer = rut_buffer_new (loader.n_vertex_bytes * n_vertices);
-  loader.current_vertex_pos = loader.vertex_buffer->data;
+  loader->vertex_buffer = rut_buffer_new (loader->n_vertex_bytes * n_vertices);
+  loader->current_vertex_pos = loader->vertex_buffer->data;
 
   /* Now that we know what attributes we are loading and their size we
    * know the full vertex size so we can create corresponding
@@ -513,12 +502,12 @@ rut_mesh_new_from_ply (RutContext *ctx,
                 int p = i * RUT_PLY_MAX_ATTRIBUTE_PROPERTIES + j;
                 LoaderProperty *loader_property = &loader_properties[p];
 
-                if (!ply_set_read_cb (loader.ply, "vertex",
+                if (!ply_set_read_cb (loader->ply, "vertex",
                                       loader_property->name,
                                       rut_mesh_ply_loader_vertex_read_cb,
-                                      &loader, p))
+                                      loader, p))
                   {
-                    g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+                    g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                                  RUT_MESH_PLY_ERROR_UNKNOWN,
                                  "Failed to parse PLY file %s", display_name);
                     goto EXIT;
@@ -527,9 +516,9 @@ rut_mesh_new_from_ply (RutContext *ctx,
         }
 
       rut_attribute =
-        rut_attribute_new (loader.vertex_buffer,
+        rut_attribute_new (loader->vertex_buffer,
                            loader_attribute->name,
-                           loader.n_vertex_bytes,
+                           loader->n_vertex_bytes,
                            loader_attribute->offset,
                            loader_attribute->n_components,
                            loader_attribute->type);
@@ -538,30 +527,31 @@ rut_mesh_new_from_ply (RutContext *ctx,
       rut_attributes[i] = rut_attribute;
     }
 
-  if (!ply_set_read_cb (loader.ply, "face", "vertex_indices",
+  if (!ply_set_read_cb (loader->ply, "face", "vertex_indices",
                         rut_mesh_ply_loader_face_read_cb,
-                        &loader, i))
+                        loader, i))
     {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+      g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                    RUT_MESH_PLY_ERROR_MISSING_PROPERTY,
                    "PLY file %s is missing face property "
                    "'vertex_indices'",
                    display_name);
+      goto EXIT;
     }
 
-  if (!ply_read (loader.ply))
+  if (!ply_read (loader->ply))
     {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+      g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                    RUT_MESH_PLY_ERROR_UNKNOWN,
                    "Unknown error loading PLY file %s", display_name);
       goto EXIT;
     }
 
-  ply_close (loader.ply);
+  ply_close (loader->ply);
 
-  if (loader.faces->len == 0)
+  if (loader->faces->len == 0)
     {
-      g_set_error (&loader.error, RUT_MESH_PLY_ERROR,
+      g_set_error (&loader->error, RUT_MESH_PLY_ERROR,
                    RUT_MESH_PLY_ERROR_INVALID,
                    "No faces found in PLY file %s",
                    display_name);
@@ -576,25 +566,25 @@ rut_mesh_new_from_ply (RutContext *ctx,
   for (i = 0; i < n_loader_attributes; i++)
     rut_refable_unref (rut_attributes[i]);
 
-  indices_buffer = rut_buffer_new (loader.faces->len *
-                                   g_array_get_element_size (loader.faces));
-  memcpy (indices_buffer->data, loader.faces->data, indices_buffer->size);
+  indices_buffer = rut_buffer_new (loader->faces->len *
+                                   g_array_get_element_size (loader->faces));
+  memcpy (indices_buffer->data, loader->faces->data, indices_buffer->size);
 
   rut_mesh_set_indices (mesh,
-                        loader.indices_type,
+                        loader->indices_type,
                         indices_buffer,
-                        loader.faces->len);
+                        loader->faces->len);
 
   rut_refable_unref (indices_buffer);
 
 EXIT:
 
-  if (loader.error)
+  if (loader->error)
     {
-      g_propagate_error (error, loader.error);
+      g_propagate_error (error, loader->error);
 
-      if (loader.vertex_buffer)
-        rut_refable_unref (loader.vertex_buffer);
+      if (loader->vertex_buffer)
+        rut_refable_unref (loader->vertex_buffer);
 
       for (i = 0; i < n_loader_attributes; i++)
         if (rut_attributes[i])
@@ -603,8 +593,79 @@ EXIT:
       mesh = NULL;
     }
 
-  if (loader.faces)
-    g_array_free (loader.faces, TRUE);
+  if (loader->faces)
+    g_array_free (loader->faces, TRUE);
+
+  return mesh;
+}
+
+RutMesh *
+rut_mesh_new_from_ply (RutContext *ctx,
+                       const char *filename,
+                       RutPLYAttribute *attributes,
+                       int n_attributes,
+                       RutPLYAttributeStatus *load_status,
+                       GError **error)
+{
+  Loader loader;
+  p_ply ply;
+  RutMesh *mesh;
+  char *display_name;
+
+  memset (&loader, 0, sizeof (Loader));
+
+  ply = ply_open (filename, rut_mesh_ply_loader_error_cb, error);
+
+  if (!ply)
+    return NULL;
+
+  display_name = g_filename_display_name (filename);
+
+  mesh = _rut_mesh_new_from_p_ply (ctx,
+                                   &loader,
+                                   ply,
+                                   display_name,
+                                   attributes,
+                                   n_attributes,
+                                   load_status,
+                                   error);
+
+  g_free (display_name);
+
+  return mesh;
+}
+
+RutMesh *
+rut_mesh_new_from_ply_data (RutContext *ctx,
+                            const uint8_t *data,
+                            size_t len,
+                            RutPLYAttribute *attributes,
+                            int n_attributes,
+                            RutPLYAttributeStatus *load_status,
+                            GError **error)
+{
+  Loader loader;
+  p_ply ply;
+  RutMesh *mesh;
+  char *display_name;
+
+  memset (&loader, 0, sizeof (Loader));
+
+  ply = ply_start (data, len, rut_mesh_ply_loader_error_cb, error);
+
+  if (!ply)
+    return NULL;
+
+  display_name = g_strdup_printf ("<serialized asset %p>", data);
+
+  mesh = _rut_mesh_new_from_p_ply (ctx,
+                                   &loader,
+                                   ply,
+                                   display_name,
+                                   attributes,
+                                   n_attributes,
+                                   load_status,
+                                   error);
 
   g_free (display_name);
 

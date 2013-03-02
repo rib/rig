@@ -41,16 +41,54 @@ handle_load_response (const Rig__LoadResult *result,
   g_print ("UI loaded by slave\n");
 }
 
+static void
+required_asset_cb (RutAsset *asset,
+                   void *user_data)
+{
+  RigSlaveMaster *master = user_data;
+
+  master->required_assets = g_list_prepend (master->required_assets, asset);
+
+  g_print ("Serialization requires asset %s\n", rut_asset_get_path (asset));
+}
+
+static void
+handle_asset_load_response (const Rig__LoadAssetResult *result,
+                            void *closure_data)
+{
+  g_print ("Asset loaded by slave\n");
+}
+
 void
 slave_master_connected (PB_RPC_Client *pb_client,
                         void *user_data)
 {
   RigSlaveMaster *master = user_data;
   RigData *data = master->data;
-  Rig__UI *ui = rig_pb_serialize_ui (data);
+  ProtobufCService *service =
+    (ProtobufCService *)master->rpc_client->pb_rpc_client;
+  Rig__UI *ui;
+  GList *l;
 
-  rig__slave__load ((ProtobufCService *)master->rpc_client->pb_rpc_client,
-                    ui, handle_load_response, NULL);
+  g_warn_if_fail (master->required_assets == NULL);
+
+  ui = rig_pb_serialize_ui (data,
+                            required_asset_cb,
+                            master);
+
+  for (l = master->required_assets; l; l = l->next)
+    {
+      RutAsset *asset = l->data;
+      RigSerializedAsset *serialized_asset = rig_pb_serialize_asset (asset);
+
+      rig__slave__load_asset (service,
+                              &serialized_asset->pb_data,
+                              handle_asset_load_response, NULL);
+
+      rut_refable_unref (serialized_asset);
+    }
+
+  rig__slave__load (service, ui, handle_load_response, NULL);
 
   g_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
@@ -59,6 +97,9 @@ static void
 destroy_slave_master (RigSlaveMaster *master)
 {
   RigData *data = master->data;
+
+  if (!master->rpc_client)
+    return;
 
   rig_rpc_client_disconnect (master->rpc_client);
   rut_refable_unref (master->rpc_client);
@@ -122,7 +163,7 @@ static RigSlaveMaster *
 rig_slave_master_new (RigData *data,
                       RigSlaveAddress *slave_address)
 {
-  RigSlaveMaster *master = g_slice_new (RigSlaveMaster);
+  RigSlaveMaster *master = g_slice_new0 (RigSlaveMaster);
   static CoglBool initialized = FALSE;
 
   if (initialized == FALSE)
