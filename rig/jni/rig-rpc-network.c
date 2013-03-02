@@ -83,15 +83,10 @@ typedef struct _ProtobufSource
 
   ProtobufCDispatch *dispatch;
 
-  PB_RPC_Client *pb_client;
-
   CoglBool pollfds_changed;
 
   int n_pollfds;
   GPollFD *pollfds;
-
-  RigRPCClientConnectCallback connected;
-  void *connected_data;
 
 } ProtobufSource;
 
@@ -203,12 +198,6 @@ protobuf_source_prepare (GSource *source, int *timeout)
   ProtobufSource *protobuf_source = (ProtobufSource *) source;
   ProtobufCDispatch *dispatch = protobuf_source->dispatch;
 
-  if (protobuf_source->pb_client &&
-      rig_pb_rpc_client_is_connected (protobuf_source->pb_client))
-    {
-      return TRUE;
-    }
-
   *timeout = get_timeout (protobuf_source);
   if (*timeout == 0)
     return TRUE;
@@ -271,17 +260,6 @@ protobuf_source_dispatch (GSource *source,
   int n_events;
   ProtobufC_FDNotify *events;
   void *to_free = NULL;
-
-  if (protobuf_source->pb_client &&
-      rig_pb_rpc_client_is_connected (protobuf_source->pb_client))
-    {
-      if (protobuf_source->connected)
-        {
-          protobuf_source->connected (protobuf_source->pb_client,
-                                      protobuf_source->connected_data);
-          protobuf_source->connected = NULL;
-        }
-    }
 
   n_events = 0;
   for (i = 0; i < protobuf_source->n_pollfds; i++)
@@ -448,7 +426,7 @@ rig_rpc_client_new (RigData *data,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
                     PB_RPC_Error_Func client_error_handler,
-                    RigRPCClientConnectCallback connected,
+                    PB_RPC_Connect_Func connect_handler,
                     void *user_data)
 {
   RigRPCClient *rpc_client = g_slice_new (RigRPCClient);
@@ -456,7 +434,6 @@ rig_rpc_client_new (RigData *data,
   ProtobufCDispatch *dispatch;
   PB_RPC_Client *pb_client;
   GSource *source;
-  ProtobufSource *protobuf_source;
 
   static CoglBool initialized = FALSE;
 
@@ -481,16 +458,13 @@ rig_rpc_client_new (RigData *data,
                            descriptor,
                            dispatch);
 
+  rig_pb_rpc_client_set_connect_handler (pb_client,
+                                         connect_handler,
+                                         user_data);
+
   g_free (addr_str);
 
   source = protobuf_source_new (data, dispatch);
-  protobuf_source = (ProtobufSource *)source;
-
-  /* FIXME: We should make rig_pb_rpc_client_new take a
-   * connected_handler and user_data instead... */
-  protobuf_source->pb_client = pb_client;
-  protobuf_source->connected = connected;
-  protobuf_source->connected_data = user_data;
 
   rpc_client->protobuf_source = source;
 

@@ -89,6 +89,15 @@ rig_pb_rpc_client_set_error_handler (PB_RPC_Client *client,
                                      PB_RPC_Error_Func func,
                                      void *error_func_data);
 
+typedef void (*PB_RPC_Connect_Func)  (PB_RPC_Client *client,
+                                      void *callback_data);
+
+void
+rig_pb_rpc_client_set_connect_handler (PB_RPC_Client *client,
+                                       PB_RPC_Connect_Func func,
+                                       void *callback_data);
+
+
 /* Configuring the autoreconnect behavior.
    If the client is disconnected, all pending requests get an error.
    If autoreconnect is set, and it is by default, try connecting again

@@ -84,6 +84,8 @@ struct _PB_RPC_Client
   ProtobufC_NameLookup_Func resolver;
   PB_RPC_Error_Func error_handler;
   void *error_handler_data;
+  PB_RPC_Connect_Func connect_handler;
+  void *connect_handler_data;
   PB_RPC_ClientState state;
   union {
     struct {
@@ -243,6 +245,9 @@ set_state_connected (PB_RPC_Client *client)
   client->info.connected.closures[0].closure = NULL;
   client->info.connected.closures[0].response_type = NULL;
   client->info.connected.closures[0].closure_data = UINT_TO_POINTER (0);
+
+  if (client->connect_handler)
+    client->connect_handler (client, client->connect_handler_data);
 }
 
 static void
@@ -837,6 +842,15 @@ rig_pb_rpc_client_set_error_handler (PB_RPC_Client *client,
 {
   client->error_handler = func;
   client->error_handler_data = func_data;
+}
+
+void
+rig_pb_rpc_client_set_connect_handler (PB_RPC_Client *client,
+                                       PB_RPC_Connect_Func func,
+                                       void *func_data)
+{
+  client->connect_handler = func;
+  client->connect_handler_data = func_data;
 }
 
 void

@@ -35,9 +35,6 @@ rig_rpc_start_server (RigData *data,
 void
 rig_rpc_stop_server (RigData *data);
 
-typedef void (*RigRPCClientConnectCallback) (PB_RPC_Client *client,
-                                             void *user_data);
-
 typedef struct _RigRPCClient
 {
   RutObjectProps _parent;
@@ -61,7 +58,7 @@ rig_rpc_client_new (RigData *data,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
                     PB_RPC_Error_Func client_error_handler,
-                    RigRPCClientConnectCallback connected,
+                    PB_RPC_Connect_Func connect_handler,
                     void *user_data);
 
 void
