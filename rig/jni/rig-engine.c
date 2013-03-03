@@ -1549,6 +1549,97 @@ ensure_light (RigEngine *engine)
 
 }
 
+static void
+create_editor_ui (RigEngine *engine)
+{
+  engine->properties_hbox = rut_box_layout_new (engine->ctx,
+                                                RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+
+  /* timeline on the bottom, everything else above */
+  engine->splits[0] = rig_split_view_new (engine,
+                                          RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
+                                          100,
+                                          100);
+
+  /* assets on the left, main area on the right */
+  engine->splits[1] = rig_split_view_new (engine,
+                                          RIG_SPLIT_VIEW_SPLIT_VERTICAL,
+                                          100,
+                                          100);
+
+  create_assets_view (engine);
+
+  create_camera_view (engine);
+
+  create_timeline_view (engine);
+
+  rig_split_view_set_child0 (engine->splits[0], engine->splits[1]);
+
+  rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
+  create_properties_bar (engine);
+
+  rig_split_view_set_split_offset (engine->splits[0], 500);
+  rig_split_view_set_split_offset (engine->splits[1], 150);
+
+  engine->top_vbox = rut_box_layout_new (engine->ctx,
+                                         RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  create_top_bar (engine);
+
+  /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
+   * layout but it didn't work so I guess I guess there is a bug
+   * in the box-layout allocate code. */
+  engine->top_hbox = rut_box_layout_new (engine->ctx,
+                                         RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_box_layout_add (engine->top_vbox, TRUE, engine->top_hbox);
+
+  rut_box_layout_add (engine->top_hbox, TRUE, engine->properties_hbox);
+  create_toolbar (engine);
+
+  rut_bin_set_child (engine->top_bin, engine->top_vbox);
+
+  engine->transparency_grid = load_transparency_grid (engine->ctx);
+
+  init_resize_handle (engine);
+}
+
+static void
+create_debug_gradient (RigEngine *engine)
+{
+  CoglVertexP2C4 quad[] = {
+        { 0, 0, 0xff, 0x00, 0x00, 0xff },
+        { 0, 200, 0x00, 0xff, 0x00, 0xff },
+        { 200, 200, 0x00, 0x00, 0xff, 0xff },
+        { 200, 0, 0xff, 0xff, 0xff, 0xff }
+  };
+  CoglOffscreen *offscreen;
+  CoglPrimitive *prim =
+    cogl_primitive_new_p2c4 (engine->ctx->cogl_context,
+                             COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+  engine->gradient = COGL_TEXTURE (
+    cogl_texture_2d_new_with_size (rut_cogl_context,
+                                   200, 200,
+                                   COGL_PIXEL_FORMAT_ANY));
+
+  offscreen = cogl_offscreen_new_to_texture (engine->gradient);
+
+  cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
+                                 0, 0,
+                                 200,
+                                 200,
+                                 -1,
+                                 100);
+  cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
+                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
+                            0, 0, 0, 1);
+  cogl_framebuffer_draw_primitive (COGL_FRAMEBUFFER (offscreen),
+                                   pipeline,
+                                   prim);
+  cogl_object_unref (prim);
+  cogl_object_unref (offscreen);
+}
+
 void
 rig_engine_init (RutShell *shell, void *user_data)
 {
@@ -1556,16 +1647,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   CoglFramebuffer *fb;
   int i;
   CoglTexture2D *color_buffer;
-  CoglColor main_area_ref_color, right_bar_ref_color;
-
-  /* A unit test for the list_splice/list_unsplice functions */
-#if 0
-  _rut_test_list_splice ();
-#endif
-
-#ifdef RIG_EDITOR_ENABLED
-  engine->serialization_stack = rut_memory_stack_new (8192);
-#endif
 
   cogl_matrix_init_identity (&engine->identity);
 
@@ -1574,6 +1655,29 @@ rig_engine_init (RutShell *shell, void *user_data)
                        &rut_data_property_specs[i],
                        engine);
 
+#ifdef RIG_EDITOR_ENABLED
+  engine->serialization_stack = rut_memory_stack_new (8192);
+
+  if (!_rig_in_device_mode)
+    {
+      engine->undo_journal = rig_undo_journal_new (engine);
+
+      /* Create a color gradient texture that can be used for debugging
+       * shadow mapping.
+       *
+       * XXX: This should probably simply be #ifdef DEBUG code.
+       */
+      create_debug_gradient (engine);
+    }
+#endif /* RIG_EDITOR_ENABLED */
+
+  engine->journal = rig_journal_new ();
+
+  engine->assets_registry = g_hash_table_new_full (g_str_hash,
+                                                   g_str_equal,
+                                                   g_free,
+                                                   rut_refable_unref);
+
   engine->timeline = rut_timeline_new (engine->ctx, 20.0);
   rut_timeline_stop (engine->timeline);
 
@@ -1581,11 +1685,6 @@ rig_engine_init (RutShell *shell, void *user_data)
     rut_introspectable_lookup_property (engine->timeline, "elapsed");
   engine->timeline_progress =
     rut_introspectable_lookup_property (engine->timeline, "progress");
-
-  engine->assets_registry = g_hash_table_new_full (g_str_hash,
-                                                   g_str_equal,
-                                                   g_free,
-                                                   rut_refable_unref);
 
   engine->scene = rut_graph_new (engine->ctx);
 
@@ -1603,8 +1702,6 @@ rig_engine_init (RutShell *shell, void *user_data)
         rig_load (engine, engine->ui_filename);
     }
 #endif
-
-  engine->journal = rig_journal_new ();
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -1663,52 +1760,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   engine->width = cogl_framebuffer_get_width (fb);
   engine->height  = cogl_framebuffer_get_height (fb);
 
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    engine->undo_journal = rig_undo_journal_new (engine);
-
-  /* Create a color gradient texture that can be used for debugging
-   * shadow mapping.
-   *
-   * XXX: This should probably simply be #ifdef DEBUG code.
-   */
-  if (!_rig_in_device_mode)
-    {
-      CoglVertexP2C4 quad[] = {
-        { 0, 0, 0xff, 0x00, 0x00, 0xff },
-        { 0, 200, 0x00, 0xff, 0x00, 0xff },
-        { 200, 200, 0x00, 0x00, 0xff, 0xff },
-        { 200, 0, 0xff, 0xff, 0xff, 0xff }
-      };
-      CoglOffscreen *offscreen;
-      CoglPrimitive *prim =
-        cogl_primitive_new_p2c4 (engine->ctx->cogl_context, COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-      CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-      engine->gradient = COGL_TEXTURE (
-        cogl_texture_2d_new_with_size (rut_cogl_context,
-                                       200, 200,
-                                       COGL_PIXEL_FORMAT_ANY));
-
-      offscreen = cogl_offscreen_new_to_texture (engine->gradient);
-
-      cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
-                                     0, 0,
-                                     200,
-                                     200,
-                                     -1,
-                                     100);
-      cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
-                                COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
-                                0, 0, 0, 1);
-      cogl_framebuffer_draw_primitive (COGL_FRAMEBUFFER (offscreen),
-                                       pipeline,
-                                       prim);
-      cogl_object_unref (prim);
-      cogl_object_unref (offscreen);
-    }
-#endif /* RIG_EDITOR_ENABLED */
-
   /*
    * Shadow mapping
    */
@@ -1747,10 +1798,10 @@ rig_engine_init (RutShell *shell, void *user_data)
   if (!_rig_in_device_mode)
     {
       engine->grid_prim = rut_create_create_grid (engine->ctx,
-                                                engine->device_width,
-                                                engine->device_height,
-                                                100,
-                                                100);
+                                                  engine->device_width,
+                                                  engine->device_height,
+                                                  100,
+                                                  100);
     }
 #endif
 
@@ -1778,59 +1829,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    {
-      cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
-      cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
-
-      engine->properties_hbox = rut_box_layout_new (engine->ctx,
-                                                  RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-
-      /* timeline on the bottom, everything else above */
-      engine->splits[0] = rig_split_view_new (engine,
-                                            RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
-                                            100,
-                                            100);
-
-      /* assets on the left, main area on the right */
-      engine->splits[1] = rig_split_view_new (engine,
-                                            RIG_SPLIT_VIEW_SPLIT_VERTICAL,
-                                            100,
-                                            100);
-
-      create_assets_view (engine);
-
-      create_camera_view (engine);
-
-      create_timeline_view (engine);
-
-      rig_split_view_set_child0 (engine->splits[0], engine->splits[1]);
-
-      rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
-      create_properties_bar (engine);
-
-      rig_split_view_set_split_offset (engine->splits[0], 500);
-      rig_split_view_set_split_offset (engine->splits[1], 150);
-
-      engine->top_vbox = rut_box_layout_new (engine->ctx,
-                                           RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-      create_top_bar (engine);
-
-      /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
-       * layout but it didn't work so I guess I guess there is a bug
-       * in the box-layout allocate code. */
-      engine->top_hbox = rut_box_layout_new (engine->ctx,
-                                           RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-      rut_box_layout_add (engine->top_vbox, TRUE, engine->top_hbox);
-
-      rut_box_layout_add (engine->top_hbox, TRUE, engine->properties_hbox);
-      create_toolbar (engine);
-
-      rut_bin_set_child (engine->top_bin, engine->top_vbox);
-
-      engine->transparency_grid = load_transparency_grid (engine->ctx);
-
-      init_resize_handle (engine);
-    }
+      create_editor_ui (engine);
   else
 #endif
     {
