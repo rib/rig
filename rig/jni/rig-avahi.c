@@ -36,18 +36,18 @@
 #include <avahi-glib/glib-watch.h>
 #include <avahi-glib/glib-malloc.h>
 
-#include <rig-data.h>
+#include <rig-engine.h>
 #include "rig-slave-address.h"
 
 static void
-create_service (RigData *data);
+create_service (RigEngine *engine);
 
 static void
 entry_group_callback (AvahiEntryGroup *group,
                       AvahiEntryGroupState state,
                       void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
   /* Called whenever the entry group state changes */
 
@@ -57,7 +57,7 @@ entry_group_callback (AvahiEntryGroup *group,
 
         /* The entry group has been established successfully */
         g_message ("Service '%s' successfully established.\n",
-                   data->avahi_service_name);
+                   engine->avahi_service_name);
         break;
 
       case AVAHI_ENTRY_GROUP_COLLISION:
@@ -66,15 +66,15 @@ entry_group_callback (AvahiEntryGroup *group,
 
         /* A service name collision with a remote service happened. Let's pick
          * a new name */
-        new_name = avahi_alternative_service_name (data->avahi_service_name);
-        avahi_free (data->avahi_service_name);
-        data->avahi_service_name = new_name;
+        new_name = avahi_alternative_service_name (engine->avahi_service_name);
+        avahi_free (engine->avahi_service_name);
+        engine->avahi_service_name = new_name;
 
         g_warning ("Avahi service name collision, renaming service to '%s'\n",
-                   data->avahi_service_name);
+                   engine->avahi_service_name);
 
         /* And recreate the service */
-        create_service (data);
+        create_service (engine);
         break;
       }
 
@@ -98,9 +98,9 @@ entry_group_callback (AvahiEntryGroup *group,
 }
 
 static void
-create_service (RigData *data)
+create_service (RigEngine *engine)
 {
-  AvahiClient *client = data->avahi_client;
+  AvahiClient *client = engine->avahi_client;
   char *new_name;
   int ret;
 
@@ -109,12 +109,12 @@ create_service (RigData *data)
   /* If this is the first time we're called, let's create a new entry group if
    * necessary */
 
-  if (!data->avahi_group)
+  if (!engine->avahi_group)
     {
-      data->avahi_group =
-        avahi_entry_group_new (client, entry_group_callback, data);
+      engine->avahi_group =
+        avahi_entry_group_new (client, entry_group_callback, engine);
 
-      if (!data->avahi_group)
+      if (!engine->avahi_group)
         {
           g_warning ("Failed create Avahi group: %s",
                      avahi_strerror (avahi_client_errno (client)));
@@ -125,7 +125,7 @@ create_service (RigData *data)
   /* If the group is empty (either because it was just created, or
    * because it was reset previously, add our entries.  */
 
-  if (avahi_entry_group_is_empty (data->avahi_group))
+  if (avahi_entry_group_is_empty (engine->avahi_group))
     {
       char *user_name;
       const char *user = g_get_real_name ();
@@ -135,16 +135,16 @@ create_service (RigData *data)
 
       user_name = g_strconcat ("user=", user, NULL);
 
-      g_message ("Adding Avahi service '%s'\n", data->avahi_service_name);
+      g_message ("Adding Avahi service '%s'\n", engine->avahi_service_name);
 
-      ret = avahi_entry_group_add_service (data->avahi_group,
+      ret = avahi_entry_group_add_service (engine->avahi_group,
                                            AVAHI_IF_UNSPEC,
                                            AVAHI_PROTO_UNSPEC,
                                            0,
-                                           data->avahi_service_name,
+                                           engine->avahi_service_name,
                                            "_rig._tcp",
                                            NULL, NULL,
-                                           data->rpc_server_port,
+                                           engine->rpc_server_port,
                                            "version=1.0",
                                            user_name,
                                            NULL);
@@ -161,7 +161,7 @@ create_service (RigData *data)
         }
 
       /* Tell the server to register the service */
-      if ((ret = avahi_entry_group_commit (data->avahi_group)) < 0)
+      if ((ret = avahi_entry_group_commit (engine->avahi_group)) < 0)
         {
           g_warning ("Failed to commit entry group: %s\n",
                      avahi_strerror (ret));
@@ -175,15 +175,15 @@ collision:
 
   /* A service name collision with a local service happened. Let's
    * pick a new name */
-  new_name = avahi_alternative_service_name (data->avahi_service_name);
-  avahi_free (data->avahi_service_name);
-  data->avahi_service_name = new_name;
+  new_name = avahi_alternative_service_name (engine->avahi_service_name);
+  avahi_free (engine->avahi_service_name);
+  engine->avahi_service_name = new_name;
 
   g_warning ("Service name collision, renaming service to '%s'\n", new_name);
 
-  avahi_entry_group_reset (data->avahi_group);
+  avahi_entry_group_reset (engine->avahi_group);
 
-  create_service (data);
+  create_service (engine);
   return;
 }
 
@@ -192,12 +192,12 @@ service_client_callback (AvahiClient *client,
                          AvahiClientState state,
                          void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
   /* Note: this callback may be called before avahi_client_new()
-   * returns, before we would otherwise initialize data->avahi_client.
+   * returns, before we would otherwise initialize engine->avahi_client.
    */
-  data->avahi_client = client;
+  engine->avahi_client = client;
 
   /* Called whenever the client or server state changes */
 
@@ -207,7 +207,7 @@ service_client_callback (AvahiClient *client,
 
       /* The server has startup successfully and registered its host
        * name on the network, so it's time to create our services */
-      create_service (data);
+      create_service (engine);
       break;
 
     case AVAHI_CLIENT_FAILURE:
@@ -236,8 +236,8 @@ service_client_callback (AvahiClient *client,
        * for our own records to register until the host name is
        * properly esatblished. */
 
-      if (data->avahi_group)
-        avahi_entry_group_reset (data->avahi_group);
+      if (engine->avahi_group)
+        avahi_entry_group_reset (engine->avahi_group);
 
       break;
 
@@ -247,15 +247,15 @@ service_client_callback (AvahiClient *client,
 }
 
 void
-rig_avahi_register_service (RigData *data)
+rig_avahi_register_service (RigEngine *engine)
 {
   const AvahiPoll *poll_api;
   AvahiGLibPoll *glib_poll;
   AvahiClient *client;
   int error;
 
-  if (!data->avahi_service_name)
-    data->avahi_service_name = g_strdup ("Rig Preview");
+  if (!engine->avahi_service_name)
+    engine->avahi_service_name = g_strdup ("Rig Preview");
 
   avahi_set_allocator (avahi_glib_allocator ());
 
@@ -269,7 +269,7 @@ rig_avahi_register_service (RigData *data)
   client = avahi_client_new (poll_api,
                              0,
                              service_client_callback,
-                             data,
+                             engine,
                              &error);
   if (client == NULL)
     {
@@ -280,20 +280,20 @@ rig_avahi_register_service (RigData *data)
       return;
     }
 
-  data->avahi_client = client;
-  data->avahi_poll_api = poll_api;
+  engine->avahi_client = client;
+  engine->avahi_poll_api = poll_api;
 }
 
 void
-rig_avahi_unregister_service (RigData *data)
+rig_avahi_unregister_service (RigEngine *engine)
 {
-  if (!data->avahi_client)
+  if (!engine->avahi_client)
     return;
 
-  avahi_client_free (data->avahi_client);
-  data->avahi_client = NULL;
-  avahi_glib_poll_free (data->avahi_poll_api);
-  data->avahi_poll_api = NULL;
+  avahi_client_free (engine->avahi_client);
+  engine->avahi_client = NULL;
+  avahi_glib_poll_free (engine->avahi_poll_api);
+  engine->avahi_poll_api = NULL;
 }
 
 static void
@@ -311,7 +311,7 @@ resolve_callback(AvahiServiceResolver *resolver,
                  AvahiLookupResultFlags flags,
                  void* user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   AvahiClient *client = avahi_service_resolver_get_client (resolver);
 
   /* Called whenever a service has been resolved successfully or timed out */
@@ -359,10 +359,10 @@ resolve_callback(AvahiServiceResolver *resolver,
 
         slave_address = rig_slave_address_new (name, host_name, port);
 
-        data->slave_addresses =
-          g_list_prepend (data->slave_addresses, slave_address);
+        engine->slave_addresses =
+          g_list_prepend (engine->slave_addresses, slave_address);
 
-        for (l = data->slave_addresses; l; l = l->next)
+        for (l = engine->slave_addresses; l; l = l->next)
           {
             RigSlaveAddress *address = l->data;
             g_print ("Slave = %s\n", address->hostname);
@@ -384,7 +384,7 @@ browse_callback (AvahiServiceBrowser *browser,
                  AvahiLookupResultFlags flags,
                  void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   AvahiClient *client = avahi_service_browser_get_client (browser);
   GList *l;
 
@@ -415,7 +415,7 @@ browse_callback (AvahiServiceBrowser *browser,
                                         AVAHI_PROTO_UNSPEC,
                                         0,
                                         resolve_callback,
-                                        data)))
+                                        engine)))
         {
           g_warning ("Failed to resolve service '%s': %s\n",
                      name, avahi_strerror (avahi_client_errno (client)));
@@ -425,15 +425,15 @@ browse_callback (AvahiServiceBrowser *browser,
 
     case AVAHI_BROWSER_REMOVE:
 
-      for (l = data->slave_addresses; l; l = l->next)
+      for (l = engine->slave_addresses; l; l = l->next)
         {
           RigSlaveAddress *slave_address = l->data;
 
           if (strcmp (slave_address->name, name) == 0)
             {
               rut_refable_unref (slave_address);
-              data->slave_addresses =
-                g_list_remove_link (data->slave_addresses, l);
+              engine->slave_addresses =
+                g_list_remove_link (engine->slave_addresses, l);
               g_message ("(Browser) REMOVE: service '%s' of type '%s' "
                          "in domain '%s'\n",
                          name, type, domain);
@@ -457,7 +457,7 @@ browser_client_callback (AvahiClient *client,
                          AvahiClientState state,
                          void *user_data)
 {
-  //RigData *data = user_data;
+  //RigEngine *engine = user_data;
 
   if (state == AVAHI_CLIENT_FAILURE)
     {
@@ -473,7 +473,7 @@ browser_client_callback (AvahiClient *client,
 }
 
 void
-rig_avahi_run_browser (RigData *data)
+rig_avahi_run_browser (RigEngine *engine)
 {
   const AvahiPoll *poll_api;
   AvahiGLibPoll *glib_poll;
@@ -493,7 +493,7 @@ rig_avahi_run_browser (RigData *data)
   client = avahi_client_new (poll_api,
                              0,
                              browser_client_callback,
-                             data,
+                             engine,
                              &error);
   if (client == NULL)
     {
@@ -509,7 +509,7 @@ rig_avahi_run_browser (RigData *data)
                                        "_rig._tcp",
                                        NULL, 0,
                                        browse_callback,
-                                       data);
+                                       engine);
   if (browser == NULL)
     {
       g_warning ("Failed to create service browser: %s\n",
@@ -520,7 +520,7 @@ rig_avahi_run_browser (RigData *data)
       return;
     }
 
-  data->avahi_client = client;
-  data->avahi_poll_api = poll_api;
-  data->avahi_browser = browser;
+  engine->avahi_client = client;
+  engine->avahi_poll_api = poll_api;
+  engine->avahi_browser = browser;
 }

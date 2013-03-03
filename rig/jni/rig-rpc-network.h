@@ -23,24 +23,24 @@
 
 #include "protobuf-c/rig-protobuf-c-rpc.h"
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 void
-rig_rpc_start_server (RigData *data,
+rig_rpc_start_server (RigEngine *engine,
                       ProtobufCService *service,
                       PB_RPC_Error_Func server_error_handler,
                       PB_RPC_Client_Connect_Func new_client_handler,
                       void *user_data);
 
 void
-rig_rpc_stop_server (RigData *data);
+rig_rpc_stop_server (RigEngine *engine);
 
 typedef struct _RigRPCClient
 {
   RutObjectProps _parent;
   int ref_count;
 
-  RigData *data;
+  RigEngine *engine;
 
   char *hostname;
   int port;
@@ -53,7 +53,7 @@ typedef struct _RigRPCClient
 } RigRPCClient;
 
 RigRPCClient *
-rig_rpc_client_new (RigData *data,
+rig_rpc_client_new (RigEngine *engine,
                     const char *hostname,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,

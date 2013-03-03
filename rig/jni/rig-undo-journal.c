@@ -23,7 +23,7 @@
 #endif
 
 #include "rig-undo-journal.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 
 typedef struct _UndoRedoOpImpl
 {
@@ -154,11 +154,11 @@ rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
                                                 const RutBoxed *value,
                                                 RutProperty *property)
 {
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   UndoRedo *undo_redo;
   UndoRedoConstPropertyChange *prop_change;
   RigTransitionPropData *prop_data =
-    rig_transition_get_prop_data_for_property (data->selected_transition,
+    rig_transition_get_prop_data_for_property (engine->selected_transition,
                                                property);
 
   /* If we have a mergable entry then we can just update the final value */
@@ -169,7 +169,7 @@ rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
       prop_change = &undo_redo->d.const_prop_change;
       rut_boxed_destroy (&prop_change->value1);
       rut_boxed_copy (&prop_change->value1, value);
-      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+      rut_property_set_boxed (&journal->engine->ctx->property_ctx,
                               property,
                               value);
       rut_boxed_destroy (&prop_data->constant_value);
@@ -190,7 +190,7 @@ rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
       prop_change->object = rut_refable_ref (property->object);
       prop_change->property = property;
 
-      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+      rut_property_set_boxed (&journal->engine->ctx->property_ctx,
                               property,
                               value);
 
@@ -233,11 +233,11 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
                                                 const RutBoxed *value,
                                                 RutProperty *property)
 {
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   UndoRedo *undo_redo;
-  float t = data->selected_transition->progress;
+  float t = engine->selected_transition->progress;
   RigPath *path =
-    rig_transition_get_path_for_property (data->selected_transition,
+    rig_transition_get_path_for_property (engine->selected_transition,
                                           property);
 
   /* If we have a mergable entry then we can just update the final value */
@@ -263,7 +263,7 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
         }
 
       rig_path_insert_boxed (path, t, value);
-      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+      rut_property_set_boxed (&journal->engine->ctx->property_ctx,
                               property,
                               value);
     }
@@ -298,7 +298,7 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
       undo_redo->mergable = mergable;
 
       rig_path_insert_boxed (path, t, value);
-      rut_property_set_boxed (&journal->data->ctx->property_ctx,
+      rut_property_set_boxed (&journal->engine->ctx->property_ctx,
                               property,
                               value);
 
@@ -312,11 +312,11 @@ rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        const RutBoxed *value,
                                        RutProperty *property)
 {
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   RigTransitionPropData *prop_data;
 
   prop_data =
-    rig_transition_get_prop_data_for_property (data->selected_transition,
+    rig_transition_get_prop_data_for_property (engine->selected_transition,
                                                property);
 
   if (prop_data && prop_data->animated)
@@ -339,7 +339,7 @@ rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
 {
   UndoRedo *undo_redo;
   UndoRedoMovePathNodes *move_path_nodes;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   int i;
 
   undo_redo = g_slice_new (UndoRedo);
@@ -356,7 +356,7 @@ rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
       const RigUndoJournalPathNode *node = nodes + i;
       UndoRedoMovedPathNode *moved_node = move_path_nodes->nodes + i;
       RigTransitionPropData *prop_data =
-        rig_transition_get_prop_data_for_property (data->selected_transition,
+        rig_transition_get_prop_data_for_property (engine->selected_transition,
                                                    node->property);
 
       moved_node->object = rut_refable_ref (node->property->object);
@@ -398,10 +398,10 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
                                            RutProperty *property,
                                            RigNode *node)
 {
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   RutBoxed old_value;
   RigPath *path =
-    rig_transition_get_path_for_property (data->selected_transition,
+    rig_transition_get_path_for_property (engine->selected_transition,
                                           property);
 
   if (rig_node_box (path->type, node, &old_value))
@@ -442,7 +442,7 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
   set_animated->property = property;
   set_animated->value = value;
 
-  rig_transition_set_property_animated (journal->data->selected_transition,
+  rig_transition_set_property_animated (journal->engine->selected_transition,
                                         property,
                                         value);
 
@@ -459,10 +459,10 @@ static void
 copy_property_cb (RigTransitionPropData *prop_data,
                   void *user_data)
 {
-  CopyPropertyClosure *data = user_data;
-  UndoRedoAddDeleteEntity *delete_entity = data->delete_entity;
+  CopyPropertyClosure *engine = user_data;
+  UndoRedoAddDeleteEntity *delete_entity = engine->delete_entity;
 
-  if (prop_data->property->object == data->object)
+  if (prop_data->property->object == engine->object)
     {
       UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
 
@@ -486,13 +486,13 @@ copy_object_properties (RigTransition *transition,
                         UndoRedoAddDeleteEntity *delete_entity,
                         RutObject *object)
 {
-  CopyPropertyClosure data;
+  CopyPropertyClosure engine;
 
-  data.delete_entity = delete_entity;
-  data.object = object;
+  engine.delete_entity = delete_entity;
+  engine.object = object;
   rig_transition_foreach_property (transition,
                                    copy_property_cb,
-                                   &data);
+                                   &engine);
 }
 
 typedef struct
@@ -505,10 +505,10 @@ static void
 delete_entity_component_cb (RutComponent *component,
                             void *user_data)
 {
-  DeleteEntityComponentClosure *data = user_data;
+  DeleteEntityComponentClosure *engine = user_data;
 
-  copy_object_properties (data->transition,
-                          data->delete_entity,
+  copy_object_properties (engine->transition,
+                          engine->delete_entity,
                           component);
 }
 
@@ -517,7 +517,7 @@ rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
                                      RutEntity *parent_entity,
                                      RutEntity *entity)
 {
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   UndoRedo *undo_redo;
   UndoRedoAddDeleteEntity *add_entity;
 
@@ -535,7 +535,7 @@ rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
   rut_list_init (&add_entity->properties);
 
   rut_graphable_add_child (parent_entity, entity);
-  rut_shell_queue_redraw (data->ctx->shell);
+  rut_shell_queue_redraw (engine->ctx->shell);
 
   rig_undo_journal_insert (journal, undo_redo);
 }
@@ -549,7 +549,7 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   RutEntity *parent = rut_graphable_get_parent (entity);
   UndoRedoPropData *prop_data;
   DeleteEntityComponentClosure delete_component_data;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
@@ -560,26 +560,26 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   delete_entity->parent_entity = rut_refable_ref (parent);
   delete_entity->deleted_entity = rut_refable_ref (entity);
 
-  /* Grab a copy of the transition data for all the properties of the
+  /* Grab a copy of the transition engine for all the properties of the
    * entity */
   rut_list_init (&delete_entity->properties);
-  copy_object_properties (data->selected_transition,
+  copy_object_properties (engine->selected_transition,
                           delete_entity,
                           entity);
 
-  /* Also copy the property data of each component */
-  delete_component_data.transition = data->selected_transition;
+  /* Also copy the property engine of each component */
+  delete_component_data.transition = engine->selected_transition;
   delete_component_data.delete_entity = delete_entity;
   rut_entity_foreach_component (entity,
                                 delete_entity_component_cb,
                                 &delete_component_data);
 
   rut_list_for_each (prop_data, &delete_entity->properties, link)
-    rig_transition_remove_property (data->selected_transition,
+    rig_transition_remove_property (engine->selected_transition,
                                     prop_data->property);
 
   rut_graphable_remove_child (entity);
-  rut_shell_queue_redraw (data->ctx->shell);
+  rut_shell_queue_redraw (engine->ctx->shell);
 
   rig_undo_journal_insert (journal, undo_redo);
 }
@@ -616,7 +616,7 @@ undo_redo_subjournal_invert (UndoRedo *undo_redo_src)
   RigUndoJournal *subjournal_dst;
   UndoRedo *inverse, *sub_undo_redo;
 
-  subjournal_dst = rig_undo_journal_new (subjournal_src->data);
+  subjournal_dst = rig_undo_journal_new (subjournal_src->engine);
 
   rut_list_for_each (sub_undo_redo, &subjournal_src->undo_ops, list_node)
     {
@@ -643,8 +643,8 @@ static void
 undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoConstPropertyChange *prop_change = &undo_redo->d.const_prop_change;
-  RigData *data = journal->data;
-  RigTransition *transition = data->selected_transition;
+  RigEngine *engine = journal->engine;
+  RigTransition *transition = engine->selected_transition;
   RigTransitionPropData *prop_data;
 
   g_print ("Property change APPLY\n");
@@ -656,7 +656,7 @@ undo_redo_const_prop_change_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   rig_transition_update_property (transition,
                                   prop_change->property);
 
-  rig_reload_inspector_property (data, prop_change->property);
+  rig_reload_inspector_property (engine, prop_change->property);
 }
 
 static UndoRedo *
@@ -691,19 +691,19 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
                           UndoRedo *undo_redo)
 {
   UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   RigPath *path;
 
   g_print ("Path add APPLY\n");
 
-  path = rig_transition_get_path_for_property (data->selected_transition,
+  path = rig_transition_get_path_for_property (engine->selected_transition,
                                                add_remove->property);
   rig_path_insert_boxed (path, add_remove->t, &add_remove->value);
 
-  rig_transition_update_property (data->selected_transition,
+  rig_transition_update_property (engine->selected_transition,
                                   add_remove->property);
 
-  rig_reload_inspector_property (data, add_remove->property);
+  rig_reload_inspector_property (engine, add_remove->property);
 }
 
 static UndoRedo *
@@ -724,19 +724,19 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
                              UndoRedo *undo_redo)
 {
   UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   RigPath *path;
 
   g_print ("Path remove APPLY\n");
 
-  path = rig_transition_get_path_for_property (data->selected_transition,
+  path = rig_transition_get_path_for_property (engine->selected_transition,
                                                add_remove->property);
   rig_path_remove (path, add_remove->t);
 
-  rig_transition_update_property (data->selected_transition,
+  rig_transition_update_property (engine->selected_transition,
                                   add_remove->property);
 
-  rig_reload_inspector_property (data, add_remove->property);
+  rig_reload_inspector_property (engine, add_remove->property);
 }
 
 static UndoRedo *
@@ -766,18 +766,18 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
                              UndoRedo *undo_redo)
 {
   UndoRedoPathModify *modify = &undo_redo->d.path_modify;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   RigPath *path;
 
   g_print ("Path modify APPLY\n");
 
-  path = rig_transition_get_path_for_property (data->selected_transition,
+  path = rig_transition_get_path_for_property (engine->selected_transition,
                                                modify->property);
   rig_path_insert_boxed (path, modify->t, &modify->value1);
 
-  rig_transition_update_property (data->selected_transition,
+  rig_transition_update_property (engine->selected_transition,
                                   modify->property);
-  rig_reload_inspector_property (data, modify->property);
+  rig_reload_inspector_property (engine, modify->property);
 }
 
 static UndoRedo *
@@ -809,15 +809,15 @@ undo_redo_set_animated_apply (RigUndoJournal *journal,
                               UndoRedo *undo_redo)
 {
   UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
 
   g_print ("Set animated APPLY\n");
 
-  rig_transition_set_property_animated (data->selected_transition,
+  rig_transition_set_property_animated (engine->selected_transition,
                                         set_animated->property,
                                         set_animated->value);
 
-  rig_reload_inspector_property (data, set_animated->property);
+  rig_reload_inspector_property (engine, set_animated->property);
 }
 
 static UndoRedo *
@@ -884,7 +884,7 @@ undo_redo_delete_entity_apply (RigUndoJournal *journal,
   rut_graphable_remove_child (delete_entity->deleted_entity);
 
   rut_list_for_each (prop_data, &delete_entity->properties, link)
-    rig_transition_remove_property (journal->data->selected_transition,
+    rig_transition_remove_property (journal->engine->selected_transition,
                                     prop_data->property);
 }
 
@@ -903,14 +903,14 @@ undo_redo_add_entity_apply (RigUndoJournal *journal,
                             UndoRedo *undo_redo)
 {
   UndoRedoAddDeleteEntity *add_entity = &undo_redo->d.add_delete_entity;
-  RigTransition *transition = journal->data->selected_transition;
+  RigTransition *transition = journal->engine->selected_transition;
   UndoRedoPropData *undo_prop_data;
 
   g_print ("Add entity APPLY\n");
 
   rut_graphable_add_child (add_entity->parent_entity,
                            add_entity->deleted_entity);
-  rig_set_selected_entity (journal->data, add_entity->deleted_entity);
+  rig_set_selected_entity (journal->engine, add_entity->deleted_entity);
 
   rut_list_for_each (undo_prop_data, &add_entity->properties, link)
     {
@@ -970,7 +970,7 @@ undo_redo_move_path_nodes_apply (RigUndoJournal *journal,
                                  UndoRedo *undo_redo)
 {
   UndoRedoMovePathNodes *move_path_nodes = &undo_redo->d.move_path_nodes;
-  RigData *data = journal->data;
+  RigEngine *engine = journal->engine;
   int i;
 
   g_print ("Move path nodes APPLY\n");
@@ -981,17 +981,17 @@ undo_redo_move_path_nodes_apply (RigUndoJournal *journal,
       RigPath *path;
       RigNode *path_node;
 
-      path = rig_transition_get_path_for_property (data->selected_transition,
+      path = rig_transition_get_path_for_property (engine->selected_transition,
                                                    node->property);
 
       path_node = rig_path_find_node (path, node->old_time);
       if (path_node)
         rig_path_move_node (path, path_node, node->new_time);
 
-      rig_transition_update_property (data->selected_transition,
+      rig_transition_update_property (engine->selected_transition,
                                       node->property);
 
-      rig_reload_inspector_property (data, node->property);
+      rig_reload_inspector_property (engine, node->property);
     }
 }
 
@@ -1189,7 +1189,7 @@ rig_undo_journal_undo (RigUndoJournal *journal)
       undo_redo_apply (journal, inverse);
       undo_redo_free (inverse);
 
-      rut_shell_queue_redraw (journal->data->shell);
+      rut_shell_queue_redraw (journal->engine->shell);
 
       dump_journal (journal);
 
@@ -1215,7 +1215,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
   rut_list_remove (&op->list_node);
   rut_list_insert (journal->undo_ops.prev, &op->list_node);
 
-  rut_shell_queue_redraw (journal->data->shell);
+  rut_shell_queue_redraw (journal->engine->shell);
 
   dump_journal (journal);
 
@@ -1223,11 +1223,11 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 }
 
 RigUndoJournal *
-rig_undo_journal_new (RigData *data)
+rig_undo_journal_new (RigEngine *engine)
 {
   RigUndoJournal *journal = g_slice_new0 (RigUndoJournal);
 
-  journal->data = data;
+  journal->engine = engine;
   rut_list_init (&journal->undo_ops);
   rut_list_init (&journal->redo_ops);
 

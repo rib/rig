@@ -33,7 +33,7 @@ typedef struct _RigPaintContext
 {
   RutPaintContext _parent;
 
-  RigData *data;
+  RigEngine *engine;
 
   GList *camera_stack;
 
@@ -45,7 +45,7 @@ GArray *
 rig_journal_new (void);
 
 void
-rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass);
+rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass);
 
 void
 rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
@@ -54,9 +54,9 @@ void
 rig_dirty_entity_pipelines (RutEntity *entity);
 
 void
-rig_renderer_init (RigData *data);
+rig_renderer_init (RigEngine *engine);
 
 void
-rig_renderer_fini (RigData *data);
+rig_renderer_fini (RigEngine *engine);
 
 #endif /* _RIG_RENDERER_H_ */

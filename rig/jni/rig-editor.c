@@ -2,7 +2,7 @@
 
 #include <glib.h>
 #include <rut.h>
-#include <rig-data.h>
+#include <rig-engine.h>
 #include <rig-engine.h>
 #include <rig-avahi.h>
 
@@ -18,17 +18,17 @@ static const GOptionEntry rut_editor_entries[] =
 void
 rig_editor_init (RutShell *shell, void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  rig_avahi_run_browser (data);
+  rig_avahi_run_browser (engine);
 
-  rig_engine_init (shell, data);
+  rig_engine_init (shell, engine);
 }
 
 int
 main (int argc, char **argv)
 {
-  RigData data;
+  RigEngine engine;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
@@ -49,39 +49,39 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
-  memset (&data, 0, sizeof (RigData));
+  memset (&engine, 0, sizeof (RigEngine));
 
-  data.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
+  engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
 
-  data.shell = rut_shell_new (rig_editor_init,
+  engine.shell = rut_shell_new (rig_editor_init,
                               rig_engine_fini,
                               rig_engine_paint,
-                              &data);
+                              &engine);
 
-  data.ctx = rut_context_new (data.shell);
+  engine.ctx = rut_context_new (engine.shell);
 
-  rut_context_init (data.ctx);
+  rut_context_init (engine.ctx);
 
-  rut_shell_add_input_callback (data.shell,
+  rut_shell_add_input_callback (engine.shell,
                                 rig_engine_input_handler,
-                                &data, NULL);
+                                &engine, NULL);
 
   while (TRUE)
     {
-      char *assets_location = g_path_get_dirname (data.ui_filename);
-      rut_set_assets_location (data.ctx, assets_location);
+      char *assets_location = g_path_get_dirname (engine.ui_filename);
+      rut_set_assets_location (engine.ctx, assets_location);
       g_free (assets_location);
 
-      data.selected_entity = NULL;
-      data.selected_transition = NULL;
+      engine.selected_entity = NULL;
+      engine.selected_transition = NULL;
 
-      rut_shell_main (data.shell);
+      rut_shell_main (engine.shell);
 
-      if (data.next_ui_filename)
+      if (engine.next_ui_filename)
         {
-          g_free (data.ui_filename);
-          data.ui_filename = data.next_ui_filename;
-          data.next_ui_filename = NULL;
+          g_free (engine.ui_filename);
+          engine.ui_filename = engine.next_ui_filename;
+          engine.next_ui_filename = NULL;
         }
       else
         break;

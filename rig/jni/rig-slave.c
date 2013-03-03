@@ -2,7 +2,7 @@
 
 #include <glib.h>
 #include <rut.h>
-#include <rig-data.h>
+#include <rig-engine.h>
 #include <rig-engine.h>
 #include <rig-avahi.h>
 #include <rig-rpc-network.h>
@@ -22,7 +22,7 @@ static const GOptionEntry rut_handset_entries[] =
 
 typedef struct _RigSlave
 {
-  RigData *data;
+  RigEngine *engine;
 
 } RigSlave;
 
@@ -50,20 +50,20 @@ slave__load_asset (Rig__Slave_Service *service,
 {
   Rig__LoadAssetResult result = RIG__LOAD_ASSET_RESULT__INIT;
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
-  RigData *data = slave->data;
+  RigEngine *engine = slave->engine;
 
   g_return_if_fail (query != NULL);
 
   if (query->has_type)
     {
       RutAsset *asset =
-        rut_asset_new_from_data (data->ctx,
+        rut_asset_new_from_data (engine->ctx,
                                  query->path,
                                  query->type,
                                  query->data.data,
                                  query->data.len);
 
-      rig_register_asset (data, asset);
+      rig_register_asset (engine, asset);
 
       g_print ("Load Asset Request\n");
     }
@@ -79,13 +79,13 @@ slave__load (Rig__Slave_Service *service,
 {
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
-  RigData *data = slave->data;
+  RigEngine *engine = slave->engine;
 
   g_return_if_fail (ui != NULL);
 
   g_print ("UI Load Request\n");
 
-  rig_pb_unserialize_ui (data, ui);
+  rig_pb_unserialize_ui (engine, ui);
 
   /* XXX: It's not ideal that Cogl doesn't differentiate the SDL and SDL2
    * winsys because only the SDL2 winsys provides
@@ -96,10 +96,10 @@ slave__load (Rig__Slave_Service *service,
    */
 #ifdef COGL_HAS_SDL_SUPPORT
   {
-    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (data->onscreen);
+    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
     SDL_SetWindowSize (sdl_window,
-                       data->device_width / 2,
-                       data->device_height / 2);
+                       engine->device_width / 2,
+                       engine->device_height / 2);
   }
 #endif
 
@@ -123,7 +123,7 @@ new_client_handler (PB_RPC_Server *server,
                     void *user_data)
 {
   RigSlave *slave = user_data;
-  //RigData *data = slave->data;
+  //RigEngine *engine = slave->engine;
 
   rig_pb_rpc_server_connection_set_close_handler (conn,
                                                   client_close_handler,
@@ -140,26 +140,26 @@ server_error_handler (PB_RPC_Error_Code code,
                       void *user_data)
 {
   RigSlave *slave = user_data;
-  RigData *data = slave->data;
+  RigEngine *engine = slave->engine;
 
   g_warning ("Server error: %s", message);
 
-  rig_rpc_stop_server (data);
+  rig_rpc_stop_server (engine);
 }
 
 void
 rig_slave_init (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
-  RigData *data = slave->data;
+  RigEngine *engine = slave->engine;
 
-  rig_rpc_start_server (data,
+  rig_rpc_start_server (engine,
                         &rig_slave_service.base,
                         server_error_handler,
                         new_client_handler,
                         slave);
 
-  rig_engine_init (shell, slave->data);
+  rig_engine_init (shell, slave->engine);
 }
 
 void
@@ -167,7 +167,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
 
-  rig_engine_fini (shell, slave->data);
+  rig_engine_fini (shell, slave->engine);
 }
 
 CoglBool
@@ -175,7 +175,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
 
-  return rig_engine_paint (slave->data->shell, slave->data);
+  return rig_engine_paint (slave->engine->shell, slave->engine);
 }
 
 #ifdef __ANDROID__
@@ -184,7 +184,7 @@ void
 android_main (struct android_app *application)
 {
   RigSlave slave;
-  RigData data;
+  RigEngine engine;
 
   /* Make sure glue isn't stripped */
   app_dummy ();
@@ -192,28 +192,28 @@ android_main (struct android_app *application)
   g_android_init ();
 
   memset (&slave, 0, sizeof (RigSlave));
-  slave.data = &data;
+  slave.engine = &engine;
 
-  memset (&data, 0, sizeof (RigData));
-  data.app = application;
+  memset (&engine, 0, sizeof (RigEngine));
+  engine.app = application;
 
   _rig_in_device_mode = TRUE;
 
-  data.shell = rut_android_shell_new (application,
+  engine.shell = rut_android_shell_new (application,
                                       rig_slave_init,
                                       rig_slave_fini,
                                       rig_slave_paint,
                                       &slave);
 
-  data.ctx = rut_context_new (data.shell);
+  engine.ctx = rut_context_new (engine.shell);
 
-  rut_context_init (data.ctx);
+  rut_context_init (engine.ctx);
 
-  rut_shell_set_input_callback (data.shell,
+  rut_shell_set_input_callback (engine.shell,
                                 rig_engine_input_handler,
-                                &data);
+                                &engine);
 
-  rut_shell_main (data.shell);
+  rut_shell_main (engine.shell);
 }
 
 #else
@@ -222,7 +222,7 @@ int
 main (int argc, char **argv)
 {
   RigSlave slave;
-  RigData data;
+  RigEngine engine;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
@@ -235,26 +235,26 @@ main (int argc, char **argv)
     }
 
   memset (&slave, 0, sizeof (RigSlave));
-  slave.data = &data;
+  slave.engine = &engine;
 
-  memset (&data, 0, sizeof (RigData));
+  memset (&engine, 0, sizeof (RigEngine));
 
-  data.shell = rut_shell_new (rig_slave_init,
+  engine.shell = rut_shell_new (rig_slave_init,
                               rig_slave_fini,
                               rig_slave_paint,
                               &slave);
 
-  data.ctx = rut_context_new (data.shell);
+  engine.ctx = rut_context_new (engine.shell);
 
-  rut_context_init (data.ctx);
+  rut_context_init (engine.ctx);
 
-  rut_shell_add_input_callback (data.shell,
+  rut_shell_add_input_callback (engine.shell,
                                 rig_engine_input_handler,
-                                &data, NULL);
+                                &engine, NULL);
 
   _rig_in_device_mode = TRUE;
 
-  rut_shell_main (data.shell);
+  rut_shell_main (engine.shell);
 
   return 0;
 }

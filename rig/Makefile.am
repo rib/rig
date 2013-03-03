@@ -36,7 +36,7 @@ EXTRA_DIST += jni/protobuf-c/README
 
 librig_la_SOURCES = \
 	$(rig_protobuf_c_sources) \
-	jni/main.c \
+	jni/rig-engine.c \
 	jni/rig-node.c \
 	jni/rig-node.h \
 	jni/rig-path.c \
@@ -60,7 +60,7 @@ librig_la_SOURCES = \
 	jni/rig-types.h \
 	jni/rig-renderer.h \
 	jni/rig-renderer.c \
-	jni/rig-data.h \
+	jni/rig-engine.h \
 	jni/rig-osx.h \
 	jni/rig-avahi.h \
 	jni/rig-avahi.c \

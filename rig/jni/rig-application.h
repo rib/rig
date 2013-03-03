@@ -22,7 +22,7 @@
 
 #include <glib.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 G_BEGIN_DECLS
 
@@ -67,7 +67,7 @@ GType
 rig_application_get_type (void) G_GNUC_CONST;
 
 RigApplication *
-rig_application_new (RigData *data);
+rig_application_new (RigEngine *engine);
 
 void
 rig_application_add_onscreen (RigApplication *app,

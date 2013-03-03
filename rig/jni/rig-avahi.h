@@ -22,12 +22,12 @@
 #define _RIG_AVAHI_H_
 
 void
-rig_avahi_register_service (RigData *data);
+rig_avahi_register_service (RigEngine *engine);
 
 void
-rig_avahi_unregister_service (RigData *data);
+rig_avahi_unregister_service (RigEngine *engine);
 
 void
-rig_avahi_run_browser (RigData *data);
+rig_avahi_run_browser (RigEngine *engine);
 
 #endif /* _RIG_AVAHI_H_ */

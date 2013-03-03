@@ -22,12 +22,12 @@
 
 #include "rig.pb-c.h"
 #include "rig-pb.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-load-xml.h"
 
 typedef struct _Serializer
 {
-  RigData *data;
+  RigEngine *engine;
 
   RigAssetReferenceCallback asset_callback;
   void *user_data;
@@ -48,22 +48,22 @@ typedef struct _Serializer
 typedef void (*PBMessageInitFunc) (void *message);
 
 static void *
-pb_new (RigData *data,
+pb_new (RigEngine *engine,
         size_t size,
         void *_message_init)
 {
   PBMessageInitFunc message_init = _message_init;
 
-  void *msg = rut_memory_stack_alloc (data->serialization_stack, size);
+  void *msg = rut_memory_stack_alloc (engine->serialization_stack, size);
   message_init (msg);
   return msg;
 }
 
 static Rig__Color *
-pb_color_new (RigData *data, const CoglColor *color)
+pb_color_new (RigEngine *engine, const CoglColor *color)
 {
-  Rig__Color *pb_color = pb_new (data, sizeof (Rig__Color), rig__color__init);
-  pb_color->hex = rut_memory_stack_alloc (data->serialization_stack,
+  Rig__Color *pb_color = pb_new (engine, sizeof (Rig__Color), rig__color__init);
+  pb_color->hex = rut_memory_stack_alloc (engine->serialization_stack,
                                           10); /* #rrggbbaa */
   snprintf (pb_color->hex, 10, "#%02x%02x%02x%02x",
             cogl_color_get_red_byte (color),
@@ -75,10 +75,10 @@ pb_color_new (RigData *data, const CoglColor *color)
 }
 
 static Rig__Rotation *
-pb_rotation_new (RigData *data, const CoglQuaternion *quaternion)
+pb_rotation_new (RigEngine *engine, const CoglQuaternion *quaternion)
 {
   Rig__Rotation *pb_rotation =
-    pb_new (data, sizeof (Rig__Rotation), rig__rotation__init);
+    pb_new (engine, sizeof (Rig__Rotation), rig__rotation__init);
   float angle = cogl_quaternion_get_rotation_angle (quaternion);
   float axis[3];
 
@@ -93,12 +93,12 @@ pb_rotation_new (RigData *data, const CoglQuaternion *quaternion)
 }
 
 static Rig__Vec3 *
-pb_vec3_new (RigData *data,
+pb_vec3_new (RigEngine *engine,
              float x,
              float y,
              float z)
 {
-  Rig__Vec3 *pb_vec3 = pb_new (data, sizeof (Rig__Vec3), rig__vec3__init);
+  Rig__Vec3 *pb_vec3 = pb_new (engine, sizeof (Rig__Vec3), rig__vec3__init);
 
   pb_vec3->x = x;
   pb_vec3->y = y;
@@ -108,13 +108,13 @@ pb_vec3_new (RigData *data,
 }
 
 static Rig__Vec4 *
-pb_vec4_new (RigData *data,
+pb_vec4_new (RigEngine *engine,
              float x,
              float y,
              float z,
              float w)
 {
-  Rig__Vec4 *pb_vec4 = pb_new (data, sizeof (Rig__Vec4), rig__vec4__init);
+  Rig__Vec4 *pb_vec4 = pb_new (engine, sizeof (Rig__Vec4), rig__vec4__init);
 
   pb_vec4->x = x;
   pb_vec4->y = y;
@@ -125,16 +125,16 @@ pb_vec4_new (RigData *data,
 }
 
 static Rig__Path *
-pb_path_new (RigData *data, RigPath *path)
+pb_path_new (RigEngine *engine, RigPath *path)
 {
-  Rig__Path *pb_path = pb_new (data, sizeof (Rig__Path), rig__path__init);
+  Rig__Path *pb_path = pb_new (engine, sizeof (Rig__Path), rig__path__init);
   RigNode *node;
   int i;
 
   if (!path->length)
     return pb_path;
 
-  pb_path->nodes = rut_memory_stack_alloc (data->serialization_stack,
+  pb_path->nodes = rut_memory_stack_alloc (engine->serialization_stack,
                                            sizeof (void *) * path->length);
   pb_path->n_nodes = path->length;
 
@@ -142,14 +142,14 @@ pb_path_new (RigData *data, RigPath *path)
   rut_list_for_each (node, &path->nodes, list_node)
     {
       Rig__Node *pb_node =
-        pb_new (data, sizeof (Rig__Node), rig__node__init);
+        pb_new (engine, sizeof (Rig__Node), rig__node__init);
 
       pb_path->nodes[i] = pb_node;
 
       pb_node->has_t = TRUE;
       pb_node->t = node->t;
 
-      pb_node->value = pb_new (data,
+      pb_node->value = pb_new (engine,
                                sizeof (Rig__PropertyValue),
                                rig__property_value__init);
 
@@ -172,7 +172,7 @@ pb_path_new (RigData *data, RigPath *path)
         case RUT_PROPERTY_TYPE_VEC3:
             {
               RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
-              pb_node->value->vec3_value = pb_vec3_new (data,
+              pb_node->value->vec3_value = pb_vec3_new (engine,
                                                         vec3_node->value[0],
                                                         vec3_node->value[1],
                                                         vec3_node->value[2]);
@@ -181,7 +181,7 @@ pb_path_new (RigData *data, RigPath *path)
         case RUT_PROPERTY_TYPE_VEC4:
             {
               RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
-              pb_node->value->vec4_value = pb_vec4_new (data,
+              pb_node->value->vec4_value = pb_vec4_new (engine,
                                                         vec4_node->value[0],
                                                         vec4_node->value[1],
                                                         vec4_node->value[2],
@@ -192,14 +192,14 @@ pb_path_new (RigData *data, RigPath *path)
             {
               RigNodeColor *color_node = (RigNodeColor *) node;
               pb_node->value->color_value =
-                pb_color_new (data, &color_node->value);
+                pb_color_new (engine, &color_node->value);
               break;
             }
         case RUT_PROPERTY_TYPE_QUATERNION:
             {
               RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
               pb_node->value->quaternion_value =
-                pb_rotation_new (data, &quaternion_node->value);
+                pb_rotation_new (engine, &quaternion_node->value);
               break;
             }
         case RUT_PROPERTY_TYPE_INTEGER:
@@ -236,11 +236,11 @@ pb_path_new (RigData *data, RigPath *path)
 }
 
 static Rig__PropertyValue *
-pb_property_value_new (RigData *data,
+pb_property_value_new (RigEngine *engine,
                        const RutBoxed *value)
 {
   Rig__PropertyValue *pb_value =
-    pb_new (data, sizeof (Rig__PropertyValue), rig__property_value__init);
+    pb_new (engine, sizeof (Rig__PropertyValue), rig__property_value__init);
 
   switch (value->type)
     {
@@ -275,18 +275,18 @@ pb_property_value_new (RigData *data,
 
     case RUT_PROPERTY_TYPE_QUATERNION:
       pb_value->quaternion_value =
-        pb_rotation_new (data, &value->d.quaternion_val);
+        pb_rotation_new (engine, &value->d.quaternion_val);
       break;
 
     case RUT_PROPERTY_TYPE_VEC3:
-      pb_value->vec3_value = pb_vec3_new (data,
+      pb_value->vec3_value = pb_vec3_new (engine,
                                           value->d.vec3_val[0],
                                           value->d.vec3_val[1],
                                           value->d.vec3_val[2]);
       break;
 
     case RUT_PROPERTY_TYPE_VEC4:
-      pb_value->vec4_value = pb_vec4_new (data,
+      pb_value->vec4_value = pb_vec4_new (engine,
                                           value->d.vec4_val[0],
                                           value->d.vec4_val[1],
                                           value->d.vec4_val[2],
@@ -294,7 +294,7 @@ pb_property_value_new (RigData *data,
       break;
 
     case RUT_PROPERTY_TYPE_COLOR:
-      pb_value->color_value = pb_color_new (data, &value->d.color_val);
+      pb_value->color_value = pb_color_new (engine, &value->d.color_val);
       break;
 
     case RUT_PROPERTY_TYPE_ENUM:
@@ -355,12 +355,12 @@ serialize_component_cb (RutComponent *component,
 {
   const RutType *type = rut_object_get_type (component);
   Serializer *serializer = user_data;
-  RigData *data = serializer->data;
+  RigEngine *engine = serializer->engine;
   int component_id;
   Rig__Entity__Component *pb_component;
 
   pb_component =
-    rut_memory_stack_alloc (data->serialization_stack,
+    rut_memory_stack_alloc (engine->serialization_stack,
                             sizeof (Rig__Entity__Component));
   rig__entity__component__init (pb_component);
 
@@ -384,14 +384,14 @@ serialize_component_cb (RutComponent *component,
       Rig__Entity__Component__Light *pb_light;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__LIGHT;
-      pb_light = pb_new (data,
+      pb_light = pb_new (engine,
                          sizeof (Rig__Entity__Component__Light),
                          rig__entity__component__light__init);
       pb_component->light = pb_light;
 
-      pb_light->ambient = pb_color_new (data, ambient);
-      pb_light->diffuse = pb_color_new (data, diffuse);
-      pb_light->specular = pb_color_new (data, specular);
+      pb_light->ambient = pb_color_new (engine, ambient);
+      pb_light->diffuse = pb_color_new (engine, diffuse);
+      pb_light->specular = pb_color_new (engine, specular);
     }
   else if (type == &rut_material_type)
     {
@@ -404,14 +404,14 @@ serialize_component_cb (RutComponent *component,
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MATERIAL;
 
-      pb_material = pb_new (data,
+      pb_material = pb_new (engine,
                             sizeof (Rig__Entity__Component__Material),
                             rig__entity__component__material__init);
       pb_component->material = pb_material;
 
-      pb_material->ambient = pb_color_new (data, ambient);
-      pb_material->diffuse = pb_color_new (data, diffuse);
-      pb_material->specular = pb_color_new (data, specular);
+      pb_material->ambient = pb_color_new (engine, ambient);
+      pb_material->diffuse = pb_color_new (engine, diffuse);
+      pb_material->specular = pb_color_new (engine, specular);
 
       pb_material->has_shininess = TRUE;
       pb_material->shininess = rut_material_get_shininess (material);
@@ -425,7 +425,7 @@ serialize_component_cb (RutComponent *component,
 
           if (id)
             {
-              pb_material->texture = pb_new (data,
+              pb_material->texture = pb_new (engine,
                                              sizeof (Rig__Texture),
                                              rig__texture__init);
               pb_material->texture->has_asset_id = TRUE;
@@ -439,7 +439,7 @@ serialize_component_cb (RutComponent *component,
           uint64_t id = serializer_lookup_object_id (serializer, asset);
           if (id)
             {
-              pb_material->normal_map = pb_new (data,
+              pb_material->normal_map = pb_new (engine,
                                                 sizeof (Rig__NormalMap),
                                                 rig__normal_map__init);
               pb_material->normal_map->asset_id = id;
@@ -452,7 +452,7 @@ serialize_component_cb (RutComponent *component,
           uint64_t id = serializer_lookup_object_id (serializer, asset);
           if (id)
             {
-              pb_material->alpha_mask = pb_new (data,
+              pb_material->alpha_mask = pb_new (engine,
                                                 sizeof (Rig__AlphaMask),
                                                 rig__alpha_mask__init);
               pb_material->alpha_mask->asset_id = id;
@@ -464,7 +464,7 @@ serialize_component_cb (RutComponent *component,
       CoglBool shaped = rut_shape_get_shaped (RUT_SHAPE (component));
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
-      pb_component->shape = pb_new (data,
+      pb_component->shape = pb_new (engine,
                                     sizeof (Rig__Entity__Component__Shape),
                                     rig__entity__component__shape__init);
       pb_component->shape->has_shaped = TRUE;
@@ -473,7 +473,7 @@ serialize_component_cb (RutComponent *component,
   else if (type == &rut_diamond_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
-      pb_component->diamond = pb_new (data,
+      pb_component->diamond = pb_new (engine,
                                       sizeof (Rig__Entity__Component__Diamond),
                                       rig__entity__component__diamond__init);
       pb_component->diamond->has_size = TRUE;
@@ -489,7 +489,7 @@ serialize_component_cb (RutComponent *component,
       g_warn_if_fail (asset_id != 0);
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MODEL;
-      pb_component->model = pb_new (data,
+      pb_component->model = pb_new (engine,
                                     sizeof (Rig__Entity__Component__Model),
                                     rig__entity__component__model__init);
 
@@ -506,7 +506,7 @@ serialize_component_cb (RutComponent *component,
       Rig__Entity__Component__Text *pb_text;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
-      pb_text = pb_new (data,
+      pb_text = pb_new (engine,
                         sizeof (Rig__Entity__Component__Text),
                         rig__entity__component__text__init);
       pb_component->text = pb_text;
@@ -515,7 +515,7 @@ serialize_component_cb (RutComponent *component,
 
       pb_text->text = (char *)rut_text_get_text (text);
       pb_text->font = (char *)rut_text_get_font_name (text);
-      pb_text->color = pb_color_new (data, color);
+      pb_text->color = pb_color_new (engine, color);
     }
 }
 
@@ -525,7 +525,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
                                    void *user_data)
 {
   Serializer *serializer = user_data;
-  RigData *data = serializer->data;
+  RigEngine *engine = serializer->engine;
   const RutType *type = rut_object_get_type (object);
   RutObject *parent = rut_graphable_get_parent (object);
   RutEntity *entity;
@@ -553,7 +553,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
     return RUT_TRAVERSE_VISIT_CONTINUE;
 
 
-  pb_entity = rut_memory_stack_alloc (data->serialization_stack,
+  pb_entity = rut_memory_stack_alloc (engine->serialization_stack,
                                       sizeof (Rig__Entity));
   rig__entity__init (pb_entity);
 
@@ -583,7 +583,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 
   q = rut_entity_get_rotation (entity);
 
-  position = rut_memory_stack_alloc (data->serialization_stack,
+  position = rut_memory_stack_alloc (engine->serialization_stack,
                                      sizeof (Rig__Vec3));
   rig__vec3__init (position);
   position->x = rut_entity_get_x (entity);
@@ -598,7 +598,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
       pb_entity->scale = scale;
     }
 
-  pb_entity->rotation = pb_rotation_new (data, q);
+  pb_entity->rotation = pb_rotation_new (engine, q);
 
   pb_entity->has_cast_shadow = TRUE;
   pb_entity->cast_shadow = rut_entity_get_cast_shadow (entity);
@@ -611,7 +611,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 
   pb_entity->n_components = serializer->n_pb_components;
   pb_entity->components =
-    rut_memory_stack_alloc (data->serialization_stack,
+    rut_memory_stack_alloc (engine->serialization_stack,
                             sizeof (void *) * pb_entity->n_components);
 
   for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
@@ -626,12 +626,12 @@ serialize_property_cb (RigTransitionPropData *prop_data,
                   void *user_data)
 {
   Serializer *serializer = user_data;
-  RigData *data = serializer->data;
+  RigEngine *engine = serializer->engine;
   RutObject *object;
   uint64_t id;
 
   Rig__Transition__Property *pb_property =
-    pb_new (data,
+    pb_new (engine,
             sizeof (Rig__Transition__Property),
             rig__transition__property__init);
 
@@ -653,10 +653,10 @@ serialize_property_cb (RigTransitionPropData *prop_data,
   pb_property->has_animated = TRUE;
   pb_property->animated = prop_data->animated;
 
-  pb_property->constant = pb_property_value_new (data, &prop_data->constant_value);
+  pb_property->constant = pb_property_value_new (engine, &prop_data->constant_value);
 
   if (prop_data->path && prop_data->path->length)
-    pb_property->path = pb_path_new (data, prop_data->path);
+    pb_property->path = pb_path_new (engine, prop_data->path);
 }
 
 static void
@@ -666,7 +666,7 @@ free_id_slice (void *id)
 }
 
 Rig__UI *
-rig_pb_serialize_ui (RigData *data,
+rig_pb_serialize_ui (RigEngine *engine,
                      RigAssetReferenceCallback asset_callback,
                      void *user_data)
 {
@@ -677,12 +677,12 @@ rig_pb_serialize_ui (RigData *data,
   Rig__Device *device;
 
   memset (&serializer, 0, sizeof (serializer));
-  rut_memory_stack_rewind (data->serialization_stack);
+  rut_memory_stack_rewind (engine->serialization_stack);
 
-  ui = pb_new (data, sizeof (Rig__UI), rig__ui__init);
-  device = pb_new (data, sizeof (Rig__Device), rig__device__init);
+  ui = pb_new (engine, sizeof (Rig__UI), rig__ui__init);
+  device = pb_new (engine, sizeof (Rig__Device), rig__device__init);
 
-  serializer.data = data;
+  serializer.engine = engine;
 
   /* This hash table maps object pointers to uint64_t ids while saving */
   serializer.id_map = g_hash_table_new_full (NULL, /* direct hash */
@@ -700,24 +700,24 @@ rig_pb_serialize_ui (RigData *data,
   ui->device = device;
 
   device->has_width = TRUE;
-  device->width = data->device_width;
+  device->width = engine->device_width;
   device->has_height = TRUE;
-  device->height = data->device_height;
-  device->background = pb_color_new (data, &data->background_color);
+  device->height = engine->device_height;
+  device->background = pb_color_new (engine, &engine->background_color);
 
   /* Assets */
 
-  ui->n_assets = g_list_length (data->assets);
+  ui->n_assets = g_list_length (engine->assets);
   if (ui->n_assets)
     {
       int i;
-      ui->assets = rut_memory_stack_alloc (data->serialization_stack,
+      ui->assets = rut_memory_stack_alloc (engine->serialization_stack,
                                            ui->n_assets * sizeof (void *));
-      for (i = 0, l = data->assets; l; i++, l = l->next)
+      for (i = 0, l = engine->assets; l; i++, l = l->next)
         {
           RutAsset *asset = l->data;
           Rig__Asset *pb_asset =
-            pb_new (data, sizeof (Rig__Asset), rig__asset__init);
+            pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
 
           register_serializer_object (&serializer, asset, serializer.next_id);
           pb_asset->has_id = TRUE;
@@ -731,31 +731,31 @@ rig_pb_serialize_ui (RigData *data,
 
 
   serializer.n_pb_entities = 0;
-  rut_graphable_traverse (data->scene,
+  rut_graphable_traverse (engine->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           _rut_entitygraph_pre_serialize_cb,
                           NULL,
                           &serializer);
 
   ui->n_entities = serializer.n_pb_entities;
-  ui->entities = rut_memory_stack_alloc (data->serialization_stack,
+  ui->entities = rut_memory_stack_alloc (engine->serialization_stack,
                                          sizeof (void *) * ui->n_entities);
   for (i = 0, l = serializer.pb_entities; l; i++, l = l->next)
     ui->entities[i] = l->data;
   g_list_free (serializer.pb_entities);
 
-  ui->n_transitions = g_list_length (data->transitions);
+  ui->n_transitions = g_list_length (engine->transitions);
   if (ui->n_transitions)
     {
       ui->transitions =
-        rut_memory_stack_alloc (data->serialization_stack,
+        rut_memory_stack_alloc (engine->serialization_stack,
                                 sizeof (void *) * ui->n_transitions);
 
-      for (i = 0, l = data->transitions; l; i++, l = l->next)
+      for (i = 0, l = engine->transitions; l; i++, l = l->next)
         {
           RigTransition *transition = l->data;
           Rig__Transition *pb_transition =
-            pb_new (data, sizeof (Rig__Transition), rig__transition__init);
+            pb_new (engine, sizeof (Rig__Transition), rig__transition__init);
           GList *l2;
           int j;
 
@@ -772,7 +772,7 @@ rig_pb_serialize_ui (RigData *data,
 
           pb_transition->n_properties = serializer.n_pb_properties;
           pb_transition->properties =
-            rut_memory_stack_alloc (data->serialization_stack,
+            rut_memory_stack_alloc (engine->serialization_stack,
                                     sizeof (void *) * pb_transition->n_properties);
           for (j = 0, l2 = serializer.pb_properties; l2; j++, l2 = l2->next)
             pb_transition->properties[j] = l2->data;
@@ -880,7 +880,7 @@ rig_pb_serialize_asset (RutAsset *asset)
 
 typedef struct _UnSerializer
 {
-  RigData *data;
+  RigEngine *engine;
 
   GList *assets;
   GList *entities;
@@ -1004,7 +1004,7 @@ pb_init_boxed_value (UnSerializer *unserializer,
       break;
 
     case RUT_PROPERTY_TYPE_COLOR:
-      pb_init_color (unserializer->data->ctx,
+      pb_init_color (unserializer->engine->ctx,
                      &boxed->d.color_val, pb_value->color_value);
       break;
 
@@ -1122,13 +1122,13 @@ unserialize_components (UnSerializer *unserializer,
             CoglColor diffuse;
             CoglColor specular;
 
-            light = rut_light_new (unserializer->data->ctx);
+            light = rut_light_new (unserializer->engine->ctx);
 
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &ambient, pb_light->ambient);
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &diffuse, pb_light->diffuse);
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &specular, pb_light->specular);
 
             rut_light_set_ambient (light, &ambient);
@@ -1153,7 +1153,7 @@ unserialize_components (UnSerializer *unserializer,
             CoglColor specular;
             RutAsset *asset;
 
-            material = rut_material_new (unserializer->data->ctx, NULL);
+            material = rut_material_new (unserializer->engine->ctx, NULL);
 
             if (pb_material->texture &&
                 pb_material->texture->has_asset_id)
@@ -1203,11 +1203,11 @@ unserialize_components (UnSerializer *unserializer,
                 rut_material_set_alpha_mask_asset (material, asset);
               }
 
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &ambient, pb_material->ambient);
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &diffuse, pb_material->diffuse);
-            pb_init_color (unserializer->data->ctx,
+            pb_init_color (unserializer->engine->ctx,
                            &specular, pb_material->specular);
 
             rut_material_set_ambient (material, &ambient);
@@ -1240,7 +1240,7 @@ unserialize_components (UnSerializer *unserializer,
                 break;
               }
 
-            model = rut_model_new_from_asset (unserializer->data->ctx, asset);
+            model = rut_model_new_from_asset (unserializer->engine->ctx, asset);
             if (model)
               {
                 rut_refable_unref (asset);
@@ -1253,13 +1253,13 @@ unserialize_components (UnSerializer *unserializer,
           {
             Rig__Entity__Component__Text *pb_text = pb_component->text;
             RutText *text =
-              rut_text_new_with_text (unserializer->data->ctx,
+              rut_text_new_with_text (unserializer->engine->ctx,
                                       pb_text->font, pb_text->text);
 
             if (pb_text->color)
               {
                 CoglColor color;
-                pb_init_color (unserializer->data->ctx, &color, pb_text->color);
+                pb_init_color (unserializer->engine->ctx, &color, pb_text->color);
                 rut_text_set_color (text, &color);
               }
 
@@ -1321,7 +1321,7 @@ unserialize_components (UnSerializer *unserializer,
                 break;
               }
 
-            shape = rut_shape_new (unserializer->data->ctx,
+            shape = rut_shape_new (unserializer->engine->ctx,
                                    shaped,
                                    cogl_texture_get_width (texture),
                                    cogl_texture_get_height (texture));
@@ -1361,7 +1361,7 @@ unserialize_components (UnSerializer *unserializer,
                 break;
               }
 
-            diamond = rut_diamond_new (unserializer->data->ctx,
+            diamond = rut_diamond_new (unserializer->engine->ctx,
                                        diamond_size,
                                        cogl_texture_get_width (texture),
                                        cogl_texture_get_height (texture));
@@ -1400,7 +1400,7 @@ unserialize_entities (UnSerializer *unserializer,
           continue;
         }
 
-      entity = rut_entity_new (unserializer->data->ctx);
+      entity = rut_entity_new (unserializer->engine->ctx);
 
       if (pb_entity->has_parent_id)
         {
@@ -1484,12 +1484,12 @@ unserialize_assets (UnSerializer *unserializer,
        * E.g. when running as a slave then assets actually get loaded
        * separately and cached before loading a UI.
        */
-      asset = rig_lookup_asset (unserializer->data, pb_asset->path);
+      asset = rig_lookup_asset (unserializer->engine, pb_asset->path);
 
-      if (!asset && unserializer->data->ctx->assets_location)
+      if (!asset && unserializer->engine->ctx->assets_location)
         {
           char *full_path =
-            g_build_filename (unserializer->data->ctx->assets_location,
+            g_build_filename (unserializer->engine->ctx->assets_location,
                               pb_asset->path, NULL);
           GFile *asset_file = g_file_new_for_path (full_path);
           GFileInfo *info = g_file_query_info (asset_file,
@@ -1499,7 +1499,7 @@ unserialize_assets (UnSerializer *unserializer,
                                                NULL);
           if (info)
             {
-              asset = rig_load_asset (unserializer->data, info, asset_file);
+              asset = rig_load_asset (unserializer->engine, info, asset_file);
               g_object_unref (info);
             }
 
@@ -1578,7 +1578,7 @@ unserialize_path_nodes (UnSerializer *unserializer,
         case RUT_PROPERTY_TYPE_COLOR:
           {
             CoglColor color;
-            pb_init_color (unserializer->data->ctx, &color, pb_value->color_value);
+            pb_init_color (unserializer->engine->ctx, &color, pb_value->color_value);
             rig_path_insert_color (path, t, &color);
             break;
           }
@@ -1671,7 +1671,7 @@ unserialize_transition_properties (UnSerializer *unserializer,
           Rig__Path *pb_path = pb_property->path;
 
           prop_data->path =
-            rig_path_new (unserializer->data->ctx,
+            rig_path_new (unserializer->engine->ctx,
                           prop_data->property->spec->type);
 
           unserialize_path_nodes (unserializer,
@@ -1700,7 +1700,7 @@ unserialize_transitions (UnSerializer *unserializer,
 
       id = pb_transition->id;
 
-      transition = rig_create_transition (unserializer->data, id);
+      transition = rig_create_transition (unserializer->engine, id);
 
       unserialize_transition_properties (unserializer,
                                   transition,
@@ -1716,20 +1716,20 @@ static void
 update_transition_property_cb (RigTransitionPropData *prop_data,
                                void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  rig_transition_update_property (data->transitions->data,
+  rig_transition_update_property (engine->transitions->data,
                                   prop_data->property);
 }
 
 void
-rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
+rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
 {
   UnSerializer unserializer;
   GList *l;
 
   memset (&unserializer, 0, sizeof (unserializer));
-  unserializer.data = data;
+  unserializer.engine = engine;
 
   /* This hash table maps from uint64_t ids to objects while loading */
   unserializer.id_map = g_hash_table_new_full (g_int64_hash,
@@ -1737,19 +1737,19 @@ rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
                                                free_id_slice,
                                                NULL);
 
-  rut_memory_stack_rewind (data->serialization_stack);
+  rut_memory_stack_rewind (engine->serialization_stack);
 
   if (pb_ui->device)
     {
       Rig__Device *device = pb_ui->device;
       if (device->has_width)
-        data->device_width = device->width;
+        engine->device_width = device->width;
       if (device->has_height)
-        data->device_height = device->height;
+        engine->device_height = device->height;
 
       if (device->background)
-        pb_init_color (data->ctx,
-                       &data->background_color,
+        pb_init_color (engine->ctx,
+                       &engine->background_color,
                        device->background);
     }
 
@@ -1767,27 +1767,27 @@ rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
 
   g_hash_table_destroy (unserializer.id_map);
 
-  rig_free_ux (data);
+  rig_free_ux (engine);
 
   for (l = unserializer.entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)
-        rut_graphable_add_child (data->scene, l->data);
+        rut_graphable_add_child (engine->scene, l->data);
     }
 
   if (unserializer.light)
-    data->light = unserializer.light;
+    engine->light = unserializer.light;
 
-  data->transitions = unserializer.transitions;
+  engine->transitions = unserializer.transitions;
 
-  data->assets = unserializer.assets;
+  engine->assets = unserializer.assets;
 
   /* Reset all of the property values to their current value according
    * to the first transition */
-  if (data->transitions)
-    rig_transition_foreach_property (data->transitions->data,
+  if (engine->transitions)
+    rig_transition_foreach_property (engine->transitions->data,
                                      update_transition_property_cb,
-                                     data);
+                                     engine);
 
-  rut_shell_queue_redraw (data->ctx->shell);
+  rut_shell_queue_redraw (engine->ctx->shell);
 }

@@ -23,7 +23,7 @@ typedef enum _RigSplitViewJoin
 } RigSplitViewJoin;
 
 RigSplitView *
-rig_split_view_new (RigData *data,
+rig_split_view_new (RigEngine *engine,
                     RigSplitViewSplit split,
                     float width,
                     float height);

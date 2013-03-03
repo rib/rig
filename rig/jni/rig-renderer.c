@@ -22,7 +22,7 @@
 #include "config.h"
 #endif
 
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-renderer.h"
 
 typedef enum _CacheSlot
@@ -141,7 +141,7 @@ set_focal_parameters (CoglPipeline *pipeline,
 }
 
 void
-rig_renderer_init (RigData *data)
+rig_renderer_init (RigEngine *engine)
 {
   /* We always want to use exactly the same snippets when creating
    * similar pipelines so that we can take advantage of Cogl's program
@@ -149,7 +149,7 @@ rig_renderer_init (RigData *data)
    * not the contents of the snippets. Therefore we just create the
    * snippets we're going to use upfront and retain them */
 
-  data->alpha_mask_snippet =
+  engine->alpha_mask_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* definitions */
                       "uniform float material_alpha_threshold;\n",
@@ -159,7 +159,7 @@ rig_renderer_init (RigData *data)
                       "    material_alpha_threshold)\n"
                       "  discard;\n");
 
-  data->lighting_vertex_snippet =
+  engine->lighting_vertex_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform mat3 normal_matrix;\n"
@@ -170,7 +170,7 @@ rig_renderer_init (RigData *data)
                       "                      cogl_position_in);\n"
                       );
 
-  data->normal_map_vertex_snippet =
+  engine->normal_map_vertex_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform vec3 light0_direction_norm;\n"
@@ -196,7 +196,7 @@ rig_renderer_init (RigData *data)
 
 
   /* Vertex shader setup for shadow mapping */
-  data->shadow_mapping_vertex_snippet =
+  engine->shadow_mapping_vertex_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
                       /* definitions */
@@ -207,7 +207,7 @@ rig_renderer_init (RigData *data)
                       "shadow_coords = light_shadow_matrix *\n"
                       "                cogl_position_in;\n");
 
-  data->blended_discard_snippet =
+  engine->blended_discard_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* definitions */
                       NULL,
@@ -218,7 +218,7 @@ rig_renderer_init (RigData *data)
                       G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
-  data->unblended_discard_snippet =
+  engine->unblended_discard_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* definitions */
                       NULL,
@@ -228,7 +228,7 @@ rig_renderer_init (RigData *data)
                       G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
-  data->premultiply_snippet =
+  engine->premultiply_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* definitions */
                       NULL,
@@ -239,7 +239,7 @@ rig_renderer_init (RigData *data)
                        * blend mode instead which should be more efficient */
                       "cogl_color_out.rgb *= cogl_color_out.a;\n");
 
-  data->unpremultiply_snippet =
+  engine->unpremultiply_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* definitions */
                       NULL,
@@ -253,7 +253,7 @@ rig_renderer_init (RigData *data)
                        * load for example. */
                       "cogl_color_out.rgb /= cogl_color_out.a;\n");
 
-  data->normal_map_fragment_snippet =
+  engine->normal_map_fragment_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
@@ -292,7 +292,7 @@ rig_renderer_init (RigData *data)
          "cogl_color_out.rgb = final_color.rgb;\n");
 
 
-  data->material_lighting_snippet =
+  engine->material_lighting_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
          "varying vec3 normal, eye_direction;\n"
@@ -328,7 +328,7 @@ rig_renderer_init (RigData *data)
 
          "cogl_color_out.rgb = final_color.rgb;\n");
 
-  data->simple_lighting_snippet =
+  engine->simple_lighting_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
          "varying vec3 normal, eye_direction;\n"
@@ -359,7 +359,7 @@ rig_renderer_init (RigData *data)
          "cogl_color_out.rgb = final_color.rgb;\n");
 
 
-  data->shadow_mapping_fragment_snippet =
+  engine->shadow_mapping_fragment_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
                       "varying vec4 shadow_coords;\n",
@@ -376,24 +376,24 @@ rig_renderer_init (RigData *data)
 }
 
 void
-rig_renderer_fini (RigData *data)
+rig_renderer_fini (RigEngine *engine)
 {
-  cogl_object_unref (data->alpha_mask_snippet);
-  cogl_object_unref (data->lighting_vertex_snippet);
-  cogl_object_unref (data->normal_map_vertex_snippet);
-  cogl_object_unref (data->shadow_mapping_vertex_snippet);
-  cogl_object_unref (data->blended_discard_snippet);
-  cogl_object_unref (data->unblended_discard_snippet);
-  cogl_object_unref (data->premultiply_snippet);
-  cogl_object_unref (data->unpremultiply_snippet);
-  cogl_object_unref (data->normal_map_fragment_snippet);
-  cogl_object_unref (data->material_lighting_snippet);
-  cogl_object_unref (data->simple_lighting_snippet);
-  cogl_object_unref (data->shadow_mapping_fragment_snippet);
+  cogl_object_unref (engine->alpha_mask_snippet);
+  cogl_object_unref (engine->lighting_vertex_snippet);
+  cogl_object_unref (engine->normal_map_vertex_snippet);
+  cogl_object_unref (engine->shadow_mapping_vertex_snippet);
+  cogl_object_unref (engine->blended_discard_snippet);
+  cogl_object_unref (engine->unblended_discard_snippet);
+  cogl_object_unref (engine->premultiply_snippet);
+  cogl_object_unref (engine->unpremultiply_snippet);
+  cogl_object_unref (engine->normal_map_fragment_snippet);
+  cogl_object_unref (engine->material_lighting_snippet);
+  cogl_object_unref (engine->simple_lighting_snippet);
+  cogl_object_unref (engine->shadow_mapping_fragment_snippet);
 }
 
 static CoglPipeline *
-get_entity_mask_pipeline (RigData *data,
+get_entity_mask_pipeline (RigEngine *engine,
                           RutEntity *entity,
                           RutComponent *geometry)
 {
@@ -404,13 +404,13 @@ get_entity_mask_pipeline (RigData *data,
     return cogl_object_ref (pipeline);
 
   /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!data->dof_pipeline_template))
+  if (G_UNLIKELY (!engine->dof_pipeline_template))
     {
       CoglPipeline *pipeline;
       CoglDepthState depth_state;
       CoglSnippet *snippet;
 
-      pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+      pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
       cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
 
@@ -459,19 +459,19 @@ get_entity_mask_pipeline (RigData *data,
       cogl_object_unref (snippet);
 #endif
 
-      data->dof_pipeline_template = pipeline;
+      engine->dof_pipeline_template = pipeline;
     }
 
   /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!data->dof_diamond_pipeline))
+  if (G_UNLIKELY (!engine->dof_diamond_pipeline))
     {
       CoglPipeline *dof_diamond_pipeline =
-        cogl_pipeline_copy (data->dof_pipeline_template);
+        cogl_pipeline_copy (engine->dof_pipeline_template);
       CoglSnippet *snippet;
 
       cogl_pipeline_set_layer_texture (dof_diamond_pipeline,
                                        0,
-                                       data->ctx->circle_texture);
+                                       engine->ctx->circle_texture);
 
       snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                                   /* declarations */
@@ -486,14 +486,14 @@ get_entity_mask_pipeline (RigData *data,
       cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      data->dof_diamond_pipeline = dof_diamond_pipeline;
+      engine->dof_diamond_pipeline = dof_diamond_pipeline;
     }
 
   /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!data->dof_unshaped_pipeline))
+  if (G_UNLIKELY (!engine->dof_unshaped_pipeline))
     {
       CoglPipeline *dof_unshaped_pipeline =
-        cogl_pipeline_copy (data->dof_pipeline_template);
+        cogl_pipeline_copy (engine->dof_pipeline_template);
       CoglSnippet *snippet;
 
       snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -509,14 +509,14 @@ get_entity_mask_pipeline (RigData *data,
       cogl_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      data->dof_unshaped_pipeline = dof_unshaped_pipeline;
+      engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
     }
 
   /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!data->dof_pipeline))
+  if (G_UNLIKELY (!engine->dof_pipeline))
     {
       CoglPipeline *dof_pipeline =
-        cogl_pipeline_copy (data->dof_pipeline_template);
+        cogl_pipeline_copy (engine->dof_pipeline_template);
       CoglSnippet *snippet;
 
       /* store the bluriness in the alpha channel */
@@ -528,19 +528,19 @@ get_entity_mask_pipeline (RigData *data,
       cogl_pipeline_add_snippet (dof_pipeline, snippet);
       cogl_object_unref (snippet);
 
-      data->dof_pipeline = dof_pipeline;
+      engine->dof_pipeline = dof_pipeline;
     }
 
   if (rut_object_get_type (geometry) == &rut_diamond_type)
     {
-      pipeline = cogl_object_ref (data->dof_diamond_pipeline);
+      pipeline = cogl_object_ref (engine->dof_diamond_pipeline);
     }
   else if (rut_object_get_type (geometry) == &rut_shape_type)
     {
       RutMaterial *material =
         rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
-      pipeline = cogl_pipeline_copy (data->dof_unshaped_pipeline);
+      pipeline = cogl_pipeline_copy (engine->dof_unshaped_pipeline);
 
       if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
         {
@@ -569,12 +569,12 @@ get_entity_mask_pipeline (RigData *data,
               cogl_pipeline_set_layer_texture (pipeline, 2,
                                                rut_asset_get_texture (alpha_mask_asset));
 
-              cogl_pipeline_add_snippet (pipeline, data->alpha_mask_snippet);
+              cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
             }
         }
     }
   else
-    pipeline = cogl_object_ref (data->dof_pipeline);
+    pipeline = cogl_object_ref (engine->dof_pipeline);
 
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
 
@@ -592,7 +592,7 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
 
   /* TODO: cache the bias * light_projection * light_view matrix! */
 
-  /* Move the unit data from [-1,1] to [0,1], column major order */
+  /* Move the unit engine from [-1,1] to [0,1], column major order */
   float bias[16] = {
     .5f, .0f, .0f, .0f,
     .0f, .5f, .0f, .0f,
@@ -611,7 +611,7 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
 }
 
 static CoglPipeline *
-get_entity_color_pipeline (RigData *data,
+get_entity_color_pipeline (RigEngine *engine,
                            RutEntity *entity,
                            RutComponent *geometry,
                            CoglBool blended)
@@ -637,7 +637,7 @@ get_entity_color_pipeline (RigData *data,
       goto FOUND;
     }
 
-  pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+  pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
   if (material)
@@ -687,13 +687,13 @@ get_entity_color_pipeline (RigData *data,
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   /* Vertex shader setup for lighting */
-  cogl_pipeline_add_snippet (pipeline, data->lighting_vertex_snippet);
+  cogl_pipeline_add_snippet (pipeline, engine->lighting_vertex_snippet);
 
   if (normal_map)
-    cogl_pipeline_add_snippet (pipeline, data->normal_map_vertex_snippet);
+    cogl_pipeline_add_snippet (pipeline, engine->normal_map_vertex_snippet);
 
   if (rut_entity_get_receive_shadow (entity))
-    cogl_pipeline_add_snippet (pipeline, data->shadow_mapping_vertex_snippet);
+    cogl_pipeline_add_snippet (pipeline, engine->shadow_mapping_vertex_snippet);
 
   /* and fragment shader */
 
@@ -704,10 +704,10 @@ get_entity_color_pipeline (RigData *data,
    */
   cogl_pipeline_add_snippet (pipeline,
                              blended ?
-                             data->blended_discard_snippet :
-                             data->unblended_discard_snippet);
+                             engine->blended_discard_snippet :
+                             engine->unblended_discard_snippet);
 
-  cogl_pipeline_add_snippet (pipeline, data->unpremultiply_snippet);
+  cogl_pipeline_add_snippet (pipeline, engine->unpremultiply_snippet);
 
   if (material)
     {
@@ -719,7 +719,7 @@ get_entity_color_pipeline (RigData *data,
           cogl_pipeline_set_layer_combine (pipeline, 2, "RGBA=REPLACE(PREVIOUS)", NULL);
           cogl_pipeline_set_layer_texture (pipeline, 2, alpha_mask);
 
-          cogl_pipeline_add_snippet (pipeline, data->alpha_mask_snippet);
+          cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
         }
 
       if (normal_map)
@@ -730,16 +730,16 @@ get_entity_color_pipeline (RigData *data,
           cogl_pipeline_set_layer_combine (pipeline, 5, "RGBA=REPLACE(PREVIOUS)", NULL);
           cogl_pipeline_set_layer_texture (pipeline, 5, normal_map);
 
-          snippet = data->normal_map_fragment_snippet;
+          snippet = engine->normal_map_fragment_snippet;
         }
       else
         {
-          snippet = data->material_lighting_snippet;
+          snippet = engine->material_lighting_snippet;
         }
     }
   else
     {
-      snippet = data->simple_lighting_snippet;
+      snippet = engine->simple_lighting_snippet;
     }
 
   cogl_pipeline_add_snippet (pipeline, snippet);
@@ -748,10 +748,10 @@ get_entity_color_pipeline (RigData *data,
     {
       /* Hook the shadow map sampling */
 
-      cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_map);
+      cogl_pipeline_set_layer_texture (pipeline, 7, engine->shadow_map);
       /* For debugging the shadow mapping... */
-      //cogl_pipeline_set_layer_texture (pipeline, 7, data->shadow_color);
-      //cogl_pipeline_set_layer_texture (pipeline, 7, data->gradient);
+      //cogl_pipeline_set_layer_texture (pipeline, 7, engine->shadow_color);
+      //cogl_pipeline_set_layer_texture (pipeline, 7, engine->gradient);
 
       /* We don't want this layer to be automatically modulated with the
        * previous layers so we set its combine mode to "REPLACE" so it
@@ -760,10 +760,10 @@ get_entity_color_pipeline (RigData *data,
 
       /* Handle shadow mapping */
       cogl_pipeline_add_snippet (pipeline,
-                                 data->shadow_mapping_fragment_snippet);
+                                 engine->shadow_mapping_fragment_snippet);
     }
 
-  cogl_pipeline_add_snippet (pipeline, data->premultiply_snippet);
+  cogl_pipeline_add_snippet (pipeline, engine->premultiply_snippet);
 
   if (rut_object_get_type (geometry) == &rut_shape_type)
     {
@@ -799,7 +799,7 @@ get_entity_color_pipeline (RigData *data,
 FOUND:
 
   /* FIXME: there's lots to optimize about this! */
-  shadow_fb = COGL_FRAMEBUFFER (data->shadow_fb);
+  shadow_fb = COGL_FRAMEBUFFER (engine->shadow_fb);
 
   /* update uniforms in pipelines */
   {
@@ -817,7 +817,7 @@ FOUND:
     rut_graphable_get_transform (entity, &model_transform);
 
     get_light_modelviewprojection (&model_transform,
-                                   data->light,
+                                   engine->light,
                                    &light_projection,
                                    &light_shadow_matrix);
 
@@ -836,17 +836,17 @@ FOUND:
 }
 
 static CoglPipeline *
-get_entity_pipeline (RigData *data,
+get_entity_pipeline (RigEngine *engine,
                      RutEntity *entity,
                      RutComponent *geometry,
                      RigPass pass)
 {
   if (pass == RIG_PASS_COLOR_UNBLENDED)
-    return get_entity_color_pipeline (data, entity, geometry, FALSE);
+    return get_entity_color_pipeline (engine, entity, geometry, FALSE);
   else if (pass == RIG_PASS_COLOR_BLENDED)
-    return get_entity_color_pipeline (data, entity, geometry, TRUE);
+    return get_entity_color_pipeline (engine, entity, geometry, TRUE);
   else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
-    return get_entity_mask_pipeline (data, entity, geometry);
+    return get_entity_mask_pipeline (engine, entity, geometry);
 
   g_warn_if_reached ();
   return NULL;
@@ -919,7 +919,7 @@ rig_journal_flush (GArray *journal,
       float normal_matrix[9];
       RutMaterial *material;
 
-      pipeline = get_entity_pipeline (paint_ctx->data,
+      pipeline = get_entity_pipeline (paint_ctx->engine,
                                       entity,
                                       geometry,
                                       paint_ctx->pass);
@@ -937,7 +937,7 @@ rig_journal_flush (GArray *journal,
                paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
         {
           int location;
-          RutLight *light = rut_entity_get_component (paint_ctx->data->light,
+          RutLight *light = rut_entity_get_component (paint_ctx->engine->light,
                                                       RUT_COMPONENT_TYPE_LIGHT);
           /* FIXME: only update the lighting uniforms when the light has
            * actually moved! */
@@ -986,7 +986,7 @@ rig_journal_flush (GArray *journal,
 }
 
 void
-rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
+rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass)
 {
   RutCamera *camera_component =
     rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
@@ -996,9 +996,9 @@ rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
 
   /* translate to z_2d and scale */
   if (!shadow_pass)
-    view = data->main_view;
+    view = engine->main_view;
   else
-    view = data->identity;
+    view = engine->identity;
 
   /* apply the camera viewing transform */
   rut_graphable_get_transform (camera, &transform);
@@ -1018,7 +1018,7 @@ rig_camera_update_view (RigData *data, RutEntity *camera, CoglBool shadow_pass)
 }
 
 static void
-draw_entity_camera_frustum (RigData *data,
+draw_entity_camera_frustum (RigEngine *engine,
                             RutEntity *entity,
                             CoglFramebuffer *fb)
 {
@@ -1070,14 +1070,14 @@ entitygraph_pre_paint_cb (RutObject *object,
         rut_entity_get_component (object, RUT_COMPONENT_TYPE_GEOMETRY);
       if (!geometry)
         {
-          if (!paint_ctx->data->play_mode &&
-              object == paint_ctx->data->light)
-            draw_entity_camera_frustum (paint_ctx->data, object, fb);
+          if (!paint_ctx->engine->play_mode &&
+              object == paint_ctx->engine->light)
+            draw_entity_camera_frustum (paint_ctx->engine, object, fb);
           return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
       cogl_framebuffer_get_modelview_matrix (fb, &matrix);
-      rig_journal_log (paint_ctx->data->journal,
+      rig_journal_log (paint_ctx->engine->journal,
                        paint_ctx,
                        entity,
                        &matrix);
@@ -1107,33 +1107,33 @@ static void
 paint_scene (RigPaintContext *paint_ctx)
 {
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RigData *data = paint_ctx->data;
-  CoglContext *ctx = data->ctx->cogl_context;
+  RigEngine *engine = paint_ctx->engine;
+  CoglContext *ctx = engine->ctx->cogl_context;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
 
   if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
       cogl_pipeline_set_color4f (pipeline,
-                                 data->background_color.red,
-                                 data->background_color.green,
-                                 data->background_color.blue,
-                                 data->background_color.alpha);
+                                 engine->background_color.red,
+                                 engine->background_color.green,
+                                 engine->background_color.blue,
+                                 engine->background_color.alpha);
       cogl_framebuffer_draw_rectangle (fb,
                                        pipeline,
                                        0, 0,
-                                       data->device_width, data->device_height);
-                                       //0, 0, data->pane_width, data->pane_height);
+                                       engine->device_width, engine->device_height);
+                                       //0, 0, engine->pane_width, engine->pane_height);
       cogl_object_unref (pipeline);
     }
 
-  rut_graphable_traverse (data->scene,
+  rut_graphable_traverse (engine->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           entitygraph_pre_paint_cb,
                           entitygraph_post_paint_cb,
                           paint_ctx);
 
-  rig_journal_flush (data->journal, paint_ctx);
+  rig_journal_flush (engine->journal, paint_ctx);
 }
 
 void

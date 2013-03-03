@@ -44,7 +44,7 @@ G_DEFINE_TYPE (RigApplication, rig_application, G_TYPE_APPLICATION);
 
 struct _RigApplicationPrivate
 {
-  RigData *data;
+  RigEngine *engine;
   GDBusConnection *dbus_connection;
   GMenuModel *menu_model;
   unsigned int export_menu_id;
@@ -116,7 +116,7 @@ open_activated (GSimpleAction *action,
                 gpointer user_data)
 {
   RigApplication *app = user_data;
-  RigData *data = app->priv->data;
+  RigEngine *engine = app->priv->engine;
   GtkWidget *dialog;
 
   dialog = gtk_file_chooser_dialog_new ("Open",
@@ -131,15 +131,15 @@ open_activated (GSimpleAction *action,
   g_signal_connect_after (dialog,
                           "realize",
                           G_CALLBACK (dialog_realized_cb),
-                          data->onscreen);
+                          engine->onscreen);
 
   if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
       char *filename =
         gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
 
-      data->next_ui_filename = filename;
-      rut_shell_quit (data->shell);
+      engine->next_ui_filename = filename;
+      rut_shell_quit (engine->shell);
     }
 
   gtk_widget_destroy (dialog);
@@ -151,9 +151,9 @@ save_activated (GSimpleAction *action,
                 gpointer user_data)
 {
   RigApplication *app = user_data;
-  RigData *data = app->priv->data;
+  RigEngine *engine = app->priv->engine;
 
-  rig_save (data, data->ui_filename);
+  rig_save (engine, engine->ui_filename);
 }
 
 static void
@@ -171,7 +171,7 @@ quit_activated (GSimpleAction *action,
 {
   RigApplication *app = user_data;
 
-  rut_shell_quit (app->priv->data->shell);
+  rut_shell_quit (app->priv->engine->shell);
 }
 
 static GActionEntry
@@ -368,7 +368,7 @@ rig_application_init (RigApplication *self)
 }
 
 RigApplication *
-rig_application_new (RigData *data)
+rig_application_new (RigEngine *engine)
 {
   RigApplication *self;
 
@@ -378,7 +378,7 @@ rig_application_new (RigData *data)
                        "application-id", "org.zeroone.rig.rig",
                        NULL);
 
-  self->priv->data = data;
+  self->priv->engine = engine;
 
   return self;
 }

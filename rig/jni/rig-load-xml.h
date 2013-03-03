@@ -20,9 +20,9 @@
 #ifndef __RIG_LOAD_XML_H__
 #define __RIG_LOAD_XML_H__
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 void
-rig_load_xml (RigData *data, const char *file);
+rig_load_xml (RigEngine *engine, const char *file);
 
 #endif /* __RIG_LOAD_XML_H__ */

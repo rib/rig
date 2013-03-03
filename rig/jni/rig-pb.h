@@ -23,14 +23,14 @@
 
 #include <rut.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig.pb-c.h"
 
 typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
                                            void *user_data);
 
 Rig__UI *
-rig_pb_serialize_ui (RigData *data,
+rig_pb_serialize_ui (RigEngine *engine,
                      RigAssetReferenceCallback asset_callback,
                      void *user_data);
 
@@ -49,6 +49,6 @@ RigSerializedAsset *
 rig_pb_serialize_asset (RutAsset *asset);
 
 void
-rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui);
+rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui);
 
 #endif /* __RIG_PB_H__ */

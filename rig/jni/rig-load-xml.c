@@ -28,7 +28,7 @@
 
 #include <glib.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 enum {
   LOADER_STATE_NONE,
@@ -47,7 +47,7 @@ enum {
 
 typedef struct _Loader
 {
-  RigData *data;
+  RigEngine *engine;
 
   GList *assets;
   GList *entities;
@@ -521,7 +521,7 @@ parse_start_element (GMarkupParseContext *context,
                      GError **error)
 {
   Loader *loader = user_data;
-  RigData *data = loader->data;
+  RigEngine *engine = loader->engine;
   int state = loader_get_state (loader);
 
   if (state == LOADER_STATE_NONE &&
@@ -555,7 +555,7 @@ parse_start_element (GMarkupParseContext *context,
 
       if (background_str)
         {
-          rut_color_init_from_string (loader->data->ctx,
+          rut_color_init_from_string (loader->engine->ctx,
                                       &loader->background,
                                       background_str);
           loader->background_set = TRUE;
@@ -597,7 +597,7 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      full_path = g_build_filename (data->ctx->assets_location, path, NULL);
+      full_path = g_build_filename (engine->ctx->assets_location, path, NULL);
       asset_file = g_file_new_for_path (full_path);
       info = g_file_query_info (asset_file,
                                 "standard::*",
@@ -606,7 +606,7 @@ parse_start_element (GMarkupParseContext *context,
                                 NULL);
       if (info)
         {
-          asset = rig_load_asset (data, info, asset_file);
+          asset = rig_load_asset (engine, info, asset_file);
           if (asset)
             {
               loader->assets = g_list_prepend (loader->assets, asset);
@@ -671,7 +671,7 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      entity = rut_entity_new (loader->data->ctx);
+      entity = rut_entity_new (loader->engine->ctx);
 
       if (parent_id_str)
         {
@@ -798,7 +798,7 @@ parse_start_element (GMarkupParseContext *context,
 
       if (ambient_str)
         {
-          rut_color_init_from_string (loader->data->ctx,
+          rut_color_init_from_string (loader->engine->ctx,
                                       &loader->material_ambient,
                                       ambient_str);
           loader->ambient_set = TRUE;
@@ -808,7 +808,7 @@ parse_start_element (GMarkupParseContext *context,
 
       if (diffuse_str)
         {
-          rut_color_init_from_string (loader->data->ctx,
+          rut_color_init_from_string (loader->engine->ctx,
                                       &loader->material_diffuse,
                                       diffuse_str);
           loader->diffuse_set = TRUE;
@@ -818,7 +818,7 @@ parse_start_element (GMarkupParseContext *context,
 
       if (specular_str)
         {
-          rut_color_init_from_string (loader->data->ctx,
+          rut_color_init_from_string (loader->engine->ctx,
                                       &loader->material_specular,
                                       specular_str);
           loader->specular_set = TRUE;
@@ -868,11 +868,11 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      rut_color_init_from_string (loader->data->ctx, &ambient, ambient_str);
-      rut_color_init_from_string (loader->data->ctx, &diffuse, diffuse_str);
-      rut_color_init_from_string (loader->data->ctx, &specular, specular_str);
+      rut_color_init_from_string (loader->engine->ctx, &ambient, ambient_str);
+      rut_color_init_from_string (loader->engine->ctx, &diffuse, diffuse_str);
+      rut_color_init_from_string (loader->engine->ctx, &specular, specular_str);
 
-      light = rut_light_new (loader->data->ctx);
+      light = rut_light_new (loader->engine->ctx);
       rut_light_set_ambient (light, &ambient);
       rut_light_set_diffuse (light, &diffuse);
       rut_light_set_specular (light, &specular);
@@ -977,7 +977,7 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      model = rut_model_new_from_asset (loader->data->ctx, asset);
+      model = rut_model_new_from_asset (loader->engine->ctx, asset);
       if (model)
         {
           rut_refable_unref (asset);
@@ -1012,7 +1012,7 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
           return;
 
-      text = rut_text_new_with_text (data->ctx, font_str, text_str);
+      text = rut_text_new_with_text (engine->ctx, font_str, text_str);
 
       if (!parse_and_set_id (loader, id_str, text, error))
         return;
@@ -1020,7 +1020,7 @@ parse_start_element (GMarkupParseContext *context,
       if (color_str)
         {
           CoglColor color;
-          rut_color_init_from_string (data->ctx, &color, color_str);
+          rut_color_init_from_string (engine->ctx, &color, color_str);
           rut_text_set_color (text, &color);
         }
 
@@ -1100,7 +1100,7 @@ parse_start_element (GMarkupParseContext *context,
 
       id = g_ascii_strtoull (id_str, NULL, 10);
 
-      loader->current_transition = rig_create_transition (loader->data, id);
+      loader->current_transition = rig_create_transition (loader->engine, id);
       loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
@@ -1205,7 +1205,7 @@ parse_start_element (GMarkupParseContext *context,
            strcmp (element_name, "path") == 0)
     {
       loader->current_path =
-        rig_path_new (data->ctx,
+        rig_path_new (engine->ctx,
                       loader->current_property->property->spec->type);
 
       loader_push_state (loader, LOADER_STATE_LOADING_PATH);
@@ -1287,7 +1287,7 @@ parse_end_element (GMarkupParseContext *context,
           return;
         }
 
-      shape = rut_shape_new (loader->data->ctx,
+      shape = rut_shape_new (loader->engine->ctx,
                              loader->shaped,
                              cogl_texture_get_width (texture),
                              cogl_texture_get_height (texture));
@@ -1326,7 +1326,7 @@ parse_end_element (GMarkupParseContext *context,
           return;
         }
 
-      diamond = rut_diamond_new (loader->data->ctx,
+      diamond = rut_diamond_new (loader->engine->ctx,
                                  loader->diamond_size,
                                  cogl_texture_get_width (texture),
                                  cogl_texture_get_height (texture));
@@ -1344,7 +1344,7 @@ parse_end_element (GMarkupParseContext *context,
       RutMaterial *material;
       RutAsset *asset;
 
-      material = rut_material_new (loader->data->ctx, NULL);
+      material = rut_material_new (loader->engine->ctx, NULL);
 
       if (!check_and_set_id (loader, loader->component_id, material, error))
         return;
@@ -1441,9 +1441,9 @@ static void
 update_transition_property_cb (RigTransitionPropData *prop_data,
                                void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  rig_transition_update_property (data->transitions->data,
+  rig_transition_update_property (engine->transitions->data,
                                   prop_data->property);
 }
 
@@ -1454,7 +1454,7 @@ free_id_slice (void *id)
 }
 
 void
-rig_load_xml (RigData *data, const char *file)
+rig_load_xml (RigEngine *engine, const char *file)
 {
   Loader loader;
   GMarkupParser parser = {
@@ -1469,7 +1469,7 @@ rig_load_xml (RigData *data, const char *file)
   GList *l;
 
   memset (&loader, 0, sizeof (loader));
-  loader.data = data;
+  loader.engine = engine;
 
   /* This hash table maps from uint64_t ids to objects while loading */
   loader.id_map = g_hash_table_new_full (g_int64_hash,
@@ -1501,36 +1501,36 @@ rig_load_xml (RigData *data, const char *file)
 
   if (loader.device_found)
     {
-      data->device_width = loader.device_width;
-      data->device_height = loader.device_height;
+      engine->device_width = loader.device_width;
+      engine->device_height = loader.device_height;
 
       if (loader.background_set)
-        data->background_color = loader.background;
+        engine->background_color = loader.background;
     }
 
-  rig_free_ux (data);
+  rig_free_ux (engine);
 
   for (l = loader.entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)
-        rut_graphable_add_child (data->scene, l->data);
+        rut_graphable_add_child (engine->scene, l->data);
     }
 
   if (loader.light)
-    data->light = loader.light;
+    engine->light = loader.light;
 
-  data->transitions = loader.transitions;
+  engine->transitions = loader.transitions;
 
-  data->assets = loader.assets;
+  engine->assets = loader.assets;
 
   /* Reset all of the property values to their current value according
    * to the first transition */
-  if (data->transitions)
-    rig_transition_foreach_property (data->transitions->data,
+  if (engine->transitions)
+    rig_transition_foreach_property (engine->transitions->data,
                                      update_transition_property_cb,
-                                     data);
+                                     engine);
 
-  rut_shell_queue_redraw (data->ctx->shell);
+  rut_shell_queue_redraw (engine->ctx->shell);
 
   g_hash_table_destroy (loader.id_map);
 

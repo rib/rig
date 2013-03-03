@@ -28,14 +28,14 @@
 
 #include "rig-slave-address.h"
 #include "rig-rpc-network.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 
 typedef struct _RigSlaveMaster
 {
   RutObjectProps _parent;
   int ref_count;
 
-  RigData *data;
+  RigEngine *engine;
 
   RigSlaveAddress *slave_address;
   RigRPCClient *rpc_client;
@@ -47,6 +47,6 @@ typedef struct _RigSlaveMaster
 } RigSlaveMaster;
 
 void
-rig_connect_to_slave (RigData *data, RigSlaveAddress *slave_address);
+rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address);
 
 #endif /* __RIG_SLAVE_MASTER__ */

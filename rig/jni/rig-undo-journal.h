@@ -130,7 +130,7 @@ typedef struct _UndoRedo
 
 struct _RigUndoJournal
 {
-  RigData *data;
+  RigEngine *engine;
 
   /* List of operations that can be undone. The operations are
    * appended to the end of this list so that they are kept in order
@@ -216,7 +216,7 @@ CoglBool
 rig_undo_journal_redo (RigUndoJournal *journal);
 
 RigUndoJournal *
-rig_undo_journal_new (RigData *data);
+rig_undo_journal_new (RigEngine *engine);
 
 void
 rig_undo_journal_free (RigUndoJournal *journal);

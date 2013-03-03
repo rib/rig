@@ -28,7 +28,7 @@
 #include <sys/mman.h>
 
 #include "rig.pb-c.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-load-xml.h"
 #include "rig-pb.h"
 
@@ -42,19 +42,19 @@ typedef struct _BufferedFile
 static void
 append_to_file (ProtobufCBuffer *buffer,
                 unsigned len,
-                const unsigned char *data)
+                const unsigned char *engine)
 {
   BufferedFile *buffered_file = (BufferedFile *)buffer;
 
   if (buffered_file->error)
     return;
 
-  if (fwrite (data, len, 1, buffered_file->fp) != 1)
+  if (fwrite (engine, len, 1, buffered_file->fp) != 1)
     buffered_file->error = TRUE;
 }
 
 void
-rig_save (RigData *data, const char *path)
+rig_save (RigEngine *engine, const char *path)
 {
   struct stat sb;
   Rig__UI *ui;
@@ -69,10 +69,10 @@ rig_save (RigData *data, const char *path)
 
   g_free (rig_filename);
 
-  if (stat (data->ctx->assets_location, &sb) == -1)
-    mkdir (data->ctx->assets_location, 0777);
+  if (stat (engine->ctx->assets_location, &sb) == -1)
+    mkdir (engine->ctx->assets_location, 0777);
 
-  ui = rig_pb_serialize_ui (data, NULL, NULL);
+  ui = rig_pb_serialize_ui (engine, NULL, NULL);
 
   rig__ui__pack_to_buffer (ui, &buffered_file.base );
 
@@ -86,7 +86,7 @@ ignore_free (void *allocator_data, void *ptr)
 }
 
 void
-rig_load (RigData *data, const char *file)
+rig_load (RigEngine *engine, const char *file)
 {
   char *ext;
   struct stat sb;
@@ -108,7 +108,7 @@ rig_load (RigData *data, const char *file)
       ignore_free,
       rut_memory_stack_alloc, /* tmp_alloc */
       8192, /* max_alloca */
-      data->serialization_stack /* allocator_data */
+      engine->serialization_stack /* allocator_data */
     };
 
 
@@ -118,7 +118,7 @@ rig_load (RigData *data, const char *file)
   ext = g_strrstr (file, ".xml");
   if (ext && ext[4] == '\0')
     {
-      rig_load_xml (data, file);
+      rig_load_xml (engine, file);
       return;
     }
 
@@ -141,7 +141,7 @@ rig_load (RigData *data, const char *file)
 
   ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 
-  rig_pb_unserialize_ui (data, ui);
+  rig_pb_unserialize_ui (engine, ui);
 
   rig__ui__free_unpacked (ui, &protobuf_c_allocator);
 

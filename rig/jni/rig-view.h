@@ -22,7 +22,7 @@
 
 #include "rut.h"
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 extern RutType rig_view_type;
 
@@ -31,6 +31,6 @@ typedef struct _RigView RigView;
 #define RIG_VIEW(x) ((RigView *) x)
 
 RigView *
-rig_view_new (RigData *data);
+rig_view_new (RigEngine *engine);
 
 #endif /* _RIG_VIEW_H_ */

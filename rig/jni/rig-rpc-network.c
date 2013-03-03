@@ -71,7 +71,7 @@
 #include "protobuf-c/rig-protobuf-c-rpc.h"
 
 #include "rig-rpc-network.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-avahi.h"
 #include "rig.pb-c.h"
 
@@ -79,7 +79,7 @@ typedef struct _ProtobufSource
 {
   GSource source;
 
-  RigData *data;
+  RigEngine *engine;
 
   ProtobufCDispatch *dispatch;
 
@@ -314,7 +314,7 @@ protobuf_source_funcs =
   };
 
 static GSource *
-protobuf_source_new (RigData *data,
+protobuf_source_new (RigEngine *engine,
                      ProtobufCDispatch *dispatch)
 {
   GSource *source = g_source_new (&protobuf_source_funcs,
@@ -323,28 +323,28 @@ protobuf_source_new (RigData *data,
 
   protobuf_source->dispatch = dispatch;
 
-  protobuf_source->data = data;
+  protobuf_source->engine = engine;
 
   return source;
 }
 
 void
-rig_rpc_stop_server (RigData *data)
+rig_rpc_stop_server (RigEngine *engine)
 {
-  g_return_if_fail (data->rpc_server != NULL);
+  g_return_if_fail (engine->rpc_server != NULL);
 
   g_warning ("Stopping RPC server");
 
-  rig_pb_rpc_server_destroy (data->rpc_server, TRUE);
-  data->rpc_server = NULL;
+  rig_pb_rpc_server_destroy (engine->rpc_server, TRUE);
+  engine->rpc_server = NULL;
 
-  rig_avahi_unregister_service (data);
+  rig_avahi_unregister_service (engine);
 
-  g_source_remove (data->rpc_server_source_id);
+  g_source_remove (engine->rpc_server_source_id);
 }
 
 void
-rig_rpc_start_server (RigData *data,
+rig_rpc_start_server (RigEngine *engine,
                       ProtobufCService *service,
                       PB_RPC_Error_Func server_error_handler,
                       PB_RPC_Client_Connect_Func new_client_handler,
@@ -357,32 +357,32 @@ rig_rpc_start_server (RigData *data,
   ProtobufCDispatch *dispatch =
     protobuf_c_dispatch_new (&protobuf_c_default_allocator);
 
-  data->rpc_server =
+  engine->rpc_server =
     rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
                            "0",
                            service,
                            dispatch);
 
-  fd = rig_pb_rpc_server_get_fd (data->rpc_server);
+  fd = rig_pb_rpc_server_get_fd (engine->rpc_server);
   getsockname (fd, (struct sockaddr *)&addr, &addr_len);
 
   if (addr.sin_family == AF_INET)
-    data->rpc_server_port = ntohs (addr.sin_port);
+    engine->rpc_server_port = ntohs (addr.sin_port);
   else
-    data->rpc_server_port = 0;
+    engine->rpc_server_port = 0;
 
-  rig_pb_rpc_server_set_error_handler (data->rpc_server,
+  rig_pb_rpc_server_set_error_handler (engine->rpc_server,
                                        server_error_handler,
                                        user_data);
 
-  rig_pb_rpc_server_set_client_connect_handler (data->rpc_server,
+  rig_pb_rpc_server_set_client_connect_handler (engine->rpc_server,
                                                 new_client_handler,
                                                 user_data);
 
-  source = protobuf_source_new (data, dispatch);
-  data->rpc_server_source_id = g_source_attach (source, NULL);
+  source = protobuf_source_new (engine, dispatch);
+  engine->rpc_server_source_id = g_source_attach (source, NULL);
 
-  rig_avahi_register_service (data);
+  rig_avahi_register_service (engine);
 }
 
 static void
@@ -421,7 +421,7 @@ _rig_rpc_client_init_type (void)
 }
 
 RigRPCClient *
-rig_rpc_client_new (RigData *data,
+rig_rpc_client_new (RigEngine *engine,
                     const char *hostname,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
@@ -464,7 +464,7 @@ rig_rpc_client_new (RigData *data,
 
   g_free (addr_str);
 
-  source = protobuf_source_new (data, dispatch);
+  source = protobuf_source_new (engine, dispatch);
 
   rpc_client->protobuf_source = source;
 

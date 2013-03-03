@@ -32,7 +32,7 @@
 #include <rut.h>
 #include <rut-bin.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-transition.h"
 #include "rig-load-save.h"
 #include "rig-undo-journal.h"
@@ -58,31 +58,31 @@ static RutPropertySpec rut_data_property_specs[] = {
     .name = "width",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigData, width)
+    .data_offset = offsetof (RigEngine, width)
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigData, height)
+    .data_offset = offsetof (RigEngine, height)
   },
   {
     .name = "device_width",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigData, device_width)
+    .data_offset = offsetof (RigEngine, device_width)
   },
   {
     .name = "device_height",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigData, device_height)
+    .data_offset = offsetof (RigEngine, device_height)
   },
   { 0 }
 };
 
 static void
-rig_load_asset_list (RigData *data);
+rig_load_asset_list (RigEngine *engine);
 
 #ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
@@ -180,8 +180,8 @@ scenegraph_post_paint_cb (RutObject *object,
 CoglBool
 rig_engine_paint (RutShell *shell, void *user_data)
 {
-  RigData *data = user_data;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (data->camera);
+  RigEngine *engine = user_data;
+  CoglFramebuffer *fb = rut_camera_get_framebuffer (engine->camera);
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
 
@@ -189,16 +189,16 @@ rig_engine_paint (RutShell *shell, void *user_data)
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                             0.9, 0.9, 0.9, 1);
 
-  paint_ctx.data = data;
+  paint_ctx.engine = engine;
   paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
-  rut_paint_ctx->camera = data->camera;
+  rut_paint_ctx->camera = engine->camera;
 
-  rut_camera_flush (data->camera);
-  rut_paint_graph_with_layers (data->root,
+  rut_camera_flush (engine->camera);
+  rut_paint_graph_with_layers (engine->root,
                                scenegraph_pre_paint_cb,
                                scenegraph_post_paint_cb,
                                rut_paint_ctx);
-  rut_camera_end_frame (data->camera);
+  rut_camera_end_frame (engine->camera);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
 
@@ -206,22 +206,22 @@ rig_engine_paint (RutShell *shell, void *user_data)
 }
 
 void
-rig_reload_inspector_property (RigData *data,
+rig_reload_inspector_property (RigEngine *engine,
                                RutProperty *property)
 {
-  if (data->inspector)
+  if (engine->inspector)
     {
       RigTransitionPropData *prop_data;
       CoglBool animated;
       GList *l;
 
       prop_data =
-        rig_transition_find_prop_data_for_property (data->selected_transition,
+        rig_transition_find_prop_data_for_property (engine->selected_transition,
                                                     property);
 
       animated = prop_data && prop_data->animated;
 
-      for (l = data->all_inspectors; l; l = l->next)
+      for (l = engine->all_inspectors; l; l = l->next)
         {
           rut_inspector_reload_property (l->data, property);
           rut_inspector_set_property_animated (l->data, property, animated);
@@ -233,19 +233,19 @@ static void
 reload_animated_inspector_properties_cb (RigTransitionPropData *prop_data,
                                          void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
   if (prop_data->animated)
-    rig_reload_inspector_property (data, prop_data->property);
+    rig_reload_inspector_property (engine, prop_data->property);
 }
 
 static void
-reload_animated_inspector_properties (RigData *data)
+reload_animated_inspector_properties (RigEngine *engine)
 {
-  if (data->inspector && data->selected_transition)
-    rig_transition_foreach_property (data->selected_transition,
+  if (engine->inspector && engine->selected_transition)
+    rig_transition_foreach_property (engine->selected_transition,
                                      reload_animated_inspector_properties_cb,
-                                     data);
+                                     engine);
 }
 
 static void
@@ -253,26 +253,26 @@ update_transition_progress_cb (RutProperty *target_property,
                                RutProperty *source_property,
                                void *user_data)
 {
-  RigData *data = user_data;
-  double progress = rut_timeline_get_progress (data->timeline);
+  RigEngine *engine = user_data;
+  double progress = rut_timeline_get_progress (engine->timeline);
   RigTransition *transition = target_property->object;
 
   rig_transition_set_progress (transition, progress);
-  reload_animated_inspector_properties (data);
+  reload_animated_inspector_properties (engine);
 }
 
 RigTransition *
-rig_create_transition (RigData *data,
+rig_create_transition (RigEngine *engine,
                        uint32_t id)
 {
-  RigTransition *transition = rig_transition_new (data->ctx, id);
+  RigTransition *transition = rig_transition_new (engine->ctx, id);
 
   /* FIXME: this should probably only update the progress for the
    * current transition */
   rut_property_set_binding (&transition->props[RUT_TRANSITION_PROP_PROGRESS],
                             update_transition_progress_cb,
-                            data,
-                            data->timeline_elapsed,
+                            engine,
+                            engine->timeline_elapsed,
                             NULL);
 
   return transition;
@@ -283,12 +283,12 @@ inspector_property_changed_cb (RutProperty *target_property,
                                RutProperty *source_property,
                                void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   RutBoxed new_value;
 
   rut_property_box (source_property, &new_value);
 
-  rig_undo_journal_set_property_and_log (data->undo_journal,
+  rig_undo_journal_set_property_and_log (engine->undo_journal,
                                          TRUE, /* mergable */
                                          &new_value,
                                          target_property);
@@ -301,7 +301,7 @@ inspector_animated_changed_cb (RutProperty *property,
                                CoglBool value,
                                void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   RigPath *path;
 
   /* If the property is being initially marked as animated and the
@@ -309,11 +309,11 @@ inspector_animated_changed_cb (RutProperty *property,
    * the current time. We want this to be undone as a single action so
    * we'll represent the pair of actions in a subjournal */
   if (value &&
-      (path = rig_transition_get_path_for_property (data->selected_transition,
+      (path = rig_transition_get_path_for_property (engine->selected_transition,
                                                     property)) &&
       path->length == 0)
     {
-      RigUndoJournal *subjournal = rig_undo_journal_new (data);
+      RigUndoJournal *subjournal = rig_undo_journal_new (engine);
       RutBoxed property_value;
 
       rut_property_box (property, &property_value);
@@ -326,19 +326,19 @@ inspector_animated_changed_cb (RutProperty *property,
                                              &property_value,
                                              property);
 
-      rig_undo_journal_log_subjournal (data->undo_journal, subjournal);
+      rig_undo_journal_log_subjournal (engine->undo_journal, subjournal);
 
       rut_boxed_destroy (&property_value);
     }
   else
-    rig_undo_journal_set_animated_and_log (data->undo_journal,
+    rig_undo_journal_set_animated_and_log (engine->undo_journal,
                                            property,
                                            value);
 }
 
 typedef struct
 {
-  RigData *data;
+  RigEngine *engine;
   RutInspector *inspector;
 } InitAnimatedStateData;
 
@@ -346,37 +346,37 @@ static void
 init_property_animated_state_cb (RutProperty *property,
                                  void *user_data)
 {
-  InitAnimatedStateData *data = user_data;
+  InitAnimatedStateData *engine = user_data;
 
   if (property->spec->animatable)
     {
       RigTransitionPropData *prop_data;
-      RigTransition *transition = data->data->selected_transition;
+      RigTransition *transition = engine->engine->selected_transition;
 
       prop_data =
         rig_transition_find_prop_data_for_property (transition, property);
 
       if (prop_data && prop_data->animated)
-        rut_inspector_set_property_animated (data->inspector, property, TRUE);
+        rut_inspector_set_property_animated (engine->inspector, property, TRUE);
     }
 }
 
 static RutInspector *
-create_inspector (RigData *data,
+create_inspector (RigEngine *engine,
                   void *object)
 {
   RutInspector *inspector =
-    rut_inspector_new (data->ctx,
+    rut_inspector_new (engine->ctx,
                        object,
                        inspector_property_changed_cb,
                        inspector_animated_changed_cb,
-                       data);
+                       engine);
 
   if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
     {
       InitAnimatedStateData animated_data;
 
-      animated_data.data = data;
+      animated_data.engine = engine;
       animated_data.inspector = inspector;
 
       rut_introspectable_foreach_property (object,
@@ -391,56 +391,56 @@ static void
 add_component_inspector_cb (RutComponent *component,
                             void *user_data)
 {
-  RigData *data = user_data;
-  RutInspector *inspector = create_inspector (data, component);
-  RutFold *fold = rut_fold_new (data->ctx, "Component");
+  RigEngine *engine = user_data;
+  RutInspector *inspector = create_inspector (engine, component);
+  RutFold *fold = rut_fold_new (engine->ctx, "Component");
 
   rut_fold_set_child (fold, inspector);
   rut_refable_unref (inspector);
 
-  rut_box_layout_add (data->inspector_box_layout, FALSE, fold);
+  rut_box_layout_add (engine->inspector_box_layout, FALSE, fold);
   rut_refable_unref (fold);
 
-  data->all_inspectors =
-    g_list_prepend (data->all_inspectors, fold);
+  engine->all_inspectors =
+    g_list_prepend (engine->all_inspectors, fold);
 }
 
 static void
-update_inspector (RigData *data)
+update_inspector (RigEngine *engine)
 {
   GList *l;
 
-  for (l = data->all_inspectors; l; l = l->next)
-    rut_box_layout_remove (data->inspector_box_layout, l->data);
+  for (l = engine->all_inspectors; l; l = l->next)
+    rut_box_layout_remove (engine->inspector_box_layout, l->data);
 
-  data->inspector = NULL;
-  g_list_free (data->all_inspectors);
-  data->all_inspectors = NULL;
+  engine->inspector = NULL;
+  g_list_free (engine->all_inspectors);
+  engine->all_inspectors = NULL;
 
-  if (data->selected_entity)
+  if (engine->selected_entity)
     {
-      data->inspector = create_inspector (data, data->selected_entity);
+      engine->inspector = create_inspector (engine, engine->selected_entity);
 
-      rut_box_layout_add (data->inspector_box_layout, FALSE, data->inspector);
-      data->all_inspectors =
-        g_list_prepend (data->all_inspectors, data->inspector);
+      rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
+      engine->all_inspectors =
+        g_list_prepend (engine->all_inspectors, engine->inspector);
 
-      rut_entity_foreach_component (data->selected_entity,
+      rut_entity_foreach_component (engine->selected_entity,
                                     add_component_inspector_cb,
-                                    data);
+                                    engine);
     }
 }
 
 void
-rig_reload_position_inspector (RigData *data,
+rig_reload_position_inspector (RigEngine *engine,
                                RutEntity *entity)
 {
-  if (data->inspector)
+  if (engine->inspector)
     {
       RutProperty *property =
         rut_introspectable_lookup_property (entity, "position");
 
-      rut_inspector_reload_property (data->inspector, property);
+      rut_inspector_reload_property (engine->inspector, property);
     }
 }
 
@@ -450,28 +450,28 @@ tool_rotation_event_cb (RutTool *tool,
                         const CoglQuaternion *rotation,
                         void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  g_return_if_fail (data->selected_entity);
+  g_return_if_fail (engine->selected_entity);
 
   switch (type)
     {
     case RUT_TOOL_ROTATION_DRAG:
-      rut_entity_set_rotation (data->selected_entity, rotation);
-      rut_shell_queue_redraw (data->shell);
+      rut_entity_set_rotation (engine->selected_entity, rotation);
+      rut_shell_queue_redraw (engine->shell);
       break;
 
     case RUT_TOOL_ROTATION_RELEASE:
       {
         RutProperty *rotation_prop =
-          rut_introspectable_lookup_property (data->selected_entity,
+          rut_introspectable_lookup_property (engine->selected_entity,
                                               "rotation");
         RutBoxed value;
 
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
         value.d.quaternion_val = *rotation;
 
-        rig_undo_journal_set_property_and_log (data->undo_journal,
+        rig_undo_journal_set_property_and_log (engine->undo_journal,
                                                FALSE /* mergable */,
                                                &value,
                                                rotation_prop);
@@ -481,71 +481,71 @@ tool_rotation_event_cb (RutTool *tool,
 }
 
 void
-rig_set_play_mode_enabled (RigData *data, CoglBool enabled)
+rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
 {
-  data->play_mode = enabled;
+  engine->play_mode = enabled;
 
-  if (data->play_mode)
+  if (engine->play_mode)
     {
-      data->enable_dof = TRUE;
-      data->debug_pick_ray = 0;
+      engine->enable_dof = TRUE;
+      engine->debug_pick_ray = 0;
     }
   else
     {
-      data->enable_dof = FALSE;
-      data->debug_pick_ray = 1;
+      engine->enable_dof = FALSE;
+      engine->debug_pick_ray = 1;
     }
 
-  rut_shell_queue_redraw (data->ctx->shell);
+  rut_shell_queue_redraw (engine->ctx->shell);
 }
 
 void
-rig_set_selected_entity (RigData *data,
+rig_set_selected_entity (RigEngine *engine,
                          RutEntity *entity)
 {
-  data->selected_entity = entity;
+  engine->selected_entity = entity;
 
   if (entity == NULL)
-    rut_tool_update (data->tool, NULL);
-  else if (entity == data->light_handle)
-    data->selected_entity = data->light;
+    rut_tool_update (engine->tool, NULL);
+  else if (entity == engine->light_handle)
+    engine->selected_entity = engine->light;
 
-  rut_shell_queue_redraw (data->ctx->shell);
-  update_inspector (data);
+  rut_shell_queue_redraw (engine->ctx->shell);
+  update_inspector (engine);
 }
 
 static void
-allocate (RigData *data)
+allocate (RigEngine *engine)
 {
-  //data->main_width = data->width - data->left_bar_width - data->right_bar_width;
-  //data->main_height = data->height - data->top_bar_height - data->bottom_bar_height;
+  //engine->main_width = engine->width - engine->left_bar_width - engine->right_bar_width;
+  //engine->main_height = engine->height - engine->top_bar_height - engine->bottom_bar_height;
 
-  rut_sizable_set_size (data->top_bin, data->width, data->height);
+  rut_sizable_set_size (engine->top_bin, engine->width, engine->height);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      if (data->resize_handle_transform)
+      if (engine->resize_handle_transform)
         {
-          RutTransform *transform = data->resize_handle_transform;
+          RutTransform *transform = engine->resize_handle_transform;
 
           rut_transform_init_identity (transform);
           rut_transform_translate (transform,
-                                   data->width - 18.0f,
-                                   data->height - 18.0f,
+                                   engine->width - 18.0f,
+                                   engine->height - 18.0f,
                                    0.0f);
         }
     }
 #endif
 
   /* Update the window camera */
-  rut_camera_set_projection_mode (data->camera, RUT_PROJECTION_ORTHOGRAPHIC);
-  rut_camera_set_orthographic_coordinates (data->camera,
-                                           0, 0, data->width, data->height);
-  rut_camera_set_near_plane (data->camera, -1);
-  rut_camera_set_far_plane (data->camera, 100);
+  rut_camera_set_projection_mode (engine->camera, RUT_PROJECTION_ORTHOGRAPHIC);
+  rut_camera_set_orthographic_coordinates (engine->camera,
+                                           0, 0, engine->width, engine->height);
+  rut_camera_set_near_plane (engine->camera, -1);
+  rut_camera_set_far_plane (engine->camera, 100);
 
-  rut_camera_set_viewport (data->camera, 0, 0, data->width, data->height);
+  rut_camera_set_viewport (engine->camera, 0, 0, engine->width, engine->height);
 }
 
 static void
@@ -554,32 +554,32 @@ data_onscreen_resize (CoglOnscreen *onscreen,
                       int height,
                       void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  data->width = width;
-  data->height = height;
+  engine->width = width;
+  engine->height = height;
 
-  rut_property_dirty (&data->ctx->property_ctx, &data->properties[RIG_DATA_PROP_WIDTH]);
-  rut_property_dirty (&data->ctx->property_ctx, &data->properties[RIG_DATA_PROP_HEIGHT]);
+  rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_WIDTH]);
+  rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_HEIGHT]);
 
-  allocate (data);
+  allocate (engine);
 }
 
 typedef struct _AssetInputClosure
 {
   RutAsset *asset;
-  RigData *data;
+  RigEngine *engine;
 } AssetInputClosure;
 
 static void
-free_asset_input_closures (RigData *data)
+free_asset_input_closures (RigEngine *engine)
 {
   GList *l;
 
-  for (l = data->asset_input_closures; l; l = l->next)
+  for (l = engine->asset_input_closures; l; l = l->next)
     g_slice_free (AssetInputClosure, l->data);
-  g_list_free (data->asset_input_closures);
-  data->asset_input_closures = NULL;
+  g_list_free (engine->asset_input_closures);
+  engine->asset_input_closures = NULL;
 }
 
 static RutInputEventStatus
@@ -590,7 +590,7 @@ asset_input_cb (RutInputRegion *region,
   AssetInputClosure *closure = user_data;
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   RutAsset *asset = closure->asset;
-  RigData *data = closure->data;
+  RigEngine *engine = closure->engine;
   RutEntity *entity;
   RutMaterial *material;
   CoglTexture *texture;
@@ -603,15 +603,15 @@ asset_input_cb (RutInputRegion *region,
         {
           RutAssetType type = rut_asset_get_type (asset);
 
-          if (data->selected_entity)
-            entity = data->selected_entity;
+          if (engine->selected_entity)
+            entity = engine->selected_entity;
           else
             {
-              entity = rut_entity_new (data->ctx);
-              rig_undo_journal_add_entity_and_log (data->undo_journal,
-                                                   data->scene,
+              entity = rut_entity_new (engine->ctx);
+              rig_undo_journal_add_entity_and_log (engine->undo_journal,
+                                                   engine->scene,
                                                    entity);
-              rig_set_selected_entity (data, entity);
+              rig_set_selected_entity (engine, entity);
             }
 
           switch (type)
@@ -635,7 +635,7 @@ asset_input_cb (RutInputRegion *region,
                   }
                 else
                   {
-                    material = rut_material_new (data->ctx, asset);
+                    material = rut_material_new (engine->ctx, asset);
                     rut_entity_add_component (entity, material);
                   }
 
@@ -647,7 +647,7 @@ asset_input_cb (RutInputRegion *region,
                                                  RUT_COMPONENT_TYPE_GEOMETRY);
                 if (!geom)
                   {
-                    shape = rut_shape_new (data->ctx, TRUE, width, height);
+                    shape = rut_shape_new (engine->ctx, TRUE, width, height);
                     rut_entity_add_component (entity, shape);
                     geom = shape;
                   }
@@ -666,7 +666,7 @@ asset_input_cb (RutInputRegion *region,
                         float size = rut_diamond_get_size (diamond);
 
                         rut_entity_remove_component (entity, geom);
-                        diamond = rut_diamond_new (data->ctx, size, width, height);
+                        diamond = rut_diamond_new (engine->ctx, size, width, height);
                       }
                   }
 
@@ -704,7 +704,7 @@ asset_input_cb (RutInputRegion *region,
                 if (material)
                   rut_entity_remove_component (entity, material);
 
-                model = rut_model_new_from_asset (data->ctx, asset);
+                model = rut_model_new_from_asset (engine->ctx, asset);
                 rut_entity_add_component (entity, model);
 
                 x_range = model->max_x - model->min_x;
@@ -723,7 +723,7 @@ asset_input_cb (RutInputRegion *region,
                 break;
               }
             case RUT_ASSET_TYPE_BUILTIN:
-              if (asset == data->text_builtin_asset)
+              if (asset == engine->text_builtin_asset)
                 {
                   RutText *text;
                   CoglColor color;
@@ -736,14 +736,14 @@ asset_input_cb (RutInputRegion *region,
                   else if (geom)
                     rut_entity_remove_component (entity, geom);
 
-                  text = rut_text_new_with_text (data->ctx, "Sans 60px", "text");
+                  text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
                   cogl_color_init_from_4f (&color, 1, 1, 1, 1);
                   rut_text_set_color (text, &color);
                   rut_entity_add_component (entity, text);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
-              else if (asset == data->circle_builtin_asset)
+              else if (asset == engine->circle_builtin_asset)
                 {
                   RutShape *shape;
                   int tex_width = 200, tex_height = 200;
@@ -774,12 +774,12 @@ asset_input_cb (RutInputRegion *region,
                         }
                     }
 
-                  shape = rut_shape_new (data->ctx, TRUE, tex_width, tex_height);
+                  shape = rut_shape_new (engine->ctx, TRUE, tex_width, tex_height);
                   rut_entity_add_component (entity, shape);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
-              else if (asset == data->diamond_builtin_asset)
+              else if (asset == engine->diamond_builtin_asset)
                 {
                   RutDiamond *diamond;
                   int tex_width = 200, tex_height = 200;
@@ -810,7 +810,7 @@ asset_input_cb (RutInputRegion *region,
                         }
                     }
 
-                  diamond = rut_diamond_new (data->ctx, 200, tex_width, tex_height);
+                  diamond = rut_diamond_new (engine->ctx, 200, tex_width, tex_height);
                   rut_entity_add_component (entity, diamond);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -822,8 +822,8 @@ asset_input_cb (RutInputRegion *region,
           if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
             {
               rig_dirty_entity_pipelines (entity);
-              update_inspector (data);
-              rut_shell_queue_redraw (data->ctx->shell);
+              update_inspector (engine);
+              rut_shell_queue_redraw (engine->ctx->shell);
             }
         }
     }
@@ -879,7 +879,7 @@ asset_matches_search (RutAsset *asset,
 }
 
 static void
-add_asset_icon (RigData *data,
+add_asset_icon (RigEngine *engine,
                 RutAsset *asset)
 {
   AssetInputClosure *closure;
@@ -891,25 +891,25 @@ add_asset_icon (RigData *data,
 
   closure = g_slice_new (AssetInputClosure);
   closure->asset = asset;
-  closure->data = data;
+  closure->engine = engine;
 
-  bin = rut_bin_new (data->ctx);
+  bin = rut_bin_new (engine->ctx);
 
-  stack = rut_stack_new (data->ctx, 0, 0);
+  stack = rut_stack_new (engine->ctx, 0, 0);
   rut_bin_set_child (bin, stack);
   rut_refable_unref (stack);
 
   texture = rut_asset_get_texture (asset);
   if (texture)
     {
-      image = rut_image_new (data->ctx, texture);
+      image = rut_image_new (engine->ctx, texture);
       rut_stack_add (stack, image);
       rut_refable_unref (image);
     }
   else
     {
       char *basename = g_path_get_basename (rut_asset_get_path (asset));
-      RutText *text = rut_text_new_with_text (data->ctx, NULL, basename);
+      RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
       rut_stack_add (stack, text);
       rut_refable_unref (text);
       g_free (basename);
@@ -921,44 +921,44 @@ add_asset_icon (RigData *data,
   rut_stack_add (stack, region);
   rut_refable_unref (region);
 
-  rut_flow_layout_add (data->assets_flow, bin);
+  rut_flow_layout_add (engine->assets_flow, bin);
   rut_refable_unref (bin);
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
-  data->asset_input_closures = g_list_prepend (data->asset_input_closures,
+  engine->asset_input_closures = g_list_prepend (engine->asset_input_closures,
                                                closure);
 }
 
 static CoglBool
-rig_search_asset_list (RigData *data, const char *search)
+rig_search_asset_list (RigEngine *engine, const char *search)
 {
   GList *l;
   int i;
   CoglBool found = FALSE;
 
-  if (data->assets_flow)
+  if (engine->assets_flow)
     {
-      rut_fold_set_child (data->assets_results_fold, NULL);
-      free_asset_input_closures (data);
+      rut_fold_set_child (engine->assets_results_fold, NULL);
+      free_asset_input_closures (engine);
     }
 
-  data->assets_flow =
-    rut_flow_layout_new (data->ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  engine->assets_flow =
+    rut_flow_layout_new (engine->ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
-  rut_flow_layout_set_x_padding (data->assets_flow, 5);
-  rut_flow_layout_set_y_padding (data->assets_flow, 5);
-  rut_flow_layout_set_max_child_height (data->assets_flow, 100);
+  rut_flow_layout_set_x_padding (engine->assets_flow, 5);
+  rut_flow_layout_set_y_padding (engine->assets_flow, 5);
+  rut_flow_layout_set_max_child_height (engine->assets_flow, 100);
 
 #if 0
-  if (data->transparency_grid)
-    rut_graphable_add_child (data->assets_list, data->transparency_grid);
+  if (engine->transparency_grid)
+    rut_graphable_add_child (engine->assets_list, engine->transparency_grid);
 #endif
 
-  rut_fold_set_child (data->assets_results_fold, data->assets_flow);
-  rut_refable_unref (data->assets_flow);
+  rut_fold_set_child (engine->assets_results_fold, engine->assets_flow);
+  rut_refable_unref (engine->assets_flow);
 
-  for (l = data->assets, i= 0; l; l = l->next, i++)
+  for (l = engine->assets, i= 0; l; l = l->next, i++)
     {
       RutAsset *asset = l->data;
 
@@ -966,7 +966,7 @@ rig_search_asset_list (RigData *data, const char *search)
         continue;
 
       found = TRUE;
-      add_asset_icon (data, asset);
+      add_asset_icon (engine, asset);
     }
 
   return found;
@@ -1077,14 +1077,14 @@ static RutPLYAttribute ply_attributes[] =
 #ifdef RIG_EDITOR_ENABLED
 
 static void
-init_resize_handle (RigData *data)
+init_resize_handle (RigEngine *engine)
 {
 #ifdef __APPLE__
   CoglTexture *resize_handle_texture;
   GError *error = NULL;
 
   resize_handle_texture =
-    rut_load_texture_from_data_file (data->ctx,
+    rut_load_texture_from_data_file (engine->ctx,
                                      "resize-handle.png",
                                      &error);
 
@@ -1097,14 +1097,14 @@ init_resize_handle (RigData *data)
     {
       RutImage *resize_handle;
 
-      resize_handle = rut_image_new (data->ctx, resize_handle_texture);
+      resize_handle = rut_image_new (engine->ctx, resize_handle_texture);
 
-      data->resize_handle_transform =
-        rut_transform_new (data->ctx, resize_handle);
+      engine->resize_handle_transform =
+        rut_transform_new (engine->ctx, resize_handle);
 
-      rut_graphable_add_child (data->root, data->resize_handle_transform);
+      rut_graphable_add_child (engine->root, engine->resize_handle_transform);
 
-      rut_refable_unref (data->resize_handle_transform);
+      rut_refable_unref (engine->resize_handle_transform);
       rut_refable_unref (resize_handle);
       cogl_object_unref (resize_handle_texture);
     }
@@ -1139,63 +1139,63 @@ void
 connect_pressed_cb (RutButton *button,
                     void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
-  if (data->slave_addresses)
+  if (engine->slave_addresses)
     {
-      RigSlaveAddress *slave_address = data->slave_addresses->data;
-      rig_connect_to_slave (data, slave_address);
+      RigSlaveAddress *slave_address = engine->slave_addresses->data;
+      rig_connect_to_slave (engine, slave_address);
     }
 }
 
 static void
-create_top_bar (RigData *data)
+create_top_bar (RigEngine *engine)
 {
-  RutStack *top_bar_stack = rut_stack_new (data->ctx, 123, 0);
-  RutButton *connect_button = rut_button_new (data->ctx, "Connect");
-  RutIcon *icon = rut_icon_new (data->ctx, "settings-icon.png");
+  RutStack *top_bar_stack = rut_stack_new (engine->ctx, 123, 0);
+  RutButton *connect_button = rut_button_new (engine->ctx, "Connect");
+  RutIcon *icon = rut_icon_new (engine->ctx, "settings-icon.png");
   RutNineSlice *gradient =
-    load_gradient_image (data->ctx, "top-bar-gradient.png");
+    load_gradient_image (engine->ctx, "top-bar-gradient.png");
 
-  rut_box_layout_add (data->top_vbox, FALSE, top_bar_stack);
+  rut_box_layout_add (engine->top_vbox, FALSE, top_bar_stack);
 
   rut_stack_add (top_bar_stack, gradient);
   rut_refable_unref (gradient);
 
-  data->top_bar_hbox =
-    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  data->top_bar_hbox_ltr =
-    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_box_layout_add (data->top_bar_hbox, TRUE, data->top_bar_hbox_ltr);
+  engine->top_bar_hbox =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  engine->top_bar_hbox_ltr =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_box_layout_add (engine->top_bar_hbox, TRUE, engine->top_bar_hbox_ltr);
 
-  data->top_bar_hbox_rtl =
-    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
-  rut_box_layout_add (data->top_bar_hbox, TRUE, data->top_bar_hbox_rtl);
+  engine->top_bar_hbox_rtl =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
+  rut_box_layout_add (engine->top_bar_hbox, TRUE, engine->top_bar_hbox_rtl);
 
-  rut_box_layout_add (data->top_bar_hbox_rtl, FALSE, icon);
+  rut_box_layout_add (engine->top_bar_hbox_rtl, FALSE, icon);
 
-  rut_stack_add (top_bar_stack, data->top_bar_hbox);
+  rut_stack_add (top_bar_stack, engine->top_bar_hbox);
 
   rut_button_add_on_click_callback (connect_button,
                                     connect_pressed_cb,
-                                    data,
+                                    engine,
                                     NULL); /* destroy callback */
-  rut_box_layout_add (data->top_bar_hbox_ltr, FALSE, connect_button);
+  rut_box_layout_add (engine->top_bar_hbox_ltr, FALSE, connect_button);
   rut_refable_unref (connect_button);
 }
 
 static void
-create_camera_view (RigData *data)
+create_camera_view (RigEngine *engine)
 {
-  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
-  RutBin *bin = rut_bin_new (data->ctx);
+  RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+  RutBin *bin = rut_bin_new (engine->ctx);
   RutNineSlice *gradient =
-    load_gradient_image (data->ctx, "document-bg-gradient.png");
+    load_gradient_image (engine->ctx, "document-bg-gradient.png");
   CoglTexture *left_drop_shadow;
   CoglTexture *bottom_drop_shadow;
-  RutBoxLayout *hbox = rut_box_layout_new (data->ctx,
+  RutBoxLayout *hbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  RutBoxLayout *vbox = rut_box_layout_new (data->ctx,
+  RutBoxLayout *vbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   RutNineSlice *left_drop;
   RutStack *left_stack;
@@ -1208,14 +1208,14 @@ create_camera_view (RigData *data)
   rut_stack_add (stack, gradient);
   rut_stack_add (stack, bin);
 
-  data->main_camera_view = rig_camera_view_new (data);
+  engine->main_camera_view = rig_camera_view_new (engine);
 
   left_drop_shadow =
-    rut_load_texture_from_data_file (data->ctx,
+    rut_load_texture_from_data_file (engine->ctx,
                                      "left-drop-shadow.png",
                                      NULL);
   bottom_drop_shadow =
-    rut_load_texture_from_data_file (data->ctx,
+    rut_load_texture_from_data_file (engine->ctx,
                                      "bottom-drop-shadow.png",
                                      NULL);
 
@@ -1225,20 +1225,20 @@ create_camera_view (RigData *data)
        * actually visible...
        */
 
-  left_drop = rut_nine_slice_new (data->ctx,
+  left_drop = rut_nine_slice_new (engine->ctx,
                                   left_drop_shadow,
                                   10 /* top */,
                                   0, /* right */
                                   10, /* bottom */
                                   0, /* left */
                                   0, 0);
-  left_stack = rut_stack_new (data->ctx, 0, 0);
-  left_shim = rut_bin_new (data->ctx);
-  bottom_drop = rut_nine_slice_new (data->ctx,
+  left_stack = rut_stack_new (engine->ctx, 0, 0);
+  left_shim = rut_bin_new (engine->ctx);
+  bottom_drop = rut_nine_slice_new (engine->ctx,
                                     bottom_drop_shadow,
                                     0, 10, 0, 0, 0, 0);
-  bottom_stack = rut_stack_new (data->ctx, 0, 0);
-  bottom_shim = rut_bin_new (data->ctx);
+  bottom_stack = rut_stack_new (engine->ctx, 0, 0);
+  bottom_shim = rut_bin_new (engine->ctx);
 
   rut_bin_set_left_padding (left_shim, 10);
   rut_bin_set_bottom_padding (bottom_shim, 10);
@@ -1250,7 +1250,7 @@ create_camera_view (RigData *data)
   rut_stack_add (left_stack, left_drop);
 
   rut_box_layout_add (hbox, TRUE, vbox);
-  rut_box_layout_add (vbox, TRUE, data->main_camera_view);
+  rut_box_layout_add (vbox, TRUE, engine->main_camera_view);
   rut_box_layout_add (vbox, FALSE, bottom_stack);
 
   rut_stack_add (bottom_stack, bottom_shim);
@@ -1258,7 +1258,7 @@ create_camera_view (RigData *data)
 
   rut_bin_set_top_padding (bin, 5);
 
-  rig_split_view_set_child1 (data->splits[1], stack);
+  rig_split_view_set_child1 (engine->splits[1], stack);
 
   rut_refable_unref (bottom_shim);
   rut_refable_unref (bottom_stack);
@@ -1279,38 +1279,38 @@ create_camera_view (RigData *data)
 }
 
 static void
-create_toolbar (RigData *data)
+create_toolbar (RigEngine *engine)
 {
-  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
-  RutNineSlice *gradient = load_gradient_image (data->ctx, "toolbar-bg-gradient.png");
-  RutIcon *icon = rut_icon_new (data->ctx, "chevron-icon.png");
-  RutBin *bin = rut_bin_new (data->ctx);
+  RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+  RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
+  RutIcon *icon = rut_icon_new (engine->ctx, "chevron-icon.png");
+  RutBin *bin = rut_bin_new (engine->ctx);
 
   rut_stack_add (stack, gradient);
   rut_refable_unref (gradient);
 
-  data->toolbar_vbox = rut_box_layout_new (data->ctx,
+  engine->toolbar_vbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  rut_bin_set_child (bin, data->toolbar_vbox);
+  rut_bin_set_child (bin, engine->toolbar_vbox);
 
   rut_bin_set_left_padding (bin, 5);
   rut_bin_set_right_padding (bin, 5);
   rut_bin_set_top_padding (bin, 5);
 
-  rut_box_layout_add (data->toolbar_vbox, FALSE, icon);
+  rut_box_layout_add (engine->toolbar_vbox, FALSE, icon);
 
   rut_stack_add (stack, bin);
 
-  rut_box_layout_add (data->top_hbox, FALSE, stack);
+  rut_box_layout_add (engine->top_hbox, FALSE, stack);
 }
 
 static void
-create_properties_bar (RigData *data)
+create_properties_bar (RigEngine *engine)
 {
-  RutStack *stack0 = rut_stack_new (data->ctx, 0, 0);
-  RutStack *stack1 = rut_stack_new (data->ctx, 0, 0);
-  RutBin *bin = rut_bin_new (data->ctx);
-  RutNineSlice *gradient = load_gradient_image (data->ctx, "document-bg-gradient.png");
+  RutStack *stack0 = rut_stack_new (engine->ctx, 0, 0);
+  RutStack *stack1 = rut_stack_new (engine->ctx, 0, 0);
+  RutBin *bin = rut_bin_new (engine->ctx);
+  RutNineSlice *gradient = load_gradient_image (engine->ctx, "document-bg-gradient.png");
   RutUIViewport *properties_vp;
   RutRectangle *bg;
 
@@ -1326,18 +1326,18 @@ create_properties_bar (RigData *data)
 
   rut_bin_set_child (bin, stack1);
 
-  bg = rut_rectangle_new4f (data->ctx,
+  bg = rut_rectangle_new4f (engine->ctx,
                             0, 0, /* size */
                             1, 1, 1, 1);
   rut_stack_add (stack1, bg);
   rut_refable_unref (bg);
 
-  data->inspector_box_layout =
-    rut_box_layout_new (data->ctx,
+  engine->inspector_box_layout =
+    rut_box_layout_new (engine->ctx,
                         RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
-  properties_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-  rut_ui_viewport_add (properties_vp, data->inspector_box_layout);
+  properties_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_ui_viewport_add (properties_vp, engine->inspector_box_layout);
 
   rut_stack_add (stack1, properties_vp);
   rut_refable_unref (properties_vp);
@@ -1345,33 +1345,33 @@ create_properties_bar (RigData *data)
   rut_ui_viewport_set_x_pannable (properties_vp, FALSE);
   rut_ui_viewport_set_y_pannable (properties_vp, TRUE);
   rut_ui_viewport_set_sync_widget (properties_vp,
-                                   data->inspector_box_layout);
+                                   engine->inspector_box_layout);
 
-  rut_box_layout_add (data->properties_hbox, FALSE, stack0);
+  rut_box_layout_add (engine->properties_hbox, FALSE, stack0);
   rut_refable_unref (stack0);
 }
 
 static void
-create_assets_view (RigData *data)
+create_assets_view (RigEngine *engine)
 {
   RutBoxLayout *vbox =
-    rut_box_layout_new (data->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  RutStack *search_stack = rut_stack_new (data->ctx, 0, 0);
-  RutBin *search_bin = rut_bin_new (data->ctx);
-  RutStack *icons_stack = rut_stack_new (data->ctx, 0, 0);
-  RutBin *icons_bin = rut_bin_new (data->ctx);
-  RutStack *stack = rut_stack_new (data->ctx, 0, 0);
-  RutNineSlice *gradient = load_gradient_image (data->ctx, "toolbar-bg-gradient.png");
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  RutStack *search_stack = rut_stack_new (engine->ctx, 0, 0);
+  RutBin *search_bin = rut_bin_new (engine->ctx);
+  RutStack *icons_stack = rut_stack_new (engine->ctx, 0, 0);
+  RutBin *icons_bin = rut_bin_new (engine->ctx);
+  RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+  RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
   RutRectangle *bg;
   RutBin *bin;
   RutEntry *entry;
   RutText *text;
 
-  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
+  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (search_stack, bg);
   rut_refable_unref (bg);
 
-  entry = rut_entry_new (data->ctx);
+  entry = rut_entry_new (engine->ctx);
 
   text = rut_entry_get_text (entry);
   rut_text_set_single_line_mode (text, TRUE);
@@ -1379,7 +1379,7 @@ create_assets_view (RigData *data)
 
   rut_text_add_text_changed_callback (text,
                                       asset_search_update_cb,
-                                      data,
+                                      engine,
                                       NULL);
 
   rut_bin_set_child (search_bin, entry);
@@ -1395,7 +1395,7 @@ create_assets_view (RigData *data)
   rut_box_layout_add (vbox, FALSE, search_stack);
   rut_refable_unref (search_stack);
 
-  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
+  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
   rut_stack_add (icons_stack, bg);
   rut_refable_unref (bg);
   rut_stack_add (icons_stack, icons_bin);
@@ -1412,16 +1412,16 @@ create_assets_view (RigData *data)
   rut_refable_unref (gradient);
 
 
-  data->assets_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-  rut_stack_add (stack, data->assets_vp);
+  engine->assets_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_stack_add (stack, engine->assets_vp);
 
-  data->assets_results_fold = rut_fold_new (data->ctx, "Results");
-  rut_ui_viewport_add (data->assets_vp, data->assets_results_fold);
-  rut_ui_viewport_set_sync_widget (data->assets_vp, data->assets_results_fold);
+  engine->assets_results_fold = rut_fold_new (engine->ctx, "Results");
+  rut_ui_viewport_add (engine->assets_vp, engine->assets_results_fold);
+  rut_ui_viewport_set_sync_widget (engine->assets_vp, engine->assets_results_fold);
 
-  rut_ui_viewport_set_x_pannable (data->assets_vp, FALSE);
+  rut_ui_viewport_set_x_pannable (engine->assets_vp, FALSE);
 
-  bin = rut_bin_new (data->ctx);
+  bin = rut_bin_new (engine->ctx);
   rut_graphable_add_child (stack, bin);
   rut_bin_set_top_padding (bin, 10);
   rut_bin_set_left_padding (bin, 5);
@@ -1429,28 +1429,28 @@ create_assets_view (RigData *data)
   rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
   rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
 
-  rig_split_view_set_child0 (data->splits[1], vbox);
+  rig_split_view_set_child0 (engine->splits[1], vbox);
   rut_refable_unref (vbox);
 }
 
 static void
-create_timeline_view (RigData *data)
+create_timeline_view (RigEngine *engine)
 {
   RutStack *stack;
   RutRectangle *bg;
 
-  data->timeline_vp = rut_ui_viewport_new (data->ctx, 0, 0);
-  rut_ui_viewport_set_x_pannable (data->timeline_vp, FALSE);
+  engine->timeline_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_ui_viewport_set_x_pannable (engine->timeline_vp, FALSE);
 
-  stack = rut_stack_new (data->ctx, 0, 0);
+  stack = rut_stack_new (engine->ctx, 0, 0);
 
-  bg = rut_rectangle_new4f (data->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
+  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (stack, bg);
   rut_refable_unref (bg);
 
-  rut_stack_add (stack, data->timeline_vp);
+  rut_stack_add (stack, engine->timeline_vp);
 
-  rig_split_view_set_child1 (data->splits[0], stack);
+  rig_split_view_set_child1 (engine->splits[0], stack);
   rut_refable_unref (stack);
 }
 #endif /* RIG_EDITOR_ENABLED */
@@ -1458,7 +1458,7 @@ create_timeline_view (RigData *data)
 void
 rig_engine_init (RutShell *shell, void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   CoglFramebuffer *fb;
   float vector3[3];
   int i;
@@ -1474,71 +1474,71 @@ rig_engine_init (RutShell *shell, void *user_data)
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
-  data->serialization_stack = rut_memory_stack_new (8192);
+  engine->serialization_stack = rut_memory_stack_new (8192);
 #endif
 
-  cogl_matrix_init_identity (&data->identity);
+  cogl_matrix_init_identity (&engine->identity);
 
-  for (i = 0; i < RIG_DATA_N_PROPS; i++)
-    rut_property_init (&data->properties[i],
+  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
+    rut_property_init (&engine->properties[i],
                        &rut_data_property_specs[i],
-                       data);
+                       engine);
 
-  data->timeline = rut_timeline_new (data->ctx, 20.0);
-  rut_timeline_stop (data->timeline);
+  engine->timeline = rut_timeline_new (engine->ctx, 20.0);
+  rut_timeline_stop (engine->timeline);
 
-  data->timeline_elapsed =
-    rut_introspectable_lookup_property (data->timeline, "elapsed");
-  data->timeline_progress =
-    rut_introspectable_lookup_property (data->timeline, "progress");
+  engine->timeline_elapsed =
+    rut_introspectable_lookup_property (engine->timeline, "elapsed");
+  engine->timeline_progress =
+    rut_introspectable_lookup_property (engine->timeline, "progress");
 
-  data->assets_registry = g_hash_table_new_full (g_str_hash,
-                                                 g_str_equal,
-                                                 g_free,
-                                                 rut_refable_unref);
+  engine->assets_registry = g_hash_table_new_full (g_str_hash,
+                                                   g_str_equal,
+                                                   g_free,
+                                                   rut_refable_unref);
 
-  data->scene = rut_graph_new (data->ctx);
+  engine->scene = rut_graph_new (engine->ctx);
 
-  data->device_width = DEVICE_WIDTH;
-  data->device_height = DEVICE_HEIGHT;
-  cogl_color_init_from_4f (&data->background_color, 0, 0, 0, 1);
+  engine->device_width = DEVICE_WIDTH;
+  engine->device_height = DEVICE_HEIGHT;
+  cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
 
 #ifndef __ANDROID__
-  if (data->ui_filename)
+  if (engine->ui_filename)
     {
       struct stat st;
 
-      stat (data->ui_filename, &st);
+      stat (engine->ui_filename, &st);
       if (S_ISREG (st.st_mode))
-        rig_load (data, data->ui_filename);
+        rig_load (engine, engine->ui_filename);
     }
 #endif
 
-  data->journal = rig_journal_new ();
+  engine->journal = rig_journal_new ();
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    data->onscreen = cogl_onscreen_new (data->ctx->cogl_context, 1000, 700);
+    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context, 1000, 700);
   else
 #endif
-    data->onscreen = cogl_onscreen_new (data->ctx->cogl_context,
-                                        data->device_width / 2, data->device_height / 2);
+    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                        engine->device_width / 2, engine->device_height / 2);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      cogl_onscreen_set_resizable (data->onscreen, TRUE);
-      cogl_onscreen_add_resize_handler (data->onscreen, data_onscreen_resize, data);
+      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
+      cogl_onscreen_add_resize_handler (engine->onscreen, data_onscreen_resize, engine);
     }
 #endif
 
-  cogl_framebuffer_allocate (COGL_FRAMEBUFFER (data->onscreen), NULL);
+  cogl_framebuffer_allocate (COGL_FRAMEBUFFER (engine->onscreen), NULL);
 
-  rut_shell_add_onscreen (data->shell, data->onscreen);
+  rut_shell_add_onscreen (engine->shell, engine->onscreen);
 
 #ifdef USE_GTK
   {
-    RigApplication *application = rig_application_new (data);
+    RigApplication *application = rig_application_new (engine);
 
     gtk_init (NULL, NULL);
 
@@ -1555,27 +1555,27 @@ rig_engine_init (RutShell *shell, void *user_data)
       /* Another instance of the application is already running */
       rut_shell_quit (shell);
 
-    rig_application_add_onscreen (application, data->onscreen);
+    rig_application_add_onscreen (application, engine->onscreen);
   }
 #endif
 
-  cogl_onscreen_show (data->onscreen);
+  cogl_onscreen_show (engine->onscreen);
 
 #ifdef __APPLE__
-  rig_osx_init (data);
+  rig_osx_init (engine);
 #endif
 
-  rut_shell_set_title (data->shell,
-                       data->onscreen,
+  rut_shell_set_title (engine->shell,
+                       engine->onscreen,
                        "Rig " G_STRINGIFY (RIG_VERSION));
 
-  fb = COGL_FRAMEBUFFER (data->onscreen);
-  data->width = cogl_framebuffer_get_width (fb);
-  data->height  = cogl_framebuffer_get_height (fb);
+  fb = COGL_FRAMEBUFFER (engine->onscreen);
+  engine->width = cogl_framebuffer_get_width (fb);
+  engine->height  = cogl_framebuffer_get_height (fb);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    data->undo_journal = rig_undo_journal_new (data);
+    engine->undo_journal = rig_undo_journal_new (engine);
 
   /* Create a color gradient texture that can be used for debugging
    * shadow mapping.
@@ -1592,15 +1592,15 @@ rig_engine_init (RutShell *shell, void *user_data)
       };
       CoglOffscreen *offscreen;
       CoglPrimitive *prim =
-        cogl_primitive_new_p2c4 (data->ctx->cogl_context, COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-      CoglPipeline *pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+        cogl_primitive_new_p2c4 (engine->ctx->cogl_context, COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+      CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
-      data->gradient = COGL_TEXTURE (
+      engine->gradient = COGL_TEXTURE (
         cogl_texture_2d_new_with_size (rut_cogl_context,
                                        200, 200,
                                        COGL_PIXEL_FORMAT_ANY));
 
-      offscreen = cogl_offscreen_new_to_texture (data->gradient);
+      offscreen = cogl_offscreen_new_to_texture (engine->gradient);
 
       cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
                                      0, 0,
@@ -1626,76 +1626,76 @@ rig_engine_init (RutShell *shell, void *user_data)
   /* Setup the shadow map */
   /* TODO: reallocate if the onscreen framebuffer is resized */
   color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
-                                                data->width * 2, data->height * 2,
+                                                engine->width * 2, engine->height * 2,
                                                 COGL_PIXEL_FORMAT_ANY);
 
-  data->shadow_color = color_buffer;
+  engine->shadow_color = color_buffer;
 
   /* XXX: Right now there's no way to avoid allocating a color buffer. */
-  data->shadow_fb =
+  engine->shadow_fb =
     cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
-  if (data->shadow_fb == NULL)
+  if (engine->shadow_fb == NULL)
     g_critical ("could not create offscreen buffer");
 
   /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (data->shadow_fb),
+  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (engine->shadow_fb),
                                               TRUE);
-  data->shadow_map =
-    cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (data->shadow_fb));
+  engine->shadow_map =
+    cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
 
 
-  data->default_pipeline = cogl_pipeline_new (data->ctx->cogl_context);
+  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   /*
    * Depth of Field
    */
 
-  data->dof = rut_dof_effect_new (data->ctx);
-  data->enable_dof = FALSE;
+  engine->dof = rut_dof_effect_new (engine->ctx);
+  engine->enable_dof = FALSE;
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      data->grid_prim = rut_create_create_grid (data->ctx,
-                                                data->device_width,
-                                                data->device_height,
+      engine->grid_prim = rut_create_create_grid (engine->ctx,
+                                                engine->device_width,
+                                                engine->device_height,
                                                 100,
                                                 100);
     }
 #endif
 
-  data->circle_node_attribute =
-    rut_create_circle_fan_p2 (data->ctx, 20, &data->circle_node_n_verts);
+  engine->circle_node_attribute =
+    rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
 
-  data->device_transform = rut_transform_new (data->ctx);
+  engine->device_transform = rut_transform_new (engine->ctx);
 
-  data->camera = rut_camera_new (data->ctx, COGL_FRAMEBUFFER (data->onscreen));
-  rut_camera_set_clear (data->camera, FALSE);
+  engine->camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->onscreen));
+  rut_camera_set_clear (engine->camera, FALSE);
 
   /* XXX: Basically just a hack for now. We should have a
    * RutShellWindow type that internally creates a RutCamera that can
    * be used when handling input events in device coordinates.
    */
-  rut_shell_set_window_camera (shell, data->camera);
+  rut_shell_set_window_camera (shell, engine->camera);
 
   /* Note: we currently require having exactly one scene light, so if
    * we didn't already load one we create a default light...
    */
 
-  if (!data->light)
+  if (!engine->light)
     {
-      data->light = rut_entity_new (data->ctx);
-      rut_entity_set_label (data->light, "light");
+      engine->light = rut_entity_new (engine->ctx);
+      rut_entity_set_label (engine->light, "light");
 
       vector3[0] = 0;
       vector3[1] = 0;
       vector3[2] = 500;
-      rut_entity_set_position (data->light, vector3);
+      rut_entity_set_position (engine->light, vector3);
 
-      rut_entity_rotate_x_axis (data->light, 20);
-      rut_entity_rotate_y_axis (data->light, -20);
+      rut_entity_rotate_x_axis (engine->light, 20);
+      rut_entity_rotate_y_axis (engine->light, -20);
 
-      light = rut_light_new (data->ctx);
+      light = rut_light_new (engine->ctx);
       cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
       rut_light_set_ambient (light, &color);
       cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
@@ -1703,17 +1703,17 @@ rig_engine_init (RutShell *shell, void *user_data)
       cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
       rut_light_set_specular (light, &color);
 
-      rut_entity_add_component (data->light, light);
+      rut_entity_add_component (engine->light, light);
 
-      rut_graphable_add_child (data->scene, data->light);
+      rut_graphable_add_child (engine->scene, engine->light);
     }
 
   /*
    * TODO: support saving and loading the camera state for lights
    */
 
-  camera = rut_camera_new (data->ctx, COGL_FRAMEBUFFER (data->shadow_fb));
-  data->shadow_map_camera = camera;
+  camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
+  engine->shadow_map_camera = camera;
 
   rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
   rut_camera_set_projection_mode (camera,
@@ -1723,7 +1723,7 @@ rig_engine_init (RutShell *shell, void *user_data)
   rut_camera_set_near_plane (camera, 1.1f);
   rut_camera_set_far_plane (camera, 1500.f);
 
-  rut_entity_add_component (data->light, camera);
+  rut_entity_add_component (engine->light, camera);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -1736,7 +1736,7 @@ rig_engine_init (RutShell *shell, void *user_data)
       if (full_path == NULL)
         g_critical ("could not find model \"light.ply\"");
 
-      mesh = rut_mesh_new_from_ply (data->ctx,
+      mesh = rut_mesh_new_from_ply (engine->ctx,
                                     full_path,
                                     ply_attributes,
                                     G_N_ELEMENTS (ply_attributes),
@@ -1744,15 +1744,15 @@ rig_engine_init (RutShell *shell, void *user_data)
                                     &error);
       if (mesh)
         {
-          RutModel *model = rut_model_new_from_mesh (data->ctx, mesh);
+          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
 
-          data->light_handle = rut_entity_new (data->ctx);
-          rut_entity_set_label (data->light_handle, "rig:light_handle");
-          rut_entity_add_component (data->light_handle, model);
-          rut_entity_set_receive_shadow (data->light_handle, FALSE);
-          rut_graphable_add_child (data->light, data->light_handle);
-          rut_entity_set_scale (data->light_handle, 100);
-          rut_entity_set_cast_shadow (data->light_handle, FALSE);
+          engine->light_handle = rut_entity_new (engine->ctx);
+          rut_entity_set_label (engine->light_handle, "rig:light_handle");
+          rut_entity_add_component (engine->light_handle, model);
+          rut_entity_set_receive_shadow (engine->light_handle, FALSE);
+          rut_graphable_add_child (engine->light, engine->light_handle);
+          rut_entity_set_scale (engine->light_handle, 100);
+          rut_entity_set_cast_shadow (engine->light_handle, FALSE);
         }
       else
         g_critical ("could not load model %s: %s", full_path, error->message);
@@ -1761,8 +1761,8 @@ rig_engine_init (RutShell *shell, void *user_data)
     }
 #endif
 
-  data->root = rut_graph_new (data->ctx);
-  data->top_bin = rut_bin_new (data->ctx);
+  engine->root = rut_graph_new (engine->ctx);
+  engine->top_bin = rut_bin_new (engine->ctx);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -1770,168 +1770,168 @@ rig_engine_init (RutShell *shell, void *user_data)
       cogl_color_init_from_4f (&main_area_ref_color, 0.22, 0.22, 0.22, 1.0);
       cogl_color_init_from_4f (&right_bar_ref_color, 0.45, 0.45, 0.45, 1.0);
 
-      data->properties_hbox = rut_box_layout_new (data->ctx,
+      engine->properties_hbox = rut_box_layout_new (engine->ctx,
                                                   RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
       /* timeline on the bottom, everything else above */
-      data->splits[0] = rig_split_view_new (data,
+      engine->splits[0] = rig_split_view_new (engine,
                                             RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                             100,
                                             100);
 
       /* assets on the left, main area on the right */
-      data->splits[1] = rig_split_view_new (data,
+      engine->splits[1] = rig_split_view_new (engine,
                                             RIG_SPLIT_VIEW_SPLIT_VERTICAL,
                                             100,
                                             100);
 
-      create_assets_view (data);
+      create_assets_view (engine);
 
-      create_camera_view (data);
+      create_camera_view (engine);
 
-      create_timeline_view (data);
+      create_timeline_view (engine);
 
-      rig_split_view_set_child0 (data->splits[0], data->splits[1]);
+      rig_split_view_set_child0 (engine->splits[0], engine->splits[1]);
 
-      rut_box_layout_add (data->properties_hbox, TRUE, data->splits[0]);
-      create_properties_bar (data);
+      rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
+      create_properties_bar (engine);
 
-      rig_split_view_set_split_offset (data->splits[0], 500);
-      rig_split_view_set_split_offset (data->splits[1], 150);
+      rig_split_view_set_split_offset (engine->splits[0], 500);
+      rig_split_view_set_split_offset (engine->splits[1], 150);
 
-      data->top_vbox = rut_box_layout_new (data->ctx,
+      engine->top_vbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-      create_top_bar (data);
+      create_top_bar (engine);
 
       /* FIXME: originally I'd wanted to make this a RIGHT_TO_LEFT box
        * layout but it didn't work so I guess I guess there is a bug
        * in the box-layout allocate code. */
-      data->top_hbox = rut_box_layout_new (data->ctx,
+      engine->top_hbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-      rut_box_layout_add (data->top_vbox, TRUE, data->top_hbox);
+      rut_box_layout_add (engine->top_vbox, TRUE, engine->top_hbox);
 
-      rut_box_layout_add (data->top_hbox, TRUE, data->properties_hbox);
-      create_toolbar (data);
+      rut_box_layout_add (engine->top_hbox, TRUE, engine->properties_hbox);
+      create_toolbar (engine);
 
-      rut_bin_set_child (data->top_bin, data->top_vbox);
+      rut_bin_set_child (engine->top_bin, engine->top_vbox);
 
-      data->transparency_grid = load_transparency_grid (data->ctx);
+      engine->transparency_grid = load_transparency_grid (engine->ctx);
 
-      init_resize_handle (data);
+      init_resize_handle (engine);
     }
   else
 #endif
     {
-      data->main_camera_view = rig_camera_view_new (data);
-      rut_bin_set_child (data->top_bin, data->main_camera_view);
+      engine->main_camera_view = rig_camera_view_new (engine);
+      rut_bin_set_child (engine->top_bin, engine->main_camera_view);
     }
 
-  rut_graphable_add_child (data->root, data->top_bin);
+  rut_graphable_add_child (engine->root, engine->top_bin);
 
-  rut_shell_add_input_camera (shell, data->camera, data->root);
+  rut_shell_add_input_camera (shell, engine->camera, engine->root);
 
   /* tool */
-  data->tool = rut_tool_new (data->shell);
-  rut_tool_add_rotation_event_callback (data->tool,
+  engine->tool = rut_tool_new (engine->shell);
+  rut_tool_add_rotation_event_callback (engine->tool,
                                         tool_rotation_event_cb,
-                                        data,
+                                        engine,
                                         NULL /* destroy_cb */);
 
   /* picking ray */
-  data->picking_ray_color = cogl_pipeline_new (data->ctx->cogl_context);
-  cogl_pipeline_set_color4f (data->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+  engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
+  cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    rig_set_play_mode_enabled (data, FALSE);
+    rig_set_play_mode_enabled (engine, FALSE);
   else
 #endif
-    rig_set_play_mode_enabled (data, TRUE);
+    rig_set_play_mode_enabled (engine, TRUE);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    rig_load_asset_list (data);
+    rig_load_asset_list (engine);
 
-  if (data->transitions)
-    data->selected_transition = data->transitions->data;
+  if (engine->transitions)
+    engine->selected_transition = engine->transitions->data;
   else
     {
-      RigTransition *transition = rig_create_transition (data, 0);
-      data->transitions = g_list_prepend (data->transitions, transition);
-      data->selected_transition = transition;
+      RigTransition *transition = rig_create_transition (engine, 0);
+      engine->transitions = g_list_prepend (engine->transitions, transition);
+      engine->selected_transition = transition;
     }
 
   if (!_rig_in_device_mode &&
-      data->selected_transition)
+      engine->selected_transition)
     {
-      data->transition_view =
-        rig_transition_view_new (data->ctx,
-                                 data->scene,
-                                 data->selected_transition,
-                                 data->timeline,
-                                 data->undo_journal);
-      rut_ui_viewport_add (data->timeline_vp, data->transition_view);
-      rut_ui_viewport_set_sync_widget (data->timeline_vp,
-                                       data->transition_view);
+      engine->transition_view =
+        rig_transition_view_new (engine->ctx,
+                                 engine->scene,
+                                 engine->selected_transition,
+                                 engine->timeline,
+                                 engine->undo_journal);
+      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
+      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
+                                       engine->transition_view);
     }
 #endif
 
-  allocate (data);
+  allocate (engine);
 
-  rig_renderer_init (data);
+  rig_renderer_init (engine);
 }
 
 void
 rig_engine_fini (RutShell *shell, void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
   int i;
 
-  rig_renderer_fini (data);
+  rig_renderer_fini (engine);
 
-  rut_refable_unref (data->light);
-  data->light = NULL;
+  rut_refable_unref (engine->light);
+  engine->light = NULL;
 
-  rut_shell_remove_input_camera (shell, data->camera, data->root);
+  rut_shell_remove_input_camera (shell, engine->camera, engine->root);
 
-  rut_refable_unref (data->camera);
-  rut_refable_unref (data->shadow_map_camera);
-  rut_refable_unref (data->root);
-  rut_refable_unref (data->scene);
-  rut_refable_unref (data->top_bin);
-  rut_refable_unref (data->main_camera_view);
+  rut_refable_unref (engine->camera);
+  rut_refable_unref (engine->shadow_map_camera);
+  rut_refable_unref (engine->root);
+  rut_refable_unref (engine->scene);
+  rut_refable_unref (engine->top_bin);
+  rut_refable_unref (engine->main_camera_view);
 
-  for (i = 0; i < RIG_DATA_N_PROPS; i++)
-    rut_property_destroy (&data->properties[i]);
+  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
+    rut_property_destroy (&engine->properties[i]);
 
-  cogl_object_unref (data->circle_node_attribute);
+  cogl_object_unref (engine->circle_node_attribute);
 
-  rut_dof_effect_free (data->dof);
+  rut_dof_effect_free (engine->dof);
 
-  rut_tool_free (data->tool);
+  rut_tool_free (engine->tool);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      for (i = 0; i < G_N_ELEMENTS (data->splits); i++)
-        rut_refable_unref (data->splits[i]);
+      for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
+        rut_refable_unref (engine->splits[i]);
 
-      rut_refable_unref (data->timeline_vp);
-      rut_refable_unref (data->transition_view);
-      rut_refable_unref (data->top_vbox);
-      rut_refable_unref (data->top_hbox);
-      rut_refable_unref (data->properties_hbox);
-      cogl_object_unref (data->grid_prim);
+      rut_refable_unref (engine->timeline_vp);
+      rut_refable_unref (engine->transition_view);
+      rut_refable_unref (engine->top_vbox);
+      rut_refable_unref (engine->top_hbox);
+      rut_refable_unref (engine->properties_hbox);
+      cogl_object_unref (engine->grid_prim);
 
-      if (data->transparency_grid)
-        rut_refable_unref (data->transparency_grid);
+      if (engine->transparency_grid)
+        rut_refable_unref (engine->transparency_grid);
     }
 #endif
 
-  cogl_object_unref (data->onscreen);
+  cogl_object_unref (engine->onscreen);
 
 #ifdef __APPLE__
-  rig_osx_deinit (data);
+  rig_osx_deinit (engine);
 #endif
 
 #ifdef USE_GTK
@@ -1945,7 +1945,7 @@ rig_engine_fini (RutShell *shell, void *user_data)
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data)
 {
-  RigData *data = user_data;
+  RigEngine *engine = user_data;
 
 #if 0
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
@@ -1953,7 +1953,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
       /* Anything that can claim the keyboard focus will do so during
        * motion events so we clear it before running other input
        * callbacks */
-      data->key_focus_callback = NULL;
+      engine->key_focus_callback = NULL;
     }
 #endif
 
@@ -1987,7 +1987,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_save (data, data->ui_filename);
+                  rig_save (engine, engine->ui_filename);
                   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
                 }
               break;
@@ -1995,7 +1995,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_undo_journal_undo (data->undo_journal);
+                  rig_undo_journal_undo (engine->undo_journal);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
               break;
@@ -2003,7 +2003,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_undo_journal_redo (data->undo_journal);
+                  rig_undo_journal_redo (engine->undo_journal);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
               break;
@@ -2015,8 +2015,8 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_set_selected_entity (data, data->editor_camera);
-                  update_inspector (data);
+                  rig_set_selected_entity (engine, engine->editor_camera);
+                  update_inspector (engine);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
 #endif
@@ -2052,42 +2052,42 @@ add_light_cb (RutInputRegion *region,
 #endif
 
 void
-rig_register_asset (RigData *data,
+rig_register_asset (RigEngine *engine,
                     RutAsset *asset)
 {
   char *key = g_strdup (rut_asset_get_path (asset));
 
-  g_hash_table_insert (data->assets_registry,
+  g_hash_table_insert (engine->assets_registry,
                        key,
                        rut_refable_ref (asset));
 }
 
 RutAsset *
-rig_lookup_asset (RigData *data,
+rig_lookup_asset (RigEngine *engine,
                   const char *path)
 {
-  return g_hash_table_lookup (data->assets_registry, path);
+  return g_hash_table_lookup (engine->assets_registry, path);
 }
 
 RutAsset *
-rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file)
+rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
-  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *inferred_tags = NULL;
   RutAsset *asset = NULL;
 
-  inferred_tags = rut_infer_asset_tags (data->ctx, info, asset_file);
+  inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
 
   if (rut_util_find_tag (inferred_tags, "normal-maps"))
-    asset = rut_asset_new_normal_map (data->ctx, path);
+    asset = rut_asset_new_normal_map (engine->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-    asset = rut_asset_new_alpha_mask (data->ctx, path);
+    asset = rut_asset_new_alpha_mask (engine->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "image"))
-    asset = rut_asset_new_texture (data->ctx, path);
+    asset = rut_asset_new_texture (engine->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "ply"))
-    asset = rut_asset_new_ply_model (data->ctx, path);
+    asset = rut_asset_new_ply_model (engine->ctx, path);
 
   if (asset)
     rut_asset_set_inferred_tags (asset, inferred_tags);
@@ -2102,15 +2102,15 @@ rig_load_asset (RigData *data, GFileInfo *info, GFile *asset_file)
 }
 
 static void
-add_asset (RigData *data, GFileInfo *info, GFile *asset_file)
+add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
-  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *l;
   RutAsset *asset;
 
   /* Avoid loading duplicate assets... */
-  for (l = data->assets; l; l = l->next)
+  for (l = engine->assets; l; l = l->next)
     {
       RutAsset *existing = l->data;
 
@@ -2118,9 +2118,9 @@ add_asset (RigData *data, GFileInfo *info, GFile *asset_file)
         return;
     }
 
-  asset = rig_load_asset (data, info, asset_file);
+  asset = rig_load_asset (engine, info, asset_file);
   if (asset)
-    data->assets = g_list_prepend (data->assets, asset);
+    engine->assets = g_list_prepend (engine->assets, asset);
 }
 
 #if 0
@@ -2138,11 +2138,11 @@ copy_tags (GList *tags)
 #endif
 
 static void
-enumerate_dir_for_assets (RigData *data,
+enumerate_dir_for_assets (RigEngine *engine,
                           GFile *directory);
 
 void
-enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
+enumerate_file_info (RigEngine *engine, GFile *parent, GFileInfo *info)
 {
   GFileType type = g_file_info_get_file_type (info);
   const char *name = g_file_info_get_name (info);
@@ -2154,7 +2154,7 @@ enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
     {
       GFile *directory = g_file_get_child (parent, name);
 
-      enumerate_dir_for_assets (data, directory);
+      enumerate_dir_for_assets (engine, directory);
 
       g_object_unref (directory);
     }
@@ -2164,7 +2164,7 @@ enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
       if (rut_file_info_is_asset (info, name))
         {
           GFile *image = g_file_get_child (parent, name);
-          add_asset (data, info, image);
+          add_asset (engine, info, image);
           g_object_unref (image);
         }
     }
@@ -2173,7 +2173,7 @@ enumerate_file_info (RigData *data, GFile *parent, GFileInfo *info)
 #ifdef USE_ASYNC_IO
 typedef struct _AssetEnumeratorState
 {
-  RigData *data;
+  RigEngine *engine;
   GFile *directory;
   GFileEnumerator *enumerator;
   GCancellable *cancellable;
@@ -2190,8 +2190,8 @@ cleanup_assets_enumerator (AssetEnumeratorState *state)
   g_object_unref (state->directory);
   g_list_free (state->tags);
 
-  state->data->asset_enumerators =
-    g_list_remove (state->data->asset_enumerators, state);
+  state->engine->asset_enumerators =
+    g_list_remove (state->engine->asset_enumerators, state);
 
   g_slice_free (AssetEnumeratorState, state);
 }
@@ -2215,7 +2215,7 @@ assets_found_cb (GObject *source_object,
     }
 
   for (l = infos; l; l = l->next)
-    enumerate_file_info (state->data, state->directory, l->data);
+    enumerate_file_info (state->engine, state->directory, l->data);
 
   g_list_free (infos);
 
@@ -2254,12 +2254,12 @@ assets_enumerator_cb (GObject *source_object,
 }
 
 static void
-enumerate_dir_for_assets_async (RigData *data,
+enumerate_dir_for_assets_async (RigEngine *engine,
                                 GFile *directory)
 {
   AssetEnumeratorState *state = g_slice_new0 (AssetEnumeratorState);
 
-  state->data = data;
+  state->engine = engine;
   state->directory = g_object_ref (directory);
 
   state->cancellable = g_cancellable_new ();
@@ -2272,15 +2272,15 @@ enumerate_dir_for_assets_async (RigData *data,
                                    G_PRIORITY_DEFAULT,
                                    state->cancellable,
                                    assets_enumerator_cb,
-                                   data);
+                                   engine);
 
-  data->asset_enumerators = g_list_prepend (data->asset_enumerators, state);
+  engine->asset_enumerators = g_list_prepend (engine->asset_enumerators, state);
 }
 
 #else /* USE_ASYNC_IO */
 
 static void
-enumerate_dir_for_assets (RigData *data,
+enumerate_dir_for_assets (RigEngine *engine,
                           GFile *file)
 {
   GFileEnumerator *enumerator;
@@ -2306,7 +2306,7 @@ enumerate_dir_for_assets (RigData *data,
                                                    NULL,
                                                    &error)))
     {
-      enumerate_file_info (data, file, file_info);
+      enumerate_file_info (engine, file, file_info);
     }
 
   g_object_unref (enumerator);
@@ -2314,54 +2314,54 @@ enumerate_dir_for_assets (RigData *data,
 #endif /* USE_ASYNC_IO */
 
 static void
-rig_load_asset_list (RigData *data)
+rig_load_asset_list (RigEngine *engine)
 {
-  GFile *assets_dir = g_file_new_for_path (data->ctx->assets_location);
+  GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
 
-  enumerate_dir_for_assets (data, assets_dir);
+  enumerate_dir_for_assets (engine, assets_dir);
 
-  data->diamond_builtin_asset = rut_asset_new_builtin (data->ctx, "diamond.png");
-  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "diamond");
-  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (data->diamond_builtin_asset, "geometry");
-  data->assets = g_list_prepend (data->assets, data->diamond_builtin_asset);
+  engine->diamond_builtin_asset = rut_asset_new_builtin (engine->ctx, "diamond.png");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
+  engine->assets = g_list_prepend (engine->assets, engine->diamond_builtin_asset);
 
-  data->circle_builtin_asset = rut_asset_new_builtin (data->ctx, "circle.png");
-  rut_asset_add_inferred_tag (data->circle_builtin_asset, "shape");
-  rut_asset_add_inferred_tag (data->circle_builtin_asset, "circle");
-  rut_asset_add_inferred_tag (data->circle_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (data->circle_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (data->circle_builtin_asset, "geometry");
-  data->assets = g_list_prepend (data->assets, data->circle_builtin_asset);
+  engine->circle_builtin_asset = rut_asset_new_builtin (engine->ctx, "circle.png");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
+  engine->assets = g_list_prepend (engine->assets, engine->circle_builtin_asset);
 
-  data->text_builtin_asset = rut_asset_new_builtin (data->ctx, "fonts.png");
-  rut_asset_add_inferred_tag (data->text_builtin_asset, "text");
-  rut_asset_add_inferred_tag (data->text_builtin_asset, "label");
-  rut_asset_add_inferred_tag (data->text_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (data->text_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (data->text_builtin_asset, "geometry");
-  data->assets = g_list_prepend (data->assets, data->text_builtin_asset);
+  engine->text_builtin_asset = rut_asset_new_builtin (engine->ctx, "fonts.png");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "text");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "label");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
+  engine->assets = g_list_prepend (engine->assets, engine->text_builtin_asset);
 
   g_object_unref (assets_dir);
 
-  rig_search_asset_list (data, NULL);
+  rig_search_asset_list (engine, NULL);
 }
 
 void
-rig_free_ux (RigData *data)
+rig_free_ux (RigEngine *engine)
 {
   GList *l;
 
-  for (l = data->transitions; l; l = l->next)
+  for (l = engine->transitions; l; l = l->next)
     rig_transition_free (l->data);
-  g_list_free (data->transitions);
-  data->transitions = NULL;
+  g_list_free (engine->transitions);
+  engine->transitions = NULL;
 
-  for (l = data->assets; l; l = l->next)
+  for (l = engine->assets; l; l = l->next)
     rut_refable_unref (l->data);
-  g_list_free (data->assets);
-  data->assets = NULL;
+  g_list_free (engine->assets);
+  engine->assets = NULL;
 
-  free_asset_input_closures (data);
+  free_asset_input_closures (engine);
 }

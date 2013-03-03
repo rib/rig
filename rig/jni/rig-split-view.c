@@ -27,7 +27,7 @@
 
 #include <rut.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-split-view.h"
 
 /* The width of the area which can be clicked on to change the size of
@@ -654,12 +654,12 @@ _rig_split_view_input_cb (RutInputRegion *region,
 }
 
 RigSplitView *
-rig_split_view_new (RigData *data,
+rig_split_view_new (RigEngine *engine,
                     RigSplitViewSplit split,
                     float width,
                     float height)
 {
-  RutContext *context = data->ctx;
+  RutContext *context = engine->ctx;
   RigSplitView *split_view = g_slice_new0 (RigSplitView);
   static CoglBool initialized = FALSE;
 

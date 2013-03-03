@@ -20,12 +20,12 @@
 #ifndef _RUT_LOAD_SAVE_H_
 #define _RUT_LOAD_SAVE_H_
 
-#include "rig-data.h"
+#include "rig-engine.h"
 
 void
-rig_save (RigData *data, const char *path);
+rig_save (RigEngine *engine, const char *path);
 
 void
-rig_load (RigData *data, const char *file);
+rig_load (RigEngine *engine, const char *file);
 
 #endif /* _RUT_LOAD_SAVE_H_ */

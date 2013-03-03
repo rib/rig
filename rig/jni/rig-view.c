@@ -25,7 +25,7 @@
 
 #include <rut.h>
 
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-view.h"
 
 struct _RigView
@@ -195,9 +195,9 @@ _rig_view_init_type (void)
 }
 
 RigView *
-rig_view_new (RigData *data)
+rig_view_new (RigEngine *engine)
 {
-  RutContext *ctx = data->ctx;
+  RutContext *ctx = engine->ctx;
   RigView *view = g_slice_new0 (RigView);
   static CoglBool initialized = FALSE;
 

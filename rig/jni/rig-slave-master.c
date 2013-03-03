@@ -64,7 +64,7 @@ slave_master_connected (PB_RPC_Client *pb_client,
                         void *user_data)
 {
   RigSlaveMaster *master = user_data;
-  RigData *data = master->data;
+  RigEngine *engine = master->engine;
   ProtobufCService *service =
     (ProtobufCService *)master->rpc_client->pb_rpc_client;
   Rig__UI *ui;
@@ -72,7 +72,7 @@ slave_master_connected (PB_RPC_Client *pb_client,
 
   g_warn_if_fail (master->required_assets == NULL);
 
-  ui = rig_pb_serialize_ui (data,
+  ui = rig_pb_serialize_ui (engine,
                             required_asset_cb,
                             master);
 
@@ -96,7 +96,7 @@ slave_master_connected (PB_RPC_Client *pb_client,
 static void
 destroy_slave_master (RigSlaveMaster *master)
 {
-  RigData *data = master->data;
+  RigEngine *engine = master->engine;
 
   if (!master->rpc_client)
     return;
@@ -107,7 +107,7 @@ destroy_slave_master (RigSlaveMaster *master)
 
   master->connected = FALSE;
 
-  data->slave_masters = g_list_remove (data->slave_masters, master);
+  engine->slave_masters = g_list_remove (engine->slave_masters, master);
 
   rut_refable_unref (master);
 }
@@ -160,7 +160,7 @@ _rig_slave_master_init_type (void)
 }
 
 static RigSlaveMaster *
-rig_slave_master_new (RigData *data,
+rig_slave_master_new (RigEngine *engine,
                       RigSlaveAddress *slave_address)
 {
   RigSlaveMaster *master = g_slice_new0 (RigSlaveMaster);
@@ -176,12 +176,12 @@ rig_slave_master_new (RigData *data,
 
   master->ref_count = 1;
 
-  master->data = data;
+  master->engine = engine;
 
   master->slave_address = rut_refable_ref (slave_address);
 
   master->rpc_client =
-    rig_rpc_client_new (data,
+    rig_rpc_client_new (engine,
                         slave_address->hostname,
                         slave_address->port,
                         (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
@@ -195,9 +195,9 @@ rig_slave_master_new (RigData *data,
 }
 
 void
-rig_connect_to_slave (RigData *data, RigSlaveAddress *slave_address)
+rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
 {
-  RigSlaveMaster *slave_master = rig_slave_master_new (data, slave_address);
+  RigSlaveMaster *slave_master = rig_slave_master_new (engine, slave_address);
 
-  data->slave_masters = g_list_prepend (data->slave_masters, slave_master);
+  engine->slave_masters = g_list_prepend (engine->slave_masters, slave_master);
 }

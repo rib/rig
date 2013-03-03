@@ -110,7 +110,7 @@ struct _RigTransitionViewObject
   RigTransitionViewControl controls[RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS];
 
   /* Pointer back to the transition view so that we can get back to it
-   * if we use the property data as the data for the path operation
+   * if we use the property engine as the engine for the path operation
    * callback */
   RigTransitionView *view;
 };
@@ -2075,7 +2075,7 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
       if (view->selected_nodes.next == view->selected_nodes.prev)
         journal = view->undo_journal;
       else
-        journal = rig_undo_journal_new (view->undo_journal->data);
+        journal = rig_undo_journal_new (view->undo_journal->engine);
 
       while (!rut_list_empty (&view->selected_nodes))
         {

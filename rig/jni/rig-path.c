@@ -264,20 +264,20 @@ path_find_control_points4 (RigPath *path,
       if (l1->prev == NULL || l2->next == NULL)
         return FALSE;
 
-      *n0 = l1->prev->data;
-      *n3 = l2->next->data;
+      *n0 = l1->prev->engine;
+      *n3 = l2->next->engine;
     }
   else
     {
       if (l1->next == NULL || l2->prev == NULL)
         return FALSE;
 
-      *n0 = l1->next->data;
-      *n3 = l2->prev->data;
+      *n0 = l1->next->engine;
+      *n3 = l2->prev->engine;
     }
 
-  *n1 = l1->data;
-  *n2 = l2->data;
+  *n1 = l1->engine;
+  *n2 = l2->engine;
 
   return TRUE;
 }
