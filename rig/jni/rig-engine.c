@@ -1506,7 +1506,13 @@ ensure_light (RigEngine *engine)
       rut_entity_add_component (engine->light, camera);
     }
   else
-    rut_camera_set_framebuffer (camera, COGL_FRAMEBUFFER (engine->shadow_fb));
+    {
+      CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->shadow_fb);
+      int width = cogl_framebuffer_get_width (fb);
+      int height = cogl_framebuffer_get_height (fb);
+      rut_camera_set_framebuffer (camera, fb);
+      rut_camera_set_viewport (camera, 0, 0, width, height);
+    }
 
   engine->shadow_map_camera = camera;
 
