@@ -364,8 +364,6 @@ RutCamera *
 rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
 {
   RutCamera *camera = g_slice_new0 (RutCamera);
-  int width = cogl_framebuffer_get_width (framebuffer);
-  int height = cogl_framebuffer_get_height (framebuffer);
 
   camera->ctx = rut_refable_ref (ctx);
 
@@ -383,8 +381,9 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   camera->orthographic = TRUE;
   camera->x1 = 0;
   camera->y1 = 0;
-  camera->x2 = width;
-  camera->y2 = height;
+  camera->x2 = 100;
+  camera->y2 = 100;
+
   camera->near = -1;
   camera->far = 100;
 
@@ -399,14 +398,20 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   cogl_matrix_init_identity (&camera->view);
   camera->inverse_view_age = -1;
 
-  camera->viewport[2] = width;
-  camera->viewport[3] = height;
-
   camera->transform_age = 0;
 
   cogl_matrix_init_identity (&camera->input_transform);
 
-  camera->fb = cogl_object_ref (framebuffer);
+  if (framebuffer)
+    {
+      int width = cogl_framebuffer_get_width (framebuffer);
+      int height = cogl_framebuffer_get_height (framebuffer);
+      camera->fb = cogl_object_ref (framebuffer);
+      camera->viewport[2] = width;
+      camera->viewport[3] = height;
+      camera->x2 = width;
+      camera->y2 = height;
+    }
 
   rut_simple_introspectable_init (camera,
                                   _rut_camera_prop_specs,
@@ -470,7 +475,9 @@ rut_camera_set_framebuffer (RutCamera *camera,
   if (camera->fb == framebuffer)
     return;
 
-  cogl_object_unref (camera->fb);
+  if (camera->fb)
+    cogl_object_unref (camera->fb);
+
   camera->fb = cogl_object_ref (framebuffer);
 }
 

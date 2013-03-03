@@ -66,11 +66,27 @@ message AlphaMask
   optional sint64 asset_id=1;
 }
 
+message Viewport
+{
+  required float x=1;
+  required float y=2;
+  required float width=3;
+  required float height=4;
+}
+
+message OrthoCoords
+{
+  required float x0=1;
+  required float y0=2;
+  required float x1=3;
+  required float y1=4;
+}
+
 message Entity
 {
   message Component
     {
-      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; }
+      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; CAMERA=7; }
 
       message Light
         {
@@ -112,6 +128,32 @@ message Entity
           optional Color color=3;
         }
 
+      message Camera
+        {
+          enum ProjectionMode {
+              ORTHOGRAPHIC=1;
+              PERSPECTIVE=2;
+          }
+
+          optional ProjectionMode projection_mode=1;
+
+          optional float field_of_view=2;
+
+          optional OrthoCoords ortho=3;
+
+          optional Viewport viewport=4;
+
+          optional float zoom=5;
+
+          optional float focal_distance=6;
+          optional float depth_of_field=7;
+
+          optional float near_plane=8;
+          optional float far_plane=9;
+
+          optional Color background=10;
+        }
+
       optional sint64 id=1;
       optional Type type=2;
       optional Light light=3;
@@ -120,6 +162,7 @@ message Entity
       optional Diamond diamond=6;
       optional Model model=7;
       optional Text text=8;
+      optional Camera camera=9;
     }
 
   optional sint64 id=1;

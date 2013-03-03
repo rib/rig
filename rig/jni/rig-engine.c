@@ -1708,22 +1708,29 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_graphable_add_child (engine->scene, engine->light);
     }
 
-  /*
-   * TODO: support saving and loading the camera state for lights
-   */
+  camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
+  if (!camera)
+    {
+      camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
 
-  camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
+      rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
+      rut_camera_set_projection_mode (camera,
+                                      RUT_PROJECTION_ORTHOGRAPHIC);
+      rut_camera_set_orthographic_coordinates (camera,
+                                               -1000, -1000, 1000, 1000);
+      rut_camera_set_near_plane (camera, 1.1f);
+      rut_camera_set_far_plane (camera, 1500.f);
+
+      rut_entity_add_component (engine->light, camera);
+    }
+  else
+    {
+      //rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
+      rut_camera_set_framebuffer (camera, COGL_FRAMEBUFFER (engine->shadow_fb));
+    }
+
   engine->shadow_map_camera = camera;
 
-  rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
-  rut_camera_set_projection_mode (camera,
-                                  RUT_PROJECTION_ORTHOGRAPHIC);
-  rut_camera_set_orthographic_coordinates (camera,
-                                           -1000, -1000, 1000, 1000);
-  rut_camera_set_near_plane (camera, 1.1f);
-  rut_camera_set_far_plane (camera, 1500.f);
-
-  rut_entity_add_component (engine->light, camera);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)

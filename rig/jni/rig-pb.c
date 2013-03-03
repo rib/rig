@@ -517,6 +517,68 @@ serialize_component_cb (RutComponent *component,
       pb_text->font = (char *)rut_text_get_font_name (text);
       pb_text->color = pb_color_new (engine, color);
     }
+  else if (type == &rut_camera_type)
+    {
+      RutCamera *camera = (RutCamera *)component;
+      Rig__Entity__Component__Camera *pb_camera;
+
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__CAMERA;
+      pb_camera = pb_new (engine,
+                          sizeof (Rig__Entity__Component__Camera),
+                          rig__entity__component__camera__init);
+      pb_component->camera = pb_camera;
+
+      pb_camera->has_projection_mode = TRUE;
+      switch (rut_camera_get_projection_mode (camera))
+        {
+        case RUT_PROJECTION_ORTHOGRAPHIC:
+          pb_camera->projection_mode =
+            RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ORTHOGRAPHIC;
+
+          pb_camera->ortho = pb_new (engine,
+                                     sizeof (Rig__OrthoCoords),
+                                     rig__ortho_coords__init);
+          pb_camera->ortho->x0 = camera->x1;
+          pb_camera->ortho->y0 = camera->y1;
+          pb_camera->ortho->x1 = camera->x2;
+          pb_camera->ortho->y1 = camera->y2;
+          break;
+        case RUT_PROJECTION_PERSPECTIVE:
+          pb_camera->projection_mode =
+            RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE;
+          pb_camera->has_field_of_view = TRUE;
+          pb_camera->field_of_view = camera->fov;
+          break;
+        }
+
+      pb_camera->viewport = pb_new (engine,
+                                    sizeof (Rig__Viewport),
+                                    rig__viewport__init);
+
+      pb_camera->viewport->x = camera->viewport[0];
+      pb_camera->viewport->y = camera->viewport[1];
+      pb_camera->viewport->width = camera->viewport[2];
+      pb_camera->viewport->height = camera->viewport[3];
+
+      if (camera->zoom != 1)
+        {
+          pb_camera->has_zoom = TRUE;
+          pb_camera->zoom = camera->zoom;
+        }
+
+      pb_camera->has_focal_distance = TRUE;
+      pb_camera->focal_distance = camera->focal_distance;
+
+      pb_camera->has_depth_of_field = TRUE;
+      pb_camera->depth_of_field = camera->depth_of_field;
+
+      pb_camera->has_near_plane = TRUE;
+      pb_camera->near_plane = camera->near;
+      pb_camera->has_far_plane = TRUE;
+      pb_camera->far_plane = camera->far;
+
+      pb_camera->background = pb_color_new (engine, &camera->bg_color);
+    }
 }
 
 static RutTraverseVisitFlags
@@ -1268,6 +1330,78 @@ unserialize_components (UnSerializer *unserializer,
             register_unserializer_object (unserializer, text, component_id);
             break;
           }
+        case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
+          {
+            Rig__Entity__Component__Camera *pb_camera = pb_component->camera;
+            RutCamera *camera =
+              rut_camera_new (unserializer->engine->ctx, NULL);
+
+            if (pb_camera->viewport)
+              {
+                Rig__Viewport *pb_viewport = pb_camera->viewport;
+
+                rut_camera_set_viewport (camera,
+                                         pb_viewport->x,
+                                         pb_viewport->y,
+                                         pb_viewport->width,
+                                         pb_viewport->height);
+              }
+
+            if (pb_camera->has_projection_mode)
+              {
+                switch (pb_camera->projection_mode)
+                  {
+                  case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ORTHOGRAPHIC:
+                    rut_camera_set_projection_mode (camera,
+                                                    RUT_PROJECTION_ORTHOGRAPHIC);
+                    break;
+                  case RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE:
+                    rut_camera_set_projection_mode (camera,
+                                                    RUT_PROJECTION_PERSPECTIVE);
+                    break;
+                  }
+              }
+
+            if (pb_camera->ortho)
+              {
+                rut_camera_set_orthographic_coordinates (camera,
+                                                         pb_camera->ortho->x0,
+                                                         pb_camera->ortho->y0,
+                                                         pb_camera->ortho->x1,
+                                                         pb_camera->ortho->y1);
+              }
+
+            if (pb_camera->has_field_of_view)
+              rut_camera_set_field_of_view (camera, pb_camera->field_of_view);
+
+            if (pb_camera->zoom)
+              rut_camera_set_zoom (camera, pb_camera->zoom);
+
+            if (pb_camera->focal_distance)
+              rut_camera_set_focal_distance (camera, pb_camera->focal_distance);
+
+            if (pb_camera->depth_of_field)
+              rut_camera_set_depth_of_field (camera, pb_camera->depth_of_field);
+
+            if (pb_camera->near_plane)
+              rut_camera_set_near_plane (camera, pb_camera->near_plane);
+
+            if (pb_camera->far_plane)
+              rut_camera_set_far_plane (camera, pb_camera->far_plane);
+
+            if (pb_camera->background)
+              {
+                CoglColor color;
+                pb_init_color (unserializer->engine->ctx,
+                               &color, pb_camera->background);
+                rut_camera_set_background_color (camera, &color);
+              }
+
+            rut_entity_add_component (entity, camera);
+
+            register_unserializer_object (unserializer, camera, component_id);
+            break;
+          }
         }
     }
 
@@ -1372,6 +1506,7 @@ unserialize_components (UnSerializer *unserializer,
           }
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
+        case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
           break;
         }
     }
