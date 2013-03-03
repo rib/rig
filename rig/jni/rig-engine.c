@@ -1455,17 +1455,107 @@ create_timeline_view (RigEngine *engine)
 }
 #endif /* RIG_EDITOR_ENABLED */
 
+static void
+ensure_light (RigEngine *engine)
+{
+  RutCamera *camera;
+
+  if (!engine->light)
+    {
+      RutLight *light;
+      float vector3[3];
+      CoglColor color;
+
+      engine->light = rut_entity_new (engine->ctx);
+      rut_entity_set_label (engine->light, "light");
+
+      vector3[0] = 0;
+      vector3[1] = 0;
+      vector3[2] = 500;
+      rut_entity_set_position (engine->light, vector3);
+
+      rut_entity_rotate_x_axis (engine->light, 20);
+      rut_entity_rotate_y_axis (engine->light, -20);
+
+      light = rut_light_new (engine->ctx);
+      cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+      rut_light_set_ambient (light, &color);
+      cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+      rut_light_set_diffuse (light, &color);
+      cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+      rut_light_set_specular (light, &color);
+
+      rut_entity_add_component (engine->light, light);
+
+      rut_graphable_add_child (engine->scene, engine->light);
+    }
+
+  camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
+  if (!camera)
+    {
+      camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
+
+      rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
+      rut_camera_set_projection_mode (camera,
+                                      RUT_PROJECTION_ORTHOGRAPHIC);
+      rut_camera_set_orthographic_coordinates (camera,
+                                               -1000, -1000, 1000, 1000);
+      rut_camera_set_near_plane (camera, 1.1f);
+      rut_camera_set_far_plane (camera, 1500.f);
+
+      rut_entity_add_component (engine->light, camera);
+    }
+  else
+    rut_camera_set_framebuffer (camera, COGL_FRAMEBUFFER (engine->shadow_fb));
+
+  engine->shadow_map_camera = camera;
+
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    {
+      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+      char *full_path = rut_find_data_file ("light.ply");
+      GError *error = NULL;
+      RutMesh *mesh;
+
+      if (full_path == NULL)
+        g_critical ("could not find model \"light.ply\"");
+
+      mesh = rut_mesh_new_from_ply (engine->ctx,
+                                    full_path,
+                                    ply_attributes,
+                                    G_N_ELEMENTS (ply_attributes),
+                                    padding_status,
+                                    &error);
+      if (mesh)
+        {
+          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
+
+          engine->light_handle = rut_entity_new (engine->ctx);
+          rut_entity_set_label (engine->light_handle, "rig:light_handle");
+          rut_entity_add_component (engine->light_handle, model);
+          rut_entity_set_receive_shadow (engine->light_handle, FALSE);
+          rut_graphable_add_child (engine->light, engine->light_handle);
+          rut_entity_set_scale (engine->light_handle, 100);
+          rut_entity_set_cast_shadow (engine->light_handle, FALSE);
+        }
+      else
+        g_critical ("could not load model %s: %s", full_path, error->message);
+
+      g_free (full_path);
+    }
+#endif
+
+}
+
 void
 rig_engine_init (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
   CoglFramebuffer *fb;
-  float vector3[3];
   int i;
   CoglTexture2D *color_buffer;
-  CoglColor color;
-  RutLight *light;
-  RutCamera *camera;
   CoglColor main_area_ref_color, right_bar_ref_color;
 
   /* A unit test for the list_splice/list_unsplice functions */
@@ -1681,92 +1771,7 @@ rig_engine_init (RutShell *shell, void *user_data)
   /* Note: we currently require having exactly one scene light, so if
    * we didn't already load one we create a default light...
    */
-
-  if (!engine->light)
-    {
-      engine->light = rut_entity_new (engine->ctx);
-      rut_entity_set_label (engine->light, "light");
-
-      vector3[0] = 0;
-      vector3[1] = 0;
-      vector3[2] = 500;
-      rut_entity_set_position (engine->light, vector3);
-
-      rut_entity_rotate_x_axis (engine->light, 20);
-      rut_entity_rotate_y_axis (engine->light, -20);
-
-      light = rut_light_new (engine->ctx);
-      cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
-      rut_light_set_ambient (light, &color);
-      cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
-      rut_light_set_diffuse (light, &color);
-      cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
-      rut_light_set_specular (light, &color);
-
-      rut_entity_add_component (engine->light, light);
-
-      rut_graphable_add_child (engine->scene, engine->light);
-    }
-
-  camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
-  if (!camera)
-    {
-      camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
-
-      rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
-      rut_camera_set_projection_mode (camera,
-                                      RUT_PROJECTION_ORTHOGRAPHIC);
-      rut_camera_set_orthographic_coordinates (camera,
-                                               -1000, -1000, 1000, 1000);
-      rut_camera_set_near_plane (camera, 1.1f);
-      rut_camera_set_far_plane (camera, 1500.f);
-
-      rut_entity_add_component (engine->light, camera);
-    }
-  else
-    {
-      //rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
-      rut_camera_set_framebuffer (camera, COGL_FRAMEBUFFER (engine->shadow_fb));
-    }
-
-  engine->shadow_map_camera = camera;
-
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-      char *full_path = rut_find_data_file ("light.ply");
-      GError *error = NULL;
-      RutMesh *mesh;
-
-      if (full_path == NULL)
-        g_critical ("could not find model \"light.ply\"");
-
-      mesh = rut_mesh_new_from_ply (engine->ctx,
-                                    full_path,
-                                    ply_attributes,
-                                    G_N_ELEMENTS (ply_attributes),
-                                    padding_status,
-                                    &error);
-      if (mesh)
-        {
-          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
-
-          engine->light_handle = rut_entity_new (engine->ctx);
-          rut_entity_set_label (engine->light_handle, "rig:light_handle");
-          rut_entity_add_component (engine->light_handle, model);
-          rut_entity_set_receive_shadow (engine->light_handle, FALSE);
-          rut_graphable_add_child (engine->light, engine->light_handle);
-          rut_entity_set_scale (engine->light_handle, 100);
-          rut_entity_set_cast_shadow (engine->light_handle, FALSE);
-        }
-      else
-        g_critical ("could not load model %s: %s", full_path, error->message);
-
-      g_free (full_path);
-    }
-#endif
+  ensure_light (engine);
 
   engine->root = rut_graph_new (engine->ctx);
   engine->top_bin = rut_bin_new (engine->ctx);
