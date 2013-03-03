@@ -1712,10 +1712,21 @@ unserialize_transitions (UnSerializer *unserializer,
     }
 }
 
+static void
+update_transition_property_cb (RigTransitionPropData *prop_data,
+                               void *user_data)
+{
+  RigData *data = user_data;
+
+  rig_transition_update_property (data->transitions->data,
+                                  prop_data->property);
+}
+
 void
 rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
 {
   UnSerializer unserializer;
+  GList *l;
 
   memset (&unserializer, 0, sizeof (unserializer));
   unserializer.data = data;
@@ -1755,4 +1766,28 @@ rig_pb_unserialize_ui (RigData *data, const Rig__UI *pb_ui)
                            pb_ui->transitions);
 
   g_hash_table_destroy (unserializer.id_map);
+
+  rig_free_ux (data);
+
+  for (l = unserializer.entities; l; l = l->next)
+    {
+      if (rut_graphable_get_parent (l->data) == NULL)
+        rut_graphable_add_child (data->scene, l->data);
+    }
+
+  if (unserializer.light)
+    data->light = unserializer.light;
+
+  data->transitions = unserializer.transitions;
+
+  data->assets = unserializer.assets;
+
+  /* Reset all of the property values to their current value according
+   * to the first transition */
+  if (data->transitions)
+    rig_transition_foreach_property (data->transitions->data,
+                                     update_transition_property_cb,
+                                     data);
+
+  rut_shell_queue_redraw (data->ctx->shell);
 }
