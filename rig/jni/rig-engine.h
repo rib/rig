@@ -168,9 +168,6 @@ struct _RigEngine
   RutArcball arcball;
   CoglQuaternion saved_rotation;
 
-  //RutTransform *screen_area_transform;
-  RutTransform *device_transform;
-
   RutTimeline *timeline;
   RutProperty *timeline_elapsed;
   RutProperty *timeline_progress;
@@ -262,7 +259,15 @@ rig_create_transition (RigEngine *engine,
                        uint32_t id);
 
 void
-rig_free_ux (RigEngine *engine);
+rig_engine_set_onscreen_size (RigEngine *engine,
+                              int width,
+                              int height);
+
+void
+rig_engine_free_ui (RigEngine *engine);
+
+void
+rig_engine_handle_ui_update (RigEngine *engine);
 
 void
 rig_register_asset (RigEngine *engine,

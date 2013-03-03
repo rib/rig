@@ -1902,7 +1902,7 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
 
   g_hash_table_destroy (unserializer.id_map);
 
-  rig_free_ux (engine);
+  rig_engine_free_ui (engine);
 
   for (l = unserializer.entities; l; l = l->next)
     {
@@ -1923,6 +1923,8 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
     rig_transition_foreach_property (engine->transitions->data,
                                      update_transition_property_cb,
                                      engine);
+
+  rig_engine_handle_ui_update (engine);
 
   rut_shell_queue_redraw (engine->ctx->shell);
 }

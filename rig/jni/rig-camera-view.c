@@ -206,6 +206,8 @@ _rut_camera_view_paint (RutObject *object,
   if (view->scene == NULL)
     return;
 
+  rut_camera_set_framebuffer (view->view_camera_component, fb);
+
   cogl_framebuffer_draw_rectangle (fb,
                                    view->bg_pipeline,
                                    0, 0,
@@ -1623,12 +1625,6 @@ rig_camera_view_new (RigEngine *engine)
   RigCameraView *view = g_slice_new0 (RigCameraView);
   static CoglBool initialized = FALSE;
 
-  /* XXX: Hack:
-   * Since we don't support multiple windows a.t.m we can assume this
-   * is the framebuffer we'll be painting to...
-   */
-  CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->onscreen);
-
   if (initialized == FALSE)
     {
       _rig_camera_view_init_type ();
@@ -1698,7 +1694,7 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_add_child (view->view_camera_screen_pos, view->view_camera);
   rut_entity_set_label (view->view_camera, "rig:camera");
 
-  view->view_camera_component = rut_camera_new (engine->ctx, fb);
+  view->view_camera_component = rut_camera_new (engine->ctx, NULL);
   rut_camera_set_clear (view->view_camera_component, FALSE);
   rut_entity_add_component (view->view_camera, view->view_camera_component);
 

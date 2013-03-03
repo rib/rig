@@ -181,9 +181,11 @@ CoglBool
 rig_engine_paint (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (engine->camera);
+  CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->onscreen);
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
+
+  rut_camera_set_framebuffer (engine->camera, fb);
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
@@ -1658,12 +1660,104 @@ create_debug_gradient (RigEngine *engine)
 }
 
 void
+rig_engine_handle_ui_update (RigEngine *engine)
+{
+  CoglTexture2D *color_buffer;
+
+  rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
+
+  /*
+   * Shadow mapping
+   */
+
+  /* Setup the shadow map */
+  /* TODO: reallocate if the onscreen framebuffer is resized */
+  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
+                                                engine->device_width * 2,
+                                                engine->device_height * 2,
+                                                COGL_PIXEL_FORMAT_ANY);
+
+  engine->shadow_color = color_buffer;
+
+  /* XXX: Right now there's no way to avoid allocating a color buffer. */
+  engine->shadow_fb =
+    cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
+  if (engine->shadow_fb == NULL)
+    g_critical ("could not create offscreen buffer");
+
+  /* retrieve the depth texture */
+  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (engine->shadow_fb),
+                                              TRUE);
+  engine->shadow_map =
+    cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
+
+  /* Note: we currently require having exactly one scene light, so if
+   * we didn't already load one we create a default light...
+   */
+  ensure_light (engine);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    {
+      engine->grid_prim = rut_create_create_grid (engine->ctx,
+                                                  engine->device_width,
+                                                  engine->device_height,
+                                                  100,
+                                                  100);
+    }
+
+  if (engine->transitions)
+    engine->selected_transition = engine->transitions->data;
+  else
+    {
+      RigTransition *transition = rig_create_transition (engine, 0);
+      engine->transitions = g_list_prepend (engine->transitions, transition);
+      engine->selected_transition = transition;
+    }
+
+  if (!_rig_in_device_mode &&
+      engine->selected_transition)
+    {
+      engine->transition_view =
+        rig_transition_view_new (engine->ctx,
+                                 engine->scene,
+                                 engine->selected_transition,
+                                 engine->timeline,
+                                 engine->undo_journal);
+      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
+      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
+                                       engine->transition_view);
+    }
+
+  if (!_rig_in_device_mode)
+    rig_load_asset_list (engine);
+#endif
+}
+
+void
+rig_engine_set_onscreen_size (RigEngine *engine,
+                              int width,
+                              int height)
+{
+  /* FIXME: This should probably be rut_shell api instead */
+#if defined (COGL_HAS_SDL_SUPPORT) && (SDL_MAJOR_VERSION >= 2)
+  {
+    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
+    SDL_SetWindowSize (sdl_window,
+                       engine->device_width / 2,
+                       engine->device_height / 2);
+  }
+#else
+#warning "rig_engine_set_onscreen_size unsupported without SDL2"
+#endif
+}
+
+void
 rig_engine_init (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
   CoglFramebuffer *fb;
   int i;
-  CoglTexture2D *color_buffer;
 
   cogl_matrix_init_identity (&engine->identity);
 
@@ -1705,9 +1799,70 @@ rig_engine_init (RutShell *shell, void *user_data)
 
   engine->scene = rut_graph_new (engine->ctx);
 
+  engine->root = rut_graph_new (engine->ctx);
+  engine->top_bin = rut_bin_new (engine->ctx);
+
+
+  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+  /*
+   * Depth of Field
+   */
+
+  engine->dof = rut_dof_effect_new (engine->ctx);
+  engine->enable_dof = FALSE;
+
+  engine->circle_node_attribute =
+    rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
+
+  /* tool */
+  engine->tool = rut_tool_new (engine->shell);
+  rut_tool_add_rotation_event_callback (engine->tool,
+                                        tool_rotation_event_cb,
+                                        engine,
+                                        NULL /* destroy_cb */);
+
+  /* picking ray */
+  engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
+  cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    rig_set_play_mode_enabled (engine, FALSE);
+  else
+#endif
+    rig_set_play_mode_enabled (engine, TRUE);
+
+  engine->camera = rut_camera_new (engine->ctx, NULL);
+  rut_camera_set_clear (engine->camera, FALSE);
+
+  /* XXX: Basically just a hack for now. We should have a
+   * RutShellWindow type that internally creates a RutCamera that can
+   * be used when handling input events in device coordinates.
+   */
+  rut_shell_set_window_camera (shell, engine->camera);
+
+  rut_shell_add_input_camera (shell, engine->camera, engine->root);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+      create_editor_ui (engine);
+  else
+#endif
+    {
+      engine->main_camera_view = rig_camera_view_new (engine);
+      rut_bin_set_child (engine->top_bin, engine->main_camera_view);
+    }
+
+  rut_graphable_add_child (engine->root, engine->top_bin);
+
+  rig_renderer_init (engine);
+
   engine->device_width = DEVICE_WIDTH;
   engine->device_height = DEVICE_HEIGHT;
   cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
+
+
 
 #ifndef __ANDROID__
   if (engine->ui_filename)
@@ -1722,21 +1877,25 @@ rig_engine_init (RutShell *shell, void *user_data)
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
-    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context, 1000, 700);
+    {
+      engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                            1000, 700);
+      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
+    }
   else
 #endif
     engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
-                                        engine->device_width / 2, engine->device_height / 2);
+                                          engine->device_width / 2,
+                                          engine->device_height / 2);
 
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
-      cogl_onscreen_add_resize_handler (engine->onscreen, data_onscreen_resize, engine);
-    }
-#endif
+  cogl_onscreen_add_resize_handler (engine->onscreen,
+                                    data_onscreen_resize, engine);
 
   cogl_framebuffer_allocate (COGL_FRAMEBUFFER (engine->onscreen), NULL);
+
+  fb = COGL_FRAMEBUFFER (engine->onscreen);
+  engine->width = cogl_framebuffer_get_width (fb);
+  engine->height  = cogl_framebuffer_get_height (fb);
 
   rut_shell_add_onscreen (engine->shell, engine->onscreen);
 
@@ -1763,8 +1922,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   }
 #endif
 
-  cogl_onscreen_show (engine->onscreen);
-
 #ifdef __APPLE__
   rig_osx_init (engine);
 #endif
@@ -1773,142 +1930,9 @@ rig_engine_init (RutShell *shell, void *user_data)
                        engine->onscreen,
                        "Rig " G_STRINGIFY (RIG_VERSION));
 
-  fb = COGL_FRAMEBUFFER (engine->onscreen);
-  engine->width = cogl_framebuffer_get_width (fb);
-  engine->height  = cogl_framebuffer_get_height (fb);
-
-  /*
-   * Shadow mapping
-   */
-
-  /* Setup the shadow map */
-  /* TODO: reallocate if the onscreen framebuffer is resized */
-  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
-                                                engine->width * 2, engine->height * 2,
-                                                COGL_PIXEL_FORMAT_ANY);
-
-  engine->shadow_color = color_buffer;
-
-  /* XXX: Right now there's no way to avoid allocating a color buffer. */
-  engine->shadow_fb =
-    cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
-  if (engine->shadow_fb == NULL)
-    g_critical ("could not create offscreen buffer");
-
-  /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (engine->shadow_fb),
-                                              TRUE);
-  engine->shadow_map =
-    cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
-
-
-  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-  /*
-   * Depth of Field
-   */
-
-  engine->dof = rut_dof_effect_new (engine->ctx);
-  engine->enable_dof = FALSE;
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      engine->grid_prim = rut_create_create_grid (engine->ctx,
-                                                  engine->device_width,
-                                                  engine->device_height,
-                                                  100,
-                                                  100);
-    }
-#endif
-
-  engine->circle_node_attribute =
-    rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
-
-  engine->device_transform = rut_transform_new (engine->ctx);
-
-  engine->camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->onscreen));
-  rut_camera_set_clear (engine->camera, FALSE);
-
-  /* XXX: Basically just a hack for now. We should have a
-   * RutShellWindow type that internally creates a RutCamera that can
-   * be used when handling input events in device coordinates.
-   */
-  rut_shell_set_window_camera (shell, engine->camera);
-
-  /* Note: we currently require having exactly one scene light, so if
-   * we didn't already load one we create a default light...
-   */
-  ensure_light (engine);
-
-  engine->root = rut_graph_new (engine->ctx);
-  engine->top_bin = rut_bin_new (engine->ctx);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-      create_editor_ui (engine);
-  else
-#endif
-    {
-      engine->main_camera_view = rig_camera_view_new (engine);
-      rut_bin_set_child (engine->top_bin, engine->main_camera_view);
-    }
-
-  rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
-
-  rut_graphable_add_child (engine->root, engine->top_bin);
-
-  rut_shell_add_input_camera (shell, engine->camera, engine->root);
-
-  /* tool */
-  engine->tool = rut_tool_new (engine->shell);
-  rut_tool_add_rotation_event_callback (engine->tool,
-                                        tool_rotation_event_cb,
-                                        engine,
-                                        NULL /* destroy_cb */);
-
-  /* picking ray */
-  engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
-  cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    rig_set_play_mode_enabled (engine, FALSE);
-  else
-#endif
-    rig_set_play_mode_enabled (engine, TRUE);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    rig_load_asset_list (engine);
-
-  if (engine->transitions)
-    engine->selected_transition = engine->transitions->data;
-  else
-    {
-      RigTransition *transition = rig_create_transition (engine, 0);
-      engine->transitions = g_list_prepend (engine->transitions, transition);
-      engine->selected_transition = transition;
-    }
-
-  if (!_rig_in_device_mode &&
-      engine->selected_transition)
-    {
-      engine->transition_view =
-        rig_transition_view_new (engine->ctx,
-                                 engine->scene,
-                                 engine->selected_transition,
-                                 engine->timeline,
-                                 engine->undo_journal);
-      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
-      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
-                                       engine->transition_view);
-    }
-#endif
+  cogl_onscreen_show (engine->onscreen);
 
   allocate (engine);
-
-  rig_renderer_init (engine);
 }
 
 void
@@ -2379,7 +2403,7 @@ rig_load_asset_list (RigEngine *engine)
 }
 
 void
-rig_free_ux (RigEngine *engine)
+rig_engine_free_ui (RigEngine *engine)
 {
   GList *l;
 

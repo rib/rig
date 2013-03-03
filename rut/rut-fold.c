@@ -349,6 +349,8 @@ rut_fold_set_folded (RutFold *fold, CoglBool folded)
     }
 
   fold->folded = folded;
+
+  rut_shell_queue_redraw (fold->context->shell);
 }
 
 void

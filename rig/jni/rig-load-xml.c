@@ -1508,7 +1508,7 @@ rig_load_xml (RigEngine *engine, const char *file)
         engine->background_color = loader.background;
     }
 
-  rig_free_ux (engine);
+  rig_engine_free_ui (engine);
 
   for (l = loader.entities; l; l = l->next)
     {
@@ -1529,6 +1529,8 @@ rig_load_xml (RigEngine *engine, const char *file)
     rig_transition_foreach_property (engine->transitions->data,
                                      update_transition_property_cb,
                                      engine);
+
+  rig_engine_handle_ui_update (engine);
 
   rut_shell_queue_redraw (engine->ctx->shell);
 

@@ -87,21 +87,9 @@ slave__load (Rig__Slave_Service *service,
 
   rig_pb_unserialize_ui (engine, ui);
 
-  /* XXX: It's not ideal that Cogl doesn't differentiate the SDL and SDL2
-   * winsys because only the SDL2 winsys provides
-   * cogl_sdl_onscreen_get_window.
-   *
-   * XXX: This should ideally be done with some form of
-   * rut_shell_onscreen_resize() api.
-   */
-#ifdef COGL_HAS_SDL_SUPPORT
-  {
-    SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
-    SDL_SetWindowSize (sdl_window,
-                       engine->device_width / 2,
-                       engine->device_height / 2);
-  }
-#endif
+  rig_engine_set_onscreen_size (engine,
+                                engine->device_width / 2,
+                                engine->device_height / 2);
 
   closure (&result, closure_data);
 }
