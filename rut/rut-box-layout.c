@@ -423,18 +423,6 @@ get_other_preferred_size (RutBoxLayout *box,
         {
         case RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT:
         case RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT:
-          rut_sizable_get_preferred_width (child->widget,
-                                           -1, /* for_height */
-                                           min_size_p ?
-                                           &min_size :
-                                           NULL,
-                                           natural_size_p ?
-                                           &natural_size :
-                                           NULL);
-          break;
-
-        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
-        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
           rut_sizable_get_preferred_height (child->widget,
                                             -1, /* for_width */
                                             min_size_p ?
@@ -443,6 +431,18 @@ get_other_preferred_size (RutBoxLayout *box,
                                             natural_size_p ?
                                             &natural_size :
                                             NULL);
+          break;
+
+        case RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM:
+        case RUT_BOX_LAYOUT_PACKING_BOTTOM_TO_TOP:
+          rut_sizable_get_preferred_width (child->widget,
+                                           -1, /* for_height */
+                                           min_size_p ?
+                                           &min_size :
+                                           NULL,
+                                           natural_size_p ?
+                                           &natural_size :
+                                           NULL);
           break;
         }
 
