@@ -393,7 +393,18 @@ add_component_inspector_cb (RutComponent *component,
 {
   RigEngine *engine = user_data;
   RutInspector *inspector = create_inspector (engine, component);
-  RutFold *fold = rut_fold_new (engine->ctx, "Component");
+  const char *name = rut_object_get_type_name (component);
+  char *label;
+  RutFold *fold;
+
+  if (strncmp (name, "Rig", 3) == 0)
+    name += 3;
+
+  label = g_strconcat (name, " Component", NULL);
+
+  fold = rut_fold_new (engine->ctx, label);
+
+  g_free (label);
 
   rut_fold_set_child (fold, inspector);
   rut_refable_unref (inspector);
