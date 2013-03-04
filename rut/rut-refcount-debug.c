@@ -97,8 +97,11 @@ log_action (RutRefcountDebugObject *object_data,
 
 #ifdef RUT_ENABLE_BACKTRACE
   {
-    action->n_backtrace_addresses =
-      backtrace (action->backtrace_addresses, state->backtrace_level);
+    if (state->backtrace_level == 0)
+      action->n_backtrace_addresses = 0;
+    else
+      action->n_backtrace_addresses =
+        backtrace (action->backtrace_addresses, state->backtrace_level);
   }
 #else /* RUT_ENABLE_BACKTRACE */
   {
