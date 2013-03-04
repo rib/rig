@@ -2219,6 +2219,11 @@ rut_shell_main (RutShell *shell)
 
   shell->fini_cb (shell, shell->user_data);
 
+#ifdef USE_SDL
+  g_main_context_set_poll_func (g_main_context_default (),
+                                rut_sdl_original_poll);
+#endif /* USE_SDL */
+
 #endif
 }
 
