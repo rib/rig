@@ -49,4 +49,7 @@ typedef struct _RigSlaveMaster
 void
 rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address);
 
+void
+rig_slave_master_sync_ui (RigSlaveMaster *master);
+
 #endif /* __RIG_SLAVE_MASTER__ */

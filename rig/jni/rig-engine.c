@@ -2493,3 +2493,12 @@ rig_load_asset_list (RigEngine *engine)
   rig_search_asset_list (engine, NULL);
 }
 #endif
+
+void
+rig_engine_sync_slaves (RigEngine *engine)
+{
+  GList *l;
+
+  for (l = engine->slave_masters; l; l = l->next)
+    rig_slave_master_sync_ui (l->data);
+}

@@ -294,4 +294,7 @@ rig_reload_position_inspector (RigEngine *engine,
 void
 rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled);
 
+void
+rig_engine_sync_slaves (RigEngine *engine);
+
 #endif /* _RUT_ENGINE_H_ */

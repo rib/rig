@@ -1149,6 +1149,8 @@ rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
 
   g_return_val_if_fail (undo_redo != NULL, FALSE);
 
+  rig_engine_sync_slaves (journal->engine);
+
   rig_undo_journal_flush_redos (journal);
 
   /* Purely for testing purposes we now redundantly apply

@@ -64,31 +64,8 @@ slave_master_connected (PB_RPC_Client *pb_client,
                         void *user_data)
 {
   RigSlaveMaster *master = user_data;
-  RigEngine *engine = master->engine;
-  ProtobufCService *service =
-    (ProtobufCService *)master->rpc_client->pb_rpc_client;
-  Rig__UI *ui;
-  GList *l;
 
-  g_warn_if_fail (master->required_assets == NULL);
-
-  ui = rig_pb_serialize_ui (engine,
-                            required_asset_cb,
-                            master);
-
-  for (l = master->required_assets; l; l = l->next)
-    {
-      RutAsset *asset = l->data;
-      RigSerializedAsset *serialized_asset = rig_pb_serialize_asset (asset);
-
-      rig__slave__load_asset (service,
-                              &serialized_asset->pb_data,
-                              handle_asset_load_response, NULL);
-
-      rut_refable_unref (serialized_asset);
-    }
-
-  rig__slave__load (service, ui, handle_load_response, NULL);
+  rig_slave_master_sync_ui (master);
 
   g_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
@@ -200,4 +177,34 @@ rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
   RigSlaveMaster *slave_master = rig_slave_master_new (engine, slave_address);
 
   engine->slave_masters = g_list_prepend (engine->slave_masters, slave_master);
+}
+
+void
+rig_slave_master_sync_ui (RigSlaveMaster *master)
+{
+  RigEngine *engine = master->engine;
+  ProtobufCService *service =
+    (ProtobufCService *)master->rpc_client->pb_rpc_client;
+  Rig__UI *ui;
+  GList *l;
+
+  g_warn_if_fail (master->required_assets == NULL);
+
+  ui = rig_pb_serialize_ui (engine,
+                            required_asset_cb,
+                            master);
+
+  for (l = master->required_assets; l; l = l->next)
+    {
+      RutAsset *asset = l->data;
+      RigSerializedAsset *serialized_asset = rig_pb_serialize_asset (asset);
+
+      rig__slave__load_asset (service,
+                              &serialized_asset->pb_data,
+                              handle_asset_load_response, NULL);
+
+      rut_refable_unref (serialized_asset);
+    }
+
+  rig__slave__load (service, ui, handle_load_response, NULL);
 }
