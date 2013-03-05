@@ -35,12 +35,10 @@ typedef struct _RutGaussianBlurrer
   int width, height;
   CoglPixelFormat format;
 
-  RutCamera *x_pass_camera;
   CoglFramebuffer *x_pass_fb;
   CoglTexture *x_pass;
   CoglPipeline *x_pass_pipeline;
 
-  RutCamera *y_pass_camera;
   CoglFramebuffer *y_pass_fb;
   CoglTexture *y_pass;
   CoglTexture *destination;

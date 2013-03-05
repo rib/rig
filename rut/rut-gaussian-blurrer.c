@@ -60,6 +60,7 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
   GString *shader;
+  CoglDepthState depth_state;
   int i;
 
   /* initialize the pipeline cache. The shaders are only dependent on the
@@ -133,6 +134,11 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   cogl_object_unref (snippet);
 
   cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+
+  cogl_depth_state_init (&depth_state);
+  cogl_depth_state_set_write_enabled (&depth_state, FALSE);
+  cogl_depth_state_set_test_enabled (&depth_state, FALSE);
+  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
   g_hash_table_insert (pipeline_cache, GINT_TO_POINTER (n_taps), pipeline);
 
@@ -260,10 +266,6 @@ void
 rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer)
 {
   _rut_gaussian_blurrer_free_buffers (blurrer);
-  if (blurrer->x_pass_camera)
-    rut_refable_unref (blurrer->x_pass_camera);
-  if (blurrer->y_pass_camera)
-    rut_refable_unref (blurrer->y_pass_camera);
   g_slice_free (RutGaussianBlurrer, blurrer);
 }
 
@@ -307,6 +309,8 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
 
       offscreen = cogl_offscreen_new_to_texture (blurrer->x_pass);
       blurrer->x_pass_fb = COGL_FRAMEBUFFER (offscreen);
+      cogl_framebuffer_orthographic (blurrer->x_pass_fb,
+                                     0, 0, src_w, src_h, -1, 100);
     }
 
   if (!blurrer->y_pass)
@@ -322,24 +326,16 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
 
       offscreen = cogl_offscreen_new_to_texture (blurrer->destination);
       blurrer->y_pass_fb = COGL_FRAMEBUFFER (offscreen);
+      cogl_framebuffer_orthographic (blurrer->y_pass_fb,
+                                     0, 0, src_w, src_h, -1, 100);
     }
 
-  if (blurrer->x_pass_camera)
-    rut_camera_set_framebuffer (blurrer->x_pass_camera, blurrer->x_pass_fb);
-  else
-    blurrer->x_pass_camera = rut_camera_new (blurrer->ctx, blurrer->x_pass_fb);
-
-  if (blurrer->y_pass_camera)
-    rut_camera_set_framebuffer (blurrer->y_pass_camera, blurrer->y_pass_fb);
-  else
-    blurrer->y_pass_camera = rut_camera_new (blurrer->ctx, blurrer->y_pass_fb);
-
-  set_blurrer_pipeline_texture (blurrer->x_pass_pipeline, source, 1.0f / src_w, 0);
-  set_blurrer_pipeline_texture (blurrer->y_pass_pipeline, blurrer->x_pass, 0, 1.0f / src_h);
+  set_blurrer_pipeline_texture (blurrer->x_pass_pipeline,
+                                source, 1.0f / src_w, 0);
+  set_blurrer_pipeline_texture (blurrer->y_pass_pipeline,
+                                blurrer->x_pass, 0, 1.0f / src_h);
 
   /* x pass */
-  rut_camera_flush (blurrer->x_pass_camera);
-
   cogl_framebuffer_draw_rectangle (blurrer->x_pass_fb,
                                    blurrer->x_pass_pipeline,
                                    0,
@@ -347,19 +343,13 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
                                    blurrer->width,
                                    blurrer->height);
 
-  rut_camera_end_frame (blurrer->x_pass_camera);
-
   /* y pass */
-  rut_camera_flush (blurrer->y_pass_camera);
-
   cogl_framebuffer_draw_rectangle (blurrer->y_pass_fb,
                                    blurrer->y_pass_pipeline,
                                    0,
                                    0,
                                    blurrer->width,
                                    blurrer->height);
-
-  rut_camera_end_frame (blurrer->y_pass_camera);
 
   return cogl_object_ref (blurrer->destination);
 }
