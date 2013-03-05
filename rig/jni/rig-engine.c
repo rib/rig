@@ -1153,12 +1153,10 @@ connect_pressed_cb (RutButton *button,
                     void *user_data)
 {
   RigEngine *engine = user_data;
+  GList *l;
 
-  if (engine->slave_addresses)
-    {
-      RigSlaveAddress *slave_address = engine->slave_addresses->data;
-      rig_connect_to_slave (engine, slave_address);
-    }
+  for (l = engine->slave_addresses; l; l = l->next)
+    rig_connect_to_slave (engine, l->data);
 }
 
 static void
