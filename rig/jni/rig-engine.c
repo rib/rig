@@ -1831,8 +1831,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   engine->timeline_progress =
     rut_introspectable_lookup_property (engine->timeline, "progress");
 
-  engine->scene = rut_graph_new (engine->ctx);
-
   engine->root = rut_graph_new (engine->ctx);
   engine->top_bin = rut_bin_new (engine->ctx);
 
@@ -2443,4 +2441,10 @@ rig_engine_free_ui (RigEngine *engine)
   engine->assets = NULL;
 
   free_asset_input_closures (engine);
+
+  if (engine->scene)
+    {
+      rut_refable_unref (engine->scene);
+      engine->scene = NULL;
+    }
 }

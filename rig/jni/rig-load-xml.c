@@ -1510,6 +1510,7 @@ rig_load_xml (RigEngine *engine, const char *file)
 
   rig_engine_free_ui (engine);
 
+  engine->scene = rut_graph_new (engine->ctx);
   for (l = loader.entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)

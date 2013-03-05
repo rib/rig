@@ -1904,6 +1904,7 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
 
   rig_engine_free_ui (engine);
 
+  engine->scene = rut_graph_new (engine->ctx);
   for (l = unserializer.entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)
