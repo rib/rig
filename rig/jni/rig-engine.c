@@ -1837,6 +1837,9 @@ rig_engine_set_onscreen_size (RigEngine *engine,
                               int width,
                               int height)
 {
+  if (engine->width == width && engine->height == height)
+    return;
+
   /* FIXME: This should probably be rut_shell api instead */
 #if defined (COGL_HAS_SDL_SUPPORT) && (SDL_MAJOR_VERSION >= 2)
   {
