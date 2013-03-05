@@ -1703,13 +1703,17 @@ rig_engine_handle_ui_update (RigEngine *engine)
    */
 
   /* Setup the shadow map */
-  /* TODO: reallocate if the onscreen framebuffer is resized */
+
+  g_warn_if_fail (engine->shadow_color == NULL);
+
   color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
                                                 engine->device_width * 2,
                                                 engine->device_height * 2,
                                                 COGL_PIXEL_FORMAT_ANY);
 
   engine->shadow_color = color_buffer;
+
+  g_warn_if_fail (engine->shadow_fb == NULL);
 
   /* XXX: Right now there's no way to avoid allocating a color buffer. */
   engine->shadow_fb =
@@ -1720,6 +1724,9 @@ rig_engine_handle_ui_update (RigEngine *engine)
   /* retrieve the depth texture */
   cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (engine->shadow_fb),
                                               TRUE);
+
+  g_warn_if_fail (engine->shadow_map == NULL);
+
   engine->shadow_map =
     cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
 
@@ -1764,6 +1771,67 @@ rig_engine_handle_ui_update (RigEngine *engine)
   if (!_rig_in_device_mode)
     rig_load_asset_list (engine);
 #endif
+}
+
+void
+rig_engine_free_ui (RigEngine *engine)
+{
+  GList *l;
+
+#ifdef RIG_EDITOR_ENABLED
+  if (engine->transition_view)
+    {
+      rut_ui_viewport_set_sync_widget (engine->timeline_vp, NULL);
+      rut_graphable_remove_child (engine->transition_view);
+      engine->transition_view = NULL;
+    }
+
+  if (engine->grid_prim)
+    {
+      cogl_object_unref (engine->grid_prim);
+      engine->grid_prim = NULL;
+    }
+#endif
+
+  if (engine->shadow_color)
+    {
+      cogl_object_unref (engine->shadow_color);
+      engine->shadow_color = NULL;
+    }
+
+  if (engine->shadow_map)
+    {
+      cogl_object_unref (engine->shadow_map);
+      engine->shadow_map = NULL;
+    }
+
+  if (engine->shadow_fb)
+    {
+      cogl_object_unref (engine->shadow_fb);
+      engine->shadow_fb = NULL;
+    }
+
+  for (l = engine->transitions; l; l = l->next)
+    rig_transition_free (l->data);
+  g_list_free (engine->transitions);
+  engine->transitions = NULL;
+
+  for (l = engine->assets; l; l = l->next)
+    rut_refable_unref (l->data);
+  g_list_free (engine->assets);
+  engine->assets = NULL;
+
+  free_asset_input_closures (engine);
+
+  /* NB: no extra reference is held on the light other than the
+   * reference for it being in the scenegraph. */
+  engine->light = NULL;
+
+  if (engine->scene)
+    {
+      rut_refable_unref (engine->scene);
+      engine->scene = NULL;
+    }
 }
 
 void
@@ -1830,6 +1898,8 @@ rig_engine_init (RutShell *shell, void *user_data)
     rut_introspectable_lookup_property (engine->timeline, "elapsed");
   engine->timeline_progress =
     rut_introspectable_lookup_property (engine->timeline, "progress");
+
+  engine->scene = rut_graph_new (engine->ctx);
 
   engine->root = rut_graph_new (engine->ctx);
   engine->top_bin = rut_bin_new (engine->ctx);
@@ -1975,8 +2045,7 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
   rig_renderer_fini (engine);
 
-  rut_refable_unref (engine->light);
-  engine->light = NULL;
+  rig_engine_free_ui (engine);
 
   free_builtin_assets (engine);
 
@@ -1985,7 +2054,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
   rut_refable_unref (engine->camera);
   rut_refable_unref (engine->shadow_map_camera);
   rut_refable_unref (engine->root);
-  rut_refable_unref (engine->scene);
   rut_refable_unref (engine->top_bin);
   rut_refable_unref (engine->main_camera_view);
 
@@ -2005,11 +2073,9 @@ rig_engine_fini (RutShell *shell, void *user_data)
         rut_refable_unref (engine->splits[i]);
 
       rut_refable_unref (engine->timeline_vp);
-      rut_refable_unref (engine->transition_view);
       rut_refable_unref (engine->top_vbox);
       rut_refable_unref (engine->top_hbox);
       rut_refable_unref (engine->properties_hbox);
-      cogl_object_unref (engine->grid_prim);
 
       if (engine->transparency_grid)
         rut_refable_unref (engine->transparency_grid);
@@ -2188,6 +2254,8 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 
   return asset;
 }
+
+#ifdef RIG_EDITOR_ENABLED
 
 static void
 add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
@@ -2424,27 +2492,4 @@ rig_load_asset_list (RigEngine *engine)
 
   rig_search_asset_list (engine, NULL);
 }
-
-void
-rig_engine_free_ui (RigEngine *engine)
-{
-  GList *l;
-
-  for (l = engine->transitions; l; l = l->next)
-    rig_transition_free (l->data);
-  g_list_free (engine->transitions);
-  engine->transitions = NULL;
-
-  for (l = engine->assets; l; l = l->next)
-    rut_refable_unref (l->data);
-  g_list_free (engine->assets);
-  engine->assets = NULL;
-
-  free_asset_input_closures (engine);
-
-  if (engine->scene)
-    {
-      rut_refable_unref (engine->scene);
-      engine->scene = NULL;
-    }
-}
+#endif
