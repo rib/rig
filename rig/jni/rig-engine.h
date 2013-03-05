@@ -85,7 +85,6 @@ struct _RigEngine
   CoglOffscreen *shadow_fb;
   CoglTexture2D *shadow_color;
   CoglTexture *shadow_map;
-  RutCamera *shadow_map_camera;
 
   float device_width;
   float device_height;

@@ -1559,8 +1559,6 @@ ensure_light (RigEngine *engine)
       rut_camera_set_viewport (camera, 0, 0, width, height);
     }
 
-  engine->shadow_map_camera = camera;
-
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -2052,7 +2050,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
   rut_shell_remove_input_camera (shell, engine->camera, engine->root);
 
   rut_refable_unref (engine->camera);
-  rut_refable_unref (engine->shadow_map_camera);
   rut_refable_unref (engine->root);
   rut_refable_unref (engine->top_bin);
   rut_refable_unref (engine->main_camera_view);
