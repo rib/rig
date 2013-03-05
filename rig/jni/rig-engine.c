@@ -1162,6 +1162,38 @@ connect_pressed_cb (RutButton *button,
 }
 
 static void
+load_builtin_assets (RigEngine *engine)
+{
+  engine->diamond_builtin_asset = rut_asset_new_builtin (engine->ctx, "diamond.png");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
+
+  engine->circle_builtin_asset = rut_asset_new_builtin (engine->ctx, "circle.png");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
+
+  engine->text_builtin_asset = rut_asset_new_builtin (engine->ctx, "fonts.png");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "text");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "label");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
+}
+
+static void
+free_builtin_assets (RigEngine *engine)
+{
+  rut_refable_unref (engine->diamond_builtin_asset);
+  rut_refable_unref (engine->circle_builtin_asset);
+  rut_refable_unref (engine->text_builtin_asset);
+}
+
+static void
 create_top_bar (RigEngine *engine)
 {
   RutStack *top_bar_stack = rut_stack_new (engine->ctx, 123, 0);
@@ -1789,6 +1821,8 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                    g_free,
                                                    rut_refable_unref);
 
+  load_builtin_assets (engine);
+
   engine->timeline = rut_timeline_new (engine->ctx, 20.0);
   rut_timeline_stop (engine->timeline);
 
@@ -1945,6 +1979,8 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
   rut_refable_unref (engine->light);
   engine->light = NULL;
+
+  free_builtin_assets (engine);
 
   rut_shell_remove_input_camera (shell, engine->camera, engine->root);
 
@@ -2374,28 +2410,17 @@ rig_load_asset_list (RigEngine *engine)
 
   enumerate_dir_for_assets (engine, assets_dir);
 
-  engine->diamond_builtin_asset = rut_asset_new_builtin (engine->ctx, "diamond.png");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
-  engine->assets = g_list_prepend (engine->assets, engine->diamond_builtin_asset);
+  rut_refable_ref (engine->diamond_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->diamond_builtin_asset);
 
-  engine->circle_builtin_asset = rut_asset_new_builtin (engine->ctx, "circle.png");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
-  engine->assets = g_list_prepend (engine->assets, engine->circle_builtin_asset);
+  rut_refable_ref (engine->circle_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->circle_builtin_asset);
 
-  engine->text_builtin_asset = rut_asset_new_builtin (engine->ctx, "fonts.png");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "text");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "label");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
-  engine->assets = g_list_prepend (engine->assets, engine->text_builtin_asset);
+  rut_refable_ref (engine->text_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->text_builtin_asset);
 
   g_object_unref (assets_dir);
 
