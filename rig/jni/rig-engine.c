@@ -1854,6 +1854,8 @@ rig_engine_init (RutShell *shell, void *user_data)
       rut_bin_set_child (engine->top_bin, engine->main_camera_view);
     }
 
+  rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
+
   rut_graphable_add_child (engine->root, engine->top_bin);
 
   rut_shell_add_input_camera (shell, engine->camera, engine->root);

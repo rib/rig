@@ -33,4 +33,8 @@ typedef struct _RigCameraView RigCameraView;
 RigCameraView *
 rig_camera_view_new (RigEngine *engine);
 
+void
+rig_camera_view_set_scene (RigCameraView *view,
+                           RutGraph *scene);
+
 #endif /* _RIG_CAMERA_VIEW_H_ */

@@ -48,6 +48,8 @@ struct _RigCameraView
 
   CoglPipeline *bg_pipeline;
 
+  RutGraph *scene;
+
   float origin[3];
   //float saved_origin[3];
 
@@ -76,15 +78,13 @@ _rig_camera_view_free (void *object)
 {
   RigCameraView *view = object;
 
+  rig_camera_view_set_scene (view, NULL);
+
   rut_shell_remove_pre_paint_callback (view->context->shell, view);
 
   rut_refable_unref (view->context);
 
   rut_graphable_destroy (view);
-
-  rut_shell_remove_input_camera (view->context->shell,
-                                 view->view_camera_component,
-                                 view->engine->scene);
 
   rut_refable_unref (view->view_camera_to_origin);
   rut_refable_unref (view->view_camera_rotate);
@@ -203,6 +203,8 @@ _rut_camera_view_paint (RutObject *object,
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   float x, y, z;
 
+  if (view->scene == NULL)
+    return;
 
   cogl_framebuffer_draw_rectangle (fb,
                                    view->bg_pipeline,
@@ -1665,7 +1667,6 @@ rig_camera_view_new (RigEngine *engine)
    */
 
   view->view_camera_to_origin = rut_entity_new (engine->ctx);
-  rut_graphable_add_child (engine->scene, view->view_camera_to_origin);
   rut_entity_set_label (view->view_camera_to_origin, "rig:camera_to_origin");
 
   view->view_camera_rotate = rut_entity_new (engine->ctx);
@@ -1697,59 +1698,61 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_add_child (view->view_camera_screen_pos, view->view_camera);
   rut_entity_set_label (view->view_camera, "rig:camera");
 
+  view->view_camera_component = rut_camera_new (engine->ctx, fb);
+  rut_camera_set_clear (view->view_camera_component, FALSE);
+  rut_entity_add_component (view->view_camera, view->view_camera_component);
+
+  return view;
+}
+
+static void
+initialize_navigation_camera (RigCameraView *view)
+{
+  RigEngine *engine = view->engine;
+
   view->origin[0] = engine->device_width / 2;
   view->origin[1] = engine->device_height / 2;
   view->origin[2] = 0;
 
-  rut_entity_translate (view->view_camera_to_origin,
-                        view->origin[0],
-                        view->origin[1],
-                        view->origin[2]);
-                        //engine->device_width / 2, (engine->device_height / 2), 0);
+  rut_entity_set_translate (view->view_camera_to_origin,
+                            view->origin[0],
+                            view->origin[1],
+                            view->origin[2]);
 
-  //rut_entity_rotate_z_axis (view->view_camera_to_origin, 45);
+  rut_entity_set_translate (view->view_camera_origin_offset,
+                            -engine->device_width / 2,
+                            -(engine->device_height / 2), 0);
 
-  rut_entity_translate (view->view_camera_origin_offset,
-                        -engine->device_width / 2, -(engine->device_height / 2), 0);
-
-  /* FIXME: currently we also do a z translation due to using
-   * cogl_matrix_view_2d_in_perspective, we should stop using that api so we can
-   * do our z_2d translation here...
-   *
-   * XXX: should the camera_z transform be done for the negative translate?
-   */
-  //device scale = 0.389062494
-  view->view_camera_z = 0.f;
-  rut_entity_translate (view->view_camera_armature, 0, 0, view->view_camera_z);
-
-#if 0
-  {
-    float pos[3] = {0, 0, 0};
-    rut_entity_set_position (view->view_camera_rig, pos);
-    rut_entity_translate (view->view_camera_rig, 100, 100, 0);
-  }
-#endif
-
-  //rut_entity_translate (view->view_camera, 100, 100, 0);
-
-#if 0
-  view->view_camera_z = 20.f;
-  vector3[0] = 0.f;
-  vector3[1] = 0.f;
-  vector3[2] = view->view_camera_z;
-  rut_entity_set_position (view->view_camera, vector3);
-#else
   view->view_camera_z = 10.f;
-#endif
-
-  view->view_camera_component = rut_camera_new (engine->ctx, fb);
-  rut_camera_set_clear (view->view_camera_component, FALSE);
-  rut_entity_add_component (view->view_camera, view->view_camera_component);
-  rut_shell_add_input_camera (view->context->shell,
-                              view->view_camera_component,
-                              engine->scene);
 
   update_camera_position (view);
+}
 
-  return view;
+void
+rig_camera_view_set_scene (RigCameraView *view,
+                           RutGraph *scene)
+{
+  if (view->scene == scene)
+    return;
+
+  if (view->scene)
+    {
+      rut_graphable_remove_child (view->view_camera_to_origin);
+      rut_shell_remove_input_camera (view->context->shell,
+                                     view->view_camera_component,
+                                     view->scene);
+    }
+
+  if (scene)
+    {
+      rut_graphable_add_child (scene, view->view_camera_to_origin);
+      rut_shell_add_input_camera (view->context->shell,
+                                  view->view_camera_component,
+                                  scene);
+      initialize_navigation_camera (view);
+    }
+
+  /* XXX: to avoid having a circular reference we don't take a
+   * reference on the scene... */
+  view->scene = scene;
 }
