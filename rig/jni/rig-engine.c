@@ -277,6 +277,9 @@ rig_create_transition (RigEngine *engine,
                             engine->timeline_elapsed,
                             NULL);
 
+  rig_transition_set_progress (transition,
+                               rut_timeline_get_progress (engine->timeline));
+
   return transition;
 }
 
