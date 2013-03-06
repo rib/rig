@@ -491,8 +491,6 @@ allocate_cb (RutObject *graphable,
     rut_entity_set_translate (view->view_camera_armature, 0, 0, view->view_camera_z);
     //rut_entity_set_translate (view->view_camera_armature, 0, 0, 0);
 
-    rut_camera_set_zoom (view->view_camera_component, 1);
-
     {
       float dx, dy, dz, scale;
       CoglQuaternion rotation;
