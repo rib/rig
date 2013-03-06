@@ -44,6 +44,10 @@ stamp-marshal
 xmldocs.make
 /data/Info.plist
 /rig/rig
+/rig/rig-device
+/rig/rig-slave
+/rig/jni/rig.pb-c.c
+/rig/jni/rig.pb-c.h
 /rig/jni/rig-defines.h
 /tools/rig-bump-map-gen
 /tools/rig-check-signature
