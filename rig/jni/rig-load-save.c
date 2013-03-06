@@ -58,7 +58,6 @@ rig_save (RigEngine *engine, const char *path)
 {
   struct stat sb;
   Rig__UI *ui;
-  const char *ext;
   char *rig_filename;
   FILE *fp;
 
@@ -68,8 +67,7 @@ rig_save (RigEngine *engine, const char *path)
     FALSE
   };
 
-  ext = g_strrstr (path, ".xml");
-  if (ext && ext[4] == '\0')
+  if (g_str_has_suffix (path, ".xml"))
     rig_filename = g_strconcat (path, ".rig", NULL);
   else
     rig_filename = g_strdup (path);
@@ -104,7 +102,6 @@ ignore_free (void *allocator_data, void *ptr)
 void
 rig_load (RigEngine *engine, const char *file)
 {
-  char *ext;
   struct stat sb;
   int fd;
   uint8_t *contents;
@@ -131,8 +128,7 @@ rig_load (RigEngine *engine, const char *file)
   /* XXX: For compatability with Rig 2 we support loading XML ui
    * descriptions, though the plan is to only maintain this for one
    * release, just to give time to convert existing files. */
-  ext = g_strrstr (file, ".xml");
-  if (ext && ext[4] == '\0')
+  if (g_str_has_suffix (file, ".xml"))
     {
       rig_load_xml (engine, file);
       return;
