@@ -58,16 +58,32 @@ rig_save (RigEngine *engine, const char *path)
 {
   struct stat sb;
   Rig__UI *ui;
-  char *rig_filename = g_strconcat (path, ".rig", NULL);
-  FILE *fp = fopen (rig_filename, "w");
+  const char *ext;
+  char *rig_filename;
+  FILE *fp;
 
   BufferedFile buffered_file = {
     { append_to_file },
-    fp,
+    NULL, /* file pointer */
     FALSE
   };
 
+  ext = g_strrstr (path, ".xml");
+  if (ext && ext[4] == '\0')
+    rig_filename = g_strconcat (path, ".rig", NULL);
+  else
+    rig_filename = g_strdup (path);
+
+  fp = fopen (rig_filename, "w");
   g_free (rig_filename);
+
+  if (!fp)
+    {
+      g_warning ("Failed to open %s for saving", rig_filename);
+      return;
+    }
+
+  buffered_file.fp = fp;
 
   if (stat (engine->ctx->assets_location, &sb) == -1)
     mkdir (engine->ctx->assets_location, 0777);
