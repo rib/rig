@@ -613,6 +613,10 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
         g_list_prepend (inferred_tags, (char *)g_intern_string ("mesh"));
       inferred_tags =
         g_list_prepend (inferred_tags, (char *)g_intern_string ("model"));
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("geometry"));
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("geom"));
     }
   g_free (basename);
 

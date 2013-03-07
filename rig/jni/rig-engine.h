@@ -138,7 +138,12 @@ struct _RigEngine
 
   RutUIViewport *assets_vp;
   RutFold *assets_results_fold;
-  RutFlowLayout *assets_flow;
+  RutBoxLayout *assets_results_vbox;
+  RutFlowLayout *assets_geometry_results;
+  RutFlowLayout *assets_image_results;
+  RutFlowLayout *assets_video_results;
+  RutFlowLayout *assets_other_results;
+
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *diamond_builtin_asset;
