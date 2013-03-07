@@ -894,6 +894,31 @@ asset_matches_search (RutAsset *asset,
   return TRUE;
 }
 
+static RutFlowLayout *
+add_results_flow (RutContext *ctx,
+                  const char *label,
+                  RutBoxLayout *vbox)
+{
+  RutFlowLayout *flow =
+    rut_flow_layout_new (ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  RutText *text = rut_text_new_with_text (ctx, "Bold Sans 20px", label);
+  CoglColor color;
+
+  rut_color_init_from_uint32 (&color, 0x85cac4ff);
+
+  rut_text_set_color (text, &color);
+
+  rut_box_layout_add (vbox, FALSE, text);
+
+  rut_flow_layout_set_x_padding (flow, 5);
+  rut_flow_layout_set_y_padding (flow, 5);
+  rut_flow_layout_set_max_child_height (flow, 100);
+
+  rut_box_layout_add (vbox, TRUE, flow);
+
+  return flow;
+}
+
 static void
 add_asset_icon (RigEngine *engine,
                 RutAsset *asset)
@@ -937,13 +962,88 @@ add_asset_icon (RigEngine *engine,
   rut_stack_add (stack, region);
   rut_refable_unref (region);
 
-  rut_flow_layout_add (engine->assets_flow, bin);
-  rut_refable_unref (bin);
+  if (rut_asset_has_tag (asset, "geometry"))
+    {
+      if (!engine->assets_geometry_results)
+        {
+          engine->assets_geometry_results =
+            add_results_flow (engine->ctx,
+                              "Geometry",
+                              engine->assets_results_vbox);
+        }
+
+      rut_flow_layout_add (engine->assets_geometry_results, bin);
+      rut_refable_unref (bin);
+    }
+  else if (rut_asset_has_tag (asset, "image"))
+    {
+      if (!engine->assets_image_results)
+        {
+          engine->assets_image_results =
+            add_results_flow (engine->ctx,
+                              "Images",
+                              engine->assets_results_vbox);
+        }
+
+      rut_flow_layout_add (engine->assets_image_results, bin);
+      rut_refable_unref (bin);
+    }
+  else if (rut_asset_has_tag (asset, "video"))
+    {
+      if (!engine->assets_video_results)
+        {
+          engine->assets_video_results =
+            add_results_flow (engine->ctx,
+                              "Video",
+                              engine->assets_results_vbox);
+        }
+
+      rut_flow_layout_add (engine->assets_video_results, bin);
+      rut_refable_unref (bin);
+    }
+  else
+    {
+      g_warn_if_reached ();
+
+      if (!engine->assets_other_results)
+        {
+          engine->assets_other_results =
+            add_results_flow (engine->ctx,
+                              "Other",
+                              engine->assets_results_vbox);
+        }
+
+      rut_flow_layout_add (engine->assets_other_results, bin);
+      rut_refable_unref (bin);
+    }
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
   engine->asset_input_closures = g_list_prepend (engine->asset_input_closures,
                                                closure);
+}
+
+static void
+clear_assets_results (RigEngine *engine)
+{
+  if (engine->assets_results_vbox)
+    {
+      rut_fold_set_child (engine->assets_results_fold, NULL);
+      free_asset_input_closures (engine);
+
+      /* NB: We don't maintain any additional references on asset
+       * result widgets beyond the references for them being in the
+       * sceneg graph and so setting a NULL fold child should release
+       * everything underneath...
+       */
+
+      engine->assets_results_vbox = NULL;
+
+      engine->assets_geometry_results = NULL;
+      engine->assets_image_results = NULL;
+      engine->assets_video_results = NULL;
+      engine->assets_other_results = NULL;
+    }
 }
 
 static CoglBool
@@ -953,26 +1053,13 @@ rig_search_asset_list (RigEngine *engine, const char *search)
   int i;
   CoglBool found = FALSE;
 
-  if (engine->assets_flow)
-    {
-      rut_fold_set_child (engine->assets_results_fold, NULL);
-      free_asset_input_closures (engine);
-    }
+  clear_assets_results (engine);
 
-  engine->assets_flow =
-    rut_flow_layout_new (engine->ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
-
-  rut_flow_layout_set_x_padding (engine->assets_flow, 5);
-  rut_flow_layout_set_y_padding (engine->assets_flow, 5);
-  rut_flow_layout_set_max_child_height (engine->assets_flow, 100);
-
-#if 0
-  if (engine->transparency_grid)
-    rut_graphable_add_child (engine->assets_list, engine->transparency_grid);
-#endif
-
-  rut_fold_set_child (engine->assets_results_fold, engine->assets_flow);
-  rut_refable_unref (engine->assets_flow);
+  engine->assets_results_vbox =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  rut_fold_set_child (engine->assets_results_fold,
+                      engine->assets_results_vbox);
+  rut_refable_unref (engine->assets_results_vbox);
 
   for (l = engine->assets, i= 0; l; l = l->next, i++)
     {
