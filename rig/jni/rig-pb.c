@@ -1050,7 +1050,7 @@ pb_init_boxed_value (UnSerializer *unserializer,
       break;
 
     case RUT_PROPERTY_TYPE_TEXT:
-      boxed->d.text_val = pb_value->text_value;
+      boxed->d.text_val = g_strdup (pb_value->text_value);
       break;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
