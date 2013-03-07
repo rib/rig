@@ -35,7 +35,8 @@ dist_assets_DATA = \
 	left-drop-shadow.png \
 	bottom-drop-shadow.png \
 	tri-fold-up.png \
-	tri-fold-down.png
+	tri-fold-down.png \
+	magnifying-glass.png
 
 if HAVE_GTK
 dist_assets_DATA += \
