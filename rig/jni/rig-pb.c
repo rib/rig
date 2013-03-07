@@ -1098,7 +1098,10 @@ collect_error (UnSerializer *unserializer,
    * realize that their document may be corrupt.
    */
 
-  g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, ap);
+  if (rut_util_is_boolean_env_set ("RUT_IGNORE_LOAD_ERRORS"))
+    g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, format, ap);
+  else
+    g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, format, ap);
 
   va_end (ap);
 }
