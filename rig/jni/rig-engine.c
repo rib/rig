@@ -1412,6 +1412,7 @@ create_assets_view (RigEngine *engine)
   RutBin *bin;
   RutEntry *entry;
   RutText *text;
+  RutIcon *search_icon;
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (search_stack, bg);
@@ -1422,6 +1423,9 @@ create_assets_view (RigEngine *engine)
   text = rut_entry_get_text (entry);
   rut_text_set_single_line_mode (text, TRUE);
   rut_text_set_hint_text (text, "Search...");
+
+  search_icon = rut_icon_new (engine->ctx, "magnifying-glass.png");
+  rut_entry_set_icon (entry, search_icon);
 
   rut_text_add_text_changed_callback (text,
                                       asset_search_update_cb,
