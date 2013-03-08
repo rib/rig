@@ -164,6 +164,12 @@ struct _RigEngine
   RutEntity *light;
   RutEntity *light_handle;
 
+  RutEntity *play_camera;
+  RutCamera *play_camera_component;
+#ifdef RIG_EDITOR_ENABLED
+  RutEntity *play_camera_handle;
+#endif
+
   /* postprocessing */
   CoglFramebuffer *postprocess;
   RutDepthOfField *dof;
