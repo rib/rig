@@ -2510,18 +2510,20 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
                 }
               break;
 
-#if 0
-            /* HACK: FIXME: provide a handle in the scene for
-             * selecting the camera entity */
+              /* HACK: Currently it's quite hard to select the play
+               * camera because it will usually be positioned far away
+               * from the scene. This provides a way to select it by
+               * pressing Ctrl+C. Eventually it should be possible to
+               * select it using a list of entities somewhere */
             case RUT_KEY_c:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_set_selected_entity (engine, engine->editor_camera);
+                  rig_set_selected_entity (engine, engine->play_camera);
                   update_inspector (engine);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
-#endif
+              break;
             }
         }
 #endif
