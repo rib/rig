@@ -89,7 +89,7 @@ rig_load_asset_list (RigEngine *engine);
 static void
 rig_refresh_thumbnails (gpointer instance,
                         gpointer user_data);
-                        
+
 static void
 rig_video_force_redraw (gpointer instance,
                         gpointer user_data);
@@ -666,17 +666,16 @@ asset_input_cb (RutInputRegion *region,
                       rut_material_set_alpha_mask_asset (material, asset);
                     else if (type == RUT_ASSET_TYPE_VIDEO)
                       {
-                        rut_material_set_video_texture_asset (engine->ctx, 
-                                                              material, asset);
-                        
+                        rut_material_set_video_texture_asset (material, asset);
+
                         if (material->sink)
                           {
-                            g_signal_connect (material->sink, "pipeline-ready", 
-                                              G_CALLBACK (rig_prepare_pointalism_pipeline), 
+                            g_signal_connect (material->sink, "pipeline-ready",
+                                              G_CALLBACK (rig_prepare_pointalism_pipeline),
                                               entity);
 
-                            g_signal_connect (material->sink, "new-frame", 
-                                              G_CALLBACK (rig_video_force_redraw), 
+                            g_signal_connect (material->sink, "new-frame",
+                                              G_CALLBACK (rig_video_force_redraw),
                                               engine);
                           }
                       }
@@ -685,17 +684,17 @@ asset_input_cb (RutInputRegion *region,
                   {
                     material = rut_material_new (engine->ctx, asset);
                     rut_entity_add_component (entity, material);
-                    
+
                     if (type == RUT_ASSET_TYPE_VIDEO)
                       {
                         if (material->sink)
                           {
-                            g_signal_connect (material->sink, "pipeline-ready", 
-                                              G_CALLBACK (rig_prepare_pointalism_pipeline), 
+                            g_signal_connect (material->sink, "pipeline-ready",
+                                              G_CALLBACK (rig_prepare_pointalism_pipeline),
                                               entity);
 
-                            g_signal_connect (material->sink, "new-frame", 
-                                              G_CALLBACK (rig_video_force_redraw), 
+                            g_signal_connect (material->sink, "new-frame",
+                                              G_CALLBACK (rig_video_force_redraw),
                                               engine);
                           }
                       }
@@ -1127,7 +1126,7 @@ rig_refresh_thumbnails (gpointer instance,
                         gpointer user_data)
 {
   RigEngine* engine = (RigEngine*) user_data;
-  
+
   rig_search_asset_list (engine, NULL);
 }
 
@@ -2593,7 +2592,7 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   else if (rut_util_find_tag (inferred_tags, "ply"))
     asset = rut_asset_new_ply_model (engine->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "video"))
-    asset = rut_asset_new_video (engine->ctx, path, (GCallback) rig_refresh_thumbnails, 
+    asset = rut_asset_new_video (engine->ctx, path, (GCallback) rig_refresh_thumbnails,
                                  engine);
 
   if (asset)
@@ -2627,8 +2626,8 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
       if (strcmp (rut_asset_get_path (existing), path) == 0)
         return;
     }
-  
-  
+
+
   if (strcmp (g_file_get_basename (asset_file), thumbnail) != 0)
     asset = rig_load_asset (engine, info, asset_file);
 

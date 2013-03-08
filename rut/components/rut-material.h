@@ -46,15 +46,17 @@ struct _RutMaterial
 
   int ref_count;
 
+  RutContext *ctx;
+
   RutComponentableProps component;
   RutAsset *texture_asset;
   RutAsset *normal_map_asset;
   RutAsset *alpha_mask_asset;
   RutAsset *video_texture_asset;
-  
+
   CoglGstVideoSink *sink;
   GstElement *bin, *pipeline;
-  
+
   RutVideoRenderer *video_renderer;
   CoglTexture *circle_shape;
 
@@ -107,8 +109,7 @@ RutAsset *
 rut_material_get_alpha_mask_asset (RutMaterial *material);
 
 void
-rut_material_set_video_texture_asset (RutContext *ctx,
-                                      RutMaterial *material, 
+rut_material_set_video_texture_asset (RutMaterial *material,
                                       RutAsset *asset);
 
 RutAsset *
@@ -152,7 +153,7 @@ rut_material_set_alpha_mask_threshold (RutObject *material,
 CoglBool
 rut_material_get_pointalism_on (RutObject *material);
 
-void 
+void
 rut_material_set_pointalism_on (RutObject *material,
                                 CoglBool pointalism_on);
 
@@ -162,28 +163,28 @@ rut_material_get_pointalism_scale (RutObject *obj);
 void
 rut_material_set_pointalism_scale (RutObject *obj,
                                    float scale);
-                                   
+
 float
 rut_material_get_pointalism_z (RutObject *obj);
 
 void
 rut_material_set_pointalism_z (RutObject *obj,
                                float z);
-                                
+
 int
 rut_material_get_pointalism_columns (RutObject *material);
 
 void
 rut_material_set_pointalism_columns (RutObject *material,
                                      int cols);
-                                     
+
 int
 rut_material_get_pointalism_rows (RutObject *material);
 
 void
 rut_material_set_pointalism_rows (RutObject *material,
                                   int rows);
-                                  
+
 float
 rut_material_get_pointalism_cell_size (RutObject *material);
 
@@ -201,7 +202,7 @@ rut_material_flush_uniforms_ignore_age (RutMaterial *material);
 void
 rut_material_video_play (RutMaterial *material,
                          RutContext *ctx);
-                         
+
 void
 rut_material_video_stop (RutMaterial *material);
 
