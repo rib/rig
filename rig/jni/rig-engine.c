@@ -525,6 +525,8 @@ rig_set_selected_entity (RigEngine *engine,
     rut_tool_update (engine->tool, NULL);
   else if (entity == engine->light_handle)
     engine->selected_entity = engine->light;
+  else if (entity == engine->play_camera_handle)
+    engine->selected_entity = engine->play_camera;
 
   rut_shell_queue_redraw (engine->ctx->shell);
   update_inspector (engine);
@@ -1690,6 +1692,178 @@ ensure_light (RigEngine *engine)
 
 }
 
+typedef struct
+{
+  const char *label;
+  RutEntity *entity;
+} FindEntityData;
+
+static RutTraverseVisitFlags
+find_entity_cb (RutObject *object,
+                int depth,
+                void *user_data)
+{
+  FindEntityData *data = user_data;
+
+  if (rut_object_get_type (object) == &rut_entity_type &&
+      !strcmp (data->label, rut_entity_get_label (object)))
+    {
+      data->entity = object;
+      return RUT_TRAVERSE_VISIT_BREAK;
+    }
+
+  return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+static RutEntity *
+find_entity (RutObject *root,
+             const char *label)
+{
+  FindEntityData data = { .label = label, .entity = NULL };
+
+  rut_graphable_traverse (root,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          find_entity_cb,
+                          NULL, /* after_children_cb */
+                          &data);
+
+  return data.entity;
+}
+
+static void
+initialise_play_camera_position (RigEngine *engine)
+{
+  float fov_y = 10; /* y-axis field of view */
+  float aspect = (float) engine->device_width / (float) engine->device_height;
+  float z_near = 10; /* distance to near clipping plane */
+  float z_2d = 30;
+  float position[3];
+  float left, right, top;
+  float left_2d_plane, right_2d_plane;
+  float width_scale;
+  float width_2d_start;
+
+  /* Initialise the camera to the center of the device with a z
+   * position that will give it pixel aligned coordinates at the
+   * origin */
+  top = z_near * tan (fov_y * G_PI / 360.0);
+  left = -top * aspect;
+  right = top * aspect;
+
+  left_2d_plane = left / z_near * z_2d;
+  right_2d_plane = right / z_near * z_2d;
+
+  width_2d_start = right_2d_plane - left_2d_plane;
+
+  width_scale = width_2d_start / engine->device_width;
+
+  position[0] = engine->device_width / 2.0f;
+  position[1] = engine->device_height / 2.0f;
+  position[2] = z_2d / width_scale;
+
+  rut_entity_set_position (engine->play_camera, position);
+}
+
+static void
+ensure_play_camera (RigEngine *engine)
+{
+  if (!engine->play_camera)
+    {
+      RutObject *entity;
+
+      /* Check if there is already something labelled ‘play-camera’
+       * loaded from the project file */
+      entity = find_entity (engine->scene, "play-camera");
+
+      if (entity)
+        engine->play_camera = rut_refable_ref (entity);
+      else
+        {
+          engine->play_camera = rut_entity_new (engine->ctx);
+          rut_entity_set_label (engine->play_camera, "play-camera");
+
+          initialise_play_camera_position (engine);
+
+          rut_graphable_add_child (engine->scene, engine->play_camera);
+        }
+    }
+
+  if (engine->play_camera_component == NULL)
+    {
+      engine->play_camera_component =
+        rut_entity_get_component (engine->play_camera,
+                                  RUT_COMPONENT_TYPE_CAMERA);
+
+      if (engine->play_camera_component)
+        rut_refable_ref (engine->play_camera_component);
+      else
+        {
+          engine->play_camera_component =
+            rut_camera_new (engine->ctx,
+                            COGL_FRAMEBUFFER (engine->onscreen));
+
+          rut_entity_add_component (engine->play_camera,
+                                    engine->play_camera_component);
+        }
+
+      rut_camera_set_clear (engine->play_camera_component, FALSE);
+    }
+
+  rig_camera_view_set_play_camera (engine->main_camera_view,
+                                   engine->play_camera);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode &&
+      engine->play_camera_handle == NULL)
+    {
+      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+      char *model_path;
+
+      model_path = rut_find_data_file ("camera-model.ply");
+
+      if (model_path == NULL)
+        g_critical ("could not find model \"camera-model.ply\"");
+      else
+        {
+          RutMesh *mesh;
+          GError *error = NULL;
+
+          mesh = rut_mesh_new_from_ply (engine->ctx,
+                                        model_path,
+                                        ply_attributes,
+                                        G_N_ELEMENTS (ply_attributes),
+                                        padding_status,
+                                        &error);
+          if (mesh == NULL)
+            {
+              g_critical ("could not load model %s: %s",
+                          model_path,
+                          error->message);
+              g_clear_error (&error);
+            }
+          else
+            {
+              RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
+
+              engine->play_camera_handle = rut_entity_new (engine->ctx);
+              rut_entity_set_label (engine->play_camera_handle,
+                                    "rig:play_camera_handle");
+
+              rut_entity_add_component (engine->play_camera_handle,
+                                        model);
+              rut_entity_set_receive_shadow (engine->play_camera_handle, FALSE);
+              rut_entity_set_cast_shadow (engine->play_camera_handle, FALSE);
+              rut_graphable_add_child (engine->play_camera,
+                                       engine->play_camera_handle);
+
+              rut_refable_unref (model);
+              rut_refable_unref (mesh);
+            }
+        }
+    }
+#endif /* RIG_EDITOR_ENABLED */
+}
+
 static void
 create_editor_ui (RigEngine *engine)
 {
@@ -1820,10 +1994,12 @@ rig_engine_handle_ui_update (RigEngine *engine)
   engine->shadow_map =
     cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
 
-  /* Note: we currently require having exactly one scene light, so if
-   * we didn't already load one we create a default light...
+  /* Note: we currently require having exactly one scene light and
+   * play camera, so if we didn't already load them we create a default
+   * light and camera...
    */
   ensure_light (engine);
+  ensure_play_camera (engine);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -1922,6 +2098,24 @@ rig_engine_free_ui (RigEngine *engine)
       rut_refable_unref (engine->scene);
       engine->scene = NULL;
     }
+
+  if (engine->play_camera)
+    {
+      rut_refable_unref (engine->play_camera);
+      engine->play_camera = NULL;
+    }
+  if (engine->play_camera_component)
+    {
+      rut_refable_unref (engine->play_camera_component);
+      engine->play_camera_component = NULL;
+    }
+#ifdef RIG_EDITOR_ENABLED
+  if (engine->play_camera_handle)
+   {
+     rut_refable_unref (engine->play_camera_handle);
+     engine->play_camera_handle = NULL;
+   }
+#endif /* RIG_EDITOR_ENABLED */
 }
 
 void

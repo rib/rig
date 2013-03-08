@@ -13,6 +13,7 @@ dist_assets_DATA = \
 	slider-handle.png \
 	light-bulb.png \
 	light.ply \
+	camera-model.ply \
 	record-button.png \
 	record-button-selected.png \
 	scroll-button-left-active.png \
