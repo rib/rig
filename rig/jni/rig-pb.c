@@ -1436,6 +1436,7 @@ unserialize_components (UnSerializer *unserializer,
             CoglTexture *texture = NULL;
             RutShape *shape;
             CoglBool shaped = FALSE;
+            int width, height;
 
             if (pb_shape->has_shaped)
               shaped = pb_shape->shaped;
@@ -1451,17 +1452,22 @@ unserialize_components (UnSerializer *unserializer,
             if (asset)
               texture = rut_asset_get_texture (asset);
 
-            if (!texture)
+            if (texture)
+              {
+                width = cogl_texture_get_width (texture);
+                height = cogl_texture_get_height (texture);
+              }
+            else
               {
                 collect_error (unserializer,
                                "Can't add shape component without a texture");
+                width = height = 100;
                 break;
               }
 
             shape = rut_shape_new (unserializer->engine->ctx,
                                    shaped,
-                                   cogl_texture_get_width (texture),
-                                   cogl_texture_get_height (texture));
+                                   width, height);
             rut_entity_add_component (entity, shape);
 
             register_unserializer_object (unserializer, shape, component_id);
