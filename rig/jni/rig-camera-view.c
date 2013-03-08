@@ -1310,6 +1310,72 @@ entitygraph_post_pick_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
+static void
+move_entity_to_camera (RigCameraView *view,
+                       RutEntity *entity)
+{
+  RigEngine *engine = view->engine;
+  RigUndoJournal *sub_journal = rig_undo_journal_new (engine);
+  float camera_position[3];
+  CoglMatrix parent_transform;
+  CoglMatrix inverse_parent_transform;
+  CoglQuaternion camera_rotation;
+  RutProperty *rotation_property =
+    rut_introspectable_lookup_property (entity, "rotation");
+  RutBoxed boxed_rotation;
+  RutObject *parent;
+
+  /* Get the world position of the view camera */
+  memset (camera_position, 0, sizeof (camera_position));
+  rut_entity_get_transformed_position (view->view_camera_armature,
+                                       camera_position);
+
+  /* Get the transform of the parent of the entity so we can calculate
+   * a position relative to the parent */
+  cogl_matrix_init_identity (&parent_transform);
+  parent = rut_graphable_get_parent (entity);
+  if (parent)
+    rut_graphable_apply_transform (parent, &parent_transform);
+
+  /* Transform the camera position by the inverse of the entity's
+   * parent transform so that we will have a position in the
+   * coordinate space of the entity */
+  if (cogl_matrix_get_inverse (&parent_transform, &inverse_parent_transform))
+    {
+      cogl_matrix_transform_points (&inverse_parent_transform,
+                                    3, /* n_components */
+                                    sizeof (float) * 3, /* stride_in */
+                                    camera_position, /* points_in */
+                                    sizeof (float) * 3, /* stride_out */
+                                    camera_position, /* points_out */
+                                    1 /* n_points */);
+
+      rig_undo_journal_move_and_log (sub_journal,
+                                     FALSE, /* mergable */
+                                     entity,
+                                     camera_position[0],
+                                     camera_position[1],
+                                     camera_position[2]);
+    }
+
+  /* Copy the camera's rotation. FIXME: this should probably also try
+   * to counteract the entity's parent rotations to match what it does
+   * for the positioning */
+  rut_entity_get_rotations (view->view_camera_armature,
+                            &camera_rotation);
+
+  boxed_rotation.type = RUT_PROPERTY_TYPE_QUATERNION;
+  boxed_rotation.d.quaternion_val = camera_rotation;
+
+  rig_undo_journal_set_property_and_log (sub_journal,
+                                         FALSE,
+                                         &boxed_rotation,
+                                         rotation_property);
+
+  rig_undo_journal_log_subjournal (engine->undo_journal,
+                                   sub_journal);
+}
+
 static RutEntity *
 pick (RigEngine *engine,
       RutCamera *camera,
@@ -1632,6 +1698,12 @@ input_cb (RutInputEvent *event,
                                                       engine->selected_entity);
               rig_set_selected_entity (engine, NULL);
             }
+          break;
+        case RUT_KEY_j:
+          if ((rut_key_event_get_modifier_state (event) &
+               RUT_MODIFIER_CTRL_ON) &&
+              engine->selected_entity)
+            move_entity_to_camera (view, engine->selected_entity);
           break;
         }
     }
