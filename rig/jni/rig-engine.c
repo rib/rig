@@ -2592,8 +2592,20 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   else if (rut_util_find_tag (inferred_tags, "ply"))
     asset = rut_asset_new_ply_model (engine->ctx, path);
   else if (rut_util_find_tag (inferred_tags, "video"))
-    asset = rut_asset_new_video (engine->ctx, path, (GCallback) rig_refresh_thumbnails,
-                                 engine);
+    {
+      if (_rig_in_device_mode)
+        {
+          asset = rut_asset_new_video (engine->ctx, path,
+                                       NULL,
+                                       engine);
+        }
+      else
+        {
+          asset = rut_asset_new_video (engine->ctx, path,
+                                       (GCallback) rig_refresh_thumbnails,
+                                       engine);
+        }
+    }
 
   if (asset)
     rut_asset_set_inferred_tags (asset, inferred_tags);

@@ -617,9 +617,13 @@ rut_asset_new_video (RutContext *ctx,
                      gpointer user_data)
 {
   RutAsset* asset = rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_VIDEO);
-  rut_video_generate_thumbnail (asset, ctx, 
-                                g_build_filename (ctx->assets_location, path, 
-                                NULL), cb, user_data);
+  /* XXX: hack! */
+  if (cb)
+    {
+      rut_video_generate_thumbnail (asset, ctx, 
+                                    g_build_filename (ctx->assets_location, path, 
+                                                      NULL), cb, user_data);
+    }
   return asset;
 }
 
