@@ -101,9 +101,10 @@ struct _RigEngine
   RutBoxLayout *top_bar_hbox;
   RutBoxLayout *top_bar_hbox_ltr;
   RutBoxLayout *top_bar_hbox_rtl;
+  RutBoxLayout *asset_panel_hbox;
   RutBoxLayout *toolbar_vbox;
   RutBoxLayout *properties_hbox;
-  RigSplitView *splits[2];
+  RigSplitView *splits[1];
 
   //RutBevel *main_area_bevel;
   RigCameraView *main_camera_view;
