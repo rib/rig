@@ -63,6 +63,7 @@ test_sources = \
 	test-texture-mipmap-get-set.c \
 	test-framebuffer-get-bits.c \
 	test-primitive-and-journal.c \
+	test-copy-replace-texture.c \
 	$(NULL)
 
 test_conformance_SOURCES = $(common_sources) $(test_sources)
