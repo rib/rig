@@ -1404,7 +1404,7 @@ create_camera_view (RigEngine *engine)
 
   rut_bin_set_top_padding (bin, 5);
 
-  rig_split_view_set_child1 (engine->splits[1], stack);
+  rut_box_layout_add (engine->asset_panel_hbox, TRUE, stack);
 
   rut_refable_unref (bottom_shim);
   rut_refable_unref (bottom_stack);
@@ -1639,7 +1639,7 @@ create_assets_view (RigEngine *engine)
 
   rut_ui_viewport_set_x_pannable (engine->assets_vp, FALSE);
 
-  rig_split_view_set_child0 (engine->splits[1], vbox);
+  rut_box_layout_add (engine->asset_panel_hbox, FALSE, vbox);
   rut_refable_unref (vbox);
 }
 
@@ -1948,10 +1948,8 @@ create_editor_ui (RigEngine *engine)
                                           100);
 
   /* assets on the left, main area on the right */
-  engine->splits[1] = rig_split_view_new (engine,
-                                          RIG_SPLIT_VIEW_SPLIT_VERTICAL,
-                                          100,
-                                          100);
+  engine->asset_panel_hbox =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
   create_assets_view (engine);
 
@@ -1959,13 +1957,12 @@ create_editor_ui (RigEngine *engine)
 
   create_timeline_view (engine);
 
-  rig_split_view_set_child0 (engine->splits[0], engine->splits[1]);
+  rig_split_view_set_child0 (engine->splits[0], engine->asset_panel_hbox);
 
   rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
   create_properties_bar (engine);
 
   rig_split_view_set_split_offset (engine->splits[0], 500);
-  rig_split_view_set_split_offset (engine->splits[1], 150);
 
   engine->top_vbox = rut_box_layout_new (engine->ctx,
                                          RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
@@ -2432,6 +2429,7 @@ rig_engine_fini (RutShell *shell, void *user_data)
       rut_refable_unref (engine->timeline_vp);
       rut_refable_unref (engine->top_vbox);
       rut_refable_unref (engine->top_hbox);
+      rut_refable_unref (engine->asset_panel_hbox);
       rut_refable_unref (engine->properties_hbox);
 
       if (engine->transparency_grid)
