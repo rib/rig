@@ -47,7 +47,9 @@ dist_assets_DATA = \
 	sound.png \
 	sound-white.png \
 	logic-white.png \
-	logic.png
+	logic.png \
+	connect.png \
+	connect-white.png
 
 if HAVE_GTK
 dist_assets_DATA += \
