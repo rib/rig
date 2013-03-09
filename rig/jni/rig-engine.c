@@ -1501,10 +1501,19 @@ static void
 create_asset_selectors (RigEngine *engine,
                         RutStack *icons_stack)
 {
-
   RutBoxLayout *hbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   RutIconButton *button;
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Geometry",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "geometry.png",
+                         "geometry.png",
+                         "geometry-white.png",
+                         "geometry.png");
+  rut_box_layout_add (hbox, FALSE, button);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1514,8 +1523,42 @@ create_asset_selectors (RigEngine *engine,
                          "image.png",
                          "image-white.png",
                          "image.png");
-
   rut_box_layout_add (hbox, FALSE, button);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Video",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "video.png",
+                         "video.png",
+                         "video-white.png",
+                         "video.png");
+  rut_box_layout_add (hbox, FALSE, button);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Sound",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "sound.png",
+                         "sound.png",
+                         "sound-white.png",
+                         "sound.png");
+  rut_box_layout_add (hbox, FALSE, button);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Logic",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "logic.png",
+                         "logic.png",
+                         "logic-white.png",
+                         "logic.png");
+  rut_box_layout_add (hbox, FALSE, button);
+
+
+
+
+
   rut_stack_add (icons_stack, hbox);
   rut_refable_unref (hbox);
 }
