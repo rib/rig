@@ -1241,7 +1241,7 @@ load_gradient_image (RutContext *ctx,
 }
 
 void
-connect_pressed_cb (RutButton *button,
+connect_pressed_cb (RutIconButton *button,
                     void *user_data)
 {
   RigEngine *engine = user_data;
@@ -1287,7 +1287,14 @@ static void
 create_top_bar (RigEngine *engine)
 {
   RutStack *top_bar_stack = rut_stack_new (engine->ctx, 123, 0);
-  RutButton *connect_button = rut_button_new (engine->ctx, "Connect");
+  RutIconButton *connect_button =
+    rut_icon_button_new (engine->ctx,
+                         NULL,
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "connect.png",
+                         "connect.png",
+                         "connect-white.png",
+                         "connect.png");
   RutIcon *icon = rut_icon_new (engine->ctx, "settings-icon.png");
   RutNineSlice *gradient =
     load_gradient_image (engine->ctx, "top-bar-gradient.png");
@@ -1311,10 +1318,10 @@ create_top_bar (RigEngine *engine)
 
   rut_stack_add (top_bar_stack, engine->top_bar_hbox);
 
-  rut_button_add_on_click_callback (connect_button,
-                                    connect_pressed_cb,
-                                    engine,
-                                    NULL); /* destroy callback */
+  rut_icon_button_add_on_click_callback (connect_button,
+                                         connect_pressed_cb,
+                                         engine,
+                                         NULL); /* destroy callback */
   rut_box_layout_add (engine->top_bar_hbox_ltr, FALSE, connect_button);
   rut_refable_unref (connect_button);
 }
