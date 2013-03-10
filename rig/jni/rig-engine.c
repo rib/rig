@@ -515,11 +515,15 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
     {
       engine->enable_dof = TRUE;
       engine->debug_pick_ray = 0;
+      if (engine->light_handle)
+        rut_graphable_remove_child (engine->light_handle);
     }
   else
     {
       engine->enable_dof = FALSE;
       engine->debug_pick_ray = 1;
+      if (engine->light && engine->light_handle)
+        rut_graphable_add_child (engine->light, engine->light_handle);
     }
 
   rut_shell_queue_redraw (engine->ctx->shell);
