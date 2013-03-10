@@ -2014,7 +2014,7 @@ create_editor_ui (RigEngine *engine)
   rut_box_layout_add (engine->properties_hbox, TRUE, engine->splits[0]);
   create_properties_bar (engine);
 
-  rig_split_view_set_split_offset (engine->splits[0], 500);
+  rig_split_view_set_split_fraction (engine->splits[0], 0.75);
 
   engine->top_vbox = rut_box_layout_new (engine->ctx,
                                          RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
