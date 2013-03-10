@@ -1504,6 +1504,9 @@ create_asset_selectors (RigEngine *engine,
   RutBoxLayout *hbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   RutIconButton *button;
+  CoglColor white;
+
+  rut_color_init_from_uint32 (&white, 0xffffffff);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1514,6 +1517,7 @@ create_asset_selectors (RigEngine *engine,
                          "geometry-white.png",
                          "geometry.png");
   rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1524,6 +1528,7 @@ create_asset_selectors (RigEngine *engine,
                          "image-white.png",
                          "image.png");
   rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1534,6 +1539,7 @@ create_asset_selectors (RigEngine *engine,
                          "video-white.png",
                          "video.png");
   rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1544,6 +1550,7 @@ create_asset_selectors (RigEngine *engine,
                          "sound-white.png",
                          "sound.png");
   rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
 
   button =
     rut_icon_button_new (engine->ctx,
@@ -1554,9 +1561,7 @@ create_asset_selectors (RigEngine *engine,
                          "logic-white.png",
                          "logic.png");
   rut_box_layout_add (hbox, FALSE, button);
-
-
-
+  rut_icon_button_set_label_color (button, &white);
 
 
   rut_stack_add (icons_stack, hbox);
