@@ -1411,6 +1411,36 @@ pick (RigEngine *engine,
   return pick_ctx.selected_entity;
 }
 
+static void
+initialize_navigation_camera (RigCameraView *view)
+{
+  RigEngine *engine = view->engine;
+  CoglQuaternion no_rotation;
+
+  view->origin[0] = engine->device_width / 2;
+  view->origin[1] = engine->device_height / 2;
+  view->origin[2] = 0;
+
+  rut_entity_set_translate (view->view_camera_to_origin,
+                            view->origin[0],
+                            view->origin[1],
+                            view->origin[2]);
+
+  cogl_quaternion_init_identity (&no_rotation);
+  rut_entity_set_rotation (view->view_camera_rotate, &no_rotation);
+
+  rut_camera_set_zoom (view->view_camera_component, 1);
+
+  rut_entity_set_translate (view->view_device_transforms.origin_offset,
+                            -engine->device_width / 2,
+                            -(engine->device_height / 2), 0);
+
+  view->view_camera_z = 10.f;
+
+  update_camera_position (view);
+
+  update_device_transforms (view);
+}
 
 static RutInputEventStatus
 input_cb (RutInputEvent *event,
@@ -1431,6 +1461,7 @@ input_cb (RutInputEvent *event,
 
       rut_camera_transform_window_coordinate (view->view_camera_component,
                                               &x, &y);
+      g_print ("window x=%f y=%f\n", x, y);
 
       state = rut_motion_event_get_button_state (event);
 
@@ -1705,6 +1736,9 @@ input_cb (RutInputEvent *event,
               engine->selected_entity)
             move_entity_to_camera (view, engine->selected_entity);
           break;
+        case RUT_KEY_0:
+          initialize_navigation_camera (view);
+          break;
         }
     }
 #endif /* RIG_EDITOR_ENABLED */
@@ -1893,31 +1927,6 @@ rig_camera_view_new (RigEngine *engine)
                            view->play_dummy_entity);
 
   return view;
-}
-
-static void
-initialize_navigation_camera (RigCameraView *view)
-{
-  RigEngine *engine = view->engine;
-
-  view->origin[0] = engine->device_width / 2;
-  view->origin[1] = engine->device_height / 2;
-  view->origin[2] = 0;
-
-  rut_entity_set_translate (view->view_camera_to_origin,
-                            view->origin[0],
-                            view->origin[1],
-                            view->origin[2]);
-
-  rut_entity_set_translate (view->view_device_transforms.origin_offset,
-                            -engine->device_width / 2,
-                            -(engine->device_height / 2), 0);
-
-  view->view_camera_z = 10.f;
-
-  update_camera_position (view);
-
-  update_device_transforms (view);
 }
 
 void
