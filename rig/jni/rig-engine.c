@@ -907,20 +907,32 @@ add_results_flow (RutContext *ctx,
 {
   RutFlowLayout *flow =
     rut_flow_layout_new (ctx, RUT_FLOW_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  RutText *text = rut_text_new_with_text (ctx, "Bold Sans 20px", label);
+  RutText *text = rut_text_new_with_text (ctx, "Bold Sans 15px", label);
   CoglColor color;
+  RutBin *label_bin = rut_bin_new (ctx);
+  RutBin *flow_bin = rut_bin_new (ctx);
 
-  rut_color_init_from_uint32 (&color, 0x85cac4ff);
+  rut_bin_set_left_padding (label_bin, 10);
+  rut_bin_set_top_padding (label_bin, 10);
+  rut_bin_set_bottom_padding (label_bin, 10);
+  rut_bin_set_child (label_bin, text);
+  rut_refable_unref (text);
 
+  rut_color_init_from_uint32 (&color, 0xffffffff);
   rut_text_set_color (text, &color);
 
-  rut_box_layout_add (vbox, FALSE, text);
+  rut_box_layout_add (vbox, FALSE, label_bin);
 
   rut_flow_layout_set_x_padding (flow, 5);
   rut_flow_layout_set_y_padding (flow, 5);
   rut_flow_layout_set_max_child_height (flow, 100);
 
-  rut_box_layout_add (vbox, TRUE, flow);
+  //rut_bin_set_left_padding (flow_bin, 5);
+  rut_bin_set_child (flow_bin, flow);
+  rut_refable_unref (flow);
+
+  rut_box_layout_add (vbox, TRUE, flow_bin);
+  rut_refable_unref (flow_bin);
 
   return flow;
 }
@@ -1582,6 +1594,7 @@ create_assets_view (RigEngine *engine)
   RutEntry *entry;
   RutText *text;
   RutIcon *search_icon;
+  CoglColor color;
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (search_stack, bg);
@@ -1634,6 +1647,12 @@ create_assets_view (RigEngine *engine)
   rut_stack_add (stack, engine->assets_vp);
 
   engine->assets_results_fold = rut_fold_new (engine->ctx, "Results");
+
+  rut_color_init_from_uint32 (&color, 0x79b8b0ff);
+  rut_fold_set_label_color (engine->assets_results_fold, &color);
+
+  rut_fold_set_font_name (engine->assets_results_fold, "Bold Sans 20px");
+
   rut_ui_viewport_add (engine->assets_vp, engine->assets_results_fold);
   rut_ui_viewport_set_sync_widget (engine->assets_vp, engine->assets_results_fold);
 
