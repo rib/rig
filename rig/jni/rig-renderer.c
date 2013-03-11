@@ -629,6 +629,10 @@ rig_prepare_pointalism_pipeline (gpointer instace,
 
   material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
   geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+
+  if (!cogl_gst_video_sink_get_pipeline (material->sink))
+    return;
+
   for (i = 0; i < 3; i++)
     pln[i] = cogl_pipeline_copy (cogl_gst_video_sink_get_pipeline (material->sink));
 
@@ -843,6 +847,13 @@ get_entity_video_pipeline (RigEngine *engine,
       halo = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_POINTALISM_HALO);
       opaque = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_POINTALISM_OPAQUE);
 
+      if (!halo || !opaque)
+        {
+          rig_prepare_pointalism_pipeline (material->sink, entity);
+          halo = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_POINTALISM_HALO);
+          opaque = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_POINTALISM_OPAQUE);
+        }
+
       cogl_gst_video_sink_attach_frame (material->sink, halo);
       cogl_gst_video_sink_attach_frame (material->sink, opaque);
 
@@ -859,6 +870,11 @@ get_entity_video_pipeline (RigEngine *engine,
   else
     {
       pln = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_VIDEO);
+      if (!pln)
+        {
+          rig_prepare_pointalism_pipeline (material->sink, entity);
+          pln = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_VIDEO);
+        }
       cogl_gst_video_sink_attach_frame (material->sink, pln);
     }
 
