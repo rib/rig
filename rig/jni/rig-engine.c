@@ -1498,6 +1498,77 @@ create_properties_bar (RigEngine *engine)
 }
 
 static void
+create_asset_selectors (RigEngine *engine,
+                        RutStack *icons_stack)
+{
+  RutBoxLayout *hbox =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  RutIconButton *button;
+  CoglColor white;
+
+  rut_color_init_from_uint32 (&white, 0xffffffff);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Geometry",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "geometry.png",
+                         "geometry.png",
+                         "geometry-white.png",
+                         "geometry.png");
+  rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Images",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "image.png",
+                         "image.png",
+                         "image-white.png",
+                         "image.png");
+  rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Video",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "video.png",
+                         "video.png",
+                         "video-white.png",
+                         "video.png");
+  rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Sound",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "sound.png",
+                         "sound.png",
+                         "sound-white.png",
+                         "sound.png");
+  rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
+
+  button =
+    rut_icon_button_new (engine->ctx,
+                         "Logic",
+                         RUT_ICON_BUTTON_POSITION_BELOW,
+                         "logic.png",
+                         "logic.png",
+                         "logic-white.png",
+                         "logic.png");
+  rut_box_layout_add (hbox, FALSE, button);
+  rut_icon_button_set_label_color (button, &white);
+
+
+  rut_stack_add (icons_stack, hbox);
+  rut_refable_unref (hbox);
+}
+
+static void
 create_assets_view (RigEngine *engine)
 {
   RutBoxLayout *vbox =
@@ -1505,11 +1576,9 @@ create_assets_view (RigEngine *engine)
   RutStack *search_stack = rut_stack_new (engine->ctx, 0, 0);
   RutBin *search_bin = rut_bin_new (engine->ctx);
   RutStack *icons_stack = rut_stack_new (engine->ctx, 0, 0);
-  RutBin *icons_bin = rut_bin_new (engine->ctx);
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
   RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
   RutRectangle *bg;
-  RutBin *bin;
   RutEntry *entry;
   RutText *text;
   RutIcon *search_icon;
@@ -1548,9 +1617,8 @@ create_assets_view (RigEngine *engine)
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
   rut_stack_add (icons_stack, bg);
   rut_refable_unref (bg);
-  rut_stack_add (icons_stack, icons_bin);
-  rut_refable_unref (icons_bin);
-  rut_bin_set_top_padding (icons_bin, 75);
+
+  create_asset_selectors (engine, icons_stack);
 
   rut_box_layout_add (vbox, FALSE, icons_stack);
   rut_refable_unref (icons_stack);
@@ -1570,14 +1638,6 @@ create_assets_view (RigEngine *engine)
   rut_ui_viewport_set_sync_widget (engine->assets_vp, engine->assets_results_fold);
 
   rut_ui_viewport_set_x_pannable (engine->assets_vp, FALSE);
-
-  bin = rut_bin_new (engine->ctx);
-  rut_graphable_add_child (stack, bin);
-  rut_bin_set_top_padding (bin, 10);
-  rut_bin_set_left_padding (bin, 5);
-  rut_bin_set_right_padding (bin, 24 + 5);
-  rut_bin_set_x_position (bin, RUT_BIN_POSITION_EXPAND);
-  rut_bin_set_y_position (bin, RUT_BIN_POSITION_BEGIN);
 
   rig_split_view_set_child0 (engine->splits[1], vbox);
   rut_refable_unref (vbox);
