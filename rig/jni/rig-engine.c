@@ -1665,22 +1665,37 @@ create_assets_view (RigEngine *engine)
 static void
 create_timeline_view (RigEngine *engine)
 {
-  RutStack *stack;
+  RutBoxLayout *vbox =
+    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  RutStack *top_stack = rut_stack_new (engine->ctx, 0, 0);
+  RutText *scene_label = rut_text_new_with_text (engine->ctx, NULL, "Scene 1");
   RutRectangle *bg;
+  RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+
+  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
+  rut_stack_add (top_stack, bg);
+  rut_refable_unref (bg);
+
+  rut_stack_add (top_stack, scene_label);
+  rut_refable_unref (scene_label);
+
+  rut_box_layout_add (vbox, FALSE, top_stack);
+  rut_refable_unref (top_stack);
 
   engine->timeline_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
   rut_ui_viewport_set_x_pannable (engine->timeline_vp, FALSE);
 
-  stack = rut_stack_new (engine->ctx, 0, 0);
-
-  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
+  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
   rut_stack_add (stack, bg);
   rut_refable_unref (bg);
 
   rut_stack_add (stack, engine->timeline_vp);
 
-  rig_split_view_set_child1 (engine->splits[0], stack);
+  rut_box_layout_add (vbox, TRUE, stack);
   rut_refable_unref (stack);
+
+  rig_split_view_set_child1 (engine->splits[0], vbox);
+  rut_refable_unref (vbox);
 }
 #endif /* RIG_EDITOR_ENABLED */
 
