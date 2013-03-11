@@ -31,6 +31,8 @@
 #include "rig-view.h"
 #include "rig-renderer.h"
 
+typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
+
 typedef struct
 {
   RutEntity *origin_offset; /* negative offset */
@@ -62,6 +64,8 @@ struct _RigCameraView
 
   float device_scale;
 
+  EntityTranslateGrabClosure *entity_translate_grab_closure;
+
   RutEntity *view_camera_to_origin; /* move to origin */
   RutEntity *view_camera_rotate; /* armature rotate rotate */
   RutEntity *view_camera_armature; /* armature length */
@@ -88,6 +92,9 @@ struct _RigCameraView
 };
 
 RutType rig_camera_view_type;
+
+static void
+update_grab_closure_size (EntityTranslateGrabClosure *closure);
 
 static void
 unref_device_transforms (RigCameraViewDeviceTransforms *transforms)
@@ -265,6 +272,40 @@ reset_play_camera (RigCameraView *view)
 }
 
 static void
+flush_viewport_for_camera (RigCameraView *view,
+                           RutCamera *window_camera,
+                           RutCamera *camera)
+{
+  float x, y, z;
+
+  x = y = z = 0;
+  rut_graphable_fully_transform_point (view,
+                                       window_camera,
+                                       &x, &y, &z);
+
+  x = RUT_UTIL_NEARBYINT (x);
+  y = RUT_UTIL_NEARBYINT (y);
+
+  /* XXX: if the viewport width/height get changed during allocation
+   * then we should probably use a dirty flag so we can defer
+   * the viewport update to here. */
+  if (camera != view->view_camera_component)
+    rut_camera_set_viewport (camera,
+                             x, y, view->width, view->height);
+  else if (view->last_viewport_x != x ||
+           view->last_viewport_y != y ||
+           view->dirty_viewport_size)
+    {
+      rut_camera_set_viewport (camera,
+                               x, y, view->width, view->height);
+
+      view->last_viewport_x = x;
+      view->last_viewport_y = y;
+      view->dirty_viewport_size = FALSE;
+    }
+}
+
+static void
 _rut_camera_view_paint (RutObject *object,
                         RutPaintContext *paint_ctx)
 {
@@ -276,7 +317,6 @@ _rut_camera_view_paint (RutObject *object,
   RutEntity *camera;
   RutCamera *camera_component;
   CoglBool need_play_camera_reset = FALSE;
-  float x, y, z;
 
   if (view->scene == NULL)
     return;
@@ -314,31 +354,7 @@ _rut_camera_view_paint (RutObject *object,
   rig_camera_update_view (engine, engine->light, TRUE);
   rig_paint_camera_entity (engine->light, rig_paint_ctx);
 
-  x = y = z = 0;
-  rut_graphable_fully_transform_point (view,
-                                       paint_ctx->camera,
-                                       &x, &y, &z);
-
-  x = RUT_UTIL_NEARBYINT (x);
-  y = RUT_UTIL_NEARBYINT (y);
-
-  /* XXX: if the viewport width/height get changed during allocation
-   * then we should probably use a dirty flag so we can defer
-   * the viewport update to here. */
-  if (camera_component != view->view_camera_component)
-    rut_camera_set_viewport (camera_component,
-                             x, y, view->width, view->height);
-  else if (view->last_viewport_x != x ||
-           view->last_viewport_y != y ||
-           view->dirty_viewport_size)
-    {
-      rut_camera_set_viewport (camera_component,
-                               x, y, view->width, view->height);
-
-      view->last_viewport_x = x;
-      view->last_viewport_y = y;
-      view->dirty_viewport_size = FALSE;
-    }
+  flush_viewport_for_camera (view, paint_ctx->camera, camera_component);
 
   rig_camera_update_view (engine, camera, FALSE);
 
@@ -634,6 +650,25 @@ allocate_cb (RutObject *graphable,
 
   rut_input_region_set_rectangle (view->input_region,
                                   0, 0, view->width, view->height);
+
+  if (view->entity_translate_grab_closure)
+    {
+      /* FIXME: Is the light camera the correct one to use? It looks
+       * like the paint function will end up using it so this at least
+       * matches that. */
+      RutCamera *light_camera =
+        rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
+
+      rig_camera_update_view (engine, engine->light, TRUE);
+
+      flush_viewport_for_camera (view,
+                                 light_camera,
+                                 view->view_camera_component);
+
+      rig_camera_update_view (engine, view->view_camera, FALSE);
+
+      update_grab_closure_size (view->entity_translate_grab_closure);
+    }
 }
 
 static void
@@ -818,9 +853,9 @@ typedef void (*EntityTranslateDoneCallback)(RutEntity *entity,
                                             float rel[3],
                                             void *user_data);
 
-typedef struct _EntityTranslateGrabClosure
+struct _EntityTranslateGrabClosure
 {
-  RigEngine *engine;
+  RigCameraView *view;
 
   /* pointer position at start of grab */
   float grab_x;
@@ -840,7 +875,7 @@ typedef struct _EntityTranslateGrabClosure
   EntityTranslateCallback entity_translate_cb;
   EntityTranslateDoneCallback entity_translate_done_cb;
   void *user_data;
-} EntityTranslateGrabClosure;
+};
 
 static RutInputEventStatus
 entity_translate_grab_input_cb (RutInputEvent *event,
@@ -849,7 +884,7 @@ entity_translate_grab_input_cb (RutInputEvent *event,
 {
   EntityTranslateGrabClosure *closure = user_data;
   RutEntity *entity = closure->entity;
-  RigEngine *engine = closure->engine;
+  RigEngine *engine = closure->view->engine;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -883,6 +918,7 @@ entity_translate_grab_input_cb (RutInputEvent *event,
           rut_shell_ungrab_input (engine->ctx->shell,
                                   entity_translate_grab_input_cb,
                                   user_data);
+          closure->view->entity_translate_grab_closure = NULL;
 
           g_slice_free (EntityTranslateGrabClosure, user_data);
 
@@ -962,19 +998,13 @@ unproject_window_coord (RutCamera *camera,
   //*z = eye_z;
 }
 
-static CoglBool
-translate_grab_entity (RigEngine *engine,
-                       RutCamera *camera,
-                       RutEntity *entity,
-                       float grab_x,
-                       float grab_y,
-                       EntityTranslateCallback translate_cb,
-                       EntityTranslateDoneCallback done_cb,
-                       void *user_data)
+static void
+update_grab_closure_size (EntityTranslateGrabClosure *closure)
 {
-  EntityTranslateGrabClosure *closure =
-    g_slice_new (EntityTranslateGrabClosure);
-  RutEntity *parent = rut_graphable_get_parent (entity);
+  RutEntity *parent = rut_graphable_get_parent (closure->entity);
+  RigCameraView *view = closure->view;
+  RutCamera *camera = view->view_camera_component;
+  RigEngine *engine = view->engine;
   CoglMatrix parent_transform;
   CoglMatrix inverse_transform;
   float origin[3] = {0, 0, 0};
@@ -985,15 +1015,14 @@ translate_grab_entity (RigEngine *engine,
   float entity_x, entity_y, entity_z;
   float w;
 
-  if (!parent)
-    return FALSE;
-
   rut_graphable_get_modelview (parent, camera, &parent_transform);
 
   if (!cogl_matrix_get_inverse (&parent_transform, &inverse_transform))
     {
+      memset (closure->x_vec, 0, sizeof (float) * 3);
+      memset (closure->y_vec, 0, sizeof (float) * 3);
       g_warning ("Failed to get inverse transform of entity");
-      return FALSE;
+      return;
     }
 
   /* Find the z of our selected entity in eye coordinates */
@@ -1057,7 +1086,31 @@ translate_grab_entity (RigEngine *engine,
   //g_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
   //         y_vec[0], y_vec[1], y_vec[2]);
 
-  closure->engine = engine;
+  memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
+  memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
+}
+
+static CoglBool
+translate_grab_entity (RigCameraView *view,
+                       RutEntity *entity,
+                       float grab_x,
+                       float grab_y,
+                       EntityTranslateCallback translate_cb,
+                       EntityTranslateDoneCallback done_cb,
+                       void *user_data)
+{
+  EntityTranslateGrabClosure *closure;
+  RutEntity *parent = rut_graphable_get_parent (entity);
+  RutCamera *camera = view->view_camera_component;
+
+  if (!parent)
+    return FALSE;
+
+  if (view->entity_translate_grab_closure)
+    return FALSE;
+
+  closure = g_slice_new (EntityTranslateGrabClosure);
+  closure->view = view;
   closure->grab_x = grab_x;
   closure->grab_y = grab_y;
 
@@ -1071,10 +1124,11 @@ translate_grab_entity (RigEngine *engine,
   closure->moved = FALSE;
   closure->user_data = user_data;
 
-  memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
-  memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
+  view->entity_translate_grab_closure = closure;
 
-  rut_shell_grab_input (engine->ctx->shell,
+  update_grab_closure_size (closure);
+
+  rut_shell_grab_input (view->engine->ctx->shell,
                         camera,
                         entity_translate_grab_input_cb,
                         closure);
@@ -1542,8 +1596,7 @@ input_cb (RutInputEvent *event,
            */
           if (engine->selected_entity)
             {
-              if (!translate_grab_entity (engine,
-                                          rut_input_event_get_camera (event),
+              if (!translate_grab_entity (view,
                                           engine->selected_entity,
                                           rut_motion_event_get_x (event),
                                           rut_motion_event_get_y (event),
@@ -1582,8 +1635,7 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                modifiers & RUT_MODIFIER_SHIFT_ON)
         {
-          if (!translate_grab_entity (engine,
-                                      rut_input_event_get_camera (event),
+          if (!translate_grab_entity (view,
                                       view->view_camera_to_origin,
                                       rut_motion_event_get_x (event),
                                       rut_motion_event_get_y (event),
