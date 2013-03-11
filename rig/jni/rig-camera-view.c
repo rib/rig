@@ -1515,7 +1515,6 @@ input_cb (RutInputEvent *event,
 
       rut_camera_transform_window_coordinate (view->view_camera_component,
                                               &x, &y);
-      g_print ("window x=%f y=%f\n", x, y);
 
       state = rut_motion_event_get_button_state (event);
 
