@@ -1948,6 +1948,11 @@ ensure_play_camera (RigEngine *engine)
             }
           else
             {
+              /* XXX: we'd like to show a model for the camera that
+               * can be used as a handle to select the camera in the
+               * editor but for the camera model tends to get in the
+               * way of editing so it's been disable for now */
+#if 0
               RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
 
               engine->play_camera_handle = rut_entity_new (engine->ctx);
@@ -1963,6 +1968,7 @@ ensure_play_camera (RigEngine *engine)
 
               rut_refable_unref (model);
               rut_refable_unref (mesh);
+#endif
             }
         }
     }
