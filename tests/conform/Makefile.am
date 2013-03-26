@@ -64,6 +64,7 @@ test_sources = \
 	test-framebuffer-get-bits.c \
 	test-primitive-and-journal.c \
 	test-copy-replace-texture.c \
+	test-pipeline-cache-unrefs-texture.c \
 	$(NULL)
 
 test_conformance_SOURCES = $(common_sources) $(test_sources)
