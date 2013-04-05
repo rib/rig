@@ -527,7 +527,7 @@ endif
 #E.g. libdir=$(libdir)/
 lib_LTLIBRARIES += libcogl2.la
 
-libcogl2_la_LIBADD = -lm $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
+libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 if !USE_GLIB
 libcogl2_la_LIBADD += $(top_builddir)/deps/glib/libglib.la
 libcogl2_la_LIBADD += $(top_builddir)/deps/gmodule/libgmodule.la
