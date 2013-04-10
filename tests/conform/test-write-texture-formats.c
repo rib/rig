@@ -130,12 +130,6 @@ void
 test_write_texture_formats (void)
 {
   test_write_byte (COGL_PIXEL_FORMAT_A_8, 0x34, 0x00000034);
-#if 0
-  /* I'm not sure what's the right value to put here because Nvidia
-     and Mesa seem to behave differently so one of them must be
-     wrong. */
-  test_write_byte (test_ctx, COGL_PIXEL_FORMAT_G_8, 0x34, 0x340000ff);
-#endif
 
   test_write_short (COGL_PIXEL_FORMAT_RGB_565, 0x0843, 0x080819ff);
   test_write_short (COGL_PIXEL_FORMAT_RGBA_4444_PRE, 0x1234, 0x11223344);

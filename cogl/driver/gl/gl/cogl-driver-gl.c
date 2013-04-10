@@ -62,12 +62,6 @@ _cogl_driver_pixel_format_from_gl_internal (CoglContext *context,
       *out_format = COGL_PIXEL_FORMAT_A_8;
       return TRUE;
 
-    case GL_LUMINANCE: case GL_LUMINANCE4: case GL_LUMINANCE8:
-    case GL_LUMINANCE12: case GL_LUMINANCE16:
-
-      *out_format = COGL_PIXEL_FORMAT_G_8;
-      return TRUE;
-
     case GL_RGB: case GL_RGB4: case GL_RGB5: case GL_RGB8:
     case GL_RGB10: case GL_RGB12: case GL_RGB16: case GL_R3_G3_B2:
 
@@ -116,11 +110,6 @@ _cogl_driver_pixel_format_to_gl (CoglContext *context,
           glintformat = GL_ALPHA;
           glformat = GL_ALPHA;
         }
-      gltype = GL_UNSIGNED_BYTE;
-      break;
-    case COGL_PIXEL_FORMAT_G_8:
-      glintformat = GL_LUMINANCE;
-      glformat = GL_LUMINANCE;
       gltype = GL_UNSIGNED_BYTE;
       break;
 
