@@ -55,6 +55,8 @@ COGL_BEGIN_DECLS
 CoglFilterReturn
 cogl_xlib_handle_event (XEvent *xevent);
 
+COGL_END_DECLS
+
 #undef __COGL_XLIB_H_INSIDE__
 
 #endif /* __COGL_XLIB_H__ */
