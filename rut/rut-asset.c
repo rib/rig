@@ -159,7 +159,7 @@ static RutPLYAttribute ply_attributes[] =
     .min_components = 2,
   },
   {
-    .name = "tangent",
+    .name = "tangent_in",
     .properties = {
       { "tanx" },
       { "tany" },
