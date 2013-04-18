@@ -174,6 +174,7 @@ struct _CoglContext
   CoglOffscreenAllocateFlags last_offscreen_allocate_flags;
 
   CoglOnscreenEventList onscreen_events_queue;
+  CoglClosure *onscreen_dispatch_idle;
 
   CoglGLES2Context *current_gles2_context;
   GQueue gles2_context_stack;

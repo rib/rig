@@ -33,6 +33,7 @@
 #include "cogl-context-private.h"
 #include "cogl-object-private.h"
 #include "cogl-closure-list-private.h"
+#include "cogl-poll-private.h"
 
 static void _cogl_onscreen_free (CoglOnscreen *onscreen);
 
@@ -119,6 +120,16 @@ _cogl_onscreen_queue_event (CoglOnscreen *onscreen,
   event->type = type;
 
   COGL_TAILQ_INSERT_TAIL (&ctx->onscreen_events_queue, event, list_node);
+
+  if (!ctx->onscreen_dispatch_idle)
+    {
+      ctx->onscreen_dispatch_idle =
+        _cogl_poll_renderer_add_idle (ctx->display->renderer,
+                                      (CoglIdleCallback)
+                                      _cogl_dispatch_onscreen_events,
+                                      ctx,
+                                      NULL);
+    }
 }
 
 void
@@ -396,6 +407,9 @@ _cogl_dispatch_onscreen_events (CoglContext *context)
   COGL_TAILQ_INIT (&queue);
   COGL_TAILQ_CONCAT (&queue, &context->onscreen_events_queue, list_node);
   COGL_TAILQ_INIT (&context->onscreen_events_queue);
+
+  _cogl_closure_disconnect (context->onscreen_dispatch_idle);
+  context->onscreen_dispatch_idle = NULL;
 
   COGL_TAILQ_FOREACH_SAFE (event,
                            &queue,
