@@ -443,6 +443,7 @@ serialize_component_cb (RutComponent *component,
                                                 sizeof (Rig__NormalMap),
                                                 rig__normal_map__init);
               pb_material->normal_map->asset_id = id;
+              pb_material->normal_map->has_asset_id = TRUE;
             }
         }
 
@@ -456,6 +457,7 @@ serialize_component_cb (RutComponent *component,
                                                 sizeof (Rig__AlphaMask),
                                                 rig__alpha_mask__init);
               pb_material->alpha_mask->asset_id = id;
+              pb_material->alpha_mask->has_asset_id = TRUE;
             }
         }
     }
@@ -1450,27 +1452,46 @@ unserialize_components (UnSerializer *unserializer,
               asset = rut_material_get_texture_asset (material);
 
             if (asset)
-              texture = rut_asset_get_texture (asset);
-
-            if (texture)
               {
-                width = cogl_texture_get_width (texture);
-                height = cogl_texture_get_height (texture);
+                if (rut_asset_get_is_video (asset))
+                  {
+                    width = 640;
+                    height = 480;
+                  }
+                else
+                  {
+                    texture = rut_asset_get_texture (asset);
+                    if (texture)
+                      {
+                        width = cogl_texture_get_width (texture);
+                        height = cogl_texture_get_height (texture);
+                      }
+                    else
+                      goto ERROR_SHAPE;
+                  }
               }
             else
-              {
-                collect_error (unserializer,
-                               "Can't add shape component without a texture");
-                width = height = 100;
-                break;
-              }
+              goto ERROR_SHAPE;
 
             shape = rut_shape_new (unserializer->engine->ctx,
                                    shaped,
                                    width, height);
+
             rut_entity_add_component (entity, shape);
 
             register_unserializer_object (unserializer, shape, component_id);
+
+            ERROR_SHAPE:
+              {
+                if (!shape)
+                  {
+                    collect_error (unserializer,
+                                   "Can't add shape component without "
+                                   "an image source");
+
+                    rut_refable_unref (material);
+                  }
+              }
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
@@ -1481,6 +1502,7 @@ unserialize_components (UnSerializer *unserializer,
             RutAsset *asset = NULL;
             CoglTexture *texture = NULL;
             RutDiamond *diamond;
+            float width, height;
 
             if (pb_diamond->has_size)
               diamond_size = pb_diamond->size;
@@ -1494,23 +1516,45 @@ unserialize_components (UnSerializer *unserializer,
               asset = rut_material_get_texture_asset (material);
 
             if (asset)
-              texture = rut_asset_get_texture (asset);
-
-            if (!texture)
               {
-                collect_error (unserializer,
-                               "Can't add diamond component without a texture");
-                rut_refable_unref (material);
-                break;
+                if (rut_asset_get_is_video (asset))
+                  {
+                    width = 640;
+                    height = 480;
+                  }
+                else
+                  {
+                    texture = rut_asset_get_texture (asset);
+                    if (texture)
+                      {
+                        width = cogl_texture_get_width (texture);
+                        height = cogl_texture_get_height (texture);
+                      }
+                    else
+                      goto ERROR_DIAMOND;
+                  }
               }
+            else
+              goto ERROR_DIAMOND;
 
             diamond = rut_diamond_new (unserializer->engine->ctx,
-                                       diamond_size,
-                                       cogl_texture_get_width (texture),
-                                       cogl_texture_get_height (texture));
+                                       diamond_size, width, height);
+
             rut_entity_add_component (entity, diamond);
 
             register_unserializer_object (unserializer, diamond, component_id);
+
+            ERROR_DIAMOND:
+              {
+                if (!diamond)
+                  {
+                    collect_error (unserializer,
+                                   "Can't add diamond component without "
+                                   "an image source");
+
+                    rut_refable_unref (material);
+                  }
+              }
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:

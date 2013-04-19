@@ -51,7 +51,7 @@ void
 rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
 
 void
-rig_dirty_entity_pipelines (RutEntity *entity);
+rig_renderer_dirty_entity_state (RutEntity *entity);
 
 void
 rig_renderer_init (RigEngine *engine);
