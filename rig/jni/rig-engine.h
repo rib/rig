@@ -217,6 +217,7 @@ struct _RigEngine
 #endif
 
   CoglSnippet *alpha_mask_snippet;
+  CoglSnippet *alpha_mask_video_snippet;
   CoglSnippet *lighting_vertex_snippet;
   CoglSnippet *normal_map_vertex_snippet;
   CoglSnippet *shadow_mapping_vertex_snippet;
@@ -225,6 +226,7 @@ struct _RigEngine
   CoglSnippet *premultiply_snippet;
   CoglSnippet *unpremultiply_snippet;
   CoglSnippet *normal_map_fragment_snippet;
+  CoglSnippet *normal_map_video_snippet;
   CoglSnippet *material_lighting_snippet;
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;

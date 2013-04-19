@@ -427,6 +427,7 @@ _rut_init (void)
       _rut_text_buffer_init_type ();
       _rut_text_init_type ();
       _rut_timeline_init_type ();
+      _rut_image_source_init_type ();
       _rut_entity_init_type ();
       _rut_asset_type_init ();
       _rut_buffer_init_type ();
