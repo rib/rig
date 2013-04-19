@@ -26,6 +26,8 @@
 #include <math.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <glib-object.h>
+
 
 #include <cogl/cogl.h>
 
@@ -83,6 +85,11 @@ static RutPropertySpec rut_data_property_specs[] = {
 
 static void
 rig_load_asset_list (RigEngine *engine);
+
+static void
+rig_refresh_thumbnails (gpointer instance,
+                        gpointer user_data);
+
 
 #ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
@@ -649,11 +656,20 @@ asset_input_cb (RutInputRegion *region,
                 if (material)
                   {
                     if (type == RUT_ASSET_TYPE_TEXTURE)
-                      rut_material_set_texture_asset (material, asset);
+                      {
+                        rut_material_set_texture_asset (material, asset);
+                        rut_entity_set_image_source_cache (entity, 0, NULL);
+                      }
                     else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-                      rut_material_set_normal_map_asset (material, asset);
+                      {
+                        rut_material_set_normal_map_asset (material, asset);
+                        rut_entity_set_image_source_cache (entity, 2, NULL);
+                      }
                     else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-                      rut_material_set_alpha_mask_asset (material, asset);
+                      {
+                        rut_material_set_alpha_mask_asset (material, asset);
+                        rut_entity_set_image_source_cache (entity, 1, NULL);
+                      }
                   }
                 else
                   {
@@ -661,9 +677,17 @@ asset_input_cb (RutInputRegion *region,
                     rut_entity_add_component (entity, material);
                   }
 
-                texture = rut_asset_get_texture (asset);
-                width = cogl_texture_get_width (texture);
-                height = cogl_texture_get_height (texture);
+                if (rut_asset_get_is_video (asset))
+                  {
+                    width = 640;
+                    height = 480;
+                  }
+                else
+                  {
+                    texture = rut_asset_get_texture (asset);
+                    width = cogl_texture_get_width (texture);
+                    height = cogl_texture_get_height (texture);
+                  }
 
                 geom = rut_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_GEOMETRY);
@@ -688,7 +712,8 @@ asset_input_cb (RutInputRegion *region,
                         float size = rut_diamond_get_size (diamond);
 
                         rut_entity_remove_component (entity, geom);
-                        diamond = rut_diamond_new (engine->ctx, size, width, height);
+                        diamond = rut_diamond_new (engine->ctx, size, width,
+                                                   height);
                       }
                   }
 
@@ -741,6 +766,8 @@ asset_input_cb (RutInputRegion *region,
 
                 rut_entity_set_scale (entity, 200.0 / max_range);
 
+                rig_dirty_entity_pipelines (NULL, entity);
+
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 break;
               }
@@ -762,6 +789,8 @@ asset_input_cb (RutInputRegion *region,
                   cogl_color_init_from_4f (&color, 1, 1, 1, 1);
                   rut_text_set_color (text, &color);
                   rut_entity_add_component (entity, text);
+
+                  rig_dirty_entity_pipelines (NULL, entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -790,14 +819,26 @@ asset_input_cb (RutInputRegion *region,
                         rut_material_get_texture_asset (material);
                       if (texture_asset)
                         {
-                          CoglTexture *texture = rut_asset_get_texture (texture_asset);
-                          tex_width = cogl_texture_get_width (texture);
-                          tex_height = cogl_texture_get_height (texture);
+                          if (rut_asset_get_is_video (texture_asset))
+                            {
+                              tex_width = 640;
+                              tex_height = 480;
+                            }
+                          else
+                            {
+                              CoglTexture *texture =
+                                rut_asset_get_texture (texture_asset);
+                              tex_width = cogl_texture_get_width (texture);
+                              tex_height = cogl_texture_get_height (texture);
+                            }
                         }
                     }
 
-                  shape = rut_shape_new (engine->ctx, TRUE, tex_width, tex_height);
+                  shape = rut_shape_new (engine->ctx, TRUE, tex_width,
+                                         tex_height);
                   rut_entity_add_component (entity, shape);
+
+                  rig_dirty_entity_pipelines (NULL, entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -818,7 +859,8 @@ asset_input_cb (RutInputRegion *region,
                     rut_entity_remove_component (entity, geom);
 
                   material =
-                    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+                    rut_entity_get_component (entity,
+                                              RUT_COMPONENT_TYPE_MATERIAL);
 
                   if (material)
                     {
@@ -826,14 +868,26 @@ asset_input_cb (RutInputRegion *region,
                         rut_material_get_texture_asset (material);
                       if (texture_asset)
                         {
-                          CoglTexture *texture = rut_asset_get_texture (texture_asset);
-                          tex_width = cogl_texture_get_width (texture);
-                          tex_height = cogl_texture_get_height (texture);
+                          if (rut_asset_get_is_video (texture_asset))
+                            {
+                              tex_width = 640;
+                              tex_height = 480;
+                            }
+                          else
+                            {
+                              CoglTexture *texture =
+                                rut_asset_get_texture (texture_asset);
+                              tex_width = cogl_texture_get_width (texture);
+                              tex_height = cogl_texture_get_height (texture);
+                            }
                         }
                     }
 
-                  diamond = rut_diamond_new (engine->ctx, 200, tex_width, tex_height);
+                  diamond = rut_diamond_new (engine->ctx, 200, tex_width,
+                                             tex_height);
                   rut_entity_add_component (entity, diamond);
+
+                  rig_dirty_entity_pipelines (NULL, entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -843,7 +897,6 @@ asset_input_cb (RutInputRegion *region,
 
           if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
             {
-              rig_dirty_entity_pipelines (entity);
               update_inspector (engine);
               rut_shell_queue_redraw (engine->ctx->shell);
             }
@@ -959,6 +1012,7 @@ add_asset_icon (RigEngine *engine,
   rut_refable_unref (stack);
 
   texture = rut_asset_get_texture (asset);
+
   if (texture)
     {
       image = rut_image_new (engine->ctx, texture);
@@ -1091,6 +1145,15 @@ rig_search_asset_list (RigEngine *engine, const char *search)
     }
 
   return found;
+}
+
+static void
+rig_refresh_thumbnails (gpointer instance,
+                        gpointer user_data)
+{
+  RigEngine* engine = (RigEngine*) user_data;
+
+  rig_search_asset_list (engine, NULL);
 }
 
 static void
@@ -2385,8 +2448,10 @@ rig_engine_init (RutShell *shell, void *user_data)
                                           engine->device_width / 2,
                                           engine->device_height / 2);
 
-  cogl_onscreen_add_resize_handler (engine->onscreen,
-                                    data_onscreen_resize, engine);
+  cogl_onscreen_add_resize_callback (engine->onscreen,
+                                     data_onscreen_resize,
+                                     engine,
+                                     NULL);
 
   cogl_framebuffer_allocate (COGL_FRAMEBUFFER (engine->onscreen), NULL);
 
@@ -2632,11 +2697,47 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
 
   if (rut_util_find_tag (inferred_tags, "normal-maps"))
-    asset = rut_asset_new_normal_map (engine->ctx, path);
+    {
+      if (rut_util_find_tag (inferred_tags, "image"))
+        asset = rut_asset_new_normal_map (engine->ctx, FALSE, NULL, NULL, path);
+      else if (rut_util_find_tag (inferred_tags, "video"))
+        {
+          if (!_rig_in_device_mode)
+            asset = rut_asset_new_normal_map (engine->ctx, TRUE,
+                      (GCallback) rig_refresh_thumbnails, engine, path);
+          else
+            asset = rut_asset_new_normal_map (engine->ctx, TRUE, NULL, NULL,
+                                              path);
+        }
+    }
   else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-    asset = rut_asset_new_alpha_mask (engine->ctx, path);
-  else if (rut_util_find_tag (inferred_tags, "image"))
-    asset = rut_asset_new_texture (engine->ctx, path);
+    {
+      if (rut_util_find_tag (inferred_tags, "image"))
+        asset = rut_asset_new_alpha_mask (engine->ctx, FALSE, NULL, NULL, path);
+      else if (rut_util_find_tag (inferred_tags, "video"))
+        {
+          if (!_rig_in_device_mode)
+            asset = rut_asset_new_alpha_mask (engine->ctx, TRUE,
+                      (GCallback) rig_refresh_thumbnails, engine, path);
+          else
+            asset = rut_asset_new_alpha_mask (engine->ctx, TRUE, NULL, NULL,
+                                              path);
+        }
+    }
+  else if (rut_util_find_tag (inferred_tags, "texture"))
+    {
+      if (rut_util_find_tag (inferred_tags, "image"))
+        asset = rut_asset_new_texture (engine->ctx, FALSE, NULL, NULL, path);
+      else if (rut_util_find_tag (inferred_tags, "video"))
+        {
+          if (!_rig_in_device_mode)
+            asset = rut_asset_new_texture (engine->ctx, TRUE,
+                      (GCallback) rig_refresh_thumbnails, engine, path);
+          else
+            asset = rut_asset_new_texture (engine->ctx, TRUE, NULL, NULL,
+                                           path);
+        }
+    }
   else if (rut_util_find_tag (inferred_tags, "ply"))
     asset = rut_asset_new_ply_model (engine->ctx, path);
 
@@ -2659,8 +2760,9 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
+  char *thumbnail = "rig_thumbnail.jpg";
   GList *l;
-  RutAsset *asset;
+  RutAsset *asset = NULL;
 
   /* Avoid loading duplicate assets... */
   for (l = engine->assets; l; l = l->next)
@@ -2671,7 +2773,10 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
         return;
     }
 
-  asset = rig_load_asset (engine, info, asset_file);
+
+  if (strcmp (g_file_get_basename (asset_file), thumbnail) != 0)
+    asset = rig_load_asset (engine, info, asset_file);
+
   if (asset)
     engine->assets = g_list_prepend (engine->assets, asset);
 }
