@@ -12,6 +12,7 @@ components_source_h = \
 source_h = \
     $(components_source_h) \
     rut-color.h \
+    rut-image-source.h \
     rut-entity.h \
     rut-components.h \
     rut-type.h \
@@ -84,6 +85,7 @@ librut_la_SOURCES = \
     rply.h \
     color-table.h \
     rut-color.c \
+    rut-image-source.c \
     rut-entity.c \
     rut-type.c \
     rut-object.c \

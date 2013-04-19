@@ -54,6 +54,7 @@
 #include "rut-fixed.h"
 #include "rut-fold.h"
 #include "rut-icon-button.h"
+#include "rut-image-source.h"
 
 /* entity/components system */
 #include "rut-entity.h"

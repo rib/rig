@@ -49,7 +49,8 @@ dist_assets_DATA = \
 	logic-white.png \
 	logic.png \
 	connect.png \
-	connect-white.png
+	connect-white.png \
+	thumb-video.png
 
 if HAVE_GTK
 dist_assets_DATA += \
