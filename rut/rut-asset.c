@@ -55,6 +55,7 @@ struct _RutAsset
   char *path;
   CoglTexture *texture;
   RutMesh  *mesh;
+  CoglBool is_video;
 
   GList *inferred_tags;
 
@@ -204,42 +205,42 @@ rut_video_grab_thumbnail (gpointer instance,
   int tex_height;
   int pixel_size;
   uint8_t *pixels;
-  char *thumb_file;                                                         
+  char *thumb_file;
   RigThumbnailGenerator *generator = (RigThumbnailGenerator*) user_data;
 
   generator->pln = cogl_gst_video_sink_get_pipeline (COGL_GST_VIDEO_SINK (instance));
-  
+
   thumb_file = g_strconcat (generator->thumbnail_path, "/rig_thumbnail.jpg", NULL);
   tex_width = 225;
   tex_height = 156;
-  
+
   if (generator->video->texture)
     cogl_object_unref (generator->video->texture);
 
-  generator->video->texture = cogl_texture_new_with_size (generator->ctx, 
-                                                          tex_width, 
-                                                          tex_height, 
+  generator->video->texture = cogl_texture_new_with_size (generator->ctx,
+                                                          tex_width,
+                                                          tex_height,
                                                           COGL_TEXTURE_NONE,
                                                           COGL_PIXEL_FORMAT_RGBA_8888);
-  
+
   off = cogl_offscreen_new_to_texture (generator->video->texture);
   fbo = COGL_FRAMEBUFFER (off);
-  
-  cogl_framebuffer_clear4f (fbo, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);  
+
+  cogl_framebuffer_clear4f (fbo, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
   cogl_framebuffer_orthographic (fbo, 0, 0, tex_width, tex_height, 1, -1);
-  cogl_framebuffer_draw_textured_rectangle (fbo, generator->pln, 0, 0, 
+  cogl_framebuffer_draw_textured_rectangle (fbo, generator->pln, 0, 0,
                                             tex_width, tex_height,  0, 0, 1, 1);
-                                            
-  pixel_size = cogl_texture_get_data (generator->video->texture, 
+
+  pixel_size = cogl_texture_get_data (generator->video->texture,
                                       COGL_PIXEL_FORMAT_RGBA_8888, 0, NULL);
-  
+
   pixels = g_new (uint8_t, pixel_size);
-  cogl_texture_get_data (generator->video->texture, 
+  cogl_texture_get_data (generator->video->texture,
                          COGL_PIXEL_FORMAT_RGBA_8888, 0, pixels);
 
   gdk_file = gdk_pixbuf_new_from_data (pixels, GDK_COLORSPACE_RGB, TRUE, 8,
-                                       tex_width, tex_height, 
-                                       tex_width * (4 * sizeof (uint8_t)), NULL, 
+                                       tex_width, tex_height,
+                                       tex_width * (4 * sizeof (uint8_t)), NULL,
                                        NULL);
 
   gdk_pixbuf_save (gdk_file, thumb_file, "jpeg", NULL, NULL);
@@ -267,18 +268,18 @@ rut_thumbnail_generator_seek (GstBus *bus,
       seek = (rand () % (duration / (GST_SECOND))) * GST_SECOND;
       gst_element_seek_simple (generator->pipeline, GST_FORMAT_TIME,
           GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT, seek);
-      
+
       gst_element_get_state (generator->bin, NULL, 0,
                               0.2 * GST_SECOND);
       generator->seek_done = TRUE;
     }
-    
+
   return TRUE;
 }
 
 static void
 rut_video_generate_thumbnail (RutAsset *asset,
-                              RutContext *ctx, 
+                              RutContext *ctx,
                               const char *filename,
                               GCallback cback,
                               gpointer user_data)
@@ -289,36 +290,37 @@ rut_video_generate_thumbnail (RutAsset *asset,
 
   generator->seek_done = FALSE;
   generator->ctx = ctx->cogl_context;
-  generator->video = asset; 
+  generator->video = asset;
   generator->file_path = filename;
   generator->thumbnail_path = ctx->assets_location;
   generator->sink = cogl_gst_video_sink_new (ctx->cogl_context);
-  generator->pipeline = gst_pipeline_new ("thumbnailer");     
+  generator->pipeline = gst_pipeline_new ("thumbnailer");
   generator->bin = gst_element_factory_make ("playbin", NULL);
 
   uri = g_strconcat ("file://", filename, NULL);
-  
-  g_object_set (G_OBJECT (generator->bin), "video-sink", 
+
+  g_object_set (G_OBJECT (generator->bin), "video-sink",
                 GST_ELEMENT (generator->sink),NULL);
   g_object_set (G_OBJECT (generator->bin), "uri", uri, NULL);
   gst_bin_add (GST_BIN (generator->pipeline), generator->bin);
-  
+
   gst_element_set_state (generator->pipeline, GST_STATE_PAUSED);
-  
-  bus = gst_element_get_bus (generator->pipeline);  
-  gst_bus_add_watch (bus, rut_thumbnail_generator_seek, generator);               
-  
-  g_signal_connect (generator->sink, "new-frame", 
-                    G_CALLBACK (rut_video_grab_thumbnail), generator); 
- 
+
+  bus = gst_element_get_bus (generator->pipeline);
+  gst_bus_add_watch (bus, rut_thumbnail_generator_seek, generator);
+
+  g_signal_connect (generator->sink, "new-frame",
+                    G_CALLBACK (rut_video_grab_thumbnail), generator);
+
   if (cback != NULL)
-    g_signal_connect (generator->sink, "new-frame", cback, user_data);              
+    g_signal_connect (generator->sink, "new-frame", cback, user_data);
   g_free (uri);
 }
 
 static RutAsset *
 rut_asset_new_full (RutContext *ctx,
                     const char *path,
+                    CoglBool is_video,
                     RutAssetType type)
 {
   RutAsset *asset = g_slice_new0 (RutAsset);
@@ -347,6 +349,8 @@ rut_asset_new_full (RutContext *ctx,
 
   asset->type = type;
 
+  asset->is_video = is_video;
+
   switch (type)
     {
     case RUT_ASSET_TYPE_BUILTIN:
@@ -356,7 +360,11 @@ rut_asset_new_full (RutContext *ctx,
       {
         CoglError *error = NULL;
 
-        asset->texture = rut_load_texture (ctx, real_path, &error);
+        if (!asset->is_video)
+          asset->texture = rut_load_texture (ctx, real_path, &error);
+        else
+          asset->texture = rut_load_texture (ctx,
+                             rut_find_data_file ("thumb-video.png"), &error);
 
         if (!asset->texture)
           {
@@ -389,26 +397,6 @@ rut_asset_new_full (RutContext *ctx,
             goto DONE;
           }
 
-        break;
-      }
-    case RUT_ASSET_TYPE_VIDEO:
-      {
-        CoglError *error = NULL;
-
-        asset->texture = rut_load_texture (ctx, 
-                                         rut_find_data_file ("thumb-video.png"), 
-                                         &error);
-
-        if (!asset->texture)
-          {
-            g_slice_free (RutAsset, asset);
-            g_warning ("could not load video thumbnail for %s: %s", real_path, 
-                       error->message);
-            
-            cogl_error_free (error);
-            asset = NULL;
-            goto DONE;
-          }
         break;
       }
     }
@@ -502,6 +490,7 @@ rut_asset_new_from_data (RutContext *ctx,
   asset->ctx = ctx;
 
   asset->type = type;
+  asset->is_video = FALSE;
 
   switch (type)
     {
@@ -579,52 +568,77 @@ RutAsset *
 rut_asset_new_builtin (RutContext *ctx,
                        const char *path)
 {
-  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_BUILTIN);
+  return rut_asset_new_full (ctx, path, FALSE, RUT_ASSET_TYPE_BUILTIN);
 }
 
 RutAsset *
 rut_asset_new_texture (RutContext *ctx,
+                       CoglBool is_video,
+                       GCallback cb,
+                       gpointer user_data,
                        const char *path)
 {
-  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_TEXTURE);
+  RutAsset *asset = rut_asset_new_full (ctx, path, is_video,
+                                        RUT_ASSET_TYPE_TEXTURE);
+
+  if (asset && cb)
+    {
+      rut_video_generate_thumbnail (asset, ctx,
+                                    g_build_filename (ctx->assets_location,
+                                                      path, NULL),
+                                    cb, user_data);
+    }
+
+  return asset;
 }
 
 RutAsset *
 rut_asset_new_normal_map (RutContext *ctx,
+                          CoglBool is_video,
+                          GCallback cb,
+                          gpointer user_data,
                           const char *path)
 {
-  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_NORMAL_MAP);
+  RutAsset *asset = rut_asset_new_full (ctx, path, is_video,
+                                        RUT_ASSET_TYPE_NORMAL_MAP);
+
+  if (asset && cb)
+    {
+      rut_video_generate_thumbnail (asset, ctx,
+                                    g_build_filename (ctx->assets_location,
+                                                      path, NULL),
+                                    cb, user_data);
+    }
+
+  return asset;
 }
 
 RutAsset *
 rut_asset_new_alpha_mask (RutContext *ctx,
+                          CoglBool is_video,
+                          GCallback cb,
+                          gpointer user_data,
                           const char *path)
 {
-  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_ALPHA_MASK);
+  RutAsset *asset = rut_asset_new_full (ctx, path, is_video,
+                                        RUT_ASSET_TYPE_ALPHA_MASK);
+
+  if (asset && cb)
+    {
+      rut_video_generate_thumbnail (asset, ctx,
+                                    g_build_filename (ctx->assets_location,
+                                                      path, NULL),
+                                    cb, user_data);
+    }
+
+  return asset;
 }
 
 RutAsset *
 rut_asset_new_ply_model (RutContext *ctx,
                          const char *path)
 {
-  return rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_PLY_MODEL);
-}
-
-RutAsset *
-rut_asset_new_video (RutContext *ctx,
-                     const char *path,
-                     GCallback cb,
-                     gpointer user_data)
-{
-  RutAsset* asset = rut_asset_new_full (ctx, path, RUT_ASSET_TYPE_VIDEO);
-  /* XXX: hack! */
-  if (cb)
-    {
-      rut_video_generate_thumbnail (asset, ctx, 
-                                    g_build_filename (ctx->assets_location, path, 
-                                                      NULL), cb, user_data);
-    }
-  return asset;
+  return rut_asset_new_full (ctx, path, FALSE, RUT_ASSET_TYPE_PLY_MODEL);
 }
 
 RutAssetType
@@ -655,6 +669,12 @@ RutMesh *
 rut_asset_get_mesh (RutAsset *asset)
 {
   return asset->mesh;
+}
+
+CoglBool
+rut_asset_get_is_video (RutAsset *asset)
+{
+  return asset->is_video;
 }
 
 static GList *
@@ -757,9 +777,9 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
           g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
 
       if (strncmp (mime_type, "video/", 6) == 0)
-        inferred_tags = 
+        inferred_tags =
           g_list_prepend (inferred_tags, (char*) g_intern_string ("video"));
-          
+
       inferred_tags =
         g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
 
@@ -783,6 +803,13 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
           inferred_tags =
             g_list_prepend (inferred_tags,
                             (char *)g_intern_string ("mask"));
+        }
+      else if (rut_util_find_tag (inferred_tags, "image") ||
+               rut_util_find_tag (inferred_tags, "video"))
+        {
+          inferred_tags =
+            g_list_prepend (inferred_tags,
+                           (char *)g_intern_string ("texture"));
         }
     }
 

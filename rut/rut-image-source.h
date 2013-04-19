@@ -18,45 +18,33 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RIG_RENDERER_H_
-#define _RIG_RENDERER_H_
+#ifndef __RUT_IMAGE_SOURCE_H__
+#define __RUT_IMAGE_SOURCE_H__
 
-typedef enum _RigPass
-{
-  RIG_PASS_COLOR_UNBLENDED,
-  RIG_PASS_COLOR_BLENDED,
-  RIG_PASS_SHADOW,
-  RIG_PASS_DOF_DEPTH
-} RigPass;
+#include <cogl-gst/cogl-gst.h>
+#include "rut-type.h"
+#include "rut-object.h"
+#include "rut-interfaces.h"
+#include "rut-context.h"
+#include "rut-asset.h"
 
-typedef struct _RigPaintContext
-{
-  RutPaintContext _parent;
+typedef struct _RutImageSource RutImageSource;
+#define RUT_IMAGE_SOURCE(p) ((RutImageSource *)(p))
+extern RutType rut_image_source_type;
 
-  RigEngine *engine;
+void _rut_image_source_init_type (void);
 
-  GList *camera_stack;
+RutImageSource*
+rut_image_source_new (RutContext *ctx,
+                      RutAsset *asset);
 
-  RigPass pass;
+CoglTexture*
+rut_image_source_get_texture (RutImageSource *source);
 
-} RigPaintContext;
+CoglGstVideoSink*
+rut_image_source_get_sink (RutImageSource *source);
 
-GArray *
-rig_journal_new (void);
+CoglBool
+rut_image_source_get_is_video (RutImageSource *source);
 
-void
-rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass);
-
-void
-rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
-
-void
-rig_dirty_entity_pipelines (RutEntity *entity);
-
-void
-rig_renderer_init (RigEngine *engine);
-
-void
-rig_renderer_fini (RigEngine *engine);
-
-#endif /* _RIG_RENDERER_H_ */
+#endif

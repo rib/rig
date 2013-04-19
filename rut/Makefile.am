@@ -12,6 +12,7 @@ components_source_h = \
 source_h = \
     $(components_source_h) \
     rut-color.h \
+    rut-image-source.h \
     rut-entity.h \
     rut-components.h \
     rut-type.h \
@@ -42,7 +43,6 @@ source_h = \
     rut-inspector.h \
     rut-prop-inspector.h \
     rut-closure.h \
-    rut-video-renderer.h \
     rut-asset.h \
     rut-bevel.h \
     rut-stack.h \
@@ -85,6 +85,7 @@ librut_la_SOURCES = \
     rply.h \
     color-table.h \
     rut-color.c \
+    rut-image-source.c \
     rut-entity.c \
     rut-type.c \
     rut-object.c \
@@ -118,7 +119,6 @@ librut_la_SOURCES = \
     rut-inspector.c \
     rut-prop-inspector.c \
     rut-closure.c \
-    rut-video-renderer.c \
     rut-asset.c \
     rut-bevel.c \
     rut-stack.c \
