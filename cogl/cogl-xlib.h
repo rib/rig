@@ -43,12 +43,11 @@ COGL_BEGIN_DECLS
  * into external X event retrieval (for example that done by Clutter
  * or GDK).
  *
- * Return value: #CoglXlibFilterReturn. %COGL_XLIB_FILTER_REMOVE
- * indicates that Cogl has internally handled the event and the
- * caller should do no further processing. %COGL_XLIB_FILTER_CONTINUE
- * indicates that Cogl is either not interested in the event,
- * or has used the event to update internal state without taking
- * any exclusive action.
+ * Return value: #CoglFilterReturn. %COGL_FILTER_REMOVE indicates
+ * that Cogl has internally handled the event and the caller should
+ * do no further processing.  %COGL_FILTER_CONTINUE indicates that
+ * Cogl is either not interested in the event, or has used the event
+ * to update internal state without taking any exclusive action.
  *
  * Stability: Unstable
  */
