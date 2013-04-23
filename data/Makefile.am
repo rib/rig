@@ -50,7 +50,8 @@ dist_assets_DATA = \
 	logic.png \
 	connect.png \
 	connect-white.png \
-	thumb-video.png
+	thumb-video.png \
+	pointalism.png
 
 if HAVE_GTK
 dist_assets_DATA += \
