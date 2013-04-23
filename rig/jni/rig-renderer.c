@@ -177,7 +177,7 @@ rig_renderer_init (RigEngine *engine)
                       /* post */
                       "normal = normalize(normal_matrix * cogl_normal_in);\n"
                       "eye_direction = -vec3(cogl_modelview_matrix *\n"
-                      "                      cogl_position_in);\n"
+                      "                      pos);\n"
                       );
 
   engine->normal_map_vertex_snippet =
@@ -204,8 +204,78 @@ rig_renderer_init (RigEngine *engine)
                       "v.z = dot (eye_direction, normal);\n"
                       "eye_direction = normalize (v);\n");
 
+  engine->cache_position_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
+                      "varying vec4 pos;\n",
+                      "pos = cogl_position_in;\n");
 
-  /* Vertex shader setup for shadow mapping */
+
+  engine->pointalism_vertex_snippet =
+  cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
+    "attribute vec2 cell_xy;\n"
+    "attribute vec4 cell_st;\n"
+    "uniform float scale_factor;\n"
+    "uniform float z_trans;\n"
+    "uniform int anti_scale;\n"
+    "varying vec4 av_color;\n",
+
+    "float grey;\n"
+
+    "av_color = texture2D (cogl_sampler1, vec2 (cell_st.x, cell_st.z));\n"
+    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.y, cell_st.z));\n"
+    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.y, cell_st.w));\n"
+    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.x, cell_st.w));\n"
+    "av_color /= 4.0;\n"
+
+    "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
+
+    "if (anti_scale == 1)\n"
+    "{"
+    "pos.xy *= scale_factor * grey;\n"
+    "pos.z += z_trans * grey;\n"
+    "}"
+    "else\n"
+    "{"
+    "pos.xy *= scale_factor - (scale_factor * grey);\n"
+    "pos.z += z_trans - (z_trans * grey);\n"
+    "}"
+    "pos.x += cell_xy.x;\n"
+    "pos.y += cell_xy.y;\n"
+    "cogl_position_out = cogl_modelview_projection_matrix * pos;\n");
+
+  engine->pointalism_video_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
+    "attribute vec2 cell_xy;\n"
+    "attribute vec4 cell_st;\n"
+    "uniform float scale_factor;\n"
+    "uniform float z_trans;\n"
+    "uniform int anti_scale;\n"
+    "varying vec4 av_color;\n",
+
+    "float grey;\n"
+
+    "av_color = cogl_gst_sample_video1 (vec2 (cell_st.x, cell_st.z));\n"
+    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.y, cell_st.z));\n"
+    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.y, cell_st.w));\n"
+    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.x, cell_st.w));\n"
+    "av_color /= 4.0;\n"
+
+    "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
+
+    "if (anti_scale == 1)\n"
+    "{"
+    "pos.xy *= scale_factor * grey;\n"
+    "pos.z += z_trans * grey;\n"
+    "}"
+    "else\n"
+    "{"
+    "pos.xy *= scale_factor - (scale_factor * grey);\n"
+    "pos.z += z_trans - (z_trans * grey);\n"
+    "}"
+    "pos.x += cell_xy.x;\n"
+    "pos.y += cell_xy.y;\n"
+    "cogl_position_out = cogl_modelview_projection_matrix * pos;\n");
+
   engine->shadow_mapping_vertex_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
@@ -215,7 +285,7 @@ rig_renderer_init (RigEngine *engine)
 
                       /* post */
                       "shadow_coords = light_shadow_matrix *\n"
-                      "                cogl_position_in;\n");
+                      "                pos;\n");
 
   engine->blended_discard_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -421,6 +491,28 @@ rig_renderer_init (RigEngine *engine)
                       "  shadow = 0.5;\n"
 
                       "cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n");
+
+  engine->pointalism_halo_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+         /* declarations */
+         "varying vec4 av_color;\n",
+
+         /* post */
+         "cogl_color_out = av_color;\n"
+         "cogl_color_out *= texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+         "if (cogl_color_out.a > 0.90 || cogl_color_out.a <= 0.0)\n"
+         "  discard;\n");
+
+  engine->pointalism_opaque_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+         /* declarations */
+         "varying vec4 av_color;\n",
+
+         /* post */
+         "cogl_color_out = av_color;\n"
+         "cogl_color_out *= texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+         "if (cogl_color_out.a < 0.90)\n"
+         "  discard;\n");
 }
 
 void
@@ -440,6 +532,11 @@ rig_renderer_fini (RigEngine *engine)
   cogl_object_unref (engine->material_lighting_snippet);
   cogl_object_unref (engine->simple_lighting_snippet);
   cogl_object_unref (engine->shadow_mapping_fragment_snippet);
+  cogl_object_unref (engine->pointalism_vertex_snippet);
+  cogl_object_unref (engine->pointalism_video_snippet);
+  cogl_object_unref (engine->pointalism_halo_snippet);
+  cogl_object_unref (engine->pointalism_opaque_snippet);
+  cogl_object_unref (engine->cache_position_snippet);
 }
 
 static CoglPipeline *
@@ -448,23 +545,54 @@ get_entity_mask_pipeline (RigEngine *engine,
                           RutComponent *geometry)
 {
   CoglPipeline *pipeline;
-  RutImageSource *alpha_src;
+  RutImageSource *sources[2];
   int i;
 
   pipeline = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_SHADOW);
-  alpha_src = rut_entity_get_image_source_cache (entity, 1);
+  sources[0] = rut_entity_get_image_source_cache (entity, 0);
+  sources[1] = rut_entity_get_image_source_cache (entity, 1);
 
   if (pipeline)
     {
-      if (alpha_src)
+      if (sources[0] &&
+          rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+        {
+          int location;
+          int scale, z;
+
+          if (rut_image_source_get_is_video (sources[0]))
+            {
+              cogl_gst_video_sink_attach_frame (
+                rut_image_source_get_sink (sources[0]), pipeline);
+            }
+
+          scale = rut_pointalism_grid_get_scale (geometry);
+          z = rut_pointalism_grid_get_z (geometry);
+
+          location = cogl_pipeline_get_uniform_location (pipeline,
+                                                         "scale_factor");
+          cogl_pipeline_set_uniform_1f (pipeline, location, scale);
+
+          location = cogl_pipeline_get_uniform_location (pipeline, "z_trans");
+          cogl_pipeline_set_uniform_1f (pipeline, location, z);
+
+          location = cogl_pipeline_get_uniform_location (pipeline, "anti_scale");
+
+          if (rut_pointalism_grid_get_lighter (geometry))
+            cogl_pipeline_set_uniform_1i (pipeline, location, 1);
+          else
+            cogl_pipeline_set_uniform_1i (pipeline, location, 0);
+        }
+
+      if (sources[1])
         {
           int location;
           RutMaterial *material =
             rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-          if (rut_image_source_get_is_video (alpha_src))
+          if (rut_image_source_get_is_video (sources[1]))
             {
               cogl_gst_video_sink_attach_frame (
-                rut_image_source_get_sink (alpha_src), pipeline);
+                rut_image_source_get_sink (sources[1]), pipeline);
             }
 
           location = cogl_pipeline_get_uniform_location (pipeline,
@@ -472,6 +600,7 @@ get_entity_mask_pipeline (RigEngine *engine,
           cogl_pipeline_set_uniform_1f (pipeline, location,
                                         material->alpha_mask_threshold);
         }
+
       return cogl_object_ref (pipeline);
     }
 
@@ -502,12 +631,13 @@ get_entity_mask_pipeline (RigEngine *engine,
                                   //"varying vec4 world_pos;\n",
 
                                   /* compute the amount of bluriness we want */
-                                  "vec4 world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+                                  "vec4 world_pos = cogl_modelview_matrix * pos;\n"
                                   //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
                                   "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
                                   "                  dof_depth_of_field, 0.0, 1.0);\n"
       );
 
+      cogl_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
       cogl_pipeline_add_snippet (pipeline, snippet);
       cogl_object_unref (snippet);
 
@@ -615,11 +745,11 @@ get_entity_mask_pipeline (RigEngine *engine,
         {
           RutAsset *texture_asset = rut_material_get_texture_asset (material);
 
-          if (alpha_src)
+          if (sources[1])
             {
-              CoglGstVideoSink *sink = rut_image_source_get_sink (alpha_src);
+              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[1]);
 
-              if (sink && rut_image_source_get_is_video (alpha_src))
+              if (sink && rut_image_source_get_is_video (sources[1]))
                 {
                   int free_layer;
                   cogl_gst_video_sink_set_first_layer (sink, 4);
@@ -636,7 +766,7 @@ get_entity_mask_pipeline (RigEngine *engine,
               else if (!sink)
                 {
                   cogl_pipeline_set_layer_texture (pipeline, 4,
-                    rut_image_source_get_texture (alpha_src));
+                    rut_image_source_get_texture (sources[1]));
                   cogl_pipeline_add_snippet (pipeline,
                                              engine->alpha_mask_snippet);
                   cogl_pipeline_set_layer_combine (pipeline, 4,
@@ -669,11 +799,11 @@ get_entity_mask_pipeline (RigEngine *engine,
         {
           RutAsset *texture_asset = rut_material_get_texture_asset (material);
 
-          if (alpha_src)
+          if (sources[1])
             {
-              CoglGstVideoSink *sink = rut_image_source_get_sink (alpha_src);
+              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[1]);
 
-              if (sink && rut_image_source_get_is_video (alpha_src))
+              if (sink && rut_image_source_get_is_video (sources[1]))
                 {
                   int free_layer;
                   cogl_gst_video_sink_set_first_layer (sink, 4);
@@ -690,7 +820,7 @@ get_entity_mask_pipeline (RigEngine *engine,
               else if (!sink)
                 {
                   cogl_pipeline_set_layer_texture (pipeline, 4,
-                    rut_image_source_get_texture (alpha_src));
+                    rut_image_source_get_texture (sources[1]));
                   cogl_pipeline_add_snippet (pipeline,
                                              engine->alpha_mask_snippet);
 
@@ -705,9 +835,67 @@ get_entity_mask_pipeline (RigEngine *engine,
               rut_asset_get_texture (texture_asset));
         }
     }
+  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+    {
+      RutMaterial *material =
+        rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+      pipeline = cogl_pipeline_copy (engine->dof_diamond_pipeline);
+
+      if (material)
+        {
+          if (sources[0])
+            {
+              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[0]);
+
+              if (sink && rut_image_source_get_is_video (sources[0]))
+                {
+                  cogl_gst_video_sink_set_first_layer (sink, 1);
+                  cogl_gst_video_sink_set_default_sample (sink, FALSE);
+                  cogl_gst_video_sink_setup_pipeline (sink, pipeline);
+                  cogl_pipeline_add_snippet (pipeline,
+                                             engine->pointalism_video_snippet);
+                }
+              else if (!sink)
+                {
+                  cogl_pipeline_set_layer_texture (pipeline, 1,
+                    rut_image_source_get_texture (sources[0]));
+                  cogl_pipeline_add_snippet (pipeline,
+                                             engine->pointalism_vertex_snippet);
+                }
+             }
+
+          if (sources[1])
+            {
+              int free_layer = 5;
+              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[1]);
+
+              if (sink && rut_image_source_get_is_video (sources[1]))
+                {
+                  cogl_gst_video_sink_set_first_layer (sink, 4);
+                  cogl_gst_video_sink_set_default_sample (sink, FALSE);
+                  cogl_gst_video_sink_setup_pipeline (sink, pipeline);
+                  free_layer = cogl_gst_video_sink_get_free_layer (sink);
+                  cogl_pipeline_add_snippet (pipeline,
+                                             engine->alpha_mask_video_snippet);
+                }
+              else if (!sink)
+                {
+                  cogl_pipeline_set_layer_texture (pipeline, 4,
+                        rut_image_source_get_texture (sources[1]));
+                  cogl_pipeline_add_snippet (pipeline,
+                                             engine->alpha_mask_snippet);
+                }
+
+              for (i = 4; i < free_layer; i++)
+                cogl_pipeline_set_layer_combine (pipeline, i,
+                                                 "RGBA=REPLACE(PREVIOUS)",
+                                                 NULL);
+            }
+        }
+    }
   else
     pipeline = cogl_object_ref (engine->dof_pipeline);
-
 
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
 
@@ -771,6 +959,8 @@ get_entity_color_pipeline (RigEngine *engine,
   CoglPipeline *pipeline;
   CoglFramebuffer *shadow_fb;
   RutImageSource *sources[3];
+  CoglSnippet *blend = engine->blended_discard_snippet;
+  CoglSnippet *unblend = engine->unblended_discard_snippet;
   int i;
 
   sources[0] = rut_entity_get_image_source_cache (entity, 0);
@@ -912,7 +1102,10 @@ get_entity_color_pipeline (RigEngine *engine,
 
   cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
 
+  cogl_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
+
   /* Vertex shader setup for lighting */
+
   cogl_pipeline_add_snippet (pipeline, engine->lighting_vertex_snippet);
 
   if (sources[2])
@@ -921,6 +1114,44 @@ get_entity_color_pipeline (RigEngine *engine,
   if (rut_entity_get_receive_shadow (entity))
     cogl_pipeline_add_snippet (pipeline, engine->shadow_mapping_vertex_snippet);
 
+  if (rut_object_get_type (geometry) == &rut_shape_type)
+    {
+      CoglTexture *shape_texture;
+
+      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
+        {
+          shape_texture =
+            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+          cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
+        }
+
+      rut_shape_add_reshaped_callback (RUT_SHAPE (geometry),
+                                       reshape_cb,
+                                       NULL,
+                                       NULL);
+    }
+  else if (rut_object_get_type (geometry) == &rut_diamond_type)
+    rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
+  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type &&
+           sources[0])
+    {
+      cogl_pipeline_set_layer_texture (pipeline, 0,
+                                       engine->ctx->circle_texture);
+      cogl_pipeline_set_layer_filters (pipeline, 0,
+        COGL_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
+        COGL_PIPELINE_FILTER_LINEAR);
+
+      if (rut_image_source_get_is_video (sources[0]))
+        cogl_pipeline_add_snippet (pipeline,
+                                   engine->pointalism_video_snippet);
+      else
+        cogl_pipeline_add_snippet (pipeline,
+                                   engine->pointalism_vertex_snippet);
+
+      blend = engine->pointalism_halo_snippet;
+      unblend = engine->pointalism_opaque_snippet;
+    }
+
   /* and fragment shader */
 
   /* XXX: ideally we wouldn't have to rely on conditionals + discards
@@ -928,10 +1159,7 @@ get_entity_color_pipeline (RigEngine *engine,
    * regions and instead we should let users mark out opaque regions
    * in geometry.
    */
-  cogl_pipeline_add_snippet (pipeline,
-                             blended ?
-                             engine->blended_discard_snippet :
-                             engine->unblended_discard_snippet);
+  cogl_pipeline_add_snippet (pipeline,  blended ? blend : unblend);
 
   cogl_pipeline_add_snippet (pipeline, engine->unpremultiply_snippet);
 
@@ -1022,25 +1250,6 @@ get_entity_color_pipeline (RigEngine *engine,
     }
 
   cogl_pipeline_add_snippet (pipeline, engine->premultiply_snippet);
-
-  if (rut_object_get_type (geometry) == &rut_shape_type)
-    {
-      CoglTexture *shape_texture;
-
-      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
-        {
-          shape_texture =
-            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
-          cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
-        }
-
-      rut_shape_add_reshaped_callback (RUT_SHAPE (geometry),
-                                       reshape_cb,
-                                       NULL,
-                                       NULL);
-    }
-  else if (rut_object_get_type (geometry) == &rut_diamond_type)
-    rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
 
   if (!blended)
     {
