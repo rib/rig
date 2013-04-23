@@ -19,7 +19,8 @@ endif
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la
+	$(top_builddir)/cogl/libcogl2.la \
+	$(LIBM)
 
 if !USE_GLIB
 common_ldadd += $(top_builddir)/deps/glib/libglib.la
