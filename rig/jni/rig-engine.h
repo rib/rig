@@ -148,6 +148,7 @@ struct _RigEngine
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *diamond_builtin_asset;
+  RutAsset *pointalism_grid_builtin_asset;
   GList *asset_input_closures;
   GList *asset_enumerators;
 
@@ -230,6 +231,11 @@ struct _RigEngine
   CoglSnippet *material_lighting_snippet;
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;
+  CoglSnippet *pointalism_vertex_snippet;
+  CoglSnippet *pointalism_video_snippet;
+  CoglSnippet *pointalism_halo_snippet;
+  CoglSnippet *pointalism_opaque_snippet;
+  CoglSnippet *cache_position_snippet;
 
   GHashTable *assets_registry;
 
@@ -310,5 +316,9 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled);
 
 void
 rig_engine_sync_slaves (RigEngine *engine);
+
+void
+rig_engine_dirty_properties_menu (RutImageSource *source,
+                                  void *user_data);
 
 #endif /* _RUT_ENGINE_H_ */

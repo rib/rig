@@ -7,7 +7,8 @@ components_source_h = \
     components/rut-model.h \
     components/rut-material.h \
     components/rut-diamond.h \
-    components/rut-shape.h
+    components/rut-shape.h \
+    components/rut-pointalism-grid.h
 
 source_h = \
     $(components_source_h) \
@@ -80,6 +81,7 @@ librut_la_SOURCES = \
     components/rut-material.c \
     components/rut-diamond.c \
     components/rut-shape.c \
+    components/rut-pointalism-grid.c \
     rply.c \
     rply.h \
     color-table.h \

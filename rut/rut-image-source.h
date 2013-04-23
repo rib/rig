@@ -34,14 +34,9 @@ extern RutType rut_image_source_type;
 
 void _rut_image_source_init_type (void);
 
-typedef void (*RutImageSourceReadyCallback) (RutImageSource *source,
-                                             void *user_data);
-
 RutImageSource*
 rut_image_source_new (RutContext *ctx,
-                      RutAsset *asset,
-                      RutImageSourceReadyCallback callback,
-                      void *user_data);
+                      RutAsset *asset);
 
 CoglTexture*
 rut_image_source_get_texture (RutImageSource *source);
@@ -52,8 +47,17 @@ rut_image_source_get_sink (RutImageSource *source);
 CoglBool
 rut_image_source_get_is_video (RutImageSource *source);
 
+typedef void (*RutImageSourceReadyCallback) (RutImageSource *source,
+                                             void *user_data);
+
 typedef void (*RutImageSourceChangedCallback) (RutImageSource *source,
                                                void *user_data);
+                                               
+RutClosure *
+rut_image_source_add_ready_callback (RutImageSource *source,
+                                     RutImageSourceReadyCallback callback,
+                                     void *user_data,
+                                     RutClosureDestroyCallback destroy_cb);
 
 RutClosure *
 rut_image_source_add_on_changed_callback (RutImageSource *source,

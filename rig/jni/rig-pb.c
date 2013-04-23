@@ -481,6 +481,25 @@ serialize_component_cb (RutComponent *component,
       pb_component->diamond->has_size = TRUE;
       pb_component->diamond->size = rut_diamond_get_size (RUT_DIAMOND (component));
     }
+  else if (type == &rut_pointalism_grid_type)
+    {
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID;
+      pb_component->grid = pb_new (engine,
+                                   sizeof (Rig__Entity__Component__PointalismGrid),
+                                   rig__entity__component__pointalism_grid__init);
+
+      pb_component->grid->has_scale = TRUE;
+      pb_component->grid->scale = rut_pointalism_grid_get_scale (RUT_POINTALISM_GRID (component));
+
+      pb_component->grid->has_z = TRUE;
+      pb_component->grid->z = rut_pointalism_grid_get_z (RUT_POINTALISM_GRID (component));
+      
+      pb_component->grid->has_cell_size = TRUE;
+      pb_component->grid->cell_size = rut_pointalism_grid_get_cell_size (RUT_POINTALISM_GRID (component));
+
+      pb_component->grid->has_lighter = TRUE;
+      pb_component->grid->lighter = rut_pointalism_grid_get_lighter (RUT_POINTALISM_GRID (component));
+    }
   else if (type == &rut_model_type)
     {
       RutModel *model = RUT_MODEL (component);
@@ -1290,6 +1309,7 @@ unserialize_components (UnSerializer *unserializer,
           }
         case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
         case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
+        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
           break;
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
           {
@@ -1550,6 +1570,78 @@ unserialize_components (UnSerializer *unserializer,
                   {
                     collect_error (unserializer,
                                    "Can't add diamond component without "
+                                   "an image source");
+
+                    rut_refable_unref (material);
+                  }
+              }
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
+          {
+            Rig__Entity__Component__PointalismGrid *pb_grid = pb_component->grid;
+            RutMaterial *material;
+            RutAsset *asset = NULL;
+            CoglTexture *texture = NULL;
+            RutPointalismGrid *grid;
+            float width, height;
+            float cell_size;
+
+            if (pb_grid->has_cell_size)
+              cell_size = pb_grid->cell_size;
+            else
+              cell_size = 20;
+
+            material = rut_entity_get_component (entity,
+                                                 RUT_COMPONENT_TYPE_MATERIAL);
+
+            if (material)
+              asset = rut_material_get_texture_asset (material);
+
+            if (asset)
+              {
+                if (rut_asset_get_is_video (asset))
+                  {
+                    width = 640;
+                    height = 480;
+                  }
+                else
+                  {
+                    texture = rut_asset_get_texture (asset);
+                    if (texture)
+                      {
+                        width = cogl_texture_get_width (texture);
+                        height = cogl_texture_get_height (texture);
+                      }
+                    else
+                      goto ERROR_POINTALISM;
+                  }
+              }
+            else
+              goto ERROR_POINTALISM;
+
+            grid = rut_pointalism_grid_new (unserializer->engine->ctx, cell_size,
+                                            width, height);
+
+            rut_entity_add_component (entity, grid);
+
+            if (pb_grid->has_scale)
+              rut_pointalism_grid_set_scale (grid, pb_grid->scale);
+
+            if (pb_grid->has_z)
+              rut_pointalism_grid_set_z (grid, pb_grid->z);
+
+            if (pb_grid->has_lighter)
+              rut_pointalism_grid_set_lighter (grid, pb_grid->lighter);
+
+            register_unserializer_object (unserializer, grid, component_id);
+
+            ERROR_POINTALISM:
+              {
+                if (!grid)
+                  {
+                    collect_error (unserializer,
+                                   "Can't add pointalism grid component without "
                                    "an image source");
 
                     rut_refable_unref (material);
