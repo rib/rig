@@ -31,6 +31,8 @@
 #include "components/rut-material.h"
 #include "components/rut-model.h"
 
+#define PI 3.14159265359
+
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object)
 {
@@ -237,9 +239,131 @@ calculate_tangent_space (void **attribute_data_v0,
   float poly_normal[3];
   float poly_tangent[3];
   float coef;
+  float center[3], dir1[3], dir2[3], angle;
+  int i;
   RutModel *model = user_data;
-  RutAttribute *att = rut_mesh_find_attribute (model->mesh,
-                                               "cogl_tex_coord0_in");
+
+  /* Vertex 1 */
+
+  center[0] = (model->min_x + model->max_x) * 0.5;
+  center[1] = vert_p0[1];
+  center[2] = (model->min_z + model->max_z) * 0.5;
+
+  dir2[0] = model->min_x - center[2];
+  dir2[1] = vert_p0[1] - center[1];
+  dir2[2] = model->min_z - center[2];
+
+  dir1[0] = vert_p0[0] - center[0];
+  dir1[1] = vert_p0[1] - center[1];
+  dir1[2] = vert_p0[2] - center[2];
+
+  angle = atan2 (dir1[0], dir1[2]) - atan2 (dir2[0], dir2[2]);
+
+  if (angle < 0)
+    angle = (2.0 * PI) + angle;
+
+  if (angle > 0)
+    tex_coord0[0] = angle/ (2.0 * PI);
+  else
+    tex_coord0[0] = 0;
+
+  tex_coord0[1] = (vert_p0[1] - model->min_y) / (model->max_y - model->min_y);
+
+  if (tex_coord0[0] <= 0)
+    {
+      if (vert_p0[0] < vert_p1[0] ||
+          vert_p0[0] < vert_p2[0] )
+        tex_coord0[0] = 1;
+    }
+
+  if ((vert_p0[1] == model->max_y ||
+      vert_p0[1] == model->min_y) &&
+      vert_p0[1] == vert_p1[1] &&
+      vert_p0[1] == vert_p2[1])
+    {
+      tex_coord0[0] = (vert_p0[0] - model->min_x) /
+                      (model->max_x - model->min_x);
+      tex_coord0[1] = (vert_p0[2] - model->min_z) /
+                      (model->max_z - model->min_z);
+    }
+
+  /* Vertex 2 */
+
+  center[1] = vert_p1[1];
+  dir2[1] = vert_p1[1] - center[1];
+
+  dir1[0] = vert_p1[0] - center[0];
+  dir1[1] = vert_p1[1] - center[1];
+  dir1[2] = vert_p1[2] - center[2];
+
+  angle = atan2 (dir1[0], dir1[2]) - atan2 (dir2[0], dir2[2]);
+
+  if (angle < 0)
+    angle = (2.0 * PI) + angle;
+
+  if (angle > 0)
+    tex_coord1[0] = angle/ (2.0 * PI);
+  else
+    tex_coord1[0] = 0;
+
+  tex_coord1[1] = (vert_p1[1] - model->min_y) / (model->max_y - model->min_y);
+
+  if (tex_coord1[0] <= 0)
+    {
+      if (vert_p1[0] < vert_p0[0] ||
+          vert_p1[0] < vert_p2[0] )
+        tex_coord1[0] = 1;
+    }
+
+  if ((vert_p1[1] == model->max_y ||
+      vert_p1[1] == model->min_y) &&
+      vert_p1[1] == vert_p0[1] &&
+      vert_p1[1] == vert_p2[1])
+    {
+      tex_coord1[0] = (vert_p1[0] - model->min_x) /
+                      (model->max_x - model->min_x);
+      tex_coord1[1] = (vert_p1[2] - model->min_z) /
+                      (model->max_z - model->min_z);
+    }
+
+  /* Vertex 3 */
+
+  center[1] = vert_p2[1];
+  dir2[1] = vert_p2[1] - center[1];
+
+  dir1[0] = vert_p2[0] - center[0];
+  dir1[1] = vert_p2[1] - center[1];
+  dir1[2] = vert_p2[2] - center[2];
+
+  angle = atan2 (dir1[0], dir1[2]) - atan2 (dir2[0], dir2[2]);
+
+  if (angle < 0)
+    angle = (2.0 * PI) + angle;
+
+  if (angle > 0)
+    tex_coord2[0] = angle/ (2.0 * PI);
+  else
+    tex_coord2[0] = 0;
+
+  tex_coord2[1] = (vert_p2[1] - model->min_y) / (model->max_y - model->min_y);
+
+  if (tex_coord2[0] <= 0)
+    {
+      if (vert_p2[0] < vert_p0[0] ||
+          vert_p2[0] < vert_p1[0] )
+        tex_coord2[0] = 1;
+    }
+
+  if ((vert_p2[1] == model->max_y ||
+      vert_p2[1] == model->min_y) &&
+      vert_p2[1] == vert_p0[1] &&
+      vert_p2[1] == vert_p1[1])
+    {
+      tex_coord2[0] = (vert_p2[0] - model->min_x) /
+                      (model->max_x - model->min_x);
+      tex_coord2[1] = (vert_p2[2] - model->min_z) /
+                      (model->max_z - model->min_z);
+    }
 
   edge1[0] = vert_p1[0] - vert_p0[0];
   edge1[1] = vert_p1[1] - vert_p0[1];
@@ -272,9 +396,6 @@ calculate_tangent_space (void **attribute_data_v0,
   vert_n2[2] += poly_normal[2];
 
   normalize_vertex (vert_n2);
-
-  if (!att)
-    return TRUE;
 
   tex_edge1[0] = tex_coord1[0] - tex_coord0[0];
   tex_edge1[1] = tex_coord1[1] - tex_coord0[1];
@@ -310,6 +431,19 @@ calculate_tangent_space (void **attribute_data_v0,
   vert_t2[2] += poly_tangent[2];
 
   normalize_vertex (vert_t2);
+
+  for (i = 4; i < 7; i++)
+    {
+      float *tex = attribute_data_v0[i];
+      tex[0] = tex_coord0[0];
+      tex[1] = tex_coord0[1];
+      tex = attribute_data_v1[i];
+      tex[0] = tex_coord1[0];
+      tex[1] = tex_coord1[1];
+      tex = attribute_data_v2[i];
+      tex[0] = tex_coord2[0];
+      tex[1] = tex_coord2[1];
+    }
 
   return TRUE;
 }
@@ -358,12 +492,15 @@ rut_model_new_from_mesh (RutContext *ctx,
                            NULL);
 
   rut_mesh_foreach_triangle (model->mesh,
-                             (RutMeshTriangleCallback) calculate_tangent_space,
+                             calculate_tangent_space,
                              model,
                              "cogl_position_in",
                              "cogl_normal_in",
-                             "tanget_in",
+                             "tangent_in",
                              "cogl_tex_coord0_in",
+                             "cogl_tex_coord1_in",
+                             "cogl_tex_coord2_in",
+                             "cogl_tex_coord5_in",
                              NULL);
 
   return model;
