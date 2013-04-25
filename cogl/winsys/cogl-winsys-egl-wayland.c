@@ -323,8 +323,12 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   wayland_onscreen = g_slice_new0 (CoglOnscreenWayland);
   egl_onscreen->platform = wayland_onscreen;
 
-  wayland_onscreen->wayland_surface =
-    wl_compositor_create_surface (wayland_renderer->wayland_compositor);
+  if (onscreen->foreign_surface)
+    wayland_onscreen->wayland_surface = onscreen->foreign_surface;
+  else
+    wayland_onscreen->wayland_surface =
+      wl_compositor_create_surface (wayland_renderer->wayland_compositor);
+
   if (!wayland_onscreen->wayland_surface)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
@@ -332,10 +336,6 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                    "Error while creating wayland surface for CoglOnscreen");
       return FALSE;
     }
-
-  wayland_onscreen->wayland_shell_surface =
-    wl_shell_get_shell_surface (wayland_renderer->wayland_shell,
-                                wayland_onscreen->wayland_surface);
 
   wayland_onscreen->wayland_egl_native_window =
     wl_egl_window_create (wayland_onscreen->wayland_surface,
@@ -357,7 +357,13 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
                             wayland_onscreen->wayland_egl_native_window,
                             NULL);
 
-  wl_shell_surface_set_toplevel (wayland_onscreen->wayland_shell_surface);
+  if (!onscreen->foreign_surface)
+    {
+      wayland_onscreen->wayland_shell_surface =
+        wl_shell_get_shell_surface (wayland_renderer->wayland_shell,
+                                    wayland_onscreen->wayland_surface);
+      wl_shell_surface_set_toplevel (wayland_onscreen->wayland_shell_surface);
+    }
 
   return TRUE;
 }
@@ -374,21 +380,23 @@ _cogl_winsys_egl_onscreen_deinit (CoglOnscreen *onscreen)
       wayland_onscreen->wayland_egl_native_window = NULL;
     }
 
-  /* NB: The wayland protocol docs explicitly state that
-   * "wl_shell_surface_destroy() must be called before destroying the
-   * wl_surface object." ... */
-  if (wayland_onscreen->wayland_shell_surface)
+  if (!onscreen->foreign_surface)
     {
-      wl_shell_surface_destroy (wayland_onscreen->wayland_shell_surface);
-      wayland_onscreen->wayland_shell_surface = NULL;
-    }
+      /* NB: The wayland protocol docs explicitly state that
+       * "wl_shell_surface_destroy() must be called before destroying
+       * the wl_surface object." ... */
+      if (wayland_onscreen->wayland_shell_surface)
+        {
+          wl_shell_surface_destroy (wayland_onscreen->wayland_shell_surface);
+          wayland_onscreen->wayland_shell_surface = NULL;
+        }
 
-  if (wayland_onscreen->wayland_surface)
-    {
-      wl_surface_destroy (wayland_onscreen->wayland_surface);
-      wayland_onscreen->wayland_surface = NULL;
+      if (wayland_onscreen->wayland_surface)
+        {
+          wl_surface_destroy (wayland_onscreen->wayland_surface);
+          wayland_onscreen->wayland_surface = NULL;
+        }
     }
-
 
   g_slice_free (CoglOnscreenWayland, wayland_onscreen);
 }
@@ -523,7 +531,7 @@ cogl_wayland_onscreen_get_surface (CoglOnscreen *onscreen)
   CoglFramebuffer *fb;
 
   fb = COGL_FRAMEBUFFER (onscreen);
-  if (fb->allocated)
+  if (fb->allocated && !onscreen->foreign_surface)
     {
       CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
       CoglOnscreenWayland *wayland_onscreen = egl_onscreen->platform;
@@ -547,6 +555,18 @@ cogl_wayland_onscreen_get_shell_surface (CoglOnscreen *onscreen)
     }
   else
     return NULL;
+}
+
+void
+cogl_wayland_onscreen_set_foreign_surface (CoglOnscreen *onscreen,
+                                           struct wl_surface *surface)
+{
+  CoglFramebuffer *fb;
+
+  fb = COGL_FRAMEBUFFER (onscreen);
+  _COGL_RETURN_IF_FAIL (!fb->allocated);
+
+  onscreen->foreign_surface = surface;
 }
 
 void
