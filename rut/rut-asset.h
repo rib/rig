@@ -1,8 +1,9 @@
 #ifndef _RUT_ASSET_H_
 #define _RUT_ASSET_H_
 
+#include <stdbool.h>
 #include <gio/gio.h>
-#include <cogl-gst/cogl-gst.h> 
+#include <cogl-gst/cogl-gst.h>
 
 typedef enum _RutAssetType {
   RUT_ASSET_TYPE_BUILTIN,
@@ -27,28 +28,23 @@ rut_asset_new_builtin (RutContext *ctx,
 
 RutAsset *
 rut_asset_new_texture (RutContext *ctx,
-                       CoglBool is_video,
-                       GCallback cb,
-                       gpointer user_data,
-                       const char *path);
+                       const char *path,
+                       const GList *inferred_tags);
 
 RutAsset *
 rut_asset_new_normal_map (RutContext *ctx,
-                          CoglBool is_video,
-                          GCallback cb,
-                          gpointer user_data,
-                          const char *path);
+                          const char *path,
+                          const GList *inferred_tags);
 
 RutAsset *
 rut_asset_new_alpha_mask (RutContext *ctx,
-                          CoglBool is_video,
-                          GCallback cb,
-                          gpointer user_data,
-                          const char *path);
+                          const char *path,
+                          const GList *inferred_tags);
 
 RutAsset *
 rut_asset_new_ply_model (RutContext *ctx,
-                         const char *path);
+                         const char *path,
+                         const GList *inferred_tags);
 
 RutAsset *
 rut_asset_new_from_data (RutContext *ctx,
@@ -90,5 +86,16 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file);
 
 void
 rut_asset_add_inferred_tag (RutAsset *asset, const char *tag);
+
+bool
+rut_asset_needs_thumbnail (RutAsset *asset);
+
+typedef void (*RutThumbnailCallback) (RutAsset *asset, void *user_data);
+
+RutClosure *
+rut_asset_thumbnail (RutAsset *asset,
+                     RutThumbnailCallback ready_callback,
+                     void *user_data,
+                     RutClosureDestroyCallback destroy_cb);
 
 #endif /* _RUT_ASSET_H_ */

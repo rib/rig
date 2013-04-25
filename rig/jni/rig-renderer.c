@@ -64,14 +64,6 @@ typedef struct _RigJournalEntry
 #define OPAQUE_THRESHOLD 0.9999
 
 static void
-rig_force_redraw (gpointer instance,
-                  gpointer user_data)
-{
-  RigEngine *engine = (RigEngine*) user_data;
-  rut_shell_queue_redraw (engine->shell);
-}
-
-static void
 rig_journal_log (GArray *journal,
                  RigPaintContext *paint_ctx,
                  RutEntity *entity,
@@ -116,7 +108,7 @@ reshape_cb (RutShape *shape, void *user_data)
   RutComponentableProps *componentable =
     rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
-  rig_dirty_entity_pipelines (NULL, entity);
+  rig_renderer_dirty_entity_state (entity);
 }
 
 static void
@@ -751,6 +743,22 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
   cogl_matrix_multiply (light_mvp, light_mvp, model_transform);
 }
 
+static void
+image_source_ready_cb (RutImageSource *source,
+                       void *user_data)
+{
+  rig_renderer_dirty_entity_state (user_data);
+}
+
+static void
+image_source_changed_cb (RutImageSource *source,
+                         void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  rut_shell_queue_redraw (engine->shell);
+}
+
 static CoglPipeline *
 get_entity_color_pipeline (RigEngine *engine,
                            RutEntity *entity,
@@ -779,14 +787,12 @@ get_entity_color_pipeline (RigEngine *engine,
       if (asset && !sources[0])
         {
           sources[0] = rut_image_source_new (engine->ctx, asset,
-            (RutImageSourceReadyCallback) rig_dirty_entity_pipelines, entity);
-
-          if (rut_asset_get_is_video (asset))
-            {
-              g_signal_connect (rut_image_source_get_sink (sources[0]),
-                                "new_frame", (GCallback) rig_force_redraw,
-                                engine);
-            }
+                                             image_source_ready_cb,
+                                             entity);
+          rut_image_source_add_on_changed_callback (sources[0],
+                                                    image_source_changed_cb,
+                                                    engine,
+                                                    NULL);
 
           rut_entity_set_image_source_cache (entity, 0, sources[0]);
         }
@@ -796,14 +802,12 @@ get_entity_color_pipeline (RigEngine *engine,
       if (asset && !sources[1])
         {
           sources[1] = rut_image_source_new (engine->ctx, asset,
-            (RutImageSourceReadyCallback) rig_dirty_entity_pipelines, entity);
-
-          if (rut_asset_get_is_video (asset))
-            {
-              g_signal_connect (rut_image_source_get_sink (sources[1]),
-                                "new_frame", (GCallback) rig_force_redraw,
-                                engine);
-            }
+                                             image_source_ready_cb,
+                                             entity);
+          rut_image_source_add_on_changed_callback (sources[1],
+                                                    image_source_changed_cb,
+                                                    engine,
+                                                    NULL);
 
           rut_entity_set_image_source_cache (entity, 1, sources[1]);
         }
@@ -813,14 +817,12 @@ get_entity_color_pipeline (RigEngine *engine,
       if (asset && !sources[2])
         {
           sources[2] = rut_image_source_new (engine->ctx, asset,
-            (RutImageSourceReadyCallback) rig_dirty_entity_pipelines, entity);
-
-          if (rut_asset_get_is_video (asset))
-            {
-              g_signal_connect (rut_image_source_get_sink (sources[2]),
-                                "new_frame", (GCallback) rig_force_redraw,
-                                engine);
-            }
+                                             image_source_ready_cb,
+                                             entity);
+          rut_image_source_add_on_changed_callback (sources[2],
+                                                    image_source_changed_cb,
+                                                    engine,
+                                                    NULL);
 
           rut_entity_set_image_source_cache (entity, 2, sources[2]);
         }
@@ -1425,11 +1427,8 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
 }
 
 void
-rig_dirty_entity_pipelines (gpointer instance,
-                            gpointer user_data)
+rig_renderer_dirty_entity_state (RutEntity *entity)
 {
-  RutEntity *entity = (RutEntity*) user_data;
-
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);

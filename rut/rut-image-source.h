@@ -34,8 +34,8 @@ extern RutType rut_image_source_type;
 
 void _rut_image_source_init_type (void);
 
-typedef void (*RutImageSourceReadyCallback) (gpointer instance,
-                                             gpointer user_data);
+typedef void (*RutImageSourceReadyCallback) (RutImageSource *source,
+                                             void *user_data);
 
 RutImageSource*
 rut_image_source_new (RutContext *ctx,
@@ -51,5 +51,14 @@ rut_image_source_get_sink (RutImageSource *source);
 
 CoglBool
 rut_image_source_get_is_video (RutImageSource *source);
+
+typedef void (*RutImageSourceChangedCallback) (RutImageSource *source,
+                                               void *user_data);
+
+RutClosure *
+rut_image_source_add_on_changed_callback (RutImageSource *source,
+                                          RutImageSourceChangedCallback callback,
+                                          void *user_data,
+                                          RutClosureDestroyCallback destroy_cb);
 
 #endif

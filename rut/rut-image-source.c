@@ -29,6 +29,11 @@ struct _RutImageSource
   GstElement *pipeline;
   GstElement *bin;
   CoglBool is_video;
+
+  RutImageSourceReadyCallback ready_callback;
+  void *ready_data;
+
+  RutList changed_cb_list;
 };
 
 static CoglBool
@@ -92,14 +97,6 @@ _rut_image_source_video_play (RutImageSource *source,
 }
 
 static void
-_rut_image_source_ready_for_use (gpointer instance,
-                                 gpointer user_data)
-{
-  RutImageSource *src = (RutImageSource*) user_data;
-  src->is_video = TRUE;
-}
-
-static void
 _rut_image_source_free (void *object)
 {
   RutImageSource *source = object;
@@ -107,22 +104,50 @@ _rut_image_source_free (void *object)
   _rut_image_source_video_stop (source);
 }
 
-static RutRefCountableVTable _rut_image_source_ref_countable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_image_source_free
-};
-
 RutType rut_image_source_type;
 
 void
 _rut_image_source_init_type (void)
 {
-  rut_type_init (&rut_image_source_type, "RutImageSource");
-  rut_type_add_interface (&rut_image_source_type,
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_image_source_free
+  };
+
+  RutType *type = &rut_image_source_type;
+#define TYPE RutImageSource
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutImageSource, ref_count),
-                          &_rut_image_source_ref_countable);
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+
+#undef TYPE
+}
+
+static void
+pipeline_ready_cb (gpointer instance,
+                  gpointer user_data)
+{
+  RutImageSource *source = (RutImageSource*) user_data;
+
+  source->is_video = TRUE;
+
+  if (source->ready_callback)
+    source->ready_callback (source, source->ready_data);
+}
+
+static void
+new_frame_cb (gpointer instance,
+              gpointer user_data)
+{
+  RutImageSource *source = (RutImageSource*) user_data;
+
+  rut_closure_list_invoke (&source->changed_cb_list,
+                           RutImageSourceChangedCallback,
+                           source);
 }
 
 RutImageSource*
@@ -138,16 +163,21 @@ rut_image_source_new (RutContext *ctx,
   source->sink = NULL;
   source->texture = NULL;
   source->is_video = FALSE;
+  source->ready_callback = callback;
+  source->ready_data = user_data;
+
+  rut_list_init (&source->changed_cb_list);
 
   if (rut_asset_get_is_video (asset))
     {
       _rut_image_source_video_play (source, ctx,
                                     rut_asset_get_path (asset));
-       g_signal_connect (source->sink, "pipeline_ready", (GCallback) callback,
-                         user_data);
-
        g_signal_connect (source->sink, "pipeline_ready",
-                        (GCallback) _rut_image_source_ready_for_use, source);
+                         (GCallback) pipeline_ready_cb,
+                         source);
+       g_signal_connect (source->sink, "new_frame",
+                         (GCallback) new_frame_cb,
+                         source);
     }
   else if (rut_asset_get_texture (asset))
     {
@@ -174,4 +204,16 @@ CoglBool
 rut_image_source_get_is_video (RutImageSource *source)
 {
   return source->is_video;
+}
+
+RutClosure *
+rut_image_source_add_on_changed_callback (RutImageSource *source,
+                                          RutImageSourceChangedCallback callback,
+                                          void *user_data,
+                                          RutClosureDestroyCallback destroy_cb)
+{
+  return rut_closure_list_add (&source->changed_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }

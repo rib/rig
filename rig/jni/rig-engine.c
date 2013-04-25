@@ -86,11 +86,6 @@ static RutPropertySpec rut_data_property_specs[] = {
 static void
 rig_load_asset_list (RigEngine *engine);
 
-static void
-rig_refresh_thumbnails (gpointer instance,
-                        gpointer user_data);
-
-
 #ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
 #endif
@@ -658,16 +653,37 @@ asset_input_cb (RutInputRegion *region,
                     if (type == RUT_ASSET_TYPE_TEXTURE)
                       {
                         rut_material_set_texture_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
                         rut_entity_set_image_source_cache (entity, 0, NULL);
                       }
                     else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
                       {
                         rut_material_set_normal_map_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
                         rut_entity_set_image_source_cache (entity, 2, NULL);
                       }
                     else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
                       {
                         rut_material_set_alpha_mask_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
                         rut_entity_set_image_source_cache (entity, 1, NULL);
                       }
                   }
@@ -766,7 +782,7 @@ asset_input_cb (RutInputRegion *region,
 
                 rut_entity_set_scale (entity, 200.0 / max_range);
 
-                rig_dirty_entity_pipelines (NULL, entity);
+                rig_renderer_dirty_entity_state (entity);
 
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 break;
@@ -790,7 +806,7 @@ asset_input_cb (RutInputRegion *region,
                   rut_text_set_color (text, &color);
                   rut_entity_add_component (entity, text);
 
-                  rig_dirty_entity_pipelines (NULL, entity);
+                  rig_renderer_dirty_entity_state (entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -821,6 +837,12 @@ asset_input_cb (RutInputRegion *region,
                         {
                           if (rut_asset_get_is_video (texture_asset))
                             {
+                              /* XXX: until we start decoding the
+                               * video we don't know the size of the
+                               * video so for now we just assume a
+                               * default size. Maybe we should just
+                               * decode a single frame to find out the
+                               * size? */
                               tex_width = 640;
                               tex_height = 480;
                             }
@@ -838,7 +860,7 @@ asset_input_cb (RutInputRegion *region,
                                          tex_height);
                   rut_entity_add_component (entity, shape);
 
-                  rig_dirty_entity_pipelines (NULL, entity);
+                  rig_renderer_dirty_entity_state (entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -870,6 +892,12 @@ asset_input_cb (RutInputRegion *region,
                         {
                           if (rut_asset_get_is_video (texture_asset))
                             {
+                              /* XXX: until we start decoding the
+                               * video we don't know the size of the
+                               * video so for now we just assume a
+                               * default size. Maybe we should just
+                               * decode a single frame to find out the
+                               * size? */
                               tex_width = 640;
                               tex_height = 480;
                             }
@@ -887,7 +915,7 @@ asset_input_cb (RutInputRegion *region,
                                              tex_height);
                   rut_entity_add_component (entity, diamond);
 
-                  rig_dirty_entity_pipelines (NULL, entity);
+                  rig_renderer_dirty_entity_state (entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -1145,15 +1173,6 @@ rig_search_asset_list (RigEngine *engine, const char *search)
     }
 
   return found;
-}
-
-static void
-rig_refresh_thumbnails (gpointer instance,
-                        gpointer user_data)
-{
-  RigEngine* engine = (RigEngine*) user_data;
-
-  rig_search_asset_list (engine, NULL);
 }
 
 static void
@@ -2685,6 +2704,14 @@ rig_lookup_asset (RigEngine *engine,
   return g_hash_table_lookup (engine->assets_registry, path);
 }
 
+static void
+thumbnail_updated_callback (RutAsset *asset, void *user_data)
+{
+  RigEngine* engine = (RigEngine*) user_data;
+
+  rig_search_asset_list (engine, NULL);
+}
+
 RutAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
@@ -2696,53 +2723,26 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 
   inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
 
-  if (rut_util_find_tag (inferred_tags, "normal-maps"))
+  if (rut_util_find_tag (inferred_tags, "image") ||
+      rut_util_find_tag (inferred_tags, "video"))
     {
-      if (rut_util_find_tag (inferred_tags, "image"))
-        asset = rut_asset_new_normal_map (engine->ctx, FALSE, NULL, NULL, path);
-      else if (rut_util_find_tag (inferred_tags, "video"))
-        {
-          if (!_rig_in_device_mode)
-            asset = rut_asset_new_normal_map (engine->ctx, TRUE,
-                      (GCallback) rig_refresh_thumbnails, engine, path);
-          else
-            asset = rut_asset_new_normal_map (engine->ctx, TRUE, NULL, NULL,
-                                              path);
-        }
-    }
-  else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-    {
-      if (rut_util_find_tag (inferred_tags, "image"))
-        asset = rut_asset_new_alpha_mask (engine->ctx, FALSE, NULL, NULL, path);
-      else if (rut_util_find_tag (inferred_tags, "video"))
-        {
-          if (!_rig_in_device_mode)
-            asset = rut_asset_new_alpha_mask (engine->ctx, TRUE,
-                      (GCallback) rig_refresh_thumbnails, engine, path);
-          else
-            asset = rut_asset_new_alpha_mask (engine->ctx, TRUE, NULL, NULL,
-                                              path);
-        }
-    }
-  else if (rut_util_find_tag (inferred_tags, "texture"))
-    {
-      if (rut_util_find_tag (inferred_tags, "image"))
-        asset = rut_asset_new_texture (engine->ctx, FALSE, NULL, NULL, path);
-      else if (rut_util_find_tag (inferred_tags, "video"))
-        {
-          if (!_rig_in_device_mode)
-            asset = rut_asset_new_texture (engine->ctx, TRUE,
-                      (GCallback) rig_refresh_thumbnails, engine, path);
-          else
-            asset = rut_asset_new_texture (engine->ctx, TRUE, NULL, NULL,
-                                           path);
-        }
+      if (rut_util_find_tag (inferred_tags, "normal-maps"))
+        asset = rut_asset_new_normal_map (engine->ctx, path, inferred_tags);
+      else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
+        asset = rut_asset_new_alpha_mask (engine->ctx, path, inferred_tags);
+      else
+        asset = rut_asset_new_texture (engine->ctx, path, inferred_tags);
     }
   else if (rut_util_find_tag (inferred_tags, "ply"))
-    asset = rut_asset_new_ply_model (engine->ctx, path);
+    asset = rut_asset_new_ply_model (engine->ctx, path, inferred_tags);
 
-  if (asset)
-    rut_asset_set_inferred_tags (asset, inferred_tags);
+  if (!_rig_in_device_mode && rut_asset_needs_thumbnail (asset))
+    {
+      rut_asset_thumbnail (asset,
+                           thumbnail_updated_callback,
+                           engine,
+                           NULL);
+    }
 
   g_list_free (inferred_tags);
 
@@ -2760,7 +2760,6 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  char *thumbnail = "rig_thumbnail.jpg";
   GList *l;
   RutAsset *asset = NULL;
 
@@ -2773,10 +2772,7 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
         return;
     }
 
-
-  if (strcmp (g_file_get_basename (asset_file), thumbnail) != 0)
-    asset = rig_load_asset (engine, info, asset_file);
-
+  asset = rig_load_asset (engine, info, asset_file);
   if (asset)
     engine->assets = g_list_prepend (engine->assets, asset);
 }
