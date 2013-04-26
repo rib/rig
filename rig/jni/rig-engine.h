@@ -148,6 +148,7 @@ struct _RigEngine
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *diamond_builtin_asset;
+  RutAsset *hair_builtin_asset;
   GList *asset_input_closures;
   GList *asset_enumerators;
 
@@ -230,6 +231,8 @@ struct _RigEngine
   CoglSnippet *material_lighting_snippet;
   CoglSnippet *simple_lighting_snippet;
   CoglSnippet *shadow_mapping_fragment_snippet;
+  CoglSnippet *hair_fragment_snippet;
+  CoglSnippet *hair_vertex_snippet;
 
   GHashTable *assets_registry;
 

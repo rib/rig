@@ -724,9 +724,12 @@ asset_input_cb (RutInputRegion *region,
               {
                 RutModel *model;
                 float x_range, y_range, z_range, max_range;
+                //RutHair *hair;
 
                 geom = rut_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_GEOMETRY);
+                //hair = rut_entity_get_component (entity,
+                                                   //RUT_COMPONENT_TYPE_HAIR);
 
                 if (geom && rut_object_get_type (geom) == &rut_model_type)
                   {
@@ -766,6 +769,24 @@ asset_input_cb (RutInputRegion *region,
 
                 rut_entity_set_scale (entity, 200.0 / max_range);
 
+                /*if (hair)
+                  {
+                    float length, gravity;
+                    int n_shells;
+
+                    length = rut_hair_get_length (hair);
+                    gravity = rut_hair_get_gravity (hair);
+                    n_shells = rut_hair_get_n_shells (hair);
+
+                    rut_entity_remove_component (entity, hair);
+
+                    hair = rut_hair_new (engine->ctx, model);
+                    rut_entity_add_component (entity, hair);
+                    rut_hair_set_length (hair, length);
+                    rut_hair_set_n_shells (hair, n_shells);
+                    rut_hair_set_gravity (hair, gravity);
+                  }*/
+
                 rig_dirty_entity_pipelines (NULL, entity);
 
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -776,6 +797,10 @@ asset_input_cb (RutInputRegion *region,
                 {
                   RutText *text;
                   CoglColor color;
+                  RutHair *hair;
+
+                  hair = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_HAIR);
 
                   geom = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_GEOMETRY);
@@ -790,6 +815,9 @@ asset_input_cb (RutInputRegion *region,
                   rut_text_set_color (text, &color);
                   rut_entity_add_component (entity, text);
 
+                  if (hair)
+                    rut_entity_remove_component (entity, hair);
+
                   rig_dirty_entity_pipelines (NULL, entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -798,9 +826,13 @@ asset_input_cb (RutInputRegion *region,
                 {
                   RutShape *shape;
                   int tex_width = 200, tex_height = 200;
+                  //RutHair *hair;
 
                   geom = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_GEOMETRY);
+
+                  //hair = rut_entity_get_component (entity,
+                                                   //RUT_COMPONENT_TYPE_HAIR);
 
                   if (geom && rut_object_get_type (geom) == &rut_shape_type)
                     {
@@ -838,6 +870,27 @@ asset_input_cb (RutInputRegion *region,
                                          tex_height);
                   rut_entity_add_component (entity, shape);
 
+                  /*if (hair)
+                    {
+                      float length, gravity;
+                      int n_shells;
+
+                      length = rut_hair_get_length (hair);
+                      gravity = rut_hair_get_gravity (hair);
+                      n_shells = rut_hair_get_n_shells (hair);
+
+                      rut_entity_remove_component (entity, hair);
+
+                      hair = rut_hair_new (engine->ctx, shape);
+                      rut_entity_add_component (entity, hair);
+                      rut_hair_set_length (hair, length);
+                      rut_hair_set_n_shells (hair, n_shells);
+                      rut_hair_set_gravity (hair, gravity);
+                    }*/
+
+                  //if (hair)
+                    //rut_entity_remove_component (entity, hair);
+
                   rig_dirty_entity_pipelines (NULL, entity);
 
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -845,10 +898,14 @@ asset_input_cb (RutInputRegion *region,
               else if (asset == engine->diamond_builtin_asset)
                 {
                   RutDiamond *diamond;
+                  //RutHair *hair;
                   int tex_width = 200, tex_height = 200;
 
                   geom = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_GEOMETRY);
+
+                  //hair = rut_entity_get_component (entity,
+                                                   //RUT_COMPONENT_TYPE_HAIR);
 
                   if (geom && rut_object_get_type (geom) == &rut_diamond_type)
                     {
@@ -885,10 +942,71 @@ asset_input_cb (RutInputRegion *region,
 
                   diamond = rut_diamond_new (engine->ctx, 200, tex_width,
                                              tex_height);
+
                   rut_entity_add_component (entity, diamond);
+
+                  /*if (hair)
+                    {
+                      float length, gravity;
+                      int n_shells;
+
+                      length = rut_hair_get_length (hair);
+                      gravity = rut_hair_get_gravity (hair);
+                      n_shells = rut_hair_get_n_shells (hair);
+
+                      rut_entity_remove_component (entity, hair);
+
+                      hair = rut_hair_new (engine->ctx, diamond);
+                      rut_entity_add_component (entity, hair);
+                      rut_hair_set_length (hair, length);
+                      rut_hair_set_n_shells (hair, n_shells);
+                      rut_hair_set_gravity (hair, gravity);
+                    }*/
+                  //if (hair)
+                    //rut_entity_remove_component (entity, hair);
 
                   rig_dirty_entity_pipelines (NULL, entity);
 
+                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                }
+              else if (asset == engine->hair_builtin_asset)
+                {
+                  RutHair *hair;
+                  RutObject *obj;
+                  //RutObject *geo;
+
+                  obj = rut_entity_get_component (entity,
+                                                  RUT_COMPONENT_TYPE_HAIR);
+
+                  //geo = rut_entity_get_component (entity,
+                                                  //RUT_COMPONENT_TYPE_GEOMETRY);
+
+                 /* if (geo)
+                    {
+                      if (rut_object_get_type (geo) != &rut_model_type)
+                        {
+                          status = RUT_INPUT_EVENT_STATUS_HANDLED;
+                          break;
+                        }
+                    }*/
+
+                  if (obj)
+                    {
+                      /*RutObject *hair_geo = rut_hair_get_geometry (obj);
+                      if (hair_geo && rut_model_get_asset (geo) ==
+                          rut_model_get_asset (hair_geo))
+                        {*/
+                          status =  RUT_INPUT_EVENT_STATUS_HANDLED;
+                          break;
+                        /*}
+                      else
+                        rut_entity_remove_component (entity, obj);*/
+                    }
+
+                  hair = rut_hair_new (engine->ctx);
+                  rut_entity_add_component (entity, hair);
+
+                  rig_dirty_entity_pipelines (NULL, entity);
                   status = RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
 
@@ -1378,6 +1496,10 @@ load_builtin_assets (RigEngine *engine)
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
+
+  engine->hair_builtin_asset = rut_asset_new_builtin (engine->ctx, "hair.png");
+  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
+  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
 }
 
 static void
@@ -1386,6 +1508,7 @@ free_builtin_assets (RigEngine *engine)
   rut_refable_unref (engine->diamond_builtin_asset);
   rut_refable_unref (engine->circle_builtin_asset);
   rut_refable_unref (engine->text_builtin_asset);
+  rut_refable_unref (engine->hair_builtin_asset);
 }
 
 static void
@@ -2987,6 +3110,10 @@ rig_load_asset_list (RigEngine *engine)
   rut_refable_ref (engine->text_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->text_builtin_asset);
+
+  rut_refable_ref (engine->hair_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->hair_builtin_asset);
 
   g_object_unref (assets_dir);
 

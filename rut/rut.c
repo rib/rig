@@ -444,6 +444,8 @@ _rut_init (void)
       _rut_diamond_slice_init_type ();
       _rut_shape_init_type ();
       _rut_shape_model_init_type ();
+      _rut_hair_init_type ();
+      //_rut_hair_slice_init_type ();
 
       g_once_init_leave (&init_status, 1);
     }
