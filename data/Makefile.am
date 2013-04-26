@@ -51,7 +51,9 @@ dist_assets_DATA = \
 	logic-white.png \
 	logic.png \
 	thumb-video.png \
-	pointalism.png
+	pointalism.png \
+	hair.png \
+	circle1.png
 
 if HAVE_GTK
 dist_assets_DATA += \

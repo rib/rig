@@ -149,6 +149,7 @@ struct _RigEngine
   RutAsset *circle_builtin_asset;
   RutAsset *diamond_builtin_asset;
   RutAsset *pointalism_grid_builtin_asset;
+  RutAsset *hair_builtin_asset;
   GList *asset_input_closures;
   GList *asset_enumerators;
 
@@ -238,6 +239,8 @@ struct _RigEngine
   CoglSnippet *pointalism_halo_snippet;
   CoglSnippet *pointalism_opaque_snippet;
   CoglSnippet *cache_position_snippet;
+  CoglSnippet *hair_fragment_snippet;
+  CoglSnippet *hair_vertex_snippet;
 
   GHashTable *assets_registry;
 

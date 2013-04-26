@@ -173,6 +173,7 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform mat3 normal_matrix;\n"
+                      "attribute vec3 tangent_in;\n"
                       "varying vec3 normal, eye_direction;\n",
                       /* post */
                       "normal = normalize(normal_matrix * cogl_normal_in);\n"
@@ -184,7 +185,6 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform vec3 light0_direction_norm;\n"
-                      "attribute vec3 tangent_in;\n"
                       "varying vec3 light_direction;\n",
 
                       /* post */
@@ -481,11 +481,10 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
                       "varying vec4 shadow_coords;\n",
-
                       /* post */
-                      "vec4 texel7 = texture2D (cogl_sampler10,\n"
+                      "vec4 texel10 = texture2D (cogl_sampler10,\n"
                       "                         shadow_coords.xy);\n"
-                      "float distance_from_light = texel7.z + 0.0005;\n"
+                      "float distance_from_light = texel10.z + 0.0005;\n"
                       "float shadow = 1.0;\n"
                       "if (distance_from_light < shadow_coords.z)\n"
                       "  shadow = 0.5;\n"
@@ -513,6 +512,33 @@ rig_renderer_init (RigEngine *engine)
          "cogl_color_out *= texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
          "if (cogl_color_out.a < 0.90)\n"
          "  discard;\n");
+
+  engine->hair_fragment_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                      /* declarations */
+                      NULL,
+                      /* post */
+                      "vec4 texel = texture2D (cogl_sampler11,\n"
+                      "                        cogl_tex_coord1_in.st);\n"
+                      "cogl_color_out *= texel;\n"
+                      "if (cogl_color_out.a < 0.9) discard;\n");
+
+  engine->hair_vertex_snippet =
+    cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+      /* declarations */
+      "uniform float hair_pos;\n"
+      "uniform float force;\n"
+      "uniform float layer;\n"
+      "uniform float slant;\n",
+      /* post */
+      "vec4 gravity_dir = vec4 (0.0, -1.0, 0.0, 0.0);\n"
+      "vec4 pos = cogl_position_in;\n"
+      "vec3 n_pos = pos.xyz;\n"
+      "vec3 n_tan = tangent_in.xyz;\n"
+      "vec3 rotate = (n_pos - (dot (n_tan, n_pos) * n_tan) * cos (slant)) + (cross (n_pos, n_tan) * sin (slant)) + (dot (n_tan, n_pos) * n_tan);\n"
+      "pos.xyz = cogl_normal_in * hair_pos + rotate;\n"
+      "cogl_position_out = cogl_modelview_projection_matrix * pos;\n"
+      "cogl_position_out += gravity_dir * (pow (layer, 3.0) * force);\n");
 }
 
 void
@@ -954,6 +980,7 @@ get_entity_color_pipeline (RigEngine *engine,
   RutImageSource *sources[3];
   CoglSnippet *blend = engine->blended_discard_snippet;
   CoglSnippet *unblend = engine->unblended_discard_snippet;
+  RutObject *hair;
   int i;
 
   sources[0] = rut_entity_get_image_source_cache (entity, 0);
@@ -972,11 +999,11 @@ get_entity_color_pipeline (RigEngine *engine,
           sources[0] = rut_image_source_new (engine->ctx, asset);
 
           rut_entity_set_image_source_cache (entity, 0, sources[0]);
-          rut_image_source_add_ready_callback (sources[0], 
+          rut_image_source_add_ready_callback (sources[0],
                                                rig_entity_new_image_source,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[0],
-                                               rig_engine_dirty_properties_menu, 
+                                               rig_engine_dirty_properties_menu,
                                                engine, NULL);
           rut_image_source_add_on_changed_callback (sources[0],
                                                     image_source_changed_cb,
@@ -990,13 +1017,13 @@ get_entity_color_pipeline (RigEngine *engine,
       if (asset && !sources[1])
         {
           sources[1] = rut_image_source_new (engine->ctx, asset);
-          
+
           rut_entity_set_image_source_cache (entity, 1, sources[1]);
           rut_image_source_add_ready_callback (sources[1],
-                                               rig_entity_new_image_source, 
+                                               rig_entity_new_image_source,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[1],
-                                               rig_engine_dirty_properties_menu, 
+                                               rig_engine_dirty_properties_menu,
                                                engine, NULL);
           rut_image_source_add_on_changed_callback (sources[1],
                                                     image_source_changed_cb,
@@ -1013,10 +1040,10 @@ get_entity_color_pipeline (RigEngine *engine,
 
           rut_entity_set_image_source_cache (entity, 2, sources[2]);
           rut_image_source_add_ready_callback (sources[2],
-                                               rig_entity_new_image_source, 
+                                               rig_entity_new_image_source,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[2],
-                                               rig_engine_dirty_properties_menu, 
+                                               rig_engine_dirty_properties_menu,
                                                engine, NULL);
           rut_image_source_add_on_changed_callback (sources[2],
                                                     image_source_changed_cb,
@@ -1038,8 +1065,7 @@ get_entity_color_pipeline (RigEngine *engine,
     }
 
   pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+  hair = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
 
   if (sources[0])
     {
@@ -1159,6 +1185,9 @@ get_entity_color_pipeline (RigEngine *engine,
       unblend = engine->pointalism_opaque_snippet;
     }
 
+  if (hair)
+    cogl_pipeline_add_snippet (pipeline, engine->hair_vertex_snippet);
+
   /* and fragment shader */
 
   /* XXX: ideally we wouldn't have to rely on conditionals + discards
@@ -1254,6 +1283,13 @@ get_entity_color_pipeline (RigEngine *engine,
       /* Handle shadow mapping */
       cogl_pipeline_add_snippet (pipeline,
                                  engine->shadow_mapping_fragment_snippet);
+    }
+
+  if (hair)
+    {
+      cogl_pipeline_add_snippet (pipeline, engine->hair_fragment_snippet);
+      cogl_pipeline_set_layer_combine (pipeline, 11, "RGBA=REPLACE(PREVIOUS)",
+                                       NULL);
     }
 
   cogl_pipeline_add_snippet (pipeline, engine->premultiply_snippet);
@@ -1451,11 +1487,68 @@ rig_journal_flush (GArray *journal,
 
       if (rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
         {
+          RutObject *hair;
+          hair = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
           primitive = rut_primable_get_primitive (geometry);
           cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
-          cogl_framebuffer_draw_primitive (fb,
-                                           pipeline,
-                                           primitive);
+
+          if (hair && material)
+            {
+              int i;
+              int location[3];
+
+              location[0] = cogl_pipeline_get_uniform_location (pipeline,
+                                                                "force");
+              cogl_pipeline_set_uniform_1f (pipeline, location[0],
+                                            rut_hair_get_gravity (hair));
+              location[0] = cogl_pipeline_get_uniform_location (pipeline,
+                                                                "hair_pos");
+              location[1] = cogl_pipeline_get_uniform_location (pipeline,
+                                                                "layer");
+              location[2] = cogl_pipeline_get_uniform_location (pipeline,
+                                                                "slant");
+              cogl_pipeline_set_layer_texture (pipeline, 11,
+                                               rut_asset_get_texture (material->texture_asset));
+              cogl_pipeline_set_uniform_1f (pipeline, location[1],
+                                            0);
+              cogl_pipeline_set_uniform_1f (pipeline, location[0],
+                                            0);
+              cogl_pipeline_set_uniform_1f (pipeline, location[2],
+                                            0);
+              cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+
+              for (i = 0; i < rut_hair_get_resolution (hair); i++)
+                {
+                  int j;
+                  int groups = rut_hair_get_n_shells (hair) /
+                               rut_hair_get_resolution (hair);
+                  for (j = 0; j < groups; j++)
+                    {
+                      float layer = ((float) groups * i + j) / (float) rut_hair_get_n_shells (hair);
+                      layer *= 5;
+                      float hair_pos = rut_hair_get_length (hair) * layer;
+                      float slant = rut_hair_get_slant (hair) * (3.14 / 180.0);
+
+                      cogl_pipeline_set_layer_texture (pipeline, 11,
+                                                       rut_hair_get_texture (hair, i));
+
+                      cogl_pipeline_set_uniform_1f (pipeline, location[1],
+                                                    layer);
+                      cogl_pipeline_set_uniform_1f (pipeline, location[0],
+                                                    hair_pos);
+                      cogl_pipeline_set_uniform_1f (pipeline, location[2],
+                                                    slant);
+
+                      cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+                      slant = (-1.0 * rut_hair_get_slant (hair)) * (3.14 / 180.0);
+                      cogl_pipeline_set_uniform_1f (pipeline, location[2],
+                                                    slant);
+                      cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+                    }
+                }
+            }
+          else if (!hair)
+            cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
         }
       else if (rut_object_get_type (geometry) == &rut_text_type &&
                paint_ctx->pass == RIG_PASS_COLOR_BLENDED)

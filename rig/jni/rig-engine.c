@@ -803,6 +803,13 @@ apply_asset_input_to_entity (RutEntity *entity,
         {
           RutText *text;
           CoglColor color;
+          RutHair *hair;
+
+          hair = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_HAIR);
+
+          if (hair)
+            rut_entity_remove_component (entity, hair);
 
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -964,6 +971,18 @@ apply_asset_input_to_entity (RutEntity *entity,
                                           tex_height);
 
           rut_entity_add_component (entity, grid);
+
+          rig_renderer_dirty_entity_state (entity);
+        }
+      else if (asset == engine->hair_builtin_asset)
+        {
+          RutHair *hair = rut_entity_get_component (entity,
+                                                    RUT_COMPONENT_TYPE_HAIR);
+          if (hair)
+            break;
+
+          hair = rut_hair_new (engine->ctx);
+          rut_entity_add_component (entity, hair);
 
           rig_renderer_dirty_entity_state (entity);
         }
@@ -1505,6 +1524,10 @@ load_builtin_assets (RigEngine *engine)
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
   rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
+
+  engine->hair_builtin_asset = rut_asset_new_builtin (engine->ctx, "hair.png");
+  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
+  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
 }
 
 static void
@@ -1514,6 +1537,7 @@ free_builtin_assets (RigEngine *engine)
   rut_refable_unref (engine->circle_builtin_asset);
   rut_refable_unref (engine->pointalism_grid_builtin_asset);
   rut_refable_unref (engine->text_builtin_asset);
+  rut_refable_unref (engine->hair_builtin_asset);
 }
 
 static void
@@ -3113,6 +3137,10 @@ rig_load_asset_list (RigEngine *engine)
   rut_refable_ref (engine->text_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->text_builtin_asset);
+
+  rut_refable_ref (engine->hair_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->hair_builtin_asset);
 
   g_object_unref (assets_dir);
 

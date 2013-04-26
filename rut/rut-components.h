@@ -27,5 +27,6 @@
 #include "components/rut-diamond.h"
 #include "components/rut-shape.h"
 #include "components/rut-pointalism-grid.h"
+#include "components/rut-hair.h"
 
 #endif /* __RUT_COMPONENTS_H__ */
