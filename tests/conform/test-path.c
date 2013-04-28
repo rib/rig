@@ -1,4 +1,5 @@
 #include <cogl/cogl.h>
+#include <cogl-path/cogl-path.h>
 
 #include <string.h>
 
@@ -20,7 +21,7 @@ draw_path_at (CoglPath *path, CoglPipeline *pipeline, int x, int y)
   cogl_framebuffer_push_matrix (test_fb);
   cogl_framebuffer_translate (test_fb, x * BLOCK_SIZE, y * BLOCK_SIZE, 0.0f);
 
-  cogl_framebuffer_fill_path (test_fb, pipeline, path);
+  cogl_path_fill (path, test_fb, pipeline);
 
   cogl_framebuffer_pop_matrix (test_fb);
 }

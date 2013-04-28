@@ -1,4 +1,4 @@
-SUBDIRS = deps test-fixtures cogl tests
+SUBDIRS = deps test-fixtures cogl
 
 if BUILD_COGL_PANGO
 SUBDIRS += cogl-pango
@@ -12,7 +12,11 @@ if BUILD_COGL_GST
 SUBDIRS += cogl-gst
 endif
 
-SUBDIRS += examples doc po build
+if BUILD_COGL_PATH
+SUBDIRS += cogl-path
+endif
+
+SUBDIRS += tests examples doc po build
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 

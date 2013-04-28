@@ -46,7 +46,6 @@
 #include "cogl-offscreen.h"
 #include "cogl-private.h"
 #include "cogl-primitives-private.h"
-#include "cogl-path-private.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
 
@@ -1648,36 +1647,6 @@ cogl_framebuffer_push_rectangle_clip (CoglFramebuffer *framebuffer,
 }
 
 void
-cogl_framebuffer_push_path_clip (CoglFramebuffer *framebuffer,
-                                 CoglPath *path)
-{
-  CoglClipState *clip_state = _cogl_framebuffer_get_clip_state (framebuffer);
-  CoglMatrixEntry *modelview_entry =
-    _cogl_framebuffer_get_modelview_entry (framebuffer);
-  CoglMatrixEntry *projection_entry =
-    _cogl_framebuffer_get_projection_entry (framebuffer);
-  /* XXX: It would be nicer if we stored the private viewport as a
-   * vec4 so we could avoid this redundant copy. */
-  float viewport[] = {
-      framebuffer->viewport_x,
-      framebuffer->viewport_y,
-      framebuffer->viewport_width,
-      framebuffer->viewport_height
-  };
-
-  clip_state->stacks->data =
-    _cogl_clip_stack_push_from_path (clip_state->stacks->data,
-                                     path,
-                                     modelview_entry,
-                                     projection_entry,
-                                     viewport);
-
-  if (framebuffer->context->current_draw_buffer == framebuffer)
-    framebuffer->context->current_draw_buffer_changes |=
-      COGL_FRAMEBUFFER_STATE_CLIP;
-}
-
-void
 cogl_framebuffer_push_primitive_clip (CoglFramebuffer *framebuffer,
                                       CoglPrimitive *primitive,
                                       float bounds_x1,
@@ -2429,28 +2398,4 @@ cogl_framebuffer_draw_textured_rectangles (CoglFramebuffer *framebuffer,
                                                    pipeline,
                                                    rects,
                                                    n_rectangles);
-}
-
-void
-cogl_framebuffer_fill_path (CoglFramebuffer *framebuffer,
-                            CoglPipeline *pipeline,
-                            CoglPath *path)
-{
-  _COGL_RETURN_IF_FAIL (cogl_is_framebuffer (framebuffer));
-  _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
-  _COGL_RETURN_IF_FAIL (cogl_is_path (path));
-
-  _cogl_path_fill_nodes (path, framebuffer, pipeline, 0 /* flags */);
-}
-
-void
-cogl_framebuffer_stroke_path (CoglFramebuffer *framebuffer,
-                              CoglPipeline *pipeline,
-                              CoglPath *path)
-{
-  _COGL_RETURN_IF_FAIL (cogl_is_framebuffer (framebuffer));
-  _COGL_RETURN_IF_FAIL (cogl_is_pipeline (pipeline));
-  _COGL_RETURN_IF_FAIL (cogl_is_path (path));
-
-  _cogl_path_stroke_nodes (path, framebuffer, pipeline);
 }

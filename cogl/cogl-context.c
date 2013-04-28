@@ -44,7 +44,6 @@
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-framebuffer-private.h"
 #include "cogl-onscreen-private.h"
-#include "cogl-path.h"
 #include "cogl-attribute-private.h"
 #include "cogl-gpu-info-private.h"
 #include "cogl-config-private.h"

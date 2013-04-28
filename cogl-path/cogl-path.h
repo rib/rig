@@ -463,6 +463,69 @@ cogl_path_set_fill_rule (CoglPath *path, CoglPathFillRule fill_rule);
 CoglPathFillRule
 cogl_path_get_fill_rule (CoglPath *path);
 
+/**
+ * cogl_framebuffer_fill_path:
+ * @path: The #CoglPath to fill
+ * @framebuffer: A #CoglFramebuffer
+ * @pipeline: A #CoglPipeline to render with
+ *
+ * Draws a triangle tesselation of the given @path using the specified
+ * GPU @pipeline to the given @framebuffer.
+ *
+ * The tesselated interior of the path is determined using the fill
+ * rule of the path. See %CoglPathFillRule for details.
+ *
+ * <note>The result of referencing sliced textures in your current
+ * pipeline when filling a path are undefined. You should pass
+ * the %COGL_TEXTURE_NO_SLICING flag when loading any texture you will
+ * use while filling a path.</note>
+ *
+ * Since: 2.0
+ */
+void
+cogl_path_fill (CoglPath *path,
+                CoglFramebuffer *framebuffer,
+                CoglPipeline *pipeline);
+
+/**
+ * cogl_path_stroke:
+ * @path: The #CoglPath to stroke
+ * @framebuffer: A #CoglFramebuffer
+ * @pipeline: A #CoglPipeline to render with
+ *
+ * Draws a list of line primitives corresponding to the edge of the
+ * given @path using the specified GPU @pipeline to the given
+ * @framebuffer.
+ *
+ * <note>Cogl does not provide any sophisticated path stroking
+ * features for things like stroke width, dashes or caps. The stroke
+ * line will have a width of 1 pixel regardless of the current
+ * transformation matrix.</note>
+ *
+ * Since: 2.0
+ */
+void
+cogl_path_stroke (CoglPath *path,
+                  CoglFramebuffer *framebuffer,
+                  CoglPipeline *pipeline);
+
+/**
+ * cogl_framebuffer_push_path_clip:
+ * @framebuffer: A #CoglFramebuffer pointer
+ * @path: The path to clip with.
+ *
+ * Sets a new clipping area using the silhouette of the specified,
+ * filled @path.  The clipping area is intersected with the previous
+ * clipping area. To restore the previous clipping area, call
+ * cogl_framebuffer_pop_clip().
+ *
+ * Since: 1.0
+ * Stability: unstable
+ */
+void
+cogl_framebuffer_push_path_clip (CoglFramebuffer *framebuffer,
+                                 CoglPath *path);
+
 COGL_END_DECLS
 
 #endif /* __COGL_PATH_H__ */

@@ -38,7 +38,6 @@
 #include <cogl/cogl-offscreen.h>
 #include <cogl/cogl-texture.h>
 #include <cogl/cogl-types.h>
-#include <cogl/cogl-path.h>
 #include <cogl/cogl-version.h>
 
 #ifdef COGL_HAS_GTYPE_SUPPORT

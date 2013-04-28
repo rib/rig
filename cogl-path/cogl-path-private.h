@@ -86,6 +86,7 @@ struct _CoglPathData
   CoglIndices         *fill_vbo_indices;
   unsigned int         fill_vbo_n_indices;
   CoglAttribute       *fill_attributes[COGL_PATH_N_ATTRIBUTES + 1];
+  CoglPrimitive       *fill_primitive;
 
   CoglAttributeBuffer *stroke_attribute_buffer;
   CoglAttribute      **stroke_attributes;
