@@ -34,7 +34,6 @@
 #include "rut-paintable.h"
 #include "rut-color.h"
 #include "rut-asset.h"
-#include "rut-bevel.h"
 #include "rut-stack.h"
 #include "rut-entry.h"
 #include "rut-downsampler.h"

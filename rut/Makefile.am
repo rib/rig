@@ -43,7 +43,6 @@ source_h = \
     rut-prop-inspector.h \
     rut-closure.h \
     rut-asset.h \
-    rut-bevel.h \
     rut-stack.h \
     rut-entry.h \
     rut-gaussian-blurrer.h \
@@ -118,7 +117,6 @@ librut_la_SOURCES = \
     rut-prop-inspector.c \
     rut-closure.c \
     rut-asset.c \
-    rut-bevel.c \
     rut-stack.c \
     rut-entry.c \
     rut-gaussian-blurrer.c \
