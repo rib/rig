@@ -32,6 +32,7 @@
 #include "rig-renderer.h"
 
 typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
+typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
 
 typedef struct
 {
@@ -64,7 +65,7 @@ struct _RigCameraView
 
   float device_scale;
 
-  EntityTranslateGrabClosure *entity_translate_grab_closure;
+  EntitiesTranslateGrabClosure *entities_translate_grab_closure;
 
   RutEntity *view_camera_to_origin; /* move to origin */
   RutEntity *view_camera_rotate; /* armature rotate rotate */
@@ -91,10 +92,52 @@ struct _RigCameraView
   CoglBool dirty_viewport_size;
 };
 
+typedef void (*EntityTranslateCallback) (RutEntity *entity,
+                                         float start[3],
+                                         float rel[3],
+                                         void *user_data);
+
+typedef void (*EntityTranslateDoneCallback) (RutEntity *entity,
+                                             CoglBool moved,
+                                             float start[3],
+                                             float rel[3],
+                                             void *user_data);
+
+struct _EntityTranslateGrabClosure
+{
+  RigCameraView *view;
+
+  /* pointer position at start of grab */
+  float grab_x;
+  float grab_y;
+
+  /* entity position at start of grab */
+  float entity_grab_pos[3];
+  RutEntity *entity;
+
+  /* set as soon as a move event is encountered so that we can detect
+   * situations where a grab is started but nothing actually moves */
+  CoglBool moved;
+
+  float x_vec[3];
+  float y_vec[3];
+
+  EntityTranslateCallback entity_translate_cb;
+  EntityTranslateDoneCallback entity_translate_done_cb;
+  void *user_data;
+};
+
+struct _EntitiesTranslateGrabClosure
+{
+  RigCameraView *view;
+  GList *entity_closures;
+};
+
+
 RutType rig_camera_view_type;
 
 static void
-update_grab_closure_size (EntityTranslateGrabClosure *closure);
+update_grab_closure_vectors (EntityTranslateGrabClosure *closure);
 
 static void
 unref_device_transforms (RigCameraViewDeviceTransforms *transforms)
@@ -210,9 +253,13 @@ paint_overlays (RigCameraView *view,
     {
       rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
-      if (engine->selected_entity)
+      if (engine->selected_entities)
         {
-          rut_tool_update (engine->tool, engine->selected_entity);
+          /* XXX: we don't currently do anything very clever in how
+           * manage the user manipulation tool when there are multiple
+           * entities selected, and simply apply the tool to the first
+           * entity. */
+          rut_tool_update (engine->tool, engine->selected_entities->data);
           rut_tool_draw (engine->tool, fb);
         }
     }
@@ -651,8 +698,10 @@ allocate_cb (RutObject *graphable,
   rut_input_region_set_rectangle (view->input_region,
                                   0, 0, view->width, view->height);
 
-  if (view->entity_translate_grab_closure)
+  if (view->entities_translate_grab_closure)
     {
+      GList *l;
+
       /* FIXME: Is the light camera the correct one to use? It looks
        * like the paint function will end up using it so this at least
        * matches that. */
@@ -667,7 +716,9 @@ allocate_cb (RutObject *graphable,
 
       rig_camera_update_view (engine, view->view_camera, FALSE);
 
-      update_grab_closure_size (view->entity_translate_grab_closure);
+      for (l = view->entities_translate_grab_closure->entity_closures;
+           l; l = l->next)
+        update_grab_closure_vectors (l->data);
     }
 }
 
@@ -842,99 +893,81 @@ entity_translate_cb (RutEntity *entity,
   rut_shell_queue_redraw (engine->ctx->shell);
 }
 
-typedef void (*EntityTranslateCallback)(RutEntity *entity,
-                                        float start[3],
-                                        float rel[3],
-                                        void *user_data);
-
-typedef void (*EntityTranslateDoneCallback)(RutEntity *entity,
-                                            CoglBool moved,
-                                            float start[3],
-                                            float rel[3],
-                                            void *user_data);
-
-struct _EntityTranslateGrabClosure
+static void
+handle_entity_translate_grab_motion (RutInputEvent *event,
+                                     EntityTranslateGrabClosure *closure)
 {
-  RigCameraView *view;
+  RutEntity *entity = closure->entity;
+  float x = rut_motion_event_get_x (event);
+  float y = rut_motion_event_get_y (event);
+  float move_x, move_y;
+  float rel[3];
+  float *x_vec = closure->x_vec;
+  float *y_vec = closure->y_vec;
 
-  /* pointer position at start of grab */
-  float grab_x;
-  float grab_y;
+  move_x = x - closure->grab_x;
+  move_y = y - closure->grab_y;
 
-  /* entity position at start of grab */
-  float entity_grab_pos[3];
-  RutEntity *entity;
+  rel[0] = x_vec[0] * move_x;
+  rel[1] = x_vec[1] * move_x;
+  rel[2] = x_vec[2] * move_x;
 
-  /* set as soon as a move event is encountered so that we can detect
-   * situations where a grab is started but nothing actually moves */
-  CoglBool moved;
+  rel[0] += y_vec[0] * move_y;
+  rel[1] += y_vec[1] * move_y;
+  rel[2] += y_vec[2] * move_y;
 
-  float x_vec[3];
-  float y_vec[3];
+  if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
+    {
+      if (closure->entity_translate_done_cb)
+        closure->entity_translate_done_cb (entity,
+                                           closure->moved,
+                                           closure->entity_grab_pos,
+                                           rel,
+                                           closure->user_data);
 
-  EntityTranslateCallback entity_translate_cb;
-  EntityTranslateDoneCallback entity_translate_done_cb;
-  void *user_data;
-};
+      g_slice_free (EntityTranslateGrabClosure, closure);
+    }
+  else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
+    {
+      closure->moved = TRUE;
+
+      closure->entity_translate_cb (entity,
+                                    closure->entity_grab_pos,
+                                    rel,
+                                    closure->user_data);
+    }
+}
 
 static RutInputEventStatus
-entity_translate_grab_input_cb (RutInputEvent *event,
-                                void *user_data)
+entities_translate_grab_input_cb (RutInputEvent *event,
+                                  void *user_data)
 
 {
-  EntityTranslateGrabClosure *closure = user_data;
-  RutEntity *entity = closure->entity;
-  RigEngine *engine = closure->view->engine;
-
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      float x = rut_motion_event_get_x (event);
-      float y = rut_motion_event_get_y (event);
-      float move_x, move_y;
-      float rel[3];
-      float *x_vec = closure->x_vec;
-      float *y_vec = closure->y_vec;
+      EntitiesTranslateGrabClosure *closure = user_data;
+      GList *l;
 
-      move_x = x - closure->grab_x;
-      move_y = y - closure->grab_y;
-
-      rel[0] = x_vec[0] * move_x;
-      rel[1] = x_vec[1] * move_x;
-      rel[2] = x_vec[2] * move_x;
-
-      rel[0] += y_vec[0] * move_y;
-      rel[1] += y_vec[1] * move_y;
-      rel[2] += y_vec[2] * move_y;
+      for (l = closure->entity_closures; l; l = l->next)
+        handle_entity_translate_grab_motion (event, l->data);
 
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
         {
-          if (closure->entity_translate_done_cb)
-            closure->entity_translate_done_cb (entity,
-                                               closure->moved,
-                                               closure->entity_grab_pos,
-                                               rel,
-                                               closure->user_data);
+          RigEngine *engine = closure->view->engine;
 
           rut_shell_ungrab_input (engine->ctx->shell,
-                                  entity_translate_grab_input_cb,
+                                  entities_translate_grab_input_cb,
                                   user_data);
-          closure->view->entity_translate_grab_closure = NULL;
+          closure->view->entities_translate_grab_closure = NULL;
 
-          g_slice_free (EntityTranslateGrabClosure, user_data);
-
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
+          /* XXX: handle_entity_translate_grab_motion() will free the
+           * entity-closures themselves on ACTION_UP so we just need
+           * to free the list here. */
+          g_list_free (closure->entity_closures);
+          g_slice_free (EntitiesTranslateGrabClosure, closure);
         }
-      else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
-        {
-          closure->moved = TRUE;
 
-          closure->entity_translate_cb (entity,
-                                        closure->entity_grab_pos,
-                                        rel,
-                                        closure->user_data);
-
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -999,7 +1032,7 @@ unproject_window_coord (RutCamera *camera,
 }
 
 static void
-update_grab_closure_size (EntityTranslateGrabClosure *closure)
+update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
 {
   RutEntity *parent = rut_graphable_get_parent (closure->entity);
   RigCameraView *view = closure->view;
@@ -1090,7 +1123,7 @@ update_grab_closure_size (EntityTranslateGrabClosure *closure)
   memcpy (closure->y_vec, y_vec, sizeof (float) * 3);
 }
 
-static CoglBool
+static EntityTranslateGrabClosure *
 translate_grab_entity (RigCameraView *view,
                        RutEntity *entity,
                        float grab_x,
@@ -1101,13 +1134,10 @@ translate_grab_entity (RigCameraView *view,
 {
   EntityTranslateGrabClosure *closure;
   RutEntity *parent = rut_graphable_get_parent (entity);
-  RutCamera *camera = view->view_camera_component;
 
   if (!parent)
-    return FALSE;
+    return NULL;
 
-  if (view->entity_translate_grab_closure)
-    return FALSE;
 
   closure = g_slice_new (EntityTranslateGrabClosure);
   closure->view = view;
@@ -1124,14 +1154,58 @@ translate_grab_entity (RigCameraView *view,
   closure->moved = FALSE;
   closure->user_data = user_data;
 
-  view->entity_translate_grab_closure = closure;
+  update_grab_closure_vectors (closure);
 
-  update_grab_closure_size (closure);
+  return closure;
+}
+
+static CoglBool
+translate_grab_entities (RigCameraView *view,
+                         GList *entities,
+                         float grab_x,
+                         float grab_y,
+                         EntityTranslateCallback translate_cb,
+                         EntityTranslateDoneCallback done_cb,
+                         void *user_data)
+{
+  RutCamera *camera = view->view_camera_component;
+  EntitiesTranslateGrabClosure *closure;
+  GList *l;
+
+  if (view->entities_translate_grab_closure)
+    return FALSE;
+
+  closure = g_slice_new (EntitiesTranslateGrabClosure);
+  closure->view = view;
+  closure->entity_closures = NULL;
+
+  for (l = entities; l; l = l->next)
+    {
+      EntityTranslateGrabClosure *entity_closure =
+        translate_grab_entity (view,
+                               l->data,
+                               grab_x,
+                               grab_y,
+                               translate_cb,
+                               done_cb,
+                               user_data);
+      if (entity_closure)
+        closure->entity_closures = g_list_prepend (closure->entity_closures,
+                                                   entity_closure);
+    }
+
+  if (!closure->entity_closures)
+    {
+      g_slice_free (EntitiesTranslateGrabClosure, closure);
+      return FALSE;
+    }
 
   rut_shell_grab_input (view->engine->ctx->shell,
                         camera,
-                        entity_translate_grab_input_cb,
+                        entities_translate_grab_input_cb,
                         closure);
+
+  view->entities_translate_grab_closure = closure;
 
   return TRUE;
 }
@@ -1588,20 +1662,28 @@ input_cb (RutInputEvent *event,
                                 ray_position,
                                 ray_direction);
 
-          rig_set_selected_entity (engine, picked_entity);
+          if ((rut_motion_event_get_modifier_state (event) &
+               RUT_MODIFIER_SHIFT_ON))
+            {
+              rig_select_entity (engine, picked_entity,
+                                 RUT_SELECT_ACTION_TOGGLE);
+            }
+          else
+            rig_select_entity (engine, picked_entity,
+                               RUT_SELECT_ACTION_REPLACE);
 
           /* If we have selected an entity then initiate a grab so the
            * entity can be moved with the mouse...
            */
-          if (engine->selected_entity)
+          if (engine->selected_entities)
             {
-              if (!translate_grab_entity (view,
-                                          engine->selected_entity,
-                                          rut_motion_event_get_x (event),
-                                          rut_motion_event_get_y (event),
-                                          entity_translate_cb,
-                                          entity_translate_done_cb,
-                                          view))
+              if (!translate_grab_entities (view,
+                                            engine->selected_entities,
+                                            rut_motion_event_get_x (event),
+                                            rut_motion_event_get_y (event),
+                                            entity_translate_cb,
+                                            entity_translate_done_cb,
+                                            view))
                 return RUT_INPUT_EVENT_STATUS_UNHANDLED;
             }
 
@@ -1774,18 +1856,31 @@ input_cb (RutInputEvent *event,
           rig_set_play_mode_enabled (engine, !engine->play_mode);
           break;
         case RUT_KEY_Delete:
-          if (engine->selected_entity)
+          if (engine->selected_entities)
             {
-              rig_undo_journal_delete_entity_and_log (engine->undo_journal,
-                                                      engine->selected_entity);
-              rig_set_selected_entity (engine, NULL);
+              GList *l, *next;
+
+              /* XXX: be careful to consider that deleting entities
+               * will remove them from the set of selected entities... */
+              for (l = engine->selected_entities; l; l = next)
+                {
+                  next = l->next;
+                  rig_undo_journal_delete_entity_and_log (engine->undo_journal,
+                                                          l->data);
+                }
+
+              g_warn_if_fail (engine->selected_entities == NULL);
             }
           break;
         case RUT_KEY_j:
           if ((rut_key_event_get_modifier_state (event) &
                RUT_MODIFIER_CTRL_ON) &&
-              engine->selected_entity)
-            move_entity_to_camera (view, engine->selected_entity);
+              engine->selected_entities)
+            {
+              GList *l;
+              for (l = engine->selected_entities; l; l = l->next)
+                move_entity_to_camera (view, l->data);
+            }
           break;
         case RUT_KEY_0:
           initialize_navigation_camera (view);

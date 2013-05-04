@@ -75,7 +75,7 @@ main (int argc, char **argv)
       rut_set_assets_location (engine.ctx, assets_location);
       g_free (assets_location);
 
-      engine.selected_entity = NULL;
+      engine.selected_entities = NULL;
       engine.selected_transition = NULL;
 
       rut_shell_main (engine.shell);

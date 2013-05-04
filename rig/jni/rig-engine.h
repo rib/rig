@@ -194,7 +194,9 @@ struct _RigEngine
 
   GList *transitions;
 
-  RutEntity *selected_entity;
+  GList *selected_entities;
+  RutList selection_changed_cb_list;
+
   RigTransition *selected_transition;
 
   RutTool *tool;
@@ -299,9 +301,26 @@ rig_lookup_asset (RigEngine *engine,
 RutAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
 
+typedef enum _RutSelectAction
+{
+  /* replaces the current selection */
+  RUT_SELECT_ACTION_REPLACE,
+  /* toggles whether the given item is selected or not */
+  RUT_SELECT_ACTION_TOGGLE,
+} RutSelectAction;
+
 void
-rig_set_selected_entity (RigEngine *engine,
-                         RutEntity *entity);
+rig_select_entity (RigEngine *engine,
+                   RutEntity *entity,
+                   RutSelectAction action);
+
+typedef void (*RigEngineSelectionChangedCallback) (RigEngine *engine,
+                                                   void *user_data);
+
+RutClosure *
+rut_engine_add_selection_changed_callback (RigEngine *engine,
+                                           RigEngineSelectionChangedCallback callback,
+                                           void *user_data);
 
 void
 rig_reload_inspector_property (RigEngine *engine,

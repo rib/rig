@@ -435,15 +435,23 @@ update_inspector (RigEngine *engine)
   g_list_free (engine->all_inspectors);
   engine->all_inspectors = NULL;
 
-  if (engine->selected_entity)
+  if (engine->selected_entities)
     {
-      engine->inspector = create_inspector (engine, engine->selected_entity);
+      /* XXX: For now we don't do anything clever in the property
+       * inspector to take account of having multiple entities
+       * selected. What might be nice to do is calculate what
+       * properties are common between all selected entities and
+       * disable all other property widgets to allow easily setting
+       * the same property on many entities at the same time. */
+      RutEntity *entity = engine->selected_entities->data;
+
+      engine->inspector = create_inspector (engine, entity);
 
       rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
       engine->all_inspectors =
         g_list_prepend (engine->all_inspectors, engine->inspector);
 
-      rut_entity_foreach_component (engine->selected_entity,
+      rut_entity_foreach_component (entity,
                                     add_component_inspector_cb,
                                     engine);
     }
@@ -477,21 +485,28 @@ tool_rotation_event_cb (RutTool *tool,
                         void *user_data)
 {
   RigEngine *engine = user_data;
+  RutEntity *entity;
 
-  g_return_if_fail (engine->selected_entity);
+  g_return_if_fail (engine->selected_entities);
+
+  /* XXX: For now we don't do anything clever to handle rotating a
+   * set of entityies, since it's ambiguous what origin should be used
+   * in this case. In the future the rotation capabilities need to be
+   * more capable though and we may intoduce the idea of a 3D cursor
+   * for example to define the origin for the set. */
+  entity = engine->selected_entities->data;
 
   switch (type)
     {
     case RUT_TOOL_ROTATION_DRAG:
-      rut_entity_set_rotation (engine->selected_entity, rotation);
+      rut_entity_set_rotation (entity, rotation);
       rut_shell_queue_redraw (engine->shell);
       break;
 
     case RUT_TOOL_ROTATION_RELEASE:
       {
         RutProperty *rotation_prop =
-          rut_introspectable_lookup_property (engine->selected_entity,
-                                              "rotation");
+          rut_introspectable_lookup_property (entity, "rotation");
         RutBoxed value;
 
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
@@ -530,20 +545,69 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
 }
 
 void
-rig_set_selected_entity (RigEngine *engine,
-                         RutEntity *entity)
+rig_select_entity (RigEngine *engine,
+                   RutEntity *entity,
+                   RutSelectAction action)
 {
-  engine->selected_entity = entity;
+  bool changed = FALSE;
 
-  if (entity == NULL)
-    rut_tool_update (engine->tool, NULL);
-  else if (entity == engine->light_handle)
-    engine->selected_entity = engine->light;
+  if (entity == engine->light_handle)
+    entity = engine->light;
+#if 0
   else if (entity == engine->play_camera_handle)
-    engine->selected_entity = engine->play_camera;
+    entity = engine->play_camera;
+#endif
 
-  rut_shell_queue_redraw (engine->ctx->shell);
-  update_inspector (engine);
+  switch (action)
+    {
+    case RUT_SELECT_ACTION_REPLACE:
+      if (engine->selected_entities)
+        {
+          if (engine->selected_entities->next == NULL &&
+              engine->selected_entities->data == entity)
+            return;
+
+          g_list_free (engine->selected_entities);
+          engine->selected_entities = NULL;
+        }
+
+      if (entity)
+        {
+          engine->selected_entities =
+            g_list_prepend (engine->selected_entities, entity);
+        }
+      changed = TRUE;
+      break;
+    case RUT_SELECT_ACTION_TOGGLE:
+      {
+        GList *link = g_list_find (engine->selected_entities, entity);
+        if (link)
+          {
+            engine->selected_entities =
+              g_list_remove_link (engine->selected_entities, link);
+          }
+        else if (entity)
+          {
+            engine->selected_entities =
+              g_list_prepend (engine->selected_entities, entity);
+          }
+        changed = TRUE;
+      }
+      break;
+    }
+
+  if (changed)
+    {
+      rut_closure_list_invoke (&engine->selection_changed_cb_list,
+                               RigEngineSelectionChangedCallback,
+                               engine);
+
+      if (engine->selected_entities == NULL)
+        rut_tool_update (engine->tool, NULL);
+
+      rut_shell_queue_redraw (engine->ctx->shell);
+      update_inspector (engine);
+    }
 }
 
 static void
@@ -614,6 +678,300 @@ free_asset_input_closures (RigEngine *engine)
   engine->asset_input_closures = NULL;
 }
 
+static void
+apply_asset_input_to_entity (RutEntity *entity,
+                             AssetInputClosure *closure)
+{
+  RutAsset *asset = closure->asset;
+  RigEngine *engine = closure->engine;
+  RutAssetType type = rut_asset_get_type (asset);
+  RutMaterial *material;
+  RutObject *geom;
+
+  switch (type)
+    {
+    case RUT_ASSET_TYPE_TEXTURE:
+    case RUT_ASSET_TYPE_NORMAL_MAP:
+    case RUT_ASSET_TYPE_ALPHA_MASK:
+        {
+          material =
+            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (!material)
+            {
+              material = rut_material_new (engine->ctx, asset);
+              rut_entity_add_component (entity, material);
+            }
+
+          if (type == RUT_ASSET_TYPE_TEXTURE)
+            {
+              rut_material_set_texture_asset (material, asset);
+
+              /* XXX: we need a generalized way of informing the
+               * renderer that we've changed an entity so that it
+               * can clear any cached pipelines like this...
+               *
+               * could we use rig_renderer_dirty_entity_state()
+               * perhaps? */
+              rut_entity_set_image_source_cache (entity, 0, NULL);
+            }
+          else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
+            {
+              rut_material_set_normal_map_asset (material, asset);
+
+              /* XXX: we need a generalized way of informing the
+               * renderer that we've changed an entity so that it
+               * can clear any cached pipelines like this...
+               *
+               * could we use rig_renderer_dirty_entity_state()
+               * perhaps? */
+              rut_entity_set_image_source_cache (entity, 2, NULL);
+            }
+          else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
+            {
+              rut_material_set_alpha_mask_asset (material, asset);
+
+              /* XXX: we need a generalized way of informing the
+               * renderer that we've changed an entity so that it
+               * can clear any cached pipelines like this...
+               *
+               * could we use rig_renderer_dirty_entity_state()
+               * perhaps? */
+              rut_entity_set_image_source_cache (entity, 1, NULL);
+            }
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+          if (!geom)
+            {
+              RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
+              rut_entity_add_component (entity, shape);
+              geom = shape;
+            }
+
+          break;
+        }
+    case RUT_ASSET_TYPE_PLY_MODEL:
+        {
+          RutModel *model;
+          float x_range, y_range, z_range, max_range;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) == &rut_model_type)
+            {
+              model = geom;
+              if (rut_model_get_asset (model) == asset)
+                break;
+            }
+          else if (geom)
+            rut_entity_remove_component (entity, geom);
+
+          /* XXX: For now we forcibly remove any material from
+           * the entity when adding a ply model geometry
+           * component since it's likely the model doesn't have
+           * texture coordinates and if the material has an
+           * associated texture with a transparent top-left
+           * pixel the model won't be visible. */
+          material =
+            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+          if (material)
+            rut_entity_remove_component (entity, material);
+
+          model = rut_model_new_from_asset (engine->ctx, asset);
+          rut_entity_add_component (entity, model);
+
+          x_range = model->max_x - model->min_x;
+          y_range = model->max_y - model->min_y;
+          z_range = model->max_z - model->min_z;
+
+          max_range = x_range;
+          if (y_range > max_range)
+            max_range = y_range;
+          if (z_range > max_range)
+            max_range = z_range;
+
+          rut_entity_set_scale (entity, 200.0 / max_range);
+
+          rig_renderer_dirty_entity_state (entity);
+
+          break;
+        }
+    case RUT_ASSET_TYPE_BUILTIN:
+      if (asset == engine->text_builtin_asset)
+        {
+          RutText *text;
+          CoglColor color;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) == &rut_text_type)
+            return;
+          else if (geom)
+            rut_entity_remove_component (entity, geom);
+
+          text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
+          cogl_color_init_from_4f (&color, 1, 1, 1, 1);
+          rut_text_set_color (text, &color);
+          rut_entity_add_component (entity, text);
+
+          rig_renderer_dirty_entity_state (entity);
+        }
+      else if (asset == engine->circle_builtin_asset)
+        {
+          RutShape *shape;
+          int tex_width = 200, tex_height = 200;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) == &rut_shape_type)
+            break;
+          else if (geom)
+            rut_entity_remove_component (entity, geom);
+
+          material =
+            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (material)
+            {
+              RutAsset *texture_asset =
+                rut_material_get_texture_asset (material);
+              if (texture_asset)
+                {
+                  if (rut_asset_get_is_video (texture_asset))
+                    {
+                      /* XXX: until we start decoding the
+                       * video we don't know the size of the
+                       * video so for now we just assume a
+                       * default size. Maybe we should just
+                       * decode a single frame to find out the
+                       * size? */
+                      tex_width = 640;
+                      tex_height = 480;
+                    }
+                  else
+                    {
+                      CoglTexture *texture =
+                        rut_asset_get_texture (texture_asset);
+                      tex_width = cogl_texture_get_width (texture);
+                      tex_height = cogl_texture_get_height (texture);
+                    }
+                }
+            }
+
+          shape = rut_shape_new (engine->ctx, TRUE, tex_width,
+                                 tex_height);
+          rut_entity_add_component (entity, shape);
+
+          rig_renderer_dirty_entity_state (entity);
+        }
+      else if (asset == engine->diamond_builtin_asset)
+        {
+          RutDiamond *diamond;
+          int tex_width = 200, tex_height = 200;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) == &rut_diamond_type)
+            break;
+          else if (geom)
+            rut_entity_remove_component (entity, geom);
+
+          material =
+            rut_entity_get_component (entity,
+                                      RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (material)
+            {
+              RutAsset *texture_asset =
+                rut_material_get_texture_asset (material);
+              if (texture_asset)
+                {
+                  if (rut_asset_get_is_video (texture_asset))
+                    {
+                      /* XXX: until we start decoding the
+                       * video we don't know the size of the
+                       * video so for now we just assume a
+                       * default size. Maybe we should just
+                       * decode a single frame to find out the
+                       * size? */
+                      tex_width = 640;
+                      tex_height = 480;
+                    }
+                  else
+                    {
+                      CoglTexture *texture =
+                        rut_asset_get_texture (texture_asset);
+                      tex_width = cogl_texture_get_width (texture);
+                      tex_height = cogl_texture_get_height (texture);
+                    }
+                }
+            }
+
+          diamond = rut_diamond_new (engine->ctx, 200, tex_width,
+                                     tex_height);
+          rut_entity_add_component (entity, diamond);
+
+          rig_renderer_dirty_entity_state (entity);
+        }
+
+      else if (asset == engine->pointalism_grid_builtin_asset)
+        {
+          RutPointalismGrid *grid;
+          int tex_width = 200, tex_height = 200;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) ==
+              &rut_pointalism_grid_type)
+            {
+              break;
+            }
+          else if (geom)
+            rut_entity_remove_component (entity, geom);
+
+          material =
+            rut_entity_get_component (entity,
+                                      RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (material)
+            {
+              RutAsset *texture_asset =
+                rut_material_get_texture_asset (material);
+              if (texture_asset)
+                {
+                  if (rut_asset_get_is_video (texture_asset))
+                    {
+                      tex_width = 640;
+                      tex_height = 480;
+                    }
+                  else
+                    {
+                      CoglTexture *texture =
+                        rut_asset_get_texture (texture_asset);
+                      tex_width = cogl_texture_get_width (texture);
+                      tex_height = cogl_texture_get_height (texture);
+                    }
+                }
+            }
+
+          grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
+                                          tex_height);
+
+          rut_entity_add_component (entity, grid);
+
+          rig_renderer_dirty_entity_state (entity);
+        }
+
+      break;
+    }
+}
+
 static RutInputEventStatus
 asset_input_cb (RutInputRegion *region,
                 RutInputEvent *event,
@@ -621,337 +979,32 @@ asset_input_cb (RutInputRegion *region,
 {
   AssetInputClosure *closure = user_data;
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  RutAsset *asset = closure->asset;
-  RigEngine *engine = closure->engine;
-  RutEntity *entity;
-  RutMaterial *material;
-  RutObject *geom;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
         {
-          RutAssetType type = rut_asset_get_type (asset);
+          RigEngine *engine = closure->engine;
 
-          if (engine->selected_entity)
-            entity = engine->selected_entity;
+          if (engine->selected_entities)
+            {
+              g_list_foreach (engine->selected_entities,
+                              (GFunc) apply_asset_input_to_entity,
+                              closure);
+            }
           else
             {
-              entity = rut_entity_new (engine->ctx);
+              RutEntity *entity = rut_entity_new (engine->ctx);
               rig_undo_journal_add_entity_and_log (engine->undo_journal,
                                                    engine->scene,
                                                    entity);
-              rig_set_selected_entity (engine, entity);
+              rig_select_entity (engine, entity, RUT_SELECT_ACTION_REPLACE);
+              apply_asset_input_to_entity (entity, closure);
             }
 
-          switch (type)
-            {
-            case RUT_ASSET_TYPE_TEXTURE:
-            case RUT_ASSET_TYPE_NORMAL_MAP:
-            case RUT_ASSET_TYPE_ALPHA_MASK:
-              {
-                material =
-                  rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                
-                if (!material)
-                  {  
-                    material = rut_material_new (engine->ctx, asset);
-                    rut_entity_add_component (entity, material);
-                  }
-
-                if (type == RUT_ASSET_TYPE_TEXTURE)
-                  {
-                    rut_material_set_texture_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                    rut_entity_set_image_source_cache (entity, 0, NULL);
-                  }
-                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-                  {
-                    rut_material_set_normal_map_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                    rut_entity_set_image_source_cache (entity, 2, NULL);
-                  }
-                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-                  {
-                    rut_material_set_alpha_mask_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                    rut_entity_set_image_source_cache (entity, 1, NULL);
-                  }
-
-                geom = rut_entity_get_component (entity,
-                                                 RUT_COMPONENT_TYPE_GEOMETRY);
-                if (!geom)
-                  {
-                    RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
-                    rut_entity_add_component (entity, shape);
-                    geom = shape;
-                  }
-
-                status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                break;
-              }
-            case RUT_ASSET_TYPE_PLY_MODEL:
-              {
-                RutModel *model;
-                float x_range, y_range, z_range, max_range;
-
-                geom = rut_entity_get_component (entity,
-                                                 RUT_COMPONENT_TYPE_GEOMETRY);
-
-                if (geom && rut_object_get_type (geom) == &rut_model_type)
-                  {
-                    model = geom;
-                    if (rut_model_get_asset (model) == asset)
-                      {
-                        status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                        break;
-                      }
-                  }
-                else if (geom)
-                  rut_entity_remove_component (entity, geom);
-
-                /* XXX: For now we forcibly remove any material from
-                 * the entity when adding a ply model geometry
-                 * component since it's likely the model doesn't have
-                 * texture coordinates and if the material has an
-                 * associated texture with a transparent top-left
-                 * pixel the model won't be visible. */
-                material =
-                  rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                if (material)
-                  rut_entity_remove_component (entity, material);
-
-                model = rut_model_new_from_asset (engine->ctx, asset);
-                rut_entity_add_component (entity, model);
-
-                x_range = model->max_x - model->min_x;
-                y_range = model->max_y - model->min_y;
-                z_range = model->max_z - model->min_z;
-
-                max_range = x_range;
-                if (y_range > max_range)
-                  max_range = y_range;
-                if (z_range > max_range)
-                  max_range = z_range;
-
-                rut_entity_set_scale (entity, 200.0 / max_range);
-
-                rig_renderer_dirty_entity_state (entity);
-
-                status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                break;
-              }
-            case RUT_ASSET_TYPE_BUILTIN:
-              if (asset == engine->text_builtin_asset)
-                {
-                  RutText *text;
-                  CoglColor color;
-
-                  geom = rut_entity_get_component (entity,
-                                                   RUT_COMPONENT_TYPE_GEOMETRY);
-
-                  if (geom && rut_object_get_type (geom) == &rut_text_type)
-                    return RUT_INPUT_EVENT_STATUS_HANDLED;
-                  else if (geom)
-                    rut_entity_remove_component (entity, geom);
-
-                  text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
-                  cogl_color_init_from_4f (&color, 1, 1, 1, 1);
-                  rut_text_set_color (text, &color);
-                  rut_entity_add_component (entity, text);
-
-                  rig_renderer_dirty_entity_state (entity);
-
-                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                }
-              else if (asset == engine->circle_builtin_asset)
-                {
-                  RutShape *shape;
-                  int tex_width = 200, tex_height = 200;
-
-                  geom = rut_entity_get_component (entity,
-                                                   RUT_COMPONENT_TYPE_GEOMETRY);
-
-                  if (geom && rut_object_get_type (geom) == &rut_shape_type)
-                    {
-                      status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                      break;
-                    }
-                  else if (geom)
-                    rut_entity_remove_component (entity, geom);
-
-                  material =
-                    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-
-                  if (material)
-                    {
-                      RutAsset *texture_asset =
-                        rut_material_get_texture_asset (material);
-                      if (texture_asset)
-                        {
-                          if (rut_asset_get_is_video (texture_asset))
-                            {
-                              /* XXX: until we start decoding the
-                               * video we don't know the size of the
-                               * video so for now we just assume a
-                               * default size. Maybe we should just
-                               * decode a single frame to find out the
-                               * size? */
-                              tex_width = 640;
-                              tex_height = 480;
-                            }
-                          else
-                            {
-                              CoglTexture *texture =
-                                rut_asset_get_texture (texture_asset);
-                              tex_width = cogl_texture_get_width (texture);
-                              tex_height = cogl_texture_get_height (texture);
-                            }
-                        }
-                    }
-
-                  shape = rut_shape_new (engine->ctx, TRUE, tex_width,
-                                         tex_height);
-                  rut_entity_add_component (entity, shape);
-
-                  rig_renderer_dirty_entity_state (entity);
-
-                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                }
-              else if (asset == engine->diamond_builtin_asset)
-                {
-                  RutDiamond *diamond;
-                  int tex_width = 200, tex_height = 200;
-
-                  geom = rut_entity_get_component (entity,
-                                                   RUT_COMPONENT_TYPE_GEOMETRY);
-
-                  if (geom && rut_object_get_type (geom) == &rut_diamond_type)
-                    {
-                      status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                      break;
-                    }
-                  else if (geom)
-                    rut_entity_remove_component (entity, geom);
-
-                  material =
-                    rut_entity_get_component (entity,
-                                              RUT_COMPONENT_TYPE_MATERIAL);
-
-                  if (material)
-                    {
-                      RutAsset *texture_asset =
-                        rut_material_get_texture_asset (material);
-                      if (texture_asset)
-                        {
-                          if (rut_asset_get_is_video (texture_asset))
-                            {
-                              /* XXX: until we start decoding the
-                               * video we don't know the size of the
-                               * video so for now we just assume a
-                               * default size. Maybe we should just
-                               * decode a single frame to find out the
-                               * size? */
-                              tex_width = 640;
-                              tex_height = 480;
-                            }
-                          else
-                            {
-                              CoglTexture *texture =
-                                rut_asset_get_texture (texture_asset);
-                              tex_width = cogl_texture_get_width (texture);
-                              tex_height = cogl_texture_get_height (texture);
-                            }
-                        }
-                    }
-
-                  diamond = rut_diamond_new (engine->ctx, 200, tex_width,
-                                             tex_height);
-                  rut_entity_add_component (entity, diamond);
-
-                  rig_renderer_dirty_entity_state (entity);
-
-                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                }
-
-              else if (asset == engine->pointalism_grid_builtin_asset)
-                {
-                  RutPointalismGrid *grid;
-                  int tex_width = 200, tex_height = 200;
-
-                  geom = rut_entity_get_component (entity,
-                                                   RUT_COMPONENT_TYPE_GEOMETRY);
-
-                  if (geom && rut_object_get_type (geom) ==
-                      &rut_pointalism_grid_type)
-                    {
-                      status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                      break;
-                    }
-                  else if (geom)
-                    rut_entity_remove_component (entity, geom);
-
-                  material =
-                    rut_entity_get_component (entity,
-                                              RUT_COMPONENT_TYPE_MATERIAL);
-
-                  if (material)
-                    {
-                      RutAsset *texture_asset =
-                        rut_material_get_texture_asset (material);
-                      if (texture_asset)
-                        {
-                          if (rut_asset_get_is_video (texture_asset))
-                            {
-                              tex_width = 640;
-                              tex_height = 480;
-                            }
-                          else
-                            {
-                              CoglTexture *texture =
-                                rut_asset_get_texture (texture_asset);
-                              tex_width = cogl_texture_get_width (texture);
-                              tex_height = cogl_texture_get_height (texture);
-                            }
-                        }
-                    }
-
-                  grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
-                                                  tex_height);
-
-                  rut_entity_add_component (entity, grid);
-
-                  rig_renderer_dirty_entity_state (entity);
-
-                  status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                }
-
-              break;
-            }
-
-          if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
-            {
-              update_inspector (engine);
-              rut_shell_queue_redraw (engine->ctx->shell);
-            }
+          update_inspector (engine);
+          rut_shell_queue_redraw (engine->ctx->shell);
+          status = RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 
@@ -2380,6 +2433,8 @@ rig_engine_init (RutShell *shell, void *user_data)
   CoglFramebuffer *fb;
   int i;
 
+  rut_list_init (&engine->selection_changed_cb_list);
+
   cogl_matrix_init_identity (&engine->identity);
 
   for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
@@ -2694,7 +2749,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_set_selected_entity (engine, engine->play_camera);
+                  rig_select_entity (engine, engine->play_camera, RUT_SELECT_ACTION_REPLACE);
                   update_inspector (engine);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }

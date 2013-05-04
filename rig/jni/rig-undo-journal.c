@@ -910,7 +910,8 @@ undo_redo_add_entity_apply (RigUndoJournal *journal,
 
   rut_graphable_add_child (add_entity->parent_entity,
                            add_entity->deleted_entity);
-  rig_set_selected_entity (journal->engine, add_entity->deleted_entity);
+  rig_select_entity (journal->engine, add_entity->deleted_entity,
+                     RUT_SELECT_ACTION_REPLACE);
 
   rut_list_for_each (undo_prop_data, &add_entity->properties, link)
     {
