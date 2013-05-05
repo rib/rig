@@ -49,7 +49,7 @@ struct _RutModel
 
   RutModelType type;
 
-	RutAsset *asset;
+  RutAsset *asset;
   RutMesh *mesh;
 
   float min_x;
@@ -60,9 +60,6 @@ struct _RutModel
   float max_z;
 
   CoglPrimitive *primitive;
-
-  CoglPipeline *pipeline_cache;
-  int normal_matrix_uniform;
 
   CoglBool builtin_normals;
   CoglBool builtin_tex_coords;

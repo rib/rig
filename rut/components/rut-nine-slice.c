@@ -457,6 +457,21 @@ _rut_nine_slice_paint (RutObject *object,
     }
 }
 
+static RutObject *
+_rut_nine_slice_copy (RutObject *object)
+{
+  RutNineSlice *nine_slice = object;
+
+  return rut_nine_slice_new (nine_slice->ctx,
+                             nine_slice->texture,
+                             nine_slice->top,
+                             nine_slice->right,
+                             nine_slice->bottom,
+                             nine_slice->left,
+                             nine_slice->width,
+                             nine_slice->height);
+}
+
 RutType rut_nine_slice_type;
 
 static void
@@ -475,7 +490,7 @@ _rut_nine_slice_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-      0
+      .copy = _rut_nine_slice_copy
   };
 
   static RutIntrospectableVTable introspectable_vtable = {

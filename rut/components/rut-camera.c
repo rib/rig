@@ -166,18 +166,6 @@ _rut_camera_free (void *object)
   g_slice_free (RutCamera, object);
 }
 
-#if 0
-static RutGraphableVTable _rut_camera_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
-static RutTransformableVTable _rut_camera_transformable_vtable = {
-  rut_camera_get_view_transform
-};
-#endif
-
 CoglPrimitive *
 rut_camera_create_frustum_primitive (RutCamera *camera)
 {
@@ -309,6 +297,30 @@ done:
   camera->in_frame = TRUE;
 }
 
+static RutObject *
+_rut_camera_copy (RutObject *obj)
+{
+  RutCamera *camera = obj;
+  RutCamera *copy = rut_camera_new (camera->ctx, camera->fb);
+
+  copy->clear_fb = camera->clear_fb;
+
+  copy->x1 = camera->x1;
+  copy->y1 = camera->y1;
+  copy->x2 = camera->x2;
+  copy->y2 = camera->y2;
+  copy->orthographic = camera->orthographic;
+
+  copy->view = camera->view;
+
+  /* TODO: copy input regions */
+
+  rut_introspectable_copy_properties (&camera->ctx->property_ctx,
+                                      camera, copy);
+
+  return copy;
+}
+
 RutType rut_camera_type;
 
 void
@@ -321,7 +333,7 @@ _rut_camera_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    .draw = NULL
+    .copy = _rut_camera_copy
   };
 
   static RutIntrospectableVTable introspectable_vtable = {
@@ -330,7 +342,6 @@ _rut_camera_init_type (void)
   };
 
   RutType *type = &rut_camera_type;
-
 #define TYPE RutCamera
 
   rut_type_init (type, G_STRINGIFY (TYPE));
@@ -350,17 +361,6 @@ _rut_camera_init_type (void)
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
-
-#if 0
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_TRANSFORMABLE,
-                          0,
-                          &transformable_vtable);
-#endif
 
 #undef TYPE
 }

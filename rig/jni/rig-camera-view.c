@@ -238,13 +238,13 @@ paint_overlays (RigCameraView *view,
     {
       rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
-      if (engine->selected_entities)
+      if (engine->entities_selection->entities)
         {
           /* XXX: we don't currently do anything very clever in how
            * manage the user manipulation tool when there are multiple
            * entities selected, and simply apply the tool to the first
            * entity. */
-          rut_tool_update (engine->tool, engine->selected_entities->data);
+          rut_tool_update (engine->tool, engine->entities_selection->entities->data);
           rut_tool_draw (engine->tool, fb);
         }
     }
@@ -1682,10 +1682,10 @@ input_cb (RutInputEvent *event,
           /* If we have selected an entity then initiate a grab so the
            * entity can be moved with the mouse...
            */
-          if (engine->selected_entities)
+          if (engine->entities_selection->entities)
             {
               if (!translate_grab_entities (view,
-                                            engine->selected_entities,
+                                            engine->entities_selection->entities,
                                             rut_motion_event_get_x (event),
                                             rut_motion_event_get_y (event),
                                             entity_translate_cb,
@@ -1830,72 +1830,81 @@ input_cb (RutInputEvent *event,
 
     }
 #ifdef RIG_EDITOR_ENABLED
-  else if (!_rig_in_device_mode &&
-           rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
-           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
+  else if (!_rig_in_device_mode)
     {
-      switch (rut_key_event_get_keysym (event))
+      if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+          rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
         {
-        case RUT_KEY_minus:
-          {
-            float zoom = rut_camera_get_zoom (view->view_camera_component);
-
-            zoom *= 0.8;
-
-            rut_camera_set_zoom (view->view_camera_component, zoom);
-
-            rut_shell_queue_redraw (engine->ctx->shell);
-
-            break;
-          }
-        case RUT_KEY_equal:
-          {
-            float zoom = rut_camera_get_zoom (view->view_camera_component);
-
-            if (zoom)
-              zoom *= 1.2;
-            else
-              zoom = 0.1;
-
-            rut_camera_set_zoom (view->view_camera_component, zoom);
-
-            rut_shell_queue_redraw (engine->ctx->shell);
-
-            break;
-          }
-        case RUT_KEY_p:
-          rig_set_play_mode_enabled (engine, !engine->play_mode);
-          break;
-        case RUT_KEY_Delete:
-          if (engine->selected_entities)
+          switch (rut_key_event_get_keysym (event))
             {
-              GList *l, *next;
+            case RUT_KEY_minus:
+              {
+                float zoom = rut_camera_get_zoom (view->view_camera_component);
 
-              /* XXX: be careful to consider that deleting entities
-               * will remove them from the set of selected entities... */
-              for (l = engine->selected_entities; l; l = next)
+                zoom *= 0.8;
+
+                rut_camera_set_zoom (view->view_camera_component, zoom);
+
+                rut_shell_queue_redraw (engine->ctx->shell);
+
+                break;
+              }
+            case RUT_KEY_equal:
+              {
+                float zoom = rut_camera_get_zoom (view->view_camera_component);
+
+                if (zoom)
+                  zoom *= 1.2;
+                else
+                  zoom = 0.1;
+
+                rut_camera_set_zoom (view->view_camera_component, zoom);
+
+                rut_shell_queue_redraw (engine->ctx->shell);
+
+                break;
+              }
+            case RUT_KEY_p:
+              rig_set_play_mode_enabled (engine, !engine->play_mode);
+              break;
+            case RUT_KEY_j:
+              if ((rut_key_event_get_modifier_state (event) &
+                   RUT_MODIFIER_CTRL_ON) &&
+                  engine->entities_selection->entities)
                 {
-                  next = l->next;
-                  rig_undo_journal_delete_entity_and_log (engine->undo_journal,
-                                                          l->data);
+                  GList *l;
+                  for (l = engine->entities_selection->entities; l; l = l->next)
+                    move_entity_to_camera (view, l->data);
                 }
+              break;
+            case RUT_KEY_0:
+              initialize_navigation_camera (view);
+              break;
+            }
+        }
+      else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP)
+        {
+          RutObject *data = rut_drop_event_get_data (event);
 
-              g_warn_if_fail (engine->selected_entities == NULL);
-            }
-          break;
-        case RUT_KEY_j:
-          if ((rut_key_event_get_modifier_state (event) &
-               RUT_MODIFIER_CTRL_ON) &&
-              engine->selected_entities)
+          if (data &&
+              rut_object_get_type (data) == &rig_entities_selection_type)
             {
-              GList *l;
-              for (l = engine->selected_entities; l; l = l->next)
-                move_entity_to_camera (view, l->data);
+              RigEntitiesSelection *selection = data;
+              int n_entities = g_list_length (selection->entities);
+
+              if (n_entities)
+                {
+                  RutEntity *parent = (RutEntity *)view->scene;
+                  GList *l;
+
+                  for (l = selection->entities; l; l = l->next)
+                    {
+                      rig_undo_journal_add_entity_and_log (engine->undo_journal,
+                                                           parent,
+                                                           l->data);
+                    }
+                }
             }
-          break;
-        case RUT_KEY_0:
-          initialize_navigation_camera (view);
-          break;
         }
     }
 #endif /* RIG_EDITOR_ENABLED */

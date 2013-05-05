@@ -58,6 +58,7 @@
 #include "rut-shim.h"
 #include "rut-asset-inspector.h"
 #include "rut-renderer.h"
+#include "rut-mimable.h"
 
 /* entity/components system */
 #include "rut-entity.h"

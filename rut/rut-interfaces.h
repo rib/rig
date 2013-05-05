@@ -381,4 +381,32 @@ typedef struct _RutImageSizeDependantVTable
                          int height);
 } RutImageSizeDependantVTable;
 
+
+/*
+ * Selectable Interface
+ *
+ * Anything that can be selected by the user and optionally cut and
+ * copied to a clipboard should be tracked using a selectable object.
+ *
+ * Whenever a new user selection is made then an object implementing
+ * the selectable interface should be created to track the selected
+ * objects and that object should be registered with a RutShell.
+ *
+ * Whenever a selection is registered then the ::cancel method of any
+ * previous selection will be called.
+ *
+ * - If Ctrl-C is pressed the ::copy method will be called which should
+ *   return a RutMimable object that will be set on the clipboard.
+ * - If Ctrl-X is pressed the ::copy method will be called, followed
+ *   by the ::del method. The copy method should return a RutMimable
+ *   object that will be set on the clipboard.
+ * - If Delete is pressed the ::del method will be called
+ */
+typedef struct _RutSelectableVTable
+{
+  void (*cancel) (RutObject *selectable);
+  RutObject *(*copy) (RutObject *selectable);
+  void (*del) (RutObject *selectable);
+} RutSelectableVTable;
+
 #endif /* _RUT_INTERFACES_H_ */

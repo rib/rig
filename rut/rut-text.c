@@ -31,6 +31,7 @@
 
 #include "rut-text.h"
 #include "rut-paintable.h"
+#include "rut-mimable.h"
 #include "components/rut-camera.h"
 
 /* This is only defined since GLib 2.31.0. The documentation says that
@@ -2436,7 +2437,10 @@ rut_text_motion_grab (RutInputEvent *event,
       offset = bytes_to_offset (text_str, index_);
 
       if (text->selectable)
-        rut_text_set_cursor_position (text, offset);
+        {
+          rut_text_set_cursor_position (text, offset);
+          rut_shell_set_selection (text->ctx->shell, text);
+        }
       else
         rut_text_set_positions (text, offset, offset);
     }
@@ -2575,6 +2579,21 @@ rut_text_input_cb (RutInputEvent *event,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     return rut_text_button_press (text, event);
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP &&
+           rut_text_get_editable (text) == TRUE)
+    {
+      RutObject *data = rut_drop_event_get_data (event);
+
+      if (rut_mimable_has_text (data))
+        {
+          char *text_data = rut_mimable_get_text (data);
+          rut_text_clear_selection (text);
+          rut_text_insert_text (text, text_data, text->position);
+          g_free (text_data);
+        }
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
@@ -3237,81 +3256,123 @@ rut_text_add_move_binding (RutBindingPool  *pool,
 }
 #endif
 
-RutRefableVTable _rut_text_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_text_free
-};
+static void
+_rut_text_selectable_cancel (RutObject *object)
+{
+  RutText *text = object;
 
-static RutGraphableVTable _rut_text_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
+  rut_text_clear_selection (text);
+}
 
-static RutPaintableVTable _rut_text_paintable_vtable = {
-  rut_text_paint
-};
+static RutObject *
+_rut_text_selectable_copy (RutObject *object)
+{
+  RutText *text = object;
+  char *text_data = rut_text_get_selection (text);
+  RutTextBlob *copy = rut_text_blob_new (text_data);
 
-static RutIntrospectableVTable _rut_text_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
+  g_free (text_data);
 
-static RutSizableVTable _rut_text_sizable_vtable = {
-  _rut_text_set_size,
-  _rut_text_get_size,
-  _rut_text_get_preferred_width,
-  _rut_text_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
+  return copy;
+}
 
-static RutComponentableVTable _rut_text_componentable_vtable = {
-    0
-};
+static void
+_rut_text_selectable_delete (RutObject *object)
+{
+  RutText *text = object;
 
-static RutPickableVTable _rut_text_pickable_vtable = {
-  .get_mesh = rut_text_get_pick_mesh
-};
+  rut_text_delete_selection (text);
+}
 
 RutType rut_text_type;
 
 void
 _rut_text_init_type (void)
 {
-  rut_type_init (&rut_text_type, "RigText");
-  rut_type_add_interface (&rut_text_type,
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_text_free
+  };
+
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child remove */
+      NULL, /* child add */
+      NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+      rut_text_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      _rut_text_set_size,
+      _rut_text_get_size,
+      _rut_text_get_preferred_width,
+      _rut_text_get_preferred_height,
+      NULL /* add_preferred_size_callback */
+  };
+
+  static RutComponentableVTable componentable_vtable = {
+      0
+  };
+
+  static RutPickableVTable pickable_vtable = {
+      .get_mesh = rut_text_get_pick_mesh
+  };
+
+  static RutSelectableVTable selectable_vtable = {
+      .cancel = _rut_text_selectable_cancel,
+      .copy = _rut_text_selectable_copy,
+      .del = _rut_text_selectable_delete,
+  };
+
+  RutType *type = &rut_text_type;
+#define TYPE RutText
+  rut_type_init (&rut_text_type, G_STRINGIFY (TYPE));
+
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutText, ref_count),
-                          &_rut_text_refable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (RutText, component),
-                          &_rut_text_componentable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          offsetof (TYPE, component),
+                          &componentable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutText, graphable),
-                          &_rut_text_graphable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutText, paintable),
-                          &_rut_text_paintable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          offsetof (TYPE, paintable),
+                          &paintable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PICKABLE,
                           0, /* no associated properties */
-                          &_rut_text_pickable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          &pickable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_text_introspectable_vtable);
-  rut_type_add_interface (&rut_text_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutText, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_text_type,
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_text_sizable_vtable);
+                          &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SELECTABLE,
+                          0, /* no associated properties */
+                          &selectable_vtable);
+#undef TYPE
 }
 
 RutText *

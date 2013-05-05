@@ -89,7 +89,8 @@ typedef enum _RutInputEventType
 {
   RUT_INPUT_EVENT_TYPE_MOTION = 1,
   RUT_INPUT_EVENT_TYPE_KEY,
-  RUT_INPUT_EVENT_TYPE_TEXT
+  RUT_INPUT_EVENT_TYPE_TEXT,
+  RUT_INPUT_EVENT_TYPE_DROP
 } RutInputEventType;
 
 typedef enum _RutKeyEventAction
@@ -290,6 +291,9 @@ typedef RutInputEventStatus (*RutInputRegionCallback) (RutInputRegion *region,
 const char *
 rut_text_event_get_text (RutInputEvent *event);
 
+RutObject *
+rut_drop_event_get_data (RutInputEvent *drop_event);
+
 RutInputRegion *
 rut_input_region_new_rectangle (float x0,
                                 float y0,
@@ -450,5 +454,35 @@ rut_shell_set_title (RutShell *shell,
  */
 void
 rut_shell_quit (RutShell *shell);
+
+/**
+ * rut_shell_set_selection:
+ * @selection: An object implementing the selectable interface
+ *
+ * This cancels any existing global selection, calling the ::cancel
+ * method of the current selection and make @selection the replacement
+ * selection.
+ *
+ * If Ctrl-C is later pressed then ::copy will be called for the
+ * selectable and the returned object will be set on the clipboard.
+ * If Ctrl-Z is later pressed then ::cut will be called for the
+ * selectable and the returned object will be set on the clipboard.
+ */
+void
+rut_shell_set_selection (RutShell *shell,
+                         RutObject *selection);
+
+RutObject *
+rut_shell_get_selection (RutShell *shell);
+
+RutObject *
+rut_shell_get_clipboard (RutShell *shell);
+
+extern RutType rut_text_blob_type;
+
+typedef struct _RutTextBlob RutTextBlob;
+
+RutTextBlob *
+rut_text_blob_new (const char *text);
 
 #endif /* _RUT_SHELL_H_ */

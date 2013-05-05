@@ -44,6 +44,14 @@ enum {
   RIG_ENGINE_N_PROPS
 };
 
+typedef struct _RigEntitesSelection
+{
+  RutObjectProps _parent;
+  int ref_count;
+  RigEngine *engine;
+  GList *entities;
+} RigEntitiesSelection;
+
 struct _RigEngine
 {
   CoglBool play_mode;
@@ -201,8 +209,7 @@ struct _RigEngine
   GList *controllers;
   RigController *selected_controller;
 
-  GList *selected_entities;
-  RutList selection_changed_cb_list;
+  RigEntitiesSelection *entities_selection;
 
   RutTool *tool;
 
@@ -268,6 +275,8 @@ struct _RigEngine
 /* FIXME: find a better place to put these prototypes */
 
 extern CoglBool _rig_in_device_mode;
+
+extern RutType rig_entities_selection_type;
 
 void
 rig_engine_init (RutShell *shell, void *user_data);

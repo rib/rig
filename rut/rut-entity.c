@@ -53,8 +53,6 @@ struct _RutEntity
   RutContext *ctx;
   int ref_count;
 
-  uint32_t id;
-
   char *label;
 
   RutGraphableProps graphable;
@@ -67,6 +65,10 @@ struct _RutEntity
 
   GPtrArray *components;
 
+  /* TODO: We should have a ->renderer_priv member instead and
+   * since each renderer will know best how it wants to track
+   * pipelines and caches of primitives associated with each
+   * entity. */
   CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
   RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
   CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
@@ -77,6 +79,8 @@ struct _RutEntity
   unsigned int visible:1;
   unsigned int dirty:1;
   unsigned int cast_shadow:1;
+
+  /* Make this part of the material component? */
   unsigned int receive_shadow:1;
 };
 
@@ -551,43 +555,6 @@ rut_entity_remove_component (RutEntity *entity,
 }
 
 void
-rut_entity_update (RutEntity *entity,
-                   int64_t    time)
-{
-  int i;
-
-  for (i = 0; i < entity->components->len; i++)
-    {
-      RutObject *component = g_ptr_array_index (entity->components, i);
-      RutComponentableVTable *componentable =
-        rut_object_get_vtable (component, RUT_INTERFACE_ID_COMPONENTABLE);
-
-      if (componentable->update)
-        componentable->update(component, time);
-    }
-}
-
-void
-rut_entity_draw (RutEntity       *entity,
-                 CoglFramebuffer *fb)
-{
-  int i;
-
-  if (!entity->visible)
-    return;
-
-  for (i = 0; i < entity->components->len; i++)
-    {
-      RutObject *component = g_ptr_array_index (entity->components, i);
-      RutComponentableVTable *componentable =
-        rut_object_get_vtable (component, RUT_INTERFACE_ID_COMPONENTABLE);
-
-      if (componentable->draw)
-        componentable->draw(component, fb);
-    }
-}
-
-void
 rut_entity_translate (RutEntity *entity,
                       float      tx,
                       float      ty,
@@ -823,4 +790,56 @@ rut_entity_set_visible (RutObject *obj, CoglBool visible)
   RutEntity *entity = RUT_ENTITY (obj);
 
   entity->visible = visible;
+}
+
+RutEntity *
+rut_entity_copy (RutEntity *entity)
+{
+  RutEntity *copy = rut_entity_new (entity->ctx);
+  GPtrArray *entity_components = entity->components;
+  GPtrArray *copy_components;
+  RutGraphableProps *graph_props =
+    rut_object_get_properties (entity, RUT_INTERFACE_ID_GRAPHABLE);
+  int i;
+  GList *l;
+
+  copy->label = NULL;
+
+  memcpy (copy->position, entity->position, sizeof (entity->position));
+  copy->rotation = entity->rotation;
+  copy->scale = entity->scale;
+  copy->transform = entity->transform;
+  copy->dirty = FALSE;
+
+  copy->visible = entity->cast_shadow;
+  copy->cast_shadow = entity->cast_shadow;
+  copy->receive_shadow = entity->receive_shadow;
+
+  copy_components = g_ptr_array_sized_new (entity_components->len);
+  copy->components = copy_components;
+
+  for (i = 0; i < entity_components->len; i++)
+    {
+      RutObject *component = g_ptr_array_index (entity_components, i);
+      RutComponentableVTable *componentable =
+        rut_object_get_vtable (component, RUT_INTERFACE_ID_COMPONENTABLE);
+      RutObject *component_copy = componentable->copy (component);
+
+      rut_entity_add_component (copy, component_copy);
+      rut_refable_unref (component_copy);
+    }
+
+  for (l = graph_props->children.head; l; l = l->next)
+    {
+      RutObject *child = l->data;
+      RutObject *child_copy;
+
+      if (rut_object_get_type (child) != &rut_entity_type)
+        continue;
+
+      child_copy = rut_entity_copy (child);
+      rut_graphable_add_child (copy, child_copy);
+    }
+
+  return copy;
 }

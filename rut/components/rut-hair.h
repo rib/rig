@@ -57,6 +57,8 @@ struct _RutHair
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_HAIR_N_PROPS];
+
+  unsigned int dirty_textures: 1;
 };
 
 void

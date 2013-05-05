@@ -10,6 +10,9 @@
 #include "rut-context.h"
 #include "rut-entity.h"
 
+/* NB: consider changes to rut_camera_copy if adding
+ * properties, or making existing properties
+ * introspectable */
 enum {
   RUT_CAMERA_PROP_MODE,
   RUT_CAMERA_PROP_VIEWPORT_X,
@@ -26,6 +29,9 @@ enum {
   RUT_CAMERA_N_PROPS
 };
 
+/* NB: consider changes to rut_camera_copy if adding
+ * properties, or making existing properties
+ * introspectable */
 /* TODO: Make internals private */
 struct _RutCamera
 {
@@ -36,8 +42,6 @@ struct _RutCamera
   int ref_count;
 
   RutContext *ctx;
-
-  RutCamera *child_camera;
 
   CoglColor bg_color;
   CoglBool clear_fb;

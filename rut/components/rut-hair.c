@@ -164,9 +164,9 @@ _rut_hair_generate_textures (RutHair *hair)
 
       diameter -= diameter_iter;
     }
-}
 
-RutType rut_hair_type;
+  hair->dirty_textures = FALSE;
+}
 
 static void
 _rut_hair_free (void *object)
@@ -178,44 +178,66 @@ _rut_hair_free (void *object)
   g_slice_free (RutHair, hair);
 }
 
-static RutRefableVTable _rut_hair_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_hair_free
-};
+static RutObject *
+_rut_hair_copy (RutObject *obj)
+{
+  RutHair *hair = obj;
+  RutHair *copy = rut_hair_new (hair->ctx);
 
-static RutComponentableVTable _rut_hair_componentable_vtable = {
-    0
-};
+  copy->length = hair->length;
+  copy->n_shells = hair->n_shells;
+  copy->gravity = hair->gravity;
+  copy->density = hair->density;
+  copy->thickness = hair->thickness;
+  copy->resolution = hair->resolution;
 
-static RutIntrospectableVTable _rut_hair_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
+  copy->dirty_textures = TRUE;
+
+  return copy;
+}
+
+RutType rut_hair_type;
 
 void
 _rut_hair_init_type (void)
 {
-  rut_type_init (&rut_hair_type, "RigHair");
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_hair_free
+  };
 
-  rut_type_add_interface (&rut_hair_type,
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  static RutComponentableVTable componentable_vtable = {
+      .copy = _rut_hair_copy
+  };
+
+  RutType *type = &rut_hair_type;
+#define TYPE RutHair
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutHair, ref_count),
-                          &_rut_hair_ref_countable_vtable);
-  rut_type_add_interface (&rut_hair_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (RutHair, component),
-                          &_rut_hair_componentable_vtable);
-
-  rut_type_add_interface (&rut_hair_type,
+                          offsetof (TYPE, component),
+                          &componentable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0,
-                          &_rut_hair_introspectable_vtable);
-
-  rut_type_add_interface (&rut_hair_type,
+                          0, /* no implied properties */
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutHair, introspectable),
-                          NULL);
+                          offsetof (TYPE, introspectable),
+                          NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutHair *
@@ -247,7 +269,7 @@ rut_hair_new (RutContext *ctx)
   rut_simple_introspectable_init (hair, _rut_hair_prop_specs,
                                   hair->properties);
 
-  _rut_hair_generate_textures (hair);
+  hair->dirty_textures = TRUE;
 
   return hair;
 }
@@ -257,6 +279,10 @@ CoglTexture *
 rut_hair_get_texture (RutObject *obj, int layer)
 {
   RutHair *hair = obj;
+
+  if (hair->dirty_textures)
+    _rut_hair_generate_textures (hair);
+
   return hair->textures[layer];
 }
 
@@ -361,7 +387,8 @@ rut_hair_set_density (RutObject *obj,
 
   hair->density = density;
 
-  _rut_hair_generate_textures (hair);
+  hair->dirty_textures = TRUE;
+
   entity = hair->component.entity;
   ctx = rut_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
@@ -389,7 +416,8 @@ rut_hair_set_thickness (RutObject *obj,
 
   hair->thickness = thickness;
 
-  _rut_hair_generate_textures (hair);
+  hair->dirty_textures = TRUE;
+
   entity = hair->component.entity;
   ctx = rut_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
@@ -416,7 +444,8 @@ rut_hair_set_resolution (RutObject *obj,
 
   hair->resolution = resolution;
 
-  _rut_hair_generate_textures (hair);
+  hair->dirty_textures = TRUE;
+
   entity = hair->component.entity;
   ctx = rut_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
