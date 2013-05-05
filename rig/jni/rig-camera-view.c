@@ -133,9 +133,6 @@ struct _EntitiesTranslateGrabClosure
   GList *entity_closures;
 };
 
-
-RutType rig_camera_view_type;
-
 static void
 update_grab_closure_vectors (EntityTranslateGrabClosure *closure);
 
@@ -174,18 +171,6 @@ _rig_camera_view_free (void *object)
 
   g_slice_free (RigCameraView, view);
 }
-
-RutRefCountableVTable _rig_camera_view_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rig_camera_view_free
-};
-
-static RutGraphableVTable _rig_camera_view_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static void
 paint_overlays (RigCameraView *view,
@@ -472,10 +457,6 @@ _rut_camera_view_paint (RutObject *object,
   if (need_play_camera_reset)
     reset_play_camera (view);
 }
-
-static RutPaintableVTable _rig_camera_view_paintable_vtable = {
-  _rut_camera_view_paint
-};
 
 static void
 matrix_view_2d_in_frustum (CoglMatrix *matrix,
@@ -790,34 +771,56 @@ rig_camera_view_get_size (void *object,
   *height = view->height;
 }
 
-static RutSizableVTable _rig_camera_view_sizable_vtable = {
-  rig_camera_view_set_size,
-  rig_camera_view_get_size,
-  rig_camera_view_get_preferred_width,
-  rig_camera_view_get_preferred_height,
-  NULL
-};
+RutType rig_camera_view_type;
 
 static void
 _rig_camera_view_init_type (void)
 {
-  rut_type_init (&rig_camera_view_type, "RigCameraView");
-  rut_type_add_interface (&rig_camera_view_type,
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_camera_view_free
+  };
+
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+      _rut_camera_view_paint
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      rig_camera_view_set_size,
+      rig_camera_view_get_size,
+      rig_camera_view_get_preferred_width,
+      rig_camera_view_get_preferred_height,
+      NULL
+  };
+
+  RutType *type = &rig_camera_view_type;
+#define TYPE RigCameraView
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigCameraView, ref_count),
-                          &_rig_camera_view_ref_countable_vtable);
-  rut_type_add_interface (&rig_camera_view_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RigCameraView, graphable),
-                          &_rig_camera_view_graphable_vtable);
-  rut_type_add_interface (&rig_camera_view_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RigCameraView, paintable),
-                          &_rig_camera_view_paintable_vtable);
-  rut_type_add_interface (&rig_camera_view_type,
+                          offsetof (TYPE, paintable),
+                          &paintable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rig_camera_view_sizable_vtable);
+                          &sizable_vtable);
+#undef TYPE
 }
 
 static void
