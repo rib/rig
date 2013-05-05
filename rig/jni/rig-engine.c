@@ -86,6 +86,9 @@ static RutPropertySpec rut_data_property_specs[] = {
 static void
 rig_load_asset_list (RigEngine *engine);
 
+static RigEntitiesSelection *
+_rig_entities_selection_new (RigEngine *engine);
+
 #ifdef RIG_EDITOR_ENABLED
 CoglBool _rig_in_device_mode = FALSE;
 #endif
@@ -502,7 +505,7 @@ _rig_engine_update_inspector (RigEngine *engine)
   g_list_free (engine->all_inspectors);
   engine->all_inspectors = NULL;
 
-  if (engine->selected_entities)
+  if (engine->entities_selection->entities)
     {
       /* XXX: For now we don't do anything clever in the property
        * inspector to take account of having multiple entities
@@ -510,7 +513,7 @@ _rig_engine_update_inspector (RigEngine *engine)
        * properties are common between all selected entities and
        * disable all other property widgets to allow easily setting
        * the same property on many entities at the same time. */
-      RutEntity *entity = engine->selected_entities->data;
+      RutEntity *entity = engine->entities_selection->entities->data;
 
       engine->inspector = create_inspector (engine, entity);
 
@@ -557,14 +560,14 @@ tool_rotation_event_cb (RutTool *tool,
   RigEngine *engine = user_data;
   RutEntity *entity;
 
-  g_return_if_fail (engine->selected_entities);
+  g_return_if_fail (engine->entities_selection->entities);
 
   /* XXX: For now we don't do anything clever to handle rotating a
    * set of entityies, since it's ambiguous what origin should be used
    * in this case. In the future the rotation capabilities need to be
    * more capable though and we may intoduce the idea of a 3D cursor
    * for example to define the origin for the set. */
-  entity = engine->selected_entities->data;
+  entity = engine->entities_selection->entities->data;
 
   switch (type)
     {
@@ -615,12 +618,154 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
   rut_shell_queue_redraw (engine->ctx->shell);
 }
 
+static void
+_rig_entities_selection_cancel (RutObject *object)
+{
+  RigEntitiesSelection *selection = object;
+  g_list_free_full (selection->entities, (GDestroyNotify)rut_refable_unref);
+  selection->entities = NULL;
+}
+
+static RutObject *
+_rig_entities_selection_copy (RutObject *object)
+{
+  RigEntitiesSelection *selection = object;
+  RigEntitiesSelection *copy = _rig_entities_selection_new (selection->engine);
+  GList *l;
+
+  for (l = selection->entities; l; l = l->next)
+    {
+      copy->entities =
+        g_list_prepend (copy->entities, rut_entity_copy (l->data));
+    }
+
+  return copy;
+}
+
+static void
+_rig_entities_selection_delete (RutObject *object)
+{
+  RigEntitiesSelection *selection = object;
+
+  if (selection->entities)
+    {
+      RigEngine *engine = selection->engine;
+
+      /* XXX: It's assumed that a selection either corresponds to
+       * engine->entities_selection or to a derived selection due to
+       * the selectable::copy vfunc.
+       *
+       * A copy should contain deep-copied entities that don't need to
+       * be directly deleted with
+       * rig_undo_journal_delete_entity_and_log() because they won't
+       * be part of the scenegraph.
+       */
+
+      if (selection == engine->entities_selection)
+        {
+          GList *l, *next;
+          int len = g_list_length (selection->entities);
+
+          for (l = selection->entities; l; l = next)
+            {
+              next = l->next;
+              rig_undo_journal_delete_entity_and_log (engine->undo_journal,
+                                                      l->data);
+            }
+
+          /* NB: that rig_undo_journal_delete_component_and_log() will
+           * remove the entity from the scenegraph*/
+
+          /* XXX: make sure that
+           * rig_undo_journal_delete_entity_and_log() doesn't change
+           * the selection, since it used to. */
+          g_warn_if_fail (len == g_list_length (selection->entities));
+        }
+
+      g_list_free_full (selection->entities,
+                        (GDestroyNotify)rut_refable_unref);
+      selection->entities = NULL;
+
+      g_warn_if_fail (selection->entities == NULL);
+    }
+}
+
+static void
+_rig_entities_selection_free (void *object)
+{
+  RigEntitiesSelection *selection = object;
+
+  _rig_entities_selection_cancel (selection);
+
+  g_slice_free (RigEntitiesSelection, selection);
+}
+
+RutType rig_entities_selection_type;
+
+static void
+_rig_entities_selection_init_type (void)
+{
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_entities_selection_free
+  };
+  static RutSelectableVTable selectable_vtable = {
+      .cancel = _rig_entities_selection_cancel,
+      .copy = _rig_entities_selection_copy,
+      .del = _rig_entities_selection_delete,
+  };
+  static RutMimableVTable mimable_vtable = {
+      .copy = _rig_entities_selection_copy
+  };
+
+  RutType *type = &rig_entities_selection_type;
+#define TYPE RigEntitiesSelection
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SELECTABLE,
+                          0, /* no associated properties */
+                          &selectable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_MIMABLE,
+                          0, /* no associated properties */
+                          &mimable_vtable);
+
+#undef TYPE
+}
+
+static RigEntitiesSelection *
+_rig_entities_selection_new (RigEngine *engine)
+{
+  static bool initialized = FALSE;
+  RigEntitiesSelection *selection = g_slice_new0 (RigEntitiesSelection);
+
+  if (initialized == FALSE)
+    {
+      _rig_entities_selection_init_type ();
+      initialized = TRUE;
+    }
+
+  rut_object_init (&selection->_parent, &rig_entities_selection_type);
+
+  selection->ref_count = 1;
+  selection->engine = engine;
+  selection->entities = NULL;
+
+  return selection;
+}
+
 void
 rig_select_entity (RigEngine *engine,
                    RutEntity *entity,
                    RutSelectAction action)
 {
-  bool changed = FALSE;
+  RigEntitiesSelection *selection = engine->entities_selection;
 
   if (entity == engine->light_handle)
     entity = engine->light;
@@ -632,53 +777,41 @@ rig_select_entity (RigEngine *engine,
   switch (action)
     {
     case RUT_SELECT_ACTION_REPLACE:
-      if (engine->selected_entities)
-        {
-          if (engine->selected_entities->next == NULL &&
-              engine->selected_entities->data == entity)
-            return;
+      {
+        g_list_free (selection->entities);
+        selection->entities = NULL;
 
-          g_list_free (engine->selected_entities);
-          engine->selected_entities = NULL;
-        }
-
-      if (entity)
-        {
-          engine->selected_entities =
-            g_list_prepend (engine->selected_entities, entity);
-        }
-      changed = TRUE;
-      break;
+        if (entity)
+          selection->entities = g_list_prepend (selection->entities,
+                                                rut_refable_ref (entity));
+        break;
+      }
     case RUT_SELECT_ACTION_TOGGLE:
       {
-        GList *link = g_list_find (engine->selected_entities, entity);
+        GList *link = g_list_find (selection->entities, entity);
         if (link)
           {
-            engine->selected_entities =
-              g_list_remove_link (engine->selected_entities, link);
+            rut_refable_unref (link->data);
+            selection->entities =
+              g_list_remove_link (selection->entities, link);
           }
         else if (entity)
           {
-            engine->selected_entities =
-              g_list_prepend (engine->selected_entities, entity);
+            rut_refable_ref (entity);
+            selection->entities =
+              g_list_prepend (selection->entities, entity);
           }
-        changed = TRUE;
       }
       break;
     }
 
-  if (changed)
-    {
-      rut_closure_list_invoke (&engine->selection_changed_cb_list,
-                               RigEngineSelectionChangedCallback,
-                               engine);
+  if (selection->entities)
+    rut_shell_set_selection (engine->shell, engine->entities_selection);
+  else
+    rut_tool_update (engine->tool, NULL);
 
-      if (engine->selected_entities == NULL)
-        rut_tool_update (engine->tool, NULL);
-
-      rut_shell_queue_redraw (engine->ctx->shell);
-      _rig_engine_update_inspector (engine);
-    }
+  rut_shell_queue_redraw (engine->ctx->shell);
+  _rig_engine_update_inspector (engine);
 }
 
 static void
@@ -1103,9 +1236,9 @@ asset_input_cb (RutInputRegion *region,
         {
           RigEngine *engine = closure->engine;
 
-          if (engine->selected_entities)
+          if (engine->entities_selection->entities)
             {
-              g_list_foreach (engine->selected_entities,
+              g_list_foreach (engine->entities_selection->entities,
                               (GFunc) apply_asset_input_to_entity,
                               closure);
             }
@@ -2627,8 +2760,6 @@ rig_engine_init (RutShell *shell, void *user_data)
   CoglFramebuffer *fb;
   int i;
 
-  rut_list_init (&engine->selection_changed_cb_list);
-
   cogl_matrix_init_identity (&engine->identity);
 
   for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
@@ -2637,6 +2768,7 @@ rig_engine_init (RutShell *shell, void *user_data)
                        engine);
 
 #ifdef RIG_EDITOR_ENABLED
+  engine->entities_selection = _rig_entities_selection_new (engine);
   engine->serialization_stack = rut_memory_stack_new (8192);
 
   if (!_rig_in_device_mode)
@@ -2853,6 +2985,8 @@ rig_engine_fini (RutShell *shell, void *user_data)
       if (engine->transparency_grid)
         rut_refable_unref (engine->transparency_grid);
     }
+
+  rut_refable_unref (engine->entities_selection);
 #endif
 
   cogl_object_unref (engine->onscreen);
@@ -2886,23 +3020,6 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
 
   switch (rut_input_event_get_type (event))
     {
-    case RUT_INPUT_EVENT_TYPE_MOTION:
-#if 0
-      switch (rut_motion_event_get_action (event))
-        {
-        case RUT_MOTION_EVENT_ACTION_DOWN:
-          //g_print ("Press Down\n");
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        case RUT_MOTION_EVENT_ACTION_UP:
-          //g_print ("Release\n");
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        case RUT_MOTION_EVENT_ACTION_MOVE:
-          //g_print ("Move\n");
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
-        }
-#endif
-      break;
-
     case RUT_INPUT_EVENT_TYPE_KEY:
 #ifdef RIG_EDITOR_ENABLED
       if (!_rig_in_device_mode &&
@@ -2935,12 +3052,13 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
                 }
               break;
 
+#if 1
               /* HACK: Currently it's quite hard to select the play
                * camera because it will usually be positioned far away
                * from the scene. This provides a way to select it by
                * pressing Ctrl+C. Eventually it should be possible to
                * select it using a list of entities somewhere */
-            case RUT_KEY_c:
+            case RUT_KEY_r:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
@@ -2949,12 +3067,15 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
               break;
+#endif
             }
         }
 #endif
       break;
 
+    case RUT_INPUT_EVENT_TYPE_MOTION:
     case RUT_INPUT_EVENT_TYPE_TEXT:
+    case RUT_INPUT_EVENT_TYPE_DROP:
       break;
     }
 

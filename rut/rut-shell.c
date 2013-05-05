@@ -108,6 +108,8 @@ struct _RutShell
   RutObject *keyboard_focus_object;
   GDestroyNotify keyboard_ungrab_cb;
 
+  RutObject *clipboard;
+
   int glib_paint_idle;
   CoglBool redraw_queued;
 
@@ -123,6 +125,8 @@ struct _RutShell
 
   /* A list of onscreen windows that the shell is manipulating */
   RutList onscreens;
+
+  RutObject *selection;
 };
 
 /* PRIVATE */
@@ -2695,4 +2699,284 @@ rut_shell_quit (RutShell *shell)
       g_main_loop_quit (shell->main_loop);
   }
 #endif
+}
+
+static void
+_rut_shell_drop (RutShell *shell,
+                 RutObject *data)
+{
+  RutInputEvent drop_event;
+
+  drop_event.native = data;
+  drop_event.shell = shell;
+  drop_event.input_transform = NULL;
+
+  drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
+
+  /* Note: This assumes input handlers are re-entrant and hopefully
+   * that's ok. */
+  _rut_shell_handle_input (shell, &drop_event);
+}
+
+RutObject *
+rut_drop_event_get_data (RutInputEvent *drop_event)
+{
+  return drop_event->native;
+}
+
+struct _RutTextBlob
+{
+  RutObjectProps _parent;
+  int ref_count;
+
+  char *text;
+};
+
+static RutObject *
+_rut_text_blob_copy (RutObject *object)
+{
+  RutTextBlob *blob = object;
+
+  return rut_text_blob_new (blob->text);
+}
+
+static bool
+_rut_text_blob_has (RutObject *object, RutMimableType type)
+{
+  if (type == RUT_MIMABLE_TYPE_TEXT)
+    return TRUE;
+
+  return FALSE;
+}
+
+static void *
+_rut_text_blob_get (RutObject *object, RutMimableType type)
+{
+  RutTextBlob *blob = object;
+
+  if (type == RUT_MIMABLE_TYPE_TEXT)
+    return blob->text;
+  else
+    return NULL;
+}
+
+static void
+_rut_text_blob_free (void *object)
+{
+  RutTextBlob *blob = object;
+
+  g_free (blob->text);
+
+  g_slice_free (RutTextBlob, object);
+}
+
+RutType rut_text_blob_type;
+
+static void
+_rut_text_blob_init_type (void)
+{
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_text_blob_free
+  };
+  static RutMimableVTable mimable_vtable = {
+      .copy = _rut_text_blob_copy,
+      .has = _rut_text_blob_has,
+      .get = _rut_text_blob_get,
+  };
+
+  RutType *type = &rut_text_blob_type;
+#define TYPE RutTextBlob
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_MIMABLE,
+                          0, /* no associated properties */
+                          &mimable_vtable);
+
+#undef TYPE
+}
+
+RutTextBlob *
+rut_text_blob_new (const char *text)
+{
+  static bool initialized = FALSE;
+  RutTextBlob *blob = g_slice_new0 (RutTextBlob);
+
+  if (initialized == FALSE)
+    {
+      _rut_text_blob_init_type ();
+      initialized = TRUE;
+    }
+
+  rut_object_init (&blob->_parent, &rut_text_blob_type);
+
+  blob->ref_count = 1;
+
+  blob->text = g_strdup (text);
+
+  return blob;
+}
+
+static RutInputEventStatus
+clipboard_input_grab_cb (RutInputEvent *event,
+                         void *user_data)
+{
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
+    {
+      if (rut_key_event_get_keysym (event) == RUT_KEY_v &&
+          (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON))
+        {
+          RutShell *shell = event->shell;
+          RutObject *data = shell->clipboard;
+          RutMimableVTable *mimable =
+            rut_object_get_vtable (data, RUT_INTERFACE_ID_MIMABLE);
+          RutObject *copy = mimable->copy (data);
+
+          _rut_shell_drop (shell, copy);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+static void
+set_clipboard (RutShell *shell, RutObject *data)
+{
+  if (shell->clipboard == data)
+    return;
+
+  if (shell->clipboard)
+    {
+      rut_refable_unref (shell->clipboard);
+
+      rut_shell_ungrab_input (shell,
+                              clipboard_input_grab_cb,
+                              shell);
+    }
+
+  if (data)
+    {
+      shell->clipboard = rut_refable_ref (data);
+
+      rut_shell_grab_input (shell,
+                            NULL,
+                            clipboard_input_grab_cb,
+                            shell);
+    }
+  else
+    shell->clipboard = NULL;
+}
+
+/* While there is an active selection then we grab input
+ * to catch Ctrl-X/Ctrl-C/Ctrl-V for cut, copy and paste
+ */
+static RutInputEventStatus
+selection_input_grab_cb (RutInputEvent *event,
+                         void *user_data)
+{
+  RutShell *shell = user_data;
+
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
+    {
+      if (rut_key_event_get_keysym (event) == RUT_KEY_c &&
+          (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON))
+        {
+          RutObject *selection = shell->selection;
+          RutSelectableVTable *selectable =
+            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+          RutObject *copy = selectable->copy (selection);
+
+          set_clipboard (shell, copy);
+
+          rut_refable_unref (copy);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+      else if (rut_key_event_get_keysym (event) == RUT_KEY_x &&
+               (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON))
+        {
+          RutObject *selection = shell->selection;
+          RutSelectableVTable *selectable =
+            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+          RutObject *copy = selectable->copy (selection);
+
+          selectable->del (selection);
+
+          set_clipboard (shell, copy);
+
+          rut_refable_unref (copy);
+
+          rut_shell_set_selection (shell, NULL);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+      else if (rut_key_event_get_keysym (event) == RUT_KEY_Delete ||
+               rut_key_event_get_keysym (event) == RUT_KEY_BackSpace)
+        {
+          RutObject *selection = shell->selection;
+          RutSelectableVTable *selectable =
+            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+
+          selectable->del (selection);
+
+          rut_shell_set_selection (shell, NULL);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+
+  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+}
+
+RutObject *
+rut_shell_get_clipboard (RutShell *shell)
+{
+  return shell->clipboard;
+}
+
+void
+rut_shell_set_selection (RutShell *shell,
+                         RutObject *selection)
+{
+  if (shell->selection == selection)
+    return;
+
+  if (shell->selection)
+    {
+      RutSelectableVTable *selectable =
+        rut_object_get_vtable (shell->selection, RUT_INTERFACE_ID_SELECTABLE);
+      selectable->cancel (shell->selection);
+
+      rut_refable_unref (shell->selection);
+
+      rut_shell_ungrab_input (shell,
+                              selection_input_grab_cb,
+                              shell);
+    }
+
+  if (selection)
+    {
+      shell->selection = rut_refable_ref (selection);
+
+      rut_shell_grab_input (shell,
+                            NULL,
+                            selection_input_grab_cb,
+                            shell);
+    }
+  else
+    shell->selection = NULL;
+}
+
+RutObject *
+rut_shell_get_selection (RutShell *shell)
+{
+  return shell->selection;
 }

@@ -113,19 +113,26 @@ rut_light_set_uniforms (RutLight *light,
 }
 
 static void
-rut_light_update (RutObject *object,
-                  int64_t time)
-{
-}
-
-RutType rut_light_type;
-
-static void
 _rut_light_free (void *object)
 {
   RutLight *light = object;
   g_slice_free (RutLight, light);
 }
+
+static RutObject *
+_rut_light_copy (RutObject *object)
+{
+  RutLight *light = object;
+  RutLight *copy = rut_light_new (light->context);
+
+  copy->ambient = light->ambient;
+  copy->diffuse = light->diffuse;
+  copy->specular = light->specular;
+
+  return copy;
+}
+
+RutType rut_light_type;
 
 void
 _rut_light_init_type (void)
@@ -137,7 +144,7 @@ _rut_light_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    .update = rut_light_update
+    .copy = _rut_light_copy
   };
 
   static RutIntrospectableVTable introspectable_vtable = {
@@ -146,7 +153,6 @@ _rut_light_init_type (void)
   };
 
   RutType *type = &rut_light_type;
-
 #define TYPE RutLight
 
   rut_type_init (type, G_STRINGIFY (TYPE));

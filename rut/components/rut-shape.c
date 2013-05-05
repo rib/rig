@@ -288,8 +288,6 @@ shape_model_new (RutContext *ctx,
   return shape_model;
 }
 
-RutType rut_shape_type;
-
 static void
 _rut_shape_free (void *object)
 {
@@ -304,6 +302,23 @@ _rut_shape_free (void *object)
   g_slice_free (RutShape, shape);
 }
 
+static RutObject *
+_rut_shape_copy (RutObject *object)
+{
+  RutShape *shape = object;
+  RutShape *copy = rut_shape_new (shape->ctx,
+                                  shape->shaped,
+                                  shape->tex_width,
+                                  shape->tex_height);
+
+  if (shape->model)
+    copy->model = rut_refable_ref (shape->model);
+
+  return copy;
+}
+
+RutType rut_shape_type;
+
 void
 _rut_shape_init_type (void)
 {
@@ -314,7 +329,7 @@ _rut_shape_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    0
+    .copy = _rut_shape_copy
   };
 
   static RutPrimableVTable primable_vtable = {

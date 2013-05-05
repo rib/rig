@@ -1187,9 +1187,6 @@ undo_redo_add_entity_apply (RigUndoJournal *journal,
       add_controller_properties (controller_state->controller,
                                  &controller_state->properties);
     }
-
-  rig_select_entity (journal->engine, add_entity->deleted_entity,
-                     RUT_SELECT_ACTION_REPLACE);
 }
 
 static UndoRedo *
@@ -1271,8 +1268,6 @@ undo_redo_delete_component_apply (RigUndoJournal *journal,
   rut_entity_remove_component (delete_component->parent_entity,
                                delete_component->deleted_component);
 
-  rig_select_entity (journal->engine, delete_component->parent_entity,
-                     RUT_SELECT_ACTION_REPLACE);
   _rig_engine_update_inspector (journal->engine);
 }
 
@@ -1305,8 +1300,6 @@ undo_redo_add_component_apply (RigUndoJournal *journal,
                                  &controller_state->properties);
     }
 
-  rig_select_entity (journal->engine, add_component->parent_entity,
-                     RUT_SELECT_ACTION_REPLACE);
   _rig_engine_update_inspector (journal->engine);
 }
 

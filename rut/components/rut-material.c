@@ -89,8 +89,6 @@ static RutPropertySpec _rut_material_prop_specs[] = {
   { 0 }
 };
 
-RutType rut_material_type;
-
 static void
 _rut_material_free (void *object)
 {
@@ -110,6 +108,32 @@ _rut_material_free (void *object)
   g_slice_free (RutMaterial, material);
 }
 
+static RutObject *
+_rut_material_copy (RutObject *object)
+{
+  RutMaterial *material = object;
+  RutEntity *entity = material->component.entity;
+  RutContext *ctx = rut_entity_get_context (entity);
+  RutMaterial *copy = rut_material_new (ctx, NULL);
+
+  if (material->color_source_asset)
+    copy->color_source_asset = rut_refable_ref (material->color_source_asset);
+  if (material->normal_map_asset)
+    copy->normal_map_asset = rut_refable_ref (material->normal_map_asset);
+  if (material->alpha_mask_asset)
+    copy->alpha_mask_asset = rut_refable_ref (material->alpha_mask_asset);
+
+  copy->ambient = material->ambient;
+  copy->diffuse = material->diffuse;
+  copy->specular = material->specular;
+  copy->shininess = material->shininess;
+  copy->alpha_mask_threshold = material->alpha_mask_threshold;
+
+  return copy;
+}
+
+RutType rut_material_type;
+
 void
 _rut_material_init_type (void)
 {
@@ -120,7 +144,7 @@ _rut_material_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    0
+    .copy = _rut_material_copy
   };
 
   static RutIntrospectableVTable introspectable_vtable = {
@@ -129,7 +153,6 @@ _rut_material_init_type (void)
   };
 
   RutType *type = &rut_material_type;
-
 #define TYPE RutMaterial
 
   rut_type_init (type, G_STRINGIFY (TYPE));

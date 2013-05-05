@@ -26,6 +26,12 @@
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
+static RutDiamond *
+_rut_diamond_new_with_slice (RutContext *ctx,
+                             float size,
+                             RutDiamondSlice *slice);
+
+
 static void
 _diamond_slice_free (void *object)
 {
@@ -36,7 +42,7 @@ _diamond_slice_free (void *object)
   g_slice_free (RutDiamondSlice, object);
 }
 
-RutType rut_diamond_slice_type;
+static RutType rut_diamond_slice_type;
 
 void
 _rut_diamond_slice_init_type (void)
@@ -48,7 +54,6 @@ _rut_diamond_slice_init_type (void)
   };
 
   RutType *type = &rut_diamond_slice_type;
-
 #define TYPE RutDiamondSlice
 
   rut_type_init (type, G_STRINGIFY (TYPE));
@@ -295,8 +300,6 @@ diamond_slice_new (float size,
   return diamond_slice;
 }
 
-RutType rut_diamond_type;
-
 static void
 _rut_diamond_free (void *object)
 {
@@ -308,6 +311,17 @@ _rut_diamond_free (void *object)
   g_slice_free (RutDiamond, diamond);
 }
 
+static RutObject *
+_rut_diamond_copy (RutObject *object)
+{
+  RutDiamond *diamond = object;
+  return _rut_diamond_new_with_slice (diamond->ctx,
+                                      diamond->size,
+                                      diamond->slice);
+}
+
+RutType rut_diamond_type;
+
 void
 _rut_diamond_init_type (void)
 {
@@ -318,7 +332,7 @@ _rut_diamond_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    0
+    .copy = _rut_diamond_copy
   };
 
   static RutPrimableVTable primable_vtable = {
@@ -330,7 +344,6 @@ _rut_diamond_init_type (void)
   };
 
   RutType *type = &rut_diamond_type;
-
 #define TYPE RutDiamond
 
   rut_type_init (type, G_STRINGIFY (TYPE));
@@ -354,11 +367,10 @@ _rut_diamond_init_type (void)
 #undef TYPE
 }
 
-RutDiamond *
-rut_diamond_new (RutContext *ctx,
-                 float size,
-                 int tex_width,
-                 int tex_height)
+static RutDiamond *
+_rut_diamond_new_with_slice (RutContext *ctx,
+                             float size,
+                             RutDiamondSlice *slice)
 {
   RutDiamond *diamond = g_slice_new0 (RutDiamond);
   RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
@@ -377,9 +389,7 @@ rut_diamond_new (RutContext *ctx,
 
   diamond->size = size;
 
-  /* XXX: It could be worth maintaining a cache of diamond slices
-   * indexed by the <size, tex_width, tex_height> tuple... */
-  diamond->slice = diamond_slice_new (size, tex_width, tex_height);
+  diamond->slice = rut_refable_ref (slice);
 
   pick_vertices[0].x = 0;
   pick_vertices[0].y = 0;
@@ -401,6 +411,22 @@ rut_diamond_new (RutContext *ctx,
                                 6);
 
   diamond->pick_mesh = pick_mesh;
+
+  return diamond;
+}
+
+RutDiamond *
+rut_diamond_new (RutContext *ctx,
+                 float size,
+                 int tex_width,
+                 int tex_height)
+{
+  /* XXX: It could be worth maintaining a cache of diamond slices
+   * indexed by the <size, tex_width, tex_height> tuple... */
+  RutDiamondSlice *slice = diamond_slice_new (size, tex_width, tex_height);
+  RutDiamond *diamond = _rut_diamond_new_with_slice (ctx, size, slice);
+
+  rut_refable_unref (slice);
 
   return diamond;
 }

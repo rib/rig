@@ -358,9 +358,6 @@ pointalism_grid_slice_new (int tex_width,
   return grid_slice;
 }
 
-
-RutType rut_pointalism_grid_type;
-
 static void
 _rut_pointalism_grid_free (void *object)
 {
@@ -374,6 +371,25 @@ _rut_pointalism_grid_free (void *object)
   g_slice_free (RutPointalismGrid, grid);
 }
 
+static RutObject *
+_rut_pointalism_grid_copy (RutObject *object)
+{
+  RutPointalismGrid *grid = object;
+  RutPointalismGrid *copy = rut_pointalism_grid_new (grid->ctx,
+                                                     grid->cell_size,
+                                                     grid->tex_width,
+                                                     grid->tex_height);
+
+#warning "FIXME: make sure the pointalism grid mesh is generated lazily"
+  rut_introspectable_copy_properties (&grid->ctx->property_ctx,
+                                      grid,
+                                      copy);
+
+  return copy;
+}
+
+RutType rut_pointalism_grid_type;
+
 void
 _rut_pointalism_grid_init_type (void)
 {
@@ -384,7 +400,7 @@ _rut_pointalism_grid_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    NULL
+    .copy = _rut_pointalism_grid_copy
   };
 
   static RutPrimableVTable primable_vtable = {

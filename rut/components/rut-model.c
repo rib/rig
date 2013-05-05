@@ -32,6 +32,9 @@
 
 #define PI 3.14159265359
 
+static RutModel *
+_rut_model_new (RutContext *ctx);
+
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object)
 {
@@ -49,8 +52,6 @@ rut_model_get_primitive (RutObject *object)
   return model->primitive;
 }
 
-RutType rut_model_type;
-
 static void
 _rut_model_free (void *object)
 {
@@ -65,6 +66,37 @@ _rut_model_free (void *object)
   g_slice_free (RutModel, model);
 }
 
+static RutObject *
+_rut_model_copy (RutObject *object)
+{
+  RutModel *model = object;
+  RutModel *copy = _rut_model_new (model->ctx);
+
+  copy->type = model->type;
+#warning "should we be performing a deep copy of this mesh, or perhaps support a copy-on-write mechanism?"
+  copy->mesh = rut_refable_ref (model->mesh);
+
+  if (model->asset)
+    copy->asset = rut_refable_ref (model->asset);
+
+  copy->min_x = model->min_x;
+  copy->max_x = model->max_x;
+  copy->min_y = model->min_y;
+  copy->max_y = model->max_y;
+  copy->min_z = model->min_z;
+  copy->max_z = model->max_z;
+
+  copy->builtin_normals = model->builtin_normals;
+  copy->builtin_tex_coords = model->builtin_tex_coords;
+
+  if (model->primitive)
+    copy->primitive = cogl_object_ref (model->primitive);
+
+  return copy;
+}
+
+RutType rut_model_type;
+
 void
 _rut_model_init_type (void)
 {
@@ -75,7 +107,7 @@ _rut_model_init_type (void)
   };
 
   static RutComponentableVTable componentable_vtable = {
-    .draw = NULL
+    .copy = _rut_model_copy
   };
 
   static RutPrimableVTable primable_vtable = {
@@ -86,8 +118,8 @@ _rut_model_init_type (void)
     .get_mesh = rut_model_get_mesh
   };
 
-  RutType *type = &rut_model_type;
 
+  RutType *type = &rut_model_type;
 #define TYPE RutModel
 
   rut_type_init (type, G_STRINGIFY (TYPE));
@@ -421,8 +453,8 @@ rut_model_new_from_mesh (RutContext *ctx,
   model->min_z = G_MAXFLOAT;
   model->max_z = G_MINFLOAT;
 
-	model->builtin_normals = !needs_normals;
-	model->builtin_tex_coords = !needs_tex_coords;
+  model->builtin_normals = !needs_normals;
+  model->builtin_tex_coords = !needs_tex_coords;
 
   if (attribute->n_components == 1)
     {
@@ -446,7 +478,7 @@ rut_model_new_from_mesh (RutContext *ctx,
                            "tangent_in",
                            NULL);
 
-	rut_mesh_foreach_triangle (model->mesh,
+  rut_mesh_foreach_triangle (model->mesh,
                              generate_missing_properties,
                              model,
                              "cogl_position_in",

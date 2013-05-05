@@ -56,10 +56,7 @@ typedef struct _RutComponentableProps
 
 typedef struct _RutComponentableVTable
 {
-  void (*start)   (RutObject *component);
-  void (*update)  (RutObject *component, int64_t time);
-  void (*draw)    (RutObject *component, CoglFramebuffer *fb);
-
+  RutObject *(*copy) (RutObject *component);
 } RutComponentableVTable;
 
 typedef enum
@@ -77,6 +74,9 @@ rut_entity_get_cast_shadow (RutObject *entity);
 
 RutEntity *
 rut_entity_new (RutContext *ctx);
+
+RutEntity *
+rut_entity_copy (RutEntity *entity);
 
 RutContext *
 rut_entity_get_context (RutEntity *entity);
@@ -161,12 +161,6 @@ void
 rut_entity_remove_component (RutEntity *entity,
                              RutObject *component);
 
-void
-rut_entity_update (RutEntity *entity,
-                   int64_t time);
-void
-rut_entity_draw (RutEntity *entity,
-                 CoglFramebuffer *fb);
 void
 rut_entity_translate (RutEntity *entity,
                       float tx,

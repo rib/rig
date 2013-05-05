@@ -158,6 +158,8 @@ librut_la_SOURCES = \
     rut-asset-inspector.c \
     rut-renderer.h \
     rut-renderer.c \
+    rut-mimable.h \
+    rut-mimable.c \
     $(source_h)
 
 if !HAVE_ANDROID
