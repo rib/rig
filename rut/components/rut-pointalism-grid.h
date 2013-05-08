@@ -30,8 +30,7 @@ enum {
   RUT_POINTALISM_GRID_PROP_SCALE,
   RUT_POINTALISM_GRID_PROP_Z,
   RUT_POINTALISM_GRID_PROP_LIGHTER,
-  RUT_POINTALISM_GRID_PROP_COLUMNS,
-  RUT_POINTALISM_GRID_PROP_ROWS,
+  RUT_POINTALISM_GRID_PROP_CELL_SIZE,
   RUT_POINTALISM_GRID_N_PROPS
 };
 
@@ -70,8 +69,7 @@ struct _RutPointalismGrid
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_POINTALISM_GRID_N_PROPS];
-  float cols;
-  float rows;
+  float cell_size;
   int tex_width;
   int tex_height;
 };
@@ -83,9 +81,7 @@ RutPointalismGrid *
 rut_pointalism_grid_new (RutContext *ctx,
                          float size,
                          int tex_width,
-                         int tex_height,
-                         float columns,
-                         float rows);
+                         int tex_height);
 
 CoglPrimitive *
 rut_pointalism_grid_get_primitive (RutObject *object);
@@ -113,19 +109,12 @@ rut_pointalism_grid_get_lighter (RutObject *obj);
 void
 rut_pointalism_grid_set_lighter (RutObject *obj,
                                  CoglBool lighter);
-
+                              
 float
-rut_pointalism_grid_get_columns (RutObject *obj);
+rut_pointalism_grid_get_cell_size (RutObject *obj);
 
 void
-rut_pointalism_grid_set_columns (RutObject *obj,
-                                 float cols);
-
-float
-rut_pointalism_grid_get_rows (RutObject *obj);
-
-void
-rut_pointalism_grid_set_rows (RutObject *obj,
-                              float rows);
+rut_pointalism_grid_set_cell_size (RutObject *obj,
+                                   float rows);
 
 #endif /* __RUT_POINTALISM_GRID_H__ */

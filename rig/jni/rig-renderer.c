@@ -932,13 +932,6 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
 }
 
 static void
-image_source_ready_cb (RutImageSource *source,
-                       void *user_data)
-{
-  rig_renderer_dirty_entity_state (user_data);
-}
-
-static void
 image_source_changed_cb (RutImageSource *source,
                          void *user_data)
 {
@@ -976,45 +969,59 @@ get_entity_color_pipeline (RigEngine *engine,
 
       if (asset && !sources[0])
         {
-          sources[0] = rut_image_source_new (engine->ctx, asset,
-                                             image_source_ready_cb,
-                                             entity);
+          sources[0] = rut_image_source_new (engine->ctx, asset);
+
+          rut_entity_set_image_source_cache (entity, 0, sources[0]);
+          rut_image_source_add_ready_callback (sources[0], 
+                                               rig_entity_new_image_source,
+                                               entity, NULL);
+          rut_image_source_add_ready_callback (sources[0],
+                                               rig_engine_dirty_properties_menu, 
+                                               engine, NULL);
           rut_image_source_add_on_changed_callback (sources[0],
                                                     image_source_changed_cb,
                                                     engine,
                                                     NULL);
 
-          rut_entity_set_image_source_cache (entity, 0, sources[0]);
         }
 
       asset = material->alpha_mask_asset;
 
       if (asset && !sources[1])
         {
-          sources[1] = rut_image_source_new (engine->ctx, asset,
-                                             image_source_ready_cb,
-                                             entity);
+          sources[1] = rut_image_source_new (engine->ctx, asset);
+          
+          rut_entity_set_image_source_cache (entity, 1, sources[1]);
+          rut_image_source_add_ready_callback (sources[1],
+                                               rig_entity_new_image_source, 
+                                               entity, NULL);
+          rut_image_source_add_ready_callback (sources[1],
+                                               rig_engine_dirty_properties_menu, 
+                                               engine, NULL);
           rut_image_source_add_on_changed_callback (sources[1],
                                                     image_source_changed_cb,
                                                     engine,
                                                     NULL);
 
-          rut_entity_set_image_source_cache (entity, 1, sources[1]);
         }
 
       asset = material->normal_map_asset;
 
       if (asset && !sources[2])
         {
-          sources[2] = rut_image_source_new (engine->ctx, asset,
-                                             image_source_ready_cb,
-                                             entity);
+          sources[2] = rut_image_source_new (engine->ctx, asset);
+
+          rut_entity_set_image_source_cache (entity, 2, sources[2]);
+          rut_image_source_add_ready_callback (sources[2],
+                                               rig_entity_new_image_source, 
+                                               entity, NULL);
+          rut_image_source_add_ready_callback (sources[2],
+                                               rig_engine_dirty_properties_menu, 
+                                               engine, NULL);
           rut_image_source_add_on_changed_callback (sources[2],
                                                     image_source_changed_cb,
                                                     engine,
                                                     NULL);
-
-          rut_entity_set_image_source_cache (entity, 2, sources[2]);
         }
     }
 
@@ -1642,3 +1649,81 @@ rig_renderer_dirty_entity_state (RutEntity *entity)
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
   rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
 }
+
+void
+rig_entity_new_image_source (RutImageSource *source,
+                             void *user_data)
+{
+  RutEntity *entity = user_data;
+  RutImageSource *src;
+  RutObject *geometry;
+  RutMaterial *material;
+  RutContext *ctx;
+  int width, height;
+
+  geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+  if (material->texture_asset)
+    {
+      ctx = rut_asset_get_context (material->texture_asset);
+      src = rut_entity_get_image_source_cache (entity, 0);
+    }
+  else if (material->alpha_mask_asset)
+    {
+      ctx = rut_asset_get_context (material->alpha_mask_asset);
+      src = rut_entity_get_image_source_cache (entity, 1);
+    }
+  else
+    {
+      ctx = rut_asset_get_context (material->normal_map_asset);
+      src = rut_entity_get_image_source_cache (entity, 2);
+    }
+
+  if (rut_image_source_get_is_video (src))
+    {
+      width = 640;
+      height = cogl_gst_video_sink_get_height_for_width (
+                 rut_image_source_get_sink (src), width);
+    }
+  else
+    {
+      CoglTexture *texture = rut_image_source_get_texture (src);
+      width = cogl_texture_get_width (texture);
+      height = cogl_texture_get_height (texture);
+    }
+
+  if (rut_object_get_type (geometry) == &rut_shape_type)
+      rut_shape_set_texture_size (RUT_SHAPE (geometry), width, height);
+  else if (rut_object_get_type (geometry) == &rut_diamond_type)
+    {
+      RutDiamond *diamond = geometry;
+      float size = rut_diamond_get_size (diamond);
+
+      rut_entity_remove_component (entity, geometry);
+      diamond = rut_diamond_new (ctx, size, width, height);
+      rut_entity_add_component (entity, geometry);
+    }
+  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+    {
+      RutPointalismGrid *grid = geometry;
+      float cell_size, scale, z;
+      CoglBool lighter;
+
+      cell_size = rut_pointalism_grid_get_cell_size (grid);
+      scale = rut_pointalism_grid_get_scale (grid);
+      z = rut_pointalism_grid_get_z (grid);
+      lighter = rut_pointalism_grid_get_lighter (grid);
+
+      rut_entity_remove_component (entity, geometry);
+      grid = rut_pointalism_grid_new (ctx, cell_size, width, height);
+
+      rut_entity_add_component (entity, grid);
+      grid->pointalism_scale = scale;
+      grid->pointalism_z = z;
+      grid->pointalism_lighter = lighter;
+    }
+
+  rig_renderer_dirty_entity_state (entity);
+}
+

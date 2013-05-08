@@ -60,23 +60,13 @@ static RutPropertySpec _rut_pointalism_grid_prop_specs[] = {
     .animatable = TRUE
   },
   {
-    .name = "pointalism-columns",
-    .nick = "Grid Columns",
+    .name = "pointalism-cell-size",
+    .nick = "Cell Size",
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter.float_type = rut_pointalism_grid_get_columns,
-    .setter.float_type = rut_pointalism_grid_set_columns,
+    .getter.float_type = rut_pointalism_grid_get_cell_size,
+    .setter.float_type = rut_pointalism_grid_set_cell_size,
     .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
-    .validation = { .float_range = { 0, 100 }},
-    .animatable = TRUE
-  },
-  {
-    .name = "pointalism-rows",
-    .nick = "Grid Rows",
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .getter.float_type = rut_pointalism_grid_get_rows,
-    .setter.float_type = rut_pointalism_grid_set_rows,
-    .flags = RUT_PROPERTY_FLAG_READWRITE | RUT_PROPERTY_FLAG_VALIDATE,
-    .validation = { .float_range = { 0, 100 }},
+    .validation = { .float_range = { 1, 100 }},
     .animatable = TRUE
   },
   { NULL }
@@ -230,8 +220,7 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
                           RutContext *ctx,
                           int tex_width,
                           int tex_height,
-                          float columns,
-                          float rows)
+                          float size)
 {
   float rem_x, rem_y;
   float size_x, size_y;
@@ -243,6 +232,9 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
   GridVertex *vertices;
   CoglPrimitive *prim = slice->primitive;
 
+  float columns = (float) tex_width / size;
+  float rows = (float) tex_height / size;
+
   rem_x = abs (columns + 1) - columns;
   rem_y = abs (rows + 1) - rows;
 
@@ -252,14 +244,18 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
   if (rem_y > 0.99)
     rem_y = 0;
 
+
   size_x = (float) tex_width / abs (columns + rem_x);
   size_y = (float) tex_height / abs (rows + rem_y);
 
-  s_iter = 1.f / abs (columns + rem_x);
-  t_iter = 1.f / abs (rows + rem_y);
+  s_iter = 1.f / (float) abs (columns + rem_x);
+  t_iter = 1.f / (float) abs (rows + rem_y);
 
-  start_x = -1.f * ((size_x * abs (columns + rem_x)) / 2);
-  start_y = -1.f * ((size_y * abs (rows + rem_y)) / 2);
+  start_x = -1.f * ((size_x * abs (columns + rem_x)) / 2.f);
+  start_y = -1.f * ((size_y * abs (rows + rem_y)) / 2.f);
+
+  g_warning ("size: %f: cols: %f rows: %f\n", size, columns, rows);
+  g_warning ("%i %f %f\n", abs (columns + rem_x), size_x, s_iter);
 
   n_vertices = (abs (columns + rem_x) * abs (rows + rem_y)) * 4;
   i = 0;
@@ -403,8 +399,7 @@ static RutPointalismGridSlice *
 pointalism_grid_slice_new (RutContext *ctx,
                            int tex_width,
                            int tex_height,
-                           float columns,
-                           float rows)
+                           float size)
 {
   RutPointalismGridSlice *grid_slice = g_slice_new (RutPointalismGridSlice);
 
@@ -414,8 +409,7 @@ pointalism_grid_slice_new (RutContext *ctx,
   grid_slice->primitive = NULL;
   grid_slice->indices = NULL;
 
-  pointalism_generate_grid (grid_slice, ctx, tex_width, tex_height, columns,
-                            rows);
+  pointalism_generate_grid (grid_slice, ctx, tex_width, tex_height, size);
 
   return grid_slice;
 }
@@ -495,9 +489,7 @@ RutPointalismGrid *
 rut_pointalism_grid_new (RutContext *ctx,
                          float size,
                          int tex_width,
-                         int tex_height,
-                         float columns,
-                         float rows)
+                         int tex_height)
 {
   RutPointalismGrid *grid = g_slice_new0 (RutPointalismGrid);
   RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
@@ -516,7 +508,7 @@ rut_pointalism_grid_new (RutContext *ctx,
 
 
   grid->slice = pointalism_grid_slice_new (ctx, tex_width, tex_height,
-                                           columns, rows);
+                                           size);
 
   pick_vertices[0].x = 0;
   pick_vertices[0].y = 0;
@@ -533,8 +525,7 @@ rut_pointalism_grid_new (RutContext *ctx,
   grid->pointalism_scale = 1;
   grid->pointalism_z = 1;
   grid->pointalism_lighter = TRUE;
-  grid->cols = columns;
-  grid->rows = rows;
+  grid->cell_size = size;
   grid->tex_width = tex_width;
   grid->tex_height = tex_height;
 
@@ -642,61 +633,31 @@ rut_pointalism_grid_set_lighter (RutObject *obj,
 }
 
 float
-rut_pointalism_grid_get_columns (RutObject *obj)
+rut_pointalism_grid_get_cell_size (RutObject *obj)
 {
   RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
 
-  return grid->cols;
+  return grid->cell_size;
 }
 
 void
-rut_pointalism_grid_set_columns (RutObject *obj,
-                                 float cols)
+rut_pointalism_grid_set_cell_size (RutObject *obj,
+                                   float cell_size)
 {
   RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
   RutEntity *entity;
   RutContext *ctx;
 
-  if (cols == grid->cols)
+  if (cell_size == grid->cell_size)
     return;
 
-  grid->cols = cols;
+  grid->cell_size = cell_size;
 
   entity = grid->component.entity;
   ctx = rut_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
-                      &grid->properties[RUT_POINTALISM_GRID_PROP_COLUMNS]);
+                      &grid->properties[RUT_POINTALISM_GRID_PROP_CELL_SIZE]);
 
   pointalism_generate_grid (grid->slice, grid->ctx, grid->tex_width,
-                            grid->tex_height, grid->cols, grid->rows);
-}
-
-float
-rut_pointalism_grid_get_rows (RutObject *obj)
-{
-  RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
-
-  return grid->rows;
-}
-
-void
-rut_pointalism_grid_set_rows (RutObject *obj,
-                              float rows)
-{
-  RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
-  RutEntity *entity;
-  RutContext *ctx;
-
-  if (rows == grid->rows)
-    return;
-
-  grid->rows = rows;
-
-  entity = grid->component.entity;
-  ctx = rut_entity_get_context (entity);
-  rut_property_dirty (&ctx->property_ctx,
-                      &grid->properties[RUT_POINTALISM_GRID_PROP_ROWS]);
-
-  pointalism_generate_grid (grid->slice, grid->ctx, grid->tex_width,
-                            grid->tex_height, grid->cols, grid->rows);
+                            grid->tex_height, grid->cell_size);
 }

@@ -317,4 +317,8 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled);
 void
 rig_engine_sync_slaves (RigEngine *engine);
 
+void
+rig_engine_dirty_properties_menu (RutImageSource *source,
+                                  void *user_data);
+
 #endif /* _RUT_ENGINE_H_ */

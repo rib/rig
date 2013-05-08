@@ -156,11 +156,10 @@ message Entity
 
       message PointalismGrid
         {
-          optional float columns=1;
-          optional float rows=2;
-          optional float scale=3;
-          optional float z=4;
-          optional bool lighter=5;
+          optional float cell_size=1;
+          optional float scale=2;
+          optional float z=3;
+          optional bool lighter=4;
         }
 
       optional sint64 id=1;

@@ -30,10 +30,8 @@ struct _RutImageSource
   GstElement *bin;
   CoglBool is_video;
 
-  RutImageSourceReadyCallback ready_callback;
-  void *ready_data;
-
   RutList changed_cb_list;
+  RutList ready_cb_list;
 };
 
 static CoglBool
@@ -129,14 +127,15 @@ _rut_image_source_init_type (void)
 
 static void
 pipeline_ready_cb (gpointer instance,
-                  gpointer user_data)
+                   gpointer user_data)
 {
   RutImageSource *source = (RutImageSource*) user_data;
 
   source->is_video = TRUE;
 
-  if (source->ready_callback)
-    source->ready_callback (source, source->ready_data);
+  rut_closure_list_invoke (&source->ready_cb_list,
+                           RutImageSourceReadyCallback,
+                           source);
 }
 
 static void
@@ -152,9 +151,7 @@ new_frame_cb (gpointer instance,
 
 RutImageSource*
 rut_image_source_new (RutContext *ctx,
-                      RutAsset *asset,
-                      RutImageSourceReadyCallback callback,
-                      void *user_data)
+                      RutAsset *asset)
 {
   RutImageSource *source = g_slice_new0 (RutImageSource);
   rut_object_init (&source->_parent, &rut_image_source_type);
@@ -163,10 +160,9 @@ rut_image_source_new (RutContext *ctx,
   source->sink = NULL;
   source->texture = NULL;
   source->is_video = FALSE;
-  source->ready_callback = callback;
-  source->ready_data = user_data;
 
   rut_list_init (&source->changed_cb_list);
+  rut_list_init (&source->ready_cb_list);
 
   if (rut_asset_get_is_video (asset))
     {
@@ -180,12 +176,26 @@ rut_image_source_new (RutContext *ctx,
                          source);
     }
   else if (rut_asset_get_texture (asset))
-    {
-      source->texture = rut_asset_get_texture (asset);
-      callback (NULL, user_data);
-    }
+    source->texture = rut_asset_get_texture (asset);
 
   return source;
+}
+
+RutClosure *
+rut_image_source_add_ready_callback (RutImageSource *source,
+                                     RutImageSourceReadyCallback callback,
+                                     void *user_data,
+                                     RutClosureDestroyCallback destroy_cb)
+{
+  if (source->texture)
+    {
+      callback (source, user_data);
+      return NULL;
+    }
+  else
+    return rut_closure_list_add (&source->ready_cb_list, callback, user_data, 
+                                 destroy_cb);
+    
 }
 
 CoglTexture*

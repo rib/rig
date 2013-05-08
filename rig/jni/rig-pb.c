@@ -493,12 +493,9 @@ serialize_component_cb (RutComponent *component,
 
       pb_component->grid->has_z = TRUE;
       pb_component->grid->z = rut_pointalism_grid_get_z (RUT_POINTALISM_GRID (component));
-
-      pb_component->grid->has_columns = TRUE;
-      pb_component->grid->columns = rut_pointalism_grid_get_columns (RUT_POINTALISM_GRID (component));
-
-      pb_component->grid->has_rows = TRUE;
-      pb_component->grid->rows = rut_pointalism_grid_get_rows (RUT_POINTALISM_GRID (component));
+      
+      pb_component->grid->has_cell_size = TRUE;
+      pb_component->grid->cell_size = rut_pointalism_grid_get_cell_size (RUT_POINTALISM_GRID (component));
 
       pb_component->grid->has_lighter = TRUE;
       pb_component->grid->lighter = rut_pointalism_grid_get_lighter (RUT_POINTALISM_GRID (component));
@@ -1588,17 +1585,12 @@ unserialize_components (UnSerializer *unserializer,
             CoglTexture *texture = NULL;
             RutPointalismGrid *grid;
             float width, height;
-            float columns, rows;
+            float cell_size;
 
-            if (pb_grid->has_columns)
-              columns = pb_grid->columns;
+            if (pb_grid->has_cell_size)
+              cell_size = pb_grid->cell_size;
             else
-              columns = 20;
-
-            if (pb_grid->has_rows)
-              rows = pb_grid->rows;
-            else
-              rows = 20;
+              cell_size = 20;
 
             material = rut_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_MATERIAL);
@@ -1628,8 +1620,8 @@ unserialize_components (UnSerializer *unserializer,
             else
               goto ERROR_POINTALISM;
 
-            grid = rut_pointalism_grid_new (unserializer->engine->ctx, 200,
-                                            width, height, columns, rows);
+            grid = rut_pointalism_grid_new (unserializer->engine->ctx, cell_size,
+                                            width, height);
 
             rut_entity_add_component (entity, grid);
 

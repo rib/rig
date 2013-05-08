@@ -450,6 +450,14 @@ update_inspector (RigEngine *engine)
 }
 
 void
+rig_engine_dirty_properties_menu (RutImageSource *source,
+                                  void *user_data)
+{
+  RigEngine *engine = user_data;
+  update_inspector (engine);
+}
+
+void
 rig_reload_position_inspector (RigEngine *engine,
                                RutEntity *entity)
 {
@@ -617,9 +625,7 @@ asset_input_cb (RutInputRegion *region,
   RigEngine *engine = closure->engine;
   RutEntity *entity;
   RutMaterial *material;
-  CoglTexture *texture;
   RutObject *geom;
-  RutShape *shape;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -644,116 +650,59 @@ asset_input_cb (RutInputRegion *region,
             case RUT_ASSET_TYPE_NORMAL_MAP:
             case RUT_ASSET_TYPE_ALPHA_MASK:
               {
-                int width, height;
-
                 material =
                   rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-                if (material)
-                  {
-                    if (type == RUT_ASSET_TYPE_TEXTURE)
-                      {
-                        rut_material_set_texture_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                        rut_entity_set_image_source_cache (entity, 0, NULL);
-                      }
-                    else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-                      {
-                        rut_material_set_normal_map_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                        rut_entity_set_image_source_cache (entity, 2, NULL);
-                      }
-                    else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-                      {
-                        rut_material_set_alpha_mask_asset (material, asset);
-
-                        /* XXX: we need a generalized way of informing the
-                         * renderer that we've changed an entity so that it
-                         * can clear any cached pipelines like this...
-                         *
-                         * could we use rig_renderer_dirty_entity_state()
-                         * perhaps? */
-                        rut_entity_set_image_source_cache (entity, 1, NULL);
-                      }
-                  }
-                else
-                  {
+                
+                if (!material)
+                  {  
                     material = rut_material_new (engine->ctx, asset);
                     rut_entity_add_component (entity, material);
                   }
 
-                if (rut_asset_get_is_video (asset))
+                if (type == RUT_ASSET_TYPE_TEXTURE)
                   {
-                    width = 640;
-                    height = 480;
+                    rut_material_set_texture_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
+                    rut_entity_set_image_source_cache (entity, 0, NULL);
                   }
-                else
+                else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
                   {
-                    texture = rut_asset_get_texture (asset);
-                    width = cogl_texture_get_width (texture);
-                    height = cogl_texture_get_height (texture);
+                    rut_material_set_normal_map_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
+                    rut_entity_set_image_source_cache (entity, 2, NULL);
+                  }
+                else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
+                  {
+                    rut_material_set_alpha_mask_asset (material, asset);
+
+                        /* XXX: we need a generalized way of informing the
+                         * renderer that we've changed an entity so that it
+                         * can clear any cached pipelines like this...
+                         *
+                         * could we use rig_renderer_dirty_entity_state()
+                         * perhaps? */
+                    rut_entity_set_image_source_cache (entity, 1, NULL);
                   }
 
                 geom = rut_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_GEOMETRY);
                 if (!geom)
                   {
-                    shape = rut_shape_new (engine->ctx, TRUE, width, height);
+                    RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
                     rut_entity_add_component (entity, shape);
                     geom = shape;
-                  }
-
-                if (type == RUT_ASSET_TYPE_TEXTURE)
-                  {
-                    if (rut_object_get_type (geom) == &rut_shape_type)
-                      {
-                        if (rut_object_get_type (geom) == &rut_shape_type)
-                          rut_shape_set_texture_size (RUT_SHAPE (geom),
-                                                      width, height);
-                      }
-                    else if (rut_object_get_type (geom) == &rut_diamond_type)
-                      {
-                        RutDiamond *diamond = geom;
-                        float size = rut_diamond_get_size (diamond);
-
-                        rut_entity_remove_component (entity, geom);
-                        diamond = rut_diamond_new (engine->ctx, size, width,
-                                                   height);
-                      }
-                    else if (rut_object_get_type (geom) ==
-                            &rut_pointalism_grid_type)
-                      {
-                        RutPointalismGrid *grid = geom;
-                        float columns, rows, scale, z;
-                        CoglBool lighter;
-
-                        columns = rut_pointalism_grid_get_columns (grid);
-                        rows = rut_pointalism_grid_get_rows (grid);
-                        scale = rut_pointalism_grid_get_scale (grid);
-                        z = rut_pointalism_grid_get_z (grid);
-                        lighter = rut_pointalism_grid_get_lighter (grid);
-
-                        rut_entity_remove_component (entity, geom);
-                        grid = rut_pointalism_grid_new (engine->ctx, 200, width,
-                                                        height, columns, rows);
-
-                        rut_entity_add_component (entity, grid);
-
-                        rut_pointalism_grid_set_scale (grid, scale);
-                        rut_pointalism_grid_set_z (grid, z);
-                        rut_pointalism_grid_set_lighter (grid, lighter);
-                      }
                   }
 
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -985,8 +934,8 @@ asset_input_cb (RutInputRegion *region,
                         }
                     }
 
-                  grid = rut_pointalism_grid_new (engine->ctx, 200, tex_width,
-                                                  tex_height, 20, 20);
+                  grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
+                                                  tex_height);
 
                   rut_entity_add_component (entity, grid);
 
@@ -1248,6 +1197,15 @@ rig_search_asset_list (RigEngine *engine, const char *search)
     }
 
   return found;
+}
+
+static void
+rig_refresh_thumbnails (RutAsset *video,
+                        void *user_data)
+{
+  RigEngine* engine = user_data;
+
+  rig_search_asset_list (engine, NULL);
 }
 
 static void
@@ -2790,14 +2748,6 @@ rig_lookup_asset (RigEngine *engine,
   return g_hash_table_lookup (engine->assets_registry, path);
 }
 
-static void
-thumbnail_updated_callback (RutAsset *asset, void *user_data)
-{
-  RigEngine* engine = (RigEngine*) user_data;
-
-  rig_search_asset_list (engine, NULL);
-}
-
 RutAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
@@ -2822,13 +2772,8 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   else if (rut_util_find_tag (inferred_tags, "ply"))
     asset = rut_asset_new_ply_model (engine->ctx, path, inferred_tags);
 
-  if (!_rig_in_device_mode && rut_asset_needs_thumbnail (asset))
-    {
-      rut_asset_thumbnail (asset,
-                           thumbnail_updated_callback,
-                           engine,
-                           NULL);
-    }
+  if (asset && !_rig_in_device_mode && rut_asset_needs_thumbnail (asset))
+    rut_asset_thumbnail (asset, rig_refresh_thumbnails, engine, NULL);
 
   g_list_free (inferred_tags);
 
