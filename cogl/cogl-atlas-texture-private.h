@@ -34,7 +34,7 @@
 #include "cogl-object-private.h"
 #include "cogl-texture-private.h"
 #include "cogl-rectangle-map.h"
-#include "cogl-atlas.h"
+#include "cogl-atlas-set-private.h"
 #include "cogl-atlas-texture.h"
 
 struct _CoglAtlasTexture
@@ -48,7 +48,7 @@ struct _CoglAtlasTexture
 
   /* The rectangle that was used to add this texture to the
      atlas. This includes the 1-pixel border */
-  CoglRectangleMapEntry rectangle;
+  CoglAtlasAllocation allocation;
 
   /* The atlas that this texture is in. If the texture is no longer in
      an atlas then this will be NULL. A reference is taken on the
@@ -61,17 +61,13 @@ struct _CoglAtlasTexture
   CoglTexture          *sub_texture;
 };
 
-void
-_cogl_atlas_texture_add_reorganize_callback (CoglContext *ctx,
-                                             UHookFunc callback,
-                                             void *user_data);
-
-void
-_cogl_atlas_texture_remove_reorganize_callback (CoglContext *ctx,
-                                                UHookFunc callback,
-                                                void *user_data);
-
 CoglBool
 _cogl_is_atlas_texture (void *object);
+
+void
+_cogl_atlas_texture_atlas_event_handler (CoglAtlasSet *set,
+                                         CoglAtlas *atlas,
+                                         CoglAtlasSetEvent event,
+                                         void *user_data);
 
 #endif /* _COGL_ATLAS_TEXTURE_PRIVATE_H_ */

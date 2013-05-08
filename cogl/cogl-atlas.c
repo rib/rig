@@ -29,11 +29,9 @@
  *  Neil Roberts   <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
-#include "cogl-atlas.h"
+#include "cogl-atlas-private.h"
 #include "cogl-rectangle-map.h"
 #include "cogl-context-private.h"
 #include "cogl-texture-private.h"
@@ -50,24 +48,46 @@
 
 static void _cogl_atlas_free (CoglAtlas *atlas);
 
-COGL_OBJECT_INTERNAL_DEFINE (Atlas, atlas);
+COGL_OBJECT_DEFINE (Atlas, atlas);
 
 CoglAtlas *
-_cogl_atlas_new (CoglPixelFormat texture_format,
-                 CoglAtlasFlags flags,
-                 CoglAtlasUpdatePositionCallback update_position_cb)
+_cogl_atlas_new (CoglContext *context,
+                 CoglPixelFormat internal_format,
+                 CoglAtlasFlags flags)
 {
   CoglAtlas *atlas = u_new (CoglAtlas, 1);
 
-  atlas->update_position_cb = update_position_cb;
+  atlas->context = context;
   atlas->map = NULL;
   atlas->texture = NULL;
   atlas->flags = flags;
-  atlas->texture_format = texture_format;
-  u_hook_list_init (&atlas->pre_reorganize_callbacks, sizeof (UHook));
-  u_hook_list_init (&atlas->post_reorganize_callbacks, sizeof (UHook));
+  atlas->internal_format = internal_format;
+
+  _cogl_list_init (&atlas->allocate_closures);
+
+  _cogl_list_init (&atlas->pre_reorganize_closures);
+  _cogl_list_init (&atlas->post_reorganize_closures);
 
   return _cogl_atlas_object_new (atlas);
+}
+
+CoglAtlasAllocateClosure *
+cogl_atlas_add_allocate_callback (CoglAtlas *atlas,
+                                  CoglAtlasAllocateCallback callback,
+                                  void *user_data,
+                                  CoglUserDataDestroyCallback destroy)
+{
+  return _cogl_closure_list_add (&atlas->allocate_closures,
+                                 callback,
+                                 user_data,
+                                 destroy);
+}
+
+void
+cogl_atlas_remove_allocate_callback (CoglAtlas *atlas,
+                                     CoglAtlasAllocateClosure *closure)
+{
+  _cogl_closure_disconnect (closure);
 }
 
 static void
@@ -80,8 +100,10 @@ _cogl_atlas_free (CoglAtlas *atlas)
   if (atlas->map)
     _cogl_rectangle_map_free (atlas->map);
 
-  u_hook_list_clear (&atlas->pre_reorganize_callbacks);
-  u_hook_list_clear (&atlas->post_reorganize_callbacks);
+  _cogl_closure_list_disconnect_all (&atlas->allocate_closures);
+
+  _cogl_closure_list_disconnect_all (&atlas->pre_reorganize_closures);
+  _cogl_closure_list_disconnect_all (&atlas->post_reorganize_closures);
 
   u_free (atlas);
 }
@@ -89,21 +111,22 @@ _cogl_atlas_free (CoglAtlas *atlas)
 typedef struct _CoglAtlasRepositionData
 {
   /* The current user data for this texture */
-  void *user_data;
+  void *allocation_data;
+
   /* The old and new positions of the texture */
   CoglRectangleMapEntry old_position;
   CoglRectangleMapEntry new_position;
 } CoglAtlasRepositionData;
 
 static void
-_cogl_atlas_migrate (CoglAtlas               *atlas,
-                     unsigned int             n_textures,
+_cogl_atlas_migrate (CoglAtlas *atlas,
+                     int n_textures,
                      CoglAtlasRepositionData *textures,
-                     CoglTexture             *old_texture,
-                     CoglTexture             *new_texture,
-                     void                    *skip_user_data)
+                     CoglTexture *old_texture,
+                     CoglTexture *new_texture,
+                     void *skip_allocation_data)
 {
-  unsigned int i;
+  int i;
   CoglBlitData blit_data;
 
   /* If the 'disable migrate' flag is set then we won't actually copy
@@ -111,19 +134,30 @@ _cogl_atlas_migrate (CoglAtlas               *atlas,
      callback to update the position */
   if ((atlas->flags & COGL_ATLAS_DISABLE_MIGRATION))
     for (i = 0; i < n_textures; i++)
-      /* Update the texture position */
-      atlas->update_position_cb (textures[i].user_data,
-                                 new_texture,
-                                 &textures[i].new_position);
+      {
+        CoglAtlasAllocation *allocation =
+          (CoglAtlasAllocation *)&textures[i].new_position;
+
+        /* Update the texture position */
+        _cogl_closure_list_invoke (&atlas->allocate_closures,
+                                   CoglAtlasAllocateCallback,
+                                   atlas,
+                                   new_texture,
+                                   allocation,
+                                   textures[i].allocation_data);
+      }
   else
     {
       _cogl_blit_begin (&blit_data, new_texture, old_texture);
 
       for (i = 0; i < n_textures; i++)
         {
+          CoglAtlasAllocation *allocation =
+            (CoglAtlasAllocation *)&textures[i].new_position;
+
           /* Skip the texture that is being added because it doesn't contain
              any data yet */
-          if (textures[i].user_data != skip_user_data)
+          if (textures[i].allocation_data != skip_allocation_data)
             _cogl_blit (&blit_data,
                         textures[i].old_position.x,
                         textures[i].old_position.y,
@@ -133,9 +167,12 @@ _cogl_atlas_migrate (CoglAtlas               *atlas,
                         textures[i].new_position.height);
 
           /* Update the texture position */
-          atlas->update_position_cb (textures[i].user_data,
+          _cogl_closure_list_invoke (&atlas->allocate_closures,
+                                     CoglAtlasAllocateCallback,
+                                     atlas,
                                      new_texture,
-                                     &textures[i].new_position);
+                                     allocation,
+                                     textures[i].allocation_data);
         }
 
       _cogl_blit_end (&blit_data);
@@ -146,23 +183,23 @@ typedef struct _CoglAtlasGetRectanglesData
 {
   CoglAtlasRepositionData *textures;
   /* Number of textures found so far */
-  unsigned int n_textures;
+  int n_textures;
 } CoglAtlasGetRectanglesData;
 
 static void
 _cogl_atlas_get_rectangles_cb (const CoglRectangleMapEntry *rectangle,
-                               void                        *rect_data,
-                               void                        *user_data)
+                               void *rect_data,
+                               void *user_data)
 {
   CoglAtlasGetRectanglesData *data = user_data;
 
   data->textures[data->n_textures].old_position = *rectangle;
-  data->textures[data->n_textures++].user_data = rect_data;
+  data->textures[data->n_textures++].allocation_data = rect_data;
 }
 
 static void
-_cogl_atlas_get_next_size (unsigned int *map_width,
-                           unsigned int *map_height)
+_cogl_atlas_get_next_size (int *map_width,
+                           int *map_height)
 {
   /* Double the size of the texture by increasing whichever dimension
      is smaller */
@@ -173,19 +210,18 @@ _cogl_atlas_get_next_size (unsigned int *map_width,
 }
 
 static void
-_cogl_atlas_get_initial_size (CoglPixelFormat format,
-                              unsigned int *map_width,
-                              unsigned int *map_height)
+_cogl_atlas_get_initial_size (CoglAtlas *atlas,
+                              int *map_width,
+                              int *map_height)
 {
+  CoglContext *ctx = atlas->context;
   unsigned int size;
   GLenum gl_intformat;
   GLenum gl_format;
   GLenum gl_type;
 
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
   ctx->driver_vtable->pixel_format_to_gl (ctx,
-                                          format,
+                                          atlas->internal_format,
                                           &gl_intformat,
                                           &gl_format,
                                           &gl_type);
@@ -195,7 +231,7 @@ _cogl_atlas_get_initial_size (CoglPixelFormat format,
      initial minimum size. If the format is only 1 byte per pixel we
      can use 1024x1024, otherwise we'll assume it will take 4 bytes
      per pixel and use 512x512. */
-  if (_cogl_pixel_format_get_bytes_per_pixel (format) == 1)
+  if (_cogl_pixel_format_get_bytes_per_pixel (atlas->internal_format) == 1)
     size = 1024;
   else
     size = 512;
@@ -216,20 +252,19 @@ _cogl_atlas_get_initial_size (CoglPixelFormat format,
 }
 
 static CoglRectangleMap *
-_cogl_atlas_create_map (CoglPixelFormat          format,
-                        unsigned int             map_width,
-                        unsigned int             map_height,
-                        unsigned int             n_textures,
+_cogl_atlas_create_map (CoglAtlas *atlas,
+                        int map_width,
+                        int map_height,
+                        int n_textures,
                         CoglAtlasRepositionData *textures)
 {
+  CoglContext *ctx = atlas->context;
   GLenum gl_intformat;
   GLenum gl_format;
   GLenum gl_type;
 
-  _COGL_GET_CONTEXT (ctx, NULL);
-
   ctx->driver_vtable->pixel_format_to_gl (ctx,
-                                          format,
+                                          atlas->internal_format,
                                           &gl_intformat,
                                           &gl_format,
                                           &gl_type);
@@ -246,7 +281,7 @@ _cogl_atlas_create_map (CoglPixelFormat          format,
       CoglRectangleMap *new_atlas = _cogl_rectangle_map_new (map_width,
                                                              map_height,
                                                              NULL);
-      unsigned int i;
+      int i;
 
       COGL_NOTE (ATLAS, "Trying to resize the atlas to %ux%u",
                  map_width, map_height);
@@ -256,7 +291,7 @@ _cogl_atlas_create_map (CoglPixelFormat          format,
         if (!_cogl_rectangle_map_add (new_atlas,
                                       textures[i].old_position.width,
                                       textures[i].old_position.height,
-                                      textures[i].user_data,
+                                      textures[i].allocation_data,
                                       &textures[i].new_position))
           break;
 
@@ -284,30 +319,29 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
                             int width,
                             int height)
 {
+  CoglContext *ctx = atlas->context;
   CoglTexture2D *tex;
   CoglError *ignore_error = NULL;
-
-  _COGL_GET_CONTEXT (ctx, NULL);
 
   if ((atlas->flags & COGL_ATLAS_CLEAR_TEXTURE))
     {
       uint8_t *clear_data;
       CoglBitmap *clear_bmp;
-      int bpp = _cogl_pixel_format_get_bytes_per_pixel (atlas->texture_format);
+      int bpp = _cogl_pixel_format_get_bytes_per_pixel (atlas->internal_format);
 
       /* Create a buffer of zeroes to initially clear the texture */
       clear_data = u_malloc0 (width * height * bpp);
       clear_bmp = cogl_bitmap_new_for_data (ctx,
                                             width,
                                             height,
-                                            atlas->texture_format,
+                                            atlas->internal_format,
                                             width * bpp,
                                             clear_data);
 
       tex = cogl_texture_2d_new_from_bitmap (clear_bmp);
 
       _cogl_texture_set_internal_format (COGL_TEXTURE (tex),
-                                         atlas->texture_format);
+                                         atlas->internal_format);
 
       if (!cogl_texture_allocate (COGL_TEXTURE (tex), &ignore_error))
         {
@@ -325,7 +359,7 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
       tex = cogl_texture_2d_new_with_size (ctx, width, height);
 
       _cogl_texture_set_internal_format (COGL_TEXTURE (tex),
-                                         atlas->texture_format);
+                                         atlas->internal_format);
 
       if (!cogl_texture_allocate (COGL_TEXTURE (tex), &ignore_error))
         {
@@ -352,36 +386,24 @@ _cogl_atlas_compare_size_cb (const void *a,
   return a_size < b_size ? 1 : a_size > b_size ? -1 : 0;
 }
 
-static void
-_cogl_atlas_notify_pre_reorganize (CoglAtlas *atlas)
-{
-  u_hook_list_invoke (&atlas->pre_reorganize_callbacks, FALSE);
-}
-
-static void
-_cogl_atlas_notify_post_reorganize (CoglAtlas *atlas)
-{
-  u_hook_list_invoke (&atlas->post_reorganize_callbacks, FALSE);
-}
-
 CoglBool
-_cogl_atlas_reserve_space (CoglAtlas             *atlas,
-                           unsigned int           width,
-                           unsigned int           height,
-                           void                  *user_data)
+_cogl_atlas_allocate_space (CoglAtlas *atlas,
+                            int width,
+                            int height,
+                            void *allocation_data)
 {
   CoglAtlasGetRectanglesData data;
   CoglRectangleMap *new_map;
   CoglTexture2D *new_tex;
-  unsigned int map_width, map_height;
+  int map_width, map_height;
   CoglBool ret;
-  CoglRectangleMapEntry new_position;
+  CoglAtlasAllocation new_allocation;
 
   /* Check if we can fit the rectangle into the existing map */
   if (atlas->map &&
       _cogl_rectangle_map_add (atlas->map, width, height,
-                               user_data,
-                               &new_position))
+                               allocation_data,
+                               (CoglRectangleMapEntry *)&new_allocation))
     {
       COGL_NOTE (ATLAS, "%p: Atlas is %ix%i, has %i textures and is %i%% waste",
                  atlas,
@@ -393,9 +415,12 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
                  100 / (_cogl_rectangle_map_get_width (atlas->map) *
                         _cogl_rectangle_map_get_height (atlas->map)));
 
-      atlas->update_position_cb (user_data,
+      _cogl_closure_list_invoke (&atlas->allocate_closures,
+                                 CoglAtlasAllocateCallback,
+                                 atlas,
                                  atlas->texture,
-                                 &new_position);
+                                 &new_allocation,
+                                 allocation_data);
 
       return TRUE;
     }
@@ -404,7 +429,9 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
      we'll notify any users of the atlas that this is going to happen
      so that for example in CoglAtlasTexture it can notify that the
      storage has changed and cause a flush */
-  _cogl_atlas_notify_pre_reorganize (atlas);
+  _cogl_closure_list_invoke (&atlas->pre_reorganize_closures,
+                             CoglAtlasReorganizeCallback,
+                             atlas);
 
   /* Get an array of all the textures currently in the atlas. */
   data.n_textures = 0;
@@ -412,7 +439,7 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
     data.textures = u_malloc (sizeof (CoglAtlasRepositionData));
   else
     {
-      unsigned int n_rectangles =
+      int n_rectangles =
         _cogl_rectangle_map_get_n_rectangles (atlas->map);
       data.textures = u_malloc (sizeof (CoglAtlasRepositionData) *
                                 (n_rectangles + 1));
@@ -427,7 +454,7 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
   data.textures[data.n_textures].old_position.y = 0;
   data.textures[data.n_textures].old_position.width = width;
   data.textures[data.n_textures].old_position.height = height;
-  data.textures[data.n_textures++].user_data = user_data;
+  data.textures[data.n_textures++].allocation_data = allocation_data;
 
   /* The atlasing algorithm works a lot better if the rectangles are
      added in decreasing order of size so we'll first sort the
@@ -452,10 +479,9 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
         _cogl_atlas_get_next_size (&map_width, &map_height);
     }
   else
-    _cogl_atlas_get_initial_size (atlas->texture_format,
-                                  &map_width, &map_height);
+    _cogl_atlas_get_initial_size (atlas, &map_width, &map_height);
 
-  new_map = _cogl_atlas_create_map (atlas->texture_format,
+  new_map = _cogl_atlas_create_map (atlas,
                                     map_width, map_height,
                                     data.n_textures, data.textures);
 
@@ -500,16 +526,24 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
                                data.textures,
                                atlas->texture,
                                COGL_TEXTURE (new_tex),
-                               user_data);
+                               allocation_data);
           _cogl_rectangle_map_free (atlas->map);
           cogl_object_unref (atlas->texture);
         }
       else
-        /* We know there's only one texture so we can just directly
-           update the rectangle from its new position */
-        atlas->update_position_cb (data.textures[0].user_data,
-                                   COGL_TEXTURE (new_tex),
-                                   &data.textures[0].new_position);
+        {
+          CoglAtlasAllocation *allocation =
+            (CoglAtlasAllocation *)&data.textures[0].new_position;
+
+          /* We know there's only one texture so we can just directly
+             update the rectangle from its new position */
+          _cogl_closure_list_invoke (&atlas->allocate_closures,
+                                     CoglAtlasAllocateCallback,
+                                     atlas,
+                                     COGL_TEXTURE (new_tex),
+                                     allocation,
+                                     data.textures[0].allocation_data);
+        }
 
       atlas->map = new_map;
       atlas->texture = COGL_TEXTURE (new_tex);
@@ -530,21 +564,28 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
 
   u_free (data.textures);
 
-  _cogl_atlas_notify_post_reorganize (atlas);
+  _cogl_closure_list_invoke (&atlas->pre_reorganize_closures,
+                             CoglAtlasReorganizeCallback,
+                             atlas);
 
   return ret;
 }
 
 void
 _cogl_atlas_remove (CoglAtlas *atlas,
-                    const CoglRectangleMapEntry *rectangle)
+                    int x,
+                    int y,
+                    int width,
+                    int height)
 {
-  _cogl_rectangle_map_remove (atlas->map, rectangle);
+  CoglRectangleMapEntry rectangle = { x, y, width, height };
+
+  _cogl_rectangle_map_remove (atlas->map, &rectangle);
 
   COGL_NOTE (ATLAS, "%p: Removed rectangle sized %ix%i",
              atlas,
-             rectangle->width,
-             rectangle->height);
+             rectangle.width,
+             rectangle.height);
   COGL_NOTE (ATLAS, "%p: Atlas is %ix%i, has %i textures and is %i%% waste",
              atlas,
              _cogl_rectangle_map_get_width (atlas->map),
@@ -554,6 +595,12 @@ _cogl_atlas_remove (CoglAtlas *atlas,
              100 / (_cogl_rectangle_map_get_width (atlas->map) *
                     _cogl_rectangle_map_get_height (atlas->map)));
 };
+
+CoglTexture *
+cogl_atlas_get_texture (CoglAtlas *atlas)
+{
+  return atlas->texture;
+}
 
 static CoglTexture *
 create_migration_texture (CoglContext *ctx,
@@ -606,18 +653,17 @@ create_migration_texture (CoglContext *ctx,
 }
 
 CoglTexture *
-_cogl_atlas_copy_rectangle (CoglAtlas *atlas,
-                            int x,
-                            int y,
-                            int width,
-                            int height,
-                            CoglPixelFormat internal_format)
+_cogl_atlas_migrate_allocation (CoglAtlas *atlas,
+                                int x,
+                                int y,
+                                int width,
+                                int height,
+                                CoglPixelFormat internal_format)
 {
+  CoglContext *ctx = atlas->context;
   CoglTexture *tex;
   CoglBlitData blit_data;
   CoglError *ignore_error = NULL;
-
-  _COGL_GET_CONTEXT (ctx, NULL);
 
   /* Create a new texture at the right size */
   tex = create_migration_texture (ctx, width, height, internal_format);
@@ -641,50 +687,91 @@ _cogl_atlas_copy_rectangle (CoglAtlas *atlas,
   return tex;
 }
 
-void
-_cogl_atlas_add_reorganize_callback (CoglAtlas            *atlas,
-                                     UHookFunc             pre_callback,
-                                     UHookFunc             post_callback,
-                                     void                 *user_data)
+CoglAtlasReorganizeClosure *
+cogl_atlas_add_pre_reorganize_callback (CoglAtlas *atlas,
+                                        CoglAtlasReorganizeCallback callback,
+                                        void *user_data,
+                                        CoglUserDataDestroyCallback destroy)
 {
-  if (pre_callback)
-    {
-      UHook *hook = u_hook_alloc (&atlas->post_reorganize_callbacks);
-      hook->func = pre_callback;
-      hook->data = user_data;
-      u_hook_prepend (&atlas->pre_reorganize_callbacks, hook);
-    }
-  if (post_callback)
-    {
-      UHook *hook = u_hook_alloc (&atlas->pre_reorganize_callbacks);
-      hook->func = post_callback;
-      hook->data = user_data;
-      u_hook_prepend (&atlas->post_reorganize_callbacks, hook);
-    }
+  _COGL_RETURN_VAL_IF_FAIL (callback != NULL, NULL);
+
+  return _cogl_closure_list_add (&atlas->pre_reorganize_closures,
+                                 callback,
+                                 user_data,
+                                 destroy);
 }
 
 void
-_cogl_atlas_remove_reorganize_callback (CoglAtlas            *atlas,
-                                        UHookFunc             pre_callback,
-                                        UHookFunc             post_callback,
-                                        void                 *user_data)
+cogl_atlas_remove_pre_reorganize_callback (CoglAtlas *atlas,
+                                           CoglAtlasReorganizeClosure *closure)
 {
-  if (pre_callback)
+  _cogl_closure_disconnect (closure);
+}
+
+CoglAtlasReorganizeClosure *
+cogl_atlas_add_post_reorganize_callback (CoglAtlas *atlas,
+                                         CoglAtlasReorganizeCallback callback,
+                                         void *user_data,
+                                         CoglUserDataDestroyCallback destroy)
+{
+  _COGL_RETURN_VAL_IF_FAIL (callback != NULL, NULL);
+
+  return _cogl_closure_list_add (&atlas->post_reorganize_closures,
+                                 callback,
+                                 user_data,
+                                 destroy);
+}
+
+void
+cogl_atlas_remove_post_reorganize_callback (CoglAtlas *atlas,
+                                            CoglAtlasReorganizeClosure *closure)
+{
+  _cogl_closure_disconnect (closure);
+}
+
+typedef struct _ForeachState
+{
+  CoglAtlas *atlas;
+  CoglAtlasForeachCallback callback;
+  void *user_data;
+} ForeachState;
+
+static void
+foreach_rectangle_cb (const CoglRectangleMapEntry *entry,
+                      void *rectangle_data,
+                      void *user_data)
+{
+  ForeachState *state = user_data;
+
+  state->callback (state->atlas,
+                   (CoglAtlasAllocation *)entry,
+                   rectangle_data,
+                   state->user_data);
+}
+
+void
+cogl_atlas_foreach (CoglAtlas *atlas,
+                    CoglAtlasForeachCallback callback,
+                    void *user_data)
+{
+  if (atlas->map)
     {
-      UHook *hook = u_hook_find_func_data (&atlas->pre_reorganize_callbacks,
-                                           FALSE,
-                                           pre_callback,
-                                           user_data);
-      if (hook)
-        u_hook_destroy_link (&atlas->pre_reorganize_callbacks, hook);
-    }
-  if (post_callback)
-    {
-      UHook *hook = u_hook_find_func_data (&atlas->post_reorganize_callbacks,
-                                           FALSE,
-                                           post_callback,
-                                           user_data);
-      if (hook)
-        u_hook_destroy_link (&atlas->post_reorganize_callbacks, hook);
+      ForeachState state;
+
+      state.atlas = atlas;
+      state.callback = callback;
+      state.user_data = user_data;
+
+      _cogl_rectangle_map_foreach (atlas->map, foreach_rectangle_cb, &state);
     }
 }
+
+int
+cogl_atlas_get_n_allocations (CoglAtlas *atlas)
+{
+  if (atlas->map)
+    return _cogl_rectangle_map_get_n_rectangles (atlas->map);
+  else
+    return 0;
+}
+

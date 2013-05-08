@@ -33,6 +33,7 @@
 #include <pango/pango-font.h>
 
 #include "cogl/cogl-texture.h"
+#include "cogl/cogl-atlas.h"
 
 COGL_BEGIN_DECLS
 
@@ -41,6 +42,7 @@ typedef struct _CoglPangoGlyphCacheValue CoglPangoGlyphCacheValue;
 
 struct _CoglPangoGlyphCacheValue
 {
+  CoglAtlas *atlas;
   CoglTexture *texture;
 
   float tx1;

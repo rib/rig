@@ -45,7 +45,7 @@
 #include "cogl-pipeline-private.h"
 #include "cogl-buffer-private.h"
 #include "cogl-bitmask.h"
-#include "cogl-atlas.h"
+#include "cogl-atlas-set.h"
 #include "cogl-driver.h"
 #include "cogl-texture-driver.h"
 #include "cogl-pipeline-cache.h"
@@ -212,8 +212,7 @@ struct _CoglContext
   CoglPipeline     *texture_download_pipeline;
   CoglPipeline     *blit_texture_pipeline;
 
-  USList           *atlases;
-  UHookList         atlas_reorganize_callbacks;
+  CoglAtlasSet     *atlas_set;
 
   /* This debugging variable is used to pick a colour for visually
      displaying the quad batches. It needs to be global so that it can
@@ -359,5 +358,8 @@ _cogl_context_get_gl_extensions (CoglContext *context);
 
 const char *
 _cogl_context_get_gl_version (CoglContext *context);
+
+CoglAtlasSet *
+_cogl_get_atlas_set (CoglContext *context);
 
 #endif /* __COGL_CONTEXT_PRIVATE_H */

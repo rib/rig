@@ -36,7 +36,9 @@ cogl_public_h = \
 	cogl-renderer.h 		\
 	cogl-snippet.h		\
 	cogl-sub-texture.h            \
-	cogl-atlas-texture.h          \
+	cogl-atlas-set.h          	\
+	cogl-atlas.h          		\
+	cogl-atlas-texture.h          	\
 	cogl-texture-2d-gl.h 		\
 	cogl-texture-2d-sliced.h      \
 	cogl-texture-2d.h             \
@@ -221,8 +223,10 @@ cogl_sources_c = \
 	cogl-texture-rectangle.c              \
 	cogl-rectangle-map.h                  \
 	cogl-rectangle-map.c                  \
-	cogl-atlas.h                          \
-	cogl-atlas.c                          \
+	cogl-atlas-set-private.h              	\
+	cogl-atlas-set.c			\
+	cogl-atlas-private.h                   	\
+	cogl-atlas.c                          	\
 	cogl-atlas-texture-private.h          \
 	cogl-atlas-texture.c                  \
 	cogl-meta-texture.c			\

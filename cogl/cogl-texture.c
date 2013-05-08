@@ -1340,18 +1340,18 @@ _cogl_texture_set_internal_format (CoglTexture *texture,
 }
 
 CoglPixelFormat
-_cogl_texture_determine_internal_format (CoglTexture *texture,
-                                         CoglPixelFormat src_format)
+_cogl_texture_derive_format (CoglContext *ctx,
+                             CoglPixelFormat src_format,
+                             CoglTextureComponents components,
+                             CoglBool premultiplied)
 {
-  switch (texture->components)
+  switch (components)
     {
     case COGL_TEXTURE_COMPONENTS_DEPTH:
       if (src_format & COGL_DEPTH_BIT)
         return src_format;
       else
         {
-          CoglContext *ctx = texture->context;
-
           if (_cogl_has_private_feature (ctx,
                   COGL_PRIVATE_FEATURE_EXT_PACKED_DEPTH_STENCIL) ||
               _cogl_has_private_feature (ctx,
@@ -1382,7 +1382,7 @@ _cogl_texture_determine_internal_format (CoglTexture *texture,
         else
           format = COGL_PIXEL_FORMAT_RGBA_8888;
 
-        if (texture->premultiplied)
+        if (premultiplied)
           {
             if (COGL_PIXEL_FORMAT_CAN_HAVE_PREMULT (format))
               return format |= COGL_PREMULT_BIT;
@@ -1395,6 +1395,16 @@ _cogl_texture_determine_internal_format (CoglTexture *texture,
     }
 
   u_return_val_if_reached (COGL_PIXEL_FORMAT_RGBA_8888_PRE);
+}
+
+CoglPixelFormat
+_cogl_texture_determine_internal_format (CoglTexture *texture,
+                                         CoglPixelFormat src_format)
+{
+  return _cogl_texture_derive_format (texture->context,
+                                      src_format,
+                                      texture->components,
+                                      texture->premultiplied);
 }
 
 void

@@ -26,18 +26,25 @@
  * SOFTWARE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <glib.h>
 
 #include "cogl-pango-glyph-cache.h"
 #include "cogl-pango-private.h"
-#include "cogl/cogl-atlas.h"
+#include "cogl/cogl-atlas-set.h"
 #include "cogl/cogl-atlas-texture-private.h"
+#include "cogl/cogl-context-private.h"
 
 typedef struct _CoglPangoGlyphCacheKey     CoglPangoGlyphCacheKey;
+
+typedef struct _AtlasClosureState
+{
+  CoglList list_node;
+  CoglAtlas *atlas;
+  CoglAtlasReorganizeClosure *reorganize_closure;
+  CoglAtlasAllocateClosure *allocate_closure;
+} AtlasClosureState;
 
 struct _CoglPangoGlyphCache
 {
@@ -45,27 +52,24 @@ struct _CoglPangoGlyphCache
 
   /* Hash table to quickly check whether a particular glyph in a
      particular font is already cached */
-  GHashTable       *hash_table;
+  GHashTable *hash_table;
 
-  /* List of CoglAtlases */
-  GSList           *atlases;
+  /* Set of CoglAtlases */
+  CoglAtlasSet *atlas_set;
+
+  CoglList atlas_closures;
 
   /* List of callbacks to invoke when an atlas is reorganized */
-  GHookList         reorganize_callbacks;
-
-  /* TRUE if we've ever stored a texture in the global atlas. This is
-     used to make sure we only register one callback to listen for
-     global atlas reorganizations */
-  CoglBool          using_global_atlas;
+  GHookList reorganize_callbacks;
 
   /* True if some of the glyphs are dirty. This is used as an
      optimization in _cogl_pango_glyph_cache_set_dirty_glyphs to avoid
      iterating the hash table if we know none of them are dirty */
-  CoglBool          has_dirty_glyphs;
+  CoglBool has_dirty_glyphs;
 
   /* Whether mipmapping is being used for this cache. This only
      affects whether we decide to put the glyph in the global atlas */
-  CoglBool          use_mipmapping;
+  CoglBool use_mipmapping;
 };
 
 struct _CoglPangoGlyphCacheKey
@@ -78,7 +82,10 @@ static void
 cogl_pango_glyph_cache_value_free (CoglPangoGlyphCacheValue *value)
 {
   if (value->texture)
-    cogl_object_unref (value->texture);
+    {
+      cogl_object_unref (value->texture);
+      cogl_object_unref (value->atlas);
+    }
   g_slice_free (CoglPangoGlyphCacheValue, value);
 }
 
@@ -117,6 +124,91 @@ cogl_pango_glyph_cache_equal_func (const void *a, const void *b)
     && key_a->glyph == key_b->glyph;
 }
 
+static void
+atlas_reorganize_cb (CoglAtlas *atlas, void *user_data)
+{
+  CoglPangoGlyphCache *cache = user_data;
+
+  g_hook_list_invoke (&cache->reorganize_callbacks, FALSE);
+}
+
+static void
+allocate_glyph_cb (CoglAtlas *atlas,
+                   CoglTexture *texture,
+                   const CoglAtlasAllocation *allocation,
+                   void *allocation_data,
+                   void *user_data)
+{
+  CoglPangoGlyphCacheValue *value = allocation_data;
+  float tex_width, tex_height;
+
+  if (value->texture)
+    {
+      cogl_object_unref (value->texture);
+      cogl_object_unref (value->atlas);
+    }
+  value->atlas = cogl_object_ref (atlas);
+  value->texture = cogl_object_ref (texture);
+
+  tex_width = cogl_texture_get_width (texture);
+  tex_height = cogl_texture_get_height (texture);
+
+  value->tx1 = allocation->x / tex_width;
+  value->ty1 = allocation->y / tex_height;
+  value->tx2 = (allocation->x + value->draw_width) / tex_width;
+  value->ty2 = (allocation->y + value->draw_height) / tex_height;
+
+  value->tx_pixel = allocation->x;
+  value->ty_pixel = allocation->y;
+
+  /* The glyph has changed position so it will need to be redrawn */
+  value->dirty = TRUE;
+}
+
+static void
+atlas_callback (CoglAtlasSet *set,
+                CoglAtlas *atlas,
+                CoglAtlasSetEvent event,
+                void *user_data)
+{
+  CoglPangoGlyphCache *cache = user_data;
+  AtlasClosureState *state;
+
+  switch (event)
+    {
+    case COGL_ATLAS_SET_EVENT_ADDED:
+      state = g_slice_new (AtlasClosureState);
+      state->atlas = atlas;
+      state->reorganize_closure =
+        cogl_atlas_add_post_reorganize_callback (atlas,
+                                                 atlas_reorganize_cb,
+                                                 cache,
+                                                 NULL); /* destroy */
+      state->allocate_closure =
+        cogl_atlas_add_allocate_callback (atlas,
+                                          allocate_glyph_cb,
+                                          cache,
+                                          NULL); /* destroy */
+
+      _cogl_list_insert (cache->atlas_closures.prev, &state->list_node);
+      break;
+    case COGL_ATLAS_SET_EVENT_REMOVED:
+      break;
+    }
+}
+
+static void
+add_global_atlas_cb (CoglAtlas *atlas,
+                     void *user_data)
+{
+  CoglPangoGlyphCache *cache = user_data;
+
+  atlas_callback (_cogl_get_atlas_set (cache->ctx),
+                  atlas,
+                  COGL_ATLAS_SET_EVENT_ADDED,
+                  cache);
+}
+
 CoglPangoGlyphCache *
 cogl_pango_glyph_cache_new (CoglContext *ctx,
                             CoglBool use_mipmapping)
@@ -135,32 +227,47 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
      (UDestroyNotify) cogl_pango_glyph_cache_key_free,
      (UDestroyNotify) cogl_pango_glyph_cache_value_free);
 
-  cache->atlases = NULL;
+  _cogl_list_init (&cache->atlas_closures);
+
+  cache->atlas_set = cogl_atlas_set_new (ctx);
+
+  cogl_atlas_set_set_components (cache->atlas_set,
+                                 COGL_TEXTURE_COMPONENTS_A);
+
+  cogl_atlas_set_set_migration_enabled (cache->atlas_set, FALSE);
+  cogl_atlas_set_set_clear_enabled (cache->atlas_set, TRUE);
+
+  /* We want to be notified when new atlases are added to our local
+   * atlas set so they can be monitored for being re-arranged... */
+  cogl_atlas_set_add_atlas_callback (cache->atlas_set,
+                                     atlas_callback,
+                                     cache,
+                                     NULL); /* destroy */
+
+  /* We want to be notified when new atlases are added to the global
+   * atlas set so they can be monitored for being re-arranged... */
+  cogl_atlas_set_add_atlas_callback (_cogl_get_atlas_set (ctx),
+                                     atlas_callback,
+                                     cache,
+                                     NULL); /* destroy */
+  /* The global atlas set may already have atlases that we will
+   * want to monitor... */
+  cogl_atlas_set_foreach (_cogl_get_atlas_set (ctx),
+                          add_global_atlas_cb,
+                          cache);
+
   g_hook_list_init (&cache->reorganize_callbacks, sizeof (GHook));
 
   cache->has_dirty_glyphs = FALSE;
-
-  cache->using_global_atlas = FALSE;
 
   cache->use_mipmapping = use_mipmapping;
 
   return cache;
 }
 
-static void
-cogl_pango_glyph_cache_reorganize_cb (void *user_data)
-{
-  CoglPangoGlyphCache *cache = user_data;
-
-  g_hook_list_invoke (&cache->reorganize_callbacks, FALSE);
-}
-
 void
 cogl_pango_glyph_cache_clear (CoglPangoGlyphCache *cache)
 {
-  g_slist_foreach (cache->atlases, (GFunc) cogl_object_unref, NULL);
-  g_slist_free (cache->atlases);
-  cache->atlases = NULL;
   cache->has_dirty_glyphs = FALSE;
 
   g_hash_table_remove_all (cache->hash_table);
@@ -169,11 +276,16 @@ cogl_pango_glyph_cache_clear (CoglPangoGlyphCache *cache)
 void
 cogl_pango_glyph_cache_free (CoglPangoGlyphCache *cache)
 {
-  if (cache->using_global_atlas)
+  AtlasClosureState *state, *tmp;
+
+  _cogl_list_for_each_safe (state, tmp, &cache->atlas_closures, list_node)
     {
-      _cogl_atlas_texture_remove_reorganize_callback (
-                                  cache->ctx,
-                                  cogl_pango_glyph_cache_reorganize_cb, cache);
+      cogl_atlas_remove_post_reorganize_callback (state->atlas,
+                                                  state->reorganize_closure);
+      cogl_atlas_remove_allocate_callback (state->atlas,
+                                           state->allocate_closure);
+      _cogl_list_remove (&state->list_node);
+      g_slice_free (AtlasClosureState, state);
     }
 
   cogl_pango_glyph_cache_clear (cache);
@@ -183,33 +295,6 @@ cogl_pango_glyph_cache_free (CoglPangoGlyphCache *cache)
   g_hook_list_clear (&cache->reorganize_callbacks);
 
   g_free (cache);
-}
-
-static void
-cogl_pango_glyph_cache_update_position_cb (void *user_data,
-                                           CoglTexture *new_texture,
-                                           const CoglRectangleMapEntry *rect)
-{
-  CoglPangoGlyphCacheValue *value = user_data;
-  float tex_width, tex_height;
-
-  if (value->texture)
-    cogl_object_unref (value->texture);
-  value->texture = cogl_object_ref (new_texture);
-
-  tex_width = cogl_texture_get_width (new_texture);
-  tex_height = cogl_texture_get_height (new_texture);
-
-  value->tx1 = rect->x / tex_width;
-  value->ty1 = rect->y / tex_height;
-  value->tx2 = (rect->x + value->draw_width) / tex_width;
-  value->ty2 = (rect->y + value->draw_height) / tex_height;
-
-  value->tx_pixel = rect->x;
-  value->ty_pixel = rect->y;
-
-  /* The glyph has changed position so it will need to be redrawn */
-  value->dirty = TRUE;
 }
 
 static CoglBool
@@ -246,18 +331,6 @@ cogl_pango_glyph_cache_add_to_global_atlas (CoglPangoGlyphCache *cache,
   value->tx_pixel = 0;
   value->ty_pixel = 0;
 
-  /* The first time we store a texture in the global atlas we'll
-     register for notifications when the global atlas is reorganized
-     so we can forward the notification on as a glyph
-     reorganization */
-  if (!cache->using_global_atlas)
-    {
-      _cogl_atlas_texture_add_reorganize_callback
-        (cache->ctx,
-         cogl_pango_glyph_cache_reorganize_cb, cache);
-      cache->using_global_atlas = TRUE;
-    }
-
   return TRUE;
 }
 
@@ -267,44 +340,17 @@ cogl_pango_glyph_cache_add_to_local_atlas (CoglPangoGlyphCache *cache,
                                            PangoGlyph glyph,
                                            CoglPangoGlyphCacheValue *value)
 {
-  CoglAtlas *atlas = NULL;
-  GSList *l;
+  CoglAtlas *atlas;
 
-  /* Look for an atlas that can reserve the space */
-  for (l = cache->atlases; l; l = l->next)
-    if (_cogl_atlas_reserve_space (l->data,
-                                   value->draw_width + 1,
-                                   value->draw_height + 1,
-                                   value))
-      {
-        atlas = l->data;
-        break;
-      }
-
-  /* If we couldn't find one then start a new atlas */
-  if (atlas == NULL)
-    {
-      atlas = _cogl_atlas_new (COGL_PIXEL_FORMAT_A_8,
-                               COGL_ATLAS_CLEAR_TEXTURE |
-                               COGL_ATLAS_DISABLE_MIGRATION,
-                               cogl_pango_glyph_cache_update_position_cb);
-      COGL_NOTE (ATLAS, "Created new atlas for glyphs: %p", atlas);
-      /* If we still can't reserve space then something has gone
-         seriously wrong so we'll just give up */
-      if (!_cogl_atlas_reserve_space (atlas,
-                                      value->draw_width + 1,
-                                      value->draw_height + 1,
-                                      value))
-        {
-          cogl_object_unref (atlas);
-          return FALSE;
-        }
-
-      _cogl_atlas_add_reorganize_callback
-        (atlas, cogl_pango_glyph_cache_reorganize_cb, NULL, cache);
-
-      cache->atlases = g_slist_prepend (cache->atlases, atlas);
-    }
+  /* Add two pixels for the border
+   * FIXME: two pixels isn't enough if mipmapping is in use
+   */
+  atlas = cogl_atlas_set_allocate_space (cache->atlas_set,
+                                         value->draw_width + 2,
+                                         value->draw_height + 2,
+                                         value);
+  if (!atlas)
+    return FALSE;
 
   return TRUE;
 }
@@ -345,12 +391,12 @@ cogl_pango_glyph_cache_lookup (CoglPangoGlyphCache *cache,
         value->dirty = FALSE;
       else
         {
-          /* Try adding the glyph to the global atlas... */
+          /* Try adding the glyph to the global atlas set... */
           if (!cogl_pango_glyph_cache_add_to_global_atlas (cache,
                                                            font,
                                                            glyph,
                                                            value) &&
-              /* If it fails try the local atlas */
+              /* If it fails try the local atlas set */
               !cogl_pango_glyph_cache_add_to_local_atlas (cache,
                                                           font,
                                                           glyph,

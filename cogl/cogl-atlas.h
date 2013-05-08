@@ -26,80 +26,89 @@
  * SOFTWARE.
  */
 
-#ifndef __COGL_ATLAS_H
-#define __COGL_ATLAS_H
+#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
+#error "Only <cogl/cogl.h> can be included directly."
+#endif
 
-#include "cogl-rectangle-map.h"
-#include "cogl-object-private.h"
-#include "cogl-texture.h"
+#ifndef _COGL_ATLAS_H_
+#define _COGL_ATLAS_H_
 
-typedef void
-(* CoglAtlasUpdatePositionCallback) (void *user_data,
-                                     CoglTexture *new_texture,
-                                     const CoglRectangleMapEntry *rect);
+#include <cogl/cogl-types.h>
+#include <cogl/cogl-object.h>
+#include <cogl/cogl-texture.h>
 
-typedef enum
+typedef struct _CoglAtlasAllocation
 {
-  COGL_ATLAS_CLEAR_TEXTURE     = (1 << 0),
-  COGL_ATLAS_DISABLE_MIGRATION = (1 << 1)
-} CoglAtlasFlags;
+  int x;
+  int y;
+  int width;
+  int height;
+} CoglAtlasAllocation;
 
 typedef struct _CoglAtlas CoglAtlas;
 
-#define COGL_ATLAS(object) ((CoglAtlas *) object)
+/* XXX: Note that during migration _cogl_atlas_get_texture() may not match the
+ * @texture given here. @texture is more up to date... */
+typedef void
+(* CoglAtlasAllocateCallback) (CoglAtlas *atlas,
+                               CoglTexture *texture,
+                               const CoglAtlasAllocation *allocation,
+                               void *allocation_data,
+                               void *user_data);
 
-struct _CoglAtlas
-{
-  CoglObject _parent;
+typedef struct _CoglClosure CoglAtlasAllocateClosure;
 
-  CoglRectangleMap *map;
-
-  CoglTexture *texture;
-  CoglPixelFormat texture_format;
-  CoglAtlasFlags flags;
-
-  CoglAtlasUpdatePositionCallback update_position_cb;
-
-  UHookList pre_reorganize_callbacks;
-  UHookList post_reorganize_callbacks;
-};
-
-CoglAtlas *
-_cogl_atlas_new (CoglPixelFormat texture_format,
-                 CoglAtlasFlags flags,
-                 CoglAtlasUpdatePositionCallback update_position_cb);
-
-CoglBool
-_cogl_atlas_reserve_space (CoglAtlas             *atlas,
-                           unsigned int           width,
-                           unsigned int           height,
-                           void                  *user_data);
+CoglAtlasAllocateClosure *
+cogl_atlas_add_allocate_callback (CoglAtlas *atlas,
+                                  CoglAtlasAllocateCallback callback,
+                                  void *user_data,
+                                  CoglUserDataDestroyCallback destroy);
 
 void
-_cogl_atlas_remove (CoglAtlas *atlas,
-                    const CoglRectangleMapEntry *rectangle);
+cogl_atlas_remove_allocate_callback (CoglAtlas *atlas,
+                                     CoglAtlasAllocateClosure *closure);
 
 CoglTexture *
-_cogl_atlas_copy_rectangle (CoglAtlas *atlas,
-                            int x,
-                            int y,
-                            int width,
-                            int height,
-                            CoglPixelFormat format);
+cogl_atlas_get_texture (CoglAtlas *atlas);
+
+typedef void (*CoglAtlasForeachCallback) (CoglAtlas *atlas,
+                                          const CoglAtlasAllocation *allocation,
+                                          void *allocation_data,
+                                          void *user_data);
+void
+cogl_atlas_foreach (CoglAtlas *atlas,
+                    CoglAtlasForeachCallback callback,
+                    void *user_data);
+
+int
+cogl_atlas_get_n_allocations (CoglAtlas *atlas);
+
+typedef struct _CoglClosure CoglAtlasReorganizeClosure;
+
+typedef void (*CoglAtlasReorganizeCallback) (CoglAtlas *atlas,
+                                             void *user_data);
+
+CoglAtlasReorganizeClosure *
+cogl_atlas_add_pre_reorganize_callback (CoglAtlas *atlas,
+                                        CoglAtlasReorganizeCallback callback,
+                                        void *user_data,
+                                        CoglUserDataDestroyCallback destroy);
 
 void
-_cogl_atlas_add_reorganize_callback (CoglAtlas            *atlas,
-                                     UHookFunc             pre_callback,
-                                     UHookFunc             post_callback,
-                                     void                 *user_data);
+cogl_atlas_remove_pre_reorganize_callback (CoglAtlas *atlas,
+                                           CoglAtlasReorganizeClosure *closure);
+
+CoglAtlasReorganizeClosure *
+cogl_atlas_add_post_reorganize_callback (CoglAtlas *atlas,
+                                         CoglAtlasReorganizeCallback callback,
+                                         void *user_data,
+                                         CoglUserDataDestroyCallback destroy);
 
 void
-_cogl_atlas_remove_reorganize_callback (CoglAtlas            *atlas,
-                                        UHookFunc             pre_callback,
-                                        UHookFunc             post_callback,
-                                        void                 *user_data);
+cogl_atlas_remove_post_reorganize_callback (CoglAtlas *atlas,
+                                            CoglAtlasReorganizeClosure *closure);
 
 CoglBool
-_cogl_is_atlas (void *object);
+cogl_is_atlas (void *object);
 
-#endif /* __COGL_ATLAS_H */
+#endif /* _COGL_ATLAS_H_ */

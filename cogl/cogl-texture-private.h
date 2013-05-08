@@ -279,9 +279,9 @@ void
 _cogl_texture_ensure_non_quad_rendering (CoglTexture *texture);
 
 /*
- * This determines a CoglPixelFormat according to texture::components
- * and texture::premultiplied (i.e. the user required components and
- * whether the texture should be considered premultiplied)
+ * This determines a CoglPixelFormat according to @components and
+ * @premultiplied (i.e. the user required components and whether the
+ * texture should be considered premultiplied)
  *
  * A reference/source format can be given (or COGL_PIXEL_FORMAT_ANY)
  * and wherever possible this function tries to simply return the
@@ -290,6 +290,15 @@ _cogl_texture_ensure_non_quad_rendering (CoglTexture *texture);
  * Texture backends can call this when allocating a texture to know
  * how to convert a source image in preparation for uploading.
  */
+CoglPixelFormat
+_cogl_texture_derive_format (CoglContext *ctx,
+                             CoglPixelFormat src_format,
+                             CoglTextureComponents components,
+                             CoglBool premultiplied);
+
+/* This is a thin wrapper around _cogl_texture_derive_format
+ * that simply passes texture->context, texture->components and
+ * texture->premultiplied in as arguments */
 CoglPixelFormat
 _cogl_texture_determine_internal_format (CoglTexture *texture,
                                          CoglPixelFormat src_format);

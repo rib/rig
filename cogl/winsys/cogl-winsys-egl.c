@@ -816,7 +816,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
                                  COGL_FRAMEBUFFER (onscreen),
                                  COGL_FRAMEBUFFER_STATE_BIND);
 
-  if (n_rectangles && egl_renderer->pf_eglSwapBuffersWithDamage)
+  if (egl_renderer->pf_eglSwapBuffersWithDamage)
     {
       CoglFramebuffer *fb = COGL_FRAMEBUFFER (onscreen);
       size_t size = n_rectangles * sizeof (int) * 4;

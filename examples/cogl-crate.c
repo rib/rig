@@ -284,8 +284,17 @@ main (int argc, char **argv)
 
       if (data.swap_ready)
         {
+          static gboolean swapped = FALSE;
+          int rect[4] = { 0, 0, 320, 240 };
+
           paint (&data);
-          cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
+          if (!swapped)
+            {
+              cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
+              swapped = TRUE;
+            }
+          else
+            cogl_onscreen_swap_buffers_with_damage (COGL_ONSCREEN (fb), rect, 1);
         }
 
       cogl_poll_renderer_get_info (cogl_context_get_renderer (ctx),

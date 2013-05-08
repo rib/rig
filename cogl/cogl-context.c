@@ -28,9 +28,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-object.h"
 #include "cogl-private.h"
@@ -47,6 +45,8 @@
 #include "cogl-texture-2d-private.h"
 #include "cogl-texture-3d-private.h"
 #include "cogl-texture-rectangle-private.h"
+#include "cogl-atlas-set.h"
+#include "cogl-atlas-texture-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-framebuffer-private.h"
@@ -432,9 +432,6 @@ cogl_context_new (CoglDisplay *display,
 
   cogl_object_unref (white_pixel_bitmap);
 
-  context->atlases = NULL;
-  u_hook_list_init (&context->atlas_reorganize_callbacks, sizeof (UHook));
-
   context->buffer_map_fallback_array = u_byte_array_new ();
   context->buffer_map_fallback_in_use = FALSE;
 
@@ -451,6 +448,14 @@ cogl_context_new (CoglDisplay *display,
 
   _cogl_list_init (&context->fences);
 
+  context->atlas_set = cogl_atlas_set_new (context);
+  cogl_atlas_set_set_components (context->atlas_set, COGL_TEXTURE_COMPONENTS_RGBA);
+  cogl_atlas_set_set_premultiplied (context->atlas_set, FALSE);
+  cogl_atlas_set_add_atlas_callback (context->atlas_set,
+                                     _cogl_atlas_texture_atlas_event_handler,
+                                     NULL, /* user data */
+                                     NULL); /* destroy */
+
   return context;
 }
 
@@ -460,6 +465,9 @@ _cogl_context_free (CoglContext *context)
   const CoglWinsysVtable *winsys = _cogl_context_get_winsys (context);
 
   winsys->context_deinit (context);
+
+  if (context->atlas_set)
+    cogl_object_unref (context->atlas_set);
 
   if (context->default_gl_texture_2d_tex)
     cogl_object_unref (context->default_gl_texture_2d_tex);
@@ -498,9 +506,6 @@ _cogl_context_free (CoglContext *context)
 
   if (context->current_clip_stack_valid)
     _cogl_clip_stack_unref (context->current_clip_stack);
-
-  u_slist_free (context->atlases);
-  u_hook_list_clear (&context->atlas_reorganize_callbacks);
 
   _cogl_bitmask_destroy (&context->enabled_builtin_attributes);
   _cogl_bitmask_destroy (&context->enable_builtin_attributes_tmp);
@@ -710,4 +715,10 @@ cogl_get_clock_time (CoglContext *context)
     return winsys->context_get_clock_time (context);
   else
     return 0;
+}
+
+CoglAtlasSet *
+_cogl_get_atlas_set (CoglContext *context)
+{
+  return context->atlas_set;
 }
