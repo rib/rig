@@ -464,6 +464,8 @@ rut_pointalism_grid_new (RutContext *ctx,
                                                     6,
                                                     buffer);
   CoglVertexP3 *pick_vertices = (CoglVertexP3 *)buffer->data;
+  float half_tex_width;
+  float half_tex_height;
 
   rut_object_init (&grid->_parent, &rut_pointalism_grid_type);
 
@@ -477,16 +479,19 @@ rut_pointalism_grid_new (RutContext *ctx,
   grid->slice = pointalism_grid_slice_new (ctx, tex_width, tex_height,
                                            size);
 
-  pick_vertices[0].x = 0;
-  pick_vertices[0].y = 0;
-  pick_vertices[1].x = 0;
-  pick_vertices[1].y = size;
-  pick_vertices[2].x = size;
-  pick_vertices[2].y = size;
+  half_tex_width = tex_width / 2.0f;
+  half_tex_height = tex_height / 2.0f;
+
+  pick_vertices[0].x = -half_tex_width;
+  pick_vertices[0].y = -half_tex_height;
+  pick_vertices[1].x = -half_tex_width;
+  pick_vertices[1].y = half_tex_height;
+  pick_vertices[2].x = half_tex_width;
+  pick_vertices[2].y = half_tex_height;
   pick_vertices[3] = pick_vertices[0];
   pick_vertices[4] = pick_vertices[2];
-  pick_vertices[5].x = size;
-  pick_vertices[5].y = 0;
+  pick_vertices[5].x = half_tex_width;
+  pick_vertices[5].y = -half_tex_height;
 
   grid->pick_mesh = pick_mesh;
   grid->pointalism_scale = 1;
