@@ -513,12 +513,12 @@ rut_pointalism_grid_new (RutContext *ctx,
   pick_vertices[0].x = 0;
   pick_vertices[0].y = 0;
   pick_vertices[1].x = 0;
-  pick_vertices[1].y = size;
-  pick_vertices[2].x = size;
-  pick_vertices[2].y = size;
+  pick_vertices[1].y = tex_height;
+  pick_vertices[2].x = tex_width;
+  pick_vertices[2].y = tex_height;
   pick_vertices[3] = pick_vertices[0];
   pick_vertices[4] = pick_vertices[2];
-  pick_vertices[5].x = size;
+  pick_vertices[5].x = tex_width;
   pick_vertices[5].y = 0;
 
   grid->pick_mesh = pick_mesh;
