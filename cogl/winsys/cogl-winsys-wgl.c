@@ -239,16 +239,16 @@ win32_event_filter_cb (MSG *msg, void *data)
   return COGL_FILTER_CONTINUE;
 }
 
-static CoglBool
-check_messages (void *user_data)
+static int64_t
+prepare_messages (void *user_data)
 {
   MSG msg;
 
-  return PeekMessageW (&msg, NULL, 0, 0, PM_NOREMOVE) ? TRUE : FALSE;
+  return PeekMessageW (&msg, NULL, 0, 0, PM_NOREMOVE) ? 0 : -1;
 }
 
 static void
-dispatch_messages (void *user_data)
+dispatch_messages (void *user_data, int revents)
 {
   MSG msg;
 
@@ -274,7 +274,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
       _cogl_poll_renderer_add_fd (renderer,
                                   WIN32_MSG_HANDLE,
                                   COGL_POLL_FD_EVENT_IN,
-                                  check_messages,
+                                  prepare_messages,
                                   dispatch_messages,
                                   renderer);
     }
