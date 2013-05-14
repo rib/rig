@@ -52,7 +52,7 @@ typedef struct _CoglRendererWgl
   GModule *gl_module;
 
   /* Function pointers for GLX specific extensions */
-#define COGL_WINSYS_FEATURE_BEGIN(a, b, c, d, e, f)
+#define COGL_WINSYS_FEATURE_BEGIN(a, b, c, d, e)
 
 #define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args) \
   ret (APIENTRY * pf_ ## name) args;
@@ -96,7 +96,7 @@ typedef struct _CoglOnscreenWgl
 /* Define a set of arrays containing the functions required from GL
    for each winsys feature */
 #define COGL_WINSYS_FEATURE_BEGIN(name, namespaces, extension_names,    \
-                                  feature_flags, feature_flags_private, \
+                                  feature_flags_private,                \
                                   winsys_feature)                       \
   static const CoglFeatureFunction                                      \
   cogl_wgl_feature_ ## name ## _funcs[] = {
@@ -110,10 +110,10 @@ typedef struct _CoglOnscreenWgl
 /* Define an array of features */
 #undef COGL_WINSYS_FEATURE_BEGIN
 #define COGL_WINSYS_FEATURE_BEGIN(name, namespaces, extension_names,    \
-                                  feature_flags, feature_flags_private, \
+                                  feature_flags_private,                \
                                   winsys_feature)                       \
-  { 255, 255, 0, namespaces, extension_names,                            \
-      feature_flags, feature_flags_private,                             \
+  { 255, 255, 0, namespaces, extension_names,                           \
+      feature_flags_private,                                            \
       winsys_feature,                                                   \
       cogl_wgl_feature_ ## name ## _funcs },
 #undef COGL_WINSYS_FEATURE_FUNCTION
@@ -607,7 +607,6 @@ update_winsys_features (CoglContext *context, CoglError **error)
 
   memset (context->winsys_features, 0, sizeof (context->winsys_features));
 
-  context->feature_flags |= COGL_FEATURE_ONSCREEN_MULTIPLE;
   COGL_FLAGS_SET (context->features,
                   COGL_FEATURE_ID_ONSCREEN_MULTIPLE, TRUE);
   COGL_FLAGS_SET (context->winsys_features,
@@ -630,7 +629,6 @@ update_winsys_features (CoglContext *context, CoglError **error)
                                  split_extensions,
                                  wgl_renderer))
           {
-            context->feature_flags |= winsys_feature_data[i].feature_flags;
             if (winsys_feature_data[i].winsys_feature)
               COGL_FLAGS_SET (context->winsys_features,
                               winsys_feature_data[i].winsys_feature,

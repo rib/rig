@@ -31,7 +31,6 @@ COGL_WINSYS_FEATURE_BEGIN (swap_control,
                            "EXT\0",
                            "swap_control\0",
                            0,
-                           0,
                            COGL_WINSYS_FEATURE_SWAP_THROTTLE)
 COGL_WINSYS_FEATURE_FUNCTION (int, wglSwapInterval,
                               (int interval))
