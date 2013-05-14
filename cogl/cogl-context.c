@@ -3,7 +3,7 @@
  *
  * An object oriented GL/GLES Abstraction/Utility Layer
  *
- * Copyright (C) 2007,2008,2009 Intel Corporation.
+ * Copyright (C) 2007,2008,2009,2013 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -288,6 +288,7 @@ cogl_context_new (CoglDisplay *display,
   context->current_draw_buffer_changes = COGL_FRAMEBUFFER_STATE_ALL;
 
   COGL_TAILQ_INIT (&context->onscreen_events_queue);
+  COGL_TAILQ_INIT (&context->onscreen_dirty_queue);
 
   g_queue_init (&context->gles2_context_stack);
 
