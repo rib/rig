@@ -38,8 +38,7 @@ struct _RutPointalismGridSlice
 {
   RutObjectProps _parent;
   int ref_count;
-  CoglPrimitive *primitive;
-  CoglIndices *indices;
+  RutMesh *mesh;
 };
 
 void
@@ -109,7 +108,7 @@ rut_pointalism_grid_get_lighter (RutObject *obj);
 void
 rut_pointalism_grid_set_lighter (RutObject *obj,
                                  CoglBool lighter);
-                              
+
 float
 rut_pointalism_grid_get_cell_size (RutObject *obj);
 

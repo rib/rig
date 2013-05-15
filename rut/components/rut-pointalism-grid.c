@@ -77,7 +77,7 @@ _pointalism_grid_slice_free (void *object)
 {
   RutPointalismGridSlice *pointalism_grid_slice = object;
 
-  cogl_object_unref (pointalism_grid_slice->primitive);
+  rut_refable_unref (pointalism_grid_slice->mesh);
 
   g_slice_free (RutPointalismGridSlice, object);
 }
@@ -113,111 +113,101 @@ typedef struct _GridVertex
 #endif
 } GridVertex;
 
-static CoglPrimitive *
-primitive_new_grid (CoglContext *ctx,
-                    CoglVerticesMode mode,
-                    int n_vertices,
-                    const GridVertex *data)
+static RutMesh *
+mesh_new_grid (CoglVerticesMode mode,
+               int n_vertices,
+               int n_indices,
+               GridVertex *vertices,
+               unsigned int *indices)
 {
-  CoglAttributeBuffer *attribute_buffer =
-    cogl_attribute_buffer_new (ctx, n_vertices * sizeof (GridVertex), data);
-  int n_attributes = 9;
-  CoglAttribute *attributes[n_attributes];
-  CoglPrimitive *primitive;
-#ifndef MESA_CONST_ATTRIB_BUG_WORKAROUND
-  const float normal[3] = { 0, 0, 1 };
-  const float tangent[3] = { 1, 0, 0 };
-#endif
-  int i;
+  RutMesh *mesh;
+  RutAttribute *attributes[9];
+  RutBuffer *vertex_buffer;
+  RutBuffer *index_buffer;
 
-  attributes[0] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_position_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, x0),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  vertex_buffer = rut_buffer_new (sizeof (GridVertex) * n_vertices);
+  index_buffer = rut_buffer_new (sizeof (unsigned int) * n_indices);
 
-  attributes[1] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord0_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, s0),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  memcpy (vertex_buffer->data, vertices, sizeof (GridVertex) * n_vertices);
+  memcpy (index_buffer->data, indices, sizeof (unsigned int) * n_indices);
 
-  attributes[2] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord1_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, s0),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[0] = rut_attribute_new (vertex_buffer,
+                                     "cogl_position_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, x0),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[3] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord4_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, s3),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord0_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s0),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[4] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_tex_coord7_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, s3),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[2] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord1_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s3),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-#ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
-  attributes[5] = cogl_attribute_new (attribute_buffer,
-                                      "cogl_normal_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, nx),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-  attributes[6] = cogl_attribute_new (attribute_buffer,
-                                      "tangent_in",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, tx),
-                                      3,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
-#else
-  attributes[5] = cogl_attribute_new_const_3fv (ctx,
-                                                "cogl_normal_in",
-                                                normal);
+  attributes[3] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord4_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s3),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[6] = cogl_attribute_new_const_3fv (ctx,
-                                                "tangent_in",
-                                                tangent);
-#endif
+  attributes[4] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord7_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s3),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[7] = cogl_attribute_new (attribute_buffer,
-                                      "cell_xy",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, x1),
-                                      2,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[5] = rut_attribute_new (vertex_buffer,
+                                     "cogl_normal_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, nx),
+                                     3,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[8] = cogl_attribute_new (attribute_buffer,
-                                      "cell_st",
-                                      sizeof (GridVertex),
-                                      offsetof (GridVertex, s1),
-                                      4,
-                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[6] = rut_attribute_new (vertex_buffer,
+                                     "tangent_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, tx),
+                                     3,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  cogl_object_unref (attribute_buffer);
+  attributes[7] = rut_attribute_new (vertex_buffer,
+                                     "cell_xy",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, x1),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  primitive = cogl_primitive_new_with_attributes (mode,
-                                                  n_vertices,
-                                                  attributes,
-                                                  n_attributes);
+  attributes[8] = rut_attribute_new (vertex_buffer,
+                                     "cell_st",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s1),
+                                     4,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  for (i = 0; i < n_attributes; i++)
-    cogl_object_unref (attributes[i]);
+  mesh = rut_mesh_new (mode, n_vertices, attributes, 9);
+  rut_mesh_set_indices (mesh,
+                        COGL_INDICES_TYPE_UNSIGNED_INT,
+                        index_buffer,
+                        n_indices);
 
-  return primitive;
+  g_free (vertices);
+  g_free (indices);
+
+  return mesh;
 }
 
 void
 pointalism_generate_grid (RutPointalismGridSlice *slice,
-                          RutContext *ctx,
                           int tex_width,
                           int tex_height,
                           float size)
@@ -254,14 +244,12 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
       vertices[k].t2 = (i + 1) * cell_t;
       vertices[k].s3 = j * cell_s;
       vertices[k].t3 = i * cell_t;
-      #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
       vertices[k].nx = 0;
       vertices[k].ny = 0;
       vertices[k].nz = 1;
       vertices[k].tx = 1;
       vertices[k].ty = 0;
       vertices[k].tz = 0;
-      #endif
       k++;
 
       vertices[k].x0 = size / 2;
@@ -276,14 +264,12 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
       vertices[k].t2 = (i + 1) * cell_t;
       vertices[k].s3 = (j + 1) * cell_s;
       vertices[k].t3 = i * cell_t;
-      #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
       vertices[k].nx = 0;
       vertices[k].ny = 0;
       vertices[k].nz = 1;
       vertices[k].tx = 1;
       vertices[k].ty = 0;
       vertices[k].tz = 0;
-      #endif
       k++;
 
       vertices[k].x0 = size / 2;
@@ -298,14 +284,12 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
       vertices[k].t2 = (i + 1) * cell_t;
       vertices[k].s3 = (j + 1) * cell_s;
       vertices[k].t3 = (i + 1) * cell_t;
-      #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
       vertices[k].nx = 0;
       vertices[k].ny = 0;
       vertices[k].nz = 1;
       vertices[k].tx = 1;
       vertices[k].ty = 0;
       vertices[k].tz = 0;
-      #endif
       k++;
 
       vertices[k].x0 = -1 * (size / 2);
@@ -320,14 +304,12 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
       vertices[k].t2 = (i + 1) * cell_t;
       vertices[k].s3 = j * cell_s;
       vertices[k].t3 = (i + 1) * cell_t;
-      #ifdef MESA_CONST_ATTRIB_BUG_WORKAROUND
       vertices[k].nx = 0;
       vertices[k].ny = 0;
       vertices[k].nz = 1;
       vertices[k].tx = 1;
       vertices[k].ty = 0;
       vertices[k].tz = 0;
-      #endif
       k++;
 
       indices[l] = k;
@@ -344,27 +326,17 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
     start_y += size;
   }
 
-  if (slice->primitive)
-    cogl_object_unref (slice->primitive);
-  if (slice->indices)
-    cogl_object_unref (slice->indices);
+  if (slice->mesh)
+    rut_refable_unref (slice->mesh);
 
-  slice->primitive = primitive_new_grid (ctx->cogl_context,
-                                         COGL_VERTICES_MODE_TRIANGLES,
-                                         (columns * rows) * 4, vertices);
-
-  slice->indices = cogl_indices_new (ctx->cogl_context,
-                                     COGL_INDICES_TYPE_UNSIGNED_INT,
-                                     indices,
-                                     (columns * rows) * 6);
-
-  cogl_primitive_set_indices (slice->primitive, slice->indices,
-                              (columns * rows) * 6);
+  slice->mesh = mesh_new_grid (COGL_VERTICES_MODE_TRIANGLES,
+                               (columns * rows) * 4,
+                               (columns * rows) * 6,
+                               vertices, indices);
 }
 
 static RutPointalismGridSlice *
-pointalism_grid_slice_new (RutContext *ctx,
-                           int tex_width,
+pointalism_grid_slice_new (int tex_width,
                            int tex_height,
                            float size)
 {
@@ -373,10 +345,9 @@ pointalism_grid_slice_new (RutContext *ctx,
   rut_object_init (&grid_slice->_parent, &rut_pointalism_grid_slice_type);
 
   grid_slice->ref_count = 1;
-  grid_slice->primitive = NULL;
-  grid_slice->indices = NULL;
+  grid_slice->mesh = NULL;
 
-  pointalism_generate_grid (grid_slice, ctx, tex_width, tex_height, size);
+  pointalism_generate_grid (grid_slice, tex_width, tex_height, size);
 
   return grid_slice;
 }
@@ -476,7 +447,7 @@ rut_pointalism_grid_new (RutContext *ctx,
   grid->ctx = rut_refable_ref (ctx);
 
 
-  grid->slice = pointalism_grid_slice_new (ctx, tex_width, tex_height,
+  grid->slice = pointalism_grid_slice_new (tex_width, tex_height,
                                            size);
 
   half_tex_width = tex_width / 2.0f;
@@ -511,7 +482,9 @@ CoglPrimitive *
 rut_pointalism_grid_get_primitive (RutObject *object)
 {
   RutPointalismGrid *grid = object;
-  return grid->slice->primitive;
+  CoglPrimitive *primitive = rut_mesh_create_primitive (grid->ctx,
+                                                        grid->slice->mesh);
+  return primitive;
 }
 
 RutMesh *
@@ -630,6 +603,6 @@ rut_pointalism_grid_set_cell_size (RutObject *obj,
   rut_property_dirty (&ctx->property_ctx,
                       &grid->properties[RUT_POINTALISM_GRID_PROP_CELL_SIZE]);
 
-  pointalism_generate_grid (grid->slice, grid->ctx, grid->tex_width,
+  pointalism_generate_grid (grid->slice, grid->tex_width,
                             grid->tex_height, grid->cell_size);
 }

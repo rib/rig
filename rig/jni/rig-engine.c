@@ -898,6 +898,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rut_entity_set_scale (entity, 200.0 / max_range);
 
           rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
 
           break;
         }
@@ -921,6 +922,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_undo_journal_add_component_and_log (sub_journal, entity, text);
 
           rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
         }
       else if (asset == engine->circle_builtin_asset)
         {
@@ -970,6 +972,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_undo_journal_add_component_and_log (sub_journal, entity, shape);
 
           rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
         }
       else if (asset == engine->diamond_builtin_asset)
         {
@@ -1020,6 +1023,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_undo_journal_add_component_and_log (sub_journal, entity, diamond);
 
           rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
         }
 
       else if (asset == engine->pointalism_grid_builtin_asset)
@@ -1069,6 +1073,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_undo_journal_add_component_and_log (sub_journal, entity, grid);
 
           rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
         }
 
       break;

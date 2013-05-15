@@ -990,7 +990,7 @@ get_entity_color_pipeline (RigEngine *engine,
       if (asset && !sources[1])
         {
           sources[1] = rut_image_source_new (engine->ctx, asset);
-          
+
           rut_entity_set_image_source_cache (entity, 1, sources[1]);
           rut_image_source_add_ready_callback (sources[1],
                                                rig_entity_new_image_source, 
@@ -1451,7 +1451,13 @@ rig_journal_flush (GArray *journal,
 
       if (rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
         {
-          primitive = rut_primable_get_primitive (geometry);
+          primitive = rut_entity_get_primitive_cache (entity, 0);
+          if (!primitive)
+            {
+              primitive = rut_primable_get_primitive (geometry);
+              rut_entity_set_primitive_cache (entity, 0, primitive);
+            }
+
           cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
           cogl_framebuffer_draw_primitive (fb,
                                            pipeline,
@@ -1694,13 +1700,18 @@ rig_entity_new_image_source (RutImageSource *source,
     }
 
   if (rut_object_get_type (geometry) == &rut_shape_type)
+    {
       rut_shape_set_texture_size (RUT_SHAPE (geometry), width, height);
+      rut_entity_set_pipeline_cache (entity, 0, NULL);
+    }
+
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
     {
       RutDiamond *diamond = geometry;
       float size = rut_diamond_get_size (diamond);
 
       rut_entity_remove_component (entity, geometry);
+      rut_entity_set_pipeline_cache (entity, 0, NULL);
       diamond = rut_diamond_new (ctx, size, width, height);
       rut_entity_add_component (entity, geometry);
     }
@@ -1716,6 +1727,7 @@ rig_entity_new_image_source (RutImageSource *source,
       lighter = rut_pointalism_grid_get_lighter (grid);
 
       rut_entity_remove_component (entity, geometry);
+      rut_entity_set_pipeline_cache (entity, 0, NULL);
       grid = rut_pointalism_grid_new (ctx, cell_size, width, height);
 
       rut_entity_add_component (entity, grid);

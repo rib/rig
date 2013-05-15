@@ -226,9 +226,19 @@ rut_entity_set_image_source_cache (RutEntity *entity,
                                    int slot,
                                    RutImageSource *src);
 
-RutImageSource*
+RutImageSource *
 rut_entity_get_image_source_cache (RutEntity *entity,
                                    int slot);
+
+
+void
+rut_entity_set_primitive_cache (RutEntity *entity,
+                                int slot,
+                                CoglPrimitive *primitive);
+
+CoglPrimitive *
+rut_entity_get_primitive_cache (RutEntity *entity,
+                                int slot);
 
 CoglBool
 rut_entity_get_visible (RutObject *entity);
