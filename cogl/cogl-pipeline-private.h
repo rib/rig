@@ -417,6 +417,19 @@ struct _CoglPipeline
    * blending, this holds our final decision */
   unsigned int          real_blend_enable:1;
 
+  /* Since the code for deciding if blending really needs to be
+   * enabled for a particular pipeline is quite expensive we update
+   * the real_blend_enable flag lazily when flushing a pipeline if
+   * this dirty flag has been set. */
+  unsigned int          dirty_real_blend_enable:1;
+
+  /* Whenever a pipeline is flushed we keep track of whether the
+   * pipeline was used with a color attribute where we don't know
+   * whether the colors are opaque. The real_blend_enable state
+   * depends on this, and must be updated whenever this changes (even
+   * if dirty_real_blend_enable isn't set) */
+  unsigned int          unknown_color_alpha:1;
+
   unsigned int          layers_cache_dirty:1;
 
   /* For debugging purposes it's possible to associate a static const
@@ -543,8 +556,9 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
 void
 _cogl_pipeline_prune_redundant_ancestry (CoglPipeline *pipeline);
 
-void _cogl_pipeline_update_blend_enable (CoglPipeline *pipeline,
-                                         CoglPipelineState changes);
+void
+_cogl_pipeline_update_real_blend_enable (CoglPipeline *pipeline,
+                                         CoglBool unknown_color_alpha);
 
 typedef enum
 {
@@ -777,13 +791,13 @@ _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
 CoglBool
 _cogl_pipeline_equal (CoglPipeline *pipeline0,
                       CoglPipeline *pipeline1,
-                      unsigned long differences,
+                      unsigned int differences,
                       unsigned long layer_differences,
                       CoglPipelineEvalFlags flags);
 
 unsigned int
 _cogl_pipeline_hash (CoglPipeline *pipeline,
-                     unsigned long differences,
+                     unsigned int differences,
                      unsigned long layer_differences,
                      CoglPipelineEvalFlags flags);
 

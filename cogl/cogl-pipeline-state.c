@@ -337,7 +337,7 @@ cogl_pipeline_set_color (CoglPipeline    *pipeline,
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_color_equal);
 
-  _cogl_pipeline_update_blend_enable (pipeline, state);
+  pipeline->dirty_real_blend_enable = TRUE;
 }
 
 void
@@ -411,7 +411,7 @@ _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
   _cogl_pipeline_update_authority (pipeline, authority, state,
                                    _cogl_pipeline_blend_enable_equal);
 
-  _cogl_pipeline_update_blend_enable (pipeline, state);
+  pipeline->dirty_real_blend_enable = TRUE;
 }
 
 static void
@@ -679,7 +679,7 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
       _cogl_pipeline_prune_redundant_ancestry (pipeline);
     }
 
-  _cogl_pipeline_update_blend_enable (pipeline, state);
+  pipeline->dirty_real_blend_enable = TRUE;
 
   return TRUE;
 }
@@ -720,7 +720,7 @@ cogl_pipeline_set_blend_constant (CoglPipeline *pipeline,
     _cogl_pipeline_update_authority (pipeline, authority, state,
                                      _cogl_pipeline_blend_state_equal);
 
-    _cogl_pipeline_update_blend_enable (pipeline, state);
+    pipeline->dirty_real_blend_enable = TRUE;
   }
 #endif
 }
