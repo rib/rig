@@ -16,7 +16,7 @@ if BUILD_COGL_PATH
 SUBDIRS += cogl-path
 endif
 
-SUBDIRS += tests examples doc po build
+SUBDIRS += tests examples po build
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
 

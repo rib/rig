@@ -1578,12 +1578,6 @@ cogl-gst/Makefile
 cogl-gst/cogl-gst.pc
 cogl-gles2/Makefile
 cogl-gles2/cogl-gles2-experimental.pc
-doc/Makefile
-doc/reference/Makefile
-doc/reference/cogl2/Makefile
-doc/reference/cogl2/cogl2-docs.xml
-doc/reference/cogl-gst/Makefile
-doc/reference/cogl-gst/cogl-gst-docs.xml
 examples/Makefile
 tests/Makefile
 tests/config.env
