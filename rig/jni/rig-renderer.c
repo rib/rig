@@ -528,15 +528,11 @@ rig_renderer_init (RigEngine *engine)
       /* declarations */
       "uniform float hair_pos;\n"
       "uniform float force;\n"
-      "uniform float layer;\n"
-      "uniform float slant;\n",
+      "uniform float layer;\n",
       /* post */
       "vec4 gravity_dir = vec4 (0.0, -1.0, 0.0, 0.0);\n"
       "vec4 pos = cogl_position_in;\n"
-      "vec3 n_pos = pos.xyz;\n"
-      "vec3 n_tan = tangent_in.xyz;\n"
-      "vec3 rotate = (n_pos - (dot (n_tan, n_pos) * n_tan) * cos (slant)) + (cross (n_pos, n_tan) * sin (slant)) + (dot (n_tan, n_pos) * n_tan);\n"
-      "pos.xyz = cogl_normal_in * hair_pos + rotate;\n"
+      "pos.xyz = cogl_normal_in * hair_pos + pos.xyz;\n"
       "cogl_position_out = cogl_modelview_projection_matrix * pos;\n"
       "cogl_position_out += gravity_dir * (pow (layer, 3.0) * force);\n");
 }
@@ -1495,7 +1491,7 @@ rig_journal_flush (GArray *journal,
           if (hair && material)
             {
               int i;
-              int location[3];
+              int location[2];
 
               location[0] = cogl_pipeline_get_uniform_location (pipeline,
                                                                 "force");
@@ -1505,15 +1501,11 @@ rig_journal_flush (GArray *journal,
                                                                 "hair_pos");
               location[1] = cogl_pipeline_get_uniform_location (pipeline,
                                                                 "layer");
-              location[2] = cogl_pipeline_get_uniform_location (pipeline,
-                                                                "slant");
               cogl_pipeline_set_layer_texture (pipeline, 11,
                                                rut_asset_get_texture (material->texture_asset));
               cogl_pipeline_set_uniform_1f (pipeline, location[1],
                                             0);
               cogl_pipeline_set_uniform_1f (pipeline, location[0],
-                                            0);
-              cogl_pipeline_set_uniform_1f (pipeline, location[2],
                                             0);
               cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
 
@@ -1525,9 +1517,7 @@ rig_journal_flush (GArray *journal,
                   for (j = 0; j < groups; j++)
                     {
                       float layer = ((float) groups * i + j) / (float) rut_hair_get_n_shells (hair);
-                      layer *= 5;
                       float hair_pos = rut_hair_get_length (hair) * layer;
-                      float slant = rut_hair_get_slant (hair) * (3.14 / 180.0);
 
                       cogl_pipeline_set_layer_texture (pipeline, 11,
                                                        rut_hair_get_texture (hair, i));
@@ -1536,13 +1526,7 @@ rig_journal_flush (GArray *journal,
                                                     layer);
                       cogl_pipeline_set_uniform_1f (pipeline, location[0],
                                                     hair_pos);
-                      cogl_pipeline_set_uniform_1f (pipeline, location[2],
-                                                    slant);
 
-                      cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
-                      slant = (-1.0 * rut_hair_get_slant (hair)) * (3.14 / 180.0);
-                      cogl_pipeline_set_uniform_1f (pipeline, location[2],
-                                                    slant);
                       cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
                     }
                 }

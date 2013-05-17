@@ -32,7 +32,7 @@ static RutPropertySpec _rut_hair_prop_specs[] = {
     .setter.float_type = rut_hair_set_length,
     .flags = RUT_PROPERTY_FLAG_READWRITE |
       RUT_PROPERTY_FLAG_VALIDATE,
-    .validation = { .float_range = { 0, 100 }},
+    .validation = { .float_range = { 0, 1000 }},
     .animatable = TRUE
   },
   {
@@ -231,13 +231,12 @@ rut_hair_new (RutContext *ctx)
   hair->ctx = rut_refable_ref (ctx);
 
   hair->length = 100;
-  hair->n_shells = 50;
+  hair->n_shells = 100;
   hair->gravity = 0.5;
   hair->density = 3000;
   hair->thickness = 0.02;
-  hair->resolution = 50;
+  hair->resolution = 100;
   hair->textures = NULL;
-  hair->slant = 45;
   hair->circle = cogl_texture_new_from_file (hair->ctx->cogl_context,
                                              rut_find_data_file ("circle1.png"),
                                                COGL_TEXTURE_NONE,
@@ -421,11 +420,4 @@ rut_hair_set_resolution (RutObject *obj,
   ctx = rut_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
                       &hair->properties[RUT_HAIR_PROP_RESOLUTION]);
-}
-
-float
-rut_hair_get_slant (RutObject *obj)
-{
-  RutHair *hair = obj;
-  return hair->slant;
 }

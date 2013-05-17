@@ -54,7 +54,6 @@ struct _RutHair
   int density;
   float thickness;
   int resolution;
-  float slant;
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_HAIR_N_PROPS];
@@ -110,8 +109,5 @@ rut_hair_get_resolution (RutObject *obj);
 void
 rut_hair_set_resolution (RutObject *obj,
                          int resolution);
-
-float
-rut_hair_get_slant (RutObject *obj);
 
 #endif
