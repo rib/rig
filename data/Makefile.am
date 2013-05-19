@@ -63,5 +63,14 @@ dist_assets_DATA += \
 	rig-key-pub.pem
 endif
 
+mimedir = $(datadir)/mime/application
+mime_DATA = rig-mime.xml
+
+mimeicondir = $(datadir)/pixmaps
+mimeicon_DATA = data/rig-logo-64.png
+
+desktopdir = $(datadir)/applications
+desktopdir = rig.desktop
+
 EXTRA_DIST = \
 	Info.plist.in

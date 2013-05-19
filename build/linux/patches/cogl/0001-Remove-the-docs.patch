@@ -1,0 +1,45 @@
+From 209109ab1b85d255e15bf6ea8baf379b0463c1ea Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Fri, 17 May 2013 17:02:19 +0100
+Subject: [PATCH] Remove the docs
+
+The thing to build without gtk-doc doesn't seem to work, so let's just
+hack it out
+---
+ Makefile.am  | 2 +-
+ configure.ac | 6 ------
+ 2 files changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 15fb589..c4116ba 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -12,7 +12,7 @@ if BUILD_COGL_GST
+ SUBDIRS += cogl-gst
+ endif
+ 
+-SUBDIRS += examples doc po build
++SUBDIRS += examples po build
+ 
+ ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
+ 
+diff --git a/configure.ac b/configure.ac
+index f0bb096..73ef2ea 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1329,12 +1329,6 @@ cogl-gst/Makefile
+ cogl-gst/cogl-gst.pc
+ cogl-gles2/Makefile
+ cogl-gles2/cogl-gles2-experimental.pc
+-doc/Makefile
+-doc/reference/Makefile
+-doc/reference/cogl2/Makefile
+-doc/reference/cogl2/cogl2-docs.xml
+-doc/reference/cogl-gst/Makefile
+-doc/reference/cogl-gst/cogl-gst-docs.xml
+ examples/Makefile
+ tests/Makefile
+ tests/conform/Makefile
+-- 
+1.8.2.1
+
