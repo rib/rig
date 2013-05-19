@@ -2550,6 +2550,8 @@ rig_engine_init (RutShell *shell, void *user_data)
       stat (engine->ui_filename, &st);
       if (S_ISREG (st.st_mode))
         rig_load (engine, engine->ui_filename);
+      else
+        rig_engine_handle_ui_update (engine);
     }
 #endif
 
