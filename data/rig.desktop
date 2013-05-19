@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Rig
+GenericName=UI editor
+Comment=UI editor for GPU accelerated Rig UI engine
+Exec=rig %f
+Icon=rig
+Terminal=false
+Type=Application
+Categories=Graphics;3DGraphics;UIGraphics
+MimeType=application/x-rig;
+

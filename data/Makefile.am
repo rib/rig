@@ -67,10 +67,10 @@ mimedir = $(datadir)/mime/application
 mime_DATA = rig-mime.xml
 
 mimeicondir = $(datadir)/pixmaps
-mimeicon_DATA = data/rig-logo-64.png
+mimeicon_DATA = rig-logo-64.png
 
 desktopdir = $(datadir)/applications
-desktopdir = rig.desktop
+desktop_DATA = rig.desktop
 
 EXTRA_DIST = \
 	Info.plist.in
