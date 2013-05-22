@@ -28,6 +28,7 @@ unported_test_sources = \
 test_sources = \
 	test-atlas-migration.c \
 	test-blend-strings.c \
+	test-blend.c \
 	test-depth-test.c \
 	test-color-hsl.c \
 	test-color-mask.c \
