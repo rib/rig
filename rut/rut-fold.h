@@ -36,6 +36,9 @@ void
 rut_fold_set_child (RutFold *fold, RutObject *child);
 
 void
+rut_fold_set_header_child (RutFold *fold, RutObject *child);
+
+void
 rut_fold_set_folded (RutFold *fold, CoglBool folded);
 
 void

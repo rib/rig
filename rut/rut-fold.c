@@ -33,6 +33,8 @@ struct _RutFold
   RutContext *context;
 
   RutBoxLayout *vbox;
+  RutBoxLayout *header_hbox_right;
+
   RutText *label;
   RutFixed *fold_icon_shim;
   RutNineSlice *fold_up_icon;
@@ -43,6 +45,7 @@ struct _RutFold
   CoglBool folded;
 
   RutObject *child;
+  RutObject *header_child;
 
   RutGraphableProps graphable;
 
@@ -221,8 +224,9 @@ rut_fold_new (RutContext *ctx,
 {
   RutFold *fold = g_slice_new0 (RutFold);
   static CoglBool initialized = FALSE;
-  RutStack *header_stack;
   RutBoxLayout *header_hbox;
+  RutStack *left_header_stack;
+  RutBoxLayout *left_header_hbox;
   RutBin *label_bin;
   RutBin *fold_icon_align;
   CoglTexture *texture;
@@ -244,20 +248,25 @@ rut_fold_new (RutContext *ctx,
 
   fold->vbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
-  header_stack = rut_stack_new (ctx, 0, 0);
-  rut_box_layout_add (fold->vbox, FALSE, header_stack);
-  rut_refable_unref (header_stack);
-
   header_hbox =
     rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_stack_add (header_stack, header_hbox);
+  rut_box_layout_add (fold->vbox, FALSE, header_hbox);
   rut_refable_unref (header_hbox);
+
+  left_header_stack = rut_stack_new (ctx, 0, 0);
+  rut_box_layout_add (header_hbox, TRUE, left_header_stack);
+  rut_refable_unref (left_header_stack);
+
+  left_header_hbox =
+    rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_stack_add (left_header_stack, left_header_hbox);
+  rut_refable_unref (left_header_hbox);
 
   fold_icon_align = rut_bin_new (ctx);
   rut_bin_set_x_position (fold_icon_align, RUT_BIN_POSITION_BEGIN);
   rut_bin_set_y_position (fold_icon_align, RUT_BIN_POSITION_CENTER);
   rut_bin_set_right_padding (fold_icon_align, 10);
-  rut_box_layout_add (header_hbox, FALSE, fold_icon_align);
+  rut_box_layout_add (left_header_hbox, FALSE, fold_icon_align);
   rut_refable_unref (fold_icon_align);
 
   texture = rut_load_texture_from_data_file (ctx, "tri-fold-up.png", NULL);
@@ -287,12 +296,17 @@ rut_fold_new (RutContext *ctx,
 
   label_bin = rut_bin_new (ctx);
   rut_bin_set_y_position (label_bin, RUT_BIN_POSITION_CENTER);
-  rut_box_layout_add (header_hbox, FALSE, label_bin);
+  rut_box_layout_add (left_header_hbox, FALSE, label_bin);
   rut_refable_unref (label_bin);
 
   fold->label = rut_text_new_with_text (ctx, NULL, label);
   rut_bin_set_child (label_bin, fold->label);
   rut_refable_unref (fold->label);
+
+  fold->header_hbox_right =
+    rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_RIGHT_TO_LEFT);
+  rut_box_layout_add (header_hbox, TRUE, fold->header_hbox_right);
+  rut_refable_unref (fold->header_hbox_right);
 
   cogl_color_init_from_4f (&black, 0, 0, 0, 1);
   rut_fold_set_folder_color (fold, &black);
@@ -304,7 +318,7 @@ rut_fold_new (RutContext *ctx,
   fold->input_region = rut_input_region_new_rectangle (0, 0, 0, 0,
                                                        input_cb,
                                                        fold);
-  rut_stack_add (header_stack, fold->input_region);
+  rut_stack_add (left_header_stack, fold->input_region);
   rut_refable_unref (fold->input_region);
 
   fold->folded = FALSE;
@@ -330,6 +344,24 @@ rut_fold_set_child (RutFold *fold, RutObject *child)
   fold->child = child;
   if (child && !fold->folded)
     rut_box_layout_add (fold->vbox, TRUE, child);
+}
+
+void
+rut_fold_set_header_child (RutFold *fold, RutObject *child)
+{
+  g_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
+
+  if (child)
+    rut_refable_ref (child);
+
+  if (fold->header_child)
+    {
+      rut_box_layout_remove (fold->header_hbox_right, fold->header_child);
+      rut_refable_unref (fold->header_child);
+    }
+
+  fold->header_child = child;
+  rut_box_layout_add (fold->header_hbox_right, TRUE, child);
 }
 
 void
