@@ -104,6 +104,7 @@ struct _RigTransitionViewObject
   RutList list_node;
 
   RutObject *object;
+  RutProperty *label_property;
 
   RutList properties;
 
@@ -1199,13 +1200,13 @@ rig_transition_view_path_operation_cb (RigPath *path,
 
 static void
 rig_transition_view_update_label_property (RutProperty *target_property,
-                                           RutProperty *source_property,
                                            void *user_data)
 {
-  RigTransitionView *view = user_data;
+  RigTransitionViewObject *object_data = user_data;
+  RigTransitionView *view = object_data->view;
   const char *label;
 
-  label = rut_property_get_text (source_property);
+  label = rut_property_get_text (object_data->label_property);
 
   if (label == NULL || *label == 0)
     label = "Object";
@@ -1236,17 +1237,18 @@ rig_transition_view_create_object_data (RigTransitionView *view,
                           "Sans Bold");
 
   label_property = rut_introspectable_lookup_property (object, "label");
+  object_data->label_property = label_property;
+
   buffer = rut_text_get_buffer (object_data->controls[0].control);
   text_property = rut_introspectable_lookup_property (buffer, "text");
 
   if (label_property && text_property)
     {
       rig_transition_view_update_label_property (text_property,
-                                                 label_property,
-                                                 view);
+                                                 object_data);
       rut_property_set_binding (text_property,
                                 rig_transition_view_update_label_property,
-                                view,
+                                object_data,
                                 label_property,
                                 NULL);
     }

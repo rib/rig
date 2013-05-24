@@ -258,10 +258,11 @@ rut_property_set_binding_full_by_name (RutObject *object,
 
 static void
 _rut_property_copy_binding_cb (RutProperty *target_property,
-                               RutProperty *source_property,
                                void *user_data)
 {
   RutPropertyContext *context = user_data;
+  RutProperty *source_property =
+    rut_property_get_first_source (target_property);
 
   rut_property_copy_value (context,
                            target_property,
@@ -295,7 +296,7 @@ rut_property_dirty (RutPropertyContext *ctx,
       RutProperty *dependant = l->data;
       RutPropertyBinding *binding = dependant->binding;
       if (binding)
-        binding->callback (dependant, property, binding->user_data);
+        binding->callback (dependant, binding->user_data);
     }
 }
 

@@ -186,8 +186,12 @@ typedef struct _RutPropertySpec
   unsigned int animatable:1;
 } RutPropertySpec;
 
+/* Note: we intentionally don't pass a pointer to a "source property"
+ * that is the property that has changed because RutProperty is
+ * designed so that we can defer binding callbacks until the mainloop
+ * so we can avoid redundant callbacks in cases where multiple
+ * dependencies of a property may be changed. */
 typedef void (*RutBindingCallback) (RutProperty *target_property,
-                                    RutProperty *source_property,
                                     void *user_data);
 
 typedef void (*RutBindingDestroyNotify) (RutProperty *property,
@@ -471,6 +475,12 @@ void
 rut_property_set_boxed (RutPropertyContext *ctx,
                         RutProperty *property,
                         const RutBoxed *boxed);
+
+static inline RutProperty *
+rut_property_get_first_source (RutProperty *property)
+{
+  return property->binding->dependencies->data;
+}
 
 void
 rut_boxed_destroy (RutBoxed *boxed);

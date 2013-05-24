@@ -3525,7 +3525,6 @@ buffer_deleted_text (RutTextBuffer *buffer,
 
 static void
 text_property_binding_cb (RutProperty *target_property,
-                          RutProperty *source_property,
                           void *user_data)
 {
   RutText *text = user_data;
@@ -3546,7 +3545,6 @@ text_property_binding_cb (RutProperty *target_property,
 
 static void
 max_length_property_binding_cb (RutProperty *target_property,
-                                RutProperty *source_property,
                                 void *user_data)
 {
   RutText *text = user_data;

@@ -254,7 +254,6 @@ reload_animated_inspector_properties (RigEngine *engine)
 
 static void
 update_transition_progress_cb (RutProperty *target_property,
-                               RutProperty *source_property,
                                void *user_data)
 {
   RigEngine *engine = user_data;

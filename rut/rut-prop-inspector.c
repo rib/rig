@@ -499,13 +499,11 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
 
 static void
 property_changed_cb (RutProperty *target_prop,
-                     RutProperty *source_prop,
                      void *user_data)
 {
   RutPropInspector *inspector = user_data;
 
   g_return_if_fail (target_prop == &inspector->dummy_prop);
-  g_return_if_fail (source_prop == inspector->source_prop);
 
   /* If the property change was only triggered because we are
    * rereading the existing value then we won't bother notifying

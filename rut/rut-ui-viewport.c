@@ -645,7 +645,6 @@ queue_allocation (RutUIViewport *ui_viewport)
 
 static void
 update_doc_xy_cb (RutProperty *target_property,
-                  RutProperty *source_property,
                   void *user_data)
 {
   RutUIViewport *ui_viewport = user_data;

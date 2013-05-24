@@ -66,6 +66,7 @@ struct _RutVec3Slider
   RutTransform *label_transform;
   RutVec3SliderControl controls[3];
 
+  bool in_set_value;
   float value[3];
 
   RutSimpleIntrospectableProps introspectable;
@@ -355,29 +356,22 @@ _rut_vec3_slider_init_type (void)
 
 static void
 rut_vec3_slider_property_changed_cb (RutProperty *target_property,
-                                     RutProperty *source_property,
                                      void *user_data)
 {
   RutVec3Slider *slider = user_data;
+  float value[3];
   int i;
+
+  if (slider->in_set_value)
+    return;
 
   for (i = 0; i < 3; i++)
     {
       RutVec3SliderControl *control = slider->controls + i;
-
-      /* When rut_vec3_slider_set_value is called this callback will
-       * be invoked three times, one for each of the child number
-       * sliders that get modified. Therefore we only want to update
-       * the value for the property that is actually being notified
-       * because otherwise we will update the vec3 with values from
-       * the number sliders that haven't been updated yet and we will
-       * report an inconsistent value. */
-      if (source_property == control->property)
-        slider->value[i] = rut_number_slider_get_value (control->slider);
+      value[i] = rut_number_slider_get_value (control->slider);
     }
 
-  rut_property_dirty (&slider->context->property_ctx,
-                      &slider->properties[RUT_VEC3_SLIDER_PROP_VALUE]);
+  rut_vec3_slider_set_value (slider, value);
 }
 
 RutVec3Slider *
@@ -486,21 +480,28 @@ rut_vec3_slider_set_value (RutObject *obj,
                            const float *value)
 {
   RutVec3Slider *slider = RUT_VEC3_SLIDER (obj);
-
   int i;
 
-  /* This value will get updated anyway as the notifications for the
-   * slider properties are emitted. However we want to copy in the
-   * whole value immediately so that it won't notify on an
-   * inconsistent state in response to the slider values changing */
   memcpy (slider->value, value, sizeof (float) * 3);
 
+  /* Normally we update slider->value[] based on notifications from
+   * the per-component slider controls, but since we are manually
+   * updating the controls here we need to temporarily ignore
+   * the notifications so we avoid any recursion
+   *
+   * Note: If we change property notifications be deferred to the
+   * mainloop then this mechanism will become redundant
+   */
+  slider->in_set_value = TRUE;
   for (i = 0; i < 3; i++)
     {
       RutVec3SliderControl *control = slider->controls + i;
-
       rut_number_slider_set_value (control->slider, value[i]);
     }
+  slider->in_set_value = FALSE;
+
+  rut_property_dirty (&slider->context->property_ctx,
+                      &slider->properties[RUT_VEC3_SLIDER_PROP_VALUE]);
 }
 
 void
