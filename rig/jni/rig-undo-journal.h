@@ -42,6 +42,8 @@ typedef enum _UndoRedoOp
   UNDO_REDO_SET_ANIMATED_OP,
   UNDO_REDO_ADD_ENTITY_OP,
   UNDO_REDO_DELETE_ENTITY_OP,
+  UNDO_REDO_ADD_COMPONENT_OP,
+  UNDO_REDO_DELETE_COMPONENT_OP,
   UNDO_REDO_MOVE_PATH_NODES_OP,
   UNDO_REDO_N_OPS
 } UndoRedoOp;
@@ -110,6 +112,13 @@ typedef struct _UndoRedoAddDeleteEntity
   RutList properties;
 } UndoRedoAddDeleteEntity;
 
+typedef struct _UndoRedoAddDeleteComponent
+{
+  RutEntity *parent_entity;
+  RutObject *deleted_component;
+  RutList properties;
+} UndoRedoAddDeleteComponent;
+
 typedef struct _UndoRedo
 {
   RutList list_node;
@@ -123,6 +132,7 @@ typedef struct _UndoRedo
       UndoRedoPathModify path_modify;
       UndoRedoSetAnimated set_animated;
       UndoRedoAddDeleteEntity add_delete_entity;
+      UndoRedoAddDeleteComponent add_delete_component;
       UndoRedoMovePathNodes move_path_nodes;
       RigUndoJournal *subjournal;
     } d;
@@ -193,6 +203,15 @@ void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
                                         RutEntity *entity);
 
+void
+rig_undo_journal_add_component_and_log (RigUndoJournal *journal,
+                                        RutEntity *entity,
+                                        RutObject *component);
+
+void
+rig_undo_journal_delete_component_and_log (RigUndoJournal *journal,
+                                           RutObject *component);
+
 /**
  * rig_undo_journal_log_subjournal:
  * @journal: The main journal
@@ -207,7 +226,8 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
  */
 void
 rig_undo_journal_log_subjournal (RigUndoJournal *journal,
-                                 RigUndoJournal *subjournal);
+                                 RigUndoJournal *subjournal,
+                                 bool apply);
 
 CoglBool
 rig_undo_journal_undo (RigUndoJournal *journal);
@@ -217,6 +237,9 @@ rig_undo_journal_redo (RigUndoJournal *journal);
 
 RigUndoJournal *
 rig_undo_journal_new (RigEngine *engine);
+
+bool
+rig_undo_journal_is_empty (RigUndoJournal *journal);
 
 void
 rig_undo_journal_free (RigUndoJournal *journal);

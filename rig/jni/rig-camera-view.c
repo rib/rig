@@ -1504,7 +1504,8 @@ move_entity_to_camera (RigCameraView *view,
                                          rotation_property);
 
   rig_undo_journal_log_subjournal (engine->undo_journal,
-                                   sub_journal);
+                                   sub_journal,
+                                   FALSE);
 }
 
 static RutEntity *

@@ -333,7 +333,7 @@ inspector_animated_changed_cb (RutProperty *property,
                                              &property_value,
                                              property);
 
-      rig_undo_journal_log_subjournal (engine->undo_journal, subjournal);
+      rig_undo_journal_log_subjournal (engine->undo_journal, subjournal, FALSE);
 
       rut_boxed_destroy (&property_value);
     }
@@ -394,6 +394,29 @@ create_inspector (RigEngine *engine,
   return inspector;
 }
 
+typedef struct _DeleteButtonState
+{
+  RigEngine *engine;
+  RutObject *component;
+} DeleteButtonState;
+
+static void
+free_delete_button_state (void *user_data)
+{
+  g_slice_free (DeleteButtonState, user_data);
+}
+
+static void
+delete_button_click_cb (RutIconButton *button, void *user_data)
+{
+  DeleteButtonState *state = user_data;
+
+  rig_undo_journal_delete_component_and_log (state->engine->undo_journal,
+                                             state->component);
+
+  rut_shell_queue_redraw (state->engine->ctx->shell);
+}
+
 static void
 add_component_inspector_cb (RutComponent *component,
                             void *user_data)
@@ -403,6 +426,9 @@ add_component_inspector_cb (RutComponent *component,
   const char *name = rut_object_get_type_name (component);
   char *label;
   RutFold *fold;
+  RutBin *button_bin;
+  RutIconButton *delete_button;
+  DeleteButtonState *button_state;
 
   if (strncmp (name, "Rig", 3) == 0)
     name += 3;
@@ -416,20 +442,48 @@ add_component_inspector_cb (RutComponent *component,
   rut_fold_set_child (fold, inspector);
   rut_refable_unref (inspector);
 
+  button_bin = rut_bin_new (engine->ctx);
+  rut_bin_set_left_padding (button_bin, 10);
+  rut_fold_set_header_child (fold, button_bin);
+
+  /* FIXME: we need better assets here so we can see a visual change
+   * when the button is pressed down */
+  delete_button = rut_icon_button_new (engine->ctx,
+                                       NULL, /* no label */
+                                       RUT_ICON_BUTTON_POSITION_BELOW,
+                                       "component-delete.png", /* normal */
+                                       "component-delete.png", /* hover */
+                                       "component-delete.png", /* active */
+                                       "component-delete.png"); /* disabled */
+  button_state = g_slice_new (DeleteButtonState);
+  button_state->engine = engine;
+  button_state->component = component;
+  rut_icon_button_add_on_click_callback (delete_button,
+                                         delete_button_click_cb,
+                                         button_state,
+                                         free_delete_button_state); /* destroy notify */
+  rut_bin_set_child (button_bin, delete_button);
+  rut_refable_unref (delete_button);
+
   rut_box_layout_add (engine->inspector_box_layout, FALSE, fold);
   rut_refable_unref (fold);
 
   engine->all_inspectors =
-    g_list_prepend (engine->all_inspectors, fold);
+    g_list_prepend (engine->all_inspectors, inspector);
 }
 
-static void
-update_inspector (RigEngine *engine)
+void
+_rig_engine_update_inspector (RigEngine *engine)
 {
-  GList *l;
+  /* This will drop the last reference to any current
+   * engine->inspector_box_layout and also any indirect references
+   * to existing RutInspectors */
+  rut_bin_set_child (engine->inspector_bin, NULL);
 
-  for (l = engine->all_inspectors; l; l = l->next)
-    rut_box_layout_remove (engine->inspector_box_layout, l->data);
+  engine->inspector_box_layout =
+    rut_box_layout_new (engine->ctx,
+                        RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  rut_bin_set_child (engine->inspector_bin, engine->inspector_box_layout);
 
   engine->inspector = NULL;
   g_list_free (engine->all_inspectors);
@@ -462,7 +516,7 @@ rig_engine_dirty_properties_menu (RutImageSource *source,
                                   void *user_data)
 {
   RigEngine *engine = user_data;
-  update_inspector (engine);
+  _rig_engine_update_inspector (engine);
 }
 
 void
@@ -606,7 +660,7 @@ rig_select_entity (RigEngine *engine,
         rut_tool_update (engine->tool, NULL);
 
       rut_shell_queue_redraw (engine->ctx->shell);
-      update_inspector (engine);
+      _rig_engine_update_inspector (engine);
     }
 }
 
@@ -684,6 +738,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 {
   RutAsset *asset = closure->asset;
   RigEngine *engine = closure->engine;
+  RigUndoJournal *sub_journal = rig_undo_journal_new (engine);
   RutAssetType type = rut_asset_get_type (asset);
   RutMaterial *material;
   RutObject *geom;
@@ -700,7 +755,8 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (!material)
             {
               material = rut_material_new (engine->ctx, asset);
-              rut_entity_add_component (entity, material);
+              rig_undo_journal_add_component_and_log (sub_journal,
+                                                      entity, material);
             }
 
           if (type == RUT_ASSET_TYPE_TEXTURE)
@@ -745,7 +801,8 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (!geom)
             {
               RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
-              rut_entity_add_component (entity, shape);
+              rig_undo_journal_add_component_and_log (sub_journal,
+                                                      entity, shape);
               geom = shape;
             }
 
@@ -766,7 +823,7 @@ apply_asset_input_to_entity (RutEntity *entity,
                 break;
             }
           else if (geom)
-            rut_entity_remove_component (entity, geom);
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
 
           /* XXX: For now we forcibly remove any material from
            * the entity when adding a ply model geometry
@@ -777,10 +834,10 @@ apply_asset_input_to_entity (RutEntity *entity,
           material =
             rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
           if (material)
-            rut_entity_remove_component (entity, material);
+            rig_undo_journal_delete_component_and_log (sub_journal, material);
 
           model = rut_model_new_from_asset (engine->ctx, asset);
-          rut_entity_add_component (entity, model);
+          rig_undo_journal_add_component_and_log (sub_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
           y_range = model->max_y - model->min_y;
@@ -808,14 +865,14 @@ apply_asset_input_to_entity (RutEntity *entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
           if (geom && rut_object_get_type (geom) == &rut_text_type)
-            return;
+            break;
           else if (geom)
-            rut_entity_remove_component (entity, geom);
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
 
           text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
           cogl_color_init_from_4f (&color, 1, 1, 1, 1);
           rut_text_set_color (text, &color);
-          rut_entity_add_component (entity, text);
+          rig_undo_journal_add_component_and_log (sub_journal, entity, text);
 
           rig_renderer_dirty_entity_state (entity);
         }
@@ -830,7 +887,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (geom && rut_object_get_type (geom) == &rut_shape_type)
             break;
           else if (geom)
-            rut_entity_remove_component (entity, geom);
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
@@ -864,7 +921,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 
           shape = rut_shape_new (engine->ctx, TRUE, tex_width,
                                  tex_height);
-          rut_entity_add_component (entity, shape);
+          rig_undo_journal_add_component_and_log (sub_journal, entity, shape);
 
           rig_renderer_dirty_entity_state (entity);
         }
@@ -879,7 +936,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (geom && rut_object_get_type (geom) == &rut_diamond_type)
             break;
           else if (geom)
-            rut_entity_remove_component (entity, geom);
+            rig_undo_journal_add_component_and_log (sub_journal, entity, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -914,7 +971,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 
           diamond = rut_diamond_new (engine->ctx, 200, tex_width,
                                      tex_height);
-          rut_entity_add_component (entity, diamond);
+          rig_undo_journal_add_component_and_log (sub_journal, entity, diamond);
 
           rig_renderer_dirty_entity_state (entity);
         }
@@ -933,7 +990,7 @@ apply_asset_input_to_entity (RutEntity *entity,
               break;
             }
           else if (geom)
-            rut_entity_remove_component (entity, geom);
+            rig_undo_journal_add_component_and_log (sub_journal, entity, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -963,13 +1020,18 @@ apply_asset_input_to_entity (RutEntity *entity,
           grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
                                           tex_height);
 
-          rut_entity_add_component (entity, grid);
+          rig_undo_journal_add_component_and_log (sub_journal, entity, grid);
 
           rig_renderer_dirty_entity_state (entity);
         }
 
       break;
     }
+
+  if (rig_undo_journal_is_empty (sub_journal))
+    rig_undo_journal_free (sub_journal);
+  else
+    rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal, FALSE);
 }
 
 static RutInputEventStatus
@@ -1002,7 +1064,7 @@ asset_input_cb (RutInputRegion *region,
               apply_asset_input_to_entity (entity, closure);
             }
 
-          update_inspector (engine);
+          _rig_engine_update_inspector (engine);
           rut_shell_queue_redraw (engine->ctx->shell);
           status = RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -1669,20 +1731,19 @@ create_properties_bar (RigEngine *engine)
   rut_stack_add (stack1, bg);
   rut_refable_unref (bg);
 
-  engine->inspector_box_layout =
-    rut_box_layout_new (engine->ctx,
-                        RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-
   properties_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_ui_viewport_add (properties_vp, engine->inspector_box_layout);
+  engine->properties_vp = properties_vp;
 
   rut_stack_add (stack1, properties_vp);
   rut_refable_unref (properties_vp);
 
   rut_ui_viewport_set_x_pannable (properties_vp, FALSE);
   rut_ui_viewport_set_y_pannable (properties_vp, TRUE);
-  rut_ui_viewport_set_sync_widget (properties_vp,
-                                   engine->inspector_box_layout);
+
+  engine->inspector_bin = rut_bin_new (engine->ctx);
+  rut_ui_viewport_add (engine->properties_vp, engine->inspector_bin);
+
+  rut_ui_viewport_set_sync_widget (properties_vp, engine->inspector_bin);
 
   rut_box_layout_add (engine->properties_hbox, FALSE, stack0);
   rut_refable_unref (stack0);
@@ -2752,7 +2813,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
                    RUT_MODIFIER_CTRL_ON))
                 {
                   rig_select_entity (engine, engine->play_camera, RUT_SELECT_ACTION_REPLACE);
-                  update_inspector (engine);
+                  _rig_engine_update_inspector (engine);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
               break;

@@ -153,6 +153,8 @@ struct _RigEngine
   GList *asset_enumerators;
 
   RutUIViewport *tool_vp;
+  RutUIViewport *properties_vp;
+  RutBin *inspector_bin;
   RutBoxLayout *inspector_box_layout;
   RutObject *inspector;
   GList *all_inspectors;
@@ -339,5 +341,8 @@ rig_engine_sync_slaves (RigEngine *engine);
 void
 rig_engine_dirty_properties_menu (RutImageSource *source,
                                   void *user_data);
+
+void
+_rig_engine_update_inspector (RigEngine *engine);
 
 #endif /* _RUT_ENGINE_H_ */

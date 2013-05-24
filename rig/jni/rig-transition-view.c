@@ -2098,7 +2098,7 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
         }
 
       if (journal != view->undo_journal)
-        rig_undo_journal_log_subjournal (view->undo_journal, journal);
+        rig_undo_journal_log_subjournal (view->undo_journal, journal, FALSE);
     }
 }
 

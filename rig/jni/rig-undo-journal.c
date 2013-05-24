@@ -32,8 +32,10 @@ typedef struct _UndoRedoOpImpl
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
 
-static CoglBool
-rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo);
+static bool
+rig_undo_journal_insert (RigUndoJournal *journal,
+                         UndoRedo *undo_redo,
+                         bool apply);
 
 static void
 undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo);
@@ -197,7 +199,7 @@ rig_undo_journal_set_constant_property_and_log (RigUndoJournal *journal,
       rut_boxed_destroy (&prop_data->constant_value);
       rut_boxed_copy (&prop_data->constant_value, value);
 
-      rig_undo_journal_insert (journal, undo_redo);
+      rig_undo_journal_insert (journal, undo_redo, FALSE);
     }
 }
 
@@ -302,7 +304,7 @@ rig_undo_journal_set_timeline_property_and_log (RigUndoJournal *journal,
                               property,
                               value);
 
-      rig_undo_journal_insert (journal, undo_redo);
+      rig_undo_journal_insert (journal, undo_redo, FALSE);
     }
 }
 
@@ -367,7 +369,7 @@ rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
       rig_path_move_node (prop_data->path, node->node, moved_node->new_time);
     }
 
-  rig_undo_journal_insert (journal, undo_redo);
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
 }
 
 void
@@ -419,7 +421,7 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
 
       rig_path_remove_node (path, node);
 
-      rig_undo_journal_insert (journal, undo_redo);
+      rig_undo_journal_insert (journal, undo_redo, FALSE);
     }
 }
 
@@ -446,70 +448,7 @@ rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
                                         property,
                                         value);
 
-  rig_undo_journal_insert (journal, undo_redo);
-}
-
-typedef struct
-{
-  RutObject *object;
-  UndoRedoAddDeleteEntity *delete_entity;
-} CopyPropertyClosure;
-
-static void
-copy_property_cb (RigTransitionPropData *prop_data,
-                  void *user_data)
-{
-  CopyPropertyClosure *engine = user_data;
-  UndoRedoAddDeleteEntity *delete_entity = engine->delete_entity;
-
-  if (prop_data->property->object == engine->object)
-    {
-      UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
-
-      undo_prop_data->animated = prop_data->animated;
-      rut_boxed_copy (&undo_prop_data->constant_value,
-                      &prop_data->constant_value);
-      /* As the entity is about to be deleted we can safely just take
-       * ownership of the path without worrying about it later being
-       * modified */
-      undo_prop_data->path =
-        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
-      undo_prop_data->property = prop_data->property;
-
-      rut_list_insert (delete_entity->properties.prev,
-                       &undo_prop_data->link);
-    }
-}
-
-static void
-copy_object_properties (RigTransition *transition,
-                        UndoRedoAddDeleteEntity *delete_entity,
-                        RutObject *object)
-{
-  CopyPropertyClosure engine;
-
-  engine.delete_entity = delete_entity;
-  engine.object = object;
-  rig_transition_foreach_property (transition,
-                                   copy_property_cb,
-                                   &engine);
-}
-
-typedef struct
-{
-  RigTransition *transition;
-  UndoRedoAddDeleteEntity *delete_entity;
-} DeleteEntityComponentClosure;
-
-static void
-delete_entity_component_cb (RutComponent *component,
-                            void *user_data)
-{
-  DeleteEntityComponentClosure *engine = user_data;
-
-  copy_object_properties (engine->transition,
-                          engine->delete_entity,
-                          component);
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
 }
 
 void
@@ -537,19 +476,64 @@ rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
   rut_graphable_add_child (parent_entity, entity);
   rut_shell_queue_redraw (engine->ctx->shell);
 
-  rig_undo_journal_insert (journal, undo_redo);
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
+}
+
+typedef struct
+{
+  RutObject *object;
+  RutList *properties;
+} CopyTransitionPropertiesData;
+
+static void
+copy_transition_property_cb (RigTransitionPropData *prop_data,
+                             void *user_data)
+{
+  CopyTransitionPropertiesData *data = user_data;
+
+  if (prop_data->property->object == data->object)
+    {
+      UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
+
+      undo_prop_data->animated = prop_data->animated;
+      rut_boxed_copy (&undo_prop_data->constant_value,
+                      &prop_data->constant_value);
+      /* As the property's owner is being deleted we can safely just
+       * take ownership of the path without worrying about it later
+       * being modified.
+       */
+      undo_prop_data->path =
+        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
+      undo_prop_data->property = prop_data->property;
+
+      rut_list_insert (data->properties->prev,
+                       &undo_prop_data->link);
+    }
+}
+
+static void
+delete_entity_component_cb (RutComponent *component,
+                            void *user_data)
+{
+  RigUndoJournal *journal = user_data;
+  rig_undo_journal_delete_component_and_log (journal, component);
 }
 
 void
 rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
                                         RutEntity *entity)
 {
+  RigUndoJournal *sub_journal = rig_undo_journal_new (journal->engine);
   UndoRedo *undo_redo;
   UndoRedoAddDeleteEntity *delete_entity;
   RutEntity *parent = rut_graphable_get_parent (entity);
   UndoRedoPropData *prop_data;
-  DeleteEntityComponentClosure delete_component_data;
   RigEngine *engine = journal->engine;
+  CopyTransitionPropertiesData copy_properties_data;
+
+  rut_entity_foreach_component (entity,
+                                delete_entity_component_cb,
+                                sub_journal);
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
@@ -563,16 +547,13 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   /* Grab a copy of the transition engine for all the properties of the
    * entity */
   rut_list_init (&delete_entity->properties);
-  copy_object_properties (engine->selected_transition,
-                          delete_entity,
-                          entity);
 
-  /* Also copy the property engine of each component */
-  delete_component_data.transition = engine->selected_transition;
-  delete_component_data.delete_entity = delete_entity;
-  rut_entity_foreach_component (entity,
-                                delete_entity_component_cb,
-                                &delete_component_data);
+  copy_properties_data.object = entity;
+  copy_properties_data.properties = &delete_entity->properties;
+
+  rig_transition_foreach_property (engine->selected_transition,
+                                   copy_transition_property_cb,
+                                   &copy_properties_data);
 
   rut_list_for_each (prop_data, &delete_entity->properties, link)
     rig_transition_remove_property (engine->selected_transition,
@@ -581,12 +562,84 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   rut_graphable_remove_child (entity);
   rut_shell_queue_redraw (engine->ctx->shell);
 
-  rig_undo_journal_insert (journal, undo_redo);
+  rig_undo_journal_insert (sub_journal, undo_redo, FALSE);
+  rig_undo_journal_log_subjournal (journal, sub_journal, FALSE);
+}
+
+void
+rig_undo_journal_add_component_and_log (RigUndoJournal *journal,
+                                        RutEntity *entity,
+                                        RutObject *component)
+{
+  RigEngine *engine = journal->engine;
+  UndoRedo *undo_redo;
+  UndoRedoAddDeleteComponent *add_component;
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_ADD_COMPONENT_OP;
+  undo_redo->mergable = FALSE;
+
+  add_component = &undo_redo->d.add_delete_component;
+
+  add_component->parent_entity = rut_refable_ref (entity);
+  add_component->deleted_component = rut_refable_ref (component);
+
+  /* There shouldn't be any properties in the transition so we don't
+   * need to bother copying them */
+  rut_list_init (&add_component->properties);
+
+  rut_entity_add_component (entity, component);
+  rut_shell_queue_redraw (engine->ctx->shell);
+
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
+}
+
+void
+rig_undo_journal_delete_component_and_log (RigUndoJournal *journal,
+                                           RutObject *component)
+{
+  UndoRedo *undo_redo;
+  UndoRedoAddDeleteComponent *delete_component;
+  RutComponentableProps *componentable =
+    rut_object_get_properties (component, RUT_INTERFACE_ID_COMPONENTABLE);
+  RutEntity *entity = componentable->entity;
+  UndoRedoPropData *prop_data;
+  RigEngine *engine = journal->engine;
+  CopyTransitionPropertiesData copy_properties_data;
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_DELETE_COMPONENT_OP;
+  undo_redo->mergable = FALSE;
+
+  delete_component = &undo_redo->d.add_delete_component;
+
+  delete_component->parent_entity = rut_refable_ref (entity);
+  delete_component->deleted_component = rut_refable_ref (component);
+
+  /* Copy the transition properties for the component */
+  rut_list_init (&delete_component->properties);
+
+  copy_properties_data.object = component;
+  copy_properties_data.properties = &delete_component->properties;
+
+  rig_transition_foreach_property (engine->selected_transition,
+                                   copy_transition_property_cb,
+                                   &copy_properties_data);
+
+  rut_list_for_each (prop_data, &delete_component->properties, link)
+    rig_transition_remove_property (engine->selected_transition,
+                                    prop_data->property);
+
+  rut_entity_remove_component (entity, component);
+  rut_shell_queue_redraw (engine->ctx->shell);
+
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
 }
 
 void
 rig_undo_journal_log_subjournal (RigUndoJournal *journal,
-                                 RigUndoJournal *subjournal)
+                                 RigUndoJournal *subjournal,
+                                 bool apply)
 {
   UndoRedo *undo_redo;
 
@@ -596,7 +649,7 @@ rig_undo_journal_log_subjournal (RigUndoJournal *journal,
 
   undo_redo->d.subjournal = subjournal;
 
-  rig_undo_journal_insert (journal, undo_redo);
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
 }
 
 static void
@@ -840,21 +893,12 @@ undo_redo_set_animated_free (UndoRedo *undo_redo)
   g_slice_free (UndoRedo, undo_redo);
 }
 
-static UndoRedo *
-copy_add_delete_entity (UndoRedo *undo_redo)
+static void
+copy_transtion_property_list (RutList *src, RutList *dst)
 {
-  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
-  UndoRedoAddDeleteEntity *add_delete_entity = &copy->d.add_delete_entity;
   UndoRedoPropData *prop_data;
 
-  rut_refable_ref (add_delete_entity->parent_entity);
-  rut_refable_ref (add_delete_entity->deleted_entity);
-
-  rut_list_init (&add_delete_entity->properties);
-
-  rut_list_for_each (prop_data,
-                     &undo_redo->d.add_delete_entity.properties,
-                     link)
+  rut_list_for_each (prop_data, src, link)
     {
       UndoRedoPropData *prop_data_copy = g_slice_new (UndoRedoPropData);
 
@@ -865,9 +909,23 @@ copy_add_delete_entity (UndoRedo *undo_redo)
       rut_boxed_copy (&prop_data_copy->constant_value,
                       &prop_data->constant_value);
 
-      rut_list_insert (add_delete_entity->properties.prev,
-                       &prop_data_copy->link);
+      rut_list_insert (dst->prev, &prop_data_copy->link);
     }
+}
+
+static UndoRedo *
+copy_add_delete_entity (UndoRedo *undo_redo)
+{
+  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedoAddDeleteEntity *add_delete_entity = &copy->d.add_delete_entity;
+
+  rut_refable_ref (add_delete_entity->parent_entity);
+  rut_refable_ref (add_delete_entity->deleted_entity);
+
+  rut_list_init (&add_delete_entity->properties);
+
+  copy_transtion_property_list (&undo_redo->d.add_delete_entity.properties,
+                                add_delete_entity->properties.prev);
 
   return copy;
 }
@@ -899,21 +957,11 @@ undo_redo_delete_entity_invert (UndoRedo *undo_redo_src)
 }
 
 static void
-undo_redo_add_entity_apply (RigUndoJournal *journal,
-                            UndoRedo *undo_redo)
+add_transition_properties (RigTransition *transition, RutList *properties)
 {
-  UndoRedoAddDeleteEntity *add_entity = &undo_redo->d.add_delete_entity;
-  RigTransition *transition = journal->engine->selected_transition;
   UndoRedoPropData *undo_prop_data;
 
-  g_print ("Add entity APPLY\n");
-
-  rut_graphable_add_child (add_entity->parent_entity,
-                           add_entity->deleted_entity);
-  rig_select_entity (journal->engine, add_entity->deleted_entity,
-                     RUT_SELECT_ACTION_REPLACE);
-
-  rut_list_for_each (undo_prop_data, &add_entity->properties, link)
+  rut_list_for_each (undo_prop_data, properties, link)
     {
       RigTransitionPropData *prop_data =
         rig_transition_get_prop_data_for_property (transition,
@@ -936,12 +984,29 @@ undo_redo_add_entity_apply (RigUndoJournal *journal,
     }
 }
 
+static void
+undo_redo_add_entity_apply (RigUndoJournal *journal,
+                            UndoRedo *undo_redo)
+{
+  UndoRedoAddDeleteEntity *add_entity = &undo_redo->d.add_delete_entity;
+  RigTransition *transition = journal->engine->selected_transition;
+
+  g_print ("Add entity APPLY\n");
+
+  rut_graphable_add_child (add_entity->parent_entity,
+                           add_entity->deleted_entity);
+  rig_select_entity (journal->engine, add_entity->deleted_entity,
+                     RUT_SELECT_ACTION_REPLACE);
+
+  add_transition_properties (transition, &add_entity->properties);
+}
+
 static UndoRedo *
 undo_redo_add_entity_invert (UndoRedo *undo_redo_src)
 {
   UndoRedo *inverse = copy_add_delete_entity (undo_redo_src);
 
-  inverse->op = UNDO_REDO_ADD_ENTITY_OP;
+  inverse->op = UNDO_REDO_DELETE_ENTITY_OP;
 
   return inverse;
 }
@@ -956,6 +1021,104 @@ undo_redo_add_delete_entity_free (UndoRedo *undo_redo)
   rut_refable_unref (add_delete_entity->deleted_entity);
 
   rut_list_for_each_safe (prop_data, tmp, &add_delete_entity->properties, link)
+    {
+      if (prop_data->path)
+        rut_refable_unref (prop_data->path);
+
+      rut_boxed_destroy (&prop_data->constant_value);
+    }
+
+  g_slice_free (UndoRedo, undo_redo);
+}
+
+static UndoRedo *
+copy_add_delete_component (UndoRedo *undo_redo)
+{
+  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedoAddDeleteComponent *add_delete_component = &copy->d.add_delete_component;
+
+  rut_refable_ref (add_delete_component->parent_entity);
+  rut_refable_ref (add_delete_component->deleted_component);
+
+  rut_list_init (&add_delete_component->properties);
+
+  copy_transtion_property_list (&undo_redo->d.add_delete_component.properties,
+                                &add_delete_component->properties);
+
+  return copy;
+}
+
+static void
+undo_redo_delete_component_apply (RigUndoJournal *journal,
+                                  UndoRedo *undo_redo)
+{
+  UndoRedoAddDeleteComponent *delete_component = &undo_redo->d.add_delete_component;
+  UndoRedoPropData *prop_data;
+
+  g_print ("Delete component APPLY\n");
+
+  rut_list_for_each (prop_data, &delete_component->properties, link)
+    rig_transition_remove_property (journal->engine->selected_transition,
+                                    prop_data->property);
+
+  rut_entity_remove_component (delete_component->parent_entity,
+                               delete_component->deleted_component);
+
+  rig_select_entity (journal->engine, delete_component->parent_entity,
+                     RUT_SELECT_ACTION_REPLACE);
+  _rig_engine_update_inspector (journal->engine);
+}
+
+static UndoRedo *
+undo_redo_delete_component_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = copy_add_delete_component (undo_redo_src);
+
+  inverse->op = UNDO_REDO_ADD_COMPONENT_OP;
+
+  return inverse;
+}
+
+static void
+undo_redo_add_component_apply (RigUndoJournal *journal,
+                               UndoRedo *undo_redo)
+{
+  UndoRedoAddDeleteComponent *add_component = &undo_redo->d.add_delete_component;
+  RigTransition *transition = journal->engine->selected_transition;
+
+  g_print ("Add component APPLY\n");
+
+  rut_entity_add_component (add_component->parent_entity,
+                            add_component->deleted_component);
+  add_transition_properties (transition, &add_component->properties);
+
+  rig_select_entity (journal->engine, add_component->parent_entity,
+                     RUT_SELECT_ACTION_REPLACE);
+  _rig_engine_update_inspector (journal->engine);
+}
+
+static UndoRedo *
+undo_redo_add_component_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = copy_add_delete_component (undo_redo_src);
+
+  inverse->op = UNDO_REDO_DELETE_COMPONENT_OP;
+
+  return inverse;
+}
+
+static void
+undo_redo_add_delete_component_free (UndoRedo *undo_redo)
+{
+  UndoRedoAddDeleteComponent *add_delete_component =
+    &undo_redo->d.add_delete_component;
+  UndoRedoPropData *prop_data, *tmp;
+
+  rut_refable_unref (add_delete_component->parent_entity);
+  rut_refable_unref (add_delete_component->deleted_component);
+
+  rut_list_for_each_safe (prop_data, tmp,
+                          &add_delete_component->properties, link)
     {
       if (prop_data->path)
         rut_refable_unref (prop_data->path);
@@ -1081,6 +1244,16 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_add_delete_entity_free
     },
     {
+      undo_redo_add_component_apply,
+      undo_redo_add_component_invert,
+      undo_redo_add_delete_component_free
+    },
+    {
+      undo_redo_delete_component_apply,
+      undo_redo_delete_component_invert,
+      undo_redo_add_delete_component_free
+    },
+    {
       undo_redo_move_path_nodes_apply,
       undo_redo_move_path_nodes_invert,
       undo_redo_move_path_nodes_free
@@ -1143,8 +1316,10 @@ rig_undo_journal_flush_redos (RigUndoJournal *journal)
   rut_list_insert_list (journal->undo_ops.prev, &reversed_operations);
 }
 
-static CoglBool
-rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
+static bool
+rig_undo_journal_insert (RigUndoJournal *journal,
+                         UndoRedo *undo_redo,
+                         bool apply)
 {
   UndoRedo *inverse;
 
@@ -1162,6 +1337,8 @@ rig_undo_journal_insert (RigUndoJournal *journal, UndoRedo *undo_redo)
   inverse = undo_redo_invert (undo_redo);
   undo_redo_apply (journal, inverse);
   undo_redo_apply (journal, undo_redo);
+  if (apply)
+    undo_redo_apply (journal, undo_redo);
   undo_redo_free (inverse);
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
@@ -1235,6 +1412,13 @@ rig_undo_journal_new (RigEngine *engine)
   rut_list_init (&journal->redo_ops);
 
   return journal;
+}
+
+bool
+rig_undo_journal_is_empty (RigUndoJournal *journal)
+{
+  return (rut_list_length (&journal->undo_ops) == 0 &&
+          rut_list_length (&journal->redo_ops) == 0);
 }
 
 void
