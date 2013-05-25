@@ -44,6 +44,7 @@ typedef enum _RigToolID
 #include "rig-osx.h"
 #include "rig-split-view.h"
 #include "rig-camera-view.h"
+#include "rig-code.h"
 
 enum {
   RIG_ENGINE_PROP_WIDTH,
@@ -148,7 +149,17 @@ struct _RigEngine
   GList *required_search_tags;
 
   RutList tool_changed_cb_list;
+
+  GString *code_string;
+  RigCodeNode *code_graph;
+  void *code_dso_handle;
+  char *code_dso_filename;
+  bool need_recompile;
 #endif
+
+  GString *codegen_string0;
+  GString *codegen_string1;
+  int next_code_id;
 
   RutObject *renderer;
 

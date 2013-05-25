@@ -7,6 +7,8 @@
 
 #include "rut-bitmask.h"
 
+G_BEGIN_DECLS
+
 /* Indices for builtin interfaces */
 typedef enum _RutInterfaceID
 {
@@ -64,5 +66,7 @@ rut_type_add_interface (RutType *type,
                         RutInterfaceID id,
                         size_t instance_priv_offset,
                         void *interface_vtable);
+
+G_END_DECLS
 
 #endif /* _RUT_TYPE_H_ */

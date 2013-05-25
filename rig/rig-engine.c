@@ -3144,6 +3144,8 @@ _rig_engine_free (void *object)
 
           if (engine->transparency_grid)
             rut_refable_unref (engine->transparency_grid);
+
+          _rig_code_fini (engine);
         }
 
       rut_refable_unref (engine->objects_selection);
@@ -3338,6 +3340,8 @@ _rig_engine_new_full (RutShell *shell,
 #ifdef RIG_EDITOR_ENABLED
   if (_rig_in_editor_mode)
     {
+      _rig_code_init (engine);
+
       engine->objects_selection = _rig_objects_selection_new (engine);
 
       rut_list_init (&engine->tool_changed_cb_list);

@@ -1,5 +1,5 @@
 
-noinst_LTLIBRARIES = librut.la
+lib_LTLIBRARIES = librut.la
 
 components_source_h = \
     components/rut-camera.h \
@@ -21,7 +21,6 @@ source_h = \
     rut-components.h \
     rut-type.h \
     rut-object.h \
-    rut-property.h \
     rut-types.h \
     rut-interfaces.h \
     rut-planes.h \
@@ -58,7 +57,6 @@ source_h = \
     rut-ui-viewport.h \
     rut-scroll-bar.h \
     rut-image.h \
-    rut-property-types.h \
     rut-volume.h \
     rut-color-picker.h \
     rut-color-button.h \
@@ -76,6 +74,15 @@ source_h = \
     rut-refcount-debug.h \
     rut-icon-button.h \
     rut-asset-inspector.h
+
+# Headers that will need to be available for compiling code at runtime
+# and so need to be installed...
+runtime_headers = \
+    rut-property-bare.h \
+    rut-property-types.h
+
+runtime_headersdir = $(prefix)/share/rig/codegen_includes
+runtime_headers_DATA = $(runtime_headers)
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -96,6 +103,7 @@ librut_la_SOURCES = \
     rut-entity.c \
     rut-type.c \
     rut-object.c \
+    rut-property.h \
     rut-property.c \
     rut-interfaces.c \
     rut-graphable.h \
@@ -191,7 +199,7 @@ librut_la_LDFLAGS = \
     -no-undefined \
     -version-info @RIG_LT_CURRENT@:@RIG_LT_REVISION@:@RIG_LT_AGE@ \
     -export-dynamic \
-    -export-symbols-regex "(^rut.*)|(^_rut_bitmask.*)"
+    -export-symbols-regex "(^rut.*)|(^_rut.*)"
 librut_la_CFLAGS = \
     @RIG_DEP_CFLAGS@ \
     @RIG_EXTRA_CFLAGS@

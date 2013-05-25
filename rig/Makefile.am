@@ -10,11 +10,16 @@ AM_CPPFLAGS = \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CPPFLAGS) \
-	-DRIG_BIN_DIR=\"$(bindir)/\"
+	-DRIG_BIN_DIR=\"$(bindir)/\" \
+	$(RIG_CLANG_CFLAGS) \
+	$(RIG_EXTRA_CPPFLAGS) \
+	-DRIG_LLVM_PREFIX=\"@RIG_LLVM_PREFIX@\" \
+	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\"
 
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
+lib_LTLIBRARIES = librig_clang.la
 noinst_LTLIBRARIES = librig.la
 bin_PROGRAMS = rig rig-slave rig-device rig-simulator
 
@@ -37,7 +42,21 @@ rig_protobuf_c_rpc_sources = \
 	protobuf-c-rpc/gsklistmacros.h
 EXTRA_DIST += protobuf-c-rpc/README
 
+# Headers that will need to be available for compiling code at runtime
+# and so need to be installed...
+runtime_headers = \
+    jni/rig-codegen.h
+
+runtime_headersdir = $(prefix)/share/rig/codegen_includes
+runtime_headers_DATA = $(runtime_headers)
+
+librig_clang_la_SOURCES = jni/rig-llvm.cpp jni/rig-llvm.h
+librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/rut/librut.la
+librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0 -Wl,--unresolved-symbols=ignore-all
+#-fuse-ld=gold
+
 librig_la_SOURCES = \
+<<<<<<< HEAD
 	$(rig_protobuf_c_rpc_sources) \
 	rig-engine.c \
 	rig-node.c \
@@ -87,6 +106,61 @@ librig_la_SOURCES += \
 	rig-selection-tool.c \
 	rig-binding-view.h \
 	rig-binding-view.c
+=======
+	$(rig_protobuf_c_sources) \
+	jni/rig-engine.c \
+	jni/rig-node.c \
+	jni/rig-node.h \
+	jni/rig-path.c \
+	jni/rig-path.h \
+	jni/rig-controller.c \
+	jni/rig-controller.h \
+	jni/rig-binding.h \
+	jni/rig-binding.c \
+	jni/rig-pb.h \
+	jni/rig-pb.c \
+	jni/rig-load-save.h \
+	jni/rig-load-save.c \
+	jni/rig-controller-view.c \
+	jni/rig-controller-view.h \
+    	jni/rig-split-view.h \
+    	jni/rig-split-view.c \
+    	jni/rig-view.h \
+    	jni/rig-view.c \
+    	jni/rig-camera-view.h \
+    	jni/rig-camera-view.c \
+	jni/rig-types.h \
+	jni/rig-renderer.h \
+	jni/rig-renderer.c \
+	jni/rig-engine.h \
+	jni/rig-osx.h \
+	jni/rig-avahi.h \
+	jni/rig-avahi.c \
+	jni/rig-rpc-network.h \
+	jni/rig-rpc-network.c \
+	jni/rig-slave-address.h \
+	jni/rig-slave-address.c \
+	jni/rig-slave-master.h \
+	jni/rig-slave-master.c \
+	jni/rig.pb-c.c \
+	jni/rig-simulator-service.c \
+	jni/rig-simulator-service.h \
+	jni/rig-renderer-service.c \
+	jni/rig-renderer-service.h
+
+if EDITOR_ENABLED
+librig_la_SOURCES += \
+	jni/rig-undo-journal.h \
+	jni/rig-undo-journal.c \
+	jni/rig-rotation-tool.h \
+	jni/rig-rotation-tool.c \
+	jni/rig-selection-tool.h \
+	jni/rig-selection-tool.c \
+	jni/rig-binding-view.h \
+	jni/rig-binding-view.c \
+	jni/rig-code.h \
+	jni/rig-code.c
+>>>>>>> stash: add initial binding support
 endif
 
 if HAVE_OSX
@@ -101,10 +175,11 @@ librig_la_SOURCES += \
 endif
 
 common_ldadd = \
-	$(RIG_DEP_LIBS) \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
-	$(top_builddir)/rut/librut.la
+	-lrig_clang \
+	$(top_builddir)/rut/librut.la \
+	$(RIG_DEP_LIBS)
 
 librig_la_LIBS = $(common_ldadd)
 

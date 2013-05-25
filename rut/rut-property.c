@@ -238,6 +238,11 @@ _rut_property_set_binding_full_array (RutProperty *property,
     }
 
   property->binding = binding;
+
+  /* A binding with no dependencies will never be triggered in
+   * response to anything so we simply trigger it once now... */
+  if (n_dependencies == 0)
+    callback (property, user_data);
 }
 
 static void
@@ -522,15 +527,19 @@ rut_property_dirty (RutPropertyContext *ctx,
                     RutProperty *property)
 {
   GSList *l;
+  GSList *next;
 
   /* FIXME: The plan is for updates to happen asynchronously by
    * queueing an update with the context but for now we simply
    * trigger the updates synchronously.
    */
-  for (l = property->dependants; l; l = l->next)
+  for (l = property->dependants; l; l = next)
     {
       RutProperty *dependant = l->data;
       RutPropertyBinding *binding = dependant->binding;
+
+      next = l->next;
+
       if (binding)
         binding->callback (dependant, binding->user_data);
     }

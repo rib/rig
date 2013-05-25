@@ -239,6 +239,7 @@ AM_PROG_CC_C_O
 AC_ISC_POSIX
 AC_C_CONST
 AC_PROG_OBJC
+AC_PROG_CXX
 
 AC_MSG_CHECKING([for alignof])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = alignof (int);],
@@ -337,6 +338,21 @@ PKG_CHECK_MODULES([LIBCRYPTO],
                   [have_libcrypto=no])
 AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
 
+PKG_CHECK_MODULES(RIG_CLANG, ["mclinker"])
+dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"
+LLVM_COMPONENTS="all"
+dnl Note empty "" implies 'all' but explicitly passing 'all' seems to confuse llvm-config
+dnl LLVM_COMPONENTS="support jit interpreter nativecodegen bitreader bitwriter codegen ipo linker selectiondag asmparser instrumentation irreeader"
+RIG_DEP_CFLAGS="$RIG_DEP_CFLAGS `llvm-config --cflags`"
+RIG_CLANG_LIBS="$RIG_CLANG_LIBS -lclangFrontendTool -lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangStaticAnalyzerFrontend -lclangStaticAnalyzerCheckers -lclangStaticAnalyzerCore -lclangAnalysis -lclangARCMigrate -lclangRewriteFrontend -lclangRewriteCore -lclangEdit -lclangAST -lclangLex -lclangBasic"
+RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --ldflags`"
+RIG_CLANG_LIBS="$RIG_CLANG_LIBS `llvm-config --libs $LLVM_COMPONENTS`"
+
+RIG_LLVM_PREFIX="`llvm-config --prefix`"
+AC_SUBST(RIG_LLVM_PREFIX)
+RIG_LLVM_VERSION="`llvm-config --version`"
+AC_SUBST(RIG_LLVM_VERSION)
+
 dnl ================================================================
 dnl Misc program dependencies.
 dnl ================================================================
@@ -372,6 +388,8 @@ AC_SUBST(RIG_EXTRA_CPPFLAGS)
 AC_SUBST(RIG_EXTRA_LDFLAGS)
 AC_SUBST(RIG_DEP_CFLAGS)
 AC_SUBST(RIG_DEP_LIBS)
+AC_SUBST(RIG_CLANG_CFLAGS)
+AC_SUBST(RIG_CLANG_LIBS)
 
 
 dnl ================================================================

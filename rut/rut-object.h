@@ -3,6 +3,8 @@
 
 #include "rut-type.h"
 
+G_BEGIN_DECLS
+
 /* We largely give up having compile time type safety for RutObjects since
  * the type system is conceptually intended to be dynamic and for most
  * apis dealing with RutObjects, they care about interfaces more than
@@ -46,14 +48,14 @@ rut_object_init (RutObjectProps *object_properties, RutType *type);
 static inline const RutType *
 rut_object_get_type (RutObject *object)
 {
-  RutObjectProps *obj = object;
+  RutObjectProps *obj = (RutObjectProps *)object;
   return obj->type;
 }
 
 static inline void *
 rut_object_get_properties (RutObject *object, RutInterfaceID interface)
 {
-  RutObjectProps *obj = object;
+  RutObjectProps *obj = (RutObjectProps *)object;
   size_t props_offset = obj->type->interfaces[interface].props_offset;
   return (uint8_t *)obj + props_offset;
 }
@@ -61,22 +63,24 @@ rut_object_get_properties (RutObject *object, RutInterfaceID interface)
 static inline void *
 rut_object_get_vtable (void *object, RutInterfaceID interface)
 {
-  RutObjectProps *obj = object;
+  RutObjectProps *obj = (RutObjectProps *)object;
   return obj->type->interfaces[interface].vtable;
 }
 
 static inline CoglBool
 rut_object_is (void *object, RutInterfaceID interface)
 {
-  RutObjectProps *obj = object;
+  RutObjectProps *obj = (RutObjectProps *)object;
   return _rut_bitmask_get (&obj->type->interfaces_mask, interface);
 }
 
 static inline const char *
 rut_object_get_type_name (void *object)
 {
-  RutObjectProps *obj = object;
+  RutObjectProps *obj = (RutObjectProps *)object;
   return obj->type->name;
 }
+
+G_END_DECLS
 
 #endif /* _RUT_OBJECT_H_ */

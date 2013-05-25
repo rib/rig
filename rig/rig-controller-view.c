@@ -2137,7 +2137,8 @@ update_method_control (RigControllerPropertyView *prop_view)
       column->control = rig_path_view_new (prop_view);
       break;
     case RIG_CONTROLLER_METHOD_BINDING:
-      column->control = rig_binding_view_new (ctx);
+      column->control = rig_binding_view_new (view->engine,
+                                              prop_view->prop_data->property);
       break;
     }
 

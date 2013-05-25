@@ -23,6 +23,9 @@
 
 #include <rut.h>
 
+#include "rig-code.h"
+#include "rig-binding.h"
+
 typedef struct _RigBindingView RigBindingView;
 
 typedef struct _Dependency
@@ -44,7 +47,7 @@ struct _RigBindingView
 {
   RutObjectProps _parent;
 
-  RutContext *ctx;
+  RigEngine *engine;
 
   int ref_count;
 
@@ -61,6 +64,8 @@ struct _RigBindingView
   RutInputRegion *drop_region;
   RutText *drop_label;
 
+  RigBinding *binding;
+
   RutText *code_view;
 
   RutProperty *preview_dependency_prop;
@@ -73,6 +78,8 @@ _rig_binding_view_free (void *object)
 {
   RigBindingView *binding_view = object;
   //RigControllerView *view = binding_view->view;
+
+  rut_refable_unref (binding_view->binding);
 
   rut_graphable_destroy (binding_view);
 
@@ -126,9 +133,13 @@ remove_dependency (RigBindingView *binding_view,
       Dependency *dependency = l->data;
       if (dependency->property == property)
         {
+          if (!dependency->preview)
+            rig_binding_remove_dependency (binding_view->binding, property);
+
           rut_box_layout_remove (binding_view->dependencies_vbox, dependency->hbox);
           rut_refable_unref (dependency->object);
           g_slice_free (Dependency, dependency);
+
           return;
         }
     }
@@ -145,6 +156,17 @@ on_dependency_delete_button_click_cb (RutIconButton *button, void *user_data)
                      dependency->property);
 }
 
+static void
+dependency_name_changed_cb (RutText *text,
+                            void *user_data)
+{
+  Dependency *dependency = user_data;
+
+  rig_binding_set_dependency_name (dependency->binding_view->binding,
+                                   dependency->property,
+                                   rut_text_get_text (text));
+}
+
 static Dependency *
 add_dependency (RigBindingView *binding_view,
                 RutProperty *property,
@@ -157,6 +179,7 @@ add_dependency (RigBindingView *binding_view,
   RutBin *bin;
   const char *component_str = NULL;
   const char *label_str;
+  RutContext *ctx = binding_view->engine->ctx;
 
   dependency->object = rut_refable_ref (object);
   dependency->binding_view = binding_view;
@@ -165,13 +188,13 @@ add_dependency (RigBindingView *binding_view,
 
   dependency->preview = drag_preview;
 
-  dependency->hbox = rut_box_layout_new (binding_view->ctx,
+  dependency->hbox = rut_box_layout_new (ctx,
                                          RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
   if (!drag_preview)
     {
       RutIconButton *delete_button =
-        rut_icon_button_new (binding_view->ctx,
+        rut_icon_button_new (ctx,
                              NULL, /* label */
                              0, /* ignore label position */
                              "delete-white.png", /* normal */
@@ -224,24 +247,29 @@ add_dependency (RigBindingView *binding_view,
                                           property->spec->name);
     }
 
-  dependency->label = rut_text_new_with_text (binding_view->ctx, NULL,
+  dependency->label = rut_text_new_with_text (ctx, NULL,
                                               dependency_label);
   g_free (dependency_label);
   rut_box_layout_add (dependency->hbox, false, dependency->label);
   rut_refable_unref (dependency->label);
 
-  bin = rut_bin_new (binding_view->ctx);
+  bin = rut_bin_new (ctx);
   rut_bin_set_left_padding (bin, 20);
   rut_box_layout_add (dependency->hbox, false, bin);
   rut_refable_unref (bin);
 
   /* TODO: Check if the name is unique for the current binding... */
   dependency->variable_name_label =
-    rut_text_new_with_text (binding_view->ctx, NULL,
+    rut_text_new_with_text (ctx, NULL,
                             property->spec->name);
   rut_text_set_editable (dependency->variable_name_label, true);
   rut_bin_set_child (bin, dependency->variable_name_label);
   rut_refable_unref (dependency->variable_name_label);
+
+  rut_text_add_text_changed_callback (dependency->variable_name_label,
+                                      dependency_name_changed_cb,
+                                      dependency,
+                                      NULL); /* destroy notify */
 
   binding_view->dependencies =
     g_list_prepend (binding_view->dependencies, dependency);
@@ -249,6 +277,13 @@ add_dependency (RigBindingView *binding_view,
   rut_box_layout_add (binding_view->dependencies_vbox,
                       false, dependency->hbox);
   rut_refable_unref (dependency->hbox);
+
+  if (!drag_preview)
+    {
+      rig_binding_add_dependency (binding_view->binding,
+                                  property,
+                                  property->spec->name);
+    }
 
   return dependency;
 }
@@ -259,6 +294,7 @@ drop_region_input_cb (RutInputRegion *region,
                       void *user_data)
 {
   RigBindingView *binding_view = user_data;
+  RutContext *ctx = binding_view->engine->ctx;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
     {
@@ -273,7 +309,7 @@ drop_region_input_cb (RutInputRegion *region,
           binding_view->preview_dependency_prop = property;
           add_dependency (binding_view, property, true);
 
-          rut_shell_take_drop_offer (binding_view->ctx->shell,
+          rut_shell_take_drop_offer (ctx->shell,
                                      binding_view->drop_region);
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -313,9 +349,21 @@ drop_region_input_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-RigBindingView *
-rig_binding_view_new (RutContext *ctx)
+static void
+text_changed_cb (RutText *text,
+                 void *user_data)
 {
+  RigBindingView *binding_view = user_data;
+
+  rig_binding_set_expression (binding_view->binding,
+                              rut_text_get_text (text));
+}
+
+RigBindingView *
+rig_binding_view_new (RigEngine *engine,
+                      RutProperty *property)
+{
+  RutContext *ctx = engine->ctx;
   RigBindingView *binding_view =
     rut_object_alloc0 (RigBindingView,
                        &rig_binding_view_type,
@@ -325,9 +373,12 @@ rig_binding_view_new (RutContext *ctx)
   RutText *equals;
 
   binding_view->ref_count = 1;
-  binding_view->ctx = ctx;
+  binding_view->engine = engine;
 
   rut_graphable_init (binding_view);
+
+  binding_view->binding = rig_binding_new (engine, property,
+                                           engine->next_code_id++);
 
   binding_view->top_stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (binding_view, binding_view->top_stack);
@@ -377,5 +428,9 @@ rig_binding_view_new (RutContext *ctx)
   rut_box_layout_add (hbox, false, binding_view->code_view);
   rut_refable_unref (binding_view->code_view);
 
+  rut_text_add_text_changed_callback (binding_view->code_view,
+                                      text_changed_cb,
+                                      binding_view,
+                                      NULL); /* destroy notify */
   return binding_view;
 }

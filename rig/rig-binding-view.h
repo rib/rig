@@ -29,6 +29,7 @@ extern RutType rig_binding_view_type;
 typedef struct _RigBindingView RigBindingView;
 
 RigBindingView *
-rig_binding_view_new (RutContext *ctx);
+rig_binding_view_new (RigEngine *engine,
+                      RutProperty *property);
 
 #endif /* _RIG_BINDING_VIEW_H_ */
