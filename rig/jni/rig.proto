@@ -239,14 +239,30 @@ message Transition
     {
 
       optional sint64 object_id=1;
-      optional bool animated=2;
-
       optional string name=3;
+
+      optional bool animated=2;
+      optional bool binding=7;
+
+      //Animated properties have key values tracked in a path
       optional PropertyType type=4;
       optional Path path=5;
       optional PropertyValue constant=6;
+
+      message Dependency
+        {
+          optional sint64 object_id=1;
+          optional string name=2;
+        }
+
+      //Binding properties instead have a list of dependency
+      //properties and a C expression to evaluate whenever
+      //one of those dependencies changes
+      repeated Dependency dependencies=8;
+      optional string c_expression=9;
     }
 
+  optional string name=3;
   optional sint64 id=1;
   repeated Property properties=2;
 }

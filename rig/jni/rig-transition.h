@@ -57,7 +57,9 @@ struct _RigTransition
 {
   RutObjectProps _parent;
 
-  uint32_t id;
+  int ref_count;
+
+  char *name;
 
   float progress;
 
@@ -114,8 +116,11 @@ rig_transition_get_path (RigTransition *transition,
                          const char *property_name);
 
 RigTransition *
-rig_transition_new (RutContext *context,
-                    uint32_t id);
+rig_transition_new (RutContext *context, const char *name);
+
+void
+rig_transition_set_name (RigTransition *transition,
+                         const char *name);
 
 typedef void
 (* RigTransitionForeachPropertyCb) (RigTransitionPropData *prop_data,

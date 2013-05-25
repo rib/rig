@@ -161,6 +161,7 @@ struct _RigEngine
 
   RutUIViewport *timeline_vp;
   RigTransitionView *transition_view;
+  RutDropDown *transition_selector;
 
   CoglMatrix main_view;
   float z_2d;
@@ -195,11 +196,10 @@ struct _RigEngine
   GList *assets;
 
   GList *transitions;
+  RigTransition *selected_transition;
 
   GList *selected_entities;
   RutList selection_changed_cb_list;
-
-  RigTransition *selected_transition;
 
   RutTool *tool;
 
@@ -275,11 +275,6 @@ rig_engine_paint (RutShell *shell, void *user_data);
 
 void
 rig_engine_fini (RutShell *shell, void *user_data);
-
-
-RigTransition *
-rig_create_transition (RigEngine *engine,
-                       uint32_t id);
 
 void
 rig_engine_set_onscreen_size (RigEngine *engine,

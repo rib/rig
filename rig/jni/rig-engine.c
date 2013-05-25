@@ -264,14 +264,26 @@ update_transition_progress_cb (RutProperty *target_property,
   reload_animated_inspector_properties (engine);
 }
 
-RigTransition *
-rig_create_transition (RigEngine *engine,
-                       uint32_t id)
+static void
+update_transition_property_cb (RigTransitionPropData *prop_data,
+                               void *user_data)
 {
-  RigTransition *transition = rig_transition_new (engine->ctx, id);
+  RigTransition *transition = user_data;
+  rig_transition_update_property (transition, prop_data->property);
+}
 
-  /* FIXME: this should probably only update the progress for the
-   * current transition */
+static void
+rig_engine_select_transition (RigEngine *engine, RigTransition *transition)
+{
+  if (engine->selected_transition == transition)
+    return;
+
+  if (engine->selected_transition)
+    {
+      RigTransition *selected = engine->selected_transition;
+      rut_property_remove_binding (&selected->props[RUT_TRANSITION_PROP_PROGRESS]);
+    }
+
   rut_property_set_binding (&transition->props[RUT_TRANSITION_PROP_PROGRESS],
                             update_transition_progress_cb,
                             engine,
@@ -281,7 +293,34 @@ rig_create_transition (RigEngine *engine,
   rig_transition_set_progress (transition,
                                rut_timeline_get_progress (engine->timeline));
 
-  return transition;
+  /* Reset all of the property values to their current value according
+   * to the given transition */
+  rig_transition_foreach_property (transition,
+                                   update_transition_property_cb,
+                                   transition);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (!_rig_in_device_mode)
+    {
+      if (engine->transition_view)
+        {
+          rut_ui_viewport_set_sync_widget (engine->timeline_vp, NULL);
+          rut_graphable_remove_child (engine->transition_view);
+        }
+
+      engine->transition_view =
+        rig_transition_view_new (engine->ctx,
+                                 engine->scene,
+                                 transition,
+                                 engine->timeline,
+                                 engine->undo_journal);
+      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
+      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
+                                       engine->transition_view);
+    }
+#endif
+
+  engine->selected_transition = transition;
 }
 
 static void
@@ -296,6 +335,7 @@ inspector_property_changed_cb (RutProperty *target_property,
 
   rig_undo_journal_set_property_and_log (engine->undo_journal,
                                          TRUE, /* mergable */
+                                         engine->selected_transition,
                                          &new_value,
                                          target_property);
 
@@ -325,10 +365,12 @@ inspector_animated_changed_cb (RutProperty *property,
       rut_property_box (property, &property_value);
 
       rig_undo_journal_set_animated_and_log (subjournal,
+                                             engine->selected_transition,
                                              property,
                                              value);
       rig_undo_journal_set_property_and_log (subjournal,
                                              FALSE /* mergable */,
+                                             engine->selected_transition,
                                              &property_value,
                                              property);
 
@@ -338,6 +380,7 @@ inspector_animated_changed_cb (RutProperty *property,
     }
   else
     rig_undo_journal_set_animated_and_log (engine->undo_journal,
+                                           engine->selected_transition,
                                            property,
                                            value);
 }
@@ -352,18 +395,18 @@ static void
 init_property_animated_state_cb (RutProperty *property,
                                  void *user_data)
 {
-  InitAnimatedStateData *engine = user_data;
+  InitAnimatedStateData *data = user_data;
 
   if (property->spec->animatable)
     {
       RigTransitionPropData *prop_data;
-      RigTransition *transition = engine->engine->selected_transition;
+      RigTransition *transition = data->engine->selected_transition;
 
       prop_data =
         rig_transition_find_prop_data_for_property (transition, property);
 
       if (prop_data && prop_data->animated)
-        rut_inspector_set_property_animated (engine->inspector, property, TRUE);
+        rut_inspector_set_property_animated (data->inspector, property, TRUE);
     }
 }
 
@@ -567,6 +610,7 @@ tool_rotation_event_cb (RutTool *tool,
 
         rig_undo_journal_set_property_and_log (engine->undo_journal,
                                                FALSE /* mergable */,
+                                               engine->selected_transition,
                                                &value,
                                                rotation_prop);
       }
@@ -1902,21 +1946,39 @@ create_assets_view (RigEngine *engine)
 }
 
 static void
+transition_select_cb (RutProperty *value_property,
+                      void *user_data)
+{
+  RigEngine *engine = user_data;
+  int value = rut_property_get_integer (value_property);
+  RigTransition *transition = g_list_nth_data (engine->transitions, value);
+  rig_engine_select_transition (engine, transition);
+}
+
+static void
 create_timeline_view (RigEngine *engine)
 {
   RutBoxLayout *vbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   RutStack *top_stack = rut_stack_new (engine->ctx, 0, 0);
-  RutText *scene_label = rut_text_new_with_text (engine->ctx, NULL, "Scene 1");
+  RutDropDown *transition_selector;
+  RutProperty *value_prop;
   RutRectangle *bg;
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+
+  transition_selector = rut_drop_down_new (engine->ctx);
+  engine->transition_selector = transition_selector;
+  value_prop = rut_introspectable_lookup_property (transition_selector, "value");
+  rut_property_connect_callback (value_prop,
+                                 transition_select_cb,
+                                 engine);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
   rut_stack_add (top_stack, bg);
   rut_refable_unref (bg);
 
-  rut_stack_add (top_stack, scene_label);
-  rut_refable_unref (scene_label);
+  rut_stack_add (top_stack, transition_selector);
+  rut_refable_unref (transition_selector);
 
   rut_box_layout_add (vbox, FALSE, top_stack);
   rut_refable_unref (top_stack);
@@ -2358,28 +2420,34 @@ rig_engine_handle_ui_update (RigEngine *engine)
                                                   100);
     }
 
-  if (engine->transitions)
-    engine->selected_transition = engine->transitions->data;
-  else
+  if (!engine->transitions)
     {
-      RigTransition *transition = rig_create_transition (engine, 0);
+      RigTransition *transition =
+        rig_transition_new (engine->ctx, "Controller 0");
       engine->transitions = g_list_prepend (engine->transitions, transition);
-      engine->selected_transition = transition;
     }
 
-  if (!_rig_in_device_mode &&
-      engine->selected_transition)
+  if (!_rig_in_device_mode)
     {
-      engine->transition_view =
-        rig_transition_view_new (engine->ctx,
-                                 engine->scene,
-                                 engine->selected_transition,
-                                 engine->timeline,
-                                 engine->undo_journal);
-      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
-      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
-                                       engine->transition_view);
+      int n_transitions;
+      RutDropDownValue *transition_values;
+      GList *l;
+      int i;
+
+      n_transitions = g_list_length (engine->transitions);
+      transition_values = malloc (sizeof (RutDropDownValue) * n_transitions);
+
+      for (l = engine->transitions, i = 0; l; l = l->next, i++)
+        {
+          RigTransition *transition = l->data;
+          transition_values[i].name = transition->name;
+          transition_values[i].value = i;
+        }
+      rut_drop_down_set_values_array (engine->transition_selector,
+                                      transition_values, n_transitions);
     }
+
+  rig_engine_select_transition (engine, engine->transitions->data);
 
   if (!_rig_in_device_mode)
     rig_load_asset_list (engine);
@@ -2425,9 +2493,10 @@ rig_engine_free_ui (RigEngine *engine)
     }
 
   for (l = engine->transitions; l; l = l->next)
-    rig_transition_free (l->data);
+    rut_refable_unref (l->data);
   g_list_free (engine->transitions);
   engine->transitions = NULL;
+  engine->selected_transition = NULL;
 
   for (l = engine->assets; l; l = l->next)
     rut_refable_unref (l->data);

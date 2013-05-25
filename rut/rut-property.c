@@ -282,6 +282,97 @@ rut_property_set_copy_binding (RutPropertyContext *context,
 }
 
 void
+rut_property_remove_binding (RutProperty *property)
+{
+  rut_property_set_binding (property,
+                            NULL, /* no callback */
+                            NULL, /* no user data */
+                            NULL); /* null vararg terminator */
+}
+
+static RutPropertySpec
+dummy_property_spec =
+  {
+    .name = "dummy",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = 0,
+    .setter.any_type = abort,
+    .getter.any_type = abort
+  };
+
+
+struct _RutPropertyClosure
+{
+  RutProperty dummy_prop;
+  RutBindingCallback callback;
+  GDestroyNotify destroy_notify;
+  void *user_data;
+};
+
+static void
+dummy_property_destroy_notify_cb (RutProperty *property,
+                                  void *user_data)
+{
+  RutPropertyClosure *closure = user_data;
+
+  if (closure->destroy_notify)
+    closure->destroy_notify (closure->user_data);
+
+  g_slice_free (RutPropertyClosure, closure);
+}
+
+static void
+dummy_property_binding_wrapper_cb (RutProperty *property,
+                                   void *user_data)
+{
+  RutPropertyClosure *closure = user_data;
+
+  closure->callback (property, closure->user_data);
+}
+
+RutPropertyClosure *
+rut_property_connect_callback_full (RutProperty *property,
+                                    RutBindingCallback callback,
+                                    void *user_data,
+                                    GDestroyNotify destroy_notify)
+{
+  RutPropertyClosure *closure;
+
+  g_return_val_if_fail (callback != NULL, NULL);
+
+  closure = g_slice_new (RutPropertyClosure);
+  rut_property_init (&closure->dummy_prop,
+                     &dummy_property_spec,
+                     NULL); /* no object */
+  closure->callback = callback;
+  closure->destroy_notify = destroy_notify;
+  closure->user_data = user_data;
+  rut_property_set_binding_full (&closure->dummy_prop,
+                                 dummy_property_binding_wrapper_cb,
+                                 closure,
+                                 dummy_property_destroy_notify_cb,
+                                 property,
+                                 NULL); /* null terminator */
+  return closure;
+}
+
+RutPropertyClosure *
+rut_property_connect_callback (RutProperty *property,
+                               RutBindingCallback callback,
+                               void *user_data)
+{
+  return rut_property_connect_callback_full (property, callback,
+                                             user_data, NULL);
+}
+
+void
+rut_property_closure_destroy (RutPropertyClosure *closure)
+{
+  rut_property_remove_binding (&closure->dummy_prop);
+}
+
+void
 rut_property_dirty (RutPropertyContext *ctx,
                     RutProperty *property)
 {

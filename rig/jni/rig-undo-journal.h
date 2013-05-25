@@ -29,6 +29,7 @@
 #include "rut-list.h"
 #include "rig-node.h"
 #include "rig-path.h"
+#include "rig-transition.h"
 
 typedef struct _RigUndoJournal RigUndoJournal;
 
@@ -50,6 +51,7 @@ typedef enum _UndoRedoOp
 
 typedef struct _UndoRedoConstPropertyChange
 {
+  RigTransition *transition;
   RutObject *object;
   RutProperty *property;
   RutBoxed value0;
@@ -58,6 +60,7 @@ typedef struct _UndoRedoConstPropertyChange
 
 typedef struct _UndoRedoPathAddRemove
 {
+  RigTransition *transition;
   RutObject *object;
   RutProperty *property;
   float t;
@@ -66,6 +69,7 @@ typedef struct _UndoRedoPathAddRemove
 
 typedef struct _UndoRedoPathModify
 {
+  RigTransition *transition;
   RutObject *object;
   RutProperty *property;
   float t;
@@ -75,6 +79,7 @@ typedef struct _UndoRedoPathModify
 
 typedef struct _UndoRedoMovedPathNode
 {
+  RigTransition *transition;
   RutObject *object;
   RutProperty *property;
   float old_time;
@@ -83,12 +88,14 @@ typedef struct _UndoRedoMovedPathNode
 
 typedef struct _UndoRedoMovePathNodes
 {
+  RigTransition *transition;
   UndoRedoMovedPathNode *nodes;
   int n_nodes;
 } UndoRedoMovePathNodes;
 
 typedef struct _UndoRedoSetAnimated
 {
+  RigTransition *transition;
   RutObject *object;
   RutProperty *property;
   CoglBool value;
@@ -105,18 +112,26 @@ typedef struct
   RutBoxed constant_value;
 } UndoRedoPropData;
 
+typedef struct _UndoRedoTransitionState
+{
+  RutList link;
+
+  RigTransition *transition;
+  RutList properties;
+} UndoRedoTransitionState;
+
 typedef struct _UndoRedoAddDeleteEntity
 {
   RutEntity *parent_entity;
   RutEntity *deleted_entity;
-  RutList properties;
+  RutList transition_properties;
 } UndoRedoAddDeleteEntity;
 
 typedef struct _UndoRedoAddDeleteComponent
 {
   RutEntity *parent_entity;
   RutObject *deleted_component;
-  RutList properties;
+  RutList transition_properties;
 } UndoRedoAddDeleteComponent;
 
 typedef struct _UndoRedo
@@ -161,6 +176,7 @@ struct _RigUndoJournal
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        CoglBool mergable,
+                                       RigTransition *transition,
                                        const RutBoxed *value,
                                        RutProperty *property);
 
@@ -172,6 +188,7 @@ typedef struct
 
 void
 rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
+                                          RigTransition *transition,
                                           float offset,
                                           const RigUndoJournalPathNode *nodes,
                                           int n_path_nodes);
@@ -179,6 +196,7 @@ rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_move_and_log (RigUndoJournal *journal,
                                CoglBool mergable,
+                               RigTransition *transition,
                                RutEntity *entity,
                                float x,
                                float y,
@@ -186,11 +204,13 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
 
 void
 rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
+                                           RigTransition *transition,
                                            RutProperty *property,
                                            RigNode *node);
 
 void
 rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
+                                       RigTransition *transition,
                                        RutProperty *property,
                                        CoglBool value);
 

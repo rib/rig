@@ -17,9 +17,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "rig-transition.h"
 
@@ -33,25 +31,56 @@ static RutPropertySpec _rig_transition_prop_specs[] = {
   { 0 }
 };
 
-static RutIntrospectableVTable _rig_transition_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
+static void
+_rig_transition_free (RigTransition *transition)
+{
+  rut_closure_list_disconnect_all (&transition->operation_cb_list);
+
+  rut_simple_introspectable_destroy (transition);
+
+  g_hash_table_destroy (transition->properties);
+
+  rut_refable_unref (transition->context);
+
+  g_free (transition->name);
+
+  g_slice_free (RigTransition, transition);
+}
 
 RutType rig_transition_type;
 
 static void
 _rig_transition_type_init (void)
 {
-  rut_type_init (&rig_transition_type, "RigTransition");
-  rut_type_add_interface (&rig_transition_type,
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_transition_free
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rig_transition_type;
+#define TYPE RigTransition
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rig_transition_introspectable_vtable);
-  rut_type_add_interface (&rig_transition_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RigTransition, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 static void
@@ -69,9 +98,8 @@ free_prop_data_cb (void *user_data)
 
 RigTransition *
 rig_transition_new (RutContext *context,
-                    uint32_t id)
+                    const char *name)
 {
-  //CoglError *error = NULL;
   RigTransition *transition;
   static CoglBool initialized = FALSE;
 
@@ -84,7 +112,10 @@ rig_transition_new (RutContext *context,
 
   transition = g_slice_new0 (RigTransition);
 
-  transition->id = id;
+  transition->ref_count = 1;
+
+  transition->name = g_strdup (name);
+
   transition->context = rut_refable_ref (context);
 
   rut_object_init (&transition->_parent, &rig_transition_type);
@@ -104,17 +135,10 @@ rig_transition_new (RutContext *context,
 }
 
 void
-rig_transition_free (RigTransition *transition)
+rig_transition_set_name (RigTransition *transition,
+                         const char *name)
 {
-  rut_closure_list_disconnect_all (&transition->operation_cb_list);
 
-  rut_simple_introspectable_destroy (transition);
-
-  g_hash_table_destroy (transition->properties);
-
-  rut_refable_unref (transition->context);
-
-  g_slice_free (RigTransition, transition);
 }
 
 RigTransitionPropData *

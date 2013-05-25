@@ -493,7 +493,7 @@ serialize_component_cb (RutComponent *component,
 
       pb_component->grid->has_z = TRUE;
       pb_component->grid->z = rut_pointalism_grid_get_z (RUT_POINTALISM_GRID (component));
-      
+
       pb_component->grid->has_cell_size = TRUE;
       pb_component->grid->cell_size = rut_pointalism_grid_get_cell_size (RUT_POINTALISM_GRID (component));
 
@@ -845,7 +845,8 @@ rig_pb_serialize_ui (RigEngine *engine,
           ui->transitions[i] = pb_transition;
 
           pb_transition->has_id = TRUE;
-          pb_transition->id = transition->id;
+
+          pb_transition->name = transition->name;
 
           serializer.n_pb_properties = 0;
           serializer.pb_properties = NULL;
@@ -1973,6 +1974,7 @@ unserialize_transitions (UnSerializer *unserializer,
     {
       Rig__Transition *pb_transition = transitions[i];
       RigTransition *transition;
+      const char *name;
       uint64_t id;
 
       if (!pb_transition->has_id)
@@ -1980,26 +1982,24 @@ unserialize_transitions (UnSerializer *unserializer,
 
       id = pb_transition->id;
 
-      transition = rig_create_transition (unserializer->engine, id);
+      if (pb_transition->name)
+        name = pb_transition->name;
+      else
+        name = "Controller 0";
+
+      transition = rig_transition_new (unserializer->engine->ctx, name);
 
       unserialize_transition_properties (unserializer,
-                                  transition,
-                                  pb_transition->n_properties,
-                                  pb_transition->properties);
+                                         transition,
+                                         pb_transition->n_properties,
+                                         pb_transition->properties);
 
       unserializer->transitions =
         g_list_prepend (unserializer->transitions, transition);
+
+      if (id)
+        register_unserializer_object (unserializer, transition, id);
     }
-}
-
-static void
-update_transition_property_cb (RigTransitionPropData *prop_data,
-                               void *user_data)
-{
-  RigEngine *engine = user_data;
-
-  rig_transition_update_property (engine->transitions->data,
-                                  prop_data->property);
 }
 
 void
@@ -2062,13 +2062,6 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
   engine->transitions = unserializer.transitions;
 
   engine->assets = unserializer.assets;
-
-  /* Reset all of the property values to their current value according
-   * to the first transition */
-  if (engine->transitions)
-    rig_transition_foreach_property (engine->transitions->data,
-                                     update_transition_property_cb,
-                                     engine);
 
   rig_engine_handle_ui_update (engine);
 

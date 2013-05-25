@@ -367,6 +367,55 @@ rut_property_set_copy_binding (RutPropertyContext *context,
                                RutProperty *target_property,
                                RutProperty *source_property);
 
+/**
+ * rut_property_remove_binding:
+ * @property: The property to remove any binding from
+ *
+ * This removes any binding callback currently associated with the
+ * given @property.
+ */
+void
+rut_property_remove_binding (RutProperty *property);
+
+typedef struct _RutPropertyClosure RutPropertyClosure;
+
+/*
+ * rut_property_connect_callback_full:
+ * @property: a property you want to be notified of changes to
+ * @callback: callback to be called whenever @property changes
+ * @user_data: private data to be passed to @callback
+ * @destroy_notify: a callback to clean up private data if @property
+ *                  is destroyed or rut_property_closure_destroy()
+ *                  is called
+ *
+ * Lets you be notified via a @callback whenever a given @property
+ * changes.
+ *
+ * <note>It is not recommended that this api should be used to
+ * generally to bind properties together by using the @callback to
+ * then set other properties; instead you should use
+ * rut_property_set_binding() so that dependencies can be fully
+ * tracked. This mechanism is only intended as a way to trigger logic
+ * in response to a property change.</note>
+ *
+ * Returns: a #RutPropertyClosure that can be explicitly destroyed by
+ *          calling rut_property_closure_destroy() or indirectly by
+ *          destroying @property.
+ */
+RutPropertyClosure *
+rut_property_connect_callback_full (RutProperty *property,
+                                    RutBindingCallback callback,
+                                    void *user_data,
+                                    GDestroyNotify destroy_notify);
+
+RutPropertyClosure *
+rut_property_connect_callback (RutProperty *property,
+                               RutBindingCallback callback,
+                               void *user_data);
+
+void
+rut_property_closure_destroy (RutPropertyClosure *closure);
+
 /*
  * XXX: Issues
  *

@@ -1084,7 +1084,6 @@ parse_start_element (GMarkupParseContext *context,
       strcmp (element_name, "transition") == 0)
     {
       const char *id_str;
-      uint32_t id;
 
       loader_push_state (loader, LOADER_STATE_LOADING_TRANSITION);
 
@@ -1098,9 +1097,8 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      id = g_ascii_strtoull (id_str, NULL, 10);
-
-      loader->current_transition = rig_create_transition (loader->engine, id);
+      loader->current_transition =
+        rig_transition_new (loader->engine->ctx, "Controller 0");
       loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
@@ -1438,16 +1436,6 @@ parse_error (GMarkupParseContext *context,
 }
 
 static void
-update_transition_property_cb (RigTransitionPropData *prop_data,
-                               void *user_data)
-{
-  RigEngine *engine = user_data;
-
-  rig_transition_update_property (engine->transitions->data,
-                                  prop_data->property);
-}
-
-static void
 free_id_slice (void *id)
 {
   g_slice_free (uint64_t, id);
@@ -1523,13 +1511,6 @@ rig_load_xml (RigEngine *engine, const char *file)
   engine->transitions = loader.transitions;
 
   engine->assets = loader.assets;
-
-  /* Reset all of the property values to their current value according
-   * to the first transition */
-  if (engine->transitions)
-    rig_transition_foreach_property (engine->transitions->data,
-                                     update_transition_property_cb,
-                                     engine);
 
   rig_engine_handle_ui_update (engine);
 

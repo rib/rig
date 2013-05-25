@@ -866,6 +866,7 @@ entity_translate_done_cb (RutEntity *entity,
     {
       rig_undo_journal_move_and_log (engine->undo_journal,
                                      FALSE, /* mergable */
+                                     engine->selected_transition,
                                      entity,
                                      start[0] + rel[0],
                                      start[1] + rel[1],
@@ -1483,6 +1484,7 @@ move_entity_to_camera (RigCameraView *view,
 
       rig_undo_journal_move_and_log (sub_journal,
                                      FALSE, /* mergable */
+                                     engine->selected_transition,
                                      entity,
                                      camera_position[0],
                                      camera_position[1],
@@ -1500,6 +1502,7 @@ move_entity_to_camera (RigCameraView *view,
 
   rig_undo_journal_set_property_and_log (sub_journal,
                                          FALSE,
+                                         engine->selected_transition,
                                          &boxed_rotation,
                                          rotation_property);
 

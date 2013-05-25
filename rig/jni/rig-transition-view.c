@@ -1925,6 +1925,7 @@ rig_transition_view_commit_dragged_nodes (RigTransitionView *view)
     }
 
   rig_undo_journal_move_path_nodes_and_log (view->undo_journal,
+                                            view->transition,
                                             view->drag_offset,
                                             nodes,
                                             n_nodes);
@@ -2095,6 +2096,7 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
             rut_container_of (view->selected_nodes.next, node, list_node);
 
           rig_undo_journal_delete_path_node_and_log (journal,
+                                                     view->transition,
                                                      node->prop_data->property,
                                                      node->node);
         }
