@@ -268,6 +268,8 @@ _rut_drag_bin_grab_input_cb (RutInputEvent *event,
             cancel_drag (bin);
 
           rut_shell_queue_redraw (bin->ctx->shell);
+
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
 

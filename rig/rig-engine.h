@@ -59,6 +59,7 @@ typedef enum _RutSelectAction
 #include "rig-camera-view.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
+#include "rig-code.h"
 
 enum {
   RIG_ENGINE_PROP_WIDTH,
@@ -125,7 +126,17 @@ struct _RigEngine
   GList *required_search_tags;
 
   RutList tool_changed_cb_list;
+
+  GString *code_string;
+  RigCodeNode *code_graph;
+  GModule *code_dso_module;
+  char *code_dso_filename;
+  bool need_recompile;
 #endif
+
+  GString *codegen_string0;
+  GString *codegen_string1;
+  int next_code_id;
 
   RutObject *renderer;
 

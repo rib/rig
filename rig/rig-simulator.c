@@ -250,6 +250,12 @@ simulator__run_frame (Rig__Simulator_Service *service,
    * pointers as IDs we can use any odd number as a temporary ID... */
   simulator->next_tmp_id = 1;
 
+
+  if (setup->has_dso)
+    {
+      rig_code_update_dso (engine, setup->dso.data, setup->dso.len);
+    }
+
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
 

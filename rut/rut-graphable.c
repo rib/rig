@@ -215,9 +215,12 @@ _rut_graphable_traverse_depth (RutObject *graphable,
 {
   RutTraverseVisitFlags flags;
 
-  flags = before_children_callback (graphable, current_depth, user_data);
-  if (flags & RUT_TRAVERSE_VISIT_BREAK)
-    return RUT_TRAVERSE_VISIT_BREAK;
+  if (before_children_callback)
+    {
+      flags = before_children_callback (graphable, current_depth, user_data);
+      if (flags & RUT_TRAVERSE_VISIT_BREAK)
+        return RUT_TRAVERSE_VISIT_BREAK;
+    }
 
   if (!(flags & RUT_TRAVERSE_VISIT_SKIP_CHILDREN))
     {

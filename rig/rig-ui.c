@@ -25,6 +25,7 @@
 #include <rut.h>
 
 #include "rig-ui.h"
+#include "rig-code.h"
 
 
 static void
@@ -57,6 +58,9 @@ _rig_ui_free (void *object)
   if (ui->play_camera_component)
     rut_object_unref (ui->play_camera_component);
 
+  if (ui->dso_data)
+    g_free (ui->dso_data);
+
   rut_object_free (RigUI, object);
 }
 
@@ -77,6 +81,17 @@ rig_ui_new (RigEngine *engine)
   ui->engine = engine;
 
   return ui;
+}
+
+void
+rig_ui_set_dso_data (RigUI *ui, uint8_t *data, int len)
+{
+  if (ui->dso_data)
+    g_free (ui->dso_data);
+
+  ui->dso_data = g_malloc (len);
+  memcpy (ui->dso_data, data, len);
+  ui->dso_len = len;
 }
 
 typedef struct

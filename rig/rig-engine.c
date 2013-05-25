@@ -974,7 +974,10 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
     }
 
   if (ui)
-    engine->play_mode_ui = rut_object_ref (ui);
+    {
+      engine->play_mode_ui = rut_object_ref (ui);
+      rig_code_update_dso (engine, ui->dso_data, ui->dso_len);
+    }
 
   //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
   //  free_shared_ui_state (engine);
@@ -987,8 +990,8 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
   else
     rig_ui_suspend (ui);
 
-  if (!ui)
-    return;
+  //if (!ui)
+  //  return;
 
   //if (first_ui)
   //  setup_shared_ui_state (engine);
@@ -1172,6 +1175,8 @@ _rig_engine_free (void *object)
           rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
         }
 #endif
+      _rig_code_fini (engine);
+
       rig_renderer_fini (engine);
 
       cogl_object_unref (engine->circle_node_attribute);
@@ -1418,8 +1423,9 @@ _rig_engine_new_full (RutShell *shell,
 
   rut_shell_add_input_camera (shell, engine->camera_2d, engine->root);
 
-#ifdef RIG_EDITOR_ENABLED
+  _rig_code_init (engine);
 
+#ifdef RIG_EDITOR_ENABLED
   /* NB: The simulator also needs to track selections when in support
    * of an editor. */
   engine->objects_selection = _rig_objects_selection_new (engine);

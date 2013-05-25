@@ -65,7 +65,7 @@ typedef struct _RutBitmaskImaginaryType *RutBitmask;
 /* The least significant bit is set to mark that no array has been
    allocated yet */
 #define _rut_bitmask_from_bits(bits) \
-  ((void *) ((((unsigned long) (bits)) << 1UL) | 1UL))
+  ((RutBitmask) ((((unsigned long) (bits)) << 1UL) | 1UL))
 
 /* Internal helper macro to determine whether this bitmask has a
    GArray allocated or whether the pointer is just used directly */

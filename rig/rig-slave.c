@@ -582,7 +582,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
           setup.edit = (Rig__UIEdit *)pending_edit->edit;
         }
 
-      rig_frontend_run_simulator_frame (frontend, &setup);
+      rig_frontend_run_simulator_frame (frontend, serializer, &setup);
 
       if (pending_edit)
         {

@@ -51,12 +51,18 @@ struct _RigUI
   RutEntity *play_camera;
   RutCamera *play_camera_component;
 
+  uint8_t *dso_data;
+  int dso_len;
+
   GList *suspended_controllers;
   bool suspended;
 };
 
 RigUI *
 rig_ui_new (RigEngine *engine);
+
+void
+rig_ui_set_dso_data (RigUI *ui, uint8_t *data, int len);
 
 void
 rig_ui_prepare (RigUI *ui);

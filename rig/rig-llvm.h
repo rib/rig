@@ -19,17 +19,27 @@
  *
  */
 
-#ifndef _RIG_BINDING_VIEW_H_
-#define _RIG_BINDING_VIEW_H_
+#ifndef __RIG_LLVM_H__
+#define __RIG_LLVM_H__
 
-#include <rut.h>
+G_BEGIN_DECLS
 
-extern RutType rig_binding_view_type;
+typedef struct _RigLLVMModule RigLLVMModule;
 
-typedef struct _RigBindingView RigBindingView;
+/* When we're connected to a slave device we write a native dso for
+ * the slave that can be sent over the wire, written and then opened.
+ */
+RigLLVMModule *
+rig_llvm_compile_to_dso (const char *code,
+                         char **dso_filename_out,
+                         uint8_t **dso_data_out,
+                         size_t *dso_len_out);
 
-RigBindingView *
-rig_binding_view_new (RigEngine *engine,
-                      RutProperty *property);
+/* When we run code in the editor we simply rely on the LLVM JIT
+ * without needing to write and then open a native dso. */
+RigLLVMModule *
+rig_llvm_compile_for_jit (const char *code);
 
-#endif /* _RIG_BINDING_VIEW_H_ */
+G_END_DECLS
+
+#endif /* __RIG_LLVM_H__ */

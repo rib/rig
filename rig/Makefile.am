@@ -4,17 +4,22 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
-	-I$(top_builddir)/rig/jni \
+	-I$(top_builddir)/rig \
 	-I$(top_builddir)/rig/protobuf-c-rpc \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
 	$(RIG_EXTRA_CPPFLAGS) \
-	-DRIG_BIN_DIR=\"$(bindir)/\"
+	-DRIG_BIN_DIR=\"$(bindir)/\" \
+	$(RIG_CLANG_CFLAGS) \
+	$(RIG_EXTRA_CPPFLAGS) \
+	-DRIG_LLVM_PREFIX=\"@RIG_LLVM_PREFIX@\" \
+	-DRIG_LLVM_VERSION=\"@RIG_LLVM_VERSION@\"
 
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
+lib_LTLIBRARIES = librig_clang.la
 noinst_LTLIBRARIES = librig.la
 bin_PROGRAMS = rig rig-slave rig-device rig-simulator
 
@@ -37,6 +42,19 @@ rig_protobuf_c_rpc_sources = \
 	protobuf-c-rpc/gsklistmacros.h
 EXTRA_DIST += protobuf-c-rpc/README
 
+# Headers that will need to be available for compiling code at runtime
+# and so need to be installed...
+runtime_headers = \
+    rig-codegen.h
+
+runtime_headersdir = $(prefix)/share/rig/codegen_includes
+runtime_headers_DATA = $(runtime_headers)
+
+librig_clang_la_SOURCES = rig-llvm.cpp rig-llvm.h
+librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/rut/librut.la
+librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0 -Wl,--unresolved-symbols=ignore-all
+#-fuse-ld=gold
+
 librig_la_SOURCES = \
 	$(rig_protobuf_c_rpc_sources) \
 	rig-engine.c \
@@ -48,6 +66,8 @@ librig_la_SOURCES = \
 	rig-path.h \
 	rig-controller.c \
 	rig-controller.h \
+	rig-binding.h \
+	rig-binding.c \
 	rig-pb.h \
 	rig-pb.c \
 	rig-load-save.h \
@@ -79,7 +99,9 @@ librig_la_SOURCES = \
 	rig-frontend.c \
 	rig-frontend.h \
 	rig-ui.h \
-	rig-ui.c
+	rig-ui.c \
+	rig-binding.h \
+	rig-binding.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
@@ -92,7 +114,9 @@ librig_la_SOURCES += \
 	rig-selection-tool.h \
 	rig-selection-tool.c \
 	rig-binding-view.h \
-	rig-binding-view.c
+	rig-binding-view.c \
+	rig-code.h \
+	rig-code.c
 endif
 
 if HAVE_OSX
@@ -107,10 +131,11 @@ librig_la_SOURCES += \
 endif
 
 common_ldadd = \
-	$(RIG_DEP_LIBS) \
 	$(RIG_EXTRA_LDFLAGS) \
 	librig.la \
-	$(top_builddir)/rut/librut.la
+	-lrig_clang \
+	$(top_builddir)/rut/librut.la \
+	$(RIG_DEP_LIBS)
 
 librig_la_LIBS = $(common_ldadd)
 

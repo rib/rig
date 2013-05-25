@@ -71,7 +71,7 @@ rig_device_redraw (RutShell *shell, void *user_data)
 
       setup.edit = NULL;
 
-      rig_frontend_run_simulator_frame (frontend, &setup);
+      rig_frontend_run_simulator_frame (frontend, serializer, &setup);
 
       rig_pb_serializer_destroy (serializer);
 

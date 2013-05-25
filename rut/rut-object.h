@@ -4,6 +4,8 @@
 #include "rut-type.h"
 #include "rut-refcount-debug.h"
 
+G_BEGIN_DECLS
+
 /* We largely give up having compile time type safety for RutObjects
  * since the type system is intended to be dynamic and most apis
  * dealing with RutObjects, care more about traits than about object
@@ -52,14 +54,14 @@ rut_object_init (RutObjectBase *object_properties, RutType *type);
 static inline const RutType *
 rut_object_get_type (RutObject *object)
 {
-  RutObjectBase *obj = object;
+  RutObjectBase *obj = (RutObjectBase *)object;
   return obj->type;
 }
 
 static inline void *
 rut_object_get_properties (RutObject *object, RutTraitID trait)
 {
-  RutObjectBase *obj = object;
+  RutObjectBase *obj = (RutObjectBase *)object;
   size_t props_offset = obj->type->traits[trait].props_offset;
   return (uint8_t *)obj + props_offset;
 }
@@ -67,28 +69,28 @@ rut_object_get_properties (RutObject *object, RutTraitID trait)
 static inline void *
 rut_object_get_vtable (void *object, RutTraitID trait)
 {
-  RutObjectBase *obj = object;
+  RutObjectBase *obj = (RutObjectBase *)object;
   return obj->type->traits[trait].vtable;
 }
 
 static inline bool
 rut_object_is (void *object, RutTraitID trait)
 {
-  RutObjectBase *obj = object;
+  RutObjectBase *obj = (RutObjectBase *)object;
   return _rut_bitmask_get (&obj->type->traits_mask, trait);
 }
 
 static inline const char *
 rut_object_get_type_name (void *object)
 {
-  RutObjectBase *obj = object;
+  RutObjectBase *obj = (RutObjectBase *)object;
   return obj->type->name;
 }
 
 static inline void *
 rut_object_ref (void *object)
 {
-  RutObjectBase *base = object;
+  RutObjectBase *base = (RutObjectBase *)object;
 
   _rut_refcount_debug_ref (object);
 
@@ -99,7 +101,7 @@ rut_object_ref (void *object)
 static inline void
 rut_object_unref (void *object)
 {
-  RutObjectBase *base = object;
+  RutObjectBase *base = (RutObjectBase *)object;
 
   _rut_refcount_debug_unref (object);
 
@@ -119,7 +121,7 @@ rut_object_unref (void *object)
 static inline void *
 rut_object_claim (void *object, void *owner)
 {
-  RutObjectBase *base = object;
+  RutObjectBase *base = (RutObjectBase *)object;
 
   _rut_refcount_debug_claim (object, owner);
 
@@ -130,12 +132,14 @@ rut_object_claim (void *object, void *owner)
 static inline void
 rut_object_release (void *object, void *owner)
 {
-  RutObjectBase *base = object;
+  RutObjectBase *base = (RutObjectBase *)object;
 
   _rut_refcount_debug_release (object, owner);
 
   if (--(base->ref_count) < 1)
     base->type->free (object);
 }
+
+G_END_DECLS
 
 #endif /* _RUT_OBJECT_H_ */

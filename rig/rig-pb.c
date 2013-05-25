@@ -785,15 +785,62 @@ serialize_controller_property_cb (RigControllerPropData *prop_data,
   pb_property->has_method = TRUE;
   switch (prop_data->method)
     {
-      case RIG_CONTROLLER_METHOD_CONSTANT:
-        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__CONSTANT;
-        break;
-      case RIG_CONTROLLER_METHOD_PATH:
-        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__PATH;
-        break;
-      case RIG_CONTROLLER_METHOD_BINDING:
-        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__C_BINDING;
-        break;
+    case RIG_CONTROLLER_METHOD_CONSTANT:
+      pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__CONSTANT;
+      break;
+    case RIG_CONTROLLER_METHOD_PATH:
+      pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__PATH;
+      break;
+    case RIG_CONTROLLER_METHOD_BINDING:
+      pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__C_BINDING;
+      break;
+    }
+
+  if (prop_data->c_expression)
+    {
+      int i;
+
+      pb_property->c_expression =
+        (char *)rig_pb_strdup (serializer, prop_data->c_expression);
+
+      pb_property->n_dependencies = prop_data->n_dependencies;
+      if (pb_property->n_dependencies)
+        {
+          Rig__Controller__Property__Dependency *pb_dependencies =
+            rut_memory_stack_memalign (
+                     serializer->stack,
+                     (sizeof (Rig__Controller__Property__Dependency)
+                      * prop_data->n_dependencies),
+                     RUT_UTIL_ALIGNOF (Rig__Controller__Property__Dependency));
+          pb_property->dependencies =
+            rut_memory_stack_memalign (
+                     serializer->stack,
+                     (sizeof (void *) * prop_data->n_dependencies),
+                     RUT_UTIL_ALIGNOF (void *));
+
+          for (i = 0; i < prop_data->n_dependencies; i++)
+            pb_property->dependencies[i] = &pb_dependencies[i];
+
+          for (i = 0; i < prop_data->n_dependencies; i++)
+            {
+              RutProperty *dependency = prop_data->dependencies[i];
+              Rig__Controller__Property__Dependency *pb_dependency =
+                &pb_dependencies[i];
+              uint64_t id =
+                rig_pb_serializer_lookup_object_id (serializer,
+                                                    dependency->object);
+
+              g_warn_if_fail (id != 0);
+
+              rig__controller__property__dependency__init (pb_dependency);
+
+              pb_dependency->has_object_id = true;
+              pb_dependency->object_id = id;
+
+              pb_dependency->name =
+                (char *)rig_pb_strdup (serializer, dependency->spec->name);
+            }
+        }
     }
 
   pb_property->constant = pb_property_value_new (serializer, &prop_data->constant_value);
@@ -1375,6 +1422,16 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
 
       /* restore the asset filter */
       serializer->asset_filter = save_filter;
+    }
+
+  if (ui->dso_data)
+    {
+      pb_ui->has_dso = true;
+      pb_ui->dso.data =
+        rut_memory_stack_memalign (serializer->stack,
+                                   ui->dso_len,
+                                   1);
+      pb_ui->dso.len = ui->dso_len;
     }
 
   return pb_ui;
@@ -3158,6 +3215,9 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
   /* Make sure the ui is complete, in case anything was missing from what we
    * loaded... */
   rig_ui_prepare (ui);
+
+  if (pb_ui->has_dso)
+    rig_ui_set_dso_data (ui, pb_ui->dso.data, pb_ui->dso.len);
 
   return ui;
 }

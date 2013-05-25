@@ -79,6 +79,9 @@ struct _RigFrontend
   RigEngineOpApplyContext apply_op_ctx;
   RigPBUnSerializer *prop_change_unserializer;
 
+  uint8_t *pending_dso_data;
+  size_t pending_dso_len;
+
   GHashTable *tmp_id_to_object_map;
 };
 
@@ -108,6 +111,7 @@ rig_frontend_sync (RigFrontend *frontend,
 
 void
 rig_frontend_run_simulator_frame (RigFrontend *frontend,
+                                  RigPBSerializer *serializer,
                                   Rig__FrameSetup *setup);
 
 void
@@ -139,5 +143,10 @@ rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
  * recieve an update from the simulator and then queues a redraw. */
 void
 rig_frontend_queue_simulator_frame (RigFrontend *frontend);
+
+void
+rig_frontend_update_simulator_dso (RigFrontend *frontend,
+                                   uint8_t *dso,
+                                   int len);
 
 #endif /* _RIG_FRONTEND_H_ */

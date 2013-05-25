@@ -30,6 +30,8 @@
 
 #include "rut-memory-stack.h"
 
+G_BEGIN_DECLS
+
 typedef struct _RutMagazineChunk RutMagazineChunk;
 
 struct _RutMagazineChunk
@@ -64,7 +66,7 @@ rut_magazine_chunk_alloc (RutMagazine *magazine)
 static inline void
 rut_magazine_chunk_free (RutMagazine *magazine, void *data)
 {
-  RutMagazineChunk *chunk = data;
+  RutMagazineChunk *chunk = (RutMagazineChunk *)data;
 
   chunk->next = magazine->head;
   magazine->head = chunk;
@@ -72,5 +74,7 @@ rut_magazine_chunk_free (RutMagazine *magazine, void *data)
 
 void
 rut_magazine_free (RutMagazine *magazine);
+
+G_END_DECLS
 
 #endif /* __RUT_MAGAZINE_H__ */

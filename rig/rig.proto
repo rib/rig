@@ -365,6 +365,8 @@ message UI
   repeated Asset assets=2;
   repeated Entity entities=3;
   repeated Controller controllers=4;
+
+  optional bytes dso=6;
 }
 
 message Event
@@ -569,6 +571,8 @@ message FrameSetup
 
   optional UIEdit edit=10; //operations for the edit-mode ui
   optional UIEdit play_edit=11; //operations for the play-mode ui
+
+  optional bytes dso=13;
 }
 
 message LoadResult

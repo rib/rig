@@ -1157,8 +1157,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
   CoglOnscreen *onscreen = NULL;
   RutShellOnscreen *shell_onscreen = NULL;
 
-  g_print ("event\n");
-
   onscreen = rut_input_event_get_onscreen (event);
 
   if (onscreen)
@@ -1198,10 +1196,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    g_print ("Motion 0\n");
-  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
-    g_print ("Drop offer 0\n");
   event->camera = shell->window_camera;
 
   rut_list_for_each_safe (c, tmp, &shell->input_cb_list, list_node)
@@ -1213,10 +1207,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         goto handled;
     }
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    g_print ("Motion 1\n");
-  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
-    g_print ("Drop offer 1\n");
   rut_list_for_each_safe (grab, shell->next_grab, &shell->grabs, list_node)
     {
       RutCamera *old_camera = event->camera;
@@ -1236,10 +1226,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    g_print ("Motion 2\n");
-  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
-    g_print ("Drop offer 2\n");
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
@@ -1267,10 +1253,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
-    g_print ("Motion 3\n");
-  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
-    g_print ("Drop offer 3\n");
   /* If nothing has handled the event by now we'll try to pick a
    * single object from the scenegraphs attached to the cameras that
    * will handle the event */
@@ -2133,7 +2115,6 @@ sdl_handle_event (RutShell *shell, SDL_Event *sdl_event)
       rut_sdl_event->buttons = shell->sdl_buttons;
       rut_sdl_event->mod_state = shell->sdl_keymod;
 
-      g_print ("sdl_handle_event: queue %d\n", rand());
       rut_input_queue_append (shell->input_queue, event);
 
       /* FIXME: we need a separate status so we can trigger a new

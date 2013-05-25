@@ -28,8 +28,14 @@
  */
 
 extern RutType rut_asset_type;
+
+#ifndef RUT_ASSET_TYPEDEF
+/* Note: rut-property.h currently avoids including rut-asset.h
+ * to avoid a circular header dependency and directly declares
+ * a RutAsset typedef */
 typedef struct _RutAsset RutAsset;
-#define RUT_ASSET(X) ((RutAsset *)X)
+#define RUT_ASSET_TYPEDEF
+#endif
 
 void _rut_asset_type_init (void);
 

@@ -80,6 +80,8 @@ struct _RutContext
   GSList *timelines;
 };
 
+G_BEGIN_DECLS
+
 RutContext *
 rut_context_new (RutShell *shell /* optional */);
 
@@ -125,5 +127,7 @@ rut_find_data_file (const char *base_filename);
 
 CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
+
+G_END_DECLS
 
 #endif /* _RUT_CONTEXT_H_ */

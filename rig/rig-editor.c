@@ -2538,7 +2538,7 @@ rig_editor_redraw (RutShell *shell, void *user_data)
           pb_frame_setup.play_mode = frontend->pending_play_mode_enabled;
         }
 
-      rig_frontend_run_simulator_frame (frontend, &pb_frame_setup);
+      rig_frontend_run_simulator_frame (frontend, serializer, &pb_frame_setup);
 
       rig_pb_serializer_destroy (serializer);
 

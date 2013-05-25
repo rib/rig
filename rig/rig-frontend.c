@@ -478,6 +478,7 @@ register_temporary_cb (gpointer key,
 
 void
 rig_frontend_run_simulator_frame (RigFrontend *frontend,
+                                  RigPBSerializer *serializer,
                                   Rig__FrameSetup *setup)
 {
   RigEngine *engine = frontend->engine;
@@ -519,18 +520,38 @@ rig_frontend_run_simulator_frame (RigFrontend *frontend,
                                    &state);
     }
 
+  if (frontend->pending_dso_data)
+    {
+      setup->has_dso = true;
+      setup->dso.len = frontend->pending_dso_len;
+      setup->dso.data =
+        rut_memory_stack_memalign (engine->frame_stack,
+                                   frontend->pending_dso_len,
+                                   RUT_UTIL_ALIGNOF (uint8_t));
+      memcpy (setup->dso.data, frontend->pending_dso_data, setup->dso.len);
+    }
+
   rig__simulator__run_frame (simulator_service,
                              setup,
                              frame_running_ack,
                              frontend); /* user data */
 
   frontend->ui_update_pending = true;
+
+  if (frontend->pending_dso_data)
+    {
+      g_free (frontend->pending_dso_data);
+      frontend->pending_dso_data = NULL;
+    }
 }
 
 static void
 _rig_frontend_free (void *object)
 {
   RigFrontend *frontend = object;
+
+  if (frontend->pending_dso_data)
+    g_free (frontend->pending_dso_data);
 
   rig_engine_op_apply_context_destroy (&frontend->apply_op_ctx);
   rig_pb_unserializer_destroy (frontend->prop_change_unserializer);
@@ -599,6 +620,11 @@ rig_frontend_spawn_simulator (RigFrontend *frontend)
 #ifdef RIG_ENABLE_DEBUG
       if (getenv ("RIG_SIMULATOR"))
         path = getenv ("RIG_SIMULATOR");
+#endif
+
+#if 0
+      if (execlp ("valgrind", "valgrind", "--track-origins=yes", path, NULL))
+        g_error ("Failed to run simulator process under valgrind");
 #endif
 
       if (execl (path, path, NULL) < 0)
@@ -733,3 +759,16 @@ rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
 
   rig_frontend_queue_simulator_frame (frontend);
 }
+
+void
+rig_frontend_update_simulator_dso (RigFrontend *frontend,
+                                   uint8_t *dso,
+                                   int len)
+{
+  if (frontend->pending_dso_data)
+    g_free (frontend->pending_dso_data);
+
+  frontend->pending_dso_data = dso;
+  frontend->pending_dso_len = len;
+}
+

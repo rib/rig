@@ -24,6 +24,7 @@
 #include <glib.h>
 
 #include "rut-shim.h"
+#include "rut-asset.h"
 #include "rut-asset-inspector.h"
 #include "rut-object.h"
 #include "rut-image.h"

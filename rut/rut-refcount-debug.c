@@ -698,7 +698,7 @@ _rut_refcount_debug_unref (void *object)
 }
 
 void
-rut_refable_dump_refs (void *object)
+rut_object_dump_refs (void *object)
 {
   RutRefcountDebugState *state = get_state ();
   RutRefcountDebugObject *object_data;
