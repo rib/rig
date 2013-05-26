@@ -861,12 +861,12 @@ entity_translate_done_cb (RutEntity *entity,
 
   /* If the entity hasn't actually moved then we'll ignore it. It that
    * case the user is presumably just trying to select and entity we
-   * don't want it to modify the transition */
+   * don't want it to modify the controller */
   if (moved)
     {
       rig_undo_journal_move_and_log (engine->undo_journal,
                                      FALSE, /* mergable */
-                                     engine->selected_transition,
+                                     engine->selected_controller,
                                      entity,
                                      start[0] + rel[0],
                                      start[1] + rel[1],
@@ -1484,7 +1484,7 @@ move_entity_to_camera (RigCameraView *view,
 
       rig_undo_journal_move_and_log (sub_journal,
                                      FALSE, /* mergable */
-                                     engine->selected_transition,
+                                     engine->selected_controller,
                                      entity,
                                      camera_position[0],
                                      camera_position[1],
@@ -1502,7 +1502,7 @@ move_entity_to_camera (RigCameraView *view,
 
   rig_undo_journal_set_property_and_log (sub_journal,
                                          FALSE,
-                                         engine->selected_transition,
+                                         engine->selected_controller,
                                          &boxed_rotation,
                                          rotation_property);
 

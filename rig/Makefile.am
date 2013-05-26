@@ -41,16 +41,16 @@ librig_la_SOURCES = \
 	jni/rig-node.h \
 	jni/rig-path.c \
 	jni/rig-path.h \
-	jni/rig-transition.c \
-	jni/rig-transition.h \
+	jni/rig-controller.c \
+	jni/rig-controller.h \
 	jni/rig-load-xml.h \
 	jni/rig-load-xml.c \
 	jni/rig-pb.h \
 	jni/rig-pb.c \
 	jni/rig-load-save.h \
 	jni/rig-load-save.c \
-	jni/rig-transition-view.c \
-	jni/rig-transition-view.h \
+	jni/rig-controller-view.c \
+	jni/rig-controller-view.h \
     	jni/rig-split-view.h \
     	jni/rig-split-view.c \
     	jni/rig-view.h \

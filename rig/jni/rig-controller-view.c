@@ -27,7 +27,7 @@
 
 #include "rut.h"
 
-#include "rig-transition-view.h"
+#include "rig-controller-view.h"
 
 /* The number of controls to display for each property. Currently
  * there is only the label for the property name but there is an
@@ -57,7 +57,7 @@ typedef struct
 {
   RutObject *transform;
   RutObject *control;
-} RigTransitionViewControl;
+} RigControllerViewControl;
 
 /* When the user clicks on the area with the dots then we'll delay
  * deciding what action to take until the next mouse event. This enum
@@ -74,21 +74,21 @@ typedef enum
   RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE,
   /* The user is drawing a bounding box to select nodes */
   RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX
-} RigTransitionViewGrabState;
+} RigControllerViewGrabState;
 
-typedef struct _RigTransitionViewObject RigTransitionViewObject;
+typedef struct _RigControllerViewObject RigControllerViewObject;
 
 typedef struct
 {
   RutList list_node;
 
   /* Pointer back to the parent object */
-  RigTransitionViewObject *object;
+  RigControllerViewObject *object;
 
   RutProperty *property;
   RigPath *path;
 
-  RigTransitionViewControl controls[RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS];
+  RigControllerViewControl controls[RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS];
 
   RutClosure *path_operation_closure;
 
@@ -97,9 +97,9 @@ typedef struct
    * faster by only checking in the selected nodes list for paths for
    * properties that have selected nodes */
   CoglBool has_selected_nodes;
-} RigTransitionViewProperty;
+} RigControllerViewProperty;
 
-struct _RigTransitionViewObject
+struct _RigControllerViewObject
 {
   RutList list_node;
 
@@ -108,28 +108,28 @@ struct _RigTransitionViewObject
 
   RutList properties;
 
-  RigTransitionViewControl controls[RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS];
+  RigControllerViewControl controls[RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS];
 
-  /* Pointer back to the transition view so that we can get back to it
+  /* Pointer back to the controller view so that we can get back to it
    * if we use the property engine as the engine for the path operation
    * callback */
-  RigTransitionView *view;
+  RigControllerView *view;
 };
 
-struct _RigTransitionView
+struct _RigControllerView
 {
   RutObjectProps _parent;
 
   RutContext *context;
-  RigTransition *transition;
-  RutClosure *transition_op_closure;
+  RigController *controller;
+  RutClosure *controller_op_closure;
   RutTimeline *timeline;
   RigUndoJournal *undo_journal;
 
   RutList preferred_size_cb_list;
 
   RutInputRegion *input_region;
-  RigTransitionViewGrabState grab_state;
+  RigControllerViewGrabState grab_state;
   /* Position that the mouse was over when the drag was start */
   float drag_start_position;
   /* Current offset in time that the selected nodes are being dragged to */
@@ -186,42 +186,42 @@ typedef struct
 {
   RutList list_node;
 
-  RigTransitionViewProperty *prop_data;
+  RigControllerViewProperty *prop_data;
   RigNode *node;
 
   /* While dragging nodes, this will be used to store the original
    * time that the node had */
   float original_time;
-} RigTransitionViewSelectedNode;
+} RigControllerViewSelectedNode;
 
-typedef CoglVertexP2C4 RigTransitionViewDotVertex;
+typedef CoglVertexP2C4 RigControllerViewDotVertex;
 
-RutType rig_transition_view_type;
+RutType rig_controller_view_type;
 
 static void
-rig_transition_view_property_removed (RigTransitionView *view,
+rig_controller_view_property_removed (RigControllerView *view,
                                       RutProperty *property);
 
 static RutInputEventStatus
-rig_transition_view_grab_input_cb (RutInputEvent *event,
+rig_controller_view_grab_input_cb (RutInputEvent *event,
                                    void *user_data);
 
 static void
-rig_transition_view_ungrab_input (RigTransitionView *view)
+rig_controller_view_ungrab_input (RigControllerView *view)
 {
   if (view->grab_state != RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB)
     {
       rut_shell_ungrab_input (view->context->shell,
-                              rig_transition_view_grab_input_cb,
+                              rig_controller_view_grab_input_cb,
                               view);
       view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_NO_GRAB;
     }
 }
 
 static void
-rig_transition_view_clear_selected_nodes (RigTransitionView *view)
+rig_controller_view_clear_selected_nodes (RigControllerView *view)
 {
-  RigTransitionViewSelectedNode *selected_node, *t;
+  RigControllerViewSelectedNode *selected_node, *t;
 
   if (rut_list_empty (&view->selected_nodes))
     return;
@@ -229,7 +229,7 @@ rig_transition_view_clear_selected_nodes (RigTransitionView *view)
   rut_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
     {
       selected_node->prop_data->has_selected_nodes = FALSE;
-      g_slice_free (RigTransitionViewSelectedNode, selected_node);
+      g_slice_free (RigControllerViewSelectedNode, selected_node);
     }
 
   rut_list_init (&view->selected_nodes);
@@ -238,13 +238,13 @@ rig_transition_view_clear_selected_nodes (RigTransitionView *view)
 }
 
 static void
-_rig_transition_view_free (void *object)
+_rig_controller_view_free (void *object)
 {
-  RigTransitionView *view = object;
+  RigControllerView *view = object;
 
   rut_closure_list_disconnect_all (&view->preferred_size_cb_list);
 
-  rig_transition_view_ungrab_input (view);
+  rig_controller_view_ungrab_input (view);
 
   if (view->separator_pipeline)
     cogl_object_unref (view->separator_pipeline);
@@ -255,25 +255,25 @@ _rig_transition_view_free (void *object)
   if (view->box_path)
     cogl_object_unref (view->box_path);
 
-  rig_transition_view_clear_selected_nodes (view);
+  rig_controller_view_clear_selected_nodes (view);
 
   rut_refable_unref (view->graph);
 
   while (!rut_list_empty (&view->objects))
     {
-      RigTransitionViewObject *object =
+      RigControllerViewObject *object =
         rut_container_of (view->objects.next, object, list_node);
       CoglBool was_last;
 
       do
         {
-          RigTransitionViewProperty *prop_data =
+          RigControllerViewProperty *prop_data =
             rut_container_of (object->properties.next, prop_data, list_node);
           RutProperty *property = prop_data->property;
 
           was_last = prop_data->list_node.next == &object->properties;
 
-          rig_transition_view_property_removed (view, property);
+          rig_controller_view_property_removed (view, property);
         }
       while (!was_last);
     }
@@ -296,46 +296,46 @@ _rig_transition_view_free (void *object)
 
   rut_graphable_destroy (view);
 
-  g_slice_free (RigTransitionView, view);
+  g_slice_free (RigControllerView, view);
 }
 
-RutRefCountableVTable _rig_transition_view_ref_countable_vtable = {
+RutRefCountableVTable _rig_controller_view_ref_countable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
-  _rig_transition_view_free
+  _rig_controller_view_free
 };
 
-static RutGraphableVTable _rig_transition_view_graphable_vtable = {
+static RutGraphableVTable _rig_controller_view_graphable_vtable = {
   NULL, /* child removed */
   NULL, /* child addded */
   NULL /* parent changed */
 };
 
 static CoglAttributeBuffer *
-rig_transition_view_create_dots_buffer (RigTransitionView *view)
+rig_controller_view_create_dots_buffer (RigControllerView *view)
 {
-  size_t size = MAX (8, view->n_dots) * sizeof (RigTransitionViewDotVertex);
+  size_t size = MAX (8, view->n_dots) * sizeof (RigControllerViewDotVertex);
 
   return cogl_attribute_buffer_new_with_size (view->context->cogl_context,
                                               size);
 }
 
 static CoglPrimitive *
-rig_transition_view_create_dots_primitive (RigTransitionView *view)
+rig_controller_view_create_dots_primitive (RigControllerView *view)
 {
   CoglAttribute *attributes[2];
   CoglPrimitive *prim;
 
   attributes[0] = cogl_attribute_new (view->dots_buffer,
                                       "cogl_position_in",
-                                      sizeof (RigTransitionViewDotVertex),
-                                      offsetof (RigTransitionViewDotVertex, x),
+                                      sizeof (RigControllerViewDotVertex),
+                                      offsetof (RigControllerViewDotVertex, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
   attributes[1] = cogl_attribute_new (view->dots_buffer,
                                       "cogl_color_in",
-                                      sizeof (RigTransitionViewDotVertex),
-                                      offsetof (RigTransitionViewDotVertex, r),
+                                      sizeof (RigControllerViewDotVertex),
+                                      offsetof (RigControllerViewDotVertex, r),
                                       4, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
 
@@ -352,18 +352,18 @@ rig_transition_view_create_dots_primitive (RigTransitionView *view)
 
 typedef struct
 {
-  RigTransitionView *view;
-  RigTransitionViewProperty *prop_data;
+  RigControllerView *view;
+  RigControllerViewProperty *prop_data;
 
-  RigTransitionViewDotVertex *v;
+  RigControllerViewDotVertex *v;
   int row_pos;
-} RigTransitionViewDotData;
+} RigControllerViewDotData;
 
 static void
-rig_transition_view_add_dot_unselected (RigTransitionViewDotData *dot_data,
+rig_controller_view_add_dot_unselected (RigControllerViewDotData *dot_data,
                                         RigNode *node)
 {
-  RigTransitionViewDotVertex *v = dot_data->v;
+  RigControllerViewDotVertex *v = dot_data->v;
 
   v->x = node->t;
   v->y = dot_data->row_pos;
@@ -373,12 +373,12 @@ rig_transition_view_add_dot_unselected (RigTransitionViewDotData *dot_data,
 }
 
 static void
-rig_transition_view_add_dot_selected (RigTransitionViewDotData *dot_data,
+rig_controller_view_add_dot_selected (RigControllerViewDotData *dot_data,
                                       RigNode *node)
 {
-  RigTransitionViewDotVertex *v = dot_data->v;
+  RigControllerViewDotVertex *v = dot_data->v;
   uint32_t color = RIG_TRANSITION_VIEW_UNSELECTED_COLOR;
-  RigTransitionViewSelectedNode *selected_node;
+  RigControllerViewSelectedNode *selected_node;
 
   rut_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
     {
@@ -398,13 +398,13 @@ rig_transition_view_add_dot_selected (RigTransitionViewDotData *dot_data,
 }
 
 static void
-rig_transition_view_update_dots_buffer (RigTransitionView *view)
+rig_controller_view_update_dots_buffer (RigControllerView *view)
 {
-  RigTransitionViewObject *object;
+  RigControllerViewObject *object;
   CoglBool buffer_is_mapped;
-  RigTransitionViewDotVertex *buffer_data;
-  RigTransitionViewDotData dot_data;
-  size_t map_size = sizeof (RigTransitionViewDotVertex) * view->n_dots;
+  RigControllerViewDotVertex *buffer_data;
+  RigControllerViewDotData dot_data;
+  size_t map_size = sizeof (RigControllerViewDotVertex) * view->n_dots;
   CoglError *ignore_error = NULL;
 
   if (view->n_dots == 0)
@@ -437,17 +437,17 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
       rut_list_for_each (dot_data.prop_data, &object->properties, list_node)
         {
           RigPath *path =
-            rig_transition_get_path_for_property (view->transition,
+            rig_controller_get_path_for_property (view->controller,
                                                   dot_data.prop_data->property);
           RigNode *node;
 
           if (dot_data.prop_data->has_selected_nodes)
             rut_list_for_each (node, &path->nodes, list_node)
-              rig_transition_view_add_dot_selected (&dot_data,
+              rig_controller_view_add_dot_selected (&dot_data,
                                                     node);
           else
             rut_list_for_each (node, &path->nodes, list_node)
-              rig_transition_view_add_dot_unselected (&dot_data,
+              rig_controller_view_add_dot_unselected (&dot_data,
                                                       node);
 
           dot_data.row_pos++;
@@ -470,7 +470,7 @@ rig_transition_view_update_dots_buffer (RigTransitionView *view)
 }
 
 static void
-rig_transition_view_draw_box (RigTransitionView *view,
+rig_controller_view_draw_box (RigControllerView *view,
                               CoglFramebuffer *fb)
 {
   if (view->box_pipeline == NULL)
@@ -493,7 +493,7 @@ rig_transition_view_draw_box (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_draw_nodes_background (RigTransitionView *view,
+rig_controller_view_draw_nodes_background (RigControllerView *view,
                                            CoglFramebuffer *fb)
 {
   int tex_width = view->row_height * 8;
@@ -591,10 +591,10 @@ rig_transition_view_draw_nodes_background (RigTransitionView *view,
 }
 
 static void
-_rig_transition_view_paint (RutObject *object,
+_rig_controller_view_paint (RutObject *object,
                             RutPaintContext *paint_ctx)
 {
-  RigTransitionView *view = object;
+  RigControllerView *view = object;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   if (view->separator_pipeline)
@@ -606,33 +606,33 @@ _rig_transition_view_paint (RutObject *object,
                                      view->nodes_x,
                                      view->total_height);
 
-  rig_transition_view_draw_nodes_background (view, fb);
+  rig_controller_view_draw_nodes_background (view, fb);
 
   if (view->dots_dirty)
     {
       if (view->dots_buffer == NULL)
-        view->dots_buffer = rig_transition_view_create_dots_buffer (view);
+        view->dots_buffer = rig_controller_view_create_dots_buffer (view);
       else
         {
           int old_n_vertices =
             (cogl_buffer_get_size (COGL_BUFFER (view->dots_buffer)) /
-             sizeof (RigTransitionViewDotVertex));
+             sizeof (RigControllerViewDotVertex));
 
           if (old_n_vertices < view->n_dots)
             {
               cogl_object_unref (view->dots_buffer);
               cogl_object_unref (view->dots_primitive);
               view->dots_primitive = NULL;
-              view->dots_buffer = rig_transition_view_create_dots_buffer (view);
+              view->dots_buffer = rig_controller_view_create_dots_buffer (view);
             }
         }
 
       if (view->dots_primitive == NULL)
-        view->dots_primitive = rig_transition_view_create_dots_primitive (view);
+        view->dots_primitive = rig_controller_view_create_dots_primitive (view);
       else
         cogl_primitive_set_n_vertices (view->dots_primitive, view->n_dots);
 
-      rig_transition_view_update_dots_buffer (view);
+      rig_controller_view_update_dots_buffer (view);
 
       view->dots_dirty = FALSE;
     }
@@ -640,7 +640,7 @@ _rig_transition_view_paint (RutObject *object,
   /* The transform is set up so that 0→1 along the x-axis extends
    * across the whole timeline. Along the y-axis 1 unit represents the
    * height of one row. This is done so that the changing the size of
-   * the transition view doesn't require updating the dots buffer. It
+   * the controller view doesn't require updating the dots buffer. It
    * doesn't matter that the scale isn't uniform because the dots are
    * drawn as points which are always sized in framebuffer pixels
    * regardless of the transformation */
@@ -688,23 +688,23 @@ _rig_transition_view_paint (RutObject *object,
   }
 
   if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX)
-    rig_transition_view_draw_box (view, fb);
+    rig_controller_view_draw_box (view, fb);
 
   cogl_framebuffer_pop_clip (fb);
 }
 
-RutPaintableVTable _rig_transition_view_paintable_vtable = {
-  _rig_transition_view_paint
+RutPaintableVTable _rig_controller_view_paintable_vtable = {
+  _rig_controller_view_paint
 };
 
 static void
-rig_transition_view_allocate_cb (RutObject *graphable,
+rig_controller_view_allocate_cb (RutObject *graphable,
                                  void *user_data)
 {
-  RigTransitionView *view = RIG_TRANSITION_VIEW (graphable);
+  RigControllerView *view = RIG_TRANSITION_VIEW (graphable);
   float column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
   float row_height = 0.0f;
-  RigTransitionViewObject *object;
+  RigControllerViewObject *object;
   int i;
   int row_num;
 
@@ -715,11 +715,11 @@ rig_transition_view_allocate_cb (RutObject *graphable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
-          RigTransitionViewControl *control = object->controls + i;
+          RigControllerViewControl *control = object->controls + i;
           float width, height;
 
           rut_sizable_get_preferred_width (control->control,
@@ -741,7 +741,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigTransitionViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_data->controls + i;
               float width, height;
 
               rut_sizable_get_preferred_width (control->control,
@@ -768,12 +768,12 @@ rig_transition_view_allocate_cb (RutObject *graphable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
       float x = 0.0f;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
-          RigTransitionViewControl *control = object->controls + i;
+          RigControllerViewControl *control = object->controls + i;
 
           rut_transform_init_identity (control->transform);
           rut_transform_translate (control->transform,
@@ -795,7 +795,7 @@ rig_transition_view_allocate_cb (RutObject *graphable,
 
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigTransitionViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_data->controls + i;
               int width = nearbyintf (column_widths[i]);
 
               if (i == 0)
@@ -843,16 +843,16 @@ rig_transition_view_allocate_cb (RutObject *graphable,
 }
 
 static void
-rig_transition_view_queue_allocation (RigTransitionView *view)
+rig_controller_view_queue_allocation (RigControllerView *view)
 {
   rut_shell_add_pre_paint_callback (view->context->shell,
                                     view,
-                                    rig_transition_view_allocate_cb,
+                                    rig_controller_view_allocate_cb,
                                     NULL /* user_data */);
 }
 
 static void
-rig_transition_view_preferred_size_changed (RigTransitionView *view)
+rig_controller_view_preferred_size_changed (RigControllerView *view)
 {
   rut_closure_list_invoke (&view->preferred_size_cb_list,
                            RutSizablePreferredSizeCallback,
@@ -861,23 +861,23 @@ rig_transition_view_preferred_size_changed (RigTransitionView *view)
 
 
 static void
-rig_transition_view_set_size (void *object,
+rig_controller_view_set_size (void *object,
                               float total_width,
                               float total_height)
 {
-  RigTransitionView *view = object;
+  RigControllerView *view = object;
 
-  /* FIXME: RigTransitionView currently ignores its height and just
+  /* FIXME: RigControllerView currently ignores its height and just
    * paints as tall as it wants */
 
   view->total_width = total_width;
   view->total_height = total_height;
 
-  rig_transition_view_queue_allocation (view);
+  rig_controller_view_queue_allocation (view);
 }
 
 static void
-handle_control_width (RigTransitionViewControl *control,
+handle_control_width (RigControllerViewControl *control,
                       float indentation,
                       float *min_width_p,
                       float *natural_width_p)
@@ -899,16 +899,16 @@ handle_control_width (RigTransitionViewControl *control,
 }
 
 static void
-rig_transition_view_get_preferred_width (void *sizable,
+rig_controller_view_get_preferred_width (void *sizable,
                                          float for_height,
                                          float *min_width_p,
                                          float *natural_width_p)
 {
-  RigTransitionView *view = RIG_TRANSITION_VIEW (sizable);
+  RigControllerView *view = RIG_TRANSITION_VIEW (sizable);
   float min_column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
   float natural_column_widths[RIG_TRANSITION_VIEW_N_COLUMNS];
   float total_min_width = 0.0f, total_natural_width = 0.0f;
-  RigTransitionViewObject *object;
+  RigControllerViewObject *object;
   int i;
 
   memset (min_column_widths, 0, sizeof (min_column_widths));
@@ -919,11 +919,11 @@ rig_transition_view_get_preferred_width (void *sizable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
-          RigTransitionViewControl *control = object->controls + i;
+          RigControllerViewControl *control = object->controls + i;
 
           handle_control_width (control,
                                 0.0f, /* indentation */
@@ -935,7 +935,7 @@ rig_transition_view_get_preferred_width (void *sizable,
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigTransitionViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_data->controls + i;
 
               handle_control_width (control,
                                     i == 0.0f ?
@@ -960,7 +960,7 @@ rig_transition_view_get_preferred_width (void *sizable,
 }
 
 static void
-handle_control_height (RigTransitionViewControl *control,
+handle_control_height (RigControllerViewControl *control,
                        float *row_height)
 {
   float natural_height;
@@ -975,13 +975,13 @@ handle_control_height (RigTransitionViewControl *control,
 }
 
 static void
-rig_transition_view_get_preferred_height (void *sizable,
+rig_controller_view_get_preferred_height (void *sizable,
                                           float for_width,
                                           float *min_height_p,
                                           float *natural_height_p)
 {
-  RigTransitionView *view = RIG_TRANSITION_VIEW (sizable);
-  RigTransitionViewObject *object;
+  RigControllerView *view = RIG_TRANSITION_VIEW (sizable);
+  RigControllerViewObject *object;
   float row_height = 0.0f;
   int n_rows = 0;
   int i;
@@ -990,13 +990,13 @@ rig_transition_view_get_preferred_height (void *sizable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
 
       n_rows++;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
-          RigTransitionViewControl *control = object->controls + i;
+          RigControllerViewControl *control = object->controls + i;
 
           handle_control_height (control,
                                  &row_height);
@@ -1006,7 +1006,7 @@ rig_transition_view_get_preferred_height (void *sizable,
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigTransitionViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_data->controls + i;
 
               handle_control_height (control,
                                      &row_height);
@@ -1023,13 +1023,13 @@ rig_transition_view_get_preferred_height (void *sizable,
 }
 
 static RutClosure *
-rig_transition_view_add_preferred_size_callback
+rig_controller_view_add_preferred_size_callback
                                (void *object,
                                 RutSizablePreferredSizeCallback cb,
                                 void *user_data,
                                 RutClosureDestroyCallback destroy_cb)
 {
-  RigTransitionView *view = object;
+  RigControllerView *view = object;
 
   return rut_closure_list_add (&view->preferred_size_cb_list,
                                cb,
@@ -1038,49 +1038,49 @@ rig_transition_view_add_preferred_size_callback
 }
 
 static void
-rig_transition_view_get_size (void *object,
+rig_controller_view_get_size (void *object,
                               float *width,
                               float *height)
 {
-  RigTransitionView *view = object;
+  RigControllerView *view = object;
 
   *width = view->total_width;
   *height = view->total_height;
 }
 
-static RutSizableVTable _rig_transition_view_sizable_vtable = {
-  rig_transition_view_set_size,
-  rig_transition_view_get_size,
-  rig_transition_view_get_preferred_width,
-  rig_transition_view_get_preferred_height,
-  rig_transition_view_add_preferred_size_callback
+static RutSizableVTable _rig_controller_view_sizable_vtable = {
+  rig_controller_view_set_size,
+  rig_controller_view_get_size,
+  rig_controller_view_get_preferred_width,
+  rig_controller_view_get_preferred_height,
+  rig_controller_view_add_preferred_size_callback
 };
 
 static void
-_rig_transition_view_init_type (void)
+_rig_controller_view_init_type (void)
 {
-  rut_type_init (&rig_transition_view_type, "RigTransitionView");
-  rut_type_add_interface (&rig_transition_view_type,
+  rut_type_init (&rig_controller_view_type, "RigControllerView");
+  rut_type_add_interface (&rig_controller_view_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigTransitionView, ref_count),
-                          &_rig_transition_view_ref_countable_vtable);
-  rut_type_add_interface (&rig_transition_view_type,
+                          offsetof (RigControllerView, ref_count),
+                          &_rig_controller_view_ref_countable_vtable);
+  rut_type_add_interface (&rig_controller_view_type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RigTransitionView, paintable),
-                          &_rig_transition_view_paintable_vtable);
-  rut_type_add_interface (&rig_transition_view_type,
+                          offsetof (RigControllerView, paintable),
+                          &_rig_controller_view_paintable_vtable);
+  rut_type_add_interface (&rig_controller_view_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RigTransitionView, graphable),
-                          &_rig_transition_view_graphable_vtable);
-  rut_type_add_interface (&rig_transition_view_type,
+                          offsetof (RigControllerView, graphable),
+                          &_rig_controller_view_graphable_vtable);
+  rut_type_add_interface (&rig_controller_view_type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rig_transition_view_sizable_vtable);
+                          &_rig_controller_view_sizable_vtable);
 }
 
 static void
-rig_transition_view_create_label_control (RigTransitionView *view,
-                                          RigTransitionViewControl *control,
+rig_controller_view_create_label_control (RigControllerView *view,
+                                          RigControllerViewControl *control,
                                           const char *text)
 {
   RutText *label = rut_text_new (view->context);
@@ -1098,11 +1098,11 @@ rig_transition_view_create_label_control (RigTransitionView *view,
 }
 
 static CoglBool
-rig_transition_view_select_node (RigTransitionView *view,
-                                 RigTransitionViewProperty *prop_data,
+rig_controller_view_select_node (RigControllerView *view,
+                                 RigControllerViewProperty *prop_data,
                                  RigNode *node)
 {
-  RigTransitionViewSelectedNode *selected_node;
+  RigControllerViewSelectedNode *selected_node;
 
   /* Check if the node is already selected */
   if (prop_data->has_selected_nodes)
@@ -1115,7 +1115,7 @@ rig_transition_view_select_node (RigTransitionView *view,
         }
     }
 
-  selected_node = g_slice_new (RigTransitionViewSelectedNode);
+  selected_node = g_slice_new (RigControllerViewSelectedNode);
   selected_node->prop_data = prop_data;
   selected_node->node = node;
 
@@ -1128,13 +1128,13 @@ rig_transition_view_select_node (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_unselect_node (RigTransitionView *view,
-                                   RigTransitionViewProperty *prop_data,
+rig_controller_view_unselect_node (RigControllerView *view,
+                                   RigControllerViewProperty *prop_data,
                                    RigNode *node)
 {
   if (prop_data->has_selected_nodes)
     {
-      RigTransitionViewSelectedNode *selected_node, *tmp;
+      RigControllerViewSelectedNode *selected_node, *tmp;
       CoglBool has_nodes = FALSE;
 
       rut_list_for_each_safe (selected_node,
@@ -1147,7 +1147,7 @@ rig_transition_view_unselect_node (RigTransitionView *view,
               if (selected_node->node == node)
                 {
                   rut_list_remove (&selected_node->list_node);
-                  g_slice_free (RigTransitionViewSelectedNode, selected_node);
+                  g_slice_free (RigControllerViewSelectedNode, selected_node);
                   view->dots_dirty = TRUE;
                   /* we don't want to break here because we want to
                    * continue searching so that we can update the
@@ -1163,14 +1163,14 @@ rig_transition_view_unselect_node (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_path_operation_cb (RigPath *path,
+rig_controller_view_path_operation_cb (RigPath *path,
                                        RigPathOperation op,
                                        RigNode *node,
                                        void *user_data)
 {
-  RigTransitionViewProperty *prop_data = user_data;
-  RigTransitionViewObject *object_data = prop_data->object;
-  RigTransitionView *view = object_data->view;
+  RigControllerViewProperty *prop_data = user_data;
+  RigControllerViewObject *object_data = prop_data->object;
+  RigControllerView *view = object_data->view;
 
   switch (op)
     {
@@ -1184,7 +1184,7 @@ rig_transition_view_path_operation_cb (RigPath *path,
       break;
 
     case RIG_PATH_OPERATION_REMOVED:
-      rig_transition_view_unselect_node (view, prop_data, node);
+      rig_controller_view_unselect_node (view, prop_data, node);
 
       view->n_dots--;
       view->dots_dirty = TRUE;
@@ -1199,11 +1199,11 @@ rig_transition_view_path_operation_cb (RigPath *path,
 }
 
 static void
-rig_transition_view_update_label_property (RutProperty *target_property,
+rig_controller_view_update_label_property (RutProperty *target_property,
                                            void *user_data)
 {
-  RigTransitionViewObject *object_data = user_data;
-  RigTransitionView *view = object_data->view;
+  RigControllerViewObject *object_data = user_data;
+  RigControllerView *view = object_data->view;
   const char *label;
 
   label = rut_property_get_text (object_data->label_property);
@@ -1213,15 +1213,15 @@ rig_transition_view_update_label_property (RutProperty *target_property,
 
   rut_property_set_text (&view->context->property_ctx, target_property, label);
 
-  rig_transition_view_queue_allocation (view);
-  rig_transition_view_preferred_size_changed (view);
+  rig_controller_view_queue_allocation (view);
+  rig_controller_view_preferred_size_changed (view);
 }
 
-static RigTransitionViewObject *
-rig_transition_view_create_object_data (RigTransitionView *view,
+static RigControllerViewObject *
+rig_controller_view_create_object_data (RigControllerView *view,
                                         RutObject *object)
 {
-  RigTransitionViewObject *object_data = g_slice_new (RigTransitionViewObject);
+  RigControllerViewObject *object_data = g_slice_new (RigControllerViewObject);
   RutProperty *label_property;
   RutProperty *text_property;
   RutTextBuffer *buffer;
@@ -1229,7 +1229,7 @@ rig_transition_view_create_object_data (RigTransitionView *view,
   object_data->object = object;
   object_data->view = view;
 
-  rig_transition_view_create_label_control (view,
+  rig_controller_view_create_label_control (view,
                                             object_data->controls + 0,
                                             NULL);
 
@@ -1244,10 +1244,10 @@ rig_transition_view_create_object_data (RigTransitionView *view,
 
   if (label_property && text_property)
     {
-      rig_transition_view_update_label_property (text_property,
+      rig_controller_view_update_label_property (text_property,
                                                  object_data);
       rut_property_set_binding (text_property,
-                                rig_transition_view_update_label_property,
+                                rig_controller_view_update_label_property,
                                 object_data,
                                 label_property,
                                 NULL);
@@ -1261,12 +1261,12 @@ rig_transition_view_create_object_data (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_property_added (RigTransitionView *view,
+rig_controller_view_property_added (RigControllerView *view,
                                     RutProperty *property)
 {
-  RigTransitionViewProperty *prop_data;
-  RigTransitionViewProperty *insert_pos;
-  RigTransitionViewObject *object_data;
+  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *insert_pos;
+  RigControllerViewObject *object_data;
   const RutPropertySpec *spec = property->spec;
   RutObject *object;
   RigPath *path;
@@ -1289,28 +1289,28 @@ rig_transition_view_property_added (RigTransitionView *view,
     if (object_data->object == object)
       goto have_object;
 
-  object_data = rig_transition_view_create_object_data (view, object);
+  object_data = rig_controller_view_create_object_data (view, object);
 
  have_object:
 
-  prop_data = g_slice_new (RigTransitionViewProperty);
+  prop_data = g_slice_new (RigControllerViewProperty);
 
   prop_data->object = object_data;
   prop_data->property = property;
   prop_data->has_selected_nodes = FALSE;
 
-  rig_transition_view_create_label_control (view,
+  rig_controller_view_create_label_control (view,
                                             prop_data->controls + 0,
                                             spec->nick ?
                                             spec->nick :
                                             spec->name);
 
-  path = rig_transition_get_path_for_property (view->transition,
+  path = rig_controller_get_path_for_property (view->controller,
                                                property);
 
   prop_data->path_operation_closure =
     rig_path_add_operation_callback (path,
-                                     rig_transition_view_path_operation_cb,
+                                     rig_controller_view_path_operation_cb,
                                      prop_data,
                                      NULL /* destroy_cb */);
 
@@ -1347,12 +1347,12 @@ rig_transition_view_property_added (RigTransitionView *view,
 
   rut_list_insert (insert_pos->list_node.prev, &prop_data->list_node);
 
-  rig_transition_view_queue_allocation (view);
-  rig_transition_view_preferred_size_changed (view);
+  rig_controller_view_queue_allocation (view);
+  rig_controller_view_preferred_size_changed (view);
 }
 
 static void
-rig_transition_view_destroy_control (RigTransitionViewControl *control)
+rig_controller_view_destroy_control (RigControllerViewControl *control)
 {
   rut_graphable_remove_child (control->control);
   rut_refable_unref (control->control);
@@ -1360,11 +1360,11 @@ rig_transition_view_destroy_control (RigTransitionViewControl *control)
   rut_refable_unref (control->transform);
 }
 
-static RigTransitionViewProperty *
-rig_transition_view_find_property (RigTransitionView *view,
+static RigControllerViewProperty *
+rig_controller_view_find_property (RigControllerView *view,
                                    RutProperty *property)
 {
-  RigTransitionViewObject *object_data;
+  RigControllerViewObject *object_data;
   RutObject *object = property->object;
 
   /* If the property belongs to a component then it is grouped by
@@ -1381,7 +1381,7 @@ rig_transition_view_find_property (RigTransitionView *view,
   rut_list_for_each (object_data, &view->objects, list_node)
     if (object_data->object == object)
       {
-        RigTransitionViewProperty *prop_data;
+        RigControllerViewProperty *prop_data;
 
         rut_list_for_each (prop_data, &object_data->properties, list_node)
           if (prop_data->property == property)
@@ -1392,12 +1392,12 @@ rig_transition_view_find_property (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_property_removed (RigTransitionView *view,
+rig_controller_view_property_removed (RigControllerView *view,
                                       RutProperty *property)
 {
-  RigTransitionViewProperty *prop_data =
-    rig_transition_view_find_property (view, property);
-  RigTransitionViewObject *object_data;
+  RigControllerViewProperty *prop_data =
+    rig_controller_view_find_property (view, property);
+  RigControllerViewObject *object_data;
   int i;
 
   if (prop_data == NULL)
@@ -1405,7 +1405,7 @@ rig_transition_view_property_removed (RigTransitionView *view,
 
   if (prop_data->has_selected_nodes)
     {
-      RigTransitionViewSelectedNode *selected_node, *t;
+      RigControllerViewSelectedNode *selected_node, *t;
 
       rut_list_for_each_safe (selected_node,
                               t,
@@ -1415,7 +1415,7 @@ rig_transition_view_property_removed (RigTransitionView *view,
           if (selected_node->prop_data == prop_data)
             {
               rut_list_remove (&selected_node->list_node);
-              g_slice_free (RigTransitionViewSelectedNode, selected_node);
+              g_slice_free (RigControllerViewSelectedNode, selected_node);
             }
         }
     }
@@ -1425,7 +1425,7 @@ rig_transition_view_property_removed (RigTransitionView *view,
   rut_closure_disconnect (prop_data->path_operation_closure);
 
   for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
-    rig_transition_view_destroy_control (prop_data->controls + i);
+    rig_controller_view_destroy_control (prop_data->controls + i);
 
   rut_list_remove (&prop_data->list_node);
 
@@ -1434,11 +1434,11 @@ rig_transition_view_property_removed (RigTransitionView *view,
   if (rut_list_empty (&object_data->properties))
     {
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
-        rig_transition_view_destroy_control (object_data->controls + i);
+        rig_controller_view_destroy_control (object_data->controls + i);
 
       rut_list_remove (&object_data->list_node);
 
-      g_slice_free (RigTransitionViewObject, object_data);
+      g_slice_free (RigControllerViewObject, object_data);
     }
 
   rut_refable_unref (prop_data->path);
@@ -1448,14 +1448,14 @@ rig_transition_view_property_removed (RigTransitionView *view,
   view->dots_dirty = TRUE;
   view->n_dots -= prop_data->path->length;
 
-  g_slice_free (RigTransitionViewProperty, prop_data);
+  g_slice_free (RigControllerViewProperty, prop_data);
 
-  rig_transition_view_queue_allocation (view);
-  rig_transition_view_preferred_size_changed (view);
+  rig_controller_view_queue_allocation (view);
+  rig_controller_view_preferred_size_changed (view);
 }
 
 static CoglPipeline *
-rig_transition_view_create_dots_pipeline (RigTransitionView *view)
+rig_controller_view_create_dots_pipeline (RigControllerView *view)
 {
   CoglPipeline *pipeline = cogl_pipeline_new (view->context->cogl_context);
   char *dot_filename;
@@ -1532,13 +1532,13 @@ rig_transition_view_create_dots_pipeline (RigTransitionView *view)
 }
 
 static void
-rig_transition_view_create_separator_pipeline (RigTransitionView *view)
+rig_controller_view_create_separator_pipeline (RigControllerView *view)
 {
   GError *error = NULL;
   CoglTexture *texture;
 
   texture = rut_load_texture_from_data_file (view->context,
-                                             "transition-view-separator.png",
+                                             "controller-view-separator.png",
                                              &error);
 
   if (texture)
@@ -1571,7 +1571,7 @@ rig_transition_view_create_separator_pipeline (RigTransitionView *view)
 }
 
 static CoglPipeline *
-rig_transition_view_create_progress_pipeline (RigTransitionView *view)
+rig_controller_view_create_progress_pipeline (RigControllerView *view)
 {
   CoglPipeline *pipeline = cogl_pipeline_new (view->context->cogl_context);
 
@@ -1585,7 +1585,7 @@ rig_transition_view_create_progress_pipeline (RigTransitionView *view)
 }
 
 static void
-rig_transition_view_get_time_from_event (RigTransitionView *view,
+rig_controller_view_get_time_from_event (RigControllerView *view,
                                          RutInputEvent *event,
                                          float *time,
                                          int *row)
@@ -1603,17 +1603,17 @@ rig_transition_view_get_time_from_event (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_update_timeline_progress (RigTransitionView *view,
+rig_controller_view_update_timeline_progress (RigControllerView *view,
                                               RutInputEvent *event)
 {
   float progress;
-  rig_transition_view_get_time_from_event (view, event, &progress, NULL);
+  rig_controller_view_get_time_from_event (view, event, &progress, NULL);
   rut_timeline_set_progress (view->timeline, progress);
   rut_shell_queue_redraw (view->context->shell);
 }
 
 static RigNode *
-rig_transition_view_find_node_in_path (RigTransitionView *view,
+rig_controller_view_find_node_in_path (RigControllerView *view,
                                        RigPath *path,
                                        float min_progress,
                                        float max_progress)
@@ -1628,15 +1628,15 @@ rig_transition_view_find_node_in_path (RigTransitionView *view,
 }
 
 static CoglBool
-rig_transition_view_find_node (RigTransitionView *view,
+rig_controller_view_find_node (RigControllerView *view,
                                RutInputEvent *event,
-                               RigTransitionViewProperty **prop_data_out,
+                               RigControllerViewProperty **prop_data_out,
                                RigNode **node_out)
 {
   float x = rut_motion_event_get_x (event);
   float y = rut_motion_event_get_y (event);
   float progress;
-  RigTransitionViewObject *object_data;
+  RigControllerViewObject *object_data;
   int row_num = 0;
 
   if (!rut_motion_event_unproject (event, view, &x, &y))
@@ -1652,7 +1652,7 @@ rig_transition_view_find_node (RigTransitionView *view,
 
   rut_list_for_each (object_data, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
 
       row_num++;
 
@@ -1665,7 +1665,7 @@ rig_transition_view_find_node (RigTransitionView *view,
               RigNode *node;
 
               node =
-                rig_transition_view_find_node_in_path (view,
+                rig_controller_view_find_node_in_path (view,
                                                        prop_data->path,
                                                        progress -
                                                        scaled_dot_size / 2.0f,
@@ -1689,18 +1689,18 @@ rig_transition_view_find_node (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_handle_select_event (RigTransitionView *view,
+rig_controller_view_handle_select_event (RigControllerView *view,
                                          RutInputEvent *event)
 {
-  RigTransitionViewProperty *prop_data;
+  RigControllerViewProperty *prop_data;
   RigNode *node;
 
-  if (rig_transition_view_find_node (view, event, &prop_data, &node))
+  if (rig_controller_view_find_node (view, event, &prop_data, &node))
     {
       if ((rut_motion_event_get_modifier_state (event) &
            (RUT_MODIFIER_LEFT_SHIFT_ON |
             RUT_MODIFIER_RIGHT_SHIFT_ON)) == 0)
-        rig_transition_view_clear_selected_nodes (view);
+        rig_controller_view_clear_selected_nodes (view);
 
       /* If shift is down then we actually want to toggle the node. If
        * the node is already selected then trying to select it again
@@ -1708,8 +1708,8 @@ rig_transition_view_handle_select_event (RigTransitionView *view,
        * down then it definitely won't be selected because we'll have
        * just cleared the selection above so it doesn't matter if we
        * toggle it */
-      if (rig_transition_view_select_node (view, prop_data, node))
-        rig_transition_view_unselect_node (view, prop_data, node);
+      if (rig_controller_view_select_node (view, prop_data, node))
+        rig_controller_view_unselect_node (view, prop_data, node);
 
       rut_timeline_set_progress (view->timeline, node->t);
 
@@ -1717,13 +1717,13 @@ rig_transition_view_handle_select_event (RigTransitionView *view,
     }
   else
     {
-      rig_transition_view_clear_selected_nodes (view);
-      rig_transition_view_update_timeline_progress (view, event);
+      rig_controller_view_clear_selected_nodes (view);
+      rig_controller_view_update_timeline_progress (view, event);
     }
 }
 
 static RigNode *
-rig_transition_view_get_unselected_neighbour (RigTransitionView *view,
+rig_controller_view_get_unselected_neighbour (RigControllerView *view,
                                               RutList *head,
                                               RigNode *node,
                                               CoglBool direction)
@@ -1732,7 +1732,7 @@ rig_transition_view_get_unselected_neighbour (RigTransitionView *view,
     {
       RutList *next_link;
       RigNode *next_node;
-      RigTransitionViewSelectedNode *selected_node;
+      RigControllerViewSelectedNode *selected_node;
 
       if (direction)
         next_link = node->list_node.next;
@@ -1759,11 +1759,11 @@ rig_transition_view_get_unselected_neighbour (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_calculate_drag_offset_range (RigTransitionView *view)
+rig_controller_view_calculate_drag_offset_range (RigControllerView *view)
 {
   float min_drag_offset = -G_MAXFLOAT;
   float max_drag_offset = G_MAXFLOAT;
-  RigTransitionViewSelectedNode *selected_node;
+  RigControllerViewSelectedNode *selected_node;
 
   /* We want to limit the range that the user can drag the selected
    * nodes to so that it won't change the order of any of the nodes */
@@ -1777,7 +1777,7 @@ rig_transition_view_calculate_drag_offset_range (RigTransitionView *view)
       selected_node->original_time = node->t;
 
       next_node =
-        rig_transition_view_get_unselected_neighbour (view,
+        rig_controller_view_get_unselected_neighbour (view,
                                                       node_list,
                                                       node,
                                                       FALSE /* direction */);
@@ -1791,7 +1791,7 @@ rig_transition_view_calculate_drag_offset_range (RigTransitionView *view)
         node_min = node->t;
 
       next_node =
-        rig_transition_view_get_unselected_neighbour (view,
+        rig_controller_view_get_unselected_neighbour (view,
                                                       node_list,
                                                       node,
                                                       TRUE /* direction */);
@@ -1816,17 +1816,17 @@ rig_transition_view_calculate_drag_offset_range (RigTransitionView *view)
 }
 
 static void
-rig_transition_view_decide_grab_state (RigTransitionView *view,
+rig_controller_view_decide_grab_state (RigControllerView *view,
                                        RutInputEvent *event)
 {
-  RigTransitionViewProperty *prop_data;
+  RigControllerViewProperty *prop_data;
   RigNode *node;
 
   if ((rut_motion_event_get_modifier_state (event) &
        (RUT_MODIFIER_LEFT_SHIFT_ON |
         RUT_MODIFIER_RIGHT_SHIFT_ON)))
     {
-      rig_transition_view_get_time_from_event (view,
+      rig_controller_view_get_time_from_event (view,
                                                event,
                                                &view->box_x1,
                                                &view->box_y1);
@@ -1835,22 +1835,22 @@ rig_transition_view_decide_grab_state (RigTransitionView *view,
 
       view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX;
     }
-  else if (rig_transition_view_find_node (view, event, &prop_data, &node))
+  else if (rig_controller_view_find_node (view, event, &prop_data, &node))
     {
-      if (!rig_transition_view_select_node (view, prop_data, node))
+      if (!rig_controller_view_select_node (view, prop_data, node))
         {
           /* If the node wasn't already selected then we only want
            * this node to be selected */
-          rig_transition_view_clear_selected_nodes (view);
-          rig_transition_view_select_node (view, prop_data, node);
+          rig_controller_view_clear_selected_nodes (view);
+          rig_controller_view_select_node (view, prop_data, node);
         }
 
-      rig_transition_view_get_time_from_event (view,
+      rig_controller_view_get_time_from_event (view,
                                                event,
                                                &view->drag_start_position,
                                                NULL);
 
-      rig_transition_view_calculate_drag_offset_range (view);
+      rig_controller_view_calculate_drag_offset_range (view);
 
       rut_shell_queue_redraw (view->context->shell);
 
@@ -1858,22 +1858,22 @@ rig_transition_view_decide_grab_state (RigTransitionView *view,
     }
   else
     {
-      rig_transition_view_clear_selected_nodes (view);
+      rig_controller_view_clear_selected_nodes (view);
 
       view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE;
     }
 }
 
 static void
-rig_transition_view_drag_nodes (RigTransitionView *view,
+rig_controller_view_drag_nodes (RigControllerView *view,
                                 RutInputEvent *event)
 {
-  RigTransitionViewSelectedNode *selected_node;
+  RigControllerViewSelectedNode *selected_node;
   float position;
   float offset;
-  RigTransitionViewObject *object_data;
+  RigControllerViewObject *object_data;
 
-  rig_transition_view_get_time_from_event (view, event, &position, NULL);
+  rig_controller_view_get_time_from_event (view, event, &position, NULL);
   offset = position - view->drag_start_position;
 
   offset = CLAMP (offset, view->min_drag_offset, view->max_drag_offset);
@@ -1889,21 +1889,21 @@ rig_transition_view_drag_nodes (RigTransitionView *view,
    * the new node positions */
   rut_list_for_each (object_data, &view->objects, list_node)
     {
-      RigTransitionViewProperty *prop_data;
+      RigControllerViewProperty *prop_data;
 
       rut_list_for_each (prop_data, &object_data->properties, list_node)
         {
           if (prop_data->has_selected_nodes)
-            rig_transition_update_property (view->transition,
+            rig_controller_update_property (view->controller,
                                             prop_data->property);
         }
     }
 }
 
 static void
-rig_transition_view_commit_dragged_nodes (RigTransitionView *view)
+rig_controller_view_commit_dragged_nodes (RigControllerView *view)
 {
-  RigTransitionViewSelectedNode *selected_node;
+  RigControllerViewSelectedNode *selected_node;
   int n_nodes, i;
   RigUndoJournalPathNode *nodes;
 
@@ -1925,17 +1925,17 @@ rig_transition_view_commit_dragged_nodes (RigTransitionView *view)
     }
 
   rig_undo_journal_move_path_nodes_and_log (view->undo_journal,
-                                            view->transition,
+                                            view->controller,
                                             view->drag_offset,
                                             nodes,
                                             n_nodes);
 }
 
 static void
-rig_transition_view_update_box (RigTransitionView *view,
+rig_controller_view_update_box (RigControllerView *view,
                                 RutInputEvent *event)
 {
-  rig_transition_view_get_time_from_event (view,
+  rig_controller_view_get_time_from_event (view,
                                            event,
                                            &view->box_x2,
                                            &view->box_y2);
@@ -1950,10 +1950,10 @@ rig_transition_view_update_box (RigTransitionView *view,
 }
 
 static void
-rig_transition_view_commit_box (RigTransitionView *view)
+rig_controller_view_commit_box (RigControllerView *view)
 {
-  RigTransitionViewObject *object;
-  RigTransitionViewProperty *prop_data;
+  RigControllerViewObject *object;
+  RigControllerViewProperty *prop_data;
   float x1, x2;
   int y1, y2;
   int row_pos = 0;
@@ -1990,12 +1990,12 @@ rig_transition_view_commit_box (RigTransitionView *view)
             {
               RigNode *node;
               RigPath *path =
-                rig_transition_get_path_for_property (view->transition,
+                rig_controller_get_path_for_property (view->controller,
                                                       prop_data->property);
 
               rut_list_for_each (node, &path->nodes, list_node)
                 if (node->t >= x1 && node->t < x2)
-                  rig_transition_view_select_node (view, prop_data, node);
+                  rig_controller_view_select_node (view, prop_data, node);
             }
 
           row_pos++;
@@ -2006,10 +2006,10 @@ rig_transition_view_commit_box (RigTransitionView *view)
 }
 
 static RutInputEventStatus
-rig_transition_view_grab_input_cb (RutInputEvent *event,
+rig_controller_view_grab_input_cb (RutInputEvent *event,
                                    void *user_data)
 {
-  RigTransitionView *view = user_data;
+  RigControllerView *view = user_data;
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
@@ -2017,7 +2017,7 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
   if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
     {
       if (view->grab_state == RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED)
-        rig_transition_view_decide_grab_state (view, event);
+        rig_controller_view_decide_grab_state (view, event);
 
       switch (view->grab_state)
         {
@@ -2026,15 +2026,15 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
           g_assert_not_reached ();
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES:
-          rig_transition_view_drag_nodes (view, event);
+          rig_controller_view_drag_nodes (view, event);
           break;
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_MOVING_TIMELINE:
-          rig_transition_view_update_timeline_progress (view, event);
+          rig_controller_view_update_timeline_progress (view, event);
           break;
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX:
-          rig_transition_view_update_box (view, event);
+          rig_controller_view_update_box (view, event);
           break;
         }
 
@@ -2054,19 +2054,19 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
           break;
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED:
-          rig_transition_view_handle_select_event (view, event);
+          rig_controller_view_handle_select_event (view, event);
           break;
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_DRAGGING_NODES:
-          rig_transition_view_commit_dragged_nodes (view);
+          rig_controller_view_commit_dragged_nodes (view);
           break;
 
         case RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX:
-          rig_transition_view_commit_box (view);
+          rig_controller_view_commit_box (view);
           break;
         }
 
-      rig_transition_view_ungrab_input (view);
+      rig_controller_view_ungrab_input (view);
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -2075,7 +2075,7 @@ rig_transition_view_grab_input_cb (RutInputEvent *event,
 }
 
 static void
-rig_transition_view_delete_selected_nodes (RigTransitionView *view)
+rig_controller_view_delete_selected_nodes (RigControllerView *view)
 {
   if (!rut_list_empty (&view->selected_nodes))
     {
@@ -2092,11 +2092,11 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
 
       while (!rut_list_empty (&view->selected_nodes))
         {
-          RigTransitionViewSelectedNode *node =
+          RigControllerViewSelectedNode *node =
             rut_container_of (view->selected_nodes.next, node, list_node);
 
           rig_undo_journal_delete_path_node_and_log (journal,
-                                                     view->transition,
+                                                     view->controller,
                                                      node->prop_data->property,
                                                      node->node);
         }
@@ -2107,11 +2107,11 @@ rig_transition_view_delete_selected_nodes (RigTransitionView *view)
 }
 
 static RutInputEventStatus
-rig_transition_view_input_region_cb (RutInputRegion *region,
+rig_controller_view_input_region_cb (RutInputRegion *region,
                                      RutInputEvent *event,
                                      void *user_data)
 {
-  RigTransitionView *view = user_data;
+  RigControllerView *view = user_data;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
@@ -2126,7 +2126,7 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
           view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_UNDECIDED;
           rut_shell_grab_input (view->context->shell,
                                 rut_input_event_get_camera (event),
-                                rig_transition_view_grab_input_cb,
+                                rig_controller_view_grab_input_cb,
                                 view);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -2138,7 +2138,7 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
       switch (rut_key_event_get_keysym (event))
         {
         case RUT_KEY_Delete:
-          rig_transition_view_delete_selected_nodes (view);
+          rig_controller_view_delete_selected_nodes (view);
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
@@ -2147,57 +2147,57 @@ rig_transition_view_input_region_cb (RutInputRegion *region,
 }
 
 static void
-transition_operation_cb (RigTransition *transition,
-                         RigTransitionOperation op,
-                         RigTransitionPropData *prop_data,
+controller_operation_cb (RigController *controller,
+                         RigControllerOperation op,
+                         RigControllerPropData *prop_data,
                          void *user_data)
 {
-  RigTransitionView *view = user_data;
+  RigControllerView *view = user_data;
 
   switch (op)
     {
     case RIG_TRANSITION_OPERATION_ADDED:
       if (prop_data->animated)
-        rig_transition_view_property_added (view, prop_data->property);
+        rig_controller_view_property_added (view, prop_data->property);
       break;
 
     case RIG_TRANSITION_OPERATION_REMOVED:
       if (prop_data->animated)
-        rig_transition_view_property_removed (view, prop_data->property);
+        rig_controller_view_property_removed (view, prop_data->property);
       break;
 
     case RIG_TRANSITION_OPERATION_ANIMATED_CHANGED:
       if (prop_data->animated)
-        rig_transition_view_property_added (view, prop_data->property);
+        rig_controller_view_property_added (view, prop_data->property);
       else
-        rig_transition_view_property_removed (view, prop_data->property);
+        rig_controller_view_property_removed (view, prop_data->property);
       break;
     }
 }
 
 static void
-rig_transition_view_add_property_cb (RigTransitionPropData *prop_data,
+rig_controller_view_add_property_cb (RigControllerPropData *prop_data,
                                      void *user_data)
 {
-  RigTransitionView *view = user_data;
+  RigControllerView *view = user_data;
 
   if (prop_data->animated)
-    rig_transition_view_property_added (view, prop_data->property);
+    rig_controller_view_property_added (view, prop_data->property);
 }
 
-RigTransitionView *
-rig_transition_view_new (RutContext *ctx,
+RigControllerView *
+rig_controller_view_new (RutContext *ctx,
                          RutObject *graph,
-                         RigTransition *transition,
+                         RigController *controller,
                          RutTimeline *timeline,
                          RigUndoJournal *undo_journal)
 {
-  RigTransitionView *view = g_slice_new0 (RigTransitionView);
+  RigControllerView *view = g_slice_new0 (RigControllerView);
   static CoglBool initialized = FALSE;
 
   if (initialized == FALSE)
     {
-      _rig_transition_view_init_type ();
+      _rig_controller_view_init_type ();
 
       initialized = TRUE;
     }
@@ -2205,7 +2205,7 @@ rig_transition_view_new (RutContext *ctx,
   view->ref_count = 1;
   view->context = rut_refable_ref (ctx);
   view->graph = rut_refable_ref (graph);
-  view->transition = transition;
+  view->controller = controller;
   view->timeline = rut_refable_ref (timeline);
   view->undo_journal = undo_journal;
 
@@ -2213,13 +2213,13 @@ rig_transition_view_new (RutContext *ctx,
 
   view->dots_dirty = TRUE;
 
-  view->dots_pipeline = rig_transition_view_create_dots_pipeline (view);
+  view->dots_pipeline = rig_controller_view_create_dots_pipeline (view);
 
-  view->progress_pipeline = rig_transition_view_create_progress_pipeline (view);
+  view->progress_pipeline = rig_controller_view_create_progress_pipeline (view);
 
-  rig_transition_view_create_separator_pipeline (view);
+  rig_controller_view_create_separator_pipeline (view);
 
-  rut_object_init (&view->_parent, &rig_transition_view_type);
+  rut_object_init (&view->_parent, &rig_controller_view_type);
 
   rut_paintable_init (RUT_OBJECT (view));
   rut_graphable_init (RUT_OBJECT (view));
@@ -2227,27 +2227,27 @@ rig_transition_view_new (RutContext *ctx,
   view->input_region =
     rut_input_region_new_rectangle (0.0, 0.0, /* x0/y0 */
                                     0.0, 0.0, /* x1/y1 */
-                                    rig_transition_view_input_region_cb,
+                                    rig_controller_view_input_region_cb,
                                     view);
   rut_graphable_add_child (view, view->input_region);
 
   rut_list_init (&view->selected_nodes);
   rut_list_init (&view->objects);
 
-  /* Add all of the existing animated properties from the transition */
-  rig_transition_foreach_property (transition,
-                                   rig_transition_view_add_property_cb,
+  /* Add all of the existing animated properties from the controller */
+  rig_controller_foreach_property (controller,
+                                   rig_controller_view_add_property_cb,
                                    view);
 
   /* Listen for properties that become animated or not so we can
    * update the list */
-  view->transition_op_closure =
-    rig_transition_add_operation_callback (transition,
-                                           transition_operation_cb,
+  view->controller_op_closure =
+    rig_controller_add_operation_callback (controller,
+                                           controller_operation_cb,
                                            view,
                                            NULL /* destroy */);
 
-  rig_transition_view_queue_allocation (view);
+  rig_controller_view_queue_allocation (view);
 
   return view;
 }

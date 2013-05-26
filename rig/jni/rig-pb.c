@@ -705,7 +705,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 }
 
 static void
-serialize_property_cb (RigTransitionPropData *prop_data,
+serialize_property_cb (RigControllerPropData *prop_data,
                   void *user_data)
 {
   Serializer *serializer = user_data;
@@ -713,10 +713,10 @@ serialize_property_cb (RigTransitionPropData *prop_data,
   RutObject *object;
   uint64_t id;
 
-  Rig__Transition__Property *pb_property =
+  Rig__Controller__Property *pb_property =
     pb_new (engine,
-            sizeof (Rig__Transition__Property),
-            rig__transition__property__init);
+            sizeof (Rig__Controller__Property),
+            rig__controller__property__init);
 
   serializer->n_pb_properties++;
   serializer->pb_properties = g_list_prepend (serializer->pb_properties, pb_property);
@@ -827,39 +827,39 @@ rig_pb_serialize_ui (RigEngine *engine,
     ui->entities[i] = l->data;
   g_list_free (serializer.pb_entities);
 
-  ui->n_transitions = g_list_length (engine->transitions);
-  if (ui->n_transitions)
+  ui->n_controllers = g_list_length (engine->controllers);
+  if (ui->n_controllers)
     {
-      ui->transitions =
+      ui->controllers =
         rut_memory_stack_alloc (engine->serialization_stack,
-                                sizeof (void *) * ui->n_transitions);
+                                sizeof (void *) * ui->n_controllers);
 
-      for (i = 0, l = engine->transitions; l; i++, l = l->next)
+      for (i = 0, l = engine->controllers; l; i++, l = l->next)
         {
-          RigTransition *transition = l->data;
-          Rig__Transition *pb_transition =
-            pb_new (engine, sizeof (Rig__Transition), rig__transition__init);
+          RigController *controller = l->data;
+          Rig__Controller *pb_controller =
+            pb_new (engine, sizeof (Rig__Controller), rig__controller__init);
           GList *l2;
           int j;
 
-          ui->transitions[i] = pb_transition;
+          ui->controllers[i] = pb_controller;
 
-          pb_transition->has_id = TRUE;
+          pb_controller->has_id = TRUE;
 
-          pb_transition->name = transition->name;
+          pb_controller->name = controller->name;
 
           serializer.n_pb_properties = 0;
           serializer.pb_properties = NULL;
-          rig_transition_foreach_property (transition,
+          rig_controller_foreach_property (controller,
                                            serialize_property_cb,
                                            &serializer);
 
-          pb_transition->n_properties = serializer.n_pb_properties;
-          pb_transition->properties =
+          pb_controller->n_properties = serializer.n_pb_properties;
+          pb_controller->properties =
             rut_memory_stack_alloc (engine->serialization_stack,
-                                    sizeof (void *) * pb_transition->n_properties);
+                                    sizeof (void *) * pb_controller->n_properties);
           for (j = 0, l2 = serializer.pb_properties; l2; j++, l2 = l2->next)
-            pb_transition->properties[j] = l2->data;
+            pb_controller->properties[j] = l2->data;
           g_list_free (serializer.pb_properties);
         }
     }
@@ -969,7 +969,7 @@ typedef struct _UnSerializer
   GList *assets;
   GList *entities;
   RutEntity *light;
-  GList *transitions;
+  GList *controllers;
 
   GHashTable *id_map;
 } UnSerializer;
@@ -1883,20 +1883,20 @@ unserialize_path_nodes (UnSerializer *unserializer,
 }
 
 static void
-unserialize_transition_properties (UnSerializer *unserializer,
-                                   RigTransition *transition,
+unserialize_controller_properties (UnSerializer *unserializer,
+                                   RigController *controller,
                                    int n_properties,
-                                   Rig__Transition__Property **properties)
+                                   Rig__Controller__Property **properties)
 {
   int i;
 
   for (i = 0; i < n_properties; i++)
     {
-      Rig__Transition__Property *pb_property = properties[i];
+      Rig__Controller__Property *pb_property = properties[i];
       uint64_t object_id;
       RutObject *object;
       CoglBool animated;
-      RigTransitionPropData *prop_data;
+      RigControllerPropData *prop_data;
 
       if (!pb_property->has_object_id ||
           pb_property->name == NULL)
@@ -1918,21 +1918,21 @@ unserialize_transition_properties (UnSerializer *unserializer,
           continue;
         }
 
-      prop_data = rig_transition_get_prop_data (transition,
+      prop_data = rig_controller_get_prop_data (controller,
                                                 object,
                                                 pb_property->name);
       if (!prop_data)
         {
           collect_error (unserializer,
                          "Invalid object property name given for"
-                         "transition property");
+                         "controller property");
           continue;
         }
 
       if (prop_data->property->spec->animatable)
         {
           if (animated)
-            rig_transition_set_property_animated (transition,
+            rig_controller_set_property_animated (controller,
                                                   prop_data->property,
                                                   TRUE);
         }
@@ -1964,41 +1964,41 @@ unserialize_transition_properties (UnSerializer *unserializer,
 }
 
 static void
-unserialize_transitions (UnSerializer *unserializer,
-                         int n_transitions,
-                         Rig__Transition **transitions)
+unserialize_controllers (UnSerializer *unserializer,
+                         int n_controllers,
+                         Rig__Controller **controllers)
 {
   int i;
 
-  for (i = 0; i < n_transitions; i++)
+  for (i = 0; i < n_controllers; i++)
     {
-      Rig__Transition *pb_transition = transitions[i];
-      RigTransition *transition;
+      Rig__Controller *pb_controller = controllers[i];
+      RigController *controller;
       const char *name;
       uint64_t id;
 
-      if (!pb_transition->has_id)
+      if (!pb_controller->has_id)
         continue;
 
-      id = pb_transition->id;
+      id = pb_controller->id;
 
-      if (pb_transition->name)
-        name = pb_transition->name;
+      if (pb_controller->name)
+        name = pb_controller->name;
       else
         name = "Controller 0";
 
-      transition = rig_transition_new (unserializer->engine->ctx, name);
+      controller = rig_controller_new (unserializer->engine->ctx, name);
 
-      unserialize_transition_properties (unserializer,
-                                         transition,
-                                         pb_transition->n_properties,
-                                         pb_transition->properties);
+      unserialize_controller_properties (unserializer,
+                                         controller,
+                                         pb_controller->n_properties,
+                                         pb_controller->properties);
 
-      unserializer->transitions =
-        g_list_prepend (unserializer->transitions, transition);
+      unserializer->controllers =
+        g_list_prepend (unserializer->controllers, controller);
 
       if (id)
-        register_unserializer_object (unserializer, transition, id);
+        register_unserializer_object (unserializer, controller, id);
     }
 }
 
@@ -2041,9 +2041,9 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
                         pb_ui->n_entities,
                         pb_ui->entities);
 
-  unserialize_transitions (&unserializer,
-                           pb_ui->n_transitions,
-                           pb_ui->transitions);
+  unserialize_controllers (&unserializer,
+                           pb_ui->n_controllers,
+                           pb_ui->controllers);
 
   g_hash_table_destroy (unserializer.id_map);
 
@@ -2059,7 +2059,7 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
   if (unserializer.light)
     engine->light = unserializer.light;
 
-  engine->transitions = unserializer.transitions;
+  engine->controllers = unserializer.controllers;
 
   engine->assets = unserializer.assets;
 

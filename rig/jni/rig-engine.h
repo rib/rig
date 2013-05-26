@@ -26,8 +26,8 @@
 
 #include "rig-protobuf-c-rpc.h"
 
-#include "rig-transition.h"
-#include "rig-transition-view.h"
+#include "rig-controller.h"
+#include "rig-controller-view.h"
 #include "rig-types.h"
 #include "rig-undo-journal.h"
 #include "rut-box-layout.h"
@@ -159,9 +159,9 @@ struct _RigEngine
   RutObject *inspector;
   GList *all_inspectors;
 
-  RutUIViewport *timeline_vp;
-  RigTransitionView *transition_view;
-  RutDropDown *transition_selector;
+  RutUIViewport *controller_vp;
+  RigControllerView *controller_view;
+  RutDropDown *controller_selector;
 
   CoglMatrix main_view;
   float z_2d;
@@ -195,8 +195,8 @@ struct _RigEngine
 
   GList *assets;
 
-  GList *transitions;
-  RigTransition *selected_transition;
+  GList *controllers;
+  RigController *selected_controller;
 
   GList *selected_entities;
   RutList selection_changed_cb_list;

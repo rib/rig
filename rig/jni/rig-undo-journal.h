@@ -29,7 +29,7 @@
 #include "rut-list.h"
 #include "rig-node.h"
 #include "rig-path.h"
-#include "rig-transition.h"
+#include "rig-controller.h"
 
 typedef struct _RigUndoJournal RigUndoJournal;
 
@@ -51,7 +51,7 @@ typedef enum _UndoRedoOp
 
 typedef struct _UndoRedoConstPropertyChange
 {
-  RigTransition *transition;
+  RigController *controller;
   RutObject *object;
   RutProperty *property;
   RutBoxed value0;
@@ -60,7 +60,7 @@ typedef struct _UndoRedoConstPropertyChange
 
 typedef struct _UndoRedoPathAddRemove
 {
-  RigTransition *transition;
+  RigController *controller;
   RutObject *object;
   RutProperty *property;
   float t;
@@ -69,7 +69,7 @@ typedef struct _UndoRedoPathAddRemove
 
 typedef struct _UndoRedoPathModify
 {
-  RigTransition *transition;
+  RigController *controller;
   RutObject *object;
   RutProperty *property;
   float t;
@@ -79,7 +79,7 @@ typedef struct _UndoRedoPathModify
 
 typedef struct _UndoRedoMovedPathNode
 {
-  RigTransition *transition;
+  RigController *controller;
   RutObject *object;
   RutProperty *property;
   float old_time;
@@ -88,14 +88,14 @@ typedef struct _UndoRedoMovedPathNode
 
 typedef struct _UndoRedoMovePathNodes
 {
-  RigTransition *transition;
+  RigController *controller;
   UndoRedoMovedPathNode *nodes;
   int n_nodes;
 } UndoRedoMovePathNodes;
 
 typedef struct _UndoRedoSetAnimated
 {
-  RigTransition *transition;
+  RigController *controller;
   RutObject *object;
   RutProperty *property;
   CoglBool value;
@@ -112,26 +112,26 @@ typedef struct
   RutBoxed constant_value;
 } UndoRedoPropData;
 
-typedef struct _UndoRedoTransitionState
+typedef struct _UndoRedoControllerState
 {
   RutList link;
 
-  RigTransition *transition;
+  RigController *controller;
   RutList properties;
-} UndoRedoTransitionState;
+} UndoRedoControllerState;
 
 typedef struct _UndoRedoAddDeleteEntity
 {
   RutEntity *parent_entity;
   RutEntity *deleted_entity;
-  RutList transition_properties;
+  RutList controller_properties;
 } UndoRedoAddDeleteEntity;
 
 typedef struct _UndoRedoAddDeleteComponent
 {
   RutEntity *parent_entity;
   RutObject *deleted_component;
-  RutList transition_properties;
+  RutList controller_properties;
 } UndoRedoAddDeleteComponent;
 
 typedef struct _UndoRedo
@@ -176,7 +176,7 @@ struct _RigUndoJournal
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
                                        CoglBool mergable,
-                                       RigTransition *transition,
+                                       RigController *controller,
                                        const RutBoxed *value,
                                        RutProperty *property);
 
@@ -188,7 +188,7 @@ typedef struct
 
 void
 rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
-                                          RigTransition *transition,
+                                          RigController *controller,
                                           float offset,
                                           const RigUndoJournalPathNode *nodes,
                                           int n_path_nodes);
@@ -196,7 +196,7 @@ rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
 void
 rig_undo_journal_move_and_log (RigUndoJournal *journal,
                                CoglBool mergable,
-                               RigTransition *transition,
+                               RigController *controller,
                                RutEntity *entity,
                                float x,
                                float y,
@@ -204,13 +204,13 @@ rig_undo_journal_move_and_log (RigUndoJournal *journal,
 
 void
 rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
-                                           RigTransition *transition,
+                                           RigController *controller,
                                            RutProperty *property,
                                            RigNode *node);
 
 void
 rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
-                                       RigTransition *transition,
+                                       RigController *controller,
                                        RutProperty *property,
                                        CoglBool value);
 

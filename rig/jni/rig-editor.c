@@ -76,7 +76,7 @@ main (int argc, char **argv)
       g_free (assets_location);
 
       engine.selected_entities = NULL;
-      engine.selected_transition = NULL;
+      engine.selected_controller = NULL;
 
       rut_shell_main (engine.shell);
 

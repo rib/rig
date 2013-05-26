@@ -233,7 +233,7 @@ message Path
   repeated Node nodes=2;
 }
 
-message Transition
+message Controller
 {
   message Property
     {
@@ -272,7 +272,7 @@ message UI
   optional Device device=1;
   repeated Asset assets=2;
   repeated Entity entities=3;
-  repeated Transition transitions=4;
+  repeated Controller controllers=4;
 }
 
 message LoadResult

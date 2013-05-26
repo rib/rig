@@ -52,7 +52,7 @@ typedef struct _Loader
   GList *assets;
   GList *entities;
   RutEntity *light;
-  GList *transitions;
+  GList *controllers;
 
   GHashTable *id_map;
 
@@ -87,8 +87,8 @@ typedef struct _Loader
   RutEntity *current_entity;
   CoglBool is_light;
 
-  RigTransition *current_transition;
-  RigTransitionPropData *current_property;
+  RigController *current_controller;
+  RigControllerPropData *current_property;
   RigPath *current_path;
 } Loader;
 
@@ -1081,7 +1081,7 @@ parse_start_element (GMarkupParseContext *context,
       loader->alpha_mask_asset_id = g_ascii_strtoull (id_str, NULL, 10);
     }
   else if (state == LOADER_STATE_NONE &&
-      strcmp (element_name, "transition") == 0)
+      strcmp (element_name, "controller") == 0)
     {
       const char *id_str;
 
@@ -1097,9 +1097,9 @@ parse_start_element (GMarkupParseContext *context,
                                         G_MARKUP_COLLECT_INVALID))
         return;
 
-      loader->current_transition =
-        rig_transition_new (loader->engine->ctx, "Controller 0");
-      loader->transitions = g_list_prepend (loader->transitions, loader->current_transition);
+      loader->current_controller =
+        rig_controller_new (loader->engine->ctx, "Controller 0");
+      loader->controllers = g_list_prepend (loader->controllers, loader->current_controller);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
            strcmp (element_name, "property") == 0)
@@ -1109,7 +1109,7 @@ parse_start_element (GMarkupParseContext *context,
       RutEntity *object;
       const char *property_name;
       CoglBool animated;
-      RigTransitionPropData *prop_data;
+      RigControllerPropData *prop_data;
 
       /* FIXME: the entity attribute should be renamed because not
          everything being animated is necessarily an entity */
@@ -1142,14 +1142,14 @@ parse_start_element (GMarkupParseContext *context,
           return;
         }
 
-      prop_data = rig_transition_get_prop_data (loader->current_transition,
+      prop_data = rig_controller_get_prop_data (loader->current_controller,
                                                 object,
                                                 property_name);
 
       if (prop_data->property->spec->animatable)
         {
           if (animated)
-            rig_transition_set_property_animated (loader->current_transition,
+            rig_controller_set_property_animated (loader->current_controller,
                                                   prop_data->property,
                                                   TRUE);
         }
@@ -1404,7 +1404,7 @@ parse_end_element (GMarkupParseContext *context,
     }
   else
   if (state == LOADER_STATE_LOADING_TRANSITION &&
-           strcmp (element_name, "transition") == 0)
+           strcmp (element_name, "controller") == 0)
     {
       loader_pop_state (loader);
     }
@@ -1508,7 +1508,7 @@ rig_load_xml (RigEngine *engine, const char *file)
   if (loader.light)
     engine->light = loader.light;
 
-  engine->transitions = loader.transitions;
+  engine->controllers = loader.controllers;
 
   engine->assets = loader.assets;
 

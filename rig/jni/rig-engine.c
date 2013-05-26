@@ -35,7 +35,7 @@
 #include <rut-bin.h>
 
 #include "rig-engine.h"
-#include "rig-transition.h"
+#include "rig-controller.h"
 #include "rig-load-save.h"
 #include "rig-undo-journal.h"
 #include "rig-renderer.h"
@@ -215,12 +215,12 @@ rig_reload_inspector_property (RigEngine *engine,
 {
   if (engine->inspector)
     {
-      RigTransitionPropData *prop_data;
+      RigControllerPropData *prop_data;
       CoglBool animated;
       GList *l;
 
       prop_data =
-        rig_transition_find_prop_data_for_property (engine->selected_transition,
+        rig_controller_find_prop_data_for_property (engine->selected_controller,
                                                     property);
 
       animated = prop_data && prop_data->animated;
@@ -234,7 +234,7 @@ rig_reload_inspector_property (RigEngine *engine,
 }
 
 static void
-reload_animated_inspector_properties_cb (RigTransitionPropData *prop_data,
+reload_animated_inspector_properties_cb (RigControllerPropData *prop_data,
                                          void *user_data)
 {
   RigEngine *engine = user_data;
@@ -246,81 +246,81 @@ reload_animated_inspector_properties_cb (RigTransitionPropData *prop_data,
 static void
 reload_animated_inspector_properties (RigEngine *engine)
 {
-  if (engine->inspector && engine->selected_transition)
-    rig_transition_foreach_property (engine->selected_transition,
+  if (engine->inspector && engine->selected_controller)
+    rig_controller_foreach_property (engine->selected_controller,
                                      reload_animated_inspector_properties_cb,
                                      engine);
 }
 
 static void
-update_transition_progress_cb (RutProperty *target_property,
+update_controller_progress_cb (RutProperty *target_property,
                                void *user_data)
 {
   RigEngine *engine = user_data;
   double progress = rut_timeline_get_progress (engine->timeline);
-  RigTransition *transition = target_property->object;
+  RigController *controller = target_property->object;
 
-  rig_transition_set_progress (transition, progress);
+  rig_controller_set_progress (controller, progress);
   reload_animated_inspector_properties (engine);
 }
 
 static void
-update_transition_property_cb (RigTransitionPropData *prop_data,
+update_controller_property_cb (RigControllerPropData *prop_data,
                                void *user_data)
 {
-  RigTransition *transition = user_data;
-  rig_transition_update_property (transition, prop_data->property);
+  RigController *controller = user_data;
+  rig_controller_update_property (controller, prop_data->property);
 }
 
 static void
-rig_engine_select_transition (RigEngine *engine, RigTransition *transition)
+rig_engine_select_controller (RigEngine *engine, RigController *controller)
 {
-  if (engine->selected_transition == transition)
+  if (engine->selected_controller == controller)
     return;
 
-  if (engine->selected_transition)
+  if (engine->selected_controller)
     {
-      RigTransition *selected = engine->selected_transition;
+      RigController *selected = engine->selected_controller;
       rut_property_remove_binding (&selected->props[RUT_TRANSITION_PROP_PROGRESS]);
     }
 
-  rut_property_set_binding (&transition->props[RUT_TRANSITION_PROP_PROGRESS],
-                            update_transition_progress_cb,
+  rut_property_set_binding (&controller->props[RUT_TRANSITION_PROP_PROGRESS],
+                            update_controller_progress_cb,
                             engine,
                             engine->timeline_elapsed,
                             NULL);
 
-  rig_transition_set_progress (transition,
+  rig_controller_set_progress (controller,
                                rut_timeline_get_progress (engine->timeline));
 
   /* Reset all of the property values to their current value according
-   * to the given transition */
-  rig_transition_foreach_property (transition,
-                                   update_transition_property_cb,
-                                   transition);
+   * to the given controller */
+  rig_controller_foreach_property (controller,
+                                   update_controller_property_cb,
+                                   controller);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
     {
-      if (engine->transition_view)
+      if (engine->controller_view)
         {
-          rut_ui_viewport_set_sync_widget (engine->timeline_vp, NULL);
-          rut_graphable_remove_child (engine->transition_view);
+          rut_ui_viewport_set_sync_widget (engine->controller_vp, NULL);
+          rut_graphable_remove_child (engine->controller_view);
         }
 
-      engine->transition_view =
-        rig_transition_view_new (engine->ctx,
+      engine->controller_view =
+        rig_controller_view_new (engine->ctx,
                                  engine->scene,
-                                 transition,
+                                 controller,
                                  engine->timeline,
                                  engine->undo_journal);
-      rut_ui_viewport_add (engine->timeline_vp, engine->transition_view);
-      rut_ui_viewport_set_sync_widget (engine->timeline_vp,
-                                       engine->transition_view);
+      rut_ui_viewport_add (engine->controller_vp, engine->controller_view);
+      rut_ui_viewport_set_sync_widget (engine->controller_vp,
+                                       engine->controller_view);
     }
 #endif
 
-  engine->selected_transition = transition;
+  engine->selected_controller = controller;
 }
 
 static void
@@ -335,7 +335,7 @@ inspector_property_changed_cb (RutProperty *target_property,
 
   rig_undo_journal_set_property_and_log (engine->undo_journal,
                                          TRUE, /* mergable */
-                                         engine->selected_transition,
+                                         engine->selected_controller,
                                          &new_value,
                                          target_property);
 
@@ -355,7 +355,7 @@ inspector_animated_changed_cb (RutProperty *property,
    * the current time. We want this to be undone as a single action so
    * we'll represent the pair of actions in a subjournal */
   if (value &&
-      (path = rig_transition_get_path_for_property (engine->selected_transition,
+      (path = rig_controller_get_path_for_property (engine->selected_controller,
                                                     property)) &&
       path->length == 0)
     {
@@ -365,12 +365,12 @@ inspector_animated_changed_cb (RutProperty *property,
       rut_property_box (property, &property_value);
 
       rig_undo_journal_set_animated_and_log (subjournal,
-                                             engine->selected_transition,
+                                             engine->selected_controller,
                                              property,
                                              value);
       rig_undo_journal_set_property_and_log (subjournal,
                                              FALSE /* mergable */,
-                                             engine->selected_transition,
+                                             engine->selected_controller,
                                              &property_value,
                                              property);
 
@@ -380,7 +380,7 @@ inspector_animated_changed_cb (RutProperty *property,
     }
   else
     rig_undo_journal_set_animated_and_log (engine->undo_journal,
-                                           engine->selected_transition,
+                                           engine->selected_controller,
                                            property,
                                            value);
 }
@@ -399,11 +399,11 @@ init_property_animated_state_cb (RutProperty *property,
 
   if (property->spec->animatable)
     {
-      RigTransitionPropData *prop_data;
-      RigTransition *transition = data->engine->selected_transition;
+      RigControllerPropData *prop_data;
+      RigController *controller = data->engine->selected_controller;
 
       prop_data =
-        rig_transition_find_prop_data_for_property (transition, property);
+        rig_controller_find_prop_data_for_property (controller, property);
 
       if (prop_data && prop_data->animated)
         rut_inspector_set_property_animated (data->inspector, property, TRUE);
@@ -610,7 +610,7 @@ tool_rotation_event_cb (RutTool *tool,
 
         rig_undo_journal_set_property_and_log (engine->undo_journal,
                                                FALSE /* mergable */,
-                                               engine->selected_transition,
+                                               engine->selected_controller,
                                                &value,
                                                rotation_prop);
       }
@@ -1946,13 +1946,13 @@ create_assets_view (RigEngine *engine)
 }
 
 static void
-transition_select_cb (RutProperty *value_property,
+controller_select_cb (RutProperty *value_property,
                       void *user_data)
 {
   RigEngine *engine = user_data;
   int value = rut_property_get_integer (value_property);
-  RigTransition *transition = g_list_nth_data (engine->transitions, value);
-  rig_engine_select_transition (engine, transition);
+  RigController *controller = g_list_nth_data (engine->controllers, value);
+  rig_engine_select_controller (engine, controller);
 }
 
 static void
@@ -1961,36 +1961,36 @@ create_timeline_view (RigEngine *engine)
   RutBoxLayout *vbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   RutStack *top_stack = rut_stack_new (engine->ctx, 0, 0);
-  RutDropDown *transition_selector;
+  RutDropDown *controller_selector;
   RutProperty *value_prop;
   RutRectangle *bg;
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
 
-  transition_selector = rut_drop_down_new (engine->ctx);
-  engine->transition_selector = transition_selector;
-  value_prop = rut_introspectable_lookup_property (transition_selector, "value");
+  controller_selector = rut_drop_down_new (engine->ctx);
+  engine->controller_selector = controller_selector;
+  value_prop = rut_introspectable_lookup_property (controller_selector, "value");
   rut_property_connect_callback (value_prop,
-                                 transition_select_cb,
+                                 controller_select_cb,
                                  engine);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
   rut_stack_add (top_stack, bg);
   rut_refable_unref (bg);
 
-  rut_stack_add (top_stack, transition_selector);
-  rut_refable_unref (transition_selector);
+  rut_stack_add (top_stack, controller_selector);
+  rut_refable_unref (controller_selector);
 
   rut_box_layout_add (vbox, FALSE, top_stack);
   rut_refable_unref (top_stack);
 
-  engine->timeline_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_ui_viewport_set_x_pannable (engine->timeline_vp, FALSE);
+  engine->controller_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_ui_viewport_set_x_pannable (engine->controller_vp, FALSE);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
   rut_stack_add (stack, bg);
   rut_refable_unref (bg);
 
-  rut_stack_add (stack, engine->timeline_vp);
+  rut_stack_add (stack, engine->controller_vp);
 
   rut_box_layout_add (vbox, TRUE, stack);
   rut_refable_unref (stack);
@@ -2420,34 +2420,34 @@ rig_engine_handle_ui_update (RigEngine *engine)
                                                   100);
     }
 
-  if (!engine->transitions)
+  if (!engine->controllers)
     {
-      RigTransition *transition =
-        rig_transition_new (engine->ctx, "Controller 0");
-      engine->transitions = g_list_prepend (engine->transitions, transition);
+      RigController *controller =
+        rig_controller_new (engine->ctx, "Controller 0");
+      engine->controllers = g_list_prepend (engine->controllers, controller);
     }
 
   if (!_rig_in_device_mode)
     {
-      int n_transitions;
-      RutDropDownValue *transition_values;
+      int n_controllers;
+      RutDropDownValue *controller_values;
       GList *l;
       int i;
 
-      n_transitions = g_list_length (engine->transitions);
-      transition_values = malloc (sizeof (RutDropDownValue) * n_transitions);
+      n_controllers = g_list_length (engine->controllers);
+      controller_values = malloc (sizeof (RutDropDownValue) * n_controllers);
 
-      for (l = engine->transitions, i = 0; l; l = l->next, i++)
+      for (l = engine->controllers, i = 0; l; l = l->next, i++)
         {
-          RigTransition *transition = l->data;
-          transition_values[i].name = transition->name;
-          transition_values[i].value = i;
+          RigController *controller = l->data;
+          controller_values[i].name = controller->name;
+          controller_values[i].value = i;
         }
-      rut_drop_down_set_values_array (engine->transition_selector,
-                                      transition_values, n_transitions);
+      rut_drop_down_set_values_array (engine->controller_selector,
+                                      controller_values, n_controllers);
     }
 
-  rig_engine_select_transition (engine, engine->transitions->data);
+  rig_engine_select_controller (engine, engine->controllers->data);
 
   if (!_rig_in_device_mode)
     rig_load_asset_list (engine);
@@ -2460,11 +2460,11 @@ rig_engine_free_ui (RigEngine *engine)
   GList *l;
 
 #ifdef RIG_EDITOR_ENABLED
-  if (engine->transition_view)
+  if (engine->controller_view)
     {
-      rut_ui_viewport_set_sync_widget (engine->timeline_vp, NULL);
-      rut_graphable_remove_child (engine->transition_view);
-      engine->transition_view = NULL;
+      rut_ui_viewport_set_sync_widget (engine->controller_vp, NULL);
+      rut_graphable_remove_child (engine->controller_view);
+      engine->controller_view = NULL;
     }
 
   if (engine->grid_prim)
@@ -2492,11 +2492,11 @@ rig_engine_free_ui (RigEngine *engine)
       engine->shadow_fb = NULL;
     }
 
-  for (l = engine->transitions; l; l = l->next)
+  for (l = engine->controllers; l; l = l->next)
     rut_refable_unref (l->data);
-  g_list_free (engine->transitions);
-  engine->transitions = NULL;
-  engine->selected_transition = NULL;
+  g_list_free (engine->controllers);
+  engine->controllers = NULL;
+  engine->selected_controller = NULL;
 
   for (l = engine->assets; l; l = l->next)
     rut_refable_unref (l->data);
@@ -2780,7 +2780,7 @@ rig_engine_fini (RutShell *shell, void *user_data)
       for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
         rut_refable_unref (engine->splits[i]);
 
-      rut_refable_unref (engine->timeline_vp);
+      rut_refable_unref (engine->controller_vp);
       rut_refable_unref (engine->top_vbox);
       rut_refable_unref (engine->top_hbox);
       rut_refable_unref (engine->asset_panel_hbox);

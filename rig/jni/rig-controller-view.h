@@ -21,19 +21,19 @@
 #define _RIG_TRANSITION_VIEW_H_
 
 #include <rut.h>
-#include "rig-transition.h"
+#include "rig-controller.h"
 #include "rig-undo-journal.h"
 
-extern RutType rig_transition_view_type;
+extern RutType rig_controller_view_type;
 
-typedef struct _RigTransitionView RigTransitionView;
+typedef struct _RigControllerView RigControllerView;
 
-#define RIG_TRANSITION_VIEW(x) ((RigTransitionView *) x)
+#define RIG_TRANSITION_VIEW(x) ((RigControllerView *) x)
 
-RigTransitionView *
-rig_transition_view_new (RutContext *ctx,
+RigControllerView *
+rig_controller_view_new (RutContext *ctx,
                          RutObject *graph,
-                         RigTransition *transition,
+                         RigController *controller,
                          RutTimeline *timeline,
                          RigUndoJournal *undo_journal);
 
