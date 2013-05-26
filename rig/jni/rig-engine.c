@@ -557,8 +557,11 @@ void
 rig_engine_dirty_properties_menu (RutImageSource *source,
                                   void *user_data)
 {
+#ifdef RIG_EDITOR_ENABLED
   RigEngine *engine = user_data;
-  _rig_engine_update_inspector (engine);
+  if (!_rig_in_device_mode)
+    _rig_engine_update_inspector (engine);
+#endif
 }
 
 void
