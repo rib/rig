@@ -375,10 +375,12 @@ struct _CoglPipeline
    * be allocated dynamically when required... */
   CoglPipelineBigState *big_state;
 
+#ifdef COGL_DEBUG_ENABLED
   /* For debugging purposes it's possible to associate a static const
    * string with a pipeline which can be an aid when trying to trace
    * where the pipeline originates from */
   const char      *static_breadcrumb;
+#endif
 
   /* Cached state... */
 
@@ -432,10 +434,12 @@ struct _CoglPipeline
 
   unsigned int          layers_cache_dirty:1;
 
+#ifdef COGL_DEBUG_ENABLED
   /* For debugging purposes it's possible to associate a static const
    * string with a pipeline which can be an aid when trying to trace
    * where the pipeline originates from */
   unsigned int          has_static_breadcrumb:1;
+#endif
 
   /* There are multiple fragment and vertex processing backends for
    * CoglPipeline, glsl, arbfp and fixed that are bundled under a
@@ -832,9 +836,11 @@ void
 _cogl_pipeline_set_blend_enabled (CoglPipeline *pipeline,
                                   CoglPipelineBlendEnable enable);
 
+#ifdef COGL_DEBUG_ENABLED
 void
 _cogl_pipeline_set_static_breadcrumb (CoglPipeline *pipeline,
                                       const char *breadcrumb);
+#endif
 
 unsigned long
 _cogl_pipeline_get_age (CoglPipeline *pipeline);

@@ -395,7 +395,9 @@ cogl_pipeline_new (CoglContext *context)
   CoglPipeline *new;
 
   new = cogl_pipeline_copy (context->default_pipeline);
+#ifdef COGL_DEBUG_ENABLED
   _cogl_pipeline_set_static_breadcrumb (new, "new");
+#endif
   return new;
 }
 
@@ -1220,8 +1222,10 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
 
       new_authority =
         cogl_pipeline_copy (_cogl_pipeline_get_parent (pipeline));
+#ifdef COGL_DEBUG_ENABLED
       _cogl_pipeline_set_static_breadcrumb (new_authority,
                                             "pre_change_notify:copy-on-write");
+#endif
 
       /* We could explicitly walk the descendants, OR together the set
        * of differences that we determine this pipeline is the
@@ -2372,6 +2376,7 @@ _cogl_pipeline_journal_unref (CoglPipeline *pipeline)
   cogl_object_unref (pipeline);
 }
 
+#ifdef COGL_DEBUG_ENABLED
 void
 _cogl_pipeline_set_static_breadcrumb (CoglPipeline *pipeline,
                                       const char *breadcrumb)
@@ -2379,6 +2384,7 @@ _cogl_pipeline_set_static_breadcrumb (CoglPipeline *pipeline,
   pipeline->has_static_breadcrumb = TRUE;
   pipeline->static_breadcrumb = breadcrumb;
 }
+#endif
 
 typedef void (*LayerStateHashFunction) (CoglPipelineLayer *authority,
                                         CoglPipelineLayer **authorities,
