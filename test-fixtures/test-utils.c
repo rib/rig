@@ -1,6 +1,9 @@
+#include <config.h>
+
 #include <cogl/cogl.h>
 #include <stdlib.h>
 
+#include "test-unit.h"
 #include "test-utils.h"
 
 #define FB_WIDTH 512
