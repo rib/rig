@@ -36,11 +36,12 @@ typedef struct _RigUndoJournal RigUndoJournal;
 typedef enum _UndoRedoOp
 {
   UNDO_REDO_SUBJOURNAL_OP,
+  UNDO_REDO_SET_CONTROLLED_OP,
+  UNDO_REDO_SET_CONTROL_METHOD_OP,
   UNDO_REDO_CONST_PROPERTY_CHANGE_OP,
   UNDO_REDO_PATH_ADD_OP,
   UNDO_REDO_PATH_REMOVE_OP,
   UNDO_REDO_PATH_MODIFY_OP,
-  UNDO_REDO_SET_ANIMATED_OP,
   UNDO_REDO_ADD_ENTITY_OP,
   UNDO_REDO_DELETE_ENTITY_OP,
   UNDO_REDO_ADD_COMPONENT_OP,
@@ -93,13 +94,22 @@ typedef struct _UndoRedoMovePathNodes
   int n_nodes;
 } UndoRedoMovePathNodes;
 
-typedef struct _UndoRedoSetAnimated
+typedef struct _UndoRedoSetControlled
 {
   RigController *controller;
   RutObject *object;
   RutProperty *property;
   CoglBool value;
-} UndoRedoSetAnimated;
+} UndoRedoSetControlled;
+
+typedef struct _UndoRedoSetControlMethod
+{
+  RigController *controller;
+  RutObject *object;
+  RutProperty *property;
+  RigControllerMethod prev_method;
+  RigControllerMethod method;
+} UndoRedoSetControlMethod;
 
 typedef struct
 {
@@ -107,7 +117,7 @@ typedef struct
 
   RutProperty *property;
 
-  CoglBool animated;
+  RigControllerMethod method;
   RigPath *path;
   RutBoxed constant_value;
 } UndoRedoPropData;
@@ -145,7 +155,8 @@ typedef struct _UndoRedo
       UndoRedoConstPropertyChange const_prop_change;
       UndoRedoPathAddRemove path_add_remove;
       UndoRedoPathModify path_modify;
-      UndoRedoSetAnimated set_animated;
+      UndoRedoSetControlled set_controlled;
+      UndoRedoSetControlMethod set_control_method;
       UndoRedoAddDeleteEntity add_delete_entity;
       UndoRedoAddDeleteComponent add_delete_component;
       UndoRedoMovePathNodes move_path_nodes;
@@ -172,6 +183,18 @@ struct _RigUndoJournal
    * operation. */
   RutList redo_ops;
 };
+
+void
+rig_undo_journal_set_controlled_and_log (RigUndoJournal *journal,
+                                         RigController *controller,
+                                         RutProperty *property,
+                                         CoglBool value);
+
+void
+rig_undo_journal_set_control_method_and_log (RigUndoJournal *journal,
+                                             RigController *controller,
+                                             RutProperty *property,
+                                             RigControllerMethod method);
 
 void
 rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
@@ -207,12 +230,6 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
                                            RigController *controller,
                                            RutProperty *property,
                                            RigNode *node);
-
-void
-rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
-                                       RigController *controller,
-                                       RutProperty *property,
-                                       CoglBool value);
 
 void
 rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,

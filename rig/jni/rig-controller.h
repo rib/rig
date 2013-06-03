@@ -22,6 +22,7 @@
 
 #include <rut.h>
 #include "rig-path.h"
+#include "rig-types.h"
 #include "rut-list.h"
 
 extern RutType rig_controller_type;
@@ -33,24 +34,38 @@ enum {
   RUT_TRANSITION_N_PROPS
 };
 
+typedef enum _RigControllerMethod
+{
+  RIG_CONTROLLER_METHOD_CONSTANT,
+  RIG_CONTROLLER_METHOD_PATH,
+  RIG_CONTROLLER_METHOD_BINDING,
+} RigControllerMethod;
+
 /* State for an individual property that the controller is tracking */
 typedef struct
 {
   RutProperty *property;
 
-  /* The controller maintains two sets of state for each property. One
-   * is a constant value that is used throughout the entire controller
-   * and the other is a path whose actual property value depends on
-   * the progress of the timeline. Only one of these states will
-   * actually be used depending on whether the property is animated.
-   * However both states are retained so that if the user toggles the
-   * animated button for a property information won't be lost. */
+  /* The controller support 3 "methods" of control for any property. One is a
+   * constant value, another is a path whereby the property value depends on
+   * the progress through the path and lastly there can be a C expression that
+   * may update the property based on a number of other dependency properties.
+   *
+   * Only one of these methods will actually be used depending on the value of
+   * the 'method' member. However all the states are retained so that if the
+   * user changes the method then information won't be lost.
+   */
 
-  CoglBool animated;
+  RigControllerMethod method;
 
   /* path may be NULL */
   RigPath *path;
   RutBoxed constant_value;
+
+  /* depenencies and c_expression may be NULL */
+  RutProperty **dependencies;
+  int n_dependencies;
+  char *c_expression;
 } RigControllerPropData;
 
 struct _RigController
@@ -68,6 +83,7 @@ struct _RigController
    * RigControllerPropData struct */
   GHashTable *properties;
 
+  RigEngine *engine;
   RutContext *context;
 
   RutList operation_cb_list;
@@ -80,7 +96,7 @@ typedef enum
 {
   RIG_TRANSITION_OPERATION_ADDED,
   RIG_TRANSITION_OPERATION_REMOVED,
-  RIG_TRANSITION_OPERATION_ANIMATED_CHANGED
+  RIG_TRANSITION_OPERATION_METHOD_CHANGED
 } RigControllerOperation;
 
 typedef void
@@ -116,7 +132,7 @@ rig_controller_get_path (RigController *controller,
                          const char *property_name);
 
 RigController *
-rig_controller_new (RutContext *context, const char *name);
+rig_controller_new (RigEngine *engine, const char *name);
 
 void
 rig_controller_set_name (RigController *controller,
@@ -145,9 +161,16 @@ rig_controller_add_operation_callback (RigController *controller,
                                        RutClosureDestroyCallback destroy_cb);
 
 void
-rig_controller_set_property_animated (RigController *controller,
-                                      RutProperty *property,
-                                      CoglBool animated);
+rig_controller_set_property_method (RigController *controller,
+                                    RutProperty *property,
+                                    RigControllerMethod method);
+
+void
+rig_controller_set_property_binding (RigController *controller,
+                                     RutProperty *property,
+                                     const char *c_expression,
+                                     RutProperty **dependencies,
+                                     int n_dependencies);
 
 void
 rig_controller_remove_property (RigController *controller,

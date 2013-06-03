@@ -20,6 +20,7 @@
 #include <config.h>
 
 #include "rig-controller.h"
+#include "rig-engine.h"
 
 static RutPropertySpec _rig_controller_prop_specs[] = {
   {
@@ -32,8 +33,10 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
 };
 
 static void
-_rig_controller_free (RigController *controller)
+_rig_controller_free (RutObject *object)
 {
+  RigController *controller = object;
+
   rut_closure_list_disconnect_all (&controller->operation_cb_list);
 
   rut_simple_introspectable_destroy (controller);
@@ -97,7 +100,7 @@ free_prop_data_cb (void *user_data)
 }
 
 RigController *
-rig_controller_new (RutContext *context,
+rig_controller_new (RigEngine *engine,
                     const char *name)
 {
   RigController *controller;
@@ -116,7 +119,8 @@ rig_controller_new (RutContext *context,
 
   controller->name = g_strdup (name);
 
-  controller->context = rut_refable_ref (context);
+  controller->engine = engine;
+  controller->context = engine->ctx;
 
   rut_object_init (&controller->_parent, &rig_controller_type);
 
@@ -158,10 +162,9 @@ rig_controller_get_prop_data_for_property (RigController *controller,
 
   if (prop_data == NULL)
     {
-      prop_data = g_slice_new (RigControllerPropData);
-      prop_data->animated = FALSE;
+      prop_data = g_slice_new0 (RigControllerPropData);
+      prop_data->method = RIG_CONTROLLER_METHOD_CONSTANT;
       prop_data->property = property;
-      prop_data->path = NULL;
 
       rut_property_box (property, &prop_data->constant_value);
 
@@ -249,7 +252,7 @@ update_progress_cb (RigControllerPropData *prop_data,
 {
   RigController *controller = user_data;
 
-  if (prop_data->animated && prop_data->path)
+  if (prop_data->method == RIG_CONTROLLER_METHOD_PATH && prop_data->path)
     rig_path_lerp_property (prop_data->path,
                             prop_data->property,
                             controller->progress);
@@ -308,23 +311,30 @@ rig_controller_update_property (RigController *controller,
     rig_controller_find_prop_data_for_property (controller, property);
 
   /* Update the given property depending on what the controller thinks
-   * it should currently be. This will either be calculated by
-   * interpolating the path for the property or by using the constant
-   * value depending on whether the property is animated */
+   * it should currently be. Depending on the current method this will
+   * either be calculated by interpolating the path for the property
+   * or by using the constant value or evaluating the C expression.
+   */
 
-  if (prop_data)
+  if (!prop_data)
+    return;
+
+  switch (prop_data->method)
     {
-      if (prop_data->animated)
-        {
-          if (prop_data->path)
-            rig_path_lerp_property (prop_data->path,
-                                    property,
-                                    controller->progress);
-        }
-      else
-        rut_property_set_boxed (&controller->context->property_ctx,
+    case RIG_CONTROLLER_METHOD_CONSTANT:
+      rut_property_set_boxed (&controller->context->property_ctx,
+                              property,
+                              &prop_data->constant_value);
+      break;
+    case RIG_CONTROLLER_METHOD_PATH:
+      if (prop_data->path)
+        rig_path_lerp_property (prop_data->path,
                                 property,
-                                &prop_data->constant_value);
+                                controller->progress);
+      break;
+    case RIG_CONTROLLER_METHOD_BINDING:
+      /* TODO */
+      break;
     }
 }
 
@@ -341,37 +351,22 @@ rig_controller_add_operation_callback (RigController *controller,
 }
 
 void
-rig_controller_set_property_animated (RigController *controller,
-                                      RutProperty *property,
-                                      CoglBool animated)
+rig_controller_set_property_method (RigController *controller,
+                                    RutProperty *property,
+                                    RigControllerMethod method)
 {
-  RigControllerPropData *prop_data;
+  RigControllerPropData *prop_data =
+    rig_controller_get_prop_data_for_property (controller, property);
 
-  if (animated)
-    {
-      prop_data =
-        rig_controller_get_prop_data_for_property (controller, property);
-    }
-  else
-    {
-      /* If the animated state is being disabled then we don't want to
-       * create the property state if doesn't already exist */
-      prop_data =
-        rig_controller_find_prop_data_for_property (controller, property);
+  if (prop_data->method == method)
+    return;
 
-      if (prop_data == NULL)
-        return;
-    }
-
-  if (animated != prop_data->animated)
-    {
-      prop_data->animated = animated;
-      rut_closure_list_invoke (&controller->operation_cb_list,
-                               RigControllerOperationCallback,
-                               controller,
-                               RIG_TRANSITION_OPERATION_ANIMATED_CHANGED,
-                               prop_data);
-    }
+  prop_data->method = method;
+  rut_closure_list_invoke (&controller->operation_cb_list,
+                           RigControllerOperationCallback,
+                           controller,
+                           RIG_TRANSITION_OPERATION_METHOD_CHANGED,
+                           prop_data);
 }
 
 void
@@ -391,4 +386,20 @@ rig_controller_remove_property (RigController *controller,
 
       g_hash_table_remove (controller->properties, property);
     }
+}
+
+void
+rig_controller_set_property_binding (RigController *controller,
+                                     RutProperty *property,
+                                     const char *c_expression,
+                                     RutProperty **dependencies,
+                                     int n_dependencies)
+{
+  RigControllerPropData *prop_data =
+    rig_controller_get_prop_data_for_property (controller, property);
+
+  prop_data->dependencies = g_slice_copy (sizeof (void *) * n_dependencies,
+                                          dependencies);
+  prop_data->n_dependencies = n_dependencies;
+  prop_data->c_expression = g_strdup (c_expression);
 }

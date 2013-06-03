@@ -733,8 +733,19 @@ serialize_property_cb (RigControllerPropData *prop_data,
 
   pb_property->name = (char *)prop_data->property->spec->name;
 
-  pb_property->has_animated = TRUE;
-  pb_property->animated = prop_data->animated;
+  pb_property->has_method = TRUE;
+  switch (prop_data->method)
+    {
+      case RIG_CONTROLLER_METHOD_CONSTANT:
+        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__CONSTANT;
+        break;
+      case RIG_CONTROLLER_METHOD_PATH:
+        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__PATH;
+        break;
+      case RIG_CONTROLLER_METHOD_BINDING:
+        pb_property->method = RIG__CONTROLLER__PROPERTY__METHOD__C_BINDING;
+        break;
+    }
 
   pb_property->constant = pb_property_value_new (engine, &prop_data->constant_value);
 
@@ -1895,17 +1906,40 @@ unserialize_controller_properties (UnSerializer *unserializer,
       Rig__Controller__Property *pb_property = properties[i];
       uint64_t object_id;
       RutObject *object;
-      CoglBool animated;
+      RigControllerMethod method;
       RigControllerPropData *prop_data;
 
       if (!pb_property->has_object_id ||
           pb_property->name == NULL)
         continue;
 
-      if (pb_property->has_animated)
-        animated = pb_property->animated;
+      if (pb_property->has_method)
+        {
+          switch (pb_property->method)
+            {
+            case RIG__CONTROLLER__PROPERTY__METHOD__CONSTANT:
+              method = RIG_CONTROLLER_METHOD_CONSTANT;
+              break;
+            case RIG__CONTROLLER__PROPERTY__METHOD__PATH:
+              method = RIG_CONTROLLER_METHOD_PATH;
+              break;
+            case RIG__CONTROLLER__PROPERTY__METHOD__C_BINDING:
+              method = RIG_CONTROLLER_METHOD_BINDING;
+              break;
+            default:
+              g_warn_if_reached ();
+              method = RIG_CONTROLLER_METHOD_CONSTANT;
+            }
+        }
+      else if (pb_property->has_animated) /* deprecated */
+        {
+          if (pb_property->animated)
+            method = RIG_CONTROLLER_METHOD_PATH;
+          else
+            method = RIG_CONTROLLER_METHOD_CONSTANT;
+        }
       else
-        animated = FALSE;
+        method = RIG_CONTROLLER_METHOD_CONSTANT;
 
       object_id = pb_property->object_id;
 
@@ -1929,18 +1963,17 @@ unserialize_controller_properties (UnSerializer *unserializer,
           continue;
         }
 
-      if (prop_data->property->spec->animatable)
-        {
-          if (animated)
-            rig_controller_set_property_animated (controller,
-                                                  prop_data->property,
-                                                  TRUE);
-        }
-      else if (animated)
+      if (!prop_data->property->spec->animatable &&
+          method != RIG_CONTROLLER_METHOD_CONSTANT)
         {
           collect_error (unserializer,
-                         "A non-animatable property is marked as animated");
+                         "Can't dynamically control non-animatable property");
+          continue;
         }
+
+      rig_controller_set_property_method (controller,
+                                          prop_data->property,
+                                          method);
 
       pb_init_boxed_value (unserializer,
                            &prop_data->constant_value,
@@ -1956,9 +1989,80 @@ unserialize_controller_properties (UnSerializer *unserializer,
                           prop_data->property->spec->type);
 
           unserialize_path_nodes (unserializer,
-                           prop_data->path,
-                           pb_path->n_nodes,
-                           pb_path->nodes);
+                                  prop_data->path,
+                                  pb_path->n_nodes,
+                                  pb_path->nodes);
+        }
+
+      if (pb_property->c_expression)
+        {
+          int j;
+          RutProperty **dependencies;
+          RutProperty *dependency;
+
+          if (pb_property->n_dependencies)
+            dependencies = alloca (sizeof (void *) *
+                                   pb_property->n_dependencies);
+          else
+            dependencies = NULL;
+
+          for (j = 0; j < pb_property->n_dependencies; j++)
+            {
+              RutObject *dependency_object;
+              Rig__Controller__Property__Dependency *pb_dependency =
+                pb_property->dependencies[j];
+
+              if (!pb_dependency->has_object_id)
+                {
+                  collect_error (unserializer,
+                                 "Property dependency with no object ID");
+                  break;
+                }
+
+              if (!pb_dependency->name)
+                {
+                  collect_error (unserializer,
+                                 "Property dependency with no name");
+                  break;
+                }
+
+              dependency_object =
+                unserializer_find_introspectable (unserializer,
+                                                  pb_dependency->object_id);
+              if (!dependency_object)
+                {
+                  collect_error (unserializer,
+                                 "Failed to find dependency object "
+                                 "for property");
+                  break;
+                }
+
+              dependency = rut_introspectable_lookup_property (dependency_object,
+                                                               pb_dependency->name);
+              if (!dependency)
+                {
+                  collect_error (unserializer,
+                                 "Failed to introspect dependency object "
+                                 "for binding property");
+                  break;
+                }
+
+              dependencies[j] = dependency;
+            }
+
+          if (j != pb_property->n_dependencies)
+            {
+              collect_error (unserializer,
+                             "Not able to resolve all dependencies for "
+                             "property binding (skipping)");
+              continue;
+            }
+
+          rig_controller_set_property_binding (controller,
+                                               prop_data->property,
+                                               pb_property->c_expression,
+                                               dependencies,
+                                               pb_property->n_dependencies);
         }
     }
 }
@@ -1987,7 +2091,7 @@ unserialize_controllers (UnSerializer *unserializer,
       else
         name = "Controller 0";
 
-      controller = rig_controller_new (unserializer->engine->ctx, name);
+      controller = rig_controller_new (unserializer->engine, name);
 
       unserialize_controller_properties (unserializer,
                                          controller,

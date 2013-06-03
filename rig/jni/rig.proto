@@ -237,12 +237,13 @@ message Controller
 {
   message Property
     {
+      enum Method { CONSTANT=1; PATH=2; C_BINDING=3; }
 
       optional sint64 object_id=1;
       optional string name=3;
 
-      optional bool animated=2;
-      optional bool binding=7;
+      optional Method method=7;
+      optional bool animated=2; //Deprecated my 'method'
 
       //Animated properties have key values tracked in a path
       optional PropertyType type=4;

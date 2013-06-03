@@ -15,24 +15,24 @@ typedef void
                               RutProperty *source_property,
                               void *user_data);
 
-/* This is called whenever the animated state changes */
+/* This is called whenever the 'controlled' state changes */
 typedef void
-(* RutPropInspectorAnimatedCallback) (RutProperty *property,
-                                      CoglBool value,
-                                      void *user_data);
+(* RutPropInspectorControlledCallback) (RutProperty *property,
+                                        CoglBool value,
+                                        void *user_data);
 
 RutPropInspector *
 rut_prop_inspector_new (RutContext *ctx,
                         RutProperty *property,
                         RutPropInspectorCallback property_changed_cb,
-                        RutPropInspectorAnimatedCallback animated_changed_cb,
+                        RutPropInspectorControlledCallback controlled_changed_cb,
                         void *user_data);
 
 void
 rut_prop_inspector_reload_property (RutPropInspector *inspector);
 
 void
-rut_prop_inspector_set_animated (RutPropInspector *inspector,
-                                 CoglBool animated);
+rut_prop_inspector_set_controlled (RutPropInspector *inspector,
+                                   CoglBool controlled);
 
 #endif /* _RUT_PROP_INSPECTOR_H_ */

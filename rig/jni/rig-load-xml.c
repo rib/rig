@@ -1098,7 +1098,7 @@ parse_start_element (GMarkupParseContext *context,
         return;
 
       loader->current_controller =
-        rig_controller_new (loader->engine->ctx, "Controller 0");
+        rig_controller_new (loader->engine, "Controller 0");
       loader->controllers = g_list_prepend (loader->controllers, loader->current_controller);
     }
   else if (state == LOADER_STATE_LOADING_TRANSITION &&
@@ -1149,9 +1149,9 @@ parse_start_element (GMarkupParseContext *context,
       if (prop_data->property->spec->animatable)
         {
           if (animated)
-            rig_controller_set_property_animated (loader->current_controller,
-                                                  prop_data->property,
-                                                  TRUE);
+            rig_controller_set_property_method (loader->current_controller,
+                                                prop_data->property,
+                                                RIG_CONTROLLER_METHOD_PATH);
         }
       else if (animated)
         {

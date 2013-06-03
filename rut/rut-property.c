@@ -67,21 +67,23 @@ static void
 _rut_property_destroy_binding (RutProperty *property)
 {
   RutPropertyBinding *binding = property->binding;
-  GList *l;
 
   if (binding)
     {
+      int i;
+
       if (binding->destroy_notify)
         binding->destroy_notify (property, binding->user_data);
 
-      for (l = binding->dependencies; l; l = l->next)
+      for (i = 0; binding->dependencies[i]; i++)
         {
-          RutProperty *dependency = l->data;
+          RutProperty *dependency = binding->dependencies[i];
           dependency->dependants =
             g_slist_remove (dependency->dependants, property);
         }
 
-      g_slice_free (RutPropertyBinding, binding);
+      g_slice_free1 (sizeof (RutPropertyBinding) + sizeof (void *) * (i + 1),
+                     binding);
 
       property->binding = NULL;
     }
@@ -138,15 +140,16 @@ rut_property_copy_value (RutPropertyContext *ctx,
   g_warn_if_reached ();
 }
 
-static void
-_rut_property_set_binding_full_valist (RutProperty *property,
-                                       RutBindingCallback callback,
-                                       void *user_data,
-                                       RutBindingDestroyNotify destroy_notify,
-                                       va_list ap)
+void
+_rut_property_set_binding_full_array (RutProperty *property,
+                                      RutBindingCallback callback,
+                                      void *user_data,
+                                      RutBindingDestroyNotify destroy_notify,
+                                      RutProperty **dependencies,
+                                      int n_dependencies)
 {
   RutPropertyBinding *binding;
-  RutProperty *dependency;
+  int i;
 
   /* XXX: Note: for now we don't allow multiple bindings for the same
    * property. I'm not sure it would make sense, as they would
@@ -161,21 +164,67 @@ _rut_property_set_binding_full_valist (RutProperty *property,
       return;
     }
 
-  binding = g_slice_new (RutPropertyBinding);
+  binding = g_slice_alloc (sizeof (RutPropertyBinding) +
+                           sizeof (void *) * (n_dependencies + 1));
   binding->callback = callback;
   binding->user_data = user_data;
   binding->destroy_notify = destroy_notify;
-  binding->dependencies = NULL;
 
-  while ((dependency = va_arg (ap, RutProperty *)))
+  memcpy (binding->dependencies, dependencies,
+          sizeof (void *) * n_dependencies);
+  binding->dependencies[n_dependencies] = NULL;
+
+  for (i = 0; i < n_dependencies; i++)
     {
-      binding->dependencies =
-        g_list_prepend (binding->dependencies, dependency);
+      RutProperty *dependency = dependencies[i];
       dependency->dependants =
         g_slist_prepend (dependency->dependants, property);
     }
 
   property->binding = binding;
+}
+
+static void
+_rut_property_set_binding_full_valist (RutProperty *property,
+                                       RutBindingCallback callback,
+                                       void *user_data,
+                                       RutBindingDestroyNotify destroy_notify,
+                                       va_list ap)
+{
+  RutProperty *dependency;
+  va_list aq;
+  int i;
+
+  va_copy (aq, ap);
+  for (i = 0; (dependency = va_arg (aq, RutProperty *)); i++)
+    ;
+  va_end (aq);
+
+  if (i)
+    {
+      RutProperty **dependencies;
+      RutProperty *dependency;
+      int j = 0;
+
+      dependencies = alloca (sizeof (void *) * i);
+
+      for (j = 0; (dependency = va_arg (ap, RutProperty *)); j++)
+        dependencies[j] = dependency;
+
+      _rut_property_set_binding_full_array (property,
+                                            callback,
+                                            user_data,
+                                            destroy_notify,
+                                            dependencies,
+                                            i);
+    }
+  else
+    _rut_property_set_binding_full_array (property,
+                                          callback,
+                                          user_data,
+                                          destroy_notify,
+                                          NULL,
+                                          0);
 }
 
 void

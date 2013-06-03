@@ -68,7 +68,7 @@ struct _RutInspector
   int height;
 
   RutInspectorCallback property_changed_cb;
-  RutInspectorAnimatedCallback animated_changed_cb;
+  RutInspectorControlledCallback controlled_changed_cb;
   void *user_data;
 
   int ref_count;
@@ -342,18 +342,18 @@ property_changed_cb (RutProperty *target_prop,
 }
 
 static void
-animated_changed_cb (RutProperty *property,
-                     CoglBool value,
-                     void *user_data)
+controlled_changed_cb (RutProperty *property,
+                       CoglBool value,
+                       void *user_data)
 {
   RutInspectorPropertyData *prop_data = user_data;
   RutInspector *inspector = prop_data->inspector;
 
   g_return_if_fail (property == prop_data->target_prop);
 
-  inspector->animated_changed_cb (property,
-                                  value,
-                                  inspector->user_data);
+  inspector->controlled_changed_cb (property,
+                                    value,
+                                    inspector->user_data);
 }
 
 static void
@@ -401,7 +401,7 @@ create_property_controls (RutInspector *inspector)
       control = rut_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
                                         property_changed_cb,
-                                        animated_changed_cb,
+                                        controlled_changed_cb,
                                         prop_data);
 
       prop_data->control = control;
@@ -415,7 +415,7 @@ RutInspector *
 rut_inspector_new (RutContext *context,
                    RutObject *object,
                    RutInspectorCallback user_property_changed_cb,
-                   RutInspectorAnimatedCallback user_animated_changed_cb,
+                   RutInspectorControlledCallback user_controlled_changed_cb,
                    void *user_data)
 {
   RutInspector *inspector = g_slice_new0 (RutInspector);
@@ -436,7 +436,7 @@ rut_inspector_new (RutContext *context,
   else
     inspector->object = object;
   inspector->property_changed_cb = user_property_changed_cb;
-  inspector->animated_changed_cb = user_animated_changed_cb;
+  inspector->controlled_changed_cb = user_controlled_changed_cb;
   inspector->user_data = user_data;
 
   rut_object_init (&inspector->_parent, &rut_inspector_type);
@@ -467,9 +467,9 @@ rut_inspector_reload_property (RutInspector *inspector,
 }
 
 void
-rut_inspector_set_property_animated (RutInspector *inspector,
-                                     RutProperty *property,
-                                     CoglBool animated)
+rut_inspector_set_property_controlled (RutInspector *inspector,
+                                       RutProperty *property,
+                                       CoglBool controlled)
 {
   int i;
 
@@ -478,6 +478,6 @@ rut_inspector_set_property_animated (RutInspector *inspector,
       RutInspectorPropertyData *prop_data = inspector->prop_data + i;
 
       if (prop_data->target_prop == property)
-        rut_prop_inspector_set_animated (prop_data->control, animated);
+        rut_prop_inspector_set_controlled (prop_data->control, controlled);
     }
 }

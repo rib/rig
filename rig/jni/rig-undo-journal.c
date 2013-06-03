@@ -84,10 +84,10 @@ dump_op (UndoRedo *op,
         g_string_append (buf, "-");
       break;
 
-    case UNDO_REDO_SET_ANIMATED_OP:
+    case UNDO_REDO_SET_CONTROLLED_OP:
       g_string_append_printf (buf,
-                              "animated=%s",
-                              op->d.set_animated.value ? "yes" : "no");
+                              "controlled=%s",
+                              op->d.set_controlled.value ? "yes" : "no");
       break;
 
     default:
@@ -328,7 +328,7 @@ rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
   prop_data =
     rig_controller_get_prop_data_for_property (controller, property);
 
-  if (prop_data && prop_data->animated)
+  if (prop_data && prop_data->method == RIG_CONTROLLER_METHOD_PATH)
     rig_undo_journal_set_controller_path_property_and_log (journal,
                                                            mergable,
                                                            controller,
@@ -436,28 +436,60 @@ rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
     }
 }
 
-
 void
-rig_undo_journal_set_animated_and_log (RigUndoJournal *journal,
-                                       RigController *controller,
-                                       RutProperty *property,
-                                       CoglBool value)
+rig_undo_journal_set_controlled_and_log (RigUndoJournal *journal,
+                                         RigController *controller,
+                                         RutProperty *property,
+                                         CoglBool value)
 {
   UndoRedo *undo_redo;
-  UndoRedoSetAnimated *set_animated;
+  UndoRedoSetControlled *set_controlled;
 
   undo_redo = g_slice_new (UndoRedo);
-  undo_redo->op = UNDO_REDO_SET_ANIMATED_OP;
+  undo_redo->op = UNDO_REDO_SET_CONTROLLED_OP;
   undo_redo->mergable = FALSE;
 
-  set_animated = &undo_redo->d.set_animated;
+  set_controlled = &undo_redo->d.set_controlled;
 
-  set_animated->controller = rut_refable_ref (controller);
-  set_animated->object = rut_refable_ref (property->object);
-  set_animated->property = property;
-  set_animated->value = value;
+  set_controlled->controller = rut_refable_ref (controller);
+  set_controlled->object = rut_refable_ref (property->object);
+  set_controlled->property = property;
+  set_controlled->value = value;
 
-  rig_controller_set_property_animated (controller, property, value);
+  if (value)
+    rig_controller_get_prop_data_for_property (controller, property);
+  else
+    rig_controller_remove_property (controller, property);
+
+  rig_undo_journal_insert (journal, undo_redo, FALSE);
+}
+
+void
+rig_undo_journal_set_control_method_and_log (RigUndoJournal *journal,
+                                             RigController *controller,
+                                             RutProperty *property,
+                                             RigControllerMethod method)
+{
+  UndoRedo *undo_redo;
+  UndoRedoSetControlMethod *set_control_method;
+  RigControllerPropData *prop_data =
+    rig_controller_get_prop_data_for_property (controller, property);
+
+  g_return_if_fail (prop_data != NULL);
+
+  undo_redo = g_slice_new (UndoRedo);
+  undo_redo->op = UNDO_REDO_SET_CONTROL_METHOD_OP;
+  undo_redo->mergable = FALSE;
+
+  set_control_method = &undo_redo->d.set_control_method;
+
+  set_control_method->controller = rut_refable_ref (controller);
+  set_control_method->object = rut_refable_ref (property->object);
+  set_control_method->property = property;
+  set_control_method->prev_method = prop_data->method;
+  set_control_method->method = method;
+
+  rig_controller_set_property_method (controller, property, method);
 
   rig_undo_journal_insert (journal, undo_redo, FALSE);
 }
@@ -506,7 +538,7 @@ copy_controller_property_cb (RigControllerPropData *prop_data,
     {
       UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
 
-      undo_prop_data->animated = prop_data->animated;
+      undo_prop_data->method = prop_data->method;
       rut_boxed_copy (&undo_prop_data->constant_value,
                       &prop_data->constant_value);
       /* As the property's owner is being deleted we can safely just
@@ -913,45 +945,91 @@ undo_redo_path_modify_free (UndoRedo *undo_redo)
 }
 
 static void
-undo_redo_set_animated_apply (RigUndoJournal *journal,
-                              UndoRedo *undo_redo)
+undo_redo_set_controlled_apply (RigUndoJournal *journal,
+                                UndoRedo *undo_redo)
 {
-  UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
+  UndoRedoSetControlled *set_controlled = &undo_redo->d.set_controlled;
   RigEngine *engine = journal->engine;
 
-  g_print ("Set animated APPLY\n");
+  g_print ("Set controlled APPLY\n");
 
-  rig_controller_set_property_animated (set_animated->controller,
-                                        set_animated->property,
-                                        set_animated->value);
+  if (set_controlled->value)
+    rig_controller_get_prop_data_for_property (set_controlled->controller,
+                                               set_controlled->property);
+  else
+    rig_controller_remove_property (set_controlled->controller,
+                                    set_controlled->property);
 
-  rig_reload_inspector_property (engine, set_animated->property);
+  rig_reload_inspector_property (engine, set_controlled->property);
 }
 
 static UndoRedo *
-undo_redo_set_animated_invert (UndoRedo *undo_redo_src)
+undo_redo_set_controlled_invert (UndoRedo *undo_redo_src)
 {
   UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
 
-  inverse->d.set_animated.value = !inverse->d.set_animated.value;
+  inverse->d.set_controlled.value = !inverse->d.set_controlled.value;
 
-  rut_refable_ref (inverse->d.set_animated.object);
-  rut_refable_ref (inverse->d.set_animated.controller);
+  rut_refable_ref (inverse->d.set_controlled.object);
+  rut_refable_ref (inverse->d.set_controlled.controller);
 
   return inverse;
 }
 
 static void
-undo_redo_set_animated_free (UndoRedo *undo_redo)
+undo_redo_set_controlled_free (UndoRedo *undo_redo)
 {
-  UndoRedoSetAnimated *set_animated = &undo_redo->d.set_animated;
-  rut_refable_unref (set_animated->object);
-  rut_refable_unref (set_animated->controller);
+  UndoRedoSetControlled *set_controlled = &undo_redo->d.set_controlled;
+  rut_refable_unref (set_controlled->object);
+  rut_refable_unref (set_controlled->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
 
 static void
-copy_transtion_property_list (RutList *src, RutList *dst)
+undo_redo_set_control_method_apply (RigUndoJournal *journal,
+                                    UndoRedo *undo_redo)
+{
+  UndoRedoSetControlMethod *set_control_method =
+    &undo_redo->d.set_control_method;
+  RigEngine *engine = journal->engine;
+
+  g_print ("Set control_method APPLY\n");
+
+  rig_controller_set_property_method (set_control_method->controller,
+                                      set_control_method->property,
+                                      set_control_method->method);
+
+  rig_reload_inspector_property (engine, set_control_method->property);
+}
+
+static UndoRedo *
+undo_redo_set_control_method_invert (UndoRedo *undo_redo_src)
+{
+  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  RigControllerMethod tmp;
+
+  tmp = inverse->d.set_control_method.method;
+  inverse->d.set_control_method.method =
+    inverse->d.set_control_method.prev_method;
+  inverse->d.set_control_method.prev_method = tmp;
+
+  rut_refable_ref (inverse->d.set_control_method.object);
+  rut_refable_ref (inverse->d.set_control_method.controller);
+
+  return inverse;
+}
+
+static void
+undo_redo_set_control_method_free (UndoRedo *undo_redo)
+{
+  UndoRedoSetControlMethod *set_control_method = &undo_redo->d.set_control_method;
+  rut_refable_unref (set_control_method->object);
+  rut_refable_unref (set_control_method->controller);
+  g_slice_free (UndoRedo, undo_redo);
+}
+
+static void
+copy_controller_property_list (RutList *src, RutList *dst)
 {
   UndoRedoPropData *prop_data;
 
@@ -960,7 +1038,7 @@ copy_transtion_property_list (RutList *src, RutList *dst)
       UndoRedoPropData *prop_data_copy = g_slice_new (UndoRedoPropData);
 
       prop_data_copy->property = prop_data->property;
-      prop_data_copy->animated = prop_data->animated;
+      prop_data_copy->method = prop_data->method;
       prop_data_copy->path =
         prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
       rut_boxed_copy (&prop_data_copy->constant_value,
@@ -989,8 +1067,8 @@ copy_controller_references (RutList *src_controller_properties,
       rut_list_insert (dst_controller_properties->prev,
                        &dst_controller_state->link);
 
-      copy_transtion_property_list (&src_controller_state->properties,
-                                    dst_controller_state->properties.prev);
+      copy_controller_property_list (&src_controller_state->properties,
+                                     dst_controller_state->properties.prev);
     }
 }
 
@@ -1067,9 +1145,9 @@ add_controller_properties (RigController *controller, RutList *properties)
       rut_boxed_copy (&prop_data->constant_value,
                       &undo_prop_data->constant_value);
 
-      rig_controller_set_property_animated (controller,
-                                            undo_prop_data->property,
-                                            undo_prop_data->animated);
+      rig_controller_set_property_method (controller,
+                                          undo_prop_data->property,
+                                          undo_prop_data->method);
     }
 }
 
@@ -1339,6 +1417,16 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_subjournal_free
     },
     {
+      undo_redo_set_controlled_apply,
+      undo_redo_set_controlled_invert,
+      undo_redo_set_controlled_free
+    },
+    {
+      undo_redo_set_control_method_apply,
+      undo_redo_set_control_method_invert,
+      undo_redo_set_control_method_free
+    },
+    {
       undo_redo_const_prop_change_apply,
       undo_redo_const_prop_change_invert,
       undo_redo_const_prop_change_free
@@ -1357,11 +1445,6 @@ static UndoRedoOpImpl undo_redo_ops[] =
       undo_redo_path_modify_apply,
       undo_redo_path_modify_invert,
       undo_redo_path_modify_free
-    },
-    {
-      undo_redo_set_animated_apply,
-      undo_redo_set_animated_invert,
-      undo_redo_set_animated_free
     },
     {
       undo_redo_add_entity_apply,

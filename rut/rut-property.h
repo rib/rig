@@ -201,14 +201,14 @@ typedef void (*RutBindingDestroyNotify) (RutProperty *property,
  * properties are destroyed. */
 typedef struct _RutPropertyBinding
 {
+  RutBindingCallback callback;
+  RutBindingDestroyNotify destroy_notify;
+  void *user_data;
   /* When the property this binding is for gets destroyed we need to
    * know the dependencies so we can remove this property from the
    * corresponding list of dependants for each dependency.
    */
-  GList *dependencies;
-  RutBindingCallback callback;
-  RutBindingDestroyNotify destroy_notify;
-  void *user_data;
+  RutProperty *dependencies[];
 } RutPropertyBinding;
 
 struct _RutProperty
@@ -327,6 +327,14 @@ rut_property_set_binding (RutProperty *property,
                           RutBindingCallback callback,
                           void *user_data,
                           ...) G_GNUC_NULL_TERMINATED;
+
+void
+_rut_property_set_binding_full_array (RutProperty *property,
+                                      RutBindingCallback callback,
+                                      void *user_data,
+                                      RutBindingDestroyNotify destroy_notify,
+                                      RutProperty **dependencies,
+                                      int n_dependencies);
 
 void
 rut_property_set_binding_full (RutProperty *property,
@@ -528,7 +536,7 @@ rut_property_set_boxed (RutPropertyContext *ctx,
 static inline RutProperty *
 rut_property_get_first_source (RutProperty *property)
 {
-  return property->binding->dependencies->data;
+  return property->binding->dependencies[0];
 }
 
 void

@@ -2159,20 +2159,11 @@ controller_operation_cb (RigController *controller,
   switch (op)
     {
     case RIG_TRANSITION_OPERATION_ADDED:
-      if (prop_data->animated)
-        rig_controller_view_property_added (view, prop_data->property);
+      rig_controller_view_property_added (view, prop_data->property);
       break;
 
     case RIG_TRANSITION_OPERATION_REMOVED:
-      if (prop_data->animated)
-        rig_controller_view_property_removed (view, prop_data->property);
-      break;
-
-    case RIG_TRANSITION_OPERATION_ANIMATED_CHANGED:
-      if (prop_data->animated)
-        rig_controller_view_property_added (view, prop_data->property);
-      else
-        rig_controller_view_property_removed (view, prop_data->property);
+      rig_controller_view_property_removed (view, prop_data->property);
       break;
     }
 }
@@ -2183,8 +2174,7 @@ rig_controller_view_add_property_cb (RigControllerPropData *prop_data,
 {
   RigControllerView *view = user_data;
 
-  if (prop_data->animated)
-    rig_controller_view_property_added (view, prop_data->property);
+  rig_controller_view_property_added (view, prop_data->property);
 }
 
 RigControllerView *
@@ -2236,13 +2226,12 @@ rig_controller_view_new (RutContext *ctx,
   rut_list_init (&view->selected_nodes);
   rut_list_init (&view->objects);
 
-  /* Add all of the existing animated properties from the controller */
+  /* Add all of the existing properties from the controller */
   rig_controller_foreach_property (controller,
                                    rig_controller_view_add_property_cb,
                                    view);
 
-  /* Listen for properties that become animated or not so we can
-   * update the list */
+  /* Listen for properties that added/removed so we can update the list */
   view->controller_op_closure =
     rig_controller_add_operation_callback (controller,
                                            controller_operation_cb,

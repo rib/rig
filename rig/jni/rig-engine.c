@@ -216,19 +216,18 @@ rig_reload_inspector_property (RigEngine *engine,
   if (engine->inspector)
     {
       RigControllerPropData *prop_data;
-      CoglBool animated;
+      CoglBool controlled;
       GList *l;
 
       prop_data =
         rig_controller_find_prop_data_for_property (engine->selected_controller,
                                                     property);
-
-      animated = prop_data && prop_data->animated;
+      controlled = !!prop_data;
 
       for (l = engine->all_inspectors; l; l = l->next)
         {
           rut_inspector_reload_property (l->data, property);
-          rut_inspector_set_property_animated (l->data, property, animated);
+          rut_inspector_set_property_controlled (l->data, property, controlled);
         }
     }
 }
@@ -239,7 +238,7 @@ reload_animated_inspector_properties_cb (RigControllerPropData *prop_data,
 {
   RigEngine *engine = user_data;
 
-  if (prop_data->animated)
+  if (prop_data->method == RIG_CONTROLLER_METHOD_PATH)
     rig_reload_inspector_property (engine, prop_data->property);
 }
 
@@ -343,43 +342,13 @@ inspector_property_changed_cb (RutProperty *target_property,
 }
 
 static void
-inspector_animated_changed_cb (RutProperty *property,
-                               CoglBool value,
-                               void *user_data)
+inspector_controlled_changed_cb (RutProperty *property,
+                                 CoglBool value,
+                                 void *user_data)
 {
   RigEngine *engine = user_data;
-  RigPath *path;
 
-  /* If the property is being initially marked as animated and the
-   * path is empty then for convenience we want to create a node for
-   * the current time. We want this to be undone as a single action so
-   * we'll represent the pair of actions in a subjournal */
-  if (value &&
-      (path = rig_controller_get_path_for_property (engine->selected_controller,
-                                                    property)) &&
-      path->length == 0)
-    {
-      RigUndoJournal *subjournal = rig_undo_journal_new (engine);
-      RutBoxed property_value;
-
-      rut_property_box (property, &property_value);
-
-      rig_undo_journal_set_animated_and_log (subjournal,
-                                             engine->selected_controller,
-                                             property,
-                                             value);
-      rig_undo_journal_set_property_and_log (subjournal,
-                                             FALSE /* mergable */,
-                                             engine->selected_controller,
-                                             &property_value,
-                                             property);
-
-      rig_undo_journal_log_subjournal (engine->undo_journal, subjournal, FALSE);
-
-      rut_boxed_destroy (&property_value);
-    }
-  else
-    rig_undo_journal_set_animated_and_log (engine->undo_journal,
+  rig_undo_journal_set_controlled_and_log (engine->undo_journal,
                                            engine->selected_controller,
                                            property,
                                            value);
@@ -389,13 +358,13 @@ typedef struct
 {
   RigEngine *engine;
   RutInspector *inspector;
-} InitAnimatedStateData;
+} InitControlledStateData;
 
 static void
-init_property_animated_state_cb (RutProperty *property,
-                                 void *user_data)
+init_property_controlled_state_cb (RutProperty *property,
+                                   void *user_data)
 {
-  InitAnimatedStateData *data = user_data;
+  InitControlledStateData *data = user_data;
 
   if (property->spec->animatable)
     {
@@ -405,8 +374,8 @@ init_property_animated_state_cb (RutProperty *property,
       prop_data =
         rig_controller_find_prop_data_for_property (controller, property);
 
-      if (prop_data && prop_data->animated)
-        rut_inspector_set_property_animated (data->inspector, property, TRUE);
+      if (prop_data)
+        rut_inspector_set_property_controlled (data->inspector, property, TRUE);
     }
 }
 
@@ -418,19 +387,19 @@ create_inspector (RigEngine *engine,
     rut_inspector_new (engine->ctx,
                        object,
                        inspector_property_changed_cb,
-                       inspector_animated_changed_cb,
+                       inspector_controlled_changed_cb,
                        engine);
 
   if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
     {
-      InitAnimatedStateData animated_data;
+      InitControlledStateData controlled_data;
 
-      animated_data.engine = engine;
-      animated_data.inspector = inspector;
+      controlled_data.engine = engine;
+      controlled_data.inspector = inspector;
 
       rut_introspectable_foreach_property (object,
-                                           init_property_animated_state_cb,
-                                           &animated_data);
+                                           init_property_controlled_state_cb,
+                                           &controlled_data);
     }
 
   return inspector;
@@ -2431,7 +2400,7 @@ rig_engine_handle_ui_update (RigEngine *engine)
   if (!engine->controllers)
     {
       RigController *controller =
-        rig_controller_new (engine->ctx, "Controller 0");
+        rig_controller_new (engine, "Controller 0");
       engine->controllers = g_list_prepend (engine->controllers, controller);
     }
 
