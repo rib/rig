@@ -72,7 +72,8 @@ source_h = \
     rut-fixed.h \
     rut-fold.h \
     rut-refcount-debug.h \
-    rut-icon-burron.h
+    rut-icon-button.h \
+    rut-asset-inspector.h
 
 librut_la_SOURCES = \
     components/rut-camera.c \
@@ -147,6 +148,12 @@ librut_la_SOURCES = \
     rut-fold.c \
     rut-refcount-debug.c \
     rut-icon-button.c \
+    rut-composite-sizable.h \
+    rut-composite-sizable.c \
+    rut-shim.h \
+    rut-shim.c \
+    rut-asset-inspector.h \
+    rut-asset-inspector.c \
     $(source_h)
 
 if !HAVE_ANDROID

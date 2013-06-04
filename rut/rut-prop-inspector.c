@@ -484,6 +484,18 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
       }
       break;
 
+    case RUT_PROPERTY_TYPE_ASSET:
+      {
+        RutAssetInspector *asset_inspector =
+          rut_asset_inspector_new (context, spec->validation.asset.type);
+
+        *control_prop = rut_introspectable_lookup_property (asset_inspector, "asset");
+        *label_text = name;
+
+        return asset_inspector;
+      }
+      break;
+
     default:
       break;
     }

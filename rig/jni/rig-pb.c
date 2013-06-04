@@ -223,6 +223,7 @@ pb_path_new (RigEngine *engine, RigPath *path)
         case RUT_PROPERTY_TYPE_ENUM:
         case RUT_PROPERTY_TYPE_BOOLEAN:
         case RUT_PROPERTY_TYPE_TEXT:
+        case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
           g_warn_if_reached ();
@@ -304,6 +305,7 @@ pb_property_value_new (RigEngine *engine,
       pb_value->enum_value = value->d.enum_val;
       break;
 
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       g_warn_if_reached ();
@@ -416,7 +418,7 @@ serialize_component_cb (RutComponent *component,
       pb_material->has_shininess = TRUE;
       pb_material->shininess = rut_material_get_shininess (material);
 
-      asset = rut_material_get_texture_asset (material);
+      asset = rut_material_get_color_source_asset (material);
       if (asset)
         {
           uint64_t id = serializer_lookup_object_id (serializer, asset);
@@ -1109,6 +1111,7 @@ pb_init_boxed_value (UnSerializer *unserializer,
       boxed->d.enum_val = pb_value->enum_value;
       break;
 
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       g_warn_if_reached ();
@@ -1266,7 +1269,7 @@ unserialize_components (UnSerializer *unserializer,
                     rut_refable_unref (material);
                     break;
                   }
-                rut_material_set_texture_asset (material, asset);
+                rut_material_set_color_source_asset (material, asset);
               }
 
             if (pb_material->normal_map &&
@@ -1481,7 +1484,7 @@ unserialize_components (UnSerializer *unserializer,
             /* We need to know the size of the texture before we can create
              * a shape component */
             if (material)
-              asset = rut_material_get_texture_asset (material);
+              asset = rut_material_get_color_source_asset (material);
 
             if (asset)
               {
@@ -1545,7 +1548,7 @@ unserialize_components (UnSerializer *unserializer,
             /* We need to know the size of the texture before we can create
              * a diamond component */
             if (material)
-              asset = rut_material_get_texture_asset (material);
+              asset = rut_material_get_color_source_asset (material);
 
             if (asset)
               {
@@ -1608,7 +1611,7 @@ unserialize_components (UnSerializer *unserializer,
                                                  RUT_COMPONENT_TYPE_MATERIAL);
 
             if (material)
-              asset = rut_material_get_texture_asset (material);
+              asset = rut_material_get_color_source_asset (material);
 
             if (asset)
               {
@@ -1886,6 +1889,7 @@ unserialize_path_nodes (UnSerializer *unserializer,
         case RUT_PROPERTY_TYPE_BOOLEAN:
         case RUT_PROPERTY_TYPE_TEXT:
         case RUT_PROPERTY_TYPE_ENUM:
+        case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
           g_warn_if_reached ();

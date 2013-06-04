@@ -55,6 +55,9 @@
 #include "rut-icon-button.h"
 #include "rut-image-source.h"
 #include "rut-drop-down.h"
+#include "rut-composite-sizable.h"
+#include "rut-shim.h"
+#include "rut-asset-inspector.h"
 
 /* entity/components system */
 #include "rut-entity.h"

@@ -31,6 +31,10 @@ struct _RutFixed
   RutObjectProps _parent;
   int ref_count;
 
+  RutContext *context;
+
+  RutList preferred_size_cb_list;
+
   float width;
   float height;
 
@@ -41,6 +45,8 @@ static void
 _rut_fixed_free (void *object)
 {
   RutFixed *fixed = object;
+
+  rut_closure_list_disconnect_all (&fixed->preferred_size_cb_list);
 
   rut_graphable_destroy (fixed);
 
@@ -138,6 +144,10 @@ rut_fixed_new (RutContext *ctx,
 
   fixed->ref_count = 1;
 
+  fixed->context = ctx;
+
+  rut_list_init (&fixed->preferred_size_cb_list);
+
   rut_graphable_init (fixed);
 
   fixed->width = width;
@@ -149,13 +159,13 @@ rut_fixed_new (RutContext *ctx,
 void
 rut_fixed_set_width (RutFixed *fixed, float width)
 {
-  fixed->width = width;
+  rut_fixed_set_size (fixed, width, fixed->height);
 }
 
 void
 rut_fixed_set_height (RutFixed *fixed, float height)
 {
-  fixed->height = height;
+  rut_fixed_set_size (fixed, fixed->width, height);
 }
 
 void
@@ -164,8 +174,16 @@ rut_fixed_set_size (RutObject *self,
                     float height)
 {
   RutFixed *fixed = self;
+
+  if (fixed->width == width && fixed->height == height)
+    return;
+
   fixed->width = width;
   fixed->height = height;
+
+  rut_closure_list_invoke (&fixed->preferred_size_cb_list,
+                           RutSizablePreferredSizeCallback,
+                           fixed);
 }
 
 void

@@ -5,13 +5,7 @@
 #include <gio/gio.h>
 #include <cogl-gst/cogl-gst.h>
 
-typedef enum _RutAssetType {
-  RUT_ASSET_TYPE_BUILTIN,
-  RUT_ASSET_TYPE_TEXTURE,
-  RUT_ASSET_TYPE_NORMAL_MAP,
-  RUT_ASSET_TYPE_ALPHA_MASK,
-  RUT_ASSET_TYPE_PLY_MODEL,
-} RutAssetType;
+#include "rut-types.h"
 
 extern RutType rut_asset_type;
 typedef struct _RutAsset RutAsset;

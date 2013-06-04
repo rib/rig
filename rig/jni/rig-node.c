@@ -17,9 +17,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <math.h>
 
@@ -268,6 +266,7 @@ rig_node_box (RutPropertyType type,
     case RUT_PROPERTY_TYPE_ENUM:
     case RUT_PROPERTY_TYPE_BOOLEAN:
     case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       break;
@@ -320,6 +319,7 @@ rig_node_free (RutPropertyType type,
     case RUT_PROPERTY_TYPE_ENUM:
     case RUT_PROPERTY_TYPE_BOOLEAN:
     case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       break;

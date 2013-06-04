@@ -116,6 +116,7 @@ get_type_size (RutPropertyType type)
     case RUT_PROPERTY_TYPE_BOOLEAN:
     case RUT_PROPERTY_TYPE_TEXT:
     case RUT_PROPERTY_TYPE_OBJECT:
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_POINTER:
       break;
     }
@@ -673,6 +674,7 @@ rig_path_lerp_property (RigPath *path,
     case RUT_PROPERTY_TYPE_ENUM:
     case RUT_PROPERTY_TYPE_BOOLEAN:
     case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       g_warn_if_reached ();
@@ -743,6 +745,7 @@ rig_path_insert_boxed (RigPath *path,
     case RUT_PROPERTY_TYPE_ENUM:
     case RUT_PROPERTY_TYPE_BOOLEAN:
     case RUT_PROPERTY_TYPE_TEXT:
+    case RUT_PROPERTY_TYPE_ASSET:
     case RUT_PROPERTY_TYPE_OBJECT:
     case RUT_PROPERTY_TYPE_POINTER:
       break;

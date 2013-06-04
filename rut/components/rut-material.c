@@ -28,6 +28,16 @@
 
 static RutPropertySpec _rut_material_prop_specs[] = {
   {
+    .name = "color_source",
+    .nick = "Color Source",
+    .type = RUT_PROPERTY_TYPE_ASSET,
+    .validation = { .asset.type = RUT_ASSET_TYPE_TEXTURE },
+    .getter.object_type = rut_material_get_color_source_asset,
+    .setter.object_type = rut_material_set_color_source_asset,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = FALSE
+  },
+  {
     .name = "ambient",
     .nick = "Ambient",
     .type = RUT_PROPERTY_TYPE_COLOR,
@@ -95,8 +105,8 @@ _rut_material_free (void *object)
 {
   RutMaterial *material = object;
 
-  if (material->texture_asset)
-    rut_refable_unref (material->texture_asset);
+  if (material->color_source_asset)
+    rut_refable_unref (material->color_source_asset);
 
   if (material->normal_map_asset)
     rut_refable_unref (material->normal_map_asset);
@@ -162,7 +172,7 @@ rut_material_new (RutContext *ctx,
 
   material->uniforms_flush_age = -1;
 
-  material->texture_asset = NULL;
+  material->color_source_asset = NULL;
   material->normal_map_asset = NULL;
   material->alpha_mask_asset = NULL;
 
@@ -171,7 +181,7 @@ rut_material_new (RutContext *ctx,
       switch (rut_asset_get_type (asset))
         {
         case RUT_ASSET_TYPE_TEXTURE:
-          material->texture_asset = rut_refable_ref (asset);
+          material->color_source_asset = rut_refable_ref (asset);
           break;
         case RUT_ASSET_TYPE_NORMAL_MAP:
           material->normal_map_asset = rut_refable_ref (asset);
@@ -188,23 +198,26 @@ rut_material_new (RutContext *ctx,
 }
 
 void
-rut_material_set_texture_asset (RutMaterial *material,
-                                RutAsset *texture_asset)
+rut_material_set_color_source_asset (RutObject *object,
+                                     RutAsset *color_source_asset)
 {
-  if (material->texture_asset)
+  RutMaterial *material = object;
+
+  if (material->color_source_asset)
     {
-      rut_refable_unref (material->texture_asset);
-      material->texture_asset = NULL;
+      rut_refable_unref (material->color_source_asset);
+      material->color_source_asset = NULL;
     }
 
-  if (texture_asset)
-    material->texture_asset = rut_refable_ref (texture_asset);
+  if (color_source_asset)
+    material->color_source_asset = rut_refable_ref (color_source_asset);
 }
 
-RutAsset *
-rut_material_get_texture_asset (RutMaterial *material)
+RutObject *
+rut_material_get_color_source_asset (RutObject *object)
 {
-  return material->texture_asset;
+  RutMaterial *material = object;
+  return material->color_source_asset;
 }
 
 void
@@ -386,7 +399,7 @@ rut_material_flush_uniforms (RutMaterial *material,
   geo = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
 
   if (rut_object_get_type (geo) == &rut_pointalism_grid_type &&
-      material->texture_asset)
+      material->color_source_asset)
     {
       int scale, z;
       scale = rut_pointalism_grid_get_scale (geo);

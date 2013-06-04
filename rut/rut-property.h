@@ -29,6 +29,7 @@ typedef enum _RutPropertyType
   RUT_PROPERTY_TYPE_VEC4,
   RUT_PROPERTY_TYPE_COLOR,
   RUT_PROPERTY_TYPE_OBJECT,
+  RUT_PROPERTY_TYPE_ASSET,
   RUT_PROPERTY_TYPE_POINTER,
 } RutPropertyType;
 
@@ -61,6 +62,7 @@ typedef struct _RutBoxed
       float vec4_val[4];
       CoglColor color_val;
       RutObject *object_val;
+      RutObject *asset_val;
       void *pointer_val;
     } d;
 } RutBoxed;
@@ -95,6 +97,11 @@ typedef struct _RutPropertyValidationObject
   RutType *type;
 } RutPropertyValidationObject;
 
+typedef struct _RutPropertyValidationAsset
+{
+  RutAssetType type;
+} RutPropertyValidationAsset;
+
 typedef union _RutPropertyValidation
 {
   RutPropertyValidationInteger int_range;
@@ -102,6 +109,7 @@ typedef union _RutPropertyValidation
   RutPropertyValidationVec3 vec3_range;
   RutPropertyValidationVec4 vec4_range;
   RutPropertyValidationObject object;
+  RutPropertyValidationAsset asset;
   const RutUIEnum *ui_enum;
 } RutPropertyValidation;
 
@@ -147,6 +155,7 @@ typedef struct _RutPropertySpec
     const float *(* vec3_type) (void *object);
     const float *(* vec4_type) (void *object);
     void *(* object_type) (void *object);
+    void *(* asset_type) (void *object);
     void *(* pointer_type) (void *object);
 
     /* This is just used to check the pointer against NULL */
@@ -168,6 +177,7 @@ typedef struct _RutPropertySpec
     void (* vec3_type) (void *object, const float value[3]);
     void (* vec4_type) (void *object, const float value[4]);
     void (* object_type) (void *object, void *value);
+    void (* asset_type) (void *object, void *value);
     void (* pointer_type) (void *object, void *value);
 
     /* This is just used to check the pointer against NULL */

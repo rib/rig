@@ -74,6 +74,14 @@ typedef enum _RutAxis
   RUT_AXIS_Z
 } RutAxis;
 
+typedef enum _RutAssetType {
+  RUT_ASSET_TYPE_BUILTIN,
+  RUT_ASSET_TYPE_TEXTURE,
+  RUT_ASSET_TYPE_NORMAL_MAP,
+  RUT_ASSET_TYPE_ALPHA_MASK,
+  RUT_ASSET_TYPE_PLY_MODEL,
+} RutAssetType;
+
 typedef struct _RutPreferredSize
 {
   float natural_size;

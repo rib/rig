@@ -776,7 +776,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 
           if (type == RUT_ASSET_TYPE_TEXTURE)
             {
-              rut_material_set_texture_asset (material, asset);
+              rut_material_set_color_source_asset (material, asset);
 
               /* XXX: we need a generalized way of informing the
                * renderer that we've changed an entity so that it
@@ -912,7 +912,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (material)
             {
               RutAsset *texture_asset =
-                rut_material_get_texture_asset (material);
+                rut_material_get_color_source_asset (material);
               if (texture_asset)
                 {
                   if (rut_asset_get_is_video (texture_asset))
@@ -963,7 +963,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (material)
             {
               RutAsset *texture_asset =
-                rut_material_get_texture_asset (material);
+                rut_material_get_color_source_asset (material);
               if (texture_asset)
                 {
                   if (rut_asset_get_is_video (texture_asset))
@@ -994,7 +994,6 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_renderer_dirty_entity_state (entity);
           rut_entity_set_primitive_cache (entity, 0, NULL);
         }
-
       else if (asset == engine->pointalism_grid_builtin_asset)
         {
           RutPointalismGrid *grid;
@@ -1018,7 +1017,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (material)
             {
               RutAsset *texture_asset =
-                rut_material_get_texture_asset (material);
+                rut_material_get_color_source_asset (material);
               if (texture_asset)
                 {
                   if (rut_asset_get_is_video (texture_asset))

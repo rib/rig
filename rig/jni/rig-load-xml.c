@@ -1271,7 +1271,7 @@ parse_end_element (GMarkupParseContext *context,
       /* We need to know the size of the texture before we can create
        * a shape component */
       if (material)
-        asset = rut_material_get_texture_asset (material);
+        asset = rut_material_get_color_source_asset (material);
 
       if (asset)
         texture = rut_asset_get_texture (asset);
@@ -1310,7 +1310,7 @@ parse_end_element (GMarkupParseContext *context,
       /* We need to know the size of the texture before we can create
        * a diamond component */
       if (material)
-        asset = rut_material_get_texture_asset (material);
+        asset = rut_material_get_color_source_asset (material);
 
       if (asset)
         texture = rut_asset_get_texture (asset);
@@ -1358,7 +1358,7 @@ parse_end_element (GMarkupParseContext *context,
                            "Invalid asset id");
               return;
             }
-          rut_material_set_texture_asset (material, asset);
+          rut_material_set_color_source_asset (material, asset);
         }
 
       if (loader->normal_map_specified)

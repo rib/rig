@@ -28,6 +28,7 @@ typedef struct _RutMaterial RutMaterial;
 extern RutType rut_material_type;
 
 enum {
+  RUT_MATERIAL_PROP_COLOR_SOURCE,
   RUT_MATERIAL_PROP_AMBIENT,
   RUT_MATERIAL_PROP_DIFFUSE,
   RUT_MATERIAL_PROP_SPECULAR,
@@ -43,7 +44,7 @@ struct _RutMaterial
   int ref_count;
 
   RutComponentableProps component;
-  RutAsset *texture_asset;
+  RutAsset *color_source_asset;
   RutAsset *normal_map_asset;
   RutAsset *alpha_mask_asset;
 
@@ -69,11 +70,11 @@ rut_material_new (RutContext *ctx,
                   RutAsset *asset);
 
 void
-rut_material_set_texture_asset (RutMaterial *material,
-                                RutAsset *asset);
+rut_material_set_color_source_asset (RutObject *object,
+                                     RutAsset *asset);
 
-RutAsset *
-rut_material_get_texture_asset (RutMaterial *material);
+RutObject *
+rut_material_get_color_source_asset (RutObject *object);
 
 void
 rut_material_set_normal_map_asset (RutMaterial *material,
