@@ -24,6 +24,7 @@
 #include "components/rut-model.h"
 #include "components/rut-material.h"
 #include "components/rut-camera.h"
+#include "components/rut-nine-slice.h"
 #include "components/rut-diamond.h"
 #include "components/rut-shape.h"
 #include "components/rut-pointalism-grid.h"

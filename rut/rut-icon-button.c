@@ -27,7 +27,7 @@
 #include "rut-paintable.h"
 #include "components/rut-camera.h"
 #include "rut-transform.h"
-#include "rut-nine-slice.h"
+#include "components/rut-nine-slice.h"
 #include "rut-stack.h"
 #include "rut-box-layout.h"
 #include "rut-icon-button.h"

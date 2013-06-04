@@ -22,7 +22,6 @@
 #include "rut-graph.h"
 #include "rut-transform.h"
 #include "rut-rectangle.h"
-#include "rut-nine-slice.h"
 #include "rut-timeline.h"
 #include "rut-display-list.h"
 #include "rut-arcball.h"

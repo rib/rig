@@ -41,6 +41,9 @@ typedef struct _Serializer
   int n_pb_properties;
   GList *pb_properties;
 
+  int n_properties;
+  void **properties_out;
+
   int next_id;
   GHashTable *id_map;
 } Serializer;
@@ -315,6 +318,63 @@ pb_property_value_new (RigEngine *engine,
   return pb_value;
 }
 
+Rig__PropertyType
+rut_property_type_to_pb_type (RutPropertyType type)
+{
+  switch (type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      return RIG__PROPERTY_TYPE__FLOAT;
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      return RIG__PROPERTY_TYPE__DOUBLE;
+    case RUT_PROPERTY_TYPE_INTEGER:
+      return RIG__PROPERTY_TYPE__INTEGER;
+    case RUT_PROPERTY_TYPE_ENUM:
+      return RIG__PROPERTY_TYPE__ENUM;
+    case RUT_PROPERTY_TYPE_UINT32:
+      return RIG__PROPERTY_TYPE__UINT32;
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+      return RIG__PROPERTY_TYPE__BOOLEAN;
+    case RUT_PROPERTY_TYPE_TEXT:
+      return RIG__PROPERTY_TYPE__TEXT;
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      return RIG__PROPERTY_TYPE__QUATERNION;
+    case RUT_PROPERTY_TYPE_VEC3:
+      return RIG__PROPERTY_TYPE__VEC3;
+    case RUT_PROPERTY_TYPE_VEC4:
+      return RIG__PROPERTY_TYPE__VEC4;
+    case RUT_PROPERTY_TYPE_COLOR:
+      return RIG__PROPERTY_TYPE__COLOR;
+    case RUT_PROPERTY_TYPE_OBJECT:
+      return RIG__PROPERTY_TYPE__OBJECT;
+    case RUT_PROPERTY_TYPE_ASSET:
+      return RIG__PROPERTY_TYPE__ASSET;
+
+    case RUT_PROPERTY_TYPE_POINTER:
+      g_warn_if_reached ();
+      return RIG__PROPERTY_TYPE__OBJECT;
+    }
+
+  g_warn_if_reached ();
+  return 0;
+}
+
+Rig__Boxed *
+pb_boxed_new (RigEngine *engine,
+              const char *name,
+              const RutBoxed *boxed)
+{
+  Rig__Boxed *pb_boxed =
+    pb_new (engine, sizeof (Rig__Boxed), rig__boxed__init);
+
+  pb_boxed->name = (char *)name;
+  pb_boxed->has_type = TRUE;
+  pb_boxed->type = rut_property_type_to_pb_type (boxed->type);
+  pb_boxed->value = pb_property_value_new (engine, boxed);
+
+  return pb_boxed;
+}
+
 static void
 register_serializer_object (Serializer *serializer,
                       void *object,
@@ -352,8 +412,58 @@ serializer_lookup_object_id (Serializer *serializer, void *object)
 }
 
 static void
+count_instrospectables_cb (RutProperty *property,
+                           void *user_data)
+{
+  Serializer *serializer = user_data;
+  serializer->n_properties++;
+}
+
+static void
+serialize_instrospectables_cb (RutProperty *property,
+                               void *user_data)
+{
+  Serializer *serializer = user_data;
+  void **properties_out = serializer->properties_out;
+  RutBoxed boxed;
+
+  rut_property_box (property, &boxed);
+
+  properties_out[serializer->n_properties++] =
+    pb_boxed_new (serializer->engine,
+                  property->spec->name,
+                  &boxed);
+
+  rut_boxed_destroy (&boxed);
+}
+
+static void
+serialize_instrospectable_properties (RutObject *object,
+                                      size_t *n_properties_out,
+                                      void **properties_out,
+                                      Serializer *serializer)
+{
+  RigEngine *engine = serializer->engine;
+
+  serializer->n_properties = 0;
+  rut_introspectable_foreach_property (object,
+                                       count_instrospectables_cb,
+                                       serializer);
+  *n_properties_out = serializer->n_properties;
+
+  serializer->properties_out = *properties_out =
+    rut_memory_stack_alloc (engine->serialization_stack,
+                            sizeof (void *) * serializer->n_properties);
+
+  serializer->n_properties = 0;
+  rut_introspectable_foreach_property (object,
+                                       serialize_instrospectables_cb,
+                                       serializer);
+}
+
+static void
 serialize_component_cb (RutComponent *component,
-                   void *user_data)
+                        void *user_data)
 {
   const RutType *type = rut_object_get_type (component);
   Serializer *serializer = user_data;
@@ -601,6 +711,14 @@ serialize_component_cb (RutComponent *component,
       pb_camera->far_plane = camera->far;
 
       pb_camera->background = pb_color_new (engine, &camera->bg_color);
+    }
+  else if (type == &rut_nine_slice_type)
+    {
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE;
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
 }
 
@@ -1191,6 +1309,107 @@ unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
   return RUT_ENTITY (object);
 }
 
+static void
+set_property_from_pb_boxed (UnSerializer *unserializer,
+                            RutProperty *property,
+                            Rig__Boxed *pb_boxed)
+{
+  RutPropertyType type;
+  RutBoxed boxed;
+
+  if (!pb_boxed->value)
+    {
+      collect_error (unserializer, "Boxed property has no value");
+      return;
+    }
+
+  if (!pb_boxed->has_type)
+    {
+      collect_error (unserializer, "Boxed property has no type");
+      return;
+    }
+
+  switch (pb_boxed->type)
+    {
+    case RIG__PROPERTY_TYPE__FLOAT:
+      type = RUT_PROPERTY_TYPE_FLOAT;
+      break;
+    case RIG__PROPERTY_TYPE__DOUBLE:
+      type = RUT_PROPERTY_TYPE_DOUBLE;
+      break;
+    case RIG__PROPERTY_TYPE__INTEGER:
+      type = RUT_PROPERTY_TYPE_INTEGER;
+      break;
+    case RIG__PROPERTY_TYPE__ENUM:
+      type = RUT_PROPERTY_TYPE_ENUM;
+      break;
+    case RIG__PROPERTY_TYPE__UINT32:
+      type = RUT_PROPERTY_TYPE_UINT32;
+      break;
+    case RIG__PROPERTY_TYPE__BOOLEAN:
+      type = RUT_PROPERTY_TYPE_BOOLEAN;
+      break;
+    case RIG__PROPERTY_TYPE__OBJECT:
+      type = RUT_PROPERTY_TYPE_OBJECT;
+      break;
+    case RIG__PROPERTY_TYPE__POINTER:
+      type = RUT_PROPERTY_TYPE_POINTER;
+      break;
+    case RIG__PROPERTY_TYPE__QUATERNION:
+      type = RUT_PROPERTY_TYPE_QUATERNION;
+      break;
+    case RIG__PROPERTY_TYPE__COLOR:
+      type = RUT_PROPERTY_TYPE_COLOR;
+      break;
+    case RIG__PROPERTY_TYPE__VEC3:
+      type = RUT_PROPERTY_TYPE_VEC3;
+      break;
+    case RIG__PROPERTY_TYPE__VEC4:
+      type = RUT_PROPERTY_TYPE_VEC4;
+      break;
+    case RIG__PROPERTY_TYPE__TEXT:
+      type = RUT_PROPERTY_TYPE_TEXT;
+      break;
+    case RIG__PROPERTY_TYPE__ASSET:
+      type = RUT_PROPERTY_TYPE_ASSET;
+      break;
+    }
+
+  pb_init_boxed_value (unserializer,
+                       &boxed,
+                       type,
+                       pb_boxed->value);
+
+  rut_property_set_boxed (&unserializer->engine->ctx->property_ctx,
+                          property, &boxed);
+}
+
+static void
+set_properties_from_pb_boxed_values (UnSerializer *unserializer,
+                                     RutObject *object,
+                                     size_t n_properties,
+                                     Rig__Boxed **properties)
+{
+  int i;
+
+  for (i = 0; i < n_properties; i++)
+    {
+      Rig__Boxed *pb_boxed = properties[i];
+      RutProperty *property =
+        rut_introspectable_lookup_property (object, pb_boxed->name);
+
+      if (!property)
+        {
+          collect_error (unserializer,
+                         "Unknown property %s for object of type %s",
+                         pb_boxed->name,
+                         rut_object_get_type_name (object));
+          continue;
+        }
+
+      set_property_from_pb_boxed (unserializer, property, pb_boxed);
+    }
+}
 
 static void
 unserialize_components (UnSerializer *unserializer,
@@ -1323,6 +1542,7 @@ unserialize_components (UnSerializer *unserializer,
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
+        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
         case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
         case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
           break;
@@ -1527,6 +1747,24 @@ unserialize_components (UnSerializer *unserializer,
                     rut_refable_unref (material);
                   }
               }
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
+          {
+            RutNineSlice *nine_slice =
+              rut_nine_slice_new (unserializer->engine->ctx,
+                                  NULL,
+                                  0, 0, 0, 0, /* left, right, top, bottom */
+                                  0, 0); /* width, height */
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 nine_slice,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+
+            rut_entity_add_component (entity, nine_slice);
+
+            register_unserializer_object (unserializer, nine_slice, component_id);
+
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:

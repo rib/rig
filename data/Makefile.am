@@ -24,6 +24,7 @@ dist_assets_DATA = \
 	fonts.png \
 	circle.png \
 	diamond.png \
+	nine-slice.png \
 	color-picker-dot.png \
 	resize-handle.png \
 	top-bar-gradient.png \

@@ -82,11 +82,51 @@ message OrthoCoords
   required float y1=4;
 }
 
+enum PropertyType { FLOAT=1;
+                    DOUBLE=2;
+                    INTEGER=3;
+                    ENUM=4;
+                    UINT32=5;
+                    BOOLEAN=6;
+                    OBJECT=7;
+                    POINTER=8;
+                    QUATERNION=9;
+                    COLOR=10;
+                    VEC3=11;
+                    VEC4=12;
+                    TEXT=13;
+                    ASSET=14; }
+
+message PropertyValue
+{
+  optional float float_value=2;
+  optional double double_value=3;
+  optional sint32 integer_value=4;
+  optional int32 enum_value=5;
+  optional int32 uint32_value=6;
+  optional bool boolean_value=7;
+  optional sint64 object_value=8;
+  //XXX: we never expect to serialize a pointer
+  optional Rotation quaternion_value=9;
+  optional Color color_value=10;
+  optional Vec3 vec3_value=12;
+  optional Vec4 vec4_value=13;
+
+  optional string text_value=14;
+}
+
+message Boxed
+{
+  optional string name=1;
+  optional PropertyType type=2;
+  optional PropertyValue value=3;
+}
+
 message Entity
 {
   message Component
     {
-      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; CAMERA=7; POINTALISM_GRID=8; }
+      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; }
 
       message Light
         {
@@ -172,6 +212,9 @@ message Entity
       optional Text text=8;
       optional Camera camera=9;
       optional PointalismGrid grid=10;
+
+      //introspectable properties...
+      repeated Boxed properties=11;
     }
 
   optional sint64 id=1;
@@ -184,37 +227,6 @@ message Entity
   optional bool cast_shadow=7;
 
   repeated Component components=8;
-}
-
-enum PropertyType { FLOAT=1;
-                    DOUBLE=2;
-                    INTEGER=3;
-                    ENUM=4;
-                    UINT32=5;
-                    BOOLEAN=6;
-                    OBJECT=7;
-                    POINTER=8;
-                    QUATERNION=9;
-                    COLOR=10;
-                    VEC3=11;
-                    VEC4=12; }
-
-message PropertyValue
-{
-  optional float float_value=2;
-  optional double double_value=3;
-  optional sint32 integer_value=4;
-  optional int32 enum_value=5;
-  optional int32 uint32_value=6;
-  optional bool boolean_value=7;
-  optional sint64 object_value=8;
-  //XXX: we never expect to serialize a pointer
-  optional Rotation quaternion_value=9;
-  optional Color color_value=10;
-  optional Vec3 vec3_value=12;
-  optional Vec4 vec4_value=13;
-
-  optional string text_value=14;
 }
 
 message Constant

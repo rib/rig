@@ -8,6 +8,7 @@ components_source_h = \
     components/rut-material.h \
     components/rut-diamond.h \
     components/rut-shape.h \
+    components/rut-nine-slice.h \
     components/rut-pointalism-grid.h
 
 source_h = \
@@ -68,7 +69,6 @@ source_h = \
     rut-graph.h \
     rut-transform.h \
     rut-rectangle.h \
-    rut-nine-slice.h \
     rut-fixed.h \
     rut-fold.h \
     rut-refcount-debug.h \
@@ -82,6 +82,7 @@ librut_la_SOURCES = \
     components/rut-material.c \
     components/rut-diamond.c \
     components/rut-shape.c \
+    components/rut-nine-slice.c \
     components/rut-pointalism-grid.c \
     rply.c \
     rply.h \
@@ -143,7 +144,6 @@ librut_la_SOURCES = \
     rut-graph.c \
     rut-transform.c \
     rut-rectangle.c \
-    rut-nine-slice.c \
     rut-fixed.c \
     rut-fold.c \
     rut-refcount-debug.c \

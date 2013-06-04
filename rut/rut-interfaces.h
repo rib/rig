@@ -339,4 +339,21 @@ typedef struct _RutInputableProps
 RutInputRegion *
 rut_inputable_get_input_region (RutObject *object);
 
+/*
+ * Image Size Dependant Interface
+ *
+ * This implies the object is related in some way to an image whose
+ * size affects the internal state of the object.
+ *
+ * For example a NineSlice's geometry depends on the size of the
+ * texture being drawn, and the geometry of a pointalism component
+ * depends on the size of the image.
+ */
+typedef struct _RutImageSizeDependantVTable
+{
+  void (*set_image_size)(RutObject *object,
+                         int width,
+                         int height);
+} RutImageSizeDependantVTable;
+
 #endif /* _RUT_INTERFACES_H_ */

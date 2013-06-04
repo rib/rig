@@ -994,6 +994,59 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_renderer_dirty_entity_state (entity);
           rut_entity_set_primitive_cache (entity, 0, NULL);
         }
+      else if (asset == engine->nine_slice_builtin_asset)
+        {
+          RutNineSlice *nine_slice;
+          int tex_width = 200, tex_height = 200;
+
+          geom = rut_entity_get_component (entity,
+                                           RUT_COMPONENT_TYPE_GEOMETRY);
+
+          if (geom && rut_object_get_type (geom) == &rut_nine_slice_type)
+            break;
+          else if (geom)
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+
+          material =
+            rut_entity_get_component (entity,
+                                      RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (material)
+            {
+              RutAsset *color_source_asset =
+                rut_material_get_color_source_asset (material);
+              if (color_source_asset)
+                {
+                  if (rut_asset_get_is_video (color_source_asset))
+                    {
+                      /* XXX: until we start decoding the
+                       * video we don't know the size of the
+                       * video so for now we just assume a
+                       * default size. Maybe we should just
+                       * decode a single frame to find out the
+                       * size? */
+                      tex_width = 640;
+                      tex_height = 480;
+                    }
+                  else
+                    {
+                      CoglTexture *texture =
+                        rut_asset_get_texture (color_source_asset);
+                      tex_width = cogl_texture_get_width (texture);
+                      tex_height = cogl_texture_get_height (texture);
+                    }
+                }
+            }
+
+          nine_slice = rut_nine_slice_new (engine->ctx, NULL,
+                                           0, 0, 0, 0,
+                                           tex_width, tex_height);
+          rig_undo_journal_add_component_and_log (sub_journal,
+                                                  entity, nine_slice);
+
+          rig_renderer_dirty_entity_state (entity);
+          rut_entity_set_primitive_cache (entity, 0, NULL);
+        }
       else if (asset == engine->pointalism_grid_builtin_asset)
         {
           RutPointalismGrid *grid;
@@ -1519,6 +1572,13 @@ connect_pressed_cb (RutIconButton *button,
 static void
 load_builtin_assets (RigEngine *engine)
 {
+
+  engine->nine_slice_builtin_asset = rut_asset_new_builtin (engine->ctx, "nine-slice.png");
+  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "nine-slice");
+  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geom");
+  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geometry");
+
   engine->diamond_builtin_asset = rut_asset_new_builtin (engine->ctx, "diamond.png");
   rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
   rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
@@ -1553,6 +1613,7 @@ load_builtin_assets (RigEngine *engine)
 static void
 free_builtin_assets (RigEngine *engine)
 {
+  rut_refable_unref (engine->nine_slice_builtin_asset);
   rut_refable_unref (engine->diamond_builtin_asset);
   rut_refable_unref (engine->circle_builtin_asset);
   rut_refable_unref (engine->pointalism_grid_builtin_asset);
@@ -3166,6 +3227,10 @@ rig_load_asset_list (RigEngine *engine)
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
 
   enumerate_dir_for_assets (engine, assets_dir);
+
+  rut_refable_ref (engine->nine_slice_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->nine_slice_builtin_asset);
 
   rut_refable_ref (engine->diamond_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,

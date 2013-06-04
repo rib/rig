@@ -147,6 +147,7 @@ struct _RigEngine
 
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
+  RutAsset *nine_slice_builtin_asset;
   RutAsset *diamond_builtin_asset;
   RutAsset *pointalism_grid_builtin_asset;
   GList *asset_input_closures;
