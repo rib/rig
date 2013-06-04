@@ -30,12 +30,14 @@
 #include "rut.h"
 
 #include "rig-controller-view.h"
+#include "rig-undo-journal.h"
+#include "rig-engine.h"
 
 /* The number of controls to display for each property. Currently
  * there is only the label for the property name but there is an
  * expectation that we will add more controls here so the layout is
  * treated as a grid with the potential for more controls */
-#define RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS 1
+#define RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS 2
 /* Same for the number of controls per object */
 #define RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS 1
 
@@ -87,7 +89,7 @@ typedef struct
   /* Pointer back to the parent object */
   RigControllerViewObject *object;
 
-  RutProperty *property;
+  RigControllerPropData *prop_data;
   RigPath *path;
 
   RigControllerViewControl controls[RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS];
@@ -99,6 +101,11 @@ typedef struct
    * faster by only checking in the selected nodes list for paths for
    * properties that have selected nodes */
   CoglBool has_selected_nodes;
+
+  /* Used to temporarily ignore notifications of control changes in
+   * cases where we are updating the controls ourselves, to avoid
+   * recursion. */
+  bool re_syncing;
 } RigControllerViewProperty;
 
 struct _RigControllerViewObject
@@ -122,6 +129,7 @@ struct _RigControllerView
 {
   RutObjectProps _parent;
 
+  RigEngine *engine;
   RutContext *context;
   RigController *controller;
   RutClosure *controller_op_closure;
@@ -188,7 +196,7 @@ typedef struct
 {
   RutList list_node;
 
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data;
   RigNode *node;
 
   /* While dragging nodes, this will be used to store the original
@@ -230,7 +238,7 @@ rig_controller_view_clear_selected_nodes (RigControllerView *view)
 
   rut_list_for_each_safe (selected_node, t, &view->selected_nodes, list_node)
     {
-      selected_node->prop_data->has_selected_nodes = FALSE;
+      selected_node->prop_view_data->has_selected_nodes = FALSE;
       g_slice_free (RigControllerViewSelectedNode, selected_node);
     }
 
@@ -269,11 +277,11 @@ _rig_controller_view_free (void *object)
 
       do
         {
-          RigControllerViewProperty *prop_data =
-            rut_container_of (object->properties.next, prop_data, list_node);
-          RutProperty *property = prop_data->property;
+          RigControllerViewProperty *prop_view_data =
+            rut_container_of (object->properties.next, prop_view_data, list_node);
+          RutProperty *property = prop_view_data->prop_data->property;
 
-          was_last = prop_data->list_node.next == &object->properties;
+          was_last = prop_view_data->list_node.next == &object->properties;
 
           rig_controller_view_property_removed (view, property);
         }
@@ -294,24 +302,10 @@ _rig_controller_view_free (void *object)
 
   rut_shell_remove_pre_paint_callback (view->context->shell, view);
 
-  rut_refable_unref (view->context);
-
   rut_graphable_destroy (view);
 
   g_slice_free (RigControllerView, view);
 }
-
-RutRefCountableVTable _rig_controller_view_ref_countable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rig_controller_view_free
-};
-
-static RutGraphableVTable _rig_controller_view_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static CoglAttributeBuffer *
 rig_controller_view_create_dots_buffer (RigControllerView *view)
@@ -355,7 +349,7 @@ rig_controller_view_create_dots_primitive (RigControllerView *view)
 typedef struct
 {
   RigControllerView *view;
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data;
 
   RigControllerViewDotVertex *v;
   int row_pos;
@@ -384,7 +378,7 @@ rig_controller_view_add_dot_selected (RigControllerViewDotData *dot_data,
 
   rut_list_for_each (selected_node, &dot_data->view->selected_nodes, list_node)
     {
-      if (selected_node->prop_data == dot_data->prop_data &&
+      if (selected_node->prop_view_data == dot_data->prop_view_data &&
           selected_node->node == node)
         {
           color = RIG_TRANSITION_VIEW_SELECTED_COLOR;
@@ -436,14 +430,22 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
     {
       dot_data.row_pos++;
 
-      rut_list_for_each (dot_data.prop_data, &object->properties, list_node)
+      rut_list_for_each (dot_data.prop_view_data, &object->properties, list_node)
         {
-          RigPath *path =
-            rig_controller_get_path_for_property (view->controller,
-                                                  dot_data.prop_data->property);
+          RigControllerPropData *prop_data = dot_data.prop_view_data->prop_data;
+          RigPath *path;
           RigNode *node;
 
-          if (dot_data.prop_data->has_selected_nodes)
+          if (prop_data->method != RIG_CONTROLLER_METHOD_PATH)
+            {
+              dot_data.row_pos++;
+              continue;
+            }
+
+          path = rig_controller_get_path_for_property (view->controller,
+                                                       prop_data->property);
+
+          if (dot_data.prop_view_data->has_selected_nodes)
             rut_list_for_each (node, &path->nodes, list_node)
               rig_controller_view_add_dot_selected (&dot_data,
                                                     node);
@@ -467,8 +469,6 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
                             NULL);
       g_free (buffer_data);
     }
-
-  g_assert (dot_data.v - buffer_data == view->n_dots);
 }
 
 static void
@@ -695,10 +695,6 @@ _rig_controller_view_paint (RutObject *object,
   cogl_framebuffer_pop_clip (fb);
 }
 
-RutPaintableVTable _rig_controller_view_paintable_vtable = {
-  _rig_controller_view_paint
-};
-
 static void
 rig_controller_view_allocate_cb (RutObject *graphable,
                                  void *user_data)
@@ -717,7 +713,7 @@ rig_controller_view_allocate_cb (RutObject *graphable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
@@ -739,11 +735,11 @@ rig_controller_view_allocate_cb (RutObject *graphable,
             row_height = height;
         }
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (prop_view_data, &object->properties, list_node)
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigControllerViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_view_data->controls + i;
               float width, height;
 
               rut_sizable_get_preferred_width (control->control,
@@ -770,7 +766,7 @@ rig_controller_view_allocate_cb (RutObject *graphable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
       float x = 0.0f;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
@@ -791,13 +787,13 @@ rig_controller_view_allocate_cb (RutObject *graphable,
           row_num++;
         }
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (prop_view_data, &object->properties, list_node)
         {
           x = 0.0f;
 
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigControllerViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_view_data->controls + i;
               int width = nearbyintf (column_widths[i]);
 
               if (i == 0)
@@ -806,7 +802,6 @@ rig_controller_view_allocate_cb (RutObject *graphable,
                   width -= RIG_TRANSITION_VIEW_PROPERTY_INDENTATION;
                 }
 
-              x = nearbyintf (x + RIG_TRANSITION_VIEW_PADDING);
               rut_transform_init_identity (control->transform);
               rut_transform_translate (control->transform,
                                        x,
@@ -815,9 +810,9 @@ rig_controller_view_allocate_cb (RutObject *graphable,
               rut_sizable_set_size (control->control,
                                     width,
                                     nearbyintf (row_height));
-
-              row_num++;
+              x = nearbyintf (x + RIG_TRANSITION_VIEW_PADDING + width);
             }
+          row_num++;
         }
     }
 
@@ -921,7 +916,7 @@ rig_controller_view_get_preferred_width (void *sizable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
 
       for (i = 0; i < RIG_TRANSITION_VIEW_N_OBJECT_CONTROLS; i++)
         {
@@ -933,11 +928,11 @@ rig_controller_view_get_preferred_width (void *sizable,
                                 natural_column_widths + i);
         }
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (prop_view_data, &object->properties, list_node)
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigControllerViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_view_data->controls + i;
 
               handle_control_width (control,
                                     i == 0.0f ?
@@ -992,7 +987,7 @@ rig_controller_view_get_preferred_height (void *sizable,
 
   rut_list_for_each (object, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
 
       n_rows++;
 
@@ -1004,11 +999,11 @@ rig_controller_view_get_preferred_height (void *sizable,
                                  &row_height);
         }
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (prop_view_data, &object->properties, list_node)
         {
           for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
             {
-              RigControllerViewControl *control = prop_data->controls + i;
+              RigControllerViewControl *control = prop_view_data->controls + i;
 
               handle_control_height (control,
                                      &row_height);
@@ -1050,34 +1045,55 @@ rig_controller_view_get_size (void *object,
   *height = view->total_height;
 }
 
-static RutSizableVTable _rig_controller_view_sizable_vtable = {
-  rig_controller_view_set_size,
-  rig_controller_view_get_size,
-  rig_controller_view_get_preferred_width,
-  rig_controller_view_get_preferred_height,
-  rig_controller_view_add_preferred_size_callback
-};
-
 static void
 _rig_controller_view_init_type (void)
 {
-  rut_type_init (&rig_controller_view_type, "RigControllerView");
-  rut_type_add_interface (&rig_controller_view_type,
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_controller_view_free
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+      _rig_controller_view_paint
+  };
+
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      rig_controller_view_set_size,
+      rig_controller_view_get_size,
+      rig_controller_view_get_preferred_width,
+      rig_controller_view_get_preferred_height,
+      rig_controller_view_add_preferred_size_callback
+  };
+
+  RutType *type = &rig_controller_view_type;
+#define TYPE RigControllerView
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigControllerView, ref_count),
-                          &_rig_controller_view_ref_countable_vtable);
-  rut_type_add_interface (&rig_controller_view_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RigControllerView, paintable),
-                          &_rig_controller_view_paintable_vtable);
-  rut_type_add_interface (&rig_controller_view_type,
+                          offsetof (TYPE, paintable),
+                          &paintable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RigControllerView, graphable),
-                          &_rig_controller_view_graphable_vtable);
-  rut_type_add_interface (&rig_controller_view_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rig_controller_view_sizable_vtable);
+                          &sizable_vtable);
+
+#undef TYPE
 }
 
 static void
@@ -1099,29 +1115,50 @@ rig_controller_view_create_label_control (RigControllerView *view,
   rut_graphable_add_child (control->transform, label);
 }
 
+static void
+rut_contoller_view_create_method_drop_down (RigControllerView *view,
+                                            RigControllerViewControl *control)
+{
+  RutDropDownValue values[] = {
+    { "Const", RIG_CONTROLLER_METHOD_CONSTANT },
+    { "Path", RIG_CONTROLLER_METHOD_PATH },
+    { "Bind", RIG_CONTROLLER_METHOD_BINDING }
+  };
+  RutDropDown *drop_down = rut_drop_down_new (view->context);
+  rut_drop_down_set_values_array (drop_down,
+                                  values,
+                                  3);
+
+  control->transform = rut_transform_new (view->context);
+  control->control = drop_down;
+
+  rut_graphable_add_child (view, control->transform);
+  rut_graphable_add_child (control->transform, drop_down);
+}
+
 static CoglBool
 rig_controller_view_select_node (RigControllerView *view,
-                                 RigControllerViewProperty *prop_data,
+                                 RigControllerViewProperty *prop_view_data,
                                  RigNode *node)
 {
   RigControllerViewSelectedNode *selected_node;
 
   /* Check if the node is already selected */
-  if (prop_data->has_selected_nodes)
+  if (prop_view_data->has_selected_nodes)
     {
       rut_list_for_each (selected_node, &view->selected_nodes, list_node)
         {
-          if (selected_node->prop_data == prop_data &&
+          if (selected_node->prop_view_data == prop_view_data &&
               selected_node->node == node)
             return TRUE;
         }
     }
 
   selected_node = g_slice_new (RigControllerViewSelectedNode);
-  selected_node->prop_data = prop_data;
+  selected_node->prop_view_data = prop_view_data;
   selected_node->node = node;
 
-  prop_data->has_selected_nodes = TRUE;
+  prop_view_data->has_selected_nodes = TRUE;
   view->dots_dirty = TRUE;
 
   rut_list_insert (view->selected_nodes.prev, &selected_node->list_node);
@@ -1131,10 +1168,10 @@ rig_controller_view_select_node (RigControllerView *view,
 
 static void
 rig_controller_view_unselect_node (RigControllerView *view,
-                                   RigControllerViewProperty *prop_data,
+                                   RigControllerViewProperty *prop_view_data,
                                    RigNode *node)
 {
-  if (prop_data->has_selected_nodes)
+  if (prop_view_data->has_selected_nodes)
     {
       RigControllerViewSelectedNode *selected_node, *tmp;
       CoglBool has_nodes = FALSE;
@@ -1144,7 +1181,7 @@ rig_controller_view_unselect_node (RigControllerView *view,
                               &view->selected_nodes,
                               list_node)
         {
-          if (selected_node->prop_data == prop_data)
+          if (selected_node->prop_view_data == prop_view_data)
             {
               if (selected_node->node == node)
                 {
@@ -1160,7 +1197,7 @@ rig_controller_view_unselect_node (RigControllerView *view,
             }
         }
 
-      prop_data->has_selected_nodes = has_nodes;
+      prop_view_data->has_selected_nodes = has_nodes;
     }
 }
 
@@ -1170,8 +1207,8 @@ rig_controller_view_path_operation_cb (RigPath *path,
                                        RigNode *node,
                                        void *user_data)
 {
-  RigControllerViewProperty *prop_data = user_data;
-  RigControllerViewObject *object_data = prop_data->object;
+  RigControllerViewProperty *prop_view_data = user_data;
+  RigControllerViewObject *object_data = prop_view_data->object;
   RigControllerView *view = object_data->view;
 
   switch (op)
@@ -1186,7 +1223,7 @@ rig_controller_view_path_operation_cb (RigPath *path,
       break;
 
     case RIG_PATH_OPERATION_REMOVED:
-      rig_controller_view_unselect_node (view, prop_data, node);
+      rig_controller_view_unselect_node (view, prop_view_data, node);
 
       view->n_dots--;
       view->dots_dirty = TRUE;
@@ -1263,14 +1300,64 @@ rig_controller_view_create_object_data (RigControllerView *view,
 }
 
 static void
-rig_controller_view_property_added (RigControllerView *view,
-                                    RutProperty *property)
+method_drop_down_change_cb (RutProperty *value, void *user_data)
 {
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data = user_data;
+  RigControllerViewObject *object_data = prop_view_data->object;
+  RigControllerView *view = object_data->view;
+  RutProperty *property = prop_view_data->prop_data->property;
+  RigControllerMethod method = rut_property_get_integer (value);
+  RigEngine *engine = view->engine;
+  RigUndoJournal *subjournal = rig_undo_journal_new (engine);
+  RigPath *path;
+
+  /* In this case we have just updated the drop-down value ourselves
+   * and so we bail out to avoid recursion. */
+  if (prop_view_data->re_syncing)
+    return;
+
+  rig_undo_journal_set_control_method_and_log (subjournal,
+                                               view->controller,
+                                               property,
+                                               method);
+
+  /* If the property is being initially marked as animated and the
+   * path is empty then for convenience we want to create a node for
+   * the current time. We want this to be undone as a single action so
+   * we'll represent the pair of actions in a subjournal */
+  if (method == RIG_CONTROLLER_METHOD_PATH &&
+      (path = rig_controller_get_path_for_property (view->controller,
+                                                    property)) &&
+      path->length == 0)
+    {
+      RutBoxed property_value;
+
+      rut_property_box (property, &property_value);
+
+      rig_undo_journal_set_property_and_log (subjournal,
+                                             FALSE /* mergable */,
+                                             view->controller,
+                                             &property_value,
+                                             property);
+
+      rut_boxed_destroy (&property_value);
+    }
+
+  rig_undo_journal_log_subjournal (engine->undo_journal, subjournal, FALSE);
+}
+
+static void
+rig_controller_view_property_added (RigControllerView *view,
+                                    RigControllerPropData *prop_data)
+{
+  RutProperty *property = prop_data->property;
+  RigControllerViewProperty *prop_view_data;
   RigControllerViewProperty *insert_pos;
   RigControllerViewObject *object_data;
   const RutPropertySpec *spec = property->spec;
   RutObject *object;
+  RutDropDown *drop_down;
+  RutProperty *drop_property;
   RigPath *path;
 
   object = property->object;
@@ -1295,59 +1382,72 @@ rig_controller_view_property_added (RigControllerView *view,
 
  have_object:
 
-  prop_data = g_slice_new (RigControllerViewProperty);
+  prop_view_data = g_slice_new (RigControllerViewProperty);
 
-  prop_data->object = object_data;
-  prop_data->property = property;
-  prop_data->has_selected_nodes = FALSE;
+  prop_view_data->object = object_data;
+  prop_view_data->prop_data = prop_data;
+  prop_view_data->prop_data->property = property;
+  prop_view_data->has_selected_nodes = FALSE;
+  prop_view_data->re_syncing = FALSE;
 
   rig_controller_view_create_label_control (view,
-                                            prop_data->controls + 0,
+                                            prop_view_data->controls + 0,
                                             spec->nick ?
                                             spec->nick :
                                             spec->name);
 
+  rut_contoller_view_create_method_drop_down (view, prop_view_data->controls + 1);
+  drop_down = prop_view_data->controls[1].control;
+  rut_drop_down_set_value (drop_down, prop_data->method);
+
+  drop_property = rut_introspectable_lookup_property (drop_down, "value");
+
+  rut_property_connect_callback (drop_property,
+                                 method_drop_down_change_cb,
+                                 prop_view_data);
+
   path = rig_controller_get_path_for_property (view->controller,
                                                property);
 
-  prop_data->path_operation_closure =
+  prop_view_data->path_operation_closure =
     rig_path_add_operation_callback (path,
                                      rig_controller_view_path_operation_cb,
-                                     prop_data,
+                                     prop_view_data,
                                      NULL /* destroy_cb */);
 
   view->n_dots += path->length;
   view->dots_dirty = TRUE;
 
-  prop_data->path = rut_refable_ref (path);
+  prop_view_data->path = rut_refable_ref (path);
 
   /* Insert the property in a sorted position */
   rut_list_for_each (insert_pos, &object_data->properties, list_node)
     {
+      RutProperty *insert_prop = insert_pos->prop_data->property;
       /* If the property belongs to the same object then sort it
        * according to the property name */
-      if (property->object == insert_pos->property->object)
+      if (property->object == insert_prop->object)
         {
           if (strcmp (property->spec->nick ?
                       property->spec->nick :
                       property->spec->name,
-                      insert_pos->property->spec->nick ?
-                      insert_pos->property->spec->nick :
-                      insert_pos->property->spec->name) < 0)
+                      insert_prop->spec->nick ?
+                      insert_prop->spec->nick :
+                      insert_prop->spec->name) < 0)
             break;
         }
       /* Make sure the entities properties are first */
       else if (property->object == object_data->object)
         break;
-      else if (insert_pos->property->object == object_data->object)
+      else if (insert_prop->object == object_data->object)
         continue;
       /* Otherwise we'll just sort by the object pointer so that at
        * least the component properties are grouped */
-      else if (property->object < insert_pos->property->object)
+      else if (property->object < insert_prop->object)
         break;
     }
 
-  rut_list_insert (insert_pos->list_node.prev, &prop_data->list_node);
+  rut_list_insert (insert_pos->list_node.prev, &prop_view_data->list_node);
 
   rig_controller_view_queue_allocation (view);
   rig_controller_view_preferred_size_changed (view);
@@ -1383,11 +1483,11 @@ rig_controller_view_find_property (RigControllerView *view,
   rut_list_for_each (object_data, &view->objects, list_node)
     if (object_data->object == object)
       {
-        RigControllerViewProperty *prop_data;
+        RigControllerViewProperty *prop_view_data;
 
-        rut_list_for_each (prop_data, &object_data->properties, list_node)
-          if (prop_data->property == property)
-            return prop_data;
+        rut_list_for_each (prop_view_data, &object_data->properties, list_node)
+          if (prop_view_data->prop_data->property == property)
+            return prop_view_data;
       }
 
   return NULL;
@@ -1397,15 +1497,15 @@ static void
 rig_controller_view_property_removed (RigControllerView *view,
                                       RutProperty *property)
 {
-  RigControllerViewProperty *prop_data =
+  RigControllerViewProperty *prop_view_data =
     rig_controller_view_find_property (view, property);
   RigControllerViewObject *object_data;
   int i;
 
-  if (prop_data == NULL)
+  if (prop_view_data == NULL)
     return;
 
-  if (prop_data->has_selected_nodes)
+  if (prop_view_data->has_selected_nodes)
     {
       RigControllerViewSelectedNode *selected_node, *t;
 
@@ -1414,7 +1514,7 @@ rig_controller_view_property_removed (RigControllerView *view,
                               &view->selected_nodes,
                               list_node)
         {
-          if (selected_node->prop_data == prop_data)
+          if (selected_node->prop_view_data == prop_view_data)
             {
               rut_list_remove (&selected_node->list_node);
               g_slice_free (RigControllerViewSelectedNode, selected_node);
@@ -1422,14 +1522,14 @@ rig_controller_view_property_removed (RigControllerView *view,
         }
     }
 
-  object_data = prop_data->object;
+  object_data = prop_view_data->object;
 
-  rut_closure_disconnect (prop_data->path_operation_closure);
+  rut_closure_disconnect (prop_view_data->path_operation_closure);
 
   for (i = 0; i < RIG_TRANSITION_VIEW_N_PROPERTY_CONTROLS; i++)
-    rig_controller_view_destroy_control (prop_data->controls + i);
+    rig_controller_view_destroy_control (prop_view_data->controls + i);
 
-  rut_list_remove (&prop_data->list_node);
+  rut_list_remove (&prop_view_data->list_node);
 
   /* If that was the last property on the object then we'll also
    * destroy the object */
@@ -1443,14 +1543,14 @@ rig_controller_view_property_removed (RigControllerView *view,
       g_slice_free (RigControllerViewObject, object_data);
     }
 
-  rut_refable_unref (prop_data->path);
+  rut_refable_unref (prop_view_data->path);
 
   rut_shell_queue_redraw (view->context->shell);
 
   view->dots_dirty = TRUE;
-  view->n_dots -= prop_data->path->length;
+  view->n_dots -= prop_view_data->path->length;
 
-  g_slice_free (RigControllerViewProperty, prop_data);
+  g_slice_free (RigControllerViewProperty, prop_view_data);
 
   rig_controller_view_queue_allocation (view);
   rig_controller_view_preferred_size_changed (view);
@@ -1632,7 +1732,7 @@ rig_controller_view_find_node_in_path (RigControllerView *view,
 static CoglBool
 rig_controller_view_find_node (RigControllerView *view,
                                RutInputEvent *event,
-                               RigControllerViewProperty **prop_data_out,
+                               RigControllerViewProperty **prop_view_data_out,
                                RigNode **node_out)
 {
   float x = rut_motion_event_get_x (event);
@@ -1654,11 +1754,11 @@ rig_controller_view_find_node (RigControllerView *view,
 
   rut_list_for_each (object_data, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
 
       row_num++;
 
-      rut_list_for_each (prop_data, &object_data->properties, list_node)
+      rut_list_for_each (prop_view_data, &object_data->properties, list_node)
         {
           if (row_num == (int) (y / view->row_height))
             {
@@ -1668,7 +1768,7 @@ rig_controller_view_find_node (RigControllerView *view,
 
               node =
                 rig_controller_view_find_node_in_path (view,
-                                                       prop_data->path,
+                                                       prop_view_data->path,
                                                        progress -
                                                        scaled_dot_size / 2.0f,
                                                        progress +
@@ -1676,7 +1776,7 @@ rig_controller_view_find_node (RigControllerView *view,
               if (node)
                 {
                   *node_out = node;
-                  *prop_data_out = prop_data;
+                  *prop_view_data_out = prop_view_data;
                   return TRUE;
                 }
 
@@ -1694,10 +1794,10 @@ static void
 rig_controller_view_handle_select_event (RigControllerView *view,
                                          RutInputEvent *event)
 {
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data;
   RigNode *node;
 
-  if (rig_controller_view_find_node (view, event, &prop_data, &node))
+  if (rig_controller_view_find_node (view, event, &prop_view_data, &node))
     {
       if ((rut_motion_event_get_modifier_state (event) &
            (RUT_MODIFIER_LEFT_SHIFT_ON |
@@ -1710,8 +1810,8 @@ rig_controller_view_handle_select_event (RigControllerView *view,
        * down then it definitely won't be selected because we'll have
        * just cleared the selection above so it doesn't matter if we
        * toggle it */
-      if (rig_controller_view_select_node (view, prop_data, node))
-        rig_controller_view_unselect_node (view, prop_data, node);
+      if (rig_controller_view_select_node (view, prop_view_data, node))
+        rig_controller_view_unselect_node (view, prop_view_data, node);
 
       rut_timeline_set_progress (view->timeline, node->t);
 
@@ -1772,7 +1872,7 @@ rig_controller_view_calculate_drag_offset_range (RigControllerView *view)
 
   rut_list_for_each (selected_node, &view->selected_nodes, list_node)
     {
-      RutList *node_list = &selected_node->prop_data->path->nodes;
+      RutList *node_list = &selected_node->prop_view_data->path->nodes;
       RigNode *node = selected_node->node, *next_node;
       float node_min, node_max;
 
@@ -1821,7 +1921,7 @@ static void
 rig_controller_view_decide_grab_state (RigControllerView *view,
                                        RutInputEvent *event)
 {
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data;
   RigNode *node;
 
   if ((rut_motion_event_get_modifier_state (event) &
@@ -1837,14 +1937,14 @@ rig_controller_view_decide_grab_state (RigControllerView *view,
 
       view->grab_state = RIG_TRANSITION_VIEW_GRAB_STATE_DRAW_BOX;
     }
-  else if (rig_controller_view_find_node (view, event, &prop_data, &node))
+  else if (rig_controller_view_find_node (view, event, &prop_view_data, &node))
     {
-      if (!rig_controller_view_select_node (view, prop_data, node))
+      if (!rig_controller_view_select_node (view, prop_view_data, node))
         {
           /* If the node wasn't already selected then we only want
            * this node to be selected */
           rig_controller_view_clear_selected_nodes (view);
-          rig_controller_view_select_node (view, prop_data, node);
+          rig_controller_view_select_node (view, prop_view_data, node);
         }
 
       rig_controller_view_get_time_from_event (view,
@@ -1881,7 +1981,7 @@ rig_controller_view_drag_nodes (RigControllerView *view,
   offset = CLAMP (offset, view->min_drag_offset, view->max_drag_offset);
 
   rut_list_for_each (selected_node, &view->selected_nodes, list_node)
-    rig_path_move_node (selected_node->prop_data->path,
+    rig_path_move_node (selected_node->prop_view_data->path,
                         selected_node->node,
                         selected_node->original_time + offset);
 
@@ -1891,13 +1991,13 @@ rig_controller_view_drag_nodes (RigControllerView *view,
    * the new node positions */
   rut_list_for_each (object_data, &view->objects, list_node)
     {
-      RigControllerViewProperty *prop_data;
+      RigControllerViewProperty *prop_view_data;
 
-      rut_list_for_each (prop_data, &object_data->properties, list_node)
+      rut_list_for_each (prop_view_data, &object_data->properties, list_node)
         {
-          if (prop_data->has_selected_nodes)
+          if (prop_view_data->has_selected_nodes)
             rig_controller_update_property (view->controller,
-                                            prop_data->property);
+                                            prop_view_data->prop_data->property);
         }
     }
 }
@@ -1920,7 +2020,7 @@ rig_controller_view_commit_dragged_nodes (RigControllerView *view)
        * undo journal can see it */
       selected_node->node->t = selected_node->original_time;
 
-      nodes[i].property = selected_node->prop_data->property;
+      nodes[i].property = selected_node->prop_view_data->prop_data->property;
       nodes[i].node = selected_node->node;
 
       i++;
@@ -1955,7 +2055,7 @@ static void
 rig_controller_view_commit_box (RigControllerView *view)
 {
   RigControllerViewObject *object;
-  RigControllerViewProperty *prop_data;
+  RigControllerViewProperty *prop_view_data;
   float x1, x2;
   int y1, y2;
   int row_pos = 0;
@@ -1986,18 +2086,19 @@ rig_controller_view_commit_box (RigControllerView *view)
     {
       row_pos++;
 
-      rut_list_for_each (prop_data, &object->properties, list_node)
+      rut_list_for_each (prop_view_data, &object->properties, list_node)
         {
           if (row_pos >= y1 && row_pos < y2)
             {
               RigNode *node;
+              RigControllerPropData *prop_data = prop_view_data->prop_data;
               RigPath *path =
                 rig_controller_get_path_for_property (view->controller,
                                                       prop_data->property);
 
               rut_list_for_each (node, &path->nodes, list_node)
                 if (node->t >= x1 && node->t < x2)
-                  rig_controller_view_select_node (view, prop_data, node);
+                  rig_controller_view_select_node (view, prop_view_data, node);
             }
 
           row_pos++;
@@ -2096,10 +2197,11 @@ rig_controller_view_delete_selected_nodes (RigControllerView *view)
         {
           RigControllerViewSelectedNode *node =
             rut_container_of (view->selected_nodes.next, node, list_node);
+          RigControllerPropData *prop_data = node->prop_view_data->prop_data;
 
           rig_undo_journal_delete_path_node_and_log (journal,
                                                      view->controller,
-                                                     node->prop_data->property,
+                                                     prop_data->property,
                                                      node->node);
         }
 
@@ -2159,26 +2261,44 @@ controller_operation_cb (RigController *controller,
   switch (op)
     {
     case RIG_TRANSITION_OPERATION_ADDED:
-      rig_controller_view_property_added (view, prop_data->property);
+      rig_controller_view_property_added (view, prop_data);
       break;
 
     case RIG_TRANSITION_OPERATION_REMOVED:
       rig_controller_view_property_removed (view, prop_data->property);
       break;
+
+    case RIG_TRANSITION_OPERATION_METHOD_CHANGED:
+      {
+        RigControllerViewProperty *prop_view_data =
+          rig_controller_view_find_property (view, prop_data->property);
+        RutDropDown *drop_down = prop_view_data->controls[1].control;
+
+        /* Normally we listen for _drop_down changes, but in this case
+         * where we are updating the drop down ourselves we need to
+         * know to ignore the corresponding notification about the
+         * _drop_down changing, otherwise - for example - we'll end up
+         * logging into the journal recursively. */
+        prop_view_data->re_syncing = TRUE;
+        rut_drop_down_set_value (drop_down, prop_data->method);
+        prop_view_data->re_syncing = FALSE;
+        view->dots_dirty = TRUE;
+        break;
+      }
     }
 }
 
 static void
-rig_controller_view_add_property_cb (RigControllerPropData *prop_data,
+rig_controller_view_add_property_cb (RigControllerPropData *prop_view_data,
                                      void *user_data)
 {
   RigControllerView *view = user_data;
 
-  rig_controller_view_property_added (view, prop_data->property);
+  rig_controller_view_property_added (view, prop_view_data);
 }
 
 RigControllerView *
-rig_controller_view_new (RutContext *ctx,
+rig_controller_view_new (RigEngine *engine,
                          RutObject *graph,
                          RigController *controller,
                          RutTimeline *timeline,
@@ -2195,7 +2315,8 @@ rig_controller_view_new (RutContext *ctx,
     }
 
   view->ref_count = 1;
-  view->context = rut_refable_ref (ctx);
+  view->engine = engine;
+  view->context = engine->ctx;
   view->graph = rut_refable_ref (graph);
   view->controller = controller;
   view->timeline = rut_refable_ref (timeline);

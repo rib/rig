@@ -31,7 +31,7 @@ typedef struct _RigControllerView RigControllerView;
 #define RIG_TRANSITION_VIEW(x) ((RigControllerView *) x)
 
 RigControllerView *
-rig_controller_view_new (RutContext *ctx,
+rig_controller_view_new (RigEngine *engine,
                          RutObject *graph,
                          RigController *controller,
                          RutTimeline *timeline,

@@ -308,7 +308,7 @@ rig_engine_select_controller (RigEngine *engine, RigController *controller)
         }
 
       engine->controller_view =
-        rig_controller_view_new (engine->ctx,
+        rig_controller_view_new (engine,
                                  engine->scene,
                                  controller,
                                  engine->timeline,
