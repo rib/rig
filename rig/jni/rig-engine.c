@@ -982,7 +982,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (geom && rut_object_get_type (geom) == &rut_diamond_type)
             break;
           else if (geom)
-            rig_undo_journal_add_component_and_log (sub_journal, entity, geom);
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1036,7 +1036,7 @@ apply_asset_input_to_entity (RutEntity *entity,
               break;
             }
           else if (geom)
-            rig_undo_journal_add_component_and_log (sub_journal, entity, geom);
+            rig_undo_journal_delete_component_and_log (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity,
