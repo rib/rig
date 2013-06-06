@@ -182,6 +182,9 @@ struct _RigUndoJournal
    * so it will not need to be inverted before redoing the
    * operation. */
   RutList redo_ops;
+
+  /* Detect recursion on insertion which indicates a bug */
+  bool inserting;
 };
 
 void

@@ -47,8 +47,10 @@ static void
 undo_redo_free (UndoRedo *undo_redo);
 
 static void
-dump_op (UndoRedo *op,
-         GString *buf)
+dump_journal (RigUndoJournal *journal, int indent);
+
+static void
+dump_op (UndoRedo *op, int indent)
 {
   switch (op->op)
     {
@@ -58,78 +60,95 @@ dump_op (UndoRedo *op,
           const float *v = op->d.const_prop_change.value0.d.vec3_val;
           int i;
 
-          g_string_append_c (buf, '(');
+          g_print ("%*sproperty change: vec3 (", indent, "");
 
           for (i = 0; i < 3; i++)
             {
               if (i > 0)
-                g_string_append_c (buf, ',');
-              g_string_append_printf (buf, "%.1f", v[i]);
+                g_print (",");
+              g_print ("%.1f", v[i]);
             }
 
-          g_string_append (buf, ")→(");
+          g_print (")→(");
 
           v = op->d.const_prop_change.value1.d.vec3_val;
 
           for (i = 0; i < 3; i++)
             {
               if (i > 0)
-                g_string_append_c (buf, ',');
-              g_string_append_printf (buf, "%.1f", v[i]);
+                g_print (",");
+              g_print ("%.1f", v[i]);
             }
 
-          g_string_append_c (buf, ')');
+          g_print (")\n");
         }
       else
-        g_string_append (buf, "-");
+        g_print ("%*sproperty change: TODO\n", indent, "");
       break;
 
     case UNDO_REDO_SET_CONTROLLED_OP:
-      g_string_append_printf (buf,
-                              "controlled=%s",
-                              op->d.set_controlled.value ? "yes" : "no");
+      g_print ("%*scontrolled=%s\n",
+               indent, "",
+               op->d.set_controlled.value ? "yes" : "no");
       break;
 
+    case UNDO_REDO_PATH_ADD_OP:
+      g_print ("%*spath add\n", indent, "");
+      break;
+    case UNDO_REDO_PATH_MODIFY_OP:
+      g_print ("%*spath modify\n", indent, "");
+      break;
+    case UNDO_REDO_MOVE_PATH_NODES_OP:
+      g_print ("%*sremove path nodes\n", indent, "");
+      break;
+    case UNDO_REDO_PATH_REMOVE_OP:
+      g_print ("%*sremove path\n", indent, "");
+      break;
+    case UNDO_REDO_SET_CONTROL_METHOD_OP:
+      g_print ("%*sset control method\n", indent, "");
+      break;
+    case UNDO_REDO_ADD_ENTITY_OP:
+      g_print ("%*sadd entity\n", indent, "");
+      break;
+    case UNDO_REDO_DELETE_ENTITY_OP:
+      g_print ("%*sdelete entity\n", indent, "");
+      break;
+    case UNDO_REDO_ADD_COMPONENT_OP:
+      g_print ("%*sadd component\n", indent, "");
+      break;
+    case UNDO_REDO_DELETE_COMPONENT_OP:
+      g_print ("%*sdelete component\n", indent, "");
+      break;
+    case UNDO_REDO_SUBJOURNAL_OP:
+      g_print ("%*ssub-journal %p\n", indent, "", op->d.subjournal);
+      dump_journal (op->d.subjournal, indent + 5);
+      break;
     default:
-      g_string_append (buf, "-");
+      g_print ("%*sTODO\n", indent, "");
       break;
     }
 }
 
 static void
-dump_journal (RigUndoJournal *journal)
+dump_journal (RigUndoJournal *journal, int indent)
 {
-  GString *buf_a = g_string_new (NULL), *buf_b = g_string_new (NULL);
-  UndoRedo *undo, *redo;
+  UndoRedo *undo_redo;
 
-  undo = rut_container_of (journal->undo_ops.next, undo, list_node);
-  redo = rut_container_of (journal->redo_ops.next, redo, list_node);
+  g_print ("\n\n%*sJournal %p\n", indent, "", journal);
+  indent += 2;
 
-  printf ("%-50s%-50s\n", "Undo", "Redo");
-
-  while (&undo->list_node != &journal->undo_ops ||
-         &redo->list_node != &journal->redo_ops)
+  if (!rut_list_empty (&journal->redo_ops))
     {
-      g_string_set_size (buf_a, 0);
-      g_string_set_size (buf_b, 0);
+      rut_list_for_each (undo_redo, &journal->redo_ops, list_node)
+        dump_op (undo_redo, indent);
 
-      if (&undo->list_node != &journal->undo_ops)
-        {
-          dump_op (undo, buf_a);
-          undo = rut_container_of (undo->list_node.next, undo, list_node);
-        }
-
-      if (&redo->list_node != &journal->redo_ops)
-        {
-          dump_op (redo, buf_b);
-          redo = rut_container_of (redo->list_node.next, redo, list_node);
-        }
-
-      printf ("%-50s%-50s\n", buf_a->str, buf_b->str);
+      g_print ("%*s %25s REDO OPS\n", indent, "", "");
+      g_print ("%*s %25s <-----\n", indent, "", "");
+      g_print ("%*s %25s UNDO OPS\n", indent, "", "");
     }
 
-  g_string_free (buf_a, TRUE);
-  g_string_free (buf_b, TRUE);
+  rut_list_for_each_reverse (undo_redo, &journal->undo_ops, list_node)
+    dump_op (undo_redo, indent);
 }
 
 static UndoRedo *
@@ -1537,10 +1556,13 @@ rig_undo_journal_insert (RigUndoJournal *journal,
   UndoRedo *inverse;
 
   g_return_val_if_fail (undo_redo != NULL, FALSE);
+  g_return_val_if_fail (journal->inserting == FALSE, FALSE);
 
   rig_engine_sync_slaves (journal->engine);
 
   rig_undo_journal_flush_redos (journal);
+
+  journal->inserting = TRUE;
 
   /* Purely for testing purposes we now redundantly apply
    * the inverse of the operation followed by the operation
@@ -1556,7 +1578,9 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
 
-  dump_journal (journal);
+  dump_journal (journal, 0);
+
+  journal->inserting = FALSE;
 
   return TRUE;
 }
@@ -1584,7 +1608,7 @@ rig_undo_journal_undo (RigUndoJournal *journal)
 
       rut_shell_queue_redraw (journal->engine->shell);
 
-      dump_journal (journal);
+      dump_journal (journal, 0);
 
       return TRUE;
     }
@@ -1610,7 +1634,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 
   rut_shell_queue_redraw (journal->engine->shell);
 
-  dump_journal (journal);
+  dump_journal (journal, 0);
 
   return TRUE;
 }
