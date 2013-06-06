@@ -323,10 +323,11 @@ dummy_property_destroy_notify_cb (RutProperty *property,
 }
 
 static void
-dummy_property_binding_wrapper_cb (RutProperty *property,
+dummy_property_binding_wrapper_cb (RutProperty *dummy_property,
                                    void *user_data)
 {
   RutPropertyClosure *closure = user_data;
+  RutProperty *property = rut_property_get_first_source (dummy_property);
 
   closure->callback (property, closure->user_data);
 }
