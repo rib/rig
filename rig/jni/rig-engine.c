@@ -2613,7 +2613,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 
   if (!_rig_in_device_mode)
     {
-      engine->undo_journal = rig_undo_journal_new (engine);
+      rig_engine_push_undo_subjournal (engine, rig_undo_journal_new (engine));
 
       /* Create a color gradient texture that can be used for debugging
        * shadow mapping.
@@ -3261,4 +3261,23 @@ rig_engine_sync_slaves (RigEngine *engine)
 
   for (l = engine->slave_masters; l; l = l->next)
     rig_slave_master_sync_ui (l->data);
+}
+
+void
+rig_engine_push_undo_subjournal (RigEngine *engine,
+                                 RigUndoJournal *subjournal)
+{
+  engine->undo_journal_stack = g_list_prepend (engine->undo_journal_stack,
+                                               subjournal);
+  engine->undo_journal = subjournal;
+}
+
+void
+rig_engine_pop_undo_subjournal (RigEngine *engine)
+{
+  engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
+                                                   engine->undo_journal_stack);
+  g_return_if_fail (engine->undo_journal_stack);
+
+  engine->undo_journal = engine->undo_journal_stack->data;
 }

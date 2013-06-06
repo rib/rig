@@ -79,6 +79,7 @@ struct _RigEngine
 
   GArray *journal;
 
+  GList *undo_journal_stack;
   RigUndoJournal *undo_journal;
 
   /* shadow mapping */
@@ -340,5 +341,12 @@ rig_engine_dirty_properties_menu (RutImageSource *source,
 
 void
 _rig_engine_update_inspector (RigEngine *engine);
+
+void
+rig_engine_push_undo_subjournal (RigEngine *engine,
+                                 RigUndoJournal *subjournal);
+
+void
+rig_engine_pop_undo_subjournal (RigEngine *engine);
 
 #endif /* _RUT_ENGINE_H_ */
