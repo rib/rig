@@ -120,6 +120,7 @@ BUILT_SOURCES = wrappers
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
+	-I$(top_builddir)/cogl \
 	-I$(top_srcdir)/test-fixtures
 
 if !USE_GLIB
