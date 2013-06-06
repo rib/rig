@@ -989,8 +989,6 @@ rut_drop_down_set_value (RutObject *obj,
 
   int i;
 
-  value = CLAMP (value, 0, drop->n_values - 1);
-
   if (value == drop->values[drop->value_index].value)
     return;
 
@@ -1003,7 +1001,10 @@ rut_drop_down_set_value (RutObject *obj,
                             &drop->properties[RUT_DROP_DOWN_PROP_VALUE]);
 
         rut_shell_queue_redraw (drop->context->shell);
+        return;
       }
+
+  g_warn_if_reached ();
 }
 
 int
