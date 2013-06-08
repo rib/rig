@@ -78,7 +78,6 @@ IGNORE_HFILES=\
 	cogl-gl-header.h			\
 	cogl-glsl-shader-boilerplate.h		\
 	cogl-profile.h				\
-	cogl-queue.h				\
 	cogl-rectangle-map.h			\
 	cogl-spans.h 				\
 	cogl-texture-driver.h			\

@@ -293,8 +293,8 @@ cogl_context_new (CoglDisplay *display,
   context->current_draw_buffer_state_flushed = 0;
   context->current_draw_buffer_changes = COGL_FRAMEBUFFER_STATE_ALL;
 
-  COGL_TAILQ_INIT (&context->onscreen_events_queue);
-  COGL_TAILQ_INIT (&context->onscreen_dirty_queue);
+  _cogl_list_init (&context->onscreen_events_queue);
+  _cogl_list_init (&context->onscreen_dirty_queue);
 
   g_queue_init (&context->gles2_context_stack);
 
@@ -432,7 +432,7 @@ cogl_context_new (CoglDisplay *display,
       cogl_has_feature (context, COGL_FEATURE_ID_POINT_SPRITE))
     GE (context, glEnable (GL_POINT_SPRITE));
 
-  COGL_TAILQ_INIT (&context->fences);
+  _cogl_list_init (&context->fences);
 
   return context;
 }

@@ -176,8 +176,8 @@ struct _CoglContext
   gboolean have_last_offscreen_allocate_flags;
   CoglOffscreenAllocateFlags last_offscreen_allocate_flags;
 
-  CoglOnscreenEventList onscreen_events_queue;
-  CoglOnscreenQueuedDirtyList onscreen_dirty_queue;
+  CoglList onscreen_events_queue;
+  CoglList onscreen_dirty_queue;
   CoglClosure *onscreen_dispatch_idle;
 
   CoglGLES2Context *current_gles2_context;
@@ -274,7 +274,7 @@ struct _CoglContext
   int n_uniform_names;
 
   CoglPollSource *fences_poll_source;
-  CoglFenceList fences;
+  CoglList fences;
 
   /* This defines a list of function pointers that Cogl uses from
      either GL or GLES. All functions are accessed indirectly through
