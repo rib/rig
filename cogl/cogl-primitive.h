@@ -268,15 +268,14 @@ cogl_primitive_new_with_attributes (CoglVerticesMode mode,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -321,15 +320,14 @@ cogl_primitive_new_p2 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -376,15 +374,14 @@ cogl_primitive_new_p3 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -431,15 +428,14 @@ cogl_primitive_new_p2c4 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -486,15 +482,14 @@ cogl_primitive_new_p3c4 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -541,15 +536,14 @@ cogl_primitive_new_p2t2 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -596,15 +590,14 @@ cogl_primitive_new_p3t2 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().
@@ -651,15 +644,14 @@ cogl_primitive_new_p2t2c4 (CoglContext *context,
  * #CoglPrimitive <structfield>n_vertices</structfield> property as if
  * cogl_primitive_set_n_vertices() were called. This property defines
  * the number of vertices to read when drawing.
-
- * <note>The primitive API doesn't support drawing with sliced
- * textures (since switching between slices implies changing state and
- * so that implies multiple primitives need to be submitted). You
- * should pass the %COGL_TEXTURE_NO_SLICING flag to all textures that
- * might be used while drawing with this API. If your hardware doesn't
- * support non-power of two textures (For example you are using GLES
- * 1.1) then you will need to make sure your assets are resized to a
- * power-of-two size (though they don't have to be square)</note>
+ *
+ * <note>The primitive API doesn't support drawing with high-level
+ * meta texture types such as #CoglTexture2DSliced or
+ * #CoglAtlasTexture so you need to ensure that only low-level
+ * textures that can be directly sampled by a GPU such as
+ * #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D are
+ * associated with the layers of any pipeline used while drawing a
+ * primitive.</note>
  *
  * Return value: A newly allocated #CoglPrimitive with a reference of
  * 1. This can be freed using cogl_object_unref().

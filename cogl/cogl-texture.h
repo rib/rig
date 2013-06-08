@@ -3,7 +3,7 @@
  *
  * An object oriented GL/GLES Abstraction/Utility Layer
  *
- * Copyright (C) 2007,2008,2009,2010 Intel Corporation.
+ * Copyright (C) 2007,2008,2009,2010,2011,2012,2013 Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,7 +16,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
  *
  *
  */
@@ -43,11 +44,15 @@ COGL_BEGIN_DECLS
 
 /**
  * SECTION:cogl-texture
- * @short_description: Functions for creating and manipulating textures
+ * @short_description: Common interface for manipulating textures
  *
- * Cogl allows creating and manipulating textures using a uniform
- * API that tries to hide all the various complexities of creating,
- * loading and manipulating textures.
+ * Cogl provides several different types of textures such as
+ * #CoglTexture2D, #CoglTexture3D, #CoglTextureRectangle,
+ * #CoglTexture2DSliced, #CoglAtlasTexture, #CoglSubTexture and
+ * #CoglTexturePixmapX11 that each have specific apis for creating
+ * and manipulating them, but there are a number of common operations
+ * that can be applied to any of these texture types which are handled
+ * via this #CoglTexture interface.
  */
 
 #define COGL_TEXTURE(X) ((CoglTexture *)X)
@@ -100,158 +105,6 @@ typedef enum {
 } CoglTextureType;
 
 uint32_t cogl_texture_error_domain (void);
-
-/**
- * cogl_texture_new_with_size:
- * @context: A #CoglContext
- * @width: width of texture in pixels.
- * @height: height of texture in pixels.
- * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
- * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
- *    texture.
- *
- * Creates a new #CoglTexture with the specified dimensions and pixel format.
- *
- * The storage for the texture is not necesarily created before this
- * function returns. The storage can be explicitly allocated using
- * cogl_texture_allocate() or preferably you can let Cogl
- * automatically allocate the storage lazily when uploading data when
- * Cogl may know more about how the texture will be used and can
- * optimize how it is allocated.
- *
- * Return value: A newly created #CoglTexture
- *
- * Since: 0.8
- */
-CoglTexture *
-cogl_texture_new_with_size (CoglContext *ctx,
-                            int width,
-                            int height,
-                            CoglTextureFlags flags,
-                            CoglPixelFormat internal_format);
-
-/**
- * cogl_texture_new_from_file:
- * @context: A #CoglContext
- * @filename: the file to load
- * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
- * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
- *    texture. If %COGL_PIXEL_FORMAT_ANY is given then a premultiplied
- *    format similar to the format of the source data will be used. The
- *    default blending equations of Cogl expect premultiplied color data;
- *    the main use of passing a non-premultiplied format here is if you
- *    have non-premultiplied source data and are going to adjust the blend
- *    mode (see cogl_material_set_blend()) or use the data for something
- *    other than straight blending.
- * @error: A #CoglError to catch exceptional errors or %NULL
- *
- * Creates a #CoglTexture from an image file.
- *
- * Return value: A newly created #CoglTexture or %NULL on failure
- *
- * Since: 0.8
- */
-CoglTexture *
-cogl_texture_new_from_file (CoglContext *context,
-                            const char *filename,
-                            CoglTextureFlags flags,
-                            CoglPixelFormat internal_format,
-                            CoglError **error);
-
-/**
- * cogl_texture_new_from_data:
- * @context: A #CoglContext
- * @width: width of texture in pixels
- * @height: height of texture in pixels
- * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
- * @format: the #CoglPixelFormat the buffer is stored in in RAM
- * @internal_format: the #CoglPixelFormat that will be used for storing
- *    the buffer on the GPU. If COGL_PIXEL_FORMAT_ANY is given then a
- *    premultiplied format similar to the format of the source data will
- *    be used. The default blending equations of Cogl expect premultiplied
- *    color data; the main use of passing a non-premultiplied format here
- *    is if you have non-premultiplied source data and are going to adjust
- *    the blend mode (see cogl_material_set_blend()) or use the data for
- *    something other than straight blending.
- * @rowstride: the memory offset in bytes between the starts of
- *    scanlines in @data
- * @data: pointer the memory region where the source buffer resides
- * @error: A #CoglError to catch exceptional errors or %NULL
- *
- * Creates a new #CoglTexture based on data residing in memory.
- *
- * Return value: A newly created #CoglTexture or %NULL on failure
- *
- * Since: 0.8
- */
-CoglTexture *
-cogl_texture_new_from_data (CoglContext *ctx,
-                            int width,
-                            int height,
-                            CoglTextureFlags flags,
-                            CoglPixelFormat format,
-                            CoglPixelFormat internal_format,
-                            int rowstride,
-                            const uint8_t *data,
-                            CoglError **error);
-
-/**
- * cogl_texture_gl_new_from_foreign:
- * @context: A #CoglContext
- * @gl_handle: opengl handle of foreign texture.
- * @gl_target: opengl target type of foreign texture
- * @width: width of foreign texture
- * @height: height of foreign texture.
- * @x_pot_waste: horizontal waste on the right hand edge of the texture.
- * @y_pot_waste: vertical waste on the bottom edge of the texture.
- * @format: format of the foreign texture.
- * @error: A #CoglError to catch exceptional errors or %NULL
- *
- * Creates a #CoglTexture based on an existing OpenGL texture; the
- * width, height and format are passed along since it is not always
- * possible to query these from OpenGL.
- *
- * The waste arguments allow you to create a Cogl texture that maps to
- * a region smaller than the real OpenGL texture. For instance if your
- * hardware only supports power-of-two textures you may load a
- * non-power-of-two image into a larger power-of-two texture and use
- * the waste arguments to tell Cogl which region should be mapped to
- * the texture coordinate range [0:1].
- *
- * Return value: A newly created #CoglTexture or %NULL on failure
- *
- * Since: 0.8
- */
-CoglTexture *
-cogl_texture_gl_new_from_foreign (CoglContext *context,
-                                  unsigned int gl_handle,
-                                  unsigned int gl_target,
-                                  int width,
-                                  int height,
-                                  int x_pot_waste,
-                                  int y_pot_waste,
-                                  CoglPixelFormat format,
-                                  CoglError **error);
-
-/**
- * cogl_texture_new_from_bitmap:
- * @bitmap: A #CoglBitmap pointer
- * @flags: Optional flags for the texture, or %COGL_TEXTURE_NONE
- * @internal_format: the #CoglPixelFormat to use for the GPU storage of the
- * texture
- * @error: A #CoglError to catch exceptional errors or %NULL
- *
- * Creates a #CoglTexture from a #CoglBitmap.
- *
- * Return value: A newly created #CoglTexture or %NULL on failure
- *
- * Since: 1.0
- */
-CoglTexture *
-cogl_texture_new_from_bitmap (CoglBitmap *bitmap,
-                              CoglTextureFlags flags,
-                              CoglPixelFormat internal_format,
-                              CoglError **error);
 
 /**
  * cogl_is_texture:
