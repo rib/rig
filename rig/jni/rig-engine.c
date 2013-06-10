@@ -834,7 +834,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (geom && rut_object_get_type (geom) == &rut_model_type)
             {
               model = geom;
-              if (rut_model_get_asset (model) == asset)
+              if (model == rut_asset_get_model (asset))
                 break;
             }
           else if (geom)
@@ -851,7 +851,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           if (material)
             rig_undo_journal_delete_component_and_log (sub_journal, material);
 
-          model = rut_model_new_from_asset (engine->ctx, asset);
+          model = rut_asset_get_model (asset);
           rig_undo_journal_add_component_and_log (sub_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
@@ -1470,9 +1470,47 @@ static RutPLYAttribute ply_attributes[] =
     },
     .n_properties = 3,
     .min_components = 2,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "tangent",
+    .name = "cogl_tex_coord1_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_tex_coord4_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "cogl_tex_coord7_in",
+    .properties = {
+      { "s" },
+      { "t" },
+      { "r" },
+    },
+    .n_properties = 3,
+    .min_components = 2,
+    .pad_n_components = 3,
+    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
+  },
+  {
+    .name = "tangent_in",
     .properties = {
       { "tanx" },
       { "tany" },
@@ -2116,7 +2154,8 @@ ensure_light (RigEngine *engine)
                                     &error);
       if (mesh)
         {
-          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
+          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh, FALSE,
+          																					 FALSE);
 
           engine->light_handle = rut_entity_new (engine->ctx);
           rut_entity_set_label (engine->light_handle, "rig:light_handle");
