@@ -376,6 +376,9 @@ void
 rut_bin_set_child (RutBin *bin,
                    RutObject *child_widget)
 {
+  if (bin->child == child_widget)
+    return;
+
   if (child_widget)
     rut_refable_ref (child_widget);
 
