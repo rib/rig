@@ -114,6 +114,7 @@ typedef enum
   COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE_INDEX,
   COGL_PIPELINE_STATE_BLEND_INDEX,
   COGL_PIPELINE_STATE_DEPTH_INDEX,
+  COGL_PIPELINE_STATE_NON_ZERO_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_LOGIC_OPS_INDEX,
@@ -157,6 +158,8 @@ typedef enum _CoglPipelineState
     1L<<COGL_PIPELINE_STATE_BLEND_INDEX,
   COGL_PIPELINE_STATE_DEPTH =
     1L<<COGL_PIPELINE_STATE_DEPTH_INDEX,
+  COGL_PIPELINE_STATE_NON_ZERO_POINT_SIZE =
+    1L<<COGL_PIPELINE_STATE_NON_ZERO_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_POINT_SIZE =
     1L<<COGL_PIPELINE_STATE_POINT_SIZE_INDEX,
   COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE =
@@ -201,6 +204,7 @@ typedef enum _CoglPipelineState
    COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE | \
    COGL_PIPELINE_STATE_BLEND | \
    COGL_PIPELINE_STATE_DEPTH | \
+   COGL_PIPELINE_STATE_NON_ZERO_POINT_SIZE | \
    COGL_PIPELINE_STATE_POINT_SIZE | \
    COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE | \
    COGL_PIPELINE_STATE_LOGIC_OPS | \
@@ -218,11 +222,6 @@ typedef enum _CoglPipelineState
    COGL_PIPELINE_STATE_UNIFORMS | \
    COGL_PIPELINE_STATE_VERTEX_SNIPPETS | \
    COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS)
-
-#define COGL_PIPELINE_STATE_AFFECTS_VERTEX_CODEGEN \
-  (COGL_PIPELINE_STATE_LAYERS | \
-   COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE |  \
-   COGL_PIPELINE_STATE_VERTEX_SNIPPETS)
 
 typedef struct
 {
@@ -285,7 +284,8 @@ typedef struct
   CoglPipelineBlendState blend_state;
   CoglDepthState depth_state;
   float point_size;
-  CoglBool per_vertex_point_size;
+  unsigned int non_zero_point_size : 1;
+  unsigned int per_vertex_point_size : 1;
   CoglPipelineLogicOpsState logic_ops_state;
   CoglPipelineCullFaceState cull_face_state;
   CoglPipelineUniformsState uniforms_state;
@@ -904,6 +904,9 @@ _cogl_pipeline_init_state_hash_functions (void);
 
 void
 _cogl_pipeline_init_layer_state_hash_functions (void);
+
+CoglPipelineState
+_cogl_pipeline_get_state_for_vertex_codegen (CoglContext *context);
 
 CoglPipelineLayerState
 _cogl_pipeline_get_layer_state_for_fragment_codegen (CoglContext *context);
