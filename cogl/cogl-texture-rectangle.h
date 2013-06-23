@@ -147,6 +147,13 @@ cogl_texture_rectangle_new_with_size (CoglContext *ctx,
  * first check for the %COGL_FEATURE_ID_TEXTURE_RECTANGLE feature
  * using cogl_has_feature().</note>
  *
+ * The storage for the texture is not allocated before this function
+ * returns. You can call cogl_texture_allocate() to explicitly
+ * allocate the underlying storage or preferably let Cogl
+ * automatically allocate storage lazily when it may know more about
+ * how the texture is going to be used and can optimize how it is
+ * allocated.
+ *
  * Returns: A pointer to a newly allocated #CoglTextureRectangle texture
  *          or if the size was too large or there wasn't enough memory
  *          %NULL is returned and @error set.
@@ -187,7 +194,11 @@ cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bitmap,
  * <note>Applications wanting to use #CoglTextureRectangle should
  * first check for the %COGL_FEATURE_ID_TEXTURE_RECTANGLE feature
  * using cogl_has_feature().</note>
-
+ *
+ * The texture is still configurable until it has been allocated so
+ * for example you can declare whether the texture is premultiplied
+ * with cogl_texture_set_premultiplied().
+ *
  * Returns: A newly allocated #CoglTextureRectangle, or if Cogl could
  *          not validate the @gl_handle in some way (perhaps because
  *          of an unsupported format) it will return %NULL and set

@@ -659,14 +659,30 @@ _cogl_texture_2d_sliced_gl_flush_legacy_texobj_wrap_modes (CoglTexture *tex,
     }
 }
 
+static void
+free_spans (CoglTexture2DSliced *tex_2ds)
+{
+  if (tex_2ds->slice_x_spans != NULL)
+    {
+      g_array_free (tex_2ds->slice_x_spans, TRUE);
+      tex_2ds->slice_x_spans = NULL;
+    }
+
+  if (tex_2ds->slice_y_spans != NULL)
+    {
+      g_array_free (tex_2ds->slice_y_spans, TRUE);
+      tex_2ds->slice_y_spans = NULL;
+    }
+}
+
 static CoglBool
-_cogl_texture_2d_sliced_setup_spans (CoglContext *ctx,
-                                     CoglTexture2DSliced *tex_2ds,
-                                     int width,
-                                     int height,
-                                     int max_waste,
-                                     CoglPixelFormat internal_format,
-                                     CoglError **error)
+setup_spans (CoglContext *ctx,
+             CoglTexture2DSliced *tex_2ds,
+             int width,
+             int height,
+             int max_waste,
+             CoglPixelFormat internal_format,
+             CoglError **error)
 {
   int max_width;
   int max_height;
@@ -754,8 +770,8 @@ _cogl_texture_2d_sliced_setup_spans (CoglContext *ctx,
                                COGL_TEXTURE_ERROR,
                                COGL_TEXTURE_ERROR_SIZE,
                                "No suitable slice geometry found");
+              free_spans (tex_2ds);
               return FALSE;
-
             }
         }
 
@@ -791,7 +807,7 @@ _cogl_texture_2d_sliced_setup_spans (CoglContext *ctx,
 }
 
 static void
-_cogl_texture_2d_sliced_slices_free (CoglTexture2DSliced *tex_2ds)
+free_slices (CoglTexture2DSliced *tex_2ds)
 {
   if (tex_2ds->slice_textures != NULL)
     {
@@ -806,111 +822,36 @@ _cogl_texture_2d_sliced_slices_free (CoglTexture2DSliced *tex_2ds)
 
       g_array_free (tex_2ds->slice_textures, TRUE);
     }
-}
 
-static void
-_cogl_texture_2d_sliced_free (CoglTexture2DSliced *tex_2ds)
-{
-  _cogl_texture_2d_sliced_slices_free (tex_2ds);
-
-  if (tex_2ds->slice_x_spans != NULL)
-    g_array_free (tex_2ds->slice_x_spans, TRUE);
-
-  if (tex_2ds->slice_y_spans != NULL)
-    g_array_free (tex_2ds->slice_y_spans, TRUE);
-
-  /* Chain up */
-  _cogl_texture_free (COGL_TEXTURE (tex_2ds));
+  free_spans (tex_2ds);
 }
 
 static CoglBool
-_cogl_texture_2d_sliced_init_base (CoglContext *ctx,
-                                   CoglTexture2DSliced *tex_2ds,
-                                   int width,
-                                   int height,
-                                   int max_waste,
-                                   CoglPixelFormat internal_format,
-                                   CoglError **error)
+allocate_slices (CoglTexture2DSliced *tex_2ds,
+                 int width,
+                 int height,
+                 int max_waste,
+                 CoglPixelFormat internal_format,
+                 CoglError **error)
 {
   CoglTexture *tex = COGL_TEXTURE (tex_2ds);
-
-  _cogl_texture_init (tex, ctx, width, height, &cogl_texture_2d_sliced_vtable);
-
-  tex_2ds->max_waste = max_waste;
-  tex_2ds->internal_format = internal_format;
-
-  return _cogl_texture_2d_sliced_setup_spans (ctx, tex_2ds,
-                                              width, height,
-                                              max_waste,
-                                              internal_format,
-                                              error);
-}
-
-CoglTexture2DSliced *
-cogl_texture_2d_sliced_new_with_size (CoglContext *ctx,
-                                      int width,
-                                      int height,
-                                      int max_waste,
-                                      CoglPixelFormat internal_format)
-{
-  CoglTexture2DSliced *tex_2ds;
-  CoglError *ignore_error = NULL;
-
-  /* Since no data, we need some internal format */
-  if (internal_format == COGL_PIXEL_FORMAT_ANY)
-    internal_format = COGL_PIXEL_FORMAT_RGBA_8888_PRE;
-
-  /* Init texture with empty bitmap */
-  tex_2ds = g_new0 (CoglTexture2DSliced, 1);
-
-  if (!_cogl_texture_2d_sliced_init_base (ctx,
-                                          tex_2ds,
-                                          width, height,
-                                          max_waste,
-                                          internal_format,
-                                          &ignore_error))
-    {
-      /* In this case we failed to find any suitable slicing geometry
-       * for the given texture size.
-       *
-       * We don't need to do anything with the error here since it
-       * will be picked up on later when trying to allocate the
-       * texture.
-       */
-      cogl_error_free (ignore_error);
-    }
-
-  /* NB: We need to be sure that cogl_texture_is_sliced() will work
-   * correctly before returning since
-   * cogl_framebuffer_allocate() uses this api to determine
-   * if a texture can be rendered to which may be before the
-   * slices have been allocated.
-   */
-
-  return _cogl_texture_2d_sliced_object_new (tex_2ds);
-}
-
-static CoglBool
-_cogl_texture_2d_sliced_allocate (CoglTexture *tex,
-                                  CoglError **error)
-{
   CoglContext *ctx = tex->context;
-  CoglTexture2DSliced *tex_2ds = COGL_TEXTURE_2D_SLICED (tex);
   int n_x_slices;
   int n_y_slices;
   int n_slices;
   int x, y;
-  CoglPixelFormat format = tex_2ds->internal_format;
   CoglSpan *x_span;
   CoglSpan *y_span;
 
-  if (!tex_2ds->slice_x_spans || !tex_2ds->slice_y_spans)
+  tex_2ds->internal_format = internal_format;
+
+  if (!setup_spans (ctx, tex_2ds,
+                    width,
+                    height,
+                    max_waste,
+                    internal_format,
+                    error))
     {
-      _cogl_set_error (error,
-                       COGL_TEXTURE_ERROR,
-                       COGL_TEXTURE_ERROR_SIZE,
-                       "Couldn't find suitable slicing geometry "
-                       "for given size");
       return FALSE;
     }
 
@@ -941,17 +882,71 @@ _cogl_texture_2d_sliced_allocate (CoglTexture *tex,
           slice = COGL_TEXTURE (
             cogl_texture_2d_new_with_size (ctx,
                                            x_span->size, y_span->size,
-                                           format));
+                                           internal_format));
           g_array_append_val (tex_2ds->slice_textures, slice);
           if (!cogl_texture_allocate (slice, error))
             {
-              _cogl_texture_2d_sliced_slices_free (tex_2ds);
+              free_slices (tex_2ds);
               return FALSE;
             }
         }
     }
 
   return TRUE;
+}
+
+static void
+_cogl_texture_2d_sliced_free (CoglTexture2DSliced *tex_2ds)
+{
+  free_slices (tex_2ds);
+
+  /* Chain up */
+  _cogl_texture_free (COGL_TEXTURE (tex_2ds));
+}
+
+static CoglTexture2DSliced *
+_cogl_texture_2d_sliced_create_base (CoglContext *ctx,
+                                     int width,
+                                     int height,
+                                     int max_waste,
+                                     CoglPixelFormat internal_format,
+                                     CoglTextureLoader *loader)
+{
+  CoglTexture2DSliced *tex_2ds = g_new0 (CoglTexture2DSliced, 1);
+
+  _cogl_texture_init (COGL_TEXTURE (tex_2ds), ctx, width, height,
+                      internal_format, loader,
+                      &cogl_texture_2d_sliced_vtable);
+
+  tex_2ds->max_waste = max_waste;
+
+  return _cogl_texture_2d_sliced_object_new (tex_2ds);
+}
+
+CoglTexture2DSliced *
+cogl_texture_2d_sliced_new_with_size (CoglContext *ctx,
+                                      int width,
+                                      int height,
+                                      int max_waste,
+                                      CoglPixelFormat internal_format)
+{
+  CoglTextureLoader *loader;
+
+  /* Since no data, we need some internal format */
+  if (internal_format == COGL_PIXEL_FORMAT_ANY)
+    internal_format = COGL_PIXEL_FORMAT_RGBA_8888_PRE;
+
+  loader = _cogl_texture_create_loader ();
+  loader->src_type = COGL_TEXTURE_SOURCE_TYPE_SIZED;
+  loader->src.sized.width = width;
+  loader->src.sized.height = height;
+
+  return _cogl_texture_2d_sliced_create_base (ctx,
+                                              width,
+                                              height,
+                                              max_waste,
+                                              internal_format,
+                                              loader);
 }
 
 CoglTexture2DSliced *
@@ -961,61 +956,21 @@ _cogl_texture_2d_sliced_new_from_bitmap (CoglBitmap *bmp,
                                          CoglBool can_convert_in_place,
                                          CoglError **error)
 {
-  CoglContext *ctx;
-  CoglTexture2DSliced *tex_2ds;
-  CoglBitmap *upload_bmp;
-  int width, height;
+  CoglTextureLoader *loader;
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_bitmap (bmp), NULL);
 
-  ctx = _cogl_bitmap_get_context (bmp);
+  loader = _cogl_texture_create_loader ();
+  loader->src_type = COGL_TEXTURE_SOURCE_TYPE_BITMAP;
+  loader->src.bitmap.bitmap = cogl_object_ref (bmp);
+  loader->src.bitmap.can_convert_in_place = can_convert_in_place;
 
-  width = cogl_bitmap_get_width (bmp);
-  height = cogl_bitmap_get_height (bmp);
-
-  /* Create new texture and fill with loaded data */
-  tex_2ds = g_new0 (CoglTexture2DSliced, 1);
-
-  internal_format =
-    _cogl_texture_determine_internal_format (cogl_bitmap_get_format (bmp),
-                                             internal_format);
-
-  upload_bmp = _cogl_bitmap_convert_for_upload (bmp,
-                                                internal_format,
-                                                can_convert_in_place,
-                                                error);
-  if (upload_bmp == NULL)
-    {
-      _cogl_texture_2d_sliced_free (tex_2ds);
-      return NULL;
-    }
-
-  /* NB: we may fail to find any suitable slicing geometry for the
-   * given texture size. */
-  if (!_cogl_texture_2d_sliced_init_base (ctx,
-                                          tex_2ds,
-                                          width, height,
-                                          max_waste,
-                                          internal_format,
-                                          error))
-    goto error;
-
-  if (!cogl_texture_allocate (COGL_TEXTURE (tex_2ds), error))
-    goto error;
-
-  if (!_cogl_texture_2d_sliced_upload_bitmap (tex_2ds,
-                                              upload_bmp,
-                                              error))
-    goto error;
-
-  cogl_object_unref (upload_bmp);
-
-  return _cogl_texture_2d_sliced_object_new (tex_2ds);
-
- error:
-  cogl_object_unref (upload_bmp);
-  _cogl_texture_2d_sliced_free (tex_2ds);
-  return NULL;
+  return _cogl_texture_2d_sliced_create_base (_cogl_bitmap_get_context (bmp),
+                                              cogl_bitmap_get_width (bmp),
+                                              cogl_bitmap_get_height (bmp),
+                                              max_waste,
+                                              internal_format,
+                                              loader);
 }
 
 CoglTexture2DSliced *
@@ -1065,6 +1020,13 @@ cogl_texture_2d_sliced_new_from_data (CoglContext *ctx,
 
   cogl_object_unref (bmp);
 
+  if (tex_2ds &&
+      !cogl_texture_allocate (COGL_TEXTURE (tex_2ds), error))
+    {
+      cogl_object_unref (tex_2ds);
+      return NULL;
+    }
+
   return tex_2ds;
 }
 
@@ -1096,6 +1058,107 @@ cogl_texture_2d_sliced_new_from_file (CoglContext *ctx,
 }
 
 static CoglBool
+allocate_with_size (CoglTexture2DSliced *tex_2ds,
+                    CoglTextureLoader *loader,
+                    CoglError **error)
+{
+  CoglTexture *tex = COGL_TEXTURE (tex_2ds);
+  CoglPixelFormat internal_format =
+    _cogl_texture_determine_internal_format (tex, COGL_PIXEL_FORMAT_ANY);
+
+  if (allocate_slices (tex_2ds,
+                       loader->src.sized.width,
+                       loader->src.sized.height,
+                       tex_2ds->max_waste,
+                       internal_format,
+                       error))
+    {
+      _cogl_texture_set_allocated (COGL_TEXTURE (tex_2ds),
+                                   internal_format,
+                                   loader->src.sized.width,
+                                   loader->src.sized.height);
+      return TRUE;
+    }
+  else
+    return FALSE;
+}
+
+static CoglBool
+allocate_from_bitmap (CoglTexture2DSliced *tex_2ds,
+                      CoglTextureLoader *loader,
+                      CoglError **error)
+{
+  CoglTexture *tex = COGL_TEXTURE (tex_2ds);
+  CoglBitmap *bmp = loader->src.bitmap.bitmap;
+  int width = cogl_bitmap_get_width (bmp);
+  int height = cogl_bitmap_get_height (bmp);
+  CoglBool can_convert_in_place = loader->src.bitmap.can_convert_in_place;
+  CoglPixelFormat internal_format;
+  CoglBitmap *upload_bmp;
+
+  _COGL_RETURN_VAL_IF_FAIL (tex_2ds->slice_textures == NULL, FALSE);
+
+  internal_format =
+    _cogl_texture_determine_internal_format (tex,
+                                             cogl_bitmap_get_format (bmp));
+
+  upload_bmp = _cogl_bitmap_convert_for_upload (bmp,
+                                                internal_format,
+                                                can_convert_in_place,
+                                                error);
+  if (upload_bmp == NULL)
+    return FALSE;
+
+  if (!allocate_slices (tex_2ds,
+                        width,
+                        height,
+                        tex_2ds->max_waste,
+                        internal_format,
+                        error))
+    {
+      cogl_object_unref (upload_bmp);
+      return FALSE;
+    }
+
+  if (!_cogl_texture_2d_sliced_upload_bitmap (tex_2ds,
+                                              upload_bmp,
+                                              error))
+    {
+      free_slices (tex_2ds);
+      cogl_object_unref (upload_bmp);
+      return FALSE;
+    }
+
+  cogl_object_unref (upload_bmp);
+
+  _cogl_texture_set_allocated (tex, internal_format, width, height);
+
+  return TRUE;
+}
+
+static CoglBool
+_cogl_texture_2d_sliced_allocate (CoglTexture *tex,
+                                  CoglError **error)
+{
+  CoglTexture2DSliced *tex_2ds = COGL_TEXTURE_2D_SLICED (tex);
+  CoglTextureLoader *loader = tex->loader;
+
+  _COGL_RETURN_VAL_IF_FAIL (loader, FALSE);
+
+  switch (loader->src_type)
+    {
+    case COGL_TEXTURE_SOURCE_TYPE_SIZED:
+      return allocate_with_size (tex_2ds, loader, error);
+    case COGL_TEXTURE_SOURCE_TYPE_BITMAP:
+      return allocate_from_bitmap (tex_2ds, loader, error);
+    default:
+      break;
+    }
+
+  g_return_val_if_reached (FALSE);
+}
+
+static CoglBool
 _cogl_texture_2d_sliced_is_foreign (CoglTexture *tex)
 {
   CoglTexture2DSliced *tex_2ds = COGL_TEXTURE_2D_SLICED (tex);
@@ -1115,17 +1178,10 @@ _cogl_texture_2d_sliced_is_sliced (CoglTexture *tex)
 {
   CoglTexture2DSliced *tex_2ds = COGL_TEXTURE_2D_SLICED (tex);
 
-  /* It's possible that we failed to calculate valid slicing geometry
-   * when initializing the texture due to the max_waste size and in
-   * this case we report that the texture is not sliced.
-   *
-   * In this case though we know that we will be throwing an error
-   * when this texture is later allocated so it shouldn't really
-   * matter what we report here since the texture won't be used in the
-   * end.
-   */
-  if (!tex_2ds->slice_x_spans || !tex_2ds->slice_y_spans)
-    return FALSE;
+  /* It's only after allocating a sliced texture that we will know
+   * whether it really needed to be sliced... */
+  if (!tex->allocated)
+    cogl_texture_allocate (tex, NULL);
 
   if (tex_2ds->slice_x_spans->len != 1 ||
       tex_2ds->slice_y_spans->len != 1)
