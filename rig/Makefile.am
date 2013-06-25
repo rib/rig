@@ -43,8 +43,6 @@ librig_la_SOURCES = \
 	jni/rig-path.h \
 	jni/rig-controller.c \
 	jni/rig-controller.h \
-	jni/rig-load-xml.h \
-	jni/rig-load-xml.c \
 	jni/rig-pb.h \
 	jni/rig-pb.c \
 	jni/rig-load-save.h \

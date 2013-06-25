@@ -29,7 +29,6 @@
 
 #include "rig.pb-c.h"
 #include "rig-engine.h"
-#include "rig-load-xml.h"
 #include "rig-pb.h"
 
 typedef struct _BufferedFile
@@ -67,10 +66,7 @@ rig_save (RigEngine *engine, const char *path)
     FALSE
   };
 
-  if (g_str_has_suffix (path, ".xml"))
-    rig_filename = g_strconcat (path, ".rig", NULL);
-  else
-    rig_filename = g_strdup (path);
+  rig_filename = g_strdup (path);
 
   fp = fopen (rig_filename, "w");
   g_free (rig_filename);
@@ -124,13 +120,10 @@ rig_load (RigEngine *engine, const char *file)
       engine->serialization_stack /* allocator_data */
     };
 
-
-  /* XXX: For compatability with Rig 2 we support loading XML ui
-   * descriptions, though the plan is to only maintain this for one
-   * release, just to give time to convert existing files. */
   if (g_str_has_suffix (file, ".xml"))
     {
-      rig_load_xml (engine, file);
+      g_warning ("Loading xml UI descriptions in Rig is no longer "
+                 "supported, only .rig files can be loaded");
       return;
     }
 
