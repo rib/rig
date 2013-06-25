@@ -89,4 +89,7 @@ rut_model_get_mesh (RutObject *self);
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);
 
+RutAsset *
+rut_model_get_asset (RutModel *model);
+
 #endif /* _RUT_MODEL_H_ */

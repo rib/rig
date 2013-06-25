@@ -23,7 +23,8 @@
 #include "rig.pb-c.h"
 #include "rig-pb.h"
 #include "rig-engine.h"
-#include "rig-load-xml.h"
+
+#include <rut.h>
 
 typedef struct _Serializer
 {
