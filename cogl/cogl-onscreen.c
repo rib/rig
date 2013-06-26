@@ -74,7 +74,6 @@ cogl_onscreen_new (CoglContext *ctx, int width, int height)
   _cogl_framebuffer_init (COGL_FRAMEBUFFER (onscreen),
                           ctx,
                           COGL_FRAMEBUFFER_TYPE_ONSCREEN,
-                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                           width, /* width */
                           height); /* height */
 
