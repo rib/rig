@@ -147,17 +147,6 @@ unsigned int
 cogl_texture_get_height (CoglTexture *texture);
 
 /**
- * cogl_texture_get_format:
- * @texture: a #CoglTexture pointer.
- *
- * Queries the #CoglPixelFormat of a cogl texture.
- *
- * Return value: the #CoglPixelFormat of the GPU side texture
- */
-CoglPixelFormat
-cogl_texture_get_format (CoglTexture *texture);
-
-/**
  * cogl_texture_is_sliced:
  * @texture: a #CoglTexture pointer.
  *

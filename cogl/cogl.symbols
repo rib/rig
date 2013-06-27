@@ -543,7 +543,6 @@ cogl_sub_texture_new
 cogl_texture_error_domain
 cogl_texture_flags_get_type
 cogl_texture_get_data
-cogl_texture_get_format
 cogl_texture_get_gl_texture
 cogl_texture_get_height
 cogl_texture_get_width

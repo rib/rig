@@ -1304,7 +1304,7 @@ _cogl_texture_2d_sliced_set_region (CoglTexture *tex,
   CoglBool status;
 
   upload_bmp = _cogl_bitmap_convert_for_upload (bmp,
-                                                cogl_texture_get_format (tex),
+                                                _cogl_texture_get_format (tex),
                                                 FALSE, /* can't convert in
                                                           place */
                                                 error);
