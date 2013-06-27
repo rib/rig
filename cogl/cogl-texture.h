@@ -132,7 +132,7 @@ cogl_is_texture (void *object);
  *
  * Return value: the width of the GPU side texture in pixels
  */
-unsigned int
+int
 cogl_texture_get_width (CoglTexture *texture);
 
 /**
@@ -143,7 +143,7 @@ cogl_texture_get_width (CoglTexture *texture);
  *
  * Return value: the height of the GPU side texture in pixels
  */
-unsigned int
+int
 cogl_texture_get_height (CoglTexture *texture);
 
 /**

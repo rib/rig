@@ -170,13 +170,13 @@ _cogl_texture_is_foreign (CoglTexture *texture)
     return FALSE;
 }
 
-unsigned int
+int
 cogl_texture_get_width (CoglTexture *texture)
 {
   return texture->width;
 }
 
-unsigned int
+int
 cogl_texture_get_height (CoglTexture *texture)
 {
   return texture->height;
