@@ -381,6 +381,8 @@ measure_mesh_xyz_cb (void **attribute_data,
 {
   RutModel *model = user_data;
   float *pos = attribute_data[0];
+  float *normal = attribute_data[1];
+  float *tangent = attribute_data[2];
 
   measure_mesh_xy_cb (attribute_data, vertex_index, user_data);
 
@@ -388,6 +390,11 @@ measure_mesh_xyz_cb (void **attribute_data,
     model->min_z = pos[2];
   if (pos[2] > model->max_z)
     model->max_z = pos[2];
+
+	if (!model->builtin_normals)
+		normal[0] = normal[1] = normal[2] = 0;
+
+	tangent[0] = tangent[1] = tangent[2] = 0;
 
   return TRUE;
 }
@@ -436,6 +443,8 @@ rut_model_new_from_mesh (RutContext *ctx,
                            measure_callback,
                            model,
                            "cogl_position_in",
+                           "cogl_normal_in",
+                           "tangent_in",
                            NULL);
 
 	rut_mesh_foreach_triangle (model->mesh,
