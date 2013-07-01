@@ -21,15 +21,10 @@
  *
  */
 
-#if !defined(__COGL_H_INSIDE__) && !defined(COGL_COMPILATION)
-#error "Only <cogl/cogl.h> can be included directly."
-#endif
-
 #ifndef __COGL_PATH_H__
 #define __COGL_PATH_H__
 
-#include <cogl/cogl-types.h>
-#include <cogl/cogl-context.h>
+#include <cogl/cogl.h>
 
 COGL_BEGIN_DECLS
 
