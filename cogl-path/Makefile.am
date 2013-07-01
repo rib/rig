@@ -60,7 +60,7 @@ libcogl_path_la_LIBADD = $(top_builddir)/cogl/libcogl2.la
 libcogl_path_la_LIBADD += $(COGL_DEP_LIBS) $(COGL_GST_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 libcogl_path_la_LDFLAGS = \
 	-export-dynamic \
-	-export-symbols-regex "^cogl_path_.*" \
+	-export-symbols-regex "^cogl_(framebuffer|path)_.*" \
 	-no-undefined \
 	-version-info @COGL_LT_CURRENT@:@COGL_LT_REVISION@:@COGL_LT_AGE@ \
 	-rpath $(libdir)
