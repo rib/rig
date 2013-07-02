@@ -214,12 +214,11 @@ rut_video_grab_thumbnail (void *instance,
   if (generator->video->texture)
     cogl_object_unref (generator->video->texture);
 
-  generator->video->texture =
-    cogl_texture_new_with_size (generator->ctx,
-                                tex_width,
-                                tex_height,
-                                COGL_TEXTURE_NONE,
-                                COGL_PIXEL_FORMAT_RGBA_8888);
+  generator->video->texture = COGL_TEXTURE (
+    cogl_texture_2d_new_with_size (generator->ctx,
+                                   tex_width,
+                                   tex_height,
+                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE));
 
   offscreen = cogl_offscreen_new_to_texture (generator->video->texture);
   fbo = COGL_FRAMEBUFFER (offscreen);
@@ -340,11 +339,11 @@ rut_model_get_thumbnail (RutContext *ctx,
 
   mesh = rut_model_get_mesh (model);
 
-  thumbnail = cogl_texture_new_with_size (ctx->cogl_context,
-                                          tex_width,
-                                          tex_height,
-                                          COGL_TEXTURE_NONE,
-                                          COGL_PIXEL_FORMAT_RGBA_8888);
+  thumbnail = COGL_TEXTURE (
+    cogl_texture_2d_new_with_size (ctx->cogl_context,
+                                   tex_width,
+                                   tex_height,
+                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE));
 
   offscreen = cogl_offscreen_new_to_texture (thumbnail);
   frame_buffer = COGL_FRAMEBUFFER (offscreen);

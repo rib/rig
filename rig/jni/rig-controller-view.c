@@ -550,10 +550,10 @@ rig_controller_view_draw_nodes_background (RigControllerView *view,
 
       cogl_buffer_unmap (COGL_BUFFER (buffer));
 
-      texture = cogl_texture_new_from_bitmap (bitmap,
-                                              COGL_TEXTURE_NO_ATLAS,
-                                              COGL_PIXEL_FORMAT_ANY,
-                                              NULL);
+      texture = COGL_TEXTURE (
+        cogl_texture_2d_new_from_bitmap (bitmap,
+                                         COGL_PIXEL_FORMAT_ANY,
+                                         NULL));
 
       cogl_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */
