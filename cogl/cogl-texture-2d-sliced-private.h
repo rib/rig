@@ -42,11 +42,4 @@ struct _CoglTexture2DSliced
   CoglPixelFormat internal_format;
 };
 
-CoglTexture2DSliced *
-_cogl_texture_2d_sliced_new_from_bitmap (CoglBitmap *bmp,
-                                         int max_waste,
-                                         CoglPixelFormat internal_format,
-                                         CoglBool can_convert_in_place,
-                                         CoglError **error);
-
 #endif /* __COGL_TEXTURE_2D_SLICED_PRIVATE_H */

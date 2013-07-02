@@ -105,7 +105,7 @@ _cogl_texture_init (CoglTexture *texture,
                     CoglContext *context,
                     int width,
                     int height,
-                    CoglPixelFormat internal_format,
+                    CoglPixelFormat src_format,
                     CoglTextureLoader *loader,
                     const CoglTextureVtable *vtable)
 {
@@ -119,7 +119,7 @@ _cogl_texture_init (CoglTexture *texture,
 
   texture->loader = loader;
 
-  _cogl_texture_set_internal_format (texture, internal_format);
+  _cogl_texture_set_internal_format (texture, src_format);
 
   /* Although we want to initialize texture::components according
    * to the source format, we always want the internal layout to
@@ -1411,4 +1411,12 @@ CoglBool
 cogl_texture_get_premultiplied (CoglTexture *texture)
 {
   return texture->premultiplied;
+}
+
+void
+_cogl_texture_copy_internal_format (CoglTexture *src,
+                                    CoglTexture *dest)
+{
+  cogl_texture_set_components (dest, src->components);
+  cogl_texture_set_premultiplied (dest, src->premultiplied);
 }

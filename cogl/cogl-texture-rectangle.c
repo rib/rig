@@ -193,22 +193,16 @@ _cogl_texture_rectangle_create_base (CoglContext *ctx,
 CoglTextureRectangle *
 cogl_texture_rectangle_new_with_size (CoglContext *ctx,
                                       int width,
-                                      int height,
-                                      CoglPixelFormat internal_format)
+                                      int height)
 {
-  CoglTextureLoader *loader;
-
-  /* Since no data, we need some internal format */
-  if (internal_format == COGL_PIXEL_FORMAT_ANY)
-    internal_format = COGL_PIXEL_FORMAT_RGBA_8888_PRE;
-
-  loader = _cogl_texture_create_loader ();
+  CoglTextureLoader *loader = _cogl_texture_create_loader ();
   loader->src_type = COGL_TEXTURE_SOURCE_TYPE_SIZED;
   loader->src.sized.width = width;
   loader->src.sized.height = height;
 
   return _cogl_texture_rectangle_create_base (ctx, width, height,
-                                              internal_format, loader);
+                                              COGL_PIXEL_FORMAT_RGBA_8888_PRE,
+                                              loader);
 }
 
 static CoglBool
@@ -485,9 +479,7 @@ _cogl_texture_rectangle_allocate (CoglTexture *tex,
 }
 
 CoglTextureRectangle *
-cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bmp,
-                                        CoglPixelFormat internal_format,
-                                        CoglError **error)
+cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bmp)
 {
   CoglTextureLoader *loader;
 
@@ -501,7 +493,7 @@ cogl_texture_rectangle_new_from_bitmap (CoglBitmap *bmp,
   return _cogl_texture_rectangle_create_base (_cogl_bitmap_get_context (bmp),
                                               cogl_bitmap_get_width (bmp),
                                               cogl_bitmap_get_height (bmp),
-                                              internal_format,
+                                              cogl_bitmap_get_format (bmp),
                                               loader);
 }
 
@@ -510,8 +502,7 @@ cogl_texture_rectangle_new_from_foreign (CoglContext *ctx,
                                          unsigned int gl_handle,
                                          int width,
                                          int height,
-                                         CoglPixelFormat format,
-                                         CoglError **error)
+                                         CoglPixelFormat format)
 {
   CoglTextureLoader *loader;
 

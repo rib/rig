@@ -232,7 +232,7 @@ _cogl_texture_init (CoglTexture *texture,
                     CoglContext *ctx,
                     int width,
                     int height,
-                    CoglPixelFormat internal_format,
+                    CoglPixelFormat src_format,
                     CoglTextureLoader *loader,
                     const CoglTextureVtable *vtable);
 
@@ -368,5 +368,9 @@ _cogl_texture_get_format (CoglTexture *texture);
 
 CoglTextureLoader *
 _cogl_texture_create_loader (void);
+
+void
+_cogl_texture_copy_internal_format (CoglTexture *src,
+                                    CoglTexture *dest);
 
 #endif /* __COGL_TEXTURE_PRIVATE_H */

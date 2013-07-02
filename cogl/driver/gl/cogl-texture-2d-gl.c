@@ -525,8 +525,7 @@ cogl_texture_2d_gl_new_from_foreign (CoglContext *ctx,
                                      unsigned int gl_handle,
                                      int width,
                                      int height,
-                                     CoglPixelFormat format,
-                                     CoglError **error)
+                                     CoglPixelFormat format)
 {
   CoglTextureLoader *loader;
 
