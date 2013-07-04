@@ -1,0 +1,16 @@
+
+@import url("template.css");
+@import url("grid/grids.css");
+@import url("heading.css");
+@import url("content.css");
+
+body{font-family: 'Droid Sans', sans-serif; font-size: 14px; padding: 0px; margin: 0px;}
+
+.leftCol{margin-right: 50px; margin-left: 5px; }
+.rightCol{margin-right: 50px; }
+
+#tweet{font-family: 'Marvel', sans-serif;}
+#tweet li{padding-bottom: 10px;}
+
+.note{font-family: 'Marvel', sans-serif; font-size: 90%;}
+.head{background: #eeeeee;}

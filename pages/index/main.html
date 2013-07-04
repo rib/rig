@@ -1,0 +1,53 @@
+<h1>An open source GPU graphics & utilities API:</h1>
+<h4>Providing:</h4>
+<ul>
+    <li><span class="category">A hardware accelerated graphics API</span></li>
+    <li><span class="category">Math utilities:</span> Matrices including Matrix Stacks, Vectors, Euler angles, Quaternion rotations and Colors.</li>
+    <li><span class="category">Texturing utilities:</span> Atlasing, Sub textures, Sliced textures, X11 Texture from pixmap, Wayland texture from buffer</li>
+</ul>
+<h4>Cogl also provides these optional utilities:</h4>
+<ul>
+    <li><span class="category">cogl-gles2:</span> to intermix rendering with OpenGL ES 2.0</li>
+    <li><span class="category">cogl-pango:</span> A Pango text renderer backend</li>
+    <li><span class="category">cogl-gst:</span> GStreamer video integration</li>
+    <li><span class="category">cogl-path:</span> A 2D Path tessellation api</li>
+</ul>
+<a href="about.html">Find out more...</a>
+<h1>Who's using Cogl</h1>
+
+<h2><a href="http://www.github.com/01org/rig">Rig</a></h2>
+
+<p>Rig is aiming to provide a design tool and rendering engine for the next
+generation of user interface developers and uses Cogl for all low-level GPU
+programming:</p>
+
+<img src="assets/rig-mock-up.png">
+
+<h2><a href="http://www.gnome.org/gnome-3/">Gnome Shell</a></h2>
+
+<p>Gnome Shell provides the core user interface of the Gnome 3 Desktop. Gnome
+Shell is built on huge number of technologies (too many to list here) including
+<a href="http://www.clutter-project.org/">Clutter</a> which is a low-level
+UI toolkit built on top of Cogl.</p>
+
+<img src="assets/640px-Gnome_Shell_Applications_Screen.png">
+
+<h2><a href="http://media-explorer.org/">Media Explorer</a></h2>
+
+<p>Media Explorer is a media centre application for Linux leveraging libraries
+such as <a href="http://gupnp.org/">GUPnP</a>, <a
+    href="http://live.gnome.org/Grilo">Grilo</a>, <a
+    href="http://projects.gnome.org/tracker/">Tracker</a> and <a
+    href="http://gstreamer.freedesktop.org/">GStreamer</a> to find, index and
+play local and remote media. The application (interface coded in <a
+    href="https://github.com/clutter-project/mx#readme">Mx</a> and <a
+    href="http://www.clutter-project.org/">Clutter</a>) enables browsing,
+searching, and viewing of found media.</p>
+
+<iframe width="420" height="315" src="http://www.youtube.com/embed/IA4uTPmbzSI" frameborder="0" allowfullscreen></iframe>
+
+<h2><a href="http://cgit.freedesktop.org/~rib/cairo/log/?h=wip/cogl-backend">Cairo Cogl</a></h2>
+This is a proof of concept accelerated backend for Cairo that did some interesting things to transparently retain tessellated path geometry where early profiling showed some very compelling results. The project has only stalled due to lack of time but could be an interesting project for someone to revive.
+
+<h2><a href="http://git.busydoingnothing.co.uk/cgit.cgi/evas.git/log/?h=wip/cogl-engine">Evas Cogl</a></h2>
+This is a proof of concept backend for the Evas scenegraph library which could for example enable the project to share the effort of handling the various EGL/GLX/WGL  window system integration backends as well as the quirky differences between GL and GLES and could also help enable support for OpenGL 3 and WebGL.
