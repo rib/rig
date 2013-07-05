@@ -22,6 +22,7 @@
 #include <config.h>
 
 #include <cogl/cogl.h>
+#include <cogl-path/cogl-path.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -379,9 +380,9 @@ rut_drop_down_paint_selector (RutDropDown *drop,
                                                rectangle */
                                             0.5f, 0.5f, 0.5f, 0.5f);
 
-  cogl_framebuffer_stroke_path (fb,
-                                drop->selector_outline_pipeline,
-                                drop->selector_outline_path);
+  cogl_path_stroke (drop->selector_outline_path,
+                    fb,
+                    drop->selector_outline_pipeline);
 
   rut_drop_down_ensure_layouts (drop);
 

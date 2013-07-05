@@ -27,6 +27,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <cogl-path/cogl-path.h>
+
 #include "rut-text.h"
 #include "rut-paintable.h"
 #include "components/rut-camera.h"
@@ -1858,7 +1860,7 @@ selection_paint (RutText *text,
                                                 add_selection_rectangle_to_path,
                                                 selection_path);
 
-          cogl_framebuffer_fill_path (fb, pipeline, selection_path);
+          cogl_path_fill (selection_path, fb, pipeline);
 
           /* Paint selected text */
           cogl_framebuffer_push_path_clip (fb,

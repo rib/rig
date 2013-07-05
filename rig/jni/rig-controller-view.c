@@ -25,6 +25,8 @@
 
 #include <math.h>
 
+#include <cogl-path/cogl-path.h>
+
 #include "rut.h"
 
 #include "rig-controller-view.h"
@@ -489,7 +491,7 @@ rig_controller_view_draw_box (RigControllerView *view,
                            view->box_y2 * view->row_height);
     }
 
-  cogl_framebuffer_stroke_path (fb, view->box_pipeline, view->box_path);
+  cogl_path_stroke (view->box_path, fb, view->box_pipeline);
 }
 
 static void
