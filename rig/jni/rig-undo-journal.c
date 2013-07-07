@@ -543,9 +543,9 @@ rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
   CopyControllerPropertiesData copy_properties_data;
   GList *l;
 
-  rut_entity_foreach_component (entity,
-                                delete_entity_component_cb,
-                                sub_journal);
+  rut_entity_foreach_component_safe (entity,
+                                     delete_entity_component_cb,
+                                     sub_journal);
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;

@@ -213,6 +213,11 @@ rut_entity_foreach_component (RutEntity *entity,
                               void *user_data);
 
 void
+rut_entity_foreach_component_safe (RutEntity *entity,
+                                   RutComponentCallback callback,
+                                   void *user_data);
+
+void
 rut_entity_set_pipeline_cache (RutEntity *entity,
                                int slot,
                                CoglPipeline *pipeline);

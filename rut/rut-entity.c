@@ -724,6 +724,22 @@ rut_entity_get_component (RutEntity *entity,
 }
 
 void
+rut_entity_foreach_component_safe (RutEntity *entity,
+                                   RutComponentCallback callback,
+                                   void *user_data)
+{
+  int i;
+  int n_components = entity->components->len;
+  size_t size = sizeof (void *) * n_components;
+  void **components = g_alloca (size);
+
+  memcpy (components, entity->components->pdata, size);
+
+  for (i = 0; i < n_components; i++)
+    callback (components[i], user_data);
+}
+
+void
 rut_entity_foreach_component (RutEntity *entity,
                               RutComponentCallback callback,
                               void *user_data)
