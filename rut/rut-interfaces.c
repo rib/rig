@@ -451,6 +451,37 @@ rut_introspectable_foreach_property (RutObject *object,
   introspectable_vtable->foreach_property (object, callback, user_data);
 }
 
+typedef struct _CopyPropertiesState
+{
+  RutPropertyContext *property_ctx;
+  RutObject *dst;
+} CopyPropertiesState;
+
+static void
+copy_property_cb (RutProperty *property,
+                  void *user_data)
+{
+  CopyPropertiesState *state = user_data;
+  RutObject *dst = state->dst;
+  RutProperty *dst_property =
+    rut_introspectable_lookup_property (dst, property->spec->name);
+
+  g_return_if_fail (dst_property != NULL);
+
+  rut_property_copy_value (state->property_ctx, dst_property, property);
+}
+
+void
+rut_introspectable_copy_properties (RutPropertyContext *property_ctx,
+                                    RutObject *src,
+                                    RutObject *dst)
+{
+  CopyPropertiesState state = { property_ctx, dst };
+  rut_introspectable_foreach_property (src,
+                                       copy_property_cb,
+                                       &state);
+}
+
 #if 0
 void
 rut_simple_introspectable_register_properties (RutObject *object,

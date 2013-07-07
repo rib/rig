@@ -177,6 +177,11 @@ rut_introspectable_foreach_property (RutObject *object,
                                      RutIntrospectablePropertyCallback callback,
                                      void *user_data);
 
+void
+rut_introspectable_copy_properties (RutPropertyContext *property_ctx,
+                                    RutObject *src,
+                                    RutObject *dst);
+
 typedef struct _RutSimpleIntrospectableProps
 {
   RutProperty *first_property;
