@@ -157,6 +157,135 @@ set_focal_parameters (CoglPipeline *pipeline,
                                    &depth_of_field);
 }
 
+static void
+init_dof_pipeline_template (RigEngine *engine)
+{
+  CoglPipeline *pipeline;
+  CoglDepthState depth_state;
+  CoglSnippet *snippet;
+
+  pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+  cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
+
+  cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
+
+  cogl_depth_state_init (&depth_state);
+  cogl_depth_state_set_test_enabled (&depth_state, TRUE);
+  cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+                              /* definitions */
+                              "uniform float dof_focal_distance;\n"
+                              "uniform float dof_depth_of_field;\n"
+
+                              "varying float dof_blur;\n",
+                              //"varying vec4 world_pos;\n",
+
+                              /* compute the amount of bluriness we want */
+                              "vec4 world_pos = cogl_modelview_matrix * pos;\n"
+                              //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
+                              "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
+                              "                  dof_depth_of_field, 0.0, 1.0);\n"
+  );
+
+  cogl_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  /* This was used to debug the focal distance and bluriness amount in the DoF
+   * effect: */
+#if 0
+  cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              "varying vec4 world_pos;\n"
+                              "varying float dof_blur;",
+
+                              "cogl_color_out = vec4(dof_blur,0,0,1);\n"
+                              //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                              //"if (world_pos.z < -30.0) cogl_color_out = vec4(0,1,0,1);\n"
+                              //"if (abs (world_pos.z + 30.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
+                              "cogl_color_out.a = dof_blur;\n"
+                              //"cogl_color_out.a = 1.0;\n"
+  );
+
+  cogl_pipeline_add_snippet (pipeline, snippet);
+  cogl_object_unref (snippet);
+#endif
+
+  engine->dof_pipeline_template = pipeline;
+}
+
+static void
+init_dof_diamond_pipeline (RigEngine *engine)
+{
+  CoglPipeline *dof_diamond_pipeline =
+    cogl_pipeline_copy (engine->dof_pipeline_template);
+  CoglSnippet *snippet;
+
+  cogl_pipeline_set_layer_texture (dof_diamond_pipeline,
+                                   0,
+                                   engine->ctx->circle_texture);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              /* declarations */
+                              "varying float dof_blur;",
+
+                              /* post */
+                              "if (cogl_color_out.a <= 0.0)\n"
+                              "  discard;\n"
+                              "\n"
+                              "cogl_color_out.a = dof_blur;\n");
+
+  cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  engine->dof_diamond_pipeline = dof_diamond_pipeline;
+}
+
+static void
+init_dof_unshaped_pipeline (RigEngine *engine)
+{
+  CoglPipeline *dof_unshaped_pipeline =
+    cogl_pipeline_copy (engine->dof_pipeline_template);
+  CoglSnippet *snippet;
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              /* declarations */
+                              "varying float dof_blur;",
+
+                              /* post */
+                              "if (cogl_color_out.a < 0.25)\n"
+                              "  discard;\n"
+                              "\n"
+                              "cogl_color_out.a = dof_blur;\n");
+
+  cogl_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
+}
+
+static void
+init_dof_pipeline (RigEngine *engine)
+{
+  CoglPipeline *dof_pipeline =
+    cogl_pipeline_copy (engine->dof_pipeline_template);
+  CoglSnippet *snippet;
+
+  /* store the bluriness in the alpha channel */
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              "varying float dof_blur;",
+
+                              "cogl_color_out.a = dof_blur;\n"
+  );
+  cogl_pipeline_add_snippet (dof_pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  engine->dof_pipeline = dof_pipeline;
+}
+
 void
 rig_renderer_init (RigEngine *engine)
 {
@@ -552,6 +681,14 @@ rig_renderer_init (RigEngine *engine)
       "pos.xyz = cogl_normal_in * hair_pos + pos.xyz;\n"
       "cogl_position_out = cogl_modelview_projection_matrix * pos;\n"
       "cogl_position_out += gravity_dir * (pow (layer, 3.0) * force);\n");
+
+  init_dof_pipeline_template (engine);
+
+  init_dof_diamond_pipeline (engine);
+
+  init_dof_unshaped_pipeline (engine);
+
+  init_dof_pipeline (engine);
 }
 
 void
@@ -686,135 +823,6 @@ get_entity_mask_pipeline (RigEngine *engine,
         }
 
       return cogl_object_ref (pipeline);
-    }
-
-  /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!engine->dof_pipeline_template))
-    {
-      CoglPipeline *pipeline;
-      CoglDepthState depth_state;
-      CoglSnippet *snippet;
-
-      pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-      cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALPHA);
-
-      cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
-
-      cogl_depth_state_init (&depth_state);
-      cogl_depth_state_set_test_enabled (&depth_state, TRUE);
-      cogl_pipeline_set_depth_state (pipeline, &depth_state, NULL);
-
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-
-                                  /* definitions */
-                                  "uniform float dof_focal_distance;\n"
-                                  "uniform float dof_depth_of_field;\n"
-
-                                  "varying float dof_blur;\n",
-                                  //"varying vec4 world_pos;\n",
-
-                                  /* compute the amount of bluriness we want */
-                                  "vec4 world_pos = cogl_modelview_matrix * pos;\n"
-                                  //"world_pos = cogl_modelview_matrix * cogl_position_in;\n"
-                                  "dof_blur = 1.0 - clamp (abs (world_pos.z - dof_focal_distance) /\n"
-                                  "                  dof_depth_of_field, 0.0, 1.0);\n"
-      );
-
-      cogl_pipeline_add_snippet (pipeline, engine->cache_position_snippet);
-      cogl_pipeline_add_snippet (pipeline, snippet);
-      cogl_object_unref (snippet);
-
-      /* This was used to debug the focal distance and bluriness amount in the DoF
-       * effect: */
-#if 0
-      cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  "varying vec4 world_pos;\n"
-                                  "varying float dof_blur;",
-
-                                  "cogl_color_out = vec4(dof_blur,0,0,1);\n"
-                                  //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
-                                  //"if (world_pos.z < -30.0) cogl_color_out = vec4(0,1,0,1);\n"
-                                  //"if (abs (world_pos.z + 30.f) < 0.1) cogl_color_out = vec4(0,1,0,1);\n"
-                                  "cogl_color_out.a = dof_blur;\n"
-                                  //"cogl_color_out.a = 1.0;\n"
-      );
-
-      cogl_pipeline_add_snippet (pipeline, snippet);
-      cogl_object_unref (snippet);
-#endif
-
-      engine->dof_pipeline_template = pipeline;
-    }
-
-  /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!engine->dof_diamond_pipeline))
-    {
-      CoglPipeline *dof_diamond_pipeline =
-        cogl_pipeline_copy (engine->dof_pipeline_template);
-      CoglSnippet *snippet;
-
-      cogl_pipeline_set_layer_texture (dof_diamond_pipeline,
-                                       0,
-                                       engine->ctx->circle_texture);
-
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  /* declarations */
-                                  "varying float dof_blur;",
-
-                                  /* post */
-                                  "if (cogl_color_out.a <= 0.0)\n"
-                                  "  discard;\n"
-                                  "\n"
-                                  "cogl_color_out.a = dof_blur;\n");
-
-      cogl_pipeline_add_snippet (dof_diamond_pipeline, snippet);
-      cogl_object_unref (snippet);
-
-      engine->dof_diamond_pipeline = dof_diamond_pipeline;
-    }
-
-  /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!engine->dof_unshaped_pipeline))
-    {
-      CoglPipeline *dof_unshaped_pipeline =
-        cogl_pipeline_copy (engine->dof_pipeline_template);
-      CoglSnippet *snippet;
-
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  /* declarations */
-                                  "varying float dof_blur;",
-
-                                  /* post */
-                                  "if (cogl_color_out.a < 0.25)\n"
-                                  "  discard;\n"
-                                  "\n"
-                                  "cogl_color_out.a = dof_blur;\n");
-
-      cogl_pipeline_add_snippet (dof_unshaped_pipeline, snippet);
-      cogl_object_unref (snippet);
-
-      engine->dof_unshaped_pipeline = dof_unshaped_pipeline;
-    }
-
-  /* TODO: move into init() somewhere */
-  if (G_UNLIKELY (!engine->dof_pipeline))
-    {
-      CoglPipeline *dof_pipeline =
-        cogl_pipeline_copy (engine->dof_pipeline_template);
-      CoglSnippet *snippet;
-
-      /* store the bluriness in the alpha channel */
-      snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                                  "varying float dof_blur;",
-
-                                  "cogl_color_out.a = dof_blur;\n"
-      );
-      cogl_pipeline_add_snippet (dof_pipeline, snippet);
-      cogl_object_unref (snippet);
-
-      engine->dof_pipeline = dof_pipeline;
     }
 
   if (rut_object_get_type (geometry) == &rut_diamond_type)
