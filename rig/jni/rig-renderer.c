@@ -25,6 +25,15 @@
 #include "rig-engine.h"
 #include "rig-renderer.h"
 
+struct _RigRenderer
+{
+  RutObjectProps _parent;
+
+  int ref_count;
+
+  GArray *journal;
+};
+
 typedef enum _CacheSlot
 {
   CACHE_SLOT_SHADOW,
@@ -71,6 +80,62 @@ typedef struct _RigJournalEntry
 #define OPAQUE_THRESHOLD 0.9999
 
 static void
+_rig_renderer_free (void *object)
+{
+  RigRenderer *renderer = object;
+
+  g_array_free (renderer->journal, TRUE);
+  renderer->journal = NULL;
+
+  g_slice_free (RigRenderer, object);
+}
+
+
+RutType rig_renderer_type;
+
+static void
+_rig_renderer_init_type (void)
+{
+  static RutRefCountableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_renderer_free
+  };
+
+  RutType *type = &rig_renderer_type;
+#define TYPE RigRenderer
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+
+#undef TYPE
+}
+
+RigRenderer *
+rig_renderer_new (RigEngine *engine)
+{
+  RigRenderer *renderer = g_slice_new0 (RigRenderer);
+  static CoglBool initialized = FALSE;
+
+  if (initialized == FALSE)
+    {
+      _rig_renderer_init_type ();
+      initialized = TRUE;
+    }
+
+  rut_object_init (&renderer->_parent, &rig_renderer_type);
+
+  renderer->ref_count = 1;
+
+  renderer->journal = g_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
+
+  return renderer;
+}
+
+static void
 rig_journal_log (GArray *journal,
                  RigPaintContext *paint_ctx,
                  RutEntity *entity,
@@ -84,12 +149,6 @@ rig_journal_log (GArray *journal,
 
   entry->entity = rut_refable_ref (entity);
   entry->matrix = *matrix;
-}
-
-GArray *
-rig_journal_new (void)
-{
-  return g_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
 }
 
 static int
@@ -1653,6 +1712,7 @@ entitygraph_pre_paint_cb (RutObject *object,
 {
   RigPaintContext *paint_ctx = user_data;
   RutPaintContext *rut_paint_ctx = user_data;
+  RigRenderer *renderer = paint_ctx->renderer;
   RutCamera *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
@@ -1684,7 +1744,7 @@ entitygraph_pre_paint_cb (RutObject *object,
         }
 
       cogl_framebuffer_get_modelview_matrix (fb, &matrix);
-      rig_journal_log (paint_ctx->engine->journal,
+      rig_journal_log (renderer->journal,
                        paint_ctx,
                        entity,
                        &matrix);
@@ -1713,6 +1773,7 @@ entitygraph_post_paint_cb (RutObject *object,
 static void
 paint_scene (RigPaintContext *paint_ctx)
 {
+  RigRenderer *renderer = paint_ctx->renderer;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
   RigEngine *engine = paint_ctx->engine;
   CoglContext *ctx = engine->ctx->cogl_context;
@@ -1740,7 +1801,7 @@ paint_scene (RigPaintContext *paint_ctx)
                           entitygraph_post_paint_cb,
                           paint_ctx);
 
-  rig_journal_flush (engine->journal, paint_ctx);
+  rig_journal_flush (renderer->journal, paint_ctx);
 }
 
 void

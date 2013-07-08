@@ -194,6 +194,8 @@ rig_engine_paint (RutShell *shell, void *user_data)
                             0.9, 0.9, 0.9, 1);
 
   paint_ctx.engine = engine;
+  paint_ctx.renderer = engine->renderer;
+
   paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
   rut_paint_ctx->camera = engine->camera;
 
@@ -2688,8 +2690,6 @@ rig_engine_init (RutShell *shell, void *user_data)
     }
 #endif /* RIG_EDITOR_ENABLED */
 
-  engine->journal = rig_journal_new ();
-
   engine->assets_registry = g_hash_table_new_full (g_str_hash,
                                                    g_str_equal,
                                                    g_free,
@@ -2764,6 +2764,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 
   rut_graphable_add_child (engine->root, engine->top_bin);
 
+  engine->renderer = rig_renderer_new (engine);
   rig_renderer_init (engine);
 
   engine->device_width = DEVICE_WIDTH;

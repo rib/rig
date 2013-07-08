@@ -34,12 +34,20 @@ typedef struct _RigPaintContext
   RutPaintContext _parent;
 
   RigEngine *engine;
+  RutObject *renderer;
 
   GList *camera_stack;
 
   RigPass pass;
 
 } RigPaintContext;
+
+typedef struct _RigRenderer RigRenderer;
+
+extern RutType rig_renderer_type;
+
+RigRenderer *
+rig_renderer_new (RigEngine *engine);
 
 GArray *
 rig_journal_new (void);

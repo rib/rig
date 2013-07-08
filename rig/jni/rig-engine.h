@@ -77,7 +77,7 @@ struct _RigEngine
   RutMemoryStack *serialization_stack;
 #endif
 
-  GArray *journal;
+  RutObject *renderer;
 
   GList *undo_journal_stack;
   RigUndoJournal *undo_journal;
