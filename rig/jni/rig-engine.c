@@ -802,28 +802,24 @@ apply_asset_input_to_entity (RutEntity *entity,
           RutModel *model;
           float x_range, y_range, z_range, max_range;
 
+          material =
+            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+          if (!material)
+            {
+              material = rut_material_new (engine->ctx, asset);
+              rig_undo_journal_add_component_and_log (sub_journal,
+                                                      entity, material);
+            }
+
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_model_type)
-            {
-              model = geom;
-              if (model == rut_asset_get_model (asset))
-                break;
-            }
+          if (geom && rut_object_get_type (geom) == &rut_model_type &&
+              geom == rut_asset_get_model (asset))
+            break;
           else if (geom)
             rig_undo_journal_delete_component_and_log (sub_journal, geom);
-
-          /* XXX: For now we forcibly remove any material from
-           * the entity when adding a ply model geometry
-           * component since it's likely the model doesn't have
-           * texture coordinates and if the material has an
-           * associated texture with a transparent top-left
-           * pixel the model won't be visible. */
-          material =
-            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-          if (material)
-            rig_undo_journal_delete_component_and_log (sub_journal, material);
 
           model = rut_asset_get_model (asset);
           rig_undo_journal_add_component_and_log (sub_journal, entity, model);
