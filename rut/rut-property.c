@@ -163,6 +163,8 @@ _rut_property_set_binding_full_array (RutProperty *property,
       _rut_property_destroy_binding (property);
       return;
     }
+  else if (callback == NULL)
+    return;
 
   binding = g_slice_alloc (sizeof (RutPropertyBinding) +
                            sizeof (void *) * (n_dependencies + 1));
@@ -333,6 +335,9 @@ rut_property_set_copy_binding (RutPropertyContext *context,
 void
 rut_property_remove_binding (RutProperty *property)
 {
+  if (!property->binding)
+    return;
+
   rut_property_set_binding (property,
                             NULL, /* no callback */
                             NULL, /* no user data */
