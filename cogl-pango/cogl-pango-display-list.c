@@ -380,9 +380,9 @@ emit_vertex_buffer_geometry (CoglFramebuffer *fb,
       cogl_object_unref (attributes[1]);
     }
 
-  cogl_framebuffer_draw_primitive (fb,
-                                   pipeline,
-                                   node->d.texture.primitive);
+  cogl_primitive_draw (node->d.texture.primitive,
+                       fb,
+                       pipeline);
 }
 
 static void
@@ -455,8 +455,8 @@ _cogl_pango_display_list_render (CoglFramebuffer *fb,
           break;
 
         case COGL_PANGO_DISPLAY_LIST_TRAPEZOID:
-          cogl_framebuffer_draw_primitive (fb, node->pipeline,
-                                           node->d.trapezoid.primitive);
+          cogl_primitive_draw (node->d.trapezoid.primitive,
+                               fb, node->pipeline);
           break;
         }
     }

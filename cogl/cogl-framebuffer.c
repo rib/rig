@@ -2222,39 +2222,12 @@ cogl_framebuffer_vdraw_indexed_attributes (CoglFramebuffer *framebuffer,
 }
 
 void
-_cogl_framebuffer_draw_primitive (CoglFramebuffer *framebuffer,
-                                  CoglPipeline *pipeline,
-                                  CoglPrimitive *primitive,
-                                  CoglDrawFlags flags)
-{
-  if (primitive->indices)
-    _cogl_framebuffer_draw_indexed_attributes (framebuffer,
-                                               pipeline,
-                                               primitive->mode,
-                                               primitive->first_vertex,
-                                               primitive->n_vertices,
-                                               primitive->indices,
-                                               primitive->attributes,
-                                               primitive->n_attributes,
-                                               flags);
-  else
-    _cogl_framebuffer_draw_attributes (framebuffer,
-                                       pipeline,
-                                       primitive->mode,
-                                       primitive->first_vertex,
-                                       primitive->n_vertices,
-                                       primitive->attributes,
-                                       primitive->n_attributes,
-                                       flags);
-}
-
-void
 cogl_framebuffer_draw_primitive (CoglFramebuffer *framebuffer,
                                  CoglPipeline *pipeline,
                                  CoglPrimitive *primitive)
 {
-  _cogl_framebuffer_draw_primitive (framebuffer, pipeline, primitive,
-                                    0 /* flags */);
+  _cogl_primitive_draw (primitive, framebuffer, pipeline,
+                        0 /* flags */);
 }
 
 void

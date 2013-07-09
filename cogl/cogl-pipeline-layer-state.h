@@ -85,7 +85,7 @@ typedef enum {
  *   cogl_framebuffer_draw_rectangle(), it will use repeat mode if any
  *   of the texture coordinates are outside the range 0→1, otherwise
  *   it will use clamp to edge. For cogl_framebuffer_draw_attributes()
- *   or cogl_framebuffer_draw_primitive() it will use repeat mode
+ *   or cogl_primitive_draw() it will use repeat mode
  *   except for layers that have point sprite coordinate generation
  *   enabled. This is the default value.
  *

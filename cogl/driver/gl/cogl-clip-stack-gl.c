@@ -34,6 +34,7 @@
 #include "cogl-primitives-private.h"
 #include "cogl-pipeline-opengl-private.h"
 #include "cogl-clip-stack-gl-private.h"
+#include "cogl-primitive-private.h"
 
 #ifndef GL_CLIP_PLANE0
 #define GL_CLIP_PLANE0 0x3000
@@ -364,12 +365,12 @@ paint_primitive_silhouette (CoglFramebuffer *framebuffer,
                             CoglPipeline *pipeline,
                             void *user_data)
 {
-  _cogl_framebuffer_draw_primitive (framebuffer,
-                                    pipeline,
-                                    user_data,
-                                    COGL_DRAW_SKIP_JOURNAL_FLUSH |
-                                    COGL_DRAW_SKIP_PIPELINE_VALIDATION |
-                                    COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
+  _cogl_primitive_draw (user_data,
+                        framebuffer,
+                        pipeline,
+                        COGL_DRAW_SKIP_JOURNAL_FLUSH |
+                        COGL_DRAW_SKIP_PIPELINE_VALIDATION |
+                        COGL_DRAW_SKIP_FRAMEBUFFER_FLUSH);
 }
 
 static void

@@ -42,6 +42,7 @@
 #include "cogl-primitives-private.h"
 #include "cogl-private.h"
 #include "cogl-attribute-private.h"
+#include "cogl-primitive-private.h"
 #include "tesselator/tesselator.h"
 
 #include <string.h>
@@ -369,10 +370,10 @@ _cogl_path_fill_nodes (CoglPath *path,
 
       primitive = _cogl_path_get_fill_primitive (path);
 
-      _cogl_framebuffer_draw_primitive (framebuffer,
-                                        pipeline,
-                                        primitive,
-                                        flags);
+      _cogl_primitive_draw (primitive,
+                            framebuffer,
+                            pipeline,
+                            flags);
     }
 }
 
