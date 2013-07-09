@@ -398,6 +398,11 @@ remove_picker (RutColorButton *button)
 {
   if (button->picker)
     {
+      RutProperty *button_color_prop =
+        &button->properties[RUT_COLOR_BUTTON_PROP_COLOR];
+
+      rut_property_remove_binding (button_color_prop);
+
       rut_shell_ungrab_input (button->context->shell,
                               picker_grab_input_cb,
                               button);
@@ -440,9 +445,7 @@ show_picker (RutColorButton *button,
   float x1, y1, x2, y2;
   float picker_x, picker_y;
 
-  if (button->picker)
-    /* This probably shouldn't happen */
-    return;
+  g_return_if_fail (button->picker == NULL);
 
   button->picker = rut_color_picker_new (button->context);
 
