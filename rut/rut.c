@@ -50,7 +50,7 @@
 typedef struct _RutTextureCacheEntry
 {
   RutContext *ctx;
-  char *filename;
+  GQuark filename_quark;
   CoglTexture *texture;
 } RutTextureCacheEntry;
 #define RUT_TEXTURE_CACHE_ENTRY(X) ((RutTextureCacheEntry *)X)
@@ -212,7 +212,6 @@ _rut_context_init_type (void)
 static void
 _rut_texture_cache_entry_free (RutTextureCacheEntry *entry)
 {
-  g_free (entry->filename);
   g_slice_free (RutTextureCacheEntry, entry);
 }
 
@@ -227,8 +226,8 @@ texture_destroyed_cb (void *user_data)
 {
   RutTextureCacheEntry *entry = user_data;
 
-  g_hash_table_remove (entry->ctx->texture_cache, entry->filename);
-  _rut_texture_cache_entry_free (entry);
+  g_hash_table_remove (entry->ctx->texture_cache,
+                       GUINT_TO_POINTER (entry->filename_quark));
 }
 
 char *
@@ -254,8 +253,10 @@ rut_find_data_file (const char *base_filename)
 CoglTexture *
 rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
 {
+  GQuark filename_quark = g_quark_from_string (filename);
   RutTextureCacheEntry *entry =
-    g_hash_table_lookup (ctx->texture_cache, filename);
+    g_hash_table_lookup (ctx->texture_cache,
+                         GUINT_TO_POINTER (filename_quark));
   CoglTexture *texture;
 
   if (entry)
@@ -271,7 +272,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
 
   entry = g_slice_new0 (RutTextureCacheEntry);
   entry->ctx = ctx;
-  entry->filename = g_strdup (filename);
+  entry->filename_quark = filename_quark;
   /* Note: we don't take a reference on the texture. The aim of this
    * cache is simply to avoid multiple loads of the same file and
    * doesn't affect the lifetime of the tracked textures. */
@@ -282,6 +283,10 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
                              &texture_cache_key,
                              entry,
                              texture_destroyed_cb);
+
+  g_hash_table_insert (ctx->texture_cache,
+                       GUINT_TO_POINTER (filename_quark),
+                       entry);
 
   return texture;
 }
@@ -344,7 +349,7 @@ rut_context_new (RutShell *shell)
   context->settings = rut_settings_new ();
 
   context->texture_cache =
-    g_hash_table_new_full (g_str_hash, g_str_equal,
+    g_hash_table_new_full (g_direct_hash, g_direct_equal,
                            NULL,
                            _rut_texture_cache_entry_destroy_cb);
 
