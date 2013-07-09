@@ -57,6 +57,7 @@
 #include "rut-composite-sizable.h"
 #include "rut-shim.h"
 #include "rut-asset-inspector.h"
+#include "rut-renderer.h"
 
 /* entity/components system */
 #include "rut-entity.h"

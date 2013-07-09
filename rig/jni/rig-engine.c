@@ -777,41 +777,13 @@ apply_asset_input_to_entity (RutEntity *entity,
             }
 
           if (type == RUT_ASSET_TYPE_TEXTURE)
-            {
-              rut_material_set_color_source_asset (material, asset);
-
-              /* XXX: we need a generalized way of informing the
-               * renderer that we've changed an entity so that it
-               * can clear any cached pipelines like this...
-               *
-               * could we use rig_renderer_dirty_entity_state()
-               * perhaps? */
-              rut_entity_set_image_source_cache (entity, 0, NULL);
-            }
+            rut_material_set_color_source_asset (material, asset);
           else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-            {
-              rut_material_set_normal_map_asset (material, asset);
-
-              /* XXX: we need a generalized way of informing the
-               * renderer that we've changed an entity so that it
-               * can clear any cached pipelines like this...
-               *
-               * could we use rig_renderer_dirty_entity_state()
-               * perhaps? */
-              rut_entity_set_image_source_cache (entity, 2, NULL);
-            }
+            rut_material_set_normal_map_asset (material, asset);
           else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-            {
-              rut_material_set_alpha_mask_asset (material, asset);
+            rut_material_set_alpha_mask_asset (material, asset);
 
-              /* XXX: we need a generalized way of informing the
-               * renderer that we've changed an entity so that it
-               * can clear any cached pipelines like this...
-               *
-               * could we use rig_renderer_dirty_entity_state()
-               * perhaps? */
-              rut_entity_set_image_source_cache (entity, 1, NULL);
-            }
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
 
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -868,8 +840,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 
           rut_entity_set_scale (entity, 200.0 / max_range);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
 
           break;
         }
@@ -899,8 +870,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rut_text_set_color (text, &color);
           rig_undo_journal_add_component_and_log (sub_journal, entity, text);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
       else if (asset == engine->circle_builtin_asset)
         {
@@ -949,8 +919,7 @@ apply_asset_input_to_entity (RutEntity *entity,
                                  tex_height);
           rig_undo_journal_add_component_and_log (sub_journal, entity, shape);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
       else if (asset == engine->diamond_builtin_asset)
         {
@@ -1000,8 +969,7 @@ apply_asset_input_to_entity (RutEntity *entity,
                                      tex_height);
           rig_undo_journal_add_component_and_log (sub_journal, entity, diamond);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
       else if (asset == engine->nine_slice_builtin_asset)
         {
@@ -1053,8 +1021,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           rig_undo_journal_add_component_and_log (sub_journal,
                                                   entity, nine_slice);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
       else if (asset == engine->pointalism_grid_builtin_asset)
         {
@@ -1102,8 +1069,7 @@ apply_asset_input_to_entity (RutEntity *entity,
 
           rig_undo_journal_add_component_and_log (sub_journal, entity, grid);
 
-          rig_renderer_dirty_entity_state (entity);
-          rut_entity_set_primitive_cache (entity, 0, NULL);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
       else if (asset == engine->hair_builtin_asset)
         {
@@ -1115,7 +1081,7 @@ apply_asset_input_to_entity (RutEntity *entity,
           hair = rut_hair_new (engine->ctx);
           rut_entity_add_component (entity, hair);
 
-          rig_renderer_dirty_entity_state (entity);
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
 
       break;

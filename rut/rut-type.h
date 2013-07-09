@@ -23,7 +23,8 @@ typedef enum _RutInterfaceID
   RUT_INTERFACE_ID_PRIMABLE,
   RUT_INTERFACE_ID_PICKABLE,
   RUT_INTERFACE_ID_INPUTABLE,
-  RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT
+  RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT,
+  RUT_INTERFACE_ID_RENDERER
 } RutInterfaceID;
 
 /* An interface defines an offset into an instance for some arbitrary

@@ -22,6 +22,8 @@
 #include "config.h"
 #endif
 
+#include <rut.h>
+
 #include "rig-engine.h"
 #include "rig-renderer.h"
 
@@ -90,6 +92,31 @@ _rig_renderer_free (void *object)
   g_slice_free (RigRenderer, object);
 }
 
+static void
+dirty_entity_pipelines (RutEntity *entity)
+{
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
+  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
+}
+
+static void
+dirty_entity_geometry (RutEntity *entity)
+{
+  rut_entity_set_primitive_cache (entity, 0, NULL);
+}
+
+/* TODO: allow more fine grained discarding of cached renderer state */
+static void
+_rig_renderer_notify_entity_changed (RutEntity *entity)
+{
+  dirty_entity_pipelines (entity);
+  dirty_entity_geometry (entity);
+
+  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_COLOR, NULL);
+  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK, NULL);
+  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP, NULL);
+}
 
 RutType rig_renderer_type;
 
@@ -102,6 +129,10 @@ _rig_renderer_init_type (void)
       _rig_renderer_free
   };
 
+  static RutRendererVTable renderer_vtable = {
+      .notify_entity_changed = _rig_renderer_notify_entity_changed
+  };
+
   RutType *type = &rig_renderer_type;
 #define TYPE RigRenderer
 
@@ -110,6 +141,10 @@ _rig_renderer_init_type (void)
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (TYPE, ref_count),
                           &refable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_RENDERER,
+                          0, /* no implied properties */
+                          &renderer_vtable);
 
 #undef TYPE
 }
@@ -174,7 +209,7 @@ reshape_cb (RutShape *shape, void *user_data)
   RutComponentableProps *componentable =
     rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
-  rig_renderer_dirty_entity_state (entity);
+  dirty_entity_pipelines (entity);
 }
 
 static void
@@ -183,8 +218,8 @@ nine_slice_changed_cb (RutNineSlice *nine_slice, void *user_data)
   RutComponentableProps *componentable =
     rut_object_get_properties (nine_slice, RUT_INTERFACE_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
-  rig_renderer_dirty_entity_state (entity);
-  rut_entity_set_primitive_cache (entity, 0, NULL);
+  _rig_renderer_notify_entity_changed (entity);
+  dirty_entity_geometry (entity);
 }
 
 static void
@@ -1822,14 +1857,6 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
 }
 
 void
-rig_renderer_dirty_entity_state (RutEntity *entity)
-{
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
-}
-
-void
 rig_entity_new_image_source (RutImageSource *source,
                              void *user_data)
 {
@@ -1916,6 +1943,5 @@ rig_entity_new_image_source (RutImageSource *source,
       grid->pointalism_lighter = lighter;
     }
 
-  rig_renderer_dirty_entity_state (entity);
+  _rig_renderer_notify_entity_changed (entity);
 }
-
