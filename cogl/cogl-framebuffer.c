@@ -2222,15 +2222,6 @@ cogl_framebuffer_vdraw_indexed_attributes (CoglFramebuffer *framebuffer,
 }
 
 void
-cogl_framebuffer_draw_primitive (CoglFramebuffer *framebuffer,
-                                 CoglPipeline *pipeline,
-                                 CoglPrimitive *primitive)
-{
-  _cogl_primitive_draw (primitive, framebuffer, pipeline,
-                        0 /* flags */);
-}
-
-void
 cogl_framebuffer_draw_rectangle (CoglFramebuffer *framebuffer,
                                  CoglPipeline *pipeline,
                                  float x_1,

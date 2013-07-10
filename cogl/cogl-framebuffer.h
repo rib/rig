@@ -1060,29 +1060,6 @@ cogl_framebuffer_clear4f (CoglFramebuffer *framebuffer,
                           float alpha);
 
 /**
- * cogl_framebuffer_draw_primitive:
- * @framebuffer: A destination #CoglFramebuffer
- * @pipeline: A #CoglPipeline state object
- * @primitive: A #CoglPrimitive geometry object
- *
- * Draws the given @primitive geometry to the specified destination
- * @framebuffer using the graphics processing state described by @pipeline.
- *
- * This drawing api doesn't support high-level meta texture types such
- * as #CoglTexture2DSliced so it is the user's responsibility to
- * ensure that only low-level textures that can be directly sampled by
- * a GPU such as #CoglTexture2D, #CoglTextureRectangle or #CoglTexture3D
- * are associated with layers of the given @pipeline.
- *
- * Stability: unstable
- * Since: 1.10
- */
-void
-cogl_framebuffer_draw_primitive (CoglFramebuffer *framebuffer,
-                                 CoglPipeline *pipeline,
-                                 CoglPrimitive *primitive);
-
-/**
  * cogl_framebuffer_vdraw_attributes:
  * @framebuffer: A destination #CoglFramebuffer
  * @pipeline: A #CoglPipeline state object
