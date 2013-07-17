@@ -228,9 +228,9 @@ paint_overlays (RigCameraView *view,
 
   if (draw_pick_ray)
     {
-      cogl_framebuffer_draw_primitive (fb,
-                                       engine->picking_ray_color,
-                                       engine->picking_ray);
+      cogl_primitive_draw (engine->picking_ray,
+                           fb,
+                           engine->picking_ray_color);
     }
 
 #ifdef RIG_EDITOR_ENABLED

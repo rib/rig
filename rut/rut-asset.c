@@ -510,7 +510,7 @@ rut_model_get_thumbnail (RutContext *ctx,
   cogl_framebuffer_push_matrix (frame_buffer);
   cogl_framebuffer_translate (frame_buffer, translate_x, translate_y, translate_z);
   cogl_framebuffer_scale (frame_buffer, scale_facor, scale_facor, scale_facor);
-  cogl_framebuffer_draw_primitive (frame_buffer, pipeline, primitive);
+  cogl_primitive_draw (primitive, frame_buffer, pipeline);
   cogl_framebuffer_pop_matrix (frame_buffer);
 
   cogl_object_unref (primitive);

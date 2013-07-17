@@ -2457,9 +2457,10 @@ create_debug_gradient (RigEngine *engine)
   cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
                             COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
                             0, 0, 0, 1);
-  cogl_framebuffer_draw_primitive (COGL_FRAMEBUFFER (offscreen),
-                                   pipeline,
-                                   prim);
+  cogl_primitive_draw (prim,
+                       COGL_FRAMEBUFFER (offscreen),
+                       pipeline);
+
   cogl_object_unref (prim);
   cogl_object_unref (offscreen);
 }

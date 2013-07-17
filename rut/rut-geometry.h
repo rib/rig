@@ -9,6 +9,10 @@ rut_create_circle_fan_p2 (RutContext *ctx,
                           int subdivisions,
                           int *n_verts);
 
+CoglPrimitive *
+rut_create_circle_fan_primitive (RutContext *ctx,
+                                 int subdivisions);
+
 RutMesh *
 rut_create_circle_outline_mesh (uint8_t n_vertices);
 

@@ -72,6 +72,19 @@ rut_create_circle_fan_p2 (RutContext *ctx,
   return attribute;
 }
 
+CoglPrimitive *
+rut_create_circle_fan_primitive (RutContext *ctx,
+                                 int subdivisions)
+{
+  int n_verts;
+  CoglAttribute *attribute =
+    rut_create_circle_fan_p2 (ctx, subdivisions, &n_verts);
+
+  return cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLE_FAN,
+                                             n_verts,
+                                             &attribute, 1);
+}
+
 RutMesh *
 rut_create_circle_outline_mesh (uint8_t n_vertices)
 {
@@ -107,14 +120,13 @@ rut_create_circle_texture (RutContext *ctx,
                            int radius_texels,
                            int padding_texels)
 {
-  CoglAttribute *circle;
+  CoglPrimitive *circle;
   CoglTexture2D *tex2d;
   CoglOffscreen *offscreen;
   CoglFramebuffer *fb;
   CoglPipeline *white_pipeline;
   int half_size = radius_texels + padding_texels;
   int size = half_size * 2;
-  int n_verts;
 
   tex2d = cogl_texture_2d_new_with_size (ctx->cogl_context,
                                          size, size,
@@ -122,7 +134,7 @@ rut_create_circle_texture (RutContext *ctx,
   offscreen = cogl_offscreen_new_to_texture (COGL_TEXTURE (tex2d));
   fb = COGL_FRAMEBUFFER (offscreen);
 
-  circle = rut_create_circle_fan_p2 (ctx, 360, &n_verts);
+  circle = rut_create_circle_fan_primitive (ctx, 360);
 
   cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
@@ -135,13 +147,7 @@ rut_create_circle_texture (RutContext *ctx,
   white_pipeline = cogl_pipeline_new (ctx->cogl_context);
   cogl_pipeline_set_color4f (white_pipeline, 1, 1, 1, 1);
 
-  cogl_framebuffer_draw_attributes (fb,
-                                    white_pipeline,
-                                    COGL_VERTICES_MODE_TRIANGLE_FAN,
-                                    0, /* first vertex */
-                                    n_verts, /* n_vertices */
-                                    &circle,
-                                    1); /* n_attributes */
+  cogl_primitive_draw (circle, fb, white_pipeline);
 
   cogl_object_unref (white_pipeline);
   cogl_object_unref (circle);

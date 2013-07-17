@@ -439,7 +439,7 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                              0);
       cogl_matrix_multiply (&jittered_projection, &jitter, &tmp);
       cogl_framebuffer_set_projection_matrix (fb, &jittered_projection);
-      cogl_framebuffer_draw_primitive (fb, pipeline, prim);
+      cogl_primitive_draw (prim, fb, pipeline);
     }
 
   cogl_framebuffer_set_projection_matrix (fb, &projection);

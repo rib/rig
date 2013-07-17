@@ -385,17 +385,17 @@ rut_tool_draw (RutTool *tool,
   cogl_framebuffer_scale (fb, scale, -scale, scale);
   cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_transform (fb, &rotation);
-  cogl_framebuffer_draw_primitive (fb,
-                                   tool->default_pipeline,
-                                   tool->rotation_tool);
+  cogl_primitive_draw (tool->rotation_tool,
+                       fb,
+                       tool->default_pipeline);
   cogl_framebuffer_pop_matrix (fb);
-  cogl_framebuffer_draw_primitive (fb,
-                                   tool->default_pipeline,
-                                   tool->rotation_tool_handle);
+  cogl_primitive_draw (tool->rotation_tool_handle,
+                       fb,
+                       tool->default_pipeline);
   cogl_framebuffer_scale (fb, 1.1, 1.1, 1.1);
-  cogl_framebuffer_draw_primitive (fb,
-                                   tool->default_pipeline,
-                                   tool->rotation_tool_handle);
+  cogl_primitive_draw (tool->rotation_tool_handle,
+                       fb,
+                       tool->default_pipeline);
   cogl_framebuffer_pop_matrix (fb);
 
   cogl_framebuffer_set_projection_matrix (fb, &saved_projection);

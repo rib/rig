@@ -1548,7 +1548,7 @@ rig_journal_flush (GArray *journal,
                                             0);
               cogl_pipeline_set_uniform_1f (pipeline, location[0],
                                             0);
-              cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+              cogl_primitive_draw (primitive, fb, pipeline);
 
               for (i = 0; i < rut_hair_get_resolution (hair); i++)
                 {
@@ -1568,12 +1568,12 @@ rig_journal_flush (GArray *journal,
                       cogl_pipeline_set_uniform_1f (pipeline, location[0],
                                                     hair_pos);
 
-                      cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+                      cogl_primitive_draw (primitive, fb, pipeline);
                     }
                 }
             }
           else if (!hair)
-            cogl_framebuffer_draw_primitive (fb, pipeline, primitive);
+            cogl_primitive_draw (primitive, fb, pipeline);
         }
       else if (rut_object_get_type (geometry) == &rut_text_type &&
                paint_ctx->pass == RIG_PASS_COLOR_BLENDED)

@@ -310,9 +310,9 @@ rut_display_list_paint (RutDisplayList *display_list,
         case RUT_CMD_TYPE_PRIMITIVE:
           {
             RutPrimitiveCmd *prim_cmd = RUT_PRIMITIVE_CMD (cmd);
-            cogl_framebuffer_draw_primitive (fb,
-                                             prim_cmd->pipeline,
-                                             prim_cmd->primitive);
+            cogl_primitive_draw (prim_cmd->primitive,
+                                 fb,
+                                 prim_cmd->pipeline);
             break;
           }
         case RUT_CMD_TYPE_TEXT:

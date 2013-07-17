@@ -666,9 +666,9 @@ _rig_controller_view_paint (RutObject *object,
                               view->row_height,
                               1.0f);
 
-      cogl_framebuffer_draw_primitive (fb,
-                                       view->dots_pipeline,
-                                       view->dots_primitive);
+      cogl_primitive_draw (view->dots_primitive,
+                           fb,
+                           view->dots_pipeline);
 
       cogl_framebuffer_pop_matrix (fb);
     }
