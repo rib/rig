@@ -82,7 +82,7 @@ enum
 /* XXX: at some point we should perhaps separate out the Rig rendering code
  * into a "Renderer" and let that code somehow define how many slots it wants
  * associated with an entity for caching state. */
-#define N_PIPELINE_CACHE_SLOTS 3
+#define N_PIPELINE_CACHE_SLOTS 5
 #define N_IMAGE_SOURCE_CACHE_SLOTS 3
 #define N_PRIMITIVE_CACHE_SLOTS 1
 

@@ -56,6 +56,8 @@ struct _RutModel
 
   RutMesh *mesh;
   RutMesh *patched_mesh;
+  RutMesh *fin_mesh;
+  CoglPrimitive *fin_primitive;
 
   float min_x;
   float max_x;
@@ -63,6 +65,8 @@ struct _RutModel
   float max_y;
   float min_z;
   float max_z;
+
+  float default_hair_length;
 
   CoglPrimitive *primitive;
 
@@ -91,7 +95,16 @@ rut_model_get_mesh (RutObject *self);
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);
 
+CoglPrimitive *
+rut_model_get_fin_primitive (RutObject *object);
+
 RutMesh *
 rut_model_get_patched_mesh (RutObject *object);
+
+RutMesh *
+rut_model_get_fin_mesh (RutObject *object);
+
+float
+rut_model_get_default_hair_length (RutObject *object);
 
 #endif /* _RUT_MODEL_H_ */
