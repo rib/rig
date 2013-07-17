@@ -1723,13 +1723,17 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                modifiers & RUT_MODIFIER_SHIFT_ON)
         {
-          if (!translate_grab_entity (view,
-                                      view->view_camera_to_origin,
-                                      rut_motion_event_get_x (event),
-                                      rut_motion_event_get_y (event),
-                                      scene_translate_cb,
-                                      NULL,
-                                      view))
+          GList link;
+          link.data = view->view_camera_to_origin;
+          link.next = NULL;
+
+          if (!translate_grab_entities (view,
+                                        &link,
+                                        rut_motion_event_get_x (event),
+                                        rut_motion_event_get_y (event),
+                                        scene_translate_cb,
+                                        NULL,
+                                        view))
             return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 #if 0
           float origin[3] = {0, 0, 0};
