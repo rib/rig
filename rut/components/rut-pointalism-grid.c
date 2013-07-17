@@ -127,7 +127,7 @@ mesh_new_grid (CoglVerticesMode mode,
                unsigned int *indices)
 {
   RutMesh *mesh;
-  RutAttribute *attributes[9];
+  RutAttribute *attributes[10];
   RutBuffer *vertex_buffer;
   RutBuffer *index_buffer;
 
@@ -173,34 +173,41 @@ mesh_new_grid (CoglVerticesMode mode,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord11_in",
+                                     sizeof (GridVertex),
+                                     offsetof (GridVertex, s0),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  attributes[6] = rut_attribute_new (vertex_buffer,
                                      "cogl_normal_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, nx),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[6] = rut_attribute_new (vertex_buffer,
+  attributes[7] = rut_attribute_new (vertex_buffer,
                                      "tangent_in",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, tx),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[7] = rut_attribute_new (vertex_buffer,
+  attributes[8] = rut_attribute_new (vertex_buffer,
                                      "cell_xy",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, x1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[8] = rut_attribute_new (vertex_buffer,
+  attributes[9] = rut_attribute_new (vertex_buffer,
                                      "cell_st",
                                      sizeof (GridVertex),
                                      offsetof (GridVertex, s1),
                                      4,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  mesh = rut_mesh_new (mode, n_vertices, attributes, 9);
+  mesh = rut_mesh_new (mode, n_vertices, attributes, 10);
   rut_mesh_set_indices (mesh,
                         COGL_INDICES_TYPE_UNSIGNED_INT,
                         index_buffer,
@@ -633,4 +640,7 @@ rut_pointalism_grid_set_cell_size (RutObject *obj,
 
   pointalism_generate_grid (grid->slice, grid->tex_width,
                             grid->tex_height, grid->cell_size);
+
+  rut_entity_set_primitive_cache (entity, 0, 
+    rut_mesh_create_primitive (grid->ctx, grid->slice->mesh));
 }

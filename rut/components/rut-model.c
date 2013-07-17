@@ -43,6 +43,7 @@ typedef struct _Vertex
   float s1, t1;
   float s4, t4;
   float s7, t7;
+  float s11, t11;
 }Vertex;
 
 /* The polygon structure */
@@ -71,11 +72,15 @@ typedef struct _TexturePatch
 typedef struct _RutModelPrivate
 {
   GList *texture_patches;
+  Polygon *fin_polygons;
+  Vertex *fin_vertices;
   Polygon *polygons;
   Vertex *vertices;
   int **adj_matrix;
   int n_polygons;
   int n_vertices;
+  int n_fin_polygons;
+  int n_fin_vertices;
 }RutModelPrivate;
 
 /* Some convinient constants */
@@ -101,6 +106,14 @@ rut_model_get_primitive (RutObject *object)
   return model->primitive;
 }
 
+CoglPrimitive *
+rut_model_get_fin_primitive (RutObject *object)
+{
+  RutModel *model = object;
+
+  return model->fin_primitive;
+}
+
 static void
 _rut_model_free (void *object)
 {
@@ -111,6 +124,21 @@ _rut_model_free (void *object)
 
   if (model->mesh)
     rut_refable_unref (model->mesh);
+
+  if (model->patched_mesh)
+    {
+      g_free (model->priv->polygons);
+      g_free (model->priv->vertices);
+      rut_refable_unref (model->patched_mesh);
+    }
+
+  if (model->fin_mesh)
+    {
+      cogl_object_unref (model->fin_primitive);
+      g_free (model->priv->fin_polygons);
+      g_free (model->priv->fin_vertices);
+      rut_refable_unref (model->fin_mesh);
+    }
 
   g_free (model->priv);
   g_slice_free (RutModel, model);
@@ -416,6 +444,118 @@ generate_cylindrical_uv_coordinates (Vertex *vertex,
   vertex->t0 = (vertex->y - model->min_y) / (model->max_y - model->min_y);
 }
 
+static void
+add_polygon_fins (RutModel *model,
+                  Polygon *polygon)
+{
+  Vertex *fin_verts[12];
+  Polygon *fin_polys[6];
+  int poly_iter = model->priv->n_fin_polygons;
+  int vert_iter = model->priv->n_fin_vertices;
+  int edges[3][2];
+  int i, j;
+
+  edges[0][0] = 0;
+  edges[0][1] = 1;
+  edges[1][0] = 1;
+  edges[1][1] = 2;
+  edges[2][0] = 2;
+  edges[2][1] = 0;
+
+  j = 0;
+
+  for (i = 0; i < 3; i++)
+    {
+      int cv = i * 4;
+      fin_verts[cv] = &model->priv->fin_vertices[vert_iter + cv];
+      fin_verts[cv + 1] = &model->priv->fin_vertices[vert_iter + cv + 1];
+      fin_verts[cv + 2] = &model->priv->fin_vertices[vert_iter + cv + 2];
+      fin_verts[cv + 3] = &model->priv->fin_vertices[vert_iter + cv + 3];
+      fin_polys[j] = &model->priv->fin_polygons[poly_iter + j];
+      fin_polys[j + 1] = &model->priv->fin_polygons[poly_iter + j + 1];
+
+      fin_polys[j]->vertices[0] = fin_verts[cv];
+      fin_polys[j]->vertices[1] = fin_verts[cv + 1];
+      fin_polys[j]->vertices[2] = fin_verts[cv + 2];
+      fin_polys[j + 1]->vertices[0] = fin_verts[cv + 2];
+      fin_polys[j + 1]->vertices[1] = fin_verts[cv + 3];
+      fin_polys[j + 1]->vertices[2] = fin_verts[cv];
+
+      fin_verts[cv]->x = fin_verts[cv + 1]->x =
+        polygon->vertices[edges[i][0]]->x;
+      fin_verts[cv]->y = fin_verts[cv + 1]->y =
+        polygon->vertices[edges[i][0]]->y;
+      fin_verts[cv]->z = fin_verts[cv + 1]->z =
+        polygon->vertices[edges[i][0]]->z;
+
+      fin_verts[cv]->nx = fin_verts[cv + 1]->nx =
+        polygon->vertices[edges[i][0]]->nx;
+      fin_verts[cv]->ny = fin_verts[cv + 1]->ny =
+        polygon->vertices[edges[i][0]]->ny;
+      fin_verts[cv]->nz = fin_verts[cv + 1]->nz =
+        polygon->vertices[edges[i][0]]->nz;
+
+      fin_verts[cv]->tx = fin_verts[cv + 1]->tx =
+        polygon->vertices[edges[i][0]]->tx;
+      fin_verts[cv]->ty = fin_verts[cv + 1]->ty =
+        polygon->vertices[edges[i][0]]->ty;
+      fin_verts[cv]->tz = fin_verts[cv + 1]->tz =
+        polygon->vertices[edges[i][0]]->tz;
+
+      fin_verts[cv + 2]->x = fin_verts[cv + 3]->x =
+        polygon->vertices[edges[i][1]]->x;
+      fin_verts[cv + 2]->y = fin_verts[cv + 3]->y =
+        polygon->vertices[edges[i][1]]->y;
+      fin_verts[cv + 2]->z = fin_verts[cv + 3]->z =
+        polygon->vertices[edges[i][1]]->z;
+
+      fin_verts[cv + 2]->nx = fin_verts[cv + 3]->nx =
+        polygon->vertices[edges[i][1]]->nx;
+      fin_verts[cv + 2]->ny = fin_verts[cv + 3]->ny =
+        polygon->vertices[edges[i][1]]->ny;
+      fin_verts[cv + 2]->nz = fin_verts[cv + 3]->nz =
+        polygon->vertices[edges[i][1]]->nz;
+
+      fin_verts[cv + 2]->tx = fin_verts[cv + 3]->tx =
+        polygon->vertices[edges[i][1]]->tx;
+      fin_verts[cv + 2]->ty = fin_verts[cv + 3]->ty =
+        polygon->vertices[edges[i][1]]->ty;
+      fin_verts[cv + 2]->tz = fin_verts[cv + 3]->tz =
+        polygon->vertices[edges[i][1]]->tz;
+
+      fin_verts[cv]->s0 = fin_verts[cv]->s1 = fin_verts[cv]->s4 =
+      fin_verts[cv]->s7 = fin_verts[cv + 1]->s0 = fin_verts[cv + 1]->s1 =
+      fin_verts[cv + 1]->s4 = fin_verts[cv + 1]->s7 =
+      polygon->vertices[edges[i][0]]->s0;
+
+      fin_verts[cv]->t0 = fin_verts[cv]->t1 = fin_verts[cv]->t4 =
+      fin_verts[cv]->t7 =  fin_verts[cv + 1]->t0 = fin_verts[cv + 1]->t1 =
+      fin_verts[cv + 1]->t4 = fin_verts[cv + 1]->t7 =
+      polygon->vertices[edges[i][0]]->t0;
+
+      fin_verts[cv + 2]->s0 = fin_verts[cv + 2]->s1 = fin_verts[cv + 2]->s4 =
+      fin_verts[cv + 2]->s7 = fin_verts[cv + 3]->s0 = fin_verts[cv + 3]->s1 =
+      fin_verts[cv + 3]->s4 = fin_verts[cv + 3]->s7 =
+      polygon->vertices[edges[i][1]]->s0;
+
+      fin_verts[cv + 2]->t0 = fin_verts[cv + 2]->t1 = fin_verts[cv + 2]->t4 =
+      fin_verts[cv + 2]->t7 = fin_verts[cv + 3]->t0 = fin_verts[cv + 3]->t1 =
+      fin_verts[cv + 3]->t4 = fin_verts[cv + 3]->t7 =
+      polygon->vertices[edges[i][1]]->t0;
+
+      fin_verts[cv]->s11 = fin_verts[cv + 1]->s11 = 0;
+      fin_verts[cv + 1]->s11 = fin_verts[cv + 3]->s11 = 1;
+
+      fin_verts[cv + 1]->t11 = fin_verts[cv + 2]->t11 = 0;
+      fin_verts[cv]->t11 = fin_verts[cv + 3]->t11 = 1;
+
+      j += 2;
+    }
+
+  model->priv->n_fin_polygons += 6;
+  model->priv->n_fin_vertices += 12;
+}
+
 /* Automatically generate all required properties not included in the
  * PLY file */
 
@@ -442,6 +582,8 @@ generate_missing_properties (void **attribute_data_v0,
       attribute_data_v2[5] };
   float *tex_coords7[3] = { attribute_data_v0[6], attribute_data_v1[6],
       attribute_data_v2[6] };
+  float *tex_coords11[3] = { attribute_data_v0[7], attribute_data_v1[7],
+      attribute_data_v2[7] };
   int i;
   RutModel *model = user_data;
   Polygon *polygon = &model->priv->polygons[model->priv->n_polygons];
@@ -471,6 +613,8 @@ generate_missing_properties (void **attribute_data_v0,
           polygon->vertices[i]->t4 = tex_coords4[i][1] = tex_coords0[i][1];
           polygon->vertices[i]->s7 = tex_coords7[i][0] = tex_coords0[i][0];
           polygon->vertices[i]->t7 = tex_coords7[i][1] = tex_coords0[i][1];
+          polygon->vertices[i]->s11 = tex_coords11[i][0] = tex_coords0[i][0];
+          polygon->vertices[i]->t11 = tex_coords11[i][1] = tex_coords0[i][1];
         }
     }
 
@@ -487,6 +631,8 @@ generate_missing_properties (void **attribute_data_v0,
           tex_coords4[i][1] = polygon->vertices[i]->t4 = tex_coords0[i][1];
           tex_coords7[i][0] = polygon->vertices[i]->s7 = tex_coords0[i][0];
           tex_coords7[i][1] = polygon->vertices[i]->t7 = tex_coords0[i][1];
+          tex_coords11[i][0] = polygon->vertices[i]->s11 = tex_coords0[i][0];
+          tex_coords11[i][1] = polygon->vertices[i]->t11 = tex_coords0[i][1];
         }
     }
 
@@ -650,7 +796,7 @@ get_angle_between_vectors (Vertex *start_vector,
   if (calculate_dot_product (&rotated_vertex, end_vector) > 0.9998)
     return angle;
 
-  /* Otherwise this is a clockwise rotation and the angle needs to adjusted */
+  /* Otherwise this is a clockwise rotation and the angle needs to be adjusted */
 
   angle = PI * 2.f - angle;
 
@@ -791,8 +937,7 @@ position_polygon_at_2D_origin (Polygon *polygon)
                                       angle);
 }
 
-/* Align the polygon to the up direction of the 2D plane and the one of the
- * patch itself */
+/* Map the new polygon by "extruding" the new vertex it indroduces */
 
 static void
 extrude_new_vertex (Polygon *parent, Polygon *child)
@@ -850,7 +995,7 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
   float new_t[3];
 
   /* 7. Extract the texture coordinates from the flattened polygon using
-     linear interpolation */
+   * linear interpolation */
 
   for (i = 0; i < 3; i++)
     {
@@ -863,9 +1008,11 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
   for (i = 0; i < 3; i++)
     {
       polygon->vertices[i]->s0 = polygon->vertices[i]->s1 =
-        polygon->vertices[i]->s4 = polygon->vertices[i]->s7 = new_s[i];
+        polygon->vertices[i]->s4 = polygon->vertices[i]->s7 =
+        polygon->vertices[i]->s11 = new_s[i];
       polygon->vertices[i]->t0 = polygon->vertices[i]->t1 =
-        polygon->vertices[i]->t4 = polygon->vertices[i]->t7 = new_t[i];
+        polygon->vertices[i]->t4 = polygon->vertices[i]->t7 =
+        polygon->vertices[i]->t11 = new_t[i];
     }
 
   return TRUE;
@@ -966,6 +1113,7 @@ rut_model_new_from_mesh (RutContext *ctx,
   model->type = RUT_MODEL_TYPE_FILE;
   model->mesh = rut_refable_ref (mesh);
   model->patched_mesh = NULL;
+  model->fin_mesh = NULL;
   model->priv = g_new (RutModelPrivate, 1);
 
   attribute = rut_mesh_find_attribute (model->mesh, "cogl_position_in");
@@ -980,8 +1128,12 @@ rut_model_new_from_mesh (RutContext *ctx,
   model->priv->texture_patches = NULL;
   model->priv->n_polygons = 0;
   model->priv->n_vertices = 0;
+  model->priv->n_fin_polygons = 0;
+  model->priv->n_fin_vertices = 0;
   model->priv->polygons = g_new (Polygon, model->mesh->n_indices / 3);
   model->priv->vertices = g_new (Vertex, model->mesh->n_indices);
+  model->priv->fin_polygons = g_new (Polygon, (model->mesh->n_indices / 3) * 6);
+  model->priv->fin_vertices = g_new (Vertex, model->mesh->n_indices * 4);
 
   model->builtin_normals = !needs_normals;
   model->builtin_tex_coords = !needs_tex_coords;
@@ -1018,15 +1170,10 @@ rut_model_new_from_mesh (RutContext *ctx,
                              "cogl_tex_coord1_in",
                              "cogl_tex_coord4_in",
                              "cogl_tex_coord7_in",
+                             "cogl_tex_coord11_in",
                              NULL);
 
-  model->priv->n_polygons = 0;
-  rut_mesh_foreach_triangle (model->mesh,
-                             copy_tangent_space_data,
-                             model,
-                             "cogl_normal_in",
-                             "tangent_in",
-                             NULL);
+  rut_model_get_default_hair_length (model);
 
   return model;
 }
@@ -1039,13 +1186,33 @@ rut_model_new_from_asset (RutContext *ctx,
 {
   RutMesh *mesh = rut_asset_get_mesh (asset);
   RutModel *model;
+  int i;
 
   if (!mesh)
     return NULL;
 
   model = rut_model_new_from_mesh (ctx, mesh, needs_normals, needs_tex_coords);
   model->asset = rut_refable_ref (asset);
+
+  model->priv->n_polygons = 0;
+  rut_mesh_foreach_triangle (model->mesh,
+                             copy_tangent_space_data,
+                             model,
+                             "cogl_normal_in",
+                             "tangent_in",
+                             NULL);
+
   model->patched_mesh = rut_model_get_patched_mesh (model);
+
+  for (i = 0; i < model->priv->n_polygons; i++)
+    add_polygon_fins (model, &model->priv->polygons[i]);
+
+  model->fin_mesh = rut_model_get_fin_mesh (model);
+
+  model->fin_primitive = rut_mesh_create_primitive (model->ctx,
+                                                    model->fin_mesh);
+  rut_refable_unref (mesh);
+  model->mesh = model->patched_mesh;
 
   return model;
 }
@@ -1064,26 +1231,21 @@ rut_model_get_asset (RutModel *model)
 }
 
 static RutMesh *
-create_patched_mesh (RutModel *model)
+create_custom_mesh (Vertex *vertices,
+                    unsigned int *indices,
+                    int n_vertices,
+                    int n_indices)
 {
   RutMesh *mesh;
-  RutAttribute *attributes[7];
+  RutAttribute *attributes[8];
   RutBuffer *vertex_buffer;
   RutBuffer *index_buffer;
-  unsigned int *indices = g_new (unsigned int, model->priv->n_vertices);
-  int i;
 
-  for (i = 0; i < model->priv->n_vertices; i++)
-    indices[i] = i;
+  vertex_buffer = rut_buffer_new (sizeof (Vertex) * n_vertices);
+  index_buffer = rut_buffer_new (sizeof (unsigned int) * n_indices);
 
-  vertex_buffer = rut_buffer_new (sizeof (Vertex) * model->priv->n_vertices);
-  index_buffer = rut_buffer_new (sizeof (unsigned int) *
-                                 model->priv->n_vertices);
-
-  memcpy (vertex_buffer->data, model->priv->vertices, sizeof (Vertex) *
-          model->priv->n_vertices);
-  memcpy (index_buffer->data, indices, sizeof (unsigned int) *
-          model->priv->n_vertices);
+  memcpy (vertex_buffer->data, vertices, sizeof (Vertex) * n_vertices);
+  memcpy (index_buffer->data, indices, sizeof (unsigned int) * n_indices);
 
   attributes[0] = rut_attribute_new (vertex_buffer,
                                      "cogl_position_in",
@@ -1121,29 +1283,30 @@ create_patched_mesh (RutModel *model)
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
+                                     "cogl_tex_coord11_in",
+                                     sizeof (Vertex),
+                                     offsetof (Vertex, s11),
+                                     2,
+                                     RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  attributes[6] = rut_attribute_new (vertex_buffer,
                                      "cogl_normal_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, nx),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  attributes[6] = rut_attribute_new (vertex_buffer,
+  attributes[7] = rut_attribute_new (vertex_buffer,
                                      "tangent_in",
                                      sizeof (Vertex),
                                      offsetof (Vertex, tx),
                                      3,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
-  mesh = rut_mesh_new (COGL_VERTICES_MODE_TRIANGLES,
-                       model->priv->n_vertices, attributes, 7);
-  rut_mesh_set_indices (mesh,
-                        COGL_INDICES_TYPE_UNSIGNED_INT,
-                        index_buffer,
-                        model->priv->n_vertices);
+  mesh = rut_mesh_new (COGL_VERTICES_MODE_TRIANGLES, n_vertices, attributes, 8);
 
-  g_free (indices);
-  g_free (model->priv->vertices);
-  g_free (model->priv->polygons);
+  rut_mesh_set_indices (mesh, COGL_INDICES_TYPE_UNSIGNED_INT, index_buffer,
+                        n_indices);
 
   return mesh;
 }
@@ -1152,11 +1315,14 @@ RutMesh *
 rut_model_get_patched_mesh (RutObject *object)
 {
   RutModel *model = object;
+  unsigned int *indices;
   int i;
   GList *iter;
 
   if (model->patched_mesh)
     return model->patched_mesh;
+
+  indices = g_new (unsigned int, model->priv->n_vertices);
 
   model->priv->adj_matrix = generate_adjacency_matrix (model);
 
@@ -1172,7 +1338,85 @@ rut_model_get_patched_mesh (RutObject *object)
 
   g_list_free (model->priv->texture_patches);
 
-  model->patched_mesh = create_patched_mesh (model);
+  for (i = 0; i < model->priv->n_vertices; i++)
+    indices[i] = i;
+
+  model->patched_mesh = create_custom_mesh (model->priv->vertices, indices,
+                                            model->priv->n_vertices,
+                                            model->priv->n_vertices);
+
+  g_free (indices);
 
   return model->patched_mesh;
+}
+
+RutMesh *
+rut_model_get_fin_mesh (RutObject *object)
+{
+  RutModel *model = object;
+  unsigned int *indices;
+  int i, j, k;
+
+  if (model->fin_mesh)
+    return model->fin_mesh;
+
+  indices = g_new (unsigned int, model->priv->n_fin_polygons * 3);
+
+  j = 0;
+  k = 0;
+
+  for (i = 0; i < model->priv->n_fin_polygons; i += 2)
+    {
+      indices[k] = j;
+      indices[k + 1] = j + 1;
+      indices[k + 2] = j + 2;
+      indices[k + 3] = j + 2;
+      indices[k + 4] = j + 3;
+      indices[k + 5] = j;
+
+      j += 4;
+      k += 6;
+    }
+
+  model->fin_mesh = create_custom_mesh (model->priv->fin_vertices, indices,
+                                        model->priv->n_fin_vertices,
+                                        model->priv->n_fin_polygons * 3);
+
+  g_free (indices);
+
+  return model->fin_mesh;
+}
+
+float
+rut_model_get_default_hair_length (RutObject *object)
+{
+  RutModel *model = object;
+  Vertex width, height, length;
+  float x_size, y_size, z_size;
+
+  if (model->default_hair_length > 0)
+    return model->default_hair_length;
+
+  model->default_hair_length = 0;
+
+  width.x = model->max_x - model->min_x;
+  width.y = width.z = 0;
+  height.y = model->max_y - model->min_y;
+  height.z = height.x = 0;
+  length.z = model->max_z - model->min_z;
+  length.x = length.y = 0;
+  x_size = calculate_magnitude (&width) / 5.0;
+  y_size = calculate_magnitude (&height) / 5.0;
+  z_size = calculate_magnitude (&length) / 5.0;
+
+  if (x_size < y_size && x_size > 0)
+    model->default_hair_length = x_size;
+
+  if (y_size < x_size && y_size > 0)
+    model->default_hair_length = y_size;
+
+  if (z_size < model->default_hair_length  && z_size > 0)
+    model->default_hair_length = z_size;
+
+  return model->default_hair_length;
 }
