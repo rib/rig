@@ -94,7 +94,7 @@ _rut_asset_free (void *object)
   g_slice_free (RutAsset, asset);
 }
 
-static RutRefCountableVTable _rut_asset_ref_countable = {
+static RutRefableVTable _rut_asset_refable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_asset_free
@@ -109,7 +109,7 @@ _rut_asset_type_init (void)
   rut_type_add_interface (&rut_asset_type,
                            RUT_INTERFACE_ID_REF_COUNTABLE,
                            offsetof (RutAsset, ref_count),
-                           &_rut_asset_ref_countable);
+                           &_rut_asset_refable);
 
 #if 0
   rut_type_add_interface (&_asset_type,

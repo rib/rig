@@ -104,7 +104,7 @@ _rut_inspector_free (void *object)
   g_slice_free (RutInspector, inspector);
 }
 
-RutRefCountableVTable _rut_inspector_ref_countable_vtable = {
+RutRefableVTable _rut_inspector_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_inspector_free
@@ -311,7 +311,7 @@ _rut_inspector_init_type (void)
   rut_type_add_interface (&rut_inspector_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutInspector, ref_count),
-                          &_rut_inspector_ref_countable_vtable);
+                          &_rut_inspector_refable_vtable);
   rut_type_add_interface (&rut_inspector_type,
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutInspector, paintable),

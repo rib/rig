@@ -145,7 +145,7 @@ _rut_color_picker_free (void *object)
   g_slice_free (RutColorPicker, picker);
 }
 
-RutRefCountableVTable _rut_color_picker_ref_countable_vtable = {
+RutRefableVTable _rut_color_picker_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_color_picker_free
@@ -575,7 +575,7 @@ _rut_color_picker_init_type (void)
   rut_type_add_interface (&rut_color_picker_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutColorPicker, ref_count),
-                          &_rut_color_picker_ref_countable_vtable);
+                          &_rut_color_picker_refable_vtable);
   rut_type_add_interface (&rut_color_picker_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutColorPicker, graphable),

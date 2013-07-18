@@ -77,7 +77,7 @@ _rut_bin_free (void *object)
   g_slice_free (RutBin, bin);
 }
 
-RutRefCountableVTable _rut_bin_ref_countable_vtable = {
+RutRefableVTable _rut_bin_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_bin_free
@@ -320,7 +320,7 @@ _rut_bin_init_type (void)
   rut_type_add_interface (&rut_bin_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBin, ref_count),
-                          &_rut_bin_ref_countable_vtable);
+                          &_rut_bin_refable_vtable);
   rut_type_add_interface (&rut_bin_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutBin, graphable),

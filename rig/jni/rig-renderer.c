@@ -123,7 +123,7 @@ RutType rig_renderer_type;
 static void
 _rig_renderer_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rig_renderer_free

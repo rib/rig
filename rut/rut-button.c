@@ -234,7 +234,7 @@ RutType rut_button_type;
 static void
 _rut_button_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rut_button_free

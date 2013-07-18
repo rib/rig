@@ -119,7 +119,7 @@ _rut_image_free (void *object)
   g_slice_free (RutImage, image);
 }
 
-RutRefCountableVTable _rut_image_ref_countable_vtable = {
+RutRefableVTable _rut_image_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_image_free
@@ -292,7 +292,7 @@ _rut_image_init_type (void)
   rut_type_add_interface (&rut_image_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutImage, ref_count),
-                          &_rut_image_ref_countable_vtable);
+                          &_rut_image_refable_vtable);
   rut_type_add_interface (&rut_image_type,
                           RUT_INTERFACE_ID_PAINTABLE,
                           offsetof (RutImage, paintable),

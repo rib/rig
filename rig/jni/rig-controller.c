@@ -55,7 +55,7 @@ RutType rig_controller_type;
 static void
 _rig_controller_type_init (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rig_controller_free

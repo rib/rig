@@ -156,7 +156,7 @@ _rut_toggle_free (void *object)
   g_slice_free (RutToggle, object);
 }
 
-RutRefCountableVTable _rut_toggle_ref_countable_vtable = {
+RutRefableVTable _rut_toggle_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_toggle_free
@@ -344,7 +344,7 @@ _rut_toggle_init_type (void)
   rut_type_add_interface (&rut_toggle_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutToggle, ref_count),
-                          &_rut_toggle_ref_countable_vtable);
+                          &_rut_toggle_refable_vtable);
   rut_type_add_interface (&rut_toggle_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutToggle, graphable),

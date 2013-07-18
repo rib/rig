@@ -45,7 +45,7 @@ rut_refable_simple_unref (void *object)
 
   if (--(*ref_count) < 1)
     {
-      RutRefCountableVTable *vtable =
+      RutRefableVTable *vtable =
         rut_object_get_vtable (object, RUT_INTERFACE_ID_REF_COUNTABLE);
       vtable->free (object);
     }
@@ -57,7 +57,7 @@ rut_refable_ref (void *object)
   RutObject *obj = object;
   const RutType *type = rut_object_get_type (obj);
 
-  RutRefCountableVTable *vtable =
+  RutRefableVTable *vtable =
     type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
 
   _rut_refcount_debug_ref (object);
@@ -70,7 +70,7 @@ rut_refable_unref (void *object)
 {
   RutObject *obj = object;
   const RutType *type = rut_object_get_type (obj);
-  RutRefCountableVTable *vtable =
+  RutRefableVTable *vtable =
     type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
 
   _rut_refcount_debug_unref (object);

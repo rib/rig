@@ -41,8 +41,8 @@ _rig_path_free (void *object)
   g_slice_free (RigPath, path);
 }
 
-static RutRefCountableVTable
-_rig_path_ref_countable_vtable =
+static RutRefableVTable
+_rig_path_refable_vtable =
   {
     rut_refable_simple_ref,
     rut_refable_simple_unref,
@@ -56,7 +56,7 @@ _rig_path_init_type (void)
   rut_type_add_interface (&rig_path_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RigPath, ref_count),
-                          &_rig_path_ref_countable_vtable);
+                          &_rig_path_refable_vtable);
 }
 
 RigPath *

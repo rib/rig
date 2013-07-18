@@ -120,7 +120,7 @@ _rut_vec3_slider_free (void *object)
   g_slice_free (RutVec3Slider, slider);
 }
 
-RutRefCountableVTable _rut_vec3_slider_ref_countable_vtable = {
+RutRefableVTable _rut_vec3_slider_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_vec3_slider_free
@@ -331,7 +331,7 @@ _rut_vec3_slider_init_type (void)
   rut_type_add_interface (&rut_vec3_slider_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutVec3Slider, ref_count),
-                          &_rut_vec3_slider_ref_countable_vtable);
+                          &_rut_vec3_slider_refable_vtable);
   rut_type_add_interface (&rut_vec3_slider_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutVec3Slider, graphable),

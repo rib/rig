@@ -68,7 +68,7 @@ _rut_model_free (void *object)
 void
 _rut_model_init_type (void)
 {
-  static RutRefCountableVTable ref_countable_vtable = {
+  static RutRefableVTable refable_vtable = {
     rut_refable_simple_ref,
     rut_refable_simple_unref,
     _rut_model_free
@@ -94,7 +94,7 @@ _rut_model_init_type (void)
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (TYPE, ref_count),
-                          &ref_countable_vtable);
+                          &refable_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
                           offsetof (TYPE, component),

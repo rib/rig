@@ -118,7 +118,7 @@ _rut_color_button_free (void *object)
   g_slice_free (RutColorButton, button);
 }
 
-RutRefCountableVTable _rut_color_button_ref_countable_vtable = {
+RutRefableVTable _rut_color_button_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_color_button_free
@@ -317,7 +317,7 @@ _rut_color_button_init_type (void)
   rut_type_add_interface (&rut_color_button_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutColorButton, ref_count),
-                          &_rut_color_button_ref_countable_vtable);
+                          &_rut_color_button_refable_vtable);
   rut_type_add_interface (&rut_color_button_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutColorButton, graphable),

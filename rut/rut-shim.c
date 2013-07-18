@@ -122,7 +122,7 @@ RutType rut_shim_type;
 static void
 _rut_shim_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rut_shim_free

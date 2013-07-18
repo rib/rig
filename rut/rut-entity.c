@@ -191,7 +191,7 @@ _rut_entity_free (void *object)
   g_slice_free (RutEntity, entity);
 }
 
-static RutRefCountableVTable _rut_entity_ref_countable_vtable = {
+static RutRefableVTable _rut_entity_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_entity_free
@@ -222,7 +222,7 @@ _rut_entity_init_type (void)
   rut_type_add_interface (&rut_entity_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutEntity, ref_count),
-                          &_rut_entity_ref_countable_vtable);
+                          &_rut_entity_refable_vtable);
   rut_type_add_interface (&rut_entity_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutEntity, graphable),

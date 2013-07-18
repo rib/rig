@@ -1017,7 +1017,7 @@ static RutType rig_serialized_asset_type;
 static void
 _rig_serialized_asset_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rig_serialized_asset_free

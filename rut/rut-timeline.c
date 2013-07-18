@@ -88,7 +88,7 @@ _rut_timeline_free (void *object)
   g_slice_free (RutTimeline, timeline);
 }
 
-static RutRefCountableVTable _rut_timeline_ref_countable_vtable = {
+static RutRefableVTable _rut_timeline_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_timeline_free
@@ -108,7 +108,7 @@ _rut_timeline_init_type (void)
   rut_type_add_interface (&_rut_timeline_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutTimeline, ref_count),
-                          &_rut_timeline_ref_countable_vtable);
+                          &_rut_timeline_refable_vtable);
   rut_type_add_interface (&_rut_timeline_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */

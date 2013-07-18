@@ -59,7 +59,7 @@ _rut_icon_free (void *object)
   g_slice_free (RutIcon, icon);
 }
 
-RutRefCountableVTable _rut_icon_ref_countable_vtable = {
+RutRefableVTable _rut_icon_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_icon_free
@@ -134,7 +134,7 @@ _rut_icon_init_type (void)
   rut_type_add_interface (&rut_icon_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutIcon, ref_count),
-                          &_rut_icon_ref_countable_vtable);
+                          &_rut_icon_refable_vtable);
   rut_type_add_interface (&rut_icon_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutIcon, graphable),

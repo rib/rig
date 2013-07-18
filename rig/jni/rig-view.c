@@ -70,7 +70,7 @@ _rig_view_free (void *object)
   g_slice_free (RigView, view);
 }
 
-RutRefCountableVTable _rig_view_ref_countable_vtable = {
+RutRefableVTable _rig_view_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rig_view_free
@@ -183,7 +183,7 @@ _rig_view_init_type (void)
   rut_type_add_interface (&rig_view_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RigView, ref_count),
-                          &_rig_view_ref_countable_vtable);
+                          &_rig_view_refable_vtable);
   rut_type_add_interface (&rig_view_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RigView, graphable),

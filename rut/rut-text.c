@@ -3237,7 +3237,7 @@ rut_text_add_move_binding (RutBindingPool  *pool,
 }
 #endif
 
-RutRefCountableVTable _rut_text_ref_countable_vtable = {
+RutRefableVTable _rut_text_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_text_free
@@ -3283,7 +3283,7 @@ _rut_text_init_type (void)
   rut_type_add_interface (&rut_text_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutText, ref_count),
-                          &_rut_text_ref_countable_vtable);
+                          &_rut_text_refable_vtable);
   rut_type_add_interface (&rut_text_type,
                           RUT_INTERFACE_ID_COMPONENTABLE,
                           offsetof (RutText, component),

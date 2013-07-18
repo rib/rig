@@ -188,7 +188,7 @@ _rut_ui_viewport_free (void *object)
   g_slice_free (RutUIViewport, object);
 }
 
-static RutRefCountableVTable _rut_ui_viewport_ref_countable_vtable = {
+static RutRefableVTable _rut_ui_viewport_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_ui_viewport_free
@@ -286,7 +286,7 @@ _rut_ui_viewport_init_type (void)
   rut_type_add_interface (&rut_ui_viewport_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutUIViewport, ref_count),
-                          &_rut_ui_viewport_ref_countable_vtable);
+                          &_rut_ui_viewport_refable_vtable);
   rut_type_add_interface (&rut_ui_viewport_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutUIViewport, graphable),

@@ -32,7 +32,7 @@ _rut_buffer_free (void *object)
   g_slice_free (RutBuffer, buffer);
 }
 
-static RutRefCountableVTable _rut_buffer_ref_countable_vtable = {
+static RutRefableVTable _rut_buffer_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_buffer_free
@@ -47,7 +47,7 @@ _rut_buffer_init_type (void)
   rut_type_add_interface (&rut_buffer_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutBuffer, ref_count),
-                          &_rut_buffer_ref_countable_vtable);
+                          &_rut_buffer_refable_vtable);
 }
 
 RutBuffer *
@@ -72,7 +72,7 @@ _rut_attribute_free (RutAttribute *attribute)
   g_slice_free (RutAttribute, attribute);
 }
 
-static RutRefCountableVTable _rut_attribute_ref_countable_vtable = {
+static RutRefableVTable _rut_attribute_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_attribute_free
@@ -87,7 +87,7 @@ _rut_attribute_init_type (void)
   rut_type_add_interface (&rut_attribute_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutAttribute, ref_count),
-                          &_rut_attribute_ref_countable_vtable);
+                          &_rut_attribute_refable_vtable);
 }
 
 RutAttribute *
@@ -125,7 +125,7 @@ _rut_mesh_free (RutMesh *mesh)
   g_slice_free (RutMesh, mesh);
 }
 
-static RutRefCountableVTable _rut_mesh_ref_countable_vtable = {
+static RutRefableVTable _rut_mesh_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_mesh_free
@@ -140,7 +140,7 @@ _rut_mesh_init_type (void)
   rut_type_add_interface (&rut_mesh_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutMesh, ref_count),
-                          &_rut_mesh_ref_countable_vtable);
+                          &_rut_mesh_refable_vtable);
 }
 
 RutMesh *

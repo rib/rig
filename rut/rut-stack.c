@@ -100,7 +100,7 @@ _rut_stack_free (void *object)
   g_slice_free (RutStack, stack);
 }
 
-RutRefCountableVTable _rut_stack_ref_countable_vtable = {
+RutRefableVTable _rut_stack_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_stack_free
@@ -308,7 +308,7 @@ _rut_stack_init_type (void)
   rut_type_add_interface (&rut_stack_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutStack, ref_count),
-                          &_rut_stack_ref_countable_vtable);
+                          &_rut_stack_refable_vtable);
   rut_type_add_interface (&rut_stack_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutStack, graphable),

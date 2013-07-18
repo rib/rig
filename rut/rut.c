@@ -191,7 +191,7 @@ _rut_context_free (void *object)
   g_slice_free (RutContext, ctx);
 }
 
-static RutRefCountableVTable _rut_context_ref_countable_vtable = {
+static RutRefableVTable _rut_context_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_context_free
@@ -206,7 +206,7 @@ _rut_context_init_type (void)
   rut_type_add_interface (&rut_context_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutContext, ref_count),
-                          &_rut_context_ref_countable_vtable);
+                          &_rut_context_refable_vtable);
 }
 
 static void

@@ -562,7 +562,7 @@ RutType rut_input_region_type;
 static void
 _rut_input_region_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rut_input_region_free
@@ -1604,7 +1604,7 @@ _rut_shell_free (void *object)
   g_free (shell);
 }
 
-RutRefCountableVTable _rut_shell_ref_countable_vtable = {
+RutRefableVTable _rut_shell_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_shell_free
@@ -1618,7 +1618,7 @@ _rut_shell_init_types (void)
   rut_type_add_interface (&rut_shell_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutShell, ref_count),
-                          &_rut_shell_ref_countable_vtable);
+                          &_rut_shell_refable_vtable);
 
   _rut_slider_init_type ();
   _rut_input_region_init_type ();
@@ -2343,7 +2343,7 @@ _rut_slider_free (void *object)
   g_slice_free (RutSlider, object);
 }
 
-RutRefCountableVTable _rut_slider_ref_countable_vtable = {
+RutRefableVTable _rut_slider_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_slider_free
@@ -2397,7 +2397,7 @@ _rut_slider_init_type (void)
   rut_type_add_interface (&rut_slider_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutSlider, ref_count),
-                          &_rut_slider_ref_countable_vtable);
+                          &_rut_slider_refable_vtable);
   rut_type_add_interface (&rut_slider_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutSlider, graphable),

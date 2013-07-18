@@ -284,7 +284,7 @@ _rut_text_buffer_free (void *object)
   g_slice_free (RutTextBuffer, buffer);
 }
 
-static RutRefCountableVTable _rut_text_buffer_ref_countable_vtable = {
+static RutRefableVTable _rut_text_buffer_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_text_buffer_free
@@ -304,7 +304,7 @@ _rut_text_buffer_init_type (void)
   rut_type_add_interface (&rut_text_buffer_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutTextBuffer, ref_count),
-                          &_rut_text_buffer_ref_countable_vtable);
+                          &_rut_text_buffer_refable_vtable);
   rut_type_add_interface (&rut_text_buffer_type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */

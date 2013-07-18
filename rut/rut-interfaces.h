@@ -36,12 +36,12 @@
  *
  */
 
-typedef struct _RutRefCountableVTable
+typedef struct _RutRefableVTable
 {
   void *(*ref)(void *object);
   void (*unref)(void *object);
   void (*free)(void *object);
-} RutRefCountableVTable;
+} RutRefableVTable;
 
 void *
 rut_refable_simple_ref (void *object);

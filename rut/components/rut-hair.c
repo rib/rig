@@ -178,7 +178,7 @@ _rut_hair_free (void *object)
   g_slice_free (RutHair, hair);
 }
 
-static RutRefCountableVTable _rut_hair_ref_countable_vtable = {
+static RutRefableVTable _rut_hair_ref_countable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_hair_free

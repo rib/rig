@@ -776,7 +776,7 @@ RutType rig_camera_view_type;
 static void
 _rig_camera_view_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rig_camera_view_free

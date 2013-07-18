@@ -112,7 +112,7 @@ _rut_entry_free (void *object)
   g_slice_free (RutEntry, entry);
 }
 
-RutRefCountableVTable _rut_entry_ref_countable_vtable = {
+RutRefableVTable _rut_entry_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_entry_free
@@ -299,7 +299,7 @@ _rut_entry_init_type (void)
   rut_type_add_interface (&rut_entry_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutEntry, ref_count),
-                          &_rut_entry_ref_countable_vtable);
+                          &_rut_entry_refable_vtable);
   rut_type_add_interface (&rut_entry_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutEntry, graphable),

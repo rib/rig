@@ -49,7 +49,7 @@ RutType rut_graph_type;
 static void
 _rut_graph_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rut_graph_free

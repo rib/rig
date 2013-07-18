@@ -402,7 +402,7 @@ static RutType rig_rpc_client_type;
 static void
 _rig_rpc_client_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rig_rpc_client_free

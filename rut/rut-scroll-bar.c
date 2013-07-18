@@ -123,7 +123,7 @@ _rut_scroll_bar_free (void *object)
   g_slice_free (RutScrollBar, object);
 }
 
-static RutRefCountableVTable _rut_scroll_bar_ref_countable_vtable = {
+static RutRefableVTable _rut_scroll_bar_refable_vtable = {
   rut_refable_simple_ref,
   rut_refable_simple_unref,
   _rut_scroll_bar_free
@@ -194,7 +194,7 @@ _rut_scroll_bar_init_type (void)
   rut_type_add_interface (&rut_scroll_bar_type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
                           offsetof (RutScrollBar, ref_count),
-                          &_rut_scroll_bar_ref_countable_vtable);
+                          &_rut_scroll_bar_refable_vtable);
   rut_type_add_interface (&rut_scroll_bar_type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (RutScrollBar, graphable),

@@ -87,7 +87,7 @@ RutType rut_pointalism_grid_slice_type;
 void
 _rut_pointalism_grid_slice_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
     rut_refable_simple_ref,
     rut_refable_simple_unref,
     _pointalism_grid_slice_free
@@ -377,7 +377,7 @@ _rut_pointalism_grid_free (void *object)
 void
 _rut_pointalism_grid_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
     rut_refable_simple_ref,
     rut_refable_simple_unref,
     _rut_pointalism_grid_free

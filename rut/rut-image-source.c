@@ -107,7 +107,7 @@ RutType rut_image_source_type;
 void
 _rut_image_source_init_type (void)
 {
-  static RutRefCountableVTable refable_vtable = {
+  static RutRefableVTable refable_vtable = {
       rut_refable_simple_ref,
       rut_refable_simple_unref,
       _rut_image_source_free
