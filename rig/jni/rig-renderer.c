@@ -1387,6 +1387,84 @@ FOUND:
   return pipeline;
 }
 
+static void
+image_source_ready_cb (RutImageSource *source,
+                       void *user_data)
+{
+  RutEntity *entity = user_data;
+  RutContext *ctx = rut_entity_get_context (entity);
+  RutImageSource *color_src;
+  RutObject *geometry;
+  RutMaterial *material;
+  int width, height;
+
+  geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+  dirty_entity_pipelines (entity);
+
+  if (material->color_source_asset)
+    color_src = rut_entity_get_image_source_cache (entity, SOURCE_TYPE_COLOR);
+  else
+    color_src = NULL;
+
+  /* If the color source has changed then we may also need to update
+   * the geometry according to the size of the color source */
+  if (source != color_src)
+    return;
+
+  if (rut_image_source_get_is_video (source))
+    {
+      width = 640;
+      height = cogl_gst_video_sink_get_height_for_width (
+                 rut_image_source_get_sink (source), width);
+    }
+  else
+    {
+      CoglTexture *texture = rut_image_source_get_texture (source);
+      width = cogl_texture_get_width (texture);
+      height = cogl_texture_get_height (texture);
+    }
+
+  /* TODO: make shape/diamond/pointalism image-size-dependant */
+  if (rut_object_is (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT))
+    {
+      RutImageSizeDependantVTable *dependant =
+        rut_object_get_vtable (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT);
+      dependant->set_image_size (geometry, width, height);
+    }
+  else if (rut_object_get_type (geometry) == &rut_shape_type)
+    rut_shape_set_texture_size (RUT_SHAPE (geometry), width, height);
+  else if (rut_object_get_type (geometry) == &rut_diamond_type)
+    {
+      RutDiamond *diamond = geometry;
+      float size = rut_diamond_get_size (diamond);
+
+      rut_entity_remove_component (entity, geometry);
+      diamond = rut_diamond_new (ctx, size, width, height);
+      rut_entity_add_component (entity, geometry);
+    }
+  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+    {
+      RutPointalismGrid *grid = geometry;
+      float cell_size, scale, z;
+      CoglBool lighter;
+
+      cell_size = rut_pointalism_grid_get_cell_size (grid);
+      scale = rut_pointalism_grid_get_scale (grid);
+      z = rut_pointalism_grid_get_z (grid);
+      lighter = rut_pointalism_grid_get_lighter (grid);
+
+      rut_entity_remove_component (entity, geometry);
+      grid = rut_pointalism_grid_new (ctx, cell_size, width, height);
+
+      rut_entity_add_component (entity, grid);
+      grid->pointalism_scale = scale;
+      grid->pointalism_z = z;
+      grid->pointalism_lighter = lighter;
+    }
+}
+
 static CoglPipeline *
 get_entity_pipeline (RigEngine *engine,
                      RutEntity *entity,
@@ -1428,7 +1506,7 @@ get_entity_pipeline (RigEngine *engine,
                                              sources[SOURCE_TYPE_COLOR]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
-                                               rig_entity_new_image_source,
+                                               image_source_ready_cb,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
                                                rig_engine_dirty_properties_menu,
@@ -1449,7 +1527,7 @@ get_entity_pipeline (RigEngine *engine,
           rut_entity_set_image_source_cache (entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
-                                               rig_entity_new_image_source,
+                                               image_source_ready_cb,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                                rig_engine_dirty_properties_menu,
@@ -1470,7 +1548,7 @@ get_entity_pipeline (RigEngine *engine,
           rut_entity_set_image_source_cache (entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
-                                               rig_entity_new_image_source,
+                                               image_source_ready_cb,
                                                entity, NULL);
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                                rig_engine_dirty_properties_menu,
@@ -1854,94 +1932,4 @@ rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
   rut_camera_end_frame (camera_component);
 
   rut_paint_ctx->camera = save_camera;
-}
-
-void
-rig_entity_new_image_source (RutImageSource *source,
-                             void *user_data)
-{
-  RutEntity *entity = user_data;
-  RutImageSource *src;
-  RutObject *geometry;
-  RutMaterial *material;
-  RutContext *ctx;
-  int width, height;
-
-  geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
-  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-
-  if (material->color_source_asset)
-    {
-      ctx = rut_asset_get_context (material->color_source_asset);
-      src = rut_entity_get_image_source_cache (entity, 0);
-    }
-  else if (material->alpha_mask_asset)
-    {
-      ctx = rut_asset_get_context (material->alpha_mask_asset);
-      src = rut_entity_get_image_source_cache (entity, 1);
-    }
-  else
-    {
-      ctx = rut_asset_get_context (material->normal_map_asset);
-      src = rut_entity_get_image_source_cache (entity, 2);
-    }
-
-  if (rut_image_source_get_is_video (src))
-    {
-      width = 640;
-      height = cogl_gst_video_sink_get_height_for_width (
-                 rut_image_source_get_sink (src), width);
-    }
-  else
-    {
-      CoglTexture *texture = rut_image_source_get_texture (src);
-      width = cogl_texture_get_width (texture);
-      height = cogl_texture_get_height (texture);
-    }
-
-  /* TODO: make shape/diamond/pointalism image-size-dependant */
-  if (rut_object_is (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT))
-    {
-      RutImageSizeDependantVTable *dependant =
-        rut_object_get_vtable (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT);
-      dependant->set_image_size (geometry, width, height);
-      rut_entity_set_pipeline_cache (entity, 0, NULL);
-    }
-  else if (rut_object_get_type (geometry) == &rut_shape_type)
-    {
-      rut_shape_set_texture_size (RUT_SHAPE (geometry), width, height);
-      rut_entity_set_pipeline_cache (entity, 0, NULL);
-    }
-  else if (rut_object_get_type (geometry) == &rut_diamond_type)
-    {
-      RutDiamond *diamond = geometry;
-      float size = rut_diamond_get_size (diamond);
-
-      rut_entity_remove_component (entity, geometry);
-      rut_entity_set_pipeline_cache (entity, 0, NULL);
-      diamond = rut_diamond_new (ctx, size, width, height);
-      rut_entity_add_component (entity, geometry);
-    }
-  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
-    {
-      RutPointalismGrid *grid = geometry;
-      float cell_size, scale, z;
-      CoglBool lighter;
-
-      cell_size = rut_pointalism_grid_get_cell_size (grid);
-      scale = rut_pointalism_grid_get_scale (grid);
-      z = rut_pointalism_grid_get_z (grid);
-      lighter = rut_pointalism_grid_get_lighter (grid);
-
-      rut_entity_remove_component (entity, geometry);
-      rut_entity_set_pipeline_cache (entity, 0, NULL);
-      grid = rut_pointalism_grid_new (ctx, cell_size, width, height);
-
-      rut_entity_add_component (entity, grid);
-      grid->pointalism_scale = scale;
-      grid->pointalism_z = z;
-      grid->pointalism_lighter = lighter;
-    }
-
-  _rig_renderer_notify_entity_changed (entity);
 }
