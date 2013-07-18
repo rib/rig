@@ -819,27 +819,9 @@ add_material_for_mask (CoglPipeline *pipeline,
 
   if (sources[SOURCE_TYPE_ALPHA_MASK])
     {
-#warning "FIXME: we can probably assume video is opaque and never add to mask-pipeline"
-      CoglGstVideoSink *sink =
-        rut_image_source_get_sink (sources[SOURCE_TYPE_ALPHA_MASK]);
-
-      if (sink && rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-        {
-          int free_layer;
-          int i;
-
-          cogl_gst_video_sink_set_first_layer (sink, 4);
-          cogl_gst_video_sink_set_default_sample (sink, FALSE);
-          cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-          free_layer = cogl_gst_video_sink_get_free_layer (sink);
-          cogl_pipeline_add_snippet (pipeline,
-                                     engine->alpha_mask_video_snippet);
-          for (i = 4; i < free_layer; i++)
-            cogl_pipeline_set_layer_combine (pipeline, i,
-                                             "RGBA=REPLACE(PREVIOUS)",
-                                             NULL);
-        }
-      else if (!sink)
+      /* XXX: We assume a video source is opaque and so never add to
+       * mask pipeline. */
+      if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
         {
           cogl_pipeline_set_layer_texture (pipeline, 4,
                                            rut_image_source_get_texture (sources[SOURCE_TYPE_ALPHA_MASK]));
