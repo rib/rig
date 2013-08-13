@@ -32,6 +32,7 @@
 #include "rut-asset.h"
 #include "rut-util.h"
 #include "rut-mesh-ply.h"
+#include "rut-mimable.h"
 
 #if 0
 enum {
@@ -94,22 +95,59 @@ _rut_asset_free (void *object)
   g_slice_free (RutAsset, asset);
 }
 
-static RutRefableVTable _rut_asset_refable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_asset_free
-};
+/* This is for copy & paste where we don't currently want a deep copy */
+static RutObject *
+_rut_asset_copy (RutObject *mimable)
+{
+  return rut_refable_ref (mimable);
+}
+
+static bool
+_rut_asset_has (RutObject *mimable, RutMimableType type)
+{
+  if (type == RUT_MIMABLE_TYPE_OBJECT)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+static void *
+_rut_asset_get (RutObject *mimable, RutMimableType type)
+{
+  if (type == RUT_MIMABLE_TYPE_OBJECT)
+    return mimable;
+  else
+    return NULL;
+}
 
 RutType rut_asset_type;
 
 void
 _rut_asset_type_init (void)
 {
-  rut_type_init (&rut_asset_type, "RigAsset");
-  rut_type_add_interface (&rut_asset_type,
-                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                           offsetof (RutAsset, ref_count),
-                           &_rut_asset_refable);
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_asset_free
+  };
+  static RutMimableVTable mimable_vtable = {
+      .copy = _rut_asset_copy,
+      .has = _rut_asset_has,
+      .get = _rut_asset_get,
+  };
+
+  RutType *type = &rut_asset_type;
+#define TYPE RutAsset
+
+  rut_type_init (&rut_asset_type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_MIMABLE,
+                          0, /* no associated properties */
+                          &mimable_vtable);
 
 #if 0
   rut_type_add_interface (&_asset_type,
@@ -121,6 +159,8 @@ _rut_asset_type_init (void)
                           offsetof (Asset, introspectable),
                           NULL); /* no implied vtable */
 #endif
+
+#undef TYPE
 }
 
 /* These should be sorted in descending order of size to

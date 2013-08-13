@@ -25,6 +25,7 @@
 
 #include "rut-shim.h"
 #include "rut-asset-inspector.h"
+#include "rut-object.h"
 
 enum {
   RUT_ASSET_INSPECTOR_PROP_ASSET,
@@ -39,7 +40,10 @@ struct _RutAssetInspector
 
   RutAssetType asset_type;
   RutAsset *asset;
+  RutImage *image;
   RutShim *shim;
+  RutInputRegion *input_region;
+  RutNineSlice *highlight;
   RutStack *stack;
 
   RutGraphableProps graphable;
@@ -48,6 +52,8 @@ struct _RutAssetInspector
   RutProperty properties[RUT_ASSET_INSPECTOR_N_PROPS];
 
   int ref_count;
+
+  unsigned int selected: 1;
 };
 
 static RutPropertySpec _rut_asset_inspector_prop_specs[] = {
@@ -65,9 +71,30 @@ static RutPropertySpec _rut_asset_inspector_prop_specs[] = {
 };
 
 static void
+_rut_asset_inspector_set_selected (RutAssetInspector *asset_inspector,
+                                   bool selected)
+{
+  if (asset_inspector->selected  == selected)
+    return;
+
+  if (selected)
+    rut_stack_add (asset_inspector->stack, asset_inspector->highlight);
+  else
+    rut_graphable_remove_child (asset_inspector->highlight);
+
+  asset_inspector->selected = selected;
+
+  rut_shell_queue_redraw (asset_inspector->ctx->shell);
+}
+
+static void
 _rut_asset_inspector_free (void *object)
 {
   RutAssetInspector *asset_inspector = object;
+
+  _rut_asset_inspector_set_selected (asset_inspector, FALSE);
+  rut_refable_unref (asset_inspector->highlight);
+  asset_inspector->highlight = NULL;
 
   rut_asset_inspector_set_asset (asset_inspector, NULL);
 
@@ -76,6 +103,31 @@ _rut_asset_inspector_free (void *object)
   rut_simple_introspectable_destroy (asset_inspector);
 
   g_slice_free (RutAssetInspector, asset_inspector);
+}
+
+static void
+_rut_asset_inspector_cancel_selection (RutObject *object)
+{
+  RutAssetInspector *asset_inspector = object;
+
+  rut_graphable_remove_child (asset_inspector->highlight);
+  rut_shell_queue_redraw (asset_inspector->ctx->shell);
+}
+
+static RutObject *
+_rut_asset_inspector_copy_selection (RutObject *object)
+{
+  RutAssetInspector *asset_inspector = object;
+
+  return rut_refable_ref (asset_inspector->asset);
+}
+
+static void
+_rut_asset_inspector_delete_selection (RutObject *object)
+{
+  RutAssetInspector *asset_inspector = object;
+
+  rut_asset_inspector_set_asset (asset_inspector, NULL);
 }
 
 RutType rut_asset_inspector_type;
@@ -104,6 +156,11 @@ _rut_asset_inspector_init_type (void)
       rut_simple_introspectable_lookup_property,
       rut_simple_introspectable_foreach_property
   };
+  static RutSelectableVTable selectable_vtable = {
+      .cancel = _rut_asset_inspector_cancel_selection,
+      .copy = _rut_asset_inspector_copy_selection,
+      .del = _rut_asset_inspector_delete_selection,
+  };
 
   RutType *type = &rut_asset_inspector_type;
 #define TYPE RutAssetInspector
@@ -127,6 +184,10 @@ _rut_asset_inspector_init_type (void)
                           offsetof (TYPE, shim),
                           NULL); /* no vtable */
   rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SELECTABLE,
+                          0, /* no implied properties */
+                          &selectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
                           &introspectable_vtable);
@@ -138,7 +199,6 @@ _rut_asset_inspector_init_type (void)
 #undef TYPE
 }
 
-#if 0
 static RutInputEventStatus
 input_cb (RutInputRegion *region,
           RutInputEvent *event,
@@ -149,12 +209,49 @@ input_cb (RutInputRegion *region,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
     {
+      _rut_asset_inspector_set_selected (asset_inspector, TRUE);
+      rut_shell_set_selection (asset_inspector->ctx->shell, asset_inspector);
       return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+           (rut_key_event_get_keysym (event) == RUT_KEY_Delete ||
+            rut_key_event_get_keysym (event) == RUT_KEY_BackSpace))
+    {
+      rut_asset_inspector_set_asset (asset_inspector, NULL);
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP)
+    {
+      RutObject *data = rut_drop_event_get_data (event);
+
+      if (rut_object_get_type (data) == &rut_asset_type)
+        rut_asset_inspector_set_asset (asset_inspector, data);
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
-#endif
+
+static RutNineSlice *
+create_highlight_nine_slice (RutContext *ctx)
+{
+  CoglTexture *texture = rut_load_texture_from_data_file (ctx, "highlight.png", NULL);
+  int width = cogl_texture_get_width (texture);
+  int height = cogl_texture_get_height (texture);
+  RutNineSlice *highlight;
+  CoglPipeline *pipeline;
+
+  highlight = rut_nine_slice_new (ctx,
+                                  texture,
+                                  15, 15, 15, 15,
+                                  width,
+                                  height);
+  cogl_object_unref (texture);
+
+  pipeline = rut_nine_slice_get_pipeline (highlight);
+
+  cogl_pipeline_set_color4f (pipeline, 1, 1, 0, 1);
+
+  return highlight;
+}
 
 RutAssetInspector *
 rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
@@ -194,14 +291,14 @@ rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
   asset_inspector->stack = stack;
   rut_refable_unref (stack);
 
-#if 0
+  asset_inspector->highlight = create_highlight_nine_slice (asset_inspector->ctx);
+
   asset_inspector->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0,
                                     input_cb,
                                     asset_inspector);
   rut_stack_add (stack, asset_inspector->input_region);
   rut_refable_unref (asset_inspector->input_region);
-#endif
 
   return asset_inspector;
 }
@@ -217,23 +314,41 @@ void
 rut_asset_inspector_set_asset (RutObject *object, RutObject *asset_object)
 {
   RutAssetInspector *asset_inspector = object;
+  bool save_selected = asset_inspector->selected;
   RutAsset *asset = asset_object;
   CoglTexture *texture;
 
   if (asset_inspector->asset == asset)
     return;
 
-  if (asset_inspector->asset)
-    rut_refable_unref (asset_inspector->asset);
-  asset_inspector->asset = rut_refable_ref (asset);
+  _rut_asset_inspector_set_selected (asset_inspector, FALSE);
 
-  texture = rut_asset_get_texture (asset);
-  if (texture)
+  if (asset_inspector->asset)
     {
-      RutImage *image = rut_image_new (asset_inspector->ctx, texture);
-      rut_stack_add (asset_inspector->stack, image);
-      rut_refable_unref (image);
+      rut_refable_unref (asset_inspector->asset);
+      asset_inspector->asset = NULL;
+
+      if (asset_inspector->image)
+        {
+          rut_graphable_remove_child (asset_inspector->image);
+          rut_refable_unref (asset_inspector->image);
+          asset_inspector->image = NULL;
+        }
     }
+
+  if (asset_object)
+    {
+      asset_inspector->asset = rut_refable_ref (asset);
+
+      texture = rut_asset_get_texture (asset);
+      if (texture)
+        {
+          asset_inspector->image = rut_image_new (asset_inspector->ctx, texture);
+          rut_stack_add (asset_inspector->stack, asset_inspector->image);
+        }
+    }
+
+  _rut_asset_inspector_set_selected (asset_inspector, save_selected);
 
   rut_property_dirty (&asset_inspector->ctx->property_ctx,
                       &asset_inspector->properties[RUT_ASSET_INSPECTOR_PROP_ASSET]);

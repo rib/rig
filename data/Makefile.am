@@ -54,7 +54,8 @@ dist_assets_DATA = \
 	thumb-video.png \
 	pointalism.png \
 	hair.png \
-	circle1.png
+	circle1.png \
+	highlight.png
 
 if HAVE_GTK
 dist_assets_DATA += \
