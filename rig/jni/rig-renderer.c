@@ -1052,6 +1052,11 @@ get_entity_color_pipeline (RigEngine *engine,
   RutObject *hair;
   int i;
 
+  /* TODO: come up with a scheme for minimizing how many separate
+   * CoglPipelines we create or at least deriving the pipelines
+   * from a small set of templates.
+   */
+
   if (blended)
     pipeline = rut_entity_get_pipeline_cache (entity,
                                               CACHE_SLOT_COLOR_BLENDED);
@@ -1331,10 +1336,8 @@ FOUND:
 
     cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
 
-    /* XXX: This is pretty bad that we are having to do this. It would
-     * be nicer if cogl exposed matrix-stacks publicly so we could
-     * maintain the entity model_matrix incrementally as we traverse
-     * the scenegraph. */
+    /* TODO: use Cogl's MatrixStack api so we can update the entity
+     * model matrix incrementally as we traverse the scenegraph */
     rut_graphable_get_transform (entity, &model_transform);
 
     get_light_modelviewprojection (&model_transform,

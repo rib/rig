@@ -580,10 +580,12 @@ rut_boxed_destroy (RutBoxed *boxed)
   switch (boxed->type)
     {
     case RUT_PROPERTY_TYPE_OBJECT:
-      rut_refable_unref (boxed->d.object_val);
+      if (boxed->d.object_val)
+        rut_refable_unref (boxed->d.object_val);
       break;
     case RUT_PROPERTY_TYPE_ASSET:
-      rut_refable_unref (boxed->d.asset_val);
+      if (boxed->d.asset_val)
+        rut_refable_unref (boxed->d.asset_val);
       break;
     case RUT_PROPERTY_TYPE_POINTER:
       g_free (boxed->d.text_val);
