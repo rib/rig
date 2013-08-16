@@ -568,9 +568,9 @@ _cogl_framebuffer_flush_dependency_journals (CoglFramebuffer *framebuffer)
 }
 
 CoglOffscreen *
-_cogl_offscreen_new_to_texture_full (CoglTexture *texture,
-                                     CoglOffscreenFlags create_flags,
-                                     int level)
+_cogl_offscreen_new_with_texture_full (CoglTexture *texture,
+                                       CoglOffscreenFlags create_flags,
+                                       int level)
 {
   CoglContext *ctx = texture->context;
   CoglOffscreen *offscreen;
@@ -613,9 +613,9 @@ _cogl_offscreen_new_to_texture_full (CoglTexture *texture,
 }
 
 CoglOffscreen *
-cogl_offscreen_new_to_texture (CoglTexture *texture)
+cogl_offscreen_new_with_texture (CoglTexture *texture)
 {
-  return _cogl_offscreen_new_to_texture_full (texture, 0, 0);
+  return _cogl_offscreen_new_with_texture_full (texture, 0, 0);
 }
 
 static void

@@ -50,7 +50,7 @@ _cogl_blit_texture_render_begin (CoglBlitData *data)
   unsigned int dst_width, dst_height;
   CoglError *ignore_error = NULL;
 
-  offscreen = _cogl_offscreen_new_to_texture_full
+  offscreen = _cogl_offscreen_new_with_texture_full
     (data->dst_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
   fb = COGL_FRAMEBUFFER (offscreen);
@@ -155,7 +155,7 @@ _cogl_blit_framebuffer_begin (CoglBlitData *data)
       !(ctx->private_feature_flags & COGL_PRIVATE_FEATURE_OFFSCREEN_BLIT))
     return FALSE;
 
-  dst_offscreen = _cogl_offscreen_new_to_texture_full
+  dst_offscreen = _cogl_offscreen_new_with_texture_full
     (data->dst_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
   dst_fb = COGL_FRAMEBUFFER (dst_offscreen);
@@ -165,7 +165,7 @@ _cogl_blit_framebuffer_begin (CoglBlitData *data)
       goto error;
     }
 
-  src_offscreen= _cogl_offscreen_new_to_texture_full
+  src_offscreen= _cogl_offscreen_new_with_texture_full
     (data->src_tex,
      COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL,
      0 /* level */);
@@ -226,7 +226,7 @@ _cogl_blit_copy_tex_sub_image_begin (CoglBlitData *data)
   if (!cogl_is_texture_2d (data->dst_tex))
     return FALSE;
 
-  offscreen = _cogl_offscreen_new_to_texture_full
+  offscreen = _cogl_offscreen_new_with_texture_full
     (data->src_tex, COGL_OFFSCREEN_DISABLE_DEPTH_AND_STENCIL, 0 /* level */);
 
   fb = COGL_FRAMEBUFFER (offscreen);
