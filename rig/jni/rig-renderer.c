@@ -83,9 +83,17 @@ typedef struct _RigJournalEntry
  */
 #define OPAQUE_THRESHOLD 0.9999
 
+#define N_PIPELINE_CACHE_SLOTS 5
+#define N_IMAGE_SOURCE_CACHE_SLOTS 3
+#define N_PRIMITIVE_CACHE_SLOTS 1
+
 typedef struct _RigRendererPriv
 {
   RigRenderer *renderer;
+
+  CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
+  RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
+  CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
 } RigRendererPriv;
 
 static void
@@ -100,35 +108,133 @@ _rig_renderer_free (void *object)
 }
 
 static void
+set_entity_pipeline_cache (RutEntity *entity,
+                           int slot,
+                           CoglPipeline *pipeline)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->pipeline_caches[slot])
+    cogl_object_unref (priv->pipeline_caches[slot]);
+
+  priv->pipeline_caches[slot] = pipeline;
+  if (pipeline)
+    cogl_object_ref (pipeline);
+}
+
+static CoglPipeline *
+get_entity_pipeline_cache (RutEntity *entity,
+                           int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+  return priv->pipeline_caches[slot];
+}
+
+static void
+set_entity_image_source_cache (RutEntity *entity,
+                               int slot,
+                               RutImageSource *source)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->image_source_caches[slot])
+    rut_refable_unref (priv->image_source_caches[slot]);
+
+  priv->image_source_caches[slot] = source;
+  if (source)
+    rut_refable_ref (source);
+}
+
+static RutImageSource*
+get_entity_image_source_cache (RutEntity *entity,
+                               int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  return priv->image_source_caches[slot];
+}
+
+static void
+set_entity_primitive_cache (RutEntity *entity,
+                            int slot,
+                            CoglPrimitive *primitive)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->primitive_caches[slot])
+    cogl_object_unref (priv->primitive_caches[slot]);
+
+  priv->primitive_caches[slot] = primitive;
+  if (primitive)
+    cogl_object_ref (primitive);
+}
+
+static CoglPrimitive *
+get_entity_primitive_cache (RutEntity *entity,
+                            int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  return priv->primitive_caches[slot];
+}
+
+static void
 dirty_entity_pipelines (RutEntity *entity)
 {
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
+  set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
+  set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
+  set_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW, NULL);
 }
 
 static void
 dirty_entity_geometry (RutEntity *entity)
 {
-  rut_entity_set_primitive_cache (entity, 0, NULL);
+  set_entity_primitive_cache (entity, 0, NULL);
 }
 
 /* TODO: allow more fine grained discarding of cached renderer state */
 static void
 _rig_renderer_notify_entity_changed (RutEntity *entity)
 {
+  if (!entity->renderer_priv)
+    return;
+
   dirty_entity_pipelines (entity);
   dirty_entity_geometry (entity);
 
-  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_COLOR, NULL);
-  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK, NULL);
-  rut_entity_set_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP, NULL);
+  set_entity_image_source_cache (entity, SOURCE_TYPE_COLOR, NULL);
+  set_entity_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK, NULL);
+  set_entity_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP, NULL);
 }
 
 static void
 _rig_renderer_free_priv (RutEntity *entity)
 {
-  g_slice_free (RigRendererPriv, entity->renderer_priv);
+  RigRendererPriv *priv = entity->renderer_priv;
+  CoglPipeline **pipeline_caches = priv->pipeline_caches;
+  RutImageSource **image_source_caches = priv->image_source_caches;
+  CoglPrimitive **primitive_caches = priv->primitive_caches;
+  int i;
+
+  for (i = 0; i < N_PIPELINE_CACHE_SLOTS; i++)
+    {
+      if (pipeline_caches[i])
+        cogl_object_unref (pipeline_caches[i]);
+    }
+
+  for (i = 0; i < N_IMAGE_SOURCE_CACHE_SLOTS; i++)
+    {
+      if (image_source_caches[i])
+        rut_refable_unref (image_source_caches[i]);
+    }
+
+  for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++)
+    {
+      if (primitive_caches[i])
+        rut_refable_unref (primitive_caches[i]);
+    }
+
+  g_slice_free (RigRendererPriv, priv);
   entity->renderer_priv = NULL;
 }
 
@@ -932,7 +1038,7 @@ get_entity_mask_pipeline (RigEngine *engine,
   CoglPipeline *pipeline;
   RutObject *hair;
 
-  pipeline = rut_entity_get_pipeline_cache (entity, CACHE_SLOT_SHADOW);
+  pipeline = get_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW);
 
   if (pipeline)
     {
@@ -1077,7 +1183,7 @@ get_entity_mask_pipeline (RigEngine *engine,
   else
     pipeline = cogl_object_ref (engine->dof_pipeline);
 
-  rut_entity_set_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
+  set_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW, pipeline);
 
   return pipeline;
 }
@@ -1147,19 +1253,18 @@ get_entity_color_pipeline (RigEngine *engine,
 
   if (blended)
     {
-      pipeline = rut_entity_get_pipeline_cache (entity,
-                                                CACHE_SLOT_COLOR_BLENDED);
+      pipeline = get_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED);
       if (hair)
-        fin_pipeline = rut_entity_get_pipeline_cache (entity,
-                                                      CACHE_SLOT_HAIR_FINS_BLENDED);
+        fin_pipeline = get_entity_pipeline_cache (entity,
+                                                  CACHE_SLOT_HAIR_FINS_BLENDED);
     }
   else
     {
-      pipeline = rut_entity_get_pipeline_cache (entity,
-                                                CACHE_SLOT_COLOR_UNBLENDED);
+      pipeline = get_entity_pipeline_cache (entity,
+                                            CACHE_SLOT_COLOR_UNBLENDED);
       if (hair)
-        fin_pipeline = rut_entity_get_pipeline_cache (entity,
-                                                      CACHE_SLOT_HAIR_FINS_UNBLENDED);
+        fin_pipeline = get_entity_pipeline_cache (entity,
+                                                  CACHE_SLOT_HAIR_FINS_UNBLENDED);
     }
 
   if (pipeline)
@@ -1434,22 +1539,20 @@ get_entity_color_pipeline (RigEngine *engine,
   if (!blended)
     {
       cogl_pipeline_set_blend (pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-      rut_entity_set_pipeline_cache (entity,
-                                     CACHE_SLOT_COLOR_UNBLENDED, pipeline);
+      set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, pipeline);
       if (hair)
         {
           cogl_pipeline_set_blend (fin_pipeline, "RGBA = ADD (SRC_COLOR, 0)", NULL);
-          rut_entity_set_pipeline_cache (entity,
-                                         CACHE_SLOT_HAIR_FINS_UNBLENDED, fin_pipeline);
+          set_entity_pipeline_cache (entity,
+                                     CACHE_SLOT_HAIR_FINS_UNBLENDED, fin_pipeline);
         }
     }
   else
     {
-      rut_entity_set_pipeline_cache (entity,
-                                     CACHE_SLOT_COLOR_BLENDED, pipeline);
+      set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, pipeline);
       if (hair)
-        rut_entity_set_pipeline_cache (entity,
-                                       CACHE_SLOT_HAIR_FINS_BLENDED, fin_pipeline);
+        set_entity_pipeline_cache (entity,
+                                   CACHE_SLOT_HAIR_FINS_BLENDED, fin_pipeline);
     }
 
 FOUND:
@@ -1525,7 +1628,7 @@ image_source_ready_cb (RutImageSource *source,
   dirty_entity_pipelines (entity);
 
   if (material->color_source_asset)
-    color_src = rut_entity_get_image_source_cache (entity, SOURCE_TYPE_COLOR);
+    color_src = get_entity_image_source_cache (entity, SOURCE_TYPE_COLOR);
   else
     color_src = NULL;
 
@@ -1603,11 +1706,11 @@ get_entity_pipeline (RigEngine *engine,
    */
 
   sources[SOURCE_TYPE_COLOR] =
-    rut_entity_get_image_source_cache (entity, SOURCE_TYPE_COLOR);
+    get_entity_image_source_cache (entity, SOURCE_TYPE_COLOR);
   sources[SOURCE_TYPE_ALPHA_MASK] =
-    rut_entity_get_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK);
+    get_entity_image_source_cache (entity, SOURCE_TYPE_ALPHA_MASK);
   sources[SOURCE_TYPE_NORMAL_MAP] =
-    rut_entity_get_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP);
+    get_entity_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP);
 
   /* Materials may be associated with various image sources which need
    * to be setup before we try creating pipelines and querying the
@@ -1622,9 +1725,9 @@ get_entity_pipeline (RigEngine *engine,
         {
           sources[SOURCE_TYPE_COLOR] = rut_image_source_new (engine->ctx, asset);
 
-          rut_entity_set_image_source_cache (entity,
-                                             SOURCE_TYPE_COLOR,
-                                             sources[SOURCE_TYPE_COLOR]);
+          set_entity_image_source_cache (entity,
+                                         SOURCE_TYPE_COLOR,
+                                         sources[SOURCE_TYPE_COLOR]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
                                                image_source_ready_cb,
@@ -1645,7 +1748,7 @@ get_entity_pipeline (RigEngine *engine,
         {
           sources[SOURCE_TYPE_ALPHA_MASK] = rut_image_source_new (engine->ctx, asset);
 
-          rut_entity_set_image_source_cache (entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
+          set_entity_image_source_cache (entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                                image_source_ready_cb,
@@ -1666,7 +1769,7 @@ get_entity_pipeline (RigEngine *engine,
         {
           sources[SOURCE_TYPE_NORMAL_MAP] = rut_image_source_new (engine->ctx, asset);
 
-          rut_entity_set_image_source_cache (entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
+          set_entity_image_source_cache (entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
           rut_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                                image_source_ready_cb,
@@ -1800,11 +1903,11 @@ rig_renderer_flush_journal (RigRenderer *renderer,
       if (hair)
         {
           if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-            fin_pipeline = rut_entity_get_pipeline_cache (entity,
-                                                          CACHE_SLOT_HAIR_FINS_BLENDED);
+            fin_pipeline = get_entity_pipeline_cache (entity,
+                                                      CACHE_SLOT_HAIR_FINS_BLENDED);
           else
-            fin_pipeline = rut_entity_get_pipeline_cache (entity,
-                                                          CACHE_SLOT_HAIR_FINS_UNBLENDED);
+            fin_pipeline = get_entity_pipeline_cache (entity,
+                                                      CACHE_SLOT_HAIR_FINS_UNBLENDED);
         }
 
       if ((paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
@@ -1861,11 +1964,11 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
       if (rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
         {
-          primitive = rut_entity_get_primitive_cache (entity, 0);
+          primitive = get_entity_primitive_cache (entity, 0);
           if (!primitive)
             {
               primitive = rut_primable_get_primitive (geometry);
-              rut_entity_set_primitive_cache (entity, 0, primitive);
+              set_entity_primitive_cache (entity, 0, primitive);
             }
 
           cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
