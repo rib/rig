@@ -81,6 +81,11 @@ typedef struct _RigJournalEntry
  */
 #define OPAQUE_THRESHOLD 0.9999
 
+typedef struct _RigRendererPriv
+{
+  RigRenderer *renderer;
+} RigRendererPriv;
+
 static void
 _rig_renderer_free (void *object)
 {
@@ -118,6 +123,13 @@ _rig_renderer_notify_entity_changed (RutEntity *entity)
   rut_entity_set_image_source_cache (entity, SOURCE_TYPE_NORMAL_MAP, NULL);
 }
 
+static void
+_rig_renderer_free_priv (RutEntity *entity)
+{
+  g_slice_free (RigRendererPriv, entity->renderer_priv);
+  entity->renderer_priv = NULL;
+}
+
 RutType rig_renderer_type;
 
 static void
@@ -130,7 +142,8 @@ _rig_renderer_init_type (void)
   };
 
   static RutRendererVTable renderer_vtable = {
-      .notify_entity_changed = _rig_renderer_notify_entity_changed
+      .notify_entity_changed = _rig_renderer_notify_entity_changed,
+      .free_priv = _rig_renderer_free_priv
   };
 
   RutType *type = &rig_renderer_type;
@@ -1582,9 +1595,32 @@ get_normal_matrix (const CoglMatrix *matrix,
 }
 
 static void
-rig_journal_flush (GArray *journal,
-                   RigPaintContext *paint_ctx)
+ensure_renderer_priv (RutEntity *entity, RigRenderer *renderer)
 {
+  /* If this entity was last renderered with some other renderer then
+   * we free any private state associated with the previous renderer
+   * before creating our own private state */
+  if (entity->renderer_priv)
+    {
+      RutObject *renderer = *(RutObject **)entity->renderer_priv;
+      if (rut_object_get_type (renderer) != &rig_renderer_type)
+        rut_renderer_free_priv (renderer, entity);
+    }
+
+  if (!entity->renderer_priv)
+    {
+      RigRendererPriv *priv = g_slice_new0 (RigRendererPriv);
+
+      priv->renderer = renderer;
+      entity->renderer_priv = priv;
+    }
+}
+
+static void
+rig_renderer_flush_journal (RigRenderer *renderer,
+                            RigPaintContext *paint_ctx)
+{
+  GArray *journal = renderer->journal;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
   RutCamera *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
@@ -1625,6 +1661,8 @@ rig_journal_flush (GArray *journal,
       CoglPrimitive *primitive;
       float normal_matrix[9];
       RutMaterial *material;
+
+      ensure_renderer_priv (entity, renderer);
 
       material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
@@ -1899,7 +1937,7 @@ paint_scene (RigPaintContext *paint_ctx)
                           entitygraph_post_paint_cb,
                           paint_ctx);
 
-  rig_journal_flush (renderer->journal, paint_ctx);
+  rig_renderer_flush_journal (renderer, paint_ctx);
 }
 
 void

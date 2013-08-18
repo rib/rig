@@ -66,6 +66,67 @@ typedef enum
   RUT_ENTITY_FLAG_CAST_SHADOW = 1 << 1,
 } RutEntityFlag;
 
+enum
+{
+  RUT_ENTITY_PROP_LABEL,
+  RUT_ENTITY_PROP_VISIBLE,
+  RUT_ENTITY_PROP_POSITION,
+  RUT_ENTITY_PROP_ROTATION,
+  RUT_ENTITY_PROP_SCALE,
+  RUT_ENTITY_PROP_CAST_SHADOW,
+  RUT_ENTITY_PROP_RECEIVE_SHADOW,
+
+  RUT_ENTITY_N_PROPS
+};
+
+/* XXX: at some point we should perhaps separate out the Rig rendering code
+ * into a "Renderer" and let that code somehow define how many slots it wants
+ * associated with an entity for caching state. */
+#define N_PIPELINE_CACHE_SLOTS 3
+#define N_IMAGE_SOURCE_CACHE_SLOTS 3
+#define N_PRIMITIVE_CACHE_SLOTS 1
+
+
+struct _RutEntity
+{
+  RutObjectProps _parent;
+
+  RutContext *ctx;
+  int ref_count;
+
+  char *label;
+
+  RutGraphableProps graphable;
+
+  /* private fields */
+  float position[3];
+  CoglQuaternion rotation;
+  float scale;                          /* uniform scaling only */
+  CoglMatrix transform;
+
+  GPtrArray *components;
+
+  /* TODO: We should have a ->renderer_priv member instead and
+   * since each renderer will know best how it wants to track
+   * pipelines and caches of primitives associated with each
+   * entity. */
+  CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
+  RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
+  CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
+
+  void *renderer_priv;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_ENTITY_N_PROPS];
+
+  unsigned int visible:1;
+  unsigned int dirty:1;
+  unsigned int cast_shadow:1;
+
+  /* Make this part of the material component? */
+  unsigned int receive_shadow:1;
+};
+
 void
 _rut_entity_init_type (void);
 

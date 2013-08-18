@@ -23,67 +23,6 @@
 #include "rut-entity.h"
 #include "rut.h"
 
-/* XXX: at some point we should perhaps separate out the Rig rendering code
- * into a "Renderer" and let that code somehow define how many slots it wants
- * associated with an entity for caching state. */
-#define N_PIPELINE_CACHE_SLOTS 3
-#define N_IMAGE_SOURCE_CACHE_SLOTS 3
-#define N_PRIMITIVE_CACHE_SLOTS 1
-
-enum
-{
-  PROP_LABEL,
-  PROP_VISIBLE,
-  PROP_POSITION,
-  PROP_ROTATION,
-  PROP_SCALE,
-  PROP_CAST_SHADOW,
-  PROP_RECEIVE_SHADOW,
-
-  N_PROPS
-};
-
-/* FIXME:
- *  - directly store the position in the transform matrix?
- */
-struct _RutEntity
-{
-  RutObjectProps _parent;
-
-  RutContext *ctx;
-  int ref_count;
-
-  char *label;
-
-  RutGraphableProps graphable;
-
-  /* private fields */
-  float position[3];
-  CoglQuaternion rotation;
-  float scale;                          /* uniform scaling only */
-  CoglMatrix transform;
-
-  GPtrArray *components;
-
-  /* TODO: We should have a ->renderer_priv member instead and
-   * since each renderer will know best how it wants to track
-   * pipelines and caches of primitives associated with each
-   * entity. */
-  CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
-  RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
-  CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
-
-  RutSimpleIntrospectableProps introspectable;
-  RutProperty properties[N_PROPS];
-
-  unsigned int visible:1;
-  unsigned int dirty:1;
-  unsigned int cast_shadow:1;
-
-  /* Make this part of the material component? */
-  unsigned int receive_shadow:1;
-};
-
 static RutPropertySpec _rut_entity_prop_specs[] = {
   {
     .name = "label",
@@ -192,6 +131,12 @@ _rut_entity_free (void *object)
       rut_refable_unref (primitive_caches[i]);
   }
 
+  if (entity->renderer_priv)
+    {
+      RutObject *renderer = *(RutObject **)entity->renderer_priv;
+      rut_renderer_free_priv (renderer, entity);
+    }
+
   g_slice_free (RutEntity, entity);
 }
 
@@ -292,7 +237,7 @@ rut_entity_set_label (RutObject *obj,
   g_free (entity->label);
   entity->label = g_strdup (label);
   rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[PROP_LABEL]);
+                      &entity->properties[RUT_ENTITY_PROP_LABEL]);
 }
 
 const char *
@@ -645,7 +590,7 @@ rut_entity_set_cast_shadow (RutObject *obj,
   entity->cast_shadow = cast_shadow;
 
   rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[PROP_CAST_SHADOW]);
+                      &entity->properties[RUT_ENTITY_PROP_CAST_SHADOW]);
 }
 
 CoglBool
@@ -668,7 +613,7 @@ rut_entity_set_receive_shadow (RutObject *obj,
   entity->receive_shadow = receive_shadow;
 
   rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[PROP_RECEIVE_SHADOW]);
+                      &entity->properties[RUT_ENTITY_PROP_RECEIVE_SHADOW]);
 }
 
 RutObject *
