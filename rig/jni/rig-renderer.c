@@ -83,9 +83,17 @@ typedef struct _RigJournalEntry
  */
 #define OPAQUE_THRESHOLD 0.9999
 
+#define N_PIPELINE_CACHE_SLOTS 5
+#define N_IMAGE_SOURCE_CACHE_SLOTS 3
+#define N_PRIMITIVE_CACHE_SLOTS 1
+
 typedef struct _RigRendererPriv
 {
   RigRenderer *renderer;
+
+  CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
+  RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
+  CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
 } RigRendererPriv;
 
 static void
@@ -97,6 +105,77 @@ _rig_renderer_free (void *object)
   renderer->journal = NULL;
 
   g_slice_free (RigRenderer, object);
+}
+
+static void
+rut_entity_set_pipeline_cache (RutEntity *entity,
+                               int slot,
+                               CoglPipeline *pipeline)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->pipeline_caches[slot])
+    cogl_object_unref (priv->pipeline_caches[slot]);
+
+  priv->pipeline_caches[slot] = pipeline;
+  if (pipeline)
+    cogl_object_ref (pipeline);
+}
+
+static CoglPipeline *
+rut_entity_get_pipeline_cache (RutEntity *entity,
+                               int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+  return priv->pipeline_caches[slot];
+}
+
+static void
+rut_entity_set_image_source_cache (RutEntity *entity,
+                                   int slot,
+                                   RutImageSource *source)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->image_source_caches[slot])
+    rut_refable_unref (priv->image_source_caches[slot]);
+
+  priv->image_source_caches[slot] = source;
+  if (source)
+    rut_refable_ref (source);
+}
+
+static RutImageSource*
+rut_entity_get_image_source_cache (RutEntity *entity,
+                                   int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  return priv->image_source_caches[slot];
+}
+
+static void
+rut_entity_set_primitive_cache (RutEntity *entity,
+                                int slot,
+                                CoglPrimitive *primitive)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  if (priv->primitive_caches[slot])
+    cogl_object_unref (priv->primitive_caches[slot]);
+
+  priv->primitive_caches[slot] = primitive;
+  if (primitive)
+    cogl_object_ref (primitive);
+}
+
+static CoglPrimitive *
+rut_entity_get_primitive_cache (RutEntity *entity,
+                                int slot)
+{
+  RigRendererPriv *priv = entity->renderer_priv;
+
+  return priv->primitive_caches[slot];
 }
 
 static void
@@ -128,7 +207,31 @@ _rig_renderer_notify_entity_changed (RutEntity *entity)
 static void
 _rig_renderer_free_priv (RutEntity *entity)
 {
-  g_slice_free (RigRendererPriv, entity->renderer_priv);
+  RigRendererPriv *priv = entity->renderer_priv;
+  CoglPipeline **pipeline_caches = priv->pipeline_caches;
+  RutImageSource **image_source_caches = priv->image_source_caches;
+  CoglPrimitive **primitive_caches = priv->primitive_caches;
+  int i;
+
+  for (i = 0; i < N_PIPELINE_CACHE_SLOTS; i++)
+    {
+      if (pipeline_caches[i])
+        cogl_object_unref (pipeline_caches[i]);
+    }
+
+  for (i = 0; i < N_IMAGE_SOURCE_CACHE_SLOTS; i++)
+    {
+      if (image_source_caches[i])
+        rut_refable_unref (image_source_caches[i]);
+    }
+
+  for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++)
+    {
+      if (primitive_caches[i])
+        rut_refable_unref (primitive_caches[i]);
+    }
+
+  g_slice_free (RigRendererPriv, priv);
   entity->renderer_priv = NULL;
 }
 
