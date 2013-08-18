@@ -33,9 +33,13 @@
 typedef struct _RutRendererVTable
 {
   void (*notify_entity_changed) (RutEntity *entity);
+  void (*free_priv) (RutEntity *entity);
 } RutRendererVTable;
 
 void
-rut_renderer_notify_entity_changed (RutObject *object, RutEntity *entity);
+rut_renderer_notify_entity_changed (RutObject *renderer, RutEntity *entity);
+
+void
+rut_renderer_free_priv (RutObject *renderer, RutEntity *entity);
 
 #endif /* _RUT_RENDERER_H_ */
