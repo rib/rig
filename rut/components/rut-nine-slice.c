@@ -335,6 +335,8 @@ _rut_nine_slice_free (void *object)
 {
   RutNineSlice *nine_slice = object;
 
+  rut_closure_list_disconnect_all (&nine_slice->updated_cb_list);
+
   if (nine_slice->texture)
     cogl_object_unref (nine_slice->texture);
 

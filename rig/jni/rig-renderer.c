@@ -237,6 +237,17 @@ nine_slice_changed_cb (RutNineSlice *nine_slice, void *user_data)
   dirty_entity_geometry (entity);
 }
 
+/* Called if the geometry of the pointalism grid has changed... */
+static void
+pointalism_changed_cb (RutPointalismGrid *grid, void *user_data)
+{
+  RutComponentableProps *componentable =
+    rut_object_get_properties (grid, RUT_INTERFACE_ID_COMPONENTABLE);
+  RutEntity *entity = componentable->entity;
+
+  dirty_entity_geometry (entity);
+}
+
 static void
 set_focal_parameters (CoglPipeline *pipeline,
                       float focal_distance,
@@ -1269,6 +1280,12 @@ get_entity_color_pipeline (RigEngine *engine,
   else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type &&
            sources[SOURCE_TYPE_COLOR])
     {
+#warning "FIXME: This is going to leak closures, if we've already registered a callback!"
+      rut_pointalism_grid_add_update_callback ((RutPointalismGrid *)geometry,
+                                               pointalism_changed_cb,
+                                               NULL,
+                                               NULL);
+
       cogl_pipeline_set_layer_texture (pipeline, 0,
                                        engine->ctx->circle_texture);
       cogl_pipeline_set_layer_filters (pipeline, 0,

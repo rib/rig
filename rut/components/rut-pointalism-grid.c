@@ -370,6 +370,8 @@ _rut_pointalism_grid_free (void *object)
 {
   RutPointalismGrid *grid = object;
 
+  rut_closure_list_disconnect_all (&grid->updated_cb_list);
+
   rut_refable_unref (grid->slice);
   rut_refable_unref (grid->pick_mesh);
 
@@ -481,6 +483,7 @@ rut_pointalism_grid_new (RutContext *ctx,
 
   grid->ctx = rut_refable_ref (ctx);
 
+  rut_list_init (&grid->updated_cb_list);
 
   grid->slice = pointalism_grid_slice_new (tex_width, tex_height,
                                            size);
@@ -635,12 +638,27 @@ rut_pointalism_grid_set_cell_size (RutObject *obj,
 
   entity = grid->component.entity;
   ctx = rut_entity_get_context (entity);
-  rut_property_dirty (&ctx->property_ctx,
-                      &grid->properties[RUT_POINTALISM_GRID_PROP_CELL_SIZE]);
 
   pointalism_generate_grid (grid->slice, grid->tex_width,
                             grid->tex_height, grid->cell_size);
 
-  rut_entity_set_primitive_cache (entity, 0, 
-    rut_mesh_create_primitive (grid->ctx, grid->slice->mesh));
+  rut_property_dirty (&ctx->property_ctx,
+                      &grid->properties[RUT_POINTALISM_GRID_PROP_CELL_SIZE]);
+
+  rut_closure_list_invoke (&grid->updated_cb_list,
+                           RutPointalismGridUpdateCallback,
+                           grid);
+}
+
+RutClosure *
+rut_pointalism_grid_add_update_callback (RutPointalismGrid *grid,
+                                         RutPointalismGridUpdateCallback callback,
+                                         void *user_data,
+                                         RutClosureDestroyCallback destroy_cb)
+{
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rut_closure_list_add (&grid->updated_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
 }
