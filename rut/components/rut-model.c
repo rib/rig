@@ -209,16 +209,12 @@ _rut_model_new (RutContext *ctx)
 
 /* Some vertex utility functions */
 
-static Vertex *
-substract_vertices (Vertex *v1, Vertex *v2)
+static void
+substract_vertices (Vertex *result, Vertex *v1, Vertex *v2)
 {
-  Vertex *result = g_new (Vertex, 1);
-
   result->x = v1->x - v2->x;
   result->y = v1->y - v2->y;
   result->z = v1->z - v2->z;
-
-  return result;
 }
 
 static float
@@ -233,30 +229,23 @@ calculate_dot_product (Vertex *v1, Vertex *v2)
   return (v1->x * v2->x) + (v1->y * v2->y) + (v1->z * v2->z);
 }
 
-static Vertex *
-calculate_cross_product (Vertex *v1, Vertex *v2)
+static void
+calculate_cross_product (Vertex *result, Vertex *v1, Vertex *v2)
 {
-  Vertex *result = g_new (Vertex, 1);
-
   result->x = (v1->y * v2->z) - (v2->y * v1->z);
   result->y = (v1->z * v2->x) - (v2->z * v1->x);
   result->z = (v1->x * v2->y) - (v2->x * v1->y);
-
-  return result;
 }
 
-static Vertex *
-calculate_triangle_centroid (Vertex *v1,
+static void
+calculate_triangle_centroid (Vertex *result,
+                             Vertex *v1,
                              Vertex *v2,
                              Vertex *v3)
 {
-  Vertex *result = g_new (Vertex, 1);
-
   result->x = (v1->x + v2->x + v3->x) / 3.f;
   result->y = (v1->y + v2->y + v3->y) / 3.f;
   result->z = (v1->z + v2->z + v3->z) / 3.f;
-
-  return result;
 }
 
 static void
@@ -264,7 +253,7 @@ rotate_vertex_around_custom_axis (Vertex *vertex,
                                   Vertex *axis,
                                   float angle)
 {
-  Vertex w, u, *v;
+  Vertex w, u, v;
   float div = calculate_dot_product (vertex, axis) /
     calculate_dot_product (axis, axis);
   float length = calculate_magnitude (axis);
@@ -279,17 +268,15 @@ rotate_vertex_around_custom_axis (Vertex *vertex,
   u.y = vertex->y - w.y;
   u.z = vertex->z - w.z;
 
-  v = calculate_cross_product (axis, &u);
+  calculate_cross_product (&v, axis, &u);
 
-  v->x /= length;
-  v->y /= length;
-  v->z /= length;
+  v.x /= length;
+  v.y /= length;
+  v.z /= length;
 
-  vertex->x = w.x + u.x * cosine + v->x * sine;
-  vertex->y = w.y + u.y * cosine + v->y * sine;
-  vertex->z = w.z + u.z * cosine + v->z * sine;
-
-  g_free (v);
+  vertex->x = w.x + u.x * cosine + v.x * sine;
+  vertex->y = w.y + u.y * cosine + v.y * sine;
+  vertex->z = w.z + u.z * cosine + v.z * sine;
 }
 
 static void
@@ -315,14 +302,14 @@ check_vertex_equality (Vertex *v1, Vertex *v2)
 static void
 calculate_poly_tangent (Polygon *poly)
 {
-  Vertex *edge1;
-  Vertex *edge2;
+  Vertex edge1;
+  Vertex edge2;
   float tex_edge1[2];
   float tex_edge2[2];
   float coef;
 
-  edge1 = substract_vertices (poly->vertices[1], poly->vertices[0]);
-  edge2 = substract_vertices (poly->vertices[2], poly->vertices[0]);
+  substract_vertices (&edge1, poly->vertices[1], poly->vertices[0]);
+  substract_vertices (&edge2, poly->vertices[2], poly->vertices[0]);
 
   tex_edge1[0] = poly->vertices[1]->s0 - poly->vertices[0]->s0;
   tex_edge1[1] = poly->vertices[1]->t0 - poly->vertices[0]->t0;
@@ -332,17 +319,14 @@ calculate_poly_tangent (Polygon *poly)
 
   coef = 1 / (tex_edge1[0] * tex_edge2[1] - tex_edge2[0] * tex_edge1[1]);
 
-  poly->tangent.x = coef * ((edge1->x * tex_edge2[1]) +
-                            (edge2->x * (-1 * tex_edge1[1])));
-  poly->tangent.y = coef * ((edge1->y * tex_edge2[1]) +
-                            (edge2->y * (-1 * tex_edge1[1])));
-  poly->tangent.z = coef * ((edge1->z * tex_edge2[1]) +
-                            (edge2->z * (-1 * tex_edge1[1])));
+  poly->tangent.x = coef * ((edge1.x * tex_edge2[1]) +
+                            (edge2.x * (-1 * tex_edge1[1])));
+  poly->tangent.y = coef * ((edge1.y * tex_edge2[1]) +
+                            (edge2.y * (-1 * tex_edge1[1])));
+  poly->tangent.z = coef * ((edge1.z * tex_edge2[1]) +
+                            (edge2.z * (-1 * tex_edge1[1])));
 
   normalize_vertex (&poly->tangent);
-
-  g_free (edge1);
-  g_free (edge2);
 }
 
 static void
@@ -366,23 +350,19 @@ calculate_vertex_tangent (Polygon *poly, Vertex *vertex)
 static void
 calculate_poly_normal (Polygon *poly)
 {
-  Vertex *edge1;
-  Vertex *edge2;
-  Vertex *poly_normal;
+  Vertex edge1;
+  Vertex edge2;
+  Vertex poly_normal;
 
-  edge1 = substract_vertices (poly->vertices[1], poly->vertices[0]);
-  edge2 = substract_vertices (poly->vertices[2], poly->vertices[0]);
+  substract_vertices (&edge1, poly->vertices[1], poly->vertices[0]);
+  substract_vertices (&edge2, poly->vertices[2], poly->vertices[0]);
 
-  poly_normal = calculate_cross_product (edge1, edge2);
-  poly->normal.x = poly_normal->x;
-  poly->normal.y = poly_normal->y;
-  poly->normal.z = poly_normal->z;
+  calculate_cross_product (&poly_normal, &edge1, &edge2);
+  poly->normal.x = poly_normal.x;
+  poly->normal.y = poly_normal.y;
+  poly->normal.z = poly_normal.z;
 
   normalize_vertex (&poly->normal);
-
-  g_free (edge1);
-  g_free (edge2);
-  g_free (poly_normal);
 }
 
 static void
@@ -773,43 +753,41 @@ find_uncovered_polygon (RutModel *model)
 static void
 position_polygon_at_2D_origin (Polygon *polygon)
 {
-  Vertex *centroid, *axis;
+  Vertex centroid, axis;
   float angle;
   int i;
 
   /* 1. Calculate polygon centroid */
 
-  centroid = calculate_triangle_centroid (polygon->vertices[0],
-                                          polygon->vertices[1],
-                                          polygon->vertices[2]);
+  calculate_triangle_centroid (&centroid,
+                               polygon->vertices[0],
+                               polygon->vertices[1],
+                               polygon->vertices[2]);
 
 
   /* 2. Move centroid to origin */
 
   for (i = 0; i < 3; i++)
     {
-      polygon->flat_vertices[i].x = polygon->vertices[i]->x - centroid->x;
-      polygon->flat_vertices[i].y = polygon->vertices[i]->y - centroid->y;
-      polygon->flat_vertices[i].z = polygon->vertices[i]->z - centroid->z;
+      polygon->flat_vertices[i].x = polygon->vertices[i]->x - centroid.x;
+      polygon->flat_vertices[i].y = polygon->vertices[i]->y - centroid.y;
+      polygon->flat_vertices[i].z = polygon->vertices[i]->z - centroid.z;
     }
 
   /* 3. Find the angle between the polgyon normal and the 2D plane normal */
 
-  axis = calculate_cross_product (&flat_normal, &polygon->normal);
-  angle = get_angle_between_vectors (&polygon->normal, &flat_normal, axis);
+  calculate_cross_product (&axis, &flat_normal, &polygon->normal);
+  angle = get_angle_between_vectors (&polygon->normal, &flat_normal, &axis);
 
   if (angle == 0.f)
-    {
-      g_free (axis);
-      return;
-    }
+    return;
 
 
   /* 4. Rotate the polygon so that its normal parallelly aligns with the
      2D plane one */
 
   for (i = 0; i < 3; i++)
-    rotate_vertex_around_custom_axis (&polygon->flat_vertices[i], axis,
+    rotate_vertex_around_custom_axis (&polygon->flat_vertices[i], &axis,
                                       angle);
 }
 
@@ -819,7 +797,7 @@ position_polygon_at_2D_origin (Polygon *polygon)
 static void
 extrude_new_vertex (Polygon *parent, Polygon *child)
 {
-  Vertex *distance;
+  Vertex distance;
   CoglBool found_first_set = FALSE;
   int shared_vertices[2][2];
   int i, j;
@@ -848,17 +826,16 @@ extrude_new_vertex (Polygon *parent, Polygon *child)
 
 FOUND_SHARED_VERTICES:
 
-  distance = substract_vertices (&parent->flat_vertices[shared_vertices[0][0]],
-                                 &child->flat_vertices[shared_vertices[0][1]]);
+  substract_vertices (&distance,
+                      &parent->flat_vertices[shared_vertices[0][0]],
+                      &child->flat_vertices[shared_vertices[0][1]]);
 
   for (i = 0; i < 3; i++)
     {
-      child->flat_vertices[i].x += distance->x;
-      child->flat_vertices[i].y += distance->y;
-      child->flat_vertices[i].z += distance->z;
+      child->flat_vertices[i].x += distance.x;
+      child->flat_vertices[i].y += distance.y;
+      child->flat_vertices[i].z += distance.z;
     }
-
-  g_free (distance);
 }
 
 static CoglBool
