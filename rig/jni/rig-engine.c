@@ -1217,10 +1217,16 @@ apply_asset_input_to_entity (RutEntity *entity,
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) ==
-              &rut_model_type)
-             rut_hair_set_length (hair, 
-                                  rut_model_get_default_hair_length (geom));
+          if (geom && rut_object_get_type (geom) == &rut_model_type)
+            {
+              RutModel *hair_geom = rut_model_new_for_hair (geom);
+
+              rut_hair_set_length (hair,
+                                   rut_model_get_default_hair_length (hair_geom));
+
+              rig_undo_journal_delete_component_and_log (sub_journal, geom);
+              rig_undo_journal_add_component_and_log (sub_journal, entity, hair_geom);
+            }
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }

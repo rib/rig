@@ -52,12 +52,7 @@ struct _RutModel
 
   RutAsset *asset;
 
-  RutModelPrivate *priv;
-
   RutMesh *mesh;
-  RutMesh *patched_mesh;
-  RutMesh *fin_mesh;
-  CoglPrimitive *fin_primitive;
 
   float min_x;
   float max_x;
@@ -66,12 +61,19 @@ struct _RutModel
   float min_z;
   float max_z;
 
-  float default_hair_length;
-
   CoglPrimitive *primitive;
 
   CoglBool builtin_normals;
   CoglBool builtin_tex_coords;
+
+  /* TODO: I think maybe we should make RutHair and RutModel mutually
+   * exclusive and move all of this stuff to RutHair instead. */
+  bool is_hair_model;
+  RutModelPrivate *priv;
+  RutMesh *patched_mesh;
+  RutMesh *fin_mesh;
+  CoglPrimitive *fin_primitive;
+  float default_hair_length;
 };
 
 void
@@ -89,6 +91,9 @@ rut_model_new_from_asset (RutContext *ctx,
                           CoglBool needs_normals,
                           CoglBool needs_tex_coords);
 
+RutModel *
+rut_model_new_for_hair (RutModel *base);
+
 RutMesh *
 rut_model_get_mesh (RutObject *self);
 
@@ -97,12 +102,6 @@ rut_model_get_primitive (RutObject *object);
 
 CoglPrimitive *
 rut_model_get_fin_primitive (RutObject *object);
-
-RutMesh *
-rut_model_get_patched_mesh (RutObject *object);
-
-RutMesh *
-rut_model_get_fin_mesh (RutObject *object);
 
 float
 rut_model_get_default_hair_length (RutObject *object);
