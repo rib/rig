@@ -116,7 +116,7 @@ rut_downsampler_downsample (RutDownsampler *downsampler,
       downsampler->dest = COGL_TEXTURE (texture_2d);
 
       /* create the FBO to render the downsampled texture */
-      offscreen = cogl_offscreen_new_to_texture (downsampler->dest);
+      offscreen = cogl_offscreen_new_with_texture (downsampler->dest);
       downsampler->fb = COGL_FRAMEBUFFER (offscreen);
 
       /* create the camera that will setup the scene for the render */

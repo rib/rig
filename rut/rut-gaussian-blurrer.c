@@ -307,7 +307,7 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       blurrer->height = src_h;
       blurrer->format = format;
 
-      offscreen = cogl_offscreen_new_to_texture (blurrer->x_pass);
+      offscreen = cogl_offscreen_new_with_texture (blurrer->x_pass);
       blurrer->x_pass_fb = COGL_FRAMEBUFFER (offscreen);
       cogl_framebuffer_orthographic (blurrer->x_pass_fb,
                                      0, 0, src_w, src_h, -1, 100);
@@ -324,7 +324,7 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       blurrer->destination = COGL_TEXTURE (texture_2d);
       blurrer->y_pass = blurrer->destination;
 
-      offscreen = cogl_offscreen_new_to_texture (blurrer->destination);
+      offscreen = cogl_offscreen_new_with_texture (blurrer->destination);
       blurrer->y_pass_fb = COGL_FRAMEBUFFER (offscreen);
       cogl_framebuffer_orthographic (blurrer->y_pass_fb,
                                      0, 0, src_w, src_h, -1, 100);

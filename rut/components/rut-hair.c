@@ -120,7 +120,7 @@ _rut_hair_generate_textures (RutHair *hair)
                                        256, 256,
                                        COGL_PIXEL_FORMAT_RGBA_8888_PRE));
 
-      offscreen = cogl_offscreen_new_to_texture (hair->textures[i]);
+      offscreen = cogl_offscreen_new_with_texture (hair->textures[i]);
 
       cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
                                 COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
