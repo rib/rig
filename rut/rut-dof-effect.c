@@ -146,7 +146,7 @@ rut_dof_effect_get_depth_pass_fb (RutDepthOfField *dof)
                                        COGL_PIXEL_FORMAT_RGBA_8888));
 
       dof->depth_pass_fb = COGL_FRAMEBUFFER (
-        cogl_offscreen_new_to_texture (dof->depth_pass));
+        cogl_offscreen_new_with_texture (dof->depth_pass));
     }
 
   return dof->depth_pass_fb;
@@ -167,7 +167,7 @@ rut_dof_effect_get_color_pass_fb (RutDepthOfField *dof)
                                        COGL_PIXEL_FORMAT_RGBA_8888));
 
       dof->color_pass_fb = COGL_FRAMEBUFFER (
-        cogl_offscreen_new_to_texture (dof->color_pass));
+        cogl_offscreen_new_with_texture (dof->color_pass));
     }
 
   return dof->color_pass_fb;

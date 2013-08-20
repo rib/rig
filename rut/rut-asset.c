@@ -259,7 +259,7 @@ rut_video_grab_thumbnail (void *instance,
                                    tex_height,
                                    COGL_PIXEL_FORMAT_RGBA_8888_PRE));
 
-  offscreen = cogl_offscreen_new_to_texture (generator->video->texture);
+  offscreen = cogl_offscreen_new_with_texture (generator->video->texture);
   fbo = COGL_FRAMEBUFFER (offscreen);
 
   cogl_framebuffer_clear4f (fbo, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
@@ -384,7 +384,7 @@ rut_model_get_thumbnail (RutContext *ctx,
                                    tex_height,
                                    COGL_PIXEL_FORMAT_RGBA_8888_PRE));
 
-  offscreen = cogl_offscreen_new_to_texture (thumbnail);
+  offscreen = cogl_offscreen_new_with_texture (thumbnail);
   frame_buffer = COGL_FRAMEBUFFER (offscreen);
 
   cogl_framebuffer_perspective (frame_buffer, fovy, aspect, z_near, z_far);

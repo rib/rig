@@ -2410,7 +2410,7 @@ create_debug_gradient (RigEngine *engine)
                                    200, 200,
                                    COGL_PIXEL_FORMAT_ANY));
 
-  offscreen = cogl_offscreen_new_to_texture (engine->gradient);
+  offscreen = cogl_offscreen_new_with_texture (engine->gradient);
 
   cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
                                  0, 0,
@@ -2455,7 +2455,7 @@ rig_engine_handle_ui_update (RigEngine *engine)
 
   /* XXX: Right now there's no way to avoid allocating a color buffer. */
   engine->shadow_fb =
-    cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
+    cogl_offscreen_new_with_texture (COGL_TEXTURE (color_buffer));
   if (engine->shadow_fb == NULL)
     g_critical ("could not create offscreen buffer");
 
