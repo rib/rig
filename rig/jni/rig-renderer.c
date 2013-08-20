@@ -114,6 +114,10 @@ rut_entity_set_pipeline_cache (RutEntity *entity,
 {
   RigRendererPriv *priv = entity->renderer_priv;
 
+#error "XXX: it probably implies we should change something if we hit this case"
+  if (!priv)
+    return;
+
   if (priv->pipeline_caches[slot])
     cogl_object_unref (priv->pipeline_caches[slot]);
 
@@ -136,6 +140,10 @@ rut_entity_set_image_source_cache (RutEntity *entity,
                                    RutImageSource *source)
 {
   RigRendererPriv *priv = entity->renderer_priv;
+
+#error "XXX: it probably implies we should change something if we hit this case"
+  if (!priv)
+    return;
 
   if (priv->image_source_caches[slot])
     rut_refable_unref (priv->image_source_caches[slot]);
@@ -160,6 +168,10 @@ rut_entity_set_primitive_cache (RutEntity *entity,
                                 CoglPrimitive *primitive)
 {
   RigRendererPriv *priv = entity->renderer_priv;
+
+#error "XXX: it probably implies we should change something if we hit this case"
+  if (!priv)
+    return;
 
   if (priv->primitive_caches[slot])
     cogl_object_unref (priv->primitive_caches[slot]);
