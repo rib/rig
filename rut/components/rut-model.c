@@ -248,7 +248,9 @@ substract_vertices (Vertex *result, Vertex *v1, Vertex *v2)
 static float
 calculate_magnitude (Vertex *vertex)
 {
-  return sqrt (pow (vertex->x, 2) + pow (vertex->y, 2) + pow (vertex->z, 2));
+  return sqrtf (vertex->x * vertex->x +
+                vertex->y * vertex->y +
+                vertex->z * vertex->z);
 }
 
 static float
