@@ -76,7 +76,7 @@ typedef struct _RutModelPrivate
   Vertex *fin_vertices;
   Polygon *polygons;
   Vertex *vertices;
-  int **adj_matrix;
+  RutBitmask adj_matrix;
   int n_polygons;
   int n_vertices;
   int n_fin_polygons;
@@ -1004,32 +1004,30 @@ check_for_shared_vertices (Polygon *poly1, Polygon *poly2)
 
 /* Generate the adjacency matrix */
 
-static int**
+static void
 generate_adjacency_matrix (RutModel *model)
 {
-  int **adj_matrix;
   int i, j;
+  RutModelPrivate *priv = model->priv;
 
-  adj_matrix = g_new (int*, model->priv->n_polygons);
+  _rut_bitmask_clear_all (&priv->adj_matrix);
 
-  for (i = 0; i < model->priv->n_polygons; i++)
+  for (i = 0; i < priv->n_polygons; i++)
     {
-      Polygon *origin = &model->priv->polygons[i];
-      adj_matrix[i] = g_new (int, model->priv->n_polygons);
+      Polygon *origin = &priv->polygons[i];
+      unsigned int adj_offset = priv->n_polygons * origin->id;
 
-      for (j = 0; j < model->priv->n_polygons; j++)
+      for (j = 0; j < priv->n_polygons; j++)
         {
-          Polygon *child = &model->priv->polygons[j];
+          Polygon *child = &priv->polygons[j];
 
           if (origin->id == child->id)
-            adj_matrix[origin->id][child->id] = 0;
+            _rut_bitmask_set (&priv->adj_matrix, adj_offset + child->id, 0);
           else
-            adj_matrix[origin->id][child->id] =
-            	check_for_shared_vertices (origin, child);
+            _rut_bitmask_set (&priv->adj_matrix, adj_offset + child->id,
+                              check_for_shared_vertices (origin, child));
         }
     }
-
-  return adj_matrix;
 }
 
 /* Finds a polygon which hasn't been covered by a patch yet */
@@ -1178,11 +1176,12 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
 static void
 grow_texture_patch (RutModel *model, TexturePatch *patch)
 {
-  CoglBool *visited = g_new (CoglBool, model->priv->n_polygons);
+  RutModelPrivate *priv = model->priv;
+  CoglBool *visited = g_new (CoglBool, priv->n_polygons);
   GQueue *stack = g_queue_new ();
   int i;
 
-  for (i = 0; i < model->priv->n_polygons; i++)
+  for (i = 0; i < priv->n_polygons; i++)
     visited[i] = FALSE;
 
   g_queue_push_tail (stack, patch->root);
@@ -1196,10 +1195,12 @@ grow_texture_patch (RutModel *model, TexturePatch *patch)
 
       visited[parent->id] = TRUE;
 
-      for (i = 0; i < model->priv->n_polygons; i++)
+      for (i = 0; i < priv->n_polygons; i++)
         {
-          Polygon *child = &model->priv->polygons[i];
-          if (model->priv->adj_matrix[parent->id][child->id] != 1)
+          Polygon *child = &priv->polygons[i];
+          unsigned int adj_offset = priv->n_polygons * parent->id;
+
+          if (_rut_bitmask_get (&priv->adj_matrix, adj_offset + child->id) != 1)
             continue;
 
           if (!visited[child->id])
@@ -1221,7 +1222,7 @@ grow_texture_patch (RutModel *model, TexturePatch *patch)
 }
 
 TexturePatch*
-create_texture_patch (RutModel *model, int **adj_matrix)
+create_texture_patch (RutModel *model)
 {
   TexturePatch *patch = NULL;
   Polygon *root = NULL;
@@ -1342,20 +1343,14 @@ static RutMesh *
 create_patched_mesh_from_model (RutObject *object)
 {
   RutModel *model = object;
-  int i;
   GList *iter;
 
   if (model->patched_mesh)
     return model->patched_mesh;
 
-  model->priv->adj_matrix = generate_adjacency_matrix (model);
+  generate_adjacency_matrix (model);
 
-  while (create_texture_patch (model, model->priv->adj_matrix));
-
-  for (i = 0; i < model->priv->n_polygons; i++)
-    g_free (model->priv->adj_matrix[i]);
-
-  g_free (model->priv->adj_matrix);
+  while (create_texture_patch (model));
 
   for (iter = model->priv->texture_patches; iter; iter = iter->next)
     g_free (iter->data);
@@ -1510,6 +1505,9 @@ rut_model_new_for_hair (RutModel *base)
   model->fin_mesh = NULL;
 
   model->priv = g_new (RutModelPrivate, 1);
+
+  _rut_bitmask_init (&model->priv->adj_matrix);
+
   model->priv->texture_patches = NULL;
 
   n_vertices = model->mesh->indices_buffer ?
