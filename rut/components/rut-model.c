@@ -39,11 +39,8 @@ typedef struct _Vertex
   float pos[3];
   float normal[3];
   float tx, ty, tz;
-  float s0, t0;
-  float s1, t1;
-  float s4, t4;
-  float s7, t7;
-  float s11, t11;
+  float s0, t0; /* source image coordinates */
+  float s1, t1; /* patch/fin texture coordinates */
 }Vertex;
 
 /* The polygon structure */
@@ -524,31 +521,23 @@ add_polygon_fins (RutModel *model,
       fin_verts[cv + 2]->tz = fin_verts[cv + 3]->tz =
         polygon->vertices[edges[i][1]]->tz;
 
-      fin_verts[cv]->s0 = fin_verts[cv]->s1 = fin_verts[cv]->s4 =
-      fin_verts[cv]->s7 = fin_verts[cv + 1]->s0 = fin_verts[cv + 1]->s1 =
-      fin_verts[cv + 1]->s4 = fin_verts[cv + 1]->s7 =
-      polygon->vertices[edges[i][0]]->s0;
+      fin_verts[cv]->s0 = fin_verts[cv + 1]->s0 =
+        polygon->vertices[edges[i][0]]->s0;
 
-      fin_verts[cv]->t0 = fin_verts[cv]->t1 = fin_verts[cv]->t4 =
-      fin_verts[cv]->t7 =  fin_verts[cv + 1]->t0 = fin_verts[cv + 1]->t1 =
-      fin_verts[cv + 1]->t4 = fin_verts[cv + 1]->t7 =
-      polygon->vertices[edges[i][0]]->t0;
+      fin_verts[cv]->t0 = fin_verts[cv + 1]->t0 =
+        polygon->vertices[edges[i][0]]->t0;
 
-      fin_verts[cv + 2]->s0 = fin_verts[cv + 2]->s1 = fin_verts[cv + 2]->s4 =
-      fin_verts[cv + 2]->s7 = fin_verts[cv + 3]->s0 = fin_verts[cv + 3]->s1 =
-      fin_verts[cv + 3]->s4 = fin_verts[cv + 3]->s7 =
-      polygon->vertices[edges[i][1]]->s0;
+      fin_verts[cv + 2]->s0 = fin_verts[cv + 3]->s0 =
+        polygon->vertices[edges[i][1]]->s0;
 
-      fin_verts[cv + 2]->t0 = fin_verts[cv + 2]->t1 = fin_verts[cv + 2]->t4 =
-      fin_verts[cv + 2]->t7 = fin_verts[cv + 3]->t0 = fin_verts[cv + 3]->t1 =
-      fin_verts[cv + 3]->t4 = fin_verts[cv + 3]->t7 =
-      polygon->vertices[edges[i][1]]->t0;
+      fin_verts[cv + 2]->t0 = fin_verts[cv + 3]->t0 =
+        polygon->vertices[edges[i][1]]->t0;
 
-      fin_verts[cv]->s11 = fin_verts[cv + 1]->s11 = 0;
-      fin_verts[cv + 1]->s11 = fin_verts[cv + 3]->s11 = 1;
+      fin_verts[cv]->s1 = fin_verts[cv + 1]->s1 = 0;
+      fin_verts[cv + 1]->s1 = fin_verts[cv + 3]->s1 = 1;
 
-      fin_verts[cv + 1]->t11 = fin_verts[cv + 2]->t11 = 0;
-      fin_verts[cv]->t11 = fin_verts[cv + 3]->t11 = 1;
+      fin_verts[cv + 1]->t1 = fin_verts[cv + 2]->t1 = 0;
+      fin_verts[cv]->t1 = fin_verts[cv + 3]->t1 = 1;
 
       j += 2;
     }
@@ -680,7 +669,6 @@ generate_missing_properties (void **attribute_data_v0,
   float *tex_coord1 = attribute_data_v1[3];
   float *tex_coord2 = attribute_data_v2[3];
 
-  int i;
   RutModel *model = user_data;
 
   if (!model->builtin_tex_coords)
@@ -695,19 +683,6 @@ generate_missing_properties (void **attribute_data_v0,
 
   calculate_tangents (vert_p0, vert_p1, vert_p2, tex_coord0, tex_coord1,
                       tex_coord2, vert_t0, vert_t1, vert_t2);
-
-  for (i = 4; i < 7; i++)
-  {
-    float *tex = attribute_data_v0[i];
-    tex[0] = tex_coord0[0];
-    tex[1] = tex_coord0[1];
-    tex = attribute_data_v1[i];
-    tex[0] = tex_coord1[0];
-    tex[1] = tex_coord1[1];
-    tex = attribute_data_v2[i];
-    tex[0] = tex_coord2[0];
-    tex[1] = tex_coord2[1];
-  }
 
   return TRUE;
 }
@@ -729,14 +704,6 @@ generate_polygons_for_patching (void **attribute_data_v0,
       attribute_data_v2[2] };
   float *tex_coords0[3] = { attribute_data_v0[3], attribute_data_v1[3],
       attribute_data_v2[3] };
-  float *tex_coords1[3] = { attribute_data_v0[4], attribute_data_v1[4],
-      attribute_data_v2[4] };
-  float *tex_coords4[3] = { attribute_data_v0[5], attribute_data_v1[5],
-      attribute_data_v2[5] };
-  float *tex_coords7[3] = { attribute_data_v0[6], attribute_data_v1[6],
-      attribute_data_v2[6] };
-  float *tex_coords11[3] = { attribute_data_v0[7], attribute_data_v1[7],
-      attribute_data_v2[7] };
   int i;
   RutModel *model = user_data;
   Polygon *polygon = &model->priv->polygons[model->priv->n_polygons];
@@ -760,32 +727,12 @@ generate_polygons_for_patching (void **attribute_data_v0,
         {
           polygon->vertices[i]->s0 = tex_coords0[i][0];
           polygon->vertices[i]->t0 = tex_coords0[i][1];
-          polygon->vertices[i]->s1 = tex_coords1[i][0] = tex_coords0[i][0];
-          polygon->vertices[i]->t1 = tex_coords1[i][1] = tex_coords0[i][1];
-          polygon->vertices[i]->s4 = tex_coords4[i][0] = tex_coords0[i][0];
-          polygon->vertices[i]->t4 = tex_coords4[i][1] = tex_coords0[i][1];
-          polygon->vertices[i]->s7 = tex_coords7[i][0] = tex_coords0[i][0];
-          polygon->vertices[i]->t7 = tex_coords7[i][1] = tex_coords0[i][1];
-          polygon->vertices[i]->s11 = tex_coords11[i][0] = tex_coords0[i][0];
-          polygon->vertices[i]->t11 = tex_coords11[i][1] = tex_coords0[i][1];
         }
-    }
-
-  if (!model->builtin_tex_coords)
-    {
-      for (i = 0; i < 3; i++)
+      else
         {
           generate_cylindrical_uv_coordinates (polygon->vertices[i], model);
           tex_coords0[i][0] = polygon->vertices[i]->s0;
           tex_coords0[i][1] = polygon->vertices[i]->t0;
-          tex_coords1[i][0] = polygon->vertices[i]->s1 = tex_coords0[i][0];
-          tex_coords1[i][1] = polygon->vertices[i]->t1 =  tex_coords0[i][1];
-          tex_coords4[i][0] = polygon->vertices[i]->s4 = tex_coords0[i][0];
-          tex_coords4[i][1] = polygon->vertices[i]->t4 = tex_coords0[i][1];
-          tex_coords7[i][0] = polygon->vertices[i]->s7 = tex_coords0[i][0];
-          tex_coords7[i][1] = polygon->vertices[i]->t7 = tex_coords0[i][1];
-          tex_coords11[i][0] = polygon->vertices[i]->s11 = tex_coords0[i][0];
-          tex_coords11[i][1] = polygon->vertices[i]->t11 = tex_coords0[i][1];
         }
     }
 
@@ -1162,12 +1109,8 @@ extract_texture_coordinates (TexturePatch* patch, Polygon *polygon)
 
   for (i = 0; i < 3; i++)
     {
-      polygon->vertices[i]->s0 = polygon->vertices[i]->s1 =
-        polygon->vertices[i]->s4 = polygon->vertices[i]->s7 =
-        polygon->vertices[i]->s11 = new_s[i];
-      polygon->vertices[i]->t0 = polygon->vertices[i]->t1 =
-        polygon->vertices[i]->t4 = polygon->vertices[i]->t7 =
-        polygon->vertices[i]->t11 = new_t[i];
+      polygon->vertices[i]->s1 = new_s[i];
+      polygon->vertices[i]->t1 = new_t[i];
     }
 
   return TRUE;
@@ -1235,6 +1178,13 @@ create_texture_patch (RutModel *model)
   patch = g_new (TexturePatch, 1);
   patch->polygons = NULL;
   patch->root = root;
+
+  /* One problem with using a constant fraction for the patch sizing
+   * is that if we have low resolution geometry then its possible that
+   * many of the polygons are themselves larger than the patch size
+   * and so we fail to extract any texture coordinates.
+   */
+#warning "TODO: Make the patch sizing adaptive if it fails extract texture coordinates"
   patch->width = fabsf (model->max_x - model->min_x) / 5.0;
   patch->height = fabsf (model->max_y - model->min_y) / 5.0;
 
@@ -1286,31 +1236,32 @@ create_custom_mesh (Vertex *vertices,
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
+#warning "TODO: audit why we have all of these texture coordinate attributes..."
   attributes[2] = rut_attribute_new (vertex_buffer,
                                      "cogl_tex_coord1_in",
                                      sizeof (Vertex),
-                                     offsetof (Vertex, s1),
+                                     offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[3] = rut_attribute_new (vertex_buffer,
                                      "cogl_tex_coord4_in",
                                      sizeof (Vertex),
-                                     offsetof (Vertex, s4),
+                                     offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[4] = rut_attribute_new (vertex_buffer,
                                      "cogl_tex_coord7_in",
                                      sizeof (Vertex),
-                                     offsetof (Vertex, s7),
+                                     offsetof (Vertex, s0),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
   attributes[5] = rut_attribute_new (vertex_buffer,
                                      "cogl_tex_coord11_in",
                                      sizeof (Vertex),
-                                     offsetof (Vertex, s11),
+                                     offsetof (Vertex, s1),
                                      2,
                                      RUT_ATTRIBUTE_TYPE_FLOAT);
 
@@ -1458,9 +1409,6 @@ rut_model_new_from_mesh (RutContext *ctx,
                              "cogl_normal_in",
                              "tangent_in",
                              "cogl_tex_coord0_in",
-                             "cogl_tex_coord1_in",
-                             "cogl_tex_coord4_in",
-                             "cogl_tex_coord7_in",
                              NULL);
 
   return model;
@@ -1530,10 +1478,6 @@ rut_model_new_for_hair (RutModel *base)
                              "cogl_normal_in",
                              "tangent_in",
                              "cogl_tex_coord0_in",
-                             "cogl_tex_coord1_in",
-                             "cogl_tex_coord4_in",
-                             "cogl_tex_coord7_in",
-                             "cogl_tex_coord11_in",
                              NULL);
 
   /* TODO: we can fold this into generate_polygons_for_patching */
