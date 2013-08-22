@@ -54,8 +54,8 @@ struct _RutHair
   CoglTexture *circle;
   CoglTexture *fin_texture;
   float *shell_positions;
-  GQueue *shell_textures;
-  GQueue *particles;
+  GArray *shell_textures;
+  GArray *particles;
 
   float length;
   int n_shells;

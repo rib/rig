@@ -98,15 +98,15 @@ _get_fuzzy_float (GRand *rand,
   return (float)g_rand_double_range (rand, value - v, value + v);
 }
 
-HairParticle *
-_rut_hair_create_particle (float diameter,
-                           float follicle_x,
-                           float follicle_y,
-                           float follicle_z)
+static void
+init_hair_particle (HairParticle *particle,
+                    GRand *rand,
+                    float diameter)
 {
-  HairParticle *particle = g_new (HairParticle, 1);
-  GRand *rand = g_rand_new ();
   float magnitude, speed;
+  float follicle_x = g_rand_double_range (rand, -1, 1);
+  float follicle_y = 0;
+  float follicle_z = g_rand_double_range (rand, -1, 1);
 
   particle->lifetime = _get_fuzzy_float (rand, 0.75, 0.5);
   particle->diameter = diameter;
@@ -133,17 +133,13 @@ _rut_hair_create_particle (float diameter,
   particle->velocity[0] *= speed;
   particle->velocity[1] *= speed;
   particle->velocity[2] *= speed;
-
-  g_rand_free (rand);
-
-  return particle;
 }
 
-static float *
-_get_updated_particle_color (HairParticle *particle,
+static void
+_get_updated_particle_color (float *color,
+                             HairParticle *particle,
                              float time)
 {
-  float *color = g_new (float, 4);
   float blur = particle->lifetime / 10.f;
   float kernel[4] = { 0.15, 0.12, 0.09, 0.05 };
   int i;
@@ -176,7 +172,6 @@ _get_updated_particle_color (HairParticle *particle,
     }
 
   color[1] = color[2] = color[0];
-  return color;
 }
 
 static float
@@ -209,81 +204,72 @@ _get_current_particle_time (HairParticle *particle,
   return t;
 }
 
-static float *
-_get_updated_particle_velocity (HairParticle *particle,
+static void
+_get_updated_particle_velocity (float *v,
+                                HairParticle *particle,
                                 float time)
 {
-  float *v = g_new (float, 3);
-
   v[0] = particle->velocity[0] + particle->acceleration[0] * time;
   v[1] = particle->velocity[1] + particle->acceleration[1] * time;
   v[2] = particle->velocity[2] + particle->acceleration[2] * time;
-
-  return v;
 }
-static float *
-_get_updated_particle_position (HairParticle *particle,
+
+static bool
+_get_updated_particle_position (float *pos,
+                                HairParticle *particle,
                                 float *velocity,
                                 float current_y,
                                 float time)
 {
-  float *s = g_new (float, 3);
+  pos[0] = 0.5 * (particle->velocity[0] + velocity[0]) * time;
+  pos[1] = 0.5 * (particle->velocity[1] + velocity[1]) * time;
+  pos[2] = 0.5 * (particle->velocity[2] + velocity[2]) * time;
 
-  s[0] = 0.5 * (particle->velocity[0] + velocity[0]) * time;
-  s[1] = 0.5 * (particle->velocity[1] + velocity[1]) * time;
-  s[2] = 0.5 * (particle->velocity[2] + velocity[2]) * time;
-
-  if (s[1] > current_y + (current_y / 10.0) ||
-      s[1] < current_y - (current_y / 10.0))
+  if (pos[1] > current_y + (current_y / 10.0) ||
+      pos[1] < current_y - (current_y / 10.0))
     {
-      g_free (s);
-      return NULL;
+      return false;
     }
 
-  return s;
+  return true;
 }
 
-static HairParticle *
-_rut_hair_get_updated_particle (HairParticle *particle,
-                                float current_y)
+static bool
+calculate_updated_particle (HairParticle *updated_particle,
+                            HairParticle *particle,
+                            float current_y)
 {
-  HairParticle *new_particle;
-  float time, *v, *s, *color;
+  float time;
+  float v[3];
+  float pos[3];
+  float color[4];
   int i;
 
   time = _get_current_particle_time (particle, current_y);
 
   if (time < 0.0)
-    return NULL;
+    return false;
 
-  v = _get_updated_particle_velocity (particle, time);
-  s = _get_updated_particle_position (particle, v, current_y, time);
+  _get_updated_particle_velocity (v, particle, time);
 
-  if (!s)
-    {
-      g_free (v);
-      return NULL;
-    }
+  if (!_get_updated_particle_position (pos, particle, v, current_y, time))
+    return false;
 
-  color = _get_updated_particle_color (particle, time);
+  _get_updated_particle_color (color, particle, time);
 
-  new_particle = g_new (HairParticle, 1);
-  new_particle->diameter = _get_updated_particle_diameter (particle, time);
-  new_particle->lifetime = particle->lifetime - time;
+  updated_particle->diameter = _get_updated_particle_diameter (particle, time);
+  updated_particle->lifetime = particle->lifetime - time;
   for (i = 0; i < 3; i++)
     {
-      new_particle->velocity[i] = v[i];
-      new_particle->position[i] = particle->position[i] + s[i] +
-                                  particle->diameter;
-      new_particle->color[i] = color[i];
+      updated_particle->velocity[i] = v[i];
+      updated_particle->position[i] =
+        particle->position[i] + pos[i] + particle->diameter;
+      updated_particle->color[i] = color[i];
     }
 
-  new_particle->color[3] = color[3];
-  g_free (v);
-  g_free (s);
-  g_free (color);
+  updated_particle->color[3] = color[3];
 
-  return new_particle;
+  return true;
 }
 
 static CoglTexture *
@@ -312,32 +298,32 @@ _rut_hair_get_fin_texture (RutHair *hair)
 
   while (current_y <= 1.f)
     {
-      HairParticle *particle, *updated_particle;
+      HairParticle *particle;
       float pos = _get_interpolated_value (0, 1, -1, 1, current_y);
       for (i = 0; i < fin_density; i++)
         {
-          particle = g_queue_peek_nth (hair->particles, i);
-          particle->diameter = hair->thickness;
-          updated_particle = _rut_hair_get_updated_particle (particle, pos);
+          HairParticle updated_particle;
 
-          if (updated_particle)
+          particle = &g_array_index (hair->particles, HairParticle, i);
+          particle->diameter = hair->thickness;
+
+          if (calculate_updated_particle (&updated_particle, particle, pos))
             {
               float x = _get_interpolated_value (-1, 1, 0, 1,
-                updated_particle->position[0]);
+                                                 updated_particle.position[0]);
 
-              cogl_pipeline_set_color4f (pipeline, updated_particle->color[0],
-                                         updated_particle->color[1],
-                                         updated_particle->color[2],
-                                         updated_particle->color[3]);
+              cogl_pipeline_set_color4f (pipeline,
+                                         updated_particle.color[0],
+                                         updated_particle.color[1],
+                                         updated_particle.color[2],
+                                         updated_particle.color[3]);
 
               cogl_framebuffer_draw_rectangle (
                 COGL_FRAMEBUFFER (offscreen), pipeline,
-                x - updated_particle->diameter / 2,
+                x - updated_particle.diameter / 2,
                 geometric_y - geo_y_iter,
-                x + updated_particle->diameter / 2,
+                x + updated_particle.diameter / 2,
                 geometric_y + geo_y_iter);
-
-              g_free (updated_particle);
             }
         }
 
@@ -379,33 +365,31 @@ _rut_hair_draw_shell_texture (RutHair *hair,
 
   for (i = 0; i < hair->density; i++)
     {
-      HairParticle *particle, *updated_particle;
+      HairParticle *particle;
+      HairParticle updated_particle;
       float current_y = (float) position / (float) hair->n_shells;
 
-      particle = g_queue_pop_head (hair->particles);
+      particle = &g_array_index (hair->particles, HairParticle, i);
+
       particle->diameter = hair->thickness;
-      updated_particle = _rut_hair_get_updated_particle (particle,
-                                                         current_y);
 
-      if (updated_particle)
+      if (calculate_updated_particle (&updated_particle,
+                                      particle,
+                                      current_y))
         {
-
-          cogl_pipeline_set_color4f (pipeline, updated_particle->color[0],
-                                     updated_particle->color[1],
-                                     updated_particle->color[2],
-                                     updated_particle->color[3]);
+          cogl_pipeline_set_color4f (pipeline,
+                                     updated_particle.color[0],
+                                     updated_particle.color[1],
+                                     updated_particle.color[2],
+                                     updated_particle.color[3]);
 
           cogl_framebuffer_draw_rectangle (
             COGL_FRAMEBUFFER (offscreen), pipeline,
-            updated_particle->position[0] - (updated_particle->diameter / 2.0),
-            updated_particle->position[2] - (updated_particle->diameter / 2.0),
-            updated_particle->position[0] + (updated_particle->diameter / 2.0),
-            updated_particle->position[2] + (updated_particle->diameter / 2.0));
-
-          g_free (updated_particle);
+            updated_particle.position[0] - (updated_particle.diameter / 2.0),
+            updated_particle.position[2] - (updated_particle.diameter / 2.0),
+            updated_particle.position[0] + (updated_particle.diameter / 2.0),
+            updated_particle.position[2] + (updated_particle.diameter / 2.0));
         }
-
-      g_queue_push_tail (hair->particles, particle);
     }
 
   cogl_object_unref (offscreen);
@@ -416,57 +400,58 @@ static void
 _rut_hair_generate_shell_textures (RutHair *hair)
 {
   GRand *rand = g_rand_new ();
-  int num_particles = g_queue_get_length (hair->particles);
-  int num_textures = g_queue_get_length (hair->shell_textures);
+  int num_particles = hair->particles->len;
+  int num_textures = hair->shell_textures->len;
   int i;
 
   if (hair->density > num_particles)
     {
-      for (i = 0; i < hair->density - num_particles; i++)
+      g_array_set_size (hair->particles, hair->density);
+
+      for (i = num_particles; i < hair->density; i++)
         {
-          float x = (float) g_rand_double_range (rand, -1, 1);
-          float z = (float) g_rand_double_range (rand, -1, 1);
-          HairParticle *particle = _rut_hair_create_particle (hair->thickness,
-                                                              x, 0, z);
-          g_queue_push_tail (hair->particles, particle);
+          HairParticle *particle =
+            &g_array_index (hair->particles, HairParticle, i);
+          init_hair_particle (particle, rand, hair->thickness);
         }
      }
   else if (hair->density < num_particles)
-    {
-      for (i = 0; i < num_particles - hair->density; i++)
-        {
-          HairParticle *particle = g_queue_pop_tail (hair->particles);
-          g_free (particle);
-        }
-    }
+    g_array_set_size (hair->particles, hair->density);
 
-  if (hair->n_shells + 1 > num_textures)
+  g_rand_free (rand);
+
+  if (hair->n_shells > num_textures)
     {
-      for (i = 0; i < (hair->n_shells + 1) - num_textures; i++)
+      g_array_set_size (hair->shell_textures, hair->n_shells);
+
+      for (i = num_textures; i < hair->n_shells; i++)
         {
-          CoglTexture *texture = (CoglTexture *)
+          CoglTexture **textures = (void *)hair->shell_textures->data;
+          textures[i] = (CoglTexture *)
             cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 256, 256,
                                            COGL_PIXEL_FORMAT_RGBA_8888);
-          g_queue_push_tail (hair->shell_textures, texture);
         }
     }
-  else if (hair->n_shells + 1 < num_textures)
+  else if (hair->n_shells < num_textures)
     {
-      for (i = 0; i < num_textures - (hair->n_shells + 1); i++)
+      for (i = hair->n_shells; i < num_textures; i++)
         {
-          CoglTexture *texture = g_queue_pop_tail (hair->shell_textures);
+          CoglTexture *texture =
+            g_array_index (hair->shell_textures, CoglTexture *, i);
           cogl_object_unref (texture);
         }
+
+      g_array_set_size (hair->shell_textures, hair->n_shells);
     }
 
-  for (i = 0; i < hair->n_shells + 1; i++)
+  for (i = 0; i < hair->n_shells; i++)
     {
-      CoglTexture *texture = g_queue_pop_head (hair->shell_textures);
+      CoglTexture *texture =
+        g_array_index (hair->shell_textures, CoglTexture *, i);
       _rut_hair_draw_shell_texture (hair, texture, i);
-      g_queue_push_tail (hair->shell_textures, texture);
     }
 
-  hair->n_textures = hair->n_shells + 1;
+  hair->n_textures = hair->n_shells;
 }
 
 static void
@@ -493,18 +478,16 @@ static void
 _rut_hair_free (void *object)
 {
   RutHair *hair = object;
+  int i;
 
-  while (!g_queue_is_empty (hair->shell_textures))
+  for (i = 0; i < hair->n_shells; i++)
     {
-      CoglTexture *texture = g_queue_pop_tail (hair->shell_textures);
+      CoglTexture *texture = g_array_index (hair->shell_textures, CoglTexture *, i);
       cogl_object_unref (texture);
     }
+  g_array_free (hair->shell_textures, TRUE);
 
-  while (!g_queue_is_empty (hair->particles))
-    {
-      HairParticle *particle = g_queue_pop_tail (hair->particles);
-      g_free (particle);
-    }
+  g_array_free (hair->particles, TRUE);
 
   rut_simple_introspectable_destroy (hair);
 
@@ -512,8 +495,6 @@ _rut_hair_free (void *object)
     cogl_object_unref (hair->fin_texture);
   cogl_object_unref (hair->circle);
   g_free (hair->shell_positions);
-  g_queue_free (hair->shell_textures);
-  g_queue_free (hair->particles);
   g_slice_free (RutHair, hair);
 }
 
@@ -594,9 +575,9 @@ rut_hair_new (RutContext *ctx)
   hair->n_textures = 0;
   hair->density = 20000;
   hair->thickness = 0.05;
-  hair->shell_textures = g_queue_new ();
+  hair->shell_textures = g_array_new (FALSE, FALSE, sizeof (CoglTexture *));
   hair->fin_texture = NULL;
-  hair->particles = g_queue_new ();
+  hair->particles = g_array_new (FALSE, FALSE, sizeof (HairParticle));
   hair->shell_positions = NULL;
 
   hair->circle = (CoglTexture*)

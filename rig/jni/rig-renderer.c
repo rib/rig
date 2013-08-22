@@ -2003,31 +2003,35 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
               rut_hair_update_state (hair);
 
-              texture = g_queue_pop_head (hair->shell_textures);
+              texture = g_array_index (hair->shell_textures, CoglTexture *, 0);
+
               cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
               rut_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
 
+              /* TODO: we should be drawing the original base model as
+               * the interior, with depth write and test enabled to
+               * make sure we reduce the work involved in blending all
+               * the shells on top. */
               cogl_primitive_draw (primitive, fb, pipeline);
-                cogl_pipeline_set_alpha_test_function (pipeline,
-                COGL_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
-                g_queue_push_tail (hair->shell_textures, texture);
 
-              for (i = 1; i < rut_hair_get_n_shells (hair) + 1; i++)
+              cogl_pipeline_set_alpha_test_function (pipeline,
+                                                     COGL_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
+
+              /* TODO: we should support having more shells than
+               * real textures... */
+              for (i = 1; i < hair->n_shells; i++)
                 {
                   float hair_pos = hair->shell_positions[i];
-                  texture = g_queue_pop_head (hair->shell_textures);
+
+                  texture = g_array_index (hair->shell_textures, CoglTexture *, i);
                   cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
                   rut_hair_set_uniform_float_value (hair, pipeline, uniform,
                                                     hair_pos);
 
                   cogl_primitive_draw (primitive, fb, pipeline);
-                  g_queue_push_tail (hair->shell_textures, texture);
                 }
-
-              cogl_pipeline_set_alpha_test_function (pipeline,
-                COGL_PIPELINE_ALPHA_FUNC_ALWAYS, 0);
             }
           else if (!hair)
             cogl_primitive_draw (primitive, fb, pipeline);
