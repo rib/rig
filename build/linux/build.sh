@@ -325,7 +325,7 @@ function build_bzip2 ()
     cd "$BUILD_DIR/$project_dir"
 
     make -f Makefile-libbz2_so
-    ln -sfr libbz2.so.1.0.6 libbz2.so
+    ln -sf libbz2.so.1.0.6 libbz2.so
     cp -av libbz2.so* "$prefix/lib/"
 
     echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
@@ -429,7 +429,7 @@ build_tool "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
 build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
 
 build_dep -C Configure -j 1 \
-    "https://www.openssl.org/source/openssl-1.0.1c.tar.gz" \
+    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1c.tar.gz" \
     linux-elf \
     no-shared
 
@@ -437,7 +437,7 @@ build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
 
 build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
 build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.2.1.tar.gz"
-CFLAGS="-g3 -O0"
+export CFLAGS="-g3 -O0"
 build_dep \
     "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.34/glib-2.34.2.tar.xz"
 unset CFLAGS
@@ -449,8 +449,12 @@ build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz" \
     --without-x --without-apple-opengl-framework
 build_dep -d jpeg-8d "http://www.ijg.org/files/jpegsrc.v8d.tar.gz"
 build_dep \
-    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.2/libpng-1.6.2.tar.xz"
-CFLAGS="-g3 -O0"
+    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.3/libpng-1.6.3.tar.xz"
+#build_dep \
+#    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
+
+export CFLAGS="-g3 -O0"
+export CPPFLAGS="-I$STAGING_PREFIX/include"
 build_dep \
     "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.26/gdk-pixbuf-2.26.5.tar.xz" \
     --disable-modules \
@@ -458,6 +462,7 @@ build_dep \
     --disable-glibtest \
     --disable-introspection
 unset CFLAGS
+unset CPPFLAGS
 
 #export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
 #build_dep -d icu -C source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
@@ -465,7 +470,8 @@ unset CFLAGS
 
 build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
 build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.92.tar.bz2" \
-    --disable-docs
+    --disable-docs \
+    --enable-libxml2
 build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.16.tar.bz2"
 
 build_dep "http://www.cairographics.org/releases/pixman-0.28.0.tar.gz" \
@@ -480,12 +486,15 @@ build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.34/pango-1.34.1.tar.xz
     --with-included-modules=yes \
     --without-dynamic-modules
 
-build_dep -d SDL-2.0.0-7140 "http://www.libsdl.org/tmp/SDL-2.0.0-7140.tar.gz"
+build_dep -d SDL2-2.0.0 "http://www.libsdl.org/release/SDL2-2.0.0.tar.gz"
+
+build_dep "http://ftp.gnu.org/gnu/gdbm/gdbm-1.10.tar.gz"
 
 build_dep "http://dbus.freedesktop.org/releases/dbus/dbus-1.7.2.tar.gz"
 
 build_dep "http://0pointer.de/lennart/projects/libdaemon/libdaemon-0.14.tar.gz"
 
+export CPPFLAGS="-I$STAGING_PREFIX/include"
 build_dep "http://avahi.org/download/avahi-0.6.31.tar.gz" \
   --disable-qt3 \
   --disable-qt4 \
@@ -494,8 +503,13 @@ build_dep "http://avahi.org/download/avahi-0.6.31.tar.gz" \
   --disable-python \
   --disable-mono \
   --disable-introspection
+unset CPPFLAGS
 
+build_dep "http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz"
+
+export CXXFLAGS="-I$STAGING_PREFIX/include"
 build_dep "http://protobuf-c.googlecode.com/files/protobuf-c-0.15.tar.gz"
+unset CXXFLAGS
 
 build_dep "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.0.7.tar.xz"
 build_dep "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.0.7.tar.xz"
@@ -546,6 +560,7 @@ for lib in \
     libcairo \
     libcogl-gst \
     libcogl-pango2 \
+    libcogl-path \
     libcogl2 \
     libdaemon \
     libdbus-1 \
@@ -563,6 +578,20 @@ for lib in \
     libgmodule-2.0 \
     libgobject-2.0 \
     libgthread-2.0 \
+    libgstfft-1.0 \
+    libgstaudio-1.0 \
+    libgstvideo-1.0 \
+    libgsttag-1.0 \
+    libgstcontroller-1.0 \
+    libgstbase-1.0 \
+    libgstreamer-1.0 \
+    libgstfft-1.0 \
+    libgstaudio-1.0 \
+    libgstvideo-1.0 \
+    libgstbase-1.0 \
+    libgsttag-1.0 \
+    libgstcontroller-1.0 \
+    libgstreamer-1.0 \
     libharfbuzz \
     libjpeg \
     liblzma \
@@ -597,7 +626,7 @@ mkdir -p "$PKG_DATADIR/mime/application"
 cp -av $STAGING_PREFIX/share/mime/application/rig-* $PKG_DATADIR/mime/application
 
 cd $PKG_DIR
-ln -srf ./release/rig-wrapper.sh $PKG_DIR/rig
+ln -sf ./release/rig-wrapper.sh $PKG_DIR/rig
 
 mkdir -p $PKG_DIR/cache
 
