@@ -604,6 +604,7 @@ for lib in \
     libprotobuf-c \
     libtiff \
     libtiffxx \
+    libxml2 \
     preloadable_libintl
 do
     cp -av $STAGING_PREFIX/lib/$lib*.so* "$PKG_LIBDIR"
