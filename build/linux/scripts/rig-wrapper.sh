@@ -1,6 +1,11 @@
 #!/bin/sh
 
+save_pwd=$PWD
 pkg_dir=`dirname "$0"`
+cd $pkg_dir
+pkg_dir=$PWD
+cd $save_pwd
+
 release_dir=$pkg_dir/release
 updates_dir=$pkg_dir/updates
 
