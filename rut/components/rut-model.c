@@ -66,7 +66,7 @@ typedef struct _TexturePatch
   float height;
 }TexturePatch;
 
-typedef struct _RutModelPrivate
+struct _RutModelPrivate
 {
   GList *texture_patches;
   Polygon *fin_polygons;
@@ -78,7 +78,7 @@ typedef struct _RutModelPrivate
   int n_vertices;
   int n_fin_polygons;
   int n_fin_vertices;
-}RutModelPrivate;
+};
 
 /* Some convinient constants */
 static float flat_normal[3] = { 0, 0, 1 };
