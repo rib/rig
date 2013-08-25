@@ -54,7 +54,6 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
   const char **strings = g_alloca (sizeof (char *) * (count_in + 4));
   GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 4));
   int count = 0;
-  char *tex_coord_declarations = NULL;
 
   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
@@ -119,6 +118,4 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   GE( ctx, glShaderSource (shader_gl_handle, count,
                            (const char **) strings, lengths) );
-
-  g_free (tex_coord_declarations);
 }
