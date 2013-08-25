@@ -41,7 +41,6 @@
 
 void
 _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
-                                               const char *version_string,
                                                GLuint shader_gl_handle,
                                                GLenum shader_gl_type,
                                                GLsizei count_in,
@@ -53,16 +52,16 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   const char **strings = g_alloca (sizeof (char *) * (count_in + 4));
   GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 4));
+  char *version_string;
   int count = 0;
 
   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
 
-  if (version_string)
-    {
-      strings[count] = version_string;
-      lengths[count++] = -1;
-    }
+  version_string = g_strdup_printf ("#version %i\n\n",
+                                    ctx->glsl_version_to_use);
+  strings[count] = version_string;
+  lengths[count++] = -1;
 
   if (ctx->private_feature_flags & COGL_PRIVATE_FEATURE_GL_EMBEDDED &&
       cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_3D))
@@ -118,4 +117,6 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   GE( ctx, glShaderSource (shader_gl_handle, count,
                            (const char **) strings, lengths) );
+
+  g_free (version_string);
 }
