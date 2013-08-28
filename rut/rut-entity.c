@@ -706,3 +706,13 @@ rut_entity_copy (RutEntity *entity)
 
   return copy;
 }
+
+void
+rut_entity_notify_changed (RutEntity *entity)
+{
+  if (entity->renderer_priv)
+    {
+      RutObject *renderer = *(RutObject **)entity->renderer_priv;
+      rut_renderer_notify_entity_changed (renderer, entity);
+    }
+}

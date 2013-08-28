@@ -138,6 +138,13 @@ rut_transform_scale (RutTransform *transform,
 }
 
 void
+rut_transform_transform (RutTransform *transform,
+                         const CoglMatrix *matrix)
+{
+  cogl_matrix_multiply (&transform->matrix, &transform->matrix, matrix);
+}
+
+void
 rut_transform_init_identity (RutTransform *transform)
 {
   cogl_matrix_init_identity (&transform->matrix);

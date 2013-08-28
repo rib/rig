@@ -160,6 +160,8 @@ librut_la_SOURCES = \
     rut-renderer.c \
     rut-mimable.h \
     rut-mimable.c \
+    rut-drag-bin.h \
+    rut-drag-bin.c \
     $(source_h)
 
 if !HAVE_ANDROID

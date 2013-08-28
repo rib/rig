@@ -97,6 +97,9 @@ struct _RutShell
   float mouse_x;
   float mouse_y;
 
+  RutObject *drag_payload;
+  RutObject *drop_offer_taker;
+
   /* List of grabs that are currently in place. This are in order from
    * highest to lowest priority. */
   RutList grabs;
@@ -1203,6 +1206,12 @@ rut_motion_event_unproject (RutInputEvent *event,
   return TRUE;
 }
 
+RutObject *
+rut_drop_offer_event_get_payload (RutInputEvent *event)
+{
+  return event->shell->drag_payload;
+}
+
 const char *
 rut_text_event_get_text (RutInputEvent *event)
 {
@@ -1343,6 +1352,31 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
   return picked_object;
 }
 
+static void
+cancel_current_drop_offer_taker (RutShell *shell)
+{
+  RutInputEvent drop_cancel;
+  RutInputRegion *region;
+  RutInputEventStatus status;
+
+  if (!shell->drop_offer_taker)
+    return;
+
+  drop_cancel.type = RUT_INPUT_EVENT_TYPE_DROP_CANCEL;
+  drop_cancel.shell = shell;
+  drop_cancel.native = NULL;
+  drop_cancel.camera = NULL;
+  drop_cancel.input_transform = NULL;
+
+  region = rut_inputable_get_input_region (shell->drop_offer_taker);
+  status = region->callback (region, &drop_cancel, region->user_data);
+
+  g_warn_if_fail (status == RUT_INPUT_EVENT_STATUS_HANDLED);
+
+  rut_refable_unref (shell->drop_offer_taker);
+  shell->drop_offer_taker = NULL;
+}
+
 static RutShellOnscreen *
 get_shell_onscreen (RutShell *shell,
                     CoglOnscreen *onscreen)
@@ -1384,6 +1418,29 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
        * the motion event */
       if (shell_onscreen)
         shell_onscreen->cursor_set = FALSE;
+
+      if (shell->drag_payload)
+        {
+          event->type = RUT_INPUT_EVENT_TYPE_DROP_OFFER;
+          _rut_shell_handle_input (shell, event);
+          event->type = RUT_INPUT_EVENT_TYPE_MOTION;
+        }
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    cancel_current_drop_offer_taker (shell);
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP)
+    {
+      if (shell->drop_offer_taker)
+        {
+          RutInputRegion *region =
+            rut_inputable_get_input_region (shell->drop_offer_taker);
+          RutInputEventStatus status;
+
+          status = region->callback (region, event, region->user_data);
+
+          if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
+            goto handled;
+        }
     }
 
   event->camera = shell->window_camera;
@@ -2702,20 +2759,44 @@ rut_shell_quit (RutShell *shell)
 }
 
 static void
-_rut_shell_drop (RutShell *shell,
-                 RutObject *data)
+_rut_shell_paste (RutShell *shell,
+                  RutObject *data)
 {
   RutInputEvent drop_event;
 
-  drop_event.native = data;
-  drop_event.shell = shell;
-  drop_event.input_transform = NULL;
-
   drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
+  drop_event.shell = shell;
+  drop_event.native = data;
+  drop_event.camera = NULL;
+  drop_event.input_transform = NULL;
 
   /* Note: This assumes input handlers are re-entrant and hopefully
    * that's ok. */
   _rut_shell_handle_input (shell, &drop_event);
+}
+
+void
+rut_shell_drop (RutShell *shell)
+{
+  RutInputEvent drop_event;
+  RutInputRegion *region;
+  RutInputEventStatus status;
+
+  if (!shell->drop_offer_taker)
+    return;
+
+  drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
+  drop_event.shell = shell;
+  drop_event.native = shell->drag_payload;
+  drop_event.camera = NULL;
+  drop_event.input_transform = NULL;
+
+  region = rut_inputable_get_input_region (shell->drop_offer_taker);
+  status = region->callback (region, &drop_event, region->user_data);
+
+  g_warn_if_fail (status == RUT_INPUT_EVENT_STATUS_HANDLED);
+
+  rut_shell_cancel_drag (shell);
 }
 
 RutObject *
@@ -2838,7 +2919,7 @@ clipboard_input_grab_cb (RutInputEvent *event,
             rut_object_get_vtable (data, RUT_INTERFACE_ID_MIMABLE);
           RutObject *copy = mimable->copy (data);
 
-          _rut_shell_drop (shell, copy);
+          _rut_shell_paste (shell, copy);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -2979,4 +3060,39 @@ RutObject *
 rut_shell_get_selection (RutShell *shell)
 {
   return shell->selection;
+}
+
+void
+rut_shell_start_drag (RutShell *shell, RutObject *payload)
+{
+  g_return_if_fail (shell->drag_payload == NULL);
+
+  if (payload)
+    shell->drag_payload = rut_refable_ref (payload);
+}
+
+void
+rut_shell_cancel_drag (RutShell *shell)
+{
+  if (shell->drag_payload)
+    {
+      cancel_current_drop_offer_taker (shell);
+      rut_refable_unref (shell->drag_payload);
+      shell->drag_payload = NULL;
+    }
+}
+
+void
+rut_shell_take_drop_offer (RutShell *shell, RutObject *taker)
+{
+  g_return_if_fail (rut_object_is (taker, RUT_INTERFACE_ID_INPUTABLE));
+
+  /* shell->drop_offer_taker is always canceled at the start of
+   * _rut_shell_handle_input() so it should always be NULL at
+   * this point. */
+  g_return_if_fail (shell->drop_offer_taker == NULL);
+
+  g_return_if_fail (taker);
+
+  shell->drop_offer_taker = rut_refable_ref (taker);
 }

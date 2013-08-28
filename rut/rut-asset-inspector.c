@@ -41,10 +41,14 @@ struct _RutAssetInspector
   RutAssetType asset_type;
   RutAsset *asset;
   RutImage *image;
+  RutDragBin *drag_bin;
   RutShim *shim;
   RutInputRegion *input_region;
   RutNineSlice *highlight;
   RutStack *stack;
+
+  RutNineSlice *drop_preview;
+  RutRectangle *drop_preview_overlay;
 
   RutGraphableProps graphable;
 
@@ -223,8 +227,52 @@ input_cb (RutInputRegion *region,
     {
       RutObject *data = rut_drop_event_get_data (event);
 
-      if (rut_object_get_type (data) == &rut_asset_type)
-        rut_asset_inspector_set_asset (asset_inspector, data);
+      if (rut_object_get_type (data) == &rut_asset_type &&
+          asset_inspector->asset_type == rut_asset_get_type (data))
+        {
+          rut_asset_inspector_set_asset (asset_inspector, data);
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    {
+      RutObject *payload = rut_drop_offer_event_get_payload (event);
+
+      if (rut_object_get_type (payload) == &rut_asset_type &&
+          asset_inspector->asset_type == rut_asset_get_type (payload))
+        {
+          RutAsset *asset = payload;
+          bool save_selected = asset_inspector->selected;
+
+          _rut_asset_inspector_set_selected (asset_inspector, FALSE);
+
+          asset_inspector->drop_preview =
+            rut_nine_slice_new (asset_inspector->ctx,
+                                rut_asset_get_texture (asset),
+                                0, 0, 0, 0,
+                                100, 100);
+          rut_stack_add (asset_inspector->stack, asset_inspector->drop_preview);
+          rut_refable_unref (asset_inspector->drop_preview);
+
+          asset_inspector->drop_preview_overlay =
+            rut_rectangle_new4f (asset_inspector->ctx,
+                                 1, 1, 0.5, 0.5, 0.5, 0.5);
+          rut_stack_add (asset_inspector->stack,
+                         asset_inspector->drop_preview_overlay);
+          rut_refable_unref (asset_inspector->drop_preview_overlay);
+
+          _rut_asset_inspector_set_selected (asset_inspector, save_selected);
+
+          rut_shell_take_drop_offer (asset_inspector->ctx->shell,
+                                     asset_inspector->input_region);
+        }
+    }
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_CANCEL)
+    {
+      g_warn_if_fail (asset_inspector->drop_preview);
+      rut_graphable_remove_child (asset_inspector->drop_preview);
+      rut_graphable_remove_child (asset_inspector->drop_preview_overlay);
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;

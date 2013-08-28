@@ -90,6 +90,8 @@ typedef enum _RutInputEventType
   RUT_INPUT_EVENT_TYPE_MOTION = 1,
   RUT_INPUT_EVENT_TYPE_KEY,
   RUT_INPUT_EVENT_TYPE_TEXT,
+  RUT_INPUT_EVENT_TYPE_DROP_OFFER,
+  RUT_INPUT_EVENT_TYPE_DROP_CANCEL,
   RUT_INPUT_EVENT_TYPE_DROP
 } RutInputEventType;
 
@@ -281,6 +283,9 @@ rut_motion_event_unproject (RutInputEvent *event,
                             RutObject *graphable,
                             float *x,
                             float *y);
+
+RutObject *
+rut_drop_offer_event_get_payload (RutInputEvent *event);
 
 typedef RutInputEventStatus (*RutInputRegionCallback) (RutInputRegion *region,
                                                        RutInputEvent *event,
@@ -484,5 +489,17 @@ typedef struct _RutTextBlob RutTextBlob;
 
 RutTextBlob *
 rut_text_blob_new (const char *text);
+
+void
+rut_shell_start_drag (RutShell *shell, RutObject *payload);
+
+void
+rut_shell_cancel_drag (RutShell *shell);
+
+void
+rut_shell_drop (RutShell *shell);
+
+void
+rut_shell_take_drop_offer (RutShell *shell, RutObject *taker);
 
 #endif /* _RUT_SHELL_H_ */

@@ -56,6 +56,10 @@ rut_transform_scale (RutTransform *transform,
                      float z);
 
 void
+rut_transform_transform (RutTransform *transform,
+                         const CoglMatrix *matrix);
+
+void
 rut_transform_init_identity (RutTransform *transform);
 
 const CoglMatrix *

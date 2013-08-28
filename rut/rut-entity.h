@@ -262,4 +262,7 @@ rut_entity_get_visible (RutObject *entity);
 void
 rut_entity_set_visible (RutObject *entity, CoglBool visible);
 
+void
+rut_entity_notify_changed (RutEntity *entity);
+
 #endif /* __RUT_ENTITY_H__ */

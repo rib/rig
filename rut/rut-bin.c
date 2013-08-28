@@ -54,8 +54,6 @@ struct _RutBin
   int ref_count;
 };
 
-RutType rut_bin_type;
-
 static void
 _rut_bin_free (void *object)
 {
@@ -76,18 +74,6 @@ _rut_bin_free (void *object)
 
   g_slice_free (RutBin, bin);
 }
-
-RutRefableVTable _rut_bin_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_bin_free
-};
-
-static RutGraphableVTable _rut_bin_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static void
 allocate_cb (RutObject *graphable,
@@ -305,30 +291,49 @@ rut_bin_get_size (void *object,
   *height = bin->height;
 }
 
-static RutSizableVTable _rut_bin_sizable_vtable = {
-  rut_bin_set_size,
-  rut_bin_get_size,
-  rut_bin_get_preferred_width,
-  rut_bin_get_preferred_height,
-  rut_bin_add_preferred_size_callback
-};
+RutType rut_bin_type;
 
 static void
 _rut_bin_init_type (void)
 {
-  rut_type_init (&rut_bin_type, "RigBin");
-  rut_type_add_interface (&rut_bin_type,
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_bin_free
+  };
+
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      rut_bin_set_size,
+      rut_bin_get_size,
+      rut_bin_get_preferred_width,
+      rut_bin_get_preferred_height,
+      rut_bin_add_preferred_size_callback
+  };
+
+  RutType *type = &rut_bin_type;
+#define TYPE RutBin
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutBin, ref_count),
-                          &_rut_bin_refable_vtable);
-  rut_type_add_interface (&rut_bin_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutBin, graphable),
-                          &_rut_bin_graphable_vtable);
-  rut_type_add_interface (&rut_bin_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_bin_sizable_vtable);
+                          &sizable_vtable);
+
+#undef TYPE
 }
 
 RutBin *
@@ -376,6 +381,8 @@ void
 rut_bin_set_child (RutBin *bin,
                    RutObject *child_widget)
 {
+  g_return_if_fail (rut_object_get_type (bin) == &rut_bin_type);
+
   if (bin->child == child_widget)
     return;
 

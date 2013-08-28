@@ -231,14 +231,21 @@ rut_material_set_color_source_asset (RutObject *object,
 {
   RutMaterial *material = object;
 
+  if (material->color_source_asset == color_source_asset)
+    return;
+
   if (material->color_source_asset)
     {
       rut_refable_unref (material->color_source_asset);
       material->color_source_asset = NULL;
     }
 
+  material->color_source_asset = color_source_asset;
   if (color_source_asset)
-    material->color_source_asset = rut_refable_ref (color_source_asset);
+    rut_refable_ref (color_source_asset);
+
+  if (material->component.entity)
+    rut_entity_notify_changed (material->component.entity);
 }
 
 RutObject *
@@ -252,14 +259,22 @@ void
 rut_material_set_normal_map_asset (RutMaterial *material,
                                    RutAsset *normal_map_asset)
 {
+  if (material->normal_map_asset == normal_map_asset)
+    return;
+
   if (material->normal_map_asset)
     {
       rut_refable_unref (material->normal_map_asset);
       material->normal_map_asset = NULL;
     }
 
+  material->normal_map_asset = normal_map_asset;
+
   if (normal_map_asset)
-    material->normal_map_asset = rut_refable_ref (normal_map_asset);
+    rut_refable_ref (normal_map_asset);
+
+  if (material->component.entity)
+    rut_entity_notify_changed (material->component.entity);
 }
 
 RutAsset *
@@ -272,14 +287,22 @@ void
 rut_material_set_alpha_mask_asset (RutMaterial *material,
                                    RutAsset *alpha_mask_asset)
 {
+  if (material->alpha_mask_asset == alpha_mask_asset)
+    return;
+
   if (material->alpha_mask_asset)
     {
       rut_refable_unref (material->alpha_mask_asset);
       material->alpha_mask_asset = NULL;
     }
 
+  material->alpha_mask_asset = alpha_mask_asset;
+
   if (alpha_mask_asset)
-    material->alpha_mask_asset = rut_refable_ref (alpha_mask_asset);
+    rut_refable_ref (alpha_mask_asset);
+
+  if (material->component.entity)
+    rut_entity_notify_changed (material->component.entity);
 }
 
 RutAsset *

@@ -41,6 +41,7 @@ typedef struct
 {
   RutObject *control;
   RutTransform *transform;
+  RutDragBin *drag_bin;
   RutProperty *source_prop;
   RutProperty *target_prop;
 
@@ -81,7 +82,6 @@ _rut_inspector_free (void *object)
 {
   RutInspector *inspector = object;
   RutObject *reference_object = inspector->objects->data;
-  int i;
 
   rut_refable_unref (inspector->context);
 
@@ -89,16 +89,6 @@ _rut_inspector_free (void *object)
     g_list_foreach (inspector->objects, (GFunc)rut_refable_unref, NULL);
   g_list_free (inspector->objects);
   inspector->objects = NULL;
-
-  for (i = 0; i < inspector->n_props; i++)
-    {
-      RutInspectorPropertyData *prop_data = inspector->prop_data + i;
-
-      rut_graphable_remove_child (prop_data->control);
-      rut_graphable_remove_child (prop_data->transform);
-      rut_refable_unref (prop_data->control);
-      rut_refable_unref (prop_data->transform);
-    }
 
   g_free (inspector->prop_data);
 
@@ -165,12 +155,12 @@ rut_inspector_set_size (void *object,
                                y_pos,
                                0.0f);
 
-      rut_sizable_get_preferred_height (prop_data->control,
+      rut_sizable_get_preferred_height (prop_data->drag_bin,
                                         pixel_slider_width,
                                         NULL,
                                         &preferred_height);
 
-      rut_sizable_set_size (prop_data->control,
+      rut_sizable_set_size (prop_data->drag_bin,
                             pixel_slider_width,
                             preferred_height);
 
@@ -422,16 +412,24 @@ create_property_controls (RutInspector *inspector)
 
       prop_data->inspector = inspector;
 
+      prop_data->transform = rut_transform_new (inspector->context);
+      rut_graphable_add_child (inspector, prop_data->transform);
+
+      prop_data->drag_bin = rut_drag_bin_new (inspector->context);
+      rut_drag_bin_set_payload (prop_data->drag_bin, inspector);
+      rut_graphable_add_child (prop_data->transform, prop_data->drag_bin);
+      rut_refable_unref (prop_data->drag_bin);
+
       control = rut_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
                                         property_changed_cb,
                                         controlled_changed_cb,
                                         prop_data);
 
+      rut_drag_bin_set_child (prop_data->drag_bin, control);
+      rut_refable_unref (control);
+
       prop_data->control = control;
-      prop_data->transform = rut_transform_new (inspector->context);
-      rut_graphable_add_child (prop_data->transform, control);
-      rut_graphable_add_child (inspector, prop_data->transform);
     }
 }
 

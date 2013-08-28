@@ -896,7 +896,7 @@ allocate (RigEngine *engine)
   //engine->main_width = engine->width - engine->left_bar_width - engine->right_bar_width;
   //engine->main_height = engine->height - engine->top_bar_height - engine->bottom_bar_height;
 
-  rut_sizable_set_size (engine->top_bin, engine->width, engine->height);
+  rut_sizable_set_size (engine->top_stack, engine->width, engine->height);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!_rig_in_device_mode)
@@ -1339,7 +1339,7 @@ result_input_cb (RutInputRegion *region,
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
-      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
         {
           RigEngine *engine = closure->engine;
 
@@ -1461,6 +1461,7 @@ add_search_result (RigEngine *engine,
   RutBin *bin;
   CoglTexture *texture;
   RutInputRegion *region;
+  RutDragBin *drag_bin;
 
   closure = g_slice_new (ResultInputClosure);
   closure->result = result;
@@ -1468,9 +1469,20 @@ add_search_result (RigEngine *engine,
 
   bin = rut_bin_new (engine->ctx);
 
+  drag_bin = rut_drag_bin_new (engine->ctx);
+  rut_drag_bin_set_payload (drag_bin, result);
+  rut_bin_set_child (bin, drag_bin);
+  rut_refable_unref (drag_bin);
+
   stack = rut_stack_new (engine->ctx, 0, 0);
-  rut_bin_set_child (bin, stack);
+  rut_drag_bin_set_child (drag_bin, stack);
   rut_refable_unref (stack);
+
+  region = rut_input_region_new_rectangle (0, 0, 100, 100,
+                                           result_input_cb,
+                                           closure);
+  rut_stack_add (stack, region);
+  rut_refable_unref (region);
 
   if (rut_object_get_type (result) == &rut_asset_type)
     {
@@ -1518,12 +1530,6 @@ add_search_result (RigEngine *engine,
       rut_box_layout_add (vbox, FALSE, text);
       rut_refable_unref (text);
     }
-
-  region = rut_input_region_new_rectangle (0, 0, 100, 100,
-                                           result_input_cb,
-                                           closure);
-  rut_stack_add (stack, region);
-  rut_refable_unref (region);
 
   if (rut_object_get_type (result) == &rut_asset_type)
     {
@@ -2722,7 +2728,7 @@ create_editor_ui (RigEngine *engine)
   rut_box_layout_add (engine->top_hbox, TRUE, engine->properties_hbox);
   create_toolbar (engine);
 
-  rut_bin_set_child (engine->top_bin, engine->top_vbox);
+  rut_stack_add (engine->top_stack, engine->top_vbox);
 
   engine->transparency_grid = load_transparency_grid (engine->ctx);
 
@@ -3008,7 +3014,10 @@ rig_engine_init (RutShell *shell, void *user_data)
   engine->scene = rut_graph_new (engine->ctx);
 
   engine->root = rut_graph_new (engine->ctx);
-  engine->top_bin = rut_bin_new (engine->ctx);
+
+  engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
+  rut_graphable_add_child (engine->root, engine->top_stack);
+  rut_refable_unref (engine->top_stack);
 
 
   engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
@@ -3059,10 +3068,8 @@ rig_engine_init (RutShell *shell, void *user_data)
 #endif
     {
       engine->main_camera_view = rig_camera_view_new (engine);
-      rut_bin_set_child (engine->top_bin, engine->main_camera_view);
+      rut_stack_add (engine->top_stack, engine->main_camera_view);
     }
-
-  rut_graphable_add_child (engine->root, engine->top_bin);
 
   engine->renderer = rig_renderer_new (engine);
   rig_renderer_init (engine);
@@ -3164,7 +3171,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
   rut_refable_unref (engine->camera);
   rut_refable_unref (engine->root);
-  rut_refable_unref (engine->top_bin);
   rut_refable_unref (engine->main_camera_view);
 
   for (i = 0; i < RIG_ENGINE_N_PROPS; i++)

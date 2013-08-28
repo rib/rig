@@ -59,6 +59,7 @@
 #include "rut-asset-inspector.h"
 #include "rut-renderer.h"
 #include "rut-mimable.h"
+#include "rut-drag-bin.h"
 
 /* entity/components system */
 #include "rut-entity.h"

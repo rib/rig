@@ -104,6 +104,7 @@ struct _RigEngine
   //float height;
   //RutProperty height_property;
 
+  RutStack *top_stack;
   RutBin *top_bin;
   RutBoxLayout *top_vbox;
   RutBoxLayout *top_hbox;

@@ -605,6 +605,7 @@ add_control (RutPropInspector *inspector,
             rut_text_new_with_text (inspector->context,
                                     NULL, /* font_name */
                                     label_text);
+          rut_text_set_selectable (control_data->control, FALSE);
           control_data->transform = rut_transform_new (inspector->context);
           rut_graphable_add_child (control_data->transform, control_data->control);
           rut_graphable_add_child (inspector, control_data->transform);

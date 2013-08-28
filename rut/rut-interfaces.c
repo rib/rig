@@ -166,13 +166,31 @@ rut_graphable_remove_all_children (RutObject *parent)
     rut_graphable_remove_child (child);
 }
 
-RutObject *
-rut_graphable_get_parent (RutObject *child)
+static RutObject *
+_rut_graphable_get_parent (RutObject *child)
 {
   RutGraphableProps *child_props =
     rut_object_get_properties (child, RUT_INTERFACE_ID_GRAPHABLE);
 
   return child_props->parent;
+}
+
+RutObject *
+rut_graphable_get_parent (RutObject *child)
+{
+  return _rut_graphable_get_parent (child);
+}
+
+RutObject *
+rut_graphable_get_root (RutObject *child)
+{
+  RutObject *root, *parent;
+
+  root = child;
+  while ((parent = _rut_graphable_get_parent (root)))
+    root = parent;
+
+  return root;
 }
 
 static RutTraverseVisitFlags

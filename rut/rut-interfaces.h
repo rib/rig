@@ -151,6 +151,9 @@ rut_graphable_remove_all_children (RutObject *parent);
 RutObject *
 rut_graphable_get_parent (RutObject *child);
 
+RutObject *
+rut_graphable_get_root (RutObject *child);
+
 void
 rut_graphable_apply_transform (RutObject *graphable,
                                CoglMatrix *transform);
