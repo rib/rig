@@ -45,6 +45,7 @@ source_c = \
 EXTRA_DIST += \
 	$(srcdir)/tesselator/README 		\
 	$(srcdir)/tesselator/priorityq-heap.c	\
+	$(srcdir)/cogl-path.symbols		\
 	$(NULL)
 
 
