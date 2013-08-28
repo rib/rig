@@ -55,7 +55,7 @@ struct _RutInspector
   RutObjectProps _parent;
 
   RutContext *context;
-  RutObject *object;
+  GList *objects;
 
   RutPaintableProps paintable;
   RutGraphableProps graphable;
@@ -80,12 +80,15 @@ static void
 _rut_inspector_free (void *object)
 {
   RutInspector *inspector = object;
+  RutObject *reference_object = inspector->objects->data;
   int i;
 
   rut_refable_unref (inspector->context);
 
-  if (rut_object_is (inspector->object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    rut_refable_unref (inspector->object);
+  if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
+    g_list_foreach (inspector->objects, (GFunc)rut_refable_unref, NULL);
+  g_list_free (inspector->objects);
+  inspector->objects = NULL;
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -327,33 +330,53 @@ _rut_inspector_init_type (void)
 }
 
 static void
-property_changed_cb (RutProperty *target_prop,
+property_changed_cb (RutProperty *primary_target_prop,
                      RutProperty *source_prop,
                      void *user_data)
 {
   RutInspectorPropertyData *prop_data = user_data;
   RutInspector *inspector = prop_data->inspector;
+  GList *l;
 
-  g_return_if_fail (target_prop == prop_data->target_prop);
+  g_return_if_fail (primary_target_prop == prop_data->target_prop);
 
-  inspector->property_changed_cb (target_prop,
-                                  source_prop,
-                                  inspector->user_data);
+  /* Forward the property change to the corresponding property
+   * of all objects being inspected... */
+  for (l = inspector->objects; l; l = l->next)
+    {
+      RutProperty *target_prop =
+        rut_introspectable_lookup_property (l->data,
+                                            primary_target_prop->spec->name);
+
+      inspector->property_changed_cb (target_prop, /* target */
+                                      source_prop,
+                                      inspector->user_data);
+    }
 }
 
 static void
-controlled_changed_cb (RutProperty *property,
+controlled_changed_cb (RutProperty *primary_property,
                        CoglBool value,
                        void *user_data)
 {
   RutInspectorPropertyData *prop_data = user_data;
   RutInspector *inspector = prop_data->inspector;
+  GList *l;
 
-  g_return_if_fail (property == prop_data->target_prop);
+  g_return_if_fail (primary_property == prop_data->target_prop);
 
-  inspector->controlled_changed_cb (property,
-                                    value,
-                                    inspector->user_data);
+  /* Forward the controlled state change to the corresponding property
+   * of all objects being inspected... */
+  for (l = inspector->objects; l; l = l->next)
+    {
+      RutProperty *property =
+        rut_introspectable_lookup_property (l->data,
+                                            primary_property->spec->name);
+
+      inspector->controlled_changed_cb (property,
+                                        value,
+                                        inspector->user_data);
+    }
 }
 
 static void
@@ -373,6 +396,7 @@ get_all_properties_cb (RutProperty *prop,
 static void
 create_property_controls (RutInspector *inspector)
 {
+  RutObject *reference_object = inspector->objects->data;
   GArray *props;
   int i;
 
@@ -380,8 +404,8 @@ create_property_controls (RutInspector *inspector)
                        FALSE, /* don't clear */
                        sizeof (RutInspectorPropertyData));
 
-  if (rut_object_is (inspector->object, RUT_INTERFACE_ID_INTROSPECTABLE))
-    rut_introspectable_foreach_property (inspector->object,
+  if (rut_object_is (reference_object, RUT_INTERFACE_ID_INTROSPECTABLE))
+    rut_introspectable_foreach_property (reference_object,
                                          get_all_properties_cb,
                                          props);
 
@@ -413,11 +437,12 @@ create_property_controls (RutInspector *inspector)
 
 RutInspector *
 rut_inspector_new (RutContext *context,
-                   RutObject *object,
+                   GList *objects,
                    RutInspectorCallback user_property_changed_cb,
                    RutInspectorControlledCallback user_controlled_changed_cb,
                    void *user_data)
 {
+  RutObject *reference_object = objects->data;
   RutInspector *inspector = g_slice_new0 (RutInspector);
   static CoglBool initialized = FALSE;
 
@@ -431,18 +456,19 @@ rut_inspector_new (RutContext *context,
 
   inspector->ref_count = 1;
   inspector->context = rut_refable_ref (context);
-  if (rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    inspector->object = rut_refable_ref (object);
-  else
-    inspector->object = object;
+  inspector->objects = g_list_copy (objects);
+
+  if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
+    g_list_foreach (objects, (GFunc)rut_refable_ref, NULL);
+
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->controlled_changed_cb = user_controlled_changed_cb;
   inspector->user_data = user_data;
 
   rut_object_init (&inspector->_parent, &rut_inspector_type);
 
-  rut_paintable_init (RUT_OBJECT (inspector));
-  rut_graphable_init (RUT_OBJECT (inspector));
+  rut_paintable_init (inspector);
+  rut_graphable_init (inspector);
 
   create_property_controls (inspector);
 

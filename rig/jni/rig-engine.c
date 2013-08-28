@@ -371,6 +371,9 @@ init_property_controlled_state_cb (RutProperty *property,
 {
   InitControlledStateData *data = user_data;
 
+  /* XXX: how should we handle showing whether a property is
+   * controlled or not when we have multiple objects selected and the
+   * property is controlled for some of them, but not all? */
   if (property->spec->animatable)
     {
       RigControllerPropData *prop_data;
@@ -386,23 +389,24 @@ init_property_controlled_state_cb (RutProperty *property,
 
 static RutInspector *
 create_inspector (RigEngine *engine,
-                  void *object)
+                  GList *objects)
 {
+  RutObject *reference_object = objects->data;
   RutInspector *inspector =
     rut_inspector_new (engine->ctx,
-                       object,
+                       objects,
                        inspector_property_changed_cb,
                        inspector_controlled_changed_cb,
                        engine);
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
+  if (rut_object_is (reference_object, RUT_INTERFACE_ID_INTROSPECTABLE))
     {
       InitControlledStateData controlled_data;
 
       controlled_data.engine = engine;
       controlled_data.inspector = inspector;
 
-      rut_introspectable_foreach_property (object,
+      rut_introspectable_foreach_property (reference_object,
                                            init_property_controlled_state_cb,
                                            &controlled_data);
     }
@@ -413,12 +417,15 @@ create_inspector (RigEngine *engine,
 typedef struct _DeleteButtonState
 {
   RigEngine *engine;
-  RutObject *component;
+  GList *components;
 } DeleteButtonState;
 
 static void
 free_delete_button_state (void *user_data)
 {
+  DeleteButtonState *state = user_data;
+
+  g_list_free (state->components);
   g_slice_free (DeleteButtonState, user_data);
 }
 
@@ -426,20 +433,24 @@ static void
 delete_button_click_cb (RutIconButton *button, void *user_data)
 {
   DeleteButtonState *state = user_data;
+  GList *l;
 
-  rig_undo_journal_delete_component_and_log (state->engine->undo_journal,
-                                             state->component);
+  for (l = state->components; l; l = l->next)
+    {
+      rig_undo_journal_delete_component_and_log (state->engine->undo_journal,
+                                                 l->data);
+    }
 
   rut_shell_queue_redraw (state->engine->ctx->shell);
 }
 
 static void
-add_component_inspector_cb (RutComponent *component,
-                            void *user_data)
+create_components_inspector (RigEngine *engine,
+                             GList *components)
 {
-  RigEngine *engine = user_data;
-  RutInspector *inspector = create_inspector (engine, component);
-  const char *name = rut_object_get_type_name (component);
+  RutComponent *reference_component = components->data;
+  RutInspector *inspector = create_inspector (engine, components);
+  const char *name = rut_object_get_type_name (reference_component);
   char *label;
   RutFold *fold;
   RutBin *button_bin;
@@ -473,7 +484,7 @@ add_component_inspector_cb (RutComponent *component,
                                        "component-delete.png"); /* disabled */
   button_state = g_slice_new (DeleteButtonState);
   button_state->engine = engine;
-  button_state->component = component;
+  button_state->components = g_list_copy (components);
   rut_icon_button_add_on_click_callback (delete_button,
                                          delete_button_click_cb,
                                          button_state,
@@ -488,9 +499,76 @@ add_component_inspector_cb (RutComponent *component,
     g_list_prepend (engine->all_inspectors, inspector);
 }
 
+RutObject *
+find_component (RutEntity *entity,
+                RutComponentType type)
+{
+  int i;
+
+  for (i = 0; i < entity->components->len; i++)
+    {
+      RutObject *component = g_ptr_array_index (entity->components, i);
+      RutComponentableProps *component_props =
+        rut_object_get_properties (component, RUT_INTERFACE_ID_COMPONENTABLE);
+
+      if (component_props->type == type)
+        return component;
+    }
+
+  return NULL;
+}
+
+typedef struct _MatchAndListState
+{
+  RigEngine *engine;
+  GList *entities;
+} MatchAndListState;
+
+static void
+match_and_create_components_inspector_cb (RutComponent *reference_component,
+                                          void *user_data)
+{
+  MatchAndListState *state = user_data;
+  RutComponentableProps *component_props =
+    rut_object_get_properties (reference_component,
+                               RUT_INTERFACE_ID_COMPONENTABLE);
+  RutComponentType type = component_props->type;
+  GList *l;
+  GList *components = NULL;
+
+  for (l = state->entities; l; l = l->next)
+    {
+      /* XXX: we will need to update this if we ever allow attaching
+       * multiple components of the same type to an entity. */
+
+      /* If there is no component of the same type attached to all the
+       * other entities then don't list the component */
+      RutComponent *component = rut_entity_get_component (l->data, type);
+      if (!component)
+        goto EXIT;
+
+      /* Or of the component doesn't also have the same RutObject type
+       * don't list the component */
+      if (rut_object_get_type (component) !=
+          rut_object_get_type (reference_component))
+        goto EXIT;
+
+      components = g_list_prepend (components, component);
+    }
+
+  if (components)
+    create_components_inspector (state->engine, components);
+
+EXIT:
+
+  g_list_free (components);
+}
+
 void
 _rig_engine_update_inspector (RigEngine *engine)
 {
+  GList *entities = engine->entities_selection->entities;
+
   /* This will drop the last reference to any current
    * engine->inspector_box_layout and also any indirect references
    * to existing RutInspectors */
@@ -505,25 +583,23 @@ _rig_engine_update_inspector (RigEngine *engine)
   g_list_free (engine->all_inspectors);
   engine->all_inspectors = NULL;
 
-  if (engine->entities_selection->entities)
+  if (entities)
     {
-      /* XXX: For now we don't do anything clever in the property
-       * inspector to take account of having multiple entities
-       * selected. What might be nice to do is calculate what
-       * properties are common between all selected entities and
-       * disable all other property widgets to allow easily setting
-       * the same property on many entities at the same time. */
-      RutEntity *entity = engine->entities_selection->entities->data;
+      RutEntity *reference_entity = entities->data;
+      MatchAndListState state;
 
-      engine->inspector = create_inspector (engine, entity);
+      engine->inspector = create_inspector (engine, entities);
 
       rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
       engine->all_inspectors =
         g_list_prepend (engine->all_inspectors, engine->inspector);
 
-      rut_entity_foreach_component (entity,
-                                    add_component_inspector_cb,
-                                    engine);
+      state.engine = engine;
+      state.entities = entities;
+
+      rut_entity_foreach_component (reference_entity,
+                                    match_and_create_components_inspector_cb,
+                                    &state);
     }
 }
 

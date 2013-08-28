@@ -25,7 +25,7 @@ typedef void
 
 RutInspector *
 rut_inspector_new (RutContext *ctx,
-                   RutObject *object,
+                   GList *objects,
                    RutInspectorCallback property_changed_cb,
                    RutInspectorControlledCallback controlled_changed_cb,
                    void *user_data);
