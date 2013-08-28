@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef __RUT_FIXED_H__
-#define __RUT_FIXED_H__
+#ifndef __RUT_SHIM_H__
+#define __RUT_SHIM_H__
 
 #include <cogl/cogl.h>
 
@@ -53,4 +53,4 @@ rut_shim_get_size (RutObject *self,
 void
 rut_shim_set_child (RutShim *shim, RutObject *child);
 
-#endif /* __RUT_FIXED_H__ */
+#endif /* __RUT_SHIM_H__ */
