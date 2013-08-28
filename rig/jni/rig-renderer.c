@@ -94,6 +94,8 @@ typedef struct _RigRendererPriv
   CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
   RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
   CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
+
+  RutClosure *preferred_size_closure;
 } RigRendererPriv;
 
 static void
@@ -233,6 +235,9 @@ _rig_renderer_free_priv (RutEntity *entity)
       if (primitive_caches[i])
         rut_refable_unref (primitive_caches[i]);
     }
+
+  if (priv->preferred_size_closure)
+    rut_closure_disconnect (priv->preferred_size_closure);
 
   g_slice_free (RigRendererPriv, priv);
   entity->renderer_priv = NULL;
@@ -1891,8 +1896,6 @@ rig_renderer_flush_journal (RigRenderer *renderer,
       RutHair *hair = rut_entity_get_component (entity,
                                                 RUT_COMPONENT_TYPE_HAIR);
 
-      ensure_renderer_priv (entity, renderer);
-
       material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
       pipeline = get_entity_pipeline (paint_ctx->engine,
@@ -2107,6 +2110,30 @@ draw_entity_camera_frustum (RigEngine *engine,
   cogl_object_unref (pipeline);
 }
 
+static void
+text_preferred_size_changed_cb (RutObject *sizable, void *user_data)
+{
+  RutText *text = sizable;
+  float width, height;
+  RutProperty *width_prop = &text->properties[RUT_TEXT_PROP_WIDTH];
+
+  if (width_prop->binding)
+    width = rut_property_get_float (width_prop);
+  else
+    {
+      rut_sizable_get_preferred_width (text,
+                                       -1,
+                                       NULL,
+                                       &width);
+    }
+
+  rut_sizable_get_preferred_height (text,
+                                    width,
+                                    NULL,
+                                    &height);
+  rut_sizable_set_size (text, width, height);
+}
+
 static RutTraverseVisitFlags
 entitygraph_pre_paint_cb (RutObject *object,
                           int depth,
@@ -2127,9 +2154,10 @@ entitygraph_pre_paint_cb (RutObject *object,
 
   if (rut_object_get_type (object) == &rut_entity_type)
     {
-      RutEntity *entity = RUT_ENTITY (object);
+      RutEntity *entity = object;
       RutObject *geometry;
       CoglMatrix matrix;
+      RigRendererPriv *priv;
 
       if (!rut_entity_get_visible (entity) ||
           (paint_ctx->pass == RIG_PASS_SHADOW && !rut_entity_get_cast_shadow (entity)))
@@ -2143,6 +2171,33 @@ entitygraph_pre_paint_cb (RutObject *object,
               object == paint_ctx->engine->light)
             draw_entity_camera_frustum (paint_ctx->engine, object, fb);
           return RUT_TRAVERSE_VISIT_CONTINUE;
+        }
+
+      ensure_renderer_priv (entity, renderer);
+      priv = entity->renderer_priv;
+
+      /* XXX: Ideally the renderer code wouldn't have to handle this
+       * but for now we make sure to allocate all text components
+       * their preferred size before rendering them.
+       *
+       * Note: we first check to see if the text component has a
+       * binding for the width property, and if so we assume the
+       * UI is constraining the width and wants the text to be
+       * wrapped.
+       */
+      if (rut_object_get_type (geometry) == &rut_text_type)
+        {
+          RutText *text = geometry;
+
+          if (!priv->preferred_size_closure)
+            {
+              priv->preferred_size_closure =
+                rut_sizable_add_preferred_size_callback (text,
+                                                         text_preferred_size_changed_cb,
+                                                         NULL, /* user data */
+                                                         NULL); /* destroy */
+              text_preferred_size_changed_cb (text, NULL);
+            }
         }
 
       cogl_framebuffer_get_modelview_matrix (fb, &matrix);
