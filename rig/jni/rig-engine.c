@@ -941,29 +941,28 @@ data_onscreen_resize (CoglOnscreen *onscreen,
   allocate (engine);
 }
 
-typedef struct _AssetInputClosure
+typedef struct _ResultInputClosure
 {
-  RutAsset *asset;
+  RutObject *result;
   RigEngine *engine;
-} AssetInputClosure;
+} ResultInputClosure;
 
 static void
-free_asset_input_closures (RigEngine *engine)
+free_result_input_closures (RigEngine *engine)
 {
   GList *l;
 
-  for (l = engine->asset_input_closures; l; l = l->next)
-    g_slice_free (AssetInputClosure, l->data);
-  g_list_free (engine->asset_input_closures);
-  engine->asset_input_closures = NULL;
+  for (l = engine->result_input_closures; l; l = l->next)
+    g_slice_free (ResultInputClosure, l->data);
+  g_list_free (engine->result_input_closures);
+  engine->result_input_closures = NULL;
 }
 
 static void
-apply_asset_input_to_entity (RutEntity *entity,
-                             AssetInputClosure *closure)
+apply_asset_input_with_entity (RigEngine *engine,
+                               RutAsset *asset,
+                               RutEntity *entity)
 {
-  RutAsset *asset = closure->asset;
-  RigEngine *engine = closure->engine;
   RigUndoJournal *sub_journal = rig_undo_journal_new (engine);
   RutAssetType type = rut_asset_get_type (asset);
   RutMaterial *material;
@@ -1316,12 +1315,26 @@ apply_asset_input_to_entity (RutEntity *entity,
     rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal, FALSE);
 }
 
-static RutInputEventStatus
-asset_input_cb (RutInputRegion *region,
-                RutInputEvent *event,
-                void *user_data)
+static void
+apply_result_input_with_entity (RutEntity *entity,
+                                ResultInputClosure *closure)
 {
-  AssetInputClosure *closure = user_data;
+  if (rut_object_get_type (closure->result) == &rut_asset_type)
+    apply_asset_input_with_entity (closure->engine,
+                                   closure->result,
+                                   entity);
+  else if (rut_object_get_type (closure->result) == &rut_entity_type)
+    rig_select_entity (closure->engine,
+                       closure->result,
+                       RUT_SELECT_ACTION_REPLACE);
+}
+
+static RutInputEventStatus
+result_input_cb (RutInputRegion *region,
+                 RutInputEvent *event,
+                 void *user_data)
+{
+  ResultInputClosure *closure = user_data;
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
@@ -1333,7 +1346,7 @@ asset_input_cb (RutInputRegion *region,
           if (engine->entities_selection->entities)
             {
               g_list_foreach (engine->entities_selection->entities,
-                              (GFunc) apply_asset_input_to_entity,
+                              (GFunc) apply_result_input_with_entity,
                               closure);
             }
           else
@@ -1343,7 +1356,7 @@ asset_input_cb (RutInputRegion *region,
                                                    engine->scene,
                                                    entity);
               rig_select_entity (engine, entity, RUT_SELECT_ACTION_REPLACE);
-              apply_asset_input_to_entity (entity, closure);
+              apply_result_input_with_entity (entity, closure);
             }
 
           _rig_engine_update_inspector (engine);
@@ -1440,18 +1453,17 @@ add_results_flow (RutContext *ctx,
 }
 
 static void
-add_asset_icon (RigEngine *engine,
-                RutAsset *asset)
+add_search_result (RigEngine *engine,
+                   RutObject *result)
 {
-  AssetInputClosure *closure;
+  ResultInputClosure *closure;
   RutStack *stack;
   RutBin *bin;
   CoglTexture *texture;
-  RutImage *image;
   RutInputRegion *region;
 
-  closure = g_slice_new (AssetInputClosure);
-  closure->asset = asset;
+  closure = g_slice_new (ResultInputClosure);
+  closure->result = result;
   closure->engine = engine;
 
   bin = rut_bin_new (engine->ctx);
@@ -1460,111 +1472,189 @@ add_asset_icon (RigEngine *engine,
   rut_bin_set_child (bin, stack);
   rut_refable_unref (stack);
 
-  texture = rut_asset_get_texture (asset);
+  if (rut_object_get_type (result) == &rut_asset_type)
+    {
+      RutAsset *asset = result;
 
-  if (texture)
-    {
-      image = rut_image_new (engine->ctx, texture);
-      rut_stack_add (stack, image);
-      rut_refable_unref (image);
+      texture = rut_asset_get_texture (asset);
+
+      if (texture)
+        {
+          RutImage *image = rut_image_new (engine->ctx, texture);
+          rut_stack_add (stack, image);
+          rut_refable_unref (image);
+        }
+      else
+        {
+          char *basename = g_path_get_basename (rut_asset_get_path (asset));
+          RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
+          rut_stack_add (stack, text);
+          rut_refable_unref (text);
+          g_free (basename);
+        }
     }
-  else
+  else if (rut_object_get_type (result) == &rut_entity_type)
     {
-      char *basename = g_path_get_basename (rut_asset_get_path (asset));
-      RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
-      rut_stack_add (stack, text);
+      RutEntity *entity = result;
+      RutBoxLayout *vbox =
+        rut_box_layout_new (engine->ctx,
+                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+      RutImage *image;
+      RutText *text;
+
+      rut_stack_add (stack, vbox);
+      rut_refable_unref (vbox);
+
+#warning "Create a sensible icon to represent entities"
+      texture = rut_load_texture_from_data_file (engine->ctx,
+                                                 "transparency-grid.png", NULL);
+      image = rut_image_new (engine->ctx, texture);
+      cogl_object_unref (texture);
+
+      rut_box_layout_add (vbox, FALSE, image);
+      rut_refable_unref (image);
+
+      text = rut_text_new_with_text (engine->ctx, NULL, entity->label);
+      rut_box_layout_add (vbox, FALSE, text);
       rut_refable_unref (text);
-      g_free (basename);
     }
 
   region = rut_input_region_new_rectangle (0, 0, 100, 100,
-                                           asset_input_cb,
+                                           result_input_cb,
                                            closure);
   rut_stack_add (stack, region);
   rut_refable_unref (region);
 
-  if (rut_asset_has_tag (asset, "geometry"))
+  if (rut_object_get_type (result) == &rut_asset_type)
     {
-      if (!engine->assets_geometry_results)
-        {
-          engine->assets_geometry_results =
-            add_results_flow (engine->ctx,
-                              "Geometry",
-                              engine->assets_results_vbox);
-        }
+      RutAsset *asset = result;
 
-      rut_flow_layout_add (engine->assets_geometry_results, bin);
-      rut_refable_unref (bin);
+      if (rut_asset_has_tag (asset, "geometry"))
+        {
+          if (!engine->assets_geometry_results)
+            {
+              engine->assets_geometry_results =
+                add_results_flow (engine->ctx,
+                                  "Geometry",
+                                  engine->search_results_vbox);
+            }
+
+          rut_flow_layout_add (engine->assets_geometry_results, bin);
+          rut_refable_unref (bin);
+        }
+      else if (rut_asset_has_tag (asset, "image"))
+        {
+          if (!engine->assets_image_results)
+            {
+              engine->assets_image_results =
+                add_results_flow (engine->ctx,
+                                  "Images",
+                                  engine->search_results_vbox);
+            }
+
+          rut_flow_layout_add (engine->assets_image_results, bin);
+          rut_refable_unref (bin);
+        }
+      else if (rut_asset_has_tag (asset, "video"))
+        {
+          if (!engine->assets_video_results)
+            {
+              engine->assets_video_results =
+                add_results_flow (engine->ctx,
+                                  "Video",
+                                  engine->search_results_vbox);
+            }
+
+          rut_flow_layout_add (engine->assets_video_results, bin);
+          rut_refable_unref (bin);
+        }
+      else
+        {
+          g_warn_if_reached ();
+
+          if (!engine->assets_other_results)
+            {
+              engine->assets_other_results =
+                add_results_flow (engine->ctx,
+                                  "Other",
+                                  engine->search_results_vbox);
+            }
+
+          rut_flow_layout_add (engine->assets_other_results, bin);
+          rut_refable_unref (bin);
+        }
     }
-  else if (rut_asset_has_tag (asset, "image"))
+  else if (rut_object_get_type (result) == &rut_entity_type)
     {
-      if (!engine->assets_image_results)
+      if (!engine->entity_results)
         {
-          engine->assets_image_results =
+          engine->entity_results =
             add_results_flow (engine->ctx,
-                              "Images",
-                              engine->assets_results_vbox);
+                              "Entity",
+                              engine->search_results_vbox);
         }
 
-      rut_flow_layout_add (engine->assets_image_results, bin);
-      rut_refable_unref (bin);
-    }
-  else if (rut_asset_has_tag (asset, "video"))
-    {
-      if (!engine->assets_video_results)
-        {
-          engine->assets_video_results =
-            add_results_flow (engine->ctx,
-                              "Video",
-                              engine->assets_results_vbox);
-        }
-
-      rut_flow_layout_add (engine->assets_video_results, bin);
-      rut_refable_unref (bin);
-    }
-  else
-    {
-      g_warn_if_reached ();
-
-      if (!engine->assets_other_results)
-        {
-          engine->assets_other_results =
-            add_results_flow (engine->ctx,
-                              "Other",
-                              engine->assets_results_vbox);
-        }
-
-      rut_flow_layout_add (engine->assets_other_results, bin);
+      rut_flow_layout_add (engine->entity_results, bin);
       rut_refable_unref (bin);
     }
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
-  engine->asset_input_closures = g_list_prepend (engine->asset_input_closures,
+  engine->result_input_closures = g_list_prepend (engine->result_input_closures,
                                                closure);
 }
 
 static void
-clear_assets_results (RigEngine *engine)
+clear_search_results (RigEngine *engine)
 {
-  if (engine->assets_results_vbox)
+  if (engine->search_results_vbox)
     {
-      rut_fold_set_child (engine->assets_results_fold, NULL);
-      free_asset_input_closures (engine);
+      rut_fold_set_child (engine->search_results_fold, NULL);
+      free_result_input_closures (engine);
 
       /* NB: We don't maintain any additional references on asset
        * result widgets beyond the references for them being in the
-       * sceneg graph and so setting a NULL fold child should release
+       * scene graph and so setting a NULL fold child should release
        * everything underneath...
        */
 
-      engine->assets_results_vbox = NULL;
+      engine->search_results_vbox = NULL;
 
+      engine->entity_results = NULL;
       engine->assets_geometry_results = NULL;
       engine->assets_image_results = NULL;
       engine->assets_video_results = NULL;
       engine->assets_other_results = NULL;
     }
+}
+
+typedef struct _EntitySearchState
+{
+  RigEngine *engine;
+  const char *search;
+  bool found;
+} EntitySearchState;
+
+static RutTraverseVisitFlags
+add_matching_entity_cb (RutObject *object,
+                        int depth,
+                        void *user_data)
+{
+  if (rut_object_get_type (object) == &rut_entity_type)
+    {
+      RutEntity *entity = object;
+      EntitySearchState *state = user_data;
+
+      if (entity->label &&
+          strncmp (entity->label, "rig:", 4) != 0 &&
+          (state->search == NULL ||
+           strstr (entity->label, state->search)))
+        {
+          state->found = TRUE;
+          add_search_result (state->engine, entity);
+        }
+    }
+  return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
 static CoglBool
@@ -1573,14 +1663,15 @@ rig_search_asset_list (RigEngine *engine, const char *search)
   GList *l;
   int i;
   CoglBool found = FALSE;
+  EntitySearchState state;
 
-  clear_assets_results (engine);
+  clear_search_results (engine);
 
-  engine->assets_results_vbox =
+  engine->search_results_vbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  rut_fold_set_child (engine->assets_results_fold,
-                      engine->assets_results_vbox);
-  rut_refable_unref (engine->assets_results_vbox);
+  rut_fold_set_child (engine->search_results_fold,
+                      engine->search_results_vbox);
+  rut_refable_unref (engine->search_results_vbox);
 
   for (l = engine->assets, i= 0; l; l = l->next, i++)
     {
@@ -1590,10 +1681,19 @@ rig_search_asset_list (RigEngine *engine, const char *search)
         continue;
 
       found = TRUE;
-      add_asset_icon (engine, asset);
+      add_search_result (engine, asset);
     }
 
-  return found;
+  state.engine = engine;
+  state.search = search;
+  state.found = FALSE;
+  rut_graphable_traverse (engine->scene,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          add_matching_entity_cb,
+                          NULL, /* post visit */
+                          &state);
+
+  return found | state.found;
 }
 
 static void
@@ -2228,20 +2328,20 @@ create_assets_view (RigEngine *engine)
   rut_refable_unref (gradient);
 
 
-  engine->assets_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_stack_add (stack, engine->assets_vp);
+  engine->search_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_stack_add (stack, engine->search_vp);
 
-  engine->assets_results_fold = rut_fold_new (engine->ctx, "Results");
+  engine->search_results_fold = rut_fold_new (engine->ctx, "Results");
 
   rut_color_init_from_uint32 (&color, 0x79b8b0ff);
-  rut_fold_set_label_color (engine->assets_results_fold, &color);
+  rut_fold_set_label_color (engine->search_results_fold, &color);
 
-  rut_fold_set_font_name (engine->assets_results_fold, "Bold Sans 20px");
+  rut_fold_set_font_name (engine->search_results_fold, "Bold Sans 20px");
 
-  rut_ui_viewport_add (engine->assets_vp, engine->assets_results_fold);
-  rut_ui_viewport_set_sync_widget (engine->assets_vp, engine->assets_results_fold);
+  rut_ui_viewport_add (engine->search_vp, engine->search_results_fold);
+  rut_ui_viewport_set_sync_widget (engine->search_vp, engine->search_results_fold);
 
-  rut_ui_viewport_set_x_pannable (engine->assets_vp, FALSE);
+  rut_ui_viewport_set_x_pannable (engine->search_vp, FALSE);
 
   rut_box_layout_add (engine->asset_panel_hbox, FALSE, vbox);
   rut_refable_unref (vbox);
@@ -2807,7 +2907,7 @@ rig_engine_free_ui (RigEngine *engine)
   g_list_free (engine->assets);
   engine->assets = NULL;
 
-  free_asset_input_closures (engine);
+  free_result_input_closures (engine);
 
   /* NB: no extra reference is held on the light other than the
    * reference for it being in the scenegraph. */

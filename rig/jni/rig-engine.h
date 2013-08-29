@@ -146,9 +146,10 @@ struct _RigEngine
   float screen_area_width;
   float screen_area_height;
 
-  RutUIViewport *assets_vp;
-  RutFold *assets_results_fold;
-  RutBoxLayout *assets_results_vbox;
+  RutUIViewport *search_vp;
+  RutFold *search_results_fold;
+  RutBoxLayout *search_results_vbox;
+  RutFlowLayout *entity_results;
   RutFlowLayout *assets_geometry_results;
   RutFlowLayout *assets_image_results;
   RutFlowLayout *assets_video_results;
@@ -160,7 +161,7 @@ struct _RigEngine
   RutAsset *diamond_builtin_asset;
   RutAsset *pointalism_grid_builtin_asset;
   RutAsset *hair_builtin_asset;
-  GList *asset_input_closures;
+  GList *result_input_closures;
   GList *asset_enumerators;
 
   RutUIViewport *tool_vp;
