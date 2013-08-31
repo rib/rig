@@ -38,6 +38,26 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .animatable = FALSE
   },
   {
+    .name = "normal_map",
+    .nick = "Normal Map",
+    .type = RUT_PROPERTY_TYPE_ASSET,
+    .validation = { .asset.type = RUT_ASSET_TYPE_NORMAL_MAP },
+    .getter.object_type = rut_material_get_normal_map_asset,
+    .setter.object_type = rut_material_set_normal_map_asset,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = FALSE
+  },
+  {
+    .name = "alpha_mask",
+    .nick = "Alpha Mask",
+    .type = RUT_PROPERTY_TYPE_ASSET,
+    .validation = { .asset.type = RUT_ASSET_TYPE_ALPHA_MASK },
+    .getter.object_type = rut_material_get_alpha_mask_asset,
+    .setter.object_type = rut_material_set_alpha_mask_asset,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = FALSE
+  },
+  {
     .name = "ambient",
     .nick = "Ambient",
     .type = RUT_PROPERTY_TYPE_COLOR,
