@@ -52,7 +52,7 @@ typedef void (*RutImageSourceReadyCallback) (RutImageSource *source,
 
 typedef void (*RutImageSourceChangedCallback) (RutImageSource *source,
                                                void *user_data);
-                                               
+
 RutClosure *
 rut_image_source_add_ready_callback (RutImageSource *source,
                                      RutImageSourceReadyCallback callback,
@@ -64,5 +64,27 @@ rut_image_source_add_on_changed_callback (RutImageSource *source,
                                           RutImageSourceChangedCallback callback,
                                           void *user_data,
                                           RutClosureDestroyCallback destroy_cb);
+
+void
+rut_image_source_set_first_layer (RutImageSource *source,
+                                  int first_layer);
+
+void
+rut_image_source_set_default_sample (RutImageSource *source,
+                                     bool default_sample);
+
+void
+rut_image_source_setup_pipeline (RutImageSource *source,
+                                 CoglPipeline *pipeline);
+
+void
+rut_image_source_attach_frame (RutImageSource *source,
+                               CoglPipeline *pipeline);
+
+void
+_rut_init_image_source_wrappers_cache (RutContext *ctx);
+
+void
+_rut_destroy_image_source_wrappers (RutContext *ctx);
 
 #endif

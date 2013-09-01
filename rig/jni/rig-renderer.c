@@ -58,6 +58,12 @@ typedef struct _RigJournalEntry
   CoglMatrix matrix;
 } RigJournalEntry;
 
+typedef enum _GetPipelineFlags
+{
+  GET_PIPELINE_FLAG_N_FLAGS
+} GetPipelineFlags;
+
+
 /* In the shaders, any alpha value greater than or equal to this is
  * considered to be fully opaque. We can't just compare for equality
  * against 1.0 because at least on a Mac Mini there seems to be some
@@ -531,17 +537,7 @@ rig_renderer_init (RigEngine *engine)
                       /* definitions */
                       "uniform float material_alpha_threshold;\n",
                       /* post */
-                      "if (texture2D(cogl_sampler4,\n"
-                      "              cogl_tex_coord4_in.st).a <= \n"
-                      "    material_alpha_threshold)\n"
-                      "  discard;\n");
-
-  engine->alpha_mask_video_snippet =
-    cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                      /* definitions */
-                      "uniform float material_alpha_threshold;\n",
-                      /* post */
-                      "if (cogl_gst_sample_video4 (\n"
+                      "if (rut_image_source_sample4 (\n"
                       "    cogl_tex_coord4_in.st).r < \n"
                       "    material_alpha_threshold)\n"
                       "  discard;\n");
@@ -586,41 +582,7 @@ rig_renderer_init (RigEngine *engine)
                       "varying vec4 pos;\n",
                       "pos = cogl_position_in;\n");
 
-
   engine->pointalism_vertex_snippet =
-  cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
-    "attribute vec2 cell_xy;\n"
-    "attribute vec4 cell_st;\n"
-    "uniform float scale_factor;\n"
-    "uniform float z_trans;\n"
-    "uniform int anti_scale;\n"
-    "varying vec4 av_color;\n",
-
-    "float grey;\n"
-
-    "av_color = texture2D (cogl_sampler1, vec2 (cell_st.x, cell_st.z));\n"
-    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.y, cell_st.z));\n"
-    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.y, cell_st.w));\n"
-    "av_color += texture2D (cogl_sampler1, vec2 (cell_st.x, cell_st.w));\n"
-    "av_color /= 4.0;\n"
-
-    "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
-
-    "if (anti_scale == 1)\n"
-    "{"
-    "pos.xy *= scale_factor * grey;\n"
-    "pos.z += z_trans * grey;\n"
-    "}"
-    "else\n"
-    "{"
-    "pos.xy *= scale_factor - (scale_factor * grey);\n"
-    "pos.z += z_trans - (z_trans * grey);\n"
-    "}"
-    "pos.x += cell_xy.x;\n"
-    "pos.y += cell_xy.y;\n"
-    "cogl_position_out = cogl_modelview_projection_matrix * pos;\n");
-
-  engine->pointalism_video_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
     "attribute vec2 cell_xy;\n"
     "attribute vec4 cell_st;\n"
@@ -631,23 +593,23 @@ rig_renderer_init (RigEngine *engine)
 
     "float grey;\n"
 
-    "av_color = cogl_gst_sample_video1 (vec2 (cell_st.x, cell_st.z));\n"
-    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.y, cell_st.z));\n"
-    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.y, cell_st.w));\n"
-    "av_color += cogl_gst_sample_video1 (vec2 (cell_st.x, cell_st.w));\n"
+    "av_color = rut_image_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
+    "av_color += rut_image_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
+    "av_color += rut_image_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
+    "av_color += rut_image_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
     "av_color /= 4.0;\n"
 
     "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
 
     "if (anti_scale == 1)\n"
     "{"
-    "pos.xy *= scale_factor * grey;\n"
-    "pos.z += z_trans * grey;\n"
+    "  pos.xy *= scale_factor * grey;\n"
+    "  pos.z += z_trans * grey;\n"
     "}"
     "else\n"
     "{"
-    "pos.xy *= scale_factor - (scale_factor * grey);\n"
-    "pos.z += z_trans - (z_trans * grey);\n"
+    "  pos.xy *= scale_factor - (scale_factor * grey);\n"
+    "  pos.z += z_trans - (z_trans * grey);\n"
     "}"
     "pos.x += cell_xy.x;\n"
     "pos.y += cell_xy.y;\n"
@@ -723,7 +685,7 @@ rig_renderer_init (RigEngine *engine)
 
          "vec3 L = normalize(light_direction);\n"
 
-         "vec3 N = texture2D(cogl_sampler7, cogl_tex_coord7_in.st).rgb;\n"
+         "vec3 N = rut_image_source_sample7(cogl_tex_coord7_in.st).rgb;\n"
          "N = 2.0 * N - 1.0;\n"
          "N = normalize(N);\n"
 
@@ -747,45 +709,6 @@ rig_renderer_init (RigEngine *engine)
          "}\n"
 
          "cogl_color_out.rgb = final_color.rgb;\n");
-
-  engine->normal_map_video_snippet =
-     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-         /* definitions */
-         "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-         "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
-         "uniform float material_shininess;\n"
-         "varying vec3 light_direction, eye_direction;\n",
-
-         /* post */
-         "vec4 final_color;\n"
-
-         "vec3 L = normalize(light_direction);\n"
-
-         "vec3 N = cogl_gst_sample_video7 (cogl_tex_coord7_in.st).rgb;\n"
-         "N = 2.0 * N - 1.0;\n"
-         "N = normalize(N);\n"
-
-         "vec4 ambient = light0_ambient * material_ambient;\n"
-
-         "final_color = ambient * cogl_color_out;\n"
-         "float lambert = dot(N, L);\n"
-
-         "if (lambert > 0.0)\n"
-         "{\n"
-         "  vec4 diffuse = light0_diffuse * material_diffuse;\n"
-         "  vec4 specular = light0_specular * material_specular;\n"
-
-         "  final_color += cogl_color_out * diffuse * lambert;\n"
-
-         "  vec3 E = normalize(eye_direction);\n"
-         "  vec3 R = reflect (-L, N);\n"
-         "  float specular_factor = pow (max(dot(R, E), 0.0),\n"
-         "                               material_shininess);\n"
-         "  final_color += specular * specular_factor;\n"
-         "}\n"
-
-         "cogl_color_out.rgb = final_color.rgb;\n");
-
 
   engine->material_lighting_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -982,7 +905,6 @@ void
 rig_renderer_fini (RigEngine *engine)
 {
   cogl_object_unref (engine->alpha_mask_snippet);
-  cogl_object_unref (engine->alpha_mask_video_snippet);
   cogl_object_unref (engine->lighting_vertex_snippet);
   cogl_object_unref (engine->normal_map_vertex_snippet);
   cogl_object_unref (engine->shadow_mapping_vertex_snippet);
@@ -991,12 +913,10 @@ rig_renderer_fini (RigEngine *engine)
   cogl_object_unref (engine->premultiply_snippet);
   cogl_object_unref (engine->unpremultiply_snippet);
   cogl_object_unref (engine->normal_map_fragment_snippet);
-  cogl_object_unref (engine->normal_map_video_snippet);
   cogl_object_unref (engine->material_lighting_snippet);
   cogl_object_unref (engine->simple_lighting_snippet);
   cogl_object_unref (engine->shadow_mapping_fragment_snippet);
   cogl_object_unref (engine->pointalism_vertex_snippet);
-  cogl_object_unref (engine->pointalism_video_snippet);
   cogl_object_unref (engine->pointalism_halo_snippet);
   cogl_object_unref (engine->pointalism_opaque_snippet);
   cogl_object_unref (engine->cache_position_snippet);
@@ -1038,7 +958,8 @@ get_entity_mask_pipeline (RigEngine *engine,
                           RutEntity *entity,
                           RutComponent *geometry,
                           RutMaterial *material,
-                          RutImageSource **sources)
+                          RutImageSource **sources,
+                          GetPipelineFlags flags)
 {
   CoglPipeline *pipeline;
   RutObject *hair;
@@ -1135,53 +1056,21 @@ get_entity_mask_pipeline (RigEngine *engine,
 
       if (material)
         {
-          if (sources[0])
+          if (sources[SOURCE_TYPE_COLOR])
             {
-              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[0]);
-
-              if (sink && rut_image_source_get_is_video (sources[0]))
-                {
-                  cogl_gst_video_sink_set_first_layer (sink, 1);
-                  cogl_gst_video_sink_set_default_sample (sink, FALSE);
-                  cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-                  cogl_pipeline_add_snippet (pipeline,
-                                             engine->pointalism_video_snippet);
-                }
-              else if (!sink)
-                {
-                  cogl_pipeline_set_layer_texture (pipeline, 1,
-                    rut_image_source_get_texture (sources[0]));
-                  cogl_pipeline_add_snippet (pipeline,
-                                             engine->pointalism_vertex_snippet);
-                }
+              rut_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
+              rut_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+              cogl_pipeline_add_snippet (pipeline,
+                                         engine->pointalism_vertex_snippet);
              }
 
-          if (sources[1])
+          if (sources[SOURCE_TYPE_ALPHA_MASK])
             {
-              int free_layer = 5;
-              CoglGstVideoSink *sink = rut_image_source_get_sink (sources[1]);
-
-              if (sink && rut_image_source_get_is_video (sources[1]))
-                {
-                  cogl_gst_video_sink_set_first_layer (sink, 4);
-                  cogl_gst_video_sink_set_default_sample (sink, FALSE);
-                  cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-                  free_layer = cogl_gst_video_sink_get_free_layer (sink);
-                  cogl_pipeline_add_snippet (pipeline,
-                                             engine->alpha_mask_video_snippet);
-                }
-              else if (!sink)
-                {
-                  cogl_pipeline_set_layer_texture (pipeline, 4,
-                        rut_image_source_get_texture (sources[1]));
-                  cogl_pipeline_add_snippet (pipeline,
-                                             engine->alpha_mask_snippet);
-                }
-
-              for (i = 4; i < free_layer; i++)
-                cogl_pipeline_set_layer_combine (pipeline, i,
-                                                 "RGBA=REPLACE(PREVIOUS)",
-                                                 NULL);
+              rut_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
+              rut_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+              cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
             }
         }
     }
@@ -1237,9 +1126,9 @@ get_entity_color_pipeline (RigEngine *engine,
                            RutComponent *geometry,
                            RutMaterial *material,
                            RutImageSource **sources,
+                           GetPipelineFlags flags,
                            CoglBool blended)
 {
-  CoglSnippet *snippet;
   CoglDepthState depth_state;
   CoglPipeline *pipeline;
   CoglPipeline *fin_pipeline;
@@ -1281,61 +1170,11 @@ get_entity_color_pipeline (RigEngine *engine,
   pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   if (sources[SOURCE_TYPE_COLOR])
-    {
-      if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
-        cogl_pipeline_set_layer_texture (pipeline, 1,
-          rut_image_source_get_texture (sources[SOURCE_TYPE_COLOR]));
-      else
-        {
-          CoglGstVideoSink *sink = rut_image_source_get_sink (sources[SOURCE_TYPE_COLOR]);
-          cogl_gst_video_sink_set_first_layer (sink, 1);
-          cogl_gst_video_sink_set_default_sample (sink, TRUE);
-          cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-        }
-    }
-
+    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
   if (sources[SOURCE_TYPE_ALPHA_MASK])
-    {
-      if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-        cogl_pipeline_set_layer_texture (pipeline, 4,
-          rut_image_source_get_texture (sources[SOURCE_TYPE_ALPHA_MASK]));
-      else
-        {
-          CoglGstVideoSink *sink = rut_image_source_get_sink (sources[SOURCE_TYPE_ALPHA_MASK]);
-          cogl_gst_video_sink_set_first_layer (sink, 4);
-          cogl_gst_video_sink_set_default_sample (sink, FALSE);
-          cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-        }
-    }
-
+    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK], pipeline);
   if (sources[SOURCE_TYPE_NORMAL_MAP])
-    {
-      if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_NORMAL_MAP]))
-        cogl_pipeline_set_layer_texture (pipeline, 7,
-          rut_image_source_get_texture (sources[SOURCE_TYPE_NORMAL_MAP]));
-      else
-        {
-          CoglGstVideoSink *sink = rut_image_source_get_sink (sources[SOURCE_TYPE_NORMAL_MAP]);
-          cogl_gst_video_sink_set_first_layer (sink, 7);
-          cogl_gst_video_sink_set_default_sample (sink, FALSE);
-          cogl_gst_video_sink_setup_pipeline (sink, pipeline);
-        }
-    }
-
-#if 0
-  /* NB: Our texture colours aren't premultiplied */
-  cogl_pipeline_set_blend (pipeline,
-                           "RGB = ADD(SRC_COLOR*(SRC_COLOR[A]), DST_COLOR*(1-SRC_COLOR[A]))"
-                           "A   = ADD(SRC_COLOR, DST_COLOR*(1-SRC_COLOR[A]))",
-                           NULL);
-#endif
-
-#if 0
-  if (rut_object_get_type (geometry) == &rut_shape_type)
-    rut_geometry_component_update_pipeline (geometry, pipeline);
-
-  pipeline = cogl_pipeline_new (rut_cogl_context);
-#endif
+    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_NORMAL_MAP], pipeline);
 
   cogl_pipeline_set_color4f (pipeline, 0.8f, 0.8f, 0.8f, 1.f);
 
@@ -1402,12 +1241,8 @@ get_entity_color_pipeline (RigEngine *engine,
         COGL_PIPELINE_FILTER_LINEAR_MIPMAP_LINEAR,
         COGL_PIPELINE_FILTER_LINEAR);
 
-      if (rut_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
-        cogl_pipeline_add_snippet (pipeline,
-                                   engine->pointalism_video_snippet);
-      else
-        cogl_pipeline_add_snippet (pipeline,
-                                   engine->pointalism_vertex_snippet);
+      cogl_pipeline_add_snippet (pipeline,
+                                 engine->pointalism_vertex_snippet);
 
       blend = engine->pointalism_halo_snippet;
       unblend = engine->pointalism_opaque_snippet;
@@ -1432,70 +1267,20 @@ get_entity_color_pipeline (RigEngine *engine,
 
   cogl_pipeline_add_snippet (pipeline, engine->unpremultiply_snippet);
 
-  if (material)
+  if (!hair && material)
     {
       if (sources[SOURCE_TYPE_ALPHA_MASK])
-        {
-          /* We don't want this layer to be automatically modulated with the
-           * previous layers so we set its combine mode to "REPLACE" so it
-           * will be skipped past and we can sample its texture manually */
-
-          CoglGstVideoSink *sink =
-            rut_image_source_get_sink (sources[SOURCE_TYPE_ALPHA_MASK]);
-
-          if (sink && rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-            {
-              int free_layer = cogl_gst_video_sink_get_free_layer (sink);
-              cogl_pipeline_add_snippet (pipeline,
-                                         engine->alpha_mask_video_snippet);
-              for (i = 4; i < free_layer; i++)
-                cogl_pipeline_set_layer_combine (pipeline, i,
-                                                 "RGBA=REPLACE(PREVIOUS)",
-                                                 NULL);
-            }
-          else if (!sink)
-            {
-              cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
-              cogl_pipeline_set_layer_combine (pipeline, 4,
-                                               "RGBA=REPLACE(PREVIOUS)", NULL);
-            }
-        }
+        cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
 
       if (sources[SOURCE_TYPE_NORMAL_MAP])
-        {
-          /* We don't want this layer to be automatically modulated with the
-           * previous layers so we set its combine mode to "REPLACE" so it
-           * will be skipped past and we can sample its texture manually */
-
-          CoglGstVideoSink *sink =
-            rut_image_source_get_sink (sources[SOURCE_TYPE_NORMAL_MAP]);
-
-          if (sink && rut_image_source_get_is_video (sources[SOURCE_TYPE_NORMAL_MAP]))
-            {
-              int free_layer = cogl_gst_video_sink_get_free_layer (sink);
-              snippet = engine->normal_map_video_snippet;
-              for (i = 7; i < free_layer; i++)
-                cogl_pipeline_set_layer_combine (pipeline, i,
-                                                 "RGBA=REPLACE(PREVIOUS)",
-                                                 NULL);
-            }
-          else if (!sink)
-            {
-              snippet = engine->normal_map_fragment_snippet;
-              cogl_pipeline_set_layer_combine (pipeline, 7,
-                                             "RGBA=REPLACE(PREVIOUS)", NULL);
-            }
-          else
-            snippet = engine->material_lighting_snippet;
-        }
+        cogl_pipeline_add_snippet (pipeline,
+                                   engine->normal_map_fragment_snippet);
       else
-        snippet = engine->material_lighting_snippet;
+        cogl_pipeline_add_snippet (pipeline,
+                                   engine->material_lighting_snippet);
     }
   else
-    snippet = engine->simple_lighting_snippet;
-
-  if (!hair)
-    cogl_pipeline_add_snippet (pipeline, snippet);
+    cogl_pipeline_add_snippet (pipeline, engine->simple_lighting_snippet);
 
   if (rut_entity_get_receive_shadow (entity))
     {
@@ -1600,17 +1385,8 @@ FOUND:
                                         light_matrix);
 
     for (i = 0; i < 3; i++)
-      {
-        if (sources[i])
-          {
-            if (rut_image_source_get_is_video (sources[i]))
-              {
-                cogl_gst_video_sink_attach_frame (
-                  rut_image_source_get_sink (sources[i]), pipeline);
-
-              }
-          }
-      }
+      if (sources[i])
+        rut_image_source_attach_frame (sources[i], pipeline);
   }
 
   return pipeline;
@@ -1703,6 +1479,7 @@ get_entity_pipeline (RigEngine *engine,
   RutMaterial *material =
     rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
   RutImageSource *sources[3];
+  GetPipelineFlags flags = 0;
 
   /* FIXME: Instead of having rut_entity apis for caching image
    * sources, we should allow the renderer to track arbitrary
@@ -1745,6 +1522,7 @@ get_entity_pipeline (RigEngine *engine,
                                                     engine,
                                                     NULL);
 
+          rut_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
         }
 
       asset = material->alpha_mask_asset;
@@ -1766,6 +1544,8 @@ get_entity_pipeline (RigEngine *engine,
                                                     engine,
                                                     NULL);
 
+          rut_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
+          rut_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK], FALSE);
         }
 
       asset = material->normal_map_asset;
@@ -1786,18 +1566,21 @@ get_entity_pipeline (RigEngine *engine,
                                                     image_source_changed_cb,
                                                     engine,
                                                     NULL);
+
+          rut_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
+          rut_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP], FALSE);
         }
     }
 
   if (pass == RIG_PASS_COLOR_UNBLENDED)
     return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, FALSE);
+                                      geometry, material, sources, flags, FALSE);
   else if (pass == RIG_PASS_COLOR_BLENDED)
     return get_entity_color_pipeline (engine, entity,
-                                      geometry, material, sources, TRUE);
+                                      geometry, material, sources, flags, TRUE);
   else if (pass == RIG_PASS_DOF_DEPTH || pass == RIG_PASS_SHADOW)
     return get_entity_mask_pipeline (engine, entity,
-                                     geometry, material, sources);
+                                     geometry, material, sources, flags);
 
   g_warn_if_reached ();
   return NULL;

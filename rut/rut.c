@@ -46,6 +46,7 @@
 #include "rut-components.h"
 #include "rut-geometry.h"
 #include "rut-scroll-bar.h"
+#include "rut-image-source.h"
 
 typedef struct _RutTextureCacheEntry
 {
@@ -170,6 +171,8 @@ _rut_context_free (void *object)
 {
   RutContext *ctx = object;
 
+  _rut_destroy_image_source_wrappers (ctx);
+
   rut_property_context_destroy (&ctx->property_ctx);
 
   g_object_unref (ctx->pango_context);
@@ -262,7 +265,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
   if (entry)
     return cogl_object_ref (entry->texture);
 
-  texture = (CoglTexture*) 
+  texture = (CoglTexture*)
     cogl_texture_2d_new_from_file (ctx->cogl_context, filename,
                                    COGL_PIXEL_FORMAT_ANY, error);
   if (!texture)
@@ -383,6 +386,8 @@ rut_context_new (RutShell *shell)
   pango_font_description_set_size (context->pango_font_desc, 14 * PANGO_SCALE);
 
   rut_property_context_init (&context->property_ctx);
+
+  _rut_init_image_source_wrappers_cache (context);
 
   if (shell)
     {
