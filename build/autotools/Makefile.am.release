@@ -12,7 +12,7 @@ RELEASE_ANNOUNCE_CC   = gnome-announce-list@gnome.org
 
 RELEASE_DOC_URL = http://docs.clutter-project.org/docs/
 
-tar_file    = $(distdir).tar.bz2
+tar_file    = $(distdir).tar.xz
 sha256_file = $(distdir).sha256sum
 
 $(sha256_file): $(tar_file)
