@@ -18,9 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <rut.h>
 
@@ -975,10 +973,7 @@ get_entity_mask_pipeline (RigEngine *engine,
           int scale, z;
 
           if (rut_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
-            {
-              cogl_gst_video_sink_attach_frame (
-                rut_image_source_get_sink (sources[SOURCE_TYPE_COLOR]), pipeline);
-            }
+            rut_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
 
           scale = rut_pointalism_grid_get_scale (geometry);
           z = rut_pointalism_grid_get_z (geometry);
@@ -1002,10 +997,7 @@ get_entity_mask_pipeline (RigEngine *engine,
         {
           int location;
           if (rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-            {
-              cogl_gst_video_sink_attach_frame (
-                rut_image_source_get_sink (sources[SOURCE_TYPE_ALPHA_MASK]), pipeline);
-            }
+            rut_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
 
           location = cogl_pipeline_get_uniform_location (pipeline,
                        "material_alpha_threshold");
