@@ -26,6 +26,9 @@
 #define __COGL_OBJECT_H
 
 #include <cogl/cogl-types.h>
+#ifdef COGL_HAS_GTYPE_SUPPORT
+#include <glib.h>
+#endif
 
 COGL_BEGIN_DECLS
 
@@ -103,7 +106,11 @@ typedef struct {
  *
  * Since: 1.4
  */
+#ifdef COGL_HAS_GTYPE_SUPPORT
+typedef GDestroyNotify CoglUserDataDestroyCallback;
+#else
 typedef void (*CoglUserDataDestroyCallback) (void *user_data);
+#endif
 
 /**
  * CoglDebugObjectTypeInfo:
