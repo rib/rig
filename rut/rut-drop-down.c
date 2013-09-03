@@ -502,12 +502,11 @@ rut_drop_down_paint_button (RutDropDown *drop,
                                              (float *) coords,
                                              G_N_ELEMENTS (coords));
 
-  layout = drop->layouts + drop->value_index;
-
   rut_drop_down_ensure_layouts (drop);
 
   cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
 
+  layout = drop->layouts + drop->value_index;
   cogl_pango_show_layout (fb,
                           layout->layout,
                           drop->width / 2 -
