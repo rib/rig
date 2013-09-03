@@ -1004,8 +1004,8 @@ cogl_framebuffer_resolve_samples_region (CoglFramebuffer *framebuffer,
  * instantiated within. This is the #CoglContext that was passed to
  * cogl_onscreen_new() for example.
  *
- * Return value: The #CoglContext that the given @framebuffer was
- *               instantiated within.
+ * Return value: (transfer none): The #CoglContext that the given
+ *               @framebuffer was instantiated within.
  * Since: 1.8
  * Stability: unstable
  */
@@ -1468,7 +1468,7 @@ cogl_framebuffer_read_pixels (CoglFramebuffer *framebuffer,
  * Gets the current #CoglFramebuffer as set using
  * cogl_push_framebuffer()
  *
- * Return value: The current #CoglFramebuffer
+ * Return value: (transfer none): The current #CoglFramebuffer
  * Stability: unstable
  * Since: 1.8
  */
