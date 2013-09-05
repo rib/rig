@@ -57,13 +57,13 @@ This is done by passing the `--disable-editor` argument to the
 Running
 ==
 
-Rig can be run in two modes:
+Building rig will result in three binaries, rig, rig-device and rig-slave:
 
 1. **Editor Mode**
 
     This mode is for interactively designing a new user interface.
-    This mode is used by default if the only argument you give to Rig
-    is a path to a UI.rig file like:
+    The editor is use by running the 'rig' binary giving it a path
+    to a UI.rig file like:
 
         rig /path/to/my/ui.rig
 
@@ -82,8 +82,31 @@ Rig can be run in two modes:
     Once you have a UI that you want to run as an application Rig can
     instead be run in a chromeless device mode like this:
 
-        rig --device-mode /path/to/my/ui.rig
+        rig-device /path/to/my/ui.rig
+        
+3. **Slave Mode**
 
-    Or simply:
-
-        rig -d /path/to/my/ui.rig
+    The usage model we are aiming for with Rig is that UI design is
+    connected to UI testing on real hardware. The aim is to directly
+    connect the prototyping and visual design stages to the technology
+    that will be used to run the UI (both hardware and software). This
+    way we think Rig will make the whole development process more
+    efficient.
+    
+    Rig can be run in a slave mode that is similar to device-mode but
+    also has network connectivity to a Rig editor. By running Rig in
+    slave mode on a device the editor will be able to discover the
+    device via the Zeroconf protocol and connect to it. While connected
+    then UI changes made in the editor will be immediately synchronized
+    with the slave device. This way UI changes, such as timing changes
+    for an animation can immediately be tested for their performance,
+    quality and responsiveness on real hardware. Experience working
+    directly with the hardware will be able to influence the design
+    at the earliest stages when the designs are easy to change.
+    
+    Running in slave mode is just done like this:
+    
+        rig-slave
+        
+    No UI.rig path need be given since the editor will send the UI to
+    slave once connected.
