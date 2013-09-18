@@ -35,10 +35,13 @@ struct _RutShim
 
   RutList preferred_size_cb_list;
 
+  RutShimAxis axis;
+
   float width;
   float height;
 
   RutObject *child;
+  RutClosure *child_preferred_size_closure;
 
   RutGraphableProps graphable;
 };
@@ -82,24 +85,44 @@ rut_shim_get_preferred_width (void *sizable,
 {
   RutShim *shim = sizable;
 
-  if (min_width_p)
-    *min_width_p = shim->width;
-  if (natural_width_p)
-    *natural_width_p = shim->width;
+  if (shim->axis == RUT_SHIM_AXIS_Y && shim->child)
+    {
+      rut_sizable_get_preferred_width (shim->child,
+                                       shim->height,
+                                       min_width_p,
+                                       natural_width_p);
+    }
+  else
+    {
+      if (min_width_p)
+        *min_width_p = shim->width;
+      if (natural_width_p)
+        *natural_width_p = shim->width;
+    }
 }
 
 static void
 rut_shim_get_preferred_height (void *sizable,
-                                float for_width,
-                                float *min_height_p,
-                                float *natural_height_p)
+                               float for_width,
+                               float *min_height_p,
+                               float *natural_height_p)
 {
   RutShim *shim = sizable;
 
-  if (min_height_p)
-    *min_height_p = shim->height;
-  if (natural_height_p)
-    *natural_height_p = shim->height;
+  if (shim->axis == RUT_SHIM_AXIS_X && shim->child)
+    {
+      rut_sizable_get_preferred_height (shim->child,
+                                        shim->width,
+                                        min_height_p,
+                                        natural_height_p);
+    }
+  else
+    {
+      if (min_height_p)
+        *min_height_p = shim->height;
+      if (natural_height_p)
+        *natural_height_p = shim->height;
+    }
 }
 
 static RutClosure *
@@ -204,6 +227,14 @@ rut_shim_set_height (RutShim *shim, float height)
   rut_shim_set_size (shim, shim->width, height);
 }
 
+static void
+preferred_size_changed (RutShim *shim)
+{
+  rut_closure_list_invoke (&shim->preferred_size_cb_list,
+                           RutSizablePreferredSizeCallback,
+                           shim);
+}
+
 void
 rut_shim_set_size (RutObject *self,
                    float width,
@@ -217,9 +248,7 @@ rut_shim_set_size (RutObject *self,
   shim->width = width;
   shim->height = height;
 
-  rut_closure_list_invoke (&shim->preferred_size_cb_list,
-                           RutSizablePreferredSizeCallback,
-                           shim);
+  preferred_size_changed (shim);
 }
 
 void
@@ -230,6 +259,19 @@ rut_shim_get_size (RutObject *self,
   RutShim *shim = self;
   *width = shim->width;
   *height = shim->height;
+}
+
+static void
+child_preferred_size_cb (RutObject *sizable,
+                         void *user_data)
+{
+  RutShim *shim = user_data;
+
+  if (shim->axis == RUT_SHIM_AXIS_XY)
+    return;
+
+  preferred_size_changed (shim);
+  queue_allocation (shim);
 }
 
 void
@@ -243,6 +285,8 @@ rut_shim_set_child (RutShim *shim, RutObject *child)
   if (shim->child)
     {
       rut_graphable_remove_child (shim->child);
+      rut_closure_disconnect (shim->child_preferred_size_closure);
+      shim->child_preferred_size_closure = NULL;
       rut_refable_unref (shim->child);
     }
 
@@ -250,6 +294,12 @@ rut_shim_set_child (RutShim *shim, RutObject *child)
     {
       shim->child = rut_refable_ref (child);
       rut_graphable_add_child (shim, child);
+
+      shim->child_preferred_size_closure =
+        rut_sizable_add_preferred_size_callback (child,
+                                                 child_preferred_size_cb,
+                                                 shim,
+                                                 NULL /* destroy */);
       queue_allocation (shim);
     }
   else
@@ -263,4 +313,15 @@ rut_shim_remove_child (RutShim *shim, RutObject *child)
 {
   g_return_if_fail (rut_object_get_type (shim) == &rut_shim_type);
   rut_graphable_remove_child (child);
+}
+
+void
+rut_shim_set_shim_axis (RutShim *shim, RutShimAxis axis)
+{
+  if (shim->axis == axis)
+    return;
+
+  shim->axis = axis;
+
+  preferred_size_changed (shim);
 }

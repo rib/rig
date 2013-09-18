@@ -53,4 +53,14 @@ rut_shim_get_size (RutObject *self,
 void
 rut_shim_set_child (RutShim *shim, RutObject *child);
 
+typedef enum _RutShimAxis
+{
+  RUT_SHIM_AXIS_XY,
+  RUT_SHIM_AXIS_X,
+  RUT_SHIM_AXIS_Y
+} RutShimAxis;
+
+void
+rut_shim_set_shim_axis (RutShim *shim, RutShimAxis axis);
+
 #endif /* __RUT_SHIM_H__ */
