@@ -55,94 +55,6 @@ _rut_fold_free (void *object)
   g_slice_free (RutFold, fold);
 }
 
-static void
-rut_fold_set_size (void *object,
-                   float width,
-                   float height)
-{
-  RutFold *fold = object;
-
-  rut_sizable_set_size (fold->vbox, width, height);
-}
-
-static void
-rut_fold_get_preferred_width (void *sizable,
-                              float for_height,
-                              float *min_width_p,
-                              float *natural_width_p)
-{
-  RutFold *fold = sizable;
-
-  rut_sizable_get_preferred_width (fold->vbox,
-                                   for_height,
-                                   min_width_p,
-                                   natural_width_p);
-}
-
-static void
-rut_fold_get_preferred_height (void *sizable,
-                               float for_width,
-                               float *min_height_p,
-                               float *natural_height_p)
-{
-  RutFold *fold = sizable;
-
-  rut_sizable_get_preferred_height (fold->vbox,
-                                    for_width,
-                                    min_height_p,
-                                    natural_height_p);
-}
-
-typedef struct _ForwardingClosure
-{
-  RutFold *fold;
-  RutSizablePreferredSizeCallback cb;
-  void *user_data;
-} ForwardingClosure;
-
-void
-forwarding_closure_destroy_cb (void *user_data)
-{
-  g_slice_free (ForwardingClosure, user_data);
-}
-
-static void
-forward_preferred_size_change_cb (RutObject *vbox,
-                                  void *user_data)
-{
-  ForwardingClosure *closure = user_data;
-  closure->cb (closure->fold, closure->user_data);
-}
-
-static RutClosure *
-rut_fold_add_preferred_size_callback (void *object,
-                                      RutSizablePreferredSizeCallback cb,
-                                      void *user_data,
-                                      RutClosureDestroyCallback destroy)
-{
-  RutFold *fold = object;
-  ForwardingClosure *closure = g_slice_new (ForwardingClosure);
-
-  closure->fold = fold;
-  closure->cb = cb;
-  closure->user_data = user_data;
-
-  return rut_sizable_add_preferred_size_callback (fold->vbox,
-                                                  forward_preferred_size_change_cb,
-                                                  closure,
-                                                  forwarding_closure_destroy_cb);
-}
-
-static void
-rut_fold_get_size (void *object,
-                   float *width,
-                   float *height)
-{
-  RutFold *fold = object;
-
-  rut_sizable_get_size (fold->vbox, width, height);
-}
-
 RutType rut_fold_type;
 
 static void
@@ -159,11 +71,11 @@ _rut_fold_init_type (void)
       NULL /* parent changed */
   };
   static RutSizableVTable sizable_vtable = {
-      rut_fold_set_size,
-      rut_fold_get_size,
-      rut_fold_get_preferred_width,
-      rut_fold_get_preferred_height,
-      rut_fold_add_preferred_size_callback
+      rut_composite_sizable_set_size,
+      rut_composite_sizable_get_size,
+      rut_composite_sizable_get_preferred_width,
+      rut_composite_sizable_get_preferred_height,
+      rut_composite_sizable_add_preferred_size_callback
   };
   static RutIntrospectableVTable introspectable_vtable = {
       rut_simple_introspectable_lookup_property,
@@ -187,6 +99,10 @@ _rut_fold_init_type (void)
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
                           &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
+                          offsetof (TYPE, vbox),
+                          NULL); /* no vtable */
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
