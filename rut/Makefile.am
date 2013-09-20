@@ -70,6 +70,7 @@ source_h = \
     rut-graph.h \
     rut-transform.h \
     rut-rectangle.h \
+    rut-scale.h \
     rut-fixed.h \
     rut-fold.h \
     rut-refcount-debug.h \
@@ -146,6 +147,7 @@ librut_la_SOURCES = \
     rut-graph.c \
     rut-transform.c \
     rut-rectangle.c \
+    rut-scale.c \
     rut-fixed.c \
     rut-fold.c \
     rut-refcount-debug.c \
