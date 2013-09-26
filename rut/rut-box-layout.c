@@ -617,6 +617,8 @@ rut_box_layout_add (RutBoxLayout *box,
 {
   RutBoxLayoutChild *child = g_slice_new (RutBoxLayoutChild);
 
+  g_return_if_fail (rut_object_get_type (box) == &rut_box_layout_type);
+
   child->widget = rut_refable_ref (child_widget);
   child->expand = expand;
 
