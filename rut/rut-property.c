@@ -330,6 +330,7 @@ rut_property_set_copy_binding (RutPropertyContext *context,
                             context,
                             source_property,
                             NULL /* terminator */);
+  _rut_property_copy_binding_cb (target_property, context);
 }
 
 void
