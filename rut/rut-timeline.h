@@ -35,6 +35,13 @@ rut_timeline_set_progress (RutObject *timeline,
                            double elapsed);
 
 void
+rut_timeline_set_length (RutObject *timeline,
+                         float length);
+
+float
+rut_timeline_get_length (RutObject *timeline);
+
+void
 rut_timeline_set_loop_enabled (RutTimeline *timeline, CoglBool enabled);
 
 /* PRIVATE */

@@ -27,6 +27,7 @@
 #include "rut-timeline.h"
 
 enum {
+  RUT_TIMELINE_PROP_LENGTH,
   RUT_TIMELINE_PROP_ELAPSED,
   RUT_TIMELINE_PROP_PROGRESS,
   RUT_TIMELINE_N_PROPS
@@ -55,6 +56,13 @@ struct _RutTimeline
 };
 
 static RutPropertySpec _rut_timeline_prop_specs[] = {
+  {
+    .name = "length",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = offsetof (RutTimeline, length),
+    .setter.float_type = rut_timeline_set_length
+  },
   {
     .name = "elapsed",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -174,7 +182,7 @@ rut_timeline_is_running (RutTimeline *timeline)
 double
 rut_timeline_get_elapsed (RutObject *obj)
 {
-  RutTimeline *timeline = RUT_TIMELINE (obj);
+  RutTimeline *timeline = obj;
 
   return timeline->elapsed;
 }
@@ -259,7 +267,7 @@ void
 rut_timeline_set_elapsed (RutObject *obj,
                           double elapsed)
 {
-  RutTimeline *timeline = RUT_TIMELINE (obj);
+  RutTimeline *timeline = obj;
 
   CoglBool should_stop;
   CoglBool should_restart_with_offset;
@@ -289,7 +297,7 @@ rut_timeline_set_elapsed (RutObject *obj,
 double
 rut_timeline_get_progress (RutObject *obj)
 {
-  RutTimeline *timeline = RUT_TIMELINE (obj);
+  RutTimeline *timeline = obj;
 
   return timeline->elapsed / timeline->length;
 }
@@ -298,10 +306,35 @@ void
 rut_timeline_set_progress (RutObject *obj,
                            double progress)
 {
-  RutTimeline *timeline = RUT_TIMELINE (obj);
+  RutTimeline *timeline = obj;
 
   double elapsed = timeline->length * progress;
   rut_timeline_set_elapsed (timeline, elapsed);
+}
+
+void
+rut_timeline_set_length (RutObject *obj,
+                         float length)
+{
+  RutTimeline *timeline = obj;
+
+  if (timeline->length == length)
+    return;
+
+  timeline->length = length;
+
+  rut_property_dirty (&timeline->ctx->property_ctx,
+                      &timeline->properties[RUT_TIMELINE_PROP_LENGTH]);
+
+  rut_timeline_set_elapsed (timeline, timeline->elapsed);
+}
+
+float
+rut_timeline_get_length (RutObject *obj)
+{
+  RutTimeline *timeline = obj;
+
+  return timeline->length;
 }
 
 void
