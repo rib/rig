@@ -3305,8 +3305,6 @@ rut_text_new_full (RutContext *ctx,
     rut_input_region_new_rectangle (0, 0, 0, 0,
                                     rut_text_input_region_cb,
                                     text);
-
-  //rut_input_region_set_graphable (text->input_region, text);
   rut_graphable_add_child (text, text->input_region);
 
   update_size (text);
@@ -3528,6 +3526,15 @@ rut_text_set_buffer (RutObject *obj,
                       &text->properties[RUT_TEXT_PROP_MAX_LENGTH]);
 }
 
+static void
+add_remove_input_region (RutText *text)
+{
+  if (text->editable || text->selectable)
+    rut_graphable_add_child (text, text->input_region);
+  else
+    rut_graphable_remove_child (text->input_region);
+}
+
 void
 rut_text_set_editable (RutObject *obj,
                        CoglBool editable)
@@ -3537,6 +3544,8 @@ rut_text_set_editable (RutObject *obj,
   if (text->editable != editable)
     {
       text->editable = editable;
+
+      add_remove_input_region (text);
 
       rut_shell_queue_redraw (text->ctx->shell);
 
@@ -3562,6 +3571,8 @@ rut_text_set_selectable (RutObject *obj,
   if (text->selectable != selectable)
     {
       text->selectable = selectable;
+
+      add_remove_input_region (text);
 
       rut_shell_queue_redraw (text->ctx->shell);
 
