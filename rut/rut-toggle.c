@@ -156,18 +156,6 @@ _rut_toggle_free (void *object)
   g_slice_free (RutToggle, object);
 }
 
-RutRefableVTable _rut_toggle_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_toggle_free
-};
-
-static RutGraphableVTable _rut_toggle_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
 static void
 _rut_toggle_paint (RutObject *object,
                    RutPaintContext *paint_ctx)
@@ -239,15 +227,6 @@ _rut_toggle_paint (RutObject *object,
                           icon_width + RUT_TOGGLE_BOX_RIGHT_PAD, 0,
                           &toggle->text_color);
 }
-
-static RutPaintableVTable _rut_toggle_paintable_vtable = {
-  _rut_toggle_paint
-};
-
-static RutIntrospectableVTable _rut_toggle_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
 
 static void
 _rut_toggle_set_size (RutObject *object,
@@ -327,44 +306,67 @@ _rut_toggle_get_preferred_height (RutObject *object,
     *natural_height_p = height;
 }
 
-static RutSizableVTable _rut_toggle_sizable_vtable = {
-  _rut_toggle_set_size,
-  _rut_toggle_get_size,
-  _rut_toggle_get_preferred_width,
-  _rut_toggle_get_preferred_height,
-  NULL /* add_preferred_size_callback (the preferred size never changes) */
-};
-
 RutType rut_toggle_type;
 
 static void
 _rut_toggle_init_type (void)
 {
-  rut_type_init (&rut_toggle_type, "RigToggle");
-  rut_type_add_interface (&rut_toggle_type,
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rut_toggle_free
+  };
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child remove */
+      NULL, /* child add */
+      NULL /* parent changed */
+  };
+  static RutPaintableVTable paintable_vtable = {
+      _rut_toggle_paint
+  };
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+  static RutSizableVTable sizable_vtable = {
+      _rut_toggle_set_size,
+      _rut_toggle_get_size,
+      _rut_toggle_get_preferred_width,
+      _rut_toggle_get_preferred_height,
+      NULL /* add_preferred_size_callback (the preferred size never changes) */
+  };
+
+  RutType *type = &rut_toggle_type;
+#define TYPE RutToggle
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutToggle, ref_count),
-                          &_rut_toggle_refable_vtable);
-  rut_type_add_interface (&rut_toggle_type,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutToggle, graphable),
-                          &_rut_toggle_graphable_vtable);
-  rut_type_add_interface (&rut_toggle_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutToggle, paintable),
-                          &_rut_toggle_paintable_vtable);
-  rut_type_add_interface (&rut_toggle_type,
+                          offsetof (TYPE, paintable),
+                          &paintable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_toggle_introspectable_vtable);
-  rut_type_add_interface (&rut_toggle_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutToggle, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_toggle_type,
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_toggle_sizable_vtable);
+                          &sizable_vtable);
+
+#undef TYPE
 }
 
 typedef struct _ToggleGrabState
