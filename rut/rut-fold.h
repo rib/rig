@@ -20,17 +20,51 @@
 #ifndef _RUT_FOLD_H_
 #define _RUT_FOLD_H_
 
-#include "rut.h"
+#include "rut-type.h"
+#include "rut-box-layout.h"
+#include "components/rut-nine-slice.h"
 
 extern RutType rut_fold_type;
 
-typedef struct _RutFold RutFold;
 
 #define RUT_FOLD(x) ((RutFold *) x)
 
+enum {
+  RUT_FOLD_PROP_LABEL,
+  RUT_FOLD_N_PROPS
+};
+
+typedef struct _RutFold
+{
+  RutObjectProps _parent;
+
+  RutContext *context;
+
+  RutBoxLayout *vbox;
+  RutBoxLayout *header_hbox_right;
+
+  RutText *label;
+  RutFixed *fold_icon_shim;
+  RutNineSlice *fold_up_icon;
+  RutNineSlice *fold_down_icon;
+
+  RutInputRegion *input_region;
+
+  CoglBool folded;
+
+  RutObject *child;
+  RutObject *header_child;
+
+  RutGraphableProps graphable;
+
+  RutSimpleIntrospectableProps introspectable;
+  RutProperty properties[RUT_FOLD_N_PROPS];
+
+  int ref_count;
+} RutFold;
+
 RutFold *
-rut_fold_new (RutContext *ctx,
-              const char *label);
+rut_fold_new (RutContext *ctx, const char *label);
 
 void
 rut_fold_set_child (RutFold *fold, RutObject *child);
@@ -46,6 +80,12 @@ rut_fold_set_folder_color (RutFold *fold, const CoglColor *color);
 
 void
 rut_fold_set_label_color (RutFold *fold, const CoglColor *color);
+
+void
+rut_fold_set_label (RutObject *object, const char *label);
+
+const char *
+rut_fold_get_label (RutObject *object);
 
 void
 rut_fold_set_font_name (RutFold *fold, const char *font);

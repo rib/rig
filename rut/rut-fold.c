@@ -26,30 +26,15 @@
 #include "rut-fixed.h"
 #include "rut-fold.h"
 
-struct _RutFold
-{
-  RutObjectProps _parent;
-
-  RutContext *context;
-
-  RutBoxLayout *vbox;
-  RutBoxLayout *header_hbox_right;
-
-  RutText *label;
-  RutFixed *fold_icon_shim;
-  RutNineSlice *fold_up_icon;
-  RutNineSlice *fold_down_icon;
-
-  RutInputRegion *input_region;
-
-  CoglBool folded;
-
-  RutObject *child;
-  RutObject *header_child;
-
-  RutGraphableProps graphable;
-
-  int ref_count;
+static RutPropertySpec _rut_fold_prop_specs[] = {
+  {
+    .name = "label",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .type = RUT_PROPERTY_TYPE_TEXT,
+    .setter.text_type = rut_fold_set_label,
+    .getter.text_type = rut_fold_get_label
+  },
+  { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
 static void
@@ -63,6 +48,7 @@ _rut_fold_free (void *object)
   rut_refable_unref (fold->fold_down_icon);
 
   rut_graphable_destroy (fold);
+  rut_simple_introspectable_destroy (fold);
 
   rut_refable_unref (fold->context);
 
@@ -179,6 +165,10 @@ _rut_fold_init_type (void)
       rut_fold_get_preferred_height,
       rut_fold_add_preferred_size_callback
   };
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
 
   RutType *type = &rut_fold_type;
 #define TYPE RutFold
@@ -197,6 +187,14 @@ _rut_fold_init_type (void)
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
                           &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (TYPE, introspectable),
+                          NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -245,6 +243,10 @@ rut_fold_new (RutContext *ctx,
   rut_object_init (&fold->_parent, &rut_fold_type);
 
   rut_graphable_init (fold);
+
+  rut_simple_introspectable_init (fold,
+                                  _rut_fold_prop_specs,
+                                  fold->properties);
 
   fold->vbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 
@@ -409,4 +411,23 @@ void
 rut_fold_set_font_name (RutFold *fold, const char *font)
 {
   rut_text_set_font_name (fold->label, font);
+}
+
+void
+rut_fold_set_label (RutObject *object, const char *label)
+{
+  RutFold *fold = object;
+
+  rut_text_set_text (fold->label, label);
+
+  rut_property_dirty (&fold->context->property_ctx,
+                      &fold->properties[RUT_FOLD_PROP_LABEL]);
+  rut_shell_queue_redraw (fold->context->shell);
+}
+
+const char *
+rut_fold_get_label (RutObject *object)
+{
+  RutFold *fold = object;
+  return rut_text_get_text (fold->label);
 }
