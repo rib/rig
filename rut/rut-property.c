@@ -141,6 +141,57 @@ rut_property_copy_value (RutPropertyContext *ctx,
 }
 
 void
+rut_property_cast_scalar_value (RutPropertyContext *ctx,
+                                RutProperty *dest,
+                                RutProperty *src)
+{
+  double val;
+
+  switch ((RutPropertyType) src->spec->type)
+    {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RUT_PROPERTY_TYPE_ ## TYPE: \
+      val = rut_property_get_ ## SUFFIX (src); \
+      break;
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
+
+#include "rut-property-types.h"
+
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef POINTER_TYPE
+#undef SCALAR_TYPE
+    default:
+      g_warn_if_reached ();
+    }
+
+  switch ((RutPropertyType) dest->spec->type)
+    {
+#define SCALAR_TYPE(SUFFIX, CTYPE, TYPE) \
+    case RUT_PROPERTY_TYPE_ ## TYPE: \
+      rut_property_set_ ## SUFFIX (ctx, dest, val); \
+      return;
+#define POINTER_TYPE(SUFFIX, CTYPE, TYPE)
+#define COMPOSITE_TYPE(SUFFIX, CTYPE, TYPE)
+#define ARRAY_TYPE(SUFFIX, CTYPE, TYPE, LEN)
+
+#include "rut-property-types.h"
+
+#undef ARRAY_TYPE
+#undef COMPOSITE_TYPE
+#undef POINTER_TYPE
+#undef SCALAR_TYPE
+    default:
+      g_warn_if_reached ();
+    }
+
+  g_warn_if_reached ();
+}
+
+
+void
 _rut_property_set_binding_full_array (RutProperty *property,
                                       RutBindingCallback callback,
                                       void *user_data,
@@ -331,6 +382,32 @@ rut_property_set_copy_binding (RutPropertyContext *context,
                             source_property,
                             NULL /* terminator */);
   _rut_property_copy_binding_cb (target_property, context);
+}
+
+static void
+_rut_property_cast_binding_cb (RutProperty *target_property,
+                               void *user_data)
+{
+  RutPropertyContext *context = user_data;
+  RutProperty *source_property =
+    rut_property_get_first_source (target_property);
+
+  rut_property_cast_scalar_value (context,
+                                  target_property,
+                                  source_property);
+}
+
+void
+rut_property_set_cast_scalar_binding (RutPropertyContext *context,
+                                      RutProperty *target_property,
+                                      RutProperty *source_property)
+{
+  rut_property_set_binding (target_property,
+                            _rut_property_cast_binding_cb,
+                            context,
+                            source_property,
+                            NULL /* terminator */);
+  _rut_property_cast_binding_cb (target_property, context);
 }
 
 void

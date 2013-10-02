@@ -379,11 +379,32 @@ rut_property_set_binding_full_by_name (RutObject *object,
  * changes the target property will be updated with a copy of the same
  * value. Note that the binding is only in one direction so that
  * changes in @target_property do not affect @source_property.
+ *
+ * An initial copy is triggered when setting the binding
  */
 void
 rut_property_set_copy_binding (RutPropertyContext *context,
                                RutProperty *target_property,
                                RutProperty *source_property);
+
+/**
+ * rut_property_set_cast_scalar_binding:
+ * @context: The property context that will be used to set the property.
+ * @target_property: The property to set the binding on.
+ * @source_property: The depedent property that the value will be taken from.
+ *
+ * This links the value of @target_property with the value of
+ * @source_property so that whenever the value of the source property
+ * changes the target property will be updated with a copy of the same
+ * value. Note that the binding is only in one direction so that
+ * changes in @target_property do not affect @source_property.
+ *
+ * An initial cast is triggered when setting the binding
+ */
+void
+rut_property_set_cast_scalar_binding (RutPropertyContext *context,
+                                      RutProperty *target_property,
+                                      RutProperty *source_property);
 
 /**
  * rut_property_remove_binding:
@@ -533,6 +554,11 @@ void
 rut_property_copy_value (RutPropertyContext *ctx,
                          RutProperty *target_property,
                          RutProperty *source_property);
+
+void
+rut_property_cast_scalar_value (RutPropertyContext *ctx,
+                                RutProperty *dest,
+                                RutProperty *src);
 
 void
 rut_property_box (RutProperty *property,
