@@ -26,6 +26,20 @@ typedef struct _RutObjectProps
   RutType *type;
 } RutObjectProps;
 
+typedef void (*RutTypeInit) (void);
+
+RutObject *
+_rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init);
+
+RutObject *
+_rut_object_alloc0 (size_t bytes, RutType *type, RutTypeInit type_init);
+
+#define rut_object_alloc(TYPE, TYPE_PTR, TYPE_INIT_FUNC) \
+  _rut_object_alloc (sizeof (TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+
+#define rut_object_alloc0(TYPE, TYPE_PTR, TYPE_INIT_FUNC) \
+  _rut_object_alloc0 (sizeof (TYPE), TYPE_PTR, TYPE_INIT_FUNC)
+
 void
 rut_object_init (RutObjectProps *object_properties, RutType *type);
 

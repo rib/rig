@@ -32,4 +32,28 @@ rut_object_init (RutObjectProps *object, RutType *type)
   _rut_refcount_debug_object_created (object);
 }
 
+RutObject *
+_rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init)
+{
+  RutObject *object = g_slice_alloc (bytes);
 
+  if (G_UNLIKELY (type->name == NULL))
+    type_init ();
+
+  rut_object_init (object, type);
+
+  return object;
+}
+
+RutObject *
+_rut_object_alloc0 (size_t bytes, RutType *type, RutTypeInit type_init)
+{
+  RutObject *object = g_slice_alloc0 (bytes);
+
+  if (G_UNLIKELY (type->name == NULL))
+    type_init ();
+
+  rut_object_init (object, type);
+
+  return object;
+}
