@@ -61,6 +61,7 @@
 #include "rut-renderer.h"
 #include "rut-mimable.h"
 #include "rut-drag-bin.h"
+#include "rut-icon-toggle.h"
 
 /* entity/components system */
 #include "rut-entity.h"

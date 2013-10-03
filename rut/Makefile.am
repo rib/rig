@@ -164,6 +164,8 @@ librut_la_SOURCES = \
     rut-mimable.c \
     rut-drag-bin.h \
     rut-drag-bin.c \
+    rut-icon-toggle.h \
+    rut-icon-toggle.c \
     $(source_h)
 
 if !HAVE_ANDROID
