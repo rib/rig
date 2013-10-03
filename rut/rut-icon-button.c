@@ -24,16 +24,11 @@
 #include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-text.h"
-#include "rut-paintable.h"
 #include "components/rut-camera.h"
 #include "rut-transform.h"
-#include "components/rut-nine-slice.h"
 #include "rut-stack.h"
 #include "rut-box-layout.h"
 #include "rut-icon-button.h"
-
-#define ICON_BUTTON_HPAD 10
-#define ICON_BUTTON_VPAD 23
 
 typedef enum _IconButtonState
 {
@@ -72,9 +67,7 @@ struct _RutIconButton
   RutList on_click_cb_list;
 
   RutGraphableProps graphable;
-  RutPaintableProps paintable;
 };
-
 
 static void
 destroy_icons (RutIconButton *button)
@@ -113,84 +106,11 @@ _rut_icon_button_free (void *object)
 
   destroy_icons (button);
 
-  if (button->label)
-    {
-      rut_graphable_remove_child (button->label);
-      rut_refable_unref (button->label);
-    }
-
-  /* NB: This will destroy the stack, layout and input_region which
-   * we don't hold extra references for... */
+  /* NB: This will destroy the stack, layout, label and input_region
+   * which we don't hold extra references for... */
   rut_graphable_destroy (button);
 
   g_slice_free (RutIconButton, object);
-}
-
-static void
-rut_icon_button_get_preferred_width (void *object,
-                                     float for_height,
-                                     float *min_width_p,
-                                     float *natural_width_p)
-{
-  RutIconButton *button = object;
-
-  rut_sizable_get_preferred_width (button->stack,
-                                   for_height,
-                                   min_width_p,
-                                   natural_width_p);
-}
-
-static void
-rut_icon_button_get_preferred_height (void *object,
-                                      float for_width,
-                                      float *min_height_p,
-                                      float *natural_height_p)
-{
-  RutIconButton *button = object;
-
-  rut_sizable_get_preferred_height (button->stack,
-                                    for_width,
-                                    min_height_p,
-                                    natural_height_p);
-}
-
-typedef struct _ForwardingClosure
-{
-  RutObject *self;
-  RutSizablePreferredSizeCallback cb;
-  void *user_data;
-} ForwardingClosure;
-
-static void
-forwarding_closure_destroy_cb (void *user_data)
-{
-  g_slice_free (ForwardingClosure, user_data);
-}
-
-static void
-forward_preferred_size_change_cb (RutObject *vbox, void *user_data)
-{
-  ForwardingClosure *closure = user_data;
-  closure->cb (closure->self, closure->user_data);
-}
-
-static RutClosure *
-rut_icon_button_add_preferred_size_callback (void *object,
-                                             RutSizablePreferredSizeCallback cb,
-                                             void *user_data,
-                                             RutClosureDestroyCallback destroy)
-{
-  RutIconButton *button = object;
-  ForwardingClosure *closure = g_slice_new (ForwardingClosure);
-
-  closure->self = object;
-  closure->cb = cb;
-  closure->user_data = user_data;
-
-  return rut_sizable_add_preferred_size_callback (button->stack,
-                                                  forward_preferred_size_change_cb,
-                                                  closure,
-                                                  forwarding_closure_destroy_cb);
 }
 
 RutType rut_icon_button_type;
@@ -198,12 +118,6 @@ RutType rut_icon_button_type;
 static void
 _rut_icon_button_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_icon_button_free
-  };
-
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
       NULL, /* child add */
@@ -211,21 +125,18 @@ _rut_icon_button_init_type (void)
   };
 
   static RutSizableVTable sizable_vtable = {
-      rut_icon_button_set_size,
-      rut_icon_button_get_size,
-      rut_icon_button_get_preferred_width,
-      rut_icon_button_get_preferred_height,
-      rut_icon_button_add_preferred_size_callback,
+      rut_composite_sizable_set_size,
+      rut_composite_sizable_get_size,
+      rut_composite_sizable_get_preferred_width,
+      rut_composite_sizable_get_preferred_height,
+      rut_composite_sizable_add_preferred_size_callback
   };
 
   RutType *type = &rut_icon_button_type;
 #define TYPE RutIconButton
 
   rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_add_refable (type, ref_count, _rut_icon_button_free);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (TYPE, graphable),
@@ -234,6 +145,10 @@ _rut_icon_button_init_type (void)
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
                           &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
+                          offsetof (TYPE, stack),
+                          NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -373,8 +288,6 @@ _rut_icon_button_input_cb (RutInputRegion *region,
                             state->camera,
                             _rut_icon_button_grab_input_cb,
                             state);
-      //button->grab_x = rut_motion_event_get_x (event);
-      //button->grab_y = rut_motion_event_get_y (event);
 
       set_state (button, ICON_BUTTON_STATE_ACTIVE);
 
@@ -420,30 +333,24 @@ rut_icon_button_new (RutContext *ctx,
                      const char *active_icon,
                      const char *disabled_icon)
 {
-  RutIconButton *button = g_slice_new0 (RutIconButton);
+  RutIconButton *button = rut_object_alloc0 (RutIconButton,
+                                             &rut_icon_button_type,
+                                             _rut_icon_button_init_type);
   float natural_width, natural_height;
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_icon_button_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (RUT_OBJECT (button), &rut_icon_button_type);
 
   button->ref_count = 1;
 
   rut_list_init (&button->on_click_cb_list);
 
-  rut_graphable_init (RUT_OBJECT (button));
-  rut_paintable_init (RUT_OBJECT (button));
+  rut_graphable_init (button);
 
   button->ctx = ctx;
 
   button->state = ICON_BUTTON_STATE_NORMAL;
 
   button->stack = rut_stack_new (ctx, 100, 100);
+  rut_graphable_add_child (button, button->stack);
+  rut_refable_unref (button->stack);
 
   button->layout = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_stack_add (button->stack, button->layout);
@@ -463,6 +370,7 @@ rut_icon_button_new (RutContext *ctx,
 
       button->label = rut_text_new_with_text (ctx, NULL, label);
       rut_bin_set_child (bin, button->label);
+      rut_refable_unref (button->label);
 
       rut_box_layout_add (button->layout, FALSE, bin);
       rut_refable_unref (bin);
@@ -488,8 +396,6 @@ rut_icon_button_new (RutContext *ctx,
                                     &natural_height);
   rut_sizable_set_size (button->stack, natural_width, natural_height);
 
-  rut_graphable_add_child (button, button->stack);
-
   return button;
 }
 
@@ -505,25 +411,6 @@ rut_icon_button_add_on_click_callback (RutIconButton *button,
                                callback,
                                user_data,
                                destroy_cb);
-}
-
-void
-rut_icon_button_set_size (RutObject *self,
-                          float width,
-                          float height)
-{
-  RutIconButton *button = self;
-
-  rut_sizable_set_size (button->stack, width, height);
-}
-
-void
-rut_icon_button_get_size (RutObject *self,
-                          float *width,
-                          float *height)
-{
-  RutIconButton *button = self;
-  rut_sizable_get_size (button->stack, width, height);
 }
 
 static void

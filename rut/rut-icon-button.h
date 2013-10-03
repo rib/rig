@@ -49,16 +49,6 @@ rut_icon_button_add_on_click_callback (RutIconButton *button,
                                   RutClosureDestroyCallback destroy_cb);
 
 void
-rut_icon_button_set_size (RutObject *self,
-                          float width,
-                          float height);
-
-void
-rut_icon_button_get_size (RutObject *self,
-                          float *width,
-                          float *height);
-
-void
 rut_icon_button_set_normal (RutIconButton *button,
                             const char *icon);
 
