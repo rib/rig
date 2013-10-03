@@ -39,7 +39,7 @@ typedef struct
   RutObject *transform;
   RutObject *widget;
   RutClosure *preferred_size_closure;
-  CoglBool expand;
+  bool expand;
 } RutBoxLayoutChild;
 
 struct _RutBoxLayout
@@ -54,7 +54,7 @@ struct _RutBoxLayout
 
   RutBoxLayoutPacking packing;
   int spacing;
-  CoglBool homogeneous;
+  bool homogeneous;
 
   float width, height;
 
@@ -82,8 +82,8 @@ static RutPropertySpec _rut_box_layout_prop_specs[] = {
   {
     .name = "homogeneous",
     .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.integer_type = rut_box_layout_get_homogeneous,
-    .setter.integer_type = rut_box_layout_set_homogeneous,
+    .getter.boolean_type = rut_box_layout_get_homogeneous,
+    .setter.boolean_type = rut_box_layout_set_homogeneous,
     .nick = "Homogeneous",
     .blurb = "Pack children with the same size",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
@@ -145,10 +145,10 @@ static void
 allocate_cb (RutObject *graphable,
              void *user_data)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (graphable);
+  RutBoxLayout *box = graphable;
   RutBoxLayoutChild *child;
   RutBoxLayoutPacking packing = box->packing;
-  CoglBool horizontal;
+  bool horizontal;
   int n_children = box->n_children;
   int n_expand_children;
 
@@ -464,7 +464,7 @@ rut_box_layout_get_preferred_width (void *sizable,
                                     float *min_width_p,
                                     float *natural_width_p)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (sizable);
+  RutBoxLayout *box = sizable;
 
   switch (box->packing)
     {
@@ -486,7 +486,7 @@ rut_box_layout_get_preferred_height (void *sizable,
                                      float *min_height_p,
                                      float *natural_height_p)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (sizable);
+  RutBoxLayout *box = sizable;
 
   switch (box->packing)
     {
@@ -570,15 +570,9 @@ RutBoxLayout *
 rut_box_layout_new (RutContext *ctx,
                     RutBoxLayoutPacking packing)
 {
-  RutBoxLayout *box = g_slice_new0 (RutBoxLayout);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_box_layout_init_type ();
-
-      initialized = TRUE;
-    }
+  RutBoxLayout *box = rut_object_alloc0 (RutBoxLayout,
+                                         &rut_box_layout_type,
+                                         _rut_box_layout_init_type);
 
   box->ref_count = 1;
   box->ctx = rut_refable_ref (ctx);
@@ -586,8 +580,6 @@ rut_box_layout_new (RutContext *ctx,
 
   rut_list_init (&box->preferred_size_cb_list);
   rut_list_init (&box->children);
-
-  rut_object_init (&box->_parent, &rut_box_layout_type);
 
   rut_graphable_init (RUT_OBJECT (box));
 
@@ -612,7 +604,7 @@ child_preferred_size_cb (RutObject *sizable,
 
 void
 rut_box_layout_add (RutBoxLayout *box,
-                    CoglBool expand,
+                    bool expand,
                     RutObject *child_widget)
 {
   RutBoxLayoutChild *child = g_slice_new (RutBoxLayoutChild);
@@ -673,18 +665,18 @@ rut_box_layout_remove (RutBoxLayout *box,
     }
 }
 
-CoglBool
+bool
 rut_box_layout_get_homogeneous (RutObject *obj)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
   return box->homogeneous;
 }
 
 void
 rut_box_layout_set_homogeneous (RutObject *obj,
-                                CoglBool homogeneous)
+                                bool homogeneous)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
 
   if (box->homogeneous == homogeneous)
     return;
@@ -700,7 +692,7 @@ rut_box_layout_set_homogeneous (RutObject *obj,
 int
 rut_box_layout_get_spacing (RutObject *obj)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
 
   return box->spacing;
 }
@@ -709,7 +701,7 @@ void
 rut_box_layout_set_spacing (RutObject *obj,
                             int spacing)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
 
   if (box->spacing == spacing)
     return;
@@ -725,7 +717,7 @@ rut_box_layout_set_spacing (RutObject *obj,
 int
 rut_box_layout_get_packing (RutObject *obj)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
   return box->packing;
 }
 
@@ -733,7 +725,7 @@ void
 rut_box_layout_set_packing (RutObject *obj,
                             RutBoxLayoutPacking packing)
 {
-  RutBoxLayout *box = RUT_BOX_LAYOUT (obj);
+  RutBoxLayout *box = obj;
 
   if (box->packing == packing)
     return;

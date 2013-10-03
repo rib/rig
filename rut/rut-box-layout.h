@@ -20,13 +20,12 @@
 #ifndef _RUT_BOX_LAYOUT_H_
 #define _RUT_BOX_LAYOUT_H_
 
-#include "rut.h"
+#include "rut-type.h"
+#include "rut-object.h"
+#include "rut-interfaces.h"
 
 extern RutType rut_box_layout_type;
-
 typedef struct _RutBoxLayout RutBoxLayout;
-
-#define RUT_BOX_LAYOUT(x) ((RutBoxLayout *) x)
 
 typedef enum
 {
@@ -42,19 +41,19 @@ rut_box_layout_new (RutContext *ctx,
 
 void
 rut_box_layout_add (RutBoxLayout *box,
-                    CoglBool expand,
+                    bool expand,
                     RutObject *child);
 
 void
 rut_box_layout_remove (RutBoxLayout *box,
                        RutObject *child);
 
-CoglBool
+bool
 rut_box_layout_get_homogeneous (RutObject *obj);
 
 void
 rut_box_layout_set_homogeneous (RutObject *obj,
-                                CoglBool homogeneous);
+                                bool homogeneous);
 
 int
 rut_box_layout_get_spacing (RutObject *obj);
