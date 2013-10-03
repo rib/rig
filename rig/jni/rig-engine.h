@@ -83,6 +83,9 @@ struct _RigEngine
 
 #ifdef RIG_EDITOR_ENABLED
   RutMemoryStack *serialization_stack;
+
+  RutText *search_text;
+  GList *required_search_tags;
 #endif
 
   RutObject *renderer;

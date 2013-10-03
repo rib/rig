@@ -1369,13 +1369,28 @@ result_input_cb (RutInputRegion *region,
 }
 
 static CoglBool
-asset_matches_search (RutAsset *asset,
+asset_matches_search (RigEngine *engine,
+                      RutAsset *asset,
                       const char *search)
 {
+  GList *l;
+  bool found = false;
   const GList *inferred_tags;
   char **tags;
   const char *path;
   int i;
+
+  for (l = engine->required_search_tags; l; l = l->next)
+    {
+      if (rut_asset_has_tag (asset, l->data))
+        {
+          found = true;
+          break;
+        }
+    }
+
+  if (engine->required_search_tags && found == false)
+    return FALSE;
 
   if (!search)
     return TRUE;
@@ -1663,8 +1678,8 @@ add_matching_entity_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static CoglBool
-rig_search_asset_list (RigEngine *engine, const char *search)
+static bool
+rig_search_with_text (RigEngine *engine, const char *search)
 {
   GList *l;
   int i;
@@ -1683,40 +1698,58 @@ rig_search_asset_list (RigEngine *engine, const char *search)
     {
       RutAsset *asset = l->data;
 
-      if (!asset_matches_search (asset, search))
+      if (!asset_matches_search (engine, asset, search))
         continue;
 
       found = TRUE;
       add_search_result (engine, asset);
     }
 
-  state.engine = engine;
-  state.search = search;
-  state.found = FALSE;
-  rut_graphable_traverse (engine->scene,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          add_matching_entity_cb,
-                          NULL, /* post visit */
-                          &state);
+  if (!engine->required_search_tags)
+    {
+      state.engine = engine;
+      state.search = search;
+      state.found = FALSE;
 
-  return found | state.found;
+      rut_graphable_traverse (engine->scene,
+                              RUT_TRAVERSE_DEPTH_FIRST,
+                              add_matching_entity_cb,
+                              NULL, /* post visit */
+                              &state);
+
+      return found | state.found;
+    }
+  else
+    {
+      /* If the user has toggled on certain search
+       * tag constraints then we don't want to
+       * fallback to matching everything when there
+       * are no results from the search so we
+       * always claim that something was found...
+       */
+      return TRUE;
+    }
+}
+
+static void
+rig_run_search (RigEngine *engine)
+{
+  if (!rig_search_with_text (engine, rut_text_get_text (engine->search_text)))
+    rig_search_with_text (engine, NULL);
 }
 
 static void
 rig_refresh_thumbnails (RutAsset *video,
                         void *user_data)
 {
-  RigEngine* engine = user_data;
-
-  rig_search_asset_list (engine, NULL);
+  rig_run_search (user_data);
 }
 
 static void
 asset_search_update_cb (RutText *text,
                         void *user_data)
 {
-  if (!rig_search_asset_list (user_data, rut_text_get_text (text)))
-    rig_search_asset_list (user_data, NULL);
+  rig_run_search (user_data);
 }
 
 
@@ -2200,72 +2233,112 @@ create_properties_bar (RigEngine *engine)
   rut_refable_unref (stack0);
 }
 
+typedef struct _SearchToggleState
+{
+  RigEngine *engine;
+  char *required_tag;
+} SearchToggleState;
+
+static void
+asset_search_toggle_cb (RutIconToggle *toggle,
+                        bool state,
+                        void *user_data)
+{
+  SearchToggleState *toggle_state = user_data;
+  RigEngine *engine = toggle_state->engine;
+
+  if (state)
+    {
+      engine->required_search_tags =
+        g_list_prepend (engine->required_search_tags,
+                        toggle_state->required_tag);
+    }
+  else
+    {
+      engine->required_search_tags =
+        g_list_remove (engine->required_search_tags,
+                       toggle_state->required_tag);
+    }
+
+  rig_run_search (engine);
+}
+
+static void
+free_search_toggle_state (void *user_data)
+{
+  SearchToggleState *state = user_data;
+
+  state->engine->required_search_tags =
+    g_list_remove (state->engine->required_search_tags, state->required_tag);
+
+  g_free (state->required_tag);
+
+  g_slice_free (SearchToggleState, state);
+}
+
+static RutIconToggle *
+create_search_toggle (RigEngine *engine,
+                      const char *set_icon,
+                      const char *unset_icon,
+                      const char *required_tag)
+{
+  RutIconToggle *toggle =
+    rut_icon_toggle_new (engine->ctx, set_icon, unset_icon);
+  SearchToggleState *state = g_slice_new0 (SearchToggleState);
+
+  state->engine = engine;
+  state->required_tag = g_strdup (required_tag);
+
+  rut_icon_toggle_add_on_toggle_callback (toggle,
+                                          asset_search_toggle_cb,
+                                          state,
+                                          free_search_toggle_state);
+
+  return toggle;
+}
+
 static void
 create_asset_selectors (RigEngine *engine,
                         RutStack *icons_stack)
 {
   RutBoxLayout *hbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  RutIconButton *button;
-  CoglColor white;
+  RutIconToggle *toggle;
 
-  rut_color_init_from_uint32 (&white, 0xffffffff);
+  toggle = create_search_toggle (engine,
+                                 "geometry-white.png",
+                                 "geometry.png",
+                                 "geometry");
+  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_refable_unref (toggle);
 
-  button =
-    rut_icon_button_new (engine->ctx,
-                         "Geometry",
-                         RUT_ICON_BUTTON_POSITION_BELOW,
-                         "geometry.png",
-                         "geometry.png",
-                         "geometry-white.png",
-                         "geometry.png");
-  rut_box_layout_add (hbox, FALSE, button);
-  rut_icon_button_set_label_color (button, &white);
+  toggle = create_search_toggle (engine,
+                                 "image-white.png",
+                                 "image.png",
+                                 "image");
+  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_refable_unref (toggle);
 
-  button =
-    rut_icon_button_new (engine->ctx,
-                         "Images",
-                         RUT_ICON_BUTTON_POSITION_BELOW,
-                         "image.png",
-                         "image.png",
-                         "image-white.png",
-                         "image.png");
-  rut_box_layout_add (hbox, FALSE, button);
-  rut_icon_button_set_label_color (button, &white);
+  toggle = create_search_toggle (engine,
+                                 "video-white.png",
+                                 "video.png",
+                                 "video");
+  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_refable_unref (toggle);
 
-  button =
-    rut_icon_button_new (engine->ctx,
-                         "Video",
-                         RUT_ICON_BUTTON_POSITION_BELOW,
-                         "video.png",
-                         "video.png",
-                         "video-white.png",
-                         "video.png");
-  rut_box_layout_add (hbox, FALSE, button);
-  rut_icon_button_set_label_color (button, &white);
+  toggle = create_search_toggle (engine,
+                                 "sound-white.png",
+                                 "sound.png",
+                                 "sound");
+  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_refable_unref (toggle);
 
-  button =
-    rut_icon_button_new (engine->ctx,
-                         "Sound",
-                         RUT_ICON_BUTTON_POSITION_BELOW,
-                         "sound.png",
-                         "sound.png",
-                         "sound-white.png",
-                         "sound.png");
-  rut_box_layout_add (hbox, FALSE, button);
-  rut_icon_button_set_label_color (button, &white);
-
-  button =
-    rut_icon_button_new (engine->ctx,
-                         "Logic",
-                         RUT_ICON_BUTTON_POSITION_BELOW,
-                         "logic.png",
-                         "logic.png",
-                         "logic-white.png",
-                         "logic.png");
-  rut_box_layout_add (hbox, FALSE, button);
-  rut_icon_button_set_label_color (button, &white);
-
+  toggle = create_search_toggle (engine,
+                                 "logic-white.png",
+                                 "logic.png",
+                                 "logic");
+  rut_box_layout_add (hbox, FALSE, toggle);
+  rut_refable_unref (toggle);
 
   rut_stack_add (icons_stack, hbox);
   rut_refable_unref (hbox);
@@ -2294,6 +2367,7 @@ create_assets_view (RigEngine *engine)
   entry = rut_entry_new (engine->ctx);
 
   text = rut_entry_get_text (entry);
+  engine->search_text = text;
   rut_text_set_single_line_mode (text, TRUE);
   rut_text_set_hint_text (text, "Search...");
 
@@ -3614,7 +3688,7 @@ rig_load_asset_list (RigEngine *engine)
 
   g_object_unref (assets_dir);
 
-  rig_search_asset_list (engine, NULL);
+  rig_run_search (engine);
 }
 #endif
 
