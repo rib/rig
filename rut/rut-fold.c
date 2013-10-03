@@ -24,6 +24,8 @@
 #include <glib.h>
 
 #include "rut-fixed.h"
+#include "rut-stack.h"
+#include "rut-bin.h"
 #include "rut-fold.h"
 
 static RutPropertySpec _rut_fold_prop_specs[] = {
