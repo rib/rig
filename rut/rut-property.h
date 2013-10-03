@@ -2,6 +2,7 @@
 #define _RUT_PROPERTY_H_
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 #include <cogl/cogl.h>
 
@@ -148,7 +149,7 @@ typedef struct _RutPropertySpec
     int (* integer_type) (void *object);
     int (* enum_type) (void *object);
     uint32_t (* uint32_type) (void *object);
-    CoglBool (* boolean_type) (void *object);
+    bool (* boolean_type) (void *object);
     const char *(* text_type) (void *object);
     const CoglQuaternion *(* quaternion_type) (void *object);
     const CoglColor *(* color_type) (void *object);
@@ -168,7 +169,7 @@ typedef struct _RutPropertySpec
     void (* integer_type) (void *object, int value);
     void (* enum_type) (void *object, int value);
     void (* uint32_type) (void *object, uint32_t value);
-    void (* boolean_type) (void *object, CoglBool value);
+    void (* boolean_type) (void *object, bool value);
     void (* text_type) (void *object, const char *value);
     void (* quaternion_type) (void *object,
                               const CoglQuaternion *quaternion);
