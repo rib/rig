@@ -55,7 +55,8 @@ dist_assets_DATA = \
 	pointalism.png \
 	hair.png \
 	circle1.png \
-	highlight.png
+	highlight.png \
+	component-delete.png
 
 if HAVE_GTK
 dist_assets_DATA += \
