@@ -173,7 +173,7 @@ rut_timeline_stop (RutTimeline *timeline)
   timeline->running = FALSE;
 }
 
-CoglBool
+bool
 rut_timeline_is_running (RutTimeline *timeline)
 {
   return timeline->running;
@@ -341,6 +341,12 @@ void
 rut_timeline_set_loop_enabled (RutTimeline *timeline, CoglBool enabled)
 {
   timeline->loop_enabled = enabled;
+}
+
+bool
+rut_timeline_get_loop_enabled (RutTimeline *timeline)
+{
+  return timeline->loop_enabled;
 }
 
 void
