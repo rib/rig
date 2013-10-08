@@ -56,7 +56,20 @@ dist_assets_DATA = \
 	hair.png \
 	circle1.png \
 	highlight.png \
-	component-delete.png
+	component-delete.png \
+	entity.svg \
+	entity-white.png \
+	entity.png \
+	delete-white.png \
+	delete.png \
+	pointer-white.png \
+	pointer.png \
+	rotate-white.png \
+	rotate.png \
+	add-white.png \
+	add.png \
+	eye-white.png \
+	eye.png
 
 if HAVE_GTK
 dist_assets_DATA += \
