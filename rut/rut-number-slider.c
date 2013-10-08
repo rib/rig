@@ -396,7 +396,6 @@ rut_number_slider_text_grab_cb (RutInputEvent *event,
            y >= slider->height))
         {
           rut_number_slider_commit_text (slider);
-          return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
       break;
 
