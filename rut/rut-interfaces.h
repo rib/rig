@@ -168,6 +168,12 @@ RutObject *
 rut_graphable_get_parent (RutObject *child);
 
 RutObject *
+rut_graphable_first (RutObject *parent);
+
+RutObject *
+rut_graphable_nth (RutObject *parent, int n);
+
+RutObject *
 rut_graphable_get_root (RutObject *child);
 
 void

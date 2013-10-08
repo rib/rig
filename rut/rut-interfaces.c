@@ -182,6 +182,35 @@ rut_graphable_get_parent (RutObject *child)
 }
 
 RutObject *
+rut_graphable_first (RutObject *parent)
+{
+  RutGraphableProps *graphable =
+    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+
+  if (graphable->children.head)
+    return graphable->children.head->data;
+  else
+    return NULL;
+}
+
+RutObject *
+rut_graphable_nth (RutObject *parent, int n)
+{
+  RutGraphableProps *graphable =
+    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+  GList *l;
+  int i;
+
+  for (l = graphable->children.head, i = 0; l && i < n; l = l->next, i++)
+    ;
+
+  if (l)
+    return l->data;
+  else
+    return NULL;
+}
+
+RutObject *
 rut_graphable_get_root (RutObject *child)
 {
   RutObject *root, *parent;
