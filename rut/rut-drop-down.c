@@ -1061,6 +1061,7 @@ rut_drop_down_set_values_array (RutDropDown *drop,
   old_value = rut_drop_down_get_value (drop);
 
   rut_drop_down_free_values (drop);
+  rut_drop_down_clear_layouts (drop);
 
   drop->values = g_malloc (sizeof (RutDropDownValue) * n_values);
   for (i = 0; i < n_values; i++)
@@ -1077,5 +1078,4 @@ rut_drop_down_set_values_array (RutDropDown *drop,
   drop->value_index = old_value_index;
 
   rut_shell_queue_redraw (drop->context->shell);
-  rut_drop_down_clear_layouts (drop);
 }
