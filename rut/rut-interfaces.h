@@ -49,6 +49,22 @@ rut_refable_simple_ref (void *object);
 void
 rut_refable_simple_unref (void *object);
 
+/* Most new types can use this convenience macro for adding
+ * the _REFABLE interface when we don't need to hook into
+ * the _ref and _unref */
+#define rut_type_add_refable(TYPE_PTR, MEMBER, FREE_FUNC) \
+  do { \
+      static RutRefableVTable refable_vtable = { \
+          rut_refable_simple_ref, \
+          rut_refable_simple_unref, \
+          FREE_FUNC \
+      }; \
+      rut_type_add_interface (TYPE_PTR, \
+                              RUT_INTERFACE_ID_REF_COUNTABLE, \
+                              offsetof (TYPE, MEMBER), \
+                              &refable_vtable); \
+  } while (0)
+
 void *
 rut_refable_ref (void *object);
 
