@@ -25,6 +25,7 @@
 
 #include "rut-property.h"
 #include "rut-interfaces.h"
+#include "rut-color.h"
 
 void
 rut_property_context_init (RutPropertyContext *context)
@@ -758,3 +759,78 @@ rut_property_set_boxed (RutPropertyContext *ctx,
   g_warn_if_reached ();
 }
 
+char *
+rut_boxed_to_string (const RutBoxed *boxed,
+                     const RutPropertySpec *spec)
+{
+  switch (boxed->type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+      return g_strdup_printf ("%f", boxed->d.float_val);
+    case RUT_PROPERTY_TYPE_DOUBLE:
+      return g_strdup_printf ("%f", boxed->d.double_val);
+    case RUT_PROPERTY_TYPE_INTEGER:
+      return g_strdup_printf ("%d", boxed->d.integer_val);
+    case RUT_PROPERTY_TYPE_ENUM:
+      {
+        if (spec && spec->validation.ui_enum)
+          {
+            const RutUIEnum *ui_enum = spec->validation.ui_enum;
+            int i;
+            for (i = 0; ui_enum->values[i].nick; i++)
+              {
+                const RutUIEnumValue *enum_value = &ui_enum->values[i];
+                if (enum_value->value == boxed->d.enum_val)
+                  return g_strdup_printf ("<%d:%s>",
+                                          boxed->d.enum_val,
+                                          enum_value->nick);
+              }
+          }
+
+        return g_strdup_printf ("<%d:Enum>", boxed->d.enum_val);
+      }
+    case RUT_PROPERTY_TYPE_UINT32:
+      return g_strdup_printf ("%u", boxed->d.uint32_val);
+    case RUT_PROPERTY_TYPE_BOOLEAN:
+      {
+        const char *bool_strings[] = { "true", "false" };
+        return g_strdup (bool_strings[!!boxed->d.boolean_val]);
+      }
+    case RUT_PROPERTY_TYPE_TEXT:
+      return g_strdup_printf ("%s", boxed->d.text_val);
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      {
+        const CoglQuaternion *quaternion = &boxed->d.quaternion_val;
+        float axis[3], angle;
+
+        cogl_quaternion_get_rotation_axis (quaternion, axis);
+        angle = cogl_quaternion_get_rotation_angle (quaternion);
+
+        return g_strdup_printf ("axis: (%.2f,%.2f,%.2f) angle: %.2f\n",
+                                axis[0], axis[1], axis[2], angle);
+      }
+    case RUT_PROPERTY_TYPE_VEC3:
+      return g_strdup_printf ("(%.1f, %.1f, %.1f)",
+                              boxed->d.vec3_val[0],
+                              boxed->d.vec3_val[1],
+                              boxed->d.vec3_val[2]);
+    case RUT_PROPERTY_TYPE_VEC4:
+      return g_strdup_printf ("(%.1f, %.1f, %.1f, %.1f)",
+                              boxed->d.vec3_val[0],
+                              boxed->d.vec3_val[1],
+                              boxed->d.vec3_val[2],
+                              boxed->d.vec3_val[3]);
+    case RUT_PROPERTY_TYPE_COLOR:
+      return rut_color_to_string (&boxed->d.color_val);
+    case RUT_PROPERTY_TYPE_OBJECT:
+      return g_strdup_printf ("<%p:%s>",
+                              boxed->d.object_val,
+                              rut_object_get_type_name (boxed->d.object_val));
+    case RUT_PROPERTY_TYPE_ASSET:
+      return g_strdup_printf ("<%p:Asset>", boxed->d.asset_val);
+    case RUT_PROPERTY_TYPE_POINTER:
+      return g_strdup_printf ("%p", boxed->d.pointer_val);
+    default:
+      return g_strdup ("<rut_boxed_dump:unknown property type>");
+    }
+}

@@ -570,6 +570,10 @@ rut_property_set_boxed (RutPropertyContext *ctx,
                         RutProperty *property,
                         const RutBoxed *boxed);
 
+char *
+rut_boxed_to_string (const RutBoxed *boxed,
+                     const RutPropertySpec *spec);
+
 static inline RutProperty *
 rut_property_get_first_source (RutProperty *property)
 {
