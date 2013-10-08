@@ -97,6 +97,9 @@ rut_model_new_for_hair (RutModel *base);
 RutMesh *
 rut_model_get_mesh (RutObject *self);
 
+RutAsset *
+rut_model_get_asset (RutModel *model);
+
 CoglPrimitive *
 rut_model_get_primitive (RutObject *object);
 
