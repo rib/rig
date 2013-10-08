@@ -414,6 +414,12 @@ rut_bin_set_child (RutBin *bin,
   rut_shell_queue_redraw (bin->context->shell);
 }
 
+RutObject *
+rut_bin_get_child (RutBin *bin)
+{
+  return bin->child;
+}
+
 void
 rut_bin_set_x_position (RutBin *bin,
                         RutBinPosition position)

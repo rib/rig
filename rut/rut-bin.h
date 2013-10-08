@@ -45,6 +45,9 @@ void
 rut_bin_set_child (RutBin *bin,
                    RutObject *child);
 
+RutObject *
+rut_bin_get_child (RutBin *bin);
+
 void
 rut_bin_set_x_position (RutBin *bin,
                         RutBinPosition position);
