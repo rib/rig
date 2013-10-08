@@ -66,16 +66,10 @@ struct _RutPropInspector
   RutPropInspectorControl controls[RUT_PROP_INSPECTOR_MAX_N_CONTROLS];
   int n_controls;
 
-  RutProperty *source_prop;
-  RutProperty *target_prop;
+  RutProperty *source_prop; /* the inspector's widget property */
+  RutProperty *target_prop; /* property being inspected */
 
   RutToggle *controlled_toggle;
-
-  /* This dummy property is used so that we can listen to changes on
-   * the source property without having to directly make the target
-   * property depend on it. The target property can only have one
-   * dependent property so we don't want to steal that slot */
-  RutProperty dummy_prop;
 
   RutPropInspectorCallback property_changed_cb;
   RutPropInspectorControlledCallback controlled_changed_cb;
@@ -89,17 +83,6 @@ struct _RutPropInspector
   int ref_count;
 };
 
-static RutPropertySpec
-dummy_property_spec =
-  {
-    .name = "dummy",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RutPropInspector, ref_count),
-    .setter.any_type = abort,
-    .getter.any_type = abort
-  };
-
 RutType rut_prop_inspector_type;
 
 static void
@@ -107,8 +90,6 @@ _rut_prop_inspector_free (void *object)
 {
   RutPropInspector *inspector = object;
   int i;
-
-  rut_property_destroy (&inspector->dummy_prop);
 
   rut_refable_unref (inspector->context);
 
@@ -515,8 +496,6 @@ property_changed_cb (RutProperty *target_prop,
 {
   RutPropInspector *inspector = user_data;
 
-  g_return_if_fail (target_prop == &inspector->dummy_prop);
-
   /* If the property change was only triggered because we are
    * rereading the existing value then we won't bother notifying
    * anyone */
@@ -622,11 +601,9 @@ add_control (RutPropInspector *inspector,
 
       if (control_prop)
         {
-          rut_property_set_binding (&inspector->dummy_prop,
-                                    property_changed_cb,
-                                    inspector,
-                                    control_prop,
-                                    NULL);
+          rut_property_connect_callback (control_prop,
+                                         property_changed_cb,
+                                         inspector);
           inspector->source_prop = control_prop;
         }
     }
@@ -635,8 +612,8 @@ add_control (RutPropInspector *inspector,
 RutPropInspector *
 rut_prop_inspector_new (RutContext *ctx,
                         RutProperty *property,
-                        RutPropInspectorCallback user_property_changed_cb,
-                        RutPropInspectorControlledCallback user_controlled_cb,
+                        RutPropInspectorCallback inspector_property_changed_cb,
+                        RutPropInspectorControlledCallback inspector_controlled_cb,
                         void *user_data)
 {
   RutPropInspector *inspector = g_slice_new0 (RutPropInspector);
@@ -653,8 +630,8 @@ rut_prop_inspector_new (RutContext *ctx,
   inspector->ref_count = 1;
   inspector->context = rut_refable_ref (ctx);
   inspector->target_prop = property;
-  inspector->property_changed_cb = user_property_changed_cb;
-  inspector->controlled_changed_cb = user_controlled_cb;
+  inspector->property_changed_cb = inspector_property_changed_cb;
+  inspector->controlled_changed_cb = inspector_controlled_cb;
   inspector->user_data = user_data;
 
   rut_object_init (&inspector->_parent, &rut_prop_inspector_type);
@@ -663,10 +640,6 @@ rut_prop_inspector_new (RutContext *ctx,
   rut_graphable_init (RUT_OBJECT (inspector));
 
   inspector->n_controls = 0;
-
-  rut_property_init (&inspector->dummy_prop,
-                     &dummy_property_spec,
-                     inspector);
 
   if (property->spec->animatable)
     add_animatable_toggle (inspector, property);
