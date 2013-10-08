@@ -548,7 +548,7 @@ rut_entity_rotate_z_axis (RutEntity *entity,
   entity->dirty = TRUE;
 }
 
-CoglBool
+bool
 rut_entity_get_cast_shadow (RutObject *obj)
 {
   RutEntity *entity = RUT_ENTITY (obj);
@@ -557,8 +557,7 @@ rut_entity_get_cast_shadow (RutObject *obj)
 }
 
 void
-rut_entity_set_cast_shadow (RutObject *obj,
-                            CoglBool cast_shadow)
+rut_entity_set_cast_shadow (RutObject *obj, bool cast_shadow)
 {
   RutEntity *entity = RUT_ENTITY (obj);
 
@@ -571,7 +570,7 @@ rut_entity_set_cast_shadow (RutObject *obj,
                       &entity->properties[RUT_ENTITY_PROP_CAST_SHADOW]);
 }
 
-CoglBool
+bool
 rut_entity_get_receive_shadow (RutObject *obj)
 {
   RutEntity *entity = RUT_ENTITY (obj);
@@ -581,7 +580,7 @@ rut_entity_get_receive_shadow (RutObject *obj)
 
 void
 rut_entity_set_receive_shadow (RutObject *obj,
-                               gboolean receive_shadow)
+                               bool receive_shadow)
 {
   RutEntity *entity = RUT_ENTITY (obj);
 
@@ -639,7 +638,7 @@ rut_entity_foreach_component (RutEntity *entity,
     callback (g_ptr_array_index (entity->components, i), user_data);
 }
 
-CoglBool
+bool
 rut_entity_get_visible (RutObject *obj)
 {
   RutEntity *entity = RUT_ENTITY (obj);
@@ -648,7 +647,7 @@ rut_entity_get_visible (RutObject *obj)
 }
 
 void
-rut_entity_set_visible (RutObject *obj, CoglBool visible)
+rut_entity_set_visible (RutObject *obj, bool visible)
 {
   RutEntity *entity = RUT_ENTITY (obj);
 

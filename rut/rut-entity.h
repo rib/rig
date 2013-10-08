@@ -114,7 +114,7 @@ struct _RutEntity
 void
 _rut_entity_init_type (void);
 
-CoglBool
+bool
 rut_entity_get_cast_shadow (RutObject *entity);
 
 RutEntity *
@@ -234,14 +234,14 @@ rut_entity_get_component (RutEntity *entity,
 
 void
 rut_entity_set_cast_shadow (RutObject *entity,
-                            gboolean cast_shadow);
+                            bool cast_shadow);
 
-CoglBool
+bool
 rut_entity_get_receive_shadow (RutObject *entity);
 
 void
 rut_entity_set_receive_shadow (RutObject *entity,
-                               gboolean receive_shadow);
+                               bool receive_shadow);
 
 typedef void (*RutComponentCallback) (RutComponent *component,
                                       void *user_data);
@@ -256,11 +256,11 @@ rut_entity_foreach_component_safe (RutEntity *entity,
                                    RutComponentCallback callback,
                                    void *user_data);
 
-CoglBool
+bool
 rut_entity_get_visible (RutObject *entity);
 
 void
-rut_entity_set_visible (RutObject *entity, CoglBool visible);
+rut_entity_set_visible (RutObject *entity, bool visible);
 
 void
 rut_entity_notify_changed (RutEntity *entity);
