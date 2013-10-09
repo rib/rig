@@ -181,7 +181,7 @@ main (int argc, char **argv)
       return 1;
     }
 
-  fb = COGL_FRAMEBUFFER (onscreen);
+  fb = onscreen;
 
   for (;;)
     {
@@ -214,7 +214,7 @@ main (int argc, char **argv)
 
       cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
       pipeline = cogl_pipeline_new (ctx);
-      cogl_pipeline_set_layer_texture (pipeline, 0, COGL_TEXTURE (tfp));
+      cogl_pipeline_set_layer_texture (pipeline, 0, tfp);
       cogl_framebuffer_draw_rectangle (fb, pipeline, -0.8, 0.8, 0.8, -0.8);
       cogl_object_unref (pipeline);
       cogl_onscreen_swap_buffers (onscreen);

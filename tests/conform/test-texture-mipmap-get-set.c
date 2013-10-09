@@ -35,7 +35,7 @@ make_texture (void)
                                           TEXTURE_SIZE * 4,
                                           tex_data);
 
-  cogl_primitive_texture_set_auto_mipmap (COGL_PRIMITIVE_TEXTURE (tex), FALSE);
+  cogl_primitive_texture_set_auto_mipmap (tex, FALSE);
 
   g_free (tex_data);
 

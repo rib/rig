@@ -32,7 +32,15 @@
 /* We forward declare the CoglTexture type here to avoid some circular
  * dependency issues with the following headers.
  */
+#ifdef __COGL_H_INSIDE__
+/* For the public C api we typedef interface types as void to avoid needing
+ * lots of casting in code and instead we will rely on runtime type checking
+ * for these objects. */
+typedef void CoglTexture;
+#else
 typedef struct _CoglTexture CoglTexture;
+#define COGL_TEXTURE(X) ((CoglTexture *)X)
+#endif
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-defines.h>
@@ -54,8 +62,6 @@ COGL_BEGIN_DECLS
  * that can be applied to any of these texture types which are handled
  * via this #CoglTexture interface.
  */
-
-#define COGL_TEXTURE(X) ((CoglTexture *)X)
 
 #define COGL_TEXTURE_MAX_WASTE  127
 

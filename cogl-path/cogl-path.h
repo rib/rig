@@ -24,7 +24,11 @@
 #ifndef __COGL_PATH_H__
 #define __COGL_PATH_H__
 
+#ifdef COGL_COMPILATION
+#include "cogl-context.h"
+#else
 #include <cogl/cogl.h>
+#endif
 
 COGL_BEGIN_DECLS
 
@@ -46,10 +50,7 @@ COGL_BEGIN_DECLS
  * vertices of the path segments relative to the last pen location
  * rather then in the absolute coordinates.
  */
-
 typedef struct _CoglPath CoglPath;
-
-#define COGL_PATH(obj) ((CoglPath *)(obj))
 
 /**
  * cogl_path_new:

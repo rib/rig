@@ -25,6 +25,10 @@
 #ifndef __COGL_H__
 #define __COGL_H__
 
+#ifdef COGL_COMPILATION
+#error "<cogl/cogl.h> shouldn't be included internally"
+#endif
+
 #define __COGL_H_INSIDE__
 
 #include <cogl/cogl-defines.h>

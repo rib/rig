@@ -385,7 +385,7 @@ paint_cb (void *user_data)
   for (l = compositor->outputs; l; l = l->next)
     {
       CoglandOutput *output = l->data;
-      CoglFramebuffer *fb = COGL_FRAMEBUFFER (output->onscreen);
+      CoglFramebuffer *fb = output->onscreen;
       GList *l2;
 
       cogl_framebuffer_clear4f (fb, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 1);
@@ -402,8 +402,7 @@ paint_cb (void *user_data)
               CoglTexture2D *texture = surface->texture;
               CoglPipeline *pipeline =
                 cogl_pipeline_new (compositor->cogl_context);
-              cogl_pipeline_set_layer_texture (pipeline, 0,
-                                               COGL_TEXTURE (texture));
+              cogl_pipeline_set_layer_texture (pipeline, 0, texture);
               cogl_framebuffer_draw_rectangle (fb, pipeline, -1, 1, 1, -1);
               cogl_object_unref (pipeline);
             }
@@ -473,7 +472,7 @@ surface_damaged (CoglandSurface *surface,
               format = COGL_PIXEL_FORMAT_ARGB_8888;
             }
 
-          cogl_texture_set_region (COGL_TEXTURE (surface->texture),
+          cogl_texture_set_region (surface->texture,
                                    width, height,
                                    format,
                                    stride,
@@ -634,7 +633,7 @@ cogland_surface_commit (struct wl_client *client,
       !region_is_empty (&surface->pending.damage))
     {
       CoglandRegion *region = &surface->pending.damage;
-      CoglTexture *texture = COGL_TEXTURE (surface->texture);
+      CoglTexture *texture = surface->texture;
 
       if (region->x2 > cogl_texture_get_width (texture))
         region->x2 = cogl_texture_get_width (texture);
@@ -885,7 +884,7 @@ cogland_compositor_create_output (CoglandCompositor *compositor,
                                         width_mm, height_mm);
   /* Eventually there will be an implicit allocate on first use so this
    * will become optional... */
-  fb = COGL_FRAMEBUFFER (output->onscreen);
+  fb = output->onscreen;
   if (!cogl_framebuffer_allocate (fb, &error))
     g_error ("Failed to allocate framebuffer: %s\n", error->message);
 
