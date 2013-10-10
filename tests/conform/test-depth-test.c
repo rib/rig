@@ -28,6 +28,7 @@ typedef struct
   CoglBool              test_enable;
   CoglDepthTestFunction test_function;
   CoglBool              write_enable;
+  CoglBool              fb_write_enable;
   float                 range_near;
   float                 range_far;
 } TestDepthState;
@@ -62,6 +63,7 @@ draw_rectangle (TestState *state,
 
   cogl_pipeline_set_color4ub (pipeline, Cr, Cg, Cb, Ca);
 
+  cogl_framebuffer_set_depth_write_enabled (test_fb, rect_state->fb_write_enable);
   cogl_framebuffer_push_matrix (test_fb);
   cogl_framebuffer_translate (test_fb, 0, 0, rect_state->depth);
   cogl_framebuffer_draw_rectangle (test_fb,
@@ -120,6 +122,7 @@ paint (TestState *state)
       FALSE, /* depth test enable */
       COGL_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
+      TRUE, /* FB depth write enable */
       0, 1 /* depth range */
     };
     /* Furthest */
@@ -129,6 +132,7 @@ paint (TestState *state)
       TRUE, /* depth test enable */
       COGL_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
+      TRUE, /* FB depth write enable */
       0, 1 /* depth range */
     };
     /* In the middle */
@@ -138,6 +142,7 @@ paint (TestState *state)
       TRUE, /* depth test enable */
       COGL_DEPTH_TEST_FUNCTION_NEVER,
       TRUE, /* depth write enable */
+      TRUE, /* FB depth write enable */
       0, 1 /* depth range */
     };
 
@@ -165,6 +170,19 @@ paint (TestState *state)
     test_depth (state, 4, 0, /* position */
                 &rect0_state, &rect1_state, &rect2_state,
                 0x0000ffff); /* expected */
+
+    rect1_state.write_enable = TRUE;
+    rect1_state.fb_write_enable = FALSE;
+    test_depth (state, 4, 0, /* position */
+                &rect0_state, &rect1_state, &rect2_state,
+                0x0000ffff); /* expected */
+
+    /* Re-enable FB depth writing to verify state flush */
+    rect1_state.write_enable = TRUE;
+    rect1_state.fb_write_enable = TRUE;
+    test_depth (state, 4, 0, /* position */
+                &rect0_state, &rect1_state, &rect2_state,
+                0x00ff00ff); /* expected */
   }
 
   /* Check that the depth buffer values can be mapped into different
@@ -178,6 +196,7 @@ paint (TestState *state)
       TRUE, /* depth test enable */
       COGL_DEPTH_TEST_FUNCTION_ALWAYS,
       TRUE, /* depth write enable */
+      TRUE, /* FB depth write enable */
       0.5, 1 /* depth range */
     };
     /* Furthest by depth, nearest by depth range */
@@ -187,6 +206,7 @@ paint (TestState *state)
       TRUE, /* depth test enable */
       COGL_DEPTH_TEST_FUNCTION_GREATER,
       TRUE, /* depth write enable */
+      TRUE, /* FB depth write enable */
       0, 0.5 /* depth range */
     };
 
