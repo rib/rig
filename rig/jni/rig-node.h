@@ -26,104 +26,89 @@
 typedef struct
 {
   RutList list_node;
+
+  RutBoxed boxed;
+
   float t;
 } RigNode;
 
-typedef struct
-{
-  RigNode base;
-  float value;
-} RigNodeFloat;
-
-typedef struct
-{
-  RigNode base;
-  double value;
-} RigNodeDouble;
-
-typedef struct
-{
-  RigNode base;
-  int value;
-} RigNodeInteger;
-
-typedef struct
-{
-  RigNode base;
-  uint32_t value;
-} RigNodeUint32;
-
-typedef struct
-{
-  RigNode base;
-  float value[3];
-} RigNodeVec3;
-
-typedef struct
-{
-  RigNode base;
-  float value[4];
-} RigNodeVec4;
-
-typedef struct
-{
-  RigNode base;
-  CoglColor value;
-} RigNodeColor;
-
-typedef struct
-{
-  RigNode base;
-  CoglQuaternion value;
-} RigNodeQuaternion;
-
 void
-rig_node_float_lerp (RigNodeFloat *a,
-                     RigNodeFloat *b,
+rig_node_float_lerp (RigNode *a,
+                     RigNode *b,
                      float t,
                      float *value);
 
 void
-rig_node_vec3_lerp (RigNodeVec3 *a,
-                    RigNodeVec3 *b,
+rig_node_vec3_lerp (RigNode *a,
+                    RigNode *b,
                     float t,
                     float value[3]);
 
 void
-rig_node_quaternion_lerp (RigNodeQuaternion *a,
-                          RigNodeQuaternion *b,
+rig_node_quaternion_lerp (RigNode *a,
+                          RigNode *b,
                           float t,
                           CoglQuaternion *value);
 
 void
-rig_node_double_lerp (RigNodeDouble *a,
-                      RigNodeDouble *b,
+rig_node_double_lerp (RigNode *a,
+                      RigNode *b,
                       float t,
                       double *value);
 
 void
-rig_node_integer_lerp (RigNodeInteger *a,
-                       RigNodeInteger *b,
+rig_node_integer_lerp (RigNode *a,
+                       RigNode *b,
                        float t,
                        int *value);
 
 void
-rig_node_uint32_lerp (RigNodeUint32 *a,
-                      RigNodeUint32 *b,
+rig_node_uint32_lerp (RigNode *a,
+                      RigNode *b,
                       float t,
                       uint32_t *value);
 
 void
-rig_node_vec4_lerp (RigNodeVec4 *a,
-                    RigNodeVec4 *b,
+rig_node_vec4_lerp (RigNode *a,
+                    RigNode *b,
                     float t,
                     float value[4]);
 
 void
-rig_node_color_lerp (RigNodeColor *a,
-                     RigNodeColor *b,
+rig_node_color_lerp (RigNode *a,
+                     RigNode *b,
                      float t,
                      CoglColor *value);
+
+void
+rig_node_enum_lerp (RigNode *a,
+                    RigNode *b,
+                    float t,
+                    int *value);
+
+void
+rig_node_boolean_lerp (RigNode *a,
+                       RigNode *b,
+                       float t,
+                       bool *value);
+
+void
+rig_node_text_lerp (RigNode *a,
+                    RigNode *b,
+                    float t,
+                    const char **value);
+
+void
+rig_node_asset_lerp (RigNode *a,
+                     RigNode *b,
+                     float t,
+                     RutAsset **value);
+
+void
+rig_node_object_lerp (RigNode *a,
+                      RigNode *b,
+                      float t,
+                      RutObject **value);
 
 CoglBool
 rig_node_box (RutPropertyType type,
@@ -131,32 +116,49 @@ rig_node_box (RutPropertyType type,
               RutBoxed *value);
 
 void
-rig_node_free (RutPropertyType type,
-               void *node);
+rig_node_free (RigNode *node);
 
-RigNodeFloat *
+RigNode *
 rig_node_new_for_float (float t, float value);
 
-RigNodeDouble *
+RigNode *
 rig_node_new_for_double (float t, double value);
 
-RigNodeVec3 *
+RigNode *
 rig_node_new_for_vec3 (float t, const float value[3]);
 
-RigNodeVec4 *
+RigNode *
 rig_node_new_for_vec4 (float t, const float value[4]);
 
-RigNodeInteger *
+RigNode *
 rig_node_new_for_integer (float t, int value);
 
-RigNodeUint32 *
+RigNode *
 rig_node_new_for_uint32 (float t, uint32_t value);
 
-RigNodeQuaternion *
+RigNode *
 rig_node_new_for_quaternion (float t, const CoglQuaternion *value);
 
-RigNodeColor *
+RigNode *
 rig_node_new_for_color (float t, const CoglColor *value);
+
+RigNode *
+rig_node_new_for_boolean (float t, bool value);
+
+RigNode *
+rig_node_new_for_enum (float t, int value);
+
+RigNode *
+rig_node_new_for_text (float t, const char *value);
+
+RigNode *
+rig_node_new_for_asset (float t, RutAsset *value);
+
+RigNode *
+rig_node_new_for_object (float t, RutObject *value);
+
+RigNode *
+rig_node_copy (RigNode *node);
 
 RigNode *
 rig_nodes_find_less_than (RigNode *start, RutList *end, float t);

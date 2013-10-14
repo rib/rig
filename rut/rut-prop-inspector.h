@@ -26,6 +26,7 @@ rut_prop_inspector_new (RutContext *ctx,
                         RutProperty *property,
                         RutPropInspectorCallback property_changed_cb,
                         RutPropInspectorControlledCallback controlled_changed_cb,
+                        bool with_label,
                         void *user_data);
 
 void

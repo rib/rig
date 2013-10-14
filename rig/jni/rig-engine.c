@@ -220,128 +220,27 @@ rig_reload_inspector_property (RigEngine *engine,
 {
   if (engine->inspector)
     {
-      RigControllerPropData *prop_data;
-      CoglBool controlled;
       GList *l;
 
-      prop_data =
-        rig_controller_find_prop_data_for_property (engine->selected_controller,
-                                                    property);
-      controlled = !!prop_data;
-
       for (l = engine->all_inspectors; l; l = l->next)
-        {
-          rut_inspector_reload_property (l->data, property);
-          rut_inspector_set_property_controlled (l->data, property, controlled);
-        }
+        rut_inspector_reload_property (l->data, property);
     }
 }
 
 static void
-reload_animated_inspector_properties_cb (RigControllerPropData *prop_data,
-                                         void *user_data)
-{
-  RigEngine *engine = user_data;
-
-  if (prop_data->method == RIG_CONTROLLER_METHOD_PATH)
-    rig_reload_inspector_property (engine, prop_data->property);
-}
-
-static void
-reload_animated_inspector_properties (RigEngine *engine)
-{
-  if (engine->inspector && engine->selected_controller)
-    rig_controller_foreach_property (engine->selected_controller,
-                                     reload_animated_inspector_properties_cb,
-                                     engine);
-}
-
-static void
-update_controller_progress_cb (RutProperty *target_property,
-                               void *user_data)
-{
-  RigEngine *engine = user_data;
-  double progress = rut_timeline_get_progress (engine->timeline);
-  RigController *controller = target_property->object;
-
-  rig_controller_set_progress (controller, progress);
-  reload_animated_inspector_properties (engine);
-}
-
-static void
-update_controller_property_cb (RigControllerPropData *prop_data,
-                               void *user_data)
-{
-  RigController *controller = user_data;
-  rig_controller_update_property (controller, prop_data->property);
-}
-
-static void
-rig_engine_select_controller (RigEngine *engine, RigController *controller)
-{
-  if (engine->selected_controller == controller)
-    return;
-
-  if (engine->selected_controller)
-    {
-      RigController *selected = engine->selected_controller;
-      rut_property_remove_binding (&selected->props[RUT_TRANSITION_PROP_PROGRESS]);
-    }
-
-  rut_property_set_binding (&controller->props[RUT_TRANSITION_PROP_PROGRESS],
-                            update_controller_progress_cb,
-                            engine,
-                            engine->timeline_elapsed,
-                            NULL);
-
-  rig_controller_set_progress (controller,
-                               rut_timeline_get_progress (engine->timeline));
-
-  /* Reset all of the property values to their current value according
-   * to the given controller */
-  rig_controller_foreach_property (controller,
-                                   update_controller_property_cb,
-                                   controller);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-    {
-      if (engine->controller_view)
-        {
-          rut_ui_viewport_set_sync_widget (engine->controller_vp, NULL);
-          rut_graphable_remove_child (engine->controller_view);
-        }
-
-      engine->controller_view =
-        rig_controller_view_new (engine,
-                                 engine->scene,
-                                 controller,
-                                 engine->timeline,
-                                 engine->undo_journal);
-      rut_ui_viewport_add (engine->controller_vp, engine->controller_view);
-      rut_ui_viewport_set_sync_widget (engine->controller_vp,
-                                       engine->controller_view);
-    }
-#endif
-
-  engine->selected_controller = controller;
-}
-
-static void
-inspector_property_changed_cb (RutProperty *target_property,
-                               RutProperty *source_property,
+inspector_property_changed_cb (RutProperty *inspected_property,
+                               RutProperty *inspector_property,
+                               bool mergeable,
                                void *user_data)
 {
   RigEngine *engine = user_data;
   RutBoxed new_value;
 
-  rut_property_box (source_property, &new_value);
+  rut_property_box (inspector_property, &new_value);
 
-  rig_undo_journal_set_property_and_log (engine->undo_journal,
-                                         TRUE, /* mergable */
-                                         engine->selected_controller,
-                                         &new_value,
-                                         target_property);
+  rig_controller_view_edit_property (engine->controller_view,
+                                     mergeable,
+                                     inspected_property, &new_value);
 
   rut_boxed_destroy (&new_value);
 }
@@ -353,10 +252,10 @@ inspector_controlled_changed_cb (RutProperty *property,
 {
   RigEngine *engine = user_data;
 
-  rig_undo_journal_set_controlled_and_log (engine->undo_journal,
-                                           engine->selected_controller,
-                                           property,
-                                           value);
+  rig_undo_journal_set_controlled (engine->undo_journal,
+                                   engine->selected_controller,
+                                   property,
+                                   value);
 }
 
 typedef struct
@@ -437,8 +336,8 @@ delete_button_click_cb (RutIconButton *button, void *user_data)
 
   for (l = state->components; l; l = l->next)
     {
-      rig_undo_journal_delete_component_and_log (state->engine->undo_journal,
-                                                 l->data);
+      rig_undo_journal_delete_component (state->engine->undo_journal,
+                                         l->data);
     }
 
   rut_shell_queue_redraw (state->engine->ctx->shell);
@@ -567,7 +466,7 @@ EXIT:
 void
 _rig_engine_update_inspector (RigEngine *engine)
 {
-  GList *entities = engine->entities_selection->entities;
+  GList *objects = engine->entities_selection->entities;
 
   /* This will drop the last reference to any current
    * engine->inspector_box_layout and also any indirect references
@@ -583,23 +482,26 @@ _rig_engine_update_inspector (RigEngine *engine)
   g_list_free (engine->all_inspectors);
   engine->all_inspectors = NULL;
 
-  if (entities)
+  if (objects)
     {
-      RutEntity *reference_entity = entities->data;
+      RutObject *reference_object = objects->data;
       MatchAndListState state;
 
-      engine->inspector = create_inspector (engine, entities);
+      engine->inspector = create_inspector (engine, objects);
 
       rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
       engine->all_inspectors =
         g_list_prepend (engine->all_inspectors, engine->inspector);
 
-      state.engine = engine;
-      state.entities = entities;
+      if (rut_object_get_type (reference_object) == &rut_entity_type)
+        {
+          state.engine = engine;
+          state.entities = objects;
 
-      rut_entity_foreach_component (reference_entity,
-                                    match_and_create_components_inspector_cb,
-                                    &state);
+          rut_entity_foreach_component (reference_object,
+                                        match_and_create_components_inspector_cb,
+                                        &state);
+        }
     }
 }
 
@@ -666,11 +568,9 @@ tool_rotation_event_cb (RutTool *tool,
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
         value.d.quaternion_val = *new_rotation;
 
-        rig_undo_journal_set_property_and_log (engine->undo_journal,
-                                               FALSE /* mergable */,
-                                               engine->selected_controller,
-                                               &value,
-                                               rotation_prop);
+        rig_controller_view_edit_property (engine->controller_view,
+                                           FALSE, /* mergable */
+                                           rotation_prop, &value);
       }
       break;
 
@@ -689,14 +589,14 @@ rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
   if (engine->play_mode)
     {
       engine->enable_dof = TRUE;
-      engine->debug_pick_ray = 0;
+      //engine->debug_pick_ray = 0;
       if (engine->light_handle)
         rut_graphable_remove_child (engine->light_handle);
     }
   else
     {
       engine->enable_dof = FALSE;
-      engine->debug_pick_ray = 1;
+      //engine->debug_pick_ray = 1;
       if (engine->light && engine->light_handle)
         rut_graphable_add_child (engine->light, engine->light_handle);
     }
@@ -743,7 +643,7 @@ _rig_entities_selection_delete (RutObject *object)
        *
        * A copy should contain deep-copied entities that don't need to
        * be directly deleted with
-       * rig_undo_journal_delete_entity_and_log() because they won't
+       * rig_undo_journal_delete_entity() because they won't
        * be part of the scenegraph.
        */
 
@@ -755,15 +655,15 @@ _rig_entities_selection_delete (RutObject *object)
           for (l = selection->entities; l; l = next)
             {
               next = l->next;
-              rig_undo_journal_delete_entity_and_log (engine->undo_journal,
-                                                      l->data);
+              rig_undo_journal_delete_entity (engine->undo_journal,
+                                              l->data);
             }
 
-          /* NB: that rig_undo_journal_delete_component_and_log() will
+          /* NB: that rig_undo_journal_delete_component() will
            * remove the entity from the scenegraph*/
 
           /* XXX: make sure that
-           * rig_undo_journal_delete_entity_and_log() doesn't change
+           * rig_undo_journal_delete_entity () doesn't change
            * the selection, since it used to. */
           g_warn_if_fail (len == g_list_length (selection->entities));
         }
@@ -846,15 +746,23 @@ _rig_entities_selection_new (RigEngine *engine)
   return selection;
 }
 
+#warning "FIXME: rename rig_select_entity to rig_select_object"
 void
 rig_select_entity (RigEngine *engine,
-                   RutEntity *entity,
+                   RutObject *object,
                    RutSelectAction action)
 {
   RigEntitiesSelection *selection = engine->entities_selection;
 
-  if (entity == engine->light_handle)
-    entity = engine->light;
+  /* For now we only support selecting multiple entities... */
+  if (object && rut_object_get_type (object) != &rut_entity_type)
+    {
+      action = RUT_SELECT_ACTION_REPLACE;
+      rut_tool_update (engine->tool, NULL);
+    }
+
+  if (object == engine->light_handle)
+    object = engine->light;
 #if 0
   else if (entity == engine->play_camera_handle)
     entity = engine->play_camera;
@@ -867,25 +775,25 @@ rig_select_entity (RigEngine *engine,
         g_list_free (selection->entities);
         selection->entities = NULL;
 
-        if (entity)
+        if (object)
           selection->entities = g_list_prepend (selection->entities,
-                                                rut_refable_ref (entity));
+                                                rut_refable_ref (object));
         break;
       }
     case RUT_SELECT_ACTION_TOGGLE:
       {
-        GList *link = g_list_find (selection->entities, entity);
+        GList *link = g_list_find (selection->entities, object);
         if (link)
           {
             rut_refable_unref (link->data);
             selection->entities =
               g_list_remove_link (selection->entities, link);
           }
-        else if (entity)
+        else if (object)
           {
-            rut_refable_ref (entity);
+            rut_refable_ref (object);
             selection->entities =
-              g_list_prepend (selection->entities, entity);
+              g_list_prepend (selection->entities, object);
           }
       }
       break;
@@ -990,8 +898,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!material)
             {
               material = rut_material_new (engine->ctx, asset);
-              rig_undo_journal_add_component_and_log (sub_journal,
-                                                      entity, material);
+              rig_undo_journal_add_component (sub_journal, entity, material);
             }
 
           if (type == RUT_ASSET_TYPE_TEXTURE)
@@ -1008,8 +915,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!geom)
             {
               RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
-              rig_undo_journal_add_component_and_log (sub_journal,
-                                                      entity, shape);
+              rig_undo_journal_add_component (sub_journal, entity, shape);
               geom = shape;
             }
 
@@ -1026,8 +932,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!material)
             {
               material = rut_material_new (engine->ctx, asset);
-              rig_undo_journal_add_component_and_log (sub_journal,
-                                                      entity, material);
+              rig_undo_journal_add_component (sub_journal, entity, material);
             }
 
           geom = rut_entity_get_component (entity,
@@ -1039,13 +944,13 @@ apply_asset_input_with_entity (RigEngine *engine,
               if (model == rut_asset_get_model (asset))
                 break;
               else
-                rig_undo_journal_delete_component_and_log (sub_journal, model);
+                rig_undo_journal_delete_component (sub_journal, model);
             }
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           model = rut_asset_get_model (asset);
-          rig_undo_journal_add_component_and_log (sub_journal, entity, model);
+          rig_undo_journal_add_component (sub_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
           y_range = model->max_y - model->min_y;
@@ -1074,7 +979,7 @@ apply_asset_input_with_entity (RigEngine *engine,
                                            RUT_COMPONENT_TYPE_HAIR);
 
           if (hair)
-            rig_undo_journal_delete_component_and_log (sub_journal, hair);
+            rig_undo_journal_delete_component (sub_journal, hair);
 
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -1082,12 +987,12 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_text_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
           cogl_color_init_from_4f (&color, 1, 1, 1, 1);
           rut_text_set_color (text, &color);
-          rig_undo_journal_add_component_and_log (sub_journal, entity, text);
+          rig_undo_journal_add_component (sub_journal, entity, text);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1102,7 +1007,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_shape_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
@@ -1136,7 +1041,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           shape = rut_shape_new (engine->ctx, TRUE, tex_width,
                                  tex_height);
-          rig_undo_journal_add_component_and_log (sub_journal, entity, shape);
+          rig_undo_journal_add_component (sub_journal, entity, shape);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1151,7 +1056,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_diamond_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1186,7 +1091,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           diamond = rut_diamond_new (engine->ctx, 200, tex_width,
                                      tex_height);
-          rig_undo_journal_add_component_and_log (sub_journal, entity, diamond);
+          rig_undo_journal_add_component (sub_journal, entity, diamond);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1201,7 +1106,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_nine_slice_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1237,8 +1142,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           nine_slice = rut_nine_slice_new (engine->ctx, NULL,
                                            0, 0, 0, 0,
                                            tex_width, tex_height);
-          rig_undo_journal_add_component_and_log (sub_journal,
-                                                  entity, nine_slice);
+          rig_undo_journal_add_component (sub_journal, entity, nine_slice);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1256,7 +1160,7 @@ apply_asset_input_with_entity (RigEngine *engine,
               break;
             }
           else if (geom)
-            rig_undo_journal_delete_component_and_log (sub_journal, geom);
+            rig_undo_journal_delete_component (sub_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1286,7 +1190,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
                                           tex_height);
 
-          rig_undo_journal_add_component_and_log (sub_journal, entity, grid);
+          rig_undo_journal_add_component (sub_journal, entity, grid);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1309,8 +1213,8 @@ apply_asset_input_with_entity (RigEngine *engine,
               rut_hair_set_length (hair,
                                    rut_model_get_default_hair_length (hair_geom));
 
-              rig_undo_journal_delete_component_and_log (sub_journal, geom);
-              rig_undo_journal_add_component_and_log (sub_journal, entity, hair_geom);
+              rig_undo_journal_delete_component (sub_journal, geom);
+              rig_undo_journal_add_component (sub_journal, entity, hair_geom);
             }
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
@@ -1322,7 +1226,7 @@ apply_asset_input_with_entity (RigEngine *engine,
   if (rig_undo_journal_is_empty (sub_journal))
     rig_undo_journal_free (sub_journal);
   else
-    rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal, FALSE);
+    rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal);
 }
 
 static void
@@ -1334,6 +1238,10 @@ apply_result_input_with_entity (RutEntity *entity,
                                    closure->result,
                                    entity);
   else if (rut_object_get_type (closure->result) == &rut_entity_type)
+    rig_select_entity (closure->engine,
+                       closure->result,
+                       RUT_SELECT_ACTION_REPLACE);
+  else if (rut_object_get_type (closure->result) == &rig_controller_type)
     rig_select_entity (closure->engine,
                        closure->result,
                        RUT_SELECT_ACTION_REPLACE);
@@ -1362,9 +1270,9 @@ result_input_cb (RutInputRegion *region,
           else
             {
               RutEntity *entity = rut_entity_new (engine->ctx);
-              rig_undo_journal_add_entity_and_log (engine->undo_journal,
-                                                   engine->scene,
-                                                   entity);
+              rig_undo_journal_add_entity (engine->undo_journal,
+                                           engine->scene,
+                                           entity);
               rig_select_entity (engine, entity, RUT_SELECT_ACTION_REPLACE);
               apply_result_input_with_entity (entity, closure);
             }
@@ -1553,6 +1461,31 @@ add_search_result (RigEngine *engine,
       rut_refable_unref (image);
 
       text = rut_text_new_with_text (engine->ctx, NULL, entity->label);
+      rut_box_layout_add (vbox, false, text);
+      rut_refable_unref (text);
+    }
+  else if (rut_object_get_type (result) == &rig_controller_type)
+    {
+      RigController *controller = result;
+      RutBoxLayout *vbox =
+        rut_box_layout_new (engine->ctx,
+                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+      RutImage *image;
+      RutText *text;
+
+      rut_stack_add (stack, vbox);
+      rut_refable_unref (vbox);
+
+#warning "Create a sensible icon to represent controllers"
+      texture = rut_load_texture_from_data_file (engine->ctx,
+                                                 "transparency-grid.png", NULL);
+      image = rut_image_new (engine->ctx, texture);
+      cogl_object_unref (texture);
+
+      rut_box_layout_add (vbox, false, image);
+      rut_refable_unref (image);
+
+      text = rut_text_new_with_text (engine->ctx, NULL, controller->label);
       rut_box_layout_add (vbox, FALSE, text);
       rut_refable_unref (text);
     }
@@ -1627,6 +1560,20 @@ add_search_result (RigEngine *engine,
       rut_flow_layout_add (engine->entity_results, bin);
       rut_refable_unref (bin);
     }
+  else if (rut_object_get_type (result) == &rig_controller_type)
+    {
+      if (!engine->controller_results)
+        {
+          engine->controller_results =
+            add_results_flow (engine->ctx,
+                              "Controllers",
+                              engine->search_results_vbox);
+        }
+
+      rut_flow_layout_add (engine->controller_results, bin);
+      rut_refable_unref (bin);
+    }
+
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
@@ -1651,6 +1598,7 @@ clear_search_results (RigEngine *engine)
       engine->search_results_vbox = NULL;
 
       engine->entity_results = NULL;
+      engine->controller_results = NULL;
       engine->assets_geometry_results = NULL;
       engine->assets_image_results = NULL;
       engine->assets_video_results = NULL;
@@ -1658,12 +1606,12 @@ clear_search_results (RigEngine *engine)
     }
 }
 
-typedef struct _EntitySearchState
+typedef struct _SearchState
 {
   RigEngine *engine;
   const char *search;
   bool found;
-} EntitySearchState;
+} SearchState;
 
 static RutTraverseVisitFlags
 add_matching_entity_cb (RutObject *object,
@@ -1673,27 +1621,62 @@ add_matching_entity_cb (RutObject *object,
   if (rut_object_get_type (object) == &rut_entity_type)
     {
       RutEntity *entity = object;
-      EntitySearchState *state = user_data;
+      SearchState *state = user_data;
 
-      if (entity->label &&
-          strncmp (entity->label, "rig:", 4) != 0 &&
-          (state->search == NULL ||
-           strstr (entity->label, state->search)))
+      if (state->search == NULL)
         {
-          state->found = TRUE;
+          state->found = true;
           add_search_result (state->engine, entity);
+        }
+      else if (entity->label &&
+               strncmp (entity->label, "rig:", 4) != 0)
+        {
+          char *entity_label = g_ascii_strdown (entity->label, -1);
+#warning "FIXME: handle utf8 string comparisons!"
+
+          if (strstr (entity_label, state->search))
+            {
+              state->found = true;
+              add_search_result (state->engine, entity);
+            }
+
+          g_free (entity_label);
         }
     }
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
+static void
+add_matching_controller (RigController *controller,
+                         SearchState *state)
+{
+  char *controller_label = g_ascii_strdown (controller->label, -1);
+#warning "FIXME: handle utf8 string comparisons!"
+
+  if (state->search == NULL ||
+      strstr (controller_label, state->search))
+    {
+      state->found = true;
+      add_search_result (state->engine, controller);
+    }
+
+  g_free (controller_label);
+}
+
 static bool
-rig_search_with_text (RigEngine *engine, const char *search)
+rig_search_with_text (RigEngine *engine, const char *user_search)
 {
   GList *l;
   int i;
   CoglBool found = FALSE;
-  EntitySearchState state;
+  SearchState state;
+  char *search;
+
+  if (user_search)
+    search = g_ascii_strdown (user_search, -1);
+  else
+    search = NULL;
+#warning "FIXME: handle non-ascii searches!"
 
   clear_search_results (engine);
 
@@ -1714,20 +1697,31 @@ rig_search_with_text (RigEngine *engine, const char *search)
       add_search_result (engine, asset);
     }
 
-  if (!engine->required_search_tags)
-    {
-      state.engine = engine;
-      state.search = search;
-      state.found = FALSE;
+  state.engine = engine;
+  state.search = search;
+  state.found = FALSE;
 
+  if (!engine->required_search_tags ||
+      rut_util_find_tag (engine->required_search_tags, "entity"))
+    {
       rut_graphable_traverse (engine->scene,
                               RUT_TRAVERSE_DEPTH_FIRST,
                               add_matching_entity_cb,
                               NULL, /* post visit */
                               &state);
-
-      return found | state.found;
     }
+
+  if (!engine->required_search_tags ||
+      rut_util_find_tag (engine->required_search_tags, "controller"))
+    {
+      for (l = engine->controllers; l; l = l->next)
+        add_matching_controller (l->data, &state);
+    }
+
+  g_free (search);
+
+  if (!engine->required_search_tags)
+    return found | state.found;
   else
     {
       /* If the user has toggled on certain search
@@ -2177,6 +2171,9 @@ create_toolbar (RigEngine *engine)
   RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
   RutIcon *icon = rut_icon_new (engine->ctx, "chevron-icon.png");
   RutBin *bin = rut_bin_new (engine->ctx);
+  RutIconToggle *pointer_toggle;
+  RutIconToggle *rotate_toggle;
+  RutIconToggleSet *toggle_set;
 
   rut_stack_add (stack, gradient);
   rut_refable_unref (gradient);
@@ -2190,6 +2187,24 @@ create_toolbar (RigEngine *engine)
   rut_bin_set_top_padding (bin, 5);
 
   rut_box_layout_add (engine->toolbar_vbox, FALSE, icon);
+
+  pointer_toggle = rut_icon_toggle_new (engine->ctx,
+                                        "pointer-white.png",
+                                        "pointer.png");
+  rotate_toggle = rut_icon_toggle_new (engine->ctx,
+                                       "rotate-white.png",
+                                       "rotate.png");
+  toggle_set = rut_icon_toggle_set_new (engine->ctx,
+                                        RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM);
+  rut_icon_toggle_set_add (toggle_set, pointer_toggle, 1);
+  rut_refable_unref (pointer_toggle);
+  rut_icon_toggle_set_add (toggle_set, rotate_toggle, 2);
+  rut_refable_unref (rotate_toggle);
+
+  rut_icon_toggle_set_set_selection (toggle_set, 1);
+
+  rut_box_layout_add (engine->toolbar_vbox, false, toggle_set);
+  rut_refable_unref (toggle_set);
 
   rut_stack_add (stack, bin);
 
@@ -2336,9 +2351,9 @@ create_asset_selectors (RigEngine *engine,
   rut_refable_unref (toggle);
 
   toggle = create_search_toggle (engine,
-                                 "sound-white.png",
-                                 "sound.png",
-                                 "sound");
+                                 "entity-white.png",
+                                 "entity.png",
+                                 "entity");
   rut_box_layout_add (hbox, FALSE, toggle);
   rut_refable_unref (toggle);
 
@@ -2437,57 +2452,72 @@ create_assets_view (RigEngine *engine)
 }
 
 static void
-controller_select_cb (RutProperty *value_property,
-                      void *user_data)
+reload_animated_inspector_properties_cb (RigControllerPropData *prop_data,
+                                         void *user_data)
 {
   RigEngine *engine = user_data;
-  int value = rut_property_get_integer (value_property);
-  RigController *controller = g_list_nth_data (engine->controllers, value);
-  rig_engine_select_controller (engine, controller);
+
+  rig_reload_inspector_property (engine, prop_data->property);
 }
 
 static void
-create_timeline_view (RigEngine *engine)
+reload_animated_inspector_properties (RigEngine *engine)
 {
-  RutBoxLayout *vbox =
-    rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  RutStack *top_stack = rut_stack_new (engine->ctx, 0, 0);
-  RutDropDown *controller_selector;
-  RutProperty *value_prop;
-  RutRectangle *bg;
-  RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
+  if (engine->inspector && engine->selected_controller)
+    rig_controller_foreach_property (engine->selected_controller,
+                                     reload_animated_inspector_properties_cb,
+                                     engine);
+}
 
-  controller_selector = rut_drop_down_new (engine->ctx);
-  engine->controller_selector = controller_selector;
-  value_prop = rut_introspectable_lookup_property (controller_selector, "value");
-  rut_property_connect_callback (value_prop,
-                                 controller_select_cb,
-                                 engine);
+static void
+controller_progress_changed_cb (RutProperty *progress_prop,
+                                void *user_data)
+{
+  reload_animated_inspector_properties (user_data);
+}
 
-  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
-  rut_stack_add (top_stack, bg);
-  rut_refable_unref (bg);
+static void
+controller_changed_cb (RigControllerView *view,
+                       RigController *controller,
+                       void *user_data)
+{
+  RigEngine *engine = user_data;
 
-  rut_stack_add (top_stack, controller_selector);
-  rut_refable_unref (controller_selector);
+  if (engine->selected_controller == controller)
+    return;
 
-  rut_box_layout_add (vbox, FALSE, top_stack);
-  rut_refable_unref (top_stack);
+  if (engine->selected_controller)
+    {
+      rut_property_closure_destroy (engine->controller_progress_closure);
+      rut_refable_unref (engine->selected_controller);
+    }
 
-  engine->controller_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_ui_viewport_set_x_pannable (engine->controller_vp, FALSE);
+  engine->selected_controller = controller;
 
-  bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
-  rut_stack_add (stack, bg);
-  rut_refable_unref (bg);
+  if (controller)
+    {
+      rut_refable_ref (controller);
 
-  rut_stack_add (stack, engine->controller_vp);
+      engine->controller_progress_closure =
+        rut_property_connect_callback (&controller->props[RIG_CONTROLLER_PROP_PROGRESS],
+                                       controller_progress_changed_cb,
+                                       engine);
+    }
+}
 
-  rut_box_layout_add (vbox, TRUE, stack);
-  rut_refable_unref (stack);
+static void
+create_controller_view (RigEngine *engine)
+{
+  engine->controller_view =
+    rig_controller_view_new (engine, engine->undo_journal);
 
-  rig_split_view_set_child1 (engine->splits[0], vbox);
-  rut_refable_unref (vbox);
+  rig_controller_view_add_controller_changed_callback (engine->controller_view,
+                                                       controller_changed_cb,
+                                                       engine,
+                                                       NULL);
+
+  rig_split_view_set_child1 (engine->splits[0], engine->controller_view);
+  rut_refable_unref (engine->controller_view);
 }
 #endif /* RIG_EDITOR_ENABLED */
 
@@ -2774,7 +2804,7 @@ create_editor_ui (RigEngine *engine)
   engine->properties_hbox = rut_box_layout_new (engine->ctx,
                                                 RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
-  /* timeline on the bottom, everything else above */
+  /* controllers on the bottom, everything else above */
   engine->splits[0] = rig_split_view_new (engine,
                                           RIG_SPLIT_VIEW_SPLIT_HORIZONTAL,
                                           100,
@@ -2788,7 +2818,7 @@ create_editor_ui (RigEngine *engine)
 
   create_camera_view (engine);
 
-  create_timeline_view (engine);
+  create_controller_view (engine);
 
   rig_split_view_set_child0 (engine->splits[0], engine->asset_panel_hbox);
 
@@ -2915,35 +2945,20 @@ rig_engine_handle_ui_update (RigEngine *engine)
 
   if (!engine->controllers)
     {
-      RigController *controller =
-        rig_controller_new (engine, "Controller 0");
+      RigController *controller = rig_controller_new (engine, "Controller 0");
+      rig_controller_set_active (controller, true);
       engine->controllers = g_list_prepend (engine->controllers, controller);
     }
 
   if (!_rig_in_device_mode)
     {
-      int n_controllers;
-      RutDropDownValue *controller_values;
-      GList *l;
-      int i;
+      rig_controller_view_update_controller_list (engine->controller_view);
 
-      n_controllers = g_list_length (engine->controllers);
-      controller_values = malloc (sizeof (RutDropDownValue) * n_controllers);
+      rig_controller_view_set_controller (engine->controller_view,
+                                          engine->controllers->data);
 
-      for (l = engine->controllers, i = 0; l; l = l->next, i++)
-        {
-          RigController *controller = l->data;
-          controller_values[i].name = controller->name;
-          controller_values[i].value = i;
-        }
-      rut_drop_down_set_values_array (engine->controller_selector,
-                                      controller_values, n_controllers);
+      rig_load_asset_list (engine);
     }
-
-  rig_engine_select_controller (engine, engine->controllers->data);
-
-  if (!_rig_in_device_mode)
-    rig_load_asset_list (engine);
 #endif
 }
 
@@ -2953,17 +2968,16 @@ rig_engine_free_ui (RigEngine *engine)
   GList *l;
 
 #ifdef RIG_EDITOR_ENABLED
-  if (engine->controller_view)
+  if (!_rig_in_device_mode)
     {
-      rut_ui_viewport_set_sync_widget (engine->controller_vp, NULL);
-      rut_graphable_remove_child (engine->controller_view);
-      engine->controller_view = NULL;
-    }
+      rig_controller_view_set_controller (engine->controller_view,
+                                          NULL);
 
-  if (engine->grid_prim)
-    {
-      cogl_object_unref (engine->grid_prim);
-      engine->grid_prim = NULL;
+      if (engine->grid_prim)
+        {
+          cogl_object_unref (engine->grid_prim);
+          engine->grid_prim = NULL;
+        }
     }
 #endif
 
@@ -3066,7 +3080,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 
   if (!_rig_in_device_mode)
     {
-      rig_engine_push_undo_subjournal (engine, rig_undo_journal_new (engine));
+      rig_engine_push_undo_subjournal (engine);
 
       /* Create a color gradient texture that can be used for debugging
        * shadow mapping.
@@ -3083,14 +3097,6 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                    rut_refable_unref);
 
   load_builtin_assets (engine);
-
-  engine->timeline = rut_timeline_new (engine->ctx, 20.0);
-  rut_timeline_stop (engine->timeline);
-
-  engine->timeline_elapsed =
-    rut_introspectable_lookup_property (engine->timeline, "elapsed");
-  engine->timeline_progress =
-    rut_introspectable_lookup_property (engine->timeline, "progress");
 
   engine->scene = rut_graph_new (engine->ctx);
 
@@ -3269,7 +3275,6 @@ rig_engine_fini (RutShell *shell, void *user_data)
       for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
         rut_refable_unref (engine->splits[i]);
 
-      rut_refable_unref (engine->controller_vp);
       rut_refable_unref (engine->top_vbox);
       rut_refable_unref (engine->top_hbox);
       rut_refable_unref (engine->asset_panel_hbox);
@@ -3709,20 +3714,27 @@ rig_engine_sync_slaves (RigEngine *engine)
 }
 
 void
-rig_engine_push_undo_subjournal (RigEngine *engine,
-                                 RigUndoJournal *subjournal)
+rig_engine_push_undo_subjournal (RigEngine *engine)
 {
+  RigUndoJournal *subjournal = rig_undo_journal_new (engine);
+
+  rig_undo_journal_set_apply_on_insert (subjournal, true);
+
   engine->undo_journal_stack = g_list_prepend (engine->undo_journal_stack,
                                                subjournal);
   engine->undo_journal = subjournal;
 }
 
-void
+RigUndoJournal *
 rig_engine_pop_undo_subjournal (RigEngine *engine)
 {
+  RigUndoJournal *head_journal = engine->undo_journal;
+
   engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
                                                    engine->undo_journal_stack);
   g_return_if_fail (engine->undo_journal_stack);
 
   engine->undo_journal = engine->undo_journal_stack->data;
+
+  return head_journal;
 }

@@ -287,6 +287,9 @@ message Controller
   optional string name=3;
   optional sint64 id=1;
   repeated Property properties=2;
+
+  //introspectable properties...
+  repeated Boxed controller_properties=4;
 }
 
 message UI

@@ -28,29 +28,10 @@
 #include "rut.h"
 #include "rut-prop-inspector.h"
 #include "rut-vec3-slider.h"
+#include "rut-rotation-inspector.h"
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
 #include "rut-color-button.h"
-
-/* A RutPropInspector represents a control to manipulate a property.
- * It can internally be composed of multiple extra controls for
- * example to toggle whether the property is animatable or not */
-
-#define RUT_PROP_INSPECTOR_MAX_N_CONTROLS 3
-
-/* Horizontal padding to add between controls */
-#define RUT_PROP_INSPECTOR_PADDING 5
-
-typedef struct
-{
-  RutTransform *transform;
-  RutObject *control;
-
-  /* If TRUE, any extra space allocated to the inspector will be
-   * equally divided between this control and all other controls that
-   * have this set to TRUE */
-  CoglBool expand;
-} RutPropInspectorControl;
 
 struct _RutPropInspector
 {
@@ -60,16 +41,14 @@ struct _RutPropInspector
 
   RutContext *context;
 
-  RutPaintableProps paintable;
   RutGraphableProps graphable;
 
-  RutPropInspectorControl controls[RUT_PROP_INSPECTOR_MAX_N_CONTROLS];
-  int n_controls;
+  RutBoxLayout *hbox;
 
-  RutProperty *source_prop; /* the inspector's widget property */
+  RutProperty *widget_prop; /* the inspector's widget property */
   RutProperty *target_prop; /* property being inspected */
 
-  RutToggle *controlled_toggle;
+  RutIconToggle *controlled_toggle;
 
   RutPropInspectorCallback property_changed_cb;
   RutPropInspectorControlledCallback controlled_changed_cb;
@@ -89,229 +68,55 @@ static void
 _rut_prop_inspector_free (void *object)
 {
   RutPropInspector *inspector = object;
-  int i;
-
-  rut_refable_unref (inspector->context);
-
-  for (i = 0; i < inspector->n_controls; i++)
-    {
-      RutPropInspectorControl *control = inspector->controls + i;
-
-      rut_graphable_remove_child (control->control);
-      rut_graphable_remove_child (control->transform);
-      rut_refable_unref (control->control);
-      rut_refable_unref (control->transform);
-    }
 
   rut_graphable_destroy (inspector);
 
   g_slice_free (RutPropInspector, inspector);
 }
 
-RutRefableVTable _rut_prop_inspector_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_prop_inspector_free
-};
-
-static RutGraphableVTable _rut_prop_inspector_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static void
-_rut_prop_inspector_paint (RutObject *object,
-                           RutPaintContext *paint_ctx)
-{
-  /* NOP */
-}
-
-RutPaintableVTable _rut_prop_inspector_paintable_vtable = {
-  _rut_prop_inspector_paint
-};
-
-static void
-rut_prop_inspector_set_size (void *object,
-                             float total_width,
-                             float total_height)
-{
-  RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
-  float preferred_widths[RUT_PROP_INSPECTOR_MAX_N_CONTROLS];
-  float total_preferred_width =
-    (inspector->n_controls - 1) * RUT_PROP_INSPECTOR_PADDING;
-  float total_expandable_width = 0.0f;
-  float x_pos = 0.0f;
-  float extra_space;
-  int i;
-
-  /* Get all of the preferred widths */
-  for (i = 0; i < inspector->n_controls; i++)
-    {
-      rut_sizable_get_preferred_width (inspector->controls[i].control,
-                                       -1, /* for_height */
-                                       NULL, /* min_width */
-                                       preferred_widths + i);
-      total_preferred_width += preferred_widths[i];
-
-      /* Keep track of the total width of expandable controls so that
-       * we can work out the fraction of the extra width that each
-       * control should receive */
-      if (inspector->controls[i].expand)
-        total_expandable_width += preferred_widths[i];
-    }
-
-  extra_space = total_width - total_preferred_width;
-
-  /* If we've been allocated a space that's too small there's not much
-   * we can do so we'll just go off the end */
-  if (extra_space < 0.0f)
-    extra_space = 0.0f;
-
-  for (i = 0; i < inspector->n_controls; i++)
-    {
-      RutPropInspectorControl *control = inspector->controls + i;
-      float width;
-      float height;
-
-      width = preferred_widths[i];
-
-      if (control->expand)
-        width += extra_space * width / total_expandable_width;
-
-      rut_sizable_get_preferred_height (control->control,
-                                        width,
-                                        NULL,
-                                        &height);
-
-      rut_transform_init_identity (control->transform);
-      rut_transform_translate (control->transform,
-                               nearbyintf (x_pos),
-                               nearbyintf (total_height / 2.0f -
-                                           height / 2.0f),
-                               0.0f);
-
-      rut_sizable_set_size (control->control,
-                            nearbyintf (width),
-                            nearbyintf (height));
-
-      x_pos += width + RUT_PROP_INSPECTOR_PADDING;
-    }
-}
-
-static void
-rut_prop_inspector_get_preferred_width (void *object,
-                                        float for_height,
-                                        float *min_width_p,
-                                        float *natural_width_p)
-{
-  RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
-  float total_natural_width =
-    (inspector->n_controls - 1) * RUT_PROP_INSPECTOR_PADDING;
-  float total_min_width = total_natural_width;
-  int i;
-
-  for (i = 0; i < inspector->n_controls; i++)
-    {
-      RutPropInspectorControl *control = inspector->controls + i;
-      float min_width;
-      float natural_width;
-
-      rut_sizable_get_preferred_width (control->control,
-                                       for_height,
-                                       &min_width,
-                                       &natural_width);
-
-      total_min_width += min_width;
-      total_natural_width += natural_width;
-    }
-
-  if (min_width_p)
-    *min_width_p = total_min_width;
-  if (natural_width_p)
-    *natural_width_p = total_natural_width;
-}
-
-static void
-rut_prop_inspector_get_preferred_height (void *object,
-                                         float for_width,
-                                         float *min_height_p,
-                                         float *natural_height_p)
-{
-  RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
-  float max_min_height = 0.0f;
-  float max_natural_height = 0.0f;
-  int i;
-
-  for (i = 0; i < inspector->n_controls; i++)
-    {
-      RutPropInspectorControl *control = inspector->controls + i;
-      float min_height;
-      float natural_height;
-
-      rut_sizable_get_preferred_height (control->control,
-                                        -1, /* for_width */
-                                        &min_height,
-                                        &natural_height);
-
-      if (min_height > max_min_height)
-        max_min_height = min_height;
-      if (natural_height > max_natural_height)
-        max_natural_height = natural_height;
-    }
-
-  if (min_height_p)
-    *min_height_p = max_min_height;
-  if (natural_height_p)
-    *natural_height_p = max_natural_height;
-}
-
-static void
-rut_prop_inspector_get_size (void *object,
-                             float *width,
-                             float *height)
-{
-  RutPropInspector *inspector = RUT_PROP_INSPECTOR (object);
-
-  *width = inspector->width;
-  *height = inspector->height;
-}
-
-static RutSizableVTable _rut_prop_inspector_sizable_vtable = {
-  rut_prop_inspector_set_size,
-  rut_prop_inspector_get_size,
-  rut_prop_inspector_get_preferred_width,
-  rut_prop_inspector_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_prop_inspector_init_type (void)
 {
-  rut_type_init (&rut_prop_inspector_type, "RigPropInspector");
-  rut_type_add_interface (&rut_prop_inspector_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutPropInspector, ref_count),
-                          &_rut_prop_inspector_refable_vtable);
-  rut_type_add_interface (&rut_prop_inspector_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutPropInspector, paintable),
-                          &_rut_prop_inspector_paintable_vtable);
-  rut_type_add_interface (&rut_prop_inspector_type,
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+  static RutSizableVTable sizable_vtable = {
+      rut_composite_sizable_set_size,
+      rut_composite_sizable_get_size,
+      rut_composite_sizable_get_preferred_width,
+      rut_composite_sizable_get_preferred_height,
+      rut_composite_sizable_add_preferred_size_callback
+  };
+
+
+  RutType *type = &rut_prop_inspector_type;
+#define TYPE RutPropInspector
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_prop_inspector_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutPropInspector, graphable),
-                          &_rut_prop_inspector_graphable_vtable);
-  rut_type_add_interface (&rut_prop_inspector_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_prop_inspector_sizable_vtable);
+                          &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
+                          offsetof (TYPE, hbox),
+                          NULL); /* no vtable */
+
+#undef TYPE
 }
 
 static RutObject *
-rut_prop_inspector_create_control_for_property (RutContext *context,
-                                                RutProperty *prop,
-                                                RutProperty **control_prop,
-                                                const char **label_text)
+create_widget_for_property (RutContext *context,
+                            RutProperty *prop,
+                            RutProperty **control_prop,
+                            const char **label_text)
 {
   const RutPropertySpec *spec = prop->spec;
   const char *name;
@@ -361,6 +166,15 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
         *control_prop = rut_introspectable_lookup_property (slider, "value");
 
         return slider;
+      }
+
+    case RUT_PROPERTY_TYPE_QUATERNION:
+      {
+        RutRotationInspector *inspector = rut_rotation_inspector_new (context);
+
+        *control_prop = rut_introspectable_lookup_property (inspector, "value");
+
+        return inspector;
       }
 
     case RUT_PROPERTY_TYPE_DOUBLE:
@@ -504,13 +318,13 @@ property_changed_cb (RutProperty *target_prop,
     return;
 
   inspector->property_changed_cb (inspector->target_prop,
-                                  inspector->source_prop,
+                                  inspector->widget_prop,
                                   inspector->user_data);
 }
 
 static void
-controlled_toggle_cb (RutToggle *toggle,
-                      CoglBool value,
+controlled_toggle_cb (RutIconToggle *toggle,
+                      bool value,
                       void *user_data)
 {
   RutPropInspector *inspector = user_data;
@@ -526,87 +340,76 @@ controlled_toggle_cb (RutToggle *toggle,
 }
 
 static void
-add_animatable_toggle (RutPropInspector *inspector,
+add_controlled_toggle (RutPropInspector *inspector,
                        RutProperty *prop)
 {
   const RutPropertySpec *spec = prop->spec;
 
   if (spec->animatable)
     {
-      char *unselected_icon = rut_find_data_file ("record-button.png");
-      char *selected_icon = rut_find_data_file ("record-button-selected.png");
-      RutObject *control = rut_toggle_new_with_icons (inspector->context,
-                                                      unselected_icon,
-                                                      selected_icon,
-                                                      "");
-      RutPropInspectorControl *control_data =
-        inspector->controls + inspector->n_controls++;
+      RutBin *bin;
+      RutIconToggle *toggle;
 
-      g_free (unselected_icon);
-      g_free (selected_icon);
+      bin = rut_bin_new (inspector->context);
+      rut_bin_set_right_padding (bin, 5);
+      rut_box_layout_add (inspector->hbox, false, bin);
+      rut_refable_unref (bin);
 
-      rut_toggle_set_state (control, FALSE);
+      toggle = rut_icon_toggle_new (inspector->context,
+                                    "record-button-selected.png",
+                                    "record-button.png");
 
-      rut_toggle_add_on_toggle_callback (control,
-                                         controlled_toggle_cb,
-                                         inspector,
-                                         NULL /* destroy_cb */);
+      rut_icon_toggle_set_state (toggle, false);
 
-      control_data->control = control;
-      control_data->transform = rut_transform_new (inspector->context);
-      rut_graphable_add_child (control_data->transform, control);
-      rut_graphable_add_child (inspector, control_data->transform);
+      rut_icon_toggle_add_on_toggle_callback (toggle,
+                                              controlled_toggle_cb,
+                                              inspector,
+                                              NULL /* destroy_cb */);
 
-      inspector->controlled_toggle = control;
+      rut_bin_set_child (bin, toggle);
+      rut_refable_unref (toggle);
+
+      inspector->controlled_toggle = toggle;
     }
 }
 
 static void
 add_control (RutPropInspector *inspector,
-             RutProperty *prop)
+             RutProperty *prop,
+             bool with_label)
 {
-  RutProperty *control_prop;
-  RutObject *control;
+  RutProperty *widget_prop;
+  RutObject *widget;
   const char *label_text;
 
-  control = rut_prop_inspector_create_control_for_property (inspector->context,
-                                                            prop,
-                                                            &control_prop,
-                                                            &label_text);
+  widget = create_widget_for_property (inspector->context,
+                                       prop,
+                                       &widget_prop,
+                                       &label_text);
 
-  if (control)
+  if (!widget)
+    return;
+
+  if (with_label && label_text)
     {
-      RutPropInspectorControl *control_data =
-        inspector->controls + inspector->n_controls++;
+      RutText *label =
+        rut_text_new_with_text (inspector->context,
+                                NULL, /* font_name */
+                                label_text);
+      rut_text_set_selectable (label, FALSE);
+      rut_box_layout_add (inspector->hbox, false, label);
+      rut_refable_unref (label);
+    }
 
-      if (label_text)
-        {
-          control_data->control =
-            rut_text_new_with_text (inspector->context,
-                                    NULL, /* font_name */
-                                    label_text);
-          rut_text_set_selectable (control_data->control, FALSE);
-          control_data->transform = rut_transform_new (inspector->context);
-          rut_graphable_add_child (control_data->transform, control_data->control);
-          rut_graphable_add_child (inspector, control_data->transform);
+  rut_box_layout_add (inspector->hbox, true, widget);
+  rut_refable_unref (widget);
 
-          control_data = inspector->controls + inspector->n_controls++;
-        }
-
-      control_data->control = control;
-      control_data->expand = TRUE;
-
-      control_data->transform = rut_transform_new (inspector->context);
-      rut_graphable_add_child (control_data->transform, control);
-      rut_graphable_add_child (inspector, control_data->transform);
-
-      if (control_prop)
-        {
-          rut_property_connect_callback (control_prop,
-                                         property_changed_cb,
-                                         inspector);
-          inspector->source_prop = control_prop;
-        }
+  if (widget_prop)
+    {
+      rut_property_connect_callback (widget_prop,
+                                     property_changed_cb,
+                                     inspector);
+      inspector->widget_prop = widget_prop;
     }
 }
 
@@ -615,41 +418,36 @@ rut_prop_inspector_new (RutContext *ctx,
                         RutProperty *property,
                         RutPropInspectorCallback inspector_property_changed_cb,
                         RutPropInspectorControlledCallback inspector_controlled_cb,
+                        bool with_label,
                         void *user_data)
 {
-  RutPropInspector *inspector = g_slice_new0 (RutPropInspector);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_prop_inspector_init_type ();
-
-      initialized = TRUE;
-    }
+  RutPropInspector *inspector =
+    rut_object_alloc0 (RutPropInspector,
+                       &rut_prop_inspector_type,
+                       _rut_prop_inspector_init_type);
 
   inspector->ref_count = 1;
-  inspector->context = rut_refable_ref (ctx);
+  inspector->context = ctx;
+
+  rut_graphable_init (inspector);
+
   inspector->target_prop = property;
   inspector->property_changed_cb = inspector_property_changed_cb;
   inspector->controlled_changed_cb = inspector_controlled_cb;
   inspector->user_data = user_data;
 
-  rut_object_init (&inspector->_parent, &rut_prop_inspector_type);
+  inspector->hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_graphable_add_child (inspector, inspector->hbox);
+  rut_refable_unref (inspector->hbox);
 
-  rut_paintable_init (RUT_OBJECT (inspector));
-  rut_graphable_init (RUT_OBJECT (inspector));
+  if (inspector->controlled_changed_cb && property->spec->animatable)
+    add_controlled_toggle (inspector, property);
 
-  inspector->n_controls = 0;
-
-  if (property->spec->animatable)
-    add_animatable_toggle (inspector, property);
-
-  add_control (inspector, property);
+  add_control (inspector, property, with_label);
 
   rut_prop_inspector_reload_property (inspector);
 
-  rut_prop_inspector_set_size (inspector, 10, 10);
+  rut_sizable_set_size (inspector, 10, 10);
 
   return inspector;
 }
@@ -663,7 +461,7 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
 
       inspector->reloading_property = TRUE;
 
-      if (inspector->source_prop)
+      if (inspector->widget_prop)
         {
           if (inspector->target_prop->spec->type !=
               inspector->widget_prop->spec->type)
@@ -674,7 +472,7 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
             }
           else
             rut_property_copy_value (&inspector->context->property_ctx,
-                                     inspector->source_prop,
+                                     inspector->widget_prop,
                                      inspector->target_prop);
         }
 
@@ -692,8 +490,8 @@ rut_prop_inspector_set_controlled (RutPropInspector *inspector,
 
       inspector->reloading_property = TRUE;
 
-      rut_toggle_set_state (inspector->controlled_toggle,
-                            controlled);
+      rut_icon_toggle_set_state (inspector->controlled_toggle,
+                                 controlled);
 
       inspector->reloading_property = old_reloading;
     }

@@ -154,6 +154,7 @@ struct _RigEngine
   RutFold *search_results_fold;
   RutBoxLayout *search_results_vbox;
   RutFlowLayout *entity_results;
+  RutFlowLayout *controller_results;
   RutFlowLayout *assets_geometry_results;
   RutFlowLayout *assets_image_results;
   RutFlowLayout *assets_video_results;
@@ -175,9 +176,7 @@ struct _RigEngine
   RutObject *inspector;
   GList *all_inspectors;
 
-  RutUIViewport *controller_vp;
   RigControllerView *controller_view;
-  RutDropDown *controller_selector;
 
   CoglMatrix main_view;
   float z_2d;
@@ -199,10 +198,6 @@ struct _RigEngine
   RutArcball arcball;
   CoglQuaternion saved_rotation;
 
-  RutTimeline *timeline;
-  RutProperty *timeline_elapsed;
-  RutProperty *timeline_progress;
-
   float grab_x;
   float grab_y;
   float entity_grab_pos[3];
@@ -213,6 +208,7 @@ struct _RigEngine
 
   GList *controllers;
   RigController *selected_controller;
+  RutPropertyClosure *controller_progress_closure;
 
   RigEntitiesSelection *entities_selection;
 
@@ -329,7 +325,7 @@ typedef enum _RutSelectAction
 
 void
 rig_select_entity (RigEngine *engine,
-                   RutEntity *entity,
+                   RutObject *object,
                    RutSelectAction action);
 
 typedef void (*RigEngineSelectionChangedCallback) (RigEngine *engine,
@@ -362,10 +358,9 @@ void
 _rig_engine_update_inspector (RigEngine *engine);
 
 void
-rig_engine_push_undo_subjournal (RigEngine *engine,
-                                 RigUndoJournal *subjournal);
+rig_engine_push_undo_subjournal (RigEngine *engine);
 
-void
+RigUndoJournal *
 rig_engine_pop_undo_subjournal (RigEngine *engine);
 
 #endif /* _RUT_ENGINE_H_ */
