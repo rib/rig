@@ -49,12 +49,6 @@ RutType rut_graph_type;
 static void
 _rut_graph_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_graph_free
-  };
-
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
       NULL, /* child add */
@@ -65,10 +59,7 @@ _rut_graph_init_type (void)
 #define TYPE RutGraph
 
   rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_add_refable (type, ref_count, _rut_graph_free);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
                           offsetof (TYPE, graphable),
@@ -80,16 +71,8 @@ _rut_graph_init_type (void)
 RutGraph *
 rut_graph_new (RutContext *ctx)
 {
-  RutGraph *graph = g_slice_new (RutGraph);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_graph_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&graph->_parent, &rut_graph_type);
+  RutGraph *graph = rut_object_alloc (RutGraph, &rut_graph_type,
+                                      _rut_graph_init_type);
 
   graph->ref_count = 1;
 
