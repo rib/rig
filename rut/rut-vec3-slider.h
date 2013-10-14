@@ -15,10 +15,6 @@ RutVec3Slider *
 rut_vec3_slider_new (RutContext *ctx);
 
 void
-rut_vec3_slider_set_name (RutVec3Slider *slider,
-                          const char *name);
-
-void
 rut_vec3_slider_set_min_value (RutVec3Slider *slider,
                                float min_value);
 

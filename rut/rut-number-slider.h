@@ -1,22 +1,18 @@
 #ifndef _RUT_NUMBER_SLIDER_H_
 #define _RUT_NUMBER_SLIDER_H_
 
-#include <cogl/cogl.h>
-
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-context.h"
 
 extern RutType rut_number_slider_type;
-
 typedef struct _RutNumberSlider RutNumberSlider;
-
-#define RUT_NUMBER_SLIDER(x) ((RutNumberSlider *) x)
 
 RutNumberSlider *
 rut_number_slider_new (RutContext *ctx);
 
 void
-rut_number_slider_set_name (RutNumberSlider *slider,
-                            const char *name);
+rut_number_slider_set_markup_label (RutNumberSlider *slider,
+                                    const char *markup);
 
 void
 rut_number_slider_set_min_value (RutNumberSlider *slider,

@@ -344,8 +344,6 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
         RutVec3Slider *slider = rut_vec3_slider_new (context);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
 
-        rut_vec3_slider_set_name (slider, name);
-
         if ((spec->flags & RUT_PROPERTY_FLAG_VALIDATE))
           {
             const RutPropertyValidationVec3 *validation =
@@ -370,8 +368,10 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
       {
         RutNumberSlider *slider = rut_number_slider_new (context);
         float min = -G_MAXFLOAT, max = G_MAXFLOAT;
+        char *label = g_strconcat (name, ": ", NULL);
 
-        rut_number_slider_set_name (slider, name);
+        rut_number_slider_set_markup_label (slider, label);
+        g_free (label);
 
         if (spec->type == RUT_PROPERTY_TYPE_INTEGER)
           {
