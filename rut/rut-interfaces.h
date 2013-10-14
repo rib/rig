@@ -434,4 +434,7 @@ typedef struct _RutSelectableVTable
   void (*del) (RutObject *selectable);
 } RutSelectableVTable;
 
+void
+rut_selectable_cancel (RutObject *object);
+
 #endif /* _RUT_INTERFACES_H_ */

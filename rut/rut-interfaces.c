@@ -766,3 +766,12 @@ rut_inputable_get_input_region (RutObject *object)
 
   return props->input_region;
 }
+
+void
+rut_selectable_cancel (RutObject *object)
+{
+  RutSelectableVTable *selectable =
+    rut_object_get_vtable (object, RUT_INTERFACE_ID_SELECTABLE);
+
+  selectable->cancel (object);
+}
