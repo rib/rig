@@ -185,6 +185,9 @@ _rut_ui_viewport_free (void *object)
   rut_simple_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
 
+  rut_shell_remove_pre_paint_callback (ui_viewport->ctx->shell,
+                                       ui_viewport);
+
   g_slice_free (RutUIViewport, object);
 }
 
@@ -910,7 +913,7 @@ rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport)
 
 void
 rut_ui_viewport_set_x_pannable (RutObject *obj,
-                                CoglBool pannable)
+                                bool pannable)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
 
@@ -919,7 +922,7 @@ rut_ui_viewport_set_x_pannable (RutObject *obj,
   queue_allocation (ui_viewport);
 }
 
-CoglBool
+bool
 rut_ui_viewport_get_x_pannable (RutObject *obj)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
@@ -929,7 +932,7 @@ rut_ui_viewport_get_x_pannable (RutObject *obj)
 
 void
 rut_ui_viewport_set_y_pannable (RutObject *obj,
-                                CoglBool pannable)
+                                bool pannable)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);
 
@@ -938,7 +941,7 @@ rut_ui_viewport_set_y_pannable (RutObject *obj,
   queue_allocation (ui_viewport);
 }
 
-CoglBool
+bool
 rut_ui_viewport_get_y_pannable (RutObject *obj)
 {
   RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (obj);

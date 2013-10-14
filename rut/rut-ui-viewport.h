@@ -88,16 +88,16 @@ rut_ui_viewport_get_doc_matrix (RutUIViewport *ui_viewport);
 
 void
 rut_ui_viewport_set_x_pannable (RutObject *ui_viewport,
-                                CoglBool pannable);
+                                bool pannable);
 
-CoglBool
+bool
 rut_ui_viewport_get_x_pannable (RutObject *ui_viewport);
 
 void
 rut_ui_viewport_set_y_pannable (RutObject *ui_viewport,
-                                CoglBool pannable);
+                                bool pannable);
 
-CoglBool
+bool
 rut_ui_viewport_get_y_pannable (RutObject *ui_viewport);
 
 /**
