@@ -629,7 +629,7 @@ _rut_text_get_size (RutObject *object,
                     float *width,
                     float *height)
 {
-  RutText *text = RUT_TEXT (object);
+  RutText *text = object;
 
   *width = text->width;
   *height = text->height;
@@ -2823,7 +2823,7 @@ _rut_text_get_preferred_width (RutObject *object,
                                float *min_width_p,
                                float *natural_width_p)
 {
-  RutText *text = RUT_TEXT (object);
+  RutText *text = object;
   PangoRectangle logical_rect = { 0, };
   PangoLayout *layout;
   int logical_width;
@@ -2866,7 +2866,7 @@ _rut_text_get_preferred_height (RutObject *object,
                                 float *min_height_p,
                                 float *natural_height_p)
 {
-  RutText *text = RUT_TEXT (object);
+  RutText *text = object;
 
   if (for_width == 0)
     {
@@ -2886,7 +2886,7 @@ _rut_text_get_preferred_height (RutObject *object,
       if (text->single_line_mode)
         for_width = -1;
 
-      layout = rut_text_create_layout (RUT_TEXT (text),
+      layout = rut_text_create_layout (text,
                                        for_width, -1);
 
       pango_layout_get_extents (layout, NULL, &logical_rect);
@@ -2953,7 +2953,7 @@ _rut_text_set_size (RutObject *object,
                     float width,
                     float height)
 {
-  RutText *text = RUT_TEXT (object);
+  RutText *text = object;
   CoglVertexP3 *pick_vertices;
 
   if (text->width == width && text->height == height)
@@ -3001,7 +3001,7 @@ _rut_text_set_size (RutObject *object,
 void
 rut_text_set_width (RutObject *obj, float width)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   _rut_text_set_size (text, width, text->height);
 }
@@ -3009,7 +3009,7 @@ rut_text_set_width (RutObject *obj, float width)
 void
 rut_text_set_height (RutObject *obj, float height)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   _rut_text_set_size (text, text->width, height);
 }
@@ -3493,7 +3493,7 @@ rut_text_new_with_buffer (RutContext *ctx,
 RutObject *
 rut_text_get_buffer (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return get_buffer (text);
 }
@@ -3502,7 +3502,7 @@ void
 rut_text_set_buffer (RutObject *obj,
                      RutObject *buffer)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (buffer)
     rut_refable_ref (buffer);
@@ -3539,7 +3539,7 @@ void
 rut_text_set_editable (RutObject *obj,
                        CoglBool editable)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->editable != editable)
     {
@@ -3557,7 +3557,7 @@ rut_text_set_editable (RutObject *obj,
 CoglBool
 rut_text_get_editable (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->editable;
 }
@@ -3566,7 +3566,7 @@ void
 rut_text_set_selectable (RutObject *obj,
                          CoglBool selectable)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->selectable != selectable)
     {
@@ -3584,7 +3584,7 @@ rut_text_set_selectable (RutObject *obj,
 CoglBool
 rut_text_get_selectable (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->selectable;
 }
@@ -3593,7 +3593,7 @@ void
 rut_text_set_activatable (RutObject *obj,
                           CoglBool activatable)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->activatable != activatable)
     {
@@ -3609,7 +3609,7 @@ rut_text_set_activatable (RutObject *obj,
 CoglBool
 rut_text_get_activatable (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->activatable;
 }
@@ -3634,7 +3634,7 @@ void
 rut_text_set_cursor_visible (RutObject *obj,
                              CoglBool cursor_visible)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->cursor_visible != cursor_visible)
     {
@@ -3650,7 +3650,7 @@ rut_text_set_cursor_visible (RutObject *obj,
 CoglBool
 rut_text_get_cursor_visible (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->cursor_visible;
 }
@@ -3659,7 +3659,7 @@ void
 rut_text_set_cursor_color (RutObject *obj,
                            const CoglColor *color)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (color)
     {
@@ -3690,7 +3690,7 @@ rut_text_set_cursor_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_cursor_color (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return &text->cursor_color;
 }
@@ -3698,7 +3698,7 @@ rut_text_get_cursor_color (RutObject *obj)
 CoglBool
 rut_text_get_cursor_color_set (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return !!text->cursor_color_set;
 }
@@ -3758,7 +3758,7 @@ void
 rut_text_set_selection_bound (RutObject *obj,
                               int selection_bound)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->selection_bound != selection_bound)
     {
@@ -3779,7 +3779,7 @@ rut_text_set_selection_bound (RutObject *obj,
 int
 rut_text_get_selection_bound (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->selection_bound;
 }
@@ -3788,7 +3788,7 @@ void
 rut_text_set_selection_color (RutObject *obj,
                               const CoglColor *color)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (color)
     {
@@ -3819,7 +3819,7 @@ rut_text_set_selection_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_selection_color (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return &text->selection_color;
 }
@@ -3827,7 +3827,7 @@ rut_text_get_selection_color (RutObject *obj)
 CoglBool
 rut_text_get_selection_color_set (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return !!text->selection_color_set;
 }
@@ -3836,7 +3836,7 @@ void
 rut_text_set_selected_text_color (RutObject *obj,
                                   const CoglColor *color)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (color)
     {
@@ -3867,7 +3867,7 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_selected_text_color (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return &text->selected_text_color;
 }
@@ -3875,7 +3875,7 @@ rut_text_get_selected_text_color (RutObject *obj)
 CoglBool
 rut_text_get_selected_text_color_set (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return !!text->selected_text_color_set;
 }
@@ -3899,7 +3899,7 @@ rut_text_get_font_description (RutText *text)
 const char *
 rut_text_get_font_name (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->font_name;
 }
@@ -3908,7 +3908,7 @@ void
 rut_text_set_font_name (RutObject *obj,
                         const char *font_name)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
   PangoFontDescription *desc;
   CoglBool is_default_font;
 
@@ -3959,7 +3959,7 @@ out:
 const char *
 rut_text_get_text (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return rut_text_buffer_get_text (get_buffer (text));
 }
@@ -3996,7 +3996,10 @@ void
 rut_text_set_text (RutObject *obj,
                    const char *text_str)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
+
+  if (!text_str)
+    text_str = "";
 
   /* if the text is editable (i.e. there is not markup flag to reset) then
    * changing the contents will result in selection and cursor changes that
@@ -4015,7 +4018,7 @@ rut_text_set_text (RutObject *obj,
 const char *
 rut_text_get_hint_text (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->hint_text ? text->hint_text : "";
 }
@@ -4024,7 +4027,7 @@ void
 rut_text_set_hint_text (RutObject *obj,
                         const char *hint_str)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   g_free (text->hint_text);
   text->hint_text = g_strdup (hint_str);
@@ -4066,7 +4069,7 @@ void
 rut_text_set_color (RutObject *obj,
                     const CoglColor *color)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   g_return_if_fail (color != NULL);
 
@@ -4091,7 +4094,7 @@ rut_text_set_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_color (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return &text->text_color;
 }
@@ -4125,7 +4128,7 @@ rut_text_get_ellipsize (RutText *text)
 CoglBool
 rut_text_get_line_wrap (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->wrap;
 }
@@ -4134,7 +4137,7 @@ void
 rut_text_set_line_wrap (RutObject *obj,
                         CoglBool line_wrap)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->wrap != line_wrap)
     {
@@ -4233,7 +4236,7 @@ void
 rut_text_set_use_markup (RutObject *obj,
 			 CoglBool setting)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
   const char *text_str;
 
   text_str = rut_text_buffer_get_text (get_buffer (text));
@@ -4251,7 +4254,7 @@ rut_text_set_use_markup (RutObject *obj,
 CoglBool
 rut_text_get_use_markup (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->use_markup;
 }
@@ -4260,7 +4263,7 @@ void
 rut_text_set_justify (RutObject *obj,
                       CoglBool justify)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->justify != justify)
     {
@@ -4278,7 +4281,7 @@ rut_text_set_justify (RutObject *obj,
 CoglBool
 rut_text_get_justify (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->justify;
 }
@@ -4286,7 +4289,7 @@ rut_text_get_justify (RutObject *obj)
 int
 rut_text_get_cursor_position (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->position;
 }
@@ -4295,7 +4298,7 @@ void
 rut_text_set_cursor_position (RutObject *obj,
                               int position)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
   int len;
 
   if (text->position == position)
@@ -4322,7 +4325,7 @@ void
 rut_text_set_cursor_size (RutObject *obj,
                           int size)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->cursor_size != size)
     {
@@ -4341,7 +4344,7 @@ rut_text_set_cursor_size (RutObject *obj,
 int
 rut_text_get_cursor_size (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->cursor_size;
 }
@@ -4350,7 +4353,7 @@ void
 rut_text_set_password_char (RutObject *obj,
                             uint32_t wc)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->password_char != wc)
     {
@@ -4368,7 +4371,7 @@ rut_text_set_password_char (RutObject *obj,
 uint32_t
 rut_text_get_password_char (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->password_char;
 }
@@ -4377,7 +4380,7 @@ void
 rut_text_set_max_length (RutObject *obj,
                          int max)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   rut_text_buffer_set_max_length (get_buffer (text), max);
 }
@@ -4385,7 +4388,7 @@ rut_text_set_max_length (RutObject *obj,
 int
 rut_text_get_max_length (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return rut_text_buffer_get_max_length (get_buffer (text));
 }
@@ -4462,7 +4465,7 @@ void
 rut_text_set_single_line_mode (RutObject *obj,
                                CoglBool single_line)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   if (text->single_line_mode != single_line)
     {
@@ -4487,7 +4490,7 @@ rut_text_set_single_line_mode (RutObject *obj,
 CoglBool
 rut_text_get_single_line_mode (RutObject *obj)
 {
-  RutText *text = RUT_TEXT (obj);
+  RutText *text = obj;
 
   return text->single_line_mode;
 }
