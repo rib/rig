@@ -47,6 +47,7 @@ rut_refable_simple_unref (void *object)
     {
       RutRefableVTable *vtable =
         rut_object_get_vtable (object, RUT_INTERFACE_ID_REF_COUNTABLE);
+      g_assert (*ref_count == 0);
       vtable->free (object);
     }
 }
