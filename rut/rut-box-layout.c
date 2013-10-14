@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "rut.h"
 #include "rut-box-layout.h"
@@ -128,18 +126,6 @@ _rut_box_layout_free (void *object)
 
   g_slice_free (RutBoxLayout, box);
 }
-
-RutRefableVTable _rut_box_layout_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_box_layout_free
-};
-
-static RutGraphableVTable _rut_box_layout_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static void
 allocate_cb (RutObject *graphable,
@@ -527,43 +513,52 @@ rut_box_layout_get_size (void *object,
   *height = box->height;
 }
 
-static RutSizableVTable _rut_box_layout_sizable_vtable = {
-  rut_box_layout_set_size,
-  rut_box_layout_get_size,
-  rut_box_layout_get_preferred_width,
-  rut_box_layout_get_preferred_height,
-  rut_box_layout_add_preferred_size_callback
-};
-
-static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
 
 static void
 _rut_box_layout_init_type (void)
 {
-  rut_type_init (&rut_box_layout_type, "RigBoxLayout");
-  rut_type_add_interface (&rut_box_layout_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutBoxLayout, ref_count),
-                          &_rut_box_layout_refable_vtable);
-  rut_type_add_interface (&rut_box_layout_type,
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      rut_box_layout_set_size,
+      rut_box_layout_get_size,
+      rut_box_layout_get_preferred_width,
+      rut_box_layout_get_preferred_height,
+      rut_box_layout_add_preferred_size_callback
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_box_layout_type;
+#define TYPE RutBoxLayout
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_box_layout_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutBoxLayout, graphable),
-                          &_rut_box_layout_graphable_vtable);
-  rut_type_add_interface (&rut_box_layout_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_box_layout_sizable_vtable);
-  rut_type_add_interface (&rut_box_layout_type,
+                          &sizable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_ui_viewport_introspectable_vtable);
-  rut_type_add_interface (&rut_box_layout_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutBoxLayout, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutBoxLayout *
