@@ -40,7 +40,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .setter.boolean_type = rut_entity_set_visible,
     .nick = "Visible",
     .blurb = "Whether the entity is visible or not",
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "position",
@@ -79,7 +80,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .setter.boolean_type = rut_entity_set_cast_shadow,
     .nick = "Cast Shadow",
     .blurb = "Whether the entity casts shadows or not",
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
   {
     .name = "receive_shadow",
@@ -88,7 +90,8 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .setter.boolean_type = rut_entity_set_receive_shadow,
     .nick = "Receive Shadow",
     .blurb = "Whether the entity receives shadows or not",
-    .flags = RUT_PROPERTY_FLAG_READWRITE
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
   },
 
   { 0 }
