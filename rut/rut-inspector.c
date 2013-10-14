@@ -35,12 +35,10 @@
 #define RUT_INSPECTOR_EDGE_GAP 5
 #define RUT_INSPECTOR_PROPERTY_GAP 5
 
-#define RUT_INSPECTOR_N_COLUMNS 1
-
 typedef struct
 {
+  RutStack *stack;
   RutObject *control;
-  RutTransform *transform;
   RutDragBin *drag_bin;
   RutProperty *source_prop;
   RutProperty *target_prop;
@@ -61,12 +59,10 @@ struct _RutInspector
   RutPaintableProps paintable;
   RutGraphableProps graphable;
 
-  int n_props;
-  int n_rows;
-  RutInspectorPropertyData *prop_data;
+  RutBoxLayout *vbox;
 
-  int width;
-  int height;
+  int n_props;
+  RutInspectorPropertyData *prop_data;
 
   RutInspectorCallback property_changed_cb;
   RutInspectorControlledCallback controlled_changed_cb;
@@ -83,8 +79,6 @@ _rut_inspector_free (void *object)
   RutInspector *inspector = object;
   RutObject *reference_object = inspector->objects->data;
 
-  rut_refable_unref (inspector->context);
-
   if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
     g_list_foreach (inspector->objects, (GFunc)rut_refable_unref, NULL);
   g_list_free (inspector->objects);
@@ -97,226 +91,41 @@ _rut_inspector_free (void *object)
   g_slice_free (RutInspector, inspector);
 }
 
-RutRefableVTable _rut_inspector_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_inspector_free
-};
-
-static RutGraphableVTable _rut_inspector_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static void
-_rut_inspector_paint (RutObject *object,
-                      RutPaintContext *paint_ctx)
-{
-  /* NOP */
-}
-
-RutPaintableVTable _rut_inspector_paintable_vtable = {
-  _rut_inspector_paint
-};
-
-static void
-rut_inspector_set_size (void *object,
-                        float width_float,
-                        float height_float)
-{
-  int width = width_float;
-  int height = height_float;
-  RutInspector *inspector = RUT_INSPECTOR (object);
-  float total_width = width - RUT_INSPECTOR_EDGE_GAP * 2;
-  float slider_width =
-    (total_width - ((RUT_INSPECTOR_N_COLUMNS - 1.0f) *
-                    RUT_INSPECTOR_PROPERTY_GAP)) /
-    RUT_INSPECTOR_N_COLUMNS;
-  float pixel_slider_width = floorf (slider_width);
-  float y_pos = RUT_INSPECTOR_EDGE_GAP;
-  float row_height = 0.0f;
-  int i;
-
-  inspector->width = width;
-  inspector->height = height;
-
-  for (i = 0; i < inspector->n_props; i++)
-    {
-      RutInspectorPropertyData *prop_data = inspector->prop_data + i;
-      float preferred_height;
-
-      rut_transform_init_identity (prop_data->transform);
-      rut_transform_translate (prop_data->transform,
-                               RUT_INSPECTOR_EDGE_GAP +
-                               nearbyintf ((slider_width +
-                                            RUT_INSPECTOR_PROPERTY_GAP) *
-                                           (i % RUT_INSPECTOR_N_COLUMNS)),
-                               y_pos,
-                               0.0f);
-
-      rut_sizable_get_preferred_height (prop_data->drag_bin,
-                                        pixel_slider_width,
-                                        NULL,
-                                        &preferred_height);
-
-      rut_sizable_set_size (prop_data->drag_bin,
-                            pixel_slider_width,
-                            preferred_height);
-
-      if (preferred_height > row_height)
-        row_height = preferred_height;
-
-      if ((i + 1) % RUT_INSPECTOR_N_COLUMNS == 0)
-        {
-          y_pos += row_height + RUT_INSPECTOR_PROPERTY_GAP;
-          row_height = 0.0f;
-        }
-    }
-}
-
-static void
-rut_inspector_get_preferred_width (void *object,
-                                   float for_height,
-                                   float *min_width_p,
-                                   float *natural_width_p)
-{
-  RutInspector *inspector = RUT_INSPECTOR (object);
-  float max_natural_width = 0.0f;
-  float max_min_width = 0.0f;
-  int i;
-
-  /* Convert the for_height into a height for each row */
-  if (for_height >= 0)
-    for_height = ((for_height -
-                   RUT_INSPECTOR_EDGE_GAP * 2 -
-                   (inspector->n_rows - 1) *
-                   RUT_INSPECTOR_PROPERTY_GAP) /
-                  inspector->n_rows);
-
-  for (i = 0; i < inspector->n_props; i++)
-    {
-      RutInspectorPropertyData *prop_data = inspector->prop_data + i;
-      float min_width;
-      float natural_width;
-
-      rut_sizable_get_preferred_width (prop_data->control,
-                                       for_height,
-                                       &min_width,
-                                       &natural_width);
-
-      if (min_width > max_min_width)
-        max_min_width = min_width;
-      if (natural_width > max_natural_width)
-        max_natural_width = natural_width;
-    }
-
-  if (min_width_p)
-    *min_width_p = (max_min_width * RUT_INSPECTOR_N_COLUMNS +
-                    (RUT_INSPECTOR_N_COLUMNS - 1) *
-                    RUT_INSPECTOR_PROPERTY_GAP +
-                    RUT_INSPECTOR_EDGE_GAP * 2);
-  if (natural_width_p)
-    *natural_width_p = (max_natural_width * RUT_INSPECTOR_N_COLUMNS +
-                        (RUT_INSPECTOR_N_COLUMNS - 1) *
-                        RUT_INSPECTOR_PROPERTY_GAP +
-                        RUT_INSPECTOR_EDGE_GAP * 2);
-}
-
-static void
-rut_inspector_get_preferred_height (void *object,
-                                    float for_width,
-                                    float *min_height_p,
-                                    float *natural_height_p)
-{
-  RutInspector *inspector = RUT_INSPECTOR (object);
-  float total_height = 0.0f;
-  float row_height = 0.0f;
-  int i;
-
-  /* Convert the for_width to the width that each slider will actually
-   * get */
-  if (for_width >= 0.0f)
-    {
-      float total_width = for_width - RUT_INSPECTOR_EDGE_GAP * 2;
-      float slider_width =
-        (total_width - ((RUT_INSPECTOR_N_COLUMNS - 1.0f) *
-                        RUT_INSPECTOR_PROPERTY_GAP)) /
-        RUT_INSPECTOR_N_COLUMNS;
-
-      for_width = floorf (slider_width);
-    }
-
-  for (i = 0; i < inspector->n_props; i++)
-    {
-      RutInspectorPropertyData *prop_data = inspector->prop_data + i;
-      float natural_height;
-
-      rut_sizable_get_preferred_height (prop_data->control,
-                                        for_width,
-                                        NULL, /* min_height */
-                                        &natural_height);
-
-      if (natural_height > row_height)
-        row_height = natural_height;
-
-      if ((i + 1) % RUT_INSPECTOR_N_COLUMNS == 0 ||
-          i == inspector->n_props - 1)
-        {
-          total_height += row_height;
-          row_height = 0.0f;
-        }
-    }
-
-  total_height += (RUT_INSPECTOR_EDGE_GAP * 2 +
-                   RUT_INSPECTOR_PROPERTY_GAP *
-                   (inspector->n_rows - 1));
-
-  if (min_height_p)
-    *min_height_p = total_height;
-  if (natural_height_p)
-    *natural_height_p = total_height;
-}
-
-static void
-rut_inspector_get_size (void *object,
-                        float *width,
-                        float *height)
-{
-  RutInspector *inspector = RUT_INSPECTOR (object);
-
-  *width = inspector->width;
-  *height = inspector->height;
-}
-
-static RutSizableVTable _rut_inspector_sizable_vtable = {
-  rut_inspector_set_size,
-  rut_inspector_get_size,
-  rut_inspector_get_preferred_width,
-  rut_inspector_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_inspector_init_type (void)
 {
-  rut_type_init (&rut_inspector_type, "RigInspector");
-  rut_type_add_interface (&rut_inspector_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutInspector, ref_count),
-                          &_rut_inspector_refable_vtable);
-  rut_type_add_interface (&rut_inspector_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutInspector, paintable),
-                          &_rut_inspector_paintable_vtable);
-  rut_type_add_interface (&rut_inspector_type,
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+  static RutSizableVTable sizable_vtable = {
+      rut_composite_sizable_set_size,
+      rut_composite_sizable_get_size,
+      rut_composite_sizable_get_preferred_width,
+      rut_composite_sizable_get_preferred_height,
+      rut_composite_sizable_add_preferred_size_callback
+  };
+
+  RutType *type = &rut_inspector_type;
+#define TYPE RutInspector
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_inspector_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutInspector, graphable),
-                          &_rut_inspector_graphable_vtable);
-  rut_type_add_interface (&rut_inspector_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_inspector_sizable_vtable);
+                          &sizable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
+                          offsetof (TYPE, vbox),
+                          NULL); /* no vtable */
+
+#undef TYPE
 }
 
 static void
@@ -327,8 +136,23 @@ property_changed_cb (RutProperty *primary_target_prop,
   RutInspectorPropertyData *prop_data = user_data;
   RutInspector *inspector = prop_data->inspector;
   GList *l;
+      bool mergable;
 
   g_return_if_fail (primary_target_prop == prop_data->target_prop);
+
+  switch (source_prop->spec->type)
+    {
+    case RUT_PROPERTY_TYPE_FLOAT:
+    case RUT_PROPERTY_TYPE_DOUBLE:
+    case RUT_PROPERTY_TYPE_INTEGER:
+    case RUT_PROPERTY_TYPE_UINT32:
+    case RUT_PROPERTY_TYPE_VEC3:
+    case RUT_PROPERTY_TYPE_VEC4:
+      mergable = true;
+      break;
+    default:
+      mergable = false;
+    }
 
   /* Forward the property change to the corresponding property
    * of all objects being inspected... */
@@ -337,7 +161,6 @@ property_changed_cb (RutProperty *primary_target_prop,
       RutProperty *target_prop =
         rut_introspectable_lookup_property (l->data,
                                             primary_target_prop->spec->name);
-
       inspector->property_changed_cb (target_prop, /* target */
                                       source_prop,
                                       inspector->user_data);
@@ -400,8 +223,7 @@ create_property_controls (RutInspector *inspector)
                                          props);
 
   inspector->n_props = props->len;
-  inspector->n_rows = ((inspector->n_props + RUT_INSPECTOR_N_COLUMNS - 1) /
-                       RUT_INSPECTOR_N_COLUMNS);
+
   inspector->prop_data = ((RutInspectorPropertyData *)
                           g_array_free (props, FALSE));
 
@@ -412,12 +234,13 @@ create_property_controls (RutInspector *inspector)
 
       prop_data->inspector = inspector;
 
-      prop_data->transform = rut_transform_new (inspector->context);
-      rut_graphable_add_child (inspector, prop_data->transform);
+      prop_data->stack = rut_stack_new (inspector->context, 1, 1);
+      rut_box_layout_add (inspector->vbox, FALSE, prop_data->stack);
+      rut_refable_unref (prop_data->stack);
 
       prop_data->drag_bin = rut_drag_bin_new (inspector->context);
       rut_drag_bin_set_payload (prop_data->drag_bin, inspector);
-      rut_graphable_add_child (prop_data->transform, prop_data->drag_bin);
+      rut_graphable_add_child (prop_data->stack, prop_data->drag_bin);
       rut_refable_unref (prop_data->drag_bin);
 
       control = rut_prop_inspector_new (inspector->context,
@@ -440,20 +263,13 @@ rut_inspector_new (RutContext *context,
                    RutInspectorControlledCallback user_controlled_changed_cb,
                    void *user_data)
 {
+  RutInspector *inspector = rut_object_alloc0 (RutInspector,
+                                               &rut_inspector_type,
+                                               _rut_inspector_init_type);
   RutObject *reference_object = objects->data;
-  RutInspector *inspector = g_slice_new0 (RutInspector);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_inspector_init_type ();
-
-      initialized = TRUE;
-    }
 
   inspector->ref_count = 1;
-  inspector->context = rut_refable_ref (context);
+  inspector->context = context;
   inspector->objects = g_list_copy (objects);
 
   if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
@@ -463,14 +279,16 @@ rut_inspector_new (RutContext *context,
   inspector->controlled_changed_cb = user_controlled_changed_cb;
   inspector->user_data = user_data;
 
-  rut_object_init (&inspector->_parent, &rut_inspector_type);
-
-  rut_paintable_init (inspector);
   rut_graphable_init (inspector);
+
+  inspector->vbox = rut_box_layout_new (context,
+                                        RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
+  rut_graphable_add_child (inspector, inspector->vbox);
+  rut_refable_unref (inspector->vbox);
 
   create_property_controls (inspector);
 
-  rut_inspector_set_size (inspector, 10, 10);
+  rut_sizable_set_size (inspector, 10, 10);
 
   return inspector;
 }
