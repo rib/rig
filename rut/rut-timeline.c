@@ -30,6 +30,8 @@ enum {
   RUT_TIMELINE_PROP_LENGTH,
   RUT_TIMELINE_PROP_ELAPSED,
   RUT_TIMELINE_PROP_PROGRESS,
+  RUT_TIMELINE_PROP_LOOP,
+  RUT_TIMELINE_PROP_RUNNING,
   RUT_TIMELINE_N_PROPS
 };
 
@@ -77,6 +79,25 @@ static RutPropertySpec _rut_timeline_prop_specs[] = {
     .getter.double_type = rut_timeline_get_progress,
     .setter.double_type = rut_timeline_set_progress
   },
+  {
+    .name = "loop",
+    .nick = "Loop",
+    .blurb = "Whether the timeline loops",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rut_timeline_get_loop_enabled,
+    .setter.boolean_type = rut_timeline_set_loop_enabled,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+  },
+  {
+    .name = "running",
+    .nick = "Running",
+    .blurb = "The timeline progressing over time",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rut_timeline_get_running,
+    .setter.boolean_type = rut_timeline_set_running,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+  },
+
   { 0 } /* XXX: Needed for runtime counting of the number of properties */
 };
 
@@ -145,7 +166,7 @@ rut_timeline_new (RutContext *ctx,
 
   timeline->elapsed = 0;
 
-  rut_simple_introspectable_init (RUT_OBJECT (timeline),
+  rut_simple_introspectable_init (timeline,
                                   _rut_timeline_prop_specs,
                                   timeline->properties);
 
@@ -155,6 +176,28 @@ rut_timeline_new (RutContext *ctx,
   return timeline;
 }
 
+bool
+rut_timeline_get_running (RutObject *object)
+{
+  RutTimeline *timeline = object;
+  return timeline->running;
+}
+
+void
+rut_timeline_set_running (RutObject *object,
+                          bool running)
+{
+  RutTimeline *timeline = object;
+
+  if (timeline->running == running)
+    return;
+
+  timeline->running = running;
+
+  rut_property_dirty (&timeline->ctx->property_ctx,
+                      &timeline->properties[RUT_TIMELINE_PROP_RUNNING]);
+}
+
 void
 rut_timeline_start (RutTimeline *timeline)
 {
@@ -162,15 +205,14 @@ rut_timeline_start (RutTimeline *timeline)
 
   rut_timeline_set_elapsed (timeline, 0);
 
-  if (!timeline->running)
-    timeline->running = TRUE;
+  rut_timeline_set_running (timeline, true);
 }
 
 void
 rut_timeline_stop (RutTimeline *timeline)
 {
   g_timer_stop (timeline->gtimer);
-  timeline->running = FALSE;
+  rut_timeline_set_running (timeline, false);
 }
 
 bool
@@ -338,14 +380,23 @@ rut_timeline_get_length (RutObject *obj)
 }
 
 void
-rut_timeline_set_loop_enabled (RutTimeline *timeline, CoglBool enabled)
+rut_timeline_set_loop_enabled (RutObject *object, bool enabled)
 {
+  RutTimeline *timeline = object;
+
+  if (timeline->loop_enabled == enabled)
+    return;
+
   timeline->loop_enabled = enabled;
+
+  rut_property_dirty (&timeline->ctx->property_ctx,
+                      &timeline->properties[RUT_TIMELINE_PROP_LOOP]);
 }
 
 bool
-rut_timeline_get_loop_enabled (RutTimeline *timeline)
+rut_timeline_get_loop_enabled (RutObject *object)
 {
+  RutTimeline *timeline = object;
   return timeline->loop_enabled;
 }
 

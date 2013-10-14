@@ -18,6 +18,13 @@ void
 rut_timeline_stop (RutTimeline *timeline);
 
 bool
+rut_timeline_get_running (RutObject *timeline);
+
+void
+rut_timeline_set_running (RutObject *timeline,
+                          bool running);
+
+bool
 rut_timeline_is_running (RutTimeline *timeline);
 
 double
@@ -42,10 +49,10 @@ float
 rut_timeline_get_length (RutObject *timeline);
 
 void
-rut_timeline_set_loop_enabled (RutTimeline *timeline, CoglBool enabled);
+rut_timeline_set_loop_enabled (RutObject *timeline, bool enabled);
 
 bool
-rut_timeline_get_loop_enabled (RutTimeline *timeline);
+rut_timeline_get_loop_enabled (RutObject *timeline);
 
 /* PRIVATE */
 void
