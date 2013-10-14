@@ -371,7 +371,7 @@ rut_text_buffer_get_bytes (RutTextBuffer *buffer)
 const char*
 rut_text_buffer_get_text (RutObject *obj)
 {
-  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+  RutTextBuffer *buffer = obj;
 
   return _rut_simple_text_buffer_get_text (buffer, NULL);
 }
@@ -391,7 +391,7 @@ void
 rut_text_buffer_set_text (RutObject *obj,
                           const char *chars)
 {
-  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+  RutTextBuffer *buffer = obj;
 
   rut_text_buffer_set_text_with_length (buffer, chars, -1);
 }
@@ -400,7 +400,7 @@ void
 rut_text_buffer_set_max_length (RutObject *obj,
                                 int max_length)
 {
-  RutTextBuffer *buffer = RUT_TEXT_BUFFER (obj);
+  RutTextBuffer *buffer = obj;
 
   max_length = CLAMP (max_length, 0, RUT_TEXT_BUFFER_MAX_SIZE);
 
