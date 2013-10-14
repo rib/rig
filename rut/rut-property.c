@@ -385,6 +385,15 @@ rut_property_set_copy_binding (RutPropertyContext *context,
   _rut_property_copy_binding_cb (target_property, context);
 }
 
+void
+rut_property_set_mirror_bindings (RutPropertyContext *context,
+                                  RutProperty *prop0,
+                                  RutProperty *prop1)
+{
+  rut_property_set_copy_binding (context, prop0, prop1);
+  rut_property_set_copy_binding (context, prop1, prop0);
+}
+
 static void
 _rut_property_cast_binding_cb (RutProperty *target_property,
                                void *user_data)

@@ -407,6 +407,11 @@ rut_property_set_cast_scalar_binding (RutPropertyContext *context,
                                       RutProperty *target_property,
                                       RutProperty *source_property);
 
+void
+rut_property_set_mirror_bindings (RutPropertyContext *context,
+                                  RutProperty *prop0,
+                                  RutProperty *prop1);
+
 /**
  * rut_property_remove_binding:
  * @property: The property to remove any binding from
