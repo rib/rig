@@ -128,14 +128,8 @@ struct _CoglQuaternion
   float x;
   float y;
   float z;
-
-  /*< private >*/
-  float padding0;
-  float padding1;
-  float padding2;
-  float padding3;
 };
-COGL_STRUCT_SIZE_ASSERT (CoglQuaternion, 32);
+COGL_STRUCT_SIZE_ASSERT (CoglQuaternion, 16);
 
 /**
  * cogl_quaternion_init:

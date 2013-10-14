@@ -146,16 +146,8 @@ struct _CoglEuler
   float heading;
   float pitch;
   float roll;
-
-  /*< private > */
-  /* May cached a quaternion here in the future */
-  float padding0;
-  float padding1;
-  float padding2;
-  float padding3;
-  float padding4;
 };
-COGL_STRUCT_SIZE_ASSERT (CoglEuler, 32);
+COGL_STRUCT_SIZE_ASSERT (CoglEuler, 12);
 
 /**
  * cogl_euler_init:
