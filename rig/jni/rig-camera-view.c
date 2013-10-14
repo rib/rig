@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <math.h>
 
@@ -236,16 +234,23 @@ paint_overlays (RigCameraView *view,
 #ifdef RIG_EDITOR_ENABLED
   if (draw_tools)
     {
+      GList *selected_objects = engine->entities_selection->entities;
+
       rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
-      if (engine->entities_selection->entities)
+      if (selected_objects)
         {
-          /* XXX: we don't currently do anything very clever in how
-           * manage the user manipulation tool when there are multiple
-           * entities selected, and simply apply the tool to the first
-           * entity. */
-          rut_tool_update (engine->tool, engine->entities_selection->entities->data);
-          rut_tool_draw (engine->tool, fb);
+          RutObject *reference_object = selected_objects->data;
+
+          if (rut_object_get_type (reference_object) == &rut_entity_type)
+            {
+              /* XXX: we don't currently do anything very clever in how
+               * manage the user manipulation tool when there are multiple
+               * entities selected, and simply apply the tool to the first
+               * entity. */
+              rut_tool_update (engine->tool, reference_object);
+              rut_tool_draw (engine->tool, fb);
+            }
         }
     }
 #endif /* RIG_EDITOR_ENABLED */
@@ -867,17 +872,26 @@ entity_translate_done_cb (RutEntity *entity,
   RigEngine *engine = view->engine;
 
   /* If the entity hasn't actually moved then we'll ignore it. It that
-   * case the user is presumably just trying to select and entity we
+   * case the user is presumably just trying to select the entity and we
    * don't want it to modify the controller */
   if (moved)
     {
-      rig_undo_journal_move_and_log (engine->undo_journal,
-                                     FALSE, /* mergable */
-                                     engine->selected_controller,
-                                     entity,
-                                     start[0] + rel[0],
-                                     start[1] + rel[1],
-                                     start[2] + rel[2]);
+      RutProperty *position_prop = &entity->properties[RUT_ENTITY_PROP_POSITION];
+      RutBoxed boxed_position;
+
+      /* Reset the entities position, before logging the move in the
+       * journal... */
+      rut_entity_set_translate (entity, start[0], start[1], start[2]);
+
+      boxed_position.type = RUT_PROPERTY_TYPE_VEC3;
+      boxed_position.d.vec3_val[0] = start[0] + rel[0];
+      boxed_position.d.vec3_val[1] = start[1] + rel[1];
+      boxed_position.d.vec3_val[2] = start[2] + rel[2];
+
+      rig_controller_view_edit_property (engine->controller_view,
+                                         FALSE, /* mergable */
+                                         position_prop,
+                                         &boxed_position);
 
       rig_reload_position_inspector (engine, entity);
 
@@ -1221,6 +1235,7 @@ translate_grab_entities (RigCameraView *view,
   return TRUE;
 }
 
+#if 0
 static void
 print_quaternion (const CoglQuaternion *q,
                   const char *label)
@@ -1230,6 +1245,7 @@ print_quaternion (const CoglQuaternion *q,
   cogl_quaternion_get_rotation_axis (q, axis);
   g_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
 }
+#endif
 
 static CoglPrimitive *
 create_line_primitive (float a[3], float b[3])
@@ -1454,7 +1470,7 @@ move_entity_to_camera (RigCameraView *view,
                        RutEntity *entity)
 {
   RigEngine *engine = view->engine;
-  RigUndoJournal *sub_journal = rig_undo_journal_new (engine);
+  RigUndoJournal *sub_journal;
   float camera_position[3];
   CoglMatrix parent_transform;
   CoglMatrix inverse_parent_transform;
@@ -1481,6 +1497,9 @@ move_entity_to_camera (RigCameraView *view,
    * coordinate space of the entity */
   if (cogl_matrix_get_inverse (&parent_transform, &inverse_parent_transform))
     {
+      RutProperty *position_prop = &entity->properties[RUT_ENTITY_PROP_POSITION];
+      RutBoxed boxed_position;
+
       cogl_matrix_transform_points (&inverse_parent_transform,
                                     3, /* n_components */
                                     sizeof (float) * 3, /* stride_in */
@@ -1489,13 +1508,16 @@ move_entity_to_camera (RigCameraView *view,
                                     camera_position, /* points_out */
                                     1 /* n_points */);
 
-      rig_undo_journal_move_and_log (sub_journal,
-                                     FALSE, /* mergable */
-                                     engine->selected_controller,
-                                     entity,
-                                     camera_position[0],
-                                     camera_position[1],
-                                     camera_position[2]);
+      boxed_position.type = RUT_PROPERTY_TYPE_VEC3;
+      boxed_position.d.vec3_val[0] = camera_position[0];
+      boxed_position.d.vec3_val[1] = camera_position[1];
+      boxed_position.d.vec3_val[2] = camera_position[2];
+
+
+      rig_controller_view_edit_property (engine->controller_view,
+                                         FALSE, /* mergable */
+                                         position_prop,
+                                         &boxed_position);
     }
 
   /* Copy the camera's rotation. FIXME: this should probably also try
@@ -1507,15 +1529,13 @@ move_entity_to_camera (RigCameraView *view,
   boxed_rotation.type = RUT_PROPERTY_TYPE_QUATERNION;
   boxed_rotation.d.quaternion_val = camera_rotation;
 
-  rig_undo_journal_set_property_and_log (sub_journal,
-                                         FALSE,
-                                         engine->selected_controller,
-                                         &boxed_rotation,
-                                         rotation_property);
+  rig_controller_view_edit_property (engine->controller_view,
+                                     FALSE, /* mergable */
+                                     rotation_property,
+                                     &boxed_rotation);
 
-  rig_undo_journal_log_subjournal (engine->undo_journal,
-                                   sub_journal,
-                                   FALSE);
+  sub_journal = rig_engine_pop_undo_subjournal (engine);
+  rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal);
 }
 
 static RutEntity *
@@ -1906,9 +1926,9 @@ input_cb (RutInputEvent *event,
 
                   for (l = selection->entities; l; l = l->next)
                     {
-                      rig_undo_journal_add_entity_and_log (engine->undo_journal,
-                                                           parent,
-                                                           l->data);
+                      rig_undo_journal_add_entity (engine->undo_journal,
+                                                   parent,
+                                                   l->data);
                     }
                 }
             }
@@ -1943,8 +1963,8 @@ device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
             CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->onscreen);
             float progression = dx / cogl_framebuffer_get_width (fb);
 
-            rut_timeline_set_progress (engine->timeline,
-                                       engine->grab_progress + progression);
+            rig_controller_set_progress (engine->controllers->data,
+                                         engine->grab_progress + progression);
 
             rut_shell_queue_redraw (engine->ctx->shell);
             return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -1974,7 +1994,8 @@ device_mode_input_cb (RutInputEvent *event,
         {
             engine->grab_x = rut_motion_event_get_x (event);
             engine->grab_y = rut_motion_event_get_y (event);
-            engine->grab_progress = rut_timeline_get_progress (engine->timeline);
+            engine->grab_progress =
+              rig_controller_get_progress (engine->controllers->data);
 
             /* TODO: Add rut_shell_implicit_grab_input() that handles releasing
              * the grab for you */

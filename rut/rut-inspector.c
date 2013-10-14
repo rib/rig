@@ -136,7 +136,7 @@ property_changed_cb (RutProperty *primary_target_prop,
   RutInspectorPropertyData *prop_data = user_data;
   RutInspector *inspector = prop_data->inspector;
   GList *l;
-      bool mergable;
+  bool mergable;
 
   g_return_if_fail (primary_target_prop == prop_data->target_prop);
 
@@ -148,6 +148,7 @@ property_changed_cb (RutProperty *primary_target_prop,
     case RUT_PROPERTY_TYPE_UINT32:
     case RUT_PROPERTY_TYPE_VEC3:
     case RUT_PROPERTY_TYPE_VEC4:
+    case RUT_PROPERTY_TYPE_QUATERNION:
       mergable = true;
       break;
     default:
@@ -163,6 +164,7 @@ property_changed_cb (RutProperty *primary_target_prop,
                                             primary_target_prop->spec->name);
       inspector->property_changed_cb (target_prop, /* target */
                                       source_prop,
+                                      mergable,
                                       inspector->user_data);
     }
 }
@@ -231,6 +233,7 @@ create_property_controls (RutInspector *inspector)
     {
       RutInspectorPropertyData *prop_data = inspector->prop_data + i;
       RutObject *control;
+      RutBin *bin;
 
       prop_data->inspector = inspector;
 
@@ -243,13 +246,18 @@ create_property_controls (RutInspector *inspector)
       rut_graphable_add_child (prop_data->stack, prop_data->drag_bin);
       rut_refable_unref (prop_data->drag_bin);
 
+      bin = rut_bin_new (inspector->context);
+      rut_bin_set_bottom_padding (bin, 5);
+      rut_drag_bin_set_child (prop_data->drag_bin, bin);
+      rut_refable_unref (bin);
+
       control = rut_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
                                         property_changed_cb,
                                         controlled_changed_cb,
+                                        true,
                                         prop_data);
-
-      rut_drag_bin_set_child (prop_data->drag_bin, control);
+      rut_bin_set_child (bin, control);
       rut_refable_unref (control);
 
       prop_data->control = control;

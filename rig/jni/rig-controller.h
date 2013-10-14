@@ -17,8 +17,8 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RUT_TRANSITION_H_
-#define _RUT_TRANSITION_H_
+#ifndef _RUT_CONTROLLER_H_
+#define _RUT_CONTROLLER_H_
 
 #include <rut.h>
 #include "rig-path.h"
@@ -30,8 +30,15 @@ extern RutType rig_controller_type;
 typedef struct _RigController RigController;
 
 enum {
-  RUT_TRANSITION_PROP_PROGRESS,
-  RUT_TRANSITION_N_PROPS
+  RIG_CONTROLLER_PROP_LABEL,
+  RIG_CONTROLLER_PROP_ACTIVE,
+  RIG_CONTROLLER_PROP_AUTO_DEACTIVATE,
+  RIG_CONTROLLER_PROP_LOOP,
+  RIG_CONTROLLER_PROP_RUNNING,
+  RIG_CONTROLLER_PROP_LENGTH,
+  RIG_CONTROLLER_PROP_ELAPSED,
+  RIG_CONTROLLER_PROP_PROGRESS,
+  RIG_CONTROLLER_N_PROPS
 };
 
 typedef enum _RigControllerMethod
@@ -44,6 +51,8 @@ typedef enum _RigControllerMethod
 /* State for an individual property that the controller is tracking */
 typedef struct
 {
+  RigController *controller;
+
   RutProperty *property;
 
   /* The controller support 3 "methods" of control for any property. One is a
@@ -60,6 +69,7 @@ typedef struct
 
   /* path may be NULL */
   RigPath *path;
+  RutClosure *path_change_closure;
   RutBoxed constant_value;
 
   /* depenencies and c_expression may be NULL */
@@ -74,29 +84,33 @@ struct _RigController
 
   int ref_count;
 
-  char *name;
+  RigEngine *engine;
+  RutContext *context;
 
-  float progress;
+  char *label;
+
+  bool active;
+  bool auto_deactivate;
+
+  RutTimeline *timeline;
+  double elapsed;
 
   /* Hash table of RigControllerProperties. The key is a pointer to
    * the RutProperty indexed using g_direct_hash and the value is the
    * RigControllerPropData struct */
   GHashTable *properties;
 
-  RigEngine *engine;
-  RutContext *context;
-
   RutList operation_cb_list;
 
-  RutProperty props[RUT_TRANSITION_N_PROPS];
+  RutProperty props[RIG_CONTROLLER_N_PROPS];
   RutSimpleIntrospectableProps introspectable;
 };
 
 typedef enum
 {
-  RIG_TRANSITION_OPERATION_ADDED,
-  RIG_TRANSITION_OPERATION_REMOVED,
-  RIG_TRANSITION_OPERATION_METHOD_CHANGED
+  RIG_CONTROLLER_OPERATION_ADDED,
+  RIG_CONTROLLER_OPERATION_REMOVED,
+  RIG_CONTROLLER_OPERATION_METHOD_CHANGED
 } RigControllerOperation;
 
 typedef void
@@ -105,22 +119,13 @@ typedef void
                                     RigControllerPropData *prop_data,
                                     void *user_data);
 
-void
-rig_controller_set_progress (RigController *controller,
-                             float progress);
-
 RigControllerPropData *
 rig_controller_find_prop_data_for_property (RigController *controller,
                                             RutProperty *property);
 
-RigControllerPropData *
-rig_controller_get_prop_data_for_property (RigController *controller,
-                                           RutProperty *property);
-
-RigControllerPropData *
-rig_controller_get_prop_data (RigController *controller,
-                              RutObject *object,
-                              const char *property_name);
+RigPath *
+rig_controller_get_path_for_prop_data (RigController *controller,
+                                       RigControllerPropData *prop_data);
 
 RigPath *
 rig_controller_get_path_for_property (RigController *controller,
@@ -135,8 +140,78 @@ RigController *
 rig_controller_new (RigEngine *engine, const char *name);
 
 void
-rig_controller_set_name (RigController *controller,
-                         const char *name);
+rig_controller_set_label (RutObject *object,
+                          const char *label);
+
+const char *
+rig_controller_get_label (RutObject *object);
+
+void
+rig_controller_set_active (RutObject *controller,
+                           bool active);
+
+bool
+rig_controller_get_active (RutObject *controller);
+
+void
+rig_controller_set_auto_deactivate (RutObject *controller,
+                                    bool auto_deactivate);
+
+bool
+rig_controller_get_auto_deactivate (RutObject *controller);
+
+void
+rig_controller_set_loop (RutObject *controller,
+                         bool loop);
+
+bool
+rig_controller_get_loop (RutObject *controller);
+
+void
+rig_controller_set_running (RutObject *controller,
+                            bool running);
+
+bool
+rig_controller_get_running (RutObject *controller);
+
+void
+rig_controller_set_length (RutObject *controller,
+                           float length);
+
+float
+rig_controller_get_length (RutObject *controller);
+
+void
+rig_controller_set_elapsed (RutObject *controller,
+                            double elapsed);
+
+double
+rig_controller_get_elapsed (RutObject *controller);
+
+void
+rig_controller_set_progress (RutObject *controller,
+                             double progress);
+
+double
+rig_controller_get_progress (RutObject *controller);
+
+void
+rig_controller_add_property (RigController *controller,
+                             RutProperty *property);
+
+void
+rig_controller_remove_property (RigController *controller,
+                                RutProperty *property);
+
+void
+rig_controller_set_property_constant (RigController *controller,
+                                      RutProperty *property,
+                                      RutBoxed *boxed_value);
+
+void
+rig_controller_set_property_path (RigController *controller,
+                                  RutProperty *property,
+                                  RigPath *path);
 
 typedef void
 (* RigControllerForeachPropertyCb) (RigControllerPropData *prop_data,
@@ -146,13 +221,6 @@ void
 rig_controller_foreach_property (RigController *controller,
                                  RigControllerForeachPropertyCb callback,
                                  void *user_data);
-
-void
-rig_controller_free (RigController *controller);
-
-void
-rig_controller_update_property (RigController *controller,
-                                RutProperty *property);
 
 RutClosure *
 rig_controller_add_operation_callback (RigController *controller,
@@ -172,8 +240,28 @@ rig_controller_set_property_binding (RigController *controller,
                                      RutProperty **dependencies,
                                      int n_dependencies);
 
-void
-rig_controller_remove_property (RigController *controller,
-                                RutProperty *property);
+typedef void (*RigControllerNodeCallback) (RigNode *node, void *user_data);
 
-#endif /* _RUT_TRANSITION_H_ */
+void
+rig_controller_foreach_node (RigController *controller,
+                             RigControllerNodeCallback callback,
+                             void *user_data);
+
+void
+rig_controller_insert_path_value (RigController *controller,
+                                  RutProperty *property,
+                                  float t,
+                                  const RutBoxed *value);
+
+void
+rig_controller_box_path_value (RigController *controller,
+                               RutProperty *property,
+                               float t,
+                               RutBoxed *out);
+
+void
+rig_controller_remove_path_value (RigController *controller,
+                                  RutProperty *property,
+                                  float t);
+
+#endif /* _RUT_CONTROLLER_H_ */

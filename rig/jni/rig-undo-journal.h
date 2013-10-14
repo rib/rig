@@ -36,6 +36,7 @@ typedef struct _RigUndoJournal RigUndoJournal;
 typedef enum _UndoRedoOp
 {
   UNDO_REDO_SUBJOURNAL_OP,
+  UNDO_REDO_SET_PROPERTY_OP,
   UNDO_REDO_SET_CONTROLLED_OP,
   UNDO_REDO_SET_CONTROL_METHOD_OP,
   UNDO_REDO_CONST_PROPERTY_CHANGE_OP,
@@ -46,18 +47,27 @@ typedef enum _UndoRedoOp
   UNDO_REDO_DELETE_ENTITY_OP,
   UNDO_REDO_ADD_COMPONENT_OP,
   UNDO_REDO_DELETE_COMPONENT_OP,
-  UNDO_REDO_MOVE_PATH_NODES_OP,
+  UNDO_REDO_ADD_CONTROLLER_OP,
+  UNDO_REDO_REMOVE_CONTROLLER_OP,
   UNDO_REDO_N_OPS
 } UndoRedoOp;
 
-typedef struct _UndoRedoConstPropertyChange
+typedef struct _UndoRedoSetProperty
+{
+  RutObject *object;
+  RutProperty *property;
+  RutBoxed value0;
+  RutBoxed value1;
+} UndoRedoSetProperty;
+
+typedef struct _UndoRedoSetControllerConst
 {
   RigController *controller;
   RutObject *object;
   RutProperty *property;
   RutBoxed value0;
   RutBoxed value1;
-} UndoRedoConstPropertyChange;
+} UndoRedoSetControllerConst;
 
 typedef struct _UndoRedoPathAddRemove
 {
@@ -65,6 +75,11 @@ typedef struct _UndoRedoPathAddRemove
   RutObject *object;
   RutProperty *property;
   float t;
+
+  /* When we initially log to remove a node then we won't save
+   * a value until we actually apply the operation and so we
+   * need to track when this boxed value is valid... */
+  bool have_value;
   RutBoxed value;
 } UndoRedoPathAddRemove;
 
@@ -78,6 +93,7 @@ typedef struct _UndoRedoPathModify
   RutBoxed value1;
 } UndoRedoPathModify;
 
+#if 0
 typedef struct _UndoRedoMovedPathNode
 {
   RigController *controller;
@@ -93,6 +109,7 @@ typedef struct _UndoRedoMovePathNodes
   UndoRedoMovedPathNode *nodes;
   int n_nodes;
 } UndoRedoMovePathNodes;
+#endif
 
 typedef struct _UndoRedoSetControlled
 {
@@ -122,18 +139,11 @@ typedef struct
   RutBoxed constant_value;
 } UndoRedoPropData;
 
-typedef struct _UndoRedoControllerState
-{
-  RutList link;
-
-  RigController *controller;
-  RutList properties;
-} UndoRedoControllerState;
-
 typedef struct _UndoRedoAddDeleteEntity
 {
   RutEntity *parent_entity;
   RutEntity *deleted_entity;
+  bool saved_controller_properties;
   RutList controller_properties;
 } UndoRedoAddDeleteEntity;
 
@@ -141,8 +151,17 @@ typedef struct _UndoRedoAddDeleteComponent
 {
   RutEntity *parent_entity;
   RutObject *deleted_component;
+  bool saved_controller_properties;
   RutList controller_properties;
 } UndoRedoAddDeleteComponent;
+
+typedef struct _UndoRedoAddRemoveController
+{
+  RigController *controller;
+  bool active_state;
+  bool saved_controller_properties;
+  RutList controller_properties;
+} UndoRedoAddRemoveController;
 
 typedef struct _UndoRedo
 {
@@ -152,14 +171,15 @@ typedef struct _UndoRedo
   CoglBool mergable;
   union
     {
-      UndoRedoConstPropertyChange const_prop_change;
+      UndoRedoSetProperty set_property;
+      UndoRedoSetControllerConst set_controller_const;
       UndoRedoPathAddRemove path_add_remove;
       UndoRedoPathModify path_modify;
       UndoRedoSetControlled set_controlled;
       UndoRedoSetControlMethod set_control_method;
       UndoRedoAddDeleteEntity add_delete_entity;
       UndoRedoAddDeleteComponent add_delete_component;
-      UndoRedoMovePathNodes move_path_nodes;
+      UndoRedoAddRemoveController add_remove_controller;
       RigUndoJournal *subjournal;
     } d;
 } UndoRedo;
@@ -185,72 +205,95 @@ struct _RigUndoJournal
 
   /* Detect recursion on insertion which indicates a bug */
   bool inserting;
+
+  /* Whether or not operations should be applied as they are inserted
+   * into the journal. By default this is false, so we can create
+   * subjournals, log operations and then apply them all together when
+   * inserting the subjournal into the master journal. Normally only
+   * the top-level, master journal would set this to true.
+   */
+  bool apply_on_insert;
 };
 
 void
-rig_undo_journal_set_controlled_and_log (RigUndoJournal *journal,
-                                         RigController *controller,
-                                         RutProperty *property,
-                                         CoglBool value);
+rig_undo_journal_log_add_controller (RigUndoJournal *journal,
+                                     RigController *controller);
 
 void
-rig_undo_journal_set_control_method_and_log (RigUndoJournal *journal,
-                                             RigController *controller,
-                                             RutProperty *property,
-                                             RigControllerMethod method);
+rig_undo_journal_log_remove_controller (RigUndoJournal *journal,
+                                        RigController *controller);
 
 void
-rig_undo_journal_set_property_and_log (RigUndoJournal *journal,
-                                       CoglBool mergable,
-                                       RigController *controller,
-                                       const RutBoxed *value,
-                                       RutProperty *property);
+rig_undo_journal_set_controlled (RigUndoJournal *journal,
+                                 RigController *controller,
+                                 RutProperty *property,
+                                 bool value);
 
+void
+rig_undo_journal_set_control_method (RigUndoJournal *journal,
+                                     RigController *controller,
+                                     RutProperty *property,
+                                     RigControllerMethod method);
+
+void
+rig_undo_journal_set_controller_constant (RigUndoJournal *journal,
+                                          bool mergable,
+                                          RigController *controller,
+                                          const RutBoxed *value,
+                                          RutProperty *property);
+
+void
+rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
+                                                 CoglBool mergable,
+                                                 RigController *controller,
+                                                 float t,
+                                                 const RutBoxed *value,
+                                                 RutProperty *property);
+
+void
+rig_undo_journal_remove_controller_path_node (RigUndoJournal *journal,
+                                              RigController *controller,
+                                              RutProperty *property,
+                                              float t);
+
+#if 0
 typedef struct
 {
-  RutProperty *property;
+  RigControllerPropData *prop_data;
   RigNode *node;
 } RigUndoJournalPathNode;
 
 void
-rig_undo_journal_move_path_nodes_and_log (RigUndoJournal *journal,
-                                          RigController *controller,
-                                          float offset,
-                                          const RigUndoJournalPathNode *nodes,
-                                          int n_path_nodes);
+rig_undo_journal_move_controller_path_nodes (RigUndoJournal *journal,
+                                             RigController *controller,
+                                             float offset,
+                                             const RigUndoJournalPathNode *nodes,
+                                             int n_path_nodes);
+#endif
 
 void
-rig_undo_journal_move_and_log (RigUndoJournal *journal,
-                               CoglBool mergable,
-                               RigController *controller,
-                               RutEntity *entity,
-                               float x,
-                               float y,
-                               float z);
+rig_undo_journal_set_property (RigUndoJournal *journal,
+                               bool mergable,
+                               const RutBoxed *value,
+                               RutProperty *property);
 
 void
-rig_undo_journal_delete_path_node_and_log (RigUndoJournal *journal,
-                                           RigController *controller,
-                                           RutProperty *property,
-                                           RigNode *node);
+rig_undo_journal_add_entity (RigUndoJournal *journal,
+                             RutEntity *parent_entity,
+                             RutEntity *entity);
 
 void
-rig_undo_journal_add_entity_and_log (RigUndoJournal *journal,
-                                     RutEntity *parent_entity,
-                                     RutEntity *entity);
+rig_undo_journal_delete_entity (RigUndoJournal *journal,
+                                RutEntity *entity);
 
 void
-rig_undo_journal_delete_entity_and_log (RigUndoJournal *journal,
-                                        RutEntity *entity);
+rig_undo_journal_add_component (RigUndoJournal *journal,
+                                RutEntity *entity,
+                                RutObject *component);
 
 void
-rig_undo_journal_add_component_and_log (RigUndoJournal *journal,
-                                        RutEntity *entity,
-                                        RutObject *component);
-
-void
-rig_undo_journal_delete_component_and_log (RigUndoJournal *journal,
-                                           RutObject *component);
+rig_undo_journal_delete_component (RigUndoJournal *journal,
+                                   RutObject *component);
 
 /**
  * rig_undo_journal_log_subjournal:
@@ -266,8 +309,7 @@ rig_undo_journal_delete_component_and_log (RigUndoJournal *journal,
  */
 void
 rig_undo_journal_log_subjournal (RigUndoJournal *journal,
-                                 RigUndoJournal *subjournal,
-                                 bool apply);
+                                 RigUndoJournal *subjournal);
 
 CoglBool
 rig_undo_journal_undo (RigUndoJournal *journal);
@@ -277,6 +319,10 @@ rig_undo_journal_redo (RigUndoJournal *journal);
 
 RigUndoJournal *
 rig_undo_journal_new (RigEngine *engine);
+
+void
+rig_undo_journal_set_apply_on_insert (RigUndoJournal *journal,
+                                      bool apply_on_insert);
 
 bool
 rig_undo_journal_is_empty (RigUndoJournal *journal);

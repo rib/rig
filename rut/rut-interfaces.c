@@ -175,11 +175,15 @@ rut_graphable_remove_child (RutObject *child)
   parent_vtable = rut_object_get_vtable (parent, RUT_INTERFACE_ID_GRAPHABLE);
   parent_props = rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
 
+  /* Note: we set ->parent to NULL here to avoid re-entrancy so
+   * ->child_removed can be a general function for removing a child
+   *  that might itself call rut_graphable_remove_child() */
+  child_props->parent = NULL;
+
   if (parent_vtable->child_removed)
     parent_vtable->child_removed (parent, child);
 
   g_queue_remove (&parent_props->children, child);
-  child_props->parent = NULL;
   rut_refable_release (child, parent);
 }
 

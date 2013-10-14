@@ -161,64 +161,58 @@ pb_path_new (RigEngine *engine, RigPath *path)
         {
         case RUT_PROPERTY_TYPE_FLOAT:
             {
-              RigNodeFloat *float_node = (RigNodeFloat *) node;
               pb_node->value->has_float_value = TRUE;
-              pb_node->value->float_value = float_node->value;
+              pb_node->value->float_value = node->boxed.d.float_val;
               break;
             }
         case RUT_PROPERTY_TYPE_DOUBLE:
             {
-              RigNodeDouble *double_node = (RigNodeDouble *) node;
               pb_node->value->has_double_value = TRUE;
-              pb_node->value->double_value = double_node->value;
+              pb_node->value->double_value = node->boxed.d.double_val;
               break;
             }
         case RUT_PROPERTY_TYPE_VEC3:
             {
-              RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
+              float *vec3 = node->boxed.d.vec3_val;
               pb_node->value->vec3_value = pb_vec3_new (engine,
-                                                        vec3_node->value[0],
-                                                        vec3_node->value[1],
-                                                        vec3_node->value[2]);
+                                                        vec3[0],
+                                                        vec3[1],
+                                                        vec3[2]);
               break;
             }
         case RUT_PROPERTY_TYPE_VEC4:
             {
-              RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
+              float *vec4 = node->boxed.d.vec4_val;
               pb_node->value->vec4_value = pb_vec4_new (engine,
-                                                        vec4_node->value[0],
-                                                        vec4_node->value[1],
-                                                        vec4_node->value[2],
-                                                        vec4_node->value[3]);
+                                                        vec4[0],
+                                                        vec4[1],
+                                                        vec4[2],
+                                                        vec4[3]);
               break;
             }
         case RUT_PROPERTY_TYPE_COLOR:
             {
-              RigNodeColor *color_node = (RigNodeColor *) node;
               pb_node->value->color_value =
-                pb_color_new (engine, &color_node->value);
+                pb_color_new (engine, &node->boxed.d.color_val);
               break;
             }
         case RUT_PROPERTY_TYPE_QUATERNION:
             {
-              RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
               pb_node->value->quaternion_value =
-                pb_rotation_new (engine, &quaternion_node->value);
+                pb_rotation_new (engine, &node->boxed.d.quaternion_val);
               break;
             }
         case RUT_PROPERTY_TYPE_INTEGER:
             {
-              RigNodeInteger *integer_node = (RigNodeInteger *) node;
               pb_node->value->has_integer_value = TRUE;
-              pb_node->value->integer_value = integer_node->value;
+              pb_node->value->integer_value = node->boxed.d.integer_val;
               continue;
               break;
             }
         case RUT_PROPERTY_TYPE_UINT32:
             {
-              RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
               pb_node->value->has_uint32_value = TRUE;
-              pb_node->value->uint32_value = uint32_node->value;
+              pb_node->value->uint32_value = node->boxed.d.uint32_val;
               break;
             }
 
@@ -617,7 +611,7 @@ serialize_component_cb (RutComponent *component,
     {
       RutModel *model = RUT_MODEL (component);
       uint64_t asset_id = serializer_lookup_object_id (serializer,
-      																								 rut_model_get_asset (model));
+                                                       rut_model_get_asset (model));
 
       /* XXX: we don't support serializing a model loaded from a RutMesh */
       g_warn_if_fail (asset_id != 0);
@@ -987,7 +981,12 @@ rig_pb_serialize_ui (RigEngine *engine,
 
           pb_controller->has_id = TRUE;
 
-          pb_controller->name = controller->name;
+          pb_controller->name = controller->label;
+
+          serialize_instrospectable_properties (controller,
+                                                &pb_controller->n_controller_properties,
+                                                (void **)&pb_controller->controller_properties,
+                                                &serializer);
 
           serializer.n_pb_properties = 0;
           serializer.pb_properties = NULL;
@@ -2162,7 +2161,8 @@ unserialize_controller_properties (UnSerializer *unserializer,
       uint64_t object_id;
       RutObject *object;
       RigControllerMethod method;
-      RigControllerPropData *prop_data;
+      RutProperty *property;
+      RutBoxed boxed_value;
 
       if (!pb_property->has_object_id ||
           pb_property->name == NULL)
@@ -2207,10 +2207,8 @@ unserialize_controller_properties (UnSerializer *unserializer,
           continue;
         }
 
-      prop_data = rig_controller_get_prop_data (controller,
-                                                object,
-                                                pb_property->name);
-      if (!prop_data)
+      property = rut_introspectable_lookup_property (object, pb_property->name);
+      if (!property)
         {
           collect_error (unserializer,
                          "Invalid object property name given for"
@@ -2218,7 +2216,7 @@ unserialize_controller_properties (UnSerializer *unserializer,
           continue;
         }
 
-      if (!prop_data->property->spec->animatable &&
+      if (!property->spec->animatable &&
           method != RIG_CONTROLLER_METHOD_CONSTANT)
         {
           collect_error (unserializer,
@@ -2226,27 +2224,39 @@ unserialize_controller_properties (UnSerializer *unserializer,
           continue;
         }
 
+      rig_controller_add_property (controller, property);
+
       rig_controller_set_property_method (controller,
-                                          prop_data->property,
+                                          property,
                                           method);
 
       pb_init_boxed_value (unserializer,
-                           &prop_data->constant_value,
-                           prop_data->constant_value.type,
+                           &boxed_value,
+                           property->spec->type,
                            pb_property->constant);
+
+      rig_controller_set_property_constant (controller,
+                                            property,
+                                            &boxed_value);
+
+      rut_boxed_destroy (&boxed_value);
 
       if (pb_property->path)
         {
           Rig__Path *pb_path = pb_property->path;
-
-          prop_data->path =
-            rig_path_new (unserializer->engine->ctx,
-                          prop_data->property->spec->type);
+          RigPath *path = rig_path_new (unserializer->engine->ctx,
+                                        property->spec->type);
 
           unserialize_path_nodes (unserializer,
-                                  prop_data->path,
+                                  path,
                                   pb_path->n_nodes,
                                   pb_path->nodes);
+
+          rig_controller_set_property_path (controller,
+                                            property,
+                                            path);
+
+          rut_refable_unref (path);
         }
 
       if (pb_property->c_expression)
@@ -2314,7 +2324,7 @@ unserialize_controller_properties (UnSerializer *unserializer,
             }
 
           rig_controller_set_property_binding (controller,
-                                               prop_data->property,
+                                               property,
                                                pb_property->c_expression,
                                                dependencies,
                                                pb_property->n_dependencies);
@@ -2322,6 +2332,20 @@ unserialize_controller_properties (UnSerializer *unserializer,
     }
 }
 
+static bool
+have_boxed_pb_property (Rig__Boxed **properties,
+                        int n_properties,
+                        const char *name)
+{
+  int i;
+  for (i = 0; i < n_properties; i++)
+    {
+      Rig__Boxed *pb_boxed = properties[i];
+      if (strcmp (pb_boxed->name, name) == 0)
+        return true;
+    }
+  return false;
+}
 static void
 unserialize_controllers (UnSerializer *unserializer,
                          int n_controllers,
@@ -2348,6 +2372,24 @@ unserialize_controllers (UnSerializer *unserializer,
 
       controller = rig_controller_new (unserializer->engine, name);
 
+      rig_controller_set_active (controller, true);
+
+      /* Properties of the RigController itself */
+      set_properties_from_pb_boxed_values (unserializer,
+                                           controller,
+                                           pb_controller->n_controller_properties,
+                                           pb_controller->controller_properties);
+
+      if (!have_boxed_pb_property (pb_controller->controller_properties,
+                                   pb_controller->n_controller_properties,
+                                   "length"))
+        {
+          /* XXX: for compatibility we set a default controller length of 20
+           * seconds */
+          rig_controller_set_length (controller, 20);
+        }
+
+      /* Properties controlled by the RigController... */
       unserialize_controller_properties (unserializer,
                                          controller,
                                          pb_controller->n_properties,

@@ -24,162 +24,238 @@
 #include "rig-node.h"
 
 void
-rig_node_integer_lerp (RigNodeInteger *a,
-                       RigNodeInteger *b,
+rig_node_integer_lerp (RigNode *a,
+                       RigNode *b,
                        float t,
                        int *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      *value = nearbyint (a->value + (b->value - a->value) * factor);
+      *value = nearbyint (a->boxed.d.integer_val +
+                          (b->boxed.d.integer_val - a->boxed.d.integer_val) *
+                          factor);
     }
   else
-    *value = a->value;
+    *value = a->boxed.d.integer_val;
 }
 
 void
-rig_node_uint32_lerp (RigNodeUint32 *a,
-                      RigNodeUint32 *b,
+rig_node_uint32_lerp (RigNode *a,
+                      RigNode *b,
                       float t,
                       uint32_t *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      *value = nearbyint (a->value + (b->value - a->value) * factor);
+      *value = nearbyint (a->boxed.d.uint32_val +
+                          (b->boxed.d.uint32_val - a->boxed.d.uint32_val) *
+                          factor);
     }
   else
-    *value = a->value;
+    *value = a->boxed.d.uint32_val;
 }
 
 void
-rig_node_float_lerp (RigNodeFloat *a,
-                     RigNodeFloat *b,
+rig_node_float_lerp (RigNode *a,
+                     RigNode *b,
                      float t,
                      float *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      *value = a->value + (b->value - a->value) * factor;
+      *value = a->boxed.d.float_val +
+        (b->boxed.d.float_val - a->boxed.d.float_val) * factor;
     }
   else
-    *value = a->value;
+    *value = a->boxed.d.float_val;
 }
 
 void
-rig_node_double_lerp (RigNodeDouble *a,
-                      RigNodeDouble *b,
+rig_node_double_lerp (RigNode *a,
+                      RigNode *b,
                       float t,
                       double *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      *value = a->value + (b->value - a->value) * factor;
+      *value = a->boxed.d.double_val +
+        (b->boxed.d.double_val - a->boxed.d.double_val) * factor;
     }
   else
-    *value = a->value;
+    *value = a->boxed.d.double_val;
 }
 
 void
-rig_node_vec3_lerp (RigNodeVec3 *a,
-                    RigNodeVec3 *b,
+rig_node_vec3_lerp (RigNode *a,
+                    RigNode *b,
                     float t,
                     float value[3])
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
 
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
-      value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
-      value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
+      value[0] = a->boxed.d.vec3_val[0] +
+        (b->boxed.d.vec3_val[0] - a->boxed.d.vec3_val[0]) * factor;
+      value[1] = a->boxed.d.vec3_val[1] +
+        (b->boxed.d.vec3_val[1] - a->boxed.d.vec3_val[1]) * factor;
+      value[2] = a->boxed.d.vec3_val[2] +
+        (b->boxed.d.vec3_val[2] - a->boxed.d.vec3_val[2]) * factor;
     }
   else
-    memcpy (value, a->value, sizeof (float) * 3);
+    memcpy (value, a->boxed.d.vec3_val, sizeof (float) * 3);
 }
 
 void
-rig_node_vec4_lerp (RigNodeVec4 *a,
-                    RigNodeVec4 *b,
+rig_node_vec4_lerp (RigNode *a,
+                    RigNode *b,
                     float t,
                     float value[4])
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
 
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      value[0] = a->value[0] + (b->value[0] - a->value[0]) * factor;
-      value[1] = a->value[1] + (b->value[1] - a->value[1]) * factor;
-      value[2] = a->value[2] + (b->value[2] - a->value[2]) * factor;
-      value[3] = a->value[3] + (b->value[3] - a->value[3]) * factor;
+      value[0] = a->boxed.d.vec4_val[0] +
+        (b->boxed.d.vec4_val[0] - a->boxed.d.vec4_val[0]) * factor;
+      value[1] = a->boxed.d.vec4_val[1] +
+        (b->boxed.d.vec4_val[1] - a->boxed.d.vec4_val[1]) * factor;
+      value[2] = a->boxed.d.vec4_val[2] +
+        (b->boxed.d.vec4_val[2] - a->boxed.d.vec4_val[2]) * factor;
+      value[3] = a->boxed.d.vec4_val[3] +
+        (b->boxed.d.vec4_val[3] - a->boxed.d.vec4_val[3]) * factor;
     }
   else
-    memcpy (value, a->value, sizeof (float) * 4);
+    memcpy (value, a->boxed.d.vec4_val, sizeof (float) * 4);
 }
 
 void
-rig_node_color_lerp (RigNodeColor *a,
-                     RigNodeColor *b,
+rig_node_color_lerp (RigNode *a,
+                     RigNode *b,
                      float t,
                      CoglColor *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
 
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      value->red =
-        a->value.red + (b->value.red - a->value.red) * factor;
-      value->green =
-        a->value.green + (b->value.green - a->value.green) * factor;
-      value->blue =
-        a->value.blue + (b->value.blue - a->value.blue) * factor;
-      value->alpha =
-        a->value.alpha + (b->value.alpha - a->value.alpha) * factor;
+      value->red = a->boxed.d.color_val.red +
+        (b->boxed.d.color_val.red - a->boxed.d.color_val.red) * factor;
+      value->green = a->boxed.d.color_val.green +
+        (b->boxed.d.color_val.green - a->boxed.d.color_val.green) * factor;
+      value->blue = a->boxed.d.color_val.blue +
+        (b->boxed.d.color_val.blue - a->boxed.d.color_val.blue) * factor;
+      value->alpha = a->boxed.d.color_val.alpha +
+        (b->boxed.d.color_val.alpha - a->boxed.d.color_val.alpha) * factor;
     }
   else
-    memcpy (value, &a->value, sizeof (CoglColor));
+    memcpy (value, &a->boxed.d.color_val, sizeof (CoglColor));
 }
 
 void
-rig_node_quaternion_lerp (RigNodeQuaternion *a,
-                          RigNodeQuaternion *b,
+rig_node_quaternion_lerp (RigNode *a,
+                          RigNode *b,
                           float t,
                           CoglQuaternion *value)
 {
-  float range = b->base.t - a->base.t;
+  float range = b->t - a->t;
   if (range)
     {
-      float offset = t - a->base.t;
+      float offset = t - a->t;
       float factor = offset / range;
 
-      cogl_quaternion_nlerp (value, &a->value, &b->value, factor);
+      cogl_quaternion_nlerp (value,
+                             &a->boxed.d.quaternion_val,
+                             &b->boxed.d.quaternion_val,
+                             factor);
     }
   else
-    *value = a->value;
+    *value = a->boxed.d.quaternion_val;
+}
+
+void
+rig_node_enum_lerp (RigNode *a,
+                    RigNode *b,
+                    float t,
+                    int *value)
+{
+  if (a->t >= b->t)
+    *value = a->boxed.d.enum_val;
+  else
+    *value = b->boxed.d.enum_val;
+}
+
+void
+rig_node_boolean_lerp (RigNode *a,
+                       RigNode *b,
+                       float t,
+                       bool *value)
+{
+  if (a->t >= b->t)
+    *value = a->boxed.d.boolean_val;
+  else
+    *value = b->boxed.d.boolean_val;
+}
+
+void
+rig_node_text_lerp (RigNode *a,
+                    RigNode *b,
+                    float t,
+                    const char **value)
+{
+  if (a->t >= b->t)
+    *value = a->boxed.d.text_val;
+  else
+    *value = b->boxed.d.text_val;
+}
+
+void
+rig_node_asset_lerp (RigNode *a,
+                     RigNode *b,
+                     float t,
+                     RutAsset **value)
+{
+  if (a->t >= b->t)
+    *value = a->boxed.d.asset_val;
+  else
+    *value = b->boxed.d.asset_val;
+}
+
+void
+rig_node_object_lerp (RigNode *a,
+                      RigNode *b,
+                      float t,
+                      RutObject **value)
+{
+  if (a->t >= b->t)
+    *value = a->boxed.d.object_val;
+  else
+    *value = b->boxed.d.object_val;
 }
 
 CoglBool
@@ -190,86 +266,74 @@ rig_node_box (RutPropertyType type,
   switch (type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
-      {
-        RigNodeFloat *float_node = (RigNodeFloat *) node;
-
-        value->type = RUT_PROPERTY_TYPE_FLOAT;
-        value->d.float_val = float_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_FLOAT;
+      value->d.float_val = node->boxed.d.float_val;
       return TRUE;
 
     case RUT_PROPERTY_TYPE_DOUBLE:
-      {
-        RigNodeDouble *double_node = (RigNodeDouble *) node;
-
-        value->type = RUT_PROPERTY_TYPE_DOUBLE;
-        value->d.double_val = double_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_DOUBLE;
+      value->d.double_val = node->boxed.d.double_val;
       return TRUE;
 
     case RUT_PROPERTY_TYPE_INTEGER:
-      {
-        RigNodeInteger *integer_node = (RigNodeInteger *) node;
-
-        value->type = RUT_PROPERTY_TYPE_INTEGER;
-        value->d.integer_val = integer_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_INTEGER;
+      value->d.integer_val = node->boxed.d.integer_val;
       return TRUE;
 
     case RUT_PROPERTY_TYPE_UINT32:
-      {
-        RigNodeUint32 *uint32_node = (RigNodeUint32 *) node;
-
-        value->type = RUT_PROPERTY_TYPE_UINT32;
-        value->d.uint32_val = uint32_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_UINT32;
+      value->d.uint32_val = node->boxed.d.uint32_val;
       return TRUE;
 
     case RUT_PROPERTY_TYPE_VEC3:
-      {
-        RigNodeVec3 *vec3_node = (RigNodeVec3 *) node;
-
-        value->type = RUT_PROPERTY_TYPE_VEC3;
-        memcpy (value->d.vec3_val, vec3_node->value, sizeof (float) * 3);
-      }
+      value->type = RUT_PROPERTY_TYPE_VEC3;
+      memcpy (value->d.vec3_val, node->boxed.d.vec3_val, sizeof (float) * 3);
       return TRUE;
 
     case RUT_PROPERTY_TYPE_VEC4:
-      {
-        RigNodeVec4 *vec4_node = (RigNodeVec4 *) node;
-
-        value->type = RUT_PROPERTY_TYPE_VEC4;
-        memcpy (value->d.vec4_val, vec4_node->value, sizeof (float) * 4);
-      }
+      value->type = RUT_PROPERTY_TYPE_VEC4;
+      memcpy (value->d.vec4_val, node->boxed.d.vec4_val, sizeof (float) * 4);
       return TRUE;
 
     case RUT_PROPERTY_TYPE_COLOR:
-      {
-        RigNodeColor *color_node = (RigNodeColor *) node;
-
-        value->type = RUT_PROPERTY_TYPE_COLOR;
-        value->d.color_val = color_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_COLOR;
+      value->d.color_val = node->boxed.d.color_val;
       return TRUE;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
-      {
-        RigNodeQuaternion *quaternion_node = (RigNodeQuaternion *) node;
-
-        value->type = RUT_PROPERTY_TYPE_QUATERNION;
-        value->d.quaternion_val = quaternion_node->value;
-      }
+      value->type = RUT_PROPERTY_TYPE_QUATERNION;
+      value->d.quaternion_val = node->boxed.d.quaternion_val;
       return TRUE;
 
-      /* These types of properties can't be interoplated so they
-       * probably shouldn't end up in a path */
     case RUT_PROPERTY_TYPE_ENUM:
+      value->type = RUT_PROPERTY_TYPE_ENUM;
+      value->d.enum_val = node->boxed.d.enum_val;
+      return TRUE;
+
     case RUT_PROPERTY_TYPE_BOOLEAN:
+      value->type = RUT_PROPERTY_TYPE_BOOLEAN;
+      value->d.boolean_val = node->boxed.d.boolean_val;
+      return TRUE;
+
     case RUT_PROPERTY_TYPE_TEXT:
+      value->type = RUT_PROPERTY_TYPE_TEXT;
+      value->d.text_val = g_strdup (node->boxed.d.text_val);
+      return TRUE;
+
     case RUT_PROPERTY_TYPE_ASSET:
+      value->type = RUT_PROPERTY_TYPE_ASSET;
+      value->d.asset_val = rut_refable_ref (node->boxed.d.asset_val);
+      return TRUE;
+
     case RUT_PROPERTY_TYPE_OBJECT:
+      value->type = RUT_PROPERTY_TYPE_OBJECT;
+      value->d.object_val = rut_refable_ref (node->boxed.d.object_val);
+      return TRUE;
+
     case RUT_PROPERTY_TYPE_POINTER:
-      break;
+      value->type = RUT_PROPERTY_TYPE_OBJECT;
+      value->d.pointer_val = node->boxed.d.pointer_val;
+      return TRUE;
     }
 
   g_warn_if_reached ();
@@ -278,128 +342,152 @@ rig_node_box (RutPropertyType type,
 }
 
 void
-rig_node_free (RutPropertyType type,
-               void *node)
+rig_node_free (RigNode *node)
 {
-  switch (type)
-    {
-    case RUT_PROPERTY_TYPE_FLOAT:
-      g_slice_free (RigNodeFloat, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_DOUBLE:
-      g_slice_free (RigNodeDouble, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_INTEGER:
-      g_slice_free (RigNodeInteger, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_UINT32:
-      g_slice_free (RigNodeUint32, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_VEC3:
-      g_slice_free (RigNodeVec3, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_VEC4:
-      g_slice_free (RigNodeVec4, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_QUATERNION:
-      g_slice_free (RigNodeQuaternion, node);
-      return;
-
-    case RUT_PROPERTY_TYPE_COLOR:
-      g_slice_free (RigNodeColor, node);
-      return;
-
-      /* These types shouldn't become nodes */
-    case RUT_PROPERTY_TYPE_ENUM:
-    case RUT_PROPERTY_TYPE_BOOLEAN:
-    case RUT_PROPERTY_TYPE_TEXT:
-    case RUT_PROPERTY_TYPE_ASSET:
-    case RUT_PROPERTY_TYPE_OBJECT:
-    case RUT_PROPERTY_TYPE_POINTER:
-      break;
-    }
-
-  g_warn_if_reached ();
+  g_slice_free (RigNode, node);
 }
 
-RigNodeInteger *
+RigNode *
 rig_node_new_for_integer (float t, int value)
 {
-  RigNodeInteger *node = g_slice_new (RigNodeInteger);
-  node->base.t = t;
-  node->value = value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_INTEGER;
+  node->boxed.d.integer_val = value;
   return node;
 }
 
-RigNodeUint32 *
+RigNode *
 rig_node_new_for_uint32 (float t, uint32_t value)
 {
-  RigNodeUint32 *node = g_slice_new (RigNodeUint32);
-  node->base.t = t;
-  node->value = value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_UINT32;
+  node->boxed.d.uint32_val = value;
   return node;
 }
 
-RigNodeFloat *
+RigNode *
 rig_node_new_for_float (float t, float value)
 {
-  RigNodeFloat *node = g_slice_new (RigNodeFloat);
-  node->base.t = t;
-  node->value = value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_FLOAT;
+  node->boxed.d.float_val = value;
   return node;
 }
 
-RigNodeDouble *
+RigNode *
 rig_node_new_for_double (float t, double value)
 {
-  RigNodeDouble *node = g_slice_new (RigNodeDouble);
-  node->base.t = t;
-  node->value = value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_DOUBLE;
+  node->boxed.d.double_val = value;
   return node;
 }
 
-RigNodeVec3 *
+RigNode *
 rig_node_new_for_vec3 (float t, const float value[3])
 {
-  RigNodeVec3 *node = g_slice_new (RigNodeVec3);
-  node->base.t = t;
-  memcpy (node->value, value, sizeof (float) * 3);
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_VEC3;
+  memcpy (node->boxed.d.vec3_val, value, sizeof (float) * 3);
   return node;
 }
 
-RigNodeVec4 *
+RigNode *
 rig_node_new_for_vec4 (float t, const float value[4])
 {
-  RigNodeVec4 *node = g_slice_new (RigNodeVec4);
-  node->base.t = t;
-  memcpy (node->value, value, sizeof (float) * 4);
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_VEC4;
+  memcpy (node->boxed.d.vec4_val, value, sizeof (float) * 4);
   return node;
 }
 
-RigNodeQuaternion *
+RigNode *
 rig_node_new_for_quaternion (float t, const CoglQuaternion *value)
 {
-  RigNodeQuaternion *node = g_slice_new (RigNodeQuaternion);
-  node->base.t = t;
-  node->value = *value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_QUATERNION;
+  node->boxed.d.quaternion_val = *value;
 
   return node;
 }
 
-RigNodeColor *
+RigNode *
 rig_node_new_for_color (float t, const CoglColor *value)
 {
-  RigNodeColor *node = g_slice_new (RigNodeColor);
-  node->base.t = t;
-  node->value = *value;
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_COLOR;
+  node->boxed.d.color_val = *value;
 
   return node;
+}
+
+RigNode *
+rig_node_new_for_boolean (float t, bool value)
+{
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_BOOLEAN;
+  node->boxed.d.boolean_val = value;
+
+  return node;
+}
+
+RigNode *
+rig_node_new_for_enum (float t, int value)
+{
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_ENUM;
+  node->boxed.d.enum_val = value;
+
+  return node;
+}
+
+RigNode *
+rig_node_new_for_text (float t, const char *value)
+{
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_TEXT;
+  node->boxed.d.text_val = g_strdup (value);
+
+  return node;
+}
+
+RigNode *
+rig_node_new_for_asset (float t, RutAsset *value)
+{
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_ASSET;
+  node->boxed.d.asset_val = rut_refable_ref (value);
+
+  return node;
+}
+
+RigNode *
+rig_node_new_for_object (float t, RutObject *value)
+{
+  RigNode *node = g_slice_new (RigNode);
+  node->t = t;
+  node->boxed.type = RUT_PROPERTY_TYPE_OBJECT;
+  node->boxed.d.object_val = rut_refable_ref (value);
+
+  return node;
+}
+
+RigNode *
+rig_node_copy (RigNode *node)
+{
+  return g_slice_dup (RigNode, node);
 }
 
 RigNode *

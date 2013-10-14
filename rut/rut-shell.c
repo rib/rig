@@ -3032,9 +3032,7 @@ rut_shell_set_selection (RutShell *shell,
 
   if (shell->selection)
     {
-      RutSelectableVTable *selectable =
-        rut_object_get_vtable (shell->selection, RUT_INTERFACE_ID_SELECTABLE);
-      selectable->cancel (shell->selection);
+      rut_selectable_cancel (shell->selection);
 
       rut_refable_unref (shell->selection);
 

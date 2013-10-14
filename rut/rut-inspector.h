@@ -13,6 +13,7 @@ typedef struct _RutInspector RutInspector;
 typedef void
 (* RutInspectorCallback) (RutProperty *target_property,
                           RutProperty *source_property,
+                          bool mergable,
                           void *user_data);
 
 /* This is called whenever the 'controlled' state changes */
