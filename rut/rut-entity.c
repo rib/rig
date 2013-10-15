@@ -121,54 +121,47 @@ _rut_entity_free (void *object)
   g_slice_free (RutEntity, entity);
 }
 
-static RutRefableVTable _rut_entity_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_entity_free
-};
-
-static RutGraphableVTable _rut_entity_graphable_vtable = {
-  NULL, /* child_removed */
-  NULL, /* child_added */
-  NULL, /* parent_changed */
-};
-
-static RutTransformableVTable _rut_entity_transformable_vtable = {
-  rut_entity_get_transform
-};
-
-static RutIntrospectableVTable _rut_entity_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
-
 RutType rut_entity_type;
 
 void
 _rut_entity_init_type (void)
 {
-  rut_type_init (&rut_entity_type, "RigEntity");
-  rut_type_add_interface (&rut_entity_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutEntity, ref_count),
-                          &_rut_entity_refable_vtable);
-  rut_type_add_interface (&rut_entity_type,
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child_removed */
+      NULL, /* child_added */
+      NULL, /* parent_changed */
+  };
+  static RutTransformableVTable transformable_vtable = {
+      rut_entity_get_transform
+  };
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_entity_type;
+#define TYPE RutEntity
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_entity_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutEntity, graphable),
-                          &_rut_entity_graphable_vtable);
-  rut_type_add_interface (&rut_entity_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_TRANSFORMABLE,
                           0,
-                          &_rut_entity_transformable_vtable);
-  rut_type_add_interface (&rut_entity_type,
+                          &transformable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_entity_introspectable_vtable);
-  rut_type_add_interface (&rut_entity_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutEntity, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutEntity *
@@ -229,6 +222,32 @@ rut_entity_get_label (RutObject *obj)
   return entity->label ? entity->label : "";
 }
 
+const float *
+rut_entity_get_position (RutObject *obj)
+{
+  RutEntity *entity = obj;
+
+  return entity->position;
+}
+
+void
+rut_entity_set_position (RutObject *obj,
+                         const float position[3])
+{
+  RutEntity *entity = obj;
+
+  if (memcpy (entity->position, position, sizeof (float) * 3) == 0)
+    return;
+
+  entity->position[0] = position[0];
+  entity->position[1] = position[1];
+  entity->position[2] = position[2];
+  entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_POSITION]);
+}
+
 float
 rut_entity_get_x (RutObject *obj)
 {
@@ -242,9 +261,13 @@ rut_entity_set_x (RutObject *obj,
                   float x)
 {
   RutEntity *entity = obj;
+  float pos[3] = {
+      x,
+      entity->position[1],
+      entity->position[2],
+  };
 
-  entity->position[0] = x;
-  entity->dirty = TRUE;
+  rut_entity_set_position (entity, pos);
 }
 
 float
@@ -260,9 +283,13 @@ rut_entity_set_y (RutObject *obj,
                   float y)
 {
   RutEntity *entity = obj;
+  float pos[3] = {
+      entity->position[0],
+      y,
+      entity->position[2],
+  };
 
-  entity->position[1] = y;
-  entity->dirty = TRUE;
+  rut_entity_set_position (entity, pos);
 }
 
 float
@@ -278,29 +305,13 @@ rut_entity_set_z (RutObject *obj,
                   float z)
 {
   RutEntity *entity = obj;
+  float pos[3] = {
+      entity->position[0],
+      entity->position[1],
+      z,
+  };
 
-  entity->position[2] = z;
-  entity->dirty = TRUE;
-}
-
-const float *
-rut_entity_get_position (RutObject *obj)
-{
-  RutEntity *entity = obj;
-
-  return entity->position;
-}
-
-void
-rut_entity_set_position (RutObject *obj,
-                         const float position[3])
-{
-  RutEntity *entity = obj;
-
-  entity->position[0] = position[0];
-  entity->position[1] = position[1];
-  entity->position[2] = position[2];
-  entity->dirty = TRUE;
+  rut_entity_set_position (entity, pos);
 }
 
 void
@@ -333,8 +344,14 @@ rut_entity_set_rotation (RutObject *obj,
 {
   RutEntity *entity = obj;
 
+  if (memcmp (&entity->rotation, rotation, sizeof (*rotation)) == 0)
+      return;
+
   entity->rotation = *rotation;
   entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
@@ -411,8 +428,14 @@ rut_entity_set_scale (RutObject *obj,
 {
   RutEntity *entity = obj;
 
+  if (entity->scale == scale)
+    return;
+
   entity->scale = scale;
   entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_SCALE]);
 }
 
 float
@@ -482,15 +505,17 @@ rut_entity_remove_component (RutEntity *entity,
 
 void
 rut_entity_translate (RutEntity *entity,
-                      float      tx,
-                      float      ty,
-                      float      tz)
+                      float tx,
+                      float ty,
+                      float tz)
 {
-  entity->position[0] += tx;
-  entity->position[1] += ty;
-  entity->position[2] += tz;
+  float pos[3] = {
+      entity->position[1] + tx,
+      entity->position[1] + ty,
+      entity->position[2] + tz,
+  };
 
-  entity->dirty = TRUE;
+  rut_entity_set_position (entity, pos);
 }
 
 void
@@ -499,56 +524,57 @@ rut_entity_set_translate (RutEntity *entity,
                           float ty,
                           float tz)
 {
-  entity->position[0] = tx;
-  entity->position[1] = ty;
-  entity->position[2] = tz;
+  float pos[3] = { tx, ty, tz, };
 
-  entity->dirty = TRUE;
+  rut_entity_set_position (entity, pos);
 }
 
 void
 rut_entity_rotate_x_axis (RutEntity *entity,
-                          float      x_angle)
+                          float x_angle)
 {
-  CoglQuaternion x_rotation, *current;
+  CoglQuaternion x_rotation;
 
-  /* XXX: avoid the allocation here, and/or make the muliplication in place */
-  current = cogl_quaternion_copy (&entity->rotation);
   cogl_quaternion_init_from_x_rotation (&x_rotation, x_angle);
-  cogl_quaternion_multiply (&entity->rotation, current, &x_rotation);
-  cogl_quaternion_free (current);
+  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+                            &x_rotation);
 
   entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
 rut_entity_rotate_y_axis (RutEntity *entity,
-                          float      y_angle)
+                          float y_angle)
 {
-  CoglQuaternion y_rotation, *current;
+  CoglQuaternion y_rotation;
 
-  /* XXX: avoid the allocation here, and/or make the muliplication in place */
-  current = cogl_quaternion_copy (&entity->rotation);
   cogl_quaternion_init_from_y_rotation (&y_rotation, y_angle);
-  cogl_quaternion_multiply (&entity->rotation, current, &y_rotation);
-  cogl_quaternion_free (current);
+  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+                            &y_rotation);
 
   entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 void
 rut_entity_rotate_z_axis (RutEntity *entity,
-                          float      z_angle)
+                          float z_angle)
 {
-  CoglQuaternion z_rotation, *current;
+  CoglQuaternion z_rotation;
 
-  /* XXX: avoid the allocation here, and/or make the muliplication in place */
-  current = cogl_quaternion_copy (&entity->rotation);
   cogl_quaternion_init_from_z_rotation (&z_rotation, z_angle);
-  cogl_quaternion_multiply (&entity->rotation, current, &z_rotation);
-  cogl_quaternion_free (current);
+  cogl_quaternion_multiply (&entity->rotation, &entity->rotation,
+                            &z_rotation);
 
   entity->dirty = TRUE;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
 bool
@@ -654,7 +680,13 @@ rut_entity_set_visible (RutObject *obj, bool visible)
 {
   RutEntity *entity = obj;
 
+  if (entity->visible == visible)
+    return;
+
   entity->visible = visible;
+
+  rut_property_dirty (&entity->ctx->property_ctx,
+                      &entity->properties[RUT_ENTITY_PROP_VISIBLE]);
 }
 
 RutEntity *
