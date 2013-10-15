@@ -173,8 +173,7 @@ rut_icon_new (RutContext *ctx,
   if (texture)
     {
       icon->image = rut_image_new (ctx, texture);
-      rut_image_set_draw_mode (icon->image,
-                               RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO);
+      rut_image_set_draw_mode (icon->image, RUT_IMAGE_DRAW_MODE_1_TO_1);
       rut_graphable_add_child (icon, icon->image);
       rut_refable_unref (icon->image);
     }
