@@ -72,8 +72,6 @@ _rut_drag_bin_free (void *object)
 
   rut_shell_remove_pre_paint_callback (bin->ctx->shell, bin);
 
-  rut_refable_unref (bin->ctx);
-
   rut_graphable_destroy (bin);
 
   rut_refable_unref (bin->inputable.input_region);
@@ -272,22 +270,14 @@ _rut_drag_bin_input_cb (RutInputRegion *region,
 RutDragBin *
 rut_drag_bin_new (RutContext *ctx)
 {
-  RutDragBin *bin = g_slice_new0 (RutDragBin);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_drag_bin_init_type ();
-
-      initialized = TRUE;
-    }
+  RutDragBin *bin = rut_object_alloc0 (RutDragBin,
+                                       &rut_drag_bin_type,
+                                       _rut_drag_bin_init_type);
 
   bin->ref_count = 1;
-  bin->ctx = rut_refable_ref (ctx);
+  bin->ctx = ctx;
 
-  rut_object_init (&bin->_parent, &rut_drag_bin_type);
-
-  rut_graphable_init (RUT_OBJECT (bin));
+  rut_graphable_init (bin);
 
   bin->in_drag = FALSE;
 
