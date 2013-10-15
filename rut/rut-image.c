@@ -52,6 +52,8 @@ struct _RutImage
   RutPaintableProps paintable;
   RutGraphableProps graphable;
 
+  RutList preferred_size_cb_list;
+
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_IMAGE_N_PROPS];
 
@@ -70,6 +72,11 @@ _rut_image_draw_mode_ui_enum =
     .nick = "Draw mode",
     .values =
     {
+      {
+        RUT_IMAGE_DRAW_MODE_1_TO_1,
+        "1 to 1",
+        "Show the full image at a 1:1 ratio"
+      },
       {
         RUT_IMAGE_DRAW_MODE_REPEAT,
         "Repeat",
@@ -110,7 +117,7 @@ _rut_image_free (void *object)
 {
   RutImage *image = object;
 
-  rut_refable_unref (image->context);
+  rut_closure_list_disconnect_all (&image->preferred_size_cb_list);
 
   rut_graphable_destroy (image);
 
@@ -119,32 +126,23 @@ _rut_image_free (void *object)
   g_slice_free (RutImage, image);
 }
 
-RutRefableVTable _rut_image_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_image_free
-};
-
-static RutGraphableVTable _rut_image_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static RutIntrospectableVTable _rut_image_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
 static void
 _rut_image_paint (RutObject *object,
                   RutPaintContext *paint_ctx)
 {
-  RutImage *image = RUT_IMAGE (object);
+  RutImage *image = object;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   switch (image->draw_mode)
     {
+    case RUT_IMAGE_DRAW_MODE_1_TO_1:
+      cogl_framebuffer_draw_rectangle (fb,
+                                       image->pipeline,
+                                       0.0f, 0.0f,
+                                       image->tex_width,
+                                       image->tex_height);
+      break;
+
     case RUT_IMAGE_DRAW_MODE_SCALE:
       cogl_framebuffer_draw_rectangle (fb,
                                        image->pipeline,
@@ -177,16 +175,12 @@ _rut_image_paint (RutObject *object,
     }
 }
 
-RutPaintableVTable _rut_image_paintable_vtable = {
-  _rut_image_paint
-};
-
 static void
 rut_image_set_size (void *object,
                     float width,
                     float height)
 {
-  RutImage *image = RUT_IMAGE (object);
+  RutImage *image = object;
 
   image->width = width;
   image->height = height;
@@ -232,17 +226,27 @@ rut_image_get_preferred_width (void *object,
                                float *min_width_p,
                                float *natural_width_p)
 {
-  RutImage *image = RUT_IMAGE (object);
+  RutImage *image = object;
 
-  if (min_width_p)
-    *min_width_p = 0.0f;
-
-  if (natural_width_p)
+  if (image->draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1)
     {
-      if (for_height != -1.0f)
-        *natural_width_p = for_height * image->tex_width / image->tex_height;
-      else
+      if (min_width_p)
+        *min_width_p = image->tex_width;
+      if (natural_width_p)
         *natural_width_p = image->tex_width;
+    }
+  else
+    {
+      if (min_width_p)
+        *min_width_p = 0.0f;
+
+      if (natural_width_p)
+        {
+          if (for_height != -1.0f)
+            *natural_width_p = for_height * image->tex_width / image->tex_height;
+          else
+            *natural_width_p = image->tex_width;
+        }
     }
 }
 
@@ -252,18 +256,42 @@ rut_image_get_preferred_height (void *object,
                                 float *min_height_p,
                                 float *natural_height_p)
 {
-  RutImage *image = RUT_IMAGE (object);
+  RutImage *image = object;
 
-  if (min_height_p)
-    *min_height_p = 0.0f;
-
-  if (natural_height_p)
+  if (image->draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1)
     {
-      if (for_width != -1.0f)
-        *natural_height_p = for_width * image->tex_height / image->tex_width;
-      else
+      if (min_height_p)
+        *min_height_p = image->tex_height;
+      if (natural_height_p)
         *natural_height_p = image->tex_height;
     }
+  else
+    {
+      if (min_height_p)
+        *min_height_p = 0.0f;
+
+      if (natural_height_p)
+        {
+          if (for_width != -1.0f)
+            *natural_height_p = for_width * image->tex_height / image->tex_width;
+          else
+            *natural_height_p = image->tex_height;
+        }
+    }
+}
+
+static RutClosure *
+rut_image_add_preferred_size_callback (void *object,
+                                       RutSizablePreferredSizeCallback cb,
+                                       void *user_data,
+                                       RutClosureDestroyCallback destroy)
+{
+  RutImage *image = object;
+
+  return rut_closure_list_add (&image->preferred_size_cb_list,
+                               cb,
+                               user_data,
+                               destroy);
 }
 
 static void
@@ -271,69 +299,76 @@ rut_image_get_size (void *object,
                     float *width,
                     float *height)
 {
-  RutImage *image = RUT_IMAGE (object);
+  RutImage *image = object;
 
   *width = image->width;
   *height = image->height;
 }
 
-static RutSizableVTable _rut_image_sizable_vtable = {
-  rut_image_set_size,
-  rut_image_get_size,
-  rut_image_get_preferred_width,
-  rut_image_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_image_init_type (void)
 {
-  rut_type_init (&rut_image_type, "RigImage");
-  rut_type_add_interface (&rut_image_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutImage, ref_count),
-                          &_rut_image_refable_vtable);
-  rut_type_add_interface (&rut_image_type,
+  static RutPaintableVTable paintable_vtable = {
+      _rut_image_paint
+  };
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+  static RutSizableVTable sizable_vtable = {
+      rut_image_set_size,
+      rut_image_get_size,
+      rut_image_get_preferred_width,
+      rut_image_get_preferred_height,
+      rut_image_add_preferred_size_callback
+  };
+
+  RutType *type = &rut_image_type;
+#define TYPE RutImage
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_image_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutImage, paintable),
-                          &_rut_image_paintable_vtable);
-  rut_type_add_interface (&rut_image_type,
+                          offsetof (TYPE, paintable),
+                          &paintable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutImage, graphable),
-                          &_rut_image_graphable_vtable);
-  rut_type_add_interface (&rut_image_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_image_sizable_vtable);
-  rut_type_add_interface (&rut_image_type,
+                          &sizable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_image_introspectable_vtable);
-  rut_type_add_interface (&rut_image_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutImage, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutImage *
 rut_image_new (RutContext *ctx,
                CoglTexture *texture)
 {
-  RutImage *image = g_slice_new0 (RutImage);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_image_init_type ();
-
-      initialized = TRUE;
-    }
+  RutImage *image = rut_object_alloc0 (RutImage,
+                                       &rut_image_type,
+                                       _rut_image_init_type);
 
   image->ref_count = 1;
-  image->context = rut_refable_ref (ctx);
+  image->context = ctx;
 
-  rut_object_init (&image->_parent, &rut_image_type);
+  rut_list_init (&image->preferred_size_cb_list);
 
   image->pipeline = cogl_pipeline_new (ctx->cogl_context);
   cogl_pipeline_set_layer_texture (image->pipeline,
@@ -343,8 +378,8 @@ rut_image_new (RutContext *ctx,
   image->tex_width = cogl_texture_get_width (texture);
   image->tex_height = cogl_texture_get_height (texture);
 
-  rut_paintable_init (RUT_OBJECT (image));
-  rut_graphable_init (RUT_OBJECT (image));
+  rut_paintable_init (image);
+  rut_graphable_init (image);
 
   rut_simple_introspectable_init (image,
                                   _rut_image_prop_specs,
@@ -357,6 +392,14 @@ rut_image_new (RutContext *ctx,
   return image;
 }
 
+static void
+preferred_size_changed (RutImage *image)
+{
+  rut_closure_list_invoke (&image->preferred_size_cb_list,
+                           RutSizablePreferredSizeCallback,
+                           image);
+}
+
 void
 rut_image_set_draw_mode (RutImage *image,
                          RutImageDrawMode draw_mode)
@@ -366,10 +409,15 @@ rut_image_set_draw_mode (RutImage *image,
       CoglPipelineWrapMode wrap_mode;
       CoglPipelineFilter min_filter, mag_filter;
 
+      if (draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1 ||
+          image->draw_mode == RUT_IMAGE_DRAW_MODE_1_TO_1)
+        preferred_size_changed (image);
+
       image->draw_mode = draw_mode;
 
       switch (draw_mode)
         {
+        case RUT_IMAGE_DRAW_MODE_1_TO_1:
         case RUT_IMAGE_DRAW_MODE_REPEAT:
           wrap_mode = COGL_PIPELINE_WRAP_MODE_REPEAT;
           min_filter = COGL_PIPELINE_FILTER_NEAREST;

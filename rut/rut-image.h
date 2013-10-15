@@ -30,6 +30,8 @@ typedef struct _RutImage RutImage;
 
 typedef enum
 {
+  /* Don't scale the image */
+  RUT_IMAGE_DRAW_MODE_1_TO_1,
   /* Fills the widget with repeats of the image */
   RUT_IMAGE_DRAW_MODE_REPEAT,
   /* Scales the image to fill the size of the widget */
