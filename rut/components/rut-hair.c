@@ -622,7 +622,7 @@ rut_hair_update_state (RutHair *hair)
 float
 rut_hair_get_length (RutObject *obj)
 {
-  RutHair *hair = RUT_HAIR (obj);
+  RutHair *hair = obj;
 
   return hair->length;
 }
@@ -631,7 +631,7 @@ void
 rut_hair_set_length (RutObject *obj,
                      float length)
 {
-  RutHair *hair = RUT_HAIR (obj);
+  RutHair *hair = obj;
   RutEntity *entity;
   RutContext *ctx;
 
@@ -652,7 +652,7 @@ rut_hair_set_length (RutObject *obj,
 int
 rut_hair_get_n_shells (RutObject *obj)
 {
-  RutHair *hair = RUT_HAIR (obj);
+  RutHair *hair = obj;
 
   return hair->n_shells;
 }
@@ -661,7 +661,7 @@ void
 rut_hair_set_n_shells (RutObject *obj,
                        int n_shells)
 {
-  RutHair *hair = RUT_HAIR (obj);
+  RutHair *hair = obj;
   RutEntity *entity;
   RutContext *ctx;
 
