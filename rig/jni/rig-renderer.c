@@ -282,16 +282,9 @@ _rig_renderer_init_type (void)
 RigRenderer *
 rig_renderer_new (RigEngine *engine)
 {
-  RigRenderer *renderer = g_slice_new0 (RigRenderer);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_renderer_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&renderer->_parent, &rig_renderer_type);
+  RigRenderer *renderer = rut_object_alloc0 (RigRenderer,
+                                             &rig_renderer_type,
+                                             _rig_renderer_init_type);
 
   renderer->ref_count = 1;
 
@@ -711,6 +704,7 @@ rig_renderer_init (RigEngine *engine)
   engine->material_lighting_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
+         "/* material lighting declarations */\n"
          "varying vec3 normal, eye_direction;\n"
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
          "uniform vec3 light0_direction_norm;\n"
@@ -747,6 +741,7 @@ rig_renderer_init (RigEngine *engine)
   engine->simple_lighting_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
+         "/* simple lighting declarations */\n"
          "varying vec3 normal, eye_direction;\n"
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
          "uniform vec3 light0_direction_norm;\n",
@@ -814,6 +809,7 @@ rig_renderer_init (RigEngine *engine)
   engine->hair_simple_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
+                      "/* hair simple declarations */\n"
                       "varying vec3 normal, eye_direction;\n"
                       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
                       "uniform vec3 light0_direction_norm;\n",
@@ -844,6 +840,7 @@ rig_renderer_init (RigEngine *engine)
   engine->hair_material_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
+                      "/* hair material declarations */\n"
                       "varying vec3 normal, eye_direction;\n"
                       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
                       "uniform vec3 light0_direction_norm;\n"
@@ -926,41 +923,31 @@ add_material_for_mask (CoglPipeline *pipeline,
                        RutMaterial *material,
                        RutImageSource **sources)
 {
-  RutAsset *color_source_asset;
-
   if (sources[SOURCE_TYPE_ALPHA_MASK])
     {
       /* XXX: We assume a video source is opaque and so never add to
        * mask pipeline. */
       if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
         {
-          cogl_pipeline_set_layer_texture (pipeline, 4,
-                                           rut_image_source_get_texture (sources[SOURCE_TYPE_ALPHA_MASK]));
-          cogl_pipeline_add_snippet (pipeline,
-                                     engine->alpha_mask_snippet);
-
-          cogl_pipeline_set_layer_combine (pipeline, 4,
-                                           "RGBA=REPLACE(PREVIOUS)",
-                                           NULL);
+          rut_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK],
+                                           pipeline);
+          cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
         }
     }
 
-  color_source_asset = rut_material_get_color_source_asset (material);
-  if (color_source_asset)
-    cogl_pipeline_set_layer_texture (pipeline, 1,
-                                     rut_asset_get_texture (color_source_asset));
+  if (sources[SOURCE_TYPE_COLOR])
+    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
 }
 
 static CoglPipeline *
 get_entity_mask_pipeline (RigEngine *engine,
                           RutEntity *entity,
-                          RutComponent *geometry,
+                          RutObject *geometry,
                           RutMaterial *material,
                           RutImageSource **sources,
                           GetPipelineFlags flags)
 {
   CoglPipeline *pipeline;
-  RutObject *hair;
 
   pipeline = get_entity_pipeline_cache (entity, CACHE_SLOT_SHADOW);
 
@@ -1008,12 +995,10 @@ get_entity_mask_pipeline (RigEngine *engine,
       return cogl_object_ref (pipeline);
     }
 
-  hair = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
-
   if (rut_object_get_type (geometry) == &rut_diamond_type)
     {
       pipeline = cogl_object_ref (engine->dof_diamond_pipeline);
-      rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
+      rut_diamond_apply_mask (geometry, pipeline);
 
       if (material)
         add_material_for_mask (pipeline, engine, material, sources);
@@ -1022,10 +1007,10 @@ get_entity_mask_pipeline (RigEngine *engine,
     {
       pipeline = cogl_pipeline_copy (engine->dof_unshaped_pipeline);
 
-      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
+      if (rut_shape_get_shaped (geometry))
         {
           CoglTexture *shape_texture =
-            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+            rut_shape_get_shape_texture (geometry);
 
           cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
         }
@@ -1042,8 +1027,6 @@ get_entity_mask_pipeline (RigEngine *engine,
     }
   else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
     {
-      int i;
-
       pipeline = cogl_pipeline_copy (engine->dof_diamond_pipeline);
 
       if (material)
@@ -1115,7 +1098,7 @@ image_source_changed_cb (RutImageSource *source,
 static CoglPipeline *
 get_entity_color_pipeline (RigEngine *engine,
                            RutEntity *entity,
-                           RutComponent *geometry,
+                           RutObject *geometry,
                            RutMaterial *material,
                            RutImageSource **sources,
                            GetPipelineFlags flags,
@@ -1203,21 +1186,21 @@ get_entity_color_pipeline (RigEngine *engine,
     {
       CoglTexture *shape_texture;
 
-      if (rut_shape_get_shaped (RUT_SHAPE (geometry)))
+      if (rut_shape_get_shaped (geometry))
         {
           shape_texture =
-            rut_shape_get_shape_texture (RUT_SHAPE (geometry));
+            rut_shape_get_shape_texture (geometry);
           cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
         }
 
 #warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rut_shape_add_reshaped_callback (RUT_SHAPE (geometry),
+      rut_shape_add_reshaped_callback (geometry,
                                        reshape_cb,
                                        NULL,
                                        NULL);
     }
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
-    rut_diamond_apply_mask (RUT_DIAMOND (geometry), pipeline);
+    rut_diamond_apply_mask (geometry, pipeline);
   else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type &&
            sources[SOURCE_TYPE_COLOR])
     {
@@ -1259,7 +1242,26 @@ get_entity_color_pipeline (RigEngine *engine,
 
   cogl_pipeline_add_snippet (pipeline, engine->unpremultiply_snippet);
 
-  if (!hair && material)
+
+  if (hair)
+    {
+      if (material)
+        cogl_pipeline_add_snippet (pipeline, engine->hair_material_snippet);
+      else
+        cogl_pipeline_add_snippet (pipeline, engine->hair_simple_snippet);
+
+      cogl_pipeline_set_layer_combine (pipeline, 11, "RGBA=REPLACE(PREVIOUS)",
+                                       NULL);
+
+      fin_pipeline = cogl_pipeline_copy (pipeline);
+      cogl_pipeline_add_snippet (fin_pipeline, engine->hair_fin_snippet);
+      cogl_pipeline_add_snippet (pipeline, engine->hair_vertex_snippet);
+      rut_hair_set_uniform_location (hair, pipeline,
+                                     blended ? RUT_HAIR_SHELL_POSITION_BLENDED :
+                                     RUT_HAIR_SHELL_POSITION_UNBLENDED);
+      rut_hair_set_uniform_location (hair, fin_pipeline, RUT_HAIR_LENGTH);
+    }
+  else if (material)
     {
       if (sources[SOURCE_TYPE_ALPHA_MASK])
         cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
@@ -1273,6 +1275,7 @@ get_entity_color_pipeline (RigEngine *engine,
     }
   else
     cogl_pipeline_add_snippet (pipeline, engine->simple_lighting_snippet);
+
 
   if (rut_entity_get_receive_shadow (entity))
     {
@@ -1292,25 +1295,6 @@ get_entity_color_pipeline (RigEngine *engine,
       /* Handle shadow mapping */
       cogl_pipeline_add_snippet (pipeline,
                                  engine->shadow_mapping_fragment_snippet);
-    }
-
-  if (hair)
-    {
-      if (material)
-        cogl_pipeline_add_snippet (pipeline, engine->hair_material_snippet);
-      else
-        cogl_pipeline_add_snippet (pipeline, engine->hair_simple_snippet);
-
-      cogl_pipeline_set_layer_combine (pipeline, 11, "RGBA=REPLACE(PREVIOUS)",
-                                       NULL);
-
-      fin_pipeline = cogl_pipeline_copy (pipeline);
-      cogl_pipeline_add_snippet (fin_pipeline, engine->hair_fin_snippet);
-      cogl_pipeline_add_snippet (pipeline, engine->hair_vertex_snippet);
-      rut_hair_set_uniform_location (hair, pipeline,
-                                     blended ? RUT_HAIR_SHELL_POSITION_BLENDED :
-                                     RUT_HAIR_SHELL_POSITION_UNBLENDED);
-      rut_hair_set_uniform_location (hair, fin_pipeline, RUT_HAIR_LENGTH);
     }
 
   cogl_pipeline_add_snippet (pipeline, engine->premultiply_snippet);
@@ -1431,7 +1415,7 @@ image_source_ready_cb (RutImageSource *source,
       dependant->set_image_size (geometry, width, height);
     }
   else if (rut_object_get_type (geometry) == &rut_shape_type)
-    rut_shape_set_texture_size (RUT_SHAPE (geometry), width, height);
+    rut_shape_set_texture_size (geometry, width, height);
   else if (rut_object_get_type (geometry) == &rut_diamond_type)
     {
       RutDiamond *diamond = geometry;
@@ -1537,7 +1521,8 @@ get_entity_pipeline (RigEngine *engine,
                                                     NULL);
 
           rut_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-          rut_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK], FALSE);
+          rut_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK],
+                                               FALSE);
         }
 
       asset = material->normal_map_asset;
@@ -1560,7 +1545,8 @@ get_entity_pipeline (RigEngine *engine,
                                                     NULL);
 
           rut_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
-          rut_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP], FALSE);
+          rut_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP],
+                                               FALSE);
         }
     }
 
@@ -1661,35 +1647,65 @@ rig_renderer_flush_journal (RigRenderer *renderer,
     {
       RigJournalEntry *entry = &g_array_index (journal, RigJournalEntry, i);
       RutEntity *entity = entry->entity;
-      RutComponent *geometry =
+      RutObject *geometry =
         rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
       CoglPipeline *pipeline;
       CoglPrimitive *primitive;
       float normal_matrix[9];
       RutMaterial *material;
       CoglPipeline *fin_pipeline = NULL;
-      RutHair *hair = rut_entity_get_component (entity,
-                                                RUT_COMPONENT_TYPE_HAIR);
+      RutHair *hair;
 
-      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+      if (rut_object_get_type (geometry) == &rut_text_type &&
+          paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+        {
+          cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+          rut_paintable_paint (geometry, rut_paint_ctx);
+          continue;
+        }
+
+      if (!rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
+        return;
+
+      /*
+       * Setup Pipelines...
+       */
 
       pipeline = get_entity_pipeline (paint_ctx->engine,
                                       entity,
                                       geometry,
                                       paint_ctx->pass);
 
+      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+
+      hair  = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
       if (hair)
         {
-          if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-            fin_pipeline = get_entity_pipeline_cache (entity,
-                                                      CACHE_SLOT_HAIR_FINS_BLENDED);
-          else
-            fin_pipeline = get_entity_pipeline_cache (entity,
-                                                      CACHE_SLOT_HAIR_FINS_UNBLENDED);
+          rut_hair_update_state (hair);
+
+          if (rut_object_get_type (geometry) == &rut_model_type)
+            {
+              if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+                {
+                  fin_pipeline =
+                    get_entity_pipeline_cache (entity,
+                                               CACHE_SLOT_HAIR_FINS_BLENDED);
+                }
+              else
+                {
+                  fin_pipeline =
+                    get_entity_pipeline_cache (entity,
+                                               CACHE_SLOT_HAIR_FINS_UNBLENDED);
+                }
+            }
         }
 
+      /*
+       * Update Uniforms...
+       */
+
       if ((paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
-          paint_ctx->pass == RIG_PASS_SHADOW))
+           paint_ctx->pass == RIG_PASS_SHADOW))
         {
           /* FIXME: avoid updating these uniforms for every primitive if
            * the focal parameters haven't change! */
@@ -1707,18 +1723,11 @@ rig_renderer_flush_journal (RigRenderer *renderer,
           /* FIXME: only update the lighting uniforms when the light has
            * actually moved! */
           rut_light_set_uniforms (light, pipeline);
-          if (hair)
-            rut_light_set_uniforms (light, fin_pipeline);
 
           /* FIXME: only update the material uniforms when the material has
            * actually changed! */
-          material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
           if (material)
-            {
-              rut_material_flush_uniforms (material, pipeline);
-              if (hair)
-                rut_material_flush_uniforms (material, fin_pipeline);
-            }
+            rut_material_flush_uniforms (material, pipeline);
 
           get_normal_matrix (&entry->matrix, normal_matrix);
 
@@ -1729,97 +1738,98 @@ rig_renderer_flush_journal (RigRenderer *renderer,
                                             1, /* count */
                                             FALSE, /* don't transpose again */
                                             normal_matrix);
-          if (hair)
+
+          if (fin_pipeline)
             {
+              rut_light_set_uniforms (light, fin_pipeline);
+
+              if (material)
+                rut_material_flush_uniforms (material, fin_pipeline);
+
               cogl_pipeline_set_uniform_matrix (fin_pipeline,
                                             location,
                                             3, /* dimensions */
                                             1, /* count */
                                             FALSE, /* don't transpose again */
                                             normal_matrix);
+
+              cogl_pipeline_set_layer_texture (fin_pipeline, 11,
+                                               hair->fin_texture);
+
+              rut_hair_set_uniform_float_value (hair, fin_pipeline,
+                                                RUT_HAIR_LENGTH,
+                                                hair->length);
             }
         }
 
-      if (rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
+      /*
+       * Draw Primitive...
+       */
+
+      primitive = get_entity_primitive_cache (entity, 0);
+      if (!primitive)
         {
-          primitive = get_entity_primitive_cache (entity, 0);
-          if (!primitive)
+          primitive = rut_primable_get_primitive (geometry);
+          set_entity_primitive_cache (entity, 0, primitive);
+        }
+
+      cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+
+      if (hair)
+        {
+          CoglTexture *texture;
+          int i, uniform;
+
+          if (fin_pipeline)
             {
-              primitive = rut_primable_get_primitive (geometry);
-              set_entity_primitive_cache (entity, 0, primitive);
+              RutModel *model = geometry;
+              cogl_primitive_draw (model->fin_primitive, fb, fin_pipeline);
             }
 
-          cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
+          if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
+            uniform = RUT_HAIR_SHELL_POSITION_BLENDED;
+          else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
+            uniform = RUT_HAIR_SHELL_POSITION_UNBLENDED;
+          else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
+                   paint_ctx->pass == RIG_PASS_SHADOW)
+            uniform = RUT_HAIR_SHELL_POSITION_SHADOW;
 
-          if (hair)
+          /* FIXME: only update the hair uniforms when they change! */
+          /* FIXME: avoid needing to query the uniform locations by
+           * name for each primitive! */
+
+          texture = g_array_index (hair->shell_textures, CoglTexture *, 0);
+
+          cogl_pipeline_set_layer_texture (pipeline, 11, texture);
+
+          rut_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
+
+          /* TODO: we should be drawing the original base model as
+           * the interior, with depth write and test enabled to
+           * make sure we reduce the work involved in blending all
+           * the shells on top. */
+          cogl_primitive_draw (primitive, fb, pipeline);
+
+          cogl_pipeline_set_alpha_test_function (pipeline,
+                                                 COGL_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
+
+          /* TODO: we should support having more shells than
+           * real textures... */
+          for (i = 1; i < hair->n_shells; i++)
             {
-              CoglTexture *texture;
-              int i, uniform;
+              float hair_pos = hair->shell_positions[i];
 
-              if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-                uniform = RUT_HAIR_SHELL_POSITION_BLENDED;
-              else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
-                uniform = RUT_HAIR_SHELL_POSITION_UNBLENDED;
-              else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
-                       paint_ctx->pass == RIG_PASS_SHADOW)
-                uniform = RUT_HAIR_SHELL_POSITION_SHADOW;
-
-              /* FIXME: only update the hair uniforms when they change! */
-              /* FIXME: avoid needing to query the uniform locations by
-               * name for each primitive! */
-
-              if (rut_object_get_type (geometry) == &rut_model_type)
-                {
-                  RutModel *model = (RutModel *)geometry;
-                  cogl_pipeline_set_layer_texture (fin_pipeline, 11,
-                                                   hair->fin_texture);
-                  rut_hair_set_uniform_float_value (hair, fin_pipeline,
-                                                    RUT_HAIR_LENGTH,
-                                                    hair->length);
-                  cogl_primitive_draw (model->fin_primitive, fb, fin_pipeline);
-                }
-
-              rut_hair_update_state (hair);
-
-              texture = g_array_index (hair->shell_textures, CoglTexture *, 0);
-
+              texture = g_array_index (hair->shell_textures, CoglTexture *, i);
               cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
-              rut_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
+              rut_hair_set_uniform_float_value (hair, pipeline, uniform,
+                                                hair_pos);
 
-              /* TODO: we should be drawing the original base model as
-               * the interior, with depth write and test enabled to
-               * make sure we reduce the work involved in blending all
-               * the shells on top. */
               cogl_primitive_draw (primitive, fb, pipeline);
-
-              cogl_pipeline_set_alpha_test_function (pipeline,
-                                                     COGL_PIPELINE_ALPHA_FUNC_GREATER, 0.49);
-
-              /* TODO: we should support having more shells than
-               * real textures... */
-              for (i = 1; i < hair->n_shells; i++)
-                {
-                  float hair_pos = hair->shell_positions[i];
-
-                  texture = g_array_index (hair->shell_textures, CoglTexture *, i);
-                  cogl_pipeline_set_layer_texture (pipeline, 11, texture);
-
-                  rut_hair_set_uniform_float_value (hair, pipeline, uniform,
-                                                    hair_pos);
-
-                  cogl_primitive_draw (primitive, fb, pipeline);
-                }
             }
-          else if (!hair)
-            cogl_primitive_draw (primitive, fb, pipeline);
         }
-      else if (rut_object_get_type (geometry) == &rut_text_type &&
-               paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-        {
-          cogl_framebuffer_set_modelview_matrix (fb, &entry->matrix);
-          rut_paintable_paint (geometry, rut_paint_ctx);
-        }
+      else
+        cogl_primitive_draw (primitive, fb, pipeline);
 
       cogl_object_unref (pipeline);
 
