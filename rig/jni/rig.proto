@@ -126,7 +126,8 @@ message Entity
 {
   message Component
     {
-      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5; TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; }
+      enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5;
+          TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10; }
 
       message Light
         {

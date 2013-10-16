@@ -721,6 +721,15 @@ serialize_component_cb (RutComponent *component,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
+  else if (type == &rut_hair_type)
+    {
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__HAIR;
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
+    }
+
 }
 
 static RutTraverseVisitFlags
@@ -1542,11 +1551,6 @@ unserialize_components (UnSerializer *unserializer,
             register_unserializer_object (unserializer, material, component_id);
             break;
           }
-        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
-        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
-        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
-        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
-          break;
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
           {
             Rig__Entity__Component__Model *pb_model = pb_component->model;
@@ -1663,10 +1667,16 @@ unserialize_components (UnSerializer *unserializer,
             register_unserializer_object (unserializer, camera, component_id);
             break;
           }
+        case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
+        case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
+        case RIG__ENTITY__COMPONENT__TYPE__DIAMOND:
+        case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
+        case RIG__ENTITY__COMPONENT__TYPE__HAIR:
+          break;
         }
     }
 
-  /* Now we add components that may depend on a _MATERIAL... */
+  /* Now we add components that may depend on a _MATERIAL or _MODEL ... */
   for (i = 0; i < pb_entity->n_components; i++)
     {
       Rig__Entity__Component *pb_component = pb_entity->components[i];
@@ -1682,10 +1692,6 @@ unserialize_components (UnSerializer *unserializer,
 
       switch (pb_component->type)
         {
-        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
-        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
-          break;
-
         case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
           {
             Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
@@ -1903,6 +1909,48 @@ unserialize_components (UnSerializer *unserializer,
               }
             break;
           }
+        case RIG__ENTITY__COMPONENT__TYPE__HAIR:
+          {
+            RutHair *hair = rut_hair_new (unserializer->engine->ctx);
+            RutObject *geom;
+
+            rut_entity_add_component (entity, hair);
+
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 hair,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+
+            register_unserializer_object (unserializer, hair, component_id);
+
+
+#warning "FIXME: don't derive complex hair meshes on the fly at runtime!"
+            /* XXX: This is a duplication of the special logic we have
+             * in rig-engine.c when first adding a hair component to
+             * an entity where we derive out special hair geometry
+             * from the current geometry.
+             *
+             * FIXME: This should not be done on the fly when loading
+             * a UI since this can be hugely expensive. We should be
+             * saving an loading a hair mesh that is derived offline.
+             */
+
+            geom = rut_entity_get_component (entity,
+                                             RUT_COMPONENT_TYPE_GEOMETRY);
+
+            if (geom && rut_object_get_type (geom) == &rut_model_type)
+              {
+                RutModel *hair_geom = rut_model_new_for_hair (geom);
+
+                rut_entity_remove_component (entity, geom);
+                rut_entity_add_component (entity, hair_geom);
+              }
+
+            break;
+          }
+
+        case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
+        case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
