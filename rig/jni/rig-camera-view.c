@@ -373,18 +373,20 @@ _rut_camera_view_paint (RutObject *object,
     }
 
   rut_camera_set_framebuffer (camera_component, fb);
-
-  cogl_framebuffer_draw_rectangle (fb,
-                                   view->bg_pipeline,
-                                   0, 0,
-                                   view->width,
-                                   view->height);
+  if (!_rig_in_device_mode)
+    {
+      cogl_framebuffer_draw_rectangle (fb,
+                                       view->bg_pipeline,
+                                       0, 0,
+                                       view->width,
+                                       view->height);
+    }
 
   rut_camera_suspend (suspended_camera);
 
   rig_paint_ctx->pass = RIG_PASS_SHADOW;
   rig_camera_update_view (engine, engine->light, TRUE);
-  rig_paint_camera_entity (engine->light, rig_paint_ctx);
+  rig_paint_camera_entity (engine->light, rig_paint_ctx, NULL);
 
   flush_viewport_for_camera (view, paint_ctx->camera, camera_component);
 
@@ -412,7 +414,7 @@ _rut_camera_view_paint (RutObject *object,
       rut_camera_end_frame (camera_component);
 
       rig_paint_ctx->pass = RIG_PASS_DOF_DEPTH;
-      rig_paint_camera_entity (camera, rig_paint_ctx);
+      rig_paint_camera_entity (camera, rig_paint_ctx, NULL);
 
       pass_fb = rut_dof_effect_get_color_pass_fb (engine->dof);
       rut_camera_set_framebuffer (camera_component, pass_fb);
@@ -420,14 +422,17 @@ _rut_camera_view_paint (RutObject *object,
       rut_camera_flush (camera_component);
       cogl_framebuffer_clear4f (pass_fb,
                                 COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                                1, 1, 1, 1);
+                                camera_component->bg_color.red,
+                                camera_component->bg_color.green,
+                                camera_component->bg_color.blue,
+                                camera_component->bg_color.alpha);
       rut_camera_end_frame (camera_component);
 
       rig_paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
-      rig_paint_camera_entity (camera, rig_paint_ctx);
+      rig_paint_camera_entity (camera, rig_paint_ctx, NULL);
 
       rig_paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
-      rig_paint_camera_entity (camera, rig_paint_ctx);
+      rig_paint_camera_entity (camera, rig_paint_ctx, NULL);
 
       rut_camera_set_framebuffer (camera_component, fb);
       rut_camera_set_viewport (camera_component,
@@ -443,10 +448,12 @@ _rut_camera_view_paint (RutObject *object,
   else
     {
       rig_paint_ctx->pass = RIG_PASS_COLOR_UNBLENDED;
-      rig_paint_camera_entity (camera, rig_paint_ctx);
+      rig_paint_camera_entity (camera, rig_paint_ctx,
+                               view->play_camera_component);
 
       rig_paint_ctx->pass = RIG_PASS_COLOR_BLENDED;
-      rig_paint_camera_entity (camera, rig_paint_ctx);
+      rig_paint_camera_entity (camera, rig_paint_ctx,
+                               view->play_camera_component);
       rut_camera_resume (suspended_camera);
     }
 
@@ -2022,22 +2029,14 @@ init_device_transforms (RutContext *ctx,
 RigCameraView *
 rig_camera_view_new (RigEngine *engine)
 {
+  RigCameraView *view = rut_object_alloc0 (RigCameraView,
+                                           &rig_camera_view_type,
+                                           _rig_camera_view_init_type);
   RutContext *ctx = engine->ctx;
-  RigCameraView *view = g_slice_new0 (RigCameraView);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_camera_view_init_type ();
-
-      initialized = TRUE;
-    }
 
   view->ref_count = 1;
   view->context = rut_refable_ref (ctx);
   view->engine = engine;
-
-  rut_object_init (&view->_parent, &rig_camera_view_type);
 
   rut_graphable_init (view);
   rut_paintable_init (view);

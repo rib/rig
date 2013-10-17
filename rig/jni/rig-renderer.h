@@ -56,7 +56,9 @@ void
 rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass);
 
 void
-rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx);
+rig_paint_camera_entity (RutEntity *view_camera,
+                         RigPaintContext *paint_ctx,
+                         RutCamera *play_camera);
 
 void
 rig_renderer_dirty_entity_state (RutEntity *entity);

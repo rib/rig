@@ -2012,28 +2012,46 @@ entitygraph_post_paint_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-static void
-paint_scene (RigPaintContext *paint_ctx)
+/* The view camera is the entity associated with the camera we will
+ * actually be rendering for.
+ *
+ * While editing then @play_camera will represent the camera we want
+ * to represent, even though we are rendering using the editor's
+ * view camera. For example we will refer to the background color
+ * of the play camera to visualize while rendering the view camera.
+ */
+void
+rig_paint_camera_entity (RutEntity *view_camera,
+                         RigPaintContext *paint_ctx,
+                         RutCamera *play_camera)
 {
-  RigRenderer *renderer = paint_ctx->renderer;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
+  RutCamera *saved_camera = rut_paint_ctx->camera;
+  RutCamera *camera =
+    rut_entity_get_component (view_camera, RUT_COMPONENT_TYPE_CAMERA);
+  RigRenderer *renderer = paint_ctx->renderer;
   RigEngine *engine = paint_ctx->engine;
   CoglContext *ctx = engine->ctx->cogl_context;
-  CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);
+  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
-  if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
+  rut_paint_ctx->camera = camera;
+
+  rut_camera_flush (camera);
+
+  if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED &&
+      play_camera &&
+      camera != play_camera)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
       cogl_pipeline_set_color4f (pipeline,
-                                 engine->background_color.red,
-                                 engine->background_color.green,
-                                 engine->background_color.blue,
-                                 engine->background_color.alpha);
+                                 play_camera->bg_color.red,
+                                 play_camera->bg_color.green,
+                                 play_camera->bg_color.blue,
+                                 play_camera->bg_color.alpha);
       cogl_framebuffer_draw_rectangle (fb,
                                        pipeline,
                                        0, 0,
                                        engine->device_width, engine->device_height);
-                                       //0, 0, engine->pane_width, engine->pane_height);
       cogl_object_unref (pipeline);
     }
 
@@ -2044,21 +2062,8 @@ paint_scene (RigPaintContext *paint_ctx)
                           paint_ctx);
 
   rig_renderer_flush_journal (renderer, paint_ctx);
-}
 
-void
-rig_paint_camera_entity (RutEntity *camera, RigPaintContext *paint_ctx)
-{
-  RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RutCamera *save_camera = rut_paint_ctx->camera;
-  RutCamera *camera_component =
-    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
+  rut_camera_end_frame (camera);
 
-  rut_paint_ctx->camera = camera_component;
-
-  rut_camera_flush (camera_component);
-  paint_scene (paint_ctx);
-  rut_camera_end_frame (camera_component);
-
-  rut_paint_ctx->camera = save_camera;
+  rut_paint_ctx->camera = saved_camera;
 }
