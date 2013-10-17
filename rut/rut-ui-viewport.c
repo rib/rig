@@ -214,16 +214,24 @@ rut_ui_viewport_get_preferred_width (void *sizable,
   if (min_width_p)
     *min_width_p = 0;
 
-  if (ui_viewport->sync_widget)
+  if (natural_width_p)
     {
-      rut_sizable_get_preferred_width (ui_viewport->sync_widget,
-                                       for_height,
-                                       NULL,
-                                       natural_width_p);
-    }
-  else
-    {
-      if (natural_width_p)
+      if (ui_viewport->sync_widget)
+        {
+          rut_sizable_get_preferred_width (ui_viewport->sync_widget,
+                                           for_height,
+                                           NULL,
+                                           natural_width_p);
+
+          /* Instead of a costly extra _get_preferred_height to see if
+           * we need to add space for a scrollbar followed by a
+           * revised _get_preferred_width we just always assume we
+           * might need a scrollbar if pannable */
+          if (ui_viewport->y_pannable)
+            *natural_width_p +=
+              rut_scroll_bar_get_thickness (ui_viewport->scroll_bar_y);
+        }
+      else
         *natural_width_p = ui_viewport->doc_width;
     }
 }
@@ -239,16 +247,25 @@ rut_ui_viewport_get_preferred_height (void *sizable,
   if (min_height_p)
     *min_height_p = 0;
 
-  if (ui_viewport->sync_widget)
+  if (natural_height_p)
     {
-      rut_sizable_get_preferred_height (ui_viewport->sync_widget,
-                                        for_width,
-                                        NULL,
-                                        natural_height_p);
-    }
-  else
-    {
-      if (natural_height_p)
+      if (ui_viewport->sync_widget)
+        {
+          rut_sizable_get_preferred_height (ui_viewport->sync_widget,
+                                            for_width,
+                                            NULL,
+                                            natural_height_p);
+
+          /* Instead of a costly extra _get_preferred_width to see if
+           * we need to add space for a scrollbar followed by a
+           * revised _get_preferred_height we just always assume we
+           * might need a scrollbar if pannable */
+          if (ui_viewport->x_pannable)
+            *natural_height_p +=
+              rut_scroll_bar_get_thickness (ui_viewport->scroll_bar_x);
+
+        }
+      else
         *natural_height_p = ui_viewport->doc_height;
     }
 }
