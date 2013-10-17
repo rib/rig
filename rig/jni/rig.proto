@@ -17,8 +17,12 @@ message Color
 
 message Device
 {
-  optional int32 width=1;
-  optional int32 height=2;
+  enum Type { PHONE=1; TABLET=2; ULTRABOOK=3; }
+  optional Type type=4;
+
+  optional int32 width=1; //deprecated - real size comes from the hardware
+  optional int32 height=2; //deprecated
+
   optional Color background=3;
 }
 
@@ -283,7 +287,11 @@ message Controller
 
 message UI
 {
+  enum Mode { FULL=1; PACKED=2; }
+  optional Mode mode=5;
+
   optional Device device=1;
+
   repeated Asset assets=2;
   repeated Entity entities=3;
   repeated Controller controllers=4;
