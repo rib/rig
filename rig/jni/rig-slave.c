@@ -12,14 +12,28 @@
 
 #include "rig.pb-c.h"
 
-#if 0
-static const GOptionEntry rut_handset_entries[] =
+static int option_width;
+static int option_height;
+static double option_scale;
+
+static const GOptionEntry rig_slave_entries[] =
 {
-  { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
-    &_rig_preview_remaining_args, "Project" },
+  {
+    "width", 'w', 0, G_OPTION_ARG_INT, &option_width,
+    "Width of slave window", NULL
+  },
+  {
+    "height", 'h', 0, G_OPTION_ARG_INT, &option_width,
+    "Height of slave window", NULL
+  },
+  {
+    "scale", 's', 0, G_OPTION_ARG_DOUBLE, &option_scale,
+    "Scale factor for slave window based on default device dimensions", NULL
+  },
+
   { 0 }
 };
-#endif
+
 
 typedef struct _RigSlave
 {
@@ -81,6 +95,7 @@ slave__load (Rig__Slave_Service *service,
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
+  float width, height;
 
   g_return_if_fail (ui != NULL);
 
@@ -88,9 +103,22 @@ slave__load (Rig__Slave_Service *service,
 
   rig_pb_unserialize_ui (engine, ui);
 
-  rig_engine_set_onscreen_size (engine,
-                                engine->device_width / 2,
-                                engine->device_height / 2);
+  if (option_width > 0 && option_height > 0)
+    {
+      width = option_width;
+      height = option_height;
+    }
+  else if (option_scale)
+    {
+      width = engine->device_width * option_scale;
+      height = engine->device_height * option_scale;
+    }
+  else
+    {
+      width = engine->device_width / 2;
+      height = engine->device_height / 2;
+    }
+  rig_engine_set_onscreen_size (engine, width, height);
 
   closure (&result, closure_data);
 }
@@ -216,7 +244,7 @@ main (int argc, char **argv)
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
-  //g_option_context_add_main_entries (context, rut_handset_entries, NULL);
+  g_option_context_add_main_entries (context, rig_slave_entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {

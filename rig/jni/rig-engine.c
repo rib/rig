@@ -3029,9 +3029,7 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 #if defined (COGL_HAS_SDL_SUPPORT) && (SDL_MAJOR_VERSION >= 2)
   {
     SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
-    SDL_SetWindowSize (sdl_window,
-                       engine->device_width / 2,
-                       engine->device_height / 2);
+    SDL_SetWindowSize (sdl_window, width, height);
   }
 #else
 #warning "rig_engine_set_onscreen_size unsupported without SDL2"
