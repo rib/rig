@@ -748,7 +748,7 @@ bitmap_new_from_pixbuf (CoglContext *ctx,
 
 RutAsset *
 rut_asset_new_from_data (RutContext *ctx,
-                         const char *path,
+                         const char *name,
                          RutAssetType type,
                          uint8_t *data,
                          size_t len)
@@ -761,7 +761,6 @@ rut_asset_new_from_data (RutContext *ctx,
 
   asset->ctx = ctx;
 
-  asset->type = type;
   asset->is_video = FALSE;
 
   switch (type)
@@ -824,7 +823,7 @@ rut_asset_new_from_data (RutContext *ctx,
         if (!asset->mesh)
           {
             g_slice_free (RutAsset, asset);
-            g_warning ("could not load model %s: %s", path, error->message);
+            g_warning ("could not load model %s: %s", name, error->message);
             g_error_free (error);
             return NULL;
           }
@@ -843,7 +842,7 @@ rut_asset_new_from_data (RutContext *ctx,
       }
     }
 
-  asset->path = g_strdup (path);
+  asset->path = g_strdup (name);
 
   return asset;
 }

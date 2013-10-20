@@ -1010,61 +1010,20 @@ rig_pb_serialize_ui (RigEngine *engine,
   return ui;
 }
 
-static void
-_rig_serialized_asset_free (void *object)
-{
-  RigSerializedAsset *serialized_asset = object;
-
-  rut_refable_unref (serialized_asset->asset);
-  g_free (serialized_asset->pb_data.data.data);
-
-  g_slice_free (RigSerializedAsset, serialized_asset);
-}
-
-static RutType rig_serialized_asset_type;
-
-static void
-_rig_serialized_asset_init_type (void)
-{
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_serialized_asset_free
-  };
-
-  RutType *type = &rig_serialized_asset_type;
-#define TYPE RigSerializedAsset
-
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-
-#undef TYPE
-}
-
-RigSerializedAsset *
-rig_pb_serialize_asset (RutAsset *asset)
+Rig__Asset *
+rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset)
 {
 #ifdef __ANDROID__
   g_warn_if_reached ();
   return NULL;
 #else
-  RigSerializedAsset *serialized_asset;
-  static CoglBool initialized = FALSE;
   RutContext *ctx = rut_asset_get_context (asset);
   const char *path = rut_asset_get_path (asset);
   char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+  Rig__Asset *pb_asset;
   GError *error = NULL;
   char *contents;
   size_t len;
-
-  if (initialized == FALSE)
-    {
-      _rig_serialized_asset_init_type ();
-      initialized = TRUE;
-    }
 
   if (!g_file_get_contents (full_path,
                             &contents,
@@ -1079,27 +1038,21 @@ rig_pb_serialize_asset (RutAsset *asset)
 
   g_free (full_path);
 
-  serialized_asset = g_slice_new (RigSerializedAsset);
+  pb_asset = pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
 
-  rut_object_init (&serialized_asset->_parent, &rig_serialized_asset_type);
+  pb_asset->path = (char *)rut_asset_get_path (asset);
 
-  serialized_asset->ref_count = 1;
+  pb_asset->has_type = TRUE;
+  pb_asset->type = rut_asset_get_type (asset);
 
-  serialized_asset->asset = rut_refable_ref (asset);
+  pb_asset->has_is_video = true;
+  pb_asset->is_video = rut_asset_get_is_video (asset);
 
+  pb_asset->has_data = TRUE;
+  pb_asset->data.data = (uint8_t *)contents;
+  pb_asset->data.len = len;
 
-  rig__serialized_asset__init (&serialized_asset->pb_data);
-
-  serialized_asset->pb_data.path = (char *)rut_asset_get_path (asset);
-
-  serialized_asset->pb_data.has_type = TRUE;
-  serialized_asset->pb_data.type = rut_asset_get_type (asset);
-
-  serialized_asset->pb_data.has_data = TRUE;
-  serialized_asset->pb_data.data.data = (uint8_t *)contents;
-  serialized_asset->pb_data.data.len = len;
-
-  return serialized_asset;
+  return pb_asset;
 #endif
 }
 

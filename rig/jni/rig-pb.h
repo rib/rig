@@ -34,19 +34,8 @@ rig_pb_serialize_ui (RigEngine *engine,
                      RigAssetReferenceCallback asset_callback,
                      void *user_data);
 
-typedef struct _RigSerializedAsset
-{
-  RutObjectProps _parent;
-  int ref_count;
-
-  RutAsset *asset;
-
-  Rig__SerializedAsset pb_data;
-
-} RigSerializedAsset;
-
-RigSerializedAsset *
-rig_pb_serialize_asset (RutAsset *asset);
+Rig__Asset *
+rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset);
 
 void
 rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui);

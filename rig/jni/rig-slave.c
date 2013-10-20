@@ -45,7 +45,7 @@ slave__test (Rig__Slave_Service *service,
 
 static void
 slave__load_asset (Rig__Slave_Service *service,
-                   const Rig__SerializedAsset *query,
+                   const Rig__Asset *query,
                    Rig__LoadAssetResult_Closure closure,
                    void *closure_data)
 {

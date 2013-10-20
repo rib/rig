@@ -197,13 +197,11 @@ rig_slave_master_sync_ui (RigSlaveMaster *master)
   for (l = master->required_assets; l; l = l->next)
     {
       RutAsset *asset = l->data;
-      RigSerializedAsset *serialized_asset = rig_pb_serialize_asset (asset);
+      Rig__Asset *serialized_asset = rig_pb_serialize_asset (engine, asset);
 
       rig__slave__load_asset (service,
-                              &serialized_asset->pb_data,
+                              serialized_asset,
                               handle_asset_load_response, NULL);
-
-      rut_refable_unref (serialized_asset);
     }
 
   rig__slave__load (service, ui, handle_load_response, NULL);

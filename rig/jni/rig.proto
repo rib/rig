@@ -30,6 +30,10 @@ message Asset
 {
   optional sint64 id=1;
   optional string path=2;
+
+  optional uint32 type=3;
+  optional bool is_video=5;
+  optional bytes data=4;
 }
 
 message Vec3
@@ -301,19 +305,12 @@ message LoadResult
 {
 }
 
-message SerializedAsset
-{
-  optional string path=1;
-  optional uint32 type=2;
-  optional bytes data=3;
-}
-
 message LoadAssetResult
 {
 }
 
 service Slave {
-    rpc LoadAsset (SerializedAsset) returns (LoadAssetResult);
+    rpc LoadAsset (Asset) returns (LoadAssetResult);
     rpc Load (UI) returns (LoadResult);
     rpc Test (Query) returns (TestResult);
 }
