@@ -90,4 +90,12 @@ struct _RutCamera
   unsigned int suspended:1;
 };
 
+void
+_matrix_scaled_perspective (CoglMatrix *matrix,
+                            float fov_y,
+                            float aspect,
+                            float z_near,
+                            float z_far,
+                            float scale);
+
 #endif /* _RUT_CAMERA_PRIVATE_H_ */

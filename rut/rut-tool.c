@@ -25,6 +25,7 @@
 #include "rut-geometry.h"
 
 #include "components/rut-camera.h"
+#include "rut-util.h"
 
 #include "rut-tool.h"
 
@@ -345,6 +346,10 @@ rut_tool_draw (RutTool *tool,
   CoglMatrix rotation;
   float scale, aspect_ratio;
   CoglMatrix saved_projection;
+  CoglMatrix projection;
+  float fov;
+  float near;
+  float zoom;
 
   float vp_width, vp_height;
 
@@ -359,11 +364,18 @@ rut_tool_draw (RutTool *tool,
   aspect_ratio = vp_width / vp_height;
 
   cogl_framebuffer_get_projection_matrix (fb, &saved_projection);
-  cogl_framebuffer_perspective (fb,
-                                rut_camera_get_field_of_view (tool->camera_component),
-                                aspect_ratio,
-                                rut_camera_get_near_plane (tool->camera_component),
-                                -tool->position[2]);
+
+  cogl_matrix_init_identity (&projection);
+  fov = rut_camera_get_field_of_view (tool->camera_component);
+  near = rut_camera_get_near_plane (tool->camera_component);
+  zoom = rut_camera_get_zoom (tool->camera_component);
+  rut_util_matrix_scaled_perspective (&projection,
+                                      fov,
+                                      aspect_ratio,
+                                      near,
+                                      -tool->position[2], /* far */
+                                      zoom);
+  cogl_framebuffer_set_projection_matrix (fb, &projection);
 
   scale = rut_tool_get_scale_for_length (tool, 128 / vp_width);
 

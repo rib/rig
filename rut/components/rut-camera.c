@@ -29,6 +29,7 @@
 #include "rut-context.h"
 #include "rut-global.h"
 #include "rut-camera-private.h"
+#include "rut-util.h"
 
 typedef struct
 {
@@ -597,26 +598,6 @@ rut_camera_get_viewport (RutCamera *camera)
   return camera->viewport;
 }
 
-void
-_matrix_scaled_perspective (CoglMatrix *matrix,
-                            float fov_y,
-                            float aspect,
-                            float z_near,
-                            float z_far,
-                            float scale)
-{
-  float ymax = z_near * tanf (fov_y * G_PI / 360.0);
-  float inverse_scale = 1.0 / scale;
-
-  cogl_matrix_frustum (matrix,
-                       -ymax * aspect * inverse_scale,/* left */
-                       ymax * aspect * inverse_scale, /* right */
-                       -ymax * inverse_scale, /* bottom */
-                       ymax * inverse_scale, /* top */
-                       z_near,
-                       z_far);
-}
-
 const CoglMatrix *
 rut_camera_get_projection (RutCamera *camera)
 {
@@ -657,12 +638,12 @@ rut_camera_get_projection (RutCamera *camera)
       else
         {
           float aspect_ratio = camera->viewport[2] / camera->viewport[3];
-          _matrix_scaled_perspective (&camera->projection,
-                                      camera->fov,
-                                      aspect_ratio,
-                                      camera->near,
-                                      camera->far,
-                                      camera->zoom);
+          rut_util_matrix_scaled_perspective (&camera->projection,
+                                              camera->fov,
+                                              aspect_ratio,
+                                              camera->near,
+                                              camera->far,
+                                              camera->zoom);
         }
 
       camera->projection_cache_age = camera->projection_age;

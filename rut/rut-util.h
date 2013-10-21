@@ -178,4 +178,12 @@ rut_util_distribute_natural_allocation (int extra_space,
 CoglBool
 rut_util_is_boolean_env_set (const char *variable);
 
+void
+rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
+                                    float fov_y,
+                                    float aspect,
+                                    float z_near,
+                                    float z_far,
+                                    float scale);
+
 #endif /* _RUT_UTIL_H_ */

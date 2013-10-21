@@ -572,3 +572,25 @@ rut_util_is_boolean_env_set (const char *variable)
 
   return ret;
 }
+
+void
+rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
+                                    float fov_y,
+                                    float aspect,
+                                    float z_near,
+                                    float z_far,
+                                    float scale)
+{
+  float ymax = z_near * tanf (fov_y * G_PI / 360.0);
+  float inverse_scale = 1.0 / scale;
+
+  cogl_matrix_frustum (matrix,
+                       -ymax * aspect * inverse_scale,/* left */
+                       ymax * aspect * inverse_scale, /* right */
+                       -ymax * inverse_scale, /* bottom */
+                       ymax * inverse_scale, /* top */
+                       z_near,
+                       z_far);
+}
+
+
