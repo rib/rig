@@ -44,7 +44,8 @@ RutAsset *
 rut_asset_new_from_data (RutContext *ctx,
                          const char *path,
                          RutAssetType type,
-                         uint8_t *data,
+                         bool is_video,
+                         const uint8_t *data,
                          size_t len);
 
 RutAssetType
@@ -94,5 +95,11 @@ rut_asset_thumbnail (RutAsset *asset,
                      RutThumbnailCallback ready_callback,
                      void *user_data,
                      RutClosureDestroyCallback destroy_cb);
+
+void *
+rut_asset_get_data (RutAsset *asset);
+
+size_t
+rut_asset_get_data_len (RutAsset *asset);
 
 #endif /* _RUT_ASSET_H_ */

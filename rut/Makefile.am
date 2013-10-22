@@ -170,6 +170,8 @@ librut_la_SOURCES = \
     rut-icon-toggle-set.c \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
+    gstmemsrc.h \
+    gstmemsrc.c \
     $(source_h)
 
 if !HAVE_ANDROID

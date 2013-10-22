@@ -55,11 +55,16 @@ struct _RutAsset
 
   RutAssetType type;
 
+  /* NB: either the path or data will be valid but not both */
   char *path;
+
+  uint8_t *data;
+  size_t data_len;
+
   CoglTexture *texture;
   RutMesh *mesh;
   RutModel *model;
-  CoglBool is_video;
+  bool is_video;
 
   GList *inferred_tags;
 
@@ -371,7 +376,7 @@ rut_video_generate_thumbnail (RutAsset *asset)
   generator->bin = gst_element_factory_make ("playbin", NULL);
 
   filename = g_build_filename (ctx->assets_location, asset->path, NULL);
-  uri = g_strconcat ("file://", filename, NULL);
+  uri = gst_filename_to_uri (filename, NULL);
   g_free (filename);
 
   g_object_set (G_OBJECT (generator->bin), "video-sink",
@@ -750,7 +755,8 @@ RutAsset *
 rut_asset_new_from_data (RutContext *ctx,
                          const char *name,
                          RutAssetType type,
-                         uint8_t *data,
+                         bool is_video,
+                         const uint8_t *data,
                          size_t len)
 {
   RutAsset *asset = g_slice_new0 (RutAsset);
@@ -761,88 +767,105 @@ rut_asset_new_from_data (RutContext *ctx,
 
   asset->ctx = ctx;
 
-  asset->is_video = FALSE;
-
-  switch (type)
-    {
-    case RUT_ASSET_TYPE_BUILTIN:
-    case RUT_ASSET_TYPE_TEXTURE:
-    case RUT_ASSET_TYPE_NORMAL_MAP:
-    case RUT_ASSET_TYPE_ALPHA_MASK:
-      {
-        GInputStream *istream = g_memory_input_stream_new_from_data (data, len, NULL);
-        GError *error = NULL;
-        GdkPixbuf *pixbuf = gdk_pixbuf_new_from_stream (istream, NULL, &error);
-        CoglBitmap *bitmap;
-        CoglError *cogl_error = NULL;
-
-        if (!pixbuf)
-          {
-            g_slice_free (RutAsset, asset);
-            g_warning ("Failed to load asset texture: %s", error->message);
-            g_error_free (error);
-            return NULL;
-          }
-
-        g_object_unref (istream);
-
-        bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
-
-        asset->texture = COGL_TEXTURE (
-          cogl_texture_2d_new_from_bitmap (bitmap,
-                                           COGL_PIXEL_FORMAT_ANY,
-                                           &cogl_error));
-
-        cogl_object_unref (bitmap);
-        g_object_unref (pixbuf);
-
-        if (!asset->texture)
-          {
-            g_slice_free (RutAsset, asset);
-            g_warning ("Failed to load asset texture: %s", cogl_error->message);
-            cogl_error_free (cogl_error);
-            return NULL;
-          }
-
-        break;
-      }
-    case RUT_ASSET_TYPE_PLY_MODEL:
-      {
-        RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-        GError *error = NULL;
-        CoglBool needs_normals = FALSE;
-        CoglBool needs_tex_coords = FALSE;
-
-        asset->mesh = rut_mesh_new_from_ply_data (ctx,
-                                                  data,
-                                                  len,
-                                                  ply_attributes,
-                                                  G_N_ELEMENTS (ply_attributes),
-                                                  padding_status,
-                                                  &error);
-        if (!asset->mesh)
-          {
-            g_slice_free (RutAsset, asset);
-            g_warning ("could not load model %s: %s", name, error->message);
-            g_error_free (error);
-            return NULL;
-          }
-
-        if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-          needs_normals = TRUE;
-
-        if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-          needs_tex_coords = TRUE;
-
-        asset->model = rut_model_new_from_asset (ctx, asset, needs_normals,
-                                                 needs_tex_coords);
-        asset->texture = rut_model_get_thumbnail (ctx, asset->model);
-
-        break;
-      }
-    }
+  asset->type = type;
 
   asset->path = g_strdup (name);
+
+  asset->is_video = is_video;
+  if (is_video)
+    {
+      asset->data = g_memdup (data, len);
+      asset->data_len = len;
+    }
+  else
+    {
+      asset->data = NULL;
+
+      switch (type)
+        {
+        case RUT_ASSET_TYPE_BUILTIN:
+        case RUT_ASSET_TYPE_TEXTURE:
+        case RUT_ASSET_TYPE_NORMAL_MAP:
+        case RUT_ASSET_TYPE_ALPHA_MASK:
+            {
+              GInputStream *istream =
+                g_memory_input_stream_new_from_data (data, len, NULL);
+              GError *error = NULL;
+              GdkPixbuf *pixbuf =
+                gdk_pixbuf_new_from_stream (istream, NULL, &error);
+              CoglBitmap *bitmap;
+              CoglError *cogl_error = NULL;
+
+              if (!pixbuf)
+                {
+                  g_slice_free (RutAsset, asset);
+                  g_warning ("Failed to load asset texture: %s", error->message);
+                  g_error_free (error);
+                  return NULL;
+                }
+
+              g_object_unref (istream);
+
+              bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
+
+              asset->texture = COGL_TEXTURE (
+                cogl_texture_2d_new_from_bitmap (bitmap,
+                                                 COGL_PIXEL_FORMAT_ANY,
+                                                 &cogl_error));
+
+              cogl_object_unref (bitmap);
+              g_object_unref (pixbuf);
+
+              if (!asset->texture)
+                {
+                  g_slice_free (RutAsset, asset);
+                  g_warning ("Failed to load asset texture: %s",
+                             cogl_error->message);
+                  cogl_error_free (cogl_error);
+                  return NULL;
+                }
+
+              break;
+            }
+        case RUT_ASSET_TYPE_PLY_MODEL:
+            {
+              RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+              GError *error = NULL;
+              CoglBool needs_normals = FALSE;
+              CoglBool needs_tex_coords = FALSE;
+
+              asset->mesh =
+                rut_mesh_new_from_ply_data (ctx,
+                                            data,
+                                            len,
+                                            ply_attributes,
+                                            G_N_ELEMENTS (ply_attributes),
+                                            padding_status,
+                                            &error);
+              if (!asset->mesh)
+                {
+                  g_slice_free (RutAsset, asset);
+                  g_warning ("could not load model %s: %s",
+                             name, error->message);
+                  g_error_free (error);
+                  return NULL;
+                }
+
+              if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
+                needs_normals = TRUE;
+
+              if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
+                needs_tex_coords = TRUE;
+
+              asset->model = rut_model_new_from_asset (ctx, asset,
+                                                       needs_normals,
+                                                       needs_tex_coords);
+              asset->texture = rut_model_get_thumbnail (ctx, asset->model);
+
+              break;
+            }
+        }
+    }
 
   return asset;
 }
@@ -1129,4 +1152,16 @@ rut_asset_thumbnail (RutAsset *asset,
   g_warn_if_fail (!rut_list_empty (&asset->thumbnail_cb_list));
 
   return closure;
+}
+
+void *
+rut_asset_get_data (RutAsset *asset)
+{
+  return asset->data;
+}
+
+size_t
+rut_asset_get_data_len (RutAsset *asset)
+{
+  return asset->data_len;
 }

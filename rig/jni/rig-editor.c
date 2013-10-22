@@ -33,6 +33,8 @@ main (int argc, char **argv)
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
+  gst_init (&argc, &argv);
+
   g_option_context_add_main_entries (context, rut_editor_entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
@@ -60,8 +62,6 @@ main (int argc, char **argv)
                               &engine);
 
   engine.ctx = rut_context_new (engine.shell);
-
-  gst_init (&argc, &argv);
 
   rut_context_init (engine.ctx);
 

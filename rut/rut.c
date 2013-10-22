@@ -48,6 +48,8 @@
 #include "rut-scroll-bar.h"
 #include "rut-image-source.h"
 
+#include "gstmemsrc.h"
+
 typedef struct _RutTextureCacheEntry
 {
   RutContext *ctx;
@@ -431,11 +433,15 @@ _rut_init (void)
 
       g_type_init ();
 
+      gst_element_register (NULL,
+                            "memsrc",
+                            0,
+                            gst_mem_src_get_type());
+
       _rut_context_init_type ();
       _rut_text_buffer_init_type ();
       _rut_text_init_type ();
       _rut_timeline_init_type ();
-      _rut_image_source_init_type ();
       _rut_entity_init_type ();
       _rut_asset_type_init ();
       _rut_buffer_init_type ();

@@ -1423,7 +1423,7 @@ image_source_ready_cb (RutImageSource *source,
 
       rut_entity_remove_component (entity, geometry);
       diamond = rut_diamond_new (ctx, size, width, height);
-      rut_entity_add_component (entity, geometry);
+      rut_entity_add_component (entity, diamond);
     }
   else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
     {

@@ -168,11 +168,13 @@ _rut_image_source_video_stop (RutImageSource *source)
 static void
 _rut_image_source_video_play (RutImageSource *source,
                               RutContext *ctx,
-                              const char *path)
+                              const char *path,
+                              const uint8_t *data,
+                              size_t len)
 {
   GstBus* bus;
   char *uri;
-  char *filename = g_build_filename (ctx->assets_location, path, NULL);
+  char *filename = NULL;
 
   _rut_image_source_video_stop (source);
 
@@ -180,7 +182,14 @@ _rut_image_source_video_play (RutImageSource *source,
   source->pipeline = gst_pipeline_new ("renderer");
   source->bin = gst_element_factory_make ("playbin", NULL);
 
-  uri = g_strconcat ("file://", filename, NULL);
+  if (data && len)
+    uri = g_strdup_printf ("mem://%p:%lu", data, (unsigned long)len);
+  else
+    {
+      filename = g_build_filename (ctx->assets_location, path, NULL);
+      uri = gst_filename_to_uri (filename, NULL);
+    }
+
   g_object_set (G_OBJECT (source->bin), "video-sink",
                 GST_ELEMENT (source->sink), NULL);
   g_object_set (G_OBJECT (source->bin), "uri", uri, NULL);
@@ -192,7 +201,8 @@ _rut_image_source_video_play (RutImageSource *source,
   gst_bus_add_watch (bus, _rut_image_source_video_loop, source);
 
   g_free (uri);
-  g_free (filename);
+  if (filename)
+    g_free (filename);
   gst_object_unref (bus);
 }
 
@@ -255,8 +265,10 @@ RutImageSource*
 rut_image_source_new (RutContext *ctx,
                       RutAsset *asset)
 {
-  RutImageSource *source = g_slice_new0 (RutImageSource);
-  rut_object_init (&source->_parent, &rut_image_source_type);
+  RutImageSource *source = rut_object_alloc0 (RutImageSource,
+                                              &rut_image_source_type,
+                                              _rut_image_source_init_type);
+
   source->ref_count = 1;
 
   source->ctx = ctx;
@@ -272,7 +284,9 @@ rut_image_source_new (RutContext *ctx,
   if (rut_asset_get_is_video (asset))
     {
       _rut_image_source_video_play (source, ctx,
-                                    rut_asset_get_path (asset));
+                                    rut_asset_get_path (asset),
+                                    rut_asset_get_data (asset),
+                                    rut_asset_get_data_len (asset));
        g_signal_connect (source->sink, "pipeline_ready",
                          (GCallback) pipeline_ready_cb,
                          source);
