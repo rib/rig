@@ -24,67 +24,72 @@
 
 #include <cogl/cogl.h>
 
-#include <rut-shell.h>
-#include <rut-entity.h>
-#include <rut-arcball.h>
-#include <rut-closure.h>
+#include <rut.h>
 
-typedef struct _RutTool
+#include "rig-camera-view.h"
+
+typedef struct _RigRotationTool
 {
-  RutShell *shell;
+  RutContext *ctx;
+
+  RigCameraView *view;
+
+  RutEntity *camera;
+  RutCamera *camera_component; /* camera component of the camera above */
+
+  bool active;
+  RutClosure *objects_selection_closure;
+
   RutEntity *selected_entity;
+
   CoglPipeline *default_pipeline;
   CoglPrimitive *rotation_tool;
   CoglPrimitive *rotation_tool_handle;
+
   RutInputRegion *rotation_circle;
   RutArcball arcball;
   CoglQuaternion start_rotation;
   CoglQuaternion start_view_rotations;
   bool button_down;
-  RutEntity *camera;
-  RutCamera *camera_component; /* camera component of the camera above */
   float position[3];    /* transformed position of the selected entity */
   float screen_pos[2];
   float scale;
+
   RutList rotation_event_cb_list;
-} RutTool;
+} RigRotationTool;
 
 typedef enum
 {
-  RUT_TOOL_ROTATION_DRAG,
-  RUT_TOOL_ROTATION_RELEASE,
-  RUT_TOOL_ROTATION_CANCEL
-} RutToolRotationEventType;
+  RIG_ROTATION_TOOL_DRAG,
+  RIG_ROTATION_TOOL_RELEASE,
+  RIG_ROTATION_TOOL_CANCEL
+} RigRotationToolEventType;
 
 typedef void
-(* RutToolRotationEventCallback) (RutTool *tool,
-                                  RutToolRotationEventType type,
+(* RigRotationToolEventCallback) (RigRotationTool *tool,
+                                  RigRotationToolEventType type,
                                   const CoglQuaternion *start_rotation,
                                   const CoglQuaternion *new_rotation,
                                   void *user_data);
 
-RutTool *
-rut_tool_new (RutShell *shell);
+RigRotationTool *
+rig_rotation_tool_new (RigCameraView *view);
 
 void
-rut_tool_set_camera (RutTool *tool,
-                     RutEntity *camera);
-
-void
-rut_tool_update (RutTool *tool,
-                 RutEntity *selected_entity);
-
-void
-rut_tool_draw (RutTool *tool,
-               CoglFramebuffer *fb);
+rig_rotation_tool_set_active (RigRotationTool *tool,
+                              bool active);
 
 RutClosure *
-rut_tool_add_rotation_event_callback (RutTool *tool,
-                                      RutToolRotationEventCallback callback,
+rig_rotation_tool_add_event_callback (RigRotationTool *tool,
+                                      RigRotationToolEventCallback callback,
                                       void *user_data,
                                       RutClosureDestroyCallback destroy_cb);
 
 void
-rut_tool_free (RutTool *tool);
+rig_rotation_tool_draw (RigRotationTool *tool,
+                        CoglFramebuffer *fb);
+
+void
+rig_rotation_tool_destroy (RigRotationTool *tool);
 
 #endif /* __RUT_TOOL_H__ */

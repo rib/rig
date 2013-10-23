@@ -22,13 +22,78 @@
 
 #include "rut.h"
 
-#include "rig-engine.h"
-
-extern RutType rig_view_type;
-
+/* Forward declare this since there is a circluar header dependency
+ * between rig-camera-view.h and rig-engine.h */
 typedef struct _RigCameraView RigCameraView;
 
-#define RIG_CAMERA_VIEW(x) ((RigCameraView *) x)
+#include "rig-engine.h"
+#include "rig-rotation-tool.h"
+
+typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
+typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
+
+typedef struct
+{
+  RutEntity *origin_offset; /* negative offset */
+  RutEntity *dev_scale; /* scale to fit device coords */
+  RutEntity *screen_pos; /* position screen in edit view */
+} RigCameraViewDeviceTransforms;
+
+struct _RigCameraView
+{
+  RutObjectProps _parent;
+
+  RigEngine *engine;
+
+  RutContext *context;
+
+  int ref_count;
+
+  RutGraphableProps graphable;
+  RutPaintableProps paintable;
+
+  float width, height;
+
+  CoglPipeline *bg_pipeline;
+
+  RutGraph *scene;
+
+  float origin[3];
+  //float saved_origin[3];
+
+  float device_scale;
+
+  EntitiesTranslateGrabClosure *entities_translate_grab_closure;
+
+  RutEntity *view_camera_to_origin; /* move to origin */
+  RutEntity *view_camera_rotate; /* armature rotate rotate */
+  RutEntity *view_camera_armature; /* armature length */
+  RutEntity *view_camera_2d_view; /* setup 2d view, origin top-left */
+  RigCameraViewDeviceTransforms view_device_transforms;
+
+  RutEntity *play_camera;
+  RutCamera *play_camera_component;
+  RigCameraViewDeviceTransforms play_device_transforms;
+  /* This entity is added as a child of all of the play device
+   * transforms. During paint the camera component is temporarily
+   * stolen from the play camera entity so that it can be transformed
+   * with the device transforms */
+  RutEntity *play_dummy_entity;
+
+  RutEntity *view_camera;
+  RutCamera *view_camera_component;
+  float view_camera_z;
+  RutInputRegion *input_region;
+
+  float last_viewport_x;
+  float last_viewport_y;
+  CoglBool dirty_viewport_size;
+
+  RigRotationTool *rotation_tool;
+  RigToolID tool_id;
+};
+
+extern RutType rig_view_type;
 
 RigCameraView *
 rig_camera_view_new (RigEngine *engine);
