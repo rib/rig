@@ -844,7 +844,9 @@ void
 rut_camera_add_input_region (RutCamera *camera,
                              RutInputRegion *region)
 {
-  g_print ("add input region %p, %p\n", camera, region);
+  if (g_list_find (camera->input_regions, region))
+    return;
+
   rut_refable_ref (region);
   camera->input_regions = g_list_prepend (camera->input_regions, region);
 }
@@ -853,15 +855,13 @@ void
 rut_camera_remove_input_region (RutCamera *camera,
                                 RutInputRegion *region)
 {
-  GList *l;
-
-  for (l = camera->input_regions; l; l = l->next)
-    if (l->data == region)
-      {
-        rut_refable_unref (region);
-        camera->input_regions = g_list_delete_link (camera->input_regions, l);
-        break;
-      }
+  GList *link = g_list_find (camera->input_regions, region);
+  if (link)
+    {
+      rut_refable_unref (region);
+      camera->input_regions =
+        g_list_delete_link (camera->input_regions, link);
+    }
 }
 
 CoglBool

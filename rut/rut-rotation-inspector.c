@@ -187,7 +187,7 @@ set_value (RutRotationInspector *inspector,
       /* With an angle of 0 or 360, the axis is arbitrary so it's
        * better for editing continuity to use the users last specified
        * axis... */
-      if ((angle == 0 || angle ==360) && axis[0] == 1.0)
+      if ((angle == 0 || angle == 360) && axis[0] == 1.0)
         {
           axis[0] = inspector->user_values[0];
           axis[1] = inspector->user_values[1];
@@ -264,13 +264,10 @@ rut_rotation_inspector_new (RutContext *context)
 
   inspector->user_axis_magnitude = 1;
 
-      /* With an angle of zero the axis will be arbitrary but we know that
-       * Cogl will return an axis of (1, 0, 0) in this case. We want our
-       * default axis to be (0, 0, 1) since we guess it's most common to
-       * want to rotate UI components around the z axis... */
-  /* These user values are saved and used when a quaternion value is given non
-   * interactively. We */
-#warning "write a good comment here..."
+  /* These user values are saved and used when a quaternion value is
+   * given non interactively. We want out default axis be (0, 0, 1)
+   * since we guess it's most common to want to rotate UI components
+   * around the z axis...*/
   inspector->user_values[0] = 0;
   inspector->user_values[1] = 0;
   inspector->user_values[2] = 1;

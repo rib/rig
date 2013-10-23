@@ -20,21 +20,17 @@
 
 #include <config.h>
 
-#include "rut-global.h"
-#include "rut-types.h"
-#include "rut-geometry.h"
+#include <rut.h>
 
-#include "components/rut-camera.h"
-#include "rut-util.h"
-
-#include "rut-tool.h"
+#include "rig-camera-view.h"
+#include "rig-rotation-tool.h"
 
 static RutInputEventStatus
 rotation_tool_grab_cb (RutInputEvent *event,
                        void *user_data)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  RutTool *tool = user_data;
+  RigRotationTool *tool = user_data;
   RutMotionEventAction action;
 
   g_warn_if_fail (tool->button_down);
@@ -44,14 +40,14 @@ rotation_tool_grab_cb (RutInputEvent *event,
     {
       tool->button_down = FALSE;
 
-      rut_shell_ungrab_input (tool->shell,
+      rut_shell_ungrab_input (tool->view->context->shell,
                               rotation_tool_grab_cb,
                               tool);
 
       rut_closure_list_invoke (&tool->rotation_event_cb_list,
-                               RutToolRotationEventCallback,
+                               RigRotationToolEventCallback,
                                tool,
-                               RUT_TOOL_ROTATION_CANCEL,
+                               RIG_ROTATION_TOOL_CANCEL,
                                &tool->start_rotation,
                                &tool->start_rotation);
 
@@ -75,7 +71,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
         RutEntity *entity = tool->selected_entity;
         float x = rut_motion_event_get_x (event);
         float y = rut_motion_event_get_y (event);
-        RutToolRotationEventType event_type = RUT_TOOL_ROTATION_DRAG;
+        RigRotationToolEventType event_type = RIG_ROTATION_TOOL_DRAG;
 
         rut_arcball_mouse_motion (&tool->arcball, x, y);
 
@@ -107,11 +103,11 @@ rotation_tool_grab_cb (RutInputEvent *event,
                  RUT_BUTTON_STATE_1) == 0)
               {
                 status = RUT_INPUT_EVENT_STATUS_HANDLED;
-                event_type = RUT_TOOL_ROTATION_RELEASE;
+                event_type = RIG_ROTATION_TOOL_RELEASE;
 
                 tool->button_down = FALSE;
 
-                rut_shell_ungrab_input (tool->shell,
+                rut_shell_ungrab_input (tool->ctx->shell,
                                         rotation_tool_grab_cb,
                                         tool);
               }
@@ -120,7 +116,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
           status = RUT_INPUT_EVENT_STATUS_HANDLED;
 
         rut_closure_list_invoke (&tool->rotation_event_cb_list,
-                                 RutToolRotationEventCallback,
+                                 RigRotationToolEventCallback,
                                  tool,
                                  event_type,
                                  &tool->start_rotation,
@@ -141,7 +137,9 @@ on_rotation_tool_clicked (RutInputRegion *region,
                           void *user_data)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  RutTool *tool = user_data;
+  RigRotationTool *tool = user_data;
+
+  g_return_if_fail (tool->selected_entity != NULL);
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
@@ -151,7 +149,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
 
-      rut_shell_grab_input (tool->shell,
+      rut_shell_grab_input (tool->ctx->shell,
                             rut_input_event_get_camera (event),
                             rotation_tool_grab_cb,
                             tool);
@@ -179,17 +177,109 @@ on_rotation_tool_clicked (RutInputRegion *region,
   return status;
 }
 
-RutTool *
-rut_tool_new (RutShell *shell)
+static void
+update_selection_state (RigRotationTool *tool)
 {
-  RutTool *tool;
-  RutContext *ctx;
+  RigObjectsSelection *selection = tool->view->engine->objects_selection;
+  RutCamera *camera = tool->camera_component;
 
-  tool = g_slice_new0 (RutTool);
+  if (tool->active &&
+      g_list_length (selection->objects) == 1 &&
+      rut_object_get_type (selection->objects->data) == &rut_entity_type)
+    {
+      if (!tool->selected_entity)
+        rut_camera_add_input_region (camera, tool->rotation_circle);
 
-  tool->shell = shell;
+      tool->selected_entity = selection->objects->data;
+    }
+  else
+    {
+      if (tool->selected_entity)
+        rut_camera_remove_input_region (camera, tool->rotation_circle);
 
-  ctx = rut_shell_get_context (shell);
+      tool->selected_entity = NULL;
+    }
+}
+
+static void
+objects_selection_event_cb (RigObjectsSelection *selection,
+                            RigObjectsSelectionEvent event,
+                            RutObject *object,
+                            void *user_data)
+{
+  RigRotationTool *tool = user_data;
+
+  if (event != RIG_OBJECTS_SELECTION_ADD_EVENT &&
+      event != RIG_OBJECTS_SELECTION_REMOVE_EVENT)
+    return;
+
+  update_selection_state (tool);
+}
+
+static void
+tool_event_cb (RigRotationTool *tool,
+               RigRotationToolEventType type,
+               const CoglQuaternion *start_rotation,
+               const CoglQuaternion *new_rotation,
+               void *user_data)
+{
+  RigEngine *engine = tool->view->engine;
+  RutEntity *entity;
+
+  g_return_if_fail (engine->objects_selection->objects);
+
+  /* XXX: For now we don't do anything clever to handle rotating a
+   * set of entityies, since it's ambiguous what origin should be used
+   * in this case. In the future the rotation capabilities need to be
+   * more capable though and we may intoduce the idea of a 3D cursor
+   * for example to define the origin for the set. */
+  entity = engine->objects_selection->objects->data;
+
+  switch (type)
+    {
+    case RIG_ROTATION_TOOL_DRAG:
+      rut_entity_set_rotation (entity, new_rotation);
+      rut_shell_queue_redraw (engine->shell);
+      break;
+
+    case RIG_ROTATION_TOOL_RELEASE:
+      {
+        RutProperty *rotation_prop =
+          rut_introspectable_lookup_property (entity, "rotation");
+        RutBoxed value;
+
+        /* Revert the rotation before logging the new rotation into
+         * the journal... */
+        rut_entity_set_rotation (entity, start_rotation);
+
+        value.type = RUT_PROPERTY_TYPE_QUATERNION;
+        value.d.quaternion_val = *new_rotation;
+
+        rig_controller_view_edit_property (engine->controller_view,
+                                           FALSE, /* mergable */
+                                           rotation_prop, &value);
+      }
+      break;
+
+    case RIG_ROTATION_TOOL_CANCEL:
+      rut_entity_set_rotation (entity, start_rotation);
+      rut_shell_queue_redraw (engine->shell);
+      break;
+    }
+}
+
+RigRotationTool *
+rig_rotation_tool_new (RigCameraView *view)
+{
+  RigRotationTool *tool = g_slice_new0 (RigRotationTool);
+  RutContext *ctx = view->context;
+
+  tool->view = view;
+  tool->ctx = ctx;
+
+  tool->camera = view->view_camera;
+  tool->camera_component =
+    rut_entity_get_component (tool->camera, RUT_COMPONENT_TYPE_CAMERA);
 
   rut_list_init (&tool->rotation_event_cb_list);
 
@@ -207,14 +297,40 @@ rut_tool_new (RutShell *shell)
     rut_input_region_new_circle (0, 0, 0, on_rotation_tool_clicked, tool);
   rut_input_region_set_hud_mode (tool->rotation_circle, TRUE);
 
+  rig_rotation_tool_add_event_callback (tool,
+                                        tool_event_cb,
+                                        NULL, /* user data */
+                                        NULL /* destroy_cb */);
+
   return tool;
 }
 
 void
-rut_tool_set_camera (RutTool *tool,
-                     RutEntity *camera)
+rig_rotation_tool_set_active (RigRotationTool *tool,
+                              bool active)
 {
-  tool->camera = camera;
+  if (tool->active == active)
+    return;
+
+  tool->active = active;
+
+  if (active)
+    {
+      RigObjectsSelection *selection = tool->view->engine->objects_selection;
+
+      tool->objects_selection_closure =
+        rig_objects_selection_add_event_callback (selection,
+                                                  objects_selection_event_cb,
+                                                  tool,
+                                                  NULL); /* destroy notify */
+    }
+  else
+    {
+      rut_closure_disconnect (tool->objects_selection_closure);
+      tool->objects_selection_closure = NULL;
+    }
+
+  update_selection_state (tool);
 }
 
 static void
@@ -241,37 +357,18 @@ get_modelview_matrix (RutEntity  *camera,
 #define VIEWPORT_TRANSFORM_Y(y, vp_origin_y, vp_height) \
     (  ( ((-(y)) + 1.0) * ((vp_height) / 2.0) ) + (vp_origin_y)  )
 
-/* to call every time the selected entity changes or when the one already
- * selected changes transform. As we have now way to be notified if the
- * transform of an entity has change (yet!) this is called every frame
- * before drawing the tool */
 void
-rut_tool_update (RutTool *tool,
-                 RutEntity *selected_entity)
+update_position (RigRotationTool *tool)
 {
-  RutComponent *camera;
+  RutCamera *camera = tool->camera_component;
   CoglMatrix transform;
   const CoglMatrix *projection;
   float scale_thingy[4], screen_space[4], x, y;
   const float *viewport;
 
-  camera = rut_entity_get_component (tool->camera,
-                                     RUT_COMPONENT_TYPE_CAMERA);
-
-  if (selected_entity == NULL)
-    {
-      tool->selected_entity = NULL;
-
-      /* remove the input region when no entity is selected */
-      rut_camera_remove_input_region (RUT_CAMERA (camera),
-                                      tool->rotation_circle);
-
-      return;
-    }
-
   /* transform the selected entity up to the projection */
   get_modelview_matrix (tool->camera,
-                        selected_entity,
+                        tool->selected_entity,
                         &transform);
 
   tool->position[0] = tool->position[1] = tool->position[2] = 0.f;
@@ -284,7 +381,7 @@ rut_tool_update (RutTool *tool,
                                 tool->position,
                                 1 /* n_points */);
 
-  projection = rut_camera_get_projection (RUT_CAMERA (camera));
+  projection = rut_camera_get_projection (camera);
 
   scale_thingy[0] = 1.f;
   scale_thingy[1] = 0.f;
@@ -319,7 +416,7 @@ rut_tool_update (RutTool *tool,
   screen_space[1] /= screen_space[3];
 
   /* apply viewport transform */
-  viewport = rut_camera_get_viewport (RUT_CAMERA (camera));
+  viewport = rut_camera_get_viewport (camera);
   x = VIEWPORT_TRANSFORM_X (screen_space[0], viewport[0], viewport[2]);
   y = VIEWPORT_TRANSFORM_Y (screen_space[1], viewport[1], viewport[3]);
 
@@ -327,32 +424,17 @@ rut_tool_update (RutTool *tool,
   tool->screen_pos[1] = y;
 
   rut_input_region_set_circle (tool->rotation_circle, x, y, 64);
-
-  if (tool->selected_entity != selected_entity)
-    {
-      /* If we go from a "no entity selected" state to a "entity selected"
-       * one, we set-up the input region */
-      if (tool->selected_entity == NULL)
-        rut_camera_add_input_region (RUT_CAMERA (camera),
-                                     tool->rotation_circle);
-
-      tool->selected_entity = selected_entity;
-    }
-
-  /* save the camera component for other functions to use */
-  tool->camera_component = RUT_CAMERA (camera);
 }
 
 static float
-rut_tool_get_scale_for_length (RutTool *tool,
-                               float    length)
+get_scale_for_length (RigRotationTool *tool, float length)
 {
   return length * tool->scale;
 }
 
 static void
-get_rotation (RutEntity  *camera,
-              RutEntity  *entity,
+get_rotation (RutEntity *camera,
+              RutEntity *entity,
               CoglMatrix *rotation)
 {
   CoglQuaternion q;
@@ -362,7 +444,8 @@ get_rotation (RutEntity  *camera,
 }
 
 void
-rut_tool_draw (RutTool *tool, CoglFramebuffer *fb)
+rig_rotation_tool_draw (RigRotationTool *tool,
+                        CoglFramebuffer *fb)
 {
   CoglMatrix rotation;
   float scale, aspect_ratio;
@@ -371,8 +454,14 @@ rut_tool_draw (RutTool *tool, CoglFramebuffer *fb)
   float fov;
   float near;
   float zoom;
-
   float vp_width, vp_height;
+
+  g_return_if_fail (tool->active);
+
+  if (!tool->selected_entity)
+    return;
+
+  update_position (tool);
 
   get_rotation (tool->camera,
                 tool->selected_entity,
@@ -398,7 +487,7 @@ rut_tool_draw (RutTool *tool, CoglFramebuffer *fb)
                                       zoom);
   cogl_framebuffer_set_projection_matrix (fb, &projection);
 
-  scale = rut_tool_get_scale_for_length (tool, 128 / vp_width);
+  scale = get_scale_for_length (tool, 128 / vp_width);
 
   /* draw the tool */
   cogl_framebuffer_push_matrix (fb);
@@ -435,8 +524,8 @@ rut_tool_draw (RutTool *tool, CoglFramebuffer *fb)
 }
 
 RutClosure *
-rut_tool_add_rotation_event_callback (RutTool *tool,
-                                      RutToolRotationEventCallback callback,
+rig_rotation_tool_add_event_callback (RigRotationTool *tool,
+                                      RigRotationToolEventCallback callback,
                                       void *user_data,
                                       RutClosureDestroyCallback destroy_cb)
 {
@@ -447,7 +536,7 @@ rut_tool_add_rotation_event_callback (RutTool *tool,
 }
 
 void
-rut_tool_free (RutTool *tool)
+rig_rotation_tool_destroy (RigRotationTool *tool)
 {
   rut_closure_list_disconnect_all (&tool->rotation_event_cb_list);
 
@@ -457,9 +546,9 @@ rut_tool_free (RutTool *tool)
   rut_refable_unref (tool->rotation_circle);
 
   if (tool->button_down)
-    rut_shell_ungrab_input (tool->shell,
+    rut_shell_ungrab_input (tool->ctx->shell,
                             rotation_tool_grab_cb,
                             tool);
 
-  g_slice_free (RutTool, tool);
+  g_slice_free (RigRotationTool, tool);
 }

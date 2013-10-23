@@ -29,7 +29,6 @@
 #include "rut-util.h"
 #include "rut-text-buffer.h"
 #include "rut-text.h"
-#include "rut-tool.h"
 #include "rut-geometry.h"
 #include "rut-paintable.h"
 #include "rut-color.h"

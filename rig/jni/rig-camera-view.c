@@ -28,67 +28,8 @@
 #include "rig-engine.h"
 #include "rig-view.h"
 #include "rig-renderer.h"
+#include "rig-rotation-tool.h"
 
-typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
-typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
-
-typedef struct
-{
-  RutEntity *origin_offset; /* negative offset */
-  RutEntity *dev_scale; /* scale to fit device coords */
-  RutEntity *screen_pos; /* position screen in edit view */
-} RigCameraViewDeviceTransforms;
-
-struct _RigCameraView
-{
-  RutObjectProps _parent;
-
-  RigEngine *engine;
-
-  RutContext *context;
-
-  int ref_count;
-
-  RutGraphableProps graphable;
-  RutPaintableProps paintable;
-
-  float width, height;
-
-  CoglPipeline *bg_pipeline;
-
-  RutGraph *scene;
-
-  float origin[3];
-  //float saved_origin[3];
-
-  float device_scale;
-
-  EntitiesTranslateGrabClosure *entities_translate_grab_closure;
-
-  RutEntity *view_camera_to_origin; /* move to origin */
-  RutEntity *view_camera_rotate; /* armature rotate rotate */
-  RutEntity *view_camera_armature; /* armature length */
-  RutEntity *view_camera_2d_view; /* setup 2d view, origin top-left */
-  RigCameraViewDeviceTransforms view_device_transforms;
-
-  RutEntity *play_camera;
-  RutCamera *play_camera_component;
-  RigCameraViewDeviceTransforms play_device_transforms;
-  /* This entity is added as a child of all of the play device
-   * transforms. During paint the camera component is temporarily
-   * stolen from the play camera entity so that it can be transformed
-   * with the device transforms */
-  RutEntity *play_dummy_entity;
-
-  RutEntity *view_camera;
-  RutCamera *view_camera_component;
-  float view_camera_z;
-  RutInputRegion *input_region;
-
-  float last_viewport_x;
-  float last_viewport_y;
-  CoglBool dirty_viewport_size;
-};
 
 typedef void (*EntityTranslateCallback) (RutEntity *entity,
                                          float start[3],
@@ -167,6 +108,8 @@ _rig_camera_view_free (void *object)
   rut_refable_unref (view->play_dummy_entity);
   unref_device_transforms (&view->play_device_transforms);
 
+  rig_rotation_tool_destroy (view->rotation_tool);
+
   g_slice_free (RigCameraView, view);
 }
 
@@ -234,24 +177,10 @@ paint_overlays (RigCameraView *view,
 #ifdef RIG_EDITOR_ENABLED
   if (draw_tools)
     {
-      GList *selected_objects = engine->entities_selection->entities;
-
       rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
-      if (selected_objects)
-        {
-          RutObject *reference_object = selected_objects->data;
-
-          if (rut_object_get_type (reference_object) == &rut_entity_type)
-            {
-              /* XXX: we don't currently do anything very clever in how
-               * manage the user manipulation tool when there are multiple
-               * entities selected, and simply apply the tool to the first
-               * entity. */
-              rut_tool_update (engine->tool, reference_object);
-              rut_tool_draw (engine->tool, fb);
-            }
-        }
+      if (view->tool_id == RIG_TOOL_ID_ROTATION)
+        rig_rotation_tool_draw (view->rotation_tool, fb);
     }
 #endif /* RIG_EDITOR_ENABLED */
 
@@ -670,7 +599,7 @@ static void
 allocate_cb (RutObject *graphable,
              void *user_data)
 {
-  RigCameraView *view = RIG_CAMERA_VIEW (graphable);
+  RigCameraView *view = graphable;
   RigEngine *engine = view->engine;
 
   update_device_transforms (view);
@@ -748,7 +677,7 @@ rig_camera_view_get_preferred_width (void *sizable,
                                      float *min_width_p,
                                      float *natural_width_p)
 {
-  RigCameraView *view = RIG_CAMERA_VIEW (sizable);
+  RigCameraView *view = sizable;
   RigEngine *engine = view->engine;
 
   if (min_width_p)
@@ -763,7 +692,7 @@ rig_camera_view_get_preferred_height (void *sizable,
                                       float *min_height_p,
                                       float *natural_height_p)
 {
-  RigCameraView *view = RIG_CAMERA_VIEW (sizable);
+  RigCameraView *view = sizable;
   RigEngine *engine = view->engine;
 
   if (min_height_p)
@@ -1619,8 +1548,6 @@ input_cb (RutInputEvent *event,
       float y = rut_motion_event_get_y (event);
       RutButtonState state;
 
-      rut_tool_set_camera (engine->tool, view->view_camera);
-
       rut_camera_transform_window_coordinate (view->view_camera_component,
                                               &x, &y);
 
@@ -1699,20 +1626,20 @@ input_cb (RutInputEvent *event,
           if ((rut_motion_event_get_modifier_state (event) &
                RUT_MODIFIER_SHIFT_ON))
             {
-              rig_select_entity (engine, picked_entity,
+              rig_select_object (engine, picked_entity,
                                  RUT_SELECT_ACTION_TOGGLE);
             }
           else
-            rig_select_entity (engine, picked_entity,
+            rig_select_object (engine, picked_entity,
                                RUT_SELECT_ACTION_REPLACE);
 
           /* If we have selected an entity then initiate a grab so the
            * entity can be moved with the mouse...
            */
-          if (engine->entities_selection->entities)
+          if (engine->objects_selection->objects)
             {
               if (!translate_grab_entities (view,
-                                            engine->entities_selection->entities,
+                                            engine->objects_selection->objects,
                                             rut_motion_event_get_x (event),
                                             rut_motion_event_get_y (event),
                                             entity_translate_cb,
@@ -1897,10 +1824,10 @@ input_cb (RutInputEvent *event,
             case RUT_KEY_j:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON) &&
-                  engine->entities_selection->entities)
+                  engine->objects_selection->objects)
                 {
                   GList *l;
-                  for (l = engine->entities_selection->entities; l; l = l->next)
+                  for (l = engine->objects_selection->objects; l; l = l->next)
                     move_entity_to_camera (view, l->data);
                 }
               break;
@@ -1914,17 +1841,17 @@ input_cb (RutInputEvent *event,
           RutObject *data = rut_drop_event_get_data (event);
 
           if (data &&
-              rut_object_get_type (data) == &rig_entities_selection_type)
+              rut_object_get_type (data) == &rig_objects_selection_type)
             {
-              RigEntitiesSelection *selection = data;
-              int n_entities = g_list_length (selection->entities);
+              RigObjectsSelection *selection = data;
+              int n_entities = g_list_length (selection->objects);
 
               if (n_entities)
                 {
                   RutEntity *parent = (RutEntity *)view->scene;
                   GList *l;
 
-                  for (l = selection->entities; l; l = l->next)
+                  for (l = selection->objects; l; l = l->next)
                     {
                       rig_undo_journal_add_entity (engine->undo_journal,
                                                    parent,
@@ -2047,6 +1974,25 @@ init_device_transforms (RutContext *ctx,
   rut_entity_set_label (transforms->screen_pos, "rig:camera_screen_pos");
 }
 
+static void
+tool_changed_cb (RigEngine *engine,
+                 RigToolID tool_id,
+                 void *user_data)
+{
+  RigCameraView *view = user_data;
+
+  switch (tool_id)
+    {
+    case RIG_TOOL_ID_SELECTION:
+      rig_rotation_tool_set_active (view->rotation_tool, false);
+      break;
+    case RIG_TOOL_ID_ROTATION:
+      rig_rotation_tool_set_active (view->rotation_tool, true);
+      break;
+    }
+  view->tool_id = tool_id;
+}
+
 RigCameraView *
 rig_camera_view_new (RigEngine *engine)
 {
@@ -2112,6 +2058,12 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_add_child (view->play_device_transforms.screen_pos,
                            view->play_dummy_entity);
 
+  view->rotation_tool = rig_rotation_tool_new (view);
+
+  rig_add_tool_changed_callback (engine,
+                                 tool_changed_cb,
+                                 view,
+                                 NULL); /* destroy notify */
   return view;
 }
 

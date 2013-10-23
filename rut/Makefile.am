@@ -36,7 +36,6 @@ source_h = \
     rut-util.h \
     rut-text-buffer.h \
     rut-text.h \
-    rut-tool.h \
     rut-geometry.h \
     rut-context.h \
     rut-number-slider.h \
@@ -116,7 +115,6 @@ librut_la_SOURCES = \
     rut-display-list.c \
     rut-text-buffer.c \
     rut-text.c \
-    rut-tool.c \
     rut-geometry.c \
     rut-number-slider.c \
     rut-vec3-slider.c \

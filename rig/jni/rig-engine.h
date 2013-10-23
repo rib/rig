@@ -24,6 +24,15 @@
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
 
+/* Forward declare since there is a circular dependency between this
+ * header and rig-camera-view.h which depends on this typedef... */
+typedef enum _RigToolID
+{
+  RIG_TOOL_ID_SELECTION = 1,
+  RIG_TOOL_ID_ROTATION,
+} RigToolID;
+
+
 #include "rig-protobuf-c-rpc.h"
 
 #include "rig-controller.h"
@@ -49,8 +58,9 @@ typedef struct _RigEntitesSelection
   RutObjectProps _parent;
   int ref_count;
   RigEngine *engine;
-  GList *entities;
-} RigEntitiesSelection;
+  GList *objects;
+  RutList selection_events_cb_list;
+} RigObjectsSelection;
 
 struct _RigEngine
 {
@@ -86,6 +96,8 @@ struct _RigEngine
 
   RutText *search_text;
   GList *required_search_tags;
+
+  RutList tool_changed_cb_list;
 #endif
 
   RutObject *renderer;
@@ -210,9 +222,7 @@ struct _RigEngine
   RigController *selected_controller;
   RutPropertyClosure *controller_progress_closure;
 
-  RigEntitiesSelection *entities_selection;
-
-  RutTool *tool;
+  RigObjectsSelection *objects_selection;
 
   /* picking ray */
   CoglPipeline *picking_ray_color;
@@ -279,7 +289,7 @@ struct _RigEngine
 
 extern CoglBool _rig_in_device_mode;
 
-extern RutType rig_entities_selection_type;
+extern RutType rig_objects_selection_type;
 
 void
 rig_engine_init (RutShell *shell, void *user_data);
@@ -324,17 +334,9 @@ typedef enum _RutSelectAction
 } RutSelectAction;
 
 void
-rig_select_entity (RigEngine *engine,
+rig_select_object (RigEngine *engine,
                    RutObject *object,
                    RutSelectAction action);
-
-typedef void (*RigEngineSelectionChangedCallback) (RigEngine *engine,
-                                                   void *user_data);
-
-RutClosure *
-rut_engine_add_selection_changed_callback (RigEngine *engine,
-                                           RigEngineSelectionChangedCallback callback,
-                                           void *user_data);
 
 void
 rig_reload_inspector_property (RigEngine *engine,
@@ -362,5 +364,33 @@ rig_engine_push_undo_subjournal (RigEngine *engine);
 
 RigUndoJournal *
 rig_engine_pop_undo_subjournal (RigEngine *engine);
+
+typedef enum _RigObjectsSelectionEvent
+{
+  RIG_OBJECTS_SELECTION_ADD_EVENT,
+  RIG_OBJECTS_SELECTION_REMOVE_EVENT
+} RigObjectsSelectionEvent;
+
+typedef void (*RigObjectsSelectionEventCallback) (RigObjectsSelection *selection,
+                                                  RigObjectsSelectionEvent event,
+                                                  RutObject *object,
+                                                  void *user_data);
+
+RutClosure *
+rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
+                                          RigObjectsSelectionEventCallback callback,
+                                          void *user_data,
+                                          RutClosureDestroyCallback destroy_cb);
+
+typedef void (*RigToolChangedCallback) (RigEngine *engine,
+                                        RigToolID tool_id,
+                                        void *user_data);
+
+void
+rig_add_tool_changed_callback (RigEngine *engine,
+                               RigToolChangedCallback callback,
+                               void *user_data,
+                               RutClosureDestroyCallback destroy_notify);
+
 
 #endif /* _RUT_ENGINE_H_ */
