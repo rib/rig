@@ -19,9 +19,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <glib-object.h>
 #include <string.h>
@@ -331,7 +329,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
   RutAttribute *rut_attributes[n_attributes];
   p_ply_element vertex_element;
   RutBuffer *indices_buffer;
-  RutMesh *mesh;
+  RutMesh *mesh = NULL;
   int i;
   int32_t n_vertices;
   int max_component_size = 1;
@@ -563,9 +561,6 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
                        rut_attributes,
                        n_loader_attributes);
 
-  for (i = 0; i < n_loader_attributes; i++)
-    rut_refable_unref (rut_attributes[i]);
-
   indices_buffer = rut_buffer_new (loader->faces->len *
                                    g_array_get_element_size (loader->faces));
   memcpy (indices_buffer->data, loader->faces->data, indices_buffer->size);
@@ -580,18 +575,14 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
 EXIT:
 
   if (loader->error)
-    {
-      g_propagate_error (error, loader->error);
+    g_propagate_error (error, loader->error);
 
-      if (loader->vertex_buffer)
-        rut_refable_unref (loader->vertex_buffer);
+  if (loader->vertex_buffer)
+    rut_refable_unref (loader->vertex_buffer);
 
-      for (i = 0; i < n_loader_attributes; i++)
-        if (rut_attributes[i])
-          rut_refable_unref (rut_attributes[i]);
-
-      mesh = NULL;
-    }
+  for (i = 0; i < n_loader_attributes; i++)
+    if (rut_attributes[i])
+      rut_refable_unref (rut_attributes[i]);
 
   if (loader->faces)
     g_array_free (loader->faces, TRUE);
