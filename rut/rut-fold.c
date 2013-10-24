@@ -52,8 +52,6 @@ _rut_fold_free (void *object)
   rut_graphable_destroy (fold);
   rut_simple_introspectable_destroy (fold);
 
-  rut_refable_unref (fold->context);
-
   g_slice_free (RutFold, fold);
 }
 
@@ -156,7 +154,7 @@ rut_fold_new (RutContext *ctx,
     }
 
   fold->ref_count = 1;
-  fold->context = rut_refable_ref (ctx);
+  fold->context = ctx;
 
   rut_object_init (&fold->_parent, &rut_fold_type);
 
@@ -252,13 +250,13 @@ rut_fold_set_child (RutFold *fold, RutObject *child)
   g_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
 
   if (child)
-    rut_refable_ref (child);
+    rut_refable_claim (child, fold);
 
   if (fold->child)
     {
       if (!fold->folded)
         rut_box_layout_remove (fold->vbox, fold->child);
-      rut_refable_unref (fold->child);
+      rut_refable_release (fold->child, fold);
     }
 
   fold->child = child;
@@ -272,12 +270,12 @@ rut_fold_set_header_child (RutFold *fold, RutObject *child)
   g_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
 
   if (child)
-    rut_refable_ref (child);
+    rut_refable_claim (child, fold);
 
   if (fold->header_child)
     {
       rut_box_layout_remove (fold->header_hbox_right, fold->header_child);
-      rut_refable_unref (fold->header_child);
+      rut_refable_release (fold->header_child, fold);
     }
 
   fold->header_child = child;
