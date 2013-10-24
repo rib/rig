@@ -363,6 +363,7 @@ rut_prop_inspector_create_control_for_property (RutContext *context,
         return slider;
       }
 
+    case RUT_PROPERTY_TYPE_DOUBLE:
     case RUT_PROPERTY_TYPE_FLOAT:
     case RUT_PROPERTY_TYPE_INTEGER:
       {
@@ -664,21 +665,12 @@ rut_prop_inspector_reload_property (RutPropInspector *inspector)
 
       if (inspector->source_prop)
         {
-          if (inspector->target_prop->spec->type == RUT_PROPERTY_TYPE_ENUM &&
-              inspector->source_prop->spec->type == RUT_PROPERTY_TYPE_INTEGER)
+          if (inspector->target_prop->spec->type !=
+              inspector->widget_prop->spec->type)
             {
-              int value = rut_property_get_enum (inspector->target_prop);
-              rut_property_set_integer (&inspector->context->property_ctx,
-                                        inspector->source_prop,
-                                        value);
-            }
-          else if (inspector->target_prop->spec->type ==
-                   RUT_PROPERTY_TYPE_INTEGER)
-            {
-              int value = rut_property_get_integer (inspector->target_prop);
-              rut_property_set_float (&inspector->context->property_ctx,
-                                      inspector->source_prop,
-                                      value);
+              rut_property_cast_scalar_value (&inspector->context->property_ctx,
+                                              inspector->widget_prop,
+                                              inspector->target_prop);
             }
           else
             rut_property_copy_value (&inspector->context->property_ctx,
