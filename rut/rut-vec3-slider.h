@@ -1,15 +1,11 @@
 #ifndef _RUT_VEC3_SLIDER_H_
 #define _RUT_VEC3_SLIDER_H_
 
-#include <cogl/cogl.h>
-
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-context.h"
 
 extern RutType rut_vec3_slider_type;
-
 typedef struct _RutVec3Slider RutVec3Slider;
-
-#define RUT_VEC3_SLIDER(x) ((RutVec3Slider *) x)
 
 RutVec3Slider *
 rut_vec3_slider_new (RutContext *ctx);
