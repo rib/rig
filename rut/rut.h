@@ -63,6 +63,7 @@
 #include "rut-drag-bin.h"
 #include "rut-icon-toggle.h"
 #include "rut-icon-toggle-set.h"
+#include "rut-rotation-inspector.h"
 
 /* entity/components system */
 #include "rut-entity.h"
