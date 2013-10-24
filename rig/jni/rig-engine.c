@@ -1452,6 +1452,7 @@ add_results_flow (RutContext *ctx,
   rut_text_set_color (text, &color);
 
   rut_box_layout_add (vbox, FALSE, label_bin);
+  rut_refable_unref (label_bin);
 
   rut_flow_layout_set_x_padding (flow, 5);
   rut_flow_layout_set_y_padding (flow, 5);
@@ -1591,8 +1592,6 @@ add_search_result (RigEngine *engine,
         }
       else
         {
-          g_warn_if_reached ();
-
           if (!engine->assets_other_results)
             {
               engine->assets_other_results =
