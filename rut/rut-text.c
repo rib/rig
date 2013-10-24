@@ -1492,6 +1492,8 @@ _rut_text_free (void *object)
   rut_text_set_buffer (text, NULL);
   g_free (text->font_name);
 
+  rut_refable_unref (text->pick_mesh);
+
   rut_simple_introspectable_destroy (text);
   rut_graphable_destroy (text);
 
@@ -3211,6 +3213,8 @@ rut_text_new_full (RutContext *ctx,
     rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES, 6, mesh_buffer);
   int i, password_hint_time;
 
+  rut_refable_unref (mesh_buffer);
+
   rut_object_init (&text->_parent, &rut_text_type);
 
   text->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
@@ -3306,6 +3310,7 @@ rut_text_new_full (RutContext *ctx,
                                     rut_text_input_region_cb,
                                     text);
   rut_graphable_add_child (text, text->input_region);
+  rut_refable_unref (text->input_region);
 
   update_size (text);
 
