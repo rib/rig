@@ -3007,6 +3007,8 @@ rig_engine_free_ui (RigEngine *engine)
           cogl_object_unref (engine->grid_prim);
           engine->grid_prim = NULL;
         }
+
+      clear_search_results (engine);
     }
 #endif
 
