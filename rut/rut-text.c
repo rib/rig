@@ -1493,6 +1493,7 @@ _rut_text_free (void *object)
   g_free (text->font_name);
 
   rut_refable_unref (text->pick_mesh);
+  rut_refable_unref (text->input_region);
 
   rut_simple_introspectable_destroy (text);
   rut_graphable_destroy (text);
@@ -3310,7 +3311,6 @@ rut_text_new_full (RutContext *ctx,
                                     rut_text_input_region_cb,
                                     text);
   rut_graphable_add_child (text, text->input_region);
-  rut_refable_unref (text->input_region);
 
   update_size (text);
 
