@@ -1466,6 +1466,7 @@ unserialize_components (UnSerializer *unserializer,
             rut_light_set_specular (light, &specular);
 
             rut_entity_add_component (entity, light);
+            rut_refable_unref (light);
 
             if (unserializer->light == NULL)
               unserializer->light = rut_refable_ref (entity);
@@ -1547,6 +1548,7 @@ unserialize_components (UnSerializer *unserializer,
               rut_material_set_shininess (material, pb_material->shininess);
 
             rut_entity_add_component (entity, material);
+            rut_refable_unref (material);
 
             register_unserializer_object (unserializer, material, component_id);
             break;
@@ -1572,6 +1574,7 @@ unserialize_components (UnSerializer *unserializer,
               {
                 rut_refable_unref (asset);
                 rut_entity_add_component (entity, model);
+                rut_refable_unref (model);
                 register_unserializer_object (unserializer, model, component_id);
               }
             break;
@@ -1591,6 +1594,7 @@ unserialize_components (UnSerializer *unserializer,
               }
 
             rut_entity_add_component (entity, text);
+            rut_refable_unref (text);
 
             register_unserializer_object (unserializer, text, component_id);
             break;
@@ -1663,6 +1667,7 @@ unserialize_components (UnSerializer *unserializer,
               }
 
             rut_entity_add_component (entity, camera);
+            rut_refable_unref (camera);
 
             register_unserializer_object (unserializer, camera, component_id);
             break;
@@ -1740,6 +1745,7 @@ unserialize_components (UnSerializer *unserializer,
                                    width, height);
 
             rut_entity_add_component (entity, shape);
+            rut_refable_unref (shape);
 
             register_unserializer_object (unserializer, shape, component_id);
 
@@ -1769,6 +1775,7 @@ unserialize_components (UnSerializer *unserializer,
                                                  pb_component->properties);
 
             rut_entity_add_component (entity, nine_slice);
+            rut_refable_unref (nine_slice);
 
             register_unserializer_object (unserializer, nine_slice, component_id);
 
@@ -1821,6 +1828,7 @@ unserialize_components (UnSerializer *unserializer,
                                        diamond_size, width, height);
 
             rut_entity_add_component (entity, diamond);
+            rut_refable_unref (diamond);
 
             register_unserializer_object (unserializer, diamond, component_id);
 
@@ -1884,6 +1892,7 @@ unserialize_components (UnSerializer *unserializer,
                                             width, height);
 
             rut_entity_add_component (entity, grid);
+            rut_refable_unref (grid);
 
             if (pb_grid->has_scale)
               rut_pointalism_grid_set_scale (grid, pb_grid->scale);
@@ -1915,6 +1924,7 @@ unserialize_components (UnSerializer *unserializer,
             RutObject *geom;
 
             rut_entity_add_component (entity, hair);
+            rut_refable_unref (hair);
 
             set_properties_from_pb_boxed_values (unserializer,
                                                  hair,
@@ -1944,6 +1954,7 @@ unserialize_components (UnSerializer *unserializer,
 
                 rut_entity_remove_component (entity, geom);
                 rut_entity_add_component (entity, hair_geom);
+                rut_refable_unref (hair_geom);
               }
 
             break;
