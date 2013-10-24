@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 
@@ -42,29 +40,39 @@
 
 typedef struct
 {
-  CoglBool enabled;
+  bool enabled;
   GHashTable *hash;
+  GList *owners;
   int backtrace_level;
 } RutRefcountDebugState;
 
 typedef struct
 {
+  const char *name;
   void *object;
-  int ref_count;
+  int data_ref;
+  int object_ref_count;
+  int n_claims;
   RutList actions;
 } RutRefcountDebugObject;
 
 typedef enum
 {
   RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE,
+  RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE,
   RUT_REFCOUNT_DEBUG_ACTION_TYPE_REF,
-  RUT_REFCOUNT_DEBUG_ACTION_TYPE_UNREF
+  RUT_REFCOUNT_DEBUG_ACTION_TYPE_UNREF,
+  RUT_REFCOUNT_DEBUG_ACTION_TYPE_CLAIM,
+  RUT_REFCOUNT_DEBUG_ACTION_TYPE_RELEASE
 } RutRefcountDebugActionType;
 
 typedef struct
 {
   RutList link;
   RutRefcountDebugActionType type;
+
+  /* for _CLAIM/_RELEASE actions... */
+  RutRefcountDebugObject *owner;
 
   int n_backtrace_addresses;
 
@@ -75,6 +83,9 @@ typedef struct
 
 static void
 atexit_cb (void);
+
+static void
+object_data_unref (RutRefcountDebugObject *object_data);
 
 static RutRefcountDebugState *
 get_state (void);
@@ -87,13 +98,52 @@ get_sizeof_action (RutRefcountDebugState *state)
 }
 
 static void
+free_action (RutRefcountDebugAction *action)
+{
+  if (action->owner)
+    object_data_unref (action->owner);
+  g_slice_free1 (get_sizeof_action (get_state ()), action);
+}
+
+static void
+free_action_log (RutRefcountDebugObject *object_data)
+{
+  RutRefcountDebugAction *action, *tmp;
+
+  rut_list_for_each_safe (action, tmp, &object_data->actions, link)
+    free_action (action);
+}
+
+static RutRefcountDebugObject *
+object_data_ref (RutRefcountDebugObject *object_data)
+{
+  object_data->data_ref++;
+  return object_data;
+}
+
+static void
+object_data_unref (RutRefcountDebugObject *object_data)
+{
+  if (--object_data->data_ref <= 0)
+    {
+      free_action_log (object_data);
+
+      g_slice_free (RutRefcountDebugObject, object_data);
+    }
+}
+
+static void
 log_action (RutRefcountDebugObject *object_data,
-            RutRefcountDebugActionType action_type)
+            RutRefcountDebugActionType action_type,
+            RutRefcountDebugObject *owner)
 {
   RutRefcountDebugState *state = get_state ();
   RutRefcountDebugAction *action = g_slice_alloc (get_sizeof_action (state));
 
   action->type = action_type;
+
+  if (owner)
+    action->owner = object_data_ref (owner);
 
 #ifdef RUT_ENABLE_BACKTRACE
   {
@@ -113,21 +163,9 @@ log_action (RutRefcountDebugObject *object_data,
 }
 
 static void
-free_action (RutRefcountDebugAction *action)
-{
-  g_slice_free1 (get_sizeof_action (get_state ()), action);
-}
-
-static void
 object_data_destroy_cb (void *data)
 {
-  RutRefcountDebugObject *object_data = data;
-  RutRefcountDebugAction *action, *tmp;
-
-  rut_list_for_each_safe (action, tmp, &object_data->actions, link)
-    free_action (action);
-
-  g_slice_free (RutRefcountDebugObject, object_data);
+  object_data_unref (data);
 }
 
 static RutRefcountDebugState *
@@ -201,7 +239,7 @@ readlink_alloc (const char *linkname)
     }
 }
 
-static CoglBool
+static bool
 resolve_addresses_addr2line (GHashTable *hash_table,
                              int n_addresses,
                              void * const *addresses)
@@ -213,7 +251,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
   int exit_status;
   int extra_args = G_N_ELEMENTS (base_args);
   int address_args = extra_args + 1;
-  CoglBool ret = TRUE;
+  bool ret = TRUE;
   int i;
 
   argv = g_alloca (sizeof (char *) *
@@ -267,7 +305,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
   return ret;
 }
 
-static CoglBool
+static bool
 resolve_addresses_backtrace (GHashTable *hash_table,
                              int n_addresses,
                              void * const *addresses)
@@ -335,7 +373,7 @@ resolve_addresses (RutRefcountDebugState *state)
     {
       void **addresses = g_malloc (sizeof (void *) * n_addresses);
       void **addr_p = addresses;
-      CoglBool resolve_ret;
+      bool resolve_ret;
 
       g_hash_table_foreach (hash_table, get_addresses_cb, &addr_p);
 
@@ -367,21 +405,20 @@ typedef struct
   GHashTable *address_table;
 } DumpObjectCallbackData;
 
+
 static void
-dump_object_cb (void *key,
-                void *value,
+dump_object_cb (RutRefcountDebugObject *object_data,
                 void *user_data)
+
 {
-  RutRefcountDebugObject *object = value;
   DumpObjectCallbackData *data = user_data;
 
   fprintf (data->out_file,
-           object->ref_count == 1 ?
-           "%p(%s) with %i reference" :
-           "%p(%s) with %i references",
-           key,
-           rut_object_get_type_name (key),
-           object->ref_count);
+           "Object: ptr=%p, id=%p, type=%s, ref_count=%i",
+           object_data->object,
+           object_data,
+           object_data->name,
+           object_data->object_ref_count);
 
   fputc ('\n', data->out_file);
 
@@ -391,7 +428,7 @@ dump_object_cb (void *key,
       RutRefcountDebugAction *action;
       int ref_count = 0;
 
-      rut_list_for_each (action, &object->actions, link)
+      rut_list_for_each (action, &object_data->actions, link)
         {
           int i;
 
@@ -399,13 +436,32 @@ dump_object_cb (void *key,
           switch (action->type)
             {
             case RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE:
-              fprintf (data->out_file, "CREATE(%i)", ++ref_count);
+              fprintf (data->out_file, "CREATE: ref_count = %i", ++ref_count);
+              break;
+            case RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE:
+              fprintf (data->out_file, "FREE: ref_count = %i", ++ref_count);
               break;
             case RUT_REFCOUNT_DEBUG_ACTION_TYPE_REF:
-              fprintf (data->out_file, "REF(%i)", ++ref_count);
+              fprintf (data->out_file, "REF: ref_count = %i", ++ref_count);
               break;
             case RUT_REFCOUNT_DEBUG_ACTION_TYPE_UNREF:
-              fprintf (data->out_file, "UNREF(%i)", --ref_count);
+              fprintf (data->out_file, "UNREF: ref_count = %i", --ref_count);
+              break;
+            case RUT_REFCOUNT_DEBUG_ACTION_TYPE_CLAIM:
+              fprintf (data->out_file, "CLAIM: ref_count = %i, "
+                       "Owner: ptr=%p,id=%p,type=%s",
+                       ++ref_count,
+                       action->owner->object,
+                       action->owner,
+                       action->owner->name);
+              break;
+            case RUT_REFCOUNT_DEBUG_ACTION_TYPE_RELEASE:
+              fprintf (data->out_file, "RELEASE: ref_count = %i, "
+                       "Owner: ptr=%p,id=%p,type=%s",
+                       --ref_count,
+                       action->owner->object,
+                       action->owner,
+                       action->owner->name);
               break;
             }
           fputc ('\n', data->out_file);
@@ -419,6 +475,14 @@ dump_object_cb (void *key,
         }
     }
 #endif /* RUT_ENABLE_BACKTRACE */
+}
+
+static void
+dump_hash_object_cb (void *key,
+                     void *value,
+                     void *user_data)
+{
+  dump_object_cb (value, user_data);
 }
 
 static void
@@ -454,7 +518,8 @@ atexit_cb (void)
 #endif
             data.address_table = NULL;
 
-          g_hash_table_foreach (state->hash, dump_object_cb, &data);
+          g_hash_table_foreach (state->hash, dump_hash_object_cb, &data);
+          g_list_foreach (state->owners, (GFunc)dump_object_cb, &data);
 
           if (data.address_table)
             g_hash_table_destroy (data.address_table);
@@ -476,6 +541,9 @@ atexit_cb (void)
       g_free (out_name);
     }
 
+  g_list_foreach (state->owners, (GFunc)object_data_unref, NULL);
+  g_list_free (state->owners);
+
   g_hash_table_destroy (state->hash);
   g_free (state);
 }
@@ -495,17 +563,33 @@ _rut_refcount_debug_object_created (void *object)
       RutRefcountDebugObject *object_data =
         g_slice_new (RutRefcountDebugObject);
 
+      /* The object data might outlive the lifetime of the
+       * object itself so lets find out the object type now
+       * while we can... */
+      object_data->name = rut_object_get_type_name (object);
+
       object_data->object = object;
-      object_data->ref_count = 1;
+
+      /* NB This debug object data may out live the object itself
+       * since we track relationships between objects and so if there
+       * are other objects that are owned by this object we will keep
+       * the object data for the owner. If the owner forgets to
+       * release the references it claimed then we want to maintain
+       * the graph of ownership for debugging. */
+
+      object_data->data_ref = 1; /* for the object_data itself */
+      object_data->object_ref_count = 1;
+      object_data->n_claims = 0;
       rut_list_init (&object_data->actions);
-      log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE);
+      log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_CREATE, NULL);
 
       g_hash_table_insert (state->hash, object, object_data);
+      object_data_ref (object_data);
     }
 }
 
 void
-_rut_refcount_debug_ref (void *object)
+_rut_refcount_debug_claim (void *object, void *owner)
 {
   RutRefcountDebugState *state = get_state ();
   RutRefcountDebugObject *object_data;
@@ -521,12 +605,38 @@ _rut_refcount_debug_ref (void *object)
       return;
     }
 
-  object_data->ref_count++;
-  log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_REF);
+  if (owner)
+    {
+      RutRefcountDebugObject *owner_data =
+        g_hash_table_lookup (state->hash, owner);
+
+      if (owner_data == NULL)
+        g_warning ("Reference claimed by object that does not exist");
+
+      if (owner_data->n_claims == 0)
+        {
+          state->owners = g_list_prepend (state->owners, owner_data);
+          object_data_ref (owner_data);
+          owner_data->n_claims++;
+        }
+
+      log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_CLAIM,
+                  owner_data);
+    }
+  else
+    log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_REF, NULL);
+
+  object_data->object_ref_count++;
 }
 
 void
-_rut_refcount_debug_unref (void *object)
+_rut_refcount_debug_ref (void *object)
+{
+  _rut_refcount_debug_claim (object, NULL /* owner */);
+}
+
+void
+_rut_refcount_debug_release (void *object, void *owner)
 {
   RutRefcountDebugState *state = get_state ();
   RutRefcountDebugObject *object_data;
@@ -542,10 +652,43 @@ _rut_refcount_debug_unref (void *object)
       return;
     }
 
-  if (--object_data->ref_count <= 0)
-    g_hash_table_remove (state->hash, object);
+  if (--object_data->object_ref_count <= 0)
+    {
+      log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE, NULL);
+      object_data->object = NULL;
+      g_hash_table_remove (state->hash, object);
+    }
   else
-    log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_UNREF);
+    {
+      if (owner)
+        {
+          RutRefcountDebugObject *owner_data =
+            g_hash_table_lookup (state->hash, object);
+
+          if (owner_data)
+            {
+              owner_data->n_claims--;
+              if (owner_data->n_claims == 0)
+                {
+                  state->owners = g_list_remove (state->owners, owner_data);
+                  object_data_unref (owner_data);
+                }
+            }
+          else
+            g_warning ("Reference released by unknown owner");
+
+          log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_RELEASE,
+                      owner_data);
+        }
+      else
+        log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_UNREF, NULL);
+    }
+}
+
+void
+_rut_refcount_debug_unref (void *object)
+{
+  _rut_refcount_debug_release (object, NULL /* owner */);
 }
 
 void
@@ -574,7 +717,7 @@ rut_refable_dump_refs (void *object)
     dump_data.address_table = resolve_addresses (state);
 #endif
 
-  dump_object_cb (object, object_data, &dump_data);
+  dump_object_cb (object_data, &dump_data);
 }
 #endif /* RUT_ENABLE_REFCOUNT_DEBUG */
 

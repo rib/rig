@@ -79,6 +79,33 @@ rut_refable_unref (void *object)
   vtable->unref (obj);
 }
 
+void *
+rut_refable_claim (void *object, void *owner)
+{
+  RutObject *obj = object;
+  const RutType *type = rut_object_get_type (obj);
+
+  RutRefableVTable *vtable =
+    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
+
+  _rut_refcount_debug_claim (object, owner);
+
+  return vtable->ref (obj);
+}
+
+void
+rut_refable_release (void *object, void *owner)
+{
+  RutObject *obj = object;
+  const RutType *type = rut_object_get_type (obj);
+  RutRefableVTable *vtable =
+    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
+
+  _rut_refcount_debug_release (object, owner);
+
+  vtable->unref (obj);
+}
+
 void
 rut_graphable_init (RutObject *object)
 {
@@ -117,7 +144,7 @@ rut_graphable_add_child (RutObject *parent, RutObject *child)
     rut_object_get_vtable (child, RUT_INTERFACE_ID_GRAPHABLE);
   RutObject *old_parent = child_props->parent;
 
-  rut_refable_ref (child);
+  rut_refable_claim (child, parent);
 
   if (old_parent)
     rut_graphable_remove_child (child);
@@ -153,7 +180,7 @@ rut_graphable_remove_child (RutObject *child)
 
   g_queue_remove (&parent_props->children, child);
   child_props->parent = NULL;
-  rut_refable_unref (child);
+  rut_refable_release (child, parent);
 }
 
 void

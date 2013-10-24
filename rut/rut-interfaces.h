@@ -68,8 +68,14 @@ rut_refable_simple_unref (void *object);
 void *
 rut_refable_ref (void *object);
 
+void *
+rut_refable_claim (void *object, void *owner);
+
 void
 rut_refable_unref (void *object);
+
+void
+rut_refable_release (void *object, void *owner);
 
 /*
  *
