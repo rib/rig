@@ -87,8 +87,6 @@ _rut_stack_free (void *object)
 {
   RutStack *stack = object;
 
-  rut_refable_unref (stack->ctx);
-
   rut_simple_introspectable_destroy (stack);
   rut_graphable_destroy (stack);
 
@@ -155,7 +153,7 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
         rut_closure_disconnect (child_data->preferred_size_closure);
         rut_list_remove (&child_data->list_node);
         g_slice_free (RutStackChild, child_data);
-        rut_refable_unref (child);
+        rut_refable_release (child, parent);
 
         preferred_size_changed (stack);
         if (!rut_list_empty (&stack->children))
@@ -188,7 +186,7 @@ _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
     return;
 
   child_data = g_slice_new (RutStackChild);
-  child_data->child = rut_refable_ref (child);
+  child_data->child = rut_refable_claim (child, parent);
 
   child_data->preferred_size_closure =
     rut_sizable_add_preferred_size_callback (child,
@@ -382,30 +380,21 @@ rut_stack_new (RutContext *context,
                float width,
                float height)
 {
-  RutStack *stack = g_slice_new0 (RutStack);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_stack_init_type ();
-
-      initialized = TRUE;
-    }
+  RutStack *stack = rut_object_alloc0 (RutStack,
+                                       &rut_stack_type,
+                                       _rut_stack_init_type);
 
   stack->ref_count = 1;
-  stack->ctx = rut_refable_ref (context);
+  stack->ctx = context;
 
   rut_list_init (&stack->children);
   rut_list_init (&stack->preferred_size_cb_list);
-
-  rut_object_init (&stack->_parent, &rut_stack_type);
 
   rut_simple_introspectable_init (stack,
                                   _rut_stack_prop_specs,
                                   stack->properties);
 
-  rut_graphable_init (RUT_OBJECT (stack));
+  rut_graphable_init (stack);
 
   rut_stack_set_size (stack, width, height);
 
