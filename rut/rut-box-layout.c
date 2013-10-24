@@ -606,13 +606,15 @@ rut_box_layout_add (RutBoxLayout *box,
 
   g_return_if_fail (rut_object_get_type (box) == &rut_box_layout_type);
 
-  child->widget = rut_refable_ref (child_widget);
-  child->expand = expand;
-
   child->transform = rut_transform_new (box->ctx);
+  rut_graphable_add_child (box, child->transform);
+  rut_refable_unref (child->transform);
+
+  child->widget = child_widget;
   rut_graphable_add_child (child->transform, child_widget);
 
-  rut_graphable_add_child (box, child->transform);
+  child->expand = expand;
+
   box->n_children++;
 
   child->preferred_size_closure =
@@ -642,10 +644,7 @@ rut_box_layout_remove (RutBoxLayout *box,
           rut_closure_disconnect (child->preferred_size_closure);
 
           rut_graphable_remove_child (child->widget);
-          rut_refable_unref (child->widget);
-
           rut_graphable_remove_child (child->transform);
-          rut_refable_unref (child->transform);
 
           rut_list_remove (&child->link);
           g_slice_free (RutBoxLayoutChild, child);
