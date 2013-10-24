@@ -39,6 +39,25 @@ rotation_tool_grab_cb (RutInputEvent *event,
 
   g_warn_if_fail (tool->button_down);
 
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+      rut_key_event_get_keysym (event) == RUT_KEY_Escape)
+    {
+      tool->button_down = FALSE;
+
+      rut_shell_ungrab_input (tool->shell,
+                              rotation_tool_grab_cb,
+                              tool);
+
+      rut_closure_list_invoke (&tool->rotation_event_cb_list,
+                               RutToolRotationEventCallback,
+                               tool,
+                               RUT_TOOL_ROTATION_CANCEL,
+                               &tool->start_rotation,
+                               &tool->start_rotation);
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 
@@ -62,7 +81,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
 
         cogl_quaternion_multiply (&camera_rotation,
                                   &tool->arcball.q_drag,
-                                  &tool->saved_rotation);
+                                  &tool->start_view_rotations);
 
         /* XXX: We have calculated the combined rotation in camera
          * space, we now need to separate out the rotation of the
@@ -104,6 +123,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
                                  RutToolRotationEventCallback,
                                  tool,
                                  event_type,
+                                 &tool->start_rotation,
                                  &new_rotation);
       }
       break;
@@ -143,7 +163,9 @@ on_rotation_tool_clicked (RutInputRegion *region,
 
       rut_entity_get_view_rotations (entity,
                                      tool->camera,
-                                     &tool->saved_rotation);
+                                     &tool->start_view_rotations);
+
+      tool->start_rotation = *rut_entity_get_rotation (entity);
 
       cogl_quaternion_init_identity (&tool->arcball.q_drag);
 
@@ -340,8 +362,7 @@ get_rotation (RutEntity  *camera,
 }
 
 void
-rut_tool_draw (RutTool *tool,
-               CoglFramebuffer *fb)
+rut_tool_draw (RutTool *tool, CoglFramebuffer *fb)
 {
   CoglMatrix rotation;
   float scale, aspect_ratio;

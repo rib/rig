@@ -630,7 +630,8 @@ rig_reload_position_inspector (RigEngine *engine,
 static void
 tool_rotation_event_cb (RutTool *tool,
                         RutToolRotationEventType type,
-                        const CoglQuaternion *rotation,
+                        const CoglQuaternion *start_rotation,
+                        const CoglQuaternion *new_rotation,
                         void *user_data)
 {
   RigEngine *engine = user_data;
@@ -648,7 +649,7 @@ tool_rotation_event_cb (RutTool *tool,
   switch (type)
     {
     case RUT_TOOL_ROTATION_DRAG:
-      rut_entity_set_rotation (entity, rotation);
+      rut_entity_set_rotation (entity, new_rotation);
       rut_shell_queue_redraw (engine->shell);
       break;
 
@@ -658,8 +659,12 @@ tool_rotation_event_cb (RutTool *tool,
           rut_introspectable_lookup_property (entity, "rotation");
         RutBoxed value;
 
+        /* Revert the rotation before logging the new rotation into
+         * the journal... */
+        rut_entity_set_rotation (entity, start_rotation);
+
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
-        value.d.quaternion_val = *rotation;
+        value.d.quaternion_val = *new_rotation;
 
         rig_undo_journal_set_property_and_log (engine->undo_journal,
                                                FALSE /* mergable */,
@@ -667,6 +672,11 @@ tool_rotation_event_cb (RutTool *tool,
                                                &value,
                                                rotation_prop);
       }
+      break;
+
+    case RUT_TOOL_ROTATION_CANCEL:
+      rut_entity_set_rotation (entity, start_rotation);
+      rut_shell_queue_redraw (engine->shell);
       break;
     }
 }

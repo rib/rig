@@ -38,7 +38,8 @@ typedef struct _RutTool
   CoglPrimitive *rotation_tool_handle;
   RutInputRegion *rotation_circle;
   RutArcball arcball;
-  CoglQuaternion saved_rotation;
+  CoglQuaternion start_rotation;
+  CoglQuaternion start_view_rotations;
   bool button_down;
   RutEntity *camera;
   RutCamera *camera_component; /* camera component of the camera above */
@@ -51,13 +52,15 @@ typedef struct _RutTool
 typedef enum
 {
   RUT_TOOL_ROTATION_DRAG,
-  RUT_TOOL_ROTATION_RELEASE
+  RUT_TOOL_ROTATION_RELEASE,
+  RUT_TOOL_ROTATION_CANCEL
 } RutToolRotationEventType;
 
 typedef void
 (* RutToolRotationEventCallback) (RutTool *tool,
                                   RutToolRotationEventType type,
-                                  const CoglQuaternion *rotation,
+                                  const CoglQuaternion *start_rotation,
+                                  const CoglQuaternion *new_rotation,
                                   void *user_data);
 
 RutTool *
