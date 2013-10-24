@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <math.h>
 
@@ -64,11 +62,6 @@ _rut_bin_free (void *object)
   rut_bin_set_child (bin, NULL);
 
   rut_shell_remove_pre_paint_callback (bin->context->shell, bin);
-
-  rut_refable_unref (bin->context);
-
-  rut_graphable_remove_child (bin->child_transform);
-  rut_refable_unref (bin->child_transform);
 
   rut_graphable_destroy (bin);
 
@@ -339,30 +332,23 @@ _rut_bin_init_type (void)
 RutBin *
 rut_bin_new (RutContext *ctx)
 {
-  RutBin *bin = g_slice_new0 (RutBin);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_bin_init_type ();
-
-      initialized = TRUE;
-    }
+  RutBin *bin = rut_object_alloc0 (RutBin,
+                                   &rut_bin_type,
+                                   _rut_bin_init_type);
 
   bin->ref_count = 1;
-  bin->context = rut_refable_ref (ctx);
+  bin->context = ctx;
 
   bin->x_position = RUT_BIN_POSITION_EXPAND;
   bin->y_position = RUT_BIN_POSITION_EXPAND;
 
   rut_list_init (&bin->preferred_size_cb_list);
 
-  rut_object_init (&bin->_parent, &rut_bin_type);
-
   rut_graphable_init (RUT_OBJECT (bin));
 
   bin->child_transform = rut_transform_new (ctx);
   rut_graphable_add_child (bin, bin->child_transform);
+  rut_refable_unref (bin->child_transform);
 
   return bin;
 }
@@ -387,14 +373,14 @@ rut_bin_set_child (RutBin *bin,
     return;
 
   if (child_widget)
-    rut_refable_ref (child_widget);
+    rut_refable_claim (child_widget, bin);
 
   if (bin->child)
     {
       rut_graphable_remove_child (bin->child);
       rut_closure_disconnect (bin->child_preferred_size_closure);
       bin->child_preferred_size_closure = NULL;
-      rut_refable_unref (bin->child);
+      rut_refable_release (bin->child, bin);
     }
 
   bin->child = child_widget;
