@@ -72,9 +72,6 @@ static RutInputEventStatus
 rut_number_slider_grab_input_cb (RutInputEvent *event,
                                  void *user_data);
 
-static void
-update_text (RutNumberSlider *slider);
-
 
 RutType rut_number_slider_type;
 
@@ -132,6 +129,18 @@ typedef struct _EditState
   float button_value;
 
 } EditState;
+
+static void
+update_text (RutNumberSlider *slider)
+{
+  char *label = slider->markup_label ? slider->markup_label : "";
+  char *text = g_strdup_printf ("%s%.*f",
+                                label,
+                                slider->decimal_places,
+                                slider->value);
+  rut_text_set_markup (slider->text, text);
+  g_free (text);
+}
 
 static void
 end_text_edit (EditState *state)
@@ -408,6 +417,8 @@ rut_number_slider_new (RutContext *context)
   slider->step = 1.0f;
   slider->decimal_places = 2;
 
+  slider->max_value = G_MAXFLOAT;
+
   rut_graphable_init (slider);
 
   rut_simple_introspectable_init (slider,
@@ -427,6 +438,7 @@ rut_number_slider_new (RutContext *context)
                                     slider);
   rut_graphable_add_child (slider, slider->input_region);
 
+  update_text (slider);
 
   rut_sizable_set_size (slider, 60, 30);
 
@@ -458,18 +470,6 @@ rut_number_slider_set_max_value (RutNumberSlider *slider,
 {
   slider->max_value = max_value;
   rut_number_slider_set_value (slider, slider->value);
-}
-
-static void
-update_text (RutNumberSlider *slider)
-{
-  char *label = slider->markup_label ? slider->markup_label : "";
-  char *text = g_strdup_printf ("%s%.*f",
-                                label,
-                                slider->decimal_places,
-                                slider->value);
-  rut_text_set_markup (slider->text, text);
-  g_free (text);
 }
 
 void
