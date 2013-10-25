@@ -341,7 +341,10 @@ rut_timeline_get_progress (RutObject *obj)
 {
   RutTimeline *timeline = obj;
 
-  return timeline->elapsed / timeline->length;
+  if (timeline->length)
+    return timeline->elapsed / timeline->length;
+  else
+    return 0;
 }
 
 void
