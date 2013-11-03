@@ -1824,54 +1824,6 @@ static RutPLYAttribute ply_attributes[] =
     .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
   },
   {
-    .name = "cogl_tex_coord1_in",
-    .properties = {
-      { "s" },
-      { "t" },
-      { "r" },
-    },
-    .n_properties = 3,
-    .min_components = 2,
-    .pad_n_components = 3,
-    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
-  },
-  {
-    .name = "cogl_tex_coord4_in",
-    .properties = {
-      { "s" },
-      { "t" },
-      { "r" },
-    },
-    .n_properties = 3,
-    .min_components = 2,
-    .pad_n_components = 3,
-    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
-  },
-  {
-    .name = "cogl_tex_coord7_in",
-    .properties = {
-      { "s" },
-      { "t" },
-      { "r" },
-    },
-    .n_properties = 3,
-    .min_components = 2,
-    .pad_n_components = 3,
-    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
-  },
-  {
-    .name = "cogl_tex_coord11_in",
-    .properties = {
-      { "s" },
-      { "t" },
-      { "r" },
-    },
-    .n_properties = 3,
-    .min_components = 2,
-    .pad_n_components = 3,
-    .pad_type = RUT_ATTRIBUTE_TYPE_FLOAT,
-  },
-  {
     .name = "tangent_in",
     .properties = {
       { "tanx" },
@@ -2629,8 +2581,8 @@ ensure_light (RigEngine *engine)
                                     &error);
       if (mesh)
         {
-          RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh, FALSE,
-          																					 FALSE);
+          RutModel *model = rut_model_new_from_asset_mesh (engine->ctx, mesh,
+                                                           FALSE, FALSE);
 
           engine->light_handle = rut_entity_new (engine->ctx);
           rut_entity_set_label (engine->light_handle, "rig:light_handle");

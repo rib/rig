@@ -79,17 +79,25 @@ struct _RutModel
 void
 _rut_model_init_type (void);
 
+/* NB: the mesh given here is copied before deriving missing
+ * attributes and not used directly.
+ *
+ * In the case where we are loading a model from a serialized
+ * UI then the serialized data should be used directly and
+ * there should be no need to derive missing attributes at
+ * runtime.
+ */
 RutModel *
-rut_model_new_from_mesh (RutContext *ctx,
-                         RutMesh *mesh,
-                         CoglBool needs_normals,
-                         CoglBool needs_tex_coords);
+rut_model_new_from_asset_mesh (RutContext *ctx,
+                               RutMesh *mesh,
+                               bool needs_normals,
+                               bool needs_tex_coords);
 
 RutModel *
 rut_model_new_from_asset (RutContext *ctx,
                           RutAsset *asset,
-                          CoglBool needs_normals,
-                          CoglBool needs_tex_coords);
+                          bool needs_normals,
+                          bool needs_tex_coords);
 
 RutModel *
 rut_model_new_for_hair (RutModel *base);

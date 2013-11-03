@@ -403,29 +403,17 @@ calculate_cylindrical_uv_coordinates (RutModel *model,
                                       float *position,
                                       float *tex)
 {
-  float center[3], dir1[3], dir2[3], angle;
+  float center_x = model->min_x + ((model->max_x - model->min_x ) / 2.0);
+  float center_z = model->min_z + ((model->max_z - model->min_z ) / 2.0);
 
-  center[0] = (model->min_x + model->max_x) * 0.5;
-  center[1] = position[1];
-  center[2] = (model->min_z + model->max_z) * 0.5;
+  float dx = position[0] - center_x;
+  float dz = position[2] - center_z;
 
-  dir2[0] = model->min_x - center[0];
-  dir2[1] = position[1] - center[1];
-  dir2[2] = model->min_z - center[2];
+  float angle = atan2 (dx, dz);
 
-  dir1[0] = position[0] - center[0];
-  dir1[1] = position[1] - center[1];
-  dir1[2] = position[2] - center[2];
-
-  angle = atan2 (dir1[0], dir1[2]) - atan2 (dir2[0], dir2[2]);
-
-  if (angle < 0)
-    angle = (2.0 * PI) + angle;
-
-  if (angle > 0)
-    tex[0] = angle/ (2.0 * PI);
-  else
-    tex[0] = 0;
+  angle += PI;
+  angle /= (2.0 * PI);
+  tex[0] = angle;
 
   tex[1] = (position[1] - model->min_y) / (model->max_y - model->min_y);
 }
@@ -672,11 +660,11 @@ generate_missing_properties (void **attribute_data_v0,
   RutModel *model = user_data;
 
   if (!model->builtin_tex_coords)
-  {
-    calculate_cylindrical_uv_coordinates (model, vert_p0, tex_coord0);
-    calculate_cylindrical_uv_coordinates (model, vert_p1, tex_coord1);
-    calculate_cylindrical_uv_coordinates (model, vert_p2, tex_coord2);
-  }
+    {
+      calculate_cylindrical_uv_coordinates (model, vert_p0, tex_coord0);
+      calculate_cylindrical_uv_coordinates (model, vert_p1, tex_coord1);
+      calculate_cylindrical_uv_coordinates (model, vert_p2, tex_coord2);
+    }
 
   if (!model->builtin_normals)
     calculate_normals (vert_p0, vert_p1, vert_p2, vert_n0, vert_n1, vert_n2);
@@ -1195,11 +1183,16 @@ create_texture_patch (RutModel *model)
   return patch;
 }
 
+/* FIXME: the specific details about what attributes are required is
+ * really tightly coupled with the renderer that will be used in
+ * the end and so conceptually this code should really live in Rig
+ * somehow.
+ */
 static RutMesh *
-create_custom_mesh (Vertex *vertices,
-                    int n_vertices,
-                    unsigned int *indices,
-                    int n_indices)
+create_renderer_mesh_from_vertices (Vertex *vertices,
+                                    int n_vertices,
+                                    unsigned int *indices,
+                                    int n_indices)
 {
   RutMesh *mesh;
   RutAttribute *attributes[8];
@@ -1301,10 +1294,11 @@ create_patched_mesh_from_model (RutObject *object)
 
   g_list_free (model->priv->texture_patches);
 
-  model->patched_mesh = create_custom_mesh (model->priv->vertices,
-                                            model->priv->n_vertices,
-                                            NULL, /* no indices */
-                                            0);
+  model->patched_mesh =
+    create_renderer_mesh_from_vertices (model->priv->vertices,
+                                        model->priv->n_vertices,
+                                        NULL, /* no indices */
+                                        0);
 
   return model->patched_mesh;
 }
@@ -1337,7 +1331,8 @@ create_fin_mesh_from_model (RutObject *object)
       k += 6;
     }
 
-  model->fin_mesh = create_custom_mesh (model->priv->fin_vertices,
+  model->fin_mesh =
+    create_renderer_mesh_from_vertices (model->priv->fin_vertices,
                                         model->priv->n_fin_vertices,
                                         indices,
                                         model->priv->n_fin_polygons * 3);
@@ -1348,27 +1343,30 @@ create_fin_mesh_from_model (RutObject *object)
 }
 
 RutModel *
-rut_model_new_from_mesh (RutContext *ctx,
-                         RutMesh *mesh,
-                         CoglBool needs_normals,
-                         CoglBool needs_tex_coords)
+rut_model_new_from_asset_mesh (RutContext *ctx,
+                               RutMesh *mesh,
+                               bool needs_normals,
+                               bool needs_tex_coords)
 {
   RutModel *model;
   RutAttribute *attribute;
   RutMeshVertexCallback measure_callback;
+  RutAttribute **attributes;
+  int i;
+  RutAttribute *tex_attrib;
 
   model = _rut_model_new (ctx);
   model->type = RUT_MODEL_TYPE_FILE;
-  model->mesh = rut_refable_ref (mesh);
+  model->mesh = rut_mesh_copy (mesh);
 
   attribute = rut_mesh_find_attribute (model->mesh, "cogl_position_in");
 
   model->min_x = G_MAXFLOAT;
-  model->max_x = G_MINFLOAT;
+  model->max_x = -G_MAXFLOAT;
   model->min_y = G_MAXFLOAT;
-  model->max_y = G_MINFLOAT;
+  model->max_y = -G_MAXFLOAT;
   model->min_z = G_MAXFLOAT;
-  model->max_z = G_MINFLOAT;
+  model->max_z = -G_MAXFLOAT;
 
   model->builtin_normals = !needs_normals;
   model->builtin_tex_coords = !needs_tex_coords;
@@ -1404,14 +1402,70 @@ rut_model_new_from_mesh (RutContext *ctx,
                              "cogl_tex_coord0_in",
                              NULL);
 
+  /* When rendering we expect that every model has a specific set of
+   * texture coordinate attributes that may be required depending
+   * on the material state used in conjunction with the model.
+   *
+   * We currently assume a newly loaded asset mesh will only have one
+   * set of texture coodinates and so all the remaining sets of
+   * texture coordinates will simply be an alias of those...
+   */
+  attributes = g_alloca (sizeof (RutAttribute *) * mesh->n_attributes + 4);
+
+  tex_attrib = NULL;
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      RutAttribute *attribute = model->mesh->attributes[i];
+      if (strcmp (attribute->name, "cogl_tex_coord0_in") == 0)
+        tex_attrib = attribute;
+
+      attributes[i] = model->mesh->attributes[i];
+    }
+
+  g_return_val_if_fail (tex_attrib != NULL, NULL);
+
+  attributes[i++] = rut_attribute_new (tex_attrib->buffer,
+                                       "cogl_tex_coord1_in",
+                                       tex_attrib->stride,
+                                       tex_attrib->offset,
+                                       2,
+                                       RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  attributes[i++] = rut_attribute_new (tex_attrib->buffer,
+                                       "cogl_tex_coord4_in",
+                                       tex_attrib->stride,
+                                       tex_attrib->offset,
+                                       2,
+                                       RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  attributes[i++] = rut_attribute_new (tex_attrib->buffer,
+                                       "cogl_tex_coord7_in",
+                                       tex_attrib->stride,
+                                       tex_attrib->offset,
+                                       2,
+                                       RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  attributes[i++] = rut_attribute_new (tex_attrib->buffer,
+                                       "cogl_tex_coord11_in",
+                                       tex_attrib->stride,
+                                       tex_attrib->offset,
+                                       2,
+                                       RUT_ATTRIBUTE_TYPE_FLOAT);
+
+  /* NB: Don't just append extra attributes here without allocating a
+   * larger array above... */
+  g_assert (i == mesh->n_attributes + 4);
+
+  rut_mesh_set_attributes (model->mesh, attributes, i);
+
   return model;
 }
 
 RutModel *
 rut_model_new_from_asset (RutContext *ctx,
                           RutAsset *asset,
-                          CoglBool needs_normals,
-                          CoglBool needs_tex_coords)
+                          bool needs_normals,
+                          bool needs_tex_coords)
 {
   RutMesh *mesh = rut_asset_get_mesh (asset);
   RutModel *model;
@@ -1419,7 +1473,8 @@ rut_model_new_from_asset (RutContext *ctx,
   if (!mesh)
     return NULL;
 
-  model = rut_model_new_from_mesh (ctx, mesh, needs_normals, needs_tex_coords);
+  model = rut_model_new_from_asset_mesh (ctx, mesh,
+                                         needs_normals, needs_tex_coords);
   model->asset = rut_refable_ref (asset);
 
   return model;

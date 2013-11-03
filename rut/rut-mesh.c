@@ -32,22 +32,18 @@ _rut_buffer_free (void *object)
   g_slice_free (RutBuffer, buffer);
 }
 
-static RutRefableVTable _rut_buffer_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_buffer_free
-};
-
 RutType rut_buffer_type;
 
 void
 _rut_buffer_init_type (void)
 {
-  rut_type_init (&rut_buffer_type, "RigBuffer");
-  rut_type_add_interface (&rut_buffer_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutBuffer, ref_count),
-                          &_rut_buffer_refable_vtable);
+  RutType *type = &rut_buffer_type;
+#define TYPE RutBuffer
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_buffer_free);
+
+#undef TYPE
 }
 
 RutBuffer *
@@ -66,28 +62,25 @@ rut_buffer_new (size_t buffer_size)
 }
 
 static void
-_rut_attribute_free (RutAttribute *attribute)
+_rut_attribute_free (RutObject *object)
 {
+  RutAttribute *attribute = object;
   rut_refable_unref (attribute->buffer);
   g_slice_free (RutAttribute, attribute);
 }
-
-static RutRefableVTable _rut_attribute_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_attribute_free
-};
 
 RutType rut_attribute_type;
 
 void
 _rut_attribute_init_type (void)
 {
-  rut_type_init (&rut_attribute_type, "RigAttribute");
-  rut_type_add_interface (&rut_attribute_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutAttribute, ref_count),
-                          &_rut_attribute_refable_vtable);
+  RutType *type = &rut_attribute_type;
+#define TYPE RutAttribute
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_attribute_free);
+
+#undef TYPE
 }
 
 RutAttribute *
@@ -114,8 +107,9 @@ rut_attribute_new (RutBuffer *buffer,
 }
 
 static void
-_rut_mesh_free (RutMesh *mesh)
+_rut_mesh_free (RutObject *object)
 {
+  RutMesh *mesh = object;
   int i;
 
   for (i = 0; i < mesh->n_attributes; i++)
@@ -125,22 +119,18 @@ _rut_mesh_free (RutMesh *mesh)
   g_slice_free (RutMesh, mesh);
 }
 
-static RutRefableVTable _rut_mesh_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_mesh_free
-};
-
 RutType rut_mesh_type;
 
 void
 _rut_mesh_init_type (void)
 {
-  rut_type_init (&rut_mesh_type, "RigMesh");
-  rut_type_add_interface (&rut_mesh_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutMesh, ref_count),
-                          &_rut_mesh_refable_vtable);
+  RutType *type = &rut_mesh_type;
+#define TYPE RutMesh
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_mesh_free);
+
+#undef TYPE
 }
 
 RutMesh *
@@ -150,21 +140,14 @@ rut_mesh_new (CoglVerticesMode mode,
               int n_attributes)
 {
   RutMesh *mesh = g_slice_new0 (RutMesh);
-  RutAttribute **attributes_real =
-    g_slice_copy (sizeof (void *) * n_attributes, attributes);
-  int i;
 
   rut_object_init (&mesh->_parent, &rut_mesh_type);
 
   mesh->ref_count = 1;
-  memcpy (attributes_real, attributes, sizeof (void *) * n_attributes);
-  mesh->attributes = attributes_real;
-  mesh->n_attributes = n_attributes;
   mesh->mode = mode;
   mesh->n_vertices = n_vertices;
 
-  for (i = 0; i < n_attributes; i++)
-    rut_refable_ref (attributes[i]);
+  rut_mesh_set_attributes (mesh, attributes, n_attributes);
 
   return mesh;
 }
@@ -279,6 +262,28 @@ rut_mesh_set_indices (RutMesh *mesh,
   mesh->n_indices = n_indices;
 }
 
+void
+rut_mesh_set_attributes (RutMesh *mesh,
+                         RutAttribute **attributes,
+                         int n_attributes)
+{
+  RutAttribute **attributes_real =
+    g_slice_copy (sizeof (void *) * n_attributes, attributes);
+  int i;
+
+  /* NB: some of the given attributes may be the same as
+   * some of the current attributes so we ref before
+   * unrefing to avoid destroying any of them. */
+  for (i = 0; i < n_attributes; i++)
+    rut_refable_ref (attributes[i]);
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    rut_refable_unref (mesh->attributes[i]);
+
+  mesh->attributes = attributes_real;
+  mesh->n_attributes = n_attributes;
+}
+
 static void
 foreach_vertex (RutMesh *mesh,
                 RutMeshVertexCallback callback,
@@ -329,7 +334,7 @@ foreach_vertex (RutMesh *mesh,
         {
           int j;
 
-          callback (bases, i, user_data);
+          callback ( (void **)bases, i, user_data);
 
           for (j = 0; j < n_attributes; j++)
             bases[j] += strides[j];
@@ -732,6 +737,7 @@ rut_mesh_create_primitive (RutContext *ctx,
                                                mesh->indices_buffer->data,
                                                mesh->n_indices);
       cogl_primitive_set_indices (primitive, indices, mesh->n_indices);
+      cogl_object_unref (indices);
     }
 
   return primitive;
@@ -750,4 +756,82 @@ rut_mesh_find_attribute (RutMesh *mesh,
         return attribute;
     }
   return NULL;
+}
+
+RutMesh *
+rut_mesh_copy (RutMesh *mesh)
+{
+  RutBuffer **buffers;
+  int n_buffers = 0;
+  RutBuffer **attribute_buffers;
+  RutBuffer **attribute_buffers_map;
+  RutAttribute **attributes;
+  RutMesh *copy;
+  int i;
+
+  buffers = g_alloca (sizeof (void *) * mesh->n_attributes);
+  attribute_buffers = g_alloca (sizeof (void *) * mesh->n_attributes);
+  attribute_buffers_map = g_alloca (sizeof (void *) * mesh->n_attributes);
+
+  /* NB:
+   * attributes may refer to shared buffers so we need to first
+   * figure out how many unique buffers the mesh refers too...
+   */
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      int j;
+
+      for (j = 0; i < n_buffers; j++)
+        if (buffers[j] == mesh->attributes[i]->buffer)
+          break;
+
+      if (j < n_buffers)
+        attribute_buffers_map[i] = attribute_buffers[j];
+      else
+        {
+          attribute_buffers[n_buffers] =
+            rut_buffer_new (mesh->attributes[i]->buffer->size);
+          memcpy (attribute_buffers[n_buffers]->data,
+                  mesh->attributes[i]->buffer->data,
+                  mesh->attributes[i]->buffer->size);
+
+          attribute_buffers_map[i] = attribute_buffers[n_buffers];
+          buffers[n_buffers++] = mesh->attributes[i]->buffer;
+        }
+    }
+
+  attributes = g_alloca (sizeof (void *) * mesh->n_attributes);
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      attributes[i] = rut_attribute_new (attribute_buffers_map[i],
+                                         mesh->attributes[i]->name,
+                                         mesh->attributes[i]->stride,
+                                         mesh->attributes[i]->offset,
+                                         mesh->attributes[i]->n_components,
+                                         mesh->attributes[i]->type);
+    }
+
+  copy = rut_mesh_new (mesh->mode,
+                       mesh->n_vertices,
+                       attributes,
+                       mesh->n_attributes);
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    rut_refable_unref (attributes[i]);
+
+  if (mesh->indices_buffer)
+    {
+      RutBuffer *indices_buffer = rut_buffer_new (mesh->indices_buffer->size);
+      memcpy (indices_buffer->data,
+              mesh->indices_buffer->data,
+              mesh->indices_buffer->size);
+      rut_mesh_set_indices (copy,
+                            mesh->indices_type,
+                            indices_buffer,
+                            mesh->n_indices);
+      rut_refable_unref (indices_buffer);
+    }
+
+  return copy;
 }

@@ -150,10 +150,19 @@ rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
                                RutBuffer *buffer);
 
 void
+rut_mesh_set_attributes (RutMesh *mesh,
+                         RutAttribute **attributes,
+                         int n_attributes);
+
+void
 rut_mesh_set_indices (RutMesh *mesh,
                       CoglIndicesType type,
                       RutBuffer *buffer,
                       int n_indices);
+
+/* Performs a deep copy of all the buffers */
+RutMesh *
+rut_mesh_copy (RutMesh *mesh);
 
 CoglPrimitive *
 rut_mesh_create_primitive (RutContext *ctx,
