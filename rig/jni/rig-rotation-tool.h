@@ -17,8 +17,8 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __RUT_TOOL_H__
-#define __RUT_TOOL_H__
+#ifndef __RIG_ROTATION_TOOL_H__
+#define __RIG_ROTATION_TOOL_H__
 
 #include <stdbool.h>
 
@@ -92,4 +92,4 @@ rig_rotation_tool_draw (RigRotationTool *tool,
 void
 rig_rotation_tool_destroy (RigRotationTool *tool);
 
-#endif /* __RUT_TOOL_H__ */
+#endif /* __RIG_ROTATION_TOOL_H__ */

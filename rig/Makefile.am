@@ -75,7 +75,9 @@ librig_la_SOURCES += \
 	jni/rig-undo-journal.h \
 	jni/rig-undo-journal.c \
 	jni/rig-rotation-tool.h \
-	jni/rig-rotation-tool.c
+	jni/rig-rotation-tool.c \
+	jni/rig-selection-tool.h \
+	jni/rig-selection-tool.c
 endif
 
 if HAVE_OSX

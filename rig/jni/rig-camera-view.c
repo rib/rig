@@ -28,6 +28,7 @@
 #include "rig-engine.h"
 #include "rig-view.h"
 #include "rig-renderer.h"
+#include "rig-selection-tool.h"
 #include "rig-rotation-tool.h"
 
 
@@ -108,6 +109,7 @@ _rig_camera_view_free (void *object)
   rut_refable_unref (view->play_dummy_entity);
   unref_device_transforms (&view->play_device_transforms);
 
+  rig_selection_tool_destroy (view->selection_tool);
   rig_rotation_tool_destroy (view->rotation_tool);
 
   g_slice_free (RigCameraView, view);
@@ -179,8 +181,15 @@ paint_overlays (RigCameraView *view,
     {
       rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
-      if (view->tool_id == RIG_TOOL_ID_ROTATION)
-        rig_rotation_tool_draw (view->rotation_tool, fb);
+      switch (view->tool_id)
+        {
+        case RIG_TOOL_ID_SELECTION:
+          rig_selection_tool_update (view->selection_tool, suspended_camera);
+          break;
+        case RIG_TOOL_ID_ROTATION:
+          rig_rotation_tool_draw (view->rotation_tool, fb);
+          break;
+        }
     }
 #endif /* RIG_EDITOR_ENABLED */
 
@@ -1984,10 +1993,12 @@ tool_changed_cb (RigEngine *engine,
   switch (tool_id)
     {
     case RIG_TOOL_ID_SELECTION:
+      rig_selection_tool_set_active (view->selection_tool, true);
       rig_rotation_tool_set_active (view->rotation_tool, false);
       break;
     case RIG_TOOL_ID_ROTATION:
       rig_rotation_tool_set_active (view->rotation_tool, true);
+      rig_selection_tool_set_active (view->selection_tool, false);
       break;
     }
   view->tool_id = tool_id;
@@ -2058,12 +2069,20 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_add_child (view->play_device_transforms.screen_pos,
                            view->play_dummy_entity);
 
+#ifdef RIG_EDITOR_ENABLED
+  view->tool_overlay = rut_graph_new (engine->ctx);
+  rut_graphable_add_child (view, view->tool_overlay);
+  rut_refable_unref (view->tool_overlay);
+
+  view->selection_tool = rig_selection_tool_new (view, view->tool_overlay);
   view->rotation_tool = rig_rotation_tool_new (view);
 
   rig_add_tool_changed_callback (engine,
                                  tool_changed_cb,
                                  view,
                                  NULL); /* destroy notify */
+#endif /* RIG_EDITOR_ENABLED */
+
   return view;
 }
 

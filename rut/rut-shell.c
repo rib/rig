@@ -1973,6 +1973,8 @@ _rut_shell_paint (RutShell *shell)
 
   flush_pre_paint_callbacks (shell);
 
+#warning "fixme: input should be handled once per frame after pre-paint callbacks"
+
   if (shell->paint_cb (shell, shell->user_data))
     goto queue_redraw;
 

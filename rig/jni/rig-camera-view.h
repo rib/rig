@@ -27,6 +27,7 @@
 typedef struct _RigCameraView RigCameraView;
 
 #include "rig-engine.h"
+#include "rig-selection-tool.h"
 #include "rig-rotation-tool.h"
 
 typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
@@ -89,8 +90,12 @@ struct _RigCameraView
   float last_viewport_y;
   CoglBool dirty_viewport_size;
 
+#ifdef RIG_EDITOR_ENABLED
+  RutGraph *tool_overlay;
+  RigSelectionTool *selection_tool;
   RigRotationTool *rotation_tool;
   RigToolID tool_id;
+#endif
 };
 
 extern RutType rig_view_type;
