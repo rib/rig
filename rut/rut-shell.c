@@ -2908,7 +2908,8 @@ static RutInputEventStatus
 clipboard_input_grab_cb (RutInputEvent *event,
                          void *user_data)
 {
-  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY)
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+      rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
     {
       if (rut_key_event_get_keysym (event) == RUT_KEY_v &&
           (rut_key_event_get_modifier_state (event) & RUT_MODIFIER_CTRL_ON))
