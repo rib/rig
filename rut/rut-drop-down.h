@@ -3,13 +3,12 @@
 
 #include <cogl/cogl.h>
 
-#include "rut.h"
+#include "rut-types.h"
+#include "rut-object.h"
 
 extern RutType rut_drop_down_type;
 
 typedef struct _RutDropDown RutDropDown;
-
-#define RUT_DROP_DOWN(x) ((RutDropDown *) x)
 
 typedef struct
 {

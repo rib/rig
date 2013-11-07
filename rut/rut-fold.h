@@ -22,12 +22,12 @@
 
 #include "rut-type.h"
 #include "rut-box-layout.h"
+#include "rut-text.h"
+
 #include "components/rut-nine-slice.h"
 
 extern RutType rut_fold_type;
 
-
-#define RUT_FOLD(x) ((RutFold *) x)
 
 enum {
   RUT_FOLD_PROP_LABEL,

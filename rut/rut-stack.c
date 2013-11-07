@@ -25,7 +25,10 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut.h"
+#include "rut-context.h"
+#include "rut-closure.h"
+#include "rut-interfaces.h"
+#include "rut-list.h"
 #include "rut-stack.h"
 
 enum {
@@ -212,7 +215,7 @@ rut_stack_get_preferred_width (void *object,
                                float *min_width_p,
                                float *natural_width_p)
 {
-  RutStack *stack = RUT_STACK (object);
+  RutStack *stack = object;
   float max_min_width = 0.0f;
   float max_natural_width = 0.0f;
   RutStackChild *child_data;
@@ -244,7 +247,7 @@ rut_stack_get_preferred_height (void *object,
                                 float *min_height_p,
                                 float *natural_height_p)
 {
-  RutStack *stack = RUT_STACK (object);
+  RutStack *stack = object;
   float max_min_height = 0.0f;
   float max_natural_height = 0.0f;
   RutStackChild *child_data;

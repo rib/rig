@@ -3,7 +3,8 @@
 
 #include <cogl/cogl.h>
 
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-property.h"
 
 extern RutType rut_inspector_type;
 
@@ -21,8 +22,6 @@ typedef void
 (* RutInspectorControlledCallback) (RutProperty *property,
                                     CoglBool value,
                                     void *user_data);
-
-#define RUT_INSPECTOR(x) ((RutInspector *) x)
 
 RutInspector *
 rut_inspector_new (RutContext *ctx,

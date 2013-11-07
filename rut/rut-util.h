@@ -186,4 +186,67 @@ rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
                                     float z_far,
                                     float scale);
 
+/* We've made a notable change to the original algorithm referenced
+ * above to make sure we have reliable results for screen aligned
+ * rectangles even though there may be some numerical in-precision in
+ * how the vertices of the polygon were calculated.
+ *
+ * We've avoided introducing an epsilon factor to the comparisons
+ * since we feel there's a risk of changing some semantics in ways that
+ * might not be desirable. One of those is that if you transform two
+ * polygons which share an edge and test a point close to that edge
+ * then this algorithm will currently give a positive result for only
+ * one polygon.
+ *
+ * Another concern is the way this algorithm resolves the corner case
+ * where the horizontal ray being cast to count edge crossings may
+ * cross directly through a vertex. The solution is based on the "idea
+ * of Simulation of Simplicity" and "pretends to shift the ray
+ * infinitesimally down so that it either clearly intersects, or
+ * clearly doesn't touch". I'm not familiar with the idea myself so I
+ * expect a misplaced epsilon is likely to break that aspect of the
+ * algorithm.
+ *
+ * The simple solution we've gone for is to pixel align the polygon
+ * vertices which should eradicate most noise due to in-precision.
+ */
+static inline int
+rut_util_point_in_screen_poly (float point_x,
+                               float point_y,
+                               void *vertices,
+                               size_t stride,
+                               int n_vertices)
+{
+  int i, j, c = 0;
+
+  for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++)
+    {
+      float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
+      float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
+      float vert_yi = *(float *)((uint8_t *)vertices + i * stride +
+                                 sizeof (float));
+      float vert_yj = *(float *)((uint8_t *)vertices + j * stride +
+                                 sizeof (float));
+
+      vert_xi = RUT_UTIL_NEARBYINT (vert_xi);
+      vert_xj = RUT_UTIL_NEARBYINT (vert_xj);
+      vert_yi = RUT_UTIL_NEARBYINT (vert_yi);
+      vert_yj = RUT_UTIL_NEARBYINT (vert_yj);
+
+      if (((vert_yi > point_y) != (vert_yj > point_y)) &&
+           (point_x < (vert_xj - vert_xi) * (point_y - vert_yi) /
+            (vert_yj - vert_yi) + vert_xi) )
+         c = !c;
+    }
+
+  return c;
+}
+
+void
+rut_util_fully_transform_points (const CoglMatrix *modelview,
+                                 const CoglMatrix *projection,
+                                 const float *viewport,
+                                 float *verts,
+                                 int n_verts);
+
 #endif /* _RUT_UTIL_H_ */

@@ -66,7 +66,7 @@ struct _RutPointalismGrid
 
   float pointalism_scale;
   float pointalism_z;
-  CoglBool pointalism_lighter;
+  bool pointalism_lighter;
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_POINTALISM_GRID_N_PROPS];
@@ -104,12 +104,12 @@ void
 rut_pointalism_grid_set_z (RutObject *obj,
                            float z);
 
-CoglBool
+bool
 rut_pointalism_grid_get_lighter (RutObject *obj);
 
 void
 rut_pointalism_grid_set_lighter (RutObject *obj,
-                                 CoglBool lighter);
+                                 bool lighter);
 
 float
 rut_pointalism_grid_get_cell_size (RutObject *obj);

@@ -780,24 +780,6 @@ rut_primable_get_primitive (RutObject *object)
   return primable->get_primitive (object);
 }
 
-void *
-rut_pickable_get_mesh (RutObject *object)
-{
-  RutPickableVTable *pickable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_PICKABLE);
-
-  return pickable->get_mesh (object);
-}
-
-RutInputRegion *
-rut_inputable_get_input_region (RutObject *object)
-{
-  RutInputableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_INPUTABLE);
-
-  return props->input_region;
-}
-
 void
 rut_selectable_cancel (RutObject *object)
 {

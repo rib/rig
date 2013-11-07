@@ -5,16 +5,15 @@
 
 #include <glib.h>
 
-#ifndef __ANDROID__
-#define USE_SDL
-//#define USE_GLIB
-#endif
-
 #include "rut-global.h"
 #include "rut-type.h"
 #include "rut-object.h"
 #include "rut-property.h"
 #include "rut-interfaces.h"
+#include "rut-meshable.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-input-region.h"
 #include "rut-context.h"
 #include "rut-shell.h"
 #include "rut-bitmask.h"

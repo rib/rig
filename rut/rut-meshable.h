@@ -14,27 +14,31 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RUT_DRAG_BIN_H_
-#define _RUT_DRAG_BIN_H_
+#ifndef __RUT_MESHABLE_H__
+#define __RUT_MESHABLE_H__
 
-#include "rut-object.h"
+/*
+ *
+ * Meshable Interface
+ * (E.g. implemented by all geometry components)
+ *
+ */
+typedef struct _RutMeshableVTable
+{
+  RutMesh *(*get_mesh)(void *object);
+} RutMeshableVTable;
 
-extern RutType rut_drag_bin_type;
+static inline void *
+rut_meshable_get_mesh (RutObject *object)
+{
+  RutMeshableVTable *meshable =
+    rut_object_get_vtable (object, RUT_INTERFACE_ID_MESHABLE);
 
-typedef struct _RutDragBin RutDragBin;
+  return meshable->get_mesh (object);
+}
 
-RutDragBin *
-rut_drag_bin_new (RutContext *ctx);
-
-void
-rut_drag_bin_set_child (RutDragBin *bin,
-                        RutObject *child);
-
-void
-rut_drag_bin_set_payload (RutDragBin *bin,
-                          RutObject *payload);
-
-#endif /* _RUT_DRAG_BIN_H_ */
+#endif /* __RUT_MESHABLE_H__ */

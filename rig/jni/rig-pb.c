@@ -546,7 +546,7 @@ serialize_component_cb (RutComponent *component,
     }
   else if (type == &rut_shape_type)
     {
-      CoglBool shaped = rut_shape_get_shaped (RUT_SHAPE (component));
+      CoglBool shaped = rut_shape_get_shaped (component);
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
       pb_component->shape = pb_new (engine,

@@ -28,9 +28,13 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "rut.h"
 #include "rut-drop-down.h"
 #include "rut-text.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-input-region.h"
+
+#include "components/rut-camera.h"
 
 #define RUT_DROP_DOWN_EDGE_WIDTH 8
 #define RUT_DROP_DOWN_EDGE_HEIGHT 16
@@ -520,7 +524,7 @@ static void
 _rut_drop_down_paint (RutObject *object,
                       RutPaintContext *paint_ctx)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (object);
+  RutDropDown *drop = object;
 
   switch (paint_ctx->layer_number)
     {
@@ -733,9 +737,10 @@ rut_drop_down_input_cb (RutInputEvent *event,
     {
       RutCamera *camera = rut_input_event_get_camera (event);
 
-      highlighted = rut_camera_pick_inputable (camera,
-                                               drop->input_region,
-                                               x, y);
+      highlighted = rut_pickable_pick (drop->input_region,
+                                        camera,
+                                        NULL, /* pre-computed modelview */
+                                        x, y);
     }
 
   if (highlighted != drop->highlighted)
@@ -798,7 +803,7 @@ rut_drop_down_set_size (RutObject *object,
                         float width,
                         float height)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (object);
+  RutDropDown *drop = object;
 
   rut_shell_queue_redraw (drop->context->shell);
   drop->width = width;
@@ -813,7 +818,7 @@ rut_drop_down_get_size (RutObject *object,
                         float *width,
                         float *height)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (object);
+  RutDropDown *drop = object;
 
   *width = drop->width;
   *height = drop->height;
@@ -825,7 +830,7 @@ rut_drop_down_get_preferred_width (RutObject *object,
                                    float *min_width_p,
                                    float *natural_width_p)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (object);
+  RutDropDown *drop = object;
   int max_width = 0;
   int i;
 
@@ -856,7 +861,7 @@ rut_drop_down_get_preferred_height (RutObject *object,
                                     float *min_height_p,
                                     float *natural_height_p)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (object);
+  RutDropDown *drop = object;
   int max_height = G_MININT;
   int i;
 
@@ -984,7 +989,7 @@ void
 rut_drop_down_set_value (RutObject *obj,
                          int value)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (obj);
+  RutDropDown *drop = obj;
 
   int i;
 
@@ -1009,7 +1014,7 @@ rut_drop_down_set_value (RutObject *obj,
 int
 rut_drop_down_get_value (RutObject *obj)
 {
-  RutDropDown *drop = RUT_DROP_DOWN (obj);
+  RutDropDown *drop = obj;
 
   return drop->values[drop->value_index].value;
 }

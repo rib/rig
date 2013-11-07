@@ -25,10 +25,12 @@
 #include "rut-interfaces.h"
 #include "rut-text.h"
 #include "rut-paintable.h"
-#include "components/rut-camera.h"
 #include "rut-transform.h"
-#include "components/rut-nine-slice.h"
+#include "rut-input-region.h"
 #include "rut-button.h"
+
+#include "components/rut-camera.h"
+#include "components/rut-nine-slice.h"
 
 #define BUTTON_HPAD 10
 #define BUTTON_VPAD 23

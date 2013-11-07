@@ -20,13 +20,12 @@
 #ifndef _RUT_BIN_H_
 #define _RUT_BIN_H_
 
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-context.h"
 
 extern RutType rut_bin_type;
 
 typedef struct _RutBin RutBin;
-
-#define RUT_BIN(x) ((RutBin *) x)
 
 /* How to position the child along a particular axis when there is
  * more space available then its needs */

@@ -20,9 +20,11 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rut-shape.h"
 #include "rut-global.h"
-#include "math.h"
+#include "rut-meshable.h"
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
@@ -343,7 +345,7 @@ _rut_shape_init_type (void)
     .get_primitive = rut_shape_get_primitive
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
     .get_mesh = rut_shape_get_pick_mesh
   };
 
@@ -370,9 +372,9 @@ _rut_shape_init_type (void)
                           0, /* no associated properties */
                           &primable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
@@ -456,10 +458,9 @@ rut_shape_get_pick_mesh (RutObject *self)
 }
 
 void
-rut_shape_set_shaped (RutObject *obj,
-                      CoglBool shaped)
+rut_shape_set_shaped (RutObject *obj, bool shaped)
 {
-  RutShape *shape = RUT_SHAPE (obj);
+  RutShape *shape = obj;
 
   if (shape->shaped == shaped)
     return;
@@ -480,10 +481,10 @@ rut_shape_set_shaped (RutObject *obj,
                       &shape->properties[RUT_SHAPE_PROP_SHAPED]);
 }
 
-CoglBool
+bool
 rut_shape_get_shaped (RutObject *obj)
 {
-  RutShape *shape = RUT_SHAPE (obj);
+  RutShape *shape = obj;
 
   return shape->shaped;
 }

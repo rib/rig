@@ -27,9 +27,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "rut.h"
 #include "rut-number-slider.h"
 #include "rut-text.h"
+#include "rut-composite-sizable.h"
+#include "rut-input-region.h"
 
 enum {
   RUT_NUMBER_SLIDER_PROP_VALUE,

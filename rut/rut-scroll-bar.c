@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "rut-context.h"
 #include "rut-shell.h"
@@ -30,6 +28,7 @@
 #include "rut-camera-private.h"
 #include "rut-scroll-bar.h"
 #include "rut-color.h"
+#include "rut-input-region.h"
 
 #define THICKNESS 20
 #define HANDLE_THICKNESS 15

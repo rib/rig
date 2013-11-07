@@ -24,8 +24,14 @@
 #include <cogl/cogl.h>
 #include <math.h>
 
-#include "rut.h"
+#include "rut-context.h"
+#include "rut-interfaces.h"
+#include "rut-paintable.h"
+#include "rut-property.h"
+#include "rut-input-region.h"
 #include "rut-color-picker.h"
+
+#include "components/rut-camera.h"
 
 enum {
   RUT_COLOR_PICKER_PROP_COLOR,
@@ -502,7 +508,7 @@ rut_color_picker_set_size (RutObject *object,
                             float width,
                             float height)
 {
-  RutColorPicker *picker = RUT_COLOR_PICKER (object);
+  RutColorPicker *picker = object;
 
   rut_shell_queue_redraw (picker->context->shell);
 
@@ -515,7 +521,7 @@ rut_color_picker_get_size (RutObject *object,
                             float *width,
                             float *height)
 {
-  RutColorPicker *picker = RUT_COLOR_PICKER (object);
+  RutColorPicker *picker = object;
 
   *width = picker->width;
   *height = picker->height;
@@ -908,7 +914,7 @@ void
 rut_color_picker_set_color (RutObject *obj,
                             const CoglColor *color)
 {
-  RutColorPicker *picker = RUT_COLOR_PICKER (obj);
+  RutColorPicker *picker = obj;
 
   if (memcmp (&picker->color, color, sizeof (CoglColor)))
     {

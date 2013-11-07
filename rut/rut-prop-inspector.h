@@ -1,13 +1,12 @@
 #ifndef _RUT_PROP_INSPECTOR_H_
 #define _RUT_PROP_INSPECTOR_H_
 
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-property.h"
 
 extern RutType rut_prop_inspector_type;
 
 typedef struct _RutPropInspector RutPropInspector;
-
-#define RUT_PROP_INSPECTOR(x) ((RutPropInspector *) x)
 
 /* This is called whenever the properties changes */
 typedef void

@@ -275,7 +275,7 @@ rut_text_get_allocation_box (RutText *text,
                              RutBox *box);
 #endif
 
-CoglBool
+bool
 rut_text_has_overlaps (RutText *text);
 
 typedef void (* RutTextChangedCallback) (RutText *text,
@@ -682,7 +682,7 @@ rut_text_get_ellipsize (RutText *text);
  */
 void
 rut_text_set_line_wrap (RutObject *text,
-                        CoglBool line_wrap);
+                        bool line_wrap);
 
 /**
  * rut_text_get_line_wrap:
@@ -693,7 +693,7 @@ rut_text_set_line_wrap (RutObject *text,
  * Return value: %TRUE if the #RutText actor should wrap
  *   its contents
  */
-CoglBool
+bool
 rut_text_get_line_wrap (RutObject *text);
 
 /**
@@ -777,7 +777,7 @@ rut_text_get_attributes (RutText *text);
  */
 void
 rut_text_set_use_markup (RutObject *text,
-                         CoglBool setting);
+                         bool setting);
 
 /**
  * rut_text_get_use_markup:
@@ -788,7 +788,7 @@ rut_text_set_use_markup (RutObject *text,
  *
  * Return value: %TRUE if the contents will be parsed for markup
  */
-CoglBool
+bool
 rut_text_get_use_markup (RutObject *text);
 
 /**
@@ -830,7 +830,7 @@ rut_text_get_line_alignment (RutText *text);
  */
 void
 rut_text_set_justify (RutObject *text,
-                      CoglBool justify);
+                      bool justify);
 
 /**
  * rut_text_get_justify:
@@ -841,7 +841,7 @@ rut_text_set_justify (RutObject *text,
  *
  * Return value: %TRUE if the text should be justified
  */
-CoglBool
+bool
 rut_text_get_justify (RutObject *text);
 
 /**
@@ -939,7 +939,7 @@ rut_text_get_chars (RutText *text,
  */
 void
 rut_text_set_editable (RutObject *text,
-                       CoglBool editable);
+                       bool editable);
 
 /**
  * rut_text_get_editable:
@@ -949,7 +949,7 @@ rut_text_set_editable (RutObject *text,
  *
  * Return value: %TRUE if the actor is editable
  */
-CoglBool
+bool
 rut_text_get_editable (RutObject *text);
 
 /**
@@ -968,7 +968,7 @@ rut_text_get_editable (RutObject *text);
  */
 void
 rut_text_set_activatable (RutObject *text,
-                          CoglBool activatable);
+                          bool activatable);
 
 /**
  * rut_text_get_activatable:
@@ -978,7 +978,7 @@ rut_text_set_activatable (RutObject *text,
  *
  * Return value: %TRUE if the actor is activatable
  */
-CoglBool
+bool
 rut_text_get_activatable (RutObject *text);
 
 /**
@@ -1023,7 +1023,7 @@ rut_text_set_cursor_position (RutObject *text,
  */
 void
 rut_text_set_cursor_visible (RutObject *text,
-                             CoglBool cursor_visible);
+                             bool cursor_visible);
 
 /**
  * rut_text_get_cursor_visible:
@@ -1033,7 +1033,7 @@ rut_text_set_cursor_visible (RutObject *text,
  *
  * Return value: %TRUE if the cursor is visible
  */
-CoglBool
+bool
 rut_text_get_cursor_visible (RutObject *text);
 
 /**
@@ -1064,7 +1064,7 @@ rut_text_set_cursor_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_cursor_color (RutObject *text);
 
-CoglBool
+bool
 rut_text_get_cursor_color_set (RutObject *text);
 
 /**
@@ -1104,7 +1104,7 @@ rut_text_get_cursor_size (RutObject *text);
  */
 void
 rut_text_set_selectable (RutObject *text,
-                         CoglBool selectable);
+                         bool selectable);
 
 /**
  * rut_text_get_selectable:
@@ -1114,7 +1114,7 @@ rut_text_set_selectable (RutObject *text,
  *
  * Return value: %TRUE if the actor is selectable
  */
-CoglBool
+bool
 rut_text_get_selectable (RutObject *text);
 
 /**
@@ -1201,7 +1201,7 @@ rut_text_set_selection_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_selection_color (RutObject *text);
 
-CoglBool
+bool
 rut_text_get_selection_color_set (RutObject *text);
 
 /**
@@ -1215,7 +1215,7 @@ rut_text_get_selection_color_set (RutObject *text);
  * Return value: %TRUE if text was deleted or if the text actor
  *   is empty, and %FALSE otherwise
  */
-CoglBool
+bool
 rut_text_delete_selection (RutText *text);
 
 /**
@@ -1294,7 +1294,7 @@ rut_text_get_max_length (RutObject *text);
  */
 void
 rut_text_set_single_line_mode (RutObject *text,
-                               CoglBool single_line);
+                               bool single_line);
 
 /**
  * rut_text_get_single_line_mode:
@@ -1304,7 +1304,7 @@ rut_text_set_single_line_mode (RutObject *text,
  *
  * Return value: %TRUE if the #RutText actor is in single line mode
  */
-CoglBool
+bool
 rut_text_get_single_line_mode (RutObject *text);
 
 /**
@@ -1335,7 +1335,7 @@ rut_text_set_selected_text_color_u32 (RutText *text,
 const CoglColor *
 rut_text_get_selected_text_color (RutObject *text);
 
-CoglBool
+bool
 rut_text_get_selected_text_color_set (RutObject *text);
 
 /**
@@ -1353,7 +1353,7 @@ rut_text_get_selected_text_color_set (RutObject *text);
  * Return value: %TRUE if the ::activate signal has been emitted,
  *   and %FALSE otherwise
  */
-CoglBool
+bool
 rut_text_activate (RutText *text);
 
 /**
@@ -1383,7 +1383,7 @@ rut_text_coords_to_position (RutText *text,
  *
  * Return value: %TRUE if the conversion was successful
  */
-CoglBool
+bool
 rut_text_position_to_coords (RutText *text,
                              int position,
                              float *x,
@@ -1446,7 +1446,7 @@ void
 rut_text_set_height (RutObject *text, float height);
 
 RutMesh *
-rut_text_get_pick_mesh (RutText *text);
+rut_text_get_pick_mesh (RutObject *text);
 
 G_END_DECLS
 

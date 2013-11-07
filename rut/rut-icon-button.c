@@ -24,11 +24,16 @@
 #include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-text.h"
-#include "components/rut-camera.h"
 #include "rut-transform.h"
 #include "rut-stack.h"
 #include "rut-box-layout.h"
 #include "rut-icon-button.h"
+#include "rut-bin.h"
+#include "rut-icon.h"
+#include "rut-composite-sizable.h"
+#include "rut-input-region.h"
+
+#include "components/rut-camera.h"
 
 typedef enum _IconButtonState
 {

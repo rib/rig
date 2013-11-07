@@ -31,8 +31,6 @@ extern RutType rut_toggle_type;
 
 typedef struct _RutToggle RutToggle;
 
-#define RUT_TOGGLE(x) ((RutToggle *) x)
-
 RutToggle *
 rut_toggle_new (RutContext *ctx,
                 const char *label);
@@ -55,11 +53,11 @@ rut_toggle_add_on_toggle_callback (RutToggle *toggle,
 
 void
 rut_toggle_set_enabled (RutObject *toggle,
-                        CoglBool enabled);
+                        bool enabled);
 
 void
 rut_toggle_set_state (RutObject *toggle,
-                      CoglBool state);
+                      bool state);
 
 RutProperty *
 rut_toggle_get_enabled_property (RutToggle *toggle);

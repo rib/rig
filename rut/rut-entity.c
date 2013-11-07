@@ -21,7 +21,7 @@
 #include <config.h>
 
 #include "rut-entity.h"
-#include "rut.h"
+#include "rut-renderer.h"
 
 static RutPropertySpec _rut_entity_prop_specs[] = {
   {

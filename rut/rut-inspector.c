@@ -25,12 +25,17 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut.h"
 #include "rut-inspector.h"
 #include "rut-prop-inspector.h"
 #include "rut-vec3-slider.h"
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
+#include "rut-stack.h"
+#include "rut-drag-bin.h"
+#include "rut-paintable.h"
+#include "rut-box-layout.h"
+#include "rut-composite-sizable.h"
+#include "rut-bin.h"
 
 #define RUT_INSPECTOR_EDGE_GAP 5
 #define RUT_INSPECTOR_PROPERTY_GAP 5

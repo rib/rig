@@ -29,5 +29,6 @@
 #include "components/rut-shape.h"
 #include "components/rut-pointalism-grid.h"
 #include "components/rut-hair.h"
+#include "components/rut-button-input.h"
 
 #endif /* __RUT_COMPONENTS_H__ */

@@ -178,6 +178,7 @@ struct _RigEngine
   RutAsset *diamond_builtin_asset;
   RutAsset *pointalism_grid_builtin_asset;
   RutAsset *hair_builtin_asset;
+  RutAsset *button_input_builtin_asset;
   GList *result_input_closures;
   GList *asset_enumerators;
 

@@ -20,9 +20,11 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rut-diamond.h"
 #include "rut-global.h"
-#include "math.h"
+#include "rut-meshable.h"
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
@@ -346,7 +348,7 @@ _rut_diamond_init_type (void)
     .get_primitive = rut_diamond_get_primitive
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
     .get_mesh = rut_diamond_get_pick_mesh
   };
 
@@ -367,9 +369,9 @@ _rut_diamond_init_type (void)
                           0, /* no associated properties */
                           &primable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
 
 #undef TYPE
 }

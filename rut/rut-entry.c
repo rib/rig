@@ -24,8 +24,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut.h"
+#include "rut-text.h"
+#include "rut-interfaces.h"
+#include "rut-transform.h"
 #include "rut-entry.h"
+
+#include "components/rut-nine-slice.h"
 
 enum {
   RUT_ENTRY_PROP_WIDTH,
@@ -220,7 +224,7 @@ _rut_entry_get_preferred_width (RutObject *object,
                                 float *min_width_p,
                                 float *natural_width_p)
 {
-  RutEntry *entry = RUT_ENTRY (object);
+  RutEntry *entry = object;
   float min_width, natural_width;
   float natural_height;
 
@@ -258,7 +262,7 @@ _rut_entry_get_preferred_height (RutObject *object,
                                  float *min_height_p,
                                  float *natural_height_p)
 {
-  RutEntry *entry = RUT_ENTRY (object);
+  RutEntry *entry = object;
 
   /* We can't pass on the for_width parameter because the width that
    * the text widget will actually get depends on the height that it
@@ -323,7 +327,7 @@ void
 rut_entry_set_width (RutObject *obj,
                      float width)
 {
-  RutEntry *entry = RUT_ENTRY (obj);
+  RutEntry *entry = obj;
 
   rut_entry_set_size (entry, width, entry->height);
 }
@@ -332,7 +336,7 @@ void
 rut_entry_set_height (RutObject *obj,
                       float height)
 {
-  RutEntry *entry = RUT_ENTRY (obj);
+  RutEntry *entry = obj;
 
   rut_entry_set_size (entry, entry->width, height);
 }

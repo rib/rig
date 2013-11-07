@@ -2,13 +2,11 @@
 #ifndef _RUT_ENTRY_H_
 #define _RUT_ENTRY_H_
 
-#include "rut.h"
-
+#include "rut-object.h"
 #include "rut-icon.h"
 
 extern RutType rut_entry_type;
 typedef struct _RutEntry RutEntry;
-#define RUT_ENTRY(x) ((RutEntry *) x)
 
 RutEntry *
 rut_entry_new (RutContext *context);

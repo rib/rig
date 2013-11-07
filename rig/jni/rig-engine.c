@@ -879,10 +879,12 @@ apply_asset_input_with_entity (RigEngine *engine,
                                RutAsset *asset,
                                RutEntity *entity)
 {
-  RigUndoJournal *sub_journal = rig_undo_journal_new (engine);
+  RigUndoJournal *sub_journal;
   RutAssetType type = rut_asset_get_type (asset);
   RutMaterial *material;
   RutObject *geom;
+
+  rig_engine_push_undo_subjournal (engine);
 
   switch (type)
     {
@@ -896,7 +898,8 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!material)
             {
               material = rut_material_new (engine->ctx, asset);
-              rig_undo_journal_add_component (sub_journal, entity, material);
+              rig_undo_journal_add_component (engine->undo_journal,
+                                              entity, material);
             }
 
           if (type == RUT_ASSET_TYPE_TEXTURE)
@@ -913,7 +916,8 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!geom)
             {
               RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
-              rig_undo_journal_add_component (sub_journal, entity, shape);
+              rig_undo_journal_add_component (engine->undo_journal,
+                                              entity, shape);
               geom = shape;
             }
 
@@ -930,7 +934,8 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (!material)
             {
               material = rut_material_new (engine->ctx, asset);
-              rig_undo_journal_add_component (sub_journal, entity, material);
+              rig_undo_journal_add_component (engine->undo_journal,
+                                              entity, material);
             }
 
           geom = rut_entity_get_component (entity,
@@ -942,13 +947,13 @@ apply_asset_input_with_entity (RigEngine *engine,
               if (model == rut_asset_get_model (asset))
                 break;
               else
-                rig_undo_journal_delete_component (sub_journal, model);
+                rig_undo_journal_delete_component (engine->undo_journal, model);
             }
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           model = rut_asset_get_model (asset);
-          rig_undo_journal_add_component (sub_journal, entity, model);
+          rig_undo_journal_add_component (engine->undo_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
           y_range = model->max_y - model->min_y;
@@ -977,7 +982,7 @@ apply_asset_input_with_entity (RigEngine *engine,
                                            RUT_COMPONENT_TYPE_HAIR);
 
           if (hair)
-            rig_undo_journal_delete_component (sub_journal, hair);
+            rig_undo_journal_delete_component (engine->undo_journal, hair);
 
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -985,12 +990,12 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_text_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           text = rut_text_new_with_text (engine->ctx, "Sans 60px", "text");
           cogl_color_init_from_4f (&color, 1, 1, 1, 1);
           rut_text_set_color (text, &color);
-          rig_undo_journal_add_component (sub_journal, entity, text);
+          rig_undo_journal_add_component (engine->undo_journal, entity, text);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1005,7 +1010,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_shape_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
             rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
@@ -1039,7 +1044,8 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           shape = rut_shape_new (engine->ctx, TRUE, tex_width,
                                  tex_height);
-          rig_undo_journal_add_component (sub_journal, entity, shape);
+          rig_undo_journal_add_component (engine->undo_journal,
+                                          entity, shape);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1054,7 +1060,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_diamond_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1089,7 +1095,8 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           diamond = rut_diamond_new (engine->ctx, 200, tex_width,
                                      tex_height);
-          rig_undo_journal_add_component (sub_journal, entity, diamond);
+          rig_undo_journal_add_component (engine->undo_journal,
+                                          entity, diamond);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1104,7 +1111,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_nine_slice_type)
             break;
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1140,7 +1147,8 @@ apply_asset_input_with_entity (RigEngine *engine,
           nine_slice = rut_nine_slice_new (engine->ctx, NULL,
                                            0, 0, 0, 0,
                                            tex_width, tex_height);
-          rig_undo_journal_add_component (sub_journal, entity, nine_slice);
+          rig_undo_journal_add_component (engine->undo_journal,
+                                          entity, nine_slice);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1158,7 +1166,7 @@ apply_asset_input_with_entity (RigEngine *engine,
               break;
             }
           else if (geom)
-            rig_undo_journal_delete_component (sub_journal, geom);
+            rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
             rut_entity_get_component (entity,
@@ -1188,7 +1196,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
                                           tex_height);
 
-          rig_undo_journal_add_component (sub_journal, entity, grid);
+          rig_undo_journal_add_component (engine->undo_journal, entity, grid);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -1200,7 +1208,7 @@ apply_asset_input_with_entity (RigEngine *engine,
             break;
 
           hair = rut_hair_new (engine->ctx);
-          rut_entity_add_component (entity, hair);
+          rig_undo_journal_add_component (engine->undo_journal, entity, hair);
           geom = rut_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
@@ -1211,15 +1219,30 @@ apply_asset_input_with_entity (RigEngine *engine,
               rut_hair_set_length (hair,
                                    rut_model_get_default_hair_length (hair_geom));
 
-              rig_undo_journal_delete_component (sub_journal, geom);
-              rig_undo_journal_add_component (sub_journal, entity, hair_geom);
+              rig_undo_journal_delete_component (engine->undo_journal, geom);
+              rig_undo_journal_add_component (engine->undo_journal,
+                                              entity, hair_geom);
             }
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
+      else if (asset == engine->button_input_builtin_asset)
+        {
+          RutButtonInput *button_input =
+            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
+          if (button_input)
+            break;
 
+          button_input = rut_button_input_new (engine->ctx);
+          rig_undo_journal_add_component (engine->undo_journal,
+                                          entity, button_input);
+
+          rut_renderer_notify_entity_changed (engine->renderer, entity);
+        }
       break;
     }
+
+  sub_journal = rig_engine_pop_undo_subjournal (engine);
 
   if (rig_undo_journal_is_empty (sub_journal))
     rig_undo_journal_free (sub_journal);
@@ -1964,6 +1987,12 @@ load_builtin_assets (RigEngine *engine)
   engine->hair_builtin_asset = rut_asset_new_builtin (engine->ctx, "hair.png");
   rut_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
   rut_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
+
+  engine->button_input_builtin_asset = rut_asset_new_builtin (engine->ctx,
+                                                               "button.png");
+  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "button");
+  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "builtin");
+  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "input");
 }
 
 static void
@@ -1975,6 +2004,7 @@ free_builtin_assets (RigEngine *engine)
   rut_refable_unref (engine->pointalism_grid_builtin_asset);
   rut_refable_unref (engine->text_builtin_asset);
   rut_refable_unref (engine->hair_builtin_asset);
+  rut_refable_unref (engine->button_input_builtin_asset);
 }
 
 static void
@@ -3687,6 +3717,10 @@ rig_load_asset_list (RigEngine *engine)
   rut_refable_ref (engine->hair_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->hair_builtin_asset);
+
+  rut_refable_ref (engine->button_input_builtin_asset);
+  engine->assets = g_list_prepend (engine->assets,
+                                   engine->button_input_builtin_asset);
 
   g_object_unref (assets_dir);
 

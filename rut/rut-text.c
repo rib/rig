@@ -31,6 +31,13 @@
 
 #include "rut-text.h"
 #include "rut-mimable.h"
+#include "rut-pickable.h"
+#include "rut-inputable.h"
+#include "rut-meshable.h"
+#include "rut-input-region.h"
+#include "rut-color.h"
+#include "rut-meshable.h"
+
 #include "components/rut-camera.h"
 
 /* This is only defined since GLib 2.31.0. The documentation says that
@@ -997,7 +1004,7 @@ rut_text_create_layout (RutText *text,
 {
 
   LayoutCache *oldest_cache = text->cached_layouts;
-  CoglBool found_free_cache = FALSE;
+  bool found_free_cache = FALSE;
   int width = -1;
   int height = -1;
   PangoEllipsizeMode ellipsize = PANGO_ELLIPSIZE_NONE;
@@ -1199,7 +1206,7 @@ rut_text_coords_to_position (RutText *text,
   return index_ + trailing;
 }
 
-CoglBool
+bool
 rut_text_position_to_coords (RutText *text,
                              int position,
                              float *x,
@@ -1286,8 +1293,8 @@ rut_text_ensure_cursor_position (RutText *text)
 {
   float x, y, cursor_height;
   RutRectangleInt cursor_pos = { 0, };
-  CoglBool x_changed, y_changed;
-  CoglBool width_changed, height_changed;
+  bool x_changed, y_changed;
+  bool width_changed, height_changed;
   int position;
 
   position = text->position;
@@ -1330,7 +1337,7 @@ rut_text_ensure_cursor_position (RutText *text)
     }
 }
 
-CoglBool
+bool
 rut_text_delete_selection (RutText *text)
 {
   int start_index;
@@ -1392,10 +1399,10 @@ static inline void
 rut_text_set_markup_internal (RutText *text,
                               const char *str)
 {
-  CoglError *error;
+  GError *error;
   char *stripped_text = NULL;
   PangoAttrList *attrs = NULL;
-  CoglBool res;
+  bool res;
 
   g_assert (str != NULL);
 
@@ -1413,7 +1420,7 @@ rut_text_set_markup_internal (RutText *text,
           g_warning ("Failed to set the markup of RutText object %p: %s",
                      text,
                      error->message);
-          cogl_error_free (error);
+          g_error_free (error);
         }
       else
         g_warning ("Failed to set the markup of RutText object %p",
@@ -1852,7 +1859,7 @@ rut_text_select_line (RutText *text)
   rut_text_set_selection (text, start_pos, end_pos);
 }
 
-static CoglBool
+static bool
 rut_text_real_move_left (RutText *text,
                          RutInputEvent *event)
 {
@@ -1890,7 +1897,7 @@ rut_text_real_move_left (RutText *text,
 }
 
 
-static CoglBool
+static bool
 rut_text_real_move_right (RutText *text,
                           RutInputEvent *event)
 {
@@ -1921,7 +1928,7 @@ rut_text_real_move_right (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_move_up (RutText *text,
                        RutInputEvent *event)
 {
@@ -1972,7 +1979,7 @@ rut_text_real_move_up (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_move_down (RutText *text,
                          RutInputEvent *event)
 {
@@ -2019,7 +2026,7 @@ rut_text_real_move_down (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_line_start (RutText *text,
                           RutInputEvent *event)
 {
@@ -2035,7 +2042,7 @@ rut_text_real_line_start (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_line_end (RutText *text,
                         RutInputEvent *event)
 {
@@ -2051,7 +2058,7 @@ rut_text_real_line_end (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_select_all (RutText *text,
                           RutInputEvent *event)
 {
@@ -2067,7 +2074,7 @@ rut_text_real_select_all (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_del_next (RutText *text,
                         RutInputEvent *event)
 {
@@ -2086,7 +2093,7 @@ rut_text_real_del_next (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_del_word_next (RutText *text,
                              RutInputEvent *event)
 {
@@ -2119,7 +2126,7 @@ rut_text_real_del_word_next (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_del_prev (RutText *text,
                         RutInputEvent *event)
 {
@@ -2151,7 +2158,7 @@ rut_text_real_del_prev (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_del_word_prev (RutText *text,
                              RutInputEvent *event)
 {
@@ -2195,7 +2202,7 @@ rut_text_real_del_word_prev (RutText *text,
   return TRUE;
 }
 
-static CoglBool
+static bool
 rut_text_real_activate (RutText *text,
                         RutInputEvent *event)
 {
@@ -2269,7 +2276,7 @@ rut_text_motion_grab (RutInputEvent *event,
   return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
-static CoglBool
+static gboolean
 rut_text_remove_password_hint (void *data)
 {
   RutText *text = data;
@@ -2287,7 +2294,7 @@ static RutInputEventStatus
 rut_text_button_press (RutText *text,
                        RutInputEvent *event)
 {
-  //CoglBool res = FALSE;
+  //bool res = FALSE;
   float x, y;
   int index_;
   CoglMatrix transform;
@@ -2305,7 +2312,10 @@ rut_text_button_press (RutText *text,
   camera = rut_input_event_get_camera (event);
 
   if (text->has_focus &&
-      !rut_camera_pick_inputable (camera, text->input_region, x, y))
+      !rut_pickable_pick (text->input_region,
+                          camera,
+                          NULL, /* pre-computed modelview */
+                          x, y))
     {
       rut_text_ungrab_key_focus (text);
 
@@ -2416,8 +2426,8 @@ rut_text_handle_key_event (RutText *text,
                            RutInputEvent *event)
 {
   //RutBindingPool *pool;
-  //CoglBool res;
-  CoglBool handled = FALSE;
+  //bool res;
+  bool handled = FALSE;
 
   if (rut_key_event_get_action (event) != RUT_KEY_EVENT_ACTION_DOWN)
     return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -2625,9 +2635,10 @@ rut_text_ungrab_key_focus (RutText *text)
 #define TEXT_PADDING    2
 
 static void
-rut_text_paint (RutText *text,
+rut_text_paint (RutObject *object,
                 RutPaintContext *paint_ctx)
 {
+  RutText *text = object;
   RutCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   PangoLayout *layout;
@@ -2635,8 +2646,8 @@ rut_text_paint (RutText *text,
   CoglColor color = { 0, };
   float real_opacity;
   int text_x = text->text_x;
-  CoglBool clip_set = FALSE;
-  //CoglBool bg_color_set = FALSE;
+  bool clip_set = FALSE;
+  //bool bg_color_set = FALSE;
   unsigned int n_chars;
   float width, height;
 
@@ -3031,7 +3042,7 @@ _rut_text_add_preferred_size_callback (void *object,
                                destroy);
 }
 
-CoglBool
+bool
 rut_text_has_overlaps (RutText *text)
 {
   return text->editable ||
@@ -3149,7 +3160,7 @@ _rut_text_init_type (void)
       0
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
       .get_mesh = rut_text_get_pick_mesh
   };
 
@@ -3180,9 +3191,9 @@ _rut_text_init_type (void)
                           offsetof (TYPE, paintable),
                           &paintable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
@@ -3542,7 +3553,7 @@ add_remove_input_region (RutText *text)
 
 void
 rut_text_set_editable (RutObject *obj,
-                       CoglBool editable)
+                       bool editable)
 {
   RutText *text = obj;
 
@@ -3559,7 +3570,7 @@ rut_text_set_editable (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_editable (RutObject *obj)
 {
   RutText *text = obj;
@@ -3569,7 +3580,7 @@ rut_text_get_editable (RutObject *obj)
 
 void
 rut_text_set_selectable (RutObject *obj,
-                         CoglBool selectable)
+                         bool selectable)
 {
   RutText *text = obj;
 
@@ -3586,7 +3597,7 @@ rut_text_set_selectable (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_selectable (RutObject *obj)
 {
   RutText *text = obj;
@@ -3596,7 +3607,7 @@ rut_text_get_selectable (RutObject *obj)
 
 void
 rut_text_set_activatable (RutObject *obj,
-                          CoglBool activatable)
+                          bool activatable)
 {
   RutText *text = obj;
 
@@ -3611,7 +3622,7 @@ rut_text_set_activatable (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_activatable (RutObject *obj)
 {
   RutText *text = obj;
@@ -3619,7 +3630,7 @@ rut_text_get_activatable (RutObject *obj)
   return text->activatable;
 }
 
-CoglBool
+bool
 rut_text_activate (RutText *text)
 {
   if (text->activatable)
@@ -3637,7 +3648,7 @@ rut_text_activate (RutText *text)
 
 void
 rut_text_set_cursor_visible (RutObject *obj,
-                             CoglBool cursor_visible)
+                             bool cursor_visible)
 {
   RutText *text = obj;
 
@@ -3652,7 +3663,7 @@ rut_text_set_cursor_visible (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_cursor_visible (RutObject *obj)
 {
   RutText *text = obj;
@@ -3700,7 +3711,7 @@ rut_text_get_cursor_color (RutObject *obj)
   return &text->cursor_color;
 }
 
-CoglBool
+bool
 rut_text_get_cursor_color_set (RutObject *obj)
 {
   RutText *text = obj;
@@ -3829,7 +3840,7 @@ rut_text_get_selection_color (RutObject *obj)
   return &text->selection_color;
 }
 
-CoglBool
+bool
 rut_text_get_selection_color_set (RutObject *obj)
 {
   RutText *text = obj;
@@ -3877,7 +3888,7 @@ rut_text_get_selected_text_color (RutObject *obj)
   return &text->selected_text_color;
 }
 
-CoglBool
+bool
 rut_text_get_selected_text_color_set (RutObject *obj)
 {
   RutText *text = obj;
@@ -3915,7 +3926,7 @@ rut_text_set_font_name (RutObject *obj,
 {
   RutText *text = obj;
   PangoFontDescription *desc;
-  CoglBool is_default_font;
+  bool is_default_font;
 
   /* get the default font name from the backend */
   if (font_name == NULL || font_name[0] == '\0')
@@ -3971,7 +3982,7 @@ rut_text_get_text (RutObject *obj)
 
 static inline void
 rut_text_set_use_markup_internal (RutText *text,
-                                  CoglBool use_markup)
+                                  bool use_markup)
 {
   if (text->use_markup != use_markup)
     {
@@ -4130,7 +4141,7 @@ rut_text_get_ellipsize (RutText *text)
   return text->ellipsize;
 }
 
-CoglBool
+bool
 rut_text_get_line_wrap (RutObject *obj)
 {
   RutText *text = obj;
@@ -4140,7 +4151,7 @@ rut_text_get_line_wrap (RutObject *obj)
 
 void
 rut_text_set_line_wrap (RutObject *obj,
-                        CoglBool line_wrap)
+                        bool line_wrap)
 {
   RutText *text = obj;
 
@@ -4239,7 +4250,7 @@ rut_text_get_line_alignment (RutText *text)
 
 void
 rut_text_set_use_markup (RutObject *obj,
-			 CoglBool setting)
+			 bool setting)
 {
   RutText *text = obj;
   const char *text_str;
@@ -4256,7 +4267,7 @@ rut_text_set_use_markup (RutObject *obj,
   rut_text_notify_preferred_size_changed (text);
 }
 
-CoglBool
+bool
 rut_text_get_use_markup (RutObject *obj)
 {
   RutText *text = obj;
@@ -4266,7 +4277,7 @@ rut_text_get_use_markup (RutObject *obj)
 
 void
 rut_text_set_justify (RutObject *obj,
-                      CoglBool justify)
+                      bool justify)
 {
   RutText *text = obj;
 
@@ -4283,7 +4294,7 @@ rut_text_set_justify (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_justify (RutObject *obj)
 {
   RutText *text = obj;
@@ -4468,7 +4479,7 @@ rut_text_get_chars (RutText *text,
 
 void
 rut_text_set_single_line_mode (RutObject *obj,
-                               CoglBool single_line)
+                               bool single_line)
 {
   RutText *text = obj;
 
@@ -4492,7 +4503,7 @@ rut_text_set_single_line_mode (RutObject *obj,
     }
 }
 
-CoglBool
+bool
 rut_text_get_single_line_mode (RutObject *obj)
 {
   RutText *text = obj;
@@ -4644,7 +4655,8 @@ rut_text_get_context (RutText *text)
 }
 
 RutMesh *
-rut_text_get_pick_mesh (RutText *text)
+rut_text_get_pick_mesh (RutObject *object)
 {
+  RutText *text = object;
   return text->pick_mesh;
 }

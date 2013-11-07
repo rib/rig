@@ -20,9 +20,11 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rut-pointalism-grid.h"
 #include "rut-global.h"
-#include "math.h"
+#include "rut-meshable.h"
 
 #define MESA_CONST_ATTRIB_BUG_WORKAROUND
 
@@ -416,7 +418,7 @@ _rut_pointalism_grid_init_type (void)
     .get_primitive = rut_pointalism_grid_get_primitive
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
     .get_mesh = rut_pointalism_grid_get_pick_mesh
   };
 
@@ -443,9 +445,9 @@ _rut_pointalism_grid_init_type (void)
                           0, /* no associated properties */
                           &primable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
 
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
@@ -588,7 +590,7 @@ rut_pointalism_grid_set_z (RutObject *obj,
                      &grid->properties[RUT_POINTALISM_GRID_PROP_Z]);
 }
 
-CoglBool
+bool
 rut_pointalism_grid_get_lighter (RutObject *obj)
 {
   RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
@@ -598,7 +600,7 @@ rut_pointalism_grid_get_lighter (RutObject *obj)
 
 void
 rut_pointalism_grid_set_lighter (RutObject *obj,
-                                 CoglBool lighter)
+                                 bool lighter)
 {
   RutPointalismGrid *grid = RUT_POINTALISM_GRID (obj);
   RutEntity *entity;

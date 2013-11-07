@@ -23,10 +23,12 @@
 
 #include <cogl/cogl.h>
 
-#include "rut.h"
 #include "rut-number-slider.h"
 #include "rut-rotation-inspector.h"
 #include "rut-text.h"
+#include "rut-box-layout.h"
+#include "rut-composite-sizable.h"
+#include "rut-util.h"
 
 enum {
   RUT_ROTATION_INSPECTOR_PROP_VALUE,

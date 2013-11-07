@@ -26,6 +26,15 @@
 #include "rut-shim.h"
 #include "rut-asset-inspector.h"
 #include "rut-object.h"
+#include "rut-image.h"
+#include "rut-drag-bin.h"
+#include "rut-stack.h"
+#include "rut-rectangle.h"
+#include "rut-interfaces.h"
+#include "rut-composite-sizable.h"
+#include "rut-input-region.h"
+
+#include "components/rut-nine-slice.h"
 
 enum {
   RUT_ASSET_INSPECTOR_PROP_ASSET,

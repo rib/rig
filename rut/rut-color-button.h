@@ -20,13 +20,12 @@
 #ifndef _RUT_COLOR_BUTTON_H_
 #define _RUT_COLOR_BUTTON_H_
 
-#include "rut.h"
+#include "rut-object.h"
+#include "rut-context.h"
 
 extern RutType rut_color_button_type;
 
 typedef struct _RutColorButton RutColorButton;
-
-#define RUT_COLOR_BUTTON(x) ((RutColorButton *) x)
 
 RutColorButton *
 rut_color_button_new (RutContext *ctx);

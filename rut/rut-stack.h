@@ -2,11 +2,10 @@
 #ifndef _RUT_STACK_H_
 #define _RUT_STACK_H_
 
-#include "rut.h"
+#include "rut-object.h"
 
 extern RutType rut_stack_type;
 typedef struct _RutStack RutStack;
-#define RUT_STACK(x) ((RutStack *) x)
 
 RutStack *
 rut_stack_new (RutContext *context,

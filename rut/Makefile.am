@@ -9,6 +9,7 @@ components_source_h = \
     components/rut-diamond.h \
     components/rut-shape.h \
     components/rut-nine-slice.h \
+    components/rut-button-input.h \
     components/rut-pointalism-grid.h \
     components/rut-hair.h
 
@@ -86,6 +87,7 @@ librut_la_SOURCES = \
     components/rut-nine-slice.c \
     components/rut-pointalism-grid.c \
     components/rut-hair.c \
+    components/rut-button-input.c \
     rply.c \
     rply.h \
     color-table.h \
@@ -168,6 +170,8 @@ librut_la_SOURCES = \
     rut-icon-toggle-set.c \
     rut-rotation-inspector.h \
     rut-rotation-inspector.c \
+    rut-input-region.h \
+    rut-input-region.c \
     gstmemsrc.h \
     gstmemsrc.c \
     $(source_h)

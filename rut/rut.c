@@ -21,18 +21,12 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <glib.h>
 
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
-
-/* FIXME: we should have a config.h where things like USE_SDL would
- * be defined instead of defining that in rut.h */
-#include "rut.h"
 
 #include "rut-bitmask.h"
 #include "rut-global.h"

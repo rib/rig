@@ -27,6 +27,8 @@
 #include "rut-stack.h"
 #include "rut-bin.h"
 #include "rut-fold.h"
+#include "rut-composite-sizable.h"
+#include "rut-input-region.h"
 
 static RutPropertySpec _rut_fold_prop_specs[] = {
   {

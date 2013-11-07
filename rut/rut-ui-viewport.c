@@ -21,9 +21,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <math.h>
 
@@ -32,6 +30,11 @@
 #include "rut-ui-viewport.h"
 #include "rut-scroll-bar.h"
 #include "rut-transform.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-input-region.h"
+
+#include "components/rut-camera.h"
 
 enum {
   RUT_UI_VIEWPORT_PROP_WIDTH,
@@ -88,7 +91,7 @@ struct _RutUIViewport
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_UI_VIEWPORT_N_PROPS];
 
-  RutInputableProps inputable;
+  RutInputRegion *input_region;
 };
 
 static RutPropertySpec _rut_ui_viewport_prop_specs[] = {
@@ -180,7 +183,7 @@ _rut_ui_viewport_free (void *object)
 
   rut_refable_unref (ui_viewport->doc_transform);
 
-  rut_refable_unref (ui_viewport->inputable.input_region);
+  rut_refable_unref (ui_viewport->input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
@@ -190,18 +193,6 @@ _rut_ui_viewport_free (void *object)
 
   g_slice_free (RutUIViewport, object);
 }
-
-static RutRefableVTable _rut_ui_viewport_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_ui_viewport_free
-};
-
-static RutGraphableVTable _rut_ui_viewport_graphable_vtable = {
-  NULL, /* child_removed */
-  NULL, /* child_added */
-  NULL, /* parent_changed */
-};
 
 static void
 rut_ui_viewport_get_preferred_width (void *sizable,
@@ -284,49 +275,98 @@ rut_ui_viewport_add_preferred_size_callback (void *object,
                                destroy);
 }
 
-static RutSizableVTable _rut_ui_viewport_sizable_vtable = {
-  _rut_ui_viewport_set_size,
-  _rut_ui_viewport_get_size,
-  rut_ui_viewport_get_preferred_width,
-  rut_ui_viewport_get_preferred_height,
-  rut_ui_viewport_add_preferred_size_callback
-};
+static bool
+_rut_ui_viewport_pick (RutObject *inputable,
+                       RutCamera *camera,
+                       const CoglMatrix *modelview,
+                       float x,
+                       float y)
+{
+  RutUIViewport *ui_viewport = inputable;
+  CoglMatrix matrix;
 
-static RutIntrospectableVTable _rut_ui_viewport_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
+  if (!modelview)
+    {
+      matrix = *rut_camera_get_view_transform (camera);
+      rut_graphable_apply_transform (inputable, &matrix);
+      modelview = &matrix;
+    }
+
+  return rut_pickable_pick (ui_viewport->input_region,
+                             camera, modelview, x, y);
+}
+
+static RutInputEventStatus
+_rut_ui_viewport_handle_event (RutObject *inputable,
+                               RutInputEvent *event)
+{
+  RutUIViewport *ui_viewport = inputable;
+  return rut_inputable_handle_event (ui_viewport->input_region, event);
+}
 
 RutType rut_ui_viewport_type;
 
 void
 _rut_ui_viewport_init_type (void)
 {
-  rut_type_init (&rut_ui_viewport_type, "RigUiViewport");
-  rut_type_add_interface (&rut_ui_viewport_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutUIViewport, ref_count),
-                          &_rut_ui_viewport_refable_vtable);
-  rut_type_add_interface (&rut_ui_viewport_type,
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child_removed */
+      NULL, /* child_added */
+      NULL, /* parent_changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      _rut_ui_viewport_set_size,
+      _rut_ui_viewport_get_size,
+      rut_ui_viewport_get_preferred_width,
+      rut_ui_viewport_get_preferred_height,
+      rut_ui_viewport_add_preferred_size_callback
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  static RutPickableVTable pickable_vtable = {
+      _rut_ui_viewport_pick,
+  };
+
+  static RutInputableVTable inputable_vtable = {
+      _rut_ui_viewport_handle_event
+  };
+
+  RutType *type = &rut_ui_viewport_type;
+#define TYPE RutUIViewport
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rut_ui_viewport_free);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutUIViewport, graphable),
-                          &_rut_ui_viewport_graphable_vtable);
-  rut_type_add_interface (&rut_ui_viewport_type,
+                          offsetof (TYPE, graphable),
+                          &graphable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */
-                          &_rut_ui_viewport_sizable_vtable);
-  rut_type_add_interface (&rut_ui_viewport_type,
+                          &sizable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INTROSPECTABLE,
                           0, /* no implied properties */
-                          &_rut_ui_viewport_introspectable_vtable);
-  rut_type_add_interface (&rut_ui_viewport_type,
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutUIViewport, introspectable),
+                          offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_ui_viewport_type,
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_PICKABLE,
+                          0, /* no implied properties */
+                          &pickable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INPUTABLE,
-                          offsetof (RutUIViewport, inputable),
-                          NULL); /* no implied vtable */
+                          0, /* no implied properties */
+                          &inputable_vtable);
+
+#undef TYPE
 }
 
 static void
@@ -677,18 +717,9 @@ rut_ui_viewport_new (RutContext *ctx,
                      float width,
                      float height)
 {
-  RutUIViewport *ui_viewport = g_slice_new0 (RutUIViewport);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_ui_viewport_init_type ();
-
-      initialized = TRUE;
-    }
-
-  rut_object_init (RUT_OBJECT (ui_viewport), &rut_ui_viewport_type);
+  RutUIViewport *ui_viewport = rut_object_alloc0 (RutUIViewport,
+                                                  &rut_ui_viewport_type,
+                                                  _rut_ui_viewport_init_type);
 
   ui_viewport->ctx = ctx;
 
@@ -748,7 +779,7 @@ rut_ui_viewport_new (RutContext *ctx,
 
   _rut_ui_viewport_update_doc_matrix (ui_viewport);
 
-  ui_viewport->inputable.input_region =
+  ui_viewport->input_region =
     rut_input_region_new_rectangle (0, 0,
                                     ui_viewport->width,
                                     ui_viewport->height,
@@ -772,7 +803,7 @@ _rut_ui_viewport_set_size (RutObject *object,
                            float width,
                            float height)
 {
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+  RutUIViewport *ui_viewport = object;
   float spacing;
 
   if (width == ui_viewport->width && height == ui_viewport->height)
@@ -781,7 +812,7 @@ _rut_ui_viewport_set_size (RutObject *object,
   ui_viewport->width = width;
   ui_viewport->height = height;
 
-  rut_input_region_set_rectangle (ui_viewport->inputable.input_region,
+  rut_input_region_set_rectangle (ui_viewport->input_region,
                                   0, 0,
                                   width,
                                   height);
@@ -812,7 +843,7 @@ _rut_ui_viewport_get_size (RutObject *object,
                            float *width,
                            float *height)
 {
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+  RutUIViewport *ui_viewport = object;
 
   *width = ui_viewport->width;
   *height = ui_viewport->height;
@@ -897,7 +928,7 @@ rut_ui_viewport_get_height (RutUIViewport *ui_viewport)
 float
 rut_ui_viewport_get_doc_x (RutObject *object)
 {
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+  RutUIViewport *ui_viewport = object;
 
   return rut_scroll_bar_get_virtual_offset (ui_viewport->scroll_bar_x);
 }
@@ -905,7 +936,7 @@ rut_ui_viewport_get_doc_x (RutObject *object)
 float
 rut_ui_viewport_get_doc_y (RutObject *object)
 {
-  RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+  RutUIViewport *ui_viewport = object;
 
   return rut_scroll_bar_get_virtual_offset (ui_viewport->scroll_bar_y);
 }

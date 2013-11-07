@@ -23,8 +23,9 @@
 
 #include <math.h>
 
-#include "rut.h"
 #include "rut-bin.h"
+#include "rut-interfaces.h"
+#include "rut-transform.h"
 
 struct _RutBin
 {
@@ -72,7 +73,7 @@ static void
 allocate_cb (RutObject *graphable,
              void *user_data)
 {
-  RutBin *bin = RUT_BIN (graphable);
+  RutBin *bin = graphable;
 
   if (bin->child)
     {
@@ -185,7 +186,7 @@ rut_bin_get_preferred_width (void *sizable,
                              float *min_width_p,
                              float *natural_width_p)
 {
-  RutBin *bin = RUT_BIN (sizable);
+  RutBin *bin = sizable;
   float min_width = bin->left_padding + bin->right_padding;
   float natural_width = min_width;
 
@@ -225,7 +226,7 @@ rut_bin_get_preferred_height (void *sizable,
                               float *min_height_p,
                               float *natural_height_p)
 {
-  RutBin *bin = RUT_BIN (sizable);
+  RutBin *bin = sizable;
   float min_height = bin->top_padding + bin->bottom_padding;
   float natural_height = min_height;
 
@@ -426,7 +427,7 @@ void
 rut_bin_set_top_padding (RutObject *obj,
                          float top_padding)
 {
-  RutBin *bin = RUT_BIN (obj);
+  RutBin *bin = obj;
 
   bin->top_padding = top_padding;
   preferred_size_changed (bin);
@@ -437,7 +438,7 @@ void
 rut_bin_set_bottom_padding (RutObject *obj,
                             float bottom_padding)
 {
-  RutBin *bin = RUT_BIN (obj);
+  RutBin *bin = obj;
 
   bin->bottom_padding = bottom_padding;
   preferred_size_changed (bin);
@@ -448,7 +449,7 @@ void
 rut_bin_set_left_padding (RutObject *obj,
                           float left_padding)
 {
-  RutBin *bin = RUT_BIN (obj);
+  RutBin *bin = obj;
 
   bin->left_padding = left_padding;
   preferred_size_changed (bin);
@@ -459,7 +460,7 @@ void
 rut_bin_set_right_padding (RutObject *obj,
                            float right_padding)
 {
-  RutBin *bin = RUT_BIN (obj);
+  RutBin *bin = obj;
 
   bin->right_padding = right_padding;
   preferred_size_changed (bin);

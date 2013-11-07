@@ -24,7 +24,6 @@
 #include "rut-entity.h"
 
 typedef struct _RutShapeModel RutShapeModel;
-#define RUT_SHAPE_SLICE(X) ((RutShapeModel *)X)
 extern RutType _rut_shape_model_type;
 
 struct _RutShapeModel
@@ -47,7 +46,6 @@ void
 _rut_shape_model_init_type (void);
 
 typedef struct _RutShape RutShape;
-#define RUT_SHAPE(p) ((RutShape *)(p))
 extern RutType rut_shape_type;
 
 enum {
@@ -102,9 +100,9 @@ rut_shape_get_pick_mesh (RutObject *self);
 
 void
 rut_shape_set_shaped (RutObject *shape,
-                      CoglBool shaped);
+                      bool shaped);
 
-CoglBool
+bool
 rut_shape_get_shaped (RutObject *shape);
 
 typedef void (*RutShapeReShapedCallback) (RutShape *shape,

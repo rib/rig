@@ -27,6 +27,7 @@
 #include "rut-geometry.h"
 #include "rut-mesh.h"
 #include "rut-mesh-ply.h"
+#include "rut-meshable.h"
 
 #include "components/rut-model.h"
 
@@ -198,7 +199,7 @@ _rut_model_init_type (void)
     .get_primitive = rut_model_get_primitive
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
     .get_mesh = rut_model_get_mesh
   };
 
@@ -220,9 +221,9 @@ _rut_model_init_type (void)
                           0, /* no associated properties */
                           &primable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
 
 #undef TYPE
 }

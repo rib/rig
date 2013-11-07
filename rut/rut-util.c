@@ -593,4 +593,61 @@ rut_util_matrix_scaled_perspective (CoglMatrix *matrix,
                        z_far);
 }
 
+/* XXX: The vertices must be 4 components: [x, y, z, w] */
+void
+rut_util_fully_transform_points (const CoglMatrix *modelview,
+                                 const CoglMatrix *projection,
+                                 const float *viewport,
+                                 float *verts,
+                                 int n_verts)
+{
+  int i;
 
+  cogl_matrix_transform_points (modelview,
+                                2, /* n_components */
+                                sizeof (float) * 4, /* stride_in */
+                                verts, /* points_in */
+                                /* strideout */
+                                sizeof (float) * 4,
+                                verts, /* points_out */
+                                4 /* n_points */);
+
+  cogl_matrix_project_points (projection,
+                              3, /* n_components */
+                              sizeof (float) * 4, /* stride_in */
+                              verts, /* points_in */
+                              /* strideout */
+                              sizeof (float) * 4,
+                              verts, /* points_out */
+                              4 /* n_points */);
+
+/* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
+ * to Cogl window/framebuffer coordinates (ranging from 0 to buffer-size) with
+ * (0,0) being top left. */
+#define VIEWPORT_TRANSFORM_X(x, vp_origin_x, vp_width) \
+    (  ( ((x) + 1.0) * ((vp_width) / 2.0) ) + (vp_origin_x)  )
+/* Note: for Y we first flip all coordinates around the X axis while in
+ * normalized device coodinates */
+#define VIEWPORT_TRANSFORM_Y(y, vp_origin_y, vp_height) \
+    (  ( ((-(y)) + 1.0) * ((vp_height) / 2.0) ) + (vp_origin_y)  )
+
+  /* Scale from normalized device coordinates (in range [-1,1]) to
+   * window coordinates ranging [0,window-size] ... */
+  for (i = 0; i < n_verts; i++)
+    {
+      float w = verts[4 * i + 3];
+
+      /* Perform perspective division */
+      verts[4 * i] /= w;
+      verts[4 * i + 1] /= w;
+
+      /* Apply viewport transform */
+      verts[4 * i] = VIEWPORT_TRANSFORM_X (verts[4 * i],
+                                           viewport[0], viewport[2]);
+      verts[4 * i + 1] = VIEWPORT_TRANSFORM_Y (verts[4 * i + 1],
+                                               viewport[1], viewport[3]);
+    }
+
+#undef VIEWPORT_TRANSFORM_X
+#undef VIEWPORT_TRANSFORM_Y
+}

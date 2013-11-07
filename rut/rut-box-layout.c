@@ -21,8 +21,9 @@
 
 #include <config.h>
 
-#include "rut.h"
 #include "rut-box-layout.h"
+#include "rut-transform.h"
+#include "rut-util.h"
 
 enum {
   RUT_BOX_LAYOUT_PROP_PACKING,

@@ -28,10 +28,12 @@
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
 #include "rut-camera-private.h"
-#include "components/rut-camera.h"
 #include "rut-transform.h"
 #include "rut-text.h"
 #include "rut-scale.h"
+#include "rut-input-region.h"
+
+#include "components/rut-camera.h"
 
 static void
 _rut_scale_set_user_scale (RutObject *object, float factor);

@@ -23,10 +23,11 @@
 
 #include <cogl/cogl.h>
 
-#include "rut.h"
 #include "rut-number-slider.h"
 #include "rut-vec3-slider.h"
 #include "rut-text.h"
+#include "rut-box-layout.h"
+#include "rut-composite-sizable.h"
 
 enum {
   RUT_VEC3_SLIDER_PROP_VALUE,

@@ -30,6 +30,7 @@
 #include "rut-camera-private.h"
 #include "rut-nine-slice.h"
 #include "rut-closure.h"
+#include "rut-meshable.h"
 
 enum {
   RUT_NINE_SLICE_PROP_WIDTH,
@@ -515,7 +516,7 @@ _rut_nine_slice_init_type (void)
       .get_primitive = rut_nine_slice_get_primitive
   };
 
-  static RutPickableVTable pickable_vtable = {
+  static RutMeshableVTable meshable_vtable = {
       .get_mesh = rut_nine_slice_get_pick_mesh
   };
 
@@ -564,9 +565,9 @@ _rut_nine_slice_init_type (void)
                           0, /* no associated properties */
                           &primable_vtable);
   rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
+                          RUT_INTERFACE_ID_MESHABLE,
                           0, /* no associated properties */
-                          &pickable_vtable);
+                          &meshable_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_SIZABLE,
                           0, /* no implied properties */

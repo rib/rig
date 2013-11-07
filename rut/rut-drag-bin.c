@@ -23,11 +23,20 @@
 
 #include <math.h>
 
-#include "rut.h"
 #include "rut-bin.h"
 #include "rut-shim.h"
-
+#include "rut-stack.h"
+#include "rut-rectangle.h"
+#include "rut-transform.h"
 #include "rut-drag-bin.h"
+#include "rut-interfaces.h"
+#include "rut-composite-sizable.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-input-region.h"
+
+#include "components/rut-nine-slice.h"
+#include "components/rut-camera.h"
 
 struct _RutDragBin
 {
@@ -51,7 +60,8 @@ struct _RutDragBin
   bool in_drag;
 
   RutGraphableProps graphable;
-  RutInputableProps inputable;
+
+  RutInputRegion *input_region;
 };
 
 RutType rut_drag_bin_type;
@@ -74,7 +84,7 @@ _rut_drag_bin_free (void *object)
 
   rut_graphable_destroy (bin);
 
-  rut_refable_unref (bin->inputable.input_region);
+  rut_refable_unref (bin->input_region);
 
   g_slice_free (RutDragBin, bin);
 }
@@ -85,11 +95,39 @@ _rut_drag_bin_set_size (RutObject *object, float width, float height)
 {
   RutDragBin *bin = object;
 
-  rut_sizable_set_size (bin->inputable.input_region,
-                        width, height);
+  rut_sizable_set_size (bin->input_region, width, height);
   rut_composite_sizable_set_size (bin, width, height);
 }
 #endif
+
+static bool
+_rut_drag_bin_pick (RutObject *inputable,
+                    RutCamera *camera,
+                    const CoglMatrix *modelview,
+                    float x,
+                    float y)
+{
+  RutDragBin *bin = inputable;
+  CoglMatrix matrix;
+
+  if (!modelview)
+    {
+      matrix = *rut_camera_get_view_transform (camera);
+      rut_graphable_apply_transform (inputable, &matrix);
+      modelview = &matrix;
+    }
+
+  return rut_pickable_pick (bin->input_region,
+                             camera, modelview, x, y);
+}
+
+static RutInputEventStatus
+_rut_drag_bin_handle_event (RutObject *inputable,
+                            RutInputEvent *event)
+{
+  RutDragBin *bin = inputable;
+  return rut_inputable_handle_event (bin->input_region, event);
+}
 
 static void
 _rut_drag_bin_init_type (void)
@@ -111,6 +149,12 @@ _rut_drag_bin_init_type (void)
       rut_composite_sizable_get_preferred_width,
       rut_composite_sizable_get_preferred_height,
       rut_composite_sizable_add_preferred_size_callback
+  };
+  static RutPickableVTable pickable_vtable = {
+      _rut_drag_bin_pick,
+  };
+  static RutInputableVTable inputable_vtable = {
+      _rut_drag_bin_handle_event
   };
 
   RutType *type = &rut_drag_bin_type;
@@ -134,9 +178,13 @@ _rut_drag_bin_init_type (void)
                           offsetof (TYPE, stack),
                           NULL); /* no vtable */
   rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_PICKABLE,
+                          0, /* no implied properties */
+                          &pickable_vtable);
+  rut_type_add_interface (type,
                           RUT_INTERFACE_ID_INPUTABLE,
-                          offsetof (TYPE, inputable),
-                          NULL); /* no implied vtable */
+                          0, /* no implied properties */
+                          &inputable_vtable);
 
 #undef TYPE
 }
@@ -285,7 +333,7 @@ rut_drag_bin_new (RutContext *ctx)
   rut_graphable_add_child (bin, bin->stack);
   rut_refable_unref (bin->stack);
 
-  bin->inputable.input_region =
+  bin->input_region =
     rut_input_region_new_rectangle (0, 0, 1, 1,
                                     _rut_drag_bin_input_cb,
                                     bin);

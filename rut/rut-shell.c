@@ -24,13 +24,22 @@
 
 #include <cogl/cogl.h>
 
-/* FIXME: we should have a config.h where things like USE_SDL would
- * be defined instead of defining that in rut.h */
-#include "rut.h"
-
 #include "rut-camera-private.h"
 #include "rut-transform-private.h"
 #include "rut-shell.h"
+#include "rut-util.h"
+#include "rut-ui-viewport.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-timeline.h"
+#include "rut-global.h"
+#include "rut-paintable.h"
+#include "rut-transform.h"
+#include "rut-input-region.h"
+#include "rut-mimable.h"
+
+#include "components/rut-nine-slice.h"
+#include "components/rut-camera.h"
 
 #ifdef __ANDROID__
 #include <android_native_app_glue.h>
@@ -132,43 +141,6 @@ struct _RutShell
   RutObject *selection;
 };
 
-/* PRIVATE */
-typedef enum _RutInputShapeType
-{
-  RUT_INPUT_SHAPE_TYPE_RECTANGLE,
-  RUT_INPUT_SHAPE_TYPE_CIRCLE
-} RutInputShapeType;
-
-/* PRIVATE */
-typedef struct _RutInputShapeRectangle
-{
-  RutInputShapeType type;
-  float x0, y0, x1, y1;
-} RutInputShapeRectange;
-
-/* PRIVATE */
-typedef struct _RutInputShapeCircle
-{
-  RutInputShapeType type;
-  float x, y;
-  float r;
-  float r_squared;
-} RutInputShapeCircle;
-
-/* PRIVATE */
-typedef struct _RutInputShapeAny
-{
-  RutInputShapeType type;
-} RutInputShapeAny;
-
-/* PRIVATE */
-typedef union _RutInputShape
-{
-  RutInputShapeAny any;
-  RutInputShapeRectange rectangle;
-  RutInputShapeCircle circle;
-} RutInputShape;
-
 typedef enum _RutInputTransformType
 {
   RUT_INPUT_TRANSFORM_TYPE_NONE,
@@ -199,23 +171,6 @@ typedef union _RutInputTransform
   RutInputTransformGraphable graphable;
 } RutInputTransform;
 
-struct _RutInputRegion
-{
-  RutObjectProps _parent;
-
-  int ref_count;
-
-  RutInputShape shape;
-
-  RutGraphableProps graphable;
-  RutInputableProps inputable;
-
-  CoglBool hud_mode;
-
-  RutInputRegionCallback callback;
-  void *user_data;
-};
-
 typedef struct
 {
   RutList link;
@@ -235,9 +190,6 @@ typedef struct
 
 static void
 _rut_slider_init_type (void);
-
-static void
-_rut_input_region_init_type (void);
 
 RutContext *
 rut_shell_get_context (RutShell *shell)
@@ -259,445 +211,6 @@ struct _RutInputEvent
   RutCamera *camera;
   const CoglMatrix *input_transform;
 };
-
-/* XXX: The vertices must be 4 components: [x, y, z, w] */
-static void
-fully_transform_points (const CoglMatrix *modelview,
-                        const CoglMatrix *projection,
-                        const float *viewport,
-                        float *verts,
-                        int n_verts)
-{
-  int i;
-
-  cogl_matrix_transform_points (modelview,
-                                2, /* n_components */
-                                sizeof (float) * 4, /* stride_in */
-                                verts, /* points_in */
-                                /* strideout */
-                                sizeof (float) * 4,
-                                verts, /* points_out */
-                                4 /* n_points */);
-
-  cogl_matrix_project_points (projection,
-                              3, /* n_components */
-                              sizeof (float) * 4, /* stride_in */
-                              verts, /* points_in */
-                              /* strideout */
-                              sizeof (float) * 4,
-                              verts, /* points_out */
-                              4 /* n_points */);
-
-/* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
- * to Cogl window/framebuffer coordinates (ranging from 0 to buffer-size) with
- * (0,0) being top left. */
-#define VIEWPORT_TRANSFORM_X(x, vp_origin_x, vp_width) \
-    (  ( ((x) + 1.0) * ((vp_width) / 2.0) ) + (vp_origin_x)  )
-/* Note: for Y we first flip all coordinates around the X axis while in
- * normalized device coodinates */
-#define VIEWPORT_TRANSFORM_Y(y, vp_origin_y, vp_height) \
-    (  ( ((-(y)) + 1.0) * ((vp_height) / 2.0) ) + (vp_origin_y)  )
-
-  /* Scale from normalized device coordinates (in range [-1,1]) to
-   * window coordinates ranging [0,window-size] ... */
-  for (i = 0; i < n_verts; i++)
-    {
-      float w = verts[4 * i + 3];
-
-      /* Perform perspective division */
-      verts[4 * i] /= w;
-      verts[4 * i + 1] /= w;
-
-      /* Apply viewport transform */
-      verts[4 * i] = VIEWPORT_TRANSFORM_X (verts[4 * i],
-                                           viewport[0], viewport[2]);
-      verts[4 * i + 1] = VIEWPORT_TRANSFORM_Y (verts[4 * i + 1],
-                                               viewport[1], viewport[3]);
-    }
-
-#undef VIEWPORT_TRANSFORM_X
-#undef VIEWPORT_TRANSFORM_Y
-}
-
-static void
-rectangle_poly_init (RutInputShapeRectange *rectangle,
-                     float *poly)
-{
-  poly[0] = rectangle->x0;
-  poly[1] = rectangle->y0;
-  poly[2] = 0;
-  poly[3] = 1;
-
-  poly[4] = rectangle->x0;
-  poly[5] = rectangle->y1;
-  poly[6] = 0;
-  poly[7] = 1;
-
-  poly[8] = rectangle->x1;
-  poly[9] = rectangle->y1;
-  poly[10] = 0;
-  poly[11] = 1;
-
-  poly[12] = rectangle->x1;
-  poly[13] = rectangle->y0;
-  poly[14] = 0;
-  poly[15] = 1;
-}
-
-/* Given an (x0,y0) (x1,y1) rectangle this transforms it into
- * a polygon in window coordinates that can be intersected
- * with input coordinates for picking.
- */
-static void
-rect_to_screen_polygon (RutInputShapeRectange *rectangle,
-                        const CoglMatrix *modelview,
-                        const CoglMatrix *projection,
-                        const float *viewport,
-                        float *poly)
-{
-  rectangle_poly_init (rectangle, poly);
-
-  fully_transform_points (modelview,
-                          projection,
-                          viewport,
-                          poly,
-                          4);
-}
-
-/* This is a replacement for the nearbyint function which always
-   rounds to the nearest integer. nearbyint is apparently a C99
-   function so it might not always be available but also it seems in
-   glibc it is defined as a function call so this macro could end up
-   faster anyway. We can't just add 0.5f because it will break for
-   negative numbers. */
-#define UTIL_NEARBYINT(x) ((int) ((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
-
-/* We've made a notable change to the original algorithm referenced
- * above to make sure we have reliable results for screen aligned
- * rectangles even though there may be some numerical in-precision in
- * how the vertices of the polygon were calculated.
- *
- * We've avoided introducing an epsilon factor to the comparisons
- * since we feel there's a risk of changing some semantics in ways that
- * might not be desirable. One of those is that if you transform two
- * polygons which share an edge and test a point close to that edge
- * then this algorithm will currently give a positive result for only
- * one polygon.
- *
- * Another concern is the way this algorithm resolves the corner case
- * where the horizontal ray being cast to count edge crossings may
- * cross directly through a vertex. The solution is based on the "idea
- * of Simulation of Simplicity" and "pretends to shift the ray
- * infinitesimally down so that it either clearly intersects, or
- * clearly doesn't touch". I'm not familiar with the idea myself so I
- * expect a misplaced epsilon is likely to break that aspect of the
- * algorithm.
- *
- * The simple solution we've gone for is to pixel align the polygon
- * vertices which should eradicate most noise due to in-precision.
- */
-static int
-point_in_screen_poly (float point_x,
-                      float point_y,
-                      void *vertices,
-                      size_t stride,
-                      int n_vertices)
-{
-  int i, j, c = 0;
-
-  for (i = 0, j = n_vertices - 1; i < n_vertices; j = i++)
-    {
-      float vert_xi = *(float *)((uint8_t *)vertices + i * stride);
-      float vert_xj = *(float *)((uint8_t *)vertices + j * stride);
-      float vert_yi = *(float *)((uint8_t *)vertices + i * stride +
-                                 sizeof (float));
-      float vert_yj = *(float *)((uint8_t *)vertices + j * stride +
-                                 sizeof (float));
-
-      vert_xi = UTIL_NEARBYINT (vert_xi);
-      vert_xj = UTIL_NEARBYINT (vert_xj);
-      vert_yi = UTIL_NEARBYINT (vert_yi);
-      vert_yj = UTIL_NEARBYINT (vert_yj);
-
-      if (((vert_yi > point_y) != (vert_yj > point_y)) &&
-           (point_x < (vert_xj - vert_xi) * (point_y - vert_yi) /
-            (vert_yj - vert_yi) + vert_xi) )
-         c = !c;
-    }
-
-  return c;
-}
-
-CoglBool
-rut_camera_pick_inputable (RutCamera *camera,
-                           RutObject *inputable,
-                           float x,
-                           float y)
-{
-  CoglMatrix matrix;
-  const CoglMatrix *modelview = NULL;
-  float poly[16];
-  const CoglMatrix *view = rut_camera_get_view_transform (camera);
-  RutInputRegion *region = rut_inputable_get_input_region (inputable);
-
-  if (region->hud_mode)
-    modelview = &camera->ctx->identity_matrix;
-  else if (rut_object_is (inputable, RUT_INTERFACE_ID_GRAPHABLE))
-    {
-      matrix = *view;
-      rut_graphable_apply_transform (inputable, &matrix);
-      modelview = &matrix;
-    }
-  else
-    modelview = view;
-
-  switch (region->shape.any.type)
-    {
-    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
-      {
-        if (!region->hud_mode)
-          {
-            rect_to_screen_polygon (&region->shape.rectangle,
-                                    modelview,
-                                    &camera->projection,
-                                    camera->viewport,
-                                    poly);
-          }
-        else
-          rectangle_poly_init (&region->shape.rectangle, poly);
-
-#if 0
-        g_print ("transformed input region\n");
-        for (i = 0; i < 4; i++)
-          {
-            float *p = poly + 4 * i;
-            g_print ("poly[].x=%f\n", p[0]);
-            g_print ("poly[].y=%f\n", p[1]);
-          }
-        g_print ("x=%f y=%f\n", x, y);
-#endif
-        if (point_in_screen_poly (x, y, poly, sizeof (float) * 4, 4))
-          return TRUE;
-        else
-          return FALSE;
-      }
-    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
-      {
-        RutInputShapeCircle *circle = &region->shape.circle;
-        float center_x = circle->x;
-        float center_y = circle->y;
-        float z = 0;
-        float w = 1;
-        float a;
-        float b;
-        float c2;
-
-        /* Note the circle hit regions are billboarded, such that only the
-         * center point is transformed but the raius of the circle stays
-         * constant. */
-
-        cogl_matrix_transform_point (modelview,
-                                     &center_x, &center_y, &z, &w);
-
-        a = x - center_x;
-        b = y - center_y;
-        c2 = a * a + b * b;
-
-        if (c2 < circle->r_squared)
-          return TRUE;
-        else
-          return FALSE;
-      }
-    }
-
-  g_warn_if_reached ();
-  return FALSE;
-}
-
-static void
-_rut_input_region_free (void *object)
-{
-  RutInputRegion *region = object;
-
-  rut_graphable_destroy (region);
-
-  g_slice_free (RutInputRegion, region);
-}
-
-static void
-_rut_input_region_set_size (RutObject *self,
-                            float width,
-                            float height)
-{
-  RutInputRegion *region = self;
-
-  switch (region->shape.any.type)
-    {
-    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
-      region->shape.rectangle.x1 = region->shape.rectangle.x0 + width;
-      region->shape.rectangle.y1 = region->shape.rectangle.y0 + height;
-      break;
-    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
-      region->shape.circle.r = MAX (width, height) / 2.0f;
-      region->shape.circle.r_squared =
-        region->shape.circle.r * region->shape.circle.r;
-      break;
-    }
-}
-
-static void
-_rut_input_region_get_size (RutObject *self,
-                            float *width,
-                            float *height)
-{
-  RutInputRegion *region = self;
-
-  switch (region->shape.any.type)
-    {
-    case RUT_INPUT_SHAPE_TYPE_RECTANGLE:
-      *width = region->shape.rectangle.x1 - region->shape.rectangle.x0;
-      *height = region->shape.rectangle.y1 - region->shape.rectangle.y0;
-      break;
-    case RUT_INPUT_SHAPE_TYPE_CIRCLE:
-      *width = *height = region->shape.circle.r * 2;
-      break;
-    }
-}
-
-RutType rut_input_region_type;
-
-static void
-_rut_input_region_init_type (void)
-{
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_input_region_free
-  };
-
-  static RutGraphableVTable graphable_vtable = {
-      NULL, /* child remove */
-      NULL, /* child add */
-      NULL /* parent changed */
-  };
-
-  static RutSizableVTable sizable_vtable = {
-      _rut_input_region_set_size,
-      _rut_input_region_get_size,
-      rut_simple_sizable_get_preferred_width,
-      rut_simple_sizable_get_preferred_height,
-      NULL /* add_preferred_size_callback */
-  };
-
-  RutType *type = &rut_input_region_type;
-#define TYPE RutInputRegion
-
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INPUTABLE,
-                          offsetof (TYPE, inputable),
-                          NULL /* no vtable */);
-#undef TYPE
-}
-
-static RutInputRegion *
-rut_input_region_new_common (RutInputRegionCallback callback,
-                             void *user_data)
-{
-  RutInputRegion *region = g_slice_new0 (RutInputRegion);
-
-  rut_object_init (&region->_parent, &rut_input_region_type);
-
-  region->ref_count = 1;
-
-  rut_graphable_init (region);
-  region->inputable.input_region = region;
-
-  region->callback = callback;
-  region->user_data = user_data;
-
-  return region;
-}
-
-RutInputRegion *
-rut_input_region_new_rectangle (float x0,
-                                float y0,
-                                float x1,
-                                float y1,
-                                RutInputRegionCallback callback,
-                                void *user_data)
-{
-  RutInputRegion *region;
-
-  region = rut_input_region_new_common (callback, user_data);
-
-  rut_input_region_set_rectangle (region, x0, y0, x1, y1);
-
-  return region;
-}
-
-RutInputRegion *
-rut_input_region_new_circle (float x0,
-                             float y0,
-                             float radius,
-                             RutInputRegionCallback callback,
-                             void *user_data)
-{
-  RutInputRegion *region;
-
-  region = rut_input_region_new_common (callback, user_data);
-
-  rut_input_region_set_circle (region, x0, y0, radius);
-
-  return region;
-
-}
-
-void
-rut_input_region_set_rectangle (RutInputRegion *region,
-                                float x0,
-                                float y0,
-                                float x1,
-                                float y1)
-{
-  region->shape.any.type = RUT_INPUT_SHAPE_TYPE_RECTANGLE;
-  region->shape.rectangle.x0 = x0;
-  region->shape.rectangle.y0 = y0;
-  region->shape.rectangle.x1 = x1;
-  region->shape.rectangle.y1 = y1;
-}
-
-void
-rut_input_region_set_circle (RutInputRegion *region,
-                             float x,
-                             float y,
-                             float radius)
-{
-  region->shape.any.type = RUT_INPUT_SHAPE_TYPE_CIRCLE;
-  region->shape.circle.x = x;
-  region->shape.circle.y = y;
-  region->shape.circle.r = radius;
-  region->shape.circle.r_squared = radius * radius;
-}
-
-void
-rut_input_region_set_hud_mode (RutInputRegion *region,
-                               CoglBool hud_mode)
-{
-  region->hud_mode = hud_mode;
-}
 
 RutClosure *
 rut_shell_add_input_callback (RutShell *shell,
@@ -1240,6 +753,57 @@ rut_text_event_get_text (RutInputEvent *event)
 #endif
 }
 
+static void
+poly_init_from_rectangle (float *poly,
+                          float x0,
+                          float y0,
+                          float x1,
+                          float y1)
+{
+  poly[0] = x0;
+  poly[1] = y0;
+  poly[2] = 0;
+  poly[3] = 1;
+
+  poly[4] = x0;
+  poly[5] = y1;
+  poly[6] = 0;
+  poly[7] = 1;
+
+  poly[8] = x1;
+  poly[9] = y1;
+  poly[10] = 0;
+  poly[11] = 1;
+
+  poly[12] = x1;
+  poly[13] = y0;
+  poly[14] = 0;
+  poly[15] = 1;
+}
+
+/* Given an (x0,y0) (x1,y1) rectangle this transforms it into
+ * a polygon in window coordinates that can be intersected
+ * with input coordinates for picking.
+ */
+static void
+rect_to_screen_polygon (float x0,
+                        float y0,
+                        float x1,
+                        float y1,
+                        const CoglMatrix *modelview,
+                        const CoglMatrix *projection,
+                        const float *viewport,
+                        float *poly)
+{
+  poly_init_from_rectangle (poly, x0, y0, x1, y1);
+
+  rut_util_fully_transform_points (modelview,
+                                   projection,
+                                   viewport,
+                                   poly,
+                                   4);
+}
+
 typedef struct _CameraPickState
 {
   RutCamera *camera;
@@ -1259,7 +823,6 @@ camera_pre_pick_region_cb (RutObject *object,
     {
       RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
       CoglMatrix transform;
-      RutInputShapeRectange rect;
       float poly[16];
       RutObject *parent = rut_graphable_get_parent (object);
       const CoglMatrix *view = rut_camera_get_view_transform (state->camera);
@@ -1267,27 +830,27 @@ camera_pre_pick_region_cb (RutObject *object,
       transform = *view;
       rut_graphable_apply_transform (parent, &transform);
 
-      rect.x0 = 0;
-      rect.y0 = 0;
-      rect.x1 = rut_ui_viewport_get_width (ui_viewport);
-      rect.y1 = rut_ui_viewport_get_height (ui_viewport);
-
-      rect_to_screen_polygon (&rect,
+      rect_to_screen_polygon (0, 0,
+                              rut_ui_viewport_get_width (ui_viewport),
+                              rut_ui_viewport_get_height (ui_viewport),
                               &transform,
                               &state->camera->projection,
                               state->camera->viewport,
                               poly);
 
-      if (!point_in_screen_poly (state->x, state->y,
-                                 poly, sizeof (float) * 4, 4))
+      if (!rut_util_point_in_screen_poly (state->x, state->y,
+                                          poly, sizeof (float) * 4, 4))
         return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
     }
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_INPUTABLE) &&
-      rut_camera_pick_inputable (state->camera,
-                                 object,
-                                 state->x, state->y))
-    state->picked_object = object;
+  if (rut_object_is (object, RUT_INTERFACE_ID_PICKABLE) &&
+      rut_pickable_pick (object,
+                          state->camera,
+                          NULL, /* pre-computed modelview */
+                          state->x, state->y))
+    {
+      state->picked_object = object;
+    }
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -1356,7 +919,6 @@ static void
 cancel_current_drop_offer_taker (RutShell *shell)
 {
   RutInputEvent drop_cancel;
-  RutInputRegion *region;
   RutInputEventStatus status;
 
   if (!shell->drop_offer_taker)
@@ -1368,8 +930,7 @@ cancel_current_drop_offer_taker (RutShell *shell)
   drop_cancel.camera = NULL;
   drop_cancel.input_transform = NULL;
 
-  region = rut_inputable_get_input_region (shell->drop_offer_taker);
-  status = region->callback (region, &drop_cancel, region->user_data);
+  status = rut_inputable_handle_event (shell->drop_offer_taker, &drop_cancel);
 
   g_warn_if_fail (status == RUT_INPUT_EVENT_STATUS_HANDLED);
 
@@ -1432,11 +993,8 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
     {
       if (shell->drop_offer_taker)
         {
-          RutInputRegion *region =
-            rut_inputable_get_input_region (shell->drop_offer_taker);
-          RutInputEventStatus status;
-
-          status = region->callback (region, event, region->user_data);
+          RutInputEventStatus status =
+            rut_inputable_handle_event (shell->drop_offer_taker, event);
 
           if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
             goto handled;
@@ -1486,12 +1044,13 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
         {
           RutInputRegion *region = l2->data;
 
-          if (rut_camera_pick_inputable (camera,
-                                         region,
-                                         shell->mouse_x,
-                                         shell->mouse_y))
+          if (rut_pickable_pick (region,
+                                 camera,
+                                 NULL, /* pre-computed modelview */
+                                 shell->mouse_x,
+                                 shell->mouse_y))
             {
-              status = region->callback (region, event, region->user_data);
+              status = rut_inputable_handle_event (region, event);
 
               if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
                 goto handled;
@@ -1511,9 +1070,8 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
     {
       if (rut_object_is (target, RUT_INTERFACE_ID_INPUTABLE))
         {
-          RutInputRegion *region = rut_inputable_get_input_region (target);
+          status = rut_inputable_handle_event (target, event);
 
-          status = region->callback (region, event, region->user_data);
           if (status == RUT_INPUT_EVENT_STATUS_HANDLED)
             break;
         }
@@ -1682,7 +1240,6 @@ _rut_shell_init_types (void)
                           &_rut_shell_refable_vtable);
 
   _rut_slider_init_type ();
-  _rut_input_region_init_type ();
 }
 
 RutShell *
@@ -2781,7 +2338,6 @@ void
 rut_shell_drop (RutShell *shell)
 {
   RutInputEvent drop_event;
-  RutInputRegion *region;
   RutInputEventStatus status;
 
   if (!shell->drop_offer_taker)
@@ -2793,8 +2349,7 @@ rut_shell_drop (RutShell *shell)
   drop_event.camera = NULL;
   drop_event.input_transform = NULL;
 
-  region = rut_inputable_get_input_region (shell->drop_offer_taker);
-  status = region->callback (region, &drop_event, region->user_data);
+  status = rut_inputable_handle_event (shell->drop_offer_taker, &drop_event);
 
   g_warn_if_fail (status == RUT_INPUT_EVENT_STATUS_HANDLED);
 

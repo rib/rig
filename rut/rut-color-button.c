@@ -21,12 +21,21 @@
  *
  */
 
+#include <config.h>
+
 #include <cogl/cogl.h>
 #include <math.h>
 
-#include "rut.h"
 #include "rut-color-button.h"
 #include "rut-color-picker.h"
+#include "rut-interfaces.h"
+#include "rut-paintable.h"
+#include "rut-transform.h"
+#include "rut-input-region.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+
+#include "components/rut-camera.h"
 
 enum {
   RUT_COLOR_BUTTON_PROP_COLOR,
@@ -240,7 +249,7 @@ rut_color_button_set_size (RutObject *object,
                            float width,
                            float height)
 {
-  RutColorButton *button = RUT_COLOR_BUTTON (object);
+  RutColorButton *button = object;
 
   rut_shell_queue_redraw (button->context->shell);
 
@@ -257,7 +266,7 @@ rut_color_button_get_size (RutObject *object,
                            float *width,
                            float *height)
 {
-  RutColorButton *button = RUT_COLOR_BUTTON (object);
+  RutColorButton *button = object;
 
   *width = button->width;
   *height = button->height;
@@ -371,9 +380,10 @@ picker_grab_input_cb (RutInputEvent *event,
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
 
-          if (!rut_camera_pick_inputable (rut_input_event_get_camera (event),
-                                          button->picker_input_region,
-                                          x, y))
+          if (!rut_pickable_pick (button->picker_input_region,
+                                   rut_input_event_get_camera (event),
+                                   NULL, /* pre-computed modelview */
+                                   x, y))
             remove_picker (button);
         }
       break;
@@ -551,9 +561,10 @@ button_grab_input_cb (RutInputEvent *event,
   x = rut_motion_event_get_x (event);
   y = rut_motion_event_get_y (event);
 
-  depressed = rut_camera_pick_inputable (camera,
-                                         button->input_region,
-                                         x, y);
+  depressed = rut_pickable_pick (button->input_region,
+                                  camera,
+                                  NULL, /* pre-computed modelview */
+                                  x, y);
 
   if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
     {
@@ -672,7 +683,7 @@ void
 rut_color_button_set_color (RutObject *obj,
                             const CoglColor *color)
 {
-  RutColorButton *button = RUT_COLOR_BUTTON (obj);
+  RutColorButton *button = obj;
 
   if (memcmp (&button->color, color, sizeof (CoglColor)))
     {

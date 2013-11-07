@@ -25,13 +25,21 @@
 #include <string.h>
 #include <math.h>
 
-#include "rut.h"
 #include "rut-prop-inspector.h"
 #include "rut-vec3-slider.h"
 #include "rut-rotation-inspector.h"
 #include "rut-number-slider.h"
 #include "rut-drop-down.h"
 #include "rut-color-button.h"
+#include "rut-interfaces.h"
+#include "rut-box-layout.h"
+#include "rut-icon-toggle.h"
+#include "rut-composite-sizable.h"
+#include "rut-text.h"
+#include "rut-toggle.h"
+#include "rut-entry.h"
+#include "rut-asset-inspector.h"
+#include "rut-bin.h"
 
 struct _RutPropInspector
 {

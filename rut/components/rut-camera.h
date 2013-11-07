@@ -161,12 +161,6 @@ rut_camera_remove_input_region (RutCamera *camera,
                                 RutInputRegion *region);
 
 CoglBool
-rut_camera_pick_inputable (RutCamera *camera,
-                           RutObject *inputable,
-                           float x,
-                           float y);
-
-CoglBool
 rut_camera_transform_window_coordinate (RutCamera *camera,
                                         float *x,
                                         float *y);

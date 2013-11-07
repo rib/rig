@@ -263,7 +263,13 @@ AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path avahi-glib avahi-client avahi-core libprotobuf-c cogl-gst gdk-pixbuf-2.0"
 
 dnl Check whether we are building for Android
-AC_CHECK_DECL([__ANDROID__], [have_android=yes], [have_android=no])
+AC_CHECK_DECL([__ANDROID__],
+              [have_android=yes],
+              [
+                have_android=no
+                AC_DEFINE([USE_SDL], [1],
+                          [On all platforms besides Android we currently use SDL])
+               ])
 AM_CONDITIONAL([HAVE_ANDROID], [test "x$have_android" = "xyes"])
 
 dnl Add the build flags for android_native_app_glue

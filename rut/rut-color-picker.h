@@ -20,13 +20,11 @@
 #ifndef _RUT_COLOR_PICKER_H_
 #define _RUT_COLOR_PICKER_H_
 
-#include "rut.h"
+#include "rut-object.h"
 
 extern RutType rut_color_picker_type;
 
 typedef struct _RutColorPicker RutColorPicker;
-
-#define RUT_COLOR_PICKER(x) ((RutColorPicker *) x)
 
 RutColorPicker *
 rut_color_picker_new (RutContext *ctx);

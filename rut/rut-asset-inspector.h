@@ -20,7 +20,7 @@
 #ifndef _RUT_ASSET_INSPECTOR_H_
 #define _RUT_ASSET_INSPECTOR_H_
 
-#include "rut.h"
+#include "rut-object.h"
 
 extern RutType rut_asset_inspector_type;
 

@@ -1276,8 +1276,11 @@ create_picking_ray (RigEngine            *engine,
 
 typedef struct _PickContext
 {
-  RutCamera *camera;
+  RigEngine *engine;
+  RutCamera *view_camera;
   CoglFramebuffer *fb;
+  float x;
+  float y;
   float *ray_origin;
   float *ray_direction;
   RutEntity *selected_entity;
@@ -1317,17 +1320,52 @@ entitygraph_pre_pick_cb (RutObject *object,
       float transformed_ray_origin[3];
       float transformed_ray_direction[3];
       CoglMatrix transform;
+      RutObject *input;
 
-      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-      if (!material || !rut_material_get_visible (material))
-        return RUT_TRAVERSE_VISIT_CONTINUE;
+      input = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
 
-      geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+      if (input)
+        {
+          if (rut_object_is (input, RUT_INTERFACE_ID_PICKABLE))
+            {
+              cogl_framebuffer_get_modelview_matrix (fb, &transform);
+
+              if (rut_pickable_pick (input,
+                                     pick_ctx->view_camera,
+                                     &transform,
+                                     pick_ctx->x,
+                                     pick_ctx->y))
+                {
+                  pick_ctx->selected_entity = entity;
+                  return RUT_TRAVERSE_VISIT_BREAK;
+                }
+              else
+                return RUT_TRAVERSE_VISIT_CONTINUE;
+            }
+          else
+            {
+              geometry = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_GEOMETRY);
+            }
+        }
+      else
+        {
+          if (!_rig_in_device_mode && !pick_ctx->engine->play_mode)
+            {
+              material = rut_entity_get_component (entity,
+                                                   RUT_COMPONENT_TYPE_MATERIAL);
+              if (!material || !rut_material_get_visible (material))
+                return RUT_TRAVERSE_VISIT_CONTINUE;
+            }
+
+          geometry = rut_entity_get_component (entity,
+                                               RUT_COMPONENT_TYPE_GEOMETRY);
+        }
 
       /* Get a model we can pick against */
       if (!(geometry &&
-            rut_object_is (geometry, RUT_INTERFACE_ID_PICKABLE) &&
-            (mesh = rut_pickable_get_mesh (geometry))))
+            rut_object_is (geometry, RUT_INTERFACE_ID_MESHABLE) &&
+            (mesh = rut_meshable_get_mesh (geometry))))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
       /* transform the ray into the model space */
@@ -1352,7 +1390,8 @@ entitygraph_pre_pick_cb (RutObject *object,
 
       if (hit)
         {
-          const CoglMatrix *view = rut_camera_get_view_transform (pick_ctx->camera);
+          const CoglMatrix *view =
+            rut_camera_get_view_transform (pick_ctx->view_camera);
           float w = 1;
 
           /* to compare intersection distances we find the actual point of ray
@@ -1480,15 +1519,19 @@ move_entity_to_camera (RigCameraView *view,
 
 static RutEntity *
 pick (RigEngine *engine,
-      RutCamera *camera,
-      CoglFramebuffer *fb,
+      RutCamera *view_camera,
+      float x,
+      float y,
       float ray_origin[3],
       float ray_direction[3])
 {
   PickContext pick_ctx;
 
-  pick_ctx.camera = camera;
-  pick_ctx.fb = fb;
+  pick_ctx.engine = engine;
+  pick_ctx.view_camera = view_camera;
+  pick_ctx.fb = rut_camera_get_framebuffer (view_camera);
+  pick_ctx.x = x;
+  pick_ctx.y = y;
   pick_ctx.selected_distance = -G_MAXFLOAT;
   pick_ctx.selected_entity = NULL;
   pick_ctx.ray_origin = ray_origin;
@@ -1496,7 +1539,7 @@ pick (RigEngine *engine,
 
   /* We are hijacking the framebuffer's matrix to track the graphable
    * transforms so we need to initialise it to a known state */
-  cogl_framebuffer_identity_matrix (fb);
+  cogl_framebuffer_identity_matrix (pick_ctx.fb);
 
   rut_graphable_traverse (engine->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
@@ -1558,82 +1601,96 @@ input_cb (RutInputEvent *event,
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
       RutButtonState state;
+      RutCamera *view_camera;
+      float ray_position[3], ray_direction[3], screen_pos[2],
+            z_far, z_near;
+      const float *viewport;
+      const CoglMatrix *inverse_projection;
+      //CoglMatrix *camera_transform;
+      const CoglMatrix *camera_view;
+      CoglMatrix camera_transform;
+      RutObject *picked_entity;
 
       rut_camera_transform_window_coordinate (view->view_camera_component,
                                               &x, &y);
 
       state = rut_motion_event_get_button_state (event);
 
-      if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
-          state == RUT_BUTTON_STATE_1)
-        {
-          /* pick */
-          RutCamera *camera;
-          float ray_position[3], ray_direction[3], screen_pos[2],
-                z_far, z_near;
-          const float *viewport;
-          const CoglMatrix *inverse_projection;
-          //CoglMatrix *camera_transform;
-          const CoglMatrix *camera_view;
-          CoglMatrix camera_transform;
-          RutObject *picked_entity;
-
-          camera = rut_entity_get_component (view->view_camera,
-                                             RUT_COMPONENT_TYPE_CAMERA);
-          viewport = rut_camera_get_viewport (RUT_CAMERA (camera));
-          z_near = rut_camera_get_near_plane (RUT_CAMERA (camera));
-          z_far = rut_camera_get_far_plane (RUT_CAMERA (camera));
-          inverse_projection =
-            rut_camera_get_inverse_projection (RUT_CAMERA (camera));
+      view_camera = rut_entity_get_component (view->view_camera,
+                                              RUT_COMPONENT_TYPE_CAMERA);
+      viewport = rut_camera_get_viewport (view_camera);
+      z_near = rut_camera_get_near_plane (view_camera);
+      z_far = rut_camera_get_far_plane (view_camera);
+      inverse_projection =
+        rut_camera_get_inverse_projection (view_camera);
 
 #if 0
-          camera_transform = rut_entity_get_transform (view->view_camera);
+      camera_transform = rut_entity_get_transform (view->view_camera);
 #else
-          camera_view = rut_camera_get_view_transform (camera);
-          cogl_matrix_get_inverse (camera_view, &camera_transform);
+      camera_view = rut_camera_get_view_transform (view_camera);
+      cogl_matrix_get_inverse (camera_view, &camera_transform);
 #endif
 
-          screen_pos[0] = x;
-          screen_pos[1] = y;
+      screen_pos[0] = x;
+      screen_pos[1] = y;
 
-          rut_util_create_pick_ray (viewport,
-                                    inverse_projection,
-                                    &camera_transform,
-                                    screen_pos,
-                                    ray_position,
-                                    ray_direction);
-
-          if (engine->debug_pick_ray)
-            {
-              float x1 = 0, y1 = 0, z1 = z_near, w1 = 1;
-              float x2 = 0, y2 = 0, z2 = z_far, w2 = 1;
-              float len;
-
-              if (engine->picking_ray)
-                cogl_object_unref (engine->picking_ray);
-
-              /* FIXME: This is a hack, we should intersect the ray with
-               * the far plane to decide how long the debug primitive
-               * should be */
-              cogl_matrix_transform_point (&camera_transform,
-                                           &x1, &y1, &z1, &w1);
-              cogl_matrix_transform_point (&camera_transform,
-                                           &x2, &y2, &z2, &w2);
-              len = z2 - z1;
-
-              engine->picking_ray = create_picking_ray (engine,
-                                                      rut_camera_get_framebuffer (camera),
-                                                      ray_position,
-                                                      ray_direction,
-                                                      len);
-            }
-
-          picked_entity = pick (engine,
-                                camera,
-                                rut_camera_get_framebuffer (camera),
+      rut_util_create_pick_ray (viewport,
+                                inverse_projection,
+                                &camera_transform,
+                                screen_pos,
                                 ray_position,
                                 ray_direction);
 
+      if (engine->debug_pick_ray)
+        {
+          float x1 = 0, y1 = 0, z1 = z_near, w1 = 1;
+          float x2 = 0, y2 = 0, z2 = z_far, w2 = 1;
+          float len;
+
+          if (engine->picking_ray)
+            cogl_object_unref (engine->picking_ray);
+
+          /* FIXME: This is a hack, we should intersect the ray with
+           * the far plane to decide how long the debug primitive
+           * should be */
+          cogl_matrix_transform_point (&camera_transform,
+                                       &x1, &y1, &z1, &w1);
+          cogl_matrix_transform_point (&camera_transform,
+                                       &x2, &y2, &z2, &w2);
+          len = z2 - z1;
+
+          engine->picking_ray =
+            create_picking_ray (engine,
+                                rut_camera_get_framebuffer (view_camera),
+                                ray_position,
+                                ray_direction,
+                                len);
+        }
+
+      picked_entity = pick (engine,
+                            view_camera,
+                            x, y,
+                            ray_position,
+                            ray_direction);
+
+      if (_rig_in_device_mode || engine->play_mode)
+        {
+          if (picked_entity)
+            {
+              RutObject *inputable =
+                rut_entity_get_component (picked_entity,
+                                          RUT_COMPONENT_TYPE_INPUT);
+              if (inputable)
+                return rut_inputable_handle_event (inputable, event);
+              else
+                return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+            }
+          else
+            return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+        }
+      else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
+               state == RUT_BUTTON_STATE_1)
+        {
           if ((rut_motion_event_get_modifier_state (event) &
                RUT_MODIFIER_SHIFT_ON))
             {

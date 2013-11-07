@@ -25,6 +25,10 @@
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
 #include "rut-camera-private.h"
+#include "rut-inputable.h"
+#include "rut-pickable.h"
+#include "rut-input-region.h"
+
 #include "components/rut-camera.h"
 
 #define RUT_TOGGLE_BOX_WIDTH 15
@@ -160,7 +164,7 @@ static void
 _rut_toggle_paint (RutObject *object,
                    RutPaintContext *paint_ctx)
 {
-  RutToggle *toggle = RUT_TOGGLE (object);
+  RutToggle *toggle = object;
   RutCamera *camera = paint_ctx->camera;
   CoglFramebuffer *fb = camera->fb;
   int icon_width;
@@ -241,7 +245,7 @@ _rut_toggle_get_size (RutObject *object,
                       float *width,
                       float *height)
 {
-  RutToggle *toggle = RUT_TOGGLE (object);
+  RutToggle *toggle = object;
 
   *width = toggle->width;
   *height = toggle->height;
@@ -253,7 +257,7 @@ _rut_toggle_get_preferred_width (RutObject *object,
                                  float *min_width_p,
                                  float *natural_width_p)
 {
-  RutToggle *toggle = RUT_TOGGLE (object);
+  RutToggle *toggle = object;
   PangoRectangle logical_rect;
   float width;
   float right_pad;
@@ -288,7 +292,7 @@ _rut_toggle_get_preferred_height (RutObject *object,
                                   float *min_height_p,
                                   float *natural_height_p)
 {
-  RutToggle *toggle = RUT_TOGGLE (object);
+  RutToggle *toggle = object;
   PangoRectangle logical_rect;
   float height;
 
@@ -393,9 +397,10 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
 
           rut_shell_ungrab_input (shell, _rut_toggle_grab_input_cb, user_data);
 
-          if (rut_camera_pick_inputable (state->camera,
-                                         state->region,
-                                         x, y))
+          if (rut_pickable_pick (state->region,
+                                  state->camera,
+                                  NULL, /* pre-computed modelview */
+                                  x, y))
             {
               rut_toggle_set_state (toggle, !toggle->state);
 
@@ -420,9 +425,10 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
 
-         if (rut_camera_pick_inputable (state->camera,
-                                        state->region,
-                                        x, y))
+         if (rut_pickable_pick (state->region,
+                                 state->camera,
+                                 NULL, /* pre-computed modelview */
+                                 x, y))
            toggle->tentative_set = TRUE;
          else
            toggle->tentative_set = FALSE;
@@ -665,9 +671,9 @@ rut_toggle_add_on_toggle_callback (RutToggle *toggle,
 
 void
 rut_toggle_set_enabled (RutObject *obj,
-                        CoglBool enabled)
+                        bool enabled)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   if (toggle->enabled == enabled)
     return;
@@ -680,9 +686,9 @@ rut_toggle_set_enabled (RutObject *obj,
 
 void
 rut_toggle_set_state (RutObject *obj,
-                      CoglBool state)
+                      bool state)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   if (toggle->state == state)
     return;
@@ -703,7 +709,7 @@ void
 rut_toggle_set_tick (RutObject *obj,
                      const char *tick)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   pango_layout_set_text (toggle->tick, tick, -1);
   rut_shell_queue_redraw (toggle->ctx->shell);
@@ -712,7 +718,7 @@ rut_toggle_set_tick (RutObject *obj,
 const char *
 rut_toggle_get_tick (RutObject *obj)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   return pango_layout_get_text (toggle->tick);
 }
@@ -721,7 +727,7 @@ void
 rut_toggle_set_tick_color (RutObject *obj,
                            const CoglColor *color)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   toggle->tick_color = *color;
   rut_shell_queue_redraw (toggle->ctx->shell);
@@ -730,7 +736,7 @@ rut_toggle_set_tick_color (RutObject *obj,
 const CoglColor *
 rut_toggle_get_tick_color (RutObject *obj)
 {
-  RutToggle *toggle = RUT_TOGGLE (obj);
+  RutToggle *toggle = obj;
 
   return &toggle->tick_color;
 }
