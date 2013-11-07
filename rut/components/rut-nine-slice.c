@@ -704,10 +704,22 @@ rut_nine_slice_set_size (RutObject *self,
 {
   RutNineSlice *nine_slice = self;
 
+  if (nine_slice->width == width && nine_slice->height == height)
+    return;
+
   free_mesh (nine_slice);
 
   nine_slice->width = width;
   nine_slice->height = height;
+
+  rut_property_dirty (&nine_slice->ctx->property_ctx,
+                      &nine_slice->properties[RUT_NINE_SLICE_PROP_WIDTH]);
+  rut_property_dirty (&nine_slice->ctx->property_ctx,
+                      &nine_slice->properties[RUT_NINE_SLICE_PROP_HEIGHT]);
+
+  rut_closure_list_invoke (&nine_slice->updated_cb_list,
+                           RutNineSliceUpdateCallback,
+                           nine_slice);
 }
 
 void
@@ -766,6 +778,8 @@ void \
 rut_nine_slice_set_ ## PROP_LC (RutObject *obj, float PROP_LC) \
 { \
   RutNineSlice *nine_slice = obj; \
+  if (nine_slice->PROP_LC == PROP_LC) \
+    return; \
   nine_slice->PROP_LC = PROP_LC; \
   free_mesh (nine_slice); \
   rut_property_dirty (&nine_slice->ctx->property_ctx, \
