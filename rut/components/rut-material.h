@@ -24,10 +24,12 @@
 #include "rut-asset.h"
 
 typedef struct _RutMaterial RutMaterial;
-#define RUT_MATERIAL(p) ((RutMaterial *)(p))
 extern RutType rut_material_type;
 
 enum {
+  RUT_MATERIAL_PROP_VISIBLE,
+  RUT_MATERIAL_PROP_CAST_SHADOW,
+  RUT_MATERIAL_PROP_RECEIVE_SHADOW,
   RUT_MATERIAL_PROP_COLOR_SOURCE,
   RUT_MATERIAL_PROP_NORMAL_MAP,
   RUT_MATERIAL_PROP_ALPHA_MASK,
@@ -62,6 +64,10 @@ struct _RutMaterial
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_MATERIAL_N_PROPS];
+
+  unsigned int visible:1;
+  unsigned int cast_shadow:1;
+  unsigned int receive_shadow:1;
 };
 
 void
@@ -75,22 +81,22 @@ void
 rut_material_set_color_source_asset (RutObject *object,
                                      RutAsset *asset);
 
-RutObject *
+RutAsset *
 rut_material_get_color_source_asset (RutObject *object);
 
 void
-rut_material_set_normal_map_asset (RutMaterial *material,
+rut_material_set_normal_map_asset (RutObject *material,
                                    RutAsset *normal_map_asset);
 
 RutAsset *
-rut_material_get_normal_map_asset (RutMaterial *material);
+rut_material_get_normal_map_asset (RutObject *material);
 
 void
-rut_material_set_alpha_mask_asset (RutMaterial *material,
+rut_material_set_alpha_mask_asset (RutObject *material,
                                    RutAsset *alpha_mask_asset);
 
 RutAsset *
-rut_material_get_alpha_mask_asset (RutMaterial *material);
+rut_material_get_alpha_mask_asset (RutObject *material);
 
 void
 rut_material_set_ambient (RutObject *material,
@@ -133,5 +139,26 @@ rut_material_flush_uniforms (RutMaterial *material,
 
 void
 rut_material_flush_uniforms_ignore_age (RutMaterial *material);
+
+bool
+rut_material_get_visible (RutObject *material);
+
+void
+rut_material_set_visible (RutObject *material, bool visible);
+
+bool
+rut_material_get_cast_shadow (RutObject *entity);
+
+void
+rut_material_set_cast_shadow (RutObject *material,
+                              bool cast_shadow);
+
+bool
+rut_material_get_receive_shadow (RutObject *material);
+
+void
+rut_material_set_receive_shadow (RutObject *material,
+                                 bool receive_shadow);
+
 
 #endif /* __RUT_MATERIAL_H__ */

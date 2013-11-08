@@ -2583,14 +2583,21 @@ ensure_light (RigEngine *engine)
         {
           RutModel *model = rut_model_new_from_asset_mesh (engine->ctx, mesh,
                                                            FALSE, FALSE);
+          RutMaterial *material = rut_material_new (engine->ctx, NULL);
 
           engine->light_handle = rut_entity_new (engine->ctx);
           rut_entity_set_label (engine->light_handle, "rig:light_handle");
-          rut_entity_add_component (engine->light_handle, model);
-          rut_entity_set_receive_shadow (engine->light_handle, FALSE);
-          rut_graphable_add_child (engine->light, engine->light_handle);
           rut_entity_set_scale (engine->light_handle, 100);
-          rut_entity_set_cast_shadow (engine->light_handle, FALSE);
+          rut_graphable_add_child (engine->light, engine->light_handle);
+
+          rut_entity_add_component (engine->light_handle, model);
+
+          rut_entity_add_component (engine->light_handle, material);
+          rut_material_set_receive_shadow (material, false);
+          rut_material_set_cast_shadow (material, false);
+
+          rut_refable_unref (model);
+          rut_refable_unref (material);
         }
       else
         g_critical ("could not load model %s: %s", full_path, error->message);
@@ -2758,6 +2765,7 @@ ensure_play_camera (RigEngine *engine)
                * way of editing so it's been disable for now */
 #if 0
               RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
+              RutMaterial *material = rut_material_new (engine->ctx, NULL);
 
               engine->play_camera_handle = rut_entity_new (engine->ctx);
               rut_entity_set_label (engine->play_camera_handle,
@@ -2765,12 +2773,16 @@ ensure_play_camera (RigEngine *engine)
 
               rut_entity_add_component (engine->play_camera_handle,
                                         model);
-              rut_entity_set_receive_shadow (engine->play_camera_handle, FALSE);
-              rut_entity_set_cast_shadow (engine->play_camera_handle, FALSE);
+
+              rut_entity_add_component (engine->play_camera_handle,
+                                        material);
+              rut_material_set_receive_shadow (material, false);
+              rut_material_set_cast_shadow (material, FALSE);
               rut_graphable_add_child (engine->play_camera,
                                        engine->play_camera_handle);
 
               rut_refable_unref (model);
+              rut_refable_unref (material);
               rut_refable_unref (mesh);
 #endif
             }

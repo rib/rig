@@ -69,12 +69,9 @@ typedef enum
 enum
 {
   RUT_ENTITY_PROP_LABEL,
-  RUT_ENTITY_PROP_VISIBLE,
   RUT_ENTITY_PROP_POSITION,
   RUT_ENTITY_PROP_ROTATION,
   RUT_ENTITY_PROP_SCALE,
-  RUT_ENTITY_PROP_CAST_SHADOW,
-  RUT_ENTITY_PROP_RECEIVE_SHADOW,
 
   RUT_ENTITY_N_PROPS
 };
@@ -103,19 +100,11 @@ struct _RutEntity
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_ENTITY_N_PROPS];
 
-  unsigned int visible:1;
   unsigned int dirty:1;
-  unsigned int cast_shadow:1;
-
-  /* Make this part of the material component? */
-  unsigned int receive_shadow:1;
 };
 
 void
 _rut_entity_init_type (void);
-
-bool
-rut_entity_get_cast_shadow (RutObject *entity);
 
 RutEntity *
 rut_entity_new (RutContext *ctx);
@@ -232,17 +221,6 @@ RutObject *
 rut_entity_get_component (RutEntity *entity,
                           RutComponentType type);
 
-void
-rut_entity_set_cast_shadow (RutObject *entity,
-                            bool cast_shadow);
-
-bool
-rut_entity_get_receive_shadow (RutObject *entity);
-
-void
-rut_entity_set_receive_shadow (RutObject *entity,
-                               bool receive_shadow);
-
 typedef void (*RutComponentCallback) (RutComponent *component,
                                       void *user_data);
 
@@ -255,12 +233,6 @@ void
 rut_entity_foreach_component_safe (RutEntity *entity,
                                    RutComponentCallback callback,
                                    void *user_data);
-
-bool
-rut_entity_get_visible (RutObject *entity);
-
-void
-rut_entity_set_visible (RutObject *entity, bool visible);
 
 void
 rut_entity_notify_changed (RutEntity *entity);

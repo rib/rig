@@ -6,6 +6,7 @@
 #include <cogl-gst/cogl-gst.h>
 
 #include "rut-types.h"
+#include "rut-mesh.h"
 
 extern RutType rut_asset_type;
 typedef struct _RutAsset RutAsset;

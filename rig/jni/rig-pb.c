@@ -234,10 +234,27 @@ pb_path_new (RigEngine *engine, RigPath *path)
   return pb_path;
 }
 
+static uint64_t
+serializer_lookup_object_id (Serializer *serializer, void *object)
+{
+  uint64_t *id = g_hash_table_lookup (serializer->id_map, object);
+
+  g_warn_if_fail (id);
+
+  if (rut_object_get_type (object) == &rut_asset_type)
+    {
+      if (serializer->asset_callback)
+        serializer->asset_callback (object, serializer->user_data);
+    }
+
+  return *id;
+}
+
 static Rig__PropertyValue *
-pb_property_value_new (RigEngine *engine,
+pb_property_value_new (Serializer *serializer,
                        const RutBoxed *value)
 {
+  RigEngine *engine = serializer->engine;
   Rig__PropertyValue *pb_value =
     pb_new (engine, sizeof (Rig__PropertyValue), rig__property_value__init);
 
@@ -304,7 +321,37 @@ pb_property_value_new (RigEngine *engine,
       break;
 
     case RUT_PROPERTY_TYPE_ASSET:
+      pb_value->has_asset_value = true;
+
+      if (value->d.asset_val)
+        {
+          uint64_t id = serializer_lookup_object_id (serializer, value->d.asset_val);
+
+          g_warn_if_fail (id != 0);
+
+          pb_value->asset_value = id;
+        }
+      else
+        pb_value->asset_value = 0;
+
+      break;
+
     case RUT_PROPERTY_TYPE_OBJECT:
+      pb_value->has_object_value = true;
+
+      if (value->d.object_val)
+        {
+          uint64_t id = serializer_lookup_object_id (serializer, value->d.object_val);
+
+          g_warn_if_fail (id != 0);
+
+          pb_value->object_value = id;
+        }
+      else
+        pb_value->object_value = 0;
+
+      break;
+
     case RUT_PROPERTY_TYPE_POINTER:
       g_warn_if_reached ();
       break;
@@ -355,17 +402,18 @@ rut_property_type_to_pb_type (RutPropertyType type)
 }
 
 Rig__Boxed *
-pb_boxed_new (RigEngine *engine,
+pb_boxed_new (Serializer *serializer,
               const char *name,
               const RutBoxed *boxed)
 {
+  RigEngine *engine = serializer->engine;
   Rig__Boxed *pb_boxed =
     pb_new (engine, sizeof (Rig__Boxed), rig__boxed__init);
 
   pb_boxed->name = (char *)name;
   pb_boxed->has_type = TRUE;
   pb_boxed->type = rut_property_type_to_pb_type (boxed->type);
-  pb_boxed->value = pb_property_value_new (engine, boxed);
+  pb_boxed->value = pb_property_value_new (serializer, boxed);
 
   return pb_boxed;
 }
@@ -395,22 +443,6 @@ register_serializer_object (Serializer *serializer,
   return id;
 }
 
-static uint64_t
-serializer_lookup_object_id (Serializer *serializer, void *object)
-{
-  uint64_t *id = g_hash_table_lookup (serializer->id_map, object);
-
-  g_warn_if_fail (id);
-
-  if (rut_object_get_type (object) == &rut_asset_type)
-    {
-      if (serializer->asset_callback)
-        serializer->asset_callback (object, serializer->user_data);
-    }
-
-  return *id;
-}
-
 static void
 count_instrospectables_cb (RutProperty *property,
                            void *user_data)
@@ -430,7 +462,7 @@ serialize_instrospectables_cb (RutProperty *property,
   rut_property_box (property, &boxed);
 
   properties_out[serializer->n_properties++] =
-    pb_boxed_new (serializer->engine,
+    pb_boxed_new (serializer,
                   property->spec->name,
                   &boxed);
 
@@ -506,71 +538,11 @@ serialize_component_cb (RutComponent *component,
     }
   else if (type == &rut_material_type)
     {
-      RutMaterial *material = RUT_MATERIAL (component);
-      RutAsset *asset;
-      const CoglColor *ambient = rut_material_get_ambient (material);
-      const CoglColor *diffuse = rut_material_get_diffuse (material);
-      const CoglColor *specular = rut_material_get_specular (material);
-      Rig__Entity__Component__Material *pb_material;
-
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MATERIAL;
-
-      pb_material = pb_new (engine,
-                            sizeof (Rig__Entity__Component__Material),
-                            rig__entity__component__material__init);
-      pb_component->material = pb_material;
-
-      pb_material->ambient = pb_color_new (engine, ambient);
-      pb_material->diffuse = pb_color_new (engine, diffuse);
-      pb_material->specular = pb_color_new (engine, specular);
-
-      pb_material->has_shininess = TRUE;
-      pb_material->shininess = rut_material_get_shininess (material);
-
-      asset = rut_material_get_color_source_asset (material);
-      if (asset)
-        {
-          uint64_t id = serializer_lookup_object_id (serializer, asset);
-
-          g_warn_if_fail (id != 0);
-
-          if (id)
-            {
-              pb_material->texture = pb_new (engine,
-                                             sizeof (Rig__Texture),
-                                             rig__texture__init);
-              pb_material->texture->has_asset_id = TRUE;
-              pb_material->texture->asset_id = id;
-            }
-        }
-
-      asset = rut_material_get_normal_map_asset (material);
-      if (asset)
-        {
-          uint64_t id = serializer_lookup_object_id (serializer, asset);
-          if (id)
-            {
-              pb_material->normal_map = pb_new (engine,
-                                                sizeof (Rig__NormalMap),
-                                                rig__normal_map__init);
-              pb_material->normal_map->asset_id = id;
-              pb_material->normal_map->has_asset_id = TRUE;
-            }
-        }
-
-      asset = rut_material_get_alpha_mask_asset (material);
-      if (asset)
-        {
-          uint64_t id = serializer_lookup_object_id (serializer, asset);
-          if (id)
-            {
-              pb_material->alpha_mask = pb_new (engine,
-                                                sizeof (Rig__AlphaMask),
-                                                rig__alpha_mask__init);
-              pb_material->alpha_mask->asset_id = id;
-              pb_material->alpha_mask->has_asset_id = TRUE;
-            }
-        }
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
   else if (type == &rut_shape_type)
     {
@@ -810,9 +782,6 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 
   pb_entity->rotation = pb_rotation_new (engine, q);
 
-  pb_entity->has_cast_shadow = TRUE;
-  pb_entity->cast_shadow = rut_entity_get_cast_shadow (entity);
-
   serializer->n_pb_components = 0;
   serializer->pb_components = NULL;
   rut_entity_foreach_component (entity,
@@ -833,7 +802,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
 
 static void
 serialize_property_cb (RigControllerPropData *prop_data,
-                  void *user_data)
+                       void *user_data)
 {
   Serializer *serializer = user_data;
   RigEngine *engine = serializer->engine;
@@ -874,7 +843,7 @@ serialize_property_cb (RigControllerPropData *prop_data,
         break;
     }
 
-  pb_property->constant = pb_property_value_new (engine, &prop_data->constant_value);
+  pb_property->constant = pb_property_value_new (serializer, &prop_data->constant_value);
 
   if (prop_data->path && prop_data->path->length)
     pb_property->path = pb_path_new (engine, prop_data->path);
@@ -1140,6 +1109,35 @@ pb_init_boxed_vec4 (RutBoxed *boxed,
     }
 }
 
+static RutEntity *
+unserializer_find_entity (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL || rut_object_get_type (object) != &rut_entity_type)
+    return NULL;
+  return RUT_ENTITY (object);
+}
+
+static RutAsset *
+unserializer_find_asset (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
+    return NULL;
+  return RUT_ASSET (object);
+}
+
+static RutObject *
+unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
+{
+  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
+  if (object == NULL ||
+      !rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE) ||
+      !rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
+    return NULL;
+  return object;
+}
+
 static void
 pb_init_boxed_value (UnSerializer *unserializer,
                      RutBoxed *boxed,
@@ -1198,7 +1196,15 @@ pb_init_boxed_value (UnSerializer *unserializer,
       break;
 
     case RUT_PROPERTY_TYPE_ASSET:
+      boxed->d.asset_val =
+        unserializer_find_asset (unserializer, pb_value->asset_value);
+      break;
+
     case RUT_PROPERTY_TYPE_OBJECT:
+      boxed->d.object_val =
+        unserializer_find_introspectable (unserializer, pb_value->object_value);
+      break;
+
     case RUT_PROPERTY_TYPE_POINTER:
       g_warn_if_reached ();
       break;
@@ -1246,35 +1252,6 @@ register_unserializer_object (UnSerializer *unserializer,
     }
 
   g_hash_table_insert (unserializer->id_map, key, object);
-}
-
-static RutEntity *
-unserializer_find_entity (UnSerializer *unserializer, uint64_t id)
-{
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL || rut_object_get_type (object) != &rut_entity_type)
-    return NULL;
-  return RUT_ENTITY (object);
-}
-
-static RutAsset *
-unserializer_find_asset (UnSerializer *unserializer, uint64_t id)
-{
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
-    return NULL;
-  return RUT_ASSET (object);
-}
-
-static RutObject *
-unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
-{
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL ||
-      !rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE) ||
-      !rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    return NULL;
-  return object;
 }
 
 static void
@@ -1382,9 +1359,11 @@ set_properties_from_pb_boxed_values (UnSerializer *unserializer,
 static void
 unserialize_components (UnSerializer *unserializer,
                         RutEntity *entity,
-                        Rig__Entity *pb_entity)
+                        Rig__Entity *pb_entity,
+                        bool force_material)
 {
   int i;
+  bool have_material = false;
 
   /* First we add components which don't depend on any other components... */
   for (i = 0; i < pb_entity->n_components; i++)
@@ -1444,69 +1423,71 @@ unserialize_components (UnSerializer *unserializer,
 
             material = rut_material_new (unserializer->engine->ctx, NULL);
 
-            if (pb_material->texture &&
-                pb_material->texture->has_asset_id)
-              {
-                Rig__Texture *pb_texture = pb_material->texture;
-
-                asset = unserializer_find_asset (unserializer,
-                                                 pb_texture->asset_id);
-                if (!asset)
-                  {
-                    collect_error (unserializer, "Invalid asset id");
-                    rut_refable_unref (material);
-                    break;
-                  }
-                rut_material_set_color_source_asset (material, asset);
-              }
-
-            if (pb_material->normal_map &&
-                pb_material->normal_map->has_asset_id)
-              {
-                Rig__NormalMap *pb_normal_map = pb_material->normal_map;
-
-                asset = unserializer_find_asset (unserializer,
-                                                 pb_normal_map->asset_id);
-                if (!asset)
-                  {
-                    collect_error (unserializer, "Invalid asset id");
-                    rut_refable_unref (material);
-                    break;
-                  }
-                rut_material_set_normal_map_asset (material, asset);
-              }
-
-            if (pb_material->alpha_mask &&
-                pb_material->alpha_mask->has_asset_id)
-              {
-                Rig__AlphaMask *pb_alpha_mask = pb_material->alpha_mask;
-
-                asset = unserializer_find_asset (unserializer,
-                                                 pb_alpha_mask->asset_id);
-                if (!asset)
-                  {
-                    collect_error (unserializer, "Invalid asset id");
-                    rut_refable_unref (material);
-                    return;
-                  }
-                rut_material_set_alpha_mask_asset (material, asset);
-              }
-
-            pb_init_color (unserializer->engine->ctx,
-                           &ambient, pb_material->ambient);
-            pb_init_color (unserializer->engine->ctx,
-                           &diffuse, pb_material->diffuse);
-            pb_init_color (unserializer->engine->ctx,
-                           &specular, pb_material->specular);
-
-            rut_material_set_ambient (material, &ambient);
-            rut_material_set_diffuse (material, &diffuse);
-            rut_material_set_specular (material, &specular);
-            if (pb_material->has_shininess)
-              rut_material_set_shininess (material, pb_material->shininess);
-
             rut_entity_add_component (entity, material);
             rut_refable_unref (material);
+
+#warning "todo: remove Component->Material compatibility"
+            if (pb_material)
+              {
+                if (pb_material->texture &&
+                    pb_material->texture->has_asset_id)
+                  {
+                    Rig__Texture *pb_texture = pb_material->texture;
+
+                    asset = unserializer_find_asset (unserializer,
+                                                     pb_texture->asset_id);
+                    if (asset)
+                      rut_material_set_color_source_asset (material, asset);
+                    else
+                      collect_error (unserializer, "Invalid asset id");
+                  }
+
+                if (pb_material->normal_map &&
+                    pb_material->normal_map->has_asset_id)
+                  {
+                    Rig__NormalMap *pb_normal_map = pb_material->normal_map;
+
+                    asset = unserializer_find_asset (unserializer,
+                                                     pb_normal_map->asset_id);
+                    if (asset)
+                      rut_material_set_normal_map_asset (material, asset);
+                    else
+                      collect_error (unserializer, "Invalid asset id");
+                  }
+
+                if (pb_material->alpha_mask &&
+                    pb_material->alpha_mask->has_asset_id)
+                  {
+                    Rig__AlphaMask *pb_alpha_mask = pb_material->alpha_mask;
+
+                    asset = unserializer_find_asset (unserializer,
+                                                     pb_alpha_mask->asset_id);
+                    if (asset)
+                      rut_material_set_alpha_mask_asset (material, asset);
+                    else
+                      collect_error (unserializer, "Invalid asset id");
+                  }
+
+                pb_init_color (unserializer->engine->ctx,
+                               &ambient, pb_material->ambient);
+                pb_init_color (unserializer->engine->ctx,
+                               &diffuse, pb_material->diffuse);
+                pb_init_color (unserializer->engine->ctx,
+                               &specular, pb_material->specular);
+
+                rut_material_set_ambient (material, &ambient);
+                rut_material_set_diffuse (material, &diffuse);
+                rut_material_set_specular (material, &specular);
+                if (pb_material->has_shininess)
+                  rut_material_set_shininess (material, pb_material->shininess);
+              }
+
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 material,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+
+            have_material = true;
 
             register_unserializer_object (unserializer, material, component_id);
             break;
@@ -1637,6 +1618,18 @@ unserialize_components (UnSerializer *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__HAIR:
           break;
         }
+    }
+
+#warning "todo: remove entity:cast_shadow compatibility"
+  if (force_material && !have_material)
+    {
+      RutMaterial *material =
+        rut_material_new (unserializer->engine->ctx, NULL);
+
+      rut_entity_add_component (entity, material);
+
+      if (pb_entity->has_cast_shadow)
+        rut_material_set_cast_shadow (material, pb_entity->cast_shadow);
     }
 
   /* Now we add components that may depend on a _MATERIAL or _MODEL ... */
@@ -1926,6 +1919,7 @@ unserialize_entities (UnSerializer *unserializer,
       Rig__Entity *pb_entity = entities[i];
       RutEntity *entity;
       uint64_t id;
+      bool force_material = false;
 
       if (!pb_entity->has_id)
         continue;
@@ -1978,10 +1972,12 @@ unserialize_entities (UnSerializer *unserializer,
         }
       if (pb_entity->has_scale)
         rut_entity_set_scale (entity, pb_entity->scale);
-      if (pb_entity->has_cast_shadow)
-        rut_entity_set_cast_shadow (entity, pb_entity->cast_shadow);
 
-      unserialize_components (unserializer, entity, pb_entity);
+#warning "remove entity::cast_shadow compatibility"
+      if (pb_entity->has_cast_shadow)
+        force_material = true;
+
+      unserialize_components (unserializer, entity, pb_entity, force_material);
 
       register_unserializer_object (unserializer, entity, id);
 
@@ -2200,10 +2196,23 @@ unserialize_controller_properties (UnSerializer *unserializer,
         }
 
       property = rut_introspectable_lookup_property (object, pb_property->name);
+
+#warning "todo: remove entity::cast_shadow compatibility"
+      if (!property &&
+          rut_object_get_type (object) == &rut_entity_type &&
+          strcmp (pb_property->name, "cast_shadow") == 0)
+        {
+          object = rut_entity_get_component (object,
+                                             RUT_COMPONENT_TYPE_MATERIAL);
+          if (object)
+            property = rut_introspectable_lookup_property (object,
+                                                           pb_property->name);
+        }
+
       if (!property)
         {
           collect_error (unserializer,
-                         "Invalid object property name given for"
+                         "Invalid object property name given for "
                          "controller property");
           continue;
         }

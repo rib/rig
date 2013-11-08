@@ -59,16 +59,19 @@ message Rotation
   required float z=4;
 }
 
+//Deprecated
 message Texture
 {
   optional sint64 asset_id=1;
 }
 
+//Deprecated
 message NormalMap
 {
   optional sint64 asset_id=1;
 }
 
+//Deprecated
 message AlphaMask
 {
   optional sint64 asset_id=1;
@@ -121,6 +124,7 @@ message PropertyValue
   optional Vec4 vec4_value=13;
 
   optional string text_value=14;
+  optional sint64 asset_value=15;
 }
 
 message Boxed
@@ -144,6 +148,7 @@ message Entity
           optional Color specular=3;
         }
 
+      //Deprecated (just rely on boxed properties)
       message Material
         {
           optional Color ambient=1;
@@ -214,7 +219,10 @@ message Entity
       optional sint64 id=1;
       optional Type type=2;
       optional Light light=3;
+
+      //Deprecated (just use type + boxed properties)
       optional Material material=4;
+
       optional Shape shape=5;
       optional Diamond diamond=6;
       optional Model model=7;
@@ -233,6 +241,7 @@ message Entity
   optional float scale=5;
   optional Rotation rotation=6;
 
+  //Deprecated (moved to material component)
   optional bool cast_shadow=7;
 
   repeated Component components=8;

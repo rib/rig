@@ -7,14 +7,19 @@
 #include <cogl/cogl.h>
 
 #include "rut-memory-stack.h"
-#include "rut-types.h"
-#include "rut-object.h"
-#include "rut-closure.h"
 
+/* We forward declare this since we have a circular header dependency
+ * where rut-asset.h indirectly includes rut-context.h which depends
+ * on this... */
 typedef struct _RutPropertyContext
 {
   RutMemoryStack *prop_update_stack;
 } RutPropertyContext;
+
+#include "rut-types.h"
+#include "rut-object.h"
+#include "rut-asset.h"
+#include "rut-closure.h"
 
 typedef enum _RutPropertyType
 {
@@ -156,7 +161,7 @@ typedef struct _RutPropertySpec
     const float *(* vec3_type) (void *object);
     const float *(* vec4_type) (void *object);
     void *(* object_type) (void *object);
-    void *(* asset_type) (void *object);
+    RutAsset *(* asset_type) (RutObject *object);
     void *(* pointer_type) (void *object);
 
     /* This is just used to check the pointer against NULL */
@@ -178,7 +183,7 @@ typedef struct _RutPropertySpec
     void (* vec3_type) (void *object, const float value[3]);
     void (* vec4_type) (void *object, const float value[4]);
     void (* object_type) (void *object, void *value);
-    void (* asset_type) (void *object, void *value);
+    void (* asset_type) (RutObject *object, RutAsset *value);
     void (* pointer_type) (void *object, void *value);
 
     /* This is just used to check the pointer against NULL */

@@ -28,12 +28,42 @@
 
 static RutPropertySpec _rut_material_prop_specs[] = {
   {
+    .name = "visible",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rut_material_get_visible,
+    .setter.boolean_type = rut_material_set_visible,
+    .nick = "Visible",
+    .blurb = "Whether the material is visible or not",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
+    .name = "cast_shadow",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rut_material_get_cast_shadow,
+    .setter.boolean_type = rut_material_set_cast_shadow,
+    .nick = "Cast Shadow",
+    .blurb = "Whether the material casts shadows or not",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
+    .name = "receive_shadow",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rut_material_get_receive_shadow,
+    .setter.boolean_type = rut_material_set_receive_shadow,
+    .nick = "Receive Shadow",
+    .blurb = "Whether the material receives shadows or not",
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = TRUE
+  },
+  {
     .name = "color_source",
     .nick = "Color Source",
     .type = RUT_PROPERTY_TYPE_ASSET,
     .validation = { .asset.type = RUT_ASSET_TYPE_TEXTURE },
-    .getter.object_type = rut_material_get_color_source_asset,
-    .setter.object_type = rut_material_set_color_source_asset,
+    .getter.asset_type = rut_material_get_color_source_asset,
+    .setter.asset_type = rut_material_set_color_source_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = FALSE
   },
@@ -42,8 +72,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .nick = "Normal Map",
     .type = RUT_PROPERTY_TYPE_ASSET,
     .validation = { .asset.type = RUT_ASSET_TYPE_NORMAL_MAP },
-    .getter.object_type = rut_material_get_normal_map_asset,
-    .setter.object_type = rut_material_set_normal_map_asset,
+    .getter.asset_type = rut_material_get_normal_map_asset,
+    .setter.asset_type = rut_material_set_normal_map_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = FALSE
   },
@@ -52,8 +82,8 @@ static RutPropertySpec _rut_material_prop_specs[] = {
     .nick = "Alpha Mask",
     .type = RUT_PROPERTY_TYPE_ASSET,
     .validation = { .asset.type = RUT_ASSET_TYPE_ALPHA_MASK },
-    .getter.object_type = rut_material_get_alpha_mask_asset,
-    .setter.object_type = rut_material_set_alpha_mask_asset,
+    .getter.asset_type = rut_material_get_alpha_mask_asset,
+    .setter.asset_type = rut_material_set_alpha_mask_asset,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = FALSE
   },
@@ -136,6 +166,10 @@ _rut_material_copy (RutObject *object)
   RutContext *ctx = rut_entity_get_context (entity);
   RutMaterial *copy = rut_material_new (ctx, NULL);
 
+  copy->visible = material->cast_shadow;
+  copy->cast_shadow = material->cast_shadow;
+  copy->receive_shadow = material->receive_shadow;
+
   if (material->color_source_asset)
     copy->color_source_asset = rut_refable_ref (material->color_source_asset);
   if (material->normal_map_asset)
@@ -208,6 +242,9 @@ rut_material_new (RutContext *ctx,
 
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
+  material->visible = TRUE;
+  material->receive_shadow = TRUE;
+
   cogl_color_init_from_4f (&material->ambient, 0.23, 0.23, 0.23, 1);
   cogl_color_init_from_4f (&material->diffuse, 0.75, 0.75, 0.75, 1);
   cogl_color_init_from_4f (&material->specular, 0.64, 0.64, 0.64, 1);
@@ -268,7 +305,7 @@ rut_material_set_color_source_asset (RutObject *object,
     rut_entity_notify_changed (material->component.entity);
 }
 
-RutObject *
+RutAsset *
 rut_material_get_color_source_asset (RutObject *object)
 {
   RutMaterial *material = object;
@@ -276,9 +313,11 @@ rut_material_get_color_source_asset (RutObject *object)
 }
 
 void
-rut_material_set_normal_map_asset (RutMaterial *material,
+rut_material_set_normal_map_asset (RutObject *object,
                                    RutAsset *normal_map_asset)
 {
+  RutMaterial *material = object;
+
   if (material->normal_map_asset == normal_map_asset)
     return;
 
@@ -298,15 +337,19 @@ rut_material_set_normal_map_asset (RutMaterial *material,
 }
 
 RutAsset *
-rut_material_get_normal_map_asset (RutMaterial *material)
+rut_material_get_normal_map_asset (RutObject *object)
 {
+  RutMaterial *material = object;
+
   return material->normal_map_asset;
 }
 
 void
-rut_material_set_alpha_mask_asset (RutMaterial *material,
+rut_material_set_alpha_mask_asset (RutObject *object,
                                    RutAsset *alpha_mask_asset)
 {
+  RutMaterial *material = object;
+
   if (material->alpha_mask_asset == alpha_mask_asset)
     return;
 
@@ -326,8 +369,10 @@ rut_material_set_alpha_mask_asset (RutMaterial *material,
 }
 
 RutAsset *
-rut_material_get_alpha_mask_asset (RutMaterial *material)
+rut_material_get_alpha_mask_asset (RutObject *object)
 {
+  RutMaterial *material = object;
+
   return material->alpha_mask_asset;
 }
 
@@ -335,16 +380,23 @@ void
 rut_material_set_ambient (RutObject *obj,
                           const CoglColor *color)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
 
   material->ambient = *color;
   material->uniforms_age++;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_AMBIENT]);
 }
 
 const CoglColor *
 rut_material_get_ambient (RutObject *obj)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
 
   return &material->ambient;
 }
@@ -353,17 +405,23 @@ void
 rut_material_set_diffuse (RutObject *obj,
                           const CoglColor *color)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
 
   material->diffuse = *color;
   material->uniforms_age++;
 
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_DIFFUSE]);
 }
 
 const CoglColor *
 rut_material_get_diffuse (RutObject *obj)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
 
   return &material->diffuse;
 }
@@ -372,16 +430,23 @@ void
 rut_material_set_specular (RutObject *obj,
                            const CoglColor *color)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
 
   material->specular = *color;
   material->uniforms_age++;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_SPECULAR]);
 }
 
 const CoglColor *
 rut_material_get_specular (RutObject *obj)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
 
   return &material->specular;
 }
@@ -390,16 +455,23 @@ void
 rut_material_set_shininess (RutObject *obj,
                             float shininess)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
 
   material->shininess = shininess;
   material->uniforms_age++;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_SPECULAR]);
 }
 
 float
 rut_material_get_shininess (RutObject *obj)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
 
   return material->shininess;
 }
@@ -407,7 +479,7 @@ rut_material_get_shininess (RutObject *obj)
 float
 rut_material_get_alpha_mask_threshold (RutObject *obj)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
 
   return material->alpha_mask_threshold;
 }
@@ -416,9 +488,10 @@ void
 rut_material_set_alpha_mask_threshold (RutObject *obj,
                                        float threshold)
 {
-  RutMaterial *material = RUT_MATERIAL (obj);
+  RutMaterial *material = obj;
   RutEntity *entity;
   RutContext *ctx;
+
   if (material->alpha_mask_threshold == threshold)
     return;
 
@@ -497,4 +570,85 @@ void
 rut_material_dirty_uniforms (RutMaterial *material)
 {
   material->uniforms_flush_age = material->uniforms_age -1;
+}
+
+bool
+rut_material_get_cast_shadow (RutObject *obj)
+{
+  RutMaterial *material = obj;
+
+  return material->cast_shadow;
+}
+
+void
+rut_material_set_cast_shadow (RutObject *obj, bool cast_shadow)
+{
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
+
+  if (material->cast_shadow == cast_shadow)
+    return;
+
+  material->cast_shadow = cast_shadow;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_CAST_SHADOW]);
+}
+
+bool
+rut_material_get_receive_shadow (RutObject *obj)
+{
+  RutMaterial *material = obj;
+
+  return material->receive_shadow;
+}
+
+void
+rut_material_set_receive_shadow (RutObject *obj,
+                                 bool receive_shadow)
+{
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
+
+  if (material->receive_shadow == receive_shadow)
+    return;
+
+  material->receive_shadow = receive_shadow;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_RECEIVE_SHADOW]);
+
+  rut_entity_notify_changed (entity);
+}
+
+bool
+rut_material_get_visible (RutObject *obj)
+{
+  RutMaterial *material = obj;
+
+  return material->visible;
+}
+
+void
+rut_material_set_visible (RutObject *obj, bool visible)
+{
+  RutMaterial *material = obj;
+  RutEntity *entity;
+  RutContext *ctx;
+
+  if (material->visible == visible)
+    return;
+
+  material->visible = visible;
+
+  entity = material->component.entity;
+  ctx = rut_entity_get_context (entity);
+  rut_property_dirty (&ctx->property_ctx,
+                      &material->properties[RUT_MATERIAL_PROP_VISIBLE]);
 }

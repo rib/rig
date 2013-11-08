@@ -1308,6 +1308,7 @@ entitygraph_pre_pick_cb (RutObject *object,
   if (rut_object_get_type (object) == &rut_entity_type)
     {
       RutEntity *entity = object;
+      RutMaterial *material;
       RutComponent *geometry;
       RutMesh *mesh;
       int index;
@@ -1317,7 +1318,8 @@ entitygraph_pre_pick_cb (RutObject *object,
       float transformed_ray_direction[3];
       CoglMatrix transform;
 
-      if (!rut_entity_get_visible (entity))
+      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+      if (!material || !rut_material_get_visible (material))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
       geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);

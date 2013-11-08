@@ -34,16 +34,6 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE
   },
   {
-    .name = "visible",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = rut_entity_get_visible,
-    .setter.boolean_type = rut_entity_set_visible,
-    .nick = "Visible",
-    .blurb = "Whether the entity is visible or not",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
-  },
-  {
     .name = "position",
     .type = RUT_PROPERTY_TYPE_VEC3,
     .getter.vec3_type = rut_entity_get_position,
@@ -70,26 +60,6 @@ static RutPropertySpec _rut_entity_prop_specs[] = {
     .setter.float_type = rut_entity_set_scale,
     .nick = "Scale",
     .blurb = "The entity's uniform scale factor",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
-  },
-  {
-    .name = "cast_shadow",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = rut_entity_get_cast_shadow,
-    .setter.boolean_type = rut_entity_set_cast_shadow,
-    .nick = "Cast Shadow",
-    .blurb = "Whether the entity casts shadows or not",
-    .flags = RUT_PROPERTY_FLAG_READWRITE,
-    .animatable = TRUE
-  },
-  {
-    .name = "receive_shadow",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = rut_entity_get_receive_shadow,
-    .setter.boolean_type = rut_entity_set_receive_shadow,
-    .nick = "Receive Shadow",
-    .blurb = "Whether the entity receives shadows or not",
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
@@ -177,9 +147,6 @@ rut_entity_new (RutContext *ctx)
   rut_simple_introspectable_init (entity,
                                   _rut_entity_prop_specs,
                                   entity->properties);
-
-  entity->visible = TRUE;
-  entity->receive_shadow = TRUE;
 
   entity->position[0] = 0.0f;
   entity->position[1] = 0.0f;
@@ -577,51 +544,6 @@ rut_entity_rotate_z_axis (RutEntity *entity,
                       &entity->properties[RUT_ENTITY_PROP_ROTATION]);
 }
 
-bool
-rut_entity_get_cast_shadow (RutObject *obj)
-{
-  RutEntity *entity = obj;
-
-  return entity->cast_shadow;
-}
-
-void
-rut_entity_set_cast_shadow (RutObject *obj, bool cast_shadow)
-{
-  RutEntity *entity = obj;
-
-  if (entity->cast_shadow == cast_shadow)
-    return;
-
-  entity->cast_shadow = cast_shadow;
-
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_CAST_SHADOW]);
-}
-
-bool
-rut_entity_get_receive_shadow (RutObject *obj)
-{
-  RutEntity *entity = obj;
-
-  return entity->receive_shadow;
-}
-
-void
-rut_entity_set_receive_shadow (RutObject *obj,
-                               bool receive_shadow)
-{
-  RutEntity *entity = obj;
-
-  if (entity->receive_shadow == receive_shadow)
-    return;
-
-  entity->receive_shadow = receive_shadow;
-
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_RECEIVE_SHADOW]);
-}
-
 RutObject *
 rut_entity_get_component (RutEntity *entity,
                           RutComponentType type)
@@ -667,28 +589,6 @@ rut_entity_foreach_component (RutEntity *entity,
     callback (g_ptr_array_index (entity->components, i), user_data);
 }
 
-bool
-rut_entity_get_visible (RutObject *obj)
-{
-  RutEntity *entity = obj;
-
-  return entity->visible;
-}
-
-void
-rut_entity_set_visible (RutObject *obj, bool visible)
-{
-  RutEntity *entity = obj;
-
-  if (entity->visible == visible)
-    return;
-
-  entity->visible = visible;
-
-  rut_property_dirty (&entity->ctx->property_ctx,
-                      &entity->properties[RUT_ENTITY_PROP_VISIBLE]);
-}
-
 RutEntity *
 rut_entity_copy (RutEntity *entity)
 {
@@ -707,10 +607,6 @@ rut_entity_copy (RutEntity *entity)
   copy->scale = entity->scale;
   copy->transform = entity->transform;
   copy->dirty = FALSE;
-
-  copy->visible = entity->cast_shadow;
-  copy->cast_shadow = entity->cast_shadow;
-  copy->receive_shadow = entity->receive_shadow;
 
   copy_components = g_ptr_array_sized_new (entity_components->len);
   copy->components = copy_components;

@@ -25,6 +25,10 @@
 
 #include <cogl/cogl.h>
 
+typedef struct _RutBuffer RutBuffer;
+typedef struct _RutAttribute RutAttribute;
+typedef struct _RutMesh RutMesh;
+
 #include "rut-context.h"
 #include "rut-list.h"
 
@@ -53,8 +57,6 @@ typedef enum {
   RUT_ATTRIBUTE_TYPE_FLOAT
 } RutAttributeType;
 
-typedef struct _RutBuffer RutBuffer;
-#define RUT_BUFFER(X) ((RutBuffer *)X)
 extern RutType rut_buffer_type;
 
 struct _RutBuffer
@@ -67,7 +69,7 @@ struct _RutBuffer
   size_t size;
 };
 
-typedef struct _RutAttribute
+struct _RutAttribute
 {
   RutObjectProps _parent;
 
@@ -79,10 +81,8 @@ typedef struct _RutAttribute
   size_t offset;
   int n_components;
   RutAttributeType type;
-} RutAttribute;
+};
 
-typedef struct _RutMesh RutMesh;
-#define RUT_MESH(X) ((RutMesh *)X)
 extern RutType rut_mesh_type;
 
 /* This kind of mesh is optimized for size and use by a GPU */
