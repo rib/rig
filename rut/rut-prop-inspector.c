@@ -40,6 +40,16 @@
 #include "rut-entry.h"
 #include "rut-asset-inspector.h"
 #include "rut-bin.h"
+#include "rut-stack.h"
+#include "rut-rectangle.h"
+#include "rut-input-region.h"
+
+
+typedef enum _DisabledState {
+  DISABLED_STATE_NONE,
+  DISABLED_STATE_FULLY,
+  DISABLED_STATE_WIDGET,
+} DisabledState;
 
 struct _RutPropInspector
 {
@@ -51,21 +61,31 @@ struct _RutPropInspector
 
   RutGraphableProps graphable;
 
-  RutBoxLayout *hbox;
+  RutStack *top_stack;
+  RutBoxLayout *top_hbox;
 
+  RutStack *widget_stack;
+  RutBoxLayout *widget_hbox;
   RutProperty *widget_prop; /* the inspector's widget property */
   RutProperty *target_prop; /* property being inspected */
 
   RutIconToggle *controlled_toggle;
 
-  RutPropInspectorCallback property_changed_cb;
+  DisabledState disabled_state;
+  RutRectangle *disabled_overlay;
+  RutInputRegion *input_region;
+
+  RutPropertyClosure *inspector_prop_closure;
+  RutPropInspectorCallback inspector_property_changed_cb;
   RutPropInspectorControlledCallback controlled_changed_cb;
   void *user_data;
+
+  RutPropertyClosure *target_prop_closure;
 
   /* This is set while the property is being reloaded. This will make
    * it avoid forwarding on property changes that were just caused by
    * reading the already current value. */
-  CoglBool reloading_property;
+  bool reloading_property;
 
   int ref_count;
 };
@@ -77,7 +97,15 @@ _rut_prop_inspector_free (void *object)
 {
   RutPropInspector *inspector = object;
 
+  if (inspector->inspector_prop_closure)
+    rut_property_closure_destroy (inspector->inspector_prop_closure);
+  if (inspector->target_prop_closure)
+    rut_property_closure_destroy (inspector->target_prop_closure);
+
   rut_graphable_destroy (inspector);
+
+  rut_refable_unref (inspector->disabled_overlay);
+  rut_refable_unref (inspector->input_region);
 
   g_slice_free (RutPropInspector, inspector);
 }
@@ -114,10 +142,39 @@ _rut_prop_inspector_init_type (void)
                           &sizable_vtable);
   rut_type_add_interface (type,
                           RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, hbox),
+                          offsetof (TYPE, top_stack),
                           NULL); /* no vtable */
 
 #undef TYPE
+}
+
+static void
+set_disabled (RutPropInspector *inspector, DisabledState state)
+{
+  if (inspector->disabled_state == state)
+    return;
+
+  if (inspector->disabled_state == DISABLED_STATE_FULLY)
+    {
+      rut_graphable_remove_child (inspector->input_region);
+      rut_graphable_remove_child (inspector->disabled_overlay);
+    }
+  else if (inspector->disabled_state == DISABLED_STATE_WIDGET)
+    {
+      rut_graphable_remove_child (inspector->input_region);
+      rut_graphable_remove_child (inspector->disabled_overlay);
+    }
+
+  if (state == DISABLED_STATE_FULLY)
+    {
+      rut_stack_add (inspector->top_stack, inspector->input_region);
+      rut_stack_add (inspector->top_stack, inspector->disabled_overlay);
+    }
+  else if (state == DISABLED_STATE_WIDGET)
+    {
+      rut_stack_add (inspector->widget_stack, inspector->input_region);
+      rut_stack_add (inspector->widget_stack, inspector->disabled_overlay);
+    }
 }
 
 static RutObject *
@@ -314,8 +371,8 @@ create_widget_for_property (RutContext *context,
 }
 
 static void
-property_changed_cb (RutProperty *target_prop,
-                     void *user_data)
+inspector_property_changed_cb (RutProperty *inspector_prop,
+                               void *user_data)
 {
   RutPropInspector *inspector = user_data;
 
@@ -325,9 +382,9 @@ property_changed_cb (RutProperty *target_prop,
   if (inspector->reloading_property)
     return;
 
-  inspector->property_changed_cb (inspector->target_prop,
-                                  inspector->widget_prop,
-                                  inspector->user_data);
+  inspector->inspector_property_changed_cb (inspector->target_prop,
+                                            inspector->widget_prop,
+                                            inspector->user_data);
 }
 
 static void
@@ -360,7 +417,7 @@ add_controlled_toggle (RutPropInspector *inspector,
 
       bin = rut_bin_new (inspector->context);
       rut_bin_set_right_padding (bin, 5);
-      rut_box_layout_add (inspector->hbox, false, bin);
+      rut_box_layout_add (inspector->top_hbox, false, bin);
       rut_refable_unref (bin);
 
       toggle = rut_icon_toggle_new (inspector->context,
@@ -405,20 +462,54 @@ add_control (RutPropInspector *inspector,
                                 NULL, /* font_name */
                                 label_text);
       rut_text_set_selectable (label, FALSE);
-      rut_box_layout_add (inspector->hbox, false, label);
+      rut_box_layout_add (inspector->widget_hbox, false, label);
       rut_refable_unref (label);
     }
 
-  rut_box_layout_add (inspector->hbox, true, widget);
+  if (!(inspector->target_prop->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
+    set_disabled (inspector, DISABLED_STATE_FULLY);
+
+  rut_box_layout_add (inspector->widget_hbox, true, widget);
   rut_refable_unref (widget);
 
   if (widget_prop)
     {
-      rut_property_connect_callback (widget_prop,
-                                     property_changed_cb,
-                                     inspector);
+      inspector->inspector_prop_closure =
+        rut_property_connect_callback (widget_prop,
+                                       inspector_property_changed_cb,
+                                       inspector);
       inspector->widget_prop = widget_prop;
     }
+}
+
+static void
+target_property_changed_cb (RutProperty *target_prop,
+                            void *user_data)
+{
+  RutPropInspector *inspector = user_data;
+
+  /* XXX: We temporarily stop listening for changes to the
+   * target_property to ignore any intermediate changes might be made
+   * while re-loading the property...
+   */
+
+  rut_property_closure_destroy (inspector->target_prop_closure);
+  inspector->target_prop_closure = NULL;
+
+  rut_prop_inspector_reload_property (inspector);
+
+  inspector->target_prop_closure =
+    rut_property_connect_callback (inspector->target_prop,
+                                   target_property_changed_cb,
+                                   inspector);
+}
+
+static RutInputEventStatus
+block_input_cb (RutInputRegion *region,
+                RutInputEvent *event,
+                void *user_data)
+{
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
 RutPropInspector *
@@ -440,22 +531,45 @@ rut_prop_inspector_new (RutContext *ctx,
   rut_graphable_init (inspector);
 
   inspector->target_prop = property;
-  inspector->property_changed_cb = inspector_property_changed_cb;
+  inspector->inspector_property_changed_cb = inspector_property_changed_cb;
   inspector->controlled_changed_cb = inspector_controlled_cb;
   inspector->user_data = user_data;
 
-  inspector->hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
-  rut_graphable_add_child (inspector, inspector->hbox);
-  rut_refable_unref (inspector->hbox);
+  inspector->top_stack = rut_stack_new (ctx, 1, 1);
+  rut_graphable_add_child (inspector, inspector->top_stack);
+  rut_refable_unref (inspector->top_stack);
+
+  inspector->top_hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_stack_add (inspector->top_stack, inspector->top_hbox);
+  rut_refable_unref (inspector->top_hbox);
 
   if (inspector->controlled_changed_cb && property->spec->animatable)
     add_controlled_toggle (inspector, property);
+
+  inspector->widget_stack = rut_stack_new (ctx, 1, 1);
+  rut_box_layout_add (inspector->top_hbox, true, inspector->widget_stack);
+  rut_refable_unref (inspector->widget_stack);
+
+  inspector->widget_hbox =
+    rut_box_layout_new (inspector->context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+  rut_stack_add (inspector->widget_stack, inspector->widget_hbox);
+  rut_refable_unref (inspector->widget_hbox);
+
+  inspector->disabled_overlay =
+    rut_rectangle_new4f (ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
+  inspector->input_region =
+    rut_input_region_new_rectangle (0, 0, 1, 1, block_input_cb, NULL);
 
   add_control (inspector, property, with_label);
 
   rut_prop_inspector_reload_property (inspector);
 
   rut_sizable_set_size (inspector, 10, 10);
+
+  inspector->target_prop_closure =
+    rut_property_connect_callback (property,
+                                   target_property_changed_cb,
+                                   inspector);
 
   return inspector;
 }
