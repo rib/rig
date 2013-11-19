@@ -618,3 +618,9 @@ rut_prop_inspector_set_controlled (RutPropInspector *inspector,
       inspector->reloading_property = old_reloading;
     }
 }
+
+RutProperty *
+rut_prop_inspector_get_property (RutPropInspector *inspector)
+{
+  return inspector->target_prop;
+}

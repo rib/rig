@@ -35,4 +35,7 @@ void
 rut_prop_inspector_set_controlled (RutPropInspector *inspector,
                                    CoglBool controlled);
 
+RutProperty *
+rut_prop_inspector_get_property (RutPropInspector *inspector);
+
 #endif /* _RUT_PROP_INSPECTOR_H_ */
