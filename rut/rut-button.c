@@ -119,25 +119,25 @@ _rut_button_free (void *object)
 
   if (button->normal_texture)
     {
-      rut_refable_unref (button->normal_texture);
+      cogl_object_unref (button->normal_texture);
       button->normal_texture = NULL;
     }
 
   if (button->hover_texture)
     {
-      rut_refable_unref (button->hover_texture);
+      cogl_object_unref (button->hover_texture);
       button->hover_texture = NULL;
     }
 
   if (button->active_texture)
     {
-      rut_refable_unref (button->active_texture);
+      cogl_object_unref (button->active_texture);
       button->active_texture = NULL;
     }
 
   if (button->disabled_texture)
     {
-      rut_refable_unref (button->disabled_texture);
+      cogl_object_unref (button->disabled_texture);
       button->disabled_texture = NULL;
     }
 
