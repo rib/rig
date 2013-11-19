@@ -247,7 +247,6 @@ create_property_controls (RutInspector *inspector)
       rut_refable_unref (prop_data->stack);
 
       prop_data->drag_bin = rut_drag_bin_new (inspector->context);
-      rut_drag_bin_set_payload (prop_data->drag_bin, inspector);
       rut_graphable_add_child (prop_data->stack, prop_data->drag_bin);
       rut_refable_unref (prop_data->drag_bin);
 
@@ -264,6 +263,11 @@ create_property_controls (RutInspector *inspector)
                                         prop_data);
       rut_bin_set_child (bin, control);
       rut_refable_unref (control);
+
+      /* XXX: It could be better if the payload could represent the selection
+       * of multiple properties when an inspector is inspecting multiple
+       * selected objects... */
+      rut_drag_bin_set_payload (prop_data->drag_bin, control);
 
       prop_data->control = control;
     }
