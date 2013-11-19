@@ -28,8 +28,6 @@ extern RutType rig_controller_view_type;
 
 typedef struct _RigControllerView RigControllerView;
 
-#define RIG_CONTROLLER_VIEW(x) ((RigControllerView *) x)
-
 RigControllerView *
 rig_controller_view_new (RigEngine *engine,
                          RigUndoJournal *undo_journal);
