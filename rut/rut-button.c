@@ -149,6 +149,8 @@ _rut_button_free (void *object)
 
   rut_graphable_destroy (button);
 
+  rut_shell_remove_pre_paint_callback (button->ctx->shell, button);
+
   g_slice_free (RutButton, object);
 }
 
