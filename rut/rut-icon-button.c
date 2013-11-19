@@ -224,6 +224,10 @@ _rut_icon_button_grab_input_cb (RutInputEvent *event,
         {
           rut_shell_ungrab_input (shell, _rut_icon_button_grab_input_cb, user_data);
 
+          /* NB: It's possible the click callbacks could result in the
+           * button's last reference being released... */
+          rut_refable_ref (button);
+
           rut_closure_list_invoke (&button->on_click_cb_list,
                                    RutIconButtonClickCallback,
                                    button);
@@ -231,6 +235,8 @@ _rut_icon_button_grab_input_cb (RutInputEvent *event,
           g_slice_free (IconButtonGrabState, state);
 
           set_state (button, ICON_BUTTON_STATE_NORMAL);
+
+          rut_refable_unref (button);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
