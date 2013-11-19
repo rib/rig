@@ -30,6 +30,7 @@
 #include "rig-controller-view.h"
 #include "rig-undo-journal.h"
 #include "rig-engine.h"
+#include "rig-binding-view.h"
 
 #define RIG_CONTROLLER_VIEW_N_PROPERTY_COLUMNS 3
 
@@ -2139,7 +2140,7 @@ update_method_control (RigControllerPropertyView *prop_view)
       column->control = rig_path_view_new (prop_view);
       break;
     case RIG_CONTROLLER_METHOD_BINDING:
-      column->control = rut_text_new_with_text (ctx, "Dependencies...", NULL);
+      column->control = rig_binding_view_new (ctx);
       break;
     }
 

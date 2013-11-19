@@ -235,6 +235,31 @@ rut_image_get_preferred_width (void *object,
       if (natural_width_p)
         *natural_width_p = image->tex_width;
     }
+  else if (image->draw_mode == RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO)
+    {
+      if (min_width_p)
+        *min_width_p = 0.0f;
+
+      if (natural_width_p)
+        {
+          if (for_height != -1.0f)
+            {
+              float aspect = image->tex_width / image->tex_height;
+
+              /* Our preferrence is to have just enough space to be
+               * able to show the image at 1:1, not to necessarily
+               * fill the for_height space...
+               */
+
+              if (for_height > image->tex_height)
+                *natural_width_p = image->tex_width;
+              else
+                *natural_width_p = for_height * aspect;
+            }
+          else
+            *natural_width_p = image->tex_width;
+        }
+    }
   else
     {
       if (min_width_p)
@@ -243,7 +268,11 @@ rut_image_get_preferred_width (void *object,
       if (natural_width_p)
         {
           if (for_height != -1.0f)
-            *natural_width_p = for_height * image->tex_width / image->tex_height;
+            {
+              float aspect = image->tex_width / image->tex_height;
+
+              *natural_width_p = for_height * aspect;
+            }
           else
             *natural_width_p = image->tex_width;
         }
@@ -265,6 +294,31 @@ rut_image_get_preferred_height (void *object,
       if (natural_height_p)
         *natural_height_p = image->tex_height;
     }
+  else if (image->draw_mode == RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO)
+    {
+      if (min_height_p)
+        *min_height_p = 0.0f;
+
+      if (natural_height_p)
+        {
+          if (for_width != -1.0f)
+            {
+              float aspect = image->tex_height / image->tex_width;
+
+              /* Our preferrence is to have just enough space to be
+               * able to show the image at 1:1, not to necessarily
+               * fill the for_width space...
+               */
+
+              if (for_width > image->tex_width)
+                *natural_height_p = image->tex_height;
+              else
+                *natural_height_p = for_width * aspect;
+            }
+          else
+            *natural_height_p = image->tex_height;
+        }
+    }
   else
     {
       if (min_height_p)
@@ -273,7 +327,11 @@ rut_image_get_preferred_height (void *object,
       if (natural_height_p)
         {
           if (for_width != -1.0f)
-            *natural_height_p = for_width * image->tex_height / image->tex_width;
+            {
+              float aspect = image->tex_height / image->tex_width;
+
+              *natural_height_p = for_width * aspect;
+            }
           else
             *natural_height_p = image->tex_height;
         }
