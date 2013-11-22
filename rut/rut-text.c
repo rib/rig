@@ -795,14 +795,19 @@ rut_text_ensure_effective_attributes (RutText *text)
 }
 
 static PangoLayout *
-rut_text_create_hint_text_layout (RutText *text)
+rut_text_ensure_hint_text_layout (RutText *text)
 {
   PangoLayout *layout;
+
+  if (text->hint_text_layout)
+    return text->hint_text_layout;
 
   layout = pango_layout_new (text->ctx->pango_context);
   pango_layout_set_font_description (layout, text->font_desc);
   pango_layout_set_single_paragraph_mode (layout, TRUE);
   pango_layout_set_text (layout, text->hint_text, -1);
+
+  text->hint_text_layout = layout;
 
   return layout;
 }
@@ -2684,12 +2689,7 @@ rut_text_paint (RutObject *object,
   if (text->editable && text->single_line_mode)
     {
       if (n_chars == 0 && text->hint_text && !text->has_focus)
-        {
-          if (text->hint_text_layout == NULL)
-            text->hint_text_layout = rut_text_create_hint_text_layout (text);
-
-          layout = text->hint_text_layout;
-        }
+        layout = rut_text_ensure_hint_text_layout (text);
       else
         layout = rut_text_create_layout (text, -1, -1);
     }
@@ -2839,11 +2839,19 @@ _rut_text_get_preferred_width (RutObject *object,
 {
   RutText *text = object;
   PangoRectangle logical_rect = { 0, };
-  PangoLayout *layout;
+  PangoLayout *layout = NULL;
   int logical_width;
   float layout_width;
 
-  layout = rut_text_create_layout (text, -1, -1);
+  if (text->editable && text->single_line_mode)
+    {
+      int n_chars = rut_text_buffer_get_length (get_buffer (text));
+      if (n_chars == 0 && text->hint_text)
+        layout = rut_text_ensure_hint_text_layout (text);
+    }
+
+  if (!layout)
+    layout = rut_text_create_layout (text, -1, -1);
 
   pango_layout_get_extents (layout, NULL, &logical_rect);
 
@@ -2892,7 +2900,7 @@ _rut_text_get_preferred_height (RutObject *object,
     }
   else
     {
-      PangoLayout *layout;
+      PangoLayout *layout = NULL;
       PangoRectangle logical_rect = { 0, };
       int logical_height;
       float layout_height;
@@ -2900,8 +2908,16 @@ _rut_text_get_preferred_height (RutObject *object,
       if (text->single_line_mode)
         for_width = -1;
 
-      layout = rut_text_create_layout (text,
-                                       for_width, -1);
+      if (text->editable && text->single_line_mode)
+        {
+          int n_chars = rut_text_buffer_get_length (get_buffer (text));
+          if (n_chars == 0 && text->hint_text)
+            layout = rut_text_ensure_hint_text_layout (text);
+        }
+
+      if (!layout)
+        layout = rut_text_create_layout (text,
+                                         for_width, -1);
 
       pango_layout_get_extents (layout, NULL, &logical_rect);
 
@@ -3295,6 +3311,7 @@ rut_text_new_full (RutContext *ctx,
   text->cursor_visible = TRUE;
   text->editable = FALSE;
   text->selectable = TRUE;
+  text->single_line_mode = true;
 
   text->selection_color_set = FALSE;
   text->cursor_color_set = FALSE;
