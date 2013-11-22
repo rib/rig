@@ -2,6 +2,7 @@
  * Rut
  *
  * Copyright (C) 2012,2013  Intel Corporation
+ * Copyright (C) 2010 Openismus GmbH
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,6 +17,10 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
+ *
+ * Note: rut_util_distribute_natural_allocation() is taken from gtk
+ * and was implemented by:
+ *   Tristan Van Berkom <tristan.van.berkom@gmail.com>
  */
 
 #include <config.h>
