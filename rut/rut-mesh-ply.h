@@ -1,7 +1,7 @@
 /*
- * Mash - A library for displaying PLY models in a Clutter scene
- * Copyright (C) 2010  Intel Corporation
- * Copyright (C) 2010  Luca Bruno <lethalman88@gmail.com>
+ * Rut - Rig Utilities
+ *
+ * Copyright (C) 2012,2013  Intel Corporation
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,7 +14,8 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
 #ifndef _RUT_MESH_PLY_
