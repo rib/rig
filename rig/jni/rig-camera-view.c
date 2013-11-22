@@ -2140,6 +2140,7 @@ rig_camera_view_new (RigEngine *engine)
                                  tool_changed_cb,
                                  view,
                                  NULL); /* destroy notify */
+  tool_changed_cb (engine, RIG_TOOL_ID_SELECTION, view);
 #endif /* RIG_EDITOR_ENABLED */
 
   return view;
