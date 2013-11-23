@@ -408,34 +408,29 @@ static void
 add_controlled_toggle (RutPropInspector *inspector,
                        RutProperty *prop)
 {
-  const RutPropertySpec *spec = prop->spec;
+  RutBin *bin;
+  RutIconToggle *toggle;
 
-  if (spec->animatable)
-    {
-      RutBin *bin;
-      RutIconToggle *toggle;
+  bin = rut_bin_new (inspector->context);
+  rut_bin_set_right_padding (bin, 5);
+  rut_box_layout_add (inspector->top_hbox, false, bin);
+  rut_refable_unref (bin);
 
-      bin = rut_bin_new (inspector->context);
-      rut_bin_set_right_padding (bin, 5);
-      rut_box_layout_add (inspector->top_hbox, false, bin);
-      rut_refable_unref (bin);
+  toggle = rut_icon_toggle_new (inspector->context,
+                                "record-button-selected.png",
+                                "record-button.png");
 
-      toggle = rut_icon_toggle_new (inspector->context,
-                                    "record-button-selected.png",
-                                    "record-button.png");
+  rut_icon_toggle_set_state (toggle, false);
 
-      rut_icon_toggle_set_state (toggle, false);
+  rut_icon_toggle_add_on_toggle_callback (toggle,
+                                          controlled_toggle_cb,
+                                          inspector,
+                                          NULL /* destroy_cb */);
 
-      rut_icon_toggle_add_on_toggle_callback (toggle,
-                                              controlled_toggle_cb,
-                                              inspector,
-                                              NULL /* destroy_cb */);
+  rut_bin_set_child (bin, toggle);
+  rut_refable_unref (toggle);
 
-      rut_bin_set_child (bin, toggle);
-      rut_refable_unref (toggle);
-
-      inspector->controlled_toggle = toggle;
-    }
+  inspector->controlled_toggle = toggle;
 }
 
 static void
@@ -524,6 +519,7 @@ rut_prop_inspector_new (RutContext *ctx,
     rut_object_alloc0 (RutPropInspector,
                        &rut_prop_inspector_type,
                        _rut_prop_inspector_init_type);
+  RutBin *grab_padding;
 
   inspector->ref_count = 1;
   inspector->context = ctx;
@@ -542,6 +538,14 @@ rut_prop_inspector_new (RutContext *ctx,
   inspector->top_hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_stack_add (inspector->top_stack, inspector->top_hbox);
   rut_refable_unref (inspector->top_hbox);
+
+  /* XXX: Hack for now, to make sure its possible to drag and drop any
+   * property without inadvertanty manipulating the property value...
+   */
+  grab_padding = rut_bin_new (inspector->context);
+  rut_bin_set_right_padding (grab_padding, 15);
+  rut_box_layout_add (inspector->top_hbox, false, grab_padding);
+  rut_refable_unref (grab_padding);
 
   if (inspector->controlled_changed_cb && property->spec->animatable)
     add_controlled_toggle (inspector, property);
