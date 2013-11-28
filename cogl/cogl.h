@@ -100,9 +100,6 @@
 /* XXX: This will definitly go away once all the Clutter winsys
  * code has been migrated down into Cogl! */
 #include <cogl/cogl-clutter.h>
-#ifdef COGL_HAS_SDL_SUPPORT
-#include <cogl/cogl-sdl.h>
-#endif
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we
