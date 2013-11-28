@@ -623,7 +623,7 @@ if UNIT_TESTS
 Cogl_2_0_gir_LIBS += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif
 Cogl_2_0_gir_FILES = $(cogl_public_h) cogl-enum-types.h
-Cogl_2_0_gir_CFLAGS = $(AM_CPPFLAGS) $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API
+Cogl_2_0_gir_CFLAGS = $(AM_CPPFLAGS) $(COGL_DEP_CFLAGS) -UCOGL_ENABLE_EXPERIMENTAL_API -UCOGL_ENABLE_EXPERIMENTAL_2_0_API -UCOGL_COMPILATION -D__COGL_H_INSIDE__ -D__COGL_XLIB_H_INSIDE__
 Cogl_2_0_gir_INCLUDES = GL-1.0 GObject-2.0
 Cogl_2_0_gir_EXPORT_PACKAGES = cogl2
 Cogl_2_0_gir_SCANNERFLAGS = --warn-all --c-include='cogl/cogl.h'
