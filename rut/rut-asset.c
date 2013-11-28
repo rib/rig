@@ -262,14 +262,14 @@ rut_video_grab_thumbnail (void *instance,
   if (generator->video->texture)
     cogl_object_unref (generator->video->texture);
 
-  generator->video->texture = COGL_TEXTURE (
+  generator->video->texture =
     cogl_texture_2d_new_with_size (generator->ctx,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE));
+                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE);
 
   offscreen = cogl_offscreen_new_with_texture (generator->video->texture);
-  fbo = COGL_FRAMEBUFFER (offscreen);
+  fbo = offscreen;
 
   cogl_framebuffer_clear4f (fbo, COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
   cogl_framebuffer_orthographic (fbo, 0, 0, tex_width, tex_height, 1, -1);
@@ -387,14 +387,14 @@ rut_model_get_thumbnail (RutContext *ctx,
 
   mesh = rut_model_get_mesh (model);
 
-  thumbnail = COGL_TEXTURE (
+  thumbnail =
     cogl_texture_2d_new_with_size (ctx->cogl_context,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE));
+                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE);
 
   offscreen = cogl_offscreen_new_with_texture (thumbnail);
-  frame_buffer = COGL_FRAMEBUFFER (offscreen);
+  frame_buffer = offscreen;
 
   cogl_framebuffer_perspective (frame_buffer, fovy, aspect, z_near, z_far);
   cogl_matrix_init_identity (&view);
@@ -760,10 +760,10 @@ rut_asset_new_from_data (RutContext *ctx,
 
               bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
 
-              asset->texture = COGL_TEXTURE (
+              asset->texture =
                 cogl_texture_2d_new_from_bitmap (bitmap,
                                                  COGL_PIXEL_FORMAT_ANY,
-                                                 &cogl_error));
+                                                 &cogl_error);
 
               cogl_object_unref (bitmap);
               g_object_unref (pixbuf);

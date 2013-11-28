@@ -1364,7 +1364,7 @@ draw_timeline_background (RigPathView *path_view,
       buffer = cogl_bitmap_get_buffer (bitmap);
 
       rowstride = cogl_bitmap_get_rowstride (bitmap);
-      tex_data = cogl_buffer_map (COGL_BUFFER (buffer),
+      tex_data = cogl_buffer_map (buffer,
                                   COGL_BUFFER_ACCESS_WRITE,
                                   COGL_BUFFER_MAP_HINT_DISCARD,
                                   NULL);
@@ -1382,16 +1382,16 @@ draw_timeline_background (RigPathView *path_view,
         }
       //memset (tex_data + rowstride * (tex_height - 1), 0x74, tex_width * 3);
 
-      cogl_buffer_unmap (COGL_BUFFER (buffer));
+      cogl_buffer_unmap (buffer);
 
-      texture = COGL_TEXTURE (
+      texture =
         cogl_texture_2d_new_from_bitmap (bitmap,
                                          COGL_PIXEL_FORMAT_ANY,
-                                         NULL));
+                                         NULL);
 
       cogl_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */
-                                       COGL_TEXTURE (texture));
+                                       texture);
       cogl_pipeline_set_layer_filters
         (pipeline,
          0, /* layer_num */
@@ -2804,7 +2804,7 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
   if (view->n_dots == 0)
     return;
 
-  buffer_data = cogl_buffer_map_range (COGL_BUFFER (view->dots_buffer),
+  buffer_data = cogl_buffer_map_range (view->dots_buffer,
                                        0, /* offset */
                                        map_size,
                                        COGL_BUFFER_ACCESS_WRITE,
@@ -2857,10 +2857,10 @@ rig_controller_view_update_dots_buffer (RigControllerView *view)
     }
 
   if (buffer_is_mapped)
-    cogl_buffer_unmap (COGL_BUFFER (view->dots_buffer));
+    cogl_buffer_unmap (view->dots_buffer);
   else
     {
-      cogl_buffer_set_data (COGL_BUFFER (view->dots_buffer),
+      cogl_buffer_set_data (view->dots_buffer,
                             0, /* offset */
                             buffer_data,
                             map_size,
@@ -2921,7 +2921,7 @@ _rig_controller_view_paint (RutObject *object,
       else
         {
           int old_n_vertices =
-            (cogl_buffer_get_size (COGL_BUFFER (view->dots_buffer)) /
+            (cogl_buffer_get_size (view->dots_buffer) /
              sizeof (RigControllerViewDotVertex));
 
           if (old_n_vertices < view->n_dots)
@@ -3431,7 +3431,7 @@ rig_controller_view_create_dots_pipeline (RigControllerView *view)
             {
               cogl_pipeline_set_layer_texture (pipeline,
                                                0, /* layer_num */
-                                               COGL_TEXTURE (texture));
+                                               texture);
               cogl_pipeline_set_layer_filters
                 (pipeline,
                  0, /* layer_num */
@@ -3472,7 +3472,7 @@ rig_controller_view_create_separator_pipeline (RigControllerView *view)
 
       cogl_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */
-                                       COGL_TEXTURE (texture));
+                                       texture);
       cogl_pipeline_set_layer_filters
         (pipeline,
          0, /* layer_num */

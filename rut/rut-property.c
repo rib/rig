@@ -22,6 +22,8 @@
 
 #include <glib.h>
 #include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 
 #include "rut-property.h"
 #include "rut-interfaces.h"

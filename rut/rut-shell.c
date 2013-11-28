@@ -23,6 +23,7 @@
 #include <glib.h>
 
 #include <cogl/cogl.h>
+#include <cogl/cogl-sdl.h>
 
 #include "rut-camera-private.h"
 #include "rut-transform-private.h"

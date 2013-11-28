@@ -293,7 +293,7 @@ _rut_hair_get_fin_texture (RutHair *hair)
 
   offscreen = cogl_offscreen_new_with_texture (fin_texture);
 
-  cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
+  cogl_framebuffer_clear4f (offscreen,
                             COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
   while (current_y <= 1.f)
@@ -319,7 +319,7 @@ _rut_hair_get_fin_texture (RutHair *hair)
                                          updated_particle.color[3]);
 
               cogl_framebuffer_draw_rectangle (
-                COGL_FRAMEBUFFER (offscreen), pipeline,
+                offscreen, pipeline,
                 x - updated_particle.diameter / 2,
                 geometric_y - geo_y_iter,
                 x + updated_particle.diameter / 2,
@@ -350,13 +350,13 @@ _rut_hair_draw_shell_texture (RutHair *hair,
 
   offscreen = cogl_offscreen_new_with_texture (shell_texture);
 
-  cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
+  cogl_framebuffer_clear4f (offscreen,
                             COGL_BUFFER_BIT_COLOR, 0, 0, 0, 0);
 
   if (position == 0)
     {
       cogl_pipeline_set_color4f (pipeline, 0.75, 0.75, 0.75, 1.0);
-      cogl_framebuffer_draw_rectangle (COGL_FRAMEBUFFER (offscreen), pipeline,
+      cogl_framebuffer_draw_rectangle (offscreen, pipeline,
                                        -1, -1, 1, 1);
       return;
     }
@@ -384,7 +384,7 @@ _rut_hair_draw_shell_texture (RutHair *hair,
                                      updated_particle.color[3]);
 
           cogl_framebuffer_draw_rectangle (
-            COGL_FRAMEBUFFER (offscreen), pipeline,
+            offscreen, pipeline,
             updated_particle.position[0] - (updated_particle.diameter / 2.0),
             updated_particle.position[2] - (updated_particle.diameter / 2.0),
             updated_particle.position[0] + (updated_particle.diameter / 2.0),

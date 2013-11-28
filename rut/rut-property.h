@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include <cogl/cogl.h>
 

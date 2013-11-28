@@ -47,7 +47,10 @@
  *
  */
 
+#include <stdlib.h>
+#include <string.h>
 #include <glib.h>
+
 #include <cogl/cogl.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
@@ -91,22 +94,22 @@ generate_bump_map (CoglContext *ctx,
                    const char *output)
 {
   CoglBitmap *bitmap = cogl_bitmap_new_from_file (ctx, path, NULL);
-  CoglTexture *src = COGL_TEXTURE (
+  CoglTexture *src =
     cogl_texture_2d_new_from_bitmap (bitmap,
                                      COGL_PIXEL_FORMAT_ANY,
-                                     NULL));
+                                     NULL);
 
   int tex_width = cogl_texture_get_width (src);
   int tex_height = cogl_texture_get_height (src);
 
-  CoglTexture *dst = COGL_TEXTURE (
+  CoglTexture *dst =
     cogl_texture_2d_new_with_size (ctx,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_ANY));
+                                   COGL_PIXEL_FORMAT_ANY);
 
   CoglOffscreen *offscreen = cogl_offscreen_new_with_texture (dst);
-  CoglFramebuffer *fb = COGL_FRAMEBUFFER (offscreen);
+  CoglFramebuffer *fb = offscreen;
 
   CoglPipeline *pipeline;
   CoglSnippet* snippet;
@@ -159,22 +162,22 @@ generate_normal_map (CoglContext *ctx,
                      const char *output)
 {
   CoglBitmap *bitmap = cogl_bitmap_new_from_file (ctx, path, NULL);
-  CoglTexture *src = COGL_TEXTURE (
+  CoglTexture *src =
     cogl_texture_2d_new_from_bitmap (bitmap,
                                      COGL_PIXEL_FORMAT_ANY,
-                                     NULL));
+                                     NULL);
 
   int tex_width = cogl_texture_get_width (src);
   int tex_height = cogl_texture_get_height (src);
 
-  CoglTexture *dst = COGL_TEXTURE (
+  CoglTexture *dst =
     cogl_texture_2d_new_with_size (ctx,
                                    tex_width,
                                    tex_height,
-                                   COGL_PIXEL_FORMAT_ANY));
+                                   COGL_PIXEL_FORMAT_ANY);
 
   CoglOffscreen *offscreen = cogl_offscreen_new_with_texture (dst);
-  CoglFramebuffer *fb = COGL_FRAMEBUFFER (offscreen);
+  CoglFramebuffer *fb = offscreen;
 
   float pixel_width = 1.0 / tex_width;
   float pixel_height = 1.0 / tex_height;

@@ -1955,7 +1955,7 @@ device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
           {
             float x = rut_motion_event_get_x (event);
             float dx = x - engine->grab_x;
-            CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->onscreen);
+            CoglFramebuffer *fb = engine->onscreen;
             float progression = dx / cogl_framebuffer_get_width (fb);
 
             rig_controller_set_progress (engine->controllers->data,

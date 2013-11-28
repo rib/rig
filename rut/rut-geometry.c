@@ -131,8 +131,8 @@ rut_create_circle_texture (RutContext *ctx,
   tex2d = cogl_texture_2d_new_with_size (ctx->cogl_context,
                                          size, size,
                                          COGL_PIXEL_FORMAT_RGBA_8888);
-  offscreen = cogl_offscreen_new_with_texture (COGL_TEXTURE (tex2d));
-  fb = COGL_FRAMEBUFFER (offscreen);
+  offscreen = cogl_offscreen_new_with_texture (tex2d);
+  fb = offscreen;
 
   circle = rut_create_circle_fan_primitive (ctx, 360);
 
@@ -153,7 +153,7 @@ rut_create_circle_texture (RutContext *ctx,
   cogl_object_unref (circle);
   cogl_object_unref (offscreen);
 
-  return COGL_TEXTURE (tex2d);
+  return tex2d;
 }
 
 /*

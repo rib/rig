@@ -297,7 +297,7 @@ ensure_hs_pipeline (RutColorPicker *picker)
   rowstride = cogl_bitmap_get_rowstride (bitmap);
   buffer = cogl_bitmap_get_buffer (bitmap);
 
-  data = cogl_buffer_map (COGL_BUFFER (buffer),
+  data = cogl_buffer_map (buffer,
                           COGL_BUFFER_ACCESS_WRITE,
                           COGL_BUFFER_MAP_HINT_DISCARD,
                           NULL);
@@ -355,7 +355,7 @@ ensure_hs_pipeline (RutColorPicker *picker)
       p += rowstride - RUT_COLOR_PICKER_HS_SIZE * 4;
     }
 
-  cogl_buffer_unmap (COGL_BUFFER (buffer));
+  cogl_buffer_unmap (buffer);
 
   texture = cogl_texture_2d_new_from_bitmap (bitmap,
                                              COGL_PIXEL_FORMAT_ANY,
@@ -364,7 +364,7 @@ ensure_hs_pipeline (RutColorPicker *picker)
   pipeline = cogl_pipeline_copy (picker->hs_pipeline);
   cogl_pipeline_set_layer_texture (pipeline,
                                    0, /* layer */
-                                   COGL_TEXTURE (texture));
+                                   texture);
   cogl_object_unref (picker->hs_pipeline);
   picker->hs_pipeline = pipeline;
 
@@ -396,7 +396,7 @@ ensure_v_pipeline (RutColorPicker *picker)
   rowstride = cogl_bitmap_get_rowstride (bitmap);
   buffer = cogl_bitmap_get_buffer (bitmap);
 
-  data = cogl_buffer_map (COGL_BUFFER (buffer),
+  data = cogl_buffer_map (buffer,
                           COGL_BUFFER_ACCESS_WRITE,
                           COGL_BUFFER_MAP_HINT_DISCARD,
                           NULL);
@@ -421,7 +421,7 @@ ensure_v_pipeline (RutColorPicker *picker)
       p += rowstride;
     }
 
-  cogl_buffer_unmap (COGL_BUFFER (buffer));
+  cogl_buffer_unmap (buffer);
 
   texture = cogl_texture_2d_new_from_bitmap (bitmap,
                                              COGL_PIXEL_FORMAT_ANY,
@@ -430,7 +430,7 @@ ensure_v_pipeline (RutColorPicker *picker)
   pipeline = cogl_pipeline_copy (picker->v_pipeline);
   cogl_pipeline_set_layer_texture (pipeline,
                                    0, /* layer */
-                                   COGL_TEXTURE (texture));
+                                   texture);
   cogl_object_unref (picker->v_pipeline);
   picker->v_pipeline = pipeline;
 

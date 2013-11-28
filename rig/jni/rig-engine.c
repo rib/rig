@@ -186,7 +186,7 @@ CoglBool
 rig_engine_paint (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
-  CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->onscreen);
+  CoglFramebuffer *fb = engine->onscreen;
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
 
@@ -2570,7 +2570,7 @@ ensure_light (RigEngine *engine)
   camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
   if (!camera)
     {
-      camera = rut_camera_new (engine->ctx, COGL_FRAMEBUFFER (engine->shadow_fb));
+      camera = rut_camera_new (engine->ctx, engine->shadow_fb);
 
       rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
       rut_camera_set_projection_mode (camera,
@@ -2584,7 +2584,7 @@ ensure_light (RigEngine *engine)
     }
   else
     {
-      CoglFramebuffer *fb = COGL_FRAMEBUFFER (engine->shadow_fb);
+      CoglFramebuffer *fb = engine->shadow_fb;
       int width = cogl_framebuffer_get_width (fb);
       int height = cogl_framebuffer_get_height (fb);
       rut_camera_set_framebuffer (camera, fb);
@@ -2746,7 +2746,7 @@ ensure_play_camera (RigEngine *engine)
         {
           engine->play_camera_component =
             rut_camera_new (engine->ctx,
-                            COGL_FRAMEBUFFER (engine->onscreen));
+                            engine->onscreen);
 
           rut_entity_add_component (engine->play_camera,
                                     engine->play_camera_component);
@@ -2886,24 +2886,24 @@ create_debug_gradient (RigEngine *engine)
                              COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
   CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
-  engine->gradient = COGL_TEXTURE (
+  engine->gradient =
     cogl_texture_2d_new_with_size (rut_cogl_context,
                                    200, 200,
-                                   COGL_PIXEL_FORMAT_ANY));
+                                   COGL_PIXEL_FORMAT_ANY);
 
   offscreen = cogl_offscreen_new_with_texture (engine->gradient);
 
-  cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (offscreen),
+  cogl_framebuffer_orthographic (offscreen,
                                  0, 0,
                                  200,
                                  200,
                                  -1,
                                  100);
-  cogl_framebuffer_clear4f (COGL_FRAMEBUFFER (offscreen),
+  cogl_framebuffer_clear4f (offscreen,
                             COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
                             0, 0, 0, 1);
   cogl_primitive_draw (prim,
-                       COGL_FRAMEBUFFER (offscreen),
+                       offscreen,
                        pipeline);
 
   cogl_object_unref (prim);
@@ -2936,18 +2936,18 @@ rig_engine_handle_ui_update (RigEngine *engine)
 
   /* XXX: Right now there's no way to avoid allocating a color buffer. */
   engine->shadow_fb =
-    cogl_offscreen_new_with_texture (COGL_TEXTURE (color_buffer));
+    cogl_offscreen_new_with_texture (color_buffer);
   if (engine->shadow_fb == NULL)
     g_critical ("could not create offscreen buffer");
 
   /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (COGL_FRAMEBUFFER (engine->shadow_fb),
+  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
                                               TRUE);
 
   g_warn_if_fail (engine->shadow_map == NULL);
 
   engine->shadow_map =
-    cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (engine->shadow_fb));
+    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
 
   /* Note: we currently require having exactly one scene light and
    * play camera, so if we didn't already load them we create a default
@@ -3218,9 +3218,9 @@ rig_engine_init (RutShell *shell, void *user_data)
                                      engine,
                                      NULL);
 
-  cogl_framebuffer_allocate (COGL_FRAMEBUFFER (engine->onscreen), NULL);
+  cogl_framebuffer_allocate (engine->onscreen, NULL);
 
-  fb = COGL_FRAMEBUFFER (engine->onscreen);
+  fb = engine->onscreen;
   engine->width = cogl_framebuffer_get_width (fb);
   engine->height  = cogl_framebuffer_get_height (fb);
 

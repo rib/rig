@@ -1330,7 +1330,7 @@ get_entity_color_pipeline (RigEngine *engine,
 FOUND:
 
   /* FIXME: there's lots to optimize about this! */
-  shadow_fb = COGL_FRAMEBUFFER (engine->shadow_fb);
+  shadow_fb = engine->shadow_fb;
 
   /* update uniforms in pipelines */
   {

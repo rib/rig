@@ -26,6 +26,7 @@
 #include <glib.h>
 
 #include <cogl/cogl.h>
+#include <cogl/cogl-sdl.h>
 #include <cogl-pango/cogl-pango.h>
 
 #include "rut-bitmask.h"
