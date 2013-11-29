@@ -82,6 +82,7 @@ depcomp
 /examples/cogl-msaa
 /examples/cogl-point-sprites
 /examples/cogl-sdl-hello
+/examples/cogl-sdl2-hello
 /examples/cogl-x11-foreign
 /examples/cogl-x11-tfp
 /examples/cogland
@@ -97,6 +98,8 @@ TAGS
 /tests/conform/test-launcher.sh
 /tests/interactive/wrapper.sh
 /tests/conform/*.bat
+/tests/conform/.log
+/tests/unit/.log
 /tests/config.env
 /tests/micro-perf/test-journal
 /po/POTFILES
