@@ -63,7 +63,6 @@ cogl_public_h = \
 	$(srcdir)/cogl-attribute.h 		\
 	$(srcdir)/cogl-bitmap.h 		\
 	$(srcdir)/cogl-buffer.h 		\
-	$(srcdir)/cogl-clip-state.h		\
 	$(srcdir)/cogl-clutter.h       		\
 	$(srcdir)/cogl-color.h 			\
 	$(srcdir)/cogl-context.h 		\
@@ -232,9 +231,6 @@ cogl_sources_c = \
 	$(srcdir)/cogl-bitmap-pixbuf.c 			\
 	$(srcdir)/cogl-clip-stack.h 			\
 	$(srcdir)/cogl-clip-stack.c			\
-	$(srcdir)/cogl-clip-state-private.h		\
-	$(srcdir)/cogl-clip-state.h			\
-	$(srcdir)/cogl-clip-state.c			\
 	$(srcdir)/cogl-feature-private.h                \
 	$(srcdir)/cogl-feature-private.c                \
 	$(srcdir)/cogl-color-private.h    		\
@@ -506,7 +502,7 @@ libcogl2_la_LDFLAGS = \
 	-no-undefined \
 	-version-info @COGL_LT_CURRENT@:@COGL_LT_REVISION@:@COGL_LT_AGE@ \
 	-export-dynamic \
-	-export-symbols-regex "^(cogl|_cogl_debug_flags|_cogl_atlas_new|_cogl_atlas_add_reorganize_callback|_cogl_atlas_reserve_space|_cogl_callback|_cogl_util_get_eye_planes_for_screen_poly|_cogl_atlas_texture_remove_reorganize_callback|_cogl_atlas_texture_add_reorganize_callback|_cogl_texture_foreach_sub_texture_in_region|_cogl_profile_trace_message|_cogl_context_get_default|_cogl_framebuffer_get_stencil_bits|_cogl_clip_stack_push_rectangle|_cogl_framebuffer_get_modelview_stack|_cogl_object_default_unref|_cogl_pipeline_foreach_layer_internal|_cogl_clip_stack_push_primitive|_cogl_buffer_unmap_for_fill_or_fallback|_cogl_primitive_draw|_cogl_debug_instances|_cogl_framebuffer_get_projection_stack|_cogl_pipeline_layer_get_texture|_cogl_buffer_map_for_fill_or_fallback|_cogl_framebuffer_get_clip_state|_cogl_texture_can_hardware_repeat|_cogl_pipeline_prune_to_n_layers|test_|unit_test_).*"
+	-export-symbols-regex "^(cogl|_cogl_debug_flags|_cogl_atlas_new|_cogl_atlas_add_reorganize_callback|_cogl_atlas_reserve_space|_cogl_callback|_cogl_util_get_eye_planes_for_screen_poly|_cogl_atlas_texture_remove_reorganize_callback|_cogl_atlas_texture_add_reorganize_callback|_cogl_texture_foreach_sub_texture_in_region|_cogl_profile_trace_message|_cogl_context_get_default|_cogl_framebuffer_get_stencil_bits|_cogl_clip_stack_push_rectangle|_cogl_framebuffer_get_modelview_stack|_cogl_object_default_unref|_cogl_pipeline_foreach_layer_internal|_cogl_clip_stack_push_primitive|_cogl_buffer_unmap_for_fill_or_fallback|_cogl_primitive_draw|_cogl_debug_instances|_cogl_framebuffer_get_projection_stack|_cogl_pipeline_layer_get_texture|_cogl_buffer_map_for_fill_or_fallback|_cogl_texture_can_hardware_repeat|_cogl_pipeline_prune_to_n_layers|test_|unit_test_).*"
 
 libcogl2_la_SOURCES = $(cogl_sources_c)
 nodist_libcogl2_la_SOURCES = $(BUILT_SOURCES)
