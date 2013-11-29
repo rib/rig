@@ -646,6 +646,7 @@ _cogl_flush_attributes_state (CoglFramebuffer *framebuffer,
    * in the journal. For this optimization to work we need to track
    * when the framebuffer really does get drawn to. */
   _cogl_framebuffer_mark_mid_scene (framebuffer);
+  _cogl_framebuffer_mark_clear_clip_dirty (framebuffer);
 
   ctx->driver_vtable->flush_attributes_state (framebuffer,
                                               pipeline,
