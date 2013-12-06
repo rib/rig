@@ -92,7 +92,7 @@ _rig_camera_view_free (void *object)
   rig_camera_view_set_scene (view, NULL);
   rig_camera_view_set_play_camera (view, NULL);
 
-  rut_shell_remove_pre_paint_callback (view->context->shell, view);
+  rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, view);
 
   rut_refable_unref (view->context);
 

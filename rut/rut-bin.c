@@ -62,7 +62,7 @@ _rut_bin_free (void *object)
 
   rut_bin_set_child (bin, NULL);
 
-  rut_shell_remove_pre_paint_callback (bin->context->shell, bin);
+  rut_shell_remove_pre_paint_callback_by_graphable (bin->context->shell, bin);
 
   rut_graphable_destroy (bin);
 

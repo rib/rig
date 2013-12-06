@@ -119,7 +119,7 @@ _rut_box_layout_free (void *object)
       rut_box_layout_remove (box, child->widget);
     }
 
-  rut_shell_remove_pre_paint_callback (box->ctx->shell, box);
+  rut_shell_remove_pre_paint_callback_by_graphable (box->ctx->shell, box);
 
   rut_refable_unref (box->ctx);
 

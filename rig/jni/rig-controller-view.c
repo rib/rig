@@ -1216,7 +1216,7 @@ _rig_path_view_free (void *object)
 
   rut_graphable_destroy (path_view);
 
-  rut_shell_remove_pre_paint_callback (view->context->shell, path_view);
+  rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, path_view);
 
   g_slice_free (RigPathView, path_view);
 }
@@ -1787,7 +1787,7 @@ _rig_controller_property_view_free (void *object)
 
   rut_graphable_destroy (prop_view);
 
-  rut_shell_remove_pre_paint_callback (prop_view->object->view->context->shell,
+  rut_shell_remove_pre_paint_callback_by_graphable (prop_view->object->view->context->shell,
                                        prop_view);
 
   g_slice_free (RigControllerPropertyView, prop_view);
@@ -2686,7 +2686,7 @@ _rig_controller_view_free (void *object)
 
   rig_controller_view_clear_object_views (view);
 
-  rut_shell_remove_pre_paint_callback (view->context->shell, view);
+  rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, view);
 
   rut_graphable_destroy (view);
 

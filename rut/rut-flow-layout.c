@@ -263,7 +263,7 @@ _rut_flow_layout_free (void *object)
       rut_flow_layout_remove_child (flow, child);
     }
 
-  rut_shell_remove_pre_paint_callback (flow->ctx->shell, flow);
+  rut_shell_remove_pre_paint_callback_by_graphable (flow->ctx->shell, flow);
 
   rut_simple_introspectable_destroy (flow);
 

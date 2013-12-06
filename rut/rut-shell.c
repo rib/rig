@@ -1438,6 +1438,9 @@ update_pre_paint_entry_depth (RutShellPrePaintEntry *entry)
 
   entry->depth = 0;
 
+  if (!entry->graphable)
+    return;
+
   for (parent = rut_graphable_get_parent (entry->graphable);
        parent;
        parent = rut_graphable_get_parent (parent))
@@ -2240,14 +2243,17 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
   RutShellPrePaintEntry *entry;
   RutList *insert_point;
 
-  /* Don't do anything if the graphable is already queued */
-  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+  if (graphable)
     {
-      if (entry->graphable == graphable)
+      /* Don't do anything if the graphable is already queued */
+      rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
         {
-          g_warn_if_fail (entry->callback == callback);
-          g_warn_if_fail (entry->user_data == user_data);
-          return;
+          if (entry->graphable == graphable)
+            {
+              g_warn_if_fail (entry->callback == callback);
+              g_warn_if_fail (entry->user_data == user_data);
+              return;
+            }
         }
     }
 
@@ -2283,14 +2289,33 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
 }
 
 void
-rut_shell_remove_pre_paint_callback (RutShell *shell,
-                                     RutObject *graphable)
+rut_shell_remove_pre_paint_callback_by_graphable (RutShell *shell,
+                                                  RutObject *graphable)
 {
   RutShellPrePaintEntry *entry;
 
   rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
     {
       if (entry->graphable == graphable)
+        {
+          rut_list_remove (&entry->list_node);
+          g_slice_free (RutShellPrePaintEntry, entry);
+          break;
+        }
+    }
+}
+
+void
+rut_shell_remove_pre_paint_callback (RutShell *shell,
+                                     RutPrePaintCallback callback,
+                                     void *user_data)
+{
+  RutShellPrePaintEntry *entry;
+
+  rut_list_for_each (entry, &shell->pre_paint_callbacks, list_node)
+    {
+      if (entry->callback == callback &&
+          entry->user_data == user_data)
         {
           rut_list_remove (&entry->list_node);
           g_slice_free (RutShellPrePaintEntry, entry);

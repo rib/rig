@@ -80,7 +80,7 @@ _rut_drag_bin_free (void *object)
       rut_refable_unref (bin->transform);
     }
 
-  rut_shell_remove_pre_paint_callback (bin->ctx->shell, bin);
+  rut_shell_remove_pre_paint_callback_by_graphable (bin->ctx->shell, bin);
 
   rut_graphable_destroy (bin);
 

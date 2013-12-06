@@ -360,7 +360,7 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
                                   void *user_data);
 
 /**
- * rut_shell_remove_pre_paint_callback:
+ * rut_shell_remove_pre_paint_callback_by_graphable:
  * @shell: The #RutShell
  * @graphable: A graphable object
  *
@@ -369,8 +369,13 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
  * function if no callback has actually been registered.
  */
 void
+rut_shell_remove_pre_paint_callback_by_graphable (RutShell *shell,
+                                                  RutObject *graphable);
+
+void
 rut_shell_remove_pre_paint_callback (RutShell *shell,
-                                     RutObject *graphable);
+                                     RutPrePaintCallback callback,
+                                     void *user_data);
 
 /**
  * rut_shell_add_onscreen:

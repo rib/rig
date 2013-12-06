@@ -188,7 +188,7 @@ _rut_ui_viewport_free (void *object)
   rut_simple_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
 
-  rut_shell_remove_pre_paint_callback (ui_viewport->ctx->shell,
+  rut_shell_remove_pre_paint_callback_by_graphable (ui_viewport->ctx->shell,
                                        ui_viewport);
 
   g_slice_free (RutUIViewport, object);
