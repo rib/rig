@@ -17,9 +17,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
@@ -29,6 +27,7 @@
 #include "rut-box-layout.h"
 
 #ifdef USE_SDL
+#include <cogl/cogl-sdl.h>
 #include <SDL.h>
 #include <SDL_syswm.h>
 #endif
