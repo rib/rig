@@ -21,6 +21,7 @@
 #include <config.h>
 
 #include <math.h>
+#include <stdlib.h>
 
 #include "rut-pointalism-grid.h"
 #include "rut-global.h"

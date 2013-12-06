@@ -27,6 +27,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef RUT_ENABLE_BACKTRACE
 #include <execinfo.h>

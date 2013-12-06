@@ -21,6 +21,7 @@
 
 #include <config.h>
 
+#include <math.h>
 #include <glib.h>
 
 #include <cogl/cogl.h>
