@@ -462,7 +462,7 @@ add_control (RutPropInspector *inspector,
     }
 
   if (!(inspector->target_prop->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
-    set_disabled (inspector, DISABLED_STATE_FULLY);
+    set_disabled (inspector, DISABLED_STATE_WIDGET);
 
   rut_box_layout_add (inspector->widget_hbox, true, widget);
   rut_refable_unref (widget);
