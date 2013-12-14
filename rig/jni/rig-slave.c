@@ -217,13 +217,11 @@ android_main (struct android_app *application)
   memset (&engine, 0, sizeof (RigEngine));
   engine.app = application;
 
-  _rig_in_device_mode = TRUE;
-
   engine.shell = rut_android_shell_new (application,
-                                      rig_slave_init,
-                                      rig_slave_fini,
-                                      rig_slave_paint,
-                                      &slave);
+                                        rig_slave_init,
+                                        rig_slave_fini,
+                                        rig_slave_paint,
+                                        &slave);
 
   engine.ctx = rut_context_new (engine.shell);
   gst_init (&argc, &argv);
@@ -263,9 +261,9 @@ main (int argc, char **argv)
   memset (&engine, 0, sizeof (RigEngine));
 
   engine.shell = rut_shell_new (rig_slave_init,
-                              rig_slave_fini,
-                              rig_slave_paint,
-                              &slave);
+                                rig_slave_fini,
+                                rig_slave_paint,
+                                &slave);
 
   engine.ctx = rut_context_new (engine.shell);
 
@@ -274,8 +272,6 @@ main (int argc, char **argv)
   rut_shell_add_input_callback (engine.shell,
                                 rig_engine_input_handler,
                                 &engine, NULL);
-
-  _rig_in_device_mode = TRUE;
 
   rut_shell_main (engine.shell);
 

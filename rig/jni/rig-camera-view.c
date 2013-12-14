@@ -132,7 +132,7 @@ paint_overlays (RigCameraView *view,
       need_camera_flush = TRUE;
     }
 
-  if (!_rig_in_device_mode && !engine->play_mode)
+  if (_rig_in_editor_mode && !engine->play_mode)
     {
       draw_tools = TRUE;
       need_camera_flush = TRUE;
@@ -297,7 +297,7 @@ _rut_camera_view_paint (RutObject *object,
     return;
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode && !engine->play_mode)
+  if (_rig_in_editor_mode && !engine->play_mode)
     {
       camera = view->view_camera;
       camera_component = view->view_camera_component;
@@ -316,7 +316,7 @@ _rut_camera_view_paint (RutObject *object,
     }
 
   rut_camera_set_framebuffer (camera_component, fb);
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       cogl_framebuffer_draw_rectangle (fb,
                                        view->bg_pipeline,
@@ -614,7 +614,7 @@ allocate_cb (RutObject *graphable,
   update_device_transforms (view);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       rut_arcball_init (&engine->arcball,
                         view->width / 2,
@@ -1350,7 +1350,7 @@ entitygraph_pre_pick_cb (RutObject *object,
         }
       else
         {
-          if (!_rig_in_device_mode && !pick_ctx->engine->play_mode)
+          if (_rig_in_editor_mode && !pick_ctx->engine->play_mode)
             {
               material = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_MATERIAL);
@@ -1673,7 +1673,7 @@ input_cb (RutInputEvent *event,
                             ray_position,
                             ray_direction);
 
-      if (_rig_in_device_mode || engine->play_mode)
+      if (!_rig_in_editor_mode || engine->play_mode)
         {
           if (picked_entity)
             {
@@ -1852,7 +1852,7 @@ input_cb (RutInputEvent *event,
 
     }
 #ifdef RIG_EDITOR_ENABLED
-  else if (!_rig_in_device_mode)
+  else if (_rig_in_editor_mode)
     {
       if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
@@ -2011,7 +2011,7 @@ input_region_cb (RutInputRegion *region,
                  void *user_data)
 {
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     return input_cb (event, user_data);
   else
 #endif
@@ -2129,18 +2129,21 @@ rig_camera_view_new (RigEngine *engine)
                            view->play_dummy_entity);
 
 #ifdef RIG_EDITOR_ENABLED
-  view->tool_overlay = rut_graph_new (engine->ctx);
-  rut_graphable_add_child (view, view->tool_overlay);
-  rut_refable_unref (view->tool_overlay);
+  if (_rig_in_editor_mode)
+    {
+      view->tool_overlay = rut_graph_new (engine->ctx);
+      rut_graphable_add_child (view, view->tool_overlay);
+      rut_refable_unref (view->tool_overlay);
 
-  view->selection_tool = rig_selection_tool_new (view, view->tool_overlay);
-  view->rotation_tool = rig_rotation_tool_new (view);
+      view->selection_tool = rig_selection_tool_new (view, view->tool_overlay);
+      view->rotation_tool = rig_rotation_tool_new (view);
 
-  rig_add_tool_changed_callback (engine,
-                                 tool_changed_cb,
-                                 view,
-                                 NULL); /* destroy notify */
-  tool_changed_cb (engine, RIG_TOOL_ID_SELECTION, view);
+      rig_add_tool_changed_callback (engine,
+                                     tool_changed_cb,
+                                     view,
+                                     NULL); /* destroy notify */
+      tool_changed_cb (engine, RIG_TOOL_ID_SELECTION, view);
+    }
 #endif /* RIG_EDITOR_ENABLED */
 
   return view;

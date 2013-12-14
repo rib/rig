@@ -57,8 +57,6 @@ main (int argc, char **argv)
 
   engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
 
-  _rig_in_device_mode = TRUE;
-
   engine.shell = rut_shell_new (rig_editor_init,
                               rig_engine_fini,
                               rig_engine_paint,

@@ -90,8 +90,10 @@ static RigObjectsSelection *
 _rig_objects_selection_new (RigEngine *engine);
 
 #ifdef RIG_EDITOR_ENABLED
-CoglBool _rig_in_device_mode = FALSE;
+bool _rig_in_editor_mode = FALSE;
 #endif
+
+bool _rig_in_simulator_mode = FALSE;
 
 static RutTraverseVisitFlags
 scenegraph_pre_paint_cb (RutObject *object,
@@ -511,7 +513,7 @@ rig_engine_dirty_properties_menu (RutImageSource *source,
 {
 #ifdef RIG_EDITOR_ENABLED
   RigEngine *engine = user_data;
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     _rig_engine_update_inspector (engine);
 #endif
 }
@@ -815,7 +817,7 @@ allocate (RigEngine *engine)
   rut_sizable_set_size (engine->top_stack, engine->width, engine->height);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       if (engine->resize_handle_transform)
         {
@@ -2593,7 +2595,7 @@ ensure_light (RigEngine *engine)
 
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
       char *full_path = rut_find_data_file ("light.ply");
@@ -2759,7 +2761,7 @@ ensure_play_camera (RigEngine *engine)
                                    engine->play_camera);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode &&
+  if (_rig_in_editor_mode &&
       engine->play_camera_handle == NULL)
     {
       RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
@@ -2954,7 +2956,7 @@ rig_engine_handle_ui_update (RigEngine *engine)
   ensure_play_camera (engine);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       engine->grid_prim = rut_create_create_grid (engine->ctx,
                                                   engine->device_width,
@@ -2970,7 +2972,7 @@ rig_engine_handle_ui_update (RigEngine *engine)
       engine->controllers = g_list_prepend (engine->controllers, controller);
     }
 
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       rig_controller_view_update_controller_list (engine->controller_view);
 
@@ -2988,7 +2990,7 @@ rig_engine_free_ui (RigEngine *engine)
   GList *l;
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       rig_controller_view_set_controller (engine->controller_view,
                                           NULL);
@@ -3096,14 +3098,20 @@ rig_engine_init (RutShell *shell, void *user_data)
                        &rut_data_property_specs[i],
                        engine);
 
-#ifdef RIG_EDITOR_ENABLED
-  engine->objects_selection = _rig_objects_selection_new (engine);
   engine->serialization_stack = rut_memory_stack_new (8192);
 
-  rut_list_init (&engine->tool_changed_cb_list);
+  engine->assets_registry = g_hash_table_new_full (g_str_hash,
+                                                   g_str_equal,
+                                                   g_free,
+                                                   rut_refable_unref);
 
-  if (!_rig_in_device_mode)
+#ifdef RIG_EDITOR_ENABLED
+  if (_rig_in_editor_mode)
     {
+      engine->objects_selection = _rig_objects_selection_new (engine);
+
+      rut_list_init (&engine->tool_changed_cb_list);
+
       rig_engine_push_undo_subjournal (engine);
 
       /* Create a color gradient texture that can be used for debugging
@@ -3112,26 +3120,48 @@ rig_engine_init (RutShell *shell, void *user_data)
        * XXX: This should probably simply be #ifdef DEBUG code.
        */
       create_debug_gradient (engine);
+
+      load_builtin_assets (engine);
     }
 #endif /* RIG_EDITOR_ENABLED */
 
-  engine->assets_registry = g_hash_table_new_full (g_str_hash,
-                                                   g_str_equal,
-                                                   g_free,
-                                                   rut_refable_unref);
+  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
-  load_builtin_assets (engine);
-
-  engine->scene = rut_graph_new (engine->ctx);
-
+  /*
+   * Setup the 2D widget scenegraph
+   */
   engine->root = rut_graph_new (engine->ctx);
 
   engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
   rut_graphable_add_child (engine->root, engine->top_stack);
   rut_refable_unref (engine->top_stack);
 
+  engine->camera = rut_camera_new (engine->ctx, NULL);
+  rut_camera_set_clear (engine->camera, FALSE);
 
-  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+  /* XXX: Basically just a hack for now. We should have a
+   * RutShellWindow type that internally creates a RutCamera that can
+   * be used when handling input events in device coordinates.
+   */
+  rut_shell_set_window_camera (shell, engine->camera);
+
+  rut_shell_add_input_camera (shell, engine->camera, engine->root);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (_rig_in_editor_mode)
+      create_editor_ui (engine);
+  else
+#endif
+    {
+      engine->main_camera_view = rig_camera_view_new (engine);
+      rut_stack_add (engine->top_stack, engine->main_camera_view);
+    }
+
+
+  /*
+   * Setup the entity scenegraph
+   */
+  engine->scene = rut_graph_new (engine->ctx);
 
   /*
    * Depth of Field
@@ -3148,32 +3178,11 @@ rig_engine_init (RutShell *shell, void *user_data)
   cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     rig_set_play_mode_enabled (engine, FALSE);
   else
 #endif
     rig_set_play_mode_enabled (engine, TRUE);
-
-  engine->camera = rut_camera_new (engine->ctx, NULL);
-  rut_camera_set_clear (engine->camera, FALSE);
-
-  /* XXX: Basically just a hack for now. We should have a
-   * RutShellWindow type that internally creates a RutCamera that can
-   * be used when handling input events in device coordinates.
-   */
-  rut_shell_set_window_camera (shell, engine->camera);
-
-  rut_shell_add_input_camera (shell, engine->camera, engine->root);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
-      create_editor_ui (engine);
-  else
-#endif
-    {
-      engine->main_camera_view = rig_camera_view_new (engine);
-      rut_stack_add (engine->top_stack, engine->main_camera_view);
-    }
 
   engine->renderer = rig_renderer_new (engine);
   rig_renderer_init (engine);
@@ -3198,7 +3207,7 @@ rig_engine_init (RutShell *shell, void *user_data)
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
                                             1000, 700);
@@ -3285,7 +3294,7 @@ rig_engine_fini (RutShell *shell, void *user_data)
   rut_dof_effect_free (engine->dof);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (!_rig_in_device_mode)
+  if (_rig_in_editor_mode)
     {
       for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
         rut_refable_unref (engine->splits[i]);
@@ -3337,7 +3346,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
     {
     case RUT_INPUT_EVENT_TYPE_KEY:
 #ifdef RIG_EDITOR_ENABLED
-      if (!_rig_in_device_mode &&
+      if (_rig_in_editor_mode &&
           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_DOWN)
         {
           switch (rut_key_event_get_keysym (event))
@@ -3458,7 +3467,7 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   else if (rut_util_find_tag (inferred_tags, "ply"))
     asset = rut_asset_new_ply_model (engine->ctx, path, inferred_tags);
 
-  if (asset && !_rig_in_device_mode && rut_asset_needs_thumbnail (asset))
+  if (asset && _rig_in_editor_mode && rut_asset_needs_thumbnail (asset))
     rut_asset_thumbnail (asset, rig_refresh_thumbnails, engine, NULL);
 
   g_list_free (inferred_tags);

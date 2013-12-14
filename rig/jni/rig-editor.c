@@ -71,6 +71,8 @@ main (int argc, char **argv)
                                 rig_engine_input_handler,
                                 &engine, NULL);
 
+  _rig_in_editor_mode = true;
+
   while (TRUE)
     {
       char *assets_location = g_path_get_dirname (engine.ui_filename);
