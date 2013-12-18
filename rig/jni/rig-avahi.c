@@ -144,7 +144,7 @@ create_service (RigEngine *engine)
                                            engine->avahi_service_name,
                                            "_rig._tcp",
                                            NULL, NULL,
-                                           engine->rpc_server_port,
+                                           engine->slave_service->port,
                                            "version=1.0",
                                            user_name,
                                            NULL);

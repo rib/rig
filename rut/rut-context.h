@@ -47,6 +47,10 @@ struct _RutContext
   RutObjectProps _parent;
   int ref_count;
 
+  /* If true then this process does not handle input events directly
+   * or output graphics directly. */
+  bool headless;
+
   RutShell *shell;
 
   RutSettings *settings;

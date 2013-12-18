@@ -164,7 +164,12 @@ server_error_handler (PB_RPC_Error_Code code,
 
   g_warning ("Server error: %s", message);
 
-  rig_rpc_stop_server (engine);
+  rig_avahi_unregister_service (engine);
+
+  rig_rpc_server_shutdown (engine->slave_service);
+
+  rut_refable_unref (engine->slave_service);
+  engine->slave_service = NULL;
 }
 
 void
@@ -173,21 +178,28 @@ rig_slave_init (RutShell *shell, void *user_data)
   RigSlave *slave = user_data;
   RigEngine *engine = slave->engine;
 
-  rig_rpc_start_server (engine,
-                        &rig_slave_service.base,
-                        server_error_handler,
-                        new_client_handler,
-                        slave);
+  engine->slave_service = rig_rpc_server_new (engine,
+                                              &rig_slave_service.base,
+                                              server_error_handler,
+                                              new_client_handler,
+                                              slave);
 
-  rig_engine_init (shell, slave->engine);
+  rig_avahi_register_service (engine);
+
+  rig_engine_init (slave->engine, shell);
 }
 
 void
 rig_slave_fini (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
+  RigEngine *engine = slave->engine;
 
-  rig_engine_fini (shell, slave->engine);
+  rig_avahi_unregister_service (engine);
+
+  rig_rpc_server_shutdown (engine->slave_service);
+
+  rig_engine_fini (shell, engine);
 }
 
 CoglBool
@@ -260,7 +272,8 @@ main (int argc, char **argv)
 
   memset (&engine, 0, sizeof (RigEngine));
 
-  engine.shell = rut_shell_new (rig_slave_init,
+  engine.shell = rut_shell_new (false, /* not headless */
+                                rig_slave_init,
                                 rig_slave_fini,
                                 rig_slave_paint,
                                 &slave);

@@ -9,13 +9,14 @@ AM_CPPFLAGS = \
 	-DG_DISABLE_SINGLE_INCLUDES \
 	-DCOGL_DISABLE_DEPRECATED \
 	$(RIG_DEP_CFLAGS) \
-	$(RIG_EXTRA_CPPFLAGS)
+	$(RIG_EXTRA_CPPFLAGS) \
+	-DRIG_BIN_DIR=\"$(bindir)/\"
 
 AM_CFLAGS = \
 	$(RIG_EXTRA_CFLAGS)
 
 noinst_LTLIBRARIES = librig.la
-bin_PROGRAMS = rig rig-slave rig-device
+bin_PROGRAMS = rig rig-slave rig-device rig-simulator
 
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
@@ -68,7 +69,11 @@ librig_la_SOURCES = \
 	jni/rig-slave-address.c \
 	jni/rig-slave-master.h \
 	jni/rig-slave-master.c \
-	jni/rig.pb-c.c
+	jni/rig.pb-c.c \
+	jni/rig-simulator-service.c \
+	jni/rig-simulator-service.h \
+	jni/rig-renderer-service.c \
+	jni/rig-renderer-service.h
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
@@ -112,3 +117,8 @@ rig_slave_LDADD = $(common_ldadd)
 rig_device_SOURCES = \
 	jni/rig-device.c
 rig_device_LDADD = $(common_ldadd)
+
+#TODO: Avoid linking with Cogl and SDL in the simulator...
+rig_simulator_SOURCES = \
+	jni/rig-simulator.c
+rig_simulator_LDADD = $(common_ldadd)

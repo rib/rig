@@ -22,6 +22,8 @@
 #ifndef _RUT_SHELL_H_
 #define _RUT_SHELL_H_
 
+#include <stdbool.h>
+
 #include "rut-keysyms.h"
 #include "rut-object.h"
 #include "rut-types.h"
@@ -36,10 +38,14 @@ typedef void (*RutShellFiniCallback) (RutShell *shell, void *user_data);
 typedef CoglBool (*RutShellPaintCallback) (RutShell *shell, void *user_data);
 
 RutShell *
-rut_shell_new (RutShellInitCallback init,
+rut_shell_new (bool headless,
+               RutShellInitCallback init,
                RutShellFiniCallback fini,
                RutShellPaintCallback paint,
                void *user_data);
+
+bool
+rut_shell_get_headless (RutShell *shell);
 
 /* XXX: Basically just a hack for now to effectively relate input events to
  * a CoglFramebuffer and so we have a way to consistently associate a

@@ -26,6 +26,11 @@
 #include <math.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
+
+#include <sys/socket.h>
+#include <sys/un.h>
+
 #include <glib-object.h>
 
 
@@ -49,6 +54,8 @@
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
 #include "rig-slave-master.h"
+#include "rig-renderer-service.h"
+#include "rig-simulator-service.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -3085,11 +3092,68 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 }
 
 void
-rig_engine_init (RutShell *shell, void *user_data)
+rig_engine_init (RigEngine *engine,
+                 RutShell *shell)
 {
-  RigEngine *engine = user_data;
   CoglFramebuffer *fb;
   int i;
+
+  /*
+   * Spawn a simulator process...
+   */
+
+  if (!_rig_in_simulator_mode)
+    {
+      pid_t pid;
+      int sp[2];
+
+      if (socketpair (AF_UNIX, SOCK_STREAM, 0, sp) < 0)
+        g_error ("Failed to open simulator ipc");
+
+      pid = fork ();
+      if (pid == 0)
+        {
+          char fd_str[10];
+          char *path = RIG_BIN_DIR "rig-simulator";
+
+          /* child - simulator process */
+          close (sp[0]);
+
+          if (snprintf (fd_str, sizeof (fd_str), "%d", sp[1]) >= sizeof (fd_str))
+            g_error ("Failed to setup environment for simulator process");
+
+          setenv ("_RIG_IPC_FD", fd_str, true);
+
+#ifdef RIG_ENABLE_DEBUG
+          if (getenv ("RIG_SIMULATOR"))
+            path = getenv ("RIG_SIMULATOR");
+#endif
+
+          if (execl (path, path, NULL) < 0)
+            g_error ("Failed to run simulator process");
+        }
+      else
+        {
+          engine->simulator_pid = pid;
+          rig_renderer_service_start (engine, sp[0]);
+        }
+    }
+  else
+    {
+      const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
+      int fd;
+
+      if (!ipc_fd_str)
+        {
+          g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "
+                   "environment variable");
+        }
+
+      fd = strtol (ipc_fd_str, NULL, 10);
+
+      rig_simulator_service_start (engine, fd);
+    }
+
 
   cogl_matrix_init_identity (&engine->identity);
 
@@ -3105,167 +3169,170 @@ rig_engine_init (RutShell *shell, void *user_data)
                                                    g_free,
                                                    rut_refable_unref);
 
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      engine->objects_selection = _rig_objects_selection_new (engine);
-
-      rut_list_init (&engine->tool_changed_cb_list);
-
-      rig_engine_push_undo_subjournal (engine);
-
-      /* Create a color gradient texture that can be used for debugging
-       * shadow mapping.
-       *
-       * XXX: This should probably simply be #ifdef DEBUG code.
-       */
-      create_debug_gradient (engine);
-
-      load_builtin_assets (engine);
-    }
-#endif /* RIG_EDITOR_ENABLED */
-
-  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-  /*
-   * Setup the 2D widget scenegraph
-   */
-  engine->root = rut_graph_new (engine->ctx);
-
-  engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
-  rut_graphable_add_child (engine->root, engine->top_stack);
-  rut_refable_unref (engine->top_stack);
-
-  engine->camera = rut_camera_new (engine->ctx, NULL);
-  rut_camera_set_clear (engine->camera, FALSE);
-
-  /* XXX: Basically just a hack for now. We should have a
-   * RutShellWindow type that internally creates a RutCamera that can
-   * be used when handling input events in device coordinates.
-   */
-  rut_shell_set_window_camera (shell, engine->camera);
-
-  rut_shell_add_input_camera (shell, engine->camera, engine->root);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-      create_editor_ui (engine);
-  else
-#endif
-    {
-      engine->main_camera_view = rig_camera_view_new (engine);
-      rut_stack_add (engine->top_stack, engine->main_camera_view);
-    }
-
-
   /*
    * Setup the entity scenegraph
    */
   engine->scene = rut_graph_new (engine->ctx);
 
-  /*
-   * Depth of Field
-   */
+  if (!_rig_in_simulator_mode)
+    {
+#ifdef RIG_EDITOR_ENABLED
+      if (_rig_in_editor_mode)
+        {
+          engine->objects_selection = _rig_objects_selection_new (engine);
 
-  engine->dof = rut_dof_effect_new (engine->ctx);
-  engine->enable_dof = FALSE;
+          rut_list_init (&engine->tool_changed_cb_list);
 
-  engine->circle_node_attribute =
-    rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
+          rig_engine_push_undo_subjournal (engine);
 
-  /* picking ray */
-  engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
-  cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+          /* Create a color gradient texture that can be used for debugging
+           * shadow mapping.
+           *
+           * XXX: This should probably simply be #ifdef DEBUG code.
+           */
+          create_debug_gradient (engine);
+
+          load_builtin_assets (engine);
+        }
+#endif /* RIG_EDITOR_ENABLED */
+
+      engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+      /*
+       * Setup the 2D widget scenegraph
+       */
+      engine->root = rut_graph_new (engine->ctx);
+
+      engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
+      rut_graphable_add_child (engine->root, engine->top_stack);
+      rut_refable_unref (engine->top_stack);
+
+      engine->camera = rut_camera_new (engine->ctx, NULL);
+      rut_camera_set_clear (engine->camera, FALSE);
+
+      /* XXX: Basically just a hack for now. We should have a
+       * RutShellWindow type that internally creates a RutCamera that can
+       * be used when handling input events in device coordinates.
+       */
+      rut_shell_set_window_camera (shell, engine->camera);
+
+      rut_shell_add_input_camera (shell, engine->camera, engine->root);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    rig_set_play_mode_enabled (engine, FALSE);
-  else
+      if (_rig_in_editor_mode)
+        create_editor_ui (engine);
+      else
 #endif
-    rig_set_play_mode_enabled (engine, TRUE);
-
-  engine->renderer = rig_renderer_new (engine);
-  rig_renderer_init (engine);
-
-  engine->device_width = DEVICE_WIDTH;
-  engine->device_height = DEVICE_HEIGHT;
-  cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
+        {
+          engine->main_camera_view = rig_camera_view_new (engine);
+          rut_stack_add (engine->top_stack, engine->main_camera_view);
+        }
 
 
+      /*
+       * Depth of Field
+       */
+
+      engine->dof = rut_dof_effect_new (engine->ctx);
+      engine->enable_dof = FALSE;
+
+      engine->circle_node_attribute =
+        rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
+
+      /* picking ray */
+      engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
+      cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+
+#ifdef RIG_EDITOR_ENABLED
+      if (_rig_in_editor_mode)
+        rig_set_play_mode_enabled (engine, FALSE);
+      else
+#endif
+        rig_set_play_mode_enabled (engine, TRUE);
+
+      engine->renderer = rig_renderer_new (engine);
+      rig_renderer_init (engine);
+
+#warning "XXX: can we remove engine->background_color?"
+      cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
+
+      engine->device_width = DEVICE_WIDTH;
+      engine->device_height = DEVICE_HEIGHT;
 
 #ifndef __ANDROID__
-  if (engine->ui_filename)
-    {
-      struct stat st;
+      if (engine->ui_filename)
+        {
+          struct stat st;
 
-      stat (engine->ui_filename, &st);
-      if (S_ISREG (st.st_mode))
-        rig_load (engine, engine->ui_filename);
-      else
-        rig_engine_handle_ui_update (engine);
-    }
+          stat (engine->ui_filename, &st);
+          if (S_ISREG (st.st_mode))
+            rig_load (engine, engine->ui_filename);
+          else
+            rig_engine_handle_ui_update (engine);
+        }
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
-                                            1000, 700);
-      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
-    }
-  else
+      if (_rig_in_editor_mode)
+        {
+          engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                                1000, 700);
+          cogl_onscreen_set_resizable (engine->onscreen, TRUE);
+        }
+      else
 #endif
-    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
-                                          engine->device_width / 2,
-                                          engine->device_height / 2);
+        engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                              engine->device_width / 2,
+                                              engine->device_height / 2);
 
-  cogl_onscreen_add_resize_callback (engine->onscreen,
-                                     data_onscreen_resize,
-                                     engine,
-                                     NULL);
+      cogl_onscreen_add_resize_callback (engine->onscreen,
+                                         data_onscreen_resize,
+                                         engine,
+                                         NULL);
 
-  cogl_framebuffer_allocate (engine->onscreen, NULL);
+      cogl_framebuffer_allocate (engine->onscreen, NULL);
 
-  fb = engine->onscreen;
-  engine->width = cogl_framebuffer_get_width (fb);
-  engine->height  = cogl_framebuffer_get_height (fb);
+      fb = engine->onscreen;
+      engine->width = cogl_framebuffer_get_width (fb);
+      engine->height  = cogl_framebuffer_get_height (fb);
 
-  rut_shell_add_onscreen (engine->shell, engine->onscreen);
+      rut_shell_add_onscreen (engine->shell, engine->onscreen);
 
 #ifdef USE_GTK
-  {
-    RigApplication *application = rig_application_new (engine);
+        {
+          RigApplication *application = rig_application_new (engine);
 
-    gtk_init (NULL, NULL);
+          gtk_init (NULL, NULL);
 
-    /* We need to register the application before showing the onscreen
-     * because we need to set the dbus paths before the window is
-     * mapped. FIXME: Eventually it might be nice to delay creating
-     * the windows until the ‘activate’ or ‘open’ signal is emitted so
-     * that we can support the single process properly. In that case
-     * we could let g_application_run handle the registration
-     * itself */
-    if (!g_application_register (G_APPLICATION (application),
-                                 NULL, /* cancellable */
-                                 NULL /* error */))
-      /* Another instance of the application is already running */
-      rut_shell_quit (shell);
+          /* We need to register the application before showing the onscreen
+           * because we need to set the dbus paths before the window is
+           * mapped. FIXME: Eventually it might be nice to delay creating
+           * the windows until the ‘activate’ or ‘open’ signal is emitted so
+           * that we can support the single process properly. In that case
+           * we could let g_application_run handle the registration
+           * itself */
+          if (!g_application_register (G_APPLICATION (application),
+                                       NULL, /* cancellable */
+                                       NULL /* error */))
+            /* Another instance of the application is already running */
+            rut_shell_quit (shell);
 
-    rig_application_add_onscreen (application, engine->onscreen);
-  }
+          rig_application_add_onscreen (application, engine->onscreen);
+        }
 #endif
 
 #ifdef __APPLE__
-  rig_osx_init (engine);
+      rig_osx_init (engine);
 #endif
 
-  rut_shell_set_title (engine->shell,
-                       engine->onscreen,
-                       "Rig " G_STRINGIFY (RIG_VERSION));
+      rut_shell_set_title (engine->shell,
+                           engine->onscreen,
+                           "Rig " G_STRINGIFY (RIG_VERSION));
 
-  cogl_onscreen_show (engine->onscreen);
+      cogl_onscreen_show (engine->onscreen);
 
-  allocate (engine);
+      allocate (engine);
+    }
 }
 
 void
@@ -3274,57 +3341,66 @@ rig_engine_fini (RutShell *shell, void *user_data)
   RigEngine *engine = user_data;
   int i;
 
-  rig_renderer_fini (engine);
+  if (!_rig_in_simulator_mode)
+    {
+      rig_renderer_fini (engine);
 
-  rig_engine_free_ui (engine);
+      rig_engine_free_ui (engine);
 
-  free_builtin_assets (engine);
+      free_builtin_assets (engine);
 
-  rut_shell_remove_input_camera (shell, engine->camera, engine->root);
+      rut_shell_remove_input_camera (shell, engine->camera, engine->root);
 
-  rut_refable_unref (engine->camera);
-  rut_refable_unref (engine->root);
-  rut_refable_unref (engine->main_camera_view);
+      rut_refable_unref (engine->camera);
+      rut_refable_unref (engine->root);
+      rut_refable_unref (engine->main_camera_view);
 
-  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
-    rut_property_destroy (&engine->properties[i]);
+      cogl_object_unref (engine->circle_node_attribute);
 
-  cogl_object_unref (engine->circle_node_attribute);
-
-  rut_dof_effect_free (engine->dof);
+      rut_dof_effect_free (engine->dof);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
-        rut_refable_unref (engine->splits[i]);
+      if (_rig_in_editor_mode)
+        {
+          for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
+            rut_refable_unref (engine->splits[i]);
 
-      rut_refable_unref (engine->top_vbox);
-      rut_refable_unref (engine->top_hbox);
-      rut_refable_unref (engine->asset_panel_hbox);
-      rut_refable_unref (engine->properties_hbox);
+          rut_refable_unref (engine->top_vbox);
+          rut_refable_unref (engine->top_hbox);
+          rut_refable_unref (engine->asset_panel_hbox);
+          rut_refable_unref (engine->properties_hbox);
 
-      if (engine->transparency_grid)
-        rut_refable_unref (engine->transparency_grid);
-    }
+          if (engine->transparency_grid)
+            rut_refable_unref (engine->transparency_grid);
+        }
 
-  rut_refable_unref (engine->objects_selection);
+      rut_refable_unref (engine->objects_selection);
 
-  rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
+      rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
 #endif
 
-  cogl_object_unref (engine->onscreen);
+      cogl_object_unref (engine->onscreen);
+
+      cogl_object_unref (engine->default_pipeline);
+
+      rig_renderer_service_stop (engine);
 
 #ifdef __APPLE__
-  rig_osx_deinit (engine);
+      rig_osx_deinit (engine);
 #endif
 
 #ifdef USE_GTK
-  {
-    GApplication *application = g_application_get_default ();
-    g_object_unref (application);
-  }
+      {
+        GApplication *application = g_application_get_default ();
+        g_object_unref (application);
+      }
 #endif /* USE_GTK */
+    }
+  else
+    rig_simulator_service_stop (engine);
+
+  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
+    rut_property_destroy (&engine->properties[i]);
 }
 
 RutInputEventStatus

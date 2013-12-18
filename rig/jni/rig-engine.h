@@ -34,6 +34,7 @@ typedef enum _RigToolID
 
 
 #include "rig-protobuf-c-rpc.h"
+#include "rig-rpc-network.h"
 
 #include "rig-controller.h"
 #include "rig-controller-view.h"
@@ -269,9 +270,10 @@ struct _RigEngine
 
   GHashTable *assets_registry;
 
-  int rpc_server_port;
-  PB_RPC_Server *rpc_server;
-  int rpc_server_source_id;
+  pid_t simulator_pid;
+  RigRPCPeer *simulator_peer;
+
+  RigRPCServer *slave_service;
 
   const AvahiPoll *avahi_poll_api;
   char *avahi_service_name;
@@ -296,8 +298,9 @@ extern bool _rig_in_simulator_mode;
 
 extern RutType rig_objects_selection_type;
 
+
 void
-rig_engine_init (RutShell *shell, void *user_data);
+rig_engine_init (RigEngine *engine, RutShell *shell);
 
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);

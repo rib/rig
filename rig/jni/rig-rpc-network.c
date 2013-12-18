@@ -41,9 +41,6 @@
  *
  * Copyright (C) 2013  Intel Corporation
  *
- * Note: Some small parts were copied from the avahi examples although
- * those files have don't name any copyright owners.
- *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -72,14 +69,11 @@
 
 #include "rig-rpc-network.h"
 #include "rig-engine.h"
-#include "rig-avahi.h"
 #include "rig.pb-c.h"
 
 typedef struct _ProtobufSource
 {
   GSource source;
-
-  RigEngine *engine;
 
   ProtobufCDispatch *dispatch;
 
@@ -314,8 +308,7 @@ protobuf_source_funcs =
   };
 
 static GSource *
-protobuf_source_new (RigEngine *engine,
-                     ProtobufCDispatch *dispatch)
+protobuf_source_new (ProtobufCDispatch *dispatch)
 {
   GSource *source = g_source_new (&protobuf_source_funcs,
                                   sizeof (ProtobufSource));
@@ -323,66 +316,96 @@ protobuf_source_new (RigEngine *engine,
 
   protobuf_source->dispatch = dispatch;
 
-  protobuf_source->engine = engine;
-
   return source;
 }
 
 void
-rig_rpc_stop_server (RigEngine *engine)
+rig_rpc_server_shutdown (RigRPCServer *server)
 {
-  g_return_if_fail (engine->rpc_server != NULL);
-
   g_warning ("Stopping RPC server");
 
-  rig_pb_rpc_server_destroy (engine->rpc_server, TRUE);
-  engine->rpc_server = NULL;
+#warning "todo: explicitly shutdown via new rig_pb_rpc_server_shutdown() api"
+  rut_refable_unref (server->pb_rpc_server);
+  server->pb_rpc_server = NULL;
 
-  rig_avahi_unregister_service (engine);
-
-  g_source_remove (engine->rpc_server_source_id);
+  g_source_remove (server->source_id);
 }
 
-void
-rig_rpc_start_server (RigEngine *engine,
-                      ProtobufCService *service,
-                      PB_RPC_Error_Func server_error_handler,
-                      PB_RPC_Client_Connect_Func new_client_handler,
-                      void *user_data)
+static void
+_rig_rpc_server_free (void *object)
 {
-  GSource *source;
-  int fd;
-  struct sockaddr_in addr;
-  socklen_t addr_len = sizeof (addr);
+  RigRPCServer *server = object;
+
+  rig_rpc_server_shutdown (server);
+
+  g_slice_free (RigRPCServer, server);
+}
+
+static RutType rig_rpc_server_type;
+
+static void
+_rig_rpc_server_init_type (void)
+{
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_rpc_server_free
+  };
+
+  RutType *type = &rig_rpc_server_type;
+#define TYPE RigRPCServer
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+
+#undef TYPE
+}
+
+RigRPCServer *
+rig_rpc_server_new (RigEngine *engine,
+                    ProtobufCService *service,
+                    PB_RPC_Error_Func server_error_handler,
+                    PB_RPC_Client_Connect_Func new_client_handler,
+                    void *user_data)
+{
+  RigRPCServer *server = rut_object_alloc0 (RigRPCServer,
+                                            &rig_rpc_server_type,
+                                            _rig_rpc_server_init_type);
   ProtobufCDispatch *dispatch =
     protobuf_c_dispatch_new (&protobuf_c_default_allocator);
+  struct sockaddr_in addr;
+  socklen_t addr_len = sizeof (addr);
+  int listening_fd;
 
-  engine->rpc_server =
+  server->pb_rpc_server =
     rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
                            "0",
                            service,
                            dispatch);
 
-  fd = rig_pb_rpc_server_get_fd (engine->rpc_server);
-  getsockname (fd, (struct sockaddr *)&addr, &addr_len);
+  listening_fd = rig_pb_rpc_server_get_listening_fd (server->pb_rpc_server);
+  getsockname (listening_fd, (struct sockaddr *)&addr, &addr_len);
 
   if (addr.sin_family == AF_INET)
-    engine->rpc_server_port = ntohs (addr.sin_port);
+    server->port = ntohs (addr.sin_port);
   else
-    engine->rpc_server_port = 0;
+    server->port = 0;
 
-  rig_pb_rpc_server_set_error_handler (engine->rpc_server,
+  rig_pb_rpc_server_set_error_handler (server->pb_rpc_server,
                                        server_error_handler,
                                        user_data);
 
-  rig_pb_rpc_server_set_client_connect_handler (engine->rpc_server,
+  rig_pb_rpc_server_set_client_connect_handler (server->pb_rpc_server,
                                                 new_client_handler,
                                                 user_data);
 
-  source = protobuf_source_new (engine, dispatch);
-  engine->rpc_server_source_id = g_source_attach (source, NULL);
+  server->protobuf_source = protobuf_source_new (dispatch);
+  server->source_id = g_source_attach (server->protobuf_source, NULL);
 
-  rig_avahi_register_service (engine);
+  return server;
 }
 
 static void
@@ -429,21 +452,13 @@ rig_rpc_client_new (RigEngine *engine,
                     PB_RPC_Connect_Func connect_handler,
                     void *user_data)
 {
-  RigRPCClient *rpc_client = g_slice_new (RigRPCClient);
+  RigRPCClient *rpc_client = rut_object_alloc0 (RigRPCClient,
+                                                &rig_rpc_client_type,
+                                                _rig_rpc_client_init_type);
   char *addr_str = g_strdup_printf ("%s:%d", hostname, port);
   ProtobufCDispatch *dispatch;
   PB_RPC_Client *pb_client;
   GSource *source;
-
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_rpc_client_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&rpc_client->_parent, &rig_rpc_client_type);
 
   rpc_client->ref_count = 1;
 
@@ -464,7 +479,7 @@ rig_rpc_client_new (RigEngine *engine,
 
   g_free (addr_str);
 
-  source = protobuf_source_new (engine, dispatch);
+  source = protobuf_source_new (dispatch);
 
   rpc_client->protobuf_source = source;
 
@@ -493,4 +508,90 @@ rig_rpc_client_disconnect (RigRPCClient *rpc_client)
 #warning "TODO: need explicit rig_pb_rpc_client_disconnect() api"
   rut_refable_unref (rpc_client->pb_rpc_client);
   rpc_client->pb_rpc_client = NULL;
+}
+
+static void
+_rig_rpc_peer_free (void *object)
+{
+  RigRPCPeer *rpc_peer = object;
+
+  rut_refable_unref (rpc_peer->pb_rpc_client);
+  rut_refable_unref (rpc_peer->pb_rpc_server);
+  rut_refable_unref (rpc_peer->pb_rpc_peer);
+
+  g_slice_free (RigRPCPeer, rpc_peer);
+}
+
+static RutType rig_rpc_peer_type;
+
+static void
+_rig_rpc_peer_init_type (void)
+{
+  static RutRefableVTable refable_vtable = {
+      rut_refable_simple_ref,
+      rut_refable_simple_unref,
+      _rig_rpc_peer_free
+  };
+
+  RutType *type = &rig_rpc_peer_type;
+#define TYPE RigRPCPeer
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_REF_COUNTABLE,
+                          offsetof (TYPE, ref_count),
+                          &refable_vtable);
+
+#undef TYPE
+}
+
+RigRPCPeer *
+rig_rpc_peer_new (RigEngine *engine,
+                  int fd,
+                  ProtobufCService *server_service,
+                  ProtobufCServiceDescriptor *client_descriptor,
+                  PB_RPC_Error_Func peer_error_handler,
+                  PB_RPC_Connect_Func connect_handler,
+                  void *user_data)
+{
+  RigRPCPeer *rpc_peer = rut_object_alloc0 (RigRPCPeer,
+                                            &rig_rpc_peer_type,
+                                            _rig_rpc_peer_init_type);
+  ProtobufCDispatch *dispatch;
+  PB_RPC_Peer *pb_peer;
+  GSource *source;
+
+  rpc_peer->ref_count = 1;
+
+  rpc_peer->fd = fd;
+
+  dispatch = protobuf_c_dispatch_new (&protobuf_c_default_allocator);
+
+  pb_peer =
+    rig_pb_rpc_peer_new (fd,
+                         server_service,
+                         client_descriptor,
+                         dispatch);
+  rpc_peer->pb_rpc_peer = pb_peer;
+
+  rpc_peer->pb_rpc_client = rig_pb_rpc_peer_get_client (pb_peer);
+
+  rig_pb_rpc_client_set_connect_handler (rpc_peer->pb_rpc_client,
+                                         connect_handler,
+                                         user_data);
+  rig_pb_rpc_client_set_error_handler (rpc_peer->pb_rpc_client,
+                                       peer_error_handler,
+                                       user_data);
+
+  rpc_peer->pb_rpc_server = rig_pb_rpc_peer_get_server (pb_peer);
+
+  rig_pb_rpc_server_set_error_handler (rpc_peer->pb_rpc_server,
+                                       peer_error_handler,
+                                       user_data);
+
+  source = protobuf_source_new (dispatch);
+  rpc_peer->protobuf_source = source;
+  rpc_peer->source_id = g_source_attach (source, NULL);
+
+  return rpc_peer;
 }

@@ -21,33 +21,53 @@
 #ifndef _RIG_RPC_NETWORK_H_
 #define _RIG_RPC_NETWORK_H_
 
+#include <glib.h>
+
+#include <rut.h>
+
 #include "protobuf-c/rig-protobuf-c-rpc.h"
 
+typedef struct _RigRPCServer RigRPCServer;
+typedef struct _RigRPCPeer RigRPCPeer;
+
+#include "rig-types.h"
 #include "rig-engine.h"
 
-void
-rig_rpc_start_server (RigEngine *engine,
-                      ProtobufCService *service,
-                      PB_RPC_Error_Func server_error_handler,
-                      PB_RPC_Client_Connect_Func new_client_handler,
-                      void *user_data);
+struct _RigRPCServer
+{
+  RutObjectProps _parent;
+  int ref_count;
+
+  int port;
+
+  PB_RPC_Server *pb_rpc_server;
+
+  GSource *protobuf_source;
+  int source_id;
+
+};
+
+RigRPCServer *
+rig_rpc_server_new (RigEngine *engine,
+                    ProtobufCService *service,
+                    PB_RPC_Error_Func server_error_handler,
+                    PB_RPC_Client_Connect_Func new_client_handler,
+                    void *user_data);
 
 void
-rig_rpc_stop_server (RigEngine *engine);
+rig_rpc_server_shutdown (RigRPCServer *server);
 
 typedef struct _RigRPCClient
 {
   RutObjectProps _parent;
   int ref_count;
 
-  RigEngine *engine;
-
   char *hostname;
   int port;
 
   PB_RPC_Client *pb_rpc_client;
-  GSource *protobuf_source;
 
+  GSource *protobuf_source;
   int source_id;
 
 } RigRPCClient;
@@ -63,5 +83,30 @@ rig_rpc_client_new (RigEngine *engine,
 
 void
 rig_rpc_client_disconnect (RigRPCClient *rpc_client);
+
+struct _RigRPCPeer
+{
+  RutObjectProps _parent;
+  int ref_count;
+
+  int fd;
+
+  PB_RPC_Peer *pb_rpc_peer;
+  PB_RPC_Server *pb_rpc_server;
+  PB_RPC_Client *pb_rpc_client;
+
+  GSource *protobuf_source;
+  int source_id;
+
+};
+
+RigRPCPeer *
+rig_rpc_peer_new (RigEngine *engine,
+                  int fd,
+                  ProtobufCService *server_service,
+                  ProtobufCServiceDescriptor *client_service,
+                  PB_RPC_Error_Func peer_error_handler,
+                  PB_RPC_Connect_Func connect_handler,
+                  void *user_data);
 
 #endif /* _RIG_RPC_NETWORK_H_ */

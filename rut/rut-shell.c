@@ -49,6 +49,8 @@
 #include "rut-sdl-keysyms.h"
 #endif
 
+#include "gstmemsrc.h"
+
 typedef struct
 {
   RutList list_node;
@@ -79,6 +81,10 @@ struct _RutShell
   RutObjectProps _parent;
 
   int ref_count;
+
+  /* If true then this process does not handle input events directly
+   * or output graphics directly. */
+  bool headless;
 
 #ifdef __ANDROID__
   CoglBool quit;
@@ -1232,7 +1238,7 @@ RutRefableVTable _rut_shell_refable_vtable = {
 
 
 static void
-_rut_shell_init_types (void)
+_rut_shell_init_types (bool headless)
 {
   rut_type_init (&rut_shell_type, "RigShell");
   rut_type_add_interface (&rut_shell_type,
@@ -1240,16 +1246,25 @@ _rut_shell_init_types (void)
                           offsetof (RutShell, ref_count),
                           &_rut_shell_refable_vtable);
 
+  if (!headless)
+    {
+      gst_element_register (NULL,
+                            "memsrc",
+                            0,
+                            gst_mem_src_get_type());
+    }
+
   _rut_slider_init_type ();
 }
 
 RutShell *
-rut_shell_new (RutShellInitCallback init,
+rut_shell_new (bool headless,
+               RutShellInitCallback init,
                RutShellFiniCallback fini,
                RutShellPaintCallback paint,
                void *user_data)
 {
-  static CoglBool initialized = FALSE;
+  static bool initialized = FALSE;
   RutShell *shell;
 
   /* Make sure core types are registered */
@@ -1258,11 +1273,13 @@ rut_shell_new (RutShellInitCallback init,
   shell = g_new0 (RutShell, 1);
 
   if (G_UNLIKELY (initialized == FALSE))
-    _rut_shell_init_types ();
+    _rut_shell_init_types (headless);
 
   shell->ref_count = 1;
 
   rut_object_init (&shell->_parent, &rut_shell_type);
+
+  shell->headless = headless;
 
   rut_list_init (&shell->input_cb_list);
   rut_list_init (&shell->grabs);
@@ -1279,6 +1296,12 @@ rut_shell_new (RutShellInitCallback init,
   return shell;
 }
 
+bool
+rut_shell_get_headless (RutShell *shell)
+{
+  return shell->headless;
+}
+
 /* Note: we don't take a reference on the context so we don't
  * introduce a circular reference. */
 void
@@ -1292,7 +1315,8 @@ void
 _rut_shell_init (RutShell *shell)
 {
 #if defined(USE_SDL) && SDL_MAJOR_VERSION < 2
-  SDL_EnableUNICODE (1);
+  if (!shell->headless)
+    SDL_EnableUNICODE (1);
 #endif
 }
 
@@ -1808,29 +1832,35 @@ rut_shell_main (RutShell *shell)
 
   shell->init_cb (shell, shell->user_data);
 
-  cogl_source = cogl_glib_source_new (shell->rut_ctx->cogl_context,
-                                      G_PRIORITY_DEFAULT);
-  g_source_attach (cogl_source, NULL);
+  if (!shell->headless)
+    {
+      cogl_source = cogl_glib_source_new (shell->rut_ctx->cogl_context,
+                                          G_PRIORITY_DEFAULT);
+      g_source_attach (cogl_source, NULL);
 
 #ifdef USE_SDL
+      {
+        GSource *sdl_source;
 
-  {
-    GSource *sdl_source;
-
-    rut_sdl_original_poll =
-      g_main_context_get_poll_func (g_main_context_default ());
-    g_main_context_set_poll_func (g_main_context_default (),
-                                  sdl_poll_wrapper);
-    sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
-    g_source_attach (sdl_source, NULL);
-  }
+        rut_sdl_original_poll =
+          g_main_context_get_poll_func (g_main_context_default ());
+        g_main_context_set_poll_func (g_main_context_default (),
+                                      sdl_poll_wrapper);
+        sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
+        g_source_attach (sdl_source, NULL);
+      }
 #endif
+    }
 
   {
-    GApplication *application = g_application_get_default ();
+    GApplication *application = NULL;
+
+    if (!shell->headless)
+      application = g_application_get_default ();
 
     /* If the application has created a GApplication then we'll run
      * that instead of running our own mainloop directly */
+
     if (application)
       g_application_run (application, 0, NULL);
     else

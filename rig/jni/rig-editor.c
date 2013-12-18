@@ -25,7 +25,7 @@ rig_editor_init (RutShell *shell, void *user_data)
 
   rig_avahi_run_browser (engine);
 
-  rig_engine_init (shell, engine);
+  rig_engine_init (engine, shell);
 }
 
 int
@@ -58,10 +58,11 @@ main (int argc, char **argv)
 
   engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
 
-  engine.shell = rut_shell_new (rig_editor_init,
-                              rig_engine_fini,
-                              rig_engine_paint,
-                              &engine);
+  engine.shell = rut_shell_new (false, /* not headless */
+                                rig_editor_init,
+                                rig_engine_fini,
+                                rig_engine_paint,
+                                &engine);
 
   engine.ctx = rut_context_new (engine.shell);
 

@@ -43,8 +43,6 @@
 #include "rut-scroll-bar.h"
 #include "rut-image-source.h"
 
-#include "gstmemsrc.h"
-
 typedef struct _RutTextureCacheEntry
 {
   RutContext *ctx;
@@ -321,76 +319,79 @@ rut_context_new (RutShell *shell)
   RutContext *context = g_new0 (RutContext, 1);
   CoglError *error = NULL;
 
+  g_return_val_if_fail (shell != NULL, NULL);
+
   _rut_init ();
 
   rut_object_init (&context->_parent, &rut_context_type);
 
   context->ref_count = 1;
 
-#ifdef USE_SDL
-  context->cogl_context = cogl_sdl_context_new (SDL_USEREVENT, &error);
-#else
-  context->cogl_context = cogl_context_new (NULL, &error);
-#endif
-  if (!context->cogl_context)
-    {
-      g_warning ("Failed to create Cogl Context: %s", error->message);
-      g_free (context);
-      return NULL;
-    }
-
-  /* We set up the first created RutContext as a global default context */
-  if (rut_cogl_context == NULL)
-    rut_cogl_context = cogl_object_ref (context->cogl_context);
-
-  context->settings = rut_settings_new ();
-
-  context->texture_cache =
-    g_hash_table_new_full (g_direct_hash, g_direct_equal,
-                           NULL,
-                           _rut_texture_cache_entry_destroy_cb);
-
-  context->nine_slice_indices =
-    cogl_indices_new (context->cogl_context,
-                      COGL_INDICES_TYPE_UNSIGNED_BYTE,
-                      _rut_nine_slice_indices_data,
-                      sizeof (_rut_nine_slice_indices_data) /
-                      sizeof (_rut_nine_slice_indices_data[0]));
-
-  context->single_texture_2d_template =
-    cogl_pipeline_new (context->cogl_context);
-  cogl_pipeline_set_layer_null_texture (context->single_texture_2d_template,
-                                        0, COGL_TEXTURE_TYPE_2D);
-
-  context->circle_texture =
-    rut_create_circle_texture (context,
-                               CIRCLE_TEX_RADIUS /* radius */,
-                               CIRCLE_TEX_PADDING /* padding */);
-
-  cogl_matrix_init_identity (&context->identity_matrix);
-
-  context->pango_font_map =
-    COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (context->cogl_context));
-
-  cogl_pango_font_map_set_use_mipmapping (context->pango_font_map, TRUE);
-
-  context->pango_context =
-    pango_font_map_create_context (PANGO_FONT_MAP (context->pango_font_map));
-
-  context->pango_font_desc = pango_font_description_new ();
-  pango_font_description_set_family (context->pango_font_desc, "Sans");
-  pango_font_description_set_size (context->pango_font_desc, 14 * PANGO_SCALE);
-
   rut_property_context_init (&context->property_ctx);
+  context->shell = rut_refable_ref (shell);
 
-  _rut_init_image_source_wrappers_cache (context);
+  context->headless = rut_shell_get_headless (shell);
 
-  if (shell)
+  if (!context->headless)
     {
-      context->shell = rut_refable_ref (shell);
+#ifdef USE_SDL
+      context->cogl_context = cogl_sdl_context_new (SDL_USEREVENT, &error);
+#else
+      context->cogl_context = cogl_context_new (NULL, &error);
+#endif
+      if (!context->cogl_context)
+        {
+          g_warning ("Failed to create Cogl Context: %s", error->message);
+          g_free (context);
+          return NULL;
+        }
 
-      _rut_shell_associate_context (shell, context);
+      /* We set up the first created RutContext as a global default context */
+      if (rut_cogl_context == NULL)
+        rut_cogl_context = cogl_object_ref (context->cogl_context);
+
+      context->settings = rut_settings_new ();
+
+      context->texture_cache =
+        g_hash_table_new_full (g_direct_hash, g_direct_equal,
+                               NULL,
+                               _rut_texture_cache_entry_destroy_cb);
+
+      context->nine_slice_indices =
+        cogl_indices_new (context->cogl_context,
+                          COGL_INDICES_TYPE_UNSIGNED_BYTE,
+                          _rut_nine_slice_indices_data,
+                          sizeof (_rut_nine_slice_indices_data) /
+                          sizeof (_rut_nine_slice_indices_data[0]));
+
+      context->single_texture_2d_template =
+        cogl_pipeline_new (context->cogl_context);
+      cogl_pipeline_set_layer_null_texture (context->single_texture_2d_template,
+                                            0, COGL_TEXTURE_TYPE_2D);
+
+      context->circle_texture =
+        rut_create_circle_texture (context,
+                                   CIRCLE_TEX_RADIUS /* radius */,
+                                   CIRCLE_TEX_PADDING /* padding */);
+
+      cogl_matrix_init_identity (&context->identity_matrix);
+
+      context->pango_font_map =
+        COGL_PANGO_FONT_MAP (cogl_pango_font_map_new (context->cogl_context));
+
+      cogl_pango_font_map_set_use_mipmapping (context->pango_font_map, TRUE);
+
+      context->pango_context =
+        pango_font_map_create_context (PANGO_FONT_MAP (context->pango_font_map));
+
+      context->pango_font_desc = pango_font_description_new ();
+      pango_font_description_set_family (context->pango_font_desc, "Sans");
+      pango_font_description_set_size (context->pango_font_desc, 14 * PANGO_SCALE);
+
+      _rut_init_image_source_wrappers_cache (context);
     }
+
+  _rut_shell_associate_context (shell, context);
 
   return context;
 }
@@ -424,13 +425,6 @@ _rut_init (void)
     {
       //bindtextdomain (GETTEXT_PACKAGE, RUT_LOCALEDIR);
       //bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-
-      g_type_init ();
-
-      gst_element_register (NULL,
-                            "memsrc",
-                            0,
-                            gst_mem_src_get_type());
 
       _rut_context_init_type ();
       _rut_text_buffer_init_type ();

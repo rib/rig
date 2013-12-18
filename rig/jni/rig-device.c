@@ -1,12 +1,11 @@
-#include "config.h"
+#include <config.h>
 
 #include <stdlib.h>
+
 #include <glib.h>
 
 #include <rut.h>
 #include <rig-engine.h>
-#include <rig-engine.h>
-#include <rig-avahi.h>
 #include <cogl-gst/cogl-gst.h>
 
 static char **_rig_editor_remaining_args = NULL;
@@ -19,20 +18,22 @@ static const GOptionEntry rut_editor_entries[] =
 };
 
 void
-rig_editor_init (RutShell *shell, void *user_data)
+rig_device_init (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
 
-  rig_engine_init (shell, engine);
+  rig_engine_init (engine, shell);
 }
 
 int
 main (int argc, char **argv)
 {
-  RigEngine engine;
   GOptionContext *context = g_option_context_new (NULL);
+  RigEngine engine;
   GError *error = NULL;
   char *assets_location;
+
+  memset (&engine, 0, sizeof (RigEngine));
 
   gst_init (&argc, &argv);
 
@@ -40,27 +41,25 @@ main (int argc, char **argv)
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
-      fprintf (stderr, "option parsing failed: %s\n", error->message);
-      exit (EXIT_FAILURE);
+      g_error ("Option parsing failed: %s\n", error->message);
+      return EXIT_FAILURE;
     }
 
   if (_rig_editor_remaining_args == NULL ||
       _rig_editor_remaining_args[0] == NULL)
     {
-      fprintf (stderr,
-               "A filename argument for the UI description file is required. "
-               "Pass a non-existing file to create it.\n");
-      exit (EXIT_FAILURE);
+      g_error ("A filename argument for the UI description file is "
+               "required. Pass a non-existing file to create it.\n");
+      return EXIT_FAILURE;
     }
-
-  memset (&engine, 0, sizeof (RigEngine));
 
   engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
 
-  engine.shell = rut_shell_new (rig_editor_init,
-                              rig_engine_fini,
-                              rig_engine_paint,
-                              &engine);
+  engine.shell = rut_shell_new (false, /* not headless */
+                                rig_device_init,
+                                rig_engine_fini,
+                                rig_engine_paint,
+                                &engine);
 
   engine.ctx = rut_context_new (engine.shell);
 
