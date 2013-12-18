@@ -1,13 +1,14 @@
 #ifndef __PROTOBUF_C_RPC_H_
 #define __PROTOBUF_C_RPC_H_
 
+#include <stdbool.h>
+
 /* Protocol is:
  *    client issues request with header:
  *         method_index              32-bit little-endian
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
  *    server responds with header:
- *         status_code               32-bit little-endian
  *         method_index              32-bit little-endian
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
@@ -46,27 +47,17 @@ typedef void (*PB_RPC_Error_Func) (PB_RPC_Error_Code code,
 /* --- Client API --- */
 typedef struct _PB_RPC_Client PB_RPC_Client;
 
-/* The return value (the service) may be cast to PB_RPC_Client* */
-ProtobufCService *
+PB_RPC_Client *
 rig_pb_rpc_client_new (PB_RPC_AddressType type,
                        const char *name,
                        const ProtobufCServiceDescriptor *descriptor,
                        ProtobufCDispatch *dispatch /* or NULL */
                        );
 
-/* forcing the client to connect */
-typedef enum
-{
-  PROTOBUF_C_RPC_CLIENT_CONNECT_SUCCESS,/* also returned if already connected */
-  PROTOBUF_C_RPC_CLIENT_CONNECT_ERROR_NAME_LOOKUP,
-  PROTOBUF_C_RPC_CLIENT_CONNECT_ERROR_CONNECT
-} PB_RPC_Client_ConnectStatus;
-
-PB_RPC_Client_ConnectStatus
-rig_pb_rpc_client_connect (PB_RPC_Client *client);
+ProtobufCService *
+rig_pb_rpc_client_get_service (PB_RPC_Client *client);
 
 /* --- configuring the client */
-
 
 /* Pluginable async dns hooks */
 /* TODO: use adns library or port evdns? ugh */
@@ -110,7 +101,7 @@ rig_pb_rpc_client_set_autoreconnect_period (PB_RPC_Client *client,
                                             unsigned millis);
 
 /* checking the state of the client */
-protobuf_c_boolean
+bool
 rig_pb_rpc_client_is_connected (PB_RPC_Client *client);
 
 /* NOTE: we don't actually start connecting til the main-loop runs,
@@ -124,8 +115,9 @@ rig_pb_rpc_server_new (PB_RPC_AddressType type,
                        ProtobufCService *service,
                        ProtobufCDispatch *dispatch /* or NULL */);
 
+/* May return -1 if not listening */
 int
-rig_pb_rpc_server_get_fd (PB_RPC_Server *server);
+rig_pb_rpc_server_get_listening_fd (PB_RPC_Server *server);
 
 typedef struct _PB_RPC_ServerConnection PB_RPC_ServerConnection;
 
@@ -168,10 +160,6 @@ void
 rig_pb_rpc_server_connection_set_data (PB_RPC_ServerConnection *conn,
                                        void *user_data);
 
-ProtobufCService *
-rig_pb_rpc_server_destroy (PB_RPC_Server *server,
-                           protobuf_c_boolean free_underlying_service);
-
 /* NOTE: these do not have guaranteed semantics if called after there are actually
    clients connected to the server!
    NOTE 2:  The purist in me has left the default of no-autotimeout.
@@ -185,9 +173,9 @@ void
 rig_pb_rpc_server_set_autotimeout (PB_RPC_Server *server,
                                    unsigned timeout_millis);
 
-typedef protobuf_c_boolean (*PB_RPC_IsRpcThreadFunc) (PB_RPC_Server *server,
-                                                      ProtobufCDispatch *dispatch,
-                                                      void *is_rpc_data);
+typedef bool (*PB_RPC_IsRpcThreadFunc) (PB_RPC_Server *server,
+                                        ProtobufCDispatch *dispatch,
+                                        void *is_rpc_data);
 
 void
 rig_pb_rpc_server_configure_threading (PB_RPC_Server *server,
@@ -207,5 +195,22 @@ rig_pb_rpc_server_set_error_handler (PB_RPC_Server *server,
  */
 void *
 rig_pb_rpc_closure_get_connection_data (void *closure_data);
+
+/* --- Peer API --- */
+
+typedef struct _PB_RPC_Peer PB_RPC_Peer;
+
+PB_RPC_Peer *
+rig_pb_rpc_peer_new (int fd,
+                     ProtobufCService *server_service,
+                     const ProtobufCServiceDescriptor *client_descriptor,
+                     ProtobufCDispatch *orig_dispatch);
+
+PB_RPC_Server *
+rig_pb_rpc_peer_get_server (PB_RPC_Peer *peer);
+
+/* The return value (the client) may be cast to ProtobufCService * */
+PB_RPC_Client *
+rig_pb_rpc_peer_get_client (PB_RPC_Peer *peer);
 
 #endif

@@ -490,6 +490,7 @@ rig_rpc_client_disconnect (RigRPCClient *rpc_client)
   g_source_unref (rpc_client->protobuf_source);
   rpc_client->protobuf_source = NULL;
 
-  protobuf_c_service_destroy ((ProtobufCService *)rpc_client->pb_rpc_client);
+#warning "TODO: need explicit rig_pb_rpc_client_disconnect() api"
+  rut_refable_unref (rpc_client->pb_rpc_client);
   rpc_client->pb_rpc_client = NULL;
 }

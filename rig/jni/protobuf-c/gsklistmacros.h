@@ -18,7 +18,7 @@
  *    PREPEND(queue, node)                                     [O(1)]
  *    IS_EMPTY(queue)                                          [O(1)]
  *    REVERSE(queue)                                           [O(N)]
- *    SORT(queue, comparator)                                  [O(NlogN)] 
+ *    SORT(queue, comparator)                                  [O(NlogN)]
  * List operations:
  *    PREPEND(list, node)                                      [O(1)]
  *    APPEND(list, node)                                       [O(1)]
@@ -59,31 +59,31 @@
 #define GSK_STACK_SORT(stack, comparator) GSK_STACK_SORT_(stack, comparator)
 #define GSK_STACK_GET_BOTTOM(stack, rv_node) GSK_STACK_GET_BOTTOM_(stack, rv_node)
 
-#define G_STMT_START do
-#define G_STMT_END   while(0)
+#define GSK_STMT_START do
+#define GSK_STMT_END   while(0)
 
 #define GSK_STACK_PUSH_(type, top, next, node) 				\
-  G_STMT_START{								\
+  GSK_STMT_START{								\
     type _gsk_tmp = (node);                                             \
     _gsk_tmp->next = (top);						\
     (top) = _gsk_tmp;							\
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_STACK_POP_(type, top, next, rv_node) 	                \
-  G_STMT_START{								\
+  GSK_STMT_START{								\
     rv_node = (top);							\
     (top) = (top)->next;						\
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_STACK_INSERT_AFTER_(type, top, next, above_node, new_node)  \
-  G_STMT_START{								\
+  GSK_STMT_START{								\
     type _gsk_tmp = (new_node);                                         \
     type _gsk_above = (above_node);                                     \
     _gsk_tmp->next = _gsk_above->next;				        \
     _gsk_above->next = _gsk_tmp;					\
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_STACK_IS_EMPTY_(type, top, next)				\
   ((top) == NULL)
 #define GSK_STACK_REVERSE_(type, top, next)				\
-  G_STMT_START{								\
+  GSK_STMT_START{								\
     type _gsk___prev = NULL;                                            \
     type _gsk___at = (top);						\
     while (_gsk___at != NULL)						\
@@ -94,7 +94,7 @@
 	_gsk___at = _gsk__next;						\
       }									\
     (top) = _gsk___prev;						\
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_STACK_FOREACH_(type, top, next, iter_var, code)              \
   for (iter_var = top; iter_var != NULL; )                              \
     {                                                                   \
@@ -108,7 +108,7 @@
  *   which is probably faster anyways.
  */
 #define GSK_STACK_SORT_(type, top, next, comparator)			\
-  G_STMT_START{								\
+  GSK_STMT_START{								\
     type _gsk_stack[GSK_LOG2_MAX_LIST_SIZE];				\
     guint _gsk_stack_size = 0;						\
     guint _gsk_i;                                                       \
@@ -198,26 +198,26 @@
               top = _gsk_new_top;                                       \
             }                                                           \
         }                                                               \
-  }G_STMT_END
+  }GSK_STMT_END
 
 #define GSK_STACK_GET_BOTTOM_(type, top, next, rv_node)                  \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     rv_node = top;                                                      \
     if (rv_node != NULL)                                                \
       while (rv_node->next)                                             \
         rv_node = rv_node->next;                                        \
-  }G_STMT_END
+  }GSK_STMT_END
 
 /* --- Queues --- */
 #define GSK_QUEUE_ENQUEUE(queue, node) GSK_QUEUE_ENQUEUE_(queue, node)
-#define GSK_QUEUE_DEQUEUE(queue, rv_node) GSK_QUEUE_DEQUEUE_(queue, rv_node) 
-#define GSK_QUEUE_PREPEND(queue, node) GSK_QUEUE_PREPEND_(queue, node) 
-#define GSK_QUEUE_IS_EMPTY(queue) GSK_QUEUE_IS_EMPTY_(queue) 
-#define GSK_QUEUE_REVERSE(queue) GSK_QUEUE_REVERSE_(queue) 
-#define GSK_QUEUE_SORT(queue, comparator) GSK_QUEUE_SORT_(queue, comparator) 
+#define GSK_QUEUE_DEQUEUE(queue, rv_node) GSK_QUEUE_DEQUEUE_(queue, rv_node)
+#define GSK_QUEUE_PREPEND(queue, node) GSK_QUEUE_PREPEND_(queue, node)
+#define GSK_QUEUE_IS_EMPTY(queue) GSK_QUEUE_IS_EMPTY_(queue)
+#define GSK_QUEUE_REVERSE(queue) GSK_QUEUE_REVERSE_(queue)
+#define GSK_QUEUE_SORT(queue, comparator) GSK_QUEUE_SORT_(queue, comparator)
 
 #define GSK_QUEUE_ENQUEUE_(type, head, tail, next, node)                \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_tmp = (node);                                             \
     if (tail)                                                           \
       tail->next = _gsk_tmp;                                            \
@@ -225,9 +225,9 @@
       head = _gsk_tmp;                                                  \
     tail = _gsk_tmp;                                                    \
     node->next = NULL;                                                  \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_QUEUE_DEQUEUE_(type, head, tail, next, rv_node)             \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     rv_node = head;                                                     \
     if (head)                                                           \
       {                                                                 \
@@ -235,31 +235,31 @@
         if (head == NULL)                                               \
           tail = NULL;                                                  \
       }                                                                 \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_QUEUE_PREPEND_(type, head, tail, next, node)                \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_tmp = (node);                                             \
     _gsk_tmp->next = head;                                              \
     head = _gsk_tmp;                                                    \
     if (tail == NULL)                                                   \
       tail = head;                                                      \
-  }G_STMT_END
+  }GSK_STMT_END
 
 #define GSK_QUEUE_IS_EMPTY_(type, head, tail, next)                     \
   ((head) == NULL)
 
 #define GSK_QUEUE_REVERSE_(type, head, tail, next)                      \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_queue_new_tail = head;                                    \
     GSK_STACK_REVERSE_(type, head, next);                               \
     tail = _gsk_queue_new_tail;                                         \
-  }G_STMT_END
+  }GSK_STMT_END
 
 #define GSK_QUEUE_SORT_(type, head, tail, next, comparator)             \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     GSK_STACK_SORT_(type, head, next, comparator);                      \
     GSK_STACK_GET_BOTTOM_(type, head, next, tail);                      \
-  }G_STMT_END
+  }GSK_STMT_END
 
 /* --- List --- */
 #define GSK_LIST_PREPEND(list, node) GSK_LIST_PREPEND_(list, node)
@@ -274,7 +274,7 @@
 #define GSK_LIST_SORT(list, comparator) GSK_LIST_SORT_(list, comparator)
 
 #define GSK_LIST_PREPEND_(type, first, last, prev, next, node)          \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_tmp = (node);                                             \
     if (first)                                                          \
       first->prev = (_gsk_tmp);                                         \
@@ -283,21 +283,21 @@
     node->next = first;                                                 \
     node->prev = NULL;                                                  \
     first = node;                                                       \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_LIST_APPEND_(type, first, last, prev, next, node)           \
   GSK_LIST_PREPEND_(type, last, first, next, prev, node)
 #define GSK_LIST_REMOVE_FIRST_(type, first, last, prev, next)           \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     first = first->next;                                                \
     if (first == NULL)                                                  \
       last = NULL;                                                      \
     else                                                                \
       first->prev = NULL;                                               \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_LIST_REMOVE_LAST_(type, first, last, prev, next)            \
   GSK_LIST_REMOVE_FIRST_(type, last, first, next, prev)
 #define GSK_LIST_REMOVE_(type, first, last, prev, next, node)           \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_tmp = (node);                                             \
     if (_gsk_tmp->prev)                                                 \
       _gsk_tmp->prev->next = _gsk_tmp->next;                            \
@@ -307,10 +307,10 @@
       _gsk_tmp->next->prev = _gsk_tmp->prev;                            \
     else                                                                \
       last = _gsk_tmp->prev;                                            \
-  }G_STMT_END
+  }GSK_STMT_END
 
 #define GSK_LIST_INSERT_AFTER_(type, first, last, prev, next, at, node) \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_at = (at);                                                \
     type _gsk_node = (node);                                            \
     _gsk_node->prev = _gsk_at;                                          \
@@ -320,13 +320,13 @@
     else                                                                \
       last = _gsk_node;                                                 \
     _gsk_at->next = _gsk_node;                                          \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_LIST_INSERT_BEFORE_(type, first, last, prev, next, at, node)\
   GSK_LIST_INSERT_AFTER_(type, last, first, next, prev, at, node)
 #define GSK_LIST_IS_EMPTY_(type, first, last, prev, next)               \
   ((first) == NULL)
 #define GSK_LIST_REVERSE_(type, first, last, prev, next)                \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_at = first;                                               \
     first = last;                                                       \
     last = _gsk_at;                                                     \
@@ -337,9 +337,9 @@
         _gsk_at->prev = _gsk_old_next;                                  \
         _gsk_at = _gsk_old_next;                                        \
       }                                                                 \
-  }G_STMT_END
+  }GSK_STMT_END
 #define GSK_LIST_SORT_(type, first, last, prev, next, comparator)       \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_prev = NULL;                                              \
     type _gsk_at;                                                       \
     GSK_STACK_SORT_(type, first, next, comparator);                     \
@@ -349,11 +349,11 @@
         _gsk_prev = _gsk_at;                                            \
       }                                                                 \
     last = _gsk_prev;                                                   \
-  }G_STMT_END
+  }GSK_STMT_END
 
 /* --- Internals --- */
 #define _GSK_MERGE_NONEMPTY_LISTS(a,b,out,type,next,comparator)         \
-  G_STMT_START{                                                         \
+  GSK_STMT_START{                                                         \
     type _gsk_out_at;                                                   \
     int _gsk_comparator_rv;                                             \
     /* merge 'a' and 'b' into 'out' -- in order to make the sort stable,*/  \
@@ -388,4 +388,4 @@
           }							        \
       }							                \
     _gsk_out_at->next = (a != NULL) ? a : b;                            \
-  }G_STMT_END
+  }GSK_STMT_END

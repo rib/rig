@@ -184,7 +184,7 @@ rig_slave_master_sync_ui (RigSlaveMaster *master)
 {
   RigEngine *engine = master->engine;
   ProtobufCService *service =
-    (ProtobufCService *)master->rpc_client->pb_rpc_client;
+    rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
   Rig__UI *ui;
   GList *l;
 
