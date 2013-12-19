@@ -52,7 +52,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
   rut_shell_run_pre_paint_callbacks (shell);
 
-  /* TODO: handle input */
+  rut_shell_dispatch_input_events (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

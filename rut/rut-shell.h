@@ -102,6 +102,9 @@ void
 rut_shell_update_timelines (RutShell *shell);
 
 void
+rut_shell_dispatch_input_events (RutShell *shell);
+
+void
 rut_shell_run_pre_paint_callbacks (RutShell *shell);
 
 /* Determines whether any timelines are running */

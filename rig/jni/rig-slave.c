@@ -212,6 +212,8 @@ rig_slave_paint (RutShell *shell, void *user_data)
 
   rut_shell_update_timelines (shell);
 
+  rut_shell_dispatch_input_events (shell);
+
   rut_shell_run_pre_paint_callbacks (shell);
 
   rig_engine_paint (engine);
