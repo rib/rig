@@ -1540,11 +1540,9 @@ flush_pre_paint_callbacks (RutShell *shell)
   shell->flushing_pre_paints = FALSE;
 }
 
-static void
-_rut_shell_paint (RutShell *shell)
+void
+rut_shell_start_redraw (RutShell *shell)
 {
-  GSList *l;
-
   g_return_if_fail (shell->redraw_queued == TRUE);
 
   shell->redraw_queued = FALSE;
@@ -1552,25 +1550,39 @@ _rut_shell_paint (RutShell *shell)
   g_source_remove (shell->glib_paint_idle);
   shell->glib_paint_idle = 0;
 #endif
+}
+
+void
+rut_shell_update_timelines (RutShell *shell)
+{
+  GSList *l;
 
   for (l = shell->rut_ctx->timelines; l; l = l->next)
     _rut_timeline_update (l->data);
+}
 
+void
+rut_shell_run_pre_paint_callbacks (RutShell *shell)
+{
   flush_pre_paint_callbacks (shell);
+}
 
-#warning "fixme: input should be handled once per frame after pre-paint callbacks"
-
-  if (shell->paint_cb (shell, shell->user_data))
-    goto queue_redraw;
+bool
+rut_shell_check_timelines (RutShell *shell)
+{
+  GSList *l;
 
   for (l = shell->rut_ctx->timelines; l; l = l->next)
     if (rut_timeline_is_running (l->data))
-      goto queue_redraw;
+      return true;
 
-  return;
+  return false;
+}
 
-queue_redraw:
-  rut_shell_queue_redraw (shell);
+static void
+_rut_shell_paint (RutShell *shell)
+{
+  shell->paint_cb (shell, shell->user_data);
 }
 
 #ifdef USE_SDL

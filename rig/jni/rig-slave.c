@@ -202,12 +202,22 @@ rig_slave_fini (RutShell *shell, void *user_data)
   rig_engine_fini (shell, engine);
 }
 
-CoglBool
+static void
 rig_slave_paint (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
+  RigEngine *engine = slave->engine;
 
-  return rig_engine_paint (slave->engine->shell, slave->engine);
+  rut_shell_start_redraw (shell);
+
+  rut_shell_update_timelines (shell);
+
+  rut_shell_run_pre_paint_callbacks (shell);
+
+  rig_engine_paint (engine);
+
+  if (rut_shell_check_timelines (shell))
+    rut_shell_queue_redraw (shell);
 }
 
 #ifdef __ANDROID__

@@ -305,8 +305,8 @@ rig_engine_init (RigEngine *engine, RutShell *shell);
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);
 
-CoglBool
-rig_engine_paint (RutShell *shell, void *user_data);
+void
+rig_engine_paint (RigEngine *engine);
 
 void
 rig_engine_fini (RutShell *shell, void *user_data);

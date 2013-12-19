@@ -28,6 +28,23 @@ rig_editor_init (RutShell *shell, void *user_data)
   rig_engine_init (engine, shell);
 }
 
+static void
+rig_editor_paint (RutShell *shell, void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  rut_shell_start_redraw (shell);
+
+  rut_shell_update_timelines (shell);
+
+  rut_shell_run_pre_paint_callbacks (shell);
+
+  rig_engine_paint (engine);
+
+  if (rut_shell_check_timelines (shell))
+    rut_shell_queue_redraw (shell);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -61,7 +78,7 @@ main (int argc, char **argv)
   engine.shell = rut_shell_new (false, /* not headless */
                                 rig_editor_init,
                                 rig_engine_fini,
-                                rig_engine_paint,
+                                rig_editor_paint,
                                 &engine);
 
   engine.ctx = rut_context_new (engine.shell);

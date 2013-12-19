@@ -35,7 +35,7 @@
 
 typedef void (*RutShellInitCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellFiniCallback) (RutShell *shell, void *user_data);
-typedef CoglBool (*RutShellPaintCallback) (RutShell *shell, void *user_data);
+typedef void (*RutShellPaintCallback) (RutShell *shell, void *user_data);
 
 RutShell *
 rut_shell_new (bool headless,
@@ -80,6 +80,33 @@ rut_shell_get_context (RutShell *shell);
 
 void
 rut_shell_main (RutShell *shell);
+
+/*
+ * Whatever paint function is given when creating a RutShell
+ * is responsible for handling each redraw cycle but should
+ * pass control back to the shell for progressing timlines,
+ * running pre-paint callbacks and finally checking whether
+ * to queue another redraw if there are any timelines
+ * running...
+ *
+ * The folling apis can be used to implement a
+ * RutShellPaintCallback...
+ */
+
+/* Should be the first thing called for each redraw... */
+void
+rut_shell_start_redraw (RutShell *shell);
+
+/* Progress timelines */
+void
+rut_shell_update_timelines (RutShell *shell);
+
+void
+rut_shell_run_pre_paint_callbacks (RutShell *shell);
+
+/* Determines whether any timelines are running */
+bool
+rut_shell_check_timelines (RutShell *shell);
 
 void
 rut_shell_add_input_camera (RutShell *shell,

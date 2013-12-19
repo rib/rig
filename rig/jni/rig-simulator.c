@@ -31,6 +31,39 @@ rig_simulator_init (RutShell *shell, void *user_data)
   rig_engine_init (engine, shell);
 }
 
+static void
+handle_update_ui_ack (const Rig__UpdateUIAck *result,
+                      void *closure_data)
+{
+  g_print ("Simulator: UI Update ACK received\n");
+}
+
+static void
+rig_simulator_run_frame (RutShell *shell, void *user_data)
+{
+  RigEngine *engine = user_data;
+  ProtobufCService *service =
+    rig_pb_rpc_client_get_service (engine->simulator_peer->pb_rpc_client);
+  Rig__UIDiff ui_diff;
+
+  rut_shell_start_redraw (shell);
+
+  rut_shell_update_timelines (shell);
+
+  rut_shell_run_pre_paint_callbacks (shell);
+
+  /* TODO: handle input */
+
+  if (rut_shell_check_timelines (shell))
+    rut_shell_queue_redraw (shell);
+
+  rig__uidiff__init (&ui_diff);
+  rig__renderer__update_ui (service,
+                            &ui_diff,
+                            handle_update_ui_ack,
+                            NULL);
+}
+
 int
 main (int argc, char **argv)
 {
@@ -54,7 +87,7 @@ main (int argc, char **argv)
   engine.shell = rut_shell_new (true, /* headless */
                                 rig_simulator_init,
                                 rig_engine_fini,
-                                rig_engine_paint,
+                                rig_simulator_run_frame,
                                 &engine);
 
   engine.ctx = rut_context_new (engine.shell);

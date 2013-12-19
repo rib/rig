@@ -191,10 +191,9 @@ scenegraph_post_paint_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-CoglBool
-rig_engine_paint (RutShell *shell, void *user_data)
+void
+rig_engine_paint (RigEngine *engine)
 {
-  RigEngine *engine = user_data;
   CoglFramebuffer *fb = engine->onscreen;
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
@@ -219,8 +218,6 @@ rig_engine_paint (RutShell *shell, void *user_data)
   rut_camera_end_frame (engine->camera);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
-
-  return FALSE;
 }
 
 void
