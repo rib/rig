@@ -46,6 +46,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
     rig_pb_rpc_client_get_service (engine->simulator_peer->pb_rpc_client);
   Rig__UIDiff ui_diff;
 
+  g_print ("Simulator: Start Frame\n");
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
@@ -56,6 +57,8 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
+
+  g_print ("Simulator: Sending UI Update\n");
 
   rig__uidiff__init (&ui_diff);
   rig__renderer__update_ui (service,

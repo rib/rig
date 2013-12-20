@@ -545,6 +545,14 @@ _rig_rpc_peer_init_type (void)
 #undef TYPE
 }
 
+static void
+server_connect_handler (PB_RPC_Server *server,
+                        PB_RPC_ServerConnection *conn,
+                        void *user_data)
+{
+  rig_pb_rpc_server_connection_set_data (conn, user_data);
+}
+
 RigRPCPeer *
 rig_rpc_peer_new (RigEngine *engine,
                   int fd,
@@ -588,6 +596,10 @@ rig_rpc_peer_new (RigEngine *engine,
   rig_pb_rpc_server_set_error_handler (rpc_peer->pb_rpc_server,
                                        peer_error_handler,
                                        user_data);
+
+  rig_pb_rpc_server_set_client_connect_handler (rpc_peer->pb_rpc_server,
+                                                server_connect_handler,
+                                                user_data);
 
   source = protobuf_source_new (dispatch);
   rpc_peer->protobuf_source = source;

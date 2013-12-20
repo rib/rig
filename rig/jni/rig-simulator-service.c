@@ -175,7 +175,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
       rut_shell_handle_stream_event (engine->shell, event);
     }
 
-  //rut_shell_queue_redraw (engine->shell);
+  rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
 }
