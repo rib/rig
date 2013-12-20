@@ -49,8 +49,8 @@ renderer__update_ui (Rig__Renderer_Service *service,
                      void *closure_data)
 {
   Rig__UpdateUIAck ack = RIG__UPDATE_UIACK__INIT;
-  RigEngine *engine =
-    rig_pb_rpc_closure_get_connection_data (closure_data);
+  //RigEngine *engine =
+  //  rig_pb_rpc_closure_get_connection_data (closure_data);
 
   g_return_if_fail (ui_diff != NULL);
 

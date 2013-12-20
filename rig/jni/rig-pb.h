@@ -37,6 +37,11 @@ rig_pb_serialize_ui (RigEngine *engine,
 Rig__Asset *
 rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset);
 
+Rig__Event **
+rig_pb_serialize_input_events (RigEngine *engine,
+                               RutList *input_queue,
+                               int n_events);
+
 void
 rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui);
 

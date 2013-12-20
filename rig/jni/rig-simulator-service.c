@@ -73,10 +73,109 @@ simulator__run_frame (Rig__Simulator_Service *service,
   Rig__RunFrameAck ack = RIG__RUN_FRAME_ACK__INIT;
   RigEngine *engine =
     rig_pb_rpc_closure_get_connection_data (closure_data);
+  int i;
 
   g_return_if_fail (setup != NULL);
 
-  g_print ("Simulator: Run Frame Request\n");
+  g_print ("Simulator: Run Frame Request: n_events = %d\n",
+           setup->n_events);
+
+  for (i = 0; i < setup->n_events; i++)
+    {
+      Rig__Event *pb_event = setup->events[i];
+      RutStreamEvent *event;
+
+      if (!pb_event->has_type)
+        {
+          g_warning ("Event missing type");
+          continue;
+        }
+
+      event = g_slice_new (RutStreamEvent);
+
+      switch (pb_event->type)
+        {
+        case RIG__EVENT__TYPE__POINTER_MOVE:
+          event->type = RUT_STREAM_EVENT_POINTER_MOVE;
+
+          if (pb_event->pointer_move->has_x)
+            event->pointer_move.x = pb_event->pointer_move->x;
+          else
+            {
+              g_warn_if_reached ();
+              event->pointer_move.x = 0;
+            }
+
+          if (pb_event->pointer_move->has_y)
+            event->pointer_move.y = pb_event->pointer_move->y;
+          else
+            {
+              g_warn_if_reached ();
+              event->pointer_move.y = 0;
+            }
+
+          g_print ("Event: Pointer move (%f, %f)\n",
+                   event->pointer_move.x, event->pointer_move.y);
+          break;
+        case RIG__EVENT__TYPE__POINTER_DOWN:
+          event->type = RUT_STREAM_EVENT_POINTER_DOWN;
+          g_print ("Event: Pointer down\n");
+          break;
+        case RIG__EVENT__TYPE__POINTER_UP:
+          event->type = RUT_STREAM_EVENT_POINTER_UP;
+          g_print ("Event: Pointer up\n");
+          break;
+        case RIG__EVENT__TYPE__KEY_DOWN:
+          event->type = RUT_STREAM_EVENT_KEY_DOWN;
+          g_print ("Event: Key down\n");
+          break;
+        case RIG__EVENT__TYPE__KEY_UP:
+          event->type = RUT_STREAM_EVENT_KEY_UP;
+          g_print ("Event: Key up\n");
+          break;
+        }
+
+      switch (pb_event->type)
+        {
+        case RIG__EVENT__TYPE__POINTER_MOVE:
+          break;
+
+        case RIG__EVENT__TYPE__POINTER_DOWN:
+        case RIG__EVENT__TYPE__POINTER_UP:
+          if (pb_event->pointer_button->has_button)
+            event->pointer_button.button = pb_event->pointer_button->button;
+          else
+            {
+              g_warn_if_reached ();
+              event->pointer_button.button = RUT_BUTTON_STATE_1;
+            }
+          break;
+
+        case RIG__EVENT__TYPE__KEY_DOWN:
+        case RIG__EVENT__TYPE__KEY_UP:
+          if (pb_event->key->has_keysym)
+            event->key.keysym = pb_event->key->keysym;
+          else
+            {
+              g_warn_if_reached ();
+              event->key.keysym = RUT_KEY_a;
+            }
+
+          if (pb_event->key->has_mod_state)
+            event->key.mod_state = pb_event->key->mod_state;
+          else
+            {
+              g_warn_if_reached ();
+              event->key.mod_state = 0;
+            }
+          break;
+
+        }
+
+      rut_shell_handle_stream_event (engine->shell, event);
+    }
+
+  //rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
 }

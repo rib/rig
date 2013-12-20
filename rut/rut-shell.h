@@ -37,6 +37,125 @@ typedef void (*RutShellInitCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellFiniCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellPaintCallback) (RutShell *shell, void *user_data);
 
+typedef enum _RutInputEventType
+{
+  RUT_INPUT_EVENT_TYPE_MOTION = 1,
+  RUT_INPUT_EVENT_TYPE_KEY,
+  RUT_INPUT_EVENT_TYPE_TEXT,
+  RUT_INPUT_EVENT_TYPE_DROP_OFFER,
+  RUT_INPUT_EVENT_TYPE_DROP_CANCEL,
+  RUT_INPUT_EVENT_TYPE_DROP
+} RutInputEventType;
+
+typedef enum _RutKeyEventAction
+{
+  RUT_KEY_EVENT_ACTION_UP = 1,
+  RUT_KEY_EVENT_ACTION_DOWN
+} RutKeyEventAction;
+
+typedef enum _RutMotionEventAction
+{
+  RUT_MOTION_EVENT_ACTION_UP = 1,
+  RUT_MOTION_EVENT_ACTION_DOWN,
+  RUT_MOTION_EVENT_ACTION_MOVE,
+} RutMotionEventAction;
+
+typedef enum _RutButtonState
+{
+  RUT_BUTTON_STATE_1         = 1<<0,
+  RUT_BUTTON_STATE_2         = 1<<1,
+  RUT_BUTTON_STATE_3         = 1<<2,
+} RutButtonState;
+
+typedef enum _RutModifierState
+{
+  RUT_MODIFIER_LEFT_ALT_ON = 1<<0,
+  RUT_MODIFIER_RIGHT_ALT_ON = 1<<1,
+
+  RUT_MODIFIER_LEFT_SHIFT_ON = 1<<2,
+  RUT_MODIFIER_RIGHT_SHIFT_ON = 1<<3,
+
+  RUT_MODIFIER_LEFT_CTRL_ON = 1<<4,
+  RUT_MODIFIER_RIGHT_CTRL_ON = 1<<5,
+
+  RUT_MODIFIER_LEFT_META_ON = 1<<6,
+  RUT_MODIFIER_RIGHT_META_ON = 1<<7,
+
+  RUT_MODIFIER_NUM_LOCK_ON = 1<<8,
+  RUT_MODIFIER_CAPS_LOCK_ON = 1<<9
+
+} RutModifierState;
+
+typedef enum
+{
+  RUT_CURSOR_ARROW,
+  RUT_CURSOR_IBEAM,
+  RUT_CURSOR_WAIT,
+  RUT_CURSOR_CROSSHAIR,
+  RUT_CURSOR_SIZE_WE,
+  RUT_CURSOR_SIZE_NS
+} RutCursor;
+
+#define RUT_MODIFIER_ALT_ON (RUT_MODIFIER_LEFT_ALT_ON|RUT_MODIFIER_RIGHT_ALT_ON)
+#define RUT_MODIFIER_SHIFT_ON (RUT_MODIFIER_LEFT_SHIFT_ON|RUT_MODIFIER_RIGHT_SHIFT_ON)
+#define RUT_MODIFIER_CTRL_ON (RUT_MODIFIER_LEFT_CTRL_ON|RUT_MODIFIER_RIGHT_CTRL_ON)
+#define RUT_MODIFIER_META_ON (RUT_MODIFIER_LEFT_META_ON|RUT_MODIFIER_RIGHT_META_ON)
+
+typedef enum _RutInputEventStatus
+{
+  RUT_INPUT_EVENT_STATUS_UNHANDLED,
+  RUT_INPUT_EVENT_STATUS_HANDLED,
+} RutInputEventStatus;
+
+typedef struct _RutInputEvent
+{
+  RutList list_node;
+  RutInputEventType type;
+  RutShell *shell;
+  RutCamera *camera;
+  const CoglMatrix *input_transform;
+
+  void *native;
+
+  uint8_t data[];
+} RutInputEvent;
+
+/* Stream events are optimized for IPC based on the assumption that
+ * the remote process does some state tracking to know the current
+ * state of pointer buttons for example.
+ */
+typedef enum _RutStreamEventType
+{
+  RUT_STREAM_EVENT_POINTER_MOVE = 1,
+  RUT_STREAM_EVENT_POINTER_DOWN,
+  RUT_STREAM_EVENT_POINTER_UP,
+  RUT_STREAM_EVENT_KEY_DOWN,
+  RUT_STREAM_EVENT_KEY_UP
+} RutStreamEventType;
+
+typedef struct _RutStreamEvent
+{
+  RutStreamEventType type;
+  uint64_t timestamp;
+
+  union {
+    struct {
+      float x;
+      float y;
+    } pointer_move;
+    struct {
+      RutButtonState button;
+    } pointer_button;
+    struct {
+      int keysym;
+      RutModifierState mod_state;
+    } key;
+  };
+} RutStreamEvent;
+
+typedef RutInputEventStatus (*RutInputCallback) (RutInputEvent *event,
+                                                 void *user_data);
+
 RutShell *
 rut_shell_new (bool headless,
                RutShellInitCallback init,
@@ -104,12 +223,27 @@ rut_shell_update_timelines (RutShell *shell);
 void
 rut_shell_dispatch_input_events (RutShell *shell);
 
+/* Dispatch a single event as rut_shell_dispatch_input_events would */
+RutInputEventStatus
+rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event);
+
+RutList *
+rut_shell_get_input_queue (RutShell *shell,
+                           int *length);
+
+void
+rut_shell_clear_input_queue (RutShell *shell);
+
 void
 rut_shell_run_pre_paint_callbacks (RutShell *shell);
 
 /* Determines whether any timelines are running */
 bool
 rut_shell_check_timelines (RutShell *shell);
+
+void
+rut_shell_handle_stream_event (RutShell *shell,
+                               RutStreamEvent *event);
 
 void
 rut_shell_add_input_camera (RutShell *shell,
@@ -121,82 +255,6 @@ rut_shell_remove_input_camera (RutShell *shell,
                                RutCamera *camera,
                                RutObject *scenegraph);
 
-typedef enum _RutInputEventType
-{
-  RUT_INPUT_EVENT_TYPE_MOTION = 1,
-  RUT_INPUT_EVENT_TYPE_KEY,
-  RUT_INPUT_EVENT_TYPE_TEXT,
-  RUT_INPUT_EVENT_TYPE_DROP_OFFER,
-  RUT_INPUT_EVENT_TYPE_DROP_CANCEL,
-  RUT_INPUT_EVENT_TYPE_DROP
-} RutInputEventType;
-
-typedef enum _RutKeyEventAction
-{
-  RUT_KEY_EVENT_ACTION_UP = 1,
-  RUT_KEY_EVENT_ACTION_DOWN
-} RutKeyEventAction;
-
-typedef enum _RutMotionEventAction
-{
-  RUT_MOTION_EVENT_ACTION_UP = 1,
-  RUT_MOTION_EVENT_ACTION_DOWN,
-  RUT_MOTION_EVENT_ACTION_MOVE,
-} RutMotionEventAction;
-
-typedef enum _RutButtonState
-{
-  RUT_BUTTON_STATE_1         = 1<<0,
-  RUT_BUTTON_STATE_2         = 1<<1,
-  RUT_BUTTON_STATE_3         = 1<<2,
-  RUT_BUTTON_STATE_WHEELUP   = 1<<3,
-  RUT_BUTTON_STATE_WHEELDOWN = 1<<4
-} RutButtonState;
-
-typedef enum _RutModifierState
-{
-  RUT_MODIFIER_LEFT_ALT_ON = 1<<0,
-  RUT_MODIFIER_RIGHT_ALT_ON = 1<<1,
-
-  RUT_MODIFIER_LEFT_SHIFT_ON = 1<<2,
-  RUT_MODIFIER_RIGHT_SHIFT_ON = 1<<3,
-
-  RUT_MODIFIER_LEFT_CTRL_ON = 1<<4,
-  RUT_MODIFIER_RIGHT_CTRL_ON = 1<<5,
-
-  RUT_MODIFIER_LEFT_META_ON = 1<<6,
-  RUT_MODIFIER_RIGHT_META_ON = 1<<7,
-
-  RUT_MODIFIER_NUM_LOCK_ON = 1<<8,
-  RUT_MODIFIER_CAPS_LOCK_ON = 1<<9
-
-} RutModifierState;
-
-typedef enum
-{
-  RUT_CURSOR_ARROW,
-  RUT_CURSOR_IBEAM,
-  RUT_CURSOR_WAIT,
-  RUT_CURSOR_CROSSHAIR,
-  RUT_CURSOR_SIZE_WE,
-  RUT_CURSOR_SIZE_NS
-} RutCursor;
-
-#define RUT_MODIFIER_ALT_ON (RUT_MODIFIER_LEFT_ALT_ON|RUT_MODIFIER_RIGHT_ALT_ON)
-#define RUT_MODIFIER_SHIFT_ON (RUT_MODIFIER_LEFT_SHIFT_ON|RUT_MODIFIER_RIGHT_SHIFT_ON)
-#define RUT_MODIFIER_CTRL_ON (RUT_MODIFIER_LEFT_CTRL_ON|RUT_MODIFIER_RIGHT_CTRL_ON)
-#define RUT_MODIFIER_META_ON (RUT_MODIFIER_LEFT_META_ON|RUT_MODIFIER_RIGHT_META_ON)
-
-typedef enum _RutInputEventStatus
-{
-  RUT_INPUT_EVENT_STATUS_UNHANDLED,
-  RUT_INPUT_EVENT_STATUS_HANDLED,
-} RutInputEventStatus;
-
-typedef struct _RutInputEvent RutInputEvent;
-
-typedef RutInputEventStatus (*RutInputCallback) (RutInputEvent *event,
-                                                 void *user_data);
 
 /**
  * rut_shell_grab_input:
@@ -287,6 +345,10 @@ rut_key_event_get_modifier_state (RutInputEvent *event);
 
 RutMotionEventAction
 rut_motion_event_get_action (RutInputEvent *event);
+
+/* For a button-up/down event which specific button changed? */
+RutButtonState
+rut_motion_event_get_button (RutInputEvent *event);
 
 RutButtonState
 rut_motion_event_get_button_state (RutInputEvent *event);

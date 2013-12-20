@@ -5,8 +5,11 @@
 #include <glib.h>
 
 #include <rut.h>
-#include <rig-engine.h>
 #include <cogl-gst/cogl-gst.h>
+
+#include "rig-engine.h"
+#include "rig-pb.h"
+#include "rig.pb-c.h"
 
 static char **_rig_editor_remaining_args = NULL;
 
@@ -26,15 +29,37 @@ rig_device_init (RutShell *shell, void *user_data)
 }
 
 static void
+handle_run_frame_ack (const Rig__RunFrameAck *ack,
+                      void *closure_data)
+{
+  g_print ("Device: Run Frame ACK received\n");
+}
+
+static void
 rig_device_paint (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
+  ProtobufCService *service =
+    rig_pb_rpc_client_get_service (engine->simulator_peer->pb_rpc_client);
+  int n_events;
+  RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
+  Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
 
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
+  setup.n_events = n_events;
+  setup.events = rig_pb_serialize_input_events (engine, input_queue, n_events);
+
+  rig__simulator__run_frame (service,
+                             &setup,
+                             handle_run_frame_ack,
+                             NULL);
+
+#warning "fixme: don't dispatch input events directly in the device process"
   rut_shell_dispatch_input_events (shell);
+  //rut_shell_clear_input_queue (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 

@@ -17,6 +17,26 @@
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
  */
+/*
+  Simple DirectMedia Layer
+  Copyright (C) 1997-2013 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
 
 #include <config.h>
 
@@ -71,6 +91,22 @@ typedef struct
 } RutShellPrePaintEntry;
 
 #ifdef USE_SDL
+typedef struct _RutSDLEvent
+{
+  SDL_Event sdl_event;
+
+  /* SDL uses global state to report keyboard modifier and button states
+   * which is a pain if events are being batched before processing them
+   * on a per-frame basis since we want to be able to track how this
+   * state changes relative to events. */
+  SDL_Keymod mod_state;
+
+  /* It could be nice if SDL_MouseButtonEvents had a buttons member
+   * that had the full state of buttons as returned by
+   * SDL_GetMouseState () */
+  uint32_t buttons;
+} RutSDLEvent;
+
 typedef void (*RutSDLEventHandler) (RutShell *shell,
                                     SDL_Event *event,
                                     void *user_data);
@@ -85,6 +121,11 @@ struct _RutShell
   /* If true then this process does not handle input events directly
    * or output graphics directly. */
   bool headless;
+  RutButtonState headless_button_state;
+#ifdef USE_SDL
+  SDL_Keymod sdl_keymod;
+  uint32_t sdl_buttons;
+#endif
 
 #ifdef __ANDROID__
   CoglBool quit;
@@ -96,9 +137,8 @@ struct _RutShell
   struct android_app* app;
 #endif
 
-#ifdef USE_SDL
   RutList input_queue;
-#endif
+  int input_queue_len;
 
   RutContext *rut_ctx;
 
@@ -214,23 +254,6 @@ _rut_shell_fini (RutShell *shell)
   rut_refable_unref (shell->rut_ctx);
 }
 
-struct _RutInputEvent
-{
-  RutList list_node;
-  RutInputEventType type;
-  RutShell *shell;
-  union {
-#if defined(USE_SDL)
-    SDL_Event sdl_event;
-#elif defined(__ANDROID__)
-    AInputEvent *android_event;
-#endif
-    void *priv;
-  };
-  RutCamera *camera;
-  const CoglMatrix *input_transform;
-};
-
 RutClosure *
 rut_shell_add_input_callback (RutShell *shell,
                               RutInputCallback callback,
@@ -325,11 +348,15 @@ rut_input_event_get_onscreen (RutInputEvent *event)
 {
   RutShell *shell = event->shell;
 
+  if (shell->headless)
+    return NULL;
+
 #if defined(USE_SDL)
 
   {
     RutShellOnscreen *shell_onscreen;
-    SDL_Event *sdl_event = &event->sdl_event;
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
     Uint32 window_id;
 
     switch ((SDL_EventType) sdl_event->type)
@@ -397,11 +424,29 @@ rut_input_event_get_onscreen (RutInputEvent *event)
 int32_t
 rut_key_event_get_keysym (RutInputEvent *event)
 {
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_KEY_UP:
+        case RUT_STREAM_EVENT_KEY_DOWN:
+          return stream_event->key.keysym;
+        default:
+          g_return_val_if_fail (0, RUT_KEY_Escape);
+        }
+    }
+
 #ifdef __ANDROID__
 #elif defined (USE_SDL)
-  SDL_Event *sdl_event = &event->sdl_event;
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
 
-  return _rut_keysym_from_sdl_keysym (sdl_event->key.keysym.sym);
+    return _rut_keysym_from_sdl_keysym (sdl_event->key.keysym.sym);
+  }
 #else
 #error "Unknown input system"
 #endif
@@ -410,8 +455,24 @@ rut_key_event_get_keysym (RutInputEvent *event)
 RutKeyEventAction
 rut_key_event_get_action (RutInputEvent *event)
 {
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent  *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_KEY_DOWN:
+          return RUT_KEY_EVENT_ACTION_DOWN;
+        case RUT_STREAM_EVENT_KEY_UP:
+          return RUT_KEY_EVENT_ACTION_UP;
+        default:
+          g_return_val_if_fail (0, RUT_KEY_EVENT_ACTION_DOWN);
+        }
+    }
+
 #ifdef __ANDROID__
-  switch (AKeyEvent_getAction (event->android_event))
+  switch (AKeyEvent_getAction (event->native))
     {
     case AKEY_EVENT_ACTION_DOWN:
       return RUT_KEY_EVENT_ACTION_DOWN;
@@ -427,17 +488,20 @@ rut_key_event_get_action (RutInputEvent *event)
       return RUT_KEY_EVENT_ACTION_UP;
     }
 #elif defined (USE_SDL)
-  SDL_Event *sdl_event = &event->sdl_event;
-  switch (sdl_event->type)
-    {
-    case SDL_KEYUP:
-      return RUT_KEY_EVENT_ACTION_UP;
-    case SDL_KEYDOWN:
-      return RUT_KEY_EVENT_ACTION_DOWN;
-    default:
-      g_warn_if_reached ();
-      return RUT_KEY_EVENT_ACTION_UP;
-    }
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
+    switch (sdl_event->type)
+      {
+      case SDL_KEYUP:
+        return RUT_KEY_EVENT_ACTION_UP;
+      case SDL_KEYDOWN:
+        return RUT_KEY_EVENT_ACTION_DOWN;
+      default:
+        g_warn_if_reached ();
+        return RUT_KEY_EVENT_ACTION_UP;
+      }
+  }
 #else
 #error "Unknown input system"
 #endif
@@ -446,8 +510,28 @@ rut_key_event_get_action (RutInputEvent *event)
 RutMotionEventAction
 rut_motion_event_get_action (RutInputEvent *event)
 {
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+          return RUT_MOTION_EVENT_ACTION_DOWN;
+        case RUT_STREAM_EVENT_POINTER_UP:
+          return RUT_MOTION_EVENT_ACTION_UP;
+        case RUT_STREAM_EVENT_POINTER_MOVE:
+          return RUT_MOTION_EVENT_ACTION_MOVE;
+        default:
+          g_warn_if_reached ();
+          return RUT_KEY_EVENT_ACTION_UP;
+        }
+    }
+
 #ifdef __ANDROID__
-  switch (AMotionEvent_getAction (event->android_event))
+  switch (AMotionEvent_getAction (event->native) &
+          AMOTION_EVENT_ACTION_MASK)
     {
     case AMOTION_EVENT_ACTION_DOWN:
       return RUT_MOTION_EVENT_ACTION_DOWN;
@@ -457,24 +541,91 @@ rut_motion_event_get_action (RutInputEvent *event)
       return RUT_MOTION_EVENT_ACTION_MOVE;
     }
 #elif defined (USE_SDL)
-  SDL_Event *sdl_event = &event->sdl_event;
-  switch (sdl_event->type)
-    {
-    case SDL_MOUSEBUTTONDOWN:
-      return RUT_MOTION_EVENT_ACTION_DOWN;
-    case SDL_MOUSEBUTTONUP:
-      return RUT_MOTION_EVENT_ACTION_UP;
-    case SDL_MOUSEMOTION:
-      return RUT_MOTION_EVENT_ACTION_MOVE;
-    default:
-      g_warn_if_reached (); /* Not a motion event */
-      return RUT_MOTION_EVENT_ACTION_MOVE;
-    }
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
+    switch (sdl_event->type)
+      {
+      case SDL_MOUSEBUTTONDOWN:
+        return RUT_MOTION_EVENT_ACTION_DOWN;
+      case SDL_MOUSEBUTTONUP:
+        return RUT_MOTION_EVENT_ACTION_UP;
+      case SDL_MOUSEMOTION:
+        return RUT_MOTION_EVENT_ACTION_MOVE;
+      default:
+        g_warn_if_reached (); /* Not a motion event */
+        return RUT_MOTION_EVENT_ACTION_MOVE;
+      }
+  }
 #else
 #error "Unknown input system"
 #endif
 }
 
+RutButtonState
+rut_motion_event_get_button (RutInputEvent *event)
+{
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+          shell->headless_button_state &= ~stream_event->pointer_button.button;
+          return stream_event->pointer_button.button;
+        case RUT_STREAM_EVENT_POINTER_UP:
+          shell->headless_button_state |= ~stream_event->pointer_button.button;
+          return stream_event->pointer_button.button;
+        default:
+          g_warn_if_reached ();
+          return RUT_BUTTON_STATE_1;
+        }
+    }
+
+#ifdef __ANDROID__
+  int pointer_index;
+
+  /* We currently just assume this api is used for handling
+   * mouse input... */
+  if (AInputEvent_getSource (event->native) !=
+      AINPUT_SOURCE_MOUSE)
+    return RUT_BUTTON_STATE_1;
+
+  pointer_index = ((AMotionEvent_getAction (event->native) &
+                    AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
+                   AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
+
+#warning "fixme: figure out how a pointer_index can be mapped to a mouse button"
+  return RUT_BUTTON_STATE_1 + pointer_index;
+
+#elif defined(USE_SDL)
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
+
+    g_return_val_if_fail ((sdl_event->type == SDL_MOUSEBUTTONUP ||
+                           sdl_event->type == SDL_MOUSEBUTTONDOWN),
+                          RUT_BUTTON_STATE_1);
+
+    switch (sdl_event->button.button)
+      {
+      case SDL_BUTTON_LEFT:
+        return RUT_BUTTON_STATE_1;
+      case SDL_BUTTON_MIDDLE:
+        return RUT_BUTTON_STATE_2;
+      case SDL_BUTTON_RIGHT:
+        return RUT_BUTTON_STATE_3;
+      default:
+        g_warn_if_reached ();
+        return RUT_BUTTON_STATE_1;
+      }
+  }
+#else
+#error "Unknown input system"
+#endif
+}
 #ifdef USE_SDL
 static RutButtonState
 rut_button_state_for_sdl_state (SDL_Event *event,
@@ -488,14 +639,6 @@ rut_button_state_for_sdl_state (SDL_Event *event,
   if (sdl_state & SDL_BUTTON(3))
     rut_state |= RUT_BUTTON_STATE_3;
 
-  if (event->type == SDL_MOUSEWHEEL)
-    {
-      if (event->wheel.y < 0)
-        rut_state |= RUT_BUTTON_STATE_WHEELUP;
-      else if (event->wheel.y > 0)
-        rut_state |= RUT_BUTTON_STATE_WHEELDOWN;
-    }
-
   return rut_state;
 }
 #endif /* USE_SDL */
@@ -503,13 +646,20 @@ rut_button_state_for_sdl_state (SDL_Event *event,
 RutButtonState
 rut_motion_event_get_button_state (RutInputEvent *event)
 {
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    return shell->headless_button_state;
+
 #ifdef __ANDROID__
   return 0;
 #elif defined (USE_SDL)
-  SDL_Event *sdl_event = &event->sdl_event;
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
 
-  return rut_button_state_for_sdl_state (sdl_event,
-                                         SDL_GetMouseState (NULL, NULL));
+    return rut_button_state_for_sdl_state (sdl_event, rut_sdl_event->buttons);
+  }
 #if 0
   /* FIXME: we need access to the RutContext here so that
    * we can statefully track the changes to the button
@@ -530,10 +680,6 @@ rut_motion_event_get_button_state (RutInputEvent *event)
           return RUT_BUTTON_STATE_2;
         case 3:
           return RUT_BUTTON_STATE_3;
-        case 4:
-          return RUT_BUTTON_STATE_WHEELUP;
-        case 5:
-          return RUT_BUTTON_STATE_WHEELDOWN;
         default:
           g_warning ("Out of range SDL button number");
           return 0;
@@ -572,12 +718,9 @@ rut_modifier_state_for_android_meta (int32_t meta)
 
 #ifdef USE_SDL
 static RutModifierState
-rut_sdl_get_modifier_state (void)
+rut_modifier_state_for_sdl_state (SDL_Keymod mod)
 {
   RutModifierState rut_state = 0;
-  SDL_Keymod mod;
-
-  mod = SDL_GetModState ();
 
   if (mod & KMOD_LSHIFT)
     rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
@@ -603,11 +746,33 @@ rut_sdl_get_modifier_state (void)
 RutModifierState
 rut_key_event_get_modifier_state (RutInputEvent *event)
 {
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+          shell->headless_button_state &= ~stream_event->pointer_button.button;
+          return stream_event->pointer_button.button;
+        case RUT_STREAM_EVENT_POINTER_UP:
+          shell->headless_button_state |= ~stream_event->pointer_button.button;
+          return stream_event->pointer_button.button;
+        default:
+          g_warn_if_reached ();
+          return RUT_BUTTON_STATE_1;
+        }
+    }
+
 #ifdef __ANDROID__
-  int32_t meta = AKeyEvent_getMetaState (event->android_event);
+  int32_t meta = AKeyEvent_getMetaState (event->native);
   return rut_modifier_state_for_android_meta (meta);
 #elif defined (USE_SDL)
-  return rut_sdl_get_modifier_state ();
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    return rut_modifier_state_for_sdl_state (rut_sdl_event->mod_state);
+  }
 #else
 #error "Unknown input system"
   return 0;
@@ -618,10 +783,13 @@ RutModifierState
 rut_motion_event_get_modifier_state (RutInputEvent *event)
 {
 #ifdef __ANDROID__
-  int32_t meta = AMotionEvent_getMetaState (event->android_event);
+  int32_t meta = AMotionEvent_getMetaState (event->native);
   return rut_modifier_state_for_android_meta (meta);
 #elif defined (USE_SDL)
-  return rut_sdl_get_modifier_state ();
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    return rut_modifier_state_for_sdl_state (rut_sdl_event->mod_state);
+  }
 #else
 #error "Unknown input system"
   return 0;
@@ -636,10 +804,11 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
   const CoglMatrix *transform = event->input_transform;
 
 #ifdef __ANDROID__
-  *x = AMotionEvent_getX (event->android_event, 0);
-  *y = AMotionEvent_getY (event->android_event, 0);
+  *x = AMotionEvent_getX (event->native, 0);
+  *y = AMotionEvent_getY (event->native, 0);
 #elif defined (USE_SDL)
-  SDL_Event *sdl_event = &event->sdl_event;
+  RutSDLEvent *rut_sdl_event = event->native;
+  SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
   switch (sdl_event->type)
     {
     case SDL_MOUSEBUTTONDOWN:
@@ -728,7 +897,8 @@ rut_text_event_get_text (RutInputEvent *event)
 
 #elif defined (USE_SDL)
 
-  SDL_Event *sdl_event = &event->sdl_event;
+  RutSDLEvent *rut_sdl_event = event->native;
+  SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
 
   return sdl_event->text.text;
 
@@ -910,7 +1080,7 @@ cancel_current_drop_offer_taker (RutShell *shell)
 
   drop_cancel.type = RUT_INPUT_EVENT_TYPE_DROP_CANCEL;
   drop_cancel.shell = shell;
-  drop_cancel.priv = NULL;
+  drop_cancel.native = NULL;
   drop_cancel.camera = NULL;
   drop_cancel.input_transform = NULL;
 
@@ -935,8 +1105,8 @@ get_shell_onscreen (RutShell *shell,
   return NULL;
 }
 
-static RutInputEventStatus
-_rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
+RutInputEventStatus
+rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   GList *l;
@@ -967,7 +1137,7 @@ _rut_shell_handle_input (RutShell *shell, RutInputEvent *event)
       if (shell->drag_payload)
         {
           event->type = RUT_INPUT_EVENT_TYPE_DROP_OFFER;
-          _rut_shell_handle_input (shell, event);
+          rut_shell_dispatch_input_event (shell, event);
           event->type = RUT_INPUT_EVENT_TYPE_MOTION;
         }
     }
@@ -1108,7 +1278,7 @@ android_handle_input (struct android_app* app, AInputEvent *event)
       return 0;
     }
 
-  if (_rut_shell_handle_input (shell, &rut_event) ==
+  if (rut_shell_dispatch_input_event (shell, &rut_event) ==
       RUT_INPUT_EVENT_STATUS_HANDLED)
     return 1;
 
@@ -1293,6 +1463,8 @@ _rut_shell_init (RutShell *shell)
 {
 #ifdef USE_SDL
   rut_list_init (&shell->input_queue);
+  shell->sdl_keymod = SDL_GetModState ();
+  shell->sdl_buttons = SDL_GetMouseState (NULL, NULL);
 #endif
 }
 
@@ -1533,6 +1705,24 @@ rut_shell_update_timelines (RutShell *shell)
     _rut_timeline_update (l->data);
 }
 
+static void
+free_input_event (RutShell *shell, RutInputEvent *event)
+{
+  if (shell->headless)
+    {
+      g_slice_free (RutStreamEvent, event->native);
+      g_slice_free (RutInputEvent, event);
+    }
+  else
+    {
+#ifdef USE_SDL
+      g_slice_free1 (sizeof (RutInputEvent) + sizeof (RutSDLEvent), event);
+#else
+      g_slice_free (RutInputEvent, event);
+#endif
+    }
+}
+
 void
 rut_shell_dispatch_input_events (RutShell *shell)
 {
@@ -1540,12 +1730,72 @@ rut_shell_dispatch_input_events (RutShell *shell)
 
   rut_list_for_each_safe (event, tmp, &shell->input_queue, list_node)
     {
-      _rut_shell_handle_input (shell, event);
+      rut_shell_dispatch_input_event (shell, event);
       rut_list_remove (&event->list_node);
-      g_slice_free (RutInputEvent, event);
+      free_input_event (shell, event);
     }
 
   shell->input_queue_len = 0;
+}
+
+RutList *
+rut_shell_get_input_queue (RutShell *shell,
+                           int *length)
+{
+  if (length)
+    *length = shell->input_queue_len;
+  return &shell->input_queue;
+}
+
+void
+rut_shell_clear_input_queue (RutShell *shell)
+{
+  RutInputEvent *event, *tmp;
+
+  rut_list_for_each_safe (event, tmp, &shell->input_queue, list_node)
+    {
+      rut_list_remove (&event->list_node);
+      free_input_event (shell, event);
+    }
+
+  shell->input_queue_len = 0;
+}
+
+void
+rut_shell_handle_stream_event (RutShell *shell,
+                               RutStreamEvent *stream_event)
+{
+  /* XXX: it's assumed that any process that's handling stream events
+   * is not handling any other native events. I.e stream events
+   * are effectively the native events.
+   */
+
+  RutInputEvent *event = g_slice_alloc (sizeof (RutInputEvent));
+  event->native = stream_event;
+
+  event->shell = shell;
+  event->input_transform = NULL;
+
+  switch (stream_event->type)
+    {
+    case RUT_STREAM_EVENT_POINTER_MOVE:
+    case RUT_STREAM_EVENT_POINTER_DOWN:
+    case RUT_STREAM_EVENT_POINTER_UP:
+      event->type = RUT_INPUT_EVENT_TYPE_MOTION;
+      break;
+    case RUT_STREAM_EVENT_KEY_DOWN:
+    case RUT_STREAM_EVENT_KEY_UP:
+      event->type = RUT_INPUT_EVENT_TYPE_KEY;
+      break;
+    }
+
+  rut_list_insert (shell->input_queue.prev, &event->list_node);
+  shell->input_queue_len++;
+
+  /* FIXME: we need a separate status so we can trigger a new
+   * frame, but if the input doesn't affect anything then we
+   * want to avoid any actual rendering. */
+  rut_shell_queue_redraw (shell);
 }
 
 void
@@ -1578,28 +1828,7 @@ static void
 sdl_handle_event (RutShell *shell, SDL_Event *sdl_event)
 {
   RutInputEvent *event = NULL;
-
-  switch (sdl_event->type)
-    {
-    case SDL_MOUSEMOTION:
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-    case SDL_KEYUP:
-    case SDL_KEYDOWN:
-    case SDL_TEXTINPUT:
-
-      /* We queue input events to be handled on a per-frame
-       * basis instead of dispatching them immediately...
-       */
-
-      event = g_slice_new (RutInputEvent);
-      event->sdl_event = *sdl_event;
-      event->shell = shell;
-      event->input_transform = NULL;
-      break;
-    default:
-      break;
-    }
+  RutSDLEvent *rut_sdl_event;
 
   switch (sdl_event->type)
     {
@@ -1614,31 +1843,123 @@ sdl_handle_event (RutShell *shell, SDL_Event *sdl_event)
           rut_shell_quit (shell);
           break;
         }
-      break;
+      return;
 
     case SDL_MOUSEMOTION:
     case SDL_MOUSEBUTTONDOWN:
     case SDL_MOUSEBUTTONUP:
-      event->type = RUT_INPUT_EVENT_TYPE_MOTION;
-      break;
-
     case SDL_KEYUP:
     case SDL_KEYDOWN:
-      event->type = RUT_INPUT_EVENT_TYPE_KEY;
-      break;
-
     case SDL_TEXTINPUT:
-      event->type = RUT_INPUT_EVENT_TYPE_TEXT;
-      break;
 
-    case SDL_QUIT:
-      rut_shell_quit (shell);
+      /* We queue input events to be handled on a per-frame
+       * basis instead of dispatching them immediately...
+       */
+
+      event = g_slice_alloc (sizeof (RutInputEvent) + sizeof (RutSDLEvent));
+      rut_sdl_event = (void *)event->data;
+      rut_sdl_event->sdl_event = *sdl_event;
+
+      memcpy (event->data, sdl_event, sizeof (SDL_Event));
+      event->native = event->data;
+
+      event->shell = shell;
+      event->input_transform = NULL;
+      break;
+    default:
       break;
     }
 
   if (event)
     {
+      switch (sdl_event->type)
+        {
+
+        case SDL_MOUSEMOTION:
+          event->type = RUT_INPUT_EVENT_TYPE_MOTION;
+          shell->sdl_buttons = sdl_event->motion.state;
+          break;
+        case SDL_MOUSEBUTTONDOWN:
+          event->type = RUT_INPUT_EVENT_TYPE_MOTION;
+          shell->sdl_buttons |= sdl_event->button.button;
+          break;
+        case SDL_MOUSEBUTTONUP:
+          event->type = RUT_INPUT_EVENT_TYPE_MOTION;
+          shell->sdl_buttons &= ~sdl_event->button.button;
+          break;
+
+        case SDL_KEYDOWN:
+
+          event->type = RUT_INPUT_EVENT_TYPE_KEY;
+          shell->sdl_keymod = sdl_event->key.keysym.mod;
+
+          /* Copied from from SDL_keyboard.c: SDL_SendKeyboardKey()
+           * since we want to track the modifier state in relation to
+           * events instead of globally and we can't simply use
+           * sdl_event->key.keysym.mod because if the button being
+           * pressed is itself a modifier then SDL doesn't reflect
+           * that in the modifier state for the event.
+           */
+          switch (sdl_event->key.keysym.scancode)
+            {
+            case SDL_SCANCODE_NUMLOCKCLEAR:
+              shell->sdl_keymod ^= KMOD_NUM;
+              break;
+            case SDL_SCANCODE_CAPSLOCK:
+              shell->sdl_keymod ^= KMOD_CAPS;
+              break;
+            case SDL_SCANCODE_LCTRL:
+              shell->sdl_keymod |= KMOD_LCTRL;
+              break;
+            case SDL_SCANCODE_RCTRL:
+              shell->sdl_keymod |= KMOD_RCTRL;
+              break;
+            case SDL_SCANCODE_LSHIFT:
+              shell->sdl_keymod |= KMOD_LSHIFT;
+              break;
+            case SDL_SCANCODE_RSHIFT:
+              shell->sdl_keymod |= KMOD_RSHIFT;
+              break;
+            case SDL_SCANCODE_LALT:
+              shell->sdl_keymod |= KMOD_LALT;
+              break;
+            case SDL_SCANCODE_RALT:
+              shell->sdl_keymod |= KMOD_RALT;
+              break;
+            case SDL_SCANCODE_LGUI:
+              shell->sdl_keymod |= KMOD_LGUI;
+              break;
+            case SDL_SCANCODE_RGUI:
+              shell->sdl_keymod |= KMOD_RGUI;
+              break;
+            case SDL_SCANCODE_MODE:
+              shell->sdl_keymod |= KMOD_MODE;
+              break;
+            default:
+              break;
+            }
+          break;
+
+        case SDL_KEYUP:
+
+          event->type = RUT_INPUT_EVENT_TYPE_KEY;
+          shell->sdl_keymod = sdl_event->key.keysym.mod;
+          break;
+
+        case SDL_TEXTINPUT:
+          event->type = RUT_INPUT_EVENT_TYPE_TEXT;
+          break;
+
+        case SDL_QUIT:
+          rut_shell_quit (shell);
+          break;
+        }
+
+      rut_sdl_event->buttons = shell->sdl_buttons;
+      rut_sdl_event->mod_state = shell->sdl_keymod;
+
       rut_list_insert (shell->input_queue.prev, &event->list_node);
+      shell->input_queue_len++;
       /* FIXME: we need a separate status so we can trigger a new
        * frame, but if the input doesn't affect anything then we
        * want to avoid any actual rendering. */
@@ -2356,13 +2677,13 @@ _rut_shell_paste (RutShell *shell,
 
   drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
   drop_event.shell = shell;
-  drop_event.priv = data;
+  drop_event.native = data;
   drop_event.camera = NULL;
   drop_event.input_transform = NULL;
 
   /* Note: This assumes input handlers are re-entrant and hopefully
    * that's ok. */
-  _rut_shell_handle_input (shell, &drop_event);
+  rut_shell_dispatch_input_event (shell, &drop_event);
 }
 
 void
@@ -2376,7 +2697,7 @@ rut_shell_drop (RutShell *shell)
 
   drop_event.type = RUT_INPUT_EVENT_TYPE_DROP;
   drop_event.shell = shell;
-  drop_event.priv = shell->drag_payload;
+  drop_event.native = shell->drag_payload;
   drop_event.camera = NULL;
   drop_event.input_transform = NULL;
 
@@ -2390,7 +2711,7 @@ rut_shell_drop (RutShell *shell)
 RutObject *
 rut_drop_event_get_data (RutInputEvent *drop_event)
 {
-  return drop_event->priv;
+  return drop_event->native;
 }
 
 struct _RutTextBlob

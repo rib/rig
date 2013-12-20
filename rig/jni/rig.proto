@@ -329,43 +329,30 @@ service Slave {
 
 message Event
 {
-  enum Type { POINTER_STATE=1; POINTER_MOVE=2; POINTER_DOWN=3; POINTER_UP=4;
-              KEY_UP=5; KEY_DOWN=6; }
+  enum Type { POINTER_MOVE=1; POINTER_DOWN=2; POINTER_UP=3;
+              KEY_UP=4; KEY_DOWN=5; }
 
-  message PointerState
-    {
-      repeated bool buttons=1;
-    }
   message PointerMove
     {
       optional float x=1;
       optional float y=2;
     }
-  message PointerDown
+  message PointerButton
     {
       optional uint32 button=1;
+      repeated bool buttons=2;
     }
-  message PointerUp
-    {
-      optional uint32 button=1;
-    }
-  message KeyDown
+  message Key
     {
       optional sint32 keysym=1;
-    }
-  message KeyUp
-    {
-      optional sint32 keysym=1;
+      optional sint32 mod_state=2;
     }
 
   optional Type type=1;
   optional sfixed64 timestamp=2;
-  optional PointerState pointer_state=3;
-  optional PointerMove pointer_move=4;
-  optional PointerDown pointer_down=5;
-  optional PointerUp pointer_up=6;
-  optional KeyDown key_down=7;
-  optional KeyUp key_up=8;
+  optional PointerMove pointer_move=3;
+  optional PointerButton pointer_button=4;
+  optional Key key=5;
 }
 
 message FrameSetup
@@ -414,7 +401,7 @@ message UpdateUIAck
 
 // The renderer service as used from the simulator
 service Renderer {
-    rpc UpdateUI (UIDiff) returns (UpdateUIAck);
+  rpc UpdateUI (UIDiff) returns (UpdateUIAck);
 
-    rpc Test (Query) returns (TestResult);
+  rpc Test (Query) returns (TestResult);
 }

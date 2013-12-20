@@ -1030,6 +1030,113 @@ rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset)
 #endif
 }
 
+Rig__Event **
+rig_pb_serialize_input_events (RigEngine *engine,
+                               RutList *input_queue,
+                               int n_events)
+{
+  RutInputEvent *event, *tmp;
+  Rig__Event **pb_events;
+  int i;
+
+#warning "would it be better to assume the caller is responsible for clearing the serialization stack?"
+  rut_memory_stack_rewind (engine->serialization_stack);
+  pb_events = rut_memory_stack_alloc (engine->serialization_stack,
+                                      n_events * sizeof (void *));
+
+  i = 0;
+  rut_list_for_each_safe (event, tmp, input_queue, list_node)
+    {
+      Rig__Event *pb_event = pb_new (engine, sizeof (Rig__Event),
+                                     rig__event__init);
+
+      pb_event->has_type = true;
+
+      switch (event->type)
+        {
+        case RUT_INPUT_EVENT_TYPE_MOTION:
+          {
+            RutMotionEventAction action = rut_motion_event_get_action (event);
+
+            switch (action)
+              {
+              case RUT_MOTION_EVENT_ACTION_MOVE:
+                g_print ("Serialize move\n");
+                pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
+                pb_event->pointer_move =
+                  pb_new (engine, sizeof (Rig__Event__PointerMove),
+                          rig__event__pointer_move__init);
+
+                pb_event->pointer_move->has_x = true;
+                pb_event->pointer_move->x = rut_motion_event_get_x (event);
+                pb_event->pointer_move->has_y = true;
+                pb_event->pointer_move->y = rut_motion_event_get_y (event);
+                break;
+              case RUT_MOTION_EVENT_ACTION_DOWN:
+                g_print ("Serialize pointer down\n");
+                pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
+                break;
+              case RUT_MOTION_EVENT_ACTION_UP:
+                g_print ("Serialize pointer up\n");
+                pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
+                break;
+              }
+
+            switch (action)
+              {
+              case RUT_MOTION_EVENT_ACTION_MOVE:
+                break;
+              case RUT_MOTION_EVENT_ACTION_UP:
+              case RUT_MOTION_EVENT_ACTION_DOWN:
+                pb_event->pointer_button =
+                  pb_new (engine, sizeof (Rig__Event__PointerButton),
+                          rig__event__pointer_button__init);
+                pb_event->pointer_button->button =
+                  rut_motion_event_get_button (event);
+              }
+
+          break;
+          }
+        case RUT_INPUT_EVENT_TYPE_KEY:
+          {
+            RutKeyEventAction action = rut_key_event_get_action (event);
+
+            switch (action)
+              {
+              case RUT_KEY_EVENT_ACTION_DOWN:
+                g_print ("Serialize key down\n");
+                pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
+                break;
+              case RUT_KEY_EVENT_ACTION_UP:
+                g_print ("Serialize key down\n");
+                pb_event->type = RIG__EVENT__TYPE__KEY_UP;
+                break;
+              }
+
+            pb_event->key =
+              pb_new (engine, sizeof (Rig__Event__Key),
+                      rig__event__key__init);
+            pb_event->key->keysym =
+              rut_key_event_get_keysym (event);
+            pb_event->key->mod_state =
+              rut_key_event_get_modifier_state (event);
+          }
+
+        case RUT_INPUT_EVENT_TYPE_TEXT:
+        case RUT_INPUT_EVENT_TYPE_DROP_OFFER:
+        case RUT_INPUT_EVENT_TYPE_DROP_CANCEL:
+        case RUT_INPUT_EVENT_TYPE_DROP:
+          break;
+        }
+
+      pb_events[i] = pb_event;
+
+      i++;
+    }
+
+  return pb_events;
+}
+
 typedef struct _UnSerializer
 {
   RigEngine *engine;
