@@ -273,18 +273,18 @@ CoglTexture *
 rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
                            CoglTexture *source)
 {
-  unsigned int src_w, src_h;
-  CoglPixelFormat format;
+  int src_w, src_h;
+  CoglTextureComponents components;
   CoglOffscreen *offscreen;
 
   /* create the first FBO to render the x pass */
   src_w = cogl_texture_get_width (source);
   src_h = cogl_texture_get_height (source);
-  format = cogl_texture_get_format (source);
+  components = cogl_texture_get_components (source);
 
   if (blurrer->width != src_w ||
       blurrer->height != src_h ||
-      blurrer->format != format)
+      blurrer->components != components)
     {
       _rut_gaussian_blurrer_free_buffers (blurrer);
     }
@@ -294,9 +294,11 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       CoglError *error = NULL;
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,
-                                       src_w,
-                                       src_h,
-                                       format);
+                                       src_w, src_h);
+
+      cogl_texture_set_components (texture_2d, components);
+
+      cogl_texture_allocate (texture_2d, &error);
       if (error)
         {
           g_warning ("blurrer: could not create x pass texture: %s",
@@ -305,7 +307,7 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       blurrer->x_pass = texture_2d;
       blurrer->width = src_w;
       blurrer->height = src_h;
-      blurrer->format = format;
+      blurrer->components = components;
 
       offscreen = cogl_offscreen_new_with_texture (blurrer->x_pass);
       blurrer->x_pass_fb = offscreen;
@@ -319,8 +321,10 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (blurrer->ctx->cogl_context,
                                        src_w,
-                                       src_h,
-                                       format);
+                                       src_h);
+
+      cogl_texture_set_components (texture_2d, components);
+
       blurrer->destination = texture_2d;
       blurrer->y_pass = blurrer->destination;
 

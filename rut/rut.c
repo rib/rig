@@ -263,8 +263,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
     return cogl_object_ref (entry->texture);
 
   texture = (CoglTexture*)
-    cogl_texture_2d_new_from_file (ctx->cogl_context, filename,
-                                   COGL_PIXEL_FORMAT_ANY, error);
+    cogl_texture_2d_new_from_file (ctx->cogl_context, filename, error);
   if (!texture)
     return NULL;
 
@@ -277,7 +276,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
   entry->texture = texture;
 
   /* Track when the texture is freed... */
-  cogl_object_set_user_data (COGL_OBJECT (texture),
+  cogl_object_set_user_data (texture,
                              &texture_cache_key,
                              entry,
                              texture_destroyed_cb);

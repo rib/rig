@@ -357,9 +357,7 @@ ensure_hs_pipeline (RutColorPicker *picker)
 
   cogl_buffer_unmap (buffer);
 
-  texture = cogl_texture_2d_new_from_bitmap (bitmap,
-                                             COGL_PIXEL_FORMAT_ANY,
-                                             NULL);
+  texture = cogl_texture_2d_new_from_bitmap (bitmap);
 
   pipeline = cogl_pipeline_copy (picker->hs_pipeline);
   cogl_pipeline_set_layer_texture (pipeline,
@@ -423,9 +421,7 @@ ensure_v_pipeline (RutColorPicker *picker)
 
   cogl_buffer_unmap (buffer);
 
-  texture = cogl_texture_2d_new_from_bitmap (bitmap,
-                                             COGL_PIXEL_FORMAT_ANY,
-                                             NULL);
+  texture = cogl_texture_2d_new_from_bitmap (bitmap);
 
   pipeline = cogl_pipeline_copy (picker->v_pipeline);
   cogl_pipeline_set_layer_texture (pipeline,

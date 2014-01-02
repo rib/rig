@@ -94,19 +94,12 @@ generate_bump_map (CoglContext *ctx,
                    const char *output)
 {
   CoglBitmap *bitmap = cogl_bitmap_new_from_file (ctx, path, NULL);
-  CoglTexture *src =
-    cogl_texture_2d_new_from_bitmap (bitmap,
-                                     COGL_PIXEL_FORMAT_ANY,
-                                     NULL);
+  CoglTexture *src = cogl_texture_2d_new_from_bitmap (bitmap);
 
   int tex_width = cogl_texture_get_width (src);
   int tex_height = cogl_texture_get_height (src);
 
-  CoglTexture *dst =
-    cogl_texture_2d_new_with_size (ctx,
-                                   tex_width,
-                                   tex_height,
-                                   COGL_PIXEL_FORMAT_ANY);
+  CoglTexture *dst = cogl_texture_2d_new_with_size (ctx, tex_width, tex_height);
 
   CoglOffscreen *offscreen = cogl_offscreen_new_with_texture (dst);
   CoglFramebuffer *fb = offscreen;
@@ -163,18 +156,12 @@ generate_normal_map (CoglContext *ctx,
 {
   CoglBitmap *bitmap = cogl_bitmap_new_from_file (ctx, path, NULL);
   CoglTexture *src =
-    cogl_texture_2d_new_from_bitmap (bitmap,
-                                     COGL_PIXEL_FORMAT_ANY,
-                                     NULL);
+    cogl_texture_2d_new_from_bitmap (bitmap);
 
   int tex_width = cogl_texture_get_width (src);
   int tex_height = cogl_texture_get_height (src);
 
-  CoglTexture *dst =
-    cogl_texture_2d_new_with_size (ctx,
-                                   tex_width,
-                                   tex_height,
-                                   COGL_PIXEL_FORMAT_ANY);
+  CoglTexture *dst = cogl_texture_2d_new_with_size (ctx, tex_width, tex_height);
 
   CoglOffscreen *offscreen = cogl_offscreen_new_with_texture (dst);
   CoglFramebuffer *fb = offscreen;

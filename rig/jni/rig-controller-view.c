@@ -1384,10 +1384,7 @@ draw_timeline_background (RigPathView *path_view,
 
       cogl_buffer_unmap (buffer);
 
-      texture =
-        cogl_texture_2d_new_from_bitmap (bitmap,
-                                         COGL_PIXEL_FORMAT_ANY,
-                                         NULL);
+      texture = cogl_texture_2d_new_from_bitmap (bitmap);
 
       cogl_pipeline_set_layer_texture (pipeline,
                                        0, /* layer_num */

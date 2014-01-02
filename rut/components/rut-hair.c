@@ -286,8 +286,7 @@ _rut_hair_get_fin_texture (RutHair *hair)
   int i;
 
   fin_texture = (CoglTexture*)
-    cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 1000, 1000,
-                                   COGL_PIXEL_FORMAT_RGBA_8888);
+    cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 1000, 1000);
 
   pipeline = cogl_pipeline_new (hair->ctx->cogl_context);
 
@@ -428,8 +427,7 @@ _rut_hair_generate_shell_textures (RutHair *hair)
         {
           CoglTexture **textures = (void *)hair->shell_textures->data;
           textures[i] = (CoglTexture *)
-            cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 256, 256,
-                                           COGL_PIXEL_FORMAT_RGBA_8888);
+            cogl_texture_2d_new_with_size (hair->ctx->cogl_context, 256, 256);
         }
     }
   else if (hair->n_shells < num_textures)
@@ -582,8 +580,8 @@ rut_hair_new (RutContext *ctx)
 
   hair->circle = (CoglTexture*)
     cogl_texture_2d_new_from_file (hair->ctx->cogl_context,
-                           				 rut_find_data_file ("circle1.png"),
-                            			 COGL_PIXEL_FORMAT_ANY, NULL);
+                                   rut_find_data_file ("circle1.png"),
+                                   NULL);
 
   rut_simple_introspectable_init (hair, _rut_hair_prop_specs,
                                   hair->properties);

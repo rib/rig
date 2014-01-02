@@ -129,8 +129,7 @@ rut_create_circle_texture (RutContext *ctx,
   int size = half_size * 2;
 
   tex2d = cogl_texture_2d_new_with_size (ctx->cogl_context,
-                                         size, size,
-                                         COGL_PIXEL_FORMAT_RGBA_8888);
+                                         size, size);
   offscreen = cogl_offscreen_new_with_texture (tex2d);
   fb = offscreen;
 

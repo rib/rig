@@ -33,7 +33,7 @@ typedef struct _RutGaussianBlurrer
   int n_taps;
 
   int width, height;
-  CoglPixelFormat format;
+  CoglTextureComponents components;
 
   CoglFramebuffer *x_pass_fb;
   CoglTexture *x_pass;

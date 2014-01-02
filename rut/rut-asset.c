@@ -266,8 +266,7 @@ rut_video_grab_thumbnail (void *instance,
   generator->video->texture =
     cogl_texture_2d_new_with_size (generator->ctx,
                                    tex_width,
-                                   tex_height,
-                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE);
+                                   tex_height);
 
   offscreen = cogl_offscreen_new_with_texture (generator->video->texture);
   fbo = offscreen;
@@ -391,8 +390,7 @@ rut_model_get_thumbnail (RutContext *ctx,
   thumbnail =
     cogl_texture_2d_new_with_size (ctx->cogl_context,
                                    tex_width,
-                                   tex_height,
-                                   COGL_PIXEL_FORMAT_RGBA_8888_PRE);
+                                   tex_height);
 
   offscreen = cogl_offscreen_new_with_texture (thumbnail);
   frame_buffer = offscreen;
@@ -761,10 +759,11 @@ rut_asset_new_from_data (RutContext *ctx,
 
               bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
 
-              asset->texture =
-                cogl_texture_2d_new_from_bitmap (bitmap,
-                                                 COGL_PIXEL_FORMAT_ANY,
-                                                 &cogl_error);
+              asset->texture = cogl_texture_2d_new_from_bitmap (bitmap);
+
+              /* Allocate now so we can simply free the data
+               * TODO: allow asynchronous upload. */
+              cogl_texture_allocate (asset->texture, NULL);
 
               cogl_object_unref (bitmap);
               g_object_unref (pixbuf);

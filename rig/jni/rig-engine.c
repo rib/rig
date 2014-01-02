@@ -2887,9 +2887,7 @@ create_debug_gradient (RigEngine *engine)
   CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   engine->gradient =
-    cogl_texture_2d_new_with_size (rut_cogl_context,
-                                   200, 200,
-                                   COGL_PIXEL_FORMAT_ANY);
+    cogl_texture_2d_new_with_size (rut_cogl_context, 200, 200);
 
   offscreen = cogl_offscreen_new_with_texture (engine->gradient);
 
@@ -2927,8 +2925,7 @@ rig_engine_handle_ui_update (RigEngine *engine)
 
   color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
                                                 engine->device_width * 2,
-                                                engine->device_height * 2,
-                                                COGL_PIXEL_FORMAT_ANY);
+                                                engine->device_height * 2);
 
   engine->shadow_color = color_buffer;
 

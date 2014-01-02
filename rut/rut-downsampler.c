@@ -75,7 +75,7 @@ rut_downsampler_downsample (RutDownsampler *downsampler,
                             int scale_factor_x,
                             int scale_factor_y)
 {
-  CoglPixelFormat format;
+  CoglTextureComponents components;
   int src_w, src_h;
   int dest_width, dest_height;
   CoglPipeline *pipeline;
@@ -98,19 +98,21 @@ rut_downsampler_downsample (RutDownsampler *downsampler,
   /* create the destination texture up front */
   dest_width = src_w / scale_factor_x;
   dest_height = src_h / scale_factor_y;
-  format = cogl_texture_get_format (source);
+  components = cogl_texture_get_components (source);
 
   if (downsampler->dest == NULL ||
       cogl_texture_get_width (downsampler->dest) != dest_width ||
       cogl_texture_get_height (downsampler->dest) != dest_height ||
-      cogl_texture_get_format (downsampler->dest) != format)
+      cogl_texture_get_components (downsampler->dest) != components)
     {
       CoglOffscreen *offscreen;
       CoglTexture2D *texture_2d =
         cogl_texture_2d_new_with_size (downsampler->ctx->cogl_context,
                                        dest_width,
-                                       dest_height,
-                                       format);
+                                       dest_height);
+
+      cogl_texture_set_components (texture_2d, components);
+
       _rut_downsampler_reset (downsampler);
 
       downsampler->dest = texture_2d;

@@ -142,8 +142,7 @@ rut_dof_effect_get_depth_pass_fb (RutDepthOfField *dof)
       dof->depth_pass =
         cogl_texture_2d_new_with_size (dof->ctx->cogl_context,
                                        dof->width,
-                                       dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888);
+                                       dof->height);
 
       dof->depth_pass_fb =
         cogl_offscreen_new_with_texture (dof->depth_pass);
@@ -163,8 +162,7 @@ rut_dof_effect_get_color_pass_fb (RutDepthOfField *dof)
       dof->color_pass =
         cogl_texture_2d_new_with_size (dof->ctx->cogl_context,
                                        dof->width,
-                                       dof->height,
-                                       COGL_PIXEL_FORMAT_RGBA_8888);
+                                       dof->height);
 
       dof->color_pass_fb =
         cogl_offscreen_new_with_texture (dof->color_pass);
