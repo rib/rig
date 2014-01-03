@@ -20,6 +20,8 @@
 
 #include <config.h>
 
+#include <stdlib.h>
+
 #include <glib.h>
 
 #include <rut.h>
@@ -242,4 +244,8 @@ rig_simulator_service_stop (RigSimulator *simulator)
 {
   rut_refable_unref (simulator->simulator_peer);
   simulator->simulator_peer = NULL;
+
+  /* For now we assume we would only stop the service due to an RPC
+   * error and so we should quit this process... */
+  exit (1);
 }
