@@ -72,8 +72,8 @@ librig_la_SOURCES = \
 	jni/rig.pb-c.c \
 	jni/rig-simulator-service.c \
 	jni/rig-simulator-service.h \
-	jni/rig-renderer-service.c \
-	jni/rig-renderer-service.h
+	jni/rig-frontend-service.c \
+	jni/rig-frontend-service.h
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \

@@ -17,13 +17,13 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RIG_RENDERER_SERVICE_H_
-#define _RIG_RENDERER_SERVICE_H_
+#ifndef _RIG_FRONTEND_SERVICE_H_
+#define _RIG_FRONTEND_SERVICE_H_
 
 void
-rig_renderer_service_start (RigEngine *engine, int ipc_fd);
+rig_frontend_service_start (RigFrontend *frontend);
 
 void
-rig_renderer_service_stop (RigEngine *engine);
+rig_frontend_service_stop (RigFrontend *frontend);
 
-#endif /* _RIG_RENDERER_SERVICE_H_ */
+#endif /* _RIG_FRONTEND_SERVICE_H_ */

@@ -399,8 +399,8 @@ message UpdateUIAck
 {
 }
 
-// The renderer service as used from the simulator
-service Renderer {
+// The frontend service as used from the simulator
+service Frontend {
   rpc UpdateUI (UIDiff) returns (UpdateUIAck);
 
   rpc Test (Query) returns (TestResult);

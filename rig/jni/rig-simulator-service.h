@@ -21,9 +21,9 @@
 #define _RIG_SIMULATOR_SERVICE_H_
 
 void
-rig_simulator_service_start (RigEngine *engine, int ipc_fd);
+rig_simulator_service_start (RigSimulator *simulator);
 
 void
-rig_simulator_service_stop (RigEngine *engine);
+rig_simulator_service_stop (RigSimulator *simulator);
 
 #endif /* _RIG_SIMULATOR_SERVICE_H_ */

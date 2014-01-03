@@ -39,8 +39,9 @@ static void
 rig_device_paint (RutShell *shell, void *user_data)
 {
   RigEngine *engine = user_data;
-  ProtobufCService *service =
-    rig_pb_rpc_client_get_service (engine->simulator_peer->pb_rpc_client);
+  RigFrontend *frontend = engine->frontend;
+  ProtobufCService *simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
   int n_events;
   RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
   Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
@@ -52,7 +53,7 @@ rig_device_paint (RutShell *shell, void *user_data)
   setup.n_events = n_events;
   setup.events = rig_pb_serialize_input_events (engine, input_queue, n_events);
 
-  rig__simulator__run_frame (service,
+  rig__simulator__run_frame (simulator_service,
                              &setup,
                              handle_run_frame_ack,
                              NULL);

@@ -63,6 +63,41 @@ typedef struct _RigEntitesSelection
   RutList selection_events_cb_list;
 } RigObjectsSelection;
 
+/* The "frontend" is the main process that controls the running
+ * of a Rig UI.
+ *
+ * Currently this is also the process where all rendering is handled,
+ * though in the future more things may be split out into different
+ * threads and processes.
+ */
+typedef struct _RigFrontend
+{
+  RigEngine *engine;
+
+  pid_t simulator_pid;
+
+  int fd;
+  RigRPCPeer *frontend_peer;
+
+} RigFrontend;
+
+/* The "simulator" is the process responsible for updating object
+ * properties either in response to user input, the progression of
+ * animations or running other forms of simulation such as physics.
+ */
+typedef struct _RigSimulator
+{
+  RigEngine *engine;
+
+  int fd;
+  RigRPCPeer *simulator_peer;
+
+  float last_pointer_x;
+  float last_pointer_y;
+
+} RigSimulator;
+
+
 struct _RigEngine
 {
   CoglBool play_mode;
@@ -270,8 +305,9 @@ struct _RigEngine
 
   GHashTable *assets_registry;
 
-  pid_t simulator_pid;
-  RigRPCPeer *simulator_peer;
+  RigFrontend *frontend; /* NULL if engine not acting as a frontend process */
+
+  RigSimulator *simulator; /* NULL if engine not acting as a simulator */
 
   RigRPCServer *slave_service;
 

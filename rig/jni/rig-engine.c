@@ -54,7 +54,7 @@
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
 #include "rig-slave-master.h"
-#include "rig-renderer-service.h"
+#include "rig-frontend-service.h"
 #include "rig-simulator-service.h"
 
 //#define DEVICE_WIDTH 480.0
@@ -3131,11 +3131,14 @@ rig_engine_init (RigEngine *engine,
         }
       else
         {
-          engine->simulator_pid = pid;
-          rig_renderer_service_start (engine, sp[0]);
+          engine->frontend = g_slice_new0 (RigFrontend);
+          engine->frontend->engine = engine;
+          engine->frontend->simulator_pid = pid;
+          engine->frontend->fd = sp[0];
+          rig_frontend_service_start (engine->frontend);
         }
     }
-  else
+  else /* Running as a simulator... */
     {
       const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
       int fd;
@@ -3148,7 +3151,10 @@ rig_engine_init (RigEngine *engine,
 
       fd = strtol (ipc_fd_str, NULL, 10);
 
-      rig_simulator_service_start (engine, fd);
+      engine->simulator = g_slice_new0 (RigSimulator);
+      engine->simulator->engine = engine;
+      engine->simulator->fd = fd;
+      rig_simulator_service_start (engine->simulator);
     }
 
 
@@ -3380,7 +3386,9 @@ rig_engine_fini (RutShell *shell, void *user_data)
 
       cogl_object_unref (engine->default_pipeline);
 
-      rig_renderer_service_stop (engine);
+      rig_frontend_service_stop (engine->frontend);
+      g_slice_free (RigFrontend, engine->frontend);
+      engine->frontend = NULL;
 
 #ifdef __APPLE__
       rig_osx_deinit (engine);
@@ -3394,7 +3402,11 @@ rig_engine_fini (RutShell *shell, void *user_data)
 #endif /* USE_GTK */
     }
   else
-    rig_simulator_service_stop (engine);
+    {
+      rig_simulator_service_stop (engine->simulator);
+      g_slice_free (RigSimulator, engine->simulator);
+      engine->simulator = NULL;
+    }
 
   for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
     rut_property_destroy (&engine->properties[i]);

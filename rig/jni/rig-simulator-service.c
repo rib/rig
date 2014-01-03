@@ -52,8 +52,9 @@ simulator__load (Rig__Simulator_Service *service,
                  void *closure_data)
 {
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
-  RigEngine *engine =
+  RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigEngine *engine = simulator->engine;
 
   g_return_if_fail (ui != NULL);
 
@@ -71,8 +72,9 @@ simulator__run_frame (Rig__Simulator_Service *service,
                       void *closure_data)
 {
   Rig__RunFrameAck ack = RIG__RUN_FRAME_ACK__INIT;
-  RigEngine *engine =
+  RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigEngine *engine = simulator->engine;
   int i;
 
   g_return_if_fail (setup != NULL);
@@ -185,7 +187,7 @@ static Rig__Simulator_Service rig_simulator_service =
 
 
 static void
-handle_renderer_test_response (const Rig__TestResult *result,
+handle_frontend_test_response (const Rig__TestResult *result,
                                 void *closure_data)
 {
   g_print ("Renderer test response received\n");
@@ -195,12 +197,12 @@ static void
 simulator_peer_connected (PB_RPC_Client *pb_client,
                           void *user_data)
 {
-  ProtobufCService *renderer_service =
+  ProtobufCService *frontend_service =
     rig_pb_rpc_client_get_service (pb_client);
   Rig__Query query = RIG__QUERY__INIT;
 
-  rig__renderer__test (renderer_service, &query,
-                       handle_renderer_test_response, NULL);
+  rig__frontend__test (frontend_service, &query,
+                       handle_frontend_test_response, NULL);
   g_print ("Simulator peer connected\n");
 }
 
@@ -209,30 +211,29 @@ simulator_peer_error_handler (PB_RPC_Error_Code code,
                               const char *message,
                               void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigSimulator *simulator = user_data;
 
   g_warning ("Simulator peer error: %s", message);
 
-  rig_simulator_service_stop (engine);
+  rig_simulator_service_stop (simulator);
 }
 
-
 void
-rig_simulator_service_start (RigEngine *engine, int ipc_fd)
+rig_simulator_service_start (RigSimulator *simulator)
 {
-  engine->simulator_peer =
-    rig_rpc_peer_new (engine,
-                      ipc_fd,
+  simulator->simulator_peer =
+    rig_rpc_peer_new (simulator->engine,
+                      simulator->fd,
                       &rig_simulator_service.base,
-                      (ProtobufCServiceDescriptor *)&rig__renderer__descriptor,
+                      (ProtobufCServiceDescriptor *)&rig__frontend__descriptor,
                       simulator_peer_error_handler,
                       simulator_peer_connected,
-                      engine);
+                      simulator);
 }
 
 void
-rig_simulator_service_stop (RigEngine *engine)
+rig_simulator_service_stop (RigSimulator *simulator)
 {
-  rut_refable_unref (engine->simulator_peer);
-  engine->simulator_peer = NULL;
+  rut_refable_unref (simulator->simulator_peer);
+  simulator->simulator_peer = NULL;
 }
