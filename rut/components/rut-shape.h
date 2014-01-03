@@ -50,6 +50,8 @@ extern RutType rut_shape_type;
 
 enum {
   RUT_SHAPE_PROP_SHAPED,
+  RUT_SHAPE_PROP_WIDTH,
+  RUT_SHAPE_PROP_HEIGHT,
   RUT_SHAPE_N_PROPS
 };
 
@@ -63,8 +65,8 @@ struct _RutShape
 
   RutContext *ctx;
 
-  int tex_width;
-  int tex_height;
+  int width;
+  int height;
   CoglBool shaped;
 
   RutShapeModel *model;
@@ -80,9 +82,9 @@ _rut_shape_init_type (void);
 
 RutShape *
 rut_shape_new (RutContext *ctx,
-               CoglBool shaped,
-               int tex_width,
-               int tex_height);
+               bool shaped,
+               int width,
+               int height);
 
 CoglPrimitive *
 rut_shape_get_primitive (RutObject *object);
@@ -115,8 +117,19 @@ rut_shape_add_reshaped_callback (RutShape *shape,
                                  RutClosureDestroyCallback destroy_cb);
 
 void
-rut_shape_set_texture_size (RutShape *shape,
-                            int tex_width,
-                            int tex_height);
+rut_shape_set_width (RutObject *obj, float width);
+
+void
+rut_shape_set_height (RutObject *obj, float height);
+
+void
+rut_shape_set_size (RutObject *self,
+                    float width,
+                    float height);
+
+void
+rut_shape_get_size (RutObject *self,
+                    float *width,
+                    float *height);
 
 #endif /* __RUT_SHAPE_H__ */

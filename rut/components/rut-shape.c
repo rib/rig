@@ -37,6 +37,23 @@ static RutPropertySpec _rut_shape_prop_specs[] = {
     .setter.boolean_type = rut_shape_set_shaped,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
   },
+  {
+    .name = "width",
+    .nick = "Width",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = G_STRUCT_OFFSET (RutShape, width),
+    .setter.float_type = rut_shape_set_width,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+  },
+  {
+    .name = "height",
+    .nick = "Height",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = G_STRUCT_OFFSET (RutShape, height),
+    .setter.float_type = rut_shape_set_height,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+  },
+
   { NULL }
 };
 
@@ -161,8 +178,8 @@ mesh_new_p2t2t2 (CoglVerticesMode mode,
 static RutShapeModel *
 shape_model_new (RutContext *ctx,
                  CoglBool shaped,
-                 float tex_width,
-                 float tex_height)
+                 float width,
+                 float height)
 {
   RutShapeModel *shape_model = g_slice_new (RutShapeModel);
   RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
@@ -192,17 +209,17 @@ shape_model_new (RutContext *ctx,
        * antialiasing. The shape mask is half the size of the texture
        * itself so we make the geometry twice as large to compensate.
        */
-      size_x = MIN (tex_width, tex_height);
+      size_x = MIN (width, height);
       size_y = size_x;
       geom_size_x = size_x * 2.0;
       geom_size_y = geom_size_x;
     }
   else
     {
-      size_x = tex_width;
-      size_y = tex_height;
-      geom_size_x = tex_width;
-      geom_size_y = tex_height;
+      size_x = width;
+      size_y = height;
+      geom_size_x = width;
+      geom_size_y = height;
     }
 
   half_size_x = size_x / 2.0;
@@ -226,7 +243,7 @@ shape_model_new (RutContext *ctx,
         };
 
       cogl_matrix_init_identity (&matrix);
-      tex_aspect = (float)tex_width / (float)tex_height;
+      tex_aspect = (float)width / (float)height;
 
       if (shaped)
         {
@@ -317,8 +334,8 @@ _rut_shape_copy (RutObject *object)
   RutShape *shape = object;
   RutShape *copy = rut_shape_new (shape->ctx,
                                   shape->shaped,
-                                  shape->tex_width,
-                                  shape->tex_height);
+                                  shape->width,
+                                  shape->height);
 
   if (shape->model)
     copy->model = rut_refable_ref (shape->model);
@@ -354,6 +371,14 @@ _rut_shape_init_type (void)
     rut_simple_introspectable_foreach_property
   };
 
+  static RutSizableVTable sizable_vtable = {
+      rut_shape_set_size,
+      rut_shape_get_size,
+      rut_simple_sizable_get_preferred_width,
+      rut_simple_sizable_get_preferred_height,
+      NULL /* add_preferred_size_callback */
+  };
+
   RutType *type = &rut_shape_type;
 
 #define TYPE RutShape
@@ -383,15 +408,20 @@ _rut_shape_init_type (void)
                           RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
                           offsetof (TYPE, introspectable),
                           NULL); /* no implied vtable */
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SIZABLE,
+                          0, /* no implied properties */
+                          &sizable_vtable);
+
 
 #undef TYPE
 }
 
 RutShape *
 rut_shape_new (RutContext *ctx,
-               CoglBool shaped,
-               int tex_width,
-               int tex_height)
+               bool shaped,
+               int width,
+               int height)
 {
   RutShape *shape = g_slice_new0 (RutShape);
 
@@ -403,8 +433,8 @@ rut_shape_new (RutContext *ctx,
 
   shape->ctx = rut_refable_ref (ctx);
 
-  shape->tex_width = tex_width;
-  shape->tex_height = tex_height;
+  shape->width = width;
+  shape->height = height;
   shape->shaped = shaped;
 
   rut_list_init (&shape->reshaped_cb_list);
@@ -423,8 +453,8 @@ rut_shape_get_model (RutShape *shape)
     {
       shape->model = shape_model_new (shape->ctx,
                                       shape->shaped,
-                                      shape->tex_width,
-                                      shape->tex_height);
+                                      shape->width,
+                                      shape->height);
     }
 
   return shape->model;
@@ -457,6 +487,16 @@ rut_shape_get_pick_mesh (RutObject *self)
   return model->pick_mesh;
 }
 
+static void
+free_model (RutShape *shape)
+{
+  if (shape->model)
+    {
+      rut_refable_unref (shape->model);
+      shape->model = NULL;
+    }
+}
+
 void
 rut_shape_set_shaped (RutObject *obj, bool shaped)
 {
@@ -467,11 +507,7 @@ rut_shape_set_shaped (RutObject *obj, bool shaped)
 
   shape->shaped = shaped;
 
-  if (shape->model)
-    {
-      rut_refable_unref (shape->model);
-      shape->model = NULL;
-    }
+  free_model (shape);
 
   rut_closure_list_invoke (&shape->reshaped_cb_list,
                            RutShapeReShapedCallback,
@@ -504,22 +540,77 @@ rut_shape_add_reshaped_callback (RutShape *shape,
 
 void
 rut_shape_set_texture_size (RutShape *shape,
-                            int tex_width,
-                            int tex_height)
+                            int width,
+                            int height)
 {
-  if (shape->tex_width == tex_width &&
-      shape->tex_height == tex_height)
+  if (shape->width == width &&
+      shape->height == height)
     return;
 
-  shape->tex_width = tex_width;
-  shape->tex_height = tex_height;
+  shape->width = width;
+  shape->height = height;
 
-  if (shape->model)
-    {
-      rut_refable_unref (shape->model);
-      shape->model = NULL;
-    }
+}
 
+void
+rut_shape_set_size (RutObject *self,
+                    float width,
+                    float height)
+{
+  RutShape *shape = self;
+  RutContext *ctx = shape->ctx;
+
+  if (shape->width == width && shape->height == height)
+    return;
+
+  shape->width = width;
+  shape->height = height;
+
+  rut_property_dirty (&ctx->property_ctx, &shape->properties[RUT_SHAPE_PROP_WIDTH]);
+  rut_property_dirty (&ctx->property_ctx, &shape->properties[RUT_SHAPE_PROP_HEIGHT]);
+
+  free_model (shape);
+
+  rut_closure_list_invoke (&shape->reshaped_cb_list,
+                           RutShapeReShapedCallback,
+                           shape);
+}
+
+void
+rut_shape_get_size (RutObject *self,
+                    float *width,
+                    float *height)
+{
+  RutShape *shape = self;
+  *width = shape->width;
+  *height = shape->height;
+}
+
+void
+rut_shape_set_width (RutObject *obj, float width)
+{
+  RutShape *shape = obj;
+  if (shape->width == width)
+    return;
+  shape->width = width;
+  free_model (shape);
+  rut_property_dirty (&shape->ctx->property_ctx,
+                      &shape->properties[RUT_SHAPE_PROP_WIDTH]);
+  rut_closure_list_invoke (&shape->reshaped_cb_list,
+                           RutShapeReShapedCallback,
+                           shape);
+}
+
+void
+rut_shape_set_height (RutObject *obj, float height)
+{
+  RutShape *shape = obj;
+  if (shape->height == height)
+    return;
+  shape->height = height;
+  free_model (shape);
+  rut_property_dirty (&shape->ctx->property_ctx,
+                      &shape->properties[RUT_SHAPE_PROP_HEIGHT]);
   rut_closure_list_invoke (&shape->reshaped_cb_list,
                            RutShapeReShapedCallback,
                            shape);

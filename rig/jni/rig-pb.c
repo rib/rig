@@ -546,14 +546,11 @@ serialize_component_cb (RutComponent *component,
     }
   else if (type == &rut_shape_type)
     {
-      CoglBool shaped = rut_shape_get_shaped (component);
-
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
-      pb_component->shape = pb_new (engine,
-                                    sizeof (Rig__Entity__Component__Shape),
-                                    rig__entity__component__shape__init);
-      pb_component->shape->has_shaped = TRUE;
-      pb_component->shape->shaped = shaped;
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
   else if (type == &rut_diamond_type)
     {
@@ -1765,42 +1762,52 @@ unserialize_components (UnSerializer *unserializer,
             CoglBool shaped = FALSE;
             int width, height;
 
-            if (pb_shape->has_shaped)
-              shaped = pb_shape->shaped;
-
-            material = rut_entity_get_component (entity,
-                                                 RUT_COMPONENT_TYPE_MATERIAL);
-
-            /* We need to know the size of the texture before we can create
-             * a shape component */
-            if (material)
-              asset = rut_material_get_color_source_asset (material);
-
-            if (asset)
+            /* XXX: Only for compaibility... */
+            if (!pb_component->n_properties)
               {
-                if (rut_asset_get_is_video (asset))
+                if (pb_shape->has_shaped)
+                  shaped = pb_shape->shaped;
+
+                material = rut_entity_get_component (entity,
+                                                     RUT_COMPONENT_TYPE_MATERIAL);
+
+                /* We need to know the size of the texture before we can create
+                 * a shape component */
+                if (material)
+                  asset = rut_material_get_color_source_asset (material);
+
+                if (asset)
                   {
-                    width = 640;
-                    height = 480;
-                  }
-                else
-                  {
-                    texture = rut_asset_get_texture (asset);
-                    if (texture)
+                    if (rut_asset_get_is_video (asset))
                       {
-                        width = cogl_texture_get_width (texture);
-                        height = cogl_texture_get_height (texture);
+                        width = 640;
+                        height = 480;
                       }
                     else
-                      goto ERROR_SHAPE;
+                      {
+                        texture = rut_asset_get_texture (asset);
+                        if (texture)
+                          {
+                            width = cogl_texture_get_width (texture);
+                            height = cogl_texture_get_height (texture);
+                          }
+                        else
+                          goto ERROR_SHAPE;
+                      }
                   }
+                else
+                  goto ERROR_SHAPE;
               }
-            else
-              goto ERROR_SHAPE;
+
 
             shape = rut_shape_new (unserializer->engine->ctx,
                                    shaped,
                                    width, height);
+
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 shape,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
 
             rut_entity_add_component (entity, shape);
             rut_refable_unref (shape);
