@@ -145,6 +145,8 @@ typedef struct _RutStreamEvent
     } pointer_move;
     struct {
       RutButtonState button;
+      float x;
+      float y;
     } pointer_button;
     struct {
       int keysym;

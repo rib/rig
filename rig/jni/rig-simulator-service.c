@@ -116,6 +116,9 @@ simulator__run_frame (Rig__Simulator_Service *service,
               event->pointer_move.y = 0;
             }
 
+          simulator->last_pointer_x = event->pointer_move.x;
+          simulator->last_pointer_y = event->pointer_move.y;
+
           g_print ("Event: Pointer move (%f, %f)\n",
                    event->pointer_move.x, event->pointer_move.y);
           break;
@@ -144,6 +147,9 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
         case RIG__EVENT__TYPE__POINTER_DOWN:
         case RIG__EVENT__TYPE__POINTER_UP:
+          event->pointer_button.x = simulator->last_pointer_x;
+          event->pointer_button.y = simulator->last_pointer_y;
+
           if (pb_event->pointer_button->has_button)
             event->pointer_button.button = pb_event->pointer_button->button;
           else

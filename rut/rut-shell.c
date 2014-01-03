@@ -802,6 +802,27 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
                                      float *y)
 {
   const CoglMatrix *transform = event->input_transform;
+  RutShell *shell = event->shell;
+
+  if (shell->headless)
+    {
+      RutStreamEvent *stream_event = event->native;
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_POINTER_MOVE:
+          *x = stream_event->pointer_move.x;
+          *y = stream_event->pointer_move.y;
+          break;
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+        case RUT_STREAM_EVENT_POINTER_UP:
+          *x = stream_event->pointer_button.x;
+          *y = stream_event->pointer_button.y;
+          break;
+        default:
+          g_warn_if_reached ();
+        }
+      return;
+    }
 
 #ifdef __ANDROID__
   *x = AMotionEvent_getX (event->native, 0);
