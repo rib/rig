@@ -140,10 +140,12 @@ typedef struct _RutStreamEvent
 
   union {
     struct {
+      RutButtonState state;
       float x;
       float y;
     } pointer_move;
     struct {
+      RutButtonState state;
       RutButtonState button;
       float x;
       float y;

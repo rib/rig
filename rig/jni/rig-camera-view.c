@@ -1955,8 +1955,7 @@ device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
           {
             float x = rut_motion_event_get_x (event);
             float dx = x - engine->grab_x;
-            CoglFramebuffer *fb = engine->onscreen;
-            float progression = dx / cogl_framebuffer_get_width (fb);
+            float progression = dx / engine->device_width;
 
             rig_controller_set_progress (engine->controllers->data,
                                          engine->grab_progress + progression);
@@ -2078,7 +2077,8 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_init (view);
   rut_paintable_init (view);
 
-  view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
+  if (!_rig_in_simulator_mode)
+    view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
 
   view->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);

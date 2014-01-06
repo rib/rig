@@ -8,6 +8,25 @@
 #include "rut-types.h"
 #include "rut-mesh.h"
 
+/* XXX: The definition of an "asset" is getting a big confusing.
+ * Initially it used to represent things created in third party
+ * programs that you might want to import into Rig. It lets us
+ * keep track of the original path, create a thumbnail and track
+ * tags for use in the Rig editor.
+ *
+ * We have been creating components with RutAsset properties
+ * though and when we load a UI or send it across to a slave then
+ * we are doing redundant work to create models and thumbnails
+ * which are only useful to an editor.
+ *
+ * XXX: Maybe we can introduce the idea of a "Blob" which can
+ * track the same kind of data we currently use assets for and
+ * perhaps rename RutAsset to RigAsset and clarify that it is
+ * only for use in the editor. A Blob can have an optional
+ * back-reference to an asset, but when serializing to slaves
+ * for example the assets wouldn't be kept.
+ */
+
 extern RutType rut_asset_type;
 typedef struct _RutAsset RutAsset;
 #define RUT_ASSET(X) ((RutAsset *)X)
@@ -48,6 +67,10 @@ rut_asset_new_from_data (RutContext *ctx,
                          bool is_video,
                          const uint8_t *data,
                          size_t len);
+
+RutAsset *
+rut_asset_new_from_mesh (RutContext *ctx,
+                         RutMesh *mesh);
 
 RutAssetType
 rut_asset_get_type (RutAsset *asset);

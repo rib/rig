@@ -26,23 +26,49 @@
 #include "rig-engine.h"
 #include "rig.pb-c.h"
 
+typedef struct _RigPBSerializer RigPBSerializer;
+typedef struct _RigPBUnSerializer RigPBUnSerializer;
+
 typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
                                            void *user_data);
 
-Rig__UI *
-rig_pb_serialize_ui (RigEngine *engine,
-                     RigAssetReferenceCallback asset_callback,
-                     void *user_data);
+RigPBSerializer *
+rig_pb_serializer_new (RigEngine *engine);
 
-Rig__Asset *
-rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset);
+typedef bool (*RigPBAssetFilter) (RutAsset *asset, void *user_data);
+
+void
+rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
+                                    RigPBAssetFilter filter,
+                                    void *user_data);
+
+void
+rig_pb_serializer_destroy (RigPBSerializer *serializer);
+
+Rig__UI *
+rig_pb_serialize_ui (RigPBSerializer *serializer);
+
+void
+rig_pb_serialized_ui_destroy (Rig__UI *ui);
 
 Rig__Event **
 rig_pb_serialize_input_events (RigEngine *engine,
                                RutList *input_queue,
                                int n_events);
 
+RigPBUnSerializer *
+rig_pb_unserializer_new (RigEngine *engine);
+
 void
-rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui);
+rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer);
+
+void
+rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
+                       const Rig__UI *pb_ui,
+                       bool skip_assets);
+
+RutMesh *
+rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
+                         Rig__Mesh *pb_mesh);
 
 #endif /* __RIG_PB_H__ */

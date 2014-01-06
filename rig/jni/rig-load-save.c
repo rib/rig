@@ -56,6 +56,7 @@ append_to_file (ProtobufCBuffer *buffer,
 void
 rig_save (RigEngine *engine, const char *path)
 {
+  RigPBSerializer *serializer;
   struct stat sb;
   Rig__UI *ui;
   char *rig_filename;
@@ -83,9 +84,15 @@ rig_save (RigEngine *engine, const char *path)
   if (stat (engine->ctx->assets_location, &sb) == -1)
     mkdir (engine->ctx->assets_location, 0777);
 
-  ui = rig_pb_serialize_ui (engine, NULL, NULL);
+  serializer = rig_pb_serializer_new (engine);
+
+  ui = rig_pb_serialize_ui (serializer);
 
   rig__ui__pack_to_buffer (ui, &buffered_file.base );
+
+  rig_pb_serialized_ui_destroy (ui);
+
+  rig_pb_serializer_destroy (serializer);
 
   fclose (fp);
 }
@@ -105,6 +112,7 @@ rig_load (RigEngine *engine, const char *file)
   size_t len;
   GError *error = NULL;
   gboolean needs_munmap = FALSE;
+  RigPBUnSerializer *unserializer;
   Rig__UI *ui;
 
   /* We use a special allocator while unpacking protocol buffers
@@ -145,9 +153,11 @@ rig_load (RigEngine *engine, const char *file)
       return;
     }
 
+  unserializer = rig_pb_unserializer_new (engine);
+
   ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 
-  rig_pb_unserialize_ui (engine, ui);
+  rig_pb_unserialize_ui (unserializer, ui, false);
 
   rig__ui__free_unpacked (ui, &protobuf_c_allocator);
 
@@ -155,4 +165,6 @@ rig_load (RigEngine *engine, const char *file)
     munmap (contents, len);
   else
     g_free (contents);
+
+  rig_pb_unserializer_destroy (unserializer);
 }

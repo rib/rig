@@ -53,6 +53,15 @@ rig_device_paint (RutShell *shell, void *user_data)
   setup.n_events = n_events;
   setup.events = rig_pb_serialize_input_events (engine, input_queue, n_events);
 
+  if (frontend->has_resized)
+    {
+      setup.has_width = true;
+      setup.width = engine->width;
+      setup.has_height = true;
+      setup.height = engine->height;
+      frontend->has_resized = false;
+    }
+
   rig__simulator__run_frame (simulator_service,
                              &setup,
                              handle_run_frame_ack,

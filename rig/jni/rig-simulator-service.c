@@ -57,12 +57,17 @@ simulator__load (Rig__Simulator_Service *service,
   RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
+  RigPBUnSerializer *unserializer;
 
   g_return_if_fail (ui != NULL);
 
   g_print ("Simulator: UI Load Request\n");
 
-  rig_pb_unserialize_ui (engine, ui);
+  unserializer = rig_pb_unserializer_new (engine);
+
+  rig_pb_unserialize_ui (unserializer, ui, false);
+
+  rig_pb_unserializer_destroy (unserializer);
 
   closure (&result, closure_data);
 }
@@ -84,6 +89,13 @@ simulator__run_frame (Rig__Simulator_Service *service,
   g_print ("Simulator: Run Frame Request: n_events = %d\n",
            setup->n_events);
 
+  if (setup->has_width && setup->has_height &&
+      (engine->width != setup->width ||
+       engine->height != setup->height))
+    {
+      rig_engine_resize (engine, setup->width, setup->height);
+    }
+
   for (i = 0; i < setup->n_events; i++)
     {
       Rig__Event *pb_event = setup->events[i];
@@ -96,6 +108,51 @@ simulator__run_frame (Rig__Simulator_Service *service,
         }
 
       event = g_slice_new (RutStreamEvent);
+
+
+      switch (pb_event->type)
+        {
+        case RIG__EVENT__TYPE__POINTER_MOVE:
+          event->pointer_move.state = simulator->button_state;
+          break;
+
+        case RIG__EVENT__TYPE__POINTER_DOWN:
+        case RIG__EVENT__TYPE__POINTER_UP:
+
+          event->pointer_button.state = simulator->button_state;
+
+          event->pointer_button.x = simulator->last_pointer_x;
+          event->pointer_button.y = simulator->last_pointer_y;
+
+          if (pb_event->pointer_button->has_button)
+            event->pointer_button.button = pb_event->pointer_button->button;
+          else
+            {
+              g_warn_if_reached ();
+              event->pointer_button.button = RUT_BUTTON_STATE_1;
+            }
+          break;
+
+        case RIG__EVENT__TYPE__KEY_DOWN:
+        case RIG__EVENT__TYPE__KEY_UP:
+
+          if (pb_event->key->has_keysym)
+            event->key.keysym = pb_event->key->keysym;
+          else
+            {
+              g_warn_if_reached ();
+              event->key.keysym = RUT_KEY_a;
+            }
+
+          if (pb_event->key->has_mod_state)
+            event->key.mod_state = pb_event->key->mod_state;
+          else
+            {
+              g_warn_if_reached ();
+              event->key.mod_state = 0;
+            }
+          break;
+        }
 
       switch (pb_event->type)
         {
@@ -126,10 +183,14 @@ simulator__run_frame (Rig__Simulator_Service *service,
           break;
         case RIG__EVENT__TYPE__POINTER_DOWN:
           event->type = RUT_STREAM_EVENT_POINTER_DOWN;
+          simulator->button_state |= event->pointer_button.button;
+          event->pointer_button.state |= event->pointer_button.button;
           g_print ("Event: Pointer down\n");
           break;
         case RIG__EVENT__TYPE__POINTER_UP:
           event->type = RUT_STREAM_EVENT_POINTER_UP;
+          simulator->button_state &= ~event->pointer_button.button;
+          event->pointer_button.state &= ~event->pointer_button.button;
           g_print ("Event: Pointer up\n");
           break;
         case RIG__EVENT__TYPE__KEY_DOWN:
@@ -140,46 +201,6 @@ simulator__run_frame (Rig__Simulator_Service *service,
           event->type = RUT_STREAM_EVENT_KEY_UP;
           g_print ("Event: Key up\n");
           break;
-        }
-
-      switch (pb_event->type)
-        {
-        case RIG__EVENT__TYPE__POINTER_MOVE:
-          break;
-
-        case RIG__EVENT__TYPE__POINTER_DOWN:
-        case RIG__EVENT__TYPE__POINTER_UP:
-          event->pointer_button.x = simulator->last_pointer_x;
-          event->pointer_button.y = simulator->last_pointer_y;
-
-          if (pb_event->pointer_button->has_button)
-            event->pointer_button.button = pb_event->pointer_button->button;
-          else
-            {
-              g_warn_if_reached ();
-              event->pointer_button.button = RUT_BUTTON_STATE_1;
-            }
-          break;
-
-        case RIG__EVENT__TYPE__KEY_DOWN:
-        case RIG__EVENT__TYPE__KEY_UP:
-          if (pb_event->key->has_keysym)
-            event->key.keysym = pb_event->key->keysym;
-          else
-            {
-              g_warn_if_reached ();
-              event->key.keysym = RUT_KEY_a;
-            }
-
-          if (pb_event->key->has_mod_state)
-            event->key.mod_state = pb_event->key->mod_state;
-          else
-            {
-              g_warn_if_reached ();
-              event->key.mod_state = 0;
-            }
-          break;
-
         }
 
       rut_shell_handle_stream_event (engine->shell, event);

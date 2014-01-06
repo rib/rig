@@ -165,9 +165,11 @@ _rut_input_region_pick (RutObject *inputable,
       {
         if (!region->hud_mode)
           {
+            const CoglMatrix *projection =
+              rut_camera_get_projection (camera);
             rect_to_screen_polygon (&region->shape.rectangle,
                                     modelview,
-                                    &camera->projection,
+                                    projection,
                                     camera->viewport,
                                     poly);
           }

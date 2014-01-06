@@ -823,6 +823,46 @@ rut_asset_new_from_data (RutContext *ctx,
 }
 
 RutAsset *
+rut_asset_new_from_mesh (RutContext *ctx,
+                         RutMesh *mesh)
+{
+  RutAsset *asset = g_slice_new0 (RutAsset);
+  bool needs_normals = true;
+  bool needs_tex_coords = true;
+  int i;
+
+  rut_object_init (&asset->_parent, &rut_asset_type);
+
+  asset->ref_count = 1;
+
+  asset->ctx = ctx;
+
+  asset->type = RUT_ASSET_TYPE_PLY_MODEL;
+
+  asset->mesh = rut_refable_ref (mesh);
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      if (strcmp (mesh->attributes[i]->name, "cogl_normal_in") == 0)
+        needs_normals = false;
+      else if (strcmp (mesh->attributes[i]->name, "cogl_tex_coord0_in") == 0)
+        needs_tex_coords = false;
+    }
+
+  /* FIXME: assets should only be used in the Rig editor so we
+   * shouldn't have to consider this... */
+  if (!asset->ctx->headless)
+    {
+      asset->model = rut_model_new_from_asset (ctx, asset,
+                                               needs_normals,
+                                               needs_tex_coords);
+      asset->texture = rut_model_get_thumbnail (ctx, asset->model);
+    }
+
+  return asset;
+}
+
+RutAsset *
 rut_asset_new_builtin (RutContext *ctx,
                        const char *path)
 {

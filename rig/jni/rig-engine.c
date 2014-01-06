@@ -846,14 +846,11 @@ allocate (RigEngine *engine)
   rut_camera_set_viewport (engine->camera, 0, 0, engine->width, engine->height);
 }
 
-static void
-data_onscreen_resize (CoglOnscreen *onscreen,
-                      int width,
-                      int height,
-                      void *user_data)
+void
+rig_engine_resize (RigEngine *engine,
+                   int width,
+                   int height)
 {
-  RigEngine *engine = user_data;
-
   engine->width = width;
   engine->height = height;
 
@@ -861,6 +858,24 @@ data_onscreen_resize (CoglOnscreen *onscreen,
   rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_HEIGHT]);
 
   allocate (engine);
+}
+
+static void
+engine_onscreen_resize (CoglOnscreen *onscreen,
+                        int width,
+                        int height,
+                        void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  g_return_if_fail (!_rig_in_simulator_mode);
+
+  engine->frontend->has_resized = true;
+  engine->frontend->pending_width = width;
+  engine->frontend->pending_height = height;
+
+#warning "FIXME: if the simulator is handling resizes then all corresponding property updates should come from the simulator!"
+  rig_engine_resize (engine, width, height);
 }
 
 typedef struct _ResultInputClosure
@@ -2921,71 +2936,74 @@ rig_engine_handle_ui_update (RigEngine *engine)
 
   rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
 
-  /*
-   * Shadow mapping
-   */
+  if (!_rig_in_simulator_mode)
+    {
+      /*
+       * Shadow mapping
+       */
 
-  /* Setup the shadow map */
+      /* Setup the shadow map */
 
-  g_warn_if_fail (engine->shadow_color == NULL);
+      g_warn_if_fail (engine->shadow_color == NULL);
 
-  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
-                                                engine->device_width * 2,
-                                                engine->device_height * 2);
+      color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
+                                                    engine->device_width * 2,
+                                                    engine->device_height * 2);
 
-  engine->shadow_color = color_buffer;
+      engine->shadow_color = color_buffer;
 
-  g_warn_if_fail (engine->shadow_fb == NULL);
+      g_warn_if_fail (engine->shadow_fb == NULL);
 
-  /* XXX: Right now there's no way to avoid allocating a color buffer. */
-  engine->shadow_fb =
-    cogl_offscreen_new_with_texture (color_buffer);
-  if (engine->shadow_fb == NULL)
-    g_critical ("could not create offscreen buffer");
+      /* XXX: Right now there's no way to avoid allocating a color buffer. */
+      engine->shadow_fb =
+        cogl_offscreen_new_with_texture (color_buffer);
+      if (engine->shadow_fb == NULL)
+        g_critical ("could not create offscreen buffer");
 
-  /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
-                                              TRUE);
+      /* retrieve the depth texture */
+      cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
+                                                  TRUE);
 
-  g_warn_if_fail (engine->shadow_map == NULL);
+      g_warn_if_fail (engine->shadow_map == NULL);
 
-  engine->shadow_map =
-    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
+      engine->shadow_map =
+        cogl_framebuffer_get_depth_texture (engine->shadow_fb);
 
-  /* Note: we currently require having exactly one scene light and
-   * play camera, so if we didn't already load them we create a default
-   * light and camera...
-   */
-  ensure_light (engine);
-  ensure_play_camera (engine);
+      /* Note: we currently require having exactly one scene light and
+       * play camera, so if we didn't already load them we create a default
+       * light and camera...
+       */
+      ensure_light (engine);
+      ensure_play_camera (engine);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      engine->grid_prim = rut_create_create_grid (engine->ctx,
-                                                  engine->device_width,
-                                                  engine->device_height,
-                                                  100,
-                                                  100);
-    }
+      if (_rig_in_editor_mode)
+        {
+          engine->grid_prim = rut_create_create_grid (engine->ctx,
+                                                      engine->device_width,
+                                                      engine->device_height,
+                                                      100,
+                                                      100);
+        }
 
-  if (!engine->controllers)
-    {
-      RigController *controller = rig_controller_new (engine, "Controller 0");
-      rig_controller_set_active (controller, true);
-      engine->controllers = g_list_prepend (engine->controllers, controller);
-    }
+      if (!engine->controllers)
+        {
+          RigController *controller = rig_controller_new (engine, "Controller 0");
+          rig_controller_set_active (controller, true);
+          engine->controllers = g_list_prepend (engine->controllers, controller);
+        }
 
-  if (_rig_in_editor_mode)
-    {
-      rig_controller_view_update_controller_list (engine->controller_view);
+      if (_rig_in_editor_mode)
+        {
+          rig_controller_view_update_controller_list (engine->controller_view);
 
-      rig_controller_view_set_controller (engine->controller_view,
-                                          engine->controllers->data);
+          rig_controller_view_set_controller (engine->controller_view,
+                                              engine->controllers->data);
 
-      rig_load_asset_list (engine);
-    }
+          rig_load_asset_list (engine);
+        }
 #endif
+    }
 }
 
 void
@@ -3131,11 +3149,13 @@ rig_engine_init (RigEngine *engine,
         }
       else
         {
-          engine->frontend = g_slice_new0 (RigFrontend);
-          engine->frontend->engine = engine;
-          engine->frontend->simulator_pid = pid;
-          engine->frontend->fd = sp[0];
-          rig_frontend_service_start (engine->frontend);
+          RigFrontend *frontend = g_slice_new0 (RigFrontend);
+          engine->frontend = frontend;
+
+          frontend->engine = engine;
+          frontend->simulator_pid = pid;
+          frontend->fd = sp[0];
+          rig_frontend_service_start (frontend);
         }
     }
   else /* Running as a simulator... */
@@ -3177,60 +3197,60 @@ rig_engine_init (RigEngine *engine,
    */
   engine->scene = rut_graph_new (engine->ctx);
 
+  engine->device_width = DEVICE_WIDTH;
+  engine->device_height = DEVICE_HEIGHT;
+
+  /*
+   * Setup the 2D widget scenegraph
+   */
+  engine->root = rut_graph_new (engine->ctx);
+
+  engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
+  rut_graphable_add_child (engine->root, engine->top_stack);
+  rut_refable_unref (engine->top_stack);
+
+  engine->camera = rut_camera_new (engine->ctx, NULL);
+  rut_camera_set_clear (engine->camera, FALSE);
+
+  /* XXX: Basically just a hack for now. We should have a
+   * RutShellWindow type that internally creates a RutCamera that can
+   * be used when handling input events in device coordinates.
+   */
+  rut_shell_set_window_camera (shell, engine->camera);
+
+  rut_shell_add_input_camera (shell, engine->camera, engine->root);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (_rig_in_editor_mode)
+    {
+      engine->objects_selection = _rig_objects_selection_new (engine);
+
+      rut_list_init (&engine->tool_changed_cb_list);
+
+      rig_engine_push_undo_subjournal (engine);
+
+      /* Create a color gradient texture that can be used for debugging
+       * shadow mapping.
+       *
+       * XXX: This should probably simply be #ifdef DEBUG code.
+       */
+      create_debug_gradient (engine);
+
+      load_builtin_assets (engine);
+
+      create_editor_ui (engine);
+    }
+  else
+#endif
+    {
+      engine->main_camera_view = rig_camera_view_new (engine);
+      rut_stack_add (engine->top_stack, engine->main_camera_view);
+    }
+
+
   if (!_rig_in_simulator_mode)
     {
-#ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
-        {
-          engine->objects_selection = _rig_objects_selection_new (engine);
-
-          rut_list_init (&engine->tool_changed_cb_list);
-
-          rig_engine_push_undo_subjournal (engine);
-
-          /* Create a color gradient texture that can be used for debugging
-           * shadow mapping.
-           *
-           * XXX: This should probably simply be #ifdef DEBUG code.
-           */
-          create_debug_gradient (engine);
-
-          load_builtin_assets (engine);
-        }
-#endif /* RIG_EDITOR_ENABLED */
-
       engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-      /*
-       * Setup the 2D widget scenegraph
-       */
-      engine->root = rut_graph_new (engine->ctx);
-
-      engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
-      rut_graphable_add_child (engine->root, engine->top_stack);
-      rut_refable_unref (engine->top_stack);
-
-      engine->camera = rut_camera_new (engine->ctx, NULL);
-      rut_camera_set_clear (engine->camera, FALSE);
-
-      /* XXX: Basically just a hack for now. We should have a
-       * RutShellWindow type that internally creates a RutCamera that can
-       * be used when handling input events in device coordinates.
-       */
-      rut_shell_set_window_camera (shell, engine->camera);
-
-      rut_shell_add_input_camera (shell, engine->camera, engine->root);
-
-#ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
-        create_editor_ui (engine);
-      else
-#endif
-        {
-          engine->main_camera_view = rig_camera_view_new (engine);
-          rut_stack_add (engine->top_stack, engine->main_camera_view);
-        }
-
 
       /*
        * Depth of Field
@@ -3259,9 +3279,6 @@ rig_engine_init (RigEngine *engine,
 #warning "XXX: can we remove engine->background_color?"
       cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
 
-      engine->device_width = DEVICE_WIDTH;
-      engine->device_height = DEVICE_HEIGHT;
-
 #ifndef __ANDROID__
       if (engine->ui_filename)
         {
@@ -3289,7 +3306,7 @@ rig_engine_init (RigEngine *engine,
                                               engine->device_height / 2);
 
       cogl_onscreen_add_resize_callback (engine->onscreen,
-                                         data_onscreen_resize,
+                                         engine_onscreen_resize,
                                          engine,
                                          NULL);
 
@@ -3298,6 +3315,10 @@ rig_engine_init (RigEngine *engine,
       fb = engine->onscreen;
       engine->width = cogl_framebuffer_get_width (fb);
       engine->height  = cogl_framebuffer_get_height (fb);
+
+      engine->frontend->has_resized = true;
+      engine->frontend->pending_width = engine->width;
+      engine->frontend->pending_height = engine->height;
 
       rut_shell_add_onscreen (engine->shell, engine->onscreen);
 
@@ -3334,6 +3355,7 @@ rig_engine_init (RigEngine *engine,
 
       cogl_onscreen_show (engine->onscreen);
 
+#warning "FIXME: rely on simulator to handle allocate()"
       allocate (engine);
     }
 }

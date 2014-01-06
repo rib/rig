@@ -79,7 +79,7 @@ typedef enum _RutAssetType {
   RUT_ASSET_TYPE_TEXTURE,
   RUT_ASSET_TYPE_NORMAL_MAP,
   RUT_ASSET_TYPE_ALPHA_MASK,
-  RUT_ASSET_TYPE_PLY_MODEL,
+  RUT_ASSET_TYPE_PLY_MODEL, /* TODO: rename to _TYPE_MESH */
 } RutAssetType;
 
 typedef struct _RutPreferredSize

@@ -41,24 +41,6 @@ handle_load_response (const Rig__LoadResult *result,
   g_print ("UI loaded by slave\n");
 }
 
-static void
-required_asset_cb (RutAsset *asset,
-                   void *user_data)
-{
-  RigSlaveMaster *master = user_data;
-
-  master->required_assets = g_list_prepend (master->required_assets, asset);
-
-  g_print ("Serialization requires asset %s\n", rut_asset_get_path (asset));
-}
-
-static void
-handle_asset_load_response (const Rig__LoadAssetResult *result,
-                            void *closure_data)
-{
-  g_print ("Asset loaded by slave\n");
-}
-
 void
 slave_master_connected (PB_RPC_Client *pb_client,
                         void *user_data)
@@ -182,27 +164,21 @@ rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
 void
 rig_slave_master_sync_ui (RigSlaveMaster *master)
 {
+  RigPBSerializer *serializer;
   RigEngine *engine = master->engine;
   ProtobufCService *service =
     rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
   Rig__UI *ui;
-  GList *l;
 
   g_warn_if_fail (master->required_assets == NULL);
 
-  ui = rig_pb_serialize_ui (engine,
-                            required_asset_cb,
-                            master);
+  serializer = rig_pb_serializer_new (engine);
 
-  for (l = master->required_assets; l; l = l->next)
-    {
-      RutAsset *asset = l->data;
-      Rig__Asset *serialized_asset = rig_pb_serialize_asset (engine, asset);
-
-      rig__slave__load_asset (service,
-                              serialized_asset,
-                              handle_asset_load_response, NULL);
-    }
+  ui = rig_pb_serialize_ui (serializer);
 
   rig__slave__load (service, ui, handle_load_response, NULL);
+
+  rig_pb_serialized_ui_destroy (ui);
+
+  rig_pb_serializer_destroy (serializer);
 }

@@ -79,6 +79,10 @@ typedef struct _RigFrontend
   int fd;
   RigRPCPeer *frontend_peer;
 
+  bool has_resized;
+  int pending_width;
+  int pending_height;
+
 } RigFrontend;
 
 /* The "simulator" is the process responsible for updating object
@@ -94,6 +98,8 @@ typedef struct _RigSimulator
 
   float last_pointer_x;
   float last_pointer_y;
+
+  RutButtonState button_state;
 
 } RigSimulator;
 
@@ -346,6 +352,11 @@ rig_engine_paint (RigEngine *engine);
 
 void
 rig_engine_fini (RutShell *shell, void *user_data);
+
+void
+rig_engine_resize (RigEngine *engine,
+                   int width,
+                   int height);
 
 void
 rig_engine_set_onscreen_size (RigEngine *engine,

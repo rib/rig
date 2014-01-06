@@ -26,12 +26,14 @@
 
 #include <rut.h>
 
-typedef struct _Serializer
+struct _RigPBSerializer
 {
   RigEngine *engine;
 
-  RigAssetReferenceCallback asset_callback;
-  void *user_data;
+  RigPBAssetFilter asset_filter;
+  void *asset_filter_data;
+
+  GList *required_assets;
 
   int n_pb_entities;
   GList *pb_entities;
@@ -47,7 +49,7 @@ typedef struct _Serializer
 
   int next_id;
   GHashTable *id_map;
-} Serializer;
+};
 
 typedef void (*PBMessageInitFunc) (void *message);
 
@@ -235,7 +237,7 @@ pb_path_new (RigEngine *engine, RigPath *path)
 }
 
 static uint64_t
-serializer_lookup_object_id (Serializer *serializer, void *object)
+serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
 {
   uint64_t *id = g_hash_table_lookup (serializer->id_map, object);
 
@@ -243,15 +245,26 @@ serializer_lookup_object_id (Serializer *serializer, void *object)
 
   if (rut_object_get_type (object) == &rut_asset_type)
     {
-      if (serializer->asset_callback)
-        serializer->asset_callback (object, serializer->user_data);
+      bool need_asset = true;
+
+      if (serializer->asset_filter)
+        {
+          need_asset = serializer->asset_filter (object,
+                                                 serializer->asset_filter_data);
+        }
+
+      if (need_asset)
+        {
+          serializer->required_assets =
+            g_list_prepend (serializer->required_assets, object);
+        }
     }
 
   return *id;
 }
 
 static Rig__PropertyValue *
-pb_property_value_new (Serializer *serializer,
+pb_property_value_new (RigPBSerializer *serializer,
                        const RutBoxed *value)
 {
   RigEngine *engine = serializer->engine;
@@ -402,7 +415,7 @@ rut_property_type_to_pb_type (RutPropertyType type)
 }
 
 Rig__Boxed *
-pb_boxed_new (Serializer *serializer,
+pb_boxed_new (RigPBSerializer *serializer,
               const char *name,
               const RutBoxed *boxed)
 {
@@ -419,7 +432,7 @@ pb_boxed_new (Serializer *serializer,
 }
 
 static uint64_t
-register_serializer_object (Serializer *serializer,
+register_serializer_object (RigPBSerializer *serializer,
                             void *object)
 {
   uint64_t id;
@@ -447,7 +460,7 @@ static void
 count_instrospectables_cb (RutProperty *property,
                            void *user_data)
 {
-  Serializer *serializer = user_data;
+  RigPBSerializer *serializer = user_data;
   serializer->n_properties++;
 }
 
@@ -455,7 +468,7 @@ static void
 serialize_instrospectables_cb (RutProperty *property,
                                void *user_data)
 {
-  Serializer *serializer = user_data;
+  RigPBSerializer *serializer = user_data;
   void **properties_out = serializer->properties_out;
   RutBoxed boxed;
 
@@ -473,7 +486,7 @@ static void
 serialize_instrospectable_properties (RutObject *object,
                                       size_t *n_properties_out,
                                       void **properties_out,
-                                      Serializer *serializer)
+                                      RigPBSerializer *serializer)
 {
   RigEngine *engine = serializer->engine;
 
@@ -498,7 +511,7 @@ serialize_component_cb (RutComponent *component,
                         void *user_data)
 {
   const RutType *type = rut_object_get_type (component);
-  Serializer *serializer = user_data;
+  RigPBSerializer *serializer = user_data;
   RigEngine *engine = serializer->engine;
   int component_id;
   Rig__Entity__Component *pb_component;
@@ -704,7 +717,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
                                    int depth,
                                    void *user_data)
 {
-  Serializer *serializer = user_data;
+  RigPBSerializer *serializer = user_data;
   RigEngine *engine = serializer->engine;
   const RutType *type = rut_object_get_type (object);
   RutObject *parent = rut_graphable_get_parent (object);
@@ -801,7 +814,7 @@ static void
 serialize_property_cb (RigControllerPropData *prop_data,
                        void *user_data)
 {
-  Serializer *serializer = user_data;
+  RigPBSerializer *serializer = user_data;
   RigEngine *engine = serializer->engine;
   RutObject *object;
   uint64_t id;
@@ -852,37 +865,308 @@ free_id_slice (void *id)
   g_slice_free (uint64_t, id);
 }
 
-Rig__UI *
-rig_pb_serialize_ui (RigEngine *engine,
-                     RigAssetReferenceCallback asset_callback,
-                     void *user_data)
+RigPBSerializer *
+rig_pb_serializer_new (RigEngine *engine)
 {
-  Serializer serializer;
+  RigPBSerializer *serializer = g_slice_new0 (RigPBSerializer);
+
+  serializer->engine = engine;
+
+  /* This hash table maps object pointers to uint64_t ids while saving */
+  serializer->id_map = g_hash_table_new_full (NULL, /* direct hash */
+                                              NULL, /* direct key equal */
+                                              NULL,
+                                              free_id_slice);
+
+  /* NB: We have to reserve 0 here so we can tell if lookups into the
+   * id_map fail. */
+  serializer->next_id = 1;
+
+  rut_memory_stack_rewind (engine->serialization_stack);
+
+  return serializer;
+}
+
+void
+rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
+                                    RigPBAssetFilter filter,
+                                    void *user_data)
+{
+  serializer->asset_filter = filter;
+  serializer->asset_filter_data = user_data;
+}
+
+void
+rig_pb_serializer_destroy (RigPBSerializer *serializer)
+{
+  if (serializer->required_assets)
+    g_list_free (serializer->required_assets);
+
+  g_hash_table_destroy (serializer->id_map);
+
+  g_slice_free (RigPBSerializer, serializer);
+}
+
+static Rig__Buffer *
+serialize_buffer (RigPBSerializer *serializer, RutBuffer *buffer)
+{
+  Rig__Buffer *pb_buffer =
+    pb_new (serializer->engine, sizeof (Rig__Buffer), rig__buffer__init);
+
+  pb_buffer->has_id = true;
+  pb_buffer->id =
+    register_serializer_object (serializer, buffer);
+
+  /* NB: The serialized asset points directly to the RutMesh
+   * data to avoid copying it... */
+  pb_buffer->has_data = true;
+  pb_buffer->data.data = buffer->data;
+  pb_buffer->data.len = buffer->size;
+
+  return pb_buffer;
+}
+
+static Rig__Asset *
+serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
+{
+  RigEngine *engine = serializer->engine;
+  RutMesh *mesh = rut_asset_get_mesh (asset);
+  Rig__Asset *pb_asset;
+  RutBuffer **buffers;
+  int n_buffers = 0;
+  Rig__Buffer **pb_buffers;
+  Rig__Buffer **attribute_buffers_map;
+  Rig__Attribute **attributes;
+  Rig__Mesh *pb_mesh;
+  int i;
+
+  pb_asset = pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
+
+  pb_asset->path = (char *)rut_asset_get_path (asset);
+
+  pb_asset->has_type = true;
+  pb_asset->type = RUT_ASSET_TYPE_PLY_MODEL;
+
+  /* The maximum number of pb_buffers we may need = n_attributes plus 1 in case
+   * there is an index buffer... */
+  pb_buffers = rut_memory_stack_alloc (engine->serialization_stack,
+                                       sizeof (void *) * (mesh->n_attributes + 1));
+
+  buffers = g_alloca (sizeof (void *) * mesh->n_attributes);
+  attribute_buffers_map = g_alloca (sizeof (void *) * mesh->n_attributes);
+
+  /* NB:
+   * attributes may refer to shared buffers so we need to first
+   * figure out how many unique buffers the mesh refers too...
+   */
+
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      int j;
+
+      for (j = 0; i < n_buffers; j++)
+        if (buffers[j] == mesh->attributes[i]->buffer)
+          break;
+
+      if (j < n_buffers)
+        attribute_buffers_map[i] = pb_buffers[j];
+      else
+        {
+          Rig__Buffer *pb_buffer =
+            serialize_buffer (serializer, mesh->attributes[i]->buffer);
+
+          pb_buffers[n_buffers] = pb_buffer;
+
+          attribute_buffers_map[i] = pb_buffer;
+          buffers[n_buffers++] = mesh->attributes[i]->buffer;
+        }
+    }
+
+  if (mesh->indices_buffer)
+    {
+      Rig__Buffer *pb_buffer =
+        serialize_buffer (serializer, mesh->indices_buffer);
+      pb_buffers[n_buffers++] = pb_buffer;
+    }
+
+  attributes= rut_memory_stack_alloc (engine->serialization_stack,
+                                      sizeof (void *) * mesh->n_attributes);
+  for (i = 0; i < mesh->n_attributes; i++)
+    {
+      Rig__Attribute *pb_attribute =
+        pb_new (engine, sizeof (Rig__Attribute), rig__attribute__init);
+      Rig__Attribute__Type type;
+
+      pb_attribute->has_buffer_id = true;
+      pb_attribute->buffer_id = attribute_buffers_map[i]->id;
+
+      pb_attribute->name = (char *)mesh->attributes[i]->name;
+
+      pb_attribute->has_stride = true;
+      pb_attribute->stride = mesh->attributes[i]->stride;
+      pb_attribute->has_offset = true;
+      pb_attribute->offset = mesh->attributes[i]->offset;
+      pb_attribute->has_n_components = true;
+      pb_attribute->n_components = mesh->attributes[i]->n_components;
+      pb_attribute->has_type = true;
+
+      switch (mesh->attributes[i]->type)
+        {
+        case RUT_ATTRIBUTE_TYPE_BYTE:
+          type = RIG__ATTRIBUTE__TYPE__BYTE;
+          break;
+        case RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE:
+          type = RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE;
+          break;
+        case RUT_ATTRIBUTE_TYPE_SHORT:
+          type = RIG__ATTRIBUTE__TYPE__SHORT;
+          break;
+        case RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT:
+          type = RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT;
+          break;
+        case RUT_ATTRIBUTE_TYPE_FLOAT:
+          type = RIG__ATTRIBUTE__TYPE__FLOAT;
+          break;
+        }
+      pb_attribute->type = type;
+
+      attributes[i] = pb_attribute;
+    }
+
+  pb_asset->mesh = pb_new (engine, sizeof (Rig__Mesh), rig__mesh__init);
+  pb_mesh = pb_asset->mesh;
+
+  pb_mesh->has_mode = true;
+  switch (mesh->mode)
+    {
+    case COGL_VERTICES_MODE_POINTS:
+      pb_mesh->mode = RIG__MESH__MODE__POINTS;
+      break;
+    case COGL_VERTICES_MODE_LINES:
+      pb_mesh->mode = RIG__MESH__MODE__LINES;
+      break;
+    case COGL_VERTICES_MODE_LINE_LOOP:
+      pb_mesh->mode = RIG__MESH__MODE__LINE_LOOP;
+      break;
+    case COGL_VERTICES_MODE_LINE_STRIP:
+      pb_mesh->mode = RIG__MESH__MODE__LINE_STRIP;
+      break;
+    case COGL_VERTICES_MODE_TRIANGLES:
+      pb_mesh->mode = RIG__MESH__MODE__TRIANGLES;
+      break;
+    case COGL_VERTICES_MODE_TRIANGLE_STRIP:
+      pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_STRIP;
+      break;
+    case COGL_VERTICES_MODE_TRIANGLE_FAN:
+      pb_mesh->mode = RIG__MESH__MODE__TRIANGLE_FAN;
+      break;
+    }
+
+  pb_mesh->n_buffers = n_buffers;
+  pb_mesh->buffers = pb_buffers;
+
+  pb_mesh->attributes = attributes;
+  pb_mesh->n_attributes = mesh->n_attributes;
+
+  pb_mesh->has_n_vertices = true;
+  pb_mesh->n_vertices = mesh->n_vertices;
+
+  if (mesh->indices_buffer)
+    {
+      pb_mesh->has_indices_type = true;
+      switch (mesh->indices_type)
+        {
+        case COGL_INDICES_TYPE_UNSIGNED_BYTE:
+          pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE;
+          break;
+        case COGL_INDICES_TYPE_UNSIGNED_SHORT:
+          pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT;
+          break;
+        case COGL_INDICES_TYPE_UNSIGNED_INT:
+          pb_mesh->indices_type = RIG__MESH__INDICES_TYPE__UNSIGNED_INT;
+          break;
+        }
+
+      pb_mesh->has_n_indices = true;
+      pb_mesh->n_indices = mesh->n_indices;
+
+      pb_mesh->has_indices_buffer_id = true;
+      pb_mesh->indices_buffer_id = pb_buffers[n_buffers - 1]->id;
+    }
+
+  return pb_asset;
+}
+
+static Rig__Asset *
+serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
+{
+#ifdef __ANDROID__
+  g_warn_if_reached ();
+  return NULL;
+#else
+  RigEngine *engine = serializer->engine;
+  RutContext *ctx = rut_asset_get_context (asset);
+  const char *path = rut_asset_get_path (asset);
+  char *full_path;
+  Rig__Asset *pb_asset;
+  GError *error = NULL;
+  char *contents;
+  size_t len;
+
+  /* XXX: This should be renamed to _TYPE_MESH */
+  if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_PLY_MODEL)
+    return serialize_mesh_asset (serializer, asset);
+
+  full_path = g_build_filename (ctx->assets_location, path, NULL);
+  if (!g_file_get_contents (full_path,
+                            &contents,
+                            &len,
+                            &error))
+    {
+      g_warning ("Failed to read contents of asset: %s", error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return NULL;
+    }
+
+  g_free (full_path);
+
+  pb_asset = pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
+
+  pb_asset->path = (char *)path;
+
+  pb_asset->has_type = TRUE;
+  pb_asset->type = rut_asset_get_type (asset);
+
+  pb_asset->has_is_video = true;
+  pb_asset->is_video = rut_asset_get_is_video (asset);
+
+  pb_asset->has_data = true;
+  pb_asset->data.data = (uint8_t *)contents;
+  pb_asset->data.len = len;
+
+  return pb_asset;
+#endif
+}
+
+static void
+serialized_asset_destroy (Rig__Asset *serialized_asset)
+{
+  if (serialized_asset->has_data)
+    g_free (serialized_asset->data.data);
+}
+
+Rig__UI *
+rig_pb_serialize_ui (RigPBSerializer *serializer)
+{
+  RigEngine *engine = serializer->engine;
   GList *l;
   int i;
   Rig__UI *ui;
   Rig__Device *device;
 
-  memset (&serializer, 0, sizeof (serializer));
-  rut_memory_stack_rewind (engine->serialization_stack);
-
   ui = pb_new (engine, sizeof (Rig__UI), rig__ui__init);
   device = pb_new (engine, sizeof (Rig__Device), rig__device__init);
-
-  serializer.engine = engine;
-
-  /* This hash table maps object pointers to uint64_t ids while saving */
-  serializer.id_map = g_hash_table_new_full (NULL, /* direct hash */
-                                             NULL, /* direct key equal */
-                                             NULL,
-                                             free_id_slice);
-
-  /* NB: We have to reserve 0 here so we can tell if lookups into the
-   * id_map fail. */
-  serializer.next_id = 1;
-
-  serializer.asset_callback = asset_callback;
-  serializer.user_data = user_data;
 
   ui->device = device;
 
@@ -892,46 +1176,29 @@ rig_pb_serialize_ui (RigEngine *engine,
   device->height = engine->device_height;
   device->background = pb_color_new (engine, &engine->background_color);
 
-  /* Assets */
+  /* Register all assets up front, but we only actually serialize those
+   * assets that are referenced - indicated by a corresponding id lookup
+   * in serializer_lookup_object_id()
+   */
+  for (l = engine->assets; l; l = l->next)
+    register_serializer_object (serializer, l->data);
 
-  ui->n_assets = g_list_length (engine->assets);
-  if (ui->n_assets)
-    {
-      int i;
-      ui->assets = rut_memory_stack_alloc (engine->serialization_stack,
-                                           ui->n_assets * sizeof (void *));
-      for (i = 0, l = engine->assets; l; i++, l = l->next)
-        {
-          RutAsset *asset = l->data;
-          Rig__Asset *pb_asset =
-            pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
-
-          pb_asset->has_id = TRUE;
-          pb_asset->id = register_serializer_object (&serializer, asset);
-
-          pb_asset->path = (char *)rut_asset_get_path (asset);
-
-          ui->assets[i] = pb_asset;
-        }
-    }
-
-
-  serializer.n_pb_entities = 0;
+  serializer->n_pb_entities = 0;
   rut_graphable_traverse (engine->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           _rut_entitygraph_pre_serialize_cb,
                           NULL,
-                          &serializer);
+                          serializer);
 
-  ui->n_entities = serializer.n_pb_entities;
+  ui->n_entities = serializer->n_pb_entities;
   ui->entities = rut_memory_stack_alloc (engine->serialization_stack,
                                          sizeof (void *) * ui->n_entities);
-  for (i = 0, l = serializer.pb_entities; l; i++, l = l->next)
+  for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
     ui->entities[i] = l->data;
-  g_list_free (serializer.pb_entities);
+  g_list_free (serializer->pb_entities);
 
   for (i = 0, l = engine->controllers; l; i++, l = l->next)
-    register_serializer_object (&serializer, l->data);
+    register_serializer_object (serializer, l->data);
 
   ui->n_controllers = g_list_length (engine->controllers);
   if (ui->n_controllers)
@@ -951,80 +1218,70 @@ rig_pb_serialize_ui (RigEngine *engine,
           ui->controllers[i] = pb_controller;
 
           pb_controller->has_id = TRUE;
-          pb_controller->id = serializer_lookup_object_id (&serializer, controller);
+          pb_controller->id = serializer_lookup_object_id (serializer, controller);
 
           pb_controller->name = controller->label;
 
           serialize_instrospectable_properties (controller,
                                                 &pb_controller->n_controller_properties,
                                                 (void **)&pb_controller->controller_properties,
-                                                &serializer);
+                                                serializer);
 
-          serializer.n_pb_properties = 0;
-          serializer.pb_properties = NULL;
+          serializer->n_pb_properties = 0;
+          serializer->pb_properties = NULL;
           rig_controller_foreach_property (controller,
                                            serialize_property_cb,
-                                           &serializer);
+                                           serializer);
 
-          pb_controller->n_properties = serializer.n_pb_properties;
+          pb_controller->n_properties = serializer->n_pb_properties;
           pb_controller->properties =
             rut_memory_stack_alloc (engine->serialization_stack,
                                     sizeof (void *) * pb_controller->n_properties);
-          for (j = 0, l2 = serializer.pb_properties; l2; j++, l2 = l2->next)
+          for (j = 0, l2 = serializer->pb_properties; l2; j++, l2 = l2->next)
             pb_controller->properties[j] = l2->data;
-          g_list_free (serializer.pb_properties);
+          g_list_free (serializer->pb_properties);
         }
     }
 
-  g_hash_table_destroy (serializer.id_map);
+  ui->n_assets = g_list_length (serializer->required_assets);
+  if (ui->n_assets)
+    {
+      RigPBAssetFilter save_filter = serializer->asset_filter;
+      int i;
+
+      /* Temporarily disable the asset filter that is called in
+       * serializer_lookup_object_id() since we have already filtered
+       * all of the assets required and we now only need to lookup
+       * the ids for serializing the assets themselves. */
+      serializer->asset_filter = NULL;
+
+      ui->assets = rut_memory_stack_alloc (engine->serialization_stack,
+                                           ui->n_assets * sizeof (void *));
+      for (i = 0, l = serializer->required_assets; l; i++, l = l->next)
+        {
+          RutAsset *asset = l->data;
+          Rig__Asset *pb_asset = serialize_asset (serializer, asset);
+
+          pb_asset->has_id = true;
+          pb_asset->id = serializer_lookup_object_id (serializer, asset);
+
+          ui->assets[i] = pb_asset;
+        }
+
+      /* restore the asset filter */
+      serializer->asset_filter = save_filter;
+    }
 
   return ui;
 }
 
-Rig__Asset *
-rig_pb_serialize_asset (RigEngine *engine, RutAsset *asset)
+void
+rig_pb_serialized_ui_destroy (Rig__UI *ui)
 {
-#ifdef __ANDROID__
-  g_warn_if_reached ();
-  return NULL;
-#else
-  RutContext *ctx = rut_asset_get_context (asset);
-  const char *path = rut_asset_get_path (asset);
-  char *full_path = g_build_filename (ctx->assets_location, path, NULL);
-  Rig__Asset *pb_asset;
-  GError *error = NULL;
-  char *contents;
-  size_t len;
+  int i;
 
-  if (!g_file_get_contents (full_path,
-                            &contents,
-                            &len,
-                            &error))
-    {
-      g_warning ("Failed to read contents of asset: %s", error->message);
-      g_error_free (error);
-      g_free (full_path);
-      return NULL;
-    }
-
-  g_free (full_path);
-
-  pb_asset = pb_new (engine, sizeof (Rig__Asset), rig__asset__init);
-
-  pb_asset->path = (char *)rut_asset_get_path (asset);
-
-  pb_asset->has_type = TRUE;
-  pb_asset->type = rut_asset_get_type (asset);
-
-  pb_asset->has_is_video = true;
-  pb_asset->is_video = rut_asset_get_is_video (asset);
-
-  pb_asset->has_data = TRUE;
-  pb_asset->data.data = (uint8_t *)contents;
-  pb_asset->data.len = len;
-
-  return pb_asset;
-#endif
+  for (i = 0; i < ui->n_assets; i++)
+    serialized_asset_destroy (ui->assets[i]);
 }
 
 Rig__Event **
@@ -1088,6 +1345,7 @@ rig_pb_serialize_input_events (RigEngine *engine,
                 pb_event->pointer_button =
                   pb_new (engine, sizeof (Rig__Event__PointerButton),
                           rig__event__pointer_button__init);
+                pb_event->pointer_button->has_button = true;
                 pb_event->pointer_button->button =
                   rut_motion_event_get_button (event);
               }
@@ -1113,8 +1371,10 @@ rig_pb_serialize_input_events (RigEngine *engine,
             pb_event->key =
               pb_new (engine, sizeof (Rig__Event__Key),
                       rig__event__key__init);
+            pb_event->key->has_keysym = true;
             pb_event->key->keysym =
               rut_key_event_get_keysym (event);
+            pb_event->key->has_mod_state = true;
             pb_event->key->mod_state =
               rut_key_event_get_modifier_state (event);
           }
@@ -1134,7 +1394,7 @@ rig_pb_serialize_input_events (RigEngine *engine,
   return pb_events;
 }
 
-typedef struct _UnSerializer
+struct _RigPBUnSerializer
 {
   RigEngine *engine;
 
@@ -1144,7 +1404,7 @@ typedef struct _UnSerializer
   GList *controllers;
 
   GHashTable *id_map;
-} UnSerializer;
+};
 
 static void
 pb_init_color (RutContext *ctx,
@@ -1214,7 +1474,7 @@ pb_init_boxed_vec4 (RutBoxed *boxed,
 }
 
 static RutEntity *
-unserializer_find_entity (UnSerializer *unserializer, uint64_t id)
+unserializer_find_entity (RigPBUnSerializer *unserializer, uint64_t id)
 {
   RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
   if (object == NULL || rut_object_get_type (object) != &rut_entity_type)
@@ -1223,7 +1483,7 @@ unserializer_find_entity (UnSerializer *unserializer, uint64_t id)
 }
 
 static RutAsset *
-unserializer_find_asset (UnSerializer *unserializer, uint64_t id)
+unserializer_find_asset (RigPBUnSerializer *unserializer, uint64_t id)
 {
   RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
   if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
@@ -1232,7 +1492,7 @@ unserializer_find_asset (UnSerializer *unserializer, uint64_t id)
 }
 
 static RutObject *
-unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
+unserializer_find_introspectable (RigPBUnSerializer *unserializer, uint64_t id)
 {
   RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
   if (object == NULL ||
@@ -1243,7 +1503,7 @@ unserializer_find_introspectable (UnSerializer *unserializer, uint64_t id)
 }
 
 static void
-pb_init_boxed_value (UnSerializer *unserializer,
+pb_init_boxed_value (RigPBUnSerializer *unserializer,
                      RutBoxed *boxed,
                      RutPropertyType type,
                      Rig__PropertyValue *pb_value)
@@ -1316,7 +1576,7 @@ pb_init_boxed_value (UnSerializer *unserializer,
 }
 
 static void
-collect_error (UnSerializer *unserializer,
+collect_error (RigPBUnSerializer *unserializer,
                const char *format,
                ...)
 {
@@ -1339,7 +1599,7 @@ collect_error (UnSerializer *unserializer,
 }
 
 static void
-register_unserializer_object (UnSerializer *unserializer,
+register_unserializer_object (RigPBUnSerializer *unserializer,
                               void *object,
                               uint64_t id)
 {
@@ -1359,7 +1619,7 @@ register_unserializer_object (UnSerializer *unserializer,
 }
 
 static void
-set_property_from_pb_boxed (UnSerializer *unserializer,
+set_property_from_pb_boxed (RigPBUnSerializer *unserializer,
                             RutProperty *property,
                             Rig__Boxed *pb_boxed)
 {
@@ -1434,7 +1694,7 @@ set_property_from_pb_boxed (UnSerializer *unserializer,
 }
 
 static void
-set_properties_from_pb_boxed_values (UnSerializer *unserializer,
+set_properties_from_pb_boxed_values (RigPBUnSerializer *unserializer,
                                      RutObject *object,
                                      size_t n_properties,
                                      Rig__Boxed **properties)
@@ -1461,7 +1721,7 @@ set_properties_from_pb_boxed_values (UnSerializer *unserializer,
 }
 
 static void
-unserialize_components (UnSerializer *unserializer,
+unserialize_components (RigPBUnSerializer *unserializer,
                         RutEntity *entity,
                         Rig__Entity *pb_entity,
                         bool force_material)
@@ -2022,7 +2282,7 @@ unserialize_components (UnSerializer *unserializer,
 }
 
 static void
-unserialize_entities (UnSerializer *unserializer,
+unserialize_entities (RigPBUnSerializer *unserializer,
                       int n_entities,
                       Rig__Entity **entities)
 {
@@ -2101,10 +2361,11 @@ unserialize_entities (UnSerializer *unserializer,
 }
 
 static void
-unserialize_assets (UnSerializer *unserializer,
+unserialize_assets (RigPBUnSerializer *unserializer,
                     int n_assets,
                     Rig__Asset **assets)
 {
+  RigEngine *engine = unserializer->engine;
   int i;
 
   for (i = 0; i < n_assets; i++)
@@ -2126,14 +2387,30 @@ unserialize_assets (UnSerializer *unserializer,
       if (!pb_asset->path)
         continue;
 
-      /* Check to see if something else has already loaded this asset.
-       *
-       * E.g. when running as a slave then assets actually get loaded
-       * separately and cached before loading a UI.
-       */
-      asset = rig_lookup_asset (unserializer->engine, pb_asset->path);
-
-      if (!asset && unserializer->engine->ctx->assets_location)
+      if (pb_asset->has_data)
+        {
+          asset = rut_asset_new_from_data (engine->ctx,
+                                           pb_asset->path,
+                                           pb_asset->type,
+                                           pb_asset->is_video,
+                                           pb_asset->data.data,
+                                           pb_asset->data.len);
+        }
+      else if (pb_asset->mesh)
+        {
+          RutMesh *mesh =
+            rig_pb_unserialize_mesh (unserializer, pb_asset->mesh);
+          if (!mesh)
+            {
+              collect_error (unserializer,
+                             "Error unserializing mesh for asset id %d",
+                             (int)id);
+              continue;
+            }
+          asset = rut_asset_new_from_mesh (engine->ctx, mesh);
+          rut_refable_unref (mesh);
+        }
+      else if (unserializer->engine->ctx->assets_location)
         {
           char *full_path =
             g_build_filename (unserializer->engine->ctx->assets_location,
@@ -2166,7 +2443,7 @@ unserialize_assets (UnSerializer *unserializer,
 }
 
 static void
-unserialize_path_nodes (UnSerializer *unserializer,
+unserialize_path_nodes (RigPBUnSerializer *unserializer,
                         RigPath *path,
                         int n_nodes,
                         Rig__Node **nodes)
@@ -2250,7 +2527,7 @@ unserialize_path_nodes (UnSerializer *unserializer,
 }
 
 static void
-unserialize_controller_properties (UnSerializer *unserializer,
+unserialize_controller_properties (RigPBUnSerializer *unserializer,
                                    RigController *controller,
                                    int n_properties,
                                    Rig__Controller__Property **properties)
@@ -2463,7 +2740,7 @@ have_boxed_pb_property (Rig__Boxed **properties,
 }
 
 static void
-unserialize_controllers (UnSerializer *unserializer,
+unserialize_controllers (RigPBUnSerializer *unserializer,
                          int n_controllers,
                          Rig__Controller **controllers)
 {
@@ -2541,22 +2818,39 @@ unserialize_controllers (UnSerializer *unserializer,
     }
 }
 
-void
-rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
+RigPBUnSerializer *
+rig_pb_unserializer_new (RigEngine *engine)
 {
-  UnSerializer unserializer;
-  GList *l;
+  RigPBUnSerializer *unserializer = g_slice_new0 (RigPBUnSerializer);
 
-  memset (&unserializer, 0, sizeof (unserializer));
-  unserializer.engine = engine;
+  unserializer->engine = engine;
 
   /* This hash table maps from uint64_t ids to objects while loading */
-  unserializer.id_map = g_hash_table_new_full (g_int64_hash,
-                                               g_int64_equal,
-                                               free_id_slice,
-                                               NULL);
+  unserializer->id_map = g_hash_table_new_full (g_int64_hash,
+                                                g_int64_equal,
+                                                free_id_slice,
+                                                NULL);
 
   rut_memory_stack_rewind (engine->serialization_stack);
+
+  return unserializer;
+}
+
+void
+rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer)
+{
+  g_hash_table_destroy (unserializer->id_map);
+
+  g_slice_free (RigPBUnSerializer, unserializer);
+}
+
+void
+rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
+                       const Rig__UI *pb_ui,
+                       bool skip_assets)
+{
+  RigEngine *engine = unserializer->engine;
+  GList *l;
 
   if (pb_ui->device)
     {
@@ -2572,37 +2866,234 @@ rig_pb_unserialize_ui (RigEngine *engine, const Rig__UI *pb_ui)
                        device->background);
     }
 
-  unserialize_assets (&unserializer,
+  unserialize_assets (unserializer,
                       pb_ui->n_assets,
                       pb_ui->assets);
 
-  unserialize_entities (&unserializer,
+  unserialize_entities (unserializer,
                         pb_ui->n_entities,
                         pb_ui->entities);
 
-  unserialize_controllers (&unserializer,
+  unserialize_controllers (unserializer,
                            pb_ui->n_controllers,
                            pb_ui->controllers);
-
-  g_hash_table_destroy (unserializer.id_map);
 
   rig_engine_free_ui (engine);
 
   engine->scene = rut_graph_new (engine->ctx);
-  for (l = unserializer.entities; l; l = l->next)
+  for (l = unserializer->entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)
         rut_graphable_add_child (engine->scene, l->data);
     }
 
-  if (unserializer.light)
-    engine->light = unserializer.light;
+  if (unserializer->light)
+    engine->light = unserializer->light;
 
-  engine->controllers = unserializer.controllers;
+  engine->controllers = unserializer->controllers;
 
-  engine->assets = unserializer.assets;
+  if (!skip_assets)
+    engine->assets = unserializer->assets;
 
   rig_engine_handle_ui_update (engine);
 
   rut_shell_queue_redraw (engine->ctx->shell);
+}
+
+typedef struct _NamedBuffer
+{
+  uint64_t id;
+  RutBuffer *buffer;
+} NamedBuffer;
+
+RutMesh *
+rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
+                         Rig__Mesh *pb_mesh)
+{
+  int i;
+  NamedBuffer named_buffers[pb_mesh->n_buffers];
+  int n_buffers = 0;
+  RutAttribute *attributes[pb_mesh->n_attributes];
+  int n_attributes = 0;
+  CoglVerticesMode mode;
+  RutMesh *mesh = NULL;
+
+  for (i = 0; i < pb_mesh->n_buffers; i++)
+    {
+      Rig__Buffer *pb_buffer = pb_mesh->buffers[i];
+      RutBuffer *buffer;
+
+      if (!pb_buffer->has_id || !pb_buffer->has_data)
+        {
+          goto ERROR;
+        }
+
+      buffer = rut_buffer_new (pb_buffer->data.len);
+      memcpy (buffer->data, pb_buffer->data.data, pb_buffer->data.len);
+      named_buffers[i].id = pb_buffer->id;
+      named_buffers[i].buffer = buffer;
+      n_buffers++;
+    }
+
+  for (i = 0; i < pb_mesh->n_attributes; i++)
+    {
+      Rig__Attribute *pb_attribute = pb_mesh->attributes[i];
+      RutBuffer *buffer = NULL;
+      RutAttributeType type;
+      int j;
+
+      if (!pb_attribute->has_buffer_id ||
+          !pb_attribute->name ||
+          !pb_attribute->has_stride ||
+          !pb_attribute->has_offset ||
+          !pb_attribute->has_n_components ||
+          !pb_attribute->has_type)
+        {
+          goto ERROR;
+        }
+
+      for (j = 0; j < pb_mesh->n_buffers; j++)
+        {
+          if (named_buffers[j].id == pb_attribute->buffer_id)
+            {
+              buffer = named_buffers[j].buffer;
+              break;
+            }
+        }
+      if (!buffer)
+        goto ERROR;
+
+      switch (pb_attribute->type)
+        {
+        case RIG__ATTRIBUTE__TYPE__BYTE:
+          type = RUT_ATTRIBUTE_TYPE_BYTE;
+          break;
+        case RIG__ATTRIBUTE__TYPE__UNSIGNED_BYTE:
+          type = RUT_ATTRIBUTE_TYPE_UNSIGNED_BYTE;
+          break;
+        case RIG__ATTRIBUTE__TYPE__SHORT:
+          type = RUT_ATTRIBUTE_TYPE_SHORT;
+          break;
+        case RIG__ATTRIBUTE__TYPE__UNSIGNED_SHORT:
+          type = RUT_ATTRIBUTE_TYPE_UNSIGNED_SHORT;
+          break;
+        case RIG__ATTRIBUTE__TYPE__FLOAT:
+          type = RUT_ATTRIBUTE_TYPE_FLOAT;
+          break;
+        }
+
+      attributes[i] =
+        rut_attribute_new (buffer,
+                           pb_attribute->name,
+                           pb_attribute->stride,
+                           pb_attribute->offset,
+                           pb_attribute->n_components,
+                           type);
+      if (pb_attribute->has_normalized &&
+          pb_attribute->normalized)
+        rut_attribute_set_normalized (attributes[i], true);
+
+      n_attributes++;
+    }
+
+  if (!pb_mesh->has_mode ||
+      !pb_mesh->has_n_vertices)
+    goto ERROR;
+
+  switch (pb_mesh->mode)
+    {
+    case RIG__MESH__MODE__POINTS:
+      mode = COGL_VERTICES_MODE_POINTS;
+      break;
+    case RIG__MESH__MODE__LINES:
+      mode = COGL_VERTICES_MODE_LINES;
+      break;
+    case RIG__MESH__MODE__LINE_LOOP:
+      mode = COGL_VERTICES_MODE_LINE_LOOP;
+      break;
+    case RIG__MESH__MODE__LINE_STRIP:
+      mode = COGL_VERTICES_MODE_LINE_STRIP;
+      break;
+    case RIG__MESH__MODE__TRIANGLES:
+      mode = COGL_VERTICES_MODE_TRIANGLES;
+      break;
+    case RIG__MESH__MODE__TRIANGLE_STRIP:
+      mode = COGL_VERTICES_MODE_TRIANGLE_STRIP;
+      break;
+    case RIG__MESH__MODE__TRIANGLE_FAN:
+      mode = COGL_VERTICES_MODE_TRIANGLE_FAN;
+      break;
+    }
+
+  mesh = rut_mesh_new (mode,
+                       pb_mesh->n_vertices,
+                       attributes,
+                       pb_mesh->n_attributes);
+
+  if (pb_mesh->has_indices_buffer_id)
+    {
+      RutBuffer *buffer;
+      CoglIndicesType indices_type;
+      int j;
+
+      for (j = 0; j < pb_mesh->n_buffers; j++)
+        {
+          if (named_buffers[j].id == pb_mesh->indices_buffer_id)
+            {
+              buffer = named_buffers[j].buffer;
+              break;
+            }
+        }
+      if (!buffer)
+        goto ERROR;
+
+      if (!pb_mesh->has_indices_type ||
+          !pb_mesh->has_n_indices)
+        {
+          goto ERROR;
+        }
+
+      switch (pb_mesh->indices_type)
+        {
+        case RIG__MESH__INDICES_TYPE__UNSIGNED_BYTE:
+          indices_type = COGL_INDICES_TYPE_UNSIGNED_BYTE;
+          break;
+        case RIG__MESH__INDICES_TYPE__UNSIGNED_SHORT:
+          indices_type = COGL_INDICES_TYPE_UNSIGNED_SHORT;
+          break;
+        case RIG__MESH__INDICES_TYPE__UNSIGNED_INT:
+          indices_type = COGL_INDICES_TYPE_UNSIGNED_INT;
+          break;
+        }
+
+      rut_mesh_set_indices (mesh,
+                            indices_type,
+                            buffer,
+                            pb_mesh->n_indices);
+    }
+
+  /* The mesh will take references on the attributes */
+  for (i = 0; i < n_attributes; i++)
+    rut_refable_unref (attributes[i]);
+
+  /* The attributes will take their own references on the buffers */
+  for (i = 0; i < n_buffers; i++)
+    rut_refable_unref (named_buffers[i].buffer);
+
+  return mesh;
+
+ERROR:
+
+  g_warn_if_reached ();
+
+  if (mesh)
+    rut_refable_unref (mesh);
+
+  for (i = 0; i < n_attributes; i++)
+    rut_refable_unref (attributes[i]);
+
+  for (i = 0; i < n_buffers; i++)
+    rut_refable_unref (named_buffers[i].buffer);
+
+  return NULL;
 }

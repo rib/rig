@@ -121,7 +121,6 @@ struct _RutShell
   /* If true then this process does not handle input events directly
    * or output graphics directly. */
   bool headless;
-  RutButtonState headless_button_state;
 #ifdef USE_SDL
   SDL_Keymod sdl_keymod;
   uint32_t sdl_buttons;
@@ -573,10 +572,8 @@ rut_motion_event_get_button (RutInputEvent *event)
       switch (stream_event->type)
         {
         case RUT_STREAM_EVENT_POINTER_DOWN:
-          shell->headless_button_state &= ~stream_event->pointer_button.button;
           return stream_event->pointer_button.button;
         case RUT_STREAM_EVENT_POINTER_UP:
-          shell->headless_button_state |= ~stream_event->pointer_button.button;
           return stream_event->pointer_button.button;
         default:
           g_warn_if_reached ();
@@ -649,7 +646,21 @@ rut_motion_event_get_button_state (RutInputEvent *event)
   RutShell *shell = event->shell;
 
   if (shell->headless)
-    return shell->headless_button_state;
+    {
+      RutStreamEvent *stream_event = event->native;
+
+      switch (stream_event->type)
+        {
+        case RUT_STREAM_EVENT_POINTER_MOVE:
+          return stream_event->pointer_move.state;
+        case RUT_STREAM_EVENT_POINTER_DOWN:
+        case RUT_STREAM_EVENT_POINTER_UP:
+          return stream_event->pointer_button.state;
+        default:
+          g_warn_if_reached ();
+          return 0;
+        }
+    }
 
 #ifdef __ANDROID__
   return 0;
@@ -753,15 +764,12 @@ rut_key_event_get_modifier_state (RutInputEvent *event)
       RutStreamEvent *stream_event = event->native;
       switch (stream_event->type)
         {
-        case RUT_STREAM_EVENT_POINTER_DOWN:
-          shell->headless_button_state &= ~stream_event->pointer_button.button;
-          return stream_event->pointer_button.button;
-        case RUT_STREAM_EVENT_POINTER_UP:
-          shell->headless_button_state |= ~stream_event->pointer_button.button;
-          return stream_event->pointer_button.button;
+        case RUT_STREAM_EVENT_KEY_DOWN:
+        case RUT_STREAM_EVENT_KEY_UP:
+          return stream_event->key.mod_state;
         default:
           g_warn_if_reached ();
-          return RUT_BUTTON_STATE_1;
+          return 0;
         }
     }
 

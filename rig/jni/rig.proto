@@ -26,14 +26,57 @@ message Device
   optional Color background=3;
 }
 
+message Buffer
+{
+  optional sint64 id=1;
+  optional bytes data=2;
+}
+message Attribute
+{
+  enum Type { BYTE=1; UNSIGNED_BYTE=2; SHORT=3; UNSIGNED_SHORT=4; FLOAT=5; }
+
+  optional sint64 buffer_id=1;
+  optional string name=2;
+  optional bool normalized=3;
+  optional uint32 stride=4;
+  optional uint32 offset=5;
+  optional uint32 n_components=6;
+  optional Type type=7;
+}
+
+message Mesh
+{
+  enum Mode { POINTS=1; LINES=2; LINE_LOOP=3; LINE_STRIP=4; TRIANGLES=5; TRIANGLE_STRIP=6; TRIANGLE_FAN=7; }
+
+  optional Mode mode=1;
+
+  //NB: buffers can be shared between attributes so attributes only
+  //refer To a buffer by an ID and the actual buffers are here.
+  //
+  //TODO: To support sharing buffers between meshes we should also add
+  //an array of buffers to the UI message.
+  repeated Buffer buffers=2;
+
+  repeated Attribute attributes=3;
+  optional uint32 n_vertices=4;
+
+  enum IndicesType { UNSIGNED_BYTE=1; UNSIGNED_SHORT=2; UNSIGNED_INT=3; }
+
+  optional IndicesType indices_type=5;
+  optional uint32 n_indices=6;
+  optional sint64 indices_buffer_id=7;
+}
+
 message Asset
 {
   optional sint64 id=1;
   optional string path=2;
 
   optional uint32 type=3;
-  optional bool is_video=5;
   optional bytes data=4;
+  optional bool is_video=5;
+
+  optional Mesh mesh=6;
 }
 
 message Vec3
@@ -317,12 +360,7 @@ message LoadResult
 {
 }
 
-message LoadAssetResult
-{
-}
-
 service Slave {
-  rpc LoadAsset (Asset) returns (LoadAssetResult);
   rpc Load (UI) returns (LoadResult);
   rpc Test (Query) returns (TestResult);
 }
@@ -357,13 +395,16 @@ message Event
 
 message FrameSetup
 {
-  //Input events relevant to this new frame...
-  repeated Event events=1;
+  optional uint32 width=1;
+  optional uint32 height=2;
 
-  optional uint64 frame_id=2;
+  //Input events relevant to this new frame...
+  repeated Event events=3;
+
+  optional uint64 frame_id=4;
 
   //Predicted presentation time...
-  optional uint64 for=3;
+  optional uint64 for=5;
 }
 
 message RunFrameAck

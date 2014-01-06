@@ -60,36 +60,6 @@ slave__test (Rig__Slave_Service *service,
 }
 
 static void
-slave__load_asset (Rig__Slave_Service *service,
-                   const Rig__Asset *query,
-                   Rig__LoadAssetResult_Closure closure,
-                   void *closure_data)
-{
-  Rig__LoadAssetResult result = RIG__LOAD_ASSET_RESULT__INIT;
-  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
-  RigEngine *engine = slave->engine;
-
-  g_return_if_fail (query != NULL);
-
-  if (query->has_type)
-    {
-      RutAsset *asset =
-        rut_asset_new_from_data (engine->ctx,
-                                 query->path,
-                                 query->type,
-                                 query->is_video,
-                                 query->data.data,
-                                 query->data.len);
-
-      rig_register_asset (engine, asset);
-
-      g_print ("Load Asset Request\n");
-    }
-
-  closure (&result, closure_data);
-}
-
-static void
 slave__load (Rig__Slave_Service *service,
              const Rig__UI *ui,
              Rig__LoadResult_Closure closure,
@@ -99,12 +69,17 @@ slave__load (Rig__Slave_Service *service,
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
   float width, height;
+  RigPBUnSerializer *unserializer;
 
   g_return_if_fail (ui != NULL);
 
   g_print ("UI Load Request\n");
 
-  rig_pb_unserialize_ui (engine, ui);
+  unserializer = rig_pb_unserializer_new (engine);
+
+  rig_pb_unserialize_ui (unserializer, ui, false);
+
+  rig_pb_unserializer_destroy (unserializer);
 
   if (option_width > 0 && option_height > 0)
     {
