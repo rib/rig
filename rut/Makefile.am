@@ -98,6 +98,8 @@ librut_la_SOURCES = \
     rut-object.c \
     rut-property.c \
     rut-interfaces.c \
+    rut-graphable.h \
+    rut-graphable.c \
     rut.c \
     rut-arcball.c \
     rut-transform-private.h \
