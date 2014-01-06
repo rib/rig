@@ -189,7 +189,8 @@ rut_simple_introspectable_init (RutObject *object,
     {
       rut_property_init (&properties[n],
                          &specs[n],
-                         object);
+                         object,
+                         n);
     }
 
   props->first_property = properties;

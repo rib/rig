@@ -8,19 +8,7 @@
 #include <cogl/cogl.h>
 
 #include "rut-memory-stack.h"
-
-/* We forward declare this since we have a circular header dependency
- * where rut-asset.h indirectly includes rut-context.h which depends
- * on this... */
-typedef struct _RutPropertyContext
-{
-  RutMemoryStack *prop_update_stack;
-} RutPropertyContext;
-
-#include "rut-types.h"
 #include "rut-object.h"
-#include "rut-asset.h"
-#include "rut-closure.h"
 
 typedef enum _RutPropertyType
 {
@@ -40,17 +28,6 @@ typedef enum _RutPropertyType
   RUT_PROPERTY_TYPE_POINTER,
 } RutPropertyType;
 
-typedef struct _RutProperty RutProperty;
-
-typedef void (*RutPropertyUpdateCallback) (RutProperty *property,
-                                           void *user_data);
-
-typedef union _RutPropertyDefault
-{
-  int integer;
-  CoglBool boolean;
-  const void *pointer;
-} RutPropertyDefault;
 
 typedef struct _RutBoxed
 {
@@ -73,6 +50,42 @@ typedef struct _RutBoxed
       void *pointer_val;
     } d;
 } RutBoxed;
+
+
+typedef struct _RutPropertyChange
+{
+  void *object;
+  RutBoxed boxed;
+  int prop_id;
+} RutPropertyChange;
+
+
+/* We forward declare this since we have a circular header dependency
+ * where rut-asset.h indirectly includes rut-context.h which depends
+ * on this... */
+typedef struct _RutPropertyContext
+{
+  bool log;
+  int magic_marker;
+  RutMemoryStack *change_log_stack;
+  int log_len;
+} RutPropertyContext;
+
+#include "rut-types.h"
+#include "rut-asset.h"
+#include "rut-closure.h"
+
+typedef struct _RutProperty RutProperty;
+
+typedef void (*RutPropertyUpdateCallback) (RutProperty *property,
+                                           void *user_data);
+
+typedef union _RutPropertyDefault
+{
+  int integer;
+  CoglBool boolean;
+  const void *pointer;
+} RutPropertyDefault;
 
 
 typedef struct _RutPropertyValidationInteger
@@ -143,6 +156,11 @@ typedef struct _RutPropertySpec
    * directly reference the data using the offset anyway.
    */
   size_t data_offset;
+
+  /* Most property specs are tracked in a per-type array with
+   * enums that are used to index into the array
+   */
+  int id;
 
   /* Note: these are optional. If the property value doesn't
    * need validation then the setter can be left as NULL
@@ -234,8 +252,16 @@ struct _RutProperty
   GSList *dependants;
   RutPropertyBinding *binding; /* Maybe make this a list of bindings? */
   void *object;
+
   uint16_t queued_count;
-  uint16_t magic_marker;
+  uint8_t magic_marker;
+
+  /* Most properties are stored in an array associated with an object
+   * with an enum to index the array. This will be an index into the
+   * array in that case and serves as a unique identifier for the
+   * property for the associated object. */
+  uint8_t id; /* NB: This implies we can have no more
+                 than 255 properties per object */
 };
 
 #if 0
@@ -332,6 +358,9 @@ flibble_get_x (Flibble *flibble)
 
 void
 rut_property_context_init (RutPropertyContext *context);
+
+void
+rut_property_context_clear_log (RutPropertyContext *context);
 
 void
 rut_property_context_destroy (RutPropertyContext *context);
@@ -556,7 +585,8 @@ rut_property_closure_destroy (RutPropertyClosure *closure);
 void
 rut_property_init (RutProperty *property,
                    const RutPropertySpec *spec,
-                   void *object);
+                   void *object,
+                   uint8_t id);
 
 void
 rut_property_dirty (RutPropertyContext *ctx,

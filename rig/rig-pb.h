@@ -26,6 +26,28 @@
 #include "rig-engine.h"
 #include "rig.pb-c.h"
 
+typedef void (*PBMessageInitFunc) (void *message);
+
+static inline void *
+_rig_pb_new (RigEngine *engine,
+             size_t size,
+             size_t alignment,
+             void *_message_init)
+{
+  PBMessageInitFunc message_init = _message_init;
+
+  void *msg = rut_memory_stack_memalign (engine->serialization_stack,
+                                         size,
+                                         alignment);
+  message_init (msg);
+  return msg;
+}
+
+#define rig_pb_new(engine, type, init) _rig_pb_new (engine, \
+                                                    sizeof (type), \
+                                                    RUT_UTIL_ALIGNOF (type), \
+                                                    init)
+
 typedef struct _RigPBSerializer RigPBSerializer;
 typedef struct _RigPBUnSerializer RigPBUnSerializer;
 
@@ -42,6 +64,22 @@ rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
                                     RigPBAssetFilter filter,
                                     void *user_data);
 
+typedef uint64_t (*RigPBSerializerObjecRegisterCallback) (void *object,
+                                                          void *user_data);
+
+void
+rig_pb_serializer_set_object_register_callback (RigPBSerializer *serializer,
+                                 RigPBSerializerObjecRegisterCallback callback,
+                                 void *user_data);
+
+typedef uint64_t (*RigPBSerializerObjecToIDCallback) (void *object,
+                                                      void *user_data);
+
+void
+rig_pb_serializer_set_object_to_id_callback (RigPBSerializer *serializer,
+                                     RigPBSerializerObjecToIDCallback callback,
+                                     void *user_data);
+
 void
 rig_pb_serializer_destroy (RigPBSerializer *serializer);
 
@@ -55,6 +93,11 @@ Rig__Event **
 rig_pb_serialize_input_events (RigEngine *engine,
                                RutList *input_queue,
                                int n_events);
+
+void
+rig_pb_property_value_init (RigPBSerializer *serializer,
+                            Rig__PropertyValue *pb_value,
+                            const RutBoxed *value);
 
 RigPBUnSerializer *
 rig_pb_unserializer_new (RigEngine *engine);

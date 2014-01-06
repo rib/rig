@@ -377,6 +377,10 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
 
   camera->ref_count = 1;
 
+  rut_simple_introspectable_init (camera,
+                                  _rut_camera_prop_specs,
+                                  camera->properties);
+
   camera->component.type = RUT_COMPONENT_TYPE_CAMERA;
 
   rut_camera_set_background_color4f (camera, 0, 0, 0, 1);
@@ -418,10 +422,6 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
       camera->x2 = width;
       camera->y2 = height;
     }
-
-  rut_simple_introspectable_init (camera,
-                                  _rut_camera_prop_specs,
-                                  camera->properties);
 
   return camera;
 }

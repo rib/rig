@@ -28,23 +28,36 @@
 #include "rut-property.h"
 #include "rut-interfaces.h"
 #include "rut-color.h"
+#include "rut-util.h"
+
+static int dummy_object = NULL;
 
 void
 rut_property_context_init (RutPropertyContext *context)
 {
-  context->prop_update_stack = rut_memory_stack_new (4096);
+  context->log = false;
+  context->magic_marker = 0;
+  context->change_log_stack = rut_memory_stack_new (4096);
+}
+
+void
+rut_property_context_clear_log (RutPropertyContext *context)
+{
+  rut_memory_stack_rewind (context->change_log_stack);
+  context->log_len = 0;
 }
 
 void
 rut_property_context_destroy (RutPropertyContext *context)
 {
-  rut_memory_stack_free (context->prop_update_stack);
+  rut_memory_stack_free (context->change_log_stack);
 }
 
 void
 rut_property_init (RutProperty *property,
                    const RutPropertySpec *spec,
-                   void *object)
+                   void *object,
+                   uint8_t id)
 {
   /* Properties that are neither readable nor writable are a bit
    * pointless so something has probably gone wrong */
@@ -64,6 +77,7 @@ rut_property_init (RutProperty *property,
   property->object = object;
   property->queued_count = 0;
   property->magic_marker = 0;
+  property->id = id;
 }
 
 static void
@@ -489,7 +503,8 @@ rut_property_connect_callback_full (RutProperty *property,
   closure = g_slice_new (RutPropertyClosure);
   rut_property_init (&closure->dummy_prop,
                      &dummy_property_spec,
-                     NULL); /* no object */
+                     &dummy_object,
+                     0); /* id */
   closure->callback = callback;
   closure->destroy_notify = destroy_notify;
   closure->user_data = user_data;
@@ -522,6 +537,32 @@ rut_property_dirty (RutPropertyContext *ctx,
                     RutProperty *property)
 {
   GSList *l;
+
+  if (ctx->log)
+    {
+      RutObject *object = property->object;
+      if (object != &dummy_object)
+        {
+          RutPropertyChange *change;
+
+          g_print ("Log %d: base=%p, offset=%d: obj = %p(%s), prop id=%d(%s)\n",
+                   ctx->log_len,
+                   ctx->change_log_stack->sub_stack->data,
+                   ctx->change_log_stack->sub_stack->offset,
+                   object,
+                   rut_object_get_type_name (object),
+                   property->id,
+                   property->spec->name);
+
+          change = rut_memory_stack_alloc (ctx->change_log_stack,
+                                           sizeof (RutPropertyChange));
+
+          change->object = object;
+          change->prop_id = property->id;
+          rut_property_box (property, &change->boxed);
+          ctx->log_len++;
+        }
+    }
 
   /* FIXME: The plan is for updates to happen asynchronously by
    * queueing an update with the context but for now we simply

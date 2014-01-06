@@ -426,7 +426,7 @@ service Simulator {
 message PropertyChange
 {
   optional sint64 object_id=1;
-  optional int32 property_index=2;
+  optional int32 property_id=2;
   optional PropertyValue value=3;
 }
 
