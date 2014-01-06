@@ -106,6 +106,12 @@ rut_attribute_new (RutBuffer *buffer,
   return attribute;
 }
 
+void
+rut_attribute_set_normalized (RutAttribute *attribute,
+                              bool normalized)
+{
+  attribute->normalized = normalized;
+}
 static void
 _rut_mesh_free (RutObject *object)
 {
@@ -717,6 +723,9 @@ rut_mesh_create_primitive (RutContext *ctx,
                                           mesh->attributes[i]->offset,
                                           mesh->attributes[i]->n_components,
                                           type);
+
+      if (mesh->attributes[i]->normalized)
+        cogl_attribute_set_normalized (attributes[i], true);
     }
 
   for (i = 0; i < n_buffers; i++)

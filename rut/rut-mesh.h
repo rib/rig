@@ -126,6 +126,10 @@ rut_attribute_new (RutBuffer *buffer,
                    RutAttributeType type);
 
 void
+rut_attribute_set_normalized (RutAttribute *attribute,
+                              bool normalized);
+
+void
 _rut_mesh_init_type (void);
 
 RutMesh *
