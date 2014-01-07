@@ -383,7 +383,7 @@ rut/Makefile
 data/Makefile
 data/Info.plist
 rig/Makefile
-rig/jni/rig-defines.h
+rig/rig-defines.h
 tools/Makefile
 )
 
