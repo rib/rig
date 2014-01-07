@@ -11,21 +11,45 @@
 #include "rig-pb.h"
 #include "rig.pb-c.h"
 
-static char **_rig_editor_remaining_args = NULL;
+static char **_rig_device_remaining_args = NULL;
 
-static const GOptionEntry rut_editor_entries[] =
+typedef struct _RigDevice
+{
+  RutShell *shell;
+  RutContext *ctx;
+  RigEngine *engine;
+
+  char *ui_filename;
+
+} RigDevice;
+
+static const GOptionEntry _rig_device_entries[] =
 {
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
-    &_rig_editor_remaining_args, "Project" },
+    &_rig_device_remaining_args, "Project" },
   { 0 }
 };
 
 void
 rig_device_init (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigDevice *device = user_data;
 
-  rig_engine_init (engine, shell);
+  device->engine = rig_engine_new (shell, device->ui_filename);
+
+  rut_shell_add_input_callback (device->shell,
+                                rig_engine_input_handler,
+                                device->engine, NULL);
+}
+
+void
+rig_device_fini (RutShell *shell, void *user_data)
+{
+  RigDevice *device = user_data;
+  RigEngine *engine = device->engine;
+
+  rut_refable_unref (engine);
+  device->engine = NULL;
 }
 
 static void
@@ -38,7 +62,8 @@ handle_run_frame_ack (const Rig__RunFrameAck *ack,
 static void
 rig_device_paint (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigDevice *device = user_data;
+  RigEngine *engine = device->engine;
   RigFrontend *frontend = engine->frontend;
   ProtobufCService *simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
@@ -83,15 +108,13 @@ int
 main (int argc, char **argv)
 {
   GOptionContext *context = g_option_context_new (NULL);
-  RigEngine engine;
+  RigDevice device;
   GError *error = NULL;
   char *assets_location;
 
-  memset (&engine, 0, sizeof (RigEngine));
-
   gst_init (&argc, &argv);
 
-  g_option_context_add_main_entries (context, rut_editor_entries, NULL);
+  g_option_context_add_main_entries (context, _rig_device_entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
@@ -99,34 +122,35 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  if (_rig_editor_remaining_args == NULL ||
-      _rig_editor_remaining_args[0] == NULL)
+  if (_rig_device_remaining_args == NULL ||
+      _rig_device_remaining_args[0] == NULL)
     {
       g_error ("A filename argument for the UI description file is "
                "required. Pass a non-existing file to create it.\n");
       return EXIT_FAILURE;
     }
 
-  engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
+  memset (&device, 0, sizeof (RigDevice));
 
-  engine.shell = rut_shell_new (false, /* not headless */
+  device.ui_filename = g_strdup (_rig_device_remaining_args[0]);
+
+  device.shell = rut_shell_new (false, /* not headless */
                                 rig_device_init,
-                                rig_engine_fini,
+                                rig_device_fini,
                                 rig_device_paint,
-                                &engine);
+                                &device);
 
-  engine.ctx = rut_context_new (engine.shell);
+  device.ctx = rut_context_new (device.shell);
 
-  rut_context_init (engine.ctx);
+  rut_context_init (device.ctx);
 
-  rut_shell_add_input_callback (engine.shell,
-                                rig_engine_input_handler,
-                                &engine, NULL);
+  assets_location = g_path_get_dirname (device.ui_filename);
+  rut_set_assets_location (device.ctx, assets_location);
 
-  assets_location = g_path_get_dirname (engine.ui_filename);
-  rut_set_assets_location (engine.ctx, assets_location);
+  rut_shell_main (device.shell);
 
-  rut_shell_main (engine.shell);
+  rut_refable_unref (device.ctx);
+  rut_refable_unref (device.shell);
 
   return 0;
 }

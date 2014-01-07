@@ -11,27 +11,51 @@
 
 static char **_rig_editor_remaining_args = NULL;
 
-static const GOptionEntry rut_editor_entries[] =
+static const GOptionEntry _rig_editor_entries[] =
 {
   { G_OPTION_REMAINING, 0, 0, G_OPTION_ARG_STRING_ARRAY,
     &_rig_editor_remaining_args, "Project" },
   { 0 }
 };
 
+typedef struct _RigEditor
+{
+  RutShell *shell;
+  RutContext *ctx;
+  RigEngine *engine;
+
+  char *ui_filename;
+
+} RigEditor;
+
+
 void
 rig_editor_init (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigEditor *editor = user_data;
+  RigEngine *engine = rig_engine_new (shell, editor->ui_filename);
+
+  editor->engine = engine;
 
   rig_avahi_run_browser (engine);
 
-  rig_engine_init (engine, shell);
+  rut_shell_add_input_callback (editor->shell,
+                                rig_engine_input_handler,
+                                engine, NULL);
+}
+
+void
+rig_editor_fini (RutShell *shell, void *user_data)
+{
+  /* NOP: (We currently free the engine when necessary in main()
+   * due to the way we check for new files to open) */
 }
 
 static void
 rig_editor_paint (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
 
   rut_shell_start_redraw (shell);
 
@@ -50,13 +74,13 @@ rig_editor_paint (RutShell *shell, void *user_data)
 int
 main (int argc, char **argv)
 {
-  RigEngine engine;
+  RigEditor editor;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
   gst_init (&argc, &argv);
 
-  g_option_context_add_main_entries (context, rut_editor_entries, NULL);
+  g_option_context_add_main_entries (context, _rig_editor_entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error))
     {
@@ -73,45 +97,52 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
-  memset (&engine, 0, sizeof (RigEngine));
+  memset (&editor, 0, sizeof (RigEditor));
 
-  engine.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
+  editor.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
 
-  engine.shell = rut_shell_new (false, /* not headless */
+  editor.shell = rut_shell_new (false, /* not headless */
                                 rig_editor_init,
-                                rig_engine_fini,
+                                rig_editor_fini,
                                 rig_editor_paint,
-                                &engine);
+                                &editor);
 
-  engine.ctx = rut_context_new (engine.shell);
+  editor.ctx = rut_context_new (editor.shell);
 
-  rut_context_init (engine.ctx);
-
-  rut_shell_add_input_callback (engine.shell,
-                                rig_engine_input_handler,
-                                &engine, NULL);
+  rut_context_init (editor.ctx);
 
   _rig_in_editor_mode = true;
 
+  /* XXX: This is a rather hacky way of handling opening new files due
+   * to how bad our resource management used be that it was easier to
+   * completely tear down the whole engine and start a-fresh. I think
+   * now it wouldn't be too tricky to support opening new files
+   * without using such a big hammer...
+   */
   while (TRUE)
     {
-      char *assets_location = g_path_get_dirname (engine.ui_filename);
-      rut_set_assets_location (engine.ctx, assets_location);
+      char *assets_location = g_path_get_dirname (editor.ui_filename);
+      rut_set_assets_location (editor.ctx, assets_location);
       g_free (assets_location);
 
-      engine.selected_controller = NULL;
+      rut_shell_main (editor.shell);
 
-      rut_shell_main (engine.shell);
-
-      if (engine.next_ui_filename)
+      if (editor.engine->next_ui_filename)
         {
-          g_free (engine.ui_filename);
-          engine.ui_filename = engine.next_ui_filename;
-          engine.next_ui_filename = NULL;
+          g_free (editor.ui_filename);
+          editor.ui_filename = editor.engine->next_ui_filename;
+          editor.engine->next_ui_filename = NULL;
+
+          rut_refable_unref (editor.engine);
+          editor.engine = NULL;
         }
       else
         break;
     }
+
+  rut_refable_unref (editor.engine);
+  rut_refable_unref (editor.ctx);
+  rut_refable_unref (editor.shell);
 
   return 0;
 }

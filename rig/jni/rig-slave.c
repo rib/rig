@@ -39,6 +39,8 @@ static const GOptionEntry rig_slave_entries[] =
 
 typedef struct _RigSlave
 {
+  RutShell *shell;
+  RutContext *ctx;
   RigEngine *engine;
 
 } RigSlave;
@@ -151,7 +153,9 @@ void
 rig_slave_init (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
-  RigEngine *engine = slave->engine;
+  RigEngine *engine = rig_engine_new (shell, NULL);
+
+  slave->engine = engine;
 
   engine->slave_service = rig_rpc_server_new (engine,
                                               &rig_slave_service.base,
@@ -161,7 +165,9 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   rig_avahi_register_service (engine);
 
-  rig_engine_init (slave->engine, shell);
+  rut_shell_add_input_callback (slave->shell,
+                                rig_engine_input_handler,
+                                engine, NULL);
 }
 
 void
@@ -174,7 +180,8 @@ rig_slave_fini (RutShell *shell, void *user_data)
 
   rig_rpc_server_shutdown (engine->slave_service);
 
-  rig_engine_fini (shell, engine);
+  rut_refable_unref (engine);
+  slave->engine = NULL;
 }
 
 static void
@@ -203,7 +210,6 @@ void
 android_main (struct android_app *application)
 {
   RigSlave slave;
-  RigEngine engine;
 
   /* Make sure glue isn't stripped */
   app_dummy ();
@@ -213,25 +219,20 @@ android_main (struct android_app *application)
   memset (&slave, 0, sizeof (RigSlave));
   slave.engine = &engine;
 
-  memset (&engine, 0, sizeof (RigEngine));
-  engine.app = application;
+  slave.app = application;
 
-  engine.shell = rut_android_shell_new (application,
-                                        rig_slave_init,
-                                        rig_slave_fini,
-                                        rig_slave_paint,
-                                        &slave);
+  slave.shell = rut_android_shell_new (application,
+                                       rig_slave_init,
+                                       rig_slave_fini,
+                                       rig_slave_paint,
+                                       &slave);
 
-  engine.ctx = rut_context_new (engine.shell);
+  slave.ctx = rut_context_new (engine.shell);
   gst_init (&argc, &argv);
 
-  rut_context_init (engine.ctx);
+  rut_context_init (slave.ctx);
 
-  rut_shell_set_input_callback (engine.shell,
-                                rig_engine_input_handler,
-                                &engine);
-
-  rut_shell_main (engine.shell);
+  rut_shell_main (slave.shell);
 }
 
 #else
@@ -240,7 +241,6 @@ int
 main (int argc, char **argv)
 {
   RigSlave slave;
-  RigEngine engine;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
@@ -255,25 +255,21 @@ main (int argc, char **argv)
     }
 
   memset (&slave, 0, sizeof (RigSlave));
-  slave.engine = &engine;
 
-  memset (&engine, 0, sizeof (RigEngine));
+  slave.shell = rut_shell_new (false, /* not headless */
+                               rig_slave_init,
+                               rig_slave_fini,
+                               rig_slave_paint,
+                               &slave);
 
-  engine.shell = rut_shell_new (false, /* not headless */
-                                rig_slave_init,
-                                rig_slave_fini,
-                                rig_slave_paint,
-                                &slave);
+  slave.ctx = rut_context_new (slave.shell);
 
-  engine.ctx = rut_context_new (engine.shell);
+  rut_context_init (slave.ctx);
 
-  rut_context_init (engine.ctx);
+  rut_shell_main (slave.shell);
 
-  rut_shell_add_input_callback (engine.shell,
-                                rig_engine_input_handler,
-                                &engine, NULL);
-
-  rut_shell_main (engine.shell);
+  rut_refable_unref (slave.ctx);
+  rut_refable_unref (slave.shell);
 
   return 0;
 }

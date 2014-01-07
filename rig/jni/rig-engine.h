@@ -91,6 +91,8 @@ typedef struct _RigFrontend
  */
 typedef struct _RigSimulator
 {
+  RutShell *shell;
+  RutContext *ctx;
   RigEngine *engine;
 
   int fd;
@@ -104,8 +106,14 @@ typedef struct _RigSimulator
 } RigSimulator;
 
 
+extern RutType rig_engine_type;
+
 struct _RigEngine
 {
+  RutObjectProps _base;
+
+  int ref_count;
+
   CoglBool play_mode;
 
   char *ui_filename;
@@ -327,6 +335,7 @@ struct _RigEngine
 
   GList *slave_masters;
 
+  RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
 };
 
@@ -340,18 +349,19 @@ extern bool _rig_in_simulator_mode;
 
 extern RutType rig_objects_selection_type;
 
+RigEngine *
+rig_engine_new (RutShell *shell,
+                const char *ui_filename);
 
-void
-rig_engine_init (RigEngine *engine, RutShell *shell);
+RigEngine *
+rig_engine_new_for_simulator (RutShell *shell,
+                              RigSimulator *simulator);
 
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);
 
 void
 rig_engine_paint (RigEngine *engine);
-
-void
-rig_engine_fini (RutShell *shell, void *user_data);
 
 void
 rig_engine_resize (RigEngine *engine,

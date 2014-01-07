@@ -62,7 +62,7 @@
 #define DEVICE_WIDTH 720.0
 #define DEVICE_HEIGHT 1280.0
 
-static RutPropertySpec rut_data_property_specs[] = {
+static RutPropertySpec _rig_engine_prop_specs[] = {
   {
     .name = "width",
     .flags = RUT_PROPERTY_FLAG_READABLE,
@@ -3106,12 +3106,126 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 #endif
 }
 
-void
-rig_engine_init (RigEngine *engine,
-                 RutShell *shell)
+static void
+_rig_engine_free (void *object)
 {
-  CoglFramebuffer *fb;
+  RigEngine *engine = object;
+  RutShell *shell = engine->shell;
   int i;
+
+  if (!_rig_in_simulator_mode)
+    {
+      rig_renderer_fini (engine);
+
+      rig_engine_free_ui (engine);
+
+      free_builtin_assets (engine);
+
+      rut_shell_remove_input_camera (shell, engine->camera, engine->root);
+
+      rut_refable_unref (engine->camera);
+      rut_refable_unref (engine->root);
+      rut_refable_unref (engine->main_camera_view);
+
+      cogl_object_unref (engine->circle_node_attribute);
+
+      rut_dof_effect_free (engine->dof);
+
+#ifdef RIG_EDITOR_ENABLED
+      if (_rig_in_editor_mode)
+        {
+          for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
+            rut_refable_unref (engine->splits[i]);
+
+          rut_refable_unref (engine->top_vbox);
+          rut_refable_unref (engine->top_hbox);
+          rut_refable_unref (engine->asset_panel_hbox);
+          rut_refable_unref (engine->properties_hbox);
+
+          if (engine->transparency_grid)
+            rut_refable_unref (engine->transparency_grid);
+        }
+
+      rut_refable_unref (engine->objects_selection);
+
+      rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
+#endif
+
+      cogl_object_unref (engine->onscreen);
+
+      cogl_object_unref (engine->default_pipeline);
+
+      rig_frontend_service_stop (engine->frontend);
+      g_slice_free (RigFrontend, engine->frontend);
+      engine->frontend = NULL;
+
+#ifdef __APPLE__
+      rig_osx_deinit (engine);
+#endif
+
+#ifdef USE_GTK
+      {
+        GApplication *application = g_application_get_default ();
+        g_object_unref (application);
+      }
+#endif /* USE_GTK */
+    }
+  else
+    {
+      rig_simulator_service_stop (engine->simulator);
+      engine->simulator = NULL;
+    }
+
+  rut_simple_introspectable_destroy (engine);
+
+  g_slice_free (RigEngine, engine);
+}
+
+
+RutType rig_engine_type;
+
+static void
+_rig_engine_init_type (void)
+{
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+
+  RutType *type = &rig_engine_type;
+#define TYPE RigEngine
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rig_engine_free);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_INTROSPECTABLE,
+                          0, /* no implied properties */
+                          &introspectable_vtable);
+  rut_type_add_interface (type,
+                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
+                          offsetof (TYPE, introspectable),
+                          NULL); /* no implied vtable */
+
+#undef TYPE
+}
+
+static RigEngine *
+_rig_engine_new_full (RutShell *shell,
+                      const char *ui_filename,
+                      RigSimulator *simulator)
+{
+  RigEngine *engine = rut_object_alloc0 (RigEngine, &rig_engine_type,
+                                         _rig_engine_init_type);
+  CoglFramebuffer *fb;
+
+  engine->ref_count = 1;
+
+  engine->shell = shell;
+  engine->ctx = rut_shell_get_context (shell);
+
+  if (ui_filename)
+    engine->ui_filename = g_strdup (ui_filename);
 
   /*
    * Spawn a simulator process...
@@ -3171,7 +3285,9 @@ rig_engine_init (RigEngine *engine,
 
       fd = strtol (ipc_fd_str, NULL, 10);
 
-      engine->simulator = g_slice_new0 (RigSimulator);
+      g_return_val_if_fail (simulator != NULL, NULL);
+
+      engine->simulator = simulator;
       engine->simulator->engine = engine;
       engine->simulator->fd = fd;
       rig_simulator_service_start (engine->simulator);
@@ -3180,10 +3296,9 @@ rig_engine_init (RigEngine *engine,
 
   cogl_matrix_init_identity (&engine->identity);
 
-  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
-    rut_property_init (&engine->properties[i],
-                       &rut_data_property_specs[i],
-                       engine);
+  rut_simple_introspectable_init (engine,
+                                  _rig_engine_prop_specs,
+                                  engine->properties);
 
   engine->serialization_stack = rut_memory_stack_new (8192);
 
@@ -3358,80 +3473,21 @@ rig_engine_init (RigEngine *engine,
 #warning "FIXME: rely on simulator to handle allocate()"
       allocate (engine);
     }
+
+  return engine;
 }
 
-void
-rig_engine_fini (RutShell *shell, void *user_data)
+RigEngine *
+rig_engine_new_for_simulator (RutShell *shell,
+                              RigSimulator *simulator)
 {
-  RigEngine *engine = user_data;
-  int i;
+  return _rig_engine_new_full (shell, NULL, simulator);
+}
 
-  if (!_rig_in_simulator_mode)
-    {
-      rig_renderer_fini (engine);
-
-      rig_engine_free_ui (engine);
-
-      free_builtin_assets (engine);
-
-      rut_shell_remove_input_camera (shell, engine->camera, engine->root);
-
-      rut_refable_unref (engine->camera);
-      rut_refable_unref (engine->root);
-      rut_refable_unref (engine->main_camera_view);
-
-      cogl_object_unref (engine->circle_node_attribute);
-
-      rut_dof_effect_free (engine->dof);
-
-#ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
-        {
-          for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
-            rut_refable_unref (engine->splits[i]);
-
-          rut_refable_unref (engine->top_vbox);
-          rut_refable_unref (engine->top_hbox);
-          rut_refable_unref (engine->asset_panel_hbox);
-          rut_refable_unref (engine->properties_hbox);
-
-          if (engine->transparency_grid)
-            rut_refable_unref (engine->transparency_grid);
-        }
-
-      rut_refable_unref (engine->objects_selection);
-
-      rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
-#endif
-
-      cogl_object_unref (engine->onscreen);
-
-      cogl_object_unref (engine->default_pipeline);
-
-      rig_frontend_service_stop (engine->frontend);
-      g_slice_free (RigFrontend, engine->frontend);
-      engine->frontend = NULL;
-
-#ifdef __APPLE__
-      rig_osx_deinit (engine);
-#endif
-
-#ifdef USE_GTK
-      {
-        GApplication *application = g_application_get_default ();
-        g_object_unref (application);
-      }
-#endif /* USE_GTK */
-    }
-  else
-    {
-      rig_simulator_service_stop (engine->simulator);
-      g_slice_free (RigSimulator, engine->simulator);
-      engine->simulator = NULL;
-    }
-
-  for (i = 0; i < RIG_ENGINE_N_PROPS; i++)
-    rut_property_destroy (&engine->properties[i]);
+RigEngine *
+rig_engine_new (RutShell *shell, const char *ui_filename)
+{
+  return _rig_engine_new_full (shell, ui_filename, NULL);
 }
 
 RutInputEventStatus

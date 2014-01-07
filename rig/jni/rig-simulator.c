@@ -26,9 +26,18 @@ static const GOptionEntry rut_editor_entries[] =
 void
 rig_simulator_init (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
+  RigSimulator *simulator = user_data;
+  simulator->engine = rig_engine_new_for_simulator (shell, simulator);
+}
 
-  rig_engine_init (engine, shell);
+void
+rig_simulator_fini (RutShell *shell, void *user_data)
+{
+  RigSimulator *simulator= user_data;
+  RigEngine *engine = simulator->engine;
+
+  rut_refable_unref (engine);
+  simulator->engine = NULL;
 }
 
 static void
@@ -41,8 +50,8 @@ handle_update_ui_ack (const Rig__UpdateUIAck *result,
 static void
 rig_simulator_run_frame (RutShell *shell, void *user_data)
 {
-  RigEngine *engine = user_data;
-  RigSimulator *simulator = engine->simulator;
+  RigSimulator *simulator = user_data;
+  RigEngine *engine = simulator->engine;
   ProtobufCService *frontend_service =
     rig_pb_rpc_client_get_service (simulator->simulator_peer->pb_rpc_client);
   Rig__UIDiff ui_diff;
@@ -71,7 +80,8 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 int
 main (int argc, char **argv)
 {
-  RigEngine engine;
+  RigSimulator simulator;
+
 #if 0
   GOptionContext *context = g_option_context_new (NULL);
 
@@ -84,21 +94,24 @@ main (int argc, char **argv)
     }
 #endif
 
-  memset (&engine, 0, sizeof (RigEngine));
+  memset (&simulator, 0, sizeof (RigSimulator));
 
   _rig_in_simulator_mode = true;
 
-  engine.shell = rut_shell_new (true, /* headless */
-                                rig_simulator_init,
-                                rig_engine_fini,
-                                rig_simulator_run_frame,
-                                &engine);
+  simulator.shell = rut_shell_new (true, /* headless */
+                                   rig_simulator_init,
+                                   rig_simulator_fini,
+                                   rig_simulator_run_frame,
+                                   &simulator);
 
-  engine.ctx = rut_context_new (engine.shell);
+  simulator.ctx = rut_context_new (simulator.shell);
 
-  rut_context_init (engine.ctx);
+  rut_context_init (simulator.ctx);
 
-  rut_shell_main (engine.shell);
+  rut_shell_main (simulator.shell);
+
+  rut_refable_unref (simulator.ctx);
+  rut_refable_unref (simulator.shell);
 
   return 0;
 }
