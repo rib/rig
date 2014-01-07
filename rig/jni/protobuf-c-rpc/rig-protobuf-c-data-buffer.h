@@ -41,7 +41,7 @@
 #ifndef __PROTOBUF_C_DATA_BUFFER_H_
 #define __PROTOBUF_C_DATA_BUFFER_H_
 
-#include <google/protobuf-c/protobuf-c.h>
+#include <protobuf-c/protobuf-c.h>
 #include <stdarg.h>
 
 

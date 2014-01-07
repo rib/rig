@@ -65,7 +65,7 @@
 
 #include <glib.h>
 
-#include "protobuf-c/rig-protobuf-c-rpc.h"
+#include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
 #include "rig-rpc-network.h"
 #include "rig-engine.h"
@@ -75,7 +75,7 @@ typedef struct _ProtobufSource
 {
   GSource source;
 
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
 
   CoglBool pollfds_changed;
 
@@ -101,7 +101,7 @@ gpollfd_events_to_protobuf_events (unsigned int events)
 static int
 get_timeout (ProtobufSource *protobuf_source)
 {
-  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  RigProtobufCDispatch *dispatch = protobuf_source->dispatch;
 
   if (dispatch->has_timeout)
     {
@@ -138,7 +138,7 @@ get_timeout (ProtobufSource *protobuf_source)
 static CoglBool
 pollfds_up_to_date (ProtobufSource *protobuf_source)
 {
-  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  RigProtobufCDispatch *dispatch = protobuf_source->dispatch;
   int i;
 
   if (dispatch->n_notifies_desired != protobuf_source->n_pollfds)
@@ -163,7 +163,7 @@ pollfds_up_to_date (ProtobufSource *protobuf_source)
 static void
 sync_pollfds (ProtobufSource *protobuf_source)
 {
-  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  RigProtobufCDispatch *dispatch = protobuf_source->dispatch;
   GSource *source = &protobuf_source->source;
   int i;
 
@@ -190,7 +190,7 @@ static gboolean
 protobuf_source_prepare (GSource *source, int *timeout)
 {
   ProtobufSource *protobuf_source = (ProtobufSource *) source;
-  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  RigProtobufCDispatch *dispatch = protobuf_source->dispatch;
 
   *timeout = get_timeout (protobuf_source);
   if (*timeout == 0)
@@ -219,10 +219,10 @@ static gboolean
 protobuf_source_check (GSource *source)
 {
   ProtobufSource *protobuf_source = (ProtobufSource *) source;
-  ProtobufCDispatch *dispatch = protobuf_source->dispatch;
+  RigProtobufCDispatch *dispatch = protobuf_source->dispatch;
   int i;
 
-  /* XXX: when we call protobuf_c_dispatch_dispatch() that will clear
+  /* XXX: when we call rig_protobuf_c_dispatch_dispatch() that will clear
    * dispatch->changes[] and so we make sure to check first if there
    * have been changes made to the pollfds so later when we prepare
    * to poll again we can update the GSource pollfds.
@@ -279,11 +279,11 @@ protobuf_source_dispatch (GSource *source,
           n_events++;
       }
 
-  protobuf_c_dispatch_dispatch (protobuf_source->dispatch, n_events, events);
+  rig_protobuf_c_dispatch_dispatch (protobuf_source->dispatch, n_events, events);
 
   /* XXX: PROTOBUF-C BUG?
    *
-   * protobuf_c_dispatch_dispatch can return with dispatch->n_changes
+   * rig_protobuf_c_dispatch_dispatch can return with dispatch->n_changes
    * == 0 even though the list of notifies may have changed during the
    * dispatch itself which means we have to resort to explicitly comparing
    * the gpollfds with dispatch->notifies_desired which is obviously
@@ -308,7 +308,7 @@ protobuf_source_funcs =
   };
 
 static GSource *
-protobuf_source_new (ProtobufCDispatch *dispatch)
+protobuf_source_new (RigProtobufCDispatch *dispatch)
 {
   GSource *source = g_source_new (&protobuf_source_funcs,
                                   sizeof (ProtobufSource));
@@ -374,8 +374,8 @@ rig_rpc_server_new (RigEngine *engine,
   RigRPCServer *server = rut_object_alloc0 (RigRPCServer,
                                             &rig_rpc_server_type,
                                             _rig_rpc_server_init_type);
-  ProtobufCDispatch *dispatch =
-    protobuf_c_dispatch_new (&protobuf_c_default_allocator);
+  RigProtobufCDispatch *dispatch =
+    rig_protobuf_c_dispatch_new (&protobuf_c_default_allocator);
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof (addr);
   int listening_fd;
@@ -456,7 +456,7 @@ rig_rpc_client_new (RigEngine *engine,
                                                 &rig_rpc_client_type,
                                                 _rig_rpc_client_init_type);
   char *addr_str = g_strdup_printf ("%s:%d", hostname, port);
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
   PB_RPC_Client *pb_client;
   GSource *source;
 
@@ -465,7 +465,7 @@ rig_rpc_client_new (RigEngine *engine,
   rpc_client->hostname = g_strdup (hostname);
   rpc_client->port = port;
 
-  dispatch = protobuf_c_dispatch_new (&protobuf_c_default_allocator);
+  dispatch = rig_protobuf_c_dispatch_new (&protobuf_c_default_allocator);
 
   pb_client = (PB_RPC_Client *)
     rig_pb_rpc_client_new (PROTOBUF_C_RPC_ADDRESS_TCP,
@@ -565,7 +565,7 @@ rig_rpc_peer_new (RigEngine *engine,
   RigRPCPeer *rpc_peer = rut_object_alloc0 (RigRPCPeer,
                                             &rig_rpc_peer_type,
                                             _rig_rpc_peer_init_type);
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
   PB_RPC_Peer *pb_peer;
   GSource *source;
 
@@ -573,7 +573,7 @@ rig_rpc_peer_new (RigEngine *engine,
 
   rpc_peer->fd = fd;
 
-  dispatch = protobuf_c_dispatch_new (&protobuf_c_default_allocator);
+  dispatch = rig_protobuf_c_dispatch_new (&protobuf_c_default_allocator);
 
   pb_peer =
     rig_pb_rpc_peer_new (fd,

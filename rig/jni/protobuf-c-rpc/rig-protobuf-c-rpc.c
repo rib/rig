@@ -59,7 +59,7 @@ typedef struct _Stream
 
   int ref_count;
 
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
 
   int fd;
 
@@ -80,7 +80,7 @@ struct _PB_RPC_Client
   ProtobufCService service;
   Stream *stream;
   ProtobufCAllocator *allocator;
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
   PB_RPC_AddressType address_type;
   char *name;
 
@@ -94,7 +94,7 @@ struct _PB_RPC_Client
   PB_RPC_ClientState state;
   union {
     struct {
-      ProtobufCDispatchIdle *idle;
+      RigProtobufCDispatchIdle *idle;
     } init;
     struct {
       uint16_t port;
@@ -106,7 +106,7 @@ struct _PB_RPC_Client
       Closure *closures;
     } connected;
     struct {
-      ProtobufCDispatchTimer *timer;
+      RigProtobufCDispatchTimer *timer;
       char *error_message;
     } failed_waiting;
     struct {
@@ -173,7 +173,7 @@ struct _PB_RPC_Server
 
   int ref_count;
 
-  ProtobufCDispatch *dispatch;
+  RigProtobufCDispatch *dispatch;
   ProtobufCAllocator *allocator;
   ProtobufCService *service;
   PB_RPC_AddressType address_type;
@@ -214,7 +214,7 @@ struct _PB_RPC_Peer
   PB_RPC_Server *server;
   PB_RPC_Client *client;
 
-  ProtobufCDispatchIdle *idle;
+  RigProtobufCDispatchIdle *idle;
 
 };
 
@@ -250,7 +250,7 @@ _rig_pb_rpc_client_free (void *object)
     {
     case PB_RPC_CLIENT_STATE_INIT:
       if (client->info.init.idle)
-        protobuf_c_dispatch_remove_idle (client->info.init.idle);
+        rig_protobuf_c_dispatch_remove_idle (client->info.init.idle);
       break;
     case PB_RPC_CLIENT_STATE_NAME_LOOKUP:
       break;
@@ -261,7 +261,7 @@ _rig_pb_rpc_client_free (void *object)
       closures = client->info.connected.closures;
       break;
     case PB_RPC_CLIENT_STATE_FAILED_WAITING:
-      protobuf_c_dispatch_remove_timer (client->info.failed_waiting.timer);
+      rig_protobuf_c_dispatch_remove_timer (client->info.failed_waiting.timer);
       client->allocator->free (client->allocator,
                                client->info.failed_waiting.error_message);
       break;
@@ -326,7 +326,7 @@ set_fd_nonblocking (int fd)
 }
 
 static void
-handle_autoreconnect_timeout (ProtobufCDispatch *dispatch,
+handle_autoreconnect_timeout (RigProtobufCDispatch *dispatch,
                               void *func_data)
 {
   PB_RPC_Client *client = func_data;
@@ -374,7 +374,7 @@ client_failed (PB_RPC_Client *client,
    * so only close the fd if we own it... */
   if (client->stream->fd >= 0 && client->stream->conn == NULL)
     {
-      protobuf_c_dispatch_close_fd (client->dispatch, client->stream->fd);
+      rig_protobuf_c_dispatch_close_fd (client->dispatch, client->stream->fd);
       client->stream->fd = -1;
     }
   rig_protobuf_c_data_buffer_reset (&client->stream->incoming);
@@ -394,7 +394,7 @@ client_failed (PB_RPC_Client *client,
     {
       client->state = PB_RPC_CLIENT_STATE_FAILED_WAITING;
       client->info.failed_waiting.timer
-        = protobuf_c_dispatch_add_timer_millis (client->dispatch,
+        = rig_protobuf_c_dispatch_add_timer_millis (client->dispatch,
                                                 client->autoreconnect_millis,
                                                 handle_autoreconnect_timeout,
                                                 client);
@@ -457,7 +457,7 @@ set_state_connected (PB_RPC_Client *client)
     client->connect_handler (client, client->connect_handler_data);
 }
 
-static ProtobufCDispatch *
+static RigProtobufCDispatch *
 stream_get_dispatch (Stream *stream)
 {
   if (stream->conn)
@@ -470,14 +470,14 @@ static void
 update_stream_fd_watch (Stream *stream)
 {
   unsigned events = PROTOBUF_C_EVENT_READABLE;
-  ProtobufCDispatch *dispatch = stream_get_dispatch (stream);
+  RigProtobufCDispatch *dispatch = stream_get_dispatch (stream);
 
   g_return_if_fail (stream->fd >= 0);
 
   if (stream->outgoing.size > 0)
     events |= PROTOBUF_C_EVENT_WRITABLE;
 
-  protobuf_c_dispatch_watch_fd (dispatch,
+  rig_protobuf_c_dispatch_watch_fd (dispatch,
                                 stream->fd,
                                 events,
                                 handle_stream_fd_events,
@@ -552,7 +552,7 @@ begin_connecting (PB_RPC_Client *client,
       if (errno == EINPROGRESS)
         {
           /* register interest in fd */
-          protobuf_c_dispatch_watch_fd (client->dispatch,
+          rig_protobuf_c_dispatch_watch_fd (client->dispatch,
                                         client->stream->fd,
                                         PROTOBUF_C_EVENT_READABLE |
                                         PROTOBUF_C_EVENT_WRITABLE,
@@ -659,7 +659,7 @@ begin_name_lookup (PB_RPC_Client *client)
 }
 
 static void
-handle_init_idle (ProtobufCDispatch *dispatch,
+handle_init_idle (RigProtobufCDispatch *dispatch,
                   void *data)
 {
   PB_RPC_Client *client = data;
@@ -791,7 +791,7 @@ invoke_client_rpc (ProtobufCService *service,
 }
 
 static void
-trivial_sync_libc_resolver (ProtobufCDispatch *dispatch,
+trivial_sync_libc_resolver (RigProtobufCDispatch *dispatch,
                             const char *name,
                             ProtobufC_NameLookup_Found found_func,
                             ProtobufC_NameLookup_Failed failed_func,
@@ -807,7 +807,7 @@ trivial_sync_libc_resolver (ProtobufCDispatch *dispatch,
 
 PB_RPC_Client *
 client_new (const ProtobufCServiceDescriptor *descriptor,
-            ProtobufCDispatch *dispatch,
+            RigProtobufCDispatch *dispatch,
             Stream *stream)
 {
   PB_RPC_Client *client = rut_object_alloc0 (PB_RPC_Client,
@@ -823,7 +823,7 @@ client_new (const ProtobufCServiceDescriptor *descriptor,
   client->stream = rut_refable_ref (stream);
   stream->client = client;
 
-  client->allocator = protobuf_c_dispatch_peek_allocator (dispatch);
+  client->allocator = rig_protobuf_c_dispatch_peek_allocator (dispatch);
   client->dispatch = dispatch;
   client->state = PB_RPC_CLIENT_STATE_INIT;
   client->autoreconnect = false;
@@ -841,7 +841,7 @@ _stream_free (void *object)
   Stream *stream = object;
 
 #warning "track whether stream->fd is foreign"
-  protobuf_c_dispatch_close_fd (stream->dispatch, stream->fd);
+  rig_protobuf_c_dispatch_close_fd (stream->dispatch, stream->fd);
 
   rig_protobuf_c_data_buffer_clear (&stream->incoming);
   rig_protobuf_c_data_buffer_clear (&stream->outgoing);
@@ -864,10 +864,10 @@ _stream_init_type (void)
 }
 
 Stream *
-stream_new (ProtobufCDispatch *dispatch,
+stream_new (RigProtobufCDispatch *dispatch,
             int fd)
 {
-  ProtobufCAllocator *allocator = protobuf_c_dispatch_peek_allocator (dispatch);
+  ProtobufCAllocator *allocator = rig_protobuf_c_dispatch_peek_allocator (dispatch);
   Stream *stream = rut_object_alloc0 (Stream,
                                       &stream_type,
                                       _stream_init_type);
@@ -891,10 +891,10 @@ PB_RPC_Client *
 rig_pb_rpc_client_new (PB_RPC_AddressType type,
                        const char *name,
                        const ProtobufCServiceDescriptor *descriptor,
-                       ProtobufCDispatch *orig_dispatch)
+                       RigProtobufCDispatch *orig_dispatch)
 {
-  ProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : protobuf_c_dispatch_default ();
+  RigProtobufCDispatch *dispatch =
+    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   Stream *stream = stream_new (dispatch, -1);
   PB_RPC_Client *client = client_new (descriptor, dispatch, stream);
 
@@ -907,7 +907,7 @@ rig_pb_rpc_client_new (PB_RPC_AddressType type,
   client->autoreconnect = true;
 
   client->info.init.idle =
-    protobuf_c_dispatch_add_idle (client->dispatch, handle_init_idle, client);
+    rig_protobuf_c_dispatch_add_idle (client->dispatch, handle_init_idle, client);
 
   return client;
 }
@@ -1027,7 +1027,7 @@ _rig_pb_rpc_server_free (void *object)
       server->allocator->free (server->allocator, req);
     }
 
-  protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
+  rig_protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
 
   g_slice_free (PB_RPC_Server, server);
 }
@@ -1580,7 +1580,7 @@ handle_server_listener_readable (int fd,
 
 static PB_RPC_Server *
 server_new (ProtobufCService *service,
-            ProtobufCDispatch *dispatch)
+            RigProtobufCDispatch *dispatch)
 {
   PB_RPC_Server *server = rut_object_alloc0 (PB_RPC_Server,
                                              &rig_pb_rpc_server_type,
@@ -1588,7 +1588,7 @@ server_new (ProtobufCService *service,
 
   server->ref_count = 1;
   server->dispatch = dispatch;
-  server->allocator = protobuf_c_dispatch_peek_allocator (dispatch);
+  server->allocator = rig_protobuf_c_dispatch_peek_allocator (dispatch);
   server->service = service;
   server->max_pending_requests_per_connection = 32;
   server->error_handler = error_handler;
@@ -1605,10 +1605,10 @@ server_new_from_listening_fd (ProtobufC_FD listening_fd,
                               PB_RPC_AddressType address_type,
                               const char *bind_name,
                               ProtobufCService *service,
-                              ProtobufCDispatch *orig_dispatch)
+                              RigProtobufCDispatch *orig_dispatch)
 {
-  ProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : protobuf_c_dispatch_default ();
+  RigProtobufCDispatch *dispatch =
+    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   PB_RPC_Server *server = server_new (service, dispatch);
   ProtobufCAllocator *allocator = server->allocator;
 
@@ -1620,7 +1620,7 @@ server_new_from_listening_fd (ProtobufC_FD listening_fd,
   server->listening_fd = listening_fd;
   set_fd_nonblocking (listening_fd);
 
-  protobuf_c_dispatch_watch_fd (server->dispatch, listening_fd,
+  rig_protobuf_c_dispatch_watch_fd (server->dispatch, listening_fd,
                                 PROTOBUF_C_EVENT_READABLE,
                                 handle_server_listener_readable, server);
   return server;
@@ -1685,7 +1685,7 @@ PB_RPC_Server *
 rig_pb_rpc_server_new (PB_RPC_AddressType type,
                        const char *name,
                        ProtobufCService *service,
-                       ProtobufCDispatch *orig_dispatch)
+                       RigProtobufCDispatch *orig_dispatch)
 {
   int fd = -1;
   int protocol_family;
@@ -1864,7 +1864,7 @@ retry_pipe:
   /* make the read side non-blocking, since we will use it from the main-loop;
      leave the write side blocking, since it will be used from foreign threads */
   set_fd_nonblocking (server->proxy_pipe[0]);
-  protobuf_c_dispatch_watch_fd (server->dispatch, server->proxy_pipe[0],
+  rig_protobuf_c_dispatch_watch_fd (server->dispatch, server->proxy_pipe[0],
                                 PROTOBUF_C_EVENT_READABLE,
                                 handle_proxy_pipe_readable, server);
 }
@@ -1898,7 +1898,7 @@ _rig_pb_rpc_peer_free (void *object)
   PB_RPC_Peer *peer = object;
 
   if (peer->idle)
-    protobuf_c_dispatch_remove_idle (peer->idle);
+    rig_protobuf_c_dispatch_remove_idle (peer->idle);
 
   rut_refable_unref (peer->server);
   rut_refable_unref (peer->client);
@@ -1923,7 +1923,7 @@ _rig_pb_rpc_peer_init_type (void)
 }
 
 static void
-handle_peer_connect_idle (ProtobufCDispatch *dispatch,
+handle_peer_connect_idle (RigProtobufCDispatch *dispatch,
                           void *data)
 {
   PB_RPC_Peer *peer = data;
@@ -1943,10 +1943,10 @@ PB_RPC_Peer *
 rig_pb_rpc_peer_new (int fd,
                      ProtobufCService *server_service,
                      const ProtobufCServiceDescriptor *client_descriptor,
-                     ProtobufCDispatch *orig_dispatch)
+                     RigProtobufCDispatch *orig_dispatch)
 {
-  ProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : protobuf_c_dispatch_default ();
+  RigProtobufCDispatch *dispatch =
+    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   PB_RPC_Peer *peer = rut_object_alloc0 (PB_RPC_Peer,
                                          &rig_pb_rpc_peer_type,
                                          _rig_pb_rpc_peer_init_type);
@@ -1964,7 +1964,7 @@ rig_pb_rpc_peer_new (int fd,
    */
 
   peer->idle =
-    protobuf_c_dispatch_add_idle (dispatch,
+    rig_protobuf_c_dispatch_add_idle (dispatch,
                                   handle_peer_connect_idle, peer);
 
   return peer;

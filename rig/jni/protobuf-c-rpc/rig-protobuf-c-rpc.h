@@ -13,7 +13,7 @@
  *         message_length            32-bit little-endian
  *         request_id                32-bit any-endian
  */
-#include <google/protobuf-c/protobuf-c-dispatch.h>
+#include "rig-protobuf-c-dispatch.h"
 
 typedef enum
 {
@@ -51,7 +51,7 @@ PB_RPC_Client *
 rig_pb_rpc_client_new (PB_RPC_AddressType type,
                        const char *name,
                        const ProtobufCServiceDescriptor *descriptor,
-                       ProtobufCDispatch *dispatch /* or NULL */
+                       RigProtobufCDispatch *dispatch /* or NULL */
                        );
 
 ProtobufCService *
@@ -65,7 +65,7 @@ typedef void (*ProtobufC_NameLookup_Found) (const uint8_t *address,
                                             void *callback_data);
 typedef void (*ProtobufC_NameLookup_Failed)(const char *error_message,
                                             void *callback_data);
-typedef void (*ProtobufC_NameLookup_Func)  (ProtobufCDispatch *dispatch,
+typedef void (*ProtobufC_NameLookup_Func)  (RigProtobufCDispatch *dispatch,
                                             const char *name,
                                             ProtobufC_NameLookup_Found found_func,
                                             ProtobufC_NameLookup_Failed failed_func,
@@ -113,7 +113,7 @@ PB_RPC_Server *
 rig_pb_rpc_server_new (PB_RPC_AddressType type,
                        const char *name,
                        ProtobufCService *service,
-                       ProtobufCDispatch *dispatch /* or NULL */);
+                       RigProtobufCDispatch *dispatch /* or NULL */);
 
 /* May return -1 if not listening */
 int
@@ -174,7 +174,7 @@ rig_pb_rpc_server_set_autotimeout (PB_RPC_Server *server,
                                    unsigned timeout_millis);
 
 typedef bool (*PB_RPC_IsRpcThreadFunc) (PB_RPC_Server *server,
-                                        ProtobufCDispatch *dispatch,
+                                        RigProtobufCDispatch *dispatch,
                                         void *is_rpc_data);
 
 void
@@ -204,7 +204,7 @@ PB_RPC_Peer *
 rig_pb_rpc_peer_new (int fd,
                      ProtobufCService *server_service,
                      const ProtobufCServiceDescriptor *client_descriptor,
-                     ProtobufCDispatch *orig_dispatch);
+                     RigProtobufCDispatch *orig_dispatch);
 
 PB_RPC_Server *
 rig_pb_rpc_peer_get_server (PB_RPC_Peer *peer);

@@ -25,7 +25,7 @@
 
 #include <rut.h>
 
-#include "protobuf-c/rig-protobuf-c-rpc.h"
+#include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
 #include "rig-slave-master.h"
 #include "rig-slave-address.h"

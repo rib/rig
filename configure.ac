@@ -255,6 +255,10 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = __alignof__ (int);],
                    AC_MSG_RESULT([yes])],
                   [AC_MSG_RESULT([no])])
 
+AC_CHECK_HEADERS(alloca.h)
+AC_CHECK_HEADERS(sys/poll.h)
+AC_CHECK_HEADERS(sys/select.h)
+
 dnl ================================================================
 dnl Libtool stuff.
 dnl ================================================================

@@ -24,7 +24,7 @@
 
 #include <glib.h>
 
-#include "protobuf-c/rig-protobuf-c-rpc.h"
+#include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
 #include "rig-slave-address.h"
 #include "rig-rpc-network.h"

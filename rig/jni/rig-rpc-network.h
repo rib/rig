@@ -25,7 +25,7 @@
 
 #include <rut.h>
 
-#include "protobuf-c/rig-protobuf-c-rpc.h"
+#include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
 typedef struct _RigRPCServer RigRPCServer;
 typedef struct _RigRPCPeer RigRPCPeer;
