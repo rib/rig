@@ -240,6 +240,21 @@ AC_ISC_POSIX
 AC_C_CONST
 AC_PROG_OBJC
 
+AC_MSG_CHECKING([for alignof])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = alignof (int);],
+                                   [(void) 0])],
+                  [AC_DEFINE([HAVE_ALIGNOF], [1],
+                             [Whether alignof can be used or not])
+                   AC_MSG_RESULT([yes])],
+                  [AC_MSG_RESULT([no])])
+AC_MSG_CHECKING([for __alignof__])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = __alignof__ (int);],
+                                   [(void) 0])],
+                  [AC_DEFINE([HAVE_ALIGNOF_UNDERSCORE], [1],
+                             [Whether __alignof__ can be used or not])
+                   AC_MSG_RESULT([yes])],
+                  [AC_MSG_RESULT([no])])
+
 dnl ================================================================
 dnl Libtool stuff.
 dnl ================================================================

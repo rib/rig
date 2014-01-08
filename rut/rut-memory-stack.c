@@ -55,22 +55,6 @@
 
 #include <glib.h>
 
-typedef struct _RutMemorySubStack RutMemorySubStack;
-
-struct _RutMemorySubStack
-{
-  RutList list_node;
-  size_t bytes;
-  uint8_t *data;
-};
-
-struct _RutMemoryStack
-{
-  RutList sub_stacks;
-
-  RutMemorySubStack *sub_stack;
-  size_t sub_stack_offset;
-};
 
 static RutMemorySubStack *
 rut_memory_sub_stack_alloc (size_t bytes)
@@ -78,6 +62,7 @@ rut_memory_sub_stack_alloc (size_t bytes)
   RutMemorySubStack *sub_stack = g_slice_new (RutMemorySubStack);
   sub_stack->bytes = bytes;
   sub_stack->data = g_malloc (bytes);
+  sub_stack->offset = 0;
   return sub_stack;
 }
 
@@ -89,7 +74,6 @@ rut_memory_stack_add_sub_stack (RutMemoryStack *stack,
     rut_memory_sub_stack_alloc (sub_stack_bytes);
   rut_list_insert (stack->sub_stacks.prev, &sub_stack->list_node);
   stack->sub_stack = sub_stack;
-  stack->sub_stack_offset = 0;
 }
 
 RutMemoryStack *
@@ -105,18 +89,10 @@ rut_memory_stack_new (size_t initial_size_bytes)
 }
 
 void *
-rut_memory_stack_alloc (RutMemoryStack *stack, size_t bytes)
+_rut_memory_stack_alloc_in_next_sub_stack (RutMemoryStack *stack,
+                                           size_t bytes)
 {
   RutMemorySubStack *sub_stack;
-  void *ret;
-
-  sub_stack = stack->sub_stack;
-  if (G_LIKELY (sub_stack->bytes - stack->sub_stack_offset >= bytes))
-    {
-      ret = sub_stack->data + stack->sub_stack_offset;
-      stack->sub_stack_offset += bytes;
-      return ret;
-    }
 
   /* If the stack has been rewound and then a large initial allocation
    * is made then we may need to skip over one or more of the
@@ -136,17 +112,16 @@ rut_memory_stack_alloc (RutMemoryStack *stack, size_t bytes)
     {
       if (sub_stack->bytes >= bytes)
         {
-          ret = sub_stack->data;
           stack->sub_stack = sub_stack;
-          stack->sub_stack_offset = bytes;
-          return ret;
+          sub_stack->offset = bytes;
+          return sub_stack->data;
         }
     }
 
-  /* Finally if we couldn't find a free sub-stack with enough space
-   * for the requested allocation we allocate another sub-stack that's
-   * twice as big as the last sub-stack or twice as big as the
-   * requested allocation if that's bigger.
+  /* If we couldn't find a free sub-stack with enough space for the
+   * requested allocation we allocate another sub-stack that's twice
+   * as big as the last sub-stack or twice as big as the requested
+   * allocation if that's bigger.
    */
 
   sub_stack = rut_container_of (stack->sub_stacks.prev,
@@ -159,18 +134,24 @@ rut_memory_stack_alloc (RutMemoryStack *stack, size_t bytes)
                                 sub_stack,
                                 list_node);
 
-  stack->sub_stack_offset += bytes;
+  sub_stack->offset += bytes;
 
   return sub_stack->data;
 }
 
 void
-rut_memory_stack_rewind (RutMemoryStack *stack)
+rut_memory_stack_foreach_region (RutMemoryStack *stack,
+                                 RutMemoryStackRegionCallback callback,
+                                 void *user_data)
 {
-  stack->sub_stack = rut_container_of (stack->sub_stacks.next,
-                                       stack->sub_stack,
-                                       list_node);
-  stack->sub_stack_offset = 0;
+  RutMemorySubStack *sub_stack, *tmp;
+
+  rut_list_for_each_safe (sub_stack, tmp, &stack->sub_stacks, list_node)
+    {
+      callback (sub_stack->data, sub_stack->offset, user_data);
+      if (sub_stack == stack->sub_stack)
+        return;
+    }
 }
 
 static void
@@ -178,6 +159,30 @@ rut_memory_sub_stack_free (RutMemorySubStack *sub_stack)
 {
   g_free (sub_stack->data);
   g_slice_free (RutMemorySubStack, sub_stack);
+}
+
+void
+rut_memory_stack_rewind (RutMemoryStack *stack)
+{
+  RutMemorySubStack *last_sub_stack = rut_container_of (stack->sub_stacks.prev,
+                                                        last_sub_stack,
+                                                        list_node);
+  RutMemorySubStack *sub_stack;
+
+  for (sub_stack = rut_container_of (stack->sub_stacks.next,
+                                     sub_stack, list_node);
+       sub_stack != last_sub_stack;
+       sub_stack = rut_container_of (stack->sub_stacks.next,
+                                     sub_stack, list_node))
+    {
+      rut_list_remove (&sub_stack->list_node);
+      rut_memory_sub_stack_free (sub_stack);
+    }
+
+  /* Just keep the largest sub-stack to try and help reduce fragmentation */
+
+  stack->sub_stack = last_sub_stack;
+  stack->sub_stack->offset = 0;
 }
 
 void

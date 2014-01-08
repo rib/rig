@@ -249,4 +249,14 @@ rut_util_fully_transform_points (const CoglMatrix *modelview,
                                  float *verts,
                                  int n_verts);
 
+
+#if defined(HAVE_ALIGNOF)
+#define RUT_UTIL_ALIGNOF(x) (alignof (x))
+#elif defined(HAVE_ALIGNOF_UNDERSCORE)
+#define RUT_UTIL_ALIGNOF(x) (__alignof__ (x))
+#else
+#warning No alignof operator found for this compiler
+#define RUT_UTIL_ALIGNOF(x) 8
+#endif
+
 #endif /* _RUT_UTIL_H_ */
