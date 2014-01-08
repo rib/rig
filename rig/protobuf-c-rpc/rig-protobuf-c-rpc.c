@@ -1027,7 +1027,8 @@ _rig_pb_rpc_server_free (void *object)
       server->allocator->free (server->allocator, req);
     }
 
-  rig_protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
+  if (server->listening_fd >= 0)
+    rig_protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
 
   g_slice_free (PB_RPC_Server, server);
 }
