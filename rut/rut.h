@@ -19,6 +19,7 @@
 #include "rut-shell.h"
 #include "rut-bitmask.h"
 #include "rut-memory-stack.h"
+#include "rut-magazine.h"
 #include "rut-graph.h"
 #include "rut-transform.h"
 #include "rut-rectangle.h"

@@ -32,7 +32,6 @@ source_h = \
     rut-bitmask.h \
     rut-shell.h \
     rut-keysyms.h \
-    rut-memory-stack.h \
     rut-global.h \
     rut-util.h \
     rut-text-buffer.h \
@@ -111,7 +110,10 @@ librut_la_SOURCES = \
     rut-bitmask.h \
     rut-bitmask.c \
     rut-flags.h \
+    rut-memory-stack.h \
     rut-memory-stack.c \
+    rut-magazine.h \
+    rut-magazine.c \
     rut-list.c \
     rut-list.h \
     rut-util.c \
