@@ -22,6 +22,8 @@ typedef struct _RigEditor
 {
   RutShell *shell;
   RutContext *ctx;
+
+  RigFrontend *frontend;
   RigEngine *engine;
 
   char *ui_filename;
@@ -33,10 +35,14 @@ void
 rig_editor_init (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
-  RigEngine *engine = rig_engine_new (shell, editor->ui_filename);
+  RigEngine *engine;
 
+  editor->frontend = rig_frontend_new (shell, editor->ui_filename);
+
+  engine = editor->frontend->engine;
   editor->engine = engine;
 
+  /* TODO move into editor */
   rig_avahi_run_browser (engine);
 
   rut_shell_add_input_callback (editor->shell,
@@ -133,14 +139,15 @@ main (int argc, char **argv)
           editor.ui_filename = editor.engine->next_ui_filename;
           editor.engine->next_ui_filename = NULL;
 
-          rut_refable_unref (editor.engine);
+          rut_refable_unref (editor.frontend);
+          editor.frontend = NULL;
           editor.engine = NULL;
         }
       else
         break;
     }
 
-  rut_refable_unref (editor.engine);
+  rut_refable_unref (editor.frontend);
   rut_refable_unref (editor.ctx);
   rut_refable_unref (editor.shell);
 

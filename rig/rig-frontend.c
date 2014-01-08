@@ -20,19 +20,22 @@
 
 #include <config.h>
 
+#include <stdlib.h>
+#include <sys/socket.h>
+
 #include <rut.h>
 
 #include "rig-engine.h"
-#include "rig-frontend-service.h"
+#include "rig-frontend.h"
 #include "rig-pb.h"
 
 #include "rig.pb-c.h"
 
 static void
 frontend__test (Rig__Frontend_Service *service,
-                 const Rig__Query *query,
-                 Rig__TestResult_Closure closure,
-                 void *closure_data)
+                const Rig__Query *query,
+                Rig__TestResult_Closure closure,
+                void *closure_data)
 {
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
   //RigFrontend *frontend = rig_pb_rpc_closure_get_connection_data (closure_data);
@@ -146,6 +149,92 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
 }
 
 static void
+_rig_frontend_free (void *object)
+{
+  RigFrontend *frontend = object;
+
+  rig_frontend_stop_service (frontend);
+
+  rut_refable_unref (frontend->engine);
+
+  rig_frontend_stop_service (frontend);
+
+  g_slice_free (RigFrontend, object);
+}
+
+RutType rig_frontend_type;
+
+static void
+_rig_frontend_init_type (void)
+{
+  RutType *type = &rig_frontend_type;
+#define TYPE RigFrontend
+
+  rut_type_init (type, G_STRINGIFY (TYPE));
+  rut_type_add_refable (type, ref_count, _rig_frontend_free);
+
+#undef TYPE
+}
+
+RigFrontend *
+rig_frontend_new (RutShell *shell,
+                  const char *ui_filename)
+{
+  pid_t pid;
+  int sp[2];
+
+  /*
+   * Spawn a simulator process...
+   */
+
+  if (socketpair (AF_UNIX, SOCK_STREAM, 0, sp) < 0)
+    g_error ("Failed to open simulator ipc");
+
+  pid = fork ();
+  if (pid == 0)
+    {
+      char fd_str[10];
+      char *path = RIG_BIN_DIR "rig-simulator";
+
+      /* child - simulator process */
+      close (sp[0]);
+
+      if (snprintf (fd_str, sizeof (fd_str), "%d", sp[1]) >= sizeof (fd_str))
+        g_error ("Failed to setup environment for simulator process");
+
+      setenv ("_RIG_IPC_FD", fd_str, true);
+
+#ifdef RIG_ENABLE_DEBUG
+      if (getenv ("RIG_SIMULATOR"))
+        path = getenv ("RIG_SIMULATOR");
+#endif
+
+      if (execl (path, path, NULL) < 0)
+        g_error ("Failed to run simulator process");
+
+      return NULL;
+    }
+  else
+    {
+      RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
+                                                 &rig_frontend_type,
+                                                 _rig_frontend_init_type);
+
+      frontend->ref_count = 1;
+
+      frontend->simulator_pid = pid;
+      frontend->fd = sp[0];
+
+      rig_frontend_start_service (frontend);
+
+      frontend->engine =
+        rig_engine_new_for_frontend (shell, frontend, ui_filename);
+
+      return frontend;
+    }
+}
+
+static void
 frontend_peer_error_handler (PB_RPC_Error_Code code,
                              const char *message,
                              void *user_data)
@@ -154,24 +243,23 @@ frontend_peer_error_handler (PB_RPC_Error_Code code,
 
   g_warning ("Frontend peer error: %s", message);
 
-  rig_frontend_service_stop (frontend);
+  rig_frontend_stop_service (frontend);
 }
 
 void
-rig_frontend_service_start (RigFrontend *frontend)
+rig_frontend_start_service (RigFrontend *frontend)
 {
   frontend->frontend_peer =
-    rig_rpc_peer_new (frontend->engine,
-                           frontend->fd,
-                           &rig_frontend_service.base,
-                           (ProtobufCServiceDescriptor *)&rig__simulator__descriptor,
-                           frontend_peer_error_handler,
-                           frontend_peer_connected,
-                           frontend);
+    rig_rpc_peer_new (frontend->fd,
+                      &rig_frontend_service.base,
+                      (ProtobufCServiceDescriptor *)&rig__simulator__descriptor,
+                      frontend_peer_error_handler,
+                      frontend_peer_connected,
+                      frontend);
 }
 
 void
-rig_frontend_service_stop (RigFrontend *frontend)
+rig_frontend_stop_service (RigFrontend *frontend)
 {
   rut_refable_unref (frontend->frontend_peer);
   frontend->frontend_peer = NULL;

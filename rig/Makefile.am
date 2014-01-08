@@ -72,10 +72,9 @@ librig_la_SOURCES = \
 	rig-slave-master.h \
 	rig-slave-master.c \
 	rig.pb-c.c \
-	rig-simulator-service.c \
-	rig-simulator-service.h \
-	rig-frontend-service.c \
-	rig-frontend-service.h
+	rig-simulator.h \
+	rig-frontend.c \
+	rig-frontend.h
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \

@@ -44,6 +44,8 @@ typedef enum _RigToolID
 #include "rig-osx.h"
 #include "rig-split-view.h"
 #include "rig-camera-view.h"
+#include "rig-frontend.h"
+#include "rig-simulator.h"
 
 enum {
   RIG_ENGINE_PROP_WIDTH,
@@ -62,48 +64,6 @@ typedef struct _RigEntitesSelection
   GList *objects;
   RutList selection_events_cb_list;
 } RigObjectsSelection;
-
-/* The "frontend" is the main process that controls the running
- * of a Rig UI.
- *
- * Currently this is also the process where all rendering is handled,
- * though in the future more things may be split out into different
- * threads and processes.
- */
-typedef struct _RigFrontend
-{
-  RigEngine *engine;
-
-  pid_t simulator_pid;
-
-  int fd;
-  RigRPCPeer *frontend_peer;
-
-  bool has_resized;
-  int pending_width;
-  int pending_height;
-
-} RigFrontend;
-
-/* The "simulator" is the process responsible for updating object
- * properties either in response to user input, the progression of
- * animations or running other forms of simulation such as physics.
- */
-typedef struct _RigSimulator
-{
-  RutShell *shell;
-  RutContext *ctx;
-  RigEngine *engine;
-
-  int fd;
-  RigRPCPeer *simulator_peer;
-
-  float last_pointer_x;
-  float last_pointer_y;
-
-  RutButtonState button_state;
-
-} RigSimulator;
 
 
 extern RutType rig_engine_type;
@@ -350,8 +310,9 @@ extern bool _rig_in_simulator_mode;
 extern RutType rig_objects_selection_type;
 
 RigEngine *
-rig_engine_new (RutShell *shell,
-                const char *ui_filename);
+rig_engine_new_for_frontend (RutShell *shell,
+                             RigFrontend *frontend,
+                             const char *ui_filename);
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,

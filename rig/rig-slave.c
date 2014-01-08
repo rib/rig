@@ -41,6 +41,8 @@ typedef struct _RigSlave
 {
   RutShell *shell;
   RutContext *ctx;
+
+  RigFrontend *frontend;
   RigEngine *engine;
 
 } RigSlave;
@@ -153,12 +155,16 @@ void
 rig_slave_init (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
-  RigEngine *engine = rig_engine_new (shell, NULL);
+  RigEngine *engine;
 
-  slave->engine = engine;
+  slave->frontend = rig_frontend_new (shell, NULL);
 
-  engine->slave_service = rig_rpc_server_new (engine,
-                                              &rig_slave_service.base,
+  engine = slave->frontend->engine;
+  slave->engine = slave->engine;
+
+  /* TODO: move from engine to frontend */
+
+  engine->slave_service = rig_rpc_server_new (&rig_slave_service.base,
                                               server_error_handler,
                                               new_client_handler,
                                               slave);
@@ -176,12 +182,14 @@ rig_slave_fini (RutShell *shell, void *user_data)
   RigSlave *slave = user_data;
   RigEngine *engine = slave->engine;
 
+  /* TODO: move to frontend */
   rig_avahi_unregister_service (engine);
-
   rig_rpc_server_shutdown (engine->slave_service);
 
-  rut_refable_unref (engine);
   slave->engine = NULL;
+
+  rut_refable_unref (slave->frontend);
+  slave->frontend = NULL;
 }
 
 static void

@@ -7,6 +7,7 @@
 #include <rut.h>
 #include <cogl-gst/cogl-gst.h>
 
+#include "rig-frontend.h"
 #include "rig-engine.h"
 #include "rig-pb.h"
 #include "rig.pb-c.h"
@@ -17,6 +18,7 @@ typedef struct _RigDevice
 {
   RutShell *shell;
   RutContext *ctx;
+  RigFrontend *frontend;
   RigEngine *engine;
 
   char *ui_filename;
@@ -35,7 +37,8 @@ rig_device_init (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
 
-  device->engine = rig_engine_new (shell, device->ui_filename);
+  device->frontend = rig_frontend_new (shell, device->ui_filename);
+  device->engine = device->frontend->engine;
 
   rut_shell_add_input_callback (device->shell,
                                 rig_engine_input_handler,

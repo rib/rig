@@ -54,8 +54,8 @@
 #include "rig-rpc-network.h"
 #include "rig.pb-c.h"
 #include "rig-slave-master.h"
-#include "rig-frontend-service.h"
-#include "rig-simulator-service.h"
+#include "rig-frontend.h"
+#include "rig-simulator.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -3155,8 +3155,6 @@ _rig_engine_free (void *object)
 
       cogl_object_unref (engine->default_pipeline);
 
-      rig_frontend_service_stop (engine->frontend);
-      g_slice_free (RigFrontend, engine->frontend);
       engine->frontend = NULL;
 
 #ifdef __APPLE__
@@ -3172,7 +3170,6 @@ _rig_engine_free (void *object)
     }
   else
     {
-      rig_simulator_service_stop (engine->simulator);
       engine->simulator = NULL;
     }
 
@@ -3213,6 +3210,7 @@ _rig_engine_init_type (void)
 static RigEngine *
 _rig_engine_new_full (RutShell *shell,
                       const char *ui_filename,
+                      RigFrontend *frontend,
                       RigSimulator *simulator)
 {
   RigEngine *engine = rut_object_alloc0 (RigEngine, &rig_engine_type,
@@ -3227,71 +3225,10 @@ _rig_engine_new_full (RutShell *shell,
   if (ui_filename)
     engine->ui_filename = g_strdup (ui_filename);
 
-  /*
-   * Spawn a simulator process...
-   */
-
-  if (!_rig_in_simulator_mode)
-    {
-      pid_t pid;
-      int sp[2];
-
-      if (socketpair (AF_UNIX, SOCK_STREAM, 0, sp) < 0)
-        g_error ("Failed to open simulator ipc");
-
-      pid = fork ();
-      if (pid == 0)
-        {
-          char fd_str[10];
-          char *path = RIG_BIN_DIR "rig-simulator";
-
-          /* child - simulator process */
-          close (sp[0]);
-
-          if (snprintf (fd_str, sizeof (fd_str), "%d", sp[1]) >= sizeof (fd_str))
-            g_error ("Failed to setup environment for simulator process");
-
-          setenv ("_RIG_IPC_FD", fd_str, true);
-
-#ifdef RIG_ENABLE_DEBUG
-          if (getenv ("RIG_SIMULATOR"))
-            path = getenv ("RIG_SIMULATOR");
-#endif
-
-          if (execl (path, path, NULL) < 0)
-            g_error ("Failed to run simulator process");
-        }
-      else
-        {
-          RigFrontend *frontend = g_slice_new0 (RigFrontend);
-          engine->frontend = frontend;
-
-          frontend->engine = engine;
-          frontend->simulator_pid = pid;
-          frontend->fd = sp[0];
-          rig_frontend_service_start (frontend);
-        }
-    }
-  else /* Running as a simulator... */
-    {
-      const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
-      int fd;
-
-      if (!ipc_fd_str)
-        {
-          g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "
-                   "environment variable");
-        }
-
-      fd = strtol (ipc_fd_str, NULL, 10);
-
-      g_return_val_if_fail (simulator != NULL, NULL);
-
-      engine->simulator = simulator;
-      engine->simulator->engine = engine;
-      engine->simulator->fd = fd;
-      rig_simulator_service_start (engine->simulator);
-    }
+  if (frontend)
+    engine->frontend = frontend;
+  else if (simulator)
+    engine->simulator = simulator;
 
 
   cogl_matrix_init_identity (&engine->identity);
@@ -3481,13 +3418,15 @@ RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
                               RigSimulator *simulator)
 {
-  return _rig_engine_new_full (shell, NULL, simulator);
+  return _rig_engine_new_full (shell, NULL, NULL, simulator);
 }
 
 RigEngine *
-rig_engine_new (RutShell *shell, const char *ui_filename)
+rig_engine_new_for_frontend (RutShell *shell,
+                             RigFrontend *frontend,
+                             const char *ui_filename)
 {
-  return _rig_engine_new_full (shell, ui_filename, NULL);
+  return _rig_engine_new_full (shell, ui_filename, frontend, NULL);
 }
 
 RutInputEventStatus

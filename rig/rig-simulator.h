@@ -17,13 +17,38 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RIG_SIMULATOR_SERVICE_H_
-#define _RIG_SIMULATOR_SERVICE_H_
+#ifndef _RIG_SIMULATOR_H_
+#define _RIG_SIMULATOR_H_
+
+#include <rut.h>
+typedef struct _RigSimulator RigSimulator;
+
+#include "rig-engine.h"
+
+/* The "simulator" is the process responsible for updating object
+ * properties either in response to user input, the progression of
+ * animations or running other forms of simulation such as physics.
+ */
+struct _RigSimulator
+{
+  RutShell *shell;
+  RutContext *ctx;
+  RigEngine *engine;
+
+  int fd;
+  RigRPCPeer *simulator_peer;
+
+  float last_pointer_x;
+  float last_pointer_y;
+
+  RutButtonState button_state;
+};
+
 
 void
-rig_simulator_service_start (RigSimulator *simulator);
+rig_simulator_stop_service (RigSimulator *simulator);
 
 void
-rig_simulator_service_stop (RigSimulator *simulator);
+rig_simulator_stop_service (RigSimulator *simulator);
 
-#endif /* _RIG_SIMULATOR_SERVICE_H_ */
+#endif /* _RIG_SIMULATOR_H_ */

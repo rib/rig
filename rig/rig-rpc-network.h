@@ -31,7 +31,6 @@ typedef struct _RigRPCServer RigRPCServer;
 typedef struct _RigRPCPeer RigRPCPeer;
 
 #include "rig-types.h"
-#include "rig-engine.h"
 
 struct _RigRPCServer
 {
@@ -48,8 +47,7 @@ struct _RigRPCServer
 };
 
 RigRPCServer *
-rig_rpc_server_new (RigEngine *engine,
-                    ProtobufCService *service,
+rig_rpc_server_new (ProtobufCService *service,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data);
@@ -73,8 +71,7 @@ typedef struct _RigRPCClient
 } RigRPCClient;
 
 RigRPCClient *
-rig_rpc_client_new (RigEngine *engine,
-                    const char *hostname,
+rig_rpc_client_new (const char *hostname,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
                     PB_RPC_Error_Func client_error_handler,
@@ -101,8 +98,7 @@ struct _RigRPCPeer
 };
 
 RigRPCPeer *
-rig_rpc_peer_new (RigEngine *engine,
-                  int fd,
+rig_rpc_peer_new (int fd,
                   ProtobufCService *server_service,
                   ProtobufCServiceDescriptor *client_service,
                   PB_RPC_Error_Func peer_error_handler,

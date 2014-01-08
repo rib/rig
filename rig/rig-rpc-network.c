@@ -68,7 +68,6 @@
 #include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
 #include "rig-rpc-network.h"
-#include "rig-engine.h"
 #include "rig.pb-c.h"
 
 typedef struct _ProtobufSource
@@ -365,8 +364,7 @@ _rig_rpc_server_init_type (void)
 }
 
 RigRPCServer *
-rig_rpc_server_new (RigEngine *engine,
-                    ProtobufCService *service,
+rig_rpc_server_new (ProtobufCService *service,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data)
@@ -444,8 +442,7 @@ _rig_rpc_client_init_type (void)
 }
 
 RigRPCClient *
-rig_rpc_client_new (RigEngine *engine,
-                    const char *hostname,
+rig_rpc_client_new (const char *hostname,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
                     PB_RPC_Error_Func client_error_handler,
@@ -554,8 +551,7 @@ server_connect_handler (PB_RPC_Server *server,
 }
 
 RigRPCPeer *
-rig_rpc_peer_new (RigEngine *engine,
-                  int fd,
+rig_rpc_peer_new (int fd,
                   ProtobufCService *server_service,
                   ProtobufCServiceDescriptor *client_descriptor,
                   PB_RPC_Error_Func peer_error_handler,
