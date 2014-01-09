@@ -3207,6 +3207,16 @@ _rig_engine_init_type (void)
 #undef TYPE
 }
 
+#if 0
+static RutMagazine *object_id_magazine = NULL;
+
+static void
+free_object_id (void *id)
+{
+  rut_magazine_chunk_free (object_id_magazine, id);
+}
+#endif
+
 static RigEngine *
 _rig_engine_new_full (RutShell *shell,
                       const char *ui_filename,
@@ -3238,6 +3248,16 @@ _rig_engine_new_full (RutShell *shell,
                                   engine->properties);
 
   engine->serialization_stack = rut_memory_stack_new (8192);
+
+#if 0
+  if (!object_id_magazine)
+    object_id_magazine = rut_magazine_new (sizeof (uint64_t), 1000);
+
+  engine->id_map = g_hash_table_new_full (g_int64_hash,
+                                          g_int64_equal,
+                                          free_object_id,
+                                          NULL);
+#endif
 
   engine->assets_registry = g_hash_table_new_full (g_str_hash,
                                                    g_str_equal,

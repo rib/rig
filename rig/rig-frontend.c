@@ -54,12 +54,38 @@ frontend__update_ui (Rig__Frontend_Service *service,
                      void *closure_data)
 {
   Rig__UpdateUIAck ack = RIG__UPDATE_UIACK__INIT;
-  //RigFrontend *frontend =
-  //  rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigFrontend *frontend =
+    rig_pb_rpc_closure_get_connection_data (closure_data);
+  int i;
+  int n_changes;
+
+  g_print ("Frontend: Update UI Request\n");
 
   g_return_if_fail (ui_diff != NULL);
 
-  g_print ("Frontend: Update UI Request\n");
+  n_changes = ui_diff->n_property_changes;
+
+  for (i = 0; i < n_changes; i++)
+    {
+      Rig__PropertyChange *pb_change = ui_diff->property_changes[i];
+      void *object;
+
+      if (!pb_change->has_object_id ||
+          pb_change->object_id == 0 ||
+          !pb_change->has_property_id ||
+          !pb_change->value)
+        {
+          g_warning ("Frontend: Invalid property change received");
+          continue;
+        }
+
+      object = (void *)pb_change->object_id;
+
+      g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
+               object,
+               rut_object_get_type_name (object),
+               pb_change->property_id);
+    }
 
   closure (&ack, closure_data);
 }
@@ -111,6 +137,13 @@ handle_load_response (const Rig__LoadResult *result,
   g_print ("Simulator: UI loaded\n");
 }
 
+uint64_t
+object_to_pointer_id_cb (void *object,
+                         void *user_data)
+{
+  return (uint64_t)object;
+}
+
 static void
 frontend_peer_connected (PB_RPC_Client *pb_client,
                          void *user_data)
@@ -122,6 +155,13 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
   Rig__UI *ui;
 
   serializer = rig_pb_serializer_new (frontend->engine);
+
+  rig_pb_serializer_set_object_register_callback (serializer,
+                                                  object_to_pointer_id_cb,
+                                                  NULL);
+  rig_pb_serializer_set_object_to_id_callback (serializer,
+                                               object_to_pointer_id_cb,
+                                               NULL);
 
   rig_pb_serializer_set_asset_filter (serializer,
                                       asset_filter_cb,

@@ -1436,6 +1436,12 @@ struct _RigPBUnSerializer
 {
   RigEngine *engine;
 
+  RigPBUnSerializerObjectRegisterCallback object_register_callback;
+  void *object_register_data;
+
+  RigPBUnSerializerIDToObjecCallback id_to_object_callback;
+  void *id_to_object_data;
+
   GList *assets;
   GList *entities;
   RutEntity *light;
@@ -1511,33 +1517,18 @@ pb_init_boxed_vec4 (RutBoxed *boxed,
     }
 }
 
-static RutEntity *
-unserializer_find_entity (RigPBUnSerializer *unserializer, uint64_t id)
-{
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL || rut_object_get_type (object) != &rut_entity_type)
-    return NULL;
-  return RUT_ENTITY (object);
-}
-
-static RutAsset *
-unserializer_find_asset (RigPBUnSerializer *unserializer, uint64_t id)
-{
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL || rut_object_get_type (object) != &rut_asset_type)
-    return NULL;
-  return RUT_ASSET (object);
-}
-
 static RutObject *
-unserializer_find_introspectable (RigPBUnSerializer *unserializer, uint64_t id)
+unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
 {
-  RutObject *object = g_hash_table_lookup (unserializer->id_map, &id);
-  if (object == NULL ||
-      !rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE) ||
-      !rut_object_is (object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    return NULL;
-  return object;
+  RutObject *object;
+
+  if (unserializer->id_to_object_callback)
+    {
+      void *user_data = unserializer->id_to_object_data;
+      return unserializer->id_to_object_callback (id, user_data);
+    }
+
+  return g_hash_table_lookup (unserializer->id_map, &id);
 }
 
 static void
@@ -1599,12 +1590,12 @@ pb_init_boxed_value (RigPBUnSerializer *unserializer,
 
     case RUT_PROPERTY_TYPE_ASSET:
       boxed->d.asset_val =
-        unserializer_find_asset (unserializer, pb_value->asset_value);
+        unserializer_find_object (unserializer, pb_value->asset_value);
       break;
 
     case RUT_PROPERTY_TYPE_OBJECT:
       boxed->d.object_val =
-        unserializer_find_introspectable (unserializer, pb_value->object_value);
+        unserializer_find_object (unserializer, pb_value->object_value);
       break;
 
     case RUT_PROPERTY_TYPE_POINTER:
@@ -1624,7 +1615,7 @@ collect_error (RigPBUnSerializer *unserializer,
 
   /* XXX: The intention is that we shouldn't just immediately abort loading
    * like this but rather we should collect the errors and try our best to
-   * continue loading. At the end we can report the errors to the user so the
+   * continue loading. At the end we can report the errors to the user so they
    * realize that their document may be corrupt.
    */
 
@@ -1641,7 +1632,18 @@ register_unserializer_object (RigPBUnSerializer *unserializer,
                               void *object,
                               uint64_t id)
 {
-  uint64_t *key = g_slice_new (uint64_t);
+  uint64_t *key;
+
+  if (unserializer->object_register_callback)
+    {
+      void *user_data = unserializer->object_register_data;
+      if (unserializer->object_register_callback (object, id, user_data))
+        return;
+    }
+
+  key = rut_memory_stack_memalign (unserializer->engine->serialization_stack,
+                                   sizeof (uint64_t),
+                                   RUT_UTIL_ALIGNOF (uint64_t));
 
   *key = id;
 
@@ -1836,7 +1838,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                   {
                     Rig__Texture *pb_texture = pb_material->texture;
 
-                    asset = unserializer_find_asset (unserializer,
+                    asset = unserializer_find_object (unserializer,
                                                      pb_texture->asset_id);
                     if (asset)
                       rut_material_set_color_source_asset (material, asset);
@@ -1849,7 +1851,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                   {
                     Rig__NormalMap *pb_normal_map = pb_material->normal_map;
 
-                    asset = unserializer_find_asset (unserializer,
+                    asset = unserializer_find_object (unserializer,
                                                      pb_normal_map->asset_id);
                     if (asset)
                       rut_material_set_normal_map_asset (material, asset);
@@ -1862,7 +1864,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                   {
                     Rig__AlphaMask *pb_alpha_mask = pb_material->alpha_mask;
 
-                    asset = unserializer_find_asset (unserializer,
+                    asset = unserializer_find_object (unserializer,
                                                      pb_alpha_mask->asset_id);
                     if (asset)
                       rut_material_set_alpha_mask_asset (material, asset);
@@ -1903,7 +1905,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
             if (!pb_model->has_asset_id)
               break;
 
-            asset = unserializer_find_asset (unserializer, pb_model->asset_id);
+            asset = unserializer_find_object (unserializer, pb_model->asset_id);
             if (!asset)
               {
                 collect_error (unserializer, "Invalid asset id");
@@ -2348,7 +2350,7 @@ unserialize_entities (RigPBUnSerializer *unserializer,
       if (pb_entity->has_parent_id)
         {
           unsigned int parent_id = pb_entity->parent_id;
-          RutEntity *parent = unserializer_find_entity (unserializer, parent_id);
+          RutEntity *parent = unserializer_find_object (unserializer, parent_id);
 
           if (!parent)
             {
@@ -2615,7 +2617,7 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
       object_id = pb_property->object_id;
 
-      object = unserializer_find_introspectable (unserializer, object_id);
+      object = unserializer_find_object (unserializer, object_id);
       if (!object)
         {
           collect_error (unserializer,
@@ -2722,8 +2724,8 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
                 }
 
               dependency_object =
-                unserializer_find_introspectable (unserializer,
-                                                  pb_dependency->object_id);
+                unserializer_find_object (unserializer,
+                                          pb_dependency->object_id);
               if (!dependency_object)
                 {
                   collect_error (unserializer,
@@ -2840,8 +2842,7 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
       if (!pb_controller->has_id)
         continue;
 
-      controller = unserializer_find_introspectable (unserializer,
-                                                     pb_controller->id);
+      controller = unserializer_find_object (unserializer, pb_controller->id);
       if (!controller)
         {
           g_warn_if_reached ();
@@ -2870,6 +2871,27 @@ rig_pb_unserializer_new (RigEngine *engine)
   rut_memory_stack_rewind (engine->serialization_stack);
 
   return unserializer;
+}
+
+void
+rig_pb_unserializer_set_object_register_callback (
+                                 RigPBUnSerializer *unserializer,
+                                 RigPBUnSerializerObjectRegisterCallback callback,
+                                 void *user_data)
+{
+  unserializer->object_register_callback = callback;
+  unserializer->object_register_data = user_data;
+
+}
+
+void
+rig_pb_unserializer_set_id_to_object_callback (
+                                     RigPBUnSerializer *unserializer,
+                                     RigPBUnSerializerIDToObjecCallback callback,
+                                     void *user_data)
+{
+  unserializer->id_to_object_callback = callback;
+  unserializer->id_to_object_data = user_data;
 }
 
 void
