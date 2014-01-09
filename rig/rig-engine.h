@@ -79,6 +79,8 @@ struct _RigEngine
   char *ui_filename;
   char *next_ui_filename;
 
+  GHashTable *id_map;
+
   RutCamera *camera;
   RutObject *root;
   RutObject *scene;

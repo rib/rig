@@ -411,8 +411,21 @@ message RunFrameAck
 {
 }
 
+message RegisterInternalAck
+{
+}
+
+message PrivateID
+{
+  optional string name=1;
+  optional sint64 object_id=2;
+}
+
 // The simulator service as used from the renderer
 service Simulator {
+
+  rpc RegisterInternal (PrivateID) returns (RegisterInternalAck);
+
   rpc Load (UI) returns (LoadResult);
 
   //Note: the simulation is only started by this request.

@@ -102,6 +102,25 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
 RigPBUnSerializer *
 rig_pb_unserializer_new (RigEngine *engine);
 
+typedef bool (*RigPBUnSerializerObjectRegisterCallback) (void *object,
+                                                         uint64_t id,
+                                                         void *user_data);
+
+void
+rig_pb_unserializer_set_object_register_callback (
+                                 RigPBUnSerializer *unserializer,
+                                 RigPBUnSerializerObjectRegisterCallback callback,
+                                 void *user_data);
+
+typedef void *(*RigPBUnSerializerIDToObjecCallback) (uint64_t id,
+                                                     void *user_data);
+
+void
+rig_pb_unserializer_set_id_to_object_callback (
+                                     RigPBUnSerializer *serializer,
+                                     RigPBUnSerializerIDToObjecCallback callback,
+                                     void *user_data);
+
 void
 rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer);
 

@@ -24,6 +24,8 @@ static const GOptionEntry rut_editor_entries[] =
 };
 #endif
 
+static RutMagazine *_rig_simulator_object_id_magazine = NULL;
+
 static void
 simulator__test (Rig__Simulator_Service *service,
                  const Rig__Query *query,
@@ -38,6 +40,22 @@ simulator__test (Rig__Simulator_Service *service,
   g_print ("Simulator Service: Test Query\n");
 
   closure (&result, closure_data);
+}
+
+static bool
+register_object_cb (void *object,
+                    uint64_t id,
+                    void *user_data)
+{
+  RigSimulator *simulator = user_data;
+  uint64_t *object_id =
+    rut_magazine_chunk_alloc (_rig_simulator_object_id_magazine);
+
+  *object_id = id;
+
+  g_hash_table_insert (simulator->id_map, object, object_id);
+
+  return false; /* also register normally in rig-pb.c */
 }
 
 static void
@@ -57,6 +75,10 @@ simulator__load (Rig__Simulator_Service *service,
   g_print ("Simulator: UI Load Request\n");
 
   unserializer = rig_pb_unserializer_new (engine);
+
+  rig_pb_unserializer_set_object_register_callback (unserializer,
+                                                    register_object_cb,
+                                                    simulator);
 
   rig_pb_unserialize_ui (unserializer, ui, false);
 
@@ -263,10 +285,27 @@ rig_simulator_stop_service (RigSimulator *simulator)
   exit (1);
 }
 
+static void
+free_object_id (void *object_id)
+{
+  rut_magazine_chunk_free (_rig_simulator_object_id_magazine, object_id);
+}
+
 void
 rig_simulator_init (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
+
+  if (!_rig_simulator_object_id_magazine)
+    {
+      _rig_simulator_object_id_magazine =
+        rut_magazine_new (sizeof (uint64_t), 1000);
+    }
+
+  simulator->id_map = g_hash_table_new_full (NULL, /* direct hash */
+                                             NULL, /* direct key equal */
+                                             NULL, /* key destroy */
+                                             free_object_id);
 
   rig_simulator_start_service (simulator);
 
@@ -282,6 +321,9 @@ rig_simulator_fini (RutShell *shell, void *user_data)
   rut_refable_unref (engine);
   simulator->engine = NULL;
 
+  g_hash_table_destroy (simulator->id_map);
+  simulator->id_map = NULL;
+
   rig_simulator_stop_service (simulator);
 }
 
@@ -294,6 +336,7 @@ handle_update_ui_ack (const Rig__UpdateUIAck *result,
 
 typedef struct _SerializeChangesState
 {
+  RigSimulator *simulator;
   RigPBSerializer *serializer;
   Rig__PropertyChange *pb_changes;
   Rig__PropertyValue *pb_values;
@@ -301,11 +344,36 @@ typedef struct _SerializeChangesState
   int i;
 } SerializeChangesState;
 
+uint64_t
+get_object_id (RigSimulator *simulator, void *object)
+{
+  uint64_t *id_ptr = g_hash_table_lookup (simulator->id_map, object);
+
+  if (G_UNLIKELY (id_ptr == NULL))
+    {
+      const char *label = "";
+      if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
+        {
+          RutProperty *label_prop =
+            rut_introspectable_lookup_property (object, "label");
+          if (label_prop)
+            label = rut_property_get_text (label_prop);
+        }
+      g_warning ("Can't find an ID for unregistered object %p(%s,label=\"%s\")",
+                 object,
+                 rut_object_get_type_name (object),
+                 label);
+      return 0;
+    }
+  else
+    return *id_ptr;
+}
 
 static void
 stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
 {
   SerializeChangesState *state = user_data;
+  RigSimulator *simulator = state->simulator;
   size_t step = sizeof (RutPropertyChange);
   size_t offset;
   int i;
@@ -325,15 +393,16 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
       rig__property_value__init (pb_value);
 
       pb_change->has_object_id = true;
-      pb_change->object_id = (uint64_t)change->object;
+      pb_change->object_id = get_object_id (simulator, change->object);
       pb_change->has_property_id = true;
       pb_change->property_id = change->prop_id;
       rig_pb_property_value_init (state->serializer, pb_value, &change->boxed);
 
-      g_print ("> %d: base = %p, offset = %d, obj = %p(%s), prop id = %d\n",
+      g_print ("> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
                i,
                data,
                offset,
+               (uint64_t)pb_change->object_id,
                change->object,
                rut_object_get_type_name (change->object),
                change->prop_id);
@@ -353,6 +422,10 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
   int n_changes;
   RigPBSerializer *serializer;
+
+  /* Setup the property context to log all property changes so they
+   * can be sent back to the frontend process each frame. */
+  simulator->ctx->property_ctx.log = true;
 
   g_print ("Simulator: Start Frame\n");
   rut_shell_start_redraw (shell);
@@ -379,6 +452,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
       SerializeChangesState state;
       int i;
 
+      state.simulator = simulator;
       state.serializer = serializer;
 
       state.pb_changes =
@@ -417,6 +491,9 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   rig_pb_serializer_destroy (serializer);
 
   rut_property_context_clear_log (prop_ctx);
+
+  /* Stop logging property changes until the next frame. */
+  simulator->ctx->property_ctx.log = false;
 }
 
 int
@@ -459,10 +536,6 @@ main (int argc, char **argv)
   simulator.ctx = rut_context_new (simulator.shell);
 
   rut_context_init (simulator.ctx);
-
-  /* Setup the property context to log all property changes so they
-   * can be sent back to the frontend process each frame. */
-  simulator.ctx->property_ctx.log = true;
 
   rut_shell_main (simulator.shell);
 

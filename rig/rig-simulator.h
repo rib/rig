@@ -42,6 +42,8 @@ struct _RigSimulator
   float last_pointer_y;
 
   RutButtonState button_state;
+
+  GHashTable *id_map;
 };
 
 
