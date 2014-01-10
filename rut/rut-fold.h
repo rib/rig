@@ -57,7 +57,7 @@ typedef struct _RutFold
 
   RutGraphableProps graphable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_FOLD_N_PROPS];
 
 } RutFold;

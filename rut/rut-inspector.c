@@ -36,6 +36,7 @@
 #include "rut-box-layout.h"
 #include "rut-composite-sizable.h"
 #include "rut-bin.h"
+#include "rut-introspectable.h"
 
 #define RUT_INSPECTOR_EDGE_GAP 5
 #define RUT_INSPECTOR_PROPERTY_GAP 5

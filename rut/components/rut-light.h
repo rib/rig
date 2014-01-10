@@ -44,7 +44,7 @@ struct _RutLight
 
   RutContext *context;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_LIGHT_N_PROPS];
 };
 

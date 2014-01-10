@@ -487,7 +487,7 @@ _rut_hair_free (void *object)
 
   g_array_free (hair->particles, TRUE);
 
-  rut_simple_introspectable_destroy (hair);
+  rut_introspectable_destroy (hair);
 
   if (hair->fin_texture)
     cogl_object_unref (hair->fin_texture);
@@ -517,10 +517,6 @@ void
 _rut_hair_init_type (void)
 {
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutComponentableVTable componentable_vtable = {
       .copy = _rut_hair_copy
@@ -536,10 +532,6 @@ _rut_hair_init_type (void)
                       &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -573,8 +565,8 @@ rut_hair_new (RutContext *ctx)
                                    rut_find_data_file ("circle1.png"),
                                    NULL);
 
-  rut_simple_introspectable_init (hair, _rut_hair_prop_specs,
-                                  hair->properties);
+  rut_introspectable_init (hair, _rut_hair_prop_specs,
+                           hair->properties);
 
   hair->dirty_hair_positions = TRUE;
   hair->dirty_shell_textures = TRUE;

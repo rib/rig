@@ -24,6 +24,7 @@
 #include "rut-box-layout.h"
 #include "rut-transform.h"
 #include "rut-util.h"
+#include "rut-introspectable.h"
 
 enum {
   RUT_BOX_LAYOUT_PROP_PACKING,
@@ -60,7 +61,7 @@ struct _RutBoxLayout
   RutGraphableProps graphable;
 
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_BOX_LAYOUT_N_PROPS];
 };
 
@@ -531,10 +532,6 @@ _rut_box_layout_init_type (void)
       rut_box_layout_add_preferred_size_callback
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_box_layout_type;
 #define TYPE RutBoxLayout
@@ -550,10 +547,6 @@ _rut_box_layout_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -576,9 +569,9 @@ rut_box_layout_new (RutContext *ctx,
 
   rut_graphable_init (box);
 
-  rut_simple_introspectable_init (box,
-                                  _rut_box_layout_prop_specs,
-                                  box->properties);
+  rut_introspectable_init (box,
+                           _rut_box_layout_prop_specs,
+                           box->properties);
 
   queue_allocation (box);
 

@@ -52,7 +52,7 @@ _rut_fold_free (void *object)
   rut_object_unref (fold->fold_down_icon);
 
   rut_graphable_destroy (fold);
-  rut_simple_introspectable_destroy (fold);
+  rut_introspectable_destroy (fold);
 
   rut_object_free (RutFold, fold);
 }
@@ -74,10 +74,6 @@ _rut_fold_init_type (void)
       rut_composite_sizable_get_preferred_height,
       rut_composite_sizable_add_preferred_size_callback
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_fold_type;
 #define TYPE RutFold
@@ -97,10 +93,6 @@ _rut_fold_init_type (void)
                       NULL); /* no vtable */
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -143,9 +135,9 @@ rut_fold_new (RutContext *ctx,
 
   rut_graphable_init (fold);
 
-  rut_simple_introspectable_init (fold,
-                                  _rut_fold_prop_specs,
-                                  fold->properties);
+  rut_introspectable_init (fold,
+                           _rut_fold_prop_specs,
+                           fold->properties);
 
   fold->vbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
 

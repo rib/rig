@@ -112,7 +112,7 @@ _rig_controller_free (RutObject *object)
 
   rut_closure_list_disconnect_all (&controller->operation_cb_list);
 
-  rut_simple_introspectable_destroy (controller);
+  rut_introspectable_destroy (controller);
 
   g_hash_table_destroy (controller->properties);
 
@@ -131,10 +131,6 @@ static void
 _rig_controller_type_init (void)
 {
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rig_controller_type;
 #define TYPE RigController
@@ -142,10 +138,6 @@ _rig_controller_type_init (void)
   rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -185,7 +177,7 @@ rig_controller_new (RigEngine *engine,
 
   rut_list_init (&controller->operation_cb_list);
 
-  rut_simple_introspectable_init (controller, _rig_controller_prop_specs, controller->props);
+  rut_introspectable_init (controller, _rig_controller_prop_specs, controller->props);
 
   controller->properties = g_hash_table_new_full (g_direct_hash,
                                                   g_direct_equal,

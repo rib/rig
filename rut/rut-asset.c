@@ -49,7 +49,7 @@ struct _RutAsset
   RutContext *ctx;
 
 #if 0
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty props[ASSET_N_PROPS];
 #endif
 
@@ -78,10 +78,6 @@ static RutPropertySpec _asset_prop_specs[] = {
 #endif
 
 #if 0
-static RutIntrospectableVTable _asset_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
 #endif
 
 static void
@@ -95,7 +91,7 @@ _rut_asset_free (void *object)
   if (asset->path)
     g_free (asset->path);
 
-  //rut_simple_introspectable_destroy (asset);
+  //rut_introspectable_destroy (asset);
 
   rut_object_free (RutAsset, asset);
 }
@@ -148,10 +144,6 @@ _rut_asset_init_type (void)
 #if 0
   rut_type_add_trait (&_asset_type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &_asset_introspectable_vtable);
-  rut_type_add_trait (&_asset_type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (Asset, introspectable),
                       NULL); /* no implied vtable */
 #endif
@@ -619,7 +611,7 @@ rut_asset_new_full (RutContext *ctx,
     }
   asset->path = g_strdup (path);
 
-  //rut_simple_introspectable_init (asset);
+  //rut_introspectable_init (asset);
 
 DONE:
 

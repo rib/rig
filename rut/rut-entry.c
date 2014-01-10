@@ -57,7 +57,7 @@ struct _RutEntry
   float width;
   float height;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_ENTRY_N_PROPS];
 };
 
@@ -102,7 +102,7 @@ _rut_entry_free (void *object)
 
   remove_icon (entry);
 
-  rut_simple_introspectable_destroy (entry);
+  rut_introspectable_destroy (entry);
 
   rut_graphable_remove_child (entry->text);
   rut_object_unref (entry->text);
@@ -287,10 +287,6 @@ _rut_entry_init_type (void)
     NULL /* add_preferred_size_callback */
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_entry_type;
 #define TYPE RutEntry
@@ -306,10 +302,6 @@ _rut_entry_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -346,9 +338,9 @@ rut_entry_new (RutContext *ctx)
 
   entry->ctx = rut_object_ref (ctx);
 
-  rut_simple_introspectable_init (entry,
-                                  _rut_entry_prop_specs,
-                                  entry->properties);
+  rut_introspectable_init (entry,
+                           _rut_entry_prop_specs,
+                           entry->properties);
 
   rut_graphable_init (entry);
 

@@ -33,6 +33,7 @@
 #include "rut-interfaces.h"
 #include "rut-composite-sizable.h"
 #include "rut-input-region.h"
+#include "rut-introspectable.h"
 
 #include "components/rut-nine-slice.h"
 
@@ -61,7 +62,7 @@ struct _RutAssetInspector
 
   RutGraphableProps graphable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_ASSET_INSPECTOR_N_PROPS];
 
 
@@ -112,7 +113,7 @@ _rut_asset_inspector_free (void *object)
 
   rut_graphable_destroy (asset_inspector);
 
-  rut_simple_introspectable_destroy (asset_inspector);
+  rut_introspectable_destroy (asset_inspector);
 
   rut_object_free (RutAssetInspector, asset_inspector);
 }
@@ -159,10 +160,6 @@ _rut_asset_inspector_init_type (void)
       rut_composite_sizable_get_preferred_height,
       rut_composite_sizable_add_preferred_size_callback
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
   static RutSelectableVTable selectable_vtable = {
       .cancel = _rut_asset_inspector_cancel_selection,
       .copy = _rut_asset_inspector_copy_selection,
@@ -191,10 +188,6 @@ _rut_asset_inspector_init_type (void)
                       &selectable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -310,9 +303,9 @@ rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
   asset_inspector->ctx = ctx;
 
 
-  rut_simple_introspectable_init (asset_inspector,
-                                  _rut_asset_inspector_prop_specs,
-                                  asset_inspector->properties);
+  rut_introspectable_init (asset_inspector,
+                           _rut_asset_inspector_prop_specs,
+                           asset_inspector->properties);
 
   rut_graphable_init (asset_inspector);
 

@@ -81,7 +81,7 @@ struct _RutCamera
   CoglMatrix input_transform;
   GList *input_regions;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_CAMERA_N_PROPS];
 
   unsigned int orthographic:1;

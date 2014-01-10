@@ -81,7 +81,7 @@ typedef struct _RutScale
 
   RutList select_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_SCALE_N_PROPS];
 
 } RutScale;

@@ -71,7 +71,7 @@ struct _RutShape
 
   RutList reshaped_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_SHAPE_N_PROPS];
 };
 

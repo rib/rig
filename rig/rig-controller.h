@@ -102,7 +102,7 @@ struct _RigController
   RutList operation_cb_list;
 
   RutProperty props[RIG_CONTROLLER_N_PROPS];
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
 };
 
 typedef enum

@@ -104,10 +104,6 @@ _rut_entity_init_type (void)
   static RutTransformableVTable transformable_vtable = {
       rut_entity_get_transform
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_entity_type;
 #define TYPE RutEntity
@@ -123,10 +119,6 @@ _rut_entity_init_type (void)
                       &transformable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -142,9 +134,9 @@ rut_entity_new (RutContext *ctx)
 
   entity->ctx = ctx;
 
-  rut_simple_introspectable_init (entity,
-                                  _rut_entity_prop_specs,
-                                  entity->properties);
+  rut_introspectable_init (entity,
+                           _rut_entity_prop_specs,
+                           entity->properties);
 
   entity->position[0] = 0.0f;
   entity->position[1] = 0.0f;

@@ -311,7 +311,7 @@ _rut_shape_free (void *object)
 
   rut_object_unref (shape->model);
 
-  rut_simple_introspectable_destroy (shape);
+  rut_introspectable_destroy (shape);
 
   rut_closure_list_disconnect_all (&shape->reshaped_cb_list);
 
@@ -351,10 +351,6 @@ _rut_shape_init_type (void)
     .get_mesh = rut_shape_get_pick_mesh
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   static RutSizableVTable sizable_vtable = {
       rut_shape_set_size,
@@ -383,10 +379,6 @@ _rut_shape_init_type (void)
                       &meshable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -419,9 +411,9 @@ rut_shape_new (RutContext *ctx,
 
   rut_list_init (&shape->reshaped_cb_list);
 
-  rut_simple_introspectable_init (shape,
-                                  _rut_shape_prop_specs,
-                                  shape->properties);
+  rut_introspectable_init (shape,
+                           _rut_shape_prop_specs,
+                           shape->properties);
 
   return shape;
 }

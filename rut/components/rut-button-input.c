@@ -63,7 +63,7 @@ struct _RutButtonInput
   int press_counter;
   ButtonState state;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_BUTTON_INPUT_N_PROPS];
 };
 
@@ -154,7 +154,7 @@ _rut_button_input_free (void *object)
 {
   RutButtonInput *button_input = object;
 
-  rut_simple_introspectable_destroy (button_input);
+  rut_introspectable_destroy (button_input);
 
   rut_object_free (RutButtonInput, object);
 }
@@ -328,10 +328,6 @@ _rut_button_input_init_type (void)
       .copy = _rut_button_input_copy
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutInputableVTable inputable_vtable = {
       .handle_event = _rut_button_input_handle_event
@@ -347,10 +343,6 @@ _rut_button_input_init_type (void)
                       &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -375,7 +367,7 @@ rut_button_input_new (RutContext *ctx)
 
   button_input->state = BUTTON_STATE_NORMAL;
 
-  rut_simple_introspectable_init (button_input,
+  rut_introspectable_init (button_input,
                                   _rut_button_input_prop_specs,
                                   button_input->properties);
 

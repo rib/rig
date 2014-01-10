@@ -73,7 +73,7 @@ struct _RutScrollBar
   float grab_y;
   float grab_offset;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_SCROLL_BAR_N_PROPS];
 };
 
@@ -177,10 +177,6 @@ _rut_scroll_bar_init_type (void)
     _rut_scroll_bar_paint
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_scroll_bar_type;
 #define TYPE RutScrollBar
@@ -196,10 +192,6 @@ _rut_scroll_bar_init_type (void)
                       &paintable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -369,9 +361,9 @@ rut_scroll_bar_new (RutContext *ctx,
 
 
 
-  rut_simple_introspectable_init (scroll_bar,
-                                  _rut_scroll_bar_prop_specs,
-                                  scroll_bar->properties);
+  rut_introspectable_init (scroll_bar,
+                           _rut_scroll_bar_prop_specs,
+                           scroll_bar->properties);
 
   scroll_bar->ctx = ctx;
 

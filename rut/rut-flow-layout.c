@@ -30,6 +30,7 @@
 #include "rut-interfaces.h"
 #include "rut-flow-layout.h"
 #include "rut-transform.h"
+#include "rut-introspectable.h"
 
 #include <math.h>
 
@@ -110,7 +111,7 @@ struct _RutFlowLayout
 
   int last_flow_line_length;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_FLOW_LAYOUT_N_PROPS];
 
   unsigned int needs_reflow: 1;
@@ -264,7 +265,7 @@ _rut_flow_layout_free (void *object)
 
   rut_shell_remove_pre_paint_callback_by_graphable (flow->ctx->shell, flow);
 
-  rut_simple_introspectable_destroy (flow);
+  rut_introspectable_destroy (flow);
 
   rut_graphable_destroy (flow);
 
@@ -693,10 +694,6 @@ _rut_flow_layout_init_type (void)
       rut_flow_layout_get_preferred_height,
       rut_flow_layout_add_preferred_size_callback
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_flow_layout_type;
 #define TYPE RutFlowLayout
@@ -712,10 +709,6 @@ _rut_flow_layout_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 #undef TYPE
@@ -735,9 +728,9 @@ rut_flow_layout_new (RutContext *ctx,
 
   rut_graphable_init (flow);
 
-  rut_simple_introspectable_init (flow,
-                                  _rut_flow_layout_prop_specs,
-                                  flow->properties);
+  rut_introspectable_init (flow,
+                           _rut_flow_layout_prop_specs,
+                           flow->properties);
 
   flow->ctx = ctx;
   flow->packing = packing;

@@ -28,6 +28,7 @@
 #include "rut-icon-toggle.h"
 #include "rut-icon-toggle-set.h"
 #include "rut-composite-sizable.h"
+#include "rut-introspectable.h"
 
 typedef struct _RutIconToggleSetState
 {
@@ -59,7 +60,7 @@ struct _RutIconToggleSet
 
   RutGraphableProps graphable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_ICON_TOGGLE_SET_N_PROPS];
 };
 
@@ -87,7 +88,7 @@ _rut_icon_toggle_set_free (void *object)
       remove_toggle_state (toggle_state);
     }
 
-  rut_simple_introspectable_destroy (toggle_set);
+  rut_introspectable_destroy (toggle_set);
 
   rut_object_free (RutIconToggleSet, object);
 }
@@ -124,10 +125,6 @@ _rut_icon_toggle_set_init_type (void)
       rut_composite_sizable_add_preferred_size_callback
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_icon_toggle_set_type;
 #define TYPE RutIconToggleSet
@@ -147,10 +144,6 @@ _rut_icon_toggle_set_init_type (void)
                       NULL); /* no vtable */
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -173,8 +166,8 @@ rut_icon_toggle_set_new (RutContext *ctx,
 
   rut_graphable_init (toggle_set);
 
-  rut_simple_introspectable_init (toggle_set, _rut_icon_toggle_set_prop_specs,
-                                  toggle_set->properties);
+  rut_introspectable_init (toggle_set, _rut_icon_toggle_set_prop_specs,
+                           toggle_set->properties);
 
   toggle_set->ctx = ctx;
 

@@ -28,6 +28,7 @@
 #include "rut-context.h"
 #include "rut-closure.h"
 #include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-list.h"
 #include "rut-stack.h"
 
@@ -62,7 +63,7 @@ struct _RutStack
 
   RutList preferred_size_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_STACK_N_PROPS];
 };
 
@@ -89,7 +90,7 @@ _rut_stack_free (void *object)
 {
   RutStack *stack = object;
 
-  rut_simple_introspectable_destroy (stack);
+  rut_introspectable_destroy (stack);
   rut_graphable_destroy (stack);
 
   rut_shell_remove_pre_paint_callback_by_graphable (stack->ctx->shell, stack);
@@ -293,10 +294,6 @@ _rut_stack_init_type (void)
     rut_stack_add_preferred_size_callback
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_stack_type;
 #define TYPE RutStack
@@ -312,10 +309,6 @@ _rut_stack_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -386,9 +379,9 @@ rut_stack_new (RutContext *context,
   rut_list_init (&stack->children);
   rut_list_init (&stack->preferred_size_cb_list);
 
-  rut_simple_introspectable_init (stack,
-                                  _rut_stack_prop_specs,
-                                  stack->properties);
+  rut_introspectable_init (stack,
+                           _rut_stack_prop_specs,
+                           stack->properties);
 
   rut_graphable_init (stack);
 

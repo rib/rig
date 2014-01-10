@@ -3163,7 +3163,7 @@ _rig_engine_free (void *object)
       engine->simulator = NULL;
     }
 
-  rut_simple_introspectable_destroy (engine);
+  rut_introspectable_destroy (engine);
 
   rut_object_free (RigEngine, engine);
 }
@@ -3174,10 +3174,6 @@ RutType rig_engine_type;
 static void
 _rig_engine_init_type (void)
 {
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
 
   RutType *type = &rig_engine_type;
@@ -3186,10 +3182,6 @@ _rig_engine_init_type (void)
   rut_type_init (type, G_STRINGIFY (TYPE), _rig_engine_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -3231,9 +3223,9 @@ _rig_engine_new_full (RutShell *shell,
 
   cogl_matrix_init_identity (&engine->identity);
 
-  rut_simple_introspectable_init (engine,
-                                  _rig_engine_prop_specs,
-                                  engine->properties);
+  rut_introspectable_init (engine,
+                           _rig_engine_prop_specs,
+                           engine->properties);
 
   engine->serialization_stack = rut_memory_stack_new (8192);
 

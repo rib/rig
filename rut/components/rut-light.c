@@ -142,10 +142,6 @@ _rut_light_init_type (void)
     .copy = _rut_light_copy
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_light_type;
 #define TYPE RutLight
@@ -157,10 +153,6 @@ _rut_light_init_type (void)
                       &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -178,9 +170,9 @@ rut_light_new (RutContext *context)
   light->component.type = RUT_COMPONENT_TYPE_LIGHT;
   light->context = rut_object_ref (context);
 
-  rut_simple_introspectable_init (light,
-                                  _rut_light_prop_specs,
-                                  light->properties);
+  rut_introspectable_init (light,
+                           _rut_light_prop_specs,
+                           light->properties);
 
   cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
@@ -194,7 +186,7 @@ rut_light_free (RutLight *light)
 {
   rut_object_unref (light->context);
 
-  rut_simple_introspectable_destroy (light);
+  rut_introspectable_destroy (light);
 
   rut_object_free (RutLight, light);
 }

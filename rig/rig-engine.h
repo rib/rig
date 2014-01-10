@@ -294,7 +294,7 @@ struct _RigEngine
 
   GList *slave_masters;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
 };
 

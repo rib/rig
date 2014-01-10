@@ -143,7 +143,7 @@ struct _RutText
 
   RutList preferred_size_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_TEXT_N_PROPS];
 
   PangoFontDescription *font_desc;

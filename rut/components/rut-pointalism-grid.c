@@ -368,7 +368,7 @@ _rut_pointalism_grid_free (void *object)
   rut_object_unref (grid->slice);
   rut_object_unref (grid->pick_mesh);
 
-  rut_simple_introspectable_destroy (grid);
+  rut_introspectable_destroy (grid);
 
   rut_object_free (RutPointalismGrid, grid);
 }
@@ -408,10 +408,6 @@ _rut_pointalism_grid_init_type (void)
     .get_mesh = rut_pointalism_grid_get_pick_mesh
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_pointalism_grid_type;
 
@@ -431,13 +427,9 @@ _rut_pointalism_grid_init_type (void)
                       0, /* no associated properties */
                       &meshable_vtable);
 
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_INTROSPECTABLE,
-                      0,
-                      &introspectable_vtable);
 
   rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL);
 
@@ -493,8 +485,8 @@ rut_pointalism_grid_new (RutContext *ctx,
   grid->tex_width = tex_width;
   grid->tex_height = tex_height;
 
-  rut_simple_introspectable_init (grid, _rut_pointalism_grid_prop_specs,
-                                  grid->properties);
+  rut_introspectable_init (grid, _rut_pointalism_grid_prop_specs,
+                           grid->properties);
 
   return grid;
 }

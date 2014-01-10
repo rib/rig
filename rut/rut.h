@@ -10,6 +10,7 @@
 #include "rut-object.h"
 #include "rut-property.h"
 #include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-graphable.h"
 #include "rut-meshable.h"
 #include "rut-inputable.h"

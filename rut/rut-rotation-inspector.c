@@ -59,7 +59,7 @@ struct _RutRotationInspector
 
   CoglQuaternion value;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_ROTATION_INSPECTOR_N_PROPS];
 };
 
@@ -87,7 +87,7 @@ _rut_rotation_inspector_free (void *object)
 {
   RutRotationInspector *inspector = object;
 
-  rut_simple_introspectable_destroy (inspector);
+  rut_introspectable_destroy (inspector);
   rut_graphable_destroy (inspector);
 
   rut_object_free (RutRotationInspector, inspector);
@@ -101,10 +101,6 @@ _rut_rotation_inspector_init_type (void)
       NULL, /* child removed */
       NULL, /* child addded */
       NULL /* parent changed */
-  };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
   };
   static RutSizableVTable sizable_vtable = {
       rut_composite_sizable_set_size,
@@ -124,10 +120,6 @@ _rut_rotation_inspector_init_type (void)
                       &graphable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -274,12 +266,12 @@ rut_rotation_inspector_new (RutContext *context)
 
   rut_graphable_init (inspector);
 
-  rut_simple_introspectable_init (inspector,
-                                  _rut_rotation_inspector_prop_specs,
-                                  inspector->properties);
+  rut_introspectable_init (inspector,
+                           _rut_rotation_inspector_prop_specs,
+                           inspector->properties);
 
   inspector->hbox = rut_box_layout_new (context,
-                                     RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
+                                        RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_graphable_add_child (inspector, inspector->hbox);
   rut_object_unref (inspector->hbox);
 

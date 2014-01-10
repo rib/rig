@@ -2246,7 +2246,7 @@ struct _RutSlider
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
 
   RutNineSlice *background;
   RutNineSlice *handle;
@@ -2290,7 +2290,7 @@ _rut_slider_free (void *object)
   rut_object_unref (slider->handle);
   rut_object_unref (slider->background);
 
-  rut_simple_introspectable_destroy (slider);
+  rut_introspectable_destroy (slider);
 
   rut_graphable_destroy (slider);
 
@@ -2336,10 +2336,6 @@ _rut_slider_init_type (void)
     _rut_slider_paint
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
 
   RutType *type = &rut_slider_type;
@@ -2356,10 +2352,6 @@ _rut_slider_init_type (void)
                       &paintable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -2509,9 +2501,9 @@ rut_slider_new (RutContext *ctx,
   //rut_input_region_set_graphable (slider->input_region, slider->handle);
   rut_graphable_add_child (slider, slider->input_region);
 
-  rut_simple_introspectable_init (slider,
-                                  _rut_slider_prop_specs,
-                                  slider->properties);
+  rut_introspectable_init (slider,
+                           _rut_slider_prop_specs,
+                           slider->properties);
 
   return slider;
 }

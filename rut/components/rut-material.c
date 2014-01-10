@@ -153,7 +153,7 @@ _rut_material_free (void *object)
   if (material->alpha_mask_asset)
     rut_object_unref (material->alpha_mask_asset);
 
-  rut_simple_introspectable_destroy (material);
+  rut_introspectable_destroy (material);
 
   rut_object_free (RutMaterial, material);
 }
@@ -196,10 +196,6 @@ _rut_material_init_type (void)
     .copy = _rut_material_copy
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_material_type;
 #define TYPE RutMaterial
@@ -211,10 +207,6 @@ _rut_material_init_type (void)
                       &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -241,9 +233,9 @@ rut_material_new (RutContext *ctx,
 
   material->shininess = 100;
 
-  rut_simple_introspectable_init (material,
-                                  _rut_material_prop_specs,
-                                  material->properties);
+  rut_introspectable_init (material,
+                           _rut_material_prop_specs,
+                           material->properties);
 
   material->uniforms_flush_age = -1;
 

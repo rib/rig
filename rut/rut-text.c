@@ -1507,7 +1507,7 @@ _rut_text_free (void *object)
   rut_object_unref (text->pick_mesh);
   rut_object_unref (text->input_region);
 
-  rut_simple_introspectable_destroy (text);
+  rut_introspectable_destroy (text);
   rut_graphable_destroy (text);
 
   rut_object_free (RutText, text);
@@ -3153,10 +3153,6 @@ _rut_text_init_type (void)
       rut_text_paint
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutSizableVTable sizable_vtable = {
       _rut_text_set_size,
@@ -3202,10 +3198,6 @@ _rut_text_init_type (void)
                       &meshable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -3250,9 +3242,9 @@ rut_text_new_full (RutContext *ctx,
   rut_graphable_init (text);
   rut_paintable_init (text);
 
-  rut_simple_introspectable_init (text,
-                                  _rut_text_prop_specs,
-                                  text->properties);
+  rut_introspectable_init (text,
+                           _rut_text_prop_specs,
+                           text->properties);
 
   text->ctx = ctx;
 
