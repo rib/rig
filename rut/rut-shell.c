@@ -114,9 +114,8 @@ typedef void (*RutSDLEventHandler) (RutShell *shell,
 
 struct _RutShell
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   /* If true then this process does not handle input events directly
    * or output graphics directly. */
@@ -250,7 +249,7 @@ rut_shell_get_context (RutShell *shell)
 static void
 _rut_shell_fini (RutShell *shell)
 {
-  rut_refable_unref (shell->rut_ctx);
+  rut_object_unref (shell->rut_ctx);
 }
 
 RutClosure *
@@ -278,10 +277,10 @@ rut_shell_add_input_camera (RutShell *shell,
 {
   InputCamera *input_camera = g_slice_new (InputCamera);
 
-  input_camera->camera = rut_refable_ref (camera);
+  input_camera->camera = rut_object_ref (camera);
 
   if (scenegraph)
-    input_camera->scenegraph = rut_refable_ref (scenegraph);
+    input_camera->scenegraph = rut_object_ref (scenegraph);
   else
     input_camera->scenegraph = NULL;
 
@@ -291,9 +290,9 @@ rut_shell_add_input_camera (RutShell *shell,
 static void
 input_camera_free (InputCamera *input_camera)
 {
-  rut_refable_unref (input_camera->camera);
+  rut_object_unref (input_camera->camera);
   if (input_camera->scenegraph)
-    rut_refable_unref (input_camera->scenegraph);
+    rut_object_unref (input_camera->scenegraph);
   g_slice_free (InputCamera, input_camera);
 }
 
@@ -1026,7 +1025,7 @@ camera_pre_pick_region_cb (RutObject *object,
         return RUT_TRAVERSE_VISIT_SKIP_CHILDREN;
     }
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_PICKABLE) &&
+  if (rut_object_is (object, RUT_TRAIT_ID_PICKABLE) &&
       rut_pickable_pick (object,
                           state->camera,
                           NULL, /* pre-computed modelview */
@@ -1117,7 +1116,7 @@ cancel_current_drop_offer_taker (RutShell *shell)
 
   g_warn_if_fail (status == RUT_INPUT_EVENT_STATUS_HANDLED);
 
-  rut_refable_unref (shell->drop_offer_taker);
+  rut_object_unref (shell->drop_offer_taker);
   shell->drop_offer_taker = NULL;
 }
 
@@ -1251,7 +1250,7 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
    * the object until one of them handles it */
   while (target)
     {
-      if (rut_object_is (target, RUT_INTERFACE_ID_INPUTABLE))
+      if (rut_object_is (target, RUT_TRAIT_ID_INPUTABLE))
         {
           status = rut_inputable_handle_event (target, event);
 
@@ -1259,7 +1258,7 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
             break;
         }
 
-      if (!rut_object_is (target, RUT_INTERFACE_ID_GRAPHABLE))
+      if (!rut_object_is (target, RUT_TRAIT_ID_GRAPHABLE))
         break;
 
       target = rut_graphable_get_parent (target);
@@ -1367,7 +1366,7 @@ _rut_shell_remove_grab_link (RutShell *shell,
                              RutShellGrab *grab)
 {
   if (grab->camera)
-    rut_refable_unref (grab->camera);
+    rut_object_unref (grab->camera);
 
   /* If we are in the middle of iterating the grab callbacks then this
    * will make it cope with removing arbritrary nodes from the list
@@ -1381,8 +1380,6 @@ _rut_shell_remove_grab_link (RutShell *shell,
 
   g_slice_free (RutShellGrab, grab);
 }
-
-RutType rut_shell_type;
 
 static void
 _rut_shell_free (void *object)
@@ -1403,34 +1400,15 @@ _rut_shell_free (void *object)
 
   _rut_shell_fini (shell);
 
-  g_free (shell);
+  rut_object_free (RutShell, shell);
 }
 
-RutRefableVTable _rut_shell_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_shell_free
-};
-
+RutType rut_shell_type;
 
 static void
-_rut_shell_init_types (bool headless)
+_rut_shell_init_type (void)
 {
-  rut_type_init (&rut_shell_type, "RigShell");
-  rut_type_add_interface (&rut_shell_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutShell, ref_count),
-                          &_rut_shell_refable_vtable);
-
-  if (!headless)
-    {
-      gst_element_register (NULL,
-                            "memsrc",
-                            0,
-                            gst_mem_src_get_type());
-    }
-
-  _rut_slider_init_type ();
+  rut_type_init (&rut_shell_type, "RutShell", _rut_shell_free);
 }
 
 RutShell *
@@ -1440,20 +1418,21 @@ rut_shell_new (bool headless,
                RutShellPaintCallback paint,
                void *user_data)
 {
-  static bool initialized = FALSE;
-  RutShell *shell;
+  static bool initialized = false;
+  RutShell *shell =
+    rut_object_alloc0 (RutShell, &rut_shell_type, _rut_shell_init_type);
 
-  /* Make sure core types are registered */
-  _rut_init ();
-
-  shell = g_new0 (RutShell, 1);
-
-  if (G_UNLIKELY (initialized == FALSE))
-    _rut_shell_init_types (headless);
-
-  shell->ref_count = 1;
-
-  rut_object_init (&shell->_parent, &rut_shell_type);
+  if (G_UNLIKELY (initialized == false))
+    {
+      if (!headless)
+        {
+          gst_element_register (NULL,
+                                "memsrc",
+                                0,
+                                gst_mem_src_get_type());
+        }
+      initialized = true;
+    }
 
   shell->headless = headless;
 
@@ -1527,7 +1506,7 @@ rut_shell_grab_key_focus (RutShell *shell,
                           RutObject *inputable,
                           GDestroyNotify ungrab_callback)
 {
-  g_return_if_fail (rut_object_is (inputable, RUT_INTERFACE_ID_INPUTABLE));
+  g_return_if_fail (rut_object_is (inputable, RUT_TRAIT_ID_INPUTABLE));
 
   /* If something tries to set the keyboard focus to the same object
    * then we probably do still want to call the keyboard ungrab
@@ -1537,8 +1516,7 @@ rut_shell_grab_key_focus (RutShell *shell,
    * some point. Otherwise this function is more like a request and it
    * should have a way of reporting whether the request succeeded */
 
-  if (rut_object_is (inputable, RUT_INTERFACE_ID_REF_COUNTABLE))
-    rut_refable_ref (inputable);
+  rut_object_ref (inputable);
 
   rut_shell_ungrab_key_focus (shell);
 
@@ -1554,9 +1532,7 @@ rut_shell_ungrab_key_focus (RutShell *shell)
       if (shell->keyboard_ungrab_cb)
         shell->keyboard_ungrab_cb (shell->keyboard_focus_object);
 
-      if (rut_object_is (shell->keyboard_focus_object,
-                         RUT_INTERFACE_ID_REF_COUNTABLE))
-        rut_refable_unref (shell->keyboard_focus_object);
+      rut_object_unref (shell->keyboard_focus_object);
 
       shell->keyboard_focus_object = NULL;
       shell->keyboard_ungrab_cb = NULL;
@@ -2218,7 +2194,7 @@ rut_shell_grab_input (RutShell *shell,
   grab->user_data = user_data;
 
   if (camera)
-    grab->camera = rut_refable_ref (camera);
+    grab->camera = rut_object_ref (camera);
   else
     grab->camera = NULL;
 
@@ -2258,8 +2234,7 @@ enum {
 
 struct _RutSlider
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   /* FIXME: It doesn't seem right that we should have to save a
    * pointer to the context for input here... */
@@ -2307,51 +2282,30 @@ _rut_slider_free (void *object)
 {
   RutSlider *slider = object;
 
-  rut_refable_unref (slider->input_region);
+  rut_object_unref (slider->input_region);
 
   rut_graphable_remove_child (slider->handle_transform);
 
-  rut_refable_unref (slider->handle_transform);
-  rut_refable_unref (slider->handle);
-  rut_refable_unref (slider->background);
+  rut_object_unref (slider->handle_transform);
+  rut_object_unref (slider->handle);
+  rut_object_unref (slider->background);
 
   rut_simple_introspectable_destroy (slider);
 
   rut_graphable_destroy (slider);
 
-  g_slice_free (RutSlider, object);
+  rut_object_free (RutSlider, object);
 }
-
-RutRefableVTable _rut_slider_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_slider_free
-};
-
-static RutGraphableVTable _rut_slider_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
 
 static void
 _rut_slider_paint (RutObject *object, RutPaintContext *paint_ctx)
 {
   RutSlider *slider = RUT_SLIDER (object);
   RutPaintableVTable *bg_paintable =
-    rut_object_get_vtable (slider->background, RUT_INTERFACE_ID_PAINTABLE);
+    rut_object_get_vtable (slider->background, RUT_TRAIT_ID_PAINTABLE);
 
-  bg_paintable->paint (RUT_OBJECT (slider->background), paint_ctx);
+  bg_paintable->paint (slider->background, paint_ctx);
 }
-
-static RutPaintableVTable _rut_slider_paintable_vtable = {
-  _rut_slider_paint
-};
-
-static RutIntrospectableVTable _rut_slider_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
 
 #if 0
 static void
@@ -2372,27 +2326,44 @@ RutType rut_slider_type;
 static void
 _rut_slider_init_type (void)
 {
-  rut_type_init (&rut_slider_type, "RigSlider");
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutSlider, ref_count),
-                          &_rut_slider_refable_vtable);
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutSlider, graphable),
-                          &_rut_slider_graphable_vtable);
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutSlider, paintable),
-                          &_rut_slider_paintable_vtable);
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_slider_introspectable_vtable);
-  rut_type_add_interface (&rut_slider_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutSlider, introspectable),
-                          NULL); /* no implied vtable */
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child remove */
+    NULL, /* child add */
+    NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+    _rut_slider_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+
+  RutType *type = &rut_slider_type;
+#define TYPE RutSlider
+
+  rut_type_init (&rut_slider_type, G_STRINGIFY (TYPE), _rut_slider_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 static RutInputEventStatus
@@ -2465,7 +2436,8 @@ rut_slider_new (RutContext *ctx,
                 float max,
                 float length)
 {
-  RutSlider *slider = g_slice_new0 (RutSlider);
+  RutSlider *slider =
+    rut_object_alloc0 (RutSlider, &rut_slider_type, _rut_slider_init_type);
   CoglTexture *bg_texture;
   CoglTexture *handle_texture;
   GError *error = NULL;
@@ -2473,12 +2445,10 @@ rut_slider_new (RutContext *ctx,
   float width;
   float height;
 
-  rut_object_init (&slider->_parent, &rut_slider_type);
 
-  slider->ref_count = 1;
 
-  rut_graphable_init (RUT_OBJECT (slider));
-  rut_paintable_init (RUT_OBJECT (slider));
+  rut_graphable_init (slider);
+  rut_paintable_init (slider);
 
   slider->ctx = ctx;
 
@@ -2745,8 +2715,7 @@ rut_drop_event_get_data (RutInputEvent *drop_event)
 
 struct _RutTextBlob
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   char *text;
 };
@@ -2786,7 +2755,7 @@ _rut_text_blob_free (void *object)
 
   g_free (blob->text);
 
-  g_slice_free (RutTextBlob, object);
+  rut_object_free (RutTextBlob, object);
 }
 
 RutType rut_text_blob_type;
@@ -2794,11 +2763,6 @@ RutType rut_text_blob_type;
 static void
 _rut_text_blob_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_text_blob_free
-  };
   static RutMimableVTable mimable_vtable = {
       .copy = _rut_text_blob_copy,
       .has = _rut_text_blob_has,
@@ -2808,15 +2772,11 @@ _rut_text_blob_init_type (void)
   RutType *type = &rut_text_blob_type;
 #define TYPE RutTextBlob
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MIMABLE,
-                          0, /* no associated properties */
-                          &mimable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_text_blob_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MIMABLE,
+                      0, /* no associated properties */
+                      &mimable_vtable);
 
 #undef TYPE
 }
@@ -2824,18 +2784,10 @@ _rut_text_blob_init_type (void)
 RutTextBlob *
 rut_text_blob_new (const char *text)
 {
-  static bool initialized = FALSE;
-  RutTextBlob *blob = g_slice_new0 (RutTextBlob);
+  RutTextBlob *blob =
+    rut_object_alloc0 (RutTextBlob, &rut_text_blob_type, _rut_text_blob_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_text_blob_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (&blob->_parent, &rut_text_blob_type);
-
-  blob->ref_count = 1;
 
   blob->text = g_strdup (text);
 
@@ -2855,7 +2807,7 @@ clipboard_input_grab_cb (RutInputEvent *event,
           RutShell *shell = event->shell;
           RutObject *data = shell->clipboard;
           RutMimableVTable *mimable =
-            rut_object_get_vtable (data, RUT_INTERFACE_ID_MIMABLE);
+            rut_object_get_vtable (data, RUT_TRAIT_ID_MIMABLE);
           RutObject *copy = mimable->copy (data);
 
           _rut_shell_paste (shell, copy);
@@ -2875,7 +2827,7 @@ set_clipboard (RutShell *shell, RutObject *data)
 
   if (shell->clipboard)
     {
-      rut_refable_unref (shell->clipboard);
+      rut_object_unref (shell->clipboard);
 
       rut_shell_ungrab_input (shell,
                               clipboard_input_grab_cb,
@@ -2884,7 +2836,7 @@ set_clipboard (RutShell *shell, RutObject *data)
 
   if (data)
     {
-      shell->clipboard = rut_refable_ref (data);
+      shell->clipboard = rut_object_ref (data);
 
       rut_shell_grab_input (shell,
                             NULL,
@@ -2911,12 +2863,12 @@ selection_input_grab_cb (RutInputEvent *event,
         {
           RutObject *selection = shell->selection;
           RutSelectableVTable *selectable =
-            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+            rut_object_get_vtable (selection, RUT_TRAIT_ID_SELECTABLE);
           RutObject *copy = selectable->copy (selection);
 
           set_clipboard (shell, copy);
 
-          rut_refable_unref (copy);
+          rut_object_unref (copy);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -2925,14 +2877,14 @@ selection_input_grab_cb (RutInputEvent *event,
         {
           RutObject *selection = shell->selection;
           RutSelectableVTable *selectable =
-            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+            rut_object_get_vtable (selection, RUT_TRAIT_ID_SELECTABLE);
           RutObject *copy = selectable->copy (selection);
 
           selectable->del (selection);
 
           set_clipboard (shell, copy);
 
-          rut_refable_unref (copy);
+          rut_object_unref (copy);
 
           rut_shell_set_selection (shell, NULL);
 
@@ -2943,7 +2895,7 @@ selection_input_grab_cb (RutInputEvent *event,
         {
           RutObject *selection = shell->selection;
           RutSelectableVTable *selectable =
-            rut_object_get_vtable (selection, RUT_INTERFACE_ID_SELECTABLE);
+            rut_object_get_vtable (selection, RUT_TRAIT_ID_SELECTABLE);
 
           selectable->del (selection);
 
@@ -2973,7 +2925,7 @@ rut_shell_set_selection (RutShell *shell,
     {
       rut_selectable_cancel (shell->selection);
 
-      rut_refable_unref (shell->selection);
+      rut_object_unref (shell->selection);
 
       rut_shell_ungrab_input (shell,
                               selection_input_grab_cb,
@@ -2982,7 +2934,7 @@ rut_shell_set_selection (RutShell *shell,
 
   if (selection)
     {
-      shell->selection = rut_refable_ref (selection);
+      shell->selection = rut_object_ref (selection);
 
       rut_shell_grab_input (shell,
                             NULL,
@@ -3005,7 +2957,7 @@ rut_shell_start_drag (RutShell *shell, RutObject *payload)
   g_return_if_fail (shell->drag_payload == NULL);
 
   if (payload)
-    shell->drag_payload = rut_refable_ref (payload);
+    shell->drag_payload = rut_object_ref (payload);
 }
 
 void
@@ -3014,7 +2966,7 @@ rut_shell_cancel_drag (RutShell *shell)
   if (shell->drag_payload)
     {
       cancel_current_drop_offer_taker (shell);
-      rut_refable_unref (shell->drag_payload);
+      rut_object_unref (shell->drag_payload);
       shell->drag_payload = NULL;
     }
 }
@@ -3022,7 +2974,7 @@ rut_shell_cancel_drag (RutShell *shell)
 void
 rut_shell_take_drop_offer (RutShell *shell, RutObject *taker)
 {
-  g_return_if_fail (rut_object_is (taker, RUT_INTERFACE_ID_INPUTABLE));
+  g_return_if_fail (rut_object_is (taker, RUT_TRAIT_ID_INPUTABLE));
 
   /* shell->drop_offer_taker is always canceled at the start of
    * _rut_shell_handle_input() so it should always be NULL at
@@ -3031,5 +2983,5 @@ rut_shell_take_drop_offer (RutShell *shell, RutObject *taker)
 
   g_return_if_fail (taker);
 
-  shell->drop_offer_taker = rut_refable_ref (taker);
+  shell->drop_offer_taker = rut_object_ref (taker);
 }

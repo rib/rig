@@ -33,9 +33,8 @@
 
 struct _RutIcon
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
   RutContext *context;
 
   RutImage *image;
@@ -45,31 +44,17 @@ struct _RutIcon
   RutGraphableProps graphable;
 };
 
-RutType rut_icon_type;
-
 static void
 _rut_icon_free (void *object)
 {
   RutIcon *icon = object;
 
-  rut_refable_unref (icon->context);
+  rut_object_unref (icon->context);
 
   rut_graphable_destroy (icon);
 
-  g_slice_free (RutIcon, icon);
+  rut_object_free (RutIcon, icon);
 }
-
-RutRefableVTable _rut_icon_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_icon_free
-};
-
-static RutGraphableVTable _rut_icon_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static void
 rut_icon_set_size (void *object,
@@ -119,53 +104,52 @@ rut_icon_get_size (void *object,
   rut_sizable_get_size (icon->image, width, height);
 }
 
-static RutSizableVTable _rut_icon_sizable_vtable = {
-  rut_icon_set_size,
-  rut_icon_get_size,
-  rut_icon_get_preferred_width,
-  rut_icon_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
+RutType rut_icon_type;
 
 static void
 _rut_icon_init_type (void)
 {
-  rut_type_init (&rut_icon_type, "RutIcon");
-  rut_type_add_interface (&rut_icon_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutIcon, ref_count),
-                          &_rut_icon_refable_vtable);
-  rut_type_add_interface (&rut_icon_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutIcon, graphable),
-                          &_rut_icon_graphable_vtable);
-  rut_type_add_interface (&rut_icon_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_icon_sizable_vtable);
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child removed */
+    NULL, /* child addded */
+    NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rut_icon_set_size,
+    rut_icon_get_size,
+    rut_icon_get_preferred_width,
+    rut_icon_get_preferred_height,
+    NULL /* add_preferred_size_callback */
+  };
+
+  RutType *type = &rut_icon_type;
+#define TYPE RutIcon
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+
+#undef TYPE
 }
 
 RutIcon *
 rut_icon_new (RutContext *ctx,
               const char *filename)
 {
-  RutIcon *icon = g_slice_new0 (RutIcon);
-  static CoglBool initialized = FALSE;
+  RutIcon *icon =
+    rut_object_alloc0 (RutIcon, &rut_icon_type, _rut_icon_init_type);
   CoglTexture *texture;
   GError *error = NULL;
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_icon_init_type ();
+  icon->context = rut_object_ref (ctx);
 
-      initialized = TRUE;
-    }
-
-  icon->ref_count = 1;
-  icon->context = rut_refable_ref (ctx);
-
-  rut_object_init (&icon->_parent, &rut_icon_type);
 
   rut_graphable_init (icon);
 
@@ -175,7 +159,7 @@ rut_icon_new (RutContext *ctx,
       icon->image = rut_image_new (ctx, texture);
       rut_image_set_draw_mode (icon->image, RUT_IMAGE_DRAW_MODE_1_TO_1);
       rut_graphable_add_child (icon, icon->image);
-      rut_refable_unref (icon->image);
+      rut_object_unref (icon->image);
     }
   else
     {

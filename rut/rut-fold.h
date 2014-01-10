@@ -36,7 +36,7 @@ enum {
 
 typedef struct _RutFold
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -60,7 +60,6 @@ typedef struct _RutFold
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_FOLD_N_PROPS];
 
-  int ref_count;
 } RutFold;
 
 RutFold *

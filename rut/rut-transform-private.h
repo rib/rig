@@ -8,8 +8,7 @@
 
 struct _RutTransform
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutGraphableProps graphable;
 

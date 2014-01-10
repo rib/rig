@@ -71,9 +71,8 @@ typedef struct _RigControllerObjectView RigControllerObjectView;
 
 typedef struct
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -107,9 +106,8 @@ typedef struct
 
 struct _RigControllerObjectView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -132,9 +130,8 @@ struct _RigControllerObjectView
 
 typedef struct _RigPathView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   float width;
   float height;
@@ -162,9 +159,8 @@ typedef struct _RigPathView
 
 typedef struct _RigNodeMarker
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -198,8 +194,7 @@ typedef struct _NodeMapping
 
 struct _RigNodesSelection
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RigControllerView *view;
   GList *node_groups;
@@ -215,9 +210,8 @@ struct _RigNodesSelection
 
 struct _RigControllerView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RigEngine *engine;
   RutContext *context;
@@ -306,7 +300,7 @@ _rig_node_marker_free (RutObject *object)
 
   rut_graphable_destroy (marker);
 
-  g_slice_free (RigNodeMarker, marker);
+  rut_object_free (RigNodeMarker, marker);
 }
 
 RutType rig_node_marker_type;
@@ -314,26 +308,17 @@ RutType rig_node_marker_type;
 static void
 _rig_node_marker_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_node_marker_free
-  };
 
   static RutGraphableVTable graphable_vtable = { 0 };
 
   RutType *type = &rig_node_marker_type;
 #define TYPE RigNodeMarker
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_node_marker_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
 
 #undef TYPE
 }
@@ -351,7 +336,7 @@ destroy_node_group (NodeGroup *node_group)
     }
 
   if (node_group->path)
-    rut_refable_unref (node_group->path);
+    rut_object_unref (node_group->path);
 
   g_slice_free (NodeGroup, node_group);
 }
@@ -462,7 +447,7 @@ select_marker_node (RigNodesSelection *selection,
 
   node_group = g_slice_new (NodeGroup);
   node_group->selection = selection;
-  node_group->path = rut_refable_ref (marker->path);
+  node_group->path = rut_object_ref (marker->path);
   node_group->nodes = NULL;
   node_group->nodes = g_list_prepend (NULL, marker->node);
 
@@ -472,7 +457,7 @@ select_marker_node (RigNodesSelection *selection,
 grouped:
 
   mapping = g_slice_new (NodeMapping);
-  mapping->marker = rut_refable_ref (marker);
+  mapping->marker = rut_object_ref (marker);
   mapping->node_group = node_group;
 
   g_hash_table_insert (selection->node_map,
@@ -963,20 +948,12 @@ _rig_node_marker_new (RigPathView *path_view,
                       RigPath *path,
                       RigNode *node)
 {
-  RigNodeMarker *marker = g_slice_new0 (RigNodeMarker);
-  static CoglBool initialized = FALSE;
+  RigNodeMarker *marker =
+    rut_object_alloc0 (RigNodeMarker, &rig_node_marker_type, _rig_node_marker_init_type);
   RutContext *ctx = path_view->prop_view->object->view->context;
   CoglTexture *tex;
 
-  if (initialized == FALSE)
-    {
-      _rig_node_marker_init_type ();
-      initialized = TRUE;
-    }
 
-  marker->ref_count = 1;
-
-  rut_object_init (&marker->_parent, &rig_node_marker_type);
 
   rut_graphable_init (marker);
 
@@ -989,13 +966,13 @@ _rig_node_marker_new (RigPathView *path_view,
   marker->rect = rut_nine_slice_new (ctx, tex,
                                      0, 0, 0, 0, 10, 10);
   rut_graphable_add_child (marker, marker->rect);
-  rut_refable_unref (marker->rect);
+  rut_object_unref (marker->rect);
 
   marker->input_region = rut_input_region_new_rectangle (0, 0, 10, 10,
                                                          marker_input_cb,
                                                          marker);
   rut_graphable_add_child (marker, marker->input_region);
-  rut_refable_unref (marker->input_region);
+  rut_object_unref (marker->input_region);
 
   return marker;
 }
@@ -1112,7 +1089,7 @@ _rig_nodes_selection_free (void *object)
   _rig_nodes_selection_cancel (selection);
 
   g_hash_table_destroy (selection->node_map);
-  g_slice_free (RigNodesSelection, selection);
+  rut_object_free (RigNodesSelection, selection);
 }
 
 RutType rig_nodes_selection_type;
@@ -1120,11 +1097,6 @@ RutType rig_nodes_selection_type;
 static void
 _rig_nodes_selection_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_nodes_selection_free
-  };
   static RutSelectableVTable selectable_vtable = {
       .cancel = _rig_nodes_selection_cancel,
       .copy = _rig_nodes_selection_copy,
@@ -1137,19 +1109,15 @@ _rig_nodes_selection_init_type (void)
   RutType *type = &rig_nodes_selection_type;
 #define TYPE RigNodesSelection
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SELECTABLE,
-                          0, /* no associated properties */
-                          &selectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MIMABLE,
-                          0, /* no associated properties */
-                          &mimable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_nodes_selection_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SELECTABLE,
+                      0, /* no associated properties */
+                      &selectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MIMABLE,
+                      0, /* no associated properties */
+                      &mimable_vtable);
 
 #undef TYPE
 }
@@ -1157,25 +1125,18 @@ _rig_nodes_selection_init_type (void)
 static void
 destroy_node_mapping (NodeMapping *mapping)
 {
-  rut_refable_unref (mapping->marker);
+  rut_object_unref (mapping->marker);
   g_slice_free (NodeMapping, mapping);
 }
 
 static RigNodesSelection *
 _rig_nodes_selection_new (RigControllerView *view)
 {
-  static bool initialized = FALSE;
-  RigNodesSelection *selection = g_slice_new0 (RigNodesSelection);
+  RigNodesSelection *selection =
+    rut_object_alloc0 (RigNodesSelection,
+                       &rig_nodes_selection_type,
+                       _rig_nodes_selection_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rig_nodes_selection_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&selection->_parent, &rig_nodes_selection_type);
-
-  selection->ref_count = 1;
   selection->view = view;
   selection->node_groups = NULL;
 
@@ -1212,13 +1173,13 @@ _rig_path_view_free (void *object)
   rut_closure_list_disconnect_all (&path_view->preferred_size_cb_list);
 
   rut_closure_disconnect (path_view->path_operation_closure);
-  rut_refable_unref (path_view->path);
+  rut_object_unref (path_view->path);
 
   rut_graphable_destroy (path_view);
 
   rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, path_view);
 
-  g_slice_free (RigPathView, path_view);
+  rut_object_free (RigPathView, path_view);
 }
 
 static void
@@ -1229,7 +1190,7 @@ _rig_path_view_allocate_cb (RutObject *object,
   RigControllerView *view = path_view->prop_view->object->view;
   RutGraphableProps *markers_graphable =
     rut_object_get_properties (path_view->markers,
-                               RUT_INTERFACE_ID_GRAPHABLE);
+                               RUT_TRAIT_ID_GRAPHABLE);
   float length = rig_controller_get_length (view->controller);
   float to_pixel = rut_scale_get_pixel_scale (view->scale);
   float origin = rut_scale_get_offset (view->scale);
@@ -1246,7 +1207,7 @@ _rig_path_view_allocate_cb (RutObject *object,
     {
       RutTransform *transform = l->data;
       RutGraphableProps *transform_graphable =
-        rut_object_get_properties (transform, RUT_INTERFACE_ID_GRAPHABLE);
+        rut_object_get_properties (transform, RUT_TRAIT_ID_GRAPHABLE);
       RigNodeMarker *marker = transform_graphable->children.head->data;
       RigNode *node = marker->node;
 
@@ -1455,24 +1416,23 @@ _rig_path_view_init_type (void)
   RutType *type = &rig_path_view_type;
 #define TYPE RigPathView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_path_view_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, ui_viewport),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_path_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, ui_viewport),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -1486,13 +1446,13 @@ rig_path_view_add_node (RigPathView *path_view,
   RigNodeMarker *marker;
 
   rut_graphable_add_child (path_view->markers, transform);
-  rut_refable_unref (transform);
+  rut_object_unref (transform);
 
   marker = _rig_node_marker_new (path_view,
                                  path_view->path,
                                  node);
   rut_graphable_add_child (transform, marker);
-  rut_refable_unref (marker);
+  rut_object_unref (marker);
 
   _rig_path_view_queue_allocate (path_view);
 
@@ -1512,14 +1472,14 @@ rig_path_view_find_node_marker (RigPathView *path_view,
                                 RigNode *node)
 {
   RutGraphableProps *graphable =
-    rut_object_get_properties (path_view->markers, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (path_view->markers, RUT_TRAIT_ID_GRAPHABLE);
   GList *l;
 
   for (l = graphable->children.head; l; l = l->next)
     {
       RutTransform *transform = l->data;
       RutGraphableProps *transform_graphable =
-        rut_object_get_properties (transform, RUT_INTERFACE_ID_GRAPHABLE);
+        rut_object_get_properties (transform, RUT_TRAIT_ID_GRAPHABLE);
       RigNodeMarker *marker = transform_graphable->children.head->data;
 
       if (marker->node == node)
@@ -1711,7 +1671,6 @@ rig_path_view_new (RigControllerPropertyView *prop_view)
   RutProperty *len_prop;
   RigPath *path;
 
-  path_view->ref_count = 1;
 
   rut_graphable_init (path_view);
   rut_paintable_init (path_view);
@@ -1722,7 +1681,7 @@ rig_path_view_new (RigControllerPropertyView *prop_view)
 
   path_view->ui_viewport = rut_ui_viewport_new (view->context, 1, 1);
   rut_graphable_add_child (path_view, path_view->ui_viewport);
-  rut_refable_unref (path_view->ui_viewport);
+  rut_object_unref (path_view->ui_viewport);
 
   path_view->input_region =
     rut_input_region_new_rectangle (0.0, 0.0, /* x0/y0 */
@@ -1730,15 +1689,15 @@ rig_path_view_new (RigControllerPropertyView *prop_view)
                                     path_view_input_region_cb,
                                     path_view);
   rut_graphable_add_child (path_view->ui_viewport, path_view->input_region);
-  rut_refable_unref (path_view->input_region);
+  rut_object_unref (path_view->input_region);
 
   path_view->markers = rut_transform_new (view->context);
   rut_graphable_add_child (path_view->ui_viewport, path_view->markers);
-  rut_refable_unref (path_view->markers);
+  rut_object_unref (path_view->markers);
 
   path = rig_controller_get_path_for_property (view->controller,
                                                property);
-  path_view->path = rut_refable_ref (path);
+  path_view->path = rut_object_ref (path);
 
   rut_path_foreach_node (path,
                          add_path_marker_cb,
@@ -1790,7 +1749,7 @@ _rig_controller_property_view_free (void *object)
   rut_shell_remove_pre_paint_callback_by_graphable (prop_view->object->view->context->shell,
                                        prop_view);
 
-  g_slice_free (RigControllerPropertyView, prop_view);
+  rut_object_free (RigControllerPropertyView, prop_view);
 }
 
 float
@@ -2010,11 +1969,6 @@ RutType rig_controller_property_view_type;
 static void
 _rig_controller_property_view_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_controller_property_view_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -2033,19 +1987,15 @@ _rig_controller_property_view_init_type (void)
   RutType *type = &rig_controller_property_view_type;
 #define TYPE RigControllerPropertyView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_property_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -2072,7 +2022,7 @@ setup_label_column (RigControllerPropertyView *prop_view,
 
   rut_bin_set_left_padding (bin, 20);
   rut_bin_set_child (bin, label);
-  rut_refable_unref (label);
+  rut_object_unref (label);
 
   if (text)
     rut_text_set_text (label, text);
@@ -2081,7 +2031,7 @@ setup_label_column (RigControllerPropertyView *prop_view,
 
   column->transform = rut_transform_new (ctx);
   rut_graphable_add_child (prop_view->columns_parent, column->transform);
-  rut_refable_unref (column->transform);
+  rut_object_unref (column->transform);
 
   column->control = bin;
 
@@ -2092,7 +2042,7 @@ setup_label_column (RigControllerPropertyView *prop_view,
                                              NULL /* destroy */);
 
   rut_graphable_add_child (column->transform, bin);
-  rut_refable_unref (bin);
+  rut_object_unref (bin);
 }
 
 static void
@@ -2114,7 +2064,7 @@ update_method_control (RigControllerPropertyView *prop_view)
     {
       column->transform = rut_transform_new (ctx);
       rut_graphable_add_child (prop_view->columns_parent, column->transform);
-      rut_refable_unref (column->transform);
+      rut_object_unref (column->transform);
     }
 
   if (column->control)
@@ -2148,7 +2098,7 @@ update_method_control (RigControllerPropertyView *prop_view)
                                              NULL /* destroy */);
 
   rut_graphable_add_child (column->transform, column->control);
-  rut_refable_unref (column->control);
+  rut_object_unref (column->control);
 
   _rig_controller_property_view_queue_allocate (prop_view);
 }
@@ -2235,13 +2185,13 @@ setup_method_drop_down (RigControllerPropertyView *prop_view)
                                   3);
 
   rut_bin_set_child (bin, drop_down);
-  rut_refable_unref (drop_down);
+  rut_object_unref (drop_down);
   rut_bin_set_left_padding (bin, 5);
   rut_bin_set_right_padding (bin, 5);
 
   column->transform = rut_transform_new (ctx);
   rut_graphable_add_child (prop_view->columns_parent, column->transform);
-  rut_refable_unref (column->transform);
+  rut_object_unref (column->transform);
 
   column->control = bin;
   column->control_preferred_size_closure =
@@ -2251,7 +2201,7 @@ setup_method_drop_down (RigControllerPropertyView *prop_view)
                                              NULL /* destroy */);
 
   rut_graphable_add_child (column->transform, bin);
-  rut_refable_unref (bin);
+  rut_object_unref (bin);
 
   rut_drop_down_set_value (drop_down, prop_view->prop_data->method);
 
@@ -2303,21 +2253,12 @@ rig_controller_property_view_new (RigControllerView *view,
                                   RigControllerPropData *prop_data,
                                   RigControllerObjectView *object_view)
 {
-  RigControllerPropertyView *prop_view = g_slice_new0 (RigControllerPropertyView);
+  RigControllerPropertyView *prop_view =
+    rut_object_alloc0 (RigControllerPropertyView,
+                       &rig_controller_property_view_type,
+                       _rig_controller_property_view_init_type);
   RutProperty *property = prop_data->property;
   const RutPropertySpec *spec = property->spec;
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_controller_property_view_init_type ();
-
-      initialized = TRUE;
-    }
-
-  prop_view->ref_count = 1;
-
-  rut_object_init (&prop_view->_parent, &rig_controller_property_view_type);
 
   rut_graphable_init (prop_view);
 
@@ -2330,16 +2271,16 @@ rig_controller_property_view_new (RigControllerView *view,
 
   prop_view->stack = rut_stack_new (view->context, 1, 1);
   rut_graphable_add_child (prop_view, prop_view->stack);
-  rut_refable_unref (prop_view->stack);
+  rut_object_unref (prop_view->stack);
 
   prop_view->bg = rut_rectangle_new4f (view->context, 1, 1,
                                        0.5, 0.5, 0.5, 1);
   rut_stack_add (prop_view->stack, prop_view->bg);
-  rut_refable_unref (prop_view->bg);
+  rut_object_unref (prop_view->bg);
 
   prop_view->columns_parent = rut_transform_new (view->context);
   rut_stack_add (prop_view->stack, prop_view->columns_parent);
-  rut_refable_unref (prop_view->columns_parent);
+  rut_object_unref (prop_view->columns_parent);
 
   setup_label_column (prop_view, spec->nick ? spec->nick : spec->name);
 
@@ -2421,13 +2362,13 @@ _rig_controller_object_view_free (void *object)
       next = l->next;
 
       rut_box_layout_remove (object_view->properties_vbox, prop_view);
-      rut_refable_unref (prop_view);
+      rut_object_unref (prop_view);
     }
   g_list_free (object_view->properties);
 
   rut_graphable_destroy (object_view);
 
-  g_slice_free (RigControllerObjectView, object_view);
+  rut_object_free (RigControllerObjectView, object_view);
 }
 
 RutType rig_controller_object_view_type;
@@ -2435,11 +2376,6 @@ RutType rig_controller_object_view_type;
 static void
 _rig_controller_object_view_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_controller_object_view_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -2458,23 +2394,19 @@ _rig_controller_object_view_init_type (void)
   RutType *type = &rig_controller_object_view_type;
 #define TYPE RigControllerObjectView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, stack),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_object_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, stack),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -2544,23 +2476,14 @@ static RigControllerObjectView *
 rig_controller_object_view_new (RigControllerView *view,
                                 RutObject *object)
 {
-  RigControllerObjectView *object_view = g_slice_new0 (RigControllerObjectView);
+  RigControllerObjectView *object_view =
+    rut_object_alloc0 (RigControllerObjectView,
+                       &rig_controller_object_view_type,
+                       _rig_controller_object_view_init_type);
   RutProperty *fold_label_property;
   RutProperty *label_property;
   //RutBoxLayout *hbox;
   //RutIconToggle *eye_toggle;
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_controller_object_view_init_type ();
-
-      initialized = TRUE;
-    }
-
-  object_view->ref_count = 1;
-
-  rut_object_init (&object_view->_parent, &rig_controller_object_view_type);
 
   rut_graphable_init (object_view);
 
@@ -2569,7 +2492,7 @@ rig_controller_object_view_new (RigControllerView *view,
 
   object_view->stack = rut_stack_new (view->context, 1, 1);
   rut_graphable_add_child (object_view, object_view->stack);
-  rut_refable_unref (object_view->stack);
+  rut_object_unref (object_view->stack);
 
   object_view->fold = rut_fold_new (view->context, "<Object>");
   rut_fold_set_font_name (object_view->fold, "Sans Bold");
@@ -2578,13 +2501,13 @@ rig_controller_object_view_new (RigControllerView *view,
 #if 0
   hbox = rut_box_layout_new (view->context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_fold_set_header_child (object_view->fold, hbox);
-  rut_refable_unref (hbox);
+  rut_object_unref (hbox);
 
   eye_toggle = rut_icon_toggle_new (view->context,
                                     "eye-white.png",
                                     "eye.png");
   rut_box_layout_add (hbox, FALSE, eye_toggle);
-  rut_refable_unref (eye_toggle);
+  rut_object_unref (eye_toggle);
 #endif
 
   fold_label_property =
@@ -2656,7 +2579,7 @@ rig_controller_view_clear_object_views (RigControllerView *view)
       RigControllerObjectView *object_view = l->data;
       next = l->next;
 
-      rut_refable_unref (object_view);
+      rut_object_unref (object_view);
       rut_box_layout_remove (view->properties_vbox, object_view);
     }
 
@@ -2680,7 +2603,7 @@ _rig_controller_view_free (void *object)
   if (view->box_path)
     cogl_object_unref (view->box_path);
 
-  rut_refable_unref (view->nodes_selection);
+  rut_object_unref (view->nodes_selection);
 
   //rig_controller_view_clear_selected_nodes (view);
 
@@ -2690,7 +2613,7 @@ _rig_controller_view_free (void *object)
 
   rut_graphable_destroy (view);
 
-  g_slice_free (RigControllerView, view);
+  rut_object_free (RigControllerView, view);
 }
 
 #if 0
@@ -3184,11 +3107,6 @@ RutType rig_controller_view_type;
 static void
 _rig_controller_view_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_controller_view_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -3207,23 +3125,19 @@ _rig_controller_view_init_type (void)
   RutType *type = &rig_controller_view_type;
 #define TYPE RigControllerView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, vbox),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, vbox),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -3274,10 +3188,10 @@ rig_controller_view_property_added (RigControllerView *view,
 
   /* If the property belongs to a component then we'll group the
    * property according to the component's object instead */
-  if (rut_object_is (object, RUT_INTERFACE_ID_COMPONENTABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
     {
       RutComponentableProps *component =
-        rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
 
       if (component->entity)
         object = component->entity;
@@ -3314,10 +3228,10 @@ rig_controller_view_find_property (RigControllerView *view,
 
   /* If the property belongs to a component then it is grouped by
    * component's entity instead */
-  if (rut_object_is (object, RUT_INTERFACE_ID_COMPONENTABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
     {
       RutComponentableProps *component =
-        rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
 
       if (component->entity)
         object = component->entity;
@@ -3356,7 +3270,7 @@ rig_controller_view_property_removed (RigControllerView *view,
 
   object_view->properties =
     g_list_remove (object_view->properties, prop_view);
-  rut_refable_unref (prop_view);
+  rut_object_unref (prop_view);
   rut_box_layout_remove (object_view->properties_vbox, prop_view);
 
   /* If that was the last property on the object then we'll also
@@ -3364,7 +3278,7 @@ rig_controller_view_property_removed (RigControllerView *view,
   if (!object_view->properties)
     {
       view->object_views = g_list_remove (view->object_views, object_view);
-      rut_refable_unref (object_view);
+      rut_object_unref (object_view);
       rut_box_layout_remove (view->properties_vbox, object_view);
     }
 
@@ -4088,7 +4002,7 @@ rig_controller_view_set_controller (RigControllerView *view,
 
       _rig_nodes_selection_cancel (view->nodes_selection);
 
-      rut_refable_unref (view->controller);
+      rut_object_unref (view->controller);
     }
 
   view->controller = controller;
@@ -4097,7 +4011,7 @@ rig_controller_view_set_controller (RigControllerView *view,
       RutProperty *controller_len_prop;
       RutProperty *scale_focus_prop;
 
-      rut_refable_ref (controller);
+      rut_object_ref (controller);
 
       rig_controller_set_active (controller, true);
 
@@ -4174,7 +4088,7 @@ on_controller_add_button_click_cb (RutIconButton *button, void *user_data)
 
   rig_undo_journal_log_add_controller (engine->undo_journal, controller);
 
-  rut_refable_unref (controller);
+  rut_object_unref (controller);
 
   rig_controller_view_set_controller (view, controller);
 }
@@ -4250,9 +4164,8 @@ rig_controller_view_new (RigEngine *engine,
   RutRectangle *bg;
   RutText *label;
 
-  rut_graphable_init (RUT_OBJECT (view));
+  rut_graphable_init (view);
 
-  view->ref_count = 1;
 
   view->engine = engine;
   view->context = engine->ctx;
@@ -4264,20 +4177,20 @@ rig_controller_view_new (RigEngine *engine,
   view->vbox = rut_box_layout_new (engine->ctx,
                                    RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_graphable_add_child (view, view->vbox);
-  rut_refable_unref (view->vbox);
+  rut_object_unref (view->vbox);
 
   top_stack = rut_stack_new (engine->ctx, 0, 0);
   rut_box_layout_add (view->vbox, FALSE, top_stack);
-  rut_refable_unref (top_stack);
+  rut_object_unref (top_stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.65, 0.65, 0.65, 1);
   rut_stack_add (top_stack, bg);
-  rut_refable_unref (bg);
+  rut_object_unref (bg);
 
   selector_hbox = rut_box_layout_new (engine->ctx,
                                       RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_stack_add (top_stack, selector_hbox);
-  rut_refable_unref (selector_hbox);
+  rut_object_unref (selector_hbox);
 
   controller_selector = rut_drop_down_new (engine->ctx);
   view->controller_selector = controller_selector;
@@ -4286,7 +4199,7 @@ rig_controller_view_new (RigEngine *engine,
                                  controller_select_cb,
                                  view);
   rut_box_layout_add (selector_hbox, false, controller_selector);
-  rut_refable_unref (controller_selector);
+  rut_object_unref (controller_selector);
 
   add_button = rut_icon_button_new (engine->ctx,
                                     NULL, /* label */
@@ -4296,7 +4209,7 @@ rig_controller_view_new (RigEngine *engine,
                                     "add-white.png", /* active */
                                     "add.png"); /* disabled */
   rut_box_layout_add (selector_hbox, false, add_button);
-  rut_refable_unref (add_button);
+  rut_object_unref (add_button);
   rut_icon_button_add_on_click_callback (add_button,
                                          on_controller_add_button_click_cb,
                                          view,
@@ -4310,7 +4223,7 @@ rig_controller_view_new (RigEngine *engine,
                                        "delete-white.png", /* active */
                                        "delete.png"); /* disabled */
   rut_box_layout_add (selector_hbox, false, delete_button);
-  rut_refable_unref (delete_button);
+  rut_object_unref (delete_button);
   rut_icon_button_add_on_click_callback (delete_button,
                                          on_controller_delete_button_click_cb,
                                          view,
@@ -4320,16 +4233,16 @@ rig_controller_view_new (RigEngine *engine,
   view->header_hbox = rut_box_layout_new (engine->ctx,
                                           RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_box_layout_add (view->vbox, FALSE, view->header_hbox);
-  rut_refable_unref (view->header_hbox);
+  rut_object_unref (view->header_hbox);
 
   view->properties_label_shim = rut_shim_new (engine->ctx, 1, 1);
   rut_shim_set_shim_axis (view->properties_label_shim, RUT_SHIM_AXIS_X);
   rut_box_layout_add (view->header_hbox, FALSE, view->properties_label_shim);
-  rut_refable_unref (view->properties_label_shim);
+  rut_object_unref (view->properties_label_shim);
 
   label = rut_text_new_with_text (engine->ctx, NULL, "Properties");
   rut_shim_set_child (view->properties_label_shim, label);
-  rut_refable_unref (label);
+  rut_object_unref (label);
 
   view->scale = rut_scale_new (engine->ctx, 0, 10);
   rut_box_layout_add (view->header_hbox, TRUE, view->scale);
@@ -4341,16 +4254,16 @@ rig_controller_view_new (RigEngine *engine,
 
   stack = rut_stack_new (engine->ctx, 0, 0);
   rut_box_layout_add (view->vbox, TRUE, stack);
-  rut_refable_unref (stack);
+  rut_object_unref (stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.52, 0.52, 0.52, 1);
   rut_stack_add (stack, bg);
-  rut_refable_unref (bg);
+  rut_object_unref (bg);
 
   view->properties_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
   rut_ui_viewport_set_x_pannable (view->properties_vp, FALSE);
   rut_stack_add (stack, view->properties_vp);
-  rut_refable_unref (view->properties_vp);
+  rut_object_unref (view->properties_vp);
 
   view->properties_vbox =
     rut_box_layout_new (view->context,
@@ -4359,7 +4272,7 @@ rig_controller_view_new (RigEngine *engine,
   rut_ui_viewport_add (view->properties_vp, view->properties_vbox);
   rut_ui_viewport_set_sync_widget (view->properties_vp,
                                    view->properties_vbox);
-  rut_refable_unref (view->properties_vbox);
+  rut_object_unref (view->properties_vbox);
 
 
   rig_controller_view_create_separator_pipeline (view);

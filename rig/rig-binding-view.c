@@ -42,11 +42,10 @@ typedef struct _Dependency
 
 struct _RigBindingView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -76,7 +75,7 @@ _rig_binding_view_free (void *object)
 
   rut_graphable_destroy (binding_view);
 
-  g_slice_free (RigBindingView, binding_view);
+  rut_object_free (RigBindingView, binding_view);
 }
 
 RutType rig_binding_view_type;
@@ -97,20 +96,19 @@ _rig_binding_view_init_type (void)
   RutType *type = &rig_binding_view_type;
 #define TYPE RigBindingView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_binding_view_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, top_stack),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_binding_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, top_stack),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -127,7 +125,7 @@ remove_dependency (RigBindingView *binding_view,
       if (dependency->property == property)
         {
           rut_box_layout_remove (binding_view->dependencies_vbox, dependency->hbox);
-          rut_refable_unref (dependency->object);
+          rut_object_unref (dependency->object);
           g_slice_free (Dependency, dependency);
           return;
         }
@@ -158,7 +156,7 @@ add_dependency (RigBindingView *binding_view,
   const char *component_str = NULL;
   const char *label_str;
 
-  dependency->object = rut_refable_ref (object);
+  dependency->object = rut_object_ref (object);
   dependency->binding_view = binding_view;
 
   dependency->property = property;
@@ -179,7 +177,7 @@ add_dependency (RigBindingView *binding_view,
                              "delete.png", /* active */
                              "delete-white.png"); /* disabled */
       rut_box_layout_add (dependency->hbox, false, delete_button);
-      rut_refable_unref (delete_button);
+      rut_object_unref (delete_button);
       rut_icon_button_add_on_click_callback (delete_button,
                                              on_dependency_delete_button_click_cb,
                                              dependency,
@@ -193,10 +191,10 @@ add_dependency (RigBindingView *binding_view,
    * Just showing a property name isn't really enough
    * */
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_COMPONENTABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
     {
       RutComponentableProps *component =
-        rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
       RutEntity *entity = component->entity;
       label_prop = rut_introspectable_lookup_property (entity, "label");
       /* XXX: Hack to drop the "Rut" prefix from the name... */
@@ -228,12 +226,12 @@ add_dependency (RigBindingView *binding_view,
                                               dependency_label);
   g_free (dependency_label);
   rut_box_layout_add (dependency->hbox, false, dependency->label);
-  rut_refable_unref (dependency->label);
+  rut_object_unref (dependency->label);
 
   bin = rut_bin_new (binding_view->ctx);
   rut_bin_set_left_padding (bin, 20);
   rut_box_layout_add (dependency->hbox, false, bin);
-  rut_refable_unref (bin);
+  rut_object_unref (bin);
 
   /* TODO: Check if the name is unique for the current binding... */
   dependency->variable_name_label =
@@ -241,14 +239,14 @@ add_dependency (RigBindingView *binding_view,
                             property->spec->name);
   rut_text_set_editable (dependency->variable_name_label, true);
   rut_bin_set_child (bin, dependency->variable_name_label);
-  rut_refable_unref (dependency->variable_name_label);
+  rut_object_unref (dependency->variable_name_label);
 
   binding_view->dependencies =
     g_list_prepend (binding_view->dependencies, dependency);
 
   rut_box_layout_add (binding_view->dependencies_vbox,
                       false, dependency->hbox);
-  rut_refable_unref (dependency->hbox);
+  rut_object_unref (dependency->hbox);
 
   return dependency;
 }
@@ -324,58 +322,57 @@ rig_binding_view_new (RutContext *ctx)
   RutBoxLayout *hbox;
   RutText *equals;
 
-  binding_view->ref_count = 1;
   binding_view->ctx = ctx;
 
   rut_graphable_init (binding_view);
 
   binding_view->top_stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (binding_view, binding_view->top_stack);
-  rut_refable_unref (binding_view->top_stack);
+  rut_object_unref (binding_view->top_stack);
 
   binding_view->vbox =
     rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_stack_add (binding_view->top_stack, binding_view->vbox);
-  rut_refable_unref (binding_view->vbox);
+  rut_object_unref (binding_view->vbox);
 
   binding_view->drop_stack = rut_stack_new (ctx, 1, 1);
   rut_box_layout_add (binding_view->vbox, false, binding_view->drop_stack);
-  rut_refable_unref (binding_view->drop_stack);
+  rut_object_unref (binding_view->drop_stack);
 
   binding_view->drop_label = rut_text_new_with_text (ctx, NULL, "Dependencies...");
   rut_stack_add (binding_view->drop_stack, binding_view->drop_label);
-  rut_refable_unref (binding_view->drop_label);
+  rut_object_unref (binding_view->drop_label);
 
   binding_view->drop_region =
     rut_input_region_new_rectangle (0, 0, 1, 1,
                                     drop_region_input_cb,
                                     binding_view);
   rut_stack_add (binding_view->drop_stack, binding_view->drop_region);
-  rut_refable_unref (binding_view->drop_region);
+  rut_object_unref (binding_view->drop_region);
 
   dependencies_indent = rut_bin_new (ctx);
   rut_box_layout_add (binding_view->vbox, false, dependencies_indent);
-  rut_refable_unref (dependencies_indent);
+  rut_object_unref (dependencies_indent);
   rut_bin_set_left_padding (dependencies_indent, 10);
 
   binding_view->dependencies_vbox =
     rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_bin_set_child (dependencies_indent, binding_view->dependencies_vbox);
-  rut_refable_unref (binding_view->dependencies_vbox);
+  rut_object_unref (binding_view->dependencies_vbox);
 
   hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_box_layout_add (binding_view->vbox, false, hbox);
-  rut_refable_unref (hbox);
+  rut_object_unref (hbox);
 
   equals = rut_text_new_with_text (ctx, "bold", "=");
   rut_box_layout_add (hbox, false, equals);
-  rut_refable_unref (equals);
+  rut_object_unref (equals);
 
   binding_view->code_view = rut_text_new_with_text (ctx, "monospace", "");
   rut_text_set_hint_text (binding_view->code_view, "Expression...");
   rut_text_set_editable (binding_view->code_view, true);
   rut_box_layout_add (hbox, false, binding_view->code_view);
-  rut_refable_unref (binding_view->code_view);
+  rut_object_unref (binding_view->code_view);
 
   return binding_view;
 }

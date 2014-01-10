@@ -61,9 +61,8 @@ extern RutType rut_buffer_type;
 
 struct _RutBuffer
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   uint8_t *data;
   size_t size;
@@ -71,9 +70,8 @@ struct _RutBuffer
 
 struct _RutAttribute
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
   RutBuffer *buffer;
   const char *name;
   CoglBool normalized;
@@ -88,9 +86,8 @@ extern RutType rut_mesh_type;
 /* This kind of mesh is optimized for size and use by a GPU */
 struct _RutMesh
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   CoglVerticesMode mode;
   RutAttribute **attributes;

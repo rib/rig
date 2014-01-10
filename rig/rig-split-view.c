@@ -42,9 +42,8 @@ enum {
 
 struct _RigSplitView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutContext *ctx;
 
@@ -93,12 +92,12 @@ _rig_split_view_free (void *object)
   rig_split_view_set_child1 (split_view, NULL);
 
   rut_graphable_remove_child (split_view->child1_transform);
-  rut_refable_unref (split_view->child1_transform);
+  rut_object_unref (split_view->child1_transform);
 
   rut_simple_introspectable_destroy (split_view);
   rut_graphable_destroy (split_view);
 
-  g_slice_free (RigSplitView, split_view);
+  rut_object_free (RigSplitView, split_view);
 }
 
 static void
@@ -374,11 +373,6 @@ RutType rig_split_view_type;
 static void
 _rig_split_view_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_split_view_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -403,27 +397,23 @@ _rig_split_view_init_type (void)
   RutType *type = &rig_split_view_type;
 #define TYPE RigSplitView
 
-  rut_type_init (&rig_split_view_type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (&rig_split_view_type, G_STRINGIFY (TYPE), _rig_split_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 #undef TYPE
 }
 
@@ -434,26 +424,16 @@ rig_split_view_new (RigEngine *engine,
                     float height)
 {
   RutContext *context = engine->ctx;
-  RigSplitView *split_view = g_slice_new0 (RigSplitView);
-  static CoglBool initialized = FALSE;
+  RigSplitView *split_view =
+    rut_object_alloc0 (RigSplitView, &rig_split_view_type, _rig_split_view_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rig_split_view_init_type ();
 
-      initialized = TRUE;
-    }
-
-  rut_object_init (&split_view->_parent, &rig_split_view_type);
-
-  split_view->ref_count = 1;
 
   rut_simple_introspectable_init (split_view,
                                   _rig_split_view_prop_specs,
                                   split_view->properties);
 
-  rut_graphable_init (RUT_OBJECT (split_view));
+  rut_graphable_init (split_view);
 
   split_view->ctx = context;
 
@@ -491,13 +471,13 @@ rig_split_view_set_child0 (RigSplitView *split_view,
   if (split_view->child0)
     {
       rut_graphable_remove_child (split_view->child0);
-      rut_refable_unref (split_view->child0);
+      rut_object_unref (split_view->child0);
     }
 
   if (child0)
     {
       rut_graphable_add_child (split_view, child0);
-      rut_refable_ref (child0);
+      rut_object_ref (child0);
     }
 
   split_view->child0 = child0;
@@ -515,13 +495,13 @@ rig_split_view_set_child1 (RigSplitView *split_view,
   if (split_view->child1)
     {
       rut_graphable_remove_child (split_view->child1);
-      rut_refable_unref (split_view->child1);
+      rut_object_unref (split_view->child1);
     }
 
   if (child1)
     {
       rut_graphable_add_child (split_view->child1_transform, child1);
-      rut_refable_ref (child1);
+      rut_object_ref (child1);
     }
 
   split_view->child1 = child1;

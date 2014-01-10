@@ -39,11 +39,10 @@ enum {
 
 struct _RutEntry
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -99,34 +98,22 @@ _rut_entry_free (void *object)
 {
   RutEntry *entry = object;
 
-  rut_refable_unref (entry->ctx);
+  rut_object_unref (entry->ctx);
 
   remove_icon (entry);
 
   rut_simple_introspectable_destroy (entry);
 
   rut_graphable_remove_child (entry->text);
-  rut_refable_unref (entry->text);
+  rut_object_unref (entry->text);
 
   rut_graphable_remove_child (entry->text_transform);
-  rut_refable_unref (entry->text_transform);
+  rut_object_unref (entry->text_transform);
 
   rut_graphable_destroy (entry);
 
-  g_slice_free (RutEntry, entry);
+  rut_object_free (RutEntry, entry);
 }
-
-RutRefableVTable _rut_entry_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_entry_free
-};
-
-static RutGraphableVTable _rut_entry_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 #if 0
 static CoglPrimitive *
@@ -281,45 +268,52 @@ _rut_entry_get_preferred_height (RutObject *object,
     }
 }
 
-static RutSizableVTable _rut_entry_sizable_vtable = {
-  rut_entry_set_size,
-  rut_entry_get_size,
-  _rut_entry_get_preferred_width,
-  _rut_entry_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
-static RutIntrospectableVTable _rut_entry_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
 RutType rut_entry_type;
 
 static void
 _rut_entry_init_type (void)
 {
-  rut_type_init (&rut_entry_type, "RigEntry");
-  rut_type_add_interface (&rut_entry_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutEntry, ref_count),
-                          &_rut_entry_refable_vtable);
-  rut_type_add_interface (&rut_entry_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutEntry, graphable),
-                          &_rut_entry_graphable_vtable);
-  rut_type_add_interface (&rut_entry_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_entry_sizable_vtable);
-  rut_type_add_interface (&rut_entry_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_entry_introspectable_vtable);
-  rut_type_add_interface (&rut_entry_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutEntry, introspectable),
-                          NULL); /* no implied vtable */
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child removed */
+    NULL, /* child addded */
+    NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rut_entry_set_size,
+    rut_entry_get_size,
+    _rut_entry_get_preferred_width,
+    _rut_entry_get_preferred_height,
+    NULL /* add_preferred_size_callback */
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_entry_type;
+#define TYPE RutEntry
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_entry_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 
@@ -344,29 +338,19 @@ rut_entry_set_height (RutObject *obj,
 RutEntry *
 rut_entry_new (RutContext *ctx)
 {
-  RutEntry *entry = g_slice_new0 (RutEntry);
-  static CoglBool initialized = FALSE;
+  RutEntry *entry =
+    rut_object_alloc0 (RutEntry, &rut_entry_type, _rut_entry_init_type);
   float width, height;
   CoglTexture *bg_texture;
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_entry_init_type ();
 
-      initialized = TRUE;
-    }
-
-  rut_object_init (&entry->_parent, &rut_entry_type);
-
-  entry->ref_count = 1;
-  entry->ctx = rut_refable_ref (ctx);
+  entry->ctx = rut_object_ref (ctx);
 
   rut_simple_introspectable_init (entry,
                                   _rut_entry_prop_specs,
                                   entry->properties);
 
-  rut_graphable_init (RUT_OBJECT (entry));
+  rut_graphable_init (entry);
 
   bg_texture =
     rut_load_texture_from_data_file (ctx,
@@ -379,7 +363,7 @@ rut_entry_new (RutContext *ctx)
                                           0, 0);
   cogl_object_unref (bg_texture);
   rut_graphable_add_child (entry, entry->background);
-  rut_refable_unref (entry->background);
+  rut_object_unref (entry->background);
 
   entry->text = rut_text_new (ctx);
   rut_text_set_editable (entry->text, TRUE);
@@ -425,7 +409,7 @@ rut_entry_set_icon (RutEntry *entry,
 
       entry->icon_transform = rut_transform_new (entry->ctx);
       rut_graphable_add_child (entry, entry->icon_transform);
-      rut_refable_unref (entry->icon_transform);
+      rut_object_unref (entry->icon_transform);
 
       rut_graphable_add_child (entry->icon_transform, icon);
       entry->icon = icon;

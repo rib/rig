@@ -322,12 +322,12 @@ rig_node_box (RutPropertyType type,
 
     case RUT_PROPERTY_TYPE_ASSET:
       value->type = RUT_PROPERTY_TYPE_ASSET;
-      value->d.asset_val = rut_refable_ref (node->boxed.d.asset_val);
+      value->d.asset_val = rut_object_ref (node->boxed.d.asset_val);
       return TRUE;
 
     case RUT_PROPERTY_TYPE_OBJECT:
       value->type = RUT_PROPERTY_TYPE_OBJECT;
-      value->d.object_val = rut_refable_ref (node->boxed.d.object_val);
+      value->d.object_val = rut_object_ref (node->boxed.d.object_val);
       return TRUE;
 
     case RUT_PROPERTY_TYPE_POINTER:
@@ -468,7 +468,7 @@ rig_node_new_for_asset (float t, RutAsset *value)
   RigNode *node = g_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_ASSET;
-  node->boxed.d.asset_val = rut_refable_ref (value);
+  node->boxed.d.asset_val = rut_object_ref (value);
 
   return node;
 }
@@ -479,7 +479,7 @@ rig_node_new_for_object (float t, RutObject *value)
   RigNode *node = g_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_OBJECT;
-  node->boxed.d.object_val = rut_refable_ref (value);
+  node->boxed.d.object_val = rut_object_ref (value);
 
   return node;
 }

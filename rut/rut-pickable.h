@@ -44,7 +44,7 @@ rut_pickable_pick (RutObject *pickable,
                    float y)
 {
   RutPickableVTable *vtable =
-    rut_object_get_vtable (pickable, RUT_INTERFACE_ID_PICKABLE);
+    rut_object_get_vtable (pickable, RUT_TRAIT_ID_PICKABLE);
 
   return vtable->pick (pickable, camera, graphable_modelview, x, y);
 }

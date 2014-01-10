@@ -20,10 +20,6 @@
 
 extern uint8_t _rut_nine_slice_indices_data[54];
 
-/* PRIVATE */
-void
-_rut_init (void);
-
 /*
  * Note: The size and padding for this circle texture have been carefully
  * chosen so it has a power of two size and we have enough padding to scale
@@ -44,8 +40,7 @@ typedef struct _RutSettings RutSettings;
 /* TODO Make internals private */
 struct _RutContext
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   /* If true then this process does not handle input events directly
    * or output graphics directly. */

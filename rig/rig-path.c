@@ -17,14 +17,10 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include "rig-path.h"
 #include "rig-node.h"
-
-RutType rig_path_type;
 
 static void
 _rig_path_free (void *object)
@@ -37,46 +33,26 @@ _rig_path_free (void *object)
   rut_list_for_each_safe (node, t, &path->nodes, list_node)
     rig_node_free (node);
 
-  rut_refable_unref (path->ctx);
+  rut_object_unref (path->ctx);
   g_slice_free (RigPath, path);
 }
 
-static RutRefableVTable
-_rig_path_refable_vtable =
-  {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rig_path_free
-  };
+RutType rig_path_type;
 
 void
 _rig_path_init_type (void)
 {
-  rut_type_init (&rig_path_type, "RigPath");
-  rut_type_add_interface (&rig_path_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigPath, ref_count),
-                          &_rig_path_refable_vtable);
+  rut_type_init (&rig_path_type, "RigPath", _rig_path_free);
 }
 
 RigPath *
 rig_path_new (RutContext *ctx,
               RutPropertyType type)
 {
-  RigPath *path = g_slice_new (RigPath);
-  static CoglBool initialized = FALSE;
+  RigPath *path =
+    rut_object_alloc0 (RigPath, &rig_path_type, _rig_path_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rig_path_init_type ();
-
-      initialized = TRUE;
-    }
-
-  rut_object_init (&path->_parent, &rig_path_type);
-
-  path->ctx = rut_refable_ref (ctx);
-  path->ref_count = 1;
+  path->ctx = rut_object_ref (ctx);
 
   path->type = type;
 
@@ -613,8 +589,8 @@ rig_path_insert_asset (RigPath *path,
   if (node)
     {
       if (node->boxed.d.asset_val)
-        rut_refable_unref (node->boxed.d.asset_val);
-      node->boxed.d.asset_val = rut_refable_ref (value);
+        rut_object_unref (node->boxed.d.asset_val);
+      node->boxed.d.asset_val = rut_object_ref (value);
       notify_node_modified (path, node);
     }
   else
@@ -635,8 +611,8 @@ rig_path_insert_object (RigPath *path,
   if (node)
     {
       if (node->boxed.d.object_val)
-        rut_refable_unref (node->boxed.d.object_val);
-      node->boxed.d.object_val = rut_refable_ref (value);
+        rut_object_unref (node->boxed.d.object_val);
+      node->boxed.d.object_val = rut_object_ref (value);
       notify_node_modified (path, node);
     }
   else

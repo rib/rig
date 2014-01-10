@@ -42,13 +42,12 @@ typedef struct
 
 struct _RutVec3Slider
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
   RutGraphableProps graphable;
 
-  int ref_count;
 
   RutBoxLayout *hbox;
 
@@ -84,7 +83,7 @@ _rut_vec3_slider_free (void *object)
   rut_simple_introspectable_destroy (slider);
   rut_graphable_destroy (slider);
 
-  g_slice_free (RutVec3Slider, slider);
+  rut_object_free (RutVec3Slider, slider);
 }
 
 
@@ -111,28 +110,27 @@ _rut_vec3_slider_init_type (void)
   RutType *type = &rut_vec3_slider_type;
 #define TYPE RutVec3Slider
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_vec3_slider_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, hbox),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_vec3_slider_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, hbox),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -162,7 +160,6 @@ rut_vec3_slider_new (RutContext *context)
                                              _rut_vec3_slider_init_type);
   int i;
 
-  slider->ref_count = 1;
   slider->context = context;
 
   rut_graphable_init (slider);
@@ -174,7 +171,7 @@ rut_vec3_slider_new (RutContext *context)
   slider->hbox = rut_box_layout_new (context,
                                      RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_graphable_add_child (slider, slider->hbox);
-  rut_refable_unref (slider->hbox);
+  rut_object_unref (slider->hbox);
 
   for (i = 0; i < 3; i++)
     {
@@ -183,13 +180,13 @@ rut_vec3_slider_new (RutContext *context)
       slider->components[i].slider = rut_number_slider_new (context);
       rut_box_layout_add (slider->hbox, FALSE,
                           slider->components[i].slider);
-      rut_refable_unref (slider->components[i].slider);
+      rut_object_unref (slider->components[i].slider);
 
       if (i != 2)
         {
           text = rut_text_new_with_text (context, NULL, ", ");
           rut_box_layout_add (slider->hbox, FALSE, text);
-          rut_refable_unref (text);
+          rut_object_unref (text);
         }
 
       slider->components[i].property =

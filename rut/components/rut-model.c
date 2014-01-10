@@ -121,13 +121,13 @@ _rut_model_free (void *object)
     cogl_object_unref (model->primitive);
 
   if (model->mesh)
-    rut_refable_unref (model->mesh);
+    rut_object_unref (model->mesh);
 
   if (model->patched_mesh)
     {
       g_free (model->priv->polygons);
       g_free (model->priv->vertices);
-      rut_refable_unref (model->patched_mesh);
+      rut_object_unref (model->patched_mesh);
     }
 
   if (model->fin_mesh)
@@ -135,11 +135,11 @@ _rut_model_free (void *object)
       cogl_object_unref (model->fin_primitive);
       g_free (model->priv->fin_polygons);
       g_free (model->priv->fin_vertices);
-      rut_refable_unref (model->fin_mesh);
+      rut_object_unref (model->fin_mesh);
     }
 
   g_free (model->priv);
-  g_slice_free (RutModel, model);
+  rut_object_free (RutModel, model);
 }
 
 static RutObject *
@@ -149,10 +149,10 @@ _rut_model_copy (RutObject *object)
   RutModel *copy = _rut_model_new (model->ctx);
 
   copy->type = model->type;
-  copy->mesh = rut_refable_ref (model->mesh);
+  copy->mesh = rut_object_ref (model->mesh);
 
   if (model->asset)
-    copy->asset = rut_refable_ref (model->asset);
+    copy->asset = rut_object_ref (model->asset);
 
   copy->min_x = model->min_x;
   copy->max_x = model->max_x;
@@ -170,8 +170,8 @@ _rut_model_copy (RutObject *object)
   if (model->is_hair_model)
     {
       copy->is_hair_model = model->is_hair_model;
-      copy->patched_mesh = rut_refable_ref (model->patched_mesh);
-      copy->fin_mesh = rut_refable_ref (model->fin_mesh);
+      copy->patched_mesh = rut_object_ref (model->patched_mesh);
+      copy->fin_mesh = rut_object_ref (model->fin_mesh);
       if (copy->fin_primitive)
         copy->fin_primitive = cogl_object_ref (model->fin_primitive);
       copy->default_hair_length = model->default_hair_length;
@@ -185,11 +185,6 @@ RutType rut_model_type;
 void
 _rut_model_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_model_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_model_copy
@@ -207,23 +202,19 @@ _rut_model_init_type (void)
   RutType *type = &rut_model_type;
 #define TYPE RutModel
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PRIMABLE,
-                          0, /* no associated properties */
-                          &primable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MESHABLE,
-                          0, /* no associated properties */
-                          &meshable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_model_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PRIMABLE,
+                      0, /* no associated properties */
+                      &primable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MESHABLE,
+                      0, /* no associated properties */
+                      &meshable_vtable);
 
 #undef TYPE
 }
@@ -233,9 +224,8 @@ _rut_model_new (RutContext *ctx)
 {
   RutModel *model;
 
-  model = g_slice_new0 (RutModel);
-  rut_object_init (&model->_parent, &rut_model_type);
-  model->ref_count = 1;
+  model =
+    rut_object_alloc0 (RutModel, &rut_model_type, _rut_model_init_type);
   model->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
   model->ctx = ctx;
 
@@ -1476,7 +1466,7 @@ rut_model_new_from_asset (RutContext *ctx,
 
   model = rut_model_new_from_asset_mesh (ctx, mesh,
                                          needs_normals, needs_tex_coords);
-  model->asset = rut_refable_ref (asset);
+  model->asset = rut_object_ref (asset);
 
   return model;
 }
@@ -1548,7 +1538,7 @@ rut_model_new_for_hair (RutModel *base)
   model->fin_primitive = rut_mesh_create_primitive (model->ctx,
                                                     model->fin_mesh);
 
-  rut_refable_unref (model->mesh);
+  rut_object_unref (model->mesh);
   model->mesh = model->patched_mesh;
 
   model->default_hair_length = rut_model_get_default_hair_length (model);

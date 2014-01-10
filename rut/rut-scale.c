@@ -60,13 +60,13 @@ _rut_scale_free (void *object)
       Label *label = &g_array_index (scale->labels, Label, i);
 
       rut_graphable_remove_child (label->transform);
-      rut_refable_unref (label->transform);
+      rut_object_unref (label->transform);
     }
 
   g_array_free (scale->labels, TRUE);
 
   rut_graphable_remove_child (scale->select_transform);
-  rut_refable_unref (scale->select_transform);
+  rut_object_unref (scale->select_transform);
 
   rut_graphable_destroy (scale);
 
@@ -74,7 +74,7 @@ _rut_scale_free (void *object)
 
   cogl_object_unref (scale->pipeline);
 
-  g_slice_free (RutScale, object);
+  rut_object_free (RutScale, object);
 }
 
 static float
@@ -191,7 +191,7 @@ update_labels (RutScale *scale)
           rut_text_set_editable (label.text, false);
           rut_text_set_selectable (label.text, false);
           rut_graphable_add_child (label.transform, label.text);
-          rut_refable_unref (label.text);
+          rut_object_unref (label.text);
 
           g_array_append_val (scale->labels, label);
         }
@@ -377,11 +377,6 @@ RutType rut_scale_type;
 static void
 _rut_scale_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_scale_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -409,31 +404,27 @@ _rut_scale_init_type (void)
   RutType *type = &rut_scale_type;
 #define TYPE RutScale
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_scale_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -816,7 +807,6 @@ rut_scale_new (RutContext *ctx,
                                        &rut_scale_type,
                                        _rut_scale_init_type);
 
-  scale->ref_count = 1;
 
   scale->ctx = ctx;
 
@@ -843,13 +833,13 @@ rut_scale_new (RutContext *ctx,
 
   scale->bg = rut_rectangle_new4f (ctx, 1, 1, 0.8, 0.8, 0.8, 1);
   rut_graphable_add_child (scale, scale->bg);
-  rut_refable_unref (scale->bg);
+  rut_object_unref (scale->bg);
 
   scale->select_transform = rut_transform_new (ctx);
 
   scale->select_rect = rut_rectangle_new4f (ctx, 1, 1, 0.9, 0.9, 0.8, 1);
   rut_graphable_add_child (scale->select_transform, scale->select_rect);
-  rut_refable_unref (scale->select_rect);
+  rut_object_unref (scale->select_rect);
 
   scale->pipeline = cogl_pipeline_new (ctx->cogl_context);
   cogl_pipeline_set_color4f (scale->pipeline, 1, 0, 0, 1);
@@ -859,7 +849,7 @@ rut_scale_new (RutContext *ctx,
                                     _rut_scale_input_cb,
                                     scale);
   rut_graphable_add_child (scale, scale->input_region);
-  rut_refable_unref (scale->input_region);
+  rut_object_unref (scale->input_region);
 
   return scale;
 }

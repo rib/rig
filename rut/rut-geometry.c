@@ -100,7 +100,7 @@ rut_create_circle_outline_mesh (uint8_t n_vertices)
   mesh = rut_mesh_new_from_buffer_p3c4 (COGL_VERTICES_MODE_LINE_LOOP,
                                         n_vertices, buffer);
 
-  rut_refable_unref (buffer);
+  rut_object_unref (buffer);
 
   return mesh;
 }
@@ -111,7 +111,7 @@ rut_create_circle_outline_primitive (RutContext *ctx,
 {
   RutMesh *mesh = rut_create_circle_outline_mesh (n_vertices);
   CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
-  rut_refable_unref (mesh);
+  rut_object_unref (mesh);
   return primitive;
 }
 
@@ -257,14 +257,14 @@ rut_create_rotation_tool_mesh (uint8_t n_vertices)
                                         n_vertices * 3,
                                         buffer);
 
-  rut_refable_unref (buffer);
+  rut_object_unref (buffer);
 
   rut_mesh_set_indices (mesh,
                         COGL_INDICES_TYPE_UNSIGNED_BYTE,
                         indices_buffer,
                         n_vertices * 2 * 3);
 
-  rut_refable_unref (indices_buffer);
+  rut_object_unref (indices_buffer);
 
   return mesh;
 }
@@ -275,7 +275,7 @@ rut_create_rotation_tool_primitive (RutContext *ctx,
 {
   RutMesh *mesh = rut_create_rotation_tool_mesh (n_vertices);
   CoglPrimitive *primitive = rut_mesh_create_primitive (ctx, mesh);
-  rut_refable_unref (mesh);
+  rut_object_unref (mesh);
 
   return primitive;
 }

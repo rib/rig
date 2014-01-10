@@ -45,9 +45,8 @@ extern RutType rut_hair_type;
 
 struct _RutHair
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
   RutContext *ctx;

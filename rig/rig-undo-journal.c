@@ -206,12 +206,12 @@ rig_undo_journal_set_controller_constant (RigUndoJournal *journal,
       undo_redo->mergable = mergable;
 
       prop_change = &undo_redo->d.set_controller_const;
-      prop_change->controller = rut_refable_ref (controller);
+      prop_change->controller = rut_object_ref (controller);
 
       rut_boxed_copy (&prop_change->value0, &prop_data->constant_value);
       rut_boxed_copy (&prop_change->value1, value);
 
-      prop_change->object = rut_refable_ref (property->object);
+      prop_change->object = rut_object_ref (property->object);
       prop_change->property = property;
     }
 
@@ -296,8 +296,8 @@ rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
           UndoRedoPathModify *modify = &undo_redo->d.path_modify;
 
           undo_redo->op = UNDO_REDO_PATH_MODIFY_OP;
-          modify->controller = rut_refable_ref (controller);
-          modify->object = rut_refable_ref (property->object);
+          modify->controller = rut_object_ref (controller);
+          modify->object = rut_object_ref (property->object);
           modify->property = property;
           modify->t = t;
           modify->value0 = old_value;
@@ -308,8 +308,8 @@ rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
           UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
 
           undo_redo->op = UNDO_REDO_PATH_ADD_OP;
-          add_remove->controller = rut_refable_ref (controller);
-          add_remove->object = rut_refable_ref (property->object);
+          add_remove->controller = rut_object_ref (controller);
+          add_remove->object = rut_object_ref (property->object);
           add_remove->property = property;
           add_remove->t = t;
           rut_boxed_copy (&add_remove->value, value);
@@ -335,8 +335,8 @@ rig_undo_journal_remove_controller_path_node (RigUndoJournal *journal,
 
   undo_redo->op = UNDO_REDO_PATH_REMOVE_OP;
   undo_redo->mergable = FALSE;
-  add_remove->controller = rut_refable_ref (controller);
-  add_remove->object = rut_refable_ref (property->object);
+  add_remove->controller = rut_object_ref (controller);
+  add_remove->object = rut_object_ref (property->object);
   add_remove->property = property;
   add_remove->t = t;
   add_remove->have_value = false;
@@ -359,8 +359,8 @@ rig_undo_journal_set_controlled (RigUndoJournal *journal,
 
   set_controlled = &undo_redo->d.set_controlled;
 
-  set_controlled->controller = rut_refable_ref (controller);
-  set_controlled->object = rut_refable_ref (property->object);
+  set_controlled->controller = rut_object_ref (controller);
+  set_controlled->object = rut_object_ref (property->object);
   set_controlled->property = property;
   set_controlled->value = value;
 
@@ -386,8 +386,8 @@ rig_undo_journal_set_control_method (RigUndoJournal *journal,
 
   set_control_method = &undo_redo->d.set_control_method;
 
-  set_control_method->controller = rut_refable_ref (controller);
-  set_control_method->object = rut_refable_ref (property->object);
+  set_control_method->controller = rut_object_ref (controller);
+  set_control_method->object = rut_object_ref (property->object);
   set_control_method->property = property;
   set_control_method->prev_method = prop_data->method;
   set_control_method->method = method;
@@ -444,7 +444,7 @@ rig_undo_journal_set_property (RigUndoJournal *journal,
       rut_property_box (property, &set_property->value0);
       rut_boxed_copy (&set_property->value1, value);
 
-      set_property->object = rut_refable_ref (property->object);
+      set_property->object = rut_object_ref (property->object);
       set_property->property = property;
     }
 
@@ -465,8 +465,8 @@ rig_undo_journal_add_entity (RigUndoJournal *journal,
 
   add_entity = &undo_redo->d.add_delete_entity;
 
-  add_entity->parent_entity = rut_refable_ref (parent_entity);
-  add_entity->deleted_entity = rut_refable_ref (entity);
+  add_entity->parent_entity = rut_object_ref (parent_entity);
+  add_entity->deleted_entity = rut_object_ref (entity);
 
   /* We assume there aren't currently any controller references to
    * this entity. */
@@ -503,8 +503,8 @@ rig_undo_journal_delete_entity (RigUndoJournal *journal,
 
   delete_entity = &undo_redo->d.add_delete_entity;
 
-  delete_entity->parent_entity = rut_refable_ref (parent);
-  delete_entity->deleted_entity = rut_refable_ref (entity);
+  delete_entity->parent_entity = rut_object_ref (parent);
+  delete_entity->deleted_entity = rut_object_ref (entity);
 
   delete_entity->saved_controller_properties = false;
 
@@ -526,8 +526,8 @@ rig_undo_journal_add_component (RigUndoJournal *journal,
 
   add_component = &undo_redo->d.add_delete_component;
 
-  add_component->parent_entity = rut_refable_ref (entity);
-  add_component->deleted_component = rut_refable_ref (component);
+  add_component->parent_entity = rut_object_ref (entity);
+  add_component->deleted_component = rut_object_ref (component);
 
   /* We assume there are no controller references to the entity
    * currently */
@@ -544,7 +544,7 @@ rig_undo_journal_delete_component (RigUndoJournal *journal,
   UndoRedo *undo_redo;
   UndoRedoAddDeleteComponent *delete_component;
   RutComponentableProps *componentable =
-    rut_object_get_properties (component, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
 
   undo_redo = g_slice_new (UndoRedo);
@@ -553,8 +553,8 @@ rig_undo_journal_delete_component (RigUndoJournal *journal,
 
   delete_component = &undo_redo->d.add_delete_component;
 
-  delete_component->parent_entity = rut_refable_ref (entity);
-  delete_component->deleted_component = rut_refable_ref (component);
+  delete_component->parent_entity = rut_object_ref (entity);
+  delete_component->deleted_component = rut_object_ref (component);
 
   delete_component->saved_controller_properties = false;
 
@@ -574,7 +574,7 @@ rig_undo_journal_log_add_controller (RigUndoJournal *journal,
 
   add_controller = &undo_redo->d.add_remove_controller;
 
-  add_controller->controller = rut_refable_ref (controller);
+  add_controller->controller = rut_object_ref (controller);
 
   g_warn_if_fail (rig_controller_get_active (controller) == false);
   add_controller->active_state = false;
@@ -598,7 +598,7 @@ rig_undo_journal_log_remove_controller (RigUndoJournal *journal,
   undo_redo->op = UNDO_REDO_REMOVE_CONTROLLER_OP;
   undo_redo->mergable = false;
 
-  remove_controller->controller = rut_refable_ref (controller);
+  remove_controller->controller = rut_object_ref (controller);
 
   remove_controller->saved_controller_properties = false;
 
@@ -691,7 +691,7 @@ undo_redo_set_property_invert (UndoRedo *undo_redo_src)
   undo_redo_inverse->op = undo_redo_src->op;
   undo_redo_inverse->mergable = FALSE;
 
-  inverse->object = rut_refable_ref (src->object);
+  inverse->object = rut_object_ref (src->object);
   inverse->property = src->property;
   inverse->value0 = src->value1;
   inverse->value1 = src->value0;
@@ -704,7 +704,7 @@ undo_redo_set_property_free (UndoRedo *undo_redo)
 {
   UndoRedoSetProperty *set_property =
     &undo_redo->d.set_property;
-  rut_refable_unref (set_property->object);
+  rut_object_unref (set_property->object);
   rut_boxed_destroy (&set_property->value0);
   rut_boxed_destroy (&set_property->value1);
   g_slice_free (UndoRedo, undo_redo);
@@ -734,8 +734,8 @@ undo_redo_set_controller_const_invert (UndoRedo *undo_redo_src)
   undo_redo_inverse->op = undo_redo_src->op;
   undo_redo_inverse->mergable = FALSE;
 
-  inverse->controller = rut_refable_ref (src->controller);
-  inverse->object = rut_refable_ref (src->object);
+  inverse->controller = rut_object_ref (src->controller);
+  inverse->object = rut_object_ref (src->object);
   inverse->property = src->property;
   inverse->value0 = src->value1;
   inverse->value1 = src->value0;
@@ -748,8 +748,8 @@ undo_redo_set_controller_const_free (UndoRedo *undo_redo)
 {
   UndoRedoSetControllerConst *set_controller_const =
     &undo_redo->d.set_controller_const;
-  rut_refable_unref (set_controller_const->object);
-  rut_refable_unref (set_controller_const->controller);
+  rut_object_unref (set_controller_const->object);
+  rut_object_unref (set_controller_const->controller);
   rut_boxed_destroy (&set_controller_const->value0);
   rut_boxed_destroy (&set_controller_const->value1);
   g_slice_free (UndoRedo, undo_redo);
@@ -785,8 +785,8 @@ undo_redo_path_add_invert (UndoRedo *undo_redo_src)
       rut_boxed_copy (&inverse->d.path_add_remove.value,
                       &undo_redo_src->d.path_add_remove.value);
     }
-  rut_refable_ref (inverse->d.path_add_remove.object);
-  rut_refable_ref (inverse->d.path_add_remove.controller);
+  rut_object_ref (inverse->d.path_add_remove.object);
+  rut_object_ref (inverse->d.path_add_remove.controller);
 
   return inverse;
 }
@@ -828,8 +828,8 @@ undo_redo_path_remove_invert (UndoRedo *undo_redo_src)
       rut_boxed_copy (&inverse->d.path_add_remove.value,
                       &undo_redo_src->d.path_add_remove.value);
     }
-  rut_refable_ref (inverse->d.path_add_remove.object);
-  rut_refable_ref (inverse->d.path_add_remove.controller);
+  rut_object_ref (inverse->d.path_add_remove.object);
+  rut_object_ref (inverse->d.path_add_remove.controller);
 
   return inverse;
 }
@@ -840,8 +840,8 @@ undo_redo_path_add_remove_free (UndoRedo *undo_redo)
   UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
   if (add_remove->have_value)
     rut_boxed_destroy (&add_remove->value);
-  rut_refable_unref (add_remove->object);
-  rut_refable_unref (add_remove->controller);
+  rut_object_unref (add_remove->object);
+  rut_object_unref (add_remove->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -869,8 +869,8 @@ undo_redo_path_modify_invert (UndoRedo *undo_redo_src)
                   &undo_redo_src->d.path_modify.value1);
   rut_boxed_copy (&inverse->d.path_modify.value1,
                   &undo_redo_src->d.path_modify.value0);
-  rut_refable_ref (inverse->d.path_modify.object);
-  rut_refable_ref (inverse->d.path_modify.controller);
+  rut_object_ref (inverse->d.path_modify.object);
+  rut_object_ref (inverse->d.path_modify.controller);
 
   return inverse;
 }
@@ -881,8 +881,8 @@ undo_redo_path_modify_free (UndoRedo *undo_redo)
   UndoRedoPathModify *modify = &undo_redo->d.path_modify;
   rut_boxed_destroy (&modify->value0);
   rut_boxed_destroy (&modify->value1);
-  rut_refable_unref (modify->object);
-  rut_refable_unref (modify->controller);
+  rut_object_unref (modify->object);
+  rut_object_unref (modify->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -910,8 +910,8 @@ undo_redo_set_controlled_invert (UndoRedo *undo_redo_src)
 
   inverse->d.set_controlled.value = !inverse->d.set_controlled.value;
 
-  rut_refable_ref (inverse->d.set_controlled.object);
-  rut_refable_ref (inverse->d.set_controlled.controller);
+  rut_object_ref (inverse->d.set_controlled.object);
+  rut_object_ref (inverse->d.set_controlled.controller);
 
   return inverse;
 }
@@ -920,8 +920,8 @@ static void
 undo_redo_set_controlled_free (UndoRedo *undo_redo)
 {
   UndoRedoSetControlled *set_controlled = &undo_redo->d.set_controlled;
-  rut_refable_unref (set_controlled->object);
-  rut_refable_unref (set_controlled->controller);
+  rut_object_unref (set_controlled->object);
+  rut_object_unref (set_controlled->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -951,8 +951,8 @@ undo_redo_set_control_method_invert (UndoRedo *undo_redo_src)
     inverse->d.set_control_method.prev_method;
   inverse->d.set_control_method.prev_method = tmp;
 
-  rut_refable_ref (inverse->d.set_control_method.object);
-  rut_refable_ref (inverse->d.set_control_method.controller);
+  rut_object_ref (inverse->d.set_control_method.object);
+  rut_object_ref (inverse->d.set_control_method.controller);
 
   return inverse;
 }
@@ -961,8 +961,8 @@ static void
 undo_redo_set_control_method_free (UndoRedo *undo_redo)
 {
   UndoRedoSetControlMethod *set_control_method = &undo_redo->d.set_control_method;
-  rut_refable_unref (set_control_method->object);
-  rut_refable_unref (set_control_method->controller);
+  rut_object_unref (set_control_method->object);
+  rut_object_unref (set_control_method->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
 
@@ -978,7 +978,7 @@ copy_controller_property_list (RutList *src, RutList *dst)
       prop_data_copy->property = prop_data->property;
       prop_data_copy->method = prop_data->method;
       prop_data_copy->path =
-        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
+        prop_data->path ? rut_object_ref (prop_data->path) : NULL;
       rut_boxed_copy (&prop_data_copy->constant_value,
                       &prop_data->constant_value);
 
@@ -1008,7 +1008,7 @@ copy_controller_references (RutList *src_controller_properties,
         g_slice_new (UndoRedoControllerState);
 
       dst_controller_state->controller =
-        rut_refable_ref (src_controller_state->controller);
+        rut_object_ref (src_controller_state->controller);
 
       rut_list_init (&dst_controller_state->properties);
 
@@ -1026,8 +1026,8 @@ copy_add_delete_entity (UndoRedo *undo_redo)
   UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
   UndoRedoAddDeleteEntity *add_delete_entity = &copy->d.add_delete_entity;
 
-  rut_refable_ref (add_delete_entity->parent_entity);
-  rut_refable_ref (add_delete_entity->deleted_entity);
+  rut_object_ref (add_delete_entity->parent_entity);
+  rut_object_ref (add_delete_entity->deleted_entity);
 
   copy_controller_references (&undo_redo->d.add_delete_entity.controller_properties,
                               &add_delete_entity->controller_properties);
@@ -1059,7 +1059,7 @@ copy_controller_property_cb (RigControllerPropData *prop_data,
        * being modified.
        */
       undo_prop_data->path =
-        prop_data->path ? rut_refable_ref (prop_data->path) : NULL;
+        prop_data->path ? rut_object_ref (prop_data->path) : NULL;
       undo_prop_data->property = prop_data->property;
 
       rut_list_insert (data->properties->prev,
@@ -1100,7 +1100,7 @@ save_controller_properties (RigEngine *engine,
           continue;
         }
 
-      controller_state->controller = rut_refable_ref (controller);
+      controller_state->controller = rut_object_ref (controller);
       rut_list_insert (controller_properties,
                        &controller_state->link);
     }
@@ -1159,7 +1159,7 @@ add_controller_properties (RigController *controller, RutList *properties)
           path = rig_path_copy (undo_prop_data->path);
           rig_controller_set_property_path (controller,
                                             undo_prop_data->property, path);
-          rut_refable_unref (path);
+          rut_object_unref (path);
         }
 
       rig_controller_set_property_constant (controller, undo_prop_data->property,
@@ -1212,7 +1212,7 @@ free_controller_properties (RutList *controller_properties)
                               &controller_state->properties, link)
         {
           if (prop_data->path)
-            rut_refable_unref (prop_data->path);
+            rut_object_unref (prop_data->path);
 
           rut_boxed_destroy (&prop_data->constant_value);
 
@@ -1228,8 +1228,8 @@ undo_redo_add_delete_entity_free (UndoRedo *undo_redo)
 {
   UndoRedoAddDeleteEntity *add_delete_entity = &undo_redo->d.add_delete_entity;
 
-  rut_refable_unref (add_delete_entity->parent_entity);
-  rut_refable_unref (add_delete_entity->deleted_entity);
+  rut_object_unref (add_delete_entity->parent_entity);
+  rut_object_unref (add_delete_entity->deleted_entity);
 
   free_controller_properties (&add_delete_entity->controller_properties);
 
@@ -1242,8 +1242,8 @@ copy_add_delete_component (UndoRedo *undo_redo)
   UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
   UndoRedoAddDeleteComponent *add_delete_component = &copy->d.add_delete_component;
 
-  rut_refable_ref (add_delete_component->parent_entity);
-  rut_refable_ref (add_delete_component->deleted_component);
+  rut_object_ref (add_delete_component->parent_entity);
+  rut_object_ref (add_delete_component->deleted_component);
 
   copy_controller_references (&undo_redo->d.add_delete_component.controller_properties,
                               &add_delete_component->controller_properties);
@@ -1328,8 +1328,8 @@ undo_redo_add_delete_component_free (UndoRedo *undo_redo)
   UndoRedoAddDeleteComponent *add_delete_component =
     &undo_redo->d.add_delete_component;
 
-  rut_refable_unref (add_delete_component->parent_entity);
-  rut_refable_unref (add_delete_component->deleted_component);
+  rut_object_unref (add_delete_component->parent_entity);
+  rut_object_unref (add_delete_component->deleted_component);
 
   free_controller_properties (&add_delete_component->controller_properties);
 
@@ -1343,7 +1343,7 @@ copy_add_remove_controller (UndoRedo *undo_redo)
   UndoRedoAddRemoveController *add_remove_controller =
     &copy->d.add_remove_controller;
 
-  rut_refable_ref (add_remove_controller->controller);
+  rut_object_ref (add_remove_controller->controller);
 
   copy_controller_references (&undo_redo->d.add_remove_controller.controller_properties,
                               &add_remove_controller->controller_properties);
@@ -1362,7 +1362,7 @@ undo_redo_add_controller_apply (RigUndoJournal *journal,
 
   engine->controllers =
     g_list_prepend (engine->controllers, add_controller->controller);
-  rut_refable_ref (add_controller->controller);
+  rut_object_ref (add_controller->controller);
 
   rut_list_for_each (controller_state,
                      &add_controller->controller_properties, link)
@@ -1433,7 +1433,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
 
   engine->controllers =
     g_list_remove (engine->controllers, remove_controller->controller);
-  rut_refable_unref (remove_controller->controller);
+  rut_object_unref (remove_controller->controller);
 
   rig_controller_view_update_controller_list (engine->controller_view);
 
@@ -1461,7 +1461,7 @@ undo_redo_add_remove_controller_free (UndoRedo *undo_redo)
   UndoRedoAddRemoveController *add_remove_controller =
     &undo_redo->d.add_remove_controller;
 
-  rut_refable_unref (add_remove_controller->controller);
+  rut_object_unref (add_remove_controller->controller);
 
   free_controller_properties (&add_remove_controller->controller_properties);
 

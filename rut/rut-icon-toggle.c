@@ -37,8 +37,7 @@
 
 struct _RutIconToggle
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -68,13 +67,13 @@ destroy_icons (RutIconToggle *toggle)
 {
   if (toggle->icon_set)
     {
-      rut_refable_unref (toggle->icon_set);
+      rut_object_unref (toggle->icon_set);
       toggle->icon_set = NULL;
     }
 
   if (toggle->icon_unset)
     {
-      rut_refable_unref (toggle->icon_unset);
+      rut_object_unref (toggle->icon_unset);
       toggle->icon_unset = NULL;
     }
 }
@@ -92,7 +91,7 @@ _rut_icon_toggle_free (void *object)
    * which we don't hold extra references for... */
   rut_graphable_destroy (toggle);
 
-  g_slice_free (RutIconToggle, object);
+  rut_object_free (RutIconToggle, object);
 }
 
 #if 0
@@ -132,20 +131,19 @@ _rut_icon_toggle_init_type (void)
   RutType *type = &rut_icon_toggle_type;
 #define TYPE RutIconToggle
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_icon_toggle_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, stack),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_toggle_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, stack),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -296,7 +294,6 @@ rut_icon_toggle_new (RutContext *ctx,
                                              _rut_icon_toggle_init_type);
   float natural_width, natural_height;
 
-  toggle->ref_count = 1;
 
   rut_list_init (&toggle->on_toggle_cb_list);
 
@@ -311,11 +308,11 @@ rut_icon_toggle_new (RutContext *ctx,
 
   toggle->stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (toggle, toggle->stack);
-  rut_refable_unref (toggle->stack);
+  rut_object_unref (toggle->stack);
 
   toggle->bin = rut_bin_new (ctx);
   rut_stack_add (toggle->stack, toggle->bin);
-  rut_refable_unref (toggle->bin);
+  rut_object_unref (toggle->bin);
 
   rut_icon_toggle_set_set_icon (toggle, set_icon);
   rut_icon_toggle_set_unset_icon (toggle, unset_icon);
@@ -325,7 +322,7 @@ rut_icon_toggle_new (RutContext *ctx,
                                     _rut_icon_toggle_input_cb,
                                     toggle);
   rut_stack_add (toggle->stack, toggle->input_region);
-  rut_refable_unref (toggle->input_region);
+  rut_object_unref (toggle->input_region);
 
   rut_sizable_get_preferred_width (toggle->stack, -1, NULL,
                                    &natural_width);
@@ -357,7 +354,7 @@ set_icon (RutIconToggle *toggle,
 {
   if (*icon)
     {
-      rut_refable_unref (*icon);
+      rut_object_unref (*icon);
       if (toggle->current_icon == *icon)
         {
           rut_bin_set_child (toggle->bin, NULL);

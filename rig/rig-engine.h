@@ -58,8 +58,7 @@ enum {
 
 typedef struct _RigEntitesSelection
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
   RigEngine *engine;
   GList *objects;
   RutList selection_events_cb_list;
@@ -70,9 +69,7 @@ extern RutType rig_engine_type;
 
 struct _RigEngine
 {
-  RutObjectProps _base;
-
-  int ref_count;
+  RutObjectBase _base;
 
   CoglBool play_mode;
 

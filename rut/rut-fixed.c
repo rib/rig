@@ -28,8 +28,7 @@
 
 struct _RutFixed
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -50,7 +49,7 @@ _rut_fixed_free (void *object)
 
   rut_graphable_destroy (fixed);
 
-  g_slice_free (RutFixed, object);
+  rut_object_free (RutFixed, object);
 }
 
 static void
@@ -86,11 +85,6 @@ RutType rut_fixed_type;
 static void
 _rut_fixed_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_fixed_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -109,19 +103,15 @@ _rut_fixed_init_type (void)
   RutType *type = &rut_fixed_type;
 #define TYPE RutFixed
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_fixed_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -131,18 +121,10 @@ rut_fixed_new (RutContext *ctx,
                float width,
                float height)
 {
-  RutFixed *fixed = g_slice_new0 (RutFixed);
-  static CoglBool initialized = FALSE;
+  RutFixed *fixed =
+    rut_object_alloc0 (RutFixed, &rut_fixed_type, _rut_fixed_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_fixed_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (&fixed->_parent, &rut_fixed_type);
-
-  fixed->ref_count = 1;
 
   fixed->context = ctx;
 

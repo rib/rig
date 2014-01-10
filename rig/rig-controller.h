@@ -80,9 +80,8 @@ typedef struct
 
 struct _RigController
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RigEngine *engine;
   RutContext *context;

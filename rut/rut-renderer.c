@@ -26,7 +26,7 @@ void
 rut_renderer_notify_entity_changed (RutObject *object, RutEntity *entity)
 {
   RutRendererVTable *renderer =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_RENDERER);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_RENDERER);
 
   return renderer->notify_entity_changed (entity);
 }
@@ -35,7 +35,7 @@ void
 rut_renderer_free_priv (RutObject *object, RutEntity *entity)
 {
   RutRendererVTable *renderer =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_RENDERER);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_RENDERER);
 
   return renderer->free_priv (entity);
 }

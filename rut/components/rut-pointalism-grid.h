@@ -36,8 +36,7 @@ enum {
 
 struct _RutPointalismGridSlice
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
   RutMesh *mesh;
 };
 
@@ -50,9 +49,8 @@ extern RutType rut_pointalism_grid_type;
 
 struct _RutPointalismGrid
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
 

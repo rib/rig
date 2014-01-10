@@ -28,8 +28,7 @@ extern RutType _rut_shape_model_type;
 
 struct _RutShapeModel
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   /* TODO: Allow this to be an asset */
   CoglTexture *shape_texture;
@@ -57,9 +56,8 @@ enum {
 
 struct _RutShape
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
 
@@ -89,7 +87,7 @@ rut_shape_new (RutContext *ctx,
 CoglPrimitive *
 rut_shape_get_primitive (RutObject *object);
 
-/* TODO: Perhaps add a RUT_INTERFACE_ID_GEOMETRY_COMPONENTABLE
+/* TODO: Perhaps add a RUT_TRAIT_ID_GEOMETRY_COMPONENTABLE
  * interface with a ->get_shape_texture() methos so we can
  * generalize rut_diamond_apply_mask() and
  * rut_shape_get_shape_texture()

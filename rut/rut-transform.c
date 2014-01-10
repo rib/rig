@@ -34,7 +34,7 @@ _rut_transform_free (void *object)
 
   rut_graphable_destroy (transform);
 
-  g_slice_free (RutTransform, object);
+  rut_object_free (RutTransform, object);
 }
 
 RutType rut_transform_type;
@@ -42,11 +42,6 @@ RutType rut_transform_type;
 static void
 _rut_transform_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_transform_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -61,19 +56,15 @@ _rut_transform_init_type (void)
   RutType *type = &rut_transform_type;
 #define TYPE RutTransform
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_TRANSFORMABLE,
-                          0,
-                          &transformable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_transform_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_TRANSFORMABLE,
+                      0,
+                      &transformable_vtable);
 
 #undef TYPE
 }
@@ -81,18 +72,10 @@ _rut_transform_init_type (void)
 RutTransform *
 rut_transform_new (RutContext *ctx)
 {
-  RutTransform *transform = g_slice_new (RutTransform);
-  static CoglBool initialized = FALSE;
+  RutTransform *transform =
+    rut_object_alloc0 (RutTransform, &rut_transform_type, _rut_transform_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_transform_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (&transform->_parent, &rut_transform_type);
-
-  transform->ref_count = 1;
 
   rut_graphable_init (transform);
 

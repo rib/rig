@@ -43,9 +43,8 @@ enum {
 
 struct _RutAsset
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutContext *ctx;
 
@@ -98,14 +97,14 @@ _rut_asset_free (void *object)
 
   //rut_simple_introspectable_destroy (asset);
 
-  g_slice_free (RutAsset, asset);
+  rut_object_free (RutAsset, asset);
 }
 
 /* This is for copy & paste where we don't currently want a deep copy */
 static RutObject *
 _rut_asset_copy (RutObject *mimable)
 {
-  return rut_refable_ref (mimable);
+  return rut_object_ref (mimable);
 }
 
 static bool
@@ -129,41 +128,32 @@ _rut_asset_get (RutObject *mimable, RutMimableType type)
 RutType rut_asset_type;
 
 void
-_rut_asset_type_init (void)
+_rut_asset_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_asset_free
-  };
   static RutMimableVTable mimable_vtable = {
-      .copy = _rut_asset_copy,
-      .has = _rut_asset_has,
-      .get = _rut_asset_get,
+    .copy = _rut_asset_copy,
+    .has = _rut_asset_has,
+    .get = _rut_asset_get,
   };
 
   RutType *type = &rut_asset_type;
 #define TYPE RutAsset
 
-  rut_type_init (&rut_asset_type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MIMABLE,
-                          0, /* no associated properties */
-                          &mimable_vtable);
+  rut_type_init (&rut_asset_type, G_STRINGIFY (TYPE), _rut_asset_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MIMABLE,
+                      0, /* no associated properties */
+                      &mimable_vtable);
 
 #if 0
-  rut_type_add_interface (&_asset_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_asset_introspectable_vtable);
-  rut_type_add_interface (&_asset_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (Asset, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_add_trait (&_asset_type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &_asset_introspectable_vtable);
+  rut_type_add_trait (&_asset_type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (Asset, introspectable),
+                      NULL); /* no implied vtable */
 #endif
 
 #undef TYPE
@@ -534,7 +524,8 @@ rut_asset_new_full (RutContext *ctx,
                     const GList *inferred_tags,
                     RutAssetType type)
 {
-  RutAsset *asset = g_slice_new0 (RutAsset);
+  RutAsset *asset =
+    rut_object_alloc0 (RutAsset, &rut_asset_type, _rut_asset_init_type);
   const char *real_path;
   char *full_path;
 
@@ -552,9 +543,7 @@ rut_asset_new_full (RutContext *ctx,
   real_path = path;
 #endif
 
-  rut_object_init (&asset->_parent, &rut_asset_type);
 
-  asset->ref_count = 1;
 
   asset->ctx = ctx;
 
@@ -583,7 +572,7 @@ rut_asset_new_full (RutContext *ctx,
 
         if (!asset->texture)
           {
-            g_slice_free (RutAsset, asset);
+            rut_object_free (RutAsset, asset);
             g_warning ("Failed to load asset texture: %s", error->message);
             cogl_error_free (error);
             asset = NULL;
@@ -608,7 +597,7 @@ rut_asset_new_full (RutContext *ctx,
 
         if (!asset->mesh)
           {
-            g_slice_free (RutAsset, asset);
+            rut_object_free (RutAsset, asset);
             g_warning ("could not load model %s: %s", path, error->message);
             g_error_free (error);
             asset = NULL;
@@ -710,11 +699,10 @@ rut_asset_new_from_data (RutContext *ctx,
                          const uint8_t *data,
                          size_t len)
 {
-  RutAsset *asset = g_slice_new0 (RutAsset);
+  RutAsset *asset =
+    rut_object_alloc0 (RutAsset, &rut_asset_type, _rut_asset_init_type);
 
-  rut_object_init (&asset->_parent, &rut_asset_type);
 
-  asset->ref_count = 1;
 
   asset->ctx = ctx;
 
@@ -749,7 +737,7 @@ rut_asset_new_from_data (RutContext *ctx,
 
               if (!pixbuf)
                 {
-                  g_slice_free (RutAsset, asset);
+                  rut_object_free (RutAsset, asset);
                   g_warning ("Failed to load asset texture: %s", error->message);
                   g_error_free (error);
                   return NULL;
@@ -770,7 +758,7 @@ rut_asset_new_from_data (RutContext *ctx,
 
               if (!asset->texture)
                 {
-                  g_slice_free (RutAsset, asset);
+                  rut_object_free (RutAsset, asset);
                   g_warning ("Failed to load asset texture: %s",
                              cogl_error->message);
                   cogl_error_free (cogl_error);
@@ -796,7 +784,7 @@ rut_asset_new_from_data (RutContext *ctx,
                                             &error);
               if (!asset->mesh)
                 {
-                  g_slice_free (RutAsset, asset);
+                  rut_object_free (RutAsset, asset);
                   g_warning ("could not load model %s: %s",
                              name, error->message);
                   g_error_free (error);
@@ -826,20 +814,19 @@ RutAsset *
 rut_asset_new_from_mesh (RutContext *ctx,
                          RutMesh *mesh)
 {
-  RutAsset *asset = g_slice_new0 (RutAsset);
+  RutAsset *asset =
+    rut_object_alloc0 (RutAsset, &rut_asset_type, _rut_asset_init_type);
   bool needs_normals = true;
   bool needs_tex_coords = true;
   int i;
 
-  rut_object_init (&asset->_parent, &rut_asset_type);
 
-  asset->ref_count = 1;
 
   asset->ctx = ctx;
 
   asset->type = RUT_ASSET_TYPE_PLY_MODEL;
 
-  asset->mesh = rut_refable_ref (mesh);
+  asset->mesh = rut_object_ref (mesh);
 
   for (i = 0; i < mesh->n_attributes; i++)
     {

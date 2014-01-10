@@ -43,7 +43,7 @@ typedef struct
 
 struct _RutBoxLayout
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -59,7 +59,6 @@ struct _RutBoxLayout
 
   RutGraphableProps graphable;
 
-  int ref_count;
 
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_BOX_LAYOUT_N_PROPS];
@@ -121,11 +120,11 @@ _rut_box_layout_free (void *object)
 
   rut_shell_remove_pre_paint_callback_by_graphable (box->ctx->shell, box);
 
-  rut_refable_unref (box->ctx);
+  rut_object_unref (box->ctx);
 
   rut_graphable_destroy (box);
 
-  g_slice_free (RutBoxLayout, box);
+  rut_object_free (RutBoxLayout, box);
 }
 
 static void
@@ -540,24 +539,23 @@ _rut_box_layout_init_type (void)
   RutType *type = &rut_box_layout_type;
 #define TYPE RutBoxLayout
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_box_layout_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_box_layout_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -570,14 +568,13 @@ rut_box_layout_new (RutContext *ctx,
                                          &rut_box_layout_type,
                                          _rut_box_layout_init_type);
 
-  box->ref_count = 1;
-  box->ctx = rut_refable_ref (ctx);
+  box->ctx = rut_object_ref (ctx);
   box->packing = packing;
 
   rut_list_init (&box->preferred_size_cb_list);
   rut_list_init (&box->children);
 
-  rut_graphable_init (RUT_OBJECT (box));
+  rut_graphable_init (box);
 
   rut_simple_introspectable_init (box,
                                   _rut_box_layout_prop_specs,
@@ -609,7 +606,7 @@ rut_box_layout_add (RutBoxLayout *box,
 
   child->transform = rut_transform_new (box->ctx);
   rut_graphable_add_child (box, child->transform);
-  rut_refable_unref (child->transform);
+  rut_object_unref (child->transform);
 
   child->widget = child_widget;
   rut_graphable_add_child (child->transform, child_widget);

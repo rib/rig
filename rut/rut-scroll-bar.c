@@ -43,8 +43,7 @@ enum {
 
 struct _RutScrollBar
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -119,14 +118,8 @@ _rut_scroll_bar_free (void *object)
 
   rut_graphable_destroy (scroll_bar);
 
-  g_slice_free (RutScrollBar, object);
+  rut_object_free (RutScrollBar, object);
 }
-
-static RutRefableVTable _rut_scroll_bar_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_scroll_bar_free
-};
 
 static void
 _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
@@ -169,47 +162,48 @@ _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
   cogl_framebuffer_pop_matrix (paint_ctx->camera->fb);
 }
 
-static RutPaintableVTable _rut_scroll_bar_paintable_vtable = {
-  _rut_scroll_bar_paint
-};
-
-RutGraphableVTable _rut_scroll_bar_graphable_vtable = {
-  NULL, /* child remove */
-  NULL, /* child add */
-  NULL /* parent changed */
-};
-
-static RutIntrospectableVTable _rut_scroll_bar_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
 RutType rut_scroll_bar_type;
 
 void
 _rut_scroll_bar_init_type (void)
 {
-  rut_type_init (&rut_scroll_bar_type, "RigScrollBar");
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutScrollBar, ref_count),
-                          &_rut_scroll_bar_refable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutScrollBar, graphable),
-                          &_rut_scroll_bar_graphable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutScrollBar, paintable),
-                          &_rut_scroll_bar_paintable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_scroll_bar_introspectable_vtable);
-  rut_type_add_interface (&rut_scroll_bar_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutScrollBar, introspectable),
-                          NULL); /* no implied vtable */
+  RutGraphableVTable graphable_vtable = {
+    NULL, /* child remove */
+    NULL, /* child add */
+    NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+    _rut_scroll_bar_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_scroll_bar_type;
+#define TYPE RutScrollBar
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_scroll_bar_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 static RutInputEventStatus
@@ -370,11 +364,10 @@ rut_scroll_bar_new (RutContext *ctx,
                     float virtual_length,
                     float viewport_length)
 {
-  RutScrollBar *scroll_bar = g_slice_new0 (RutScrollBar);
+  RutScrollBar *scroll_bar =
+    rut_object_alloc0 (RutScrollBar, &rut_scroll_bar_type, _rut_scroll_bar_init_type);
 
-  rut_object_init (&scroll_bar->_parent, &rut_scroll_bar_type);
 
-  scroll_bar->ref_count = 1;
 
   rut_simple_introspectable_init (scroll_bar,
                                   _rut_scroll_bar_prop_specs,
@@ -382,8 +375,8 @@ rut_scroll_bar_new (RutContext *ctx,
 
   scroll_bar->ctx = ctx;
 
-  rut_graphable_init (RUT_OBJECT (scroll_bar));
-  rut_paintable_init (RUT_OBJECT (scroll_bar));
+  rut_graphable_init (scroll_bar);
+  rut_paintable_init (scroll_bar);
 
   scroll_bar->axis = axis;
   scroll_bar->length = length;

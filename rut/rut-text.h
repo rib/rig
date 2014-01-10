@@ -122,9 +122,8 @@ enum
 
 struct _RutText
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
 

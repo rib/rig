@@ -53,7 +53,7 @@ typedef enum _DisabledState {
 
 struct _RutPropInspector
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   float width, height;
 
@@ -87,7 +87,6 @@ struct _RutPropInspector
    * reading the already current value. */
   bool reloading_property;
 
-  int ref_count;
 };
 
 RutType rut_prop_inspector_type;
@@ -104,10 +103,10 @@ _rut_prop_inspector_free (void *object)
 
   rut_graphable_destroy (inspector);
 
-  rut_refable_unref (inspector->disabled_overlay);
-  rut_refable_unref (inspector->input_region);
+  rut_object_unref (inspector->disabled_overlay);
+  rut_object_unref (inspector->input_region);
 
-  g_slice_free (RutPropInspector, inspector);
+  rut_object_free (RutPropInspector, inspector);
 }
 
 static void
@@ -130,20 +129,19 @@ _rut_prop_inspector_init_type (void)
   RutType *type = &rut_prop_inspector_type;
 #define TYPE RutPropInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_prop_inspector_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, top_stack),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_prop_inspector_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, top_stack),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -414,7 +412,7 @@ add_controlled_toggle (RutPropInspector *inspector,
   bin = rut_bin_new (inspector->context);
   rut_bin_set_right_padding (bin, 5);
   rut_box_layout_add (inspector->top_hbox, false, bin);
-  rut_refable_unref (bin);
+  rut_object_unref (bin);
 
   toggle = rut_icon_toggle_new (inspector->context,
                                 "record-button-selected.png",
@@ -428,7 +426,7 @@ add_controlled_toggle (RutPropInspector *inspector,
                                           NULL /* destroy_cb */);
 
   rut_bin_set_child (bin, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   inspector->controlled_toggle = toggle;
 }
@@ -458,14 +456,14 @@ add_control (RutPropInspector *inspector,
                                 label_text);
       rut_text_set_selectable (label, FALSE);
       rut_box_layout_add (inspector->widget_hbox, false, label);
-      rut_refable_unref (label);
+      rut_object_unref (label);
     }
 
   if (!(inspector->target_prop->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
     set_disabled (inspector, DISABLED_STATE_WIDGET);
 
   rut_box_layout_add (inspector->widget_hbox, true, widget);
-  rut_refable_unref (widget);
+  rut_object_unref (widget);
 
   if (widget_prop)
     {
@@ -521,7 +519,6 @@ rut_prop_inspector_new (RutContext *ctx,
                        _rut_prop_inspector_init_type);
   RutBin *grab_padding;
 
-  inspector->ref_count = 1;
   inspector->context = ctx;
 
   rut_graphable_init (inspector);
@@ -533,11 +530,11 @@ rut_prop_inspector_new (RutContext *ctx,
 
   inspector->top_stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (inspector, inspector->top_stack);
-  rut_refable_unref (inspector->top_stack);
+  rut_object_unref (inspector->top_stack);
 
   inspector->top_hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_stack_add (inspector->top_stack, inspector->top_hbox);
-  rut_refable_unref (inspector->top_hbox);
+  rut_object_unref (inspector->top_hbox);
 
   /* XXX: Hack for now, to make sure its possible to drag and drop any
    * property without inadvertanty manipulating the property value...
@@ -545,19 +542,19 @@ rut_prop_inspector_new (RutContext *ctx,
   grab_padding = rut_bin_new (inspector->context);
   rut_bin_set_right_padding (grab_padding, 15);
   rut_box_layout_add (inspector->top_hbox, false, grab_padding);
-  rut_refable_unref (grab_padding);
+  rut_object_unref (grab_padding);
 
   if (inspector->controlled_changed_cb && property->spec->animatable)
     add_controlled_toggle (inspector, property);
 
   inspector->widget_stack = rut_stack_new (ctx, 1, 1);
   rut_box_layout_add (inspector->top_hbox, true, inspector->widget_stack);
-  rut_refable_unref (inspector->widget_stack);
+  rut_object_unref (inspector->widget_stack);
 
   inspector->widget_hbox =
     rut_box_layout_new (inspector->context, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_stack_add (inspector->widget_stack, inspector->widget_hbox);
-  rut_refable_unref (inspector->widget_hbox);
+  rut_object_unref (inspector->widget_hbox);
 
   inspector->disabled_overlay =
     rut_rectangle_new4f (ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);

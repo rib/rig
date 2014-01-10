@@ -1504,13 +1504,13 @@ _rut_text_free (void *object)
   rut_text_set_buffer (text, NULL);
   g_free (text->font_name);
 
-  rut_refable_unref (text->pick_mesh);
-  rut_refable_unref (text->input_region);
+  rut_object_unref (text->pick_mesh);
+  rut_object_unref (text->input_region);
 
   rut_simple_introspectable_destroy (text);
   rut_graphable_destroy (text);
 
-  g_slice_free (RutText, text);
+  rut_object_free (RutText, text);
 }
 
 typedef void (* RutTextSelectionFunc) (RutText *text,
@@ -3143,12 +3143,6 @@ RutType rut_text_type;
 void
 _rut_text_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_text_free
-  };
-
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
       NULL, /* child add */
@@ -3188,44 +3182,40 @@ _rut_text_init_type (void)
 
   RutType *type = &rut_text_type;
 #define TYPE RutText
-  rut_type_init (&rut_text_type, G_STRINGIFY (TYPE));
 
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MESHABLE,
-                          0, /* no associated properties */
-                          &meshable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SELECTABLE,
-                          0, /* no associated properties */
-                          &selectable_vtable);
+  rut_type_init (&rut_text_type, G_STRINGIFY (TYPE), _rut_text_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MESHABLE,
+                      0, /* no associated properties */
+                      &meshable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SELECTABLE,
+                      0, /* no associated properties */
+                      &selectable_vtable);
 #undef TYPE
 }
 
@@ -3235,19 +3225,18 @@ rut_text_new_full (RutContext *ctx,
                    const char *text_str,
                    RutTextBuffer *buffer)
 {
-  RutText *text = g_slice_new0 (RutText);
+  RutText *text =
+    rut_object_alloc0 (RutText, &rut_text_type, _rut_text_init_type);
   RutBuffer *mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
   RutMesh *pick_mesh =
     rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES, 6, mesh_buffer);
   int i, password_hint_time;
 
-  rut_refable_unref (mesh_buffer);
+  rut_object_unref (mesh_buffer);
 
-  rut_object_init (&text->_parent, &rut_text_type);
 
   text->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  text->ref_count = 1;
 
   rut_list_init (&text->preferred_size_cb_list);
   rut_list_init (&text->delete_text_cb_list);
@@ -3367,7 +3356,7 @@ get_buffer (RutText *text)
       RutTextBuffer *buffer;
       buffer = rut_text_buffer_new (text->ctx);
       rut_text_set_buffer (text, buffer);
-      rut_refable_unref (buffer);
+      rut_object_unref (buffer);
     }
 
   return text->buffer;
@@ -3538,12 +3527,12 @@ rut_text_set_buffer (RutObject *obj,
   RutText *text = obj;
 
   if (buffer)
-    rut_refable_ref (buffer);
+    rut_object_ref (buffer);
 
   if (text->buffer)
     {
       buffer_disconnect_signals (text);
-      rut_refable_unref (text->buffer);
+      rut_object_unref (text->buffer);
     }
 
   text->buffer = buffer;

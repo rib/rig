@@ -569,7 +569,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
                         indices_buffer,
                         loader->faces->len);
 
-  rut_refable_unref (indices_buffer);
+  rut_object_unref (indices_buffer);
 
 EXIT:
 
@@ -577,11 +577,11 @@ EXIT:
     g_propagate_error (error, loader->error);
 
   if (loader->vertex_buffer)
-    rut_refable_unref (loader->vertex_buffer);
+    rut_object_unref (loader->vertex_buffer);
 
   for (i = 0; i < n_loader_attributes; i++)
     if (rut_attributes[i])
-      rut_refable_unref (rut_attributes[i]);
+      rut_object_unref (rut_attributes[i]);
 
   if (loader->faces)
     g_array_free (loader->faces, TRUE);

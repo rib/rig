@@ -598,7 +598,7 @@ rut_property_box (RutProperty *property,
       {
         RutObject *obj = rut_property_get_object (property);
         if (obj)
-          boxed->d.object_val = rut_refable_ref (obj);
+          boxed->d.object_val = rut_object_ref (obj);
         else
           boxed->d.object_val = NULL;
         break;
@@ -607,7 +607,7 @@ rut_property_box (RutProperty *property,
       {
         RutObject *obj = rut_property_get_asset (property);
         if (obj)
-          boxed->d.asset_val = rut_refable_ref (obj);
+          boxed->d.asset_val = rut_object_ref (obj);
         else
           boxed->d.asset_val = NULL;
         break;
@@ -666,7 +666,7 @@ rut_boxed_copy (RutBoxed *dst,
     case RUT_PROPERTY_TYPE_OBJECT:
       {
         if (src->d.object_val)
-          dst->d.object_val = rut_refable_ref (src->d.object_val);
+          dst->d.object_val = rut_object_ref (src->d.object_val);
         else
           dst->d.object_val = NULL;
         return;
@@ -674,7 +674,7 @@ rut_boxed_copy (RutBoxed *dst,
     case RUT_PROPERTY_TYPE_ASSET:
       {
         if (src->d.asset_val)
-          dst->d.asset_val = rut_refable_ref (src->d.asset_val);
+          dst->d.asset_val = rut_object_ref (src->d.asset_val);
         else
           dst->d.asset_val = NULL;
         return;
@@ -712,11 +712,11 @@ rut_boxed_destroy (RutBoxed *boxed)
     {
     case RUT_PROPERTY_TYPE_OBJECT:
       if (boxed->d.object_val)
-        rut_refable_unref (boxed->d.object_val);
+        rut_object_unref (boxed->d.object_val);
       break;
     case RUT_PROPERTY_TYPE_ASSET:
       if (boxed->d.asset_val)
-        rut_refable_unref (boxed->d.asset_val);
+        rut_object_unref (boxed->d.asset_val);
       break;
     case RUT_PROPERTY_TYPE_POINTER:
       g_free (boxed->d.text_val);

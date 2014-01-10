@@ -431,7 +431,7 @@ browse_callback (AvahiServiceBrowser *browser,
 
           if (strcmp (slave_address->name, name) == 0)
             {
-              rut_refable_unref (slave_address);
+              rut_object_unref (slave_address);
               engine->slave_addresses =
                 g_list_remove_link (engine->slave_addresses, l);
               g_message ("(Browser) REMOVE: service '%s' of type '%s' "

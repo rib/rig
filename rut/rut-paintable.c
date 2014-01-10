@@ -33,7 +33,7 @@ rut_paintable_init (RutObject *object)
 {
 #if 0
   RutPaintableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_PAINTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_PAINTABLE);
 #endif
 }
 
@@ -41,7 +41,7 @@ void
 rut_paintable_paint (RutObject *object, RutPaintContext *paint_ctx)
 {
   RutPaintableVTable *paintable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_PAINTABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_PAINTABLE);
 
   paintable->paint (object, paint_ctx);
 }

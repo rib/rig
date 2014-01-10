@@ -35,11 +35,10 @@ enum {
 /* TODO: Make internals private */
 struct _RutCamera
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutComponentableProps component;
 
-  int ref_count;
 
   RutContext *ctx;
 

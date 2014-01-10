@@ -51,8 +51,7 @@ enum {
 
 struct _RutToggle
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -157,7 +156,7 @@ _rut_toggle_free (void *object)
   rut_simple_introspectable_destroy (toggle);
   rut_graphable_destroy (toggle);
 
-  g_slice_free (RutToggle, object);
+  rut_object_free (RutToggle, object);
 }
 
 static void
@@ -315,11 +314,6 @@ RutType rut_toggle_type;
 static void
 _rut_toggle_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_toggle_free
-  };
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
       NULL, /* child add */
@@ -343,32 +337,27 @@ _rut_toggle_init_type (void)
   RutType *type = &rut_toggle_type;
 #define TYPE RutToggle
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_toggle_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -548,23 +537,13 @@ rut_toggle_new_with_icons (RutContext *ctx,
                            const char *selected_icon,
                            const char *label)
 {
-  RutToggle *toggle = g_slice_new0 (RutToggle);
+  RutToggle *toggle =
+    rut_object_alloc0 (RutToggle, &rut_toggle_type, _rut_toggle_init_type);
   PangoRectangle label_size;
   char *font_name;
   PangoFontDescription *font_desc;
-  static CoglBool initialized = FALSE;
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_toggle_init_type ();
 
-      initialized = TRUE;
-    }
-
-  rut_object_init (RUT_OBJECT (toggle), &rut_toggle_type);
-
-  toggle->ref_count = 1;
 
   rut_list_init (&toggle->on_toggle_cb_list);
 

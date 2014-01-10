@@ -324,7 +324,7 @@ rig_rpc_server_shutdown (RigRPCServer *server)
   g_warning ("Stopping RPC server");
 
 #warning "todo: explicitly shutdown via new rig_pb_rpc_server_shutdown() api"
-  rut_refable_unref (server->pb_rpc_server);
+  rut_object_unref (server->pb_rpc_server);
   server->pb_rpc_server = NULL;
 
   g_source_remove (server->source_id);
@@ -337,7 +337,7 @@ _rig_rpc_server_free (void *object)
 
   rig_rpc_server_shutdown (server);
 
-  g_slice_free (RigRPCServer, server);
+  rut_object_free (RigRPCServer, server);
 }
 
 static RutType rig_rpc_server_type;
@@ -345,20 +345,11 @@ static RutType rig_rpc_server_type;
 static void
 _rig_rpc_server_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_rpc_server_free
-  };
 
   RutType *type = &rig_rpc_server_type;
 #define TYPE RigRPCServer
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_server_free);
 
 #undef TYPE
 }
@@ -415,7 +406,7 @@ _rig_rpc_client_free (void *object)
 
   g_free (rpc_client->hostname);
 
-  g_slice_free (RigRPCClient, rpc_client);
+  rut_object_free (RigRPCClient, rpc_client);
 }
 
 static RutType rig_rpc_client_type;
@@ -423,20 +414,11 @@ static RutType rig_rpc_client_type;
 static void
 _rig_rpc_client_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_rpc_client_free
-  };
 
   RutType *type = &rig_rpc_client_type;
 #define TYPE RigRPCClient
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_client_free);
 
 #undef TYPE
 }
@@ -457,7 +439,6 @@ rig_rpc_client_new (const char *hostname,
   PB_RPC_Client *pb_client;
   GSource *source;
 
-  rpc_client->ref_count = 1;
 
   rpc_client->hostname = g_strdup (hostname);
   rpc_client->port = port;
@@ -503,7 +484,7 @@ rig_rpc_client_disconnect (RigRPCClient *rpc_client)
   rpc_client->protobuf_source = NULL;
 
 #warning "TODO: need explicit rig_pb_rpc_client_disconnect() api"
-  rut_refable_unref (rpc_client->pb_rpc_client);
+  rut_object_unref (rpc_client->pb_rpc_client);
   rpc_client->pb_rpc_client = NULL;
 }
 
@@ -512,11 +493,11 @@ _rig_rpc_peer_free (void *object)
 {
   RigRPCPeer *rpc_peer = object;
 
-  rut_refable_unref (rpc_peer->pb_rpc_client);
-  rut_refable_unref (rpc_peer->pb_rpc_server);
-  rut_refable_unref (rpc_peer->pb_rpc_peer);
+  rut_object_unref (rpc_peer->pb_rpc_client);
+  rut_object_unref (rpc_peer->pb_rpc_server);
+  rut_object_unref (rpc_peer->pb_rpc_peer);
 
-  g_slice_free (RigRPCPeer, rpc_peer);
+  rut_object_free (RigRPCPeer, rpc_peer);
 }
 
 static RutType rig_rpc_peer_type;
@@ -524,20 +505,11 @@ static RutType rig_rpc_peer_type;
 static void
 _rig_rpc_peer_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_rpc_peer_free
-  };
 
   RutType *type = &rig_rpc_peer_type;
 #define TYPE RigRPCPeer
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_peer_free);
 
 #undef TYPE
 }
@@ -565,7 +537,6 @@ rig_rpc_peer_new (int fd,
   PB_RPC_Peer *pb_peer;
   GSource *source;
 
-  rpc_peer->ref_count = 1;
 
   rpc_peer->fd = fd;
 

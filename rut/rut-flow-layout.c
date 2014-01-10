@@ -85,11 +85,10 @@ typedef struct
 
 struct _RutFlowLayout
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   float width, height;
 
@@ -269,7 +268,7 @@ _rut_flow_layout_free (void *object)
 
   rut_graphable_destroy (flow);
 
-  g_slice_free (RutFlowLayout, flow);
+  rut_object_free (RutFlowLayout, flow);
 }
 
 typedef void (* PreferredSizeCallback) (void *sizable,
@@ -682,11 +681,6 @@ RutType rut_flow_layout_type;
 static void
 _rut_flow_layout_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_flow_layout_free
-  };
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
       NULL, /* child addded */
@@ -707,28 +701,23 @@ _rut_flow_layout_init_type (void)
   RutType *type = &rut_flow_layout_type;
 #define TYPE RutFlowLayout
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_flow_layout_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 #undef TYPE
 }
 
@@ -736,18 +725,10 @@ RutFlowLayout *
 rut_flow_layout_new (RutContext *ctx,
                      RutFlowLayoutPacking packing)
 {
-  RutFlowLayout *flow = g_slice_new0 (RutFlowLayout);
-  static CoglBool initialized = FALSE;
+  RutFlowLayout *flow =
+    rut_object_alloc0 (RutFlowLayout, &rut_flow_layout_type, _rut_flow_layout_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_flow_layout_init_type ();
-      initialized = TRUE;
-    }
 
-  flow->ref_count = 1;
-
-  rut_object_init (&flow->_parent, &rut_flow_layout_type);
 
   rut_list_init (&flow->preferred_size_cb_list);
   rut_list_init (&flow->children);
@@ -801,7 +782,7 @@ rut_flow_layout_add (RutFlowLayout *flow,
 
   child->transform = rut_transform_new (flow->ctx);
   rut_graphable_add_child (flow, child->transform);
-  rut_refable_unref (child->transform);
+  rut_object_unref (child->transform);
 
   child->widget = child_widget;
   rut_graphable_add_child (child->transform, child_widget);

@@ -46,8 +46,7 @@ enum {
 
 struct _RutIconToggleSet
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -68,7 +67,7 @@ static void
 remove_toggle_state (RutIconToggleSetState *toggle_state)
 {
   rut_list_remove (&toggle_state->list_node);
-  rut_refable_unref (toggle_state->toggle);
+  rut_object_unref (toggle_state->toggle);
   g_slice_free (RutIconToggleSetState, toggle_state);
 }
 
@@ -90,7 +89,7 @@ _rut_icon_toggle_set_free (void *object)
 
   rut_simple_introspectable_destroy (toggle_set);
 
-  g_slice_free (RutIconToggleSet, object);
+  rut_object_free (RutIconToggleSet, object);
 }
 
 static RutPropertySpec
@@ -133,28 +132,27 @@ _rut_icon_toggle_set_init_type (void)
   RutType *type = &rut_icon_toggle_set_type;
 #define TYPE RutIconToggleSet
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_icon_toggle_set_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, layout),
-                          NULL); /* no vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_toggle_set_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, layout),
+                      NULL); /* no vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -169,7 +167,6 @@ rut_icon_toggle_set_new (RutContext *ctx,
                        _rut_icon_toggle_set_init_type);
   RutBoxLayoutPacking box_packing;
 
-  toggle_set->ref_count = 1;
 
   rut_list_init (&toggle_set->on_change_cb_list);
   rut_list_init (&toggle_set->toggles_list);
@@ -199,7 +196,7 @@ rut_icon_toggle_set_new (RutContext *ctx,
 
   toggle_set->layout = rut_box_layout_new (ctx, box_packing);
   rut_graphable_add_child (toggle_set, toggle_set->layout);
-  rut_refable_unref (toggle_set->layout);
+  rut_object_unref (toggle_set->layout);
 
   toggle_set->current_toggle_state = NULL;
 
@@ -278,7 +275,7 @@ rut_icon_toggle_set_add (RutIconToggleSet *toggle_set,
   g_return_if_fail (find_state_for_value (toggle_set, value) == NULL);
 
   toggle_state = g_slice_new0 (RutIconToggleSetState);
-  toggle_state->toggle = rut_refable_ref (toggle);
+  toggle_state->toggle = rut_object_ref (toggle);
   toggle_state->on_toggle_closure =
     rut_icon_toggle_add_on_toggle_callback (toggle,
                                             on_toggle_cb,

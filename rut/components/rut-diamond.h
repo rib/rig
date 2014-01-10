@@ -28,8 +28,7 @@ extern RutType _rut_diamond_slice_type;
 
 struct _RutDiamondSlice
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   CoglMatrix rotate_matrix;
 
@@ -48,9 +47,8 @@ extern RutType rut_diamond_type;
 
 struct _RutDiamond
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
 

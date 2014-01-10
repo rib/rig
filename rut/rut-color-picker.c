@@ -47,7 +47,7 @@ typedef enum
 
 struct _RutColorPicker
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -77,7 +77,6 @@ struct _RutColorPicker
   /* The current component values of the HSV colour */
   float hue, saturation, value;
 
-  int ref_count;
 };
 
 RutType rut_color_picker_type;
@@ -141,21 +140,15 @@ _rut_color_picker_free (void *object)
   cogl_object_unref (picker->bg_pipeline);
 
   rut_graphable_remove_child (picker->input_region);
-  rut_refable_unref (picker->input_region);
+  rut_object_unref (picker->input_region);
 
-  rut_refable_unref (picker->context);
+  rut_object_unref (picker->context);
 
   rut_simple_introspectable_destroy (picker);
   rut_graphable_destroy (picker);
 
-  g_slice_free (RutColorPicker, picker);
+  rut_object_free (RutColorPicker, picker);
 }
-
-RutRefableVTable _rut_color_picker_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_color_picker_free
-};
 
 static void
 hsv_to_rgb (const float hsv[3],
@@ -547,57 +540,58 @@ rut_color_picker_get_preferred_height (RutObject *object,
     *natural_height_p = RUT_COLOR_PICKER_TOTAL_HEIGHT;
 }
 
-static RutGraphableVTable _rut_color_picker_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static RutPaintableVTable _rut_color_picker_paintable_vtable = {
-  _rut_color_picker_paint
-};
-
-static RutIntrospectableVTable _rut_color_picker_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
-static RutSizableVTable _rut_color_picker_sizable_vtable = {
-  rut_color_picker_set_size,
-  rut_color_picker_get_size,
-  rut_color_picker_get_preferred_width,
-  rut_color_picker_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_color_picker_init_type (void)
 {
-  rut_type_init (&rut_color_picker_type, "RigColorPicker");
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutColorPicker, ref_count),
-                          &_rut_color_picker_refable_vtable);
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutColorPicker, graphable),
-                          &_rut_color_picker_graphable_vtable);
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutColorPicker, paintable),
-                          &_rut_color_picker_paintable_vtable);
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_color_picker_introspectable_vtable);
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutColorPicker, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_color_picker_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_color_picker_sizable_vtable);
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child removed */
+    NULL, /* child addded */
+    NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+    _rut_color_picker_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rut_color_picker_set_size,
+    rut_color_picker_get_size,
+    rut_color_picker_get_preferred_width,
+    rut_color_picker_get_preferred_height,
+    NULL /* add_preferred_size_callback */
+  };
+
+  RutType *type = &rut_color_picker_type;
+#define TYPE RutColorPicker
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_color_picker_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+
+#undef TYPE
 }
 
 static CoglPipeline *
@@ -849,23 +843,13 @@ input_region_cb (RutInputRegion *region,
 RutColorPicker *
 rut_color_picker_new (RutContext *context)
 {
-  RutColorPicker *picker = g_slice_new0 (RutColorPicker);
-  static CoglBool initialized = FALSE;
+  RutColorPicker *picker =
+    rut_object_alloc0 (RutColorPicker, &rut_color_picker_type, _rut_color_picker_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_color_picker_init_type ();
-
-      initialized = TRUE;
-    }
-
-  picker->ref_count = 1;
-  picker->context = rut_refable_ref (context);
+  picker->context = rut_object_ref (context);
 
   cogl_color_init_from_4ub (&picker->color, 0, 0, 0, 255);
 
-  rut_object_init (&picker->_parent, &rut_color_picker_type);
 
   picker->hs_pipeline = create_hs_pipeline (context->cogl_context);
   picker->hs_pipeline_dirty = TRUE;
@@ -877,8 +861,8 @@ rut_color_picker_new (RutContext *context)
 
   picker->bg_pipeline = create_bg_pipeline (context->cogl_context);
 
-  rut_paintable_init (RUT_OBJECT (picker));
-  rut_graphable_init (RUT_OBJECT (picker));
+  rut_paintable_init (picker);
+  rut_graphable_init (picker);
 
   rut_simple_introspectable_init (picker,
                                   _rut_color_picker_prop_specs,

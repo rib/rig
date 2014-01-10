@@ -46,8 +46,7 @@ typedef enum _IconButtonState
 
 struct _RutIconButton
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -79,25 +78,25 @@ destroy_icons (RutIconButton *button)
 {
   if (button->icon_normal)
     {
-      rut_refable_unref (button->icon_normal);
+      rut_object_unref (button->icon_normal);
       button->icon_normal = NULL;
     }
 
   if (button->icon_hover)
     {
-      rut_refable_unref (button->icon_hover);
+      rut_object_unref (button->icon_hover);
       button->icon_hover = NULL;
     }
 
   if (button->icon_active)
     {
-      rut_refable_unref (button->icon_active);
+      rut_object_unref (button->icon_active);
       button->icon_active = NULL;
     }
 
   if (button->icon_disabled)
     {
-      rut_refable_unref (button->icon_disabled);
+      rut_object_unref (button->icon_disabled);
       button->icon_disabled = NULL;
     }
 }
@@ -115,7 +114,7 @@ _rut_icon_button_free (void *object)
    * which we don't hold extra references for... */
   rut_graphable_destroy (button);
 
-  g_slice_free (RutIconButton, object);
+  rut_object_free (RutIconButton, object);
 }
 
 RutType rut_icon_button_type;
@@ -140,20 +139,19 @@ _rut_icon_button_init_type (void)
   RutType *type = &rut_icon_button_type;
 #define TYPE RutIconButton
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_icon_button_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, stack),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_button_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, stack),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -226,7 +224,7 @@ _rut_icon_button_grab_input_cb (RutInputEvent *event,
 
           /* NB: It's possible the click callbacks could result in the
            * button's last reference being released... */
-          rut_refable_ref (button);
+          rut_object_ref (button);
 
           rut_closure_list_invoke (&button->on_click_cb_list,
                                    RutIconButtonClickCallback,
@@ -236,7 +234,7 @@ _rut_icon_button_grab_input_cb (RutInputEvent *event,
 
           set_state (button, ICON_BUTTON_STATE_NORMAL);
 
-          rut_refable_unref (button);
+          rut_object_unref (button);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -349,7 +347,6 @@ rut_icon_button_new (RutContext *ctx,
                                              _rut_icon_button_init_type);
   float natural_width, natural_height;
 
-  button->ref_count = 1;
 
   rut_list_init (&button->on_click_cb_list);
 
@@ -361,15 +358,15 @@ rut_icon_button_new (RutContext *ctx,
 
   button->stack = rut_stack_new (ctx, 100, 100);
   rut_graphable_add_child (button, button->stack);
-  rut_refable_unref (button->stack);
+  rut_object_unref (button->stack);
 
   button->layout = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_stack_add (button->stack, button->layout);
-  rut_refable_unref (button->layout);
+  rut_object_unref (button->layout);
 
   button->bin = rut_bin_new (ctx);
   rut_box_layout_add (button->layout, TRUE, button->bin);
-  rut_refable_unref (button->bin);
+  rut_object_unref (button->bin);
 
   button->label_position = label_position;
 
@@ -381,10 +378,10 @@ rut_icon_button_new (RutContext *ctx,
 
       button->label = rut_text_new_with_text (ctx, NULL, label);
       rut_bin_set_child (bin, button->label);
-      rut_refable_unref (button->label);
+      rut_object_unref (button->label);
 
       rut_box_layout_add (button->layout, FALSE, bin);
-      rut_refable_unref (bin);
+      rut_object_unref (bin);
 
       update_layout (button);
     }
@@ -399,7 +396,7 @@ rut_icon_button_new (RutContext *ctx,
                                     _rut_icon_button_input_cb,
                                     button);
   rut_stack_add (button->stack, button->input_region);
-  rut_refable_unref (button->input_region);
+  rut_object_unref (button->input_region);
 
   rut_sizable_get_preferred_width (button->stack, -1, NULL,
                                    &natural_width);
@@ -431,7 +428,7 @@ set_icon (RutIconButton *button,
 {
   if (*icon)
     {
-      rut_refable_unref (*icon);
+      rut_object_unref (*icon);
       if (button->current_icon == *icon)
         {
           rut_bin_set_child (button->bin, NULL);

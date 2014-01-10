@@ -29,6 +29,8 @@
 
 #include <glib.h>
 
+#include <stdbool.h>
+
 G_BEGIN_DECLS
 
 /*
@@ -89,19 +91,19 @@ void
 _rut_bitmask_init_from_bitmask (RutBitmask *bitmask,
                                 const RutBitmask *src);
 
-gboolean
+bool
 _rut_bitmask_get_from_array (const RutBitmask *bitmask,
                               unsigned int bit_num);
 
 void
 _rut_bitmask_set_in_array (RutBitmask *bitmask,
                             unsigned int bit_num,
-                            gboolean value);
+                            bool value);
 
 void
 _rut_bitmask_set_range_in_array (RutBitmask *bitmask,
                                   unsigned int n_bits,
-                                  gboolean value);
+                                  bool value);
 
 void
 _rut_bitmask_clear_all_in_array (RutBitmask *bitmask);
@@ -141,8 +143,8 @@ void
 _rut_bitmask_xor_bits (RutBitmask *dst,
                        const RutBitmask *src);
 
-/* The foreach function can return FALSE to stop iteration */
-typedef gboolean (* RutBitmaskForeachFunc) (int bit_num, void *user_data);
+/* The foreach function can return false to stop iteration */
+typedef bool (* RutBitmaskForeachFunc) (int bit_num, void *user_data);
 
 /*
  * cogl_bitmask_foreach:
@@ -162,10 +164,10 @@ _rut_bitmask_foreach (const RutBitmask *bitmask,
  * @a: The first #RutBitmask to compare
  * @b: The second #RutBitmask to compare
  *
- * Returns %TRUE if the bitmask @a is equal to bitmask @b else returns
- * %FALSE.
+ * Returns %true if the bitmask @a is equal to bitmask @b else returns
+ * %false.
  */
-gboolean
+bool
 _rut_bitmask_equal (const RutBitmask *a,
                     const RutBitmask *b);
 
@@ -176,13 +178,13 @@ _rut_bitmask_equal (const RutBitmask *a,
  *
  * Return value: whether bit number @bit_num is set in @bitmask
  */
-static inline gboolean
+static inline bool
 _rut_bitmask_get (const RutBitmask *bitmask, unsigned int bit_num)
 {
   if (_rut_bitmask_has_array (bitmask))
     return _rut_bitmask_get_from_array (bitmask, bit_num);
   else if (bit_num >= COGL_BITMASK_MAX_DIRECT_BITS)
-    return FALSE;
+    return false;
   else
     return !!(_rut_bitmask_to_bits (bitmask) & (1UL << bit_num));
 }
@@ -196,7 +198,7 @@ _rut_bitmask_get (const RutBitmask *bitmask, unsigned int bit_num)
  * Sets or resets a bit number @bit_num in @bitmask according to @value.
  */
 static inline void
-_rut_bitmask_set (RutBitmask *bitmask, unsigned int bit_num, gboolean value)
+_rut_bitmask_set (RutBitmask *bitmask, unsigned int bit_num, bool value)
 {
   if (_rut_bitmask_has_array (bitmask) ||
       bit_num >= COGL_BITMASK_MAX_DIRECT_BITS)
@@ -220,7 +222,7 @@ _rut_bitmask_set (RutBitmask *bitmask, unsigned int bit_num, gboolean value)
 static inline void
 _rut_bitmask_set_range (RutBitmask *bitmask,
                         unsigned int n_bits,
-                        gboolean value)
+                        bool value)
 {
   if (_rut_bitmask_has_array (bitmask) ||
       n_bits > COGL_BITMASK_MAX_DIRECT_BITS)
@@ -243,7 +245,7 @@ static inline void
 _rut_bitmask_destroy (RutBitmask *bitmask)
 {
   if (_rut_bitmask_has_array (bitmask))
-    g_array_free ((GArray *) *bitmask, TRUE);
+    g_array_free ((GArray *) *bitmask, true);
 }
 
 /*

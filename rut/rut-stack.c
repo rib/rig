@@ -48,11 +48,10 @@ typedef struct
 
 struct _RutStack
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -98,14 +97,8 @@ _rut_stack_free (void *object)
   /* Destroying the graphable state should remove all the children */
   g_warn_if_fail (rut_list_empty (&stack->children));
 
-  g_slice_free (RutStack, stack);
+  rut_object_free (RutStack, stack);
 }
-
-RutRefableVTable _rut_stack_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_stack_free
-};
 
 static void
 allocate_cb (RutObject *graphable,
@@ -117,7 +110,7 @@ allocate_cb (RutObject *graphable,
   rut_list_for_each (child_data, &stack->children, list_node)
     {
       RutObject *child = child_data->child;
-      if (rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
+      if (rut_object_is (child, RUT_TRAIT_ID_SIZABLE))
         rut_sizable_set_size (child, stack->width, stack->height);
     }
 }
@@ -147,7 +140,7 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
 
   /* non-sizable children are allowed but we don't track any
    * child-data for them... */
-  if (!rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
+  if (!rut_object_is (child, RUT_TRAIT_ID_SIZABLE))
     return;
 
   rut_list_for_each (child_data, &stack->children, list_node)
@@ -156,7 +149,7 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
         rut_closure_disconnect (child_data->preferred_size_closure);
         rut_list_remove (&child_data->list_node);
         g_slice_free (RutStackChild, child_data);
-        rut_refable_release (child, parent);
+        rut_object_release (child, parent);
 
         preferred_size_changed (stack);
         if (!rut_list_empty (&stack->children))
@@ -185,11 +178,11 @@ _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
 
   /* non-sizable children are allowed but we don't track any
    * child-data for them... */
-  if (!rut_object_is (child, RUT_INTERFACE_ID_SIZABLE))
+  if (!rut_object_is (child, RUT_TRAIT_ID_SIZABLE))
     return;
 
   child_data = g_slice_new (RutStackChild);
-  child_data->child = rut_refable_claim (child, parent);
+  child_data->child = rut_object_claim (child, parent);
 
   child_data->preferred_size_closure =
     rut_sizable_add_preferred_size_callback (child,
@@ -202,12 +195,6 @@ _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
   preferred_size_changed (stack);
   queue_allocation (stack);
 }
-
-static RutGraphableVTable _rut_stack_graphable_vtable = {
-  _rut_stack_child_removed_cb,
-  _rut_stack_child_added_cb,
-  NULL /* parent changed */
-};
 
 static void
 rut_stack_get_preferred_width (void *object,
@@ -287,45 +274,52 @@ rut_stack_add_preferred_size_callback (void *object,
                                destroy);
 }
 
-static RutSizableVTable _rut_stack_sizable_vtable = {
-  rut_stack_set_size,
-  rut_stack_get_size,
-  rut_stack_get_preferred_width,
-  rut_stack_get_preferred_height,
-  rut_stack_add_preferred_size_callback
-};
-
-static RutIntrospectableVTable _rut_stack_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
 RutType rut_stack_type;
 
 static void
 _rut_stack_init_type (void)
 {
-  rut_type_init (&rut_stack_type, "RutStack");
-  rut_type_add_interface (&rut_stack_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutStack, ref_count),
-                          &_rut_stack_refable_vtable);
-  rut_type_add_interface (&rut_stack_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutStack, graphable),
-                          &_rut_stack_graphable_vtable);
-  rut_type_add_interface (&rut_stack_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_stack_sizable_vtable);
-  rut_type_add_interface (&rut_stack_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_stack_introspectable_vtable);
-  rut_type_add_interface (&rut_stack_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutStack, introspectable),
-                          NULL); /* no implied vtable */
+  static RutGraphableVTable graphable_vtable = {
+    _rut_stack_child_removed_cb,
+    _rut_stack_child_added_cb,
+    NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rut_stack_set_size,
+    rut_stack_get_size,
+    rut_stack_get_preferred_width,
+    rut_stack_get_preferred_height,
+    rut_stack_add_preferred_size_callback
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_stack_type;
+#define TYPE RutStack
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_stack_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 void
@@ -387,7 +381,6 @@ rut_stack_new (RutContext *context,
                                        &rut_stack_type,
                                        _rut_stack_init_type);
 
-  stack->ref_count = 1;
   stack->ctx = context;
 
   rut_list_init (&stack->children);

@@ -37,7 +37,7 @@ enum {
 
 struct _RutImage
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   float width, height;
   int tex_width, tex_height;
@@ -59,7 +59,6 @@ struct _RutImage
 
   CoglPipeline *pipeline;
 
-  int ref_count;
 
   RutImageDrawMode draw_mode;
 };
@@ -123,7 +122,7 @@ _rut_image_free (void *object)
 
   cogl_object_unref (image->pipeline);
 
-  g_slice_free (RutImage, image);
+  rut_object_free (RutImage, image);
 }
 
 static void
@@ -389,28 +388,27 @@ _rut_image_init_type (void)
   RutType *type = &rut_image_type;
 #define TYPE RutImage
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_image_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_image_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -423,7 +421,6 @@ rut_image_new (RutContext *ctx,
                                        &rut_image_type,
                                        _rut_image_init_type);
 
-  image->ref_count = 1;
   image->context = ctx;
 
   rut_list_init (&image->preferred_size_cb_list);

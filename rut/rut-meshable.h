@@ -36,7 +36,7 @@ static inline void *
 rut_meshable_get_mesh (RutObject *object)
 {
   RutMeshableVTable *meshable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_MESHABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_MESHABLE);
 
   return meshable->get_mesh (object);
 }

@@ -37,11 +37,10 @@ enum {
 
 struct _RutTimeline
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   float length;
 
@@ -108,55 +107,49 @@ _rut_timeline_free (void *object)
 
   timeline->ctx->timelines =
     g_slist_remove (timeline->ctx->timelines, timeline);
-  rut_refable_unref (timeline->ctx);
+  rut_object_unref (timeline->ctx);
 
   g_timer_destroy (timeline->gtimer);
 
-  rut_simple_introspectable_destroy (RUT_OBJECT (timeline));
+  rut_simple_introspectable_destroy (timeline);
 
-  g_slice_free (RutTimeline, timeline);
+  rut_object_free (RutTimeline, timeline);
 }
 
-static RutRefableVTable _rut_timeline_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_timeline_free
-};
+RutType rut_timeline_type;
 
-static RutIntrospectableVTable _rut_timeline_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
-static RutType _rut_timeline_type;
-
-void
+static void
 _rut_timeline_init_type (void)
 {
-  rut_type_init (&_rut_timeline_type, "RutTimeline");
-  rut_type_add_interface (&_rut_timeline_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutTimeline, ref_count),
-                          &_rut_timeline_refable_vtable);
-  rut_type_add_interface (&_rut_timeline_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_timeline_introspectable_vtable);
-  rut_type_add_interface (&_rut_timeline_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutTimeline, introspectable),
-                          NULL); /* no implied vtable */
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_timeline_type;
+#define TYPE RutTimeline
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_timeline_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutTimeline *
 rut_timeline_new (RutContext *ctx,
                   float length)
 {
-  RutTimeline *timeline = g_slice_new0 (RutTimeline);
+  RutTimeline *timeline =
+    rut_object_alloc0 (RutTimeline, &rut_timeline_type, _rut_timeline_init_type);
 
-  rut_object_init (&timeline->_parent, &_rut_timeline_type);
 
-  timeline->ref_count = 1;
 
   timeline->length = length;
   timeline->gtimer = g_timer_new ();
@@ -170,7 +163,7 @@ rut_timeline_new (RutContext *ctx,
                                   _rut_timeline_prop_specs,
                                   timeline->properties);
 
-  timeline->ctx = rut_refable_ref (ctx);
+  timeline->ctx = rut_object_ref (ctx);
   ctx->timelines = g_slist_prepend (ctx->timelines, timeline);
 
   return timeline;

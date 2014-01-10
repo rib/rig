@@ -145,17 +145,17 @@ _rut_material_free (void *object)
   RutMaterial *material = object;
 
   if (material->color_source_asset)
-    rut_refable_unref (material->color_source_asset);
+    rut_object_unref (material->color_source_asset);
 
   if (material->normal_map_asset)
-    rut_refable_unref (material->normal_map_asset);
+    rut_object_unref (material->normal_map_asset);
 
   if (material->alpha_mask_asset)
-    rut_refable_unref (material->alpha_mask_asset);
+    rut_object_unref (material->alpha_mask_asset);
 
   rut_simple_introspectable_destroy (material);
 
-  g_slice_free (RutMaterial, material);
+  rut_object_free (RutMaterial, material);
 }
 
 static RutObject *
@@ -171,11 +171,11 @@ _rut_material_copy (RutObject *object)
   copy->receive_shadow = material->receive_shadow;
 
   if (material->color_source_asset)
-    copy->color_source_asset = rut_refable_ref (material->color_source_asset);
+    copy->color_source_asset = rut_object_ref (material->color_source_asset);
   if (material->normal_map_asset)
-    copy->normal_map_asset = rut_refable_ref (material->normal_map_asset);
+    copy->normal_map_asset = rut_object_ref (material->normal_map_asset);
   if (material->alpha_mask_asset)
-    copy->alpha_mask_asset = rut_refable_ref (material->alpha_mask_asset);
+    copy->alpha_mask_asset = rut_object_ref (material->alpha_mask_asset);
 
   copy->ambient = material->ambient;
   copy->diffuse = material->diffuse;
@@ -191,11 +191,6 @@ RutType rut_material_type;
 void
 _rut_material_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_material_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_material_copy
@@ -209,23 +204,19 @@ _rut_material_init_type (void)
   RutType *type = &rut_material_type;
 #define TYPE RutMaterial
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_material_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -234,11 +225,10 @@ RutMaterial *
 rut_material_new (RutContext *ctx,
                   RutAsset *asset)
 {
-  RutMaterial *material = g_slice_new0 (RutMaterial);
+  RutMaterial *material =
+    rut_object_alloc0 (RutMaterial, &rut_material_type, _rut_material_init_type);
 
-  rut_object_init (&material->_parent, &rut_material_type);
 
-  material->ref_count = 1;
 
   material->component.type = RUT_COMPONENT_TYPE_MATERIAL;
 
@@ -266,13 +256,13 @@ rut_material_new (RutContext *ctx,
       switch (rut_asset_get_type (asset))
         {
         case RUT_ASSET_TYPE_TEXTURE:
-          material->color_source_asset = rut_refable_ref (asset);
+          material->color_source_asset = rut_object_ref (asset);
           break;
         case RUT_ASSET_TYPE_NORMAL_MAP:
-          material->normal_map_asset = rut_refable_ref (asset);
+          material->normal_map_asset = rut_object_ref (asset);
           break;
         case RUT_ASSET_TYPE_ALPHA_MASK:
-          material->alpha_mask_asset = rut_refable_ref (asset);
+          material->alpha_mask_asset = rut_object_ref (asset);
           break;
         default:
           g_warn_if_reached ();
@@ -293,13 +283,13 @@ rut_material_set_color_source_asset (RutObject *object,
 
   if (material->color_source_asset)
     {
-      rut_refable_unref (material->color_source_asset);
+      rut_object_unref (material->color_source_asset);
       material->color_source_asset = NULL;
     }
 
   material->color_source_asset = color_source_asset;
   if (color_source_asset)
-    rut_refable_ref (color_source_asset);
+    rut_object_ref (color_source_asset);
 
   if (material->component.entity)
     rut_entity_notify_changed (material->component.entity);
@@ -323,14 +313,14 @@ rut_material_set_normal_map_asset (RutObject *object,
 
   if (material->normal_map_asset)
     {
-      rut_refable_unref (material->normal_map_asset);
+      rut_object_unref (material->normal_map_asset);
       material->normal_map_asset = NULL;
     }
 
   material->normal_map_asset = normal_map_asset;
 
   if (normal_map_asset)
-    rut_refable_ref (normal_map_asset);
+    rut_object_ref (normal_map_asset);
 
   if (material->component.entity)
     rut_entity_notify_changed (material->component.entity);
@@ -355,14 +345,14 @@ rut_material_set_alpha_mask_asset (RutObject *object,
 
   if (material->alpha_mask_asset)
     {
-      rut_refable_unref (material->alpha_mask_asset);
+      rut_object_unref (material->alpha_mask_asset);
       material->alpha_mask_asset = NULL;
     }
 
   material->alpha_mask_asset = alpha_mask_asset;
 
   if (alpha_mask_asset)
-    rut_refable_ref (alpha_mask_asset);
+    rut_object_ref (alpha_mask_asset);
 
   if (material->component.entity)
     rut_entity_notify_changed (material->component.entity);

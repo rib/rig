@@ -44,7 +44,7 @@ enum {
 
 struct _RutColorButton
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -74,7 +74,6 @@ struct _RutColorButton
 
   RutInputRegion *input_region;
 
-  int ref_count;
 };
 
 RutType rut_color_button_type;
@@ -117,21 +116,15 @@ _rut_color_button_free (void *object)
   cogl_object_unref (button->color_pipeline);
 
   rut_graphable_remove_child (button->input_region);
-  rut_refable_unref (button->input_region);
+  rut_object_unref (button->input_region);
 
-  rut_refable_unref (button->context);
+  rut_object_unref (button->context);
 
   rut_simple_introspectable_destroy (button);
   rut_graphable_destroy (button);
 
-  g_slice_free (RutColorButton, button);
+  rut_object_free (RutColorButton, button);
 }
-
-RutRefableVTable _rut_color_button_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_color_button_free
-};
 
 static void
 _rut_color_button_paint (RutObject *object,
@@ -296,57 +289,59 @@ rut_color_button_get_preferred_height (RutObject *object,
     *natural_height_p = RUT_COLOR_BUTTON_HEIGHT;
 }
 
-static RutGraphableVTable _rut_color_button_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static RutPaintableVTable _rut_color_button_paintable_vtable = {
-  _rut_color_button_paint
-};
-
-static RutIntrospectableVTable _rut_color_button_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
-static RutSizableVTable _rut_color_button_sizable_vtable = {
-  rut_color_button_set_size,
-  rut_color_button_get_size,
-  rut_color_button_get_preferred_width,
-  rut_color_button_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_color_button_init_type (void)
 {
-  rut_type_init (&rut_color_button_type, "RigColorButton");
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutColorButton, ref_count),
-                          &_rut_color_button_refable_vtable);
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutColorButton, graphable),
-                          &_rut_color_button_graphable_vtable);
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutColorButton, paintable),
-                          &_rut_color_button_paintable_vtable);
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_color_button_introspectable_vtable);
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutColorButton, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_color_button_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_color_button_sizable_vtable);
+  static RutGraphableVTable graphable_vtable = {
+      NULL, /* child removed */
+      NULL, /* child addded */
+      NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+      _rut_color_button_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+      rut_simple_introspectable_lookup_property,
+      rut_simple_introspectable_foreach_property
+  };
+
+  static RutSizableVTable sizable_vtable = {
+      rut_color_button_set_size,
+      rut_color_button_get_size,
+      rut_color_button_get_preferred_width,
+      rut_color_button_get_preferred_height,
+      NULL /* add_preferred_size_callback */
+  };
+
+
+  RutType *type = &rut_color_button_type;
+#define TYPE RutColorButton
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_color_button_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+
+#undef TYPE
 }
 
 static CoglPipeline *
@@ -418,13 +413,13 @@ remove_picker (RutColorButton *button)
                               button);
 
       rut_graphable_remove_child (button->picker_input_region);
-      rut_refable_unref (button->picker_input_region);
+      rut_object_unref (button->picker_input_region);
 
       rut_graphable_remove_child (button->picker);
-      rut_refable_unref (button->picker);
+      rut_object_unref (button->picker);
 
       rut_graphable_remove_child (button->picker_transform);
-      rut_refable_unref (button->picker_transform);
+      rut_object_unref (button->picker_transform);
 
       button->picker = NULL;
 
@@ -632,23 +627,13 @@ button_input_region_cb (RutInputRegion *region,
 RutColorButton *
 rut_color_button_new (RutContext *context)
 {
-  RutColorButton *button = g_slice_new0 (RutColorButton);
-  static CoglBool initialized = FALSE;
+  RutColorButton *button =
+    rut_object_alloc0 (RutColorButton, &rut_color_button_type, _rut_color_button_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_color_button_init_type ();
-
-      initialized = TRUE;
-    }
-
-  button->ref_count = 1;
-  button->context = rut_refable_ref (context);
+  button->context = rut_object_ref (context);
 
   cogl_color_init_from_4ub (&button->color, 0, 0, 0, 255);
 
-  rut_object_init (&button->_parent, &rut_color_button_type);
 
   button->dark_edge_pipeline =
     create_color_pipeline (context->cogl_context, 0x000000ff);
@@ -659,8 +644,8 @@ rut_color_button_new (RutContext *context)
   button->color_pipeline =
     create_color_pipeline (context->cogl_context, 0x000000ff);
 
-  rut_paintable_init (RUT_OBJECT (button));
-  rut_graphable_init (RUT_OBJECT (button));
+  rut_paintable_init (button);
+  rut_graphable_init (button);
 
   rut_simple_introspectable_init (button,
                                   _rut_color_button_prop_specs,

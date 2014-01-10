@@ -19,9 +19,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <rut.h>
 
@@ -30,7 +28,7 @@
 
 struct _RigView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -44,10 +42,7 @@ struct _RigView
 
   RutGraphableProps graphable;
 
-  int ref_count;
 };
-
-RutType rig_view_type;
 
 static void
 _rig_view_free (void *object)
@@ -60,7 +55,7 @@ _rig_view_free (void *object)
 
   rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, view);
 
-  rut_refable_unref (view->context);
+  rut_object_unref (view->context);
 
   rut_graphable_destroy (view);
 
@@ -69,18 +64,6 @@ _rig_view_free (void *object)
 
   g_slice_free (RigView, view);
 }
-
-RutRefableVTable _rig_view_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rig_view_free
-};
-
-static RutGraphableVTable _rig_view_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
 
 static void
 allocate_cb (RutObject *graphable,
@@ -168,61 +151,61 @@ rig_view_get_size (void *object,
   *height = view->height;
 }
 
-static RutSizableVTable _rig_view_sizable_vtable = {
-  rig_view_set_size,
-  rig_view_get_size,
-  rig_view_get_preferred_width,
-  rig_view_get_preferred_height,
-  rig_view_add_preferred_size_callback
-};
+RutType rig_view_type;
 
 static void
 _rig_view_init_type (void)
 {
-  rut_type_init (&rig_view_type, "RigView");
-  rut_type_add_interface (&rig_view_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RigView, ref_count),
-                          &_rig_view_refable_vtable);
-  rut_type_add_interface (&rig_view_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RigView, graphable),
-                          &_rig_view_graphable_vtable);
-  rut_type_add_interface (&rig_view_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rig_view_sizable_vtable);
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child removed */
+    NULL, /* child addded */
+    NULL /* parent changed */
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rig_view_set_size,
+    rig_view_get_size,
+    rig_view_get_preferred_width,
+    rig_view_get_preferred_height,
+    rig_view_add_preferred_size_callback
+  };
+
+  RutType *type = &rig_view_type;
+#define TYPE RigView
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+
+#undef TYPE
 }
 
 RigView *
 rig_view_new (RigEngine *engine)
 {
   RutContext *ctx = engine->ctx;
-  RigView *view = g_slice_new0 (RigView);
-  static CoglBool initialized = FALSE;
+  RigView *view =
+    rut_object_alloc0 (RigView, &rig_view_type, _rig_view_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rig_view_init_type ();
-
-      initialized = TRUE;
-    }
-
-  view->ref_count = 1;
-  view->context = rut_refable_ref (ctx);
+  view->context = rut_object_ref (ctx);
 
   rut_list_init (&view->preferred_size_cb_list);
 
-  rut_object_init (&view->_parent, &rig_view_type);
 
-  rut_graphable_init (RUT_OBJECT (view));
+  rut_graphable_init (view);
 
   view->vbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_graphable_add_child (view, view->vbox);
-  rut_refable_unref (view->vbox);
+  rut_object_unref (view->vbox);
   view->hbox = rut_box_layout_new (ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_graphable_add_child (view->vbox, view->hbox);
-  rut_refable_unref (view->hbox);
+  rut_object_unref (view->hbox);
 
   return view;
 }
@@ -251,14 +234,14 @@ rig_view_set_child (RigView *view,
                     RutObject *child_widget)
 {
   if (child_widget)
-    rut_refable_ref (child_widget);
+    rut_object_ref (child_widget);
 
   if (view->child)
     {
       rut_graphable_remove_child (view->child);
       rut_closure_disconnect (view->vbox_preferred_size_closure);
       view->vbox_preferred_size_closure = NULL;
-      rut_refable_unref (view->child);
+      rut_object_unref (view->child);
     }
 
   view->child = child_widget;

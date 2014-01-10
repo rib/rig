@@ -32,8 +32,7 @@
 
 struct _RutRectangle
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   float width;
   float height;
@@ -54,7 +53,7 @@ _rut_rectangle_free (void *object)
 
   rut_graphable_destroy (rectangle);
 
-  g_slice_free (RutRectangle, object);
+  rut_object_free (RutRectangle, object);
 }
 
 static void
@@ -76,11 +75,6 @@ RutType rut_rectangle_type;
 static void
 _rut_rectangle_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_rectangle_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -103,23 +97,19 @@ _rut_rectangle_init_type (void)
   RutType *type = &rut_rectangle_type;
 #define TYPE RutRectangle
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_rectangle_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -133,18 +123,10 @@ rut_rectangle_new4f (RutContext *ctx,
                      float blue,
                      float alpha)
 {
-  RutRectangle *rectangle = g_slice_new0 (RutRectangle);
-  static CoglBool initialized = FALSE;
+  RutRectangle *rectangle =
+    rut_object_alloc0 (RutRectangle, &rut_rectangle_type, _rut_rectangle_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_rectangle_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (&rectangle->_parent, &rut_rectangle_type);
-
-  rectangle->ref_count = 1;
 
   rut_graphable_init (rectangle);
   rut_paintable_init (rectangle);

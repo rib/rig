@@ -72,7 +72,7 @@ rut_light_set_uniforms (RutLight *light,
                         CoglPipeline *pipeline)
 {
   RutComponentableProps *component =
-    rut_object_get_properties (light, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (light, RUT_TRAIT_ID_COMPONENTABLE);
   RutEntity *entity = component->entity;
   float origin[3] = {0, 0, 0};
   float norm_direction[3] = {0, 0, 1};
@@ -116,7 +116,7 @@ static void
 _rut_light_free (void *object)
 {
   RutLight *light = object;
-  g_slice_free (RutLight, light);
+  rut_object_free (RutLight, light);
 }
 
 static RutObject *
@@ -137,11 +137,6 @@ RutType rut_light_type;
 void
 _rut_light_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_light_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_light_copy
@@ -155,23 +150,19 @@ _rut_light_init_type (void)
   RutType *type = &rut_light_type;
 #define TYPE RutLight
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_light_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -181,12 +172,11 @@ rut_light_new (RutContext *context)
 {
   RutLight *light;
 
-  light = g_slice_new0 (RutLight);
-  rut_object_init (&light->_parent, &rut_light_type);
+  light =
+    rut_object_alloc0 (RutLight, &rut_light_type, _rut_light_init_type);
 
-  light->ref_count = 1;
   light->component.type = RUT_COMPONENT_TYPE_LIGHT;
-  light->context = rut_refable_ref (context);
+  light->context = rut_object_ref (context);
 
   rut_simple_introspectable_init (light,
                                   _rut_light_prop_specs,
@@ -202,11 +192,11 @@ rut_light_new (RutContext *context)
 void
 rut_light_free (RutLight *light)
 {
-  rut_refable_unref (light->context);
+  rut_object_unref (light->context);
 
   rut_simple_introspectable_destroy (light);
 
-  g_slice_free (RutLight, light);
+  rut_object_free (RutLight, light);
 }
 
 void

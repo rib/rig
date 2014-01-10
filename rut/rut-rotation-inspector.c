@@ -43,13 +43,12 @@ typedef struct
 
 struct _RutRotationInspector
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
   RutGraphableProps graphable;
 
-  int ref_count;
 
   RutBoxLayout *hbox;
 
@@ -91,7 +90,7 @@ _rut_rotation_inspector_free (void *object)
   rut_simple_introspectable_destroy (inspector);
   rut_graphable_destroy (inspector);
 
-  g_slice_free (RutRotationInspector, inspector);
+  rut_object_free (RutRotationInspector, inspector);
 }
 
 
@@ -118,28 +117,27 @@ _rut_rotation_inspector_init_type (void)
   RutType *type = &rut_rotation_inspector_type;
 #define TYPE RutRotationInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_rotation_inspector_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, hbox),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_rotation_inspector_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, hbox),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -261,7 +259,6 @@ rut_rotation_inspector_new (RutContext *context)
   RutText *text;
   int i;
 
-  inspector->ref_count = 1;
   inspector->context = context;
 
   inspector->user_axis_magnitude = 1;
@@ -284,7 +281,7 @@ rut_rotation_inspector_new (RutContext *context)
   inspector->hbox = rut_box_layout_new (context,
                                      RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   rut_graphable_add_child (inspector, inspector->hbox);
-  rut_refable_unref (inspector->hbox);
+  rut_object_unref (inspector->hbox);
 
   /*
    * Axis
@@ -292,14 +289,14 @@ rut_rotation_inspector_new (RutContext *context)
 
   text = rut_text_new_with_text (context, NULL, "(");
   rut_box_layout_add (inspector->hbox, false, text);
-  rut_refable_unref (text);
+  rut_object_unref (text);
 
   for (i = 0; i < 3; i++)
     {
       inspector->components[i].slider = rut_number_slider_new (context);
       rut_box_layout_add (inspector->hbox, false,
                           inspector->components[i].slider);
-      rut_refable_unref (inspector->components[i].slider);
+      rut_object_unref (inspector->components[i].slider);
 
       rut_number_slider_set_min_value (inspector->components[i].slider, -G_MAXFLOAT);
       rut_number_slider_set_max_value (inspector->components[i].slider, G_MAXFLOAT);
@@ -308,7 +305,7 @@ rut_rotation_inspector_new (RutContext *context)
         {
           text = rut_text_new_with_text (context, NULL, ", ");
           rut_box_layout_add (inspector->hbox, false, text);
-          rut_refable_unref (text);
+          rut_object_unref (text);
         }
 
       inspector->components[i].property =
@@ -318,7 +315,7 @@ rut_rotation_inspector_new (RutContext *context)
 
   text = rut_text_new_with_text (context, NULL, ") ");
   rut_box_layout_add (inspector->hbox, false, text);
-  rut_refable_unref (text);
+  rut_object_unref (text);
 
   rut_number_slider_set_markup_label (inspector->components[0].slider,
                                       "<span foreground=\"red\">x:</span>");
@@ -338,7 +335,7 @@ rut_rotation_inspector_new (RutContext *context)
 
   rut_box_layout_add (inspector->hbox, false,
                       inspector->components[3].slider);
-  rut_refable_unref (inspector->components[3].slider);
+  rut_object_unref (inspector->components[3].slider);
 
   rut_number_slider_set_markup_label (inspector->components[3].slider,
                                       "<span foreground=\"yellow\">a:</span>");
@@ -349,7 +346,7 @@ rut_rotation_inspector_new (RutContext *context)
 
   text = rut_text_new_with_text (context, NULL, "°");
   rut_box_layout_add (inspector->hbox, false, text);
-  rut_refable_unref (text);
+  rut_object_unref (text);
 
   enable_value_binding (inspector);
 

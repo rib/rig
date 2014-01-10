@@ -36,9 +36,8 @@ typedef struct _RigFrontend RigFrontend;
  */
 struct _RigFrontend
 {
-  RutObjectProps _base;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RigEngine *engine;
 

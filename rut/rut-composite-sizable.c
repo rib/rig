@@ -32,7 +32,7 @@ rut_composite_sizable_get_preferred_width (void *sizable,
                                            float *natural_width_p)
 {
   RutObject **container =
-    rut_object_get_properties (sizable, RUT_INTERFACE_ID_COMPOSITE_SIZABLE);
+    rut_object_get_properties (sizable, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
 
   rut_sizable_get_preferred_width (*container,
                                    for_height,
@@ -47,7 +47,7 @@ rut_composite_sizable_get_preferred_height (void *sizable,
                                             float *natural_height_p)
 {
   RutObject **container =
-    rut_object_get_properties (sizable, RUT_INTERFACE_ID_COMPOSITE_SIZABLE);
+    rut_object_get_properties (sizable, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
 
   rut_sizable_get_preferred_height (*container,
                                     for_width,
@@ -84,7 +84,7 @@ rut_composite_sizable_add_preferred_size_callback (
                                              RutClosureDestroyCallback destroy)
 {
   RutObject **container =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPOSITE_SIZABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
   ForwardingClosure *closure = g_slice_new (ForwardingClosure);
 
   closure->composite_sizable = object;
@@ -102,7 +102,7 @@ void
 rut_composite_sizable_set_size (void *object, float width, float height)
 {
   RutObject **container =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPOSITE_SIZABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
 
   rut_sizable_set_size (*container, width, height);
 }
@@ -111,7 +111,7 @@ void
 rut_composite_sizable_get_size (void *object, float *width, float *height)
 {
   RutObject **container =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPOSITE_SIZABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
 
   rut_sizable_get_size (*container, width, height);
 }
