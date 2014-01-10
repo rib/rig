@@ -1432,24 +1432,6 @@ rig_pb_serialize_input_events (RigEngine *engine,
   return pb_events;
 }
 
-struct _RigPBUnSerializer
-{
-  RigEngine *engine;
-
-  RigPBUnSerializerObjectRegisterCallback object_register_callback;
-  void *object_register_data;
-
-  RigPBUnSerializerIDToObjecCallback id_to_object_callback;
-  void *id_to_object_data;
-
-  GList *assets;
-  GList *entities;
-  RutEntity *light;
-  GList *controllers;
-
-  GHashTable *id_map;
-};
-
 static void
 pb_init_color (RutContext *ctx,
                CoglColor *color,
@@ -1520,8 +1502,6 @@ pb_init_boxed_vec4 (RutBoxed *boxed,
 static RutObject *
 unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
 {
-  RutObject *object;
-
   if (unserializer->id_to_object_callback)
     {
       void *user_data = unserializer->id_to_object_data;
@@ -1531,11 +1511,11 @@ unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
   return g_hash_table_lookup (unserializer->id_map, &id);
 }
 
-static void
-pb_init_boxed_value (RigPBUnSerializer *unserializer,
-                     RutBoxed *boxed,
-                     RutPropertyType type,
-                     Rig__PropertyValue *pb_value)
+void
+rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
+                         RutBoxed *boxed,
+                         RutPropertyType type,
+                         Rig__PropertyValue *pb_value)
 {
   boxed->type = type;
 
@@ -1724,10 +1704,10 @@ set_property_from_pb_boxed (RigPBUnSerializer *unserializer,
       break;
     }
 
-  pb_init_boxed_value (unserializer,
-                       &boxed,
-                       type,
-                       pb_boxed->value);
+  rig_pb_init_boxed_value (unserializer,
+                           &boxed,
+                           type,
+                           pb_boxed->value);
 
   rut_property_set_boxed (&unserializer->engine->ctx->property_ctx,
                           property, &boxed);
@@ -2662,10 +2642,10 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
                                           property,
                                           method);
 
-      pb_init_boxed_value (unserializer,
-                           &boxed_value,
-                           property->spec->type,
-                           pb_property->constant);
+      rig_pb_init_boxed_value (unserializer,
+                               &boxed_value,
+                               property->spec->type,
+                               pb_property->constant);
 
       rig_controller_set_property_constant (controller,
                                             property,
@@ -2857,20 +2837,23 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
     }
 }
 
-RigPBUnSerializer *
-rig_pb_unserializer_new (RigEngine *engine)
+void
+rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
+                          RigEngine *engine,
+                          bool with_id_map)
 {
-  RigPBUnSerializer *unserializer = g_slice_new0 (RigPBUnSerializer);
+  memset (unserializer, 0, sizeof (RigPBUnSerializer));
 
   unserializer->engine = engine;
 
-  /* This hash table maps from uint64_t ids to objects while loading */
-  unserializer->id_map = g_hash_table_new (g_int64_hash,
-                                           g_int64_equal);
+  if (with_id_map)
+    {
+      /* This hash table maps from uint64_t ids to objects while loading */
+      unserializer->id_map = g_hash_table_new (g_int64_hash,
+                                               g_int64_equal);
+    }
 
   rut_memory_stack_rewind (engine->serialization_stack);
-
-  return unserializer;
 }
 
 void
@@ -2897,9 +2880,8 @@ rig_pb_unserializer_set_id_to_object_callback (
 void
 rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer)
 {
-  g_hash_table_destroy (unserializer->id_map);
-
-  g_slice_free (RigPBUnSerializer, unserializer);
+  if (unserializer->id_map)
+    g_hash_table_destroy (unserializer->id_map);
 }
 
 void
