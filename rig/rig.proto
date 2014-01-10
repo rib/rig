@@ -424,7 +424,7 @@ message PrivateID
 // The simulator service as used from the renderer
 service Simulator {
 
-  rpc RegisterInternal (PrivateID) returns (RegisterInternalAck);
+  //rpc RegisterInternal (PrivateID) returns (RegisterInternalAck);
 
   rpc Load (UI) returns (LoadResult);
 
