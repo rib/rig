@@ -30,60 +30,6 @@
  * warrent being split out into separate files.
  */
 
-/*
- *
- * Introspectable Interface
- *
- */
-
-typedef void (*RutIntrospectablePropertyCallback) (RutProperty *property,
-                                                   void *user_data);
-
-typedef struct _RutIntrospectableVTable
-{
-  RutProperty *(*lookup_property) (RutObject *object, const char *name);
-  void (*foreach_property) (RutObject *object,
-                            RutIntrospectablePropertyCallback callback,
-                            void *user_data);
-} RutIntrospectableVTable;
-
-RutProperty *
-rut_introspectable_lookup_property (RutObject *object,
-                                    const char *name);
-
-void
-rut_introspectable_foreach_property (RutObject *object,
-                                     RutIntrospectablePropertyCallback callback,
-                                     void *user_data);
-
-void
-rut_introspectable_copy_properties (RutPropertyContext *property_ctx,
-                                    RutObject *src,
-                                    RutObject *dst);
-
-typedef struct _RutSimpleIntrospectableProps
-{
-  RutProperty *first_property;
-  int n_properties;
-} RutSimpleIntrospectableProps;
-
-void
-rut_simple_introspectable_init (RutObject *object,
-                                RutPropertySpec *specs,
-                                RutProperty *properties);
-
-void
-rut_simple_introspectable_destroy (RutObject *object);
-
-RutProperty *
-rut_simple_introspectable_lookup_property (RutObject *object,
-                                           const char *name);
-
-void
-rut_simple_introspectable_foreach_property (RutObject *object,
-                                            RutIntrospectablePropertyCallback callback,
-                                            void *user_data);
-
 typedef struct RutTransformableVTable
 {
   const CoglMatrix *(*get_matrix) (RutObject *object);

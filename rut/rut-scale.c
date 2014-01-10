@@ -70,7 +70,7 @@ _rut_scale_free (void *object)
 
   rut_graphable_destroy (scale);
 
-  rut_simple_introspectable_destroy (scale);
+  rut_introspectable_destroy (scale);
 
   cogl_object_unref (scale->pipeline);
 
@@ -396,10 +396,6 @@ _rut_scale_init_type (void)
       _rut_scale_add_preferred_size_callback,
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_scale_type;
 #define TYPE RutScale
@@ -419,10 +415,6 @@ _rut_scale_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -816,8 +808,8 @@ rut_scale_new (RutContext *ctx,
   rut_list_init (&scale->preferred_size_cb_list);
   rut_list_init (&scale->select_cb_list);
 
-  rut_simple_introspectable_init (scale, _rut_scale_prop_specs,
-                                  scale->properties);
+  rut_introspectable_init (scale, _rut_scale_prop_specs,
+                           scale->properties);
 
   scale->width = 1;
   scale->height = 1;

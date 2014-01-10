@@ -26,7 +26,7 @@
 #include <stdlib.h>
 
 #include "rut-property.h"
-#include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-color.h"
 #include "rut-util.h"
 

@@ -87,7 +87,7 @@ struct _RutUIViewport
   float grab_doc_x;
   float grab_doc_y;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_UI_VIEWPORT_N_PROPS];
 
   RutInputRegion *input_region;
@@ -184,11 +184,11 @@ _rut_ui_viewport_free (void *object)
 
   rut_object_unref (ui_viewport->input_region);
 
-  rut_simple_introspectable_destroy (ui_viewport);
+  rut_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
 
   rut_shell_remove_pre_paint_callback_by_graphable (ui_viewport->ctx->shell,
-                                       ui_viewport);
+                                                    ui_viewport);
 
   rut_object_free (RutUIViewport, object);
 }
@@ -322,10 +322,6 @@ _rut_ui_viewport_init_type (void)
       rut_ui_viewport_add_preferred_size_callback
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutPickableVTable pickable_vtable = {
       _rut_ui_viewport_pick,
@@ -349,10 +345,6 @@ _rut_ui_viewport_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -722,9 +714,9 @@ rut_ui_viewport_new (RutContext *ctx,
   ui_viewport->ctx = ctx;
 
 
-  rut_simple_introspectable_init (ui_viewport,
-                                  _rut_ui_viewport_prop_specs,
-                                  ui_viewport->properties);
+  rut_introspectable_init (ui_viewport,
+                           _rut_ui_viewport_prop_specs,
+                           ui_viewport->properties);
 
   rut_graphable_init (ui_viewport);
 

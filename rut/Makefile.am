@@ -23,7 +23,6 @@ source_h = \
     rut-object.h \
     rut-property.h \
     rut-types.h \
-    rut-interfaces.h \
     rut-planes.h \
     rut-timeline.h \
     rut-display-list.h \
@@ -96,6 +95,9 @@ librut_la_SOURCES = \
     rut-type.c \
     rut-object.c \
     rut-property.c \
+    rut-introspectable.h \
+    rut-introspectable.c \
+    rut-interfaces.h \
     rut-interfaces.c \
     rut-graphable.h \
     rut-graphable.c \

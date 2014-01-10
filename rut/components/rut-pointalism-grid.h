@@ -66,7 +66,7 @@ struct _RutPointalismGrid
   float pointalism_z;
   bool pointalism_lighter;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_POINTALISM_GRID_N_PROPS];
   float cell_size;
   int tex_width;

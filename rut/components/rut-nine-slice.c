@@ -77,7 +77,7 @@ struct _RutNineSlice
 
   RutList updated_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_NINE_SLICE_N_PROPS];
 };
 
@@ -347,7 +347,7 @@ _rut_nine_slice_free (void *object)
 
   rut_graphable_destroy (nine_slice);
 
-  rut_simple_introspectable_destroy (nine_slice);
+  rut_introspectable_destroy (nine_slice);
 
   rut_object_free (RutNineSlice, object);
 }
@@ -497,10 +497,6 @@ _rut_nine_slice_init_type (void)
       .copy = _rut_nine_slice_copy
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutPaintableVTable paintable_vtable = {
       _rut_nine_slice_paint
@@ -540,10 +536,6 @@ _rut_nine_slice_init_type (void)
                       &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -613,9 +605,9 @@ rut_nine_slice_new (RutContext *ctx,
       nine_slice->tex_height = height;
     }
 
-  rut_simple_introspectable_init (nine_slice,
-                                  _rut_nine_slice_prop_specs,
-                                  nine_slice->properties);
+  rut_introspectable_init (nine_slice,
+                           _rut_nine_slice_prop_specs,
+                           nine_slice->properties);
 
   return nine_slice;
 }

@@ -278,7 +278,7 @@ typedef struct _RutUIProperty
 
 
 /* A quick example of using the rig property system in conjunction
- * with the RutSimpleIntrospectable interface.
+ * with the RutIntrospectable interface.
  */
 #if 0
 
@@ -291,7 +291,7 @@ typedef struct _Flibble
 {
   float x;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_FLIBBLE_N_PROPS];
 
 } Flibble;
@@ -316,7 +316,7 @@ flibble_free (void *object)
 {
   /* SNIP */
 
-  rut_simple_introspectable_destroy (flibble);
+  rut_introspectable_destroy (flibble);
 
   /* SNIP */
 }
@@ -328,9 +328,9 @@ flibble_new (void)
 {
   /* SNIP */
 
-  rut_simple_introspectable_init (flibble,
-                                  flibble_prop_specs,
-                                  flibble->properties);
+  rut_introspectable_init (flibble,
+                           flibble_prop_specs,
+                           flibble->properties);
 
   /* SNIP */
 }

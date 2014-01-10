@@ -23,7 +23,7 @@
 #include <cogl/cogl.h>
 
 #include "rut-context.h"
-#include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-timeline.h"
 
 enum {
@@ -52,7 +52,7 @@ struct _RutTimeline
   CoglBool running;
   double elapsed;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_TIMELINE_N_PROPS];
 };
 
@@ -111,7 +111,7 @@ _rut_timeline_free (void *object)
 
   g_timer_destroy (timeline->gtimer);
 
-  rut_simple_introspectable_destroy (timeline);
+  rut_introspectable_destroy (timeline);
 
   rut_object_free (RutTimeline, timeline);
 }
@@ -121,10 +121,6 @@ RutType rut_timeline_type;
 static void
 _rut_timeline_init_type (void)
 {
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_timeline_type;
 #define TYPE RutTimeline
@@ -132,10 +128,6 @@ _rut_timeline_init_type (void)
   rut_type_init (type, G_STRINGIFY (TYPE), _rut_timeline_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -159,9 +151,9 @@ rut_timeline_new (RutContext *ctx,
 
   timeline->elapsed = 0;
 
-  rut_simple_introspectable_init (timeline,
-                                  _rut_timeline_prop_specs,
-                                  timeline->properties);
+  rut_introspectable_init (timeline,
+                           _rut_timeline_prop_specs,
+                           timeline->properties);
 
   timeline->ctx = rut_object_ref (ctx);
   ctx->timelines = g_slist_prepend (ctx->timelines, timeline);

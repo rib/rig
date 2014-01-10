@@ -60,7 +60,7 @@ struct _RutNumberSlider
 
   RutInputRegion *input_region;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_NUMBER_SLIDER_N_PROPS];
 };
 
@@ -96,7 +96,7 @@ _rut_number_slider_free (void *object)
   rut_graphable_remove_child (slider->input_region);
   rut_object_unref (slider->input_region);
 
-  rut_simple_introspectable_destroy (slider);
+  rut_introspectable_destroy (slider);
   rut_graphable_destroy (slider);
 
   if (slider->markup_label)
@@ -363,10 +363,6 @@ _rut_number_slider_init_type (void)
       NULL /* parent changed */
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutSizableVTable sizable_vtable = {
       _rut_number_slider_set_size,
@@ -386,10 +382,6 @@ _rut_number_slider_init_type (void)
                       &graphable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -419,9 +411,9 @@ rut_number_slider_new (RutContext *context)
 
   rut_graphable_init (slider);
 
-  rut_simple_introspectable_init (slider,
-                                  _rut_number_slider_prop_specs,
-                                  slider->properties);
+  rut_introspectable_init (slider,
+                           _rut_number_slider_prop_specs,
+                           slider->properties);
 
   slider->text = rut_text_new (context);
   rut_text_set_use_markup (slider->text, true);

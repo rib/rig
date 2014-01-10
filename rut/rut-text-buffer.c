@@ -25,7 +25,7 @@
 
 #include "rut-context.h"
 #include "rut-property.h"
-#include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-text-buffer.h"
 
 #include <string.h>
@@ -58,7 +58,7 @@ struct _RutTextBuffer
   RutList insert_text_cb_list;
   RutList delete_text_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[N_PROPS];
 };
 
@@ -276,7 +276,7 @@ _rut_text_buffer_free (void *object)
       g_free (buffer->simple_text);
     }
 
-  rut_simple_introspectable_destroy (buffer);
+  rut_introspectable_destroy (buffer);
 
   rut_object_unref (buffer->ctx);
 
@@ -288,10 +288,6 @@ RutType rut_text_buffer_type;
 void
 _rut_text_buffer_init_type (void)
 {
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   RutType *type = &rut_text_buffer_type;
 #define TYPE RutTextBuffer
@@ -299,10 +295,6 @@ _rut_text_buffer_init_type (void)
   rut_type_init (type, G_STRINGIFY (TYPE), _rut_text_buffer_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -329,9 +321,9 @@ rut_text_buffer_new (RutContext *ctx)
   buffer->simple_text_bytes = 0;
   buffer->simple_text_size = 0;
 
-  rut_simple_introspectable_init (buffer,
-                                  _rut_text_buffer_prop_specs,
-                                  buffer->properties);
+  rut_introspectable_init (buffer,
+                           _rut_text_buffer_prop_specs,
+                           buffer->properties);
 
   return buffer;
 }

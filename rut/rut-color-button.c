@@ -51,7 +51,7 @@ struct _RutColorButton
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_COLOR_BUTTON_N_PROPS];
 
   int width, height;
@@ -120,7 +120,7 @@ _rut_color_button_free (void *object)
 
   rut_object_unref (button->context);
 
-  rut_simple_introspectable_destroy (button);
+  rut_introspectable_destroy (button);
   rut_graphable_destroy (button);
 
   rut_object_free (RutColorButton, button);
@@ -302,10 +302,6 @@ _rut_color_button_init_type (void)
       _rut_color_button_paint
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
   static RutSizableVTable sizable_vtable = {
       rut_color_button_set_size,
@@ -330,10 +326,6 @@ _rut_color_button_init_type (void)
                       &paintable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -647,9 +639,9 @@ rut_color_button_new (RutContext *context)
   rut_paintable_init (button);
   rut_graphable_init (button);
 
-  rut_simple_introspectable_init (button,
-                                  _rut_color_button_prop_specs,
-                                  button->properties);
+  rut_introspectable_init (button,
+                           _rut_color_button_prop_specs,
+                           button->properties);
 
   button->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0,

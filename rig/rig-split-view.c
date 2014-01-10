@@ -61,7 +61,7 @@ struct _RigSplitView
   RutObject *child0;
   RutObject *child1;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RIG_SPLIT_VIEW_N_PROPS];
 };
 
@@ -94,7 +94,7 @@ _rig_split_view_free (void *object)
   rut_graphable_remove_child (split_view->child1_transform);
   rut_object_unref (split_view->child1_transform);
 
-  rut_simple_introspectable_destroy (split_view);
+  rut_introspectable_destroy (split_view);
   rut_graphable_destroy (split_view);
 
   rut_object_free (RigSplitView, split_view);
@@ -388,10 +388,6 @@ _rig_split_view_init_type (void)
       NULL /* add_preferred_size_callback */
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
 
 
   RutType *type = &rig_split_view_type;
@@ -408,10 +404,6 @@ _rig_split_view_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 #undef TYPE
@@ -429,9 +421,9 @@ rig_split_view_new (RigEngine *engine,
 
 
 
-  rut_simple_introspectable_init (split_view,
-                                  _rig_split_view_prop_specs,
-                                  split_view->properties);
+  rut_introspectable_init (split_view,
+                           _rig_split_view_prop_specs,
+                           split_view->properties);
 
   rut_graphable_init (split_view);
 

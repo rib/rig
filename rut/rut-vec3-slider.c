@@ -56,7 +56,7 @@ struct _RutVec3Slider
   bool in_set_value;
   float value[3];
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_VEC3_SLIDER_N_PROPS];
 };
 
@@ -80,7 +80,7 @@ _rut_vec3_slider_free (void *object)
 {
   RutVec3Slider *slider = object;
 
-  rut_simple_introspectable_destroy (slider);
+  rut_introspectable_destroy (slider);
   rut_graphable_destroy (slider);
 
   rut_object_free (RutVec3Slider, slider);
@@ -94,10 +94,6 @@ _rut_vec3_slider_init_type (void)
       NULL, /* child removed */
       NULL, /* child addded */
       NULL /* parent changed */
-  };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
   };
   static RutSizableVTable sizable_vtable = {
       rut_composite_sizable_set_size,
@@ -117,10 +113,6 @@ _rut_vec3_slider_init_type (void)
                       &graphable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -164,9 +156,9 @@ rut_vec3_slider_new (RutContext *context)
 
   rut_graphable_init (slider);
 
-  rut_simple_introspectable_init (slider,
-                                  _rut_vec3_slider_prop_specs,
-                                  slider->properties);
+  rut_introspectable_init (slider,
+                           _rut_vec3_slider_prop_specs,
+                           slider->properties);
 
   slider->hbox = rut_box_layout_new (context,
                                      RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);

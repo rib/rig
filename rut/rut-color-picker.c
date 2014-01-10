@@ -54,7 +54,7 @@ struct _RutColorPicker
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_COLOR_PICKER_N_PROPS];
 
   CoglBool hs_pipeline_dirty;
@@ -144,7 +144,7 @@ _rut_color_picker_free (void *object)
 
   rut_object_unref (picker->context);
 
-  rut_simple_introspectable_destroy (picker);
+  rut_introspectable_destroy (picker);
   rut_graphable_destroy (picker);
 
   rut_object_free (RutColorPicker, picker);
@@ -553,10 +553,6 @@ _rut_color_picker_init_type (void)
     _rut_color_picker_paint
   };
 
-  static RutIntrospectableVTable introspectable_vtable = {
-    rut_simple_introspectable_lookup_property,
-    rut_simple_introspectable_foreach_property
-  };
 
   static RutSizableVTable sizable_vtable = {
     rut_color_picker_set_size,
@@ -580,10 +576,6 @@ _rut_color_picker_init_type (void)
                       &paintable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -864,9 +856,9 @@ rut_color_picker_new (RutContext *context)
   rut_paintable_init (picker);
   rut_graphable_init (picker);
 
-  rut_simple_introspectable_init (picker,
-                                  _rut_color_picker_prop_specs,
-                                  picker->properties);
+  rut_introspectable_init (picker,
+                           _rut_color_picker_prop_specs,
+                           picker->properties);
 
   picker->input_region =
     rut_input_region_new_rectangle (/* x1 */

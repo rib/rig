@@ -27,6 +27,7 @@
 #include "rut-type.h"
 #include "rut-object.h"
 #include "rut-interfaces.h"
+#include "rut-introspectable.h"
 #include "rut-context.h"
 #include "rut-image-source.h"
 
@@ -95,7 +96,7 @@ struct _RutEntity
 
   void *renderer_priv;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_ENTITY_N_PROPS];
 
   unsigned int dirty:1;

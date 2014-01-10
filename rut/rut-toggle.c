@@ -93,7 +93,7 @@ struct _RutToggle
   RutGraphableProps graphable;
   RutPaintableProps paintable;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_TOGGLE_N_PROPS];
 };
 
@@ -153,7 +153,7 @@ _rut_toggle_free (void *object)
   cogl_object_unref (toggle->pipeline_border);
   cogl_object_unref (toggle->pipeline_box);
 
-  rut_simple_introspectable_destroy (toggle);
+  rut_introspectable_destroy (toggle);
   rut_graphable_destroy (toggle);
 
   rut_object_free (RutToggle, object);
@@ -322,10 +322,6 @@ _rut_toggle_init_type (void)
   static RutPaintableVTable paintable_vtable = {
       _rut_toggle_paint
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
   static RutSizableVTable sizable_vtable = {
       _rut_toggle_set_size,
       _rut_toggle_get_size,
@@ -348,10 +344,6 @@ _rut_toggle_init_type (void)
                       &paintable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
   rut_type_add_trait (type,
@@ -550,9 +542,9 @@ rut_toggle_new_with_icons (RutContext *ctx,
   rut_graphable_init (toggle);
   rut_paintable_init (toggle);
 
-  rut_simple_introspectable_init (toggle,
-                                  _rut_toggle_prop_specs,
-                                  toggle->properties);
+  rut_introspectable_init (toggle,
+                           _rut_toggle_prop_specs,
+                           toggle->properties);
 
   toggle->ctx = ctx;
 

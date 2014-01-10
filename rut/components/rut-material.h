@@ -61,7 +61,7 @@ struct _RutMaterial
   int uniforms_age;
   int uniforms_flush_age;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_MATERIAL_N_PROPS];
 
   unsigned int visible:1;

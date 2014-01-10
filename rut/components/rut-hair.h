@@ -63,7 +63,7 @@ struct _RutHair
   float thickness;
   int uniform_locations[4];
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_HAIR_N_PROPS];
 
   unsigned int dirty_shell_textures: 1;

@@ -54,7 +54,7 @@ struct _RutImage
 
   RutList preferred_size_cb_list;
 
-  RutSimpleIntrospectableProps introspectable;
+  RutIntrospectableProps introspectable;
   RutProperty properties[RUT_IMAGE_N_PROPS];
 
   CoglPipeline *pipeline;
@@ -373,10 +373,6 @@ _rut_image_init_type (void)
       NULL, /* child addded */
       NULL /* parent changed */
   };
-  static RutIntrospectableVTable introspectable_vtable = {
-      rut_simple_introspectable_lookup_property,
-      rut_simple_introspectable_foreach_property
-  };
   static RutSizableVTable sizable_vtable = {
       rut_image_set_size,
       rut_image_get_size,
@@ -403,10 +399,6 @@ _rut_image_init_type (void)
                       &sizable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
-                      0, /* no implied properties */
-                      &introspectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL); /* no implied vtable */
 
@@ -436,9 +428,9 @@ rut_image_new (RutContext *ctx,
   rut_paintable_init (image);
   rut_graphable_init (image);
 
-  rut_simple_introspectable_init (image,
-                                  _rut_image_prop_specs,
-                                  image->properties);
+  rut_introspectable_init (image,
+                           _rut_image_prop_specs,
+                           image->properties);
 
   rut_image_set_draw_mode (image, RUT_IMAGE_DRAW_MODE_SCALE_WITH_ASPECT_RATIO);
 
