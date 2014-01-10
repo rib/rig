@@ -116,13 +116,13 @@ _rig_controller_free (RutObject *object)
 
   g_hash_table_destroy (controller->properties);
 
-  rut_refable_unref (controller->context);
+  rut_object_unref (controller->context);
 
   g_free (controller->label);
 
-  rut_refable_unref (controller->timeline);
+  rut_object_unref (controller->timeline);
 
-  g_slice_free (RigController, controller);
+  rut_object_free (RigController, controller);
 }
 
 RutType rig_controller_type;
@@ -130,11 +130,6 @@ RutType rig_controller_type;
 static void
 _rig_controller_type_init (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_controller_free
-  };
 
   static RutIntrospectableVTable introspectable_vtable = {
       rut_simple_introspectable_lookup_property,
@@ -144,19 +139,15 @@ _rig_controller_type_init (void)
   RutType *type = &rig_controller_type;
 #define TYPE RigController
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -167,7 +158,7 @@ free_prop_data_cb (void *user_data)
   RigControllerPropData *prop_data = user_data;
 
   if (prop_data->path)
-    rut_refable_unref (prop_data->path);
+    rut_object_unref (prop_data->path);
 
   rut_boxed_destroy (&prop_data->constant_value);
 
@@ -183,7 +174,6 @@ rig_controller_new (RigEngine *engine,
                                                  _rig_controller_type_init);
   RutTimeline *timeline;
 
-  controller->ref_count = 1;
 
   controller->label = g_strdup (label);
 
@@ -730,10 +720,10 @@ rig_controller_set_property_path (RigController *controller,
   if (prop_data->path)
     {
       rut_closure_disconnect (prop_data->path_change_closure);
-      rut_refable_unref (prop_data->path);
+      rut_object_unref (prop_data->path);
     }
 
-  prop_data->path = rut_refable_ref (path);
+  prop_data->path = rut_object_ref (path);
 #warning "FIXME: what if this changes the length of the controller?"
 
   if (controller->active &&

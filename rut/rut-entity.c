@@ -88,7 +88,7 @@ _rut_entity_free (void *object)
       rut_renderer_free_priv (renderer, entity);
     }
 
-  g_slice_free (RutEntity, entity);
+  rut_object_free (RutEntity, entity);
 }
 
 RutType rut_entity_type;
@@ -112,24 +112,23 @@ _rut_entity_init_type (void)
   RutType *type = &rut_entity_type;
 #define TYPE RutEntity
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_entity_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_TRANSFORMABLE,
-                          0,
-                          &transformable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_entity_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_TRANSFORMABLE,
+                      0,
+                      &transformable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -137,12 +136,11 @@ _rut_entity_init_type (void)
 RutEntity *
 rut_entity_new (RutContext *ctx)
 {
-  RutEntity *entity = g_slice_new0 (RutEntity);
+  RutEntity *entity =
+    rut_object_alloc0 (RutEntity, &rut_entity_type, _rut_entity_init_type);
 
-  rut_object_init (&entity->_parent, &rut_entity_type);
 
   entity->ctx = ctx;
-  entity->ref_count = 1;
 
   rut_simple_introspectable_init (entity,
                                   _rut_entity_prop_specs,
@@ -332,7 +330,7 @@ rut_entity_apply_rotations (RutObject *entity,
 
   do {
     RutGraphableProps *graphable_priv =
-      rut_object_get_properties (node, RUT_INTERFACE_ID_GRAPHABLE);
+      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
 
     depth++;
 
@@ -345,13 +343,13 @@ rut_entity_apply_rotations (RutObject *entity,
   i = 0;
   do {
     RutGraphableProps *graphable_priv;
-    RutObjectProps *obj = node;
+    RutObjectBase *obj = node;
 
     if (obj->type == &rut_entity_type)
       entity_nodes[i++] = node;
 
     graphable_priv =
-      rut_object_get_properties (node, RUT_INTERFACE_ID_GRAPHABLE);
+      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
     node = graphable_priv->parent;
   } while (node);
 
@@ -413,8 +411,8 @@ rut_entity_get_scales (RutObject *entity)
 
   do {
     RutGraphableProps *graphable_priv =
-      rut_object_get_properties (node, RUT_INTERFACE_ID_GRAPHABLE);
-    RutObjectProps *obj = node;
+      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
+    RutObjectBase *obj = node;
 
     if (obj->type == &rut_entity_type)
       scales *= rut_entity_get_scale (node);
@@ -453,9 +451,9 @@ rut_entity_add_component (RutEntity *entity,
                           RutObject *object)
 {
   RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
   component->entity = entity;
-  rut_refable_ref (object);
+  rut_object_ref (object);
   g_ptr_array_add (entity->components, object);
 }
 
@@ -464,9 +462,9 @@ rut_entity_remove_component (RutEntity *entity,
                              RutObject *object)
 {
   RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
   component->entity = NULL;
-  rut_refable_unref (object);
+  rut_object_unref (object);
   g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
 }
 
@@ -554,7 +552,7 @@ rut_entity_get_component (RutEntity *entity,
     {
       RutObject *component = g_ptr_array_index (entity->components, i);
       RutComponentableProps *component_props =
-        rut_object_get_properties (component, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
 
       if (component_props->type == type)
         return component;
@@ -596,7 +594,7 @@ rut_entity_copy (RutEntity *entity)
   GPtrArray *entity_components = entity->components;
   GPtrArray *copy_components;
   RutGraphableProps *graph_props =
-    rut_object_get_properties (entity, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (entity, RUT_TRAIT_ID_GRAPHABLE);
   int i;
   GList *l;
 
@@ -615,11 +613,11 @@ rut_entity_copy (RutEntity *entity)
     {
       RutObject *component = g_ptr_array_index (entity_components, i);
       RutComponentableVTable *componentable =
-        rut_object_get_vtable (component, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_vtable (component, RUT_TRAIT_ID_COMPONENTABLE);
       RutObject *component_copy = componentable->copy (component);
 
       rut_entity_add_component (copy, component_copy);
-      rut_refable_unref (component_copy);
+      rut_object_unref (component_copy);
     }
 
   for (l = graph_props->children.head; l; l = l->next)

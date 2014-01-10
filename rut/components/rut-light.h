@@ -36,8 +36,7 @@ enum {
 
 struct _RutLight
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
   RutComponentableProps component;
   CoglColor ambient;
   CoglColor diffuse;

@@ -22,8 +22,7 @@
 
 struct _RutImageSource
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -219,20 +218,11 @@ RutType rut_image_source_type;
 void
 _rut_image_source_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_image_source_free
-  };
 
   RutType *type = &rut_image_source_type;
 #define TYPE RutImageSource
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_image_source_free);
 
 #undef TYPE
 }
@@ -268,8 +258,6 @@ rut_image_source_new (RutContext *ctx,
   RutImageSource *source = rut_object_alloc0 (RutImageSource,
                                               &rut_image_source_type,
                                               _rut_image_source_init_type);
-
-  source->ref_count = 1;
 
   source->ctx = ctx;
   source->sink = NULL;

@@ -1,11 +1,9 @@
 #ifndef _RUT_TIMELINE_H_
 #define _RUT_TIMELINE_H_
 
-void
-_rut_timeline_init_type (void);
+extern RutType rut_timeline_type;
 
 typedef struct _RutTimeline RutTimeline;
-#define RUT_TIMELINE(x) ((RutTimeline *)x)
 
 RutTimeline *
 rut_timeline_new (RutContext *ctx,

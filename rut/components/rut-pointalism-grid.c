@@ -76,13 +76,13 @@ static RutPropertySpec _rut_pointalism_grid_prop_specs[] = {
 };
 
 static void
-_pointalism_grid_slice_free (void *object)
+_rut_pointalism_grid_slice_free (void *object)
 {
   RutPointalismGridSlice *pointalism_grid_slice = object;
 
-  rut_refable_unref (pointalism_grid_slice->mesh);
+  rut_object_unref (pointalism_grid_slice->mesh);
 
-  g_slice_free (RutPointalismGridSlice, object);
+  rut_object_free (RutPointalismGridSlice, object);
 }
 
 RutType rut_pointalism_grid_slice_type;
@@ -90,21 +90,12 @@ RutType rut_pointalism_grid_slice_type;
 void
 _rut_pointalism_grid_slice_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _pointalism_grid_slice_free
-  };
 
   RutType *type = &rut_pointalism_grid_slice_type;
 
 #define TYPE RutPointalismGridSlice
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_pointalism_grid_slice_free);
 
 #undef TYPE
 }
@@ -343,7 +334,7 @@ pointalism_generate_grid (RutPointalismGridSlice *slice,
   }
 
   if (slice->mesh)
-    rut_refable_unref (slice->mesh);
+    rut_object_unref (slice->mesh);
 
   slice->mesh = mesh_new_grid (COGL_VERTICES_MODE_TRIANGLES,
                                (columns * rows) * 4,
@@ -356,11 +347,10 @@ pointalism_grid_slice_new (int tex_width,
                            int tex_height,
                            float size)
 {
-  RutPointalismGridSlice *grid_slice = g_slice_new (RutPointalismGridSlice);
+  RutPointalismGridSlice *grid_slice =
+    rut_object_alloc0 (RutPointalismGridSlice, &rut_pointalism_grid_slice_type, _rut_pointalism_grid_slice_init_type);
 
-  rut_object_init (&grid_slice->_parent, &rut_pointalism_grid_slice_type);
 
-  grid_slice->ref_count = 1;
   grid_slice->mesh = NULL;
 
   pointalism_generate_grid (grid_slice, tex_width, tex_height, size);
@@ -375,12 +365,12 @@ _rut_pointalism_grid_free (void *object)
 
   rut_closure_list_disconnect_all (&grid->updated_cb_list);
 
-  rut_refable_unref (grid->slice);
-  rut_refable_unref (grid->pick_mesh);
+  rut_object_unref (grid->slice);
+  rut_object_unref (grid->pick_mesh);
 
   rut_simple_introspectable_destroy (grid);
 
-  g_slice_free (RutPointalismGrid, grid);
+  rut_object_free (RutPointalismGrid, grid);
 }
 
 static RutObject *
@@ -405,11 +395,6 @@ RutType rut_pointalism_grid_type;
 void
 _rut_pointalism_grid_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_pointalism_grid_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_pointalism_grid_copy
@@ -432,33 +417,29 @@ _rut_pointalism_grid_init_type (void)
 
 #define TYPE RutPointalismGrid
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PRIMABLE,
-                          0, /* no associated properties */
-                          &primable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MESHABLE,
-                          0, /* no associated properties */
-                          &meshable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_pointalism_grid_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PRIMABLE,
+                      0, /* no associated properties */
+                      &primable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MESHABLE,
+                      0, /* no associated properties */
+                      &meshable_vtable);
 
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0,
-                          &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0,
+                      &introspectable_vtable);
 
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL);
 
 #undef TYPE
 }
@@ -469,7 +450,8 @@ rut_pointalism_grid_new (RutContext *ctx,
                          int tex_width,
                          int tex_height)
 {
-  RutPointalismGrid *grid = g_slice_new0 (RutPointalismGrid);
+  RutPointalismGrid *grid =
+    rut_object_alloc0 (RutPointalismGrid, &rut_pointalism_grid_type, _rut_pointalism_grid_init_type);
   RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
   RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
                                                     6,
@@ -478,13 +460,11 @@ rut_pointalism_grid_new (RutContext *ctx,
   float half_tex_width;
   float half_tex_height;
 
-  rut_object_init (&grid->_parent, &rut_pointalism_grid_type);
 
-  grid->ref_count = 1;
 
   grid->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  grid->ctx = rut_refable_ref (ctx);
+  grid->ctx = rut_object_ref (ctx);
 
   rut_list_init (&grid->updated_cb_list);
 

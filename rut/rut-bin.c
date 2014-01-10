@@ -29,7 +29,7 @@
 
 struct _RutBin
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -50,7 +50,6 @@ struct _RutBin
 
   RutGraphableProps graphable;
 
-  int ref_count;
 };
 
 static void
@@ -66,7 +65,7 @@ _rut_bin_free (void *object)
 
   rut_graphable_destroy (bin);
 
-  g_slice_free (RutBin, bin);
+  rut_object_free (RutBin, bin);
 }
 
 static void
@@ -290,11 +289,6 @@ RutType rut_bin_type;
 static void
 _rut_bin_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_bin_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -313,19 +307,15 @@ _rut_bin_init_type (void)
   RutType *type = &rut_bin_type;
 #define TYPE RutBin
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_bin_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -337,7 +327,6 @@ rut_bin_new (RutContext *ctx)
                                    &rut_bin_type,
                                    _rut_bin_init_type);
 
-  bin->ref_count = 1;
   bin->context = ctx;
 
   bin->x_position = RUT_BIN_POSITION_EXPAND;
@@ -345,11 +334,11 @@ rut_bin_new (RutContext *ctx)
 
   rut_list_init (&bin->preferred_size_cb_list);
 
-  rut_graphable_init (RUT_OBJECT (bin));
+  rut_graphable_init (bin);
 
   bin->child_transform = rut_transform_new (ctx);
   rut_graphable_add_child (bin, bin->child_transform);
-  rut_refable_unref (bin->child_transform);
+  rut_object_unref (bin->child_transform);
 
   return bin;
 }
@@ -374,14 +363,14 @@ rut_bin_set_child (RutBin *bin,
     return;
 
   if (child_widget)
-    rut_refable_claim (child_widget, bin);
+    rut_object_claim (child_widget, bin);
 
   if (bin->child)
     {
       rut_graphable_remove_child (bin->child);
       rut_closure_disconnect (bin->child_preferred_size_closure);
       bin->child_preferred_size_closure = NULL;
-      rut_refable_release (bin->child, bin);
+      rut_object_release (bin->child, bin);
     }
 
   bin->child = child_widget;

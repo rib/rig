@@ -51,7 +51,7 @@ rig_device_fini (RutShell *shell, void *user_data)
   RigDevice *device = user_data;
   RigEngine *engine = device->engine;
 
-  rut_refable_unref (engine);
+  rut_object_unref (engine);
   device->engine = NULL;
 }
 
@@ -152,8 +152,8 @@ main (int argc, char **argv)
 
   rut_shell_main (device.shell);
 
-  rut_refable_unref (device.ctx);
-  rut_refable_unref (device.shell);
+  rut_object_unref (device.ctx);
+  rut_object_unref (device.shell);
 
   return 0;
 }

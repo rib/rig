@@ -167,18 +167,18 @@ create_dummy_control_points (EntityState *entity_state)
 
   point->transform = rut_transform_new (tool->ctx);
   rut_graphable_add_child (tool->tool_overlay, point->transform);
-  rut_refable_unref (point->transform);
+  rut_object_unref (point->transform);
 
   point->marker = rut_nine_slice_new (tool->ctx, tex, 0, 0, 0, 0, 10, 10);
   rut_graphable_add_child (point->transform, point->marker);
-  rut_refable_unref (point->marker);
+  rut_object_unref (point->marker);
 
   point->input_region =
     rut_input_region_new_circle (0, 0, 5,
                                  control_point_input_cb,
                                  point);
   rut_graphable_add_child (tool->tool_overlay, point->input_region);
-  rut_refable_unref (point->input_region);
+  rut_object_unref (point->input_region);
   entity_state->control_points =
     g_list_prepend (entity_state->control_points, point);
 
@@ -191,18 +191,18 @@ create_dummy_control_points (EntityState *entity_state)
 
   point->transform = rut_transform_new (tool->ctx);
   rut_graphable_add_child (tool->tool_overlay, point->transform);
-  rut_refable_unref (point->transform);
+  rut_object_unref (point->transform);
 
   point->marker = rut_nine_slice_new (tool->ctx, tex, 0, 0, 0, 0, 10, 10);
   rut_graphable_add_child (point->transform, point->marker);
-  rut_refable_unref (point->marker);
+  rut_object_unref (point->marker);
 
   point->input_region =
     rut_input_region_new_circle (0, 0, 5,
                                  control_point_input_cb,
                                  point);
   rut_graphable_add_child (tool->tool_overlay, point->input_region);
-  rut_refable_unref (point->input_region);
+  rut_object_unref (point->input_region);
   entity_state->control_points =
     g_list_prepend (entity_state->control_points, point);
 
@@ -221,7 +221,7 @@ entity_state_destroy (EntityState *entity_state)
       rut_graphable_remove_child (point->transform);
     }
 
-  rut_refable_unref (entity_state->entity);
+  rut_object_unref (entity_state->entity);
 
   g_slice_free (EntityState, entity_state);
 }
@@ -259,7 +259,7 @@ objects_selection_event_cb (RigObjectsSelection *selection,
 
         entity_state = g_slice_new0 (EntityState);
         entity_state->tool = tool;
-        entity_state->entity = rut_refable_ref (object);
+        entity_state->entity = rut_object_ref (object);
         entity_state->control_points = NULL;
 
         tool->selected_entities = g_list_prepend (tool->selected_entities,

@@ -20,56 +20,71 @@
 
 #include <config.h>
 
+#include <stdbool.h>
+
 #include "rut-type.h"
 #include "rut-bitmask.h"
 
-static CoglBool
+static bool
 find_max_id (int bit_num, void *user_data)
 {
   int *max_id = user_data;
   if (bit_num > *max_id)
     *max_id = bit_num;
 
-  return TRUE;
+  return true;
 }
 
 void
-rut_type_add_interface (RutType *type,
-                        RutInterfaceID id,
-                        size_t instance_priv_offset,
-                        void *interface_vtable)
+rut_type_add_trait (RutType *type,
+                    RutTraitID id,
+                    size_t instance_priv_offset,
+                    void *interface_vtable)
 {
   int max_id = 0;
 
-  _rut_bitmask_foreach (&type->interfaces_mask,
+  _rut_bitmask_foreach (&type->traits_mask,
                         find_max_id,
                         &max_id);
 
   if (id > max_id)
     {
-      type->interfaces = g_realloc (type->interfaces,
-                                    sizeof (RutInterface) * (id + 1));
+      type->traits = g_realloc (type->traits,
+                                sizeof (RutTraitImplementation) * (id + 1));
     }
 
-  _rut_bitmask_set (&type->interfaces_mask, id, TRUE);
-  type->interfaces[id].props_offset = instance_priv_offset;
-  type->interfaces[id].vtable = interface_vtable;
-
-  /* TODO
-   * type->interfaces[interface_id].v8_prototype_append (type);
-   */
+  _rut_bitmask_set (&type->traits_mask, id, true);
+  type->traits[id].props_offset = instance_priv_offset;
+  type->traits[id].vtable = interface_vtable;
+  type->traits[id].destructor = NULL;
 }
 
 void
-rut_type_init (RutType *type, const char *name)
+rut_trait_set_destructor (RutType *type,
+                          RutTraitID id,
+                          RutTraitDestructor trait_destructor)
 {
+  type->traits[id].destructor = trait_destructor;
+  rut_list_insert (type->destructors.prev,
+                   &type->traits[id].destructor_link);
+}
+
+void
+rut_type_init (RutType *type,
+               const char *name,
+               RutTypeDestructor destructor)
+{
+  /* Note: we can assume the type is zeroed at this point */
+
   type->name = name;
+  type->free = destructor;
 
-  _rut_bitmask_init (&type->interfaces_mask);
+  _rut_bitmask_init (&type->traits_mask);
+  rut_list_init (&type->destructors);
+}
 
-  type->interfaces = NULL;
-
-  /* TODO
-   * type->v8_template = FunctionTemplate::New();
-   */
+void
+rut_type_set_magazine (RutType *type, RutMagazine *magazine)
+{
+  type->magazine = magazine;
 }

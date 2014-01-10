@@ -41,13 +41,13 @@ G_STATIC_ASSERT (sizeof (unsigned long) <= sizeof (void *));
 #define BIT_MASK(bit_num) \
   (1UL << BIT_INDEX (bit_num))
 
-gboolean
+bool
 set_bit_cb (int bit,
             void *user_data)
 {
   RutBitmask *b = user_data;
-  _rut_bitmask_set (b, bit, TRUE);
-  return TRUE;
+  _rut_bitmask_set (b, bit, true);
+  return true;
 }
 
 void
@@ -57,7 +57,7 @@ _rut_bitmask_init_from_bitmask (RutBitmask *bitmask,
   _rut_bitmask_foreach (src, set_bit_cb, bitmask);
 }
 
-gboolean
+bool
 _rut_bitmask_get_from_array (const RutBitmask *bitmask,
                              unsigned int bit_num)
 {
@@ -66,7 +66,7 @@ _rut_bitmask_get_from_array (const RutBitmask *bitmask,
   /* If the index is off the end of the array then assume the bit is
      not set */
   if (bit_num >= sizeof (unsigned long) * 8 * array->len)
-    return FALSE;
+    return false;
   else
     return !!(g_array_index (array, unsigned long, ARRAY_INDEX (bit_num)) &
               BIT_MASK (bit_num));
@@ -79,8 +79,8 @@ _rut_bitmask_convert_to_array (RutBitmask *bitmask)
   /* Fetch the old values */
   unsigned long old_values = _rut_bitmask_to_bits (bitmask);
 
-  array = g_array_new (FALSE, /* not zero-terminated */
-                       TRUE, /* do clear new entries */
+  array = g_array_new (false, /* not zero-terminated */
+                       true, /* do clear new entries */
                        sizeof (unsigned long));
   /* Copy the old values back in */
   g_array_append_val (array, old_values);
@@ -91,7 +91,7 @@ _rut_bitmask_convert_to_array (RutBitmask *bitmask)
 void
 _rut_bitmask_set_in_array (RutBitmask *bitmask,
                            unsigned int bit_num,
-                           gboolean value)
+                           bool value)
 {
   GArray *array;
   unsigned int array_index;
@@ -155,7 +155,7 @@ _rut_bitmask_set_bits (RutBitmask *dst,
 void
 _rut_bitmask_set_range_in_array (RutBitmask *bitmask,
                                  unsigned int n_bits,
-                                 gboolean value)
+                                 bool value)
 {
   GArray *array;
   unsigned int array_index, bit_index;
@@ -275,10 +275,10 @@ _rut_bitmask_foreach (const RutBitmask *bitmask,
 typedef struct _EqualState
 {
   const RutBitmask *b;
-  gboolean equal;
+  bool equal;
 } EqualState;
 
-gboolean
+bool
 check_bit_cb (int bit,
               void *user_data)
 {
@@ -286,17 +286,17 @@ check_bit_cb (int bit,
 
   if (!_rut_bitmask_get (state->b, bit))
     {
-      state->equal = FALSE;
-      return FALSE;
+      state->equal = false;
+      return false;
     }
-  return TRUE;
+  return true;
 }
 
-gboolean
+bool
 _rut_bitmask_equal (const RutBitmask *a,
                     const RutBitmask *b)
 {
-  EqualState state = { b, TRUE };
+  EqualState state = { b, true };
   _rut_bitmask_foreach (a, check_bit_cb, &state);
   return state.equal;
 }

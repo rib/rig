@@ -147,7 +147,7 @@ server_error_handler (PB_RPC_Error_Code code,
 
   rig_rpc_server_shutdown (engine->slave_service);
 
-  rut_refable_unref (engine->slave_service);
+  rut_object_unref (engine->slave_service);
   engine->slave_service = NULL;
 }
 
@@ -188,7 +188,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
 
   slave->engine = NULL;
 
-  rut_refable_unref (slave->frontend);
+  rut_object_unref (slave->frontend);
   slave->frontend = NULL;
 }
 
@@ -276,8 +276,8 @@ main (int argc, char **argv)
 
   rut_shell_main (slave.shell);
 
-  rut_refable_unref (slave.ctx);
-  rut_refable_unref (slave.shell);
+  rut_object_unref (slave.ctx);
+  rut_object_unref (slave.shell);
 
   return 0;
 }

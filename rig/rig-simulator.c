@@ -277,7 +277,7 @@ rig_simulator_start_service (RigSimulator *simulator)
 void
 rig_simulator_stop_service (RigSimulator *simulator)
 {
-  rut_refable_unref (simulator->simulator_peer);
+  rut_object_unref (simulator->simulator_peer);
   simulator->simulator_peer = NULL;
 
   /* For now we assume we would only stop the service due to an RPC
@@ -318,7 +318,7 @@ rig_simulator_fini (RutShell *shell, void *user_data)
   RigSimulator *simulator = user_data;
   RigEngine *engine = simulator->engine;
 
-  rut_refable_unref (engine);
+  rut_object_unref (engine);
   simulator->engine = NULL;
 
   g_hash_table_destroy (simulator->id_map);
@@ -352,7 +352,7 @@ get_object_id (RigSimulator *simulator, void *object)
   if (G_UNLIKELY (id_ptr == NULL))
     {
       const char *label = "";
-      if (rut_object_is (object, RUT_INTERFACE_ID_INTROSPECTABLE))
+      if (rut_object_is (object, RUT_TRAIT_ID_INTROSPECTABLE))
         {
           RutProperty *label_prop =
             rut_introspectable_lookup_property (object, "label");
@@ -539,8 +539,8 @@ main (int argc, char **argv)
 
   rut_shell_main (simulator.shell);
 
-  rut_refable_unref (simulator.ctx);
-  rut_refable_unref (simulator.shell);
+  rut_object_unref (simulator.ctx);
+  rut_object_unref (simulator.shell);
 
   return 0;
 }

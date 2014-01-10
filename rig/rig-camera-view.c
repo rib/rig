@@ -79,9 +79,9 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure);
 static void
 unref_device_transforms (RigCameraViewDeviceTransforms *transforms)
 {
-  rut_refable_unref (transforms->origin_offset);
-  rut_refable_unref (transforms->dev_scale);
-  rut_refable_unref (transforms->screen_pos);
+  rut_object_unref (transforms->origin_offset);
+  rut_object_unref (transforms->dev_scale);
+  rut_object_unref (transforms->screen_pos);
 }
 
 static void
@@ -94,25 +94,25 @@ _rig_camera_view_free (void *object)
 
   rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, view);
 
-  rut_refable_unref (view->context);
+  rut_object_unref (view->context);
 
   rut_graphable_destroy (view);
 
-  rut_refable_unref (view->view_camera_to_origin);
-  rut_refable_unref (view->view_camera_rotate);
-  rut_refable_unref (view->view_camera_armature);
-  rut_refable_unref (view->view_camera_2d_view);
-  rut_refable_unref (view->view_camera);
-  rut_refable_unref (view->view_camera_component);
+  rut_object_unref (view->view_camera_to_origin);
+  rut_object_unref (view->view_camera_rotate);
+  rut_object_unref (view->view_camera_armature);
+  rut_object_unref (view->view_camera_2d_view);
+  rut_object_unref (view->view_camera);
+  rut_object_unref (view->view_camera_component);
   unref_device_transforms (&view->view_device_transforms);
 
-  rut_refable_unref (view->play_dummy_entity);
+  rut_object_unref (view->play_dummy_entity);
   unref_device_transforms (&view->play_device_transforms);
 
   rig_selection_tool_destroy (view->selection_tool);
   rig_rotation_tool_destroy (view->rotation_tool);
 
-  g_slice_free (RigCameraView, view);
+  rut_object_free (RigCameraView, view);
 }
 
 static void
@@ -726,11 +726,6 @@ RutType rig_camera_view_type;
 static void
 _rig_camera_view_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_camera_view_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
@@ -753,23 +748,19 @@ _rig_camera_view_init_type (void)
   RutType *type = &rig_camera_view_type;
 #define TYPE RigCameraView
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_camera_view_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 #undef TYPE
 }
 
@@ -1301,7 +1292,7 @@ entitygraph_pre_pick_cb (RutObject *object,
    * we can avoid repeated accumulating the transform of ancestors when
    * traversing between scenegraph nodes that have common ancestors.
    */
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       const CoglMatrix *matrix = rut_transformable_get_matrix (object);
       cogl_framebuffer_push_matrix (fb);
@@ -1326,7 +1317,7 @@ entitygraph_pre_pick_cb (RutObject *object,
 
       if (input)
         {
-          if (rut_object_is (input, RUT_INTERFACE_ID_PICKABLE))
+          if (rut_object_is (input, RUT_TRAIT_ID_PICKABLE))
             {
               cogl_framebuffer_get_modelview_matrix (fb, &transform);
 
@@ -1364,7 +1355,7 @@ entitygraph_pre_pick_cb (RutObject *object,
 
       /* Get a model we can pick against */
       if (!(geometry &&
-            rut_object_is (geometry, RUT_INTERFACE_ID_MESHABLE) &&
+            rut_object_is (geometry, RUT_TRAIT_ID_MESHABLE) &&
             (mesh = rut_meshable_get_mesh (geometry))))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
@@ -1435,7 +1426,7 @@ entitygraph_post_pick_cb (RutObject *object,
                           int depth,
                           void *user_data)
 {
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       PickContext *pick_ctx = user_data;
       cogl_framebuffer_pop_matrix (pick_ctx->fb);
@@ -2070,8 +2061,7 @@ rig_camera_view_new (RigEngine *engine)
                                            _rig_camera_view_init_type);
   RutContext *ctx = engine->ctx;
 
-  view->ref_count = 1;
-  view->context = rut_refable_ref (ctx);
+  view->context = rut_object_ref (ctx);
   view->engine = engine;
 
   rut_graphable_init (view);
@@ -2133,7 +2123,7 @@ rig_camera_view_new (RigEngine *engine)
     {
       view->tool_overlay = rut_graph_new (engine->ctx);
       rut_graphable_add_child (view, view->tool_overlay);
-      rut_refable_unref (view->tool_overlay);
+      rut_object_unref (view->tool_overlay);
 
       view->selection_tool = rig_selection_tool_new (view, view->tool_overlay);
       view->rotation_tool = rig_rotation_tool_new (view);
@@ -2188,13 +2178,13 @@ rig_camera_view_set_play_camera (RigCameraView *view,
   if (view->play_camera)
     {
       rut_graphable_remove_child (view->play_device_transforms.origin_offset);
-      rut_refable_unref (view->play_camera);
-      rut_refable_unref (view->play_camera_component);
+      rut_object_unref (view->play_camera);
+      rut_object_unref (view->play_camera_component);
     }
 
   if (play_camera)
     {
-      view->play_camera = rut_refable_ref (play_camera);
+      view->play_camera = rut_object_ref (play_camera);
 
       rut_graphable_add_child (play_camera,
                                view->play_device_transforms.origin_offset);
@@ -2202,7 +2192,7 @@ rig_camera_view_set_play_camera (RigCameraView *view,
       view->play_camera_component =
         rut_entity_get_component (play_camera,
                                   RUT_COMPONENT_TYPE_CAMERA);
-      rut_refable_ref (view->play_camera_component);
+      rut_object_ref (view->play_camera_component);
     }
   else
     view->play_camera_component = NULL;

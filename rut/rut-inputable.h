@@ -38,7 +38,7 @@ rut_inputable_handle_event (RutObject *inputable,
                             RutInputEvent *event)
 {
   RutInputableVTable *vtable =
-    rut_object_get_vtable (inputable, RUT_INTERFACE_ID_INPUTABLE);
+    rut_object_get_vtable (inputable, RUT_TRAIT_ID_INPUTABLE);
 
   return vtable->handle_event (inputable, event);
 }

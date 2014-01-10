@@ -24,8 +24,7 @@
 
 typedef struct _RigSlaveAddress
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   char *name;
   char *hostname;

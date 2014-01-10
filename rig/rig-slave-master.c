@@ -61,14 +61,14 @@ destroy_slave_master (RigSlaveMaster *master)
     return;
 
   rig_rpc_client_disconnect (master->rpc_client);
-  rut_refable_unref (master->rpc_client);
+  rut_object_unref (master->rpc_client);
   master->rpc_client = NULL;
 
   master->connected = FALSE;
 
   engine->slave_masters = g_list_remove (engine->slave_masters, master);
 
-  rut_refable_unref (master);
+  rut_object_unref (master);
 }
 
 static void
@@ -92,7 +92,7 @@ _rig_slave_master_free (void *object)
 
   destroy_slave_master (master);
 
-  g_slice_free (RigSlaveMaster, master);
+  rut_object_free (RigSlaveMaster, master);
 }
 
 static RutType rig_slave_master_type;
@@ -100,44 +100,22 @@ static RutType rig_slave_master_type;
 static void
 _rig_slave_master_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_slave_master_free
-  };
-
-  RutType *type = &rig_slave_master_type;
-#define TYPE RigSlaveMaster
-
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-
-#undef TYPE
+  rut_type_init (&rig_slave_master_type, G_STRINGIFY (TYPE),
+                 _rig_slave_master_free);
 }
 
 static RigSlaveMaster *
 rig_slave_master_new (RigEngine *engine,
                       RigSlaveAddress *slave_address)
 {
-  RigSlaveMaster *master = g_slice_new0 (RigSlaveMaster);
-  static CoglBool initialized = FALSE;
-
-  if (initialized == FALSE)
-    {
-      _rig_slave_master_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&master->_parent, &rig_slave_master_type);
-
-  master->ref_count = 1;
+  RigSlaveMaster *master =
+    rut_object_alloc0 (RigSlaveMaster,
+                       &rig_slave_master_type,
+                       _rig_slave_master_init_type);
 
   master->engine = engine;
 
-  master->slave_address = rut_refable_ref (slave_address);
+  master->slave_address = rut_object_ref (slave_address);
 
   master->rpc_client =
     rig_rpc_client_new (slave_address->hostname,

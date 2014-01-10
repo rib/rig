@@ -493,7 +493,7 @@ _rut_hair_free (void *object)
     cogl_object_unref (hair->fin_texture);
   cogl_object_unref (hair->circle);
   g_free (hair->shell_positions);
-  g_slice_free (RutHair, hair);
+  rut_object_free (RutHair, hair);
 }
 
 static RutObject *
@@ -516,11 +516,6 @@ RutType rut_hair_type;
 void
 _rut_hair_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_hair_free
-  };
 
   static RutIntrospectableVTable introspectable_vtable = {
       rut_simple_introspectable_lookup_property,
@@ -534,23 +529,19 @@ _rut_hair_init_type (void)
   RutType *type = &rut_hair_type;
 #define TYPE RutHair
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_hair_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -558,15 +549,14 @@ _rut_hair_init_type (void)
 RutHair *
 rut_hair_new (RutContext *ctx)
 {
-  RutHair *hair = g_slice_new0 (RutHair);
+  RutHair *hair =
+    rut_object_alloc0 (RutHair, &rut_hair_type, _rut_hair_init_type);
 
-  rut_object_init (&hair->_parent, &rut_hair_type);
 
-  hair->ref_count = 1;
 
   hair->component.type = RUT_COMPONENT_TYPE_HAIR;
 
-  hair->ctx = rut_refable_ref (ctx);
+  hair->ctx = rut_object_ref (ctx);
 
   hair->length = 100;
   hair->n_shells = 50;

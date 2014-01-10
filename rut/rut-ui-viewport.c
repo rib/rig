@@ -51,11 +51,10 @@ enum {
 
 struct _RutUIViewport
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   RutGraphableProps graphable;
 
@@ -181,9 +180,9 @@ _rut_ui_viewport_free (void *object)
 
   rut_closure_list_disconnect_all (&ui_viewport->preferred_size_cb_list);
 
-  rut_refable_unref (ui_viewport->doc_transform);
+  rut_object_unref (ui_viewport->doc_transform);
 
-  rut_refable_unref (ui_viewport->input_region);
+  rut_object_unref (ui_viewport->input_region);
 
   rut_simple_introspectable_destroy (ui_viewport);
   rut_graphable_destroy (ui_viewport);
@@ -191,7 +190,7 @@ _rut_ui_viewport_free (void *object)
   rut_shell_remove_pre_paint_callback_by_graphable (ui_viewport->ctx->shell,
                                        ui_viewport);
 
-  g_slice_free (RutUIViewport, object);
+  rut_object_free (RutUIViewport, object);
 }
 
 static void
@@ -339,32 +338,31 @@ _rut_ui_viewport_init_type (void)
   RutType *type = &rut_ui_viewport_type;
 #define TYPE RutUIViewport
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_ui_viewport_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
-                          0, /* no implied properties */
-                          &pickable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INPUTABLE,
-                          0, /* no implied properties */
-                          &inputable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_ui_viewport_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PICKABLE,
+                      0, /* no implied properties */
+                      &pickable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INPUTABLE,
+                      0, /* no implied properties */
+                      &inputable_vtable);
 
 #undef TYPE
 }
@@ -723,13 +721,12 @@ rut_ui_viewport_new (RutContext *ctx,
 
   ui_viewport->ctx = ctx;
 
-  ui_viewport->ref_count = 1;
 
   rut_simple_introspectable_init (ui_viewport,
                                   _rut_ui_viewport_prop_specs,
                                   ui_viewport->properties);
 
-  rut_graphable_init (RUT_OBJECT (ui_viewport));
+  rut_graphable_init (ui_viewport);
 
   ui_viewport->width = width;
   ui_viewport->height = height;
@@ -1028,8 +1025,8 @@ rut_ui_viewport_set_sync_widget (RutObject *obj,
 
   if (widget)
     {
-      g_return_if_fail (rut_object_is (widget, RUT_INTERFACE_ID_SIZABLE));
-      rut_refable_ref (widget);
+      g_return_if_fail (rut_object_is (widget, RUT_TRAIT_ID_SIZABLE));
+      rut_object_ref (widget);
       queue_allocation (ui_viewport);
       preferred_size_closure =
         rut_sizable_add_preferred_size_callback (widget,
@@ -1041,7 +1038,7 @@ rut_ui_viewport_set_sync_widget (RutObject *obj,
   if (ui_viewport->sync_widget)
     {
       rut_closure_disconnect (ui_viewport->sync_widget_preferred_size_closure);
-      rut_refable_unref (ui_viewport->sync_widget);
+      rut_object_unref (ui_viewport->sync_widget);
     }
 
   ui_viewport->sync_widget_preferred_size_closure = preferred_size_closure;

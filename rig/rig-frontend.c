@@ -195,11 +195,11 @@ _rig_frontend_free (void *object)
 
   rig_frontend_stop_service (frontend);
 
-  rut_refable_unref (frontend->engine);
+  rut_object_unref (frontend->engine);
 
   rig_frontend_stop_service (frontend);
 
-  g_slice_free (RigFrontend, object);
+  rut_object_free (RigFrontend, object);
 }
 
 RutType rig_frontend_type;
@@ -210,8 +210,7 @@ _rig_frontend_init_type (void)
   RutType *type = &rig_frontend_type;
 #define TYPE RigFrontend
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_frontend_free);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_frontend_free);
 
 #undef TYPE
 }
@@ -260,7 +259,6 @@ rig_frontend_new (RutShell *shell,
                                                  &rig_frontend_type,
                                                  _rig_frontend_init_type);
 
-      frontend->ref_count = 1;
 
       frontend->simulator_pid = pid;
       frontend->fd = sp[0];
@@ -301,6 +299,6 @@ rig_frontend_start_service (RigFrontend *frontend)
 void
 rig_frontend_stop_service (RigFrontend *frontend)
 {
-  rut_refable_unref (frontend->frontend_peer);
+  rut_object_unref (frontend->frontend_peer);
   frontend->frontend_peer = NULL;
 }

@@ -41,8 +41,7 @@ enum {
 
 typedef struct _RutScale
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 

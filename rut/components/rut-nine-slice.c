@@ -44,8 +44,7 @@ enum {
 
 struct _RutNineSlice
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -326,7 +325,7 @@ free_mesh (RutNineSlice *nine_slice)
 {
   if (nine_slice->mesh)
     {
-      rut_refable_unref (nine_slice->mesh);
+      rut_object_unref (nine_slice->mesh);
       nine_slice->mesh = NULL;
     }
 }
@@ -350,7 +349,7 @@ _rut_nine_slice_free (void *object)
 
   rut_simple_introspectable_destroy (nine_slice);
 
-  g_slice_free (RutNineSlice, object);
+  rut_object_free (RutNineSlice, object);
 }
 
 static void
@@ -487,11 +486,6 @@ RutType rut_nine_slice_type;
 static void
 _rut_nine_slice_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_nine_slice_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -535,47 +529,43 @@ _rut_nine_slice_init_type (void)
   RutType *type = &rut_nine_slice_type;
 #define TYPE RutNineSlice
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PRIMABLE,
-                          0, /* no associated properties */
-                          &primable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MESHABLE,
-                          0, /* no associated properties */
-                          &meshable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT,
-                          0, /* no implied properties */
-                          &image_dependant_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_nine_slice_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PRIMABLE,
+                      0, /* no associated properties */
+                      &primable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MESHABLE,
+                      0, /* no associated properties */
+                      &meshable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT,
+                      0, /* no implied properties */
+                      &image_dependant_vtable);
 
 #undef TYPE
 }
@@ -590,20 +580,12 @@ rut_nine_slice_new (RutContext *ctx,
                     float width,
                     float height)
 {
-  RutNineSlice *nine_slice = g_slice_new (RutNineSlice);
-  static CoglBool initialized = FALSE;
+  RutNineSlice *nine_slice =
+    rut_object_alloc0 (RutNineSlice, &rut_nine_slice_type, _rut_nine_slice_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_nine_slice_init_type ();
-      initialized = TRUE;
-    }
-
-  rut_object_init (&nine_slice->_parent, &rut_nine_slice_type);
 
   nine_slice->ctx = ctx;
 
-  nine_slice->ref_count = 1;
 
   nine_slice->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 

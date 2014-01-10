@@ -54,8 +54,7 @@ typedef enum _ButtonState
 
 struct _RutButtonInput
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -157,7 +156,7 @@ _rut_button_input_free (void *object)
 
   rut_simple_introspectable_destroy (button_input);
 
-  g_slice_free (RutButtonInput, object);
+  rut_object_free (RutButtonInput, object);
 }
 
 static RutObject *
@@ -341,24 +340,23 @@ _rut_button_input_init_type (void)
   RutType *type = &rut_button_input_type;
 #define TYPE RutButtonInput
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_button_input_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INPUTABLE,
-                          0, /* no implied properties */
-                          &inputable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_button_input_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INPUTABLE,
+                      0, /* no implied properties */
+                      &inputable_vtable);
 
 #undef TYPE
 }
@@ -372,8 +370,6 @@ rut_button_input_new (RutContext *ctx)
                        _rut_button_input_init_type);
 
   button_input->ctx = ctx;
-
-  button_input->ref_count = 1;
 
   button_input->component.type = RUT_COMPONENT_TYPE_INPUT;
 

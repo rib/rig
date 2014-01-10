@@ -30,10 +30,8 @@
 #include "rut-context.h"
 #include "rut-image-source.h"
 
-#define RUT_COMPONENT(X) ((RutComponent *)(X))
 typedef struct _RutComponent RutComponent;
 
-#define RUT_ENTITY(X) ((RutEntity *)X)
 typedef struct _RutEntity RutEntity;
 extern RutType rut_entity_type;
 
@@ -79,10 +77,9 @@ enum
 
 struct _RutEntity
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
-  int ref_count;
 
   char *label;
 

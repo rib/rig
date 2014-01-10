@@ -58,15 +58,15 @@ static RutPropertySpec _rut_shape_prop_specs[] = {
 };
 
 static void
-_shape_model_free (void *object)
+_rut_shape_model_free (void *object)
 {
   RutShapeModel *shape_model = object;
 
   cogl_object_unref (shape_model->shape_texture);
-  rut_refable_unref (shape_model->pick_mesh);
-  rut_refable_unref (shape_model->shape_mesh);
+  rut_object_unref (shape_model->pick_mesh);
+  rut_object_unref (shape_model->shape_mesh);
 
-  g_slice_free (RutShapeModel, object);
+  rut_object_free (RutShapeModel, object);
 }
 
 RutType rut_shape_model_type;
@@ -74,21 +74,12 @@ RutType rut_shape_model_type;
 void
 _rut_shape_model_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _shape_model_free
-  };
 
   RutType *type = &rut_shape_model_type;
 
 #define TYPE RutShapeModel
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_shape_model_free);
 
 #undef TYPE
 }
@@ -181,7 +172,8 @@ shape_model_new (RutContext *ctx,
                  float width,
                  float height)
 {
-  RutShapeModel *shape_model = g_slice_new (RutShapeModel);
+  RutShapeModel *shape_model =
+    rut_object_alloc0 (RutShapeModel, &rut_shape_model_type, _rut_shape_model_init_type);
   RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
   RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
                                                     6,
@@ -198,9 +190,7 @@ shape_model_new (RutContext *ctx,
   float half_geom_size_x;
   float half_geom_size_y;
 
-  rut_object_init (&shape_model->_parent, &rut_shape_model_type);
 
-  shape_model->ref_count = 1;
 
   if (shaped)
     {
@@ -319,13 +309,13 @@ _rut_shape_free (void *object)
 {
   RutShape *shape = object;
 
-  rut_refable_unref (shape->model);
+  rut_object_unref (shape->model);
 
   rut_simple_introspectable_destroy (shape);
 
   rut_closure_list_disconnect_all (&shape->reshaped_cb_list);
 
-  g_slice_free (RutShape, shape);
+  rut_object_free (RutShape, shape);
 }
 
 static RutObject *
@@ -338,7 +328,7 @@ _rut_shape_copy (RutObject *object)
                                   shape->height);
 
   if (shape->model)
-    copy->model = rut_refable_ref (shape->model);
+    copy->model = rut_object_ref (shape->model);
 
   return copy;
 }
@@ -348,11 +338,6 @@ RutType rut_shape_type;
 void
 _rut_shape_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_shape_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_shape_copy
@@ -383,35 +368,31 @@ _rut_shape_init_type (void)
 
 #define TYPE RutShape
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PRIMABLE,
-                          0, /* no associated properties */
-                          &primable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MESHABLE,
-                          0, /* no associated properties */
-                          &meshable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_shape_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PRIMABLE,
+                      0, /* no associated properties */
+                      &primable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MESHABLE,
+                      0, /* no associated properties */
+                      &meshable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 
 #undef TYPE
@@ -423,15 +404,14 @@ rut_shape_new (RutContext *ctx,
                int width,
                int height)
 {
-  RutShape *shape = g_slice_new0 (RutShape);
+  RutShape *shape =
+    rut_object_alloc0 (RutShape, &rut_shape_type, _rut_shape_init_type);
 
-  rut_object_init (&shape->_parent, &rut_shape_type);
 
-  shape->ref_count = 1;
 
   shape->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  shape->ctx = rut_refable_ref (ctx);
+  shape->ctx = rut_object_ref (ctx);
 
   shape->width = width;
   shape->height = height;
@@ -492,7 +472,7 @@ free_model (RutShape *shape)
 {
   if (shape->model)
     {
-      rut_refable_unref (shape->model);
+      rut_object_unref (shape->model);
       shape->model = NULL;
     }
 }

@@ -42,9 +42,8 @@ enum {
 
 struct _RutTextBuffer
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutContext *ctx;
 
@@ -279,40 +278,35 @@ _rut_text_buffer_free (void *object)
 
   rut_simple_introspectable_destroy (buffer);
 
-  rut_refable_unref (buffer->ctx);
+  rut_object_unref (buffer->ctx);
 
-  g_slice_free (RutTextBuffer, buffer);
+  rut_object_free (RutTextBuffer, buffer);
 }
-
-static RutRefableVTable _rut_text_buffer_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_text_buffer_free
-};
-
-static RutIntrospectableVTable _rut_text_buffer_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
 
 RutType rut_text_buffer_type;
 
 void
 _rut_text_buffer_init_type (void)
 {
-  rut_type_init (&rut_text_buffer_type, "RigTextBuffer");
-  rut_type_add_interface (&rut_text_buffer_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutTextBuffer, ref_count),
-                          &_rut_text_buffer_refable_vtable);
-  rut_type_add_interface (&rut_text_buffer_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_text_buffer_introspectable_vtable);
-  rut_type_add_interface (&rut_text_buffer_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutTextBuffer, introspectable),
-                          NULL); /* no implied vtable */
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  RutType *type = &rut_text_buffer_type;
+#define TYPE RutTextBuffer
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_text_buffer_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+
+#undef TYPE
 }
 
 RutTextBuffer*
@@ -320,16 +314,15 @@ rut_text_buffer_new (RutContext *ctx)
 {
   RutTextBuffer *buffer;
 
-  buffer = g_slice_new0 (RutTextBuffer);
+  buffer =
+    rut_object_alloc0 (RutTextBuffer, &rut_text_buffer_type, _rut_text_buffer_init_type);
 
-  rut_object_init (&buffer->_parent, &rut_text_buffer_type);
 
   rut_list_init (&buffer->insert_text_cb_list);
   rut_list_init (&buffer->delete_text_cb_list);
 
-  buffer->ctx = rut_refable_ref (ctx);
+  buffer->ctx = rut_object_ref (ctx);
 
-  buffer->ref_count = 1;
 
   buffer->simple_text = NULL;
   buffer->simple_text_chars = 0;

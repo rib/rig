@@ -43,9 +43,8 @@ enum {
 
 struct _RutMaterial
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutComponentableProps component;
   RutAsset *color_source_asset;

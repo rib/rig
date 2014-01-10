@@ -32,8 +32,7 @@
 
 typedef struct _RigSlaveMaster
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RigEngine *engine;
 

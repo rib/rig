@@ -136,7 +136,7 @@ scenegraph_pre_paint_cb (RutObject *object,
                                             rut_ui_viewport_get_height (ui_viewport));
     }
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       //g_print ("%*sTransformable = %p\n", depth, "", object);
       const CoglMatrix *matrix = rut_transformable_get_matrix (object);
@@ -145,10 +145,10 @@ scenegraph_pre_paint_cb (RutObject *object,
       cogl_framebuffer_transform (fb, matrix);
     }
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_PAINTABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_PAINTABLE))
     {
       RutPaintableVTable *vtable =
-        rut_object_get_vtable (object, RUT_INTERFACE_ID_PAINTABLE);
+        rut_object_get_vtable (object, RUT_TRAIT_ID_PAINTABLE);
       vtable->paint (object, rut_paint_ctx);
     }
 
@@ -183,7 +183,7 @@ scenegraph_post_paint_cb (RutObject *object,
       cogl_framebuffer_pop_clip (fb);
     }
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       cogl_framebuffer_pop_matrix (fb);
     }
@@ -304,7 +304,7 @@ create_inspector (RigEngine *engine,
                        inspector_controlled_changed_cb,
                        engine);
 
-  if (rut_object_is (reference_object, RUT_INTERFACE_ID_INTROSPECTABLE))
+  if (rut_object_is (reference_object, RUT_TRAIT_ID_INTROSPECTABLE))
     {
       InitControlledStateData controlled_data;
 
@@ -372,7 +372,7 @@ create_components_inspector (RigEngine *engine,
   g_free (label);
 
   rut_fold_set_child (fold, inspector);
-  rut_refable_unref (inspector);
+  rut_object_unref (inspector);
 
   button_bin = rut_bin_new (engine->ctx);
   rut_bin_set_left_padding (button_bin, 10);
@@ -395,10 +395,10 @@ create_components_inspector (RigEngine *engine,
                                          button_state,
                                          free_delete_button_state); /* destroy notify */
   rut_bin_set_child (button_bin, delete_button);
-  rut_refable_unref (delete_button);
+  rut_object_unref (delete_button);
 
   rut_box_layout_add (engine->inspector_box_layout, FALSE, fold);
-  rut_refable_unref (fold);
+  rut_object_unref (fold);
 
   engine->all_inspectors =
     g_list_prepend (engine->all_inspectors, inspector);
@@ -414,7 +414,7 @@ find_component (RutEntity *entity,
     {
       RutObject *component = g_ptr_array_index (entity->components, i);
       RutComponentableProps *component_props =
-        rut_object_get_properties (component, RUT_INTERFACE_ID_COMPONENTABLE);
+        rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
 
       if (component_props->type == type)
         return component;
@@ -436,7 +436,7 @@ match_and_create_components_inspector_cb (RutComponent *reference_component,
   MatchAndListState *state = user_data;
   RutComponentableProps *component_props =
     rut_object_get_properties (reference_component,
-                               RUT_INTERFACE_ID_COMPONENTABLE);
+                               RUT_TRAIT_ID_COMPONENTABLE);
   RutComponentType type = component_props->type;
   GList *l;
   GList *components = NULL;
@@ -562,7 +562,7 @@ static void
 _rig_objects_selection_cancel (RutObject *object)
 {
   RigObjectsSelection *selection = object;
-  g_list_free_full (selection->objects, (GDestroyNotify)rut_refable_unref);
+  g_list_free_full (selection->objects, (GDestroyNotify)rut_object_unref);
   selection->objects = NULL;
 }
 
@@ -631,7 +631,7 @@ _rig_objects_selection_delete (RutObject *object)
         }
 
       g_list_free_full (selection->objects,
-                        (GDestroyNotify)rut_refable_unref);
+                        (GDestroyNotify)rut_object_unref);
       selection->objects = NULL;
 
       g_warn_if_fail (selection->objects == NULL);
@@ -647,7 +647,7 @@ _rig_objects_selection_free (void *object)
 
   rut_closure_list_disconnect_all (&selection->selection_events_cb_list);
 
-  g_slice_free (RigObjectsSelection, selection);
+  rut_object_free (RigObjectsSelection, selection);
 }
 
 RutType rig_objects_selection_type;
@@ -655,11 +655,6 @@ RutType rig_objects_selection_type;
 static void
 _rig_objects_selection_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_objects_selection_free
-  };
   static RutSelectableVTable selectable_vtable = {
       .cancel = _rig_objects_selection_cancel,
       .copy = _rig_objects_selection_copy,
@@ -672,19 +667,15 @@ _rig_objects_selection_init_type (void)
   RutType *type = &rig_objects_selection_type;
 #define TYPE RigObjectsSelection
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SELECTABLE,
-                          0, /* no associated properties */
-                          &selectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_MIMABLE,
-                          0, /* no associated properties */
-                          &mimable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_objects_selection_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SELECTABLE,
+                      0, /* no associated properties */
+                      &selectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_MIMABLE,
+                      0, /* no associated properties */
+                      &mimable_vtable);
 
 #undef TYPE
 }
@@ -697,7 +688,6 @@ _rig_objects_selection_new (RigEngine *engine)
                        &rig_objects_selection_type,
                        _rig_objects_selection_init_type);
 
-  selection->ref_count = 1;
   selection->engine = engine;
   selection->objects = NULL;
 
@@ -727,7 +717,7 @@ remove_selection_cb (RutObject *object,
                            selection,
                            RIG_OBJECTS_SELECTION_REMOVE_EVENT,
                            object);
-  rut_refable_unref (object);
+  rut_object_unref (object);
 }
 
 void
@@ -764,7 +754,7 @@ rig_select_object (RigEngine *engine,
         if (object)
           {
             selection->objects = g_list_prepend (selection->objects,
-                                                 rut_refable_ref (object));
+                                                 rut_object_ref (object));
             rut_closure_list_invoke (&selection->selection_events_cb_list,
                                      RigObjectsSelectionEventCallback,
                                      selection,
@@ -787,7 +777,7 @@ rig_select_object (RigEngine *engine,
                                      selection,
                                      RIG_OBJECTS_SELECTION_REMOVE_EVENT,
                                      link->data);
-            rut_refable_unref (link->data);
+            rut_object_unref (link->data);
           }
         else if (object)
           {
@@ -797,7 +787,7 @@ rig_select_object (RigEngine *engine,
                                      RIG_OBJECTS_SELECTION_ADD_EVENT,
                                      object);
 
-            rut_refable_ref (object);
+            rut_object_ref (object);
             selection->objects =
               g_list_prepend (selection->objects, object);
           }
@@ -1406,13 +1396,13 @@ add_results_flow (RutContext *ctx,
   rut_bin_set_top_padding (label_bin, 10);
   rut_bin_set_bottom_padding (label_bin, 10);
   rut_bin_set_child (label_bin, text);
-  rut_refable_unref (text);
+  rut_object_unref (text);
 
   rut_color_init_from_uint32 (&color, 0xffffffff);
   rut_text_set_color (text, &color);
 
   rut_box_layout_add (vbox, FALSE, label_bin);
-  rut_refable_unref (label_bin);
+  rut_object_unref (label_bin);
 
   rut_flow_layout_set_x_padding (flow, 5);
   rut_flow_layout_set_y_padding (flow, 5);
@@ -1420,10 +1410,10 @@ add_results_flow (RutContext *ctx,
 
   //rut_bin_set_left_padding (flow_bin, 5);
   rut_bin_set_child (flow_bin, flow);
-  rut_refable_unref (flow);
+  rut_object_unref (flow);
 
   rut_box_layout_add (vbox, TRUE, flow_bin);
-  rut_refable_unref (flow_bin);
+  rut_object_unref (flow_bin);
 
   return flow;
 }
@@ -1448,17 +1438,17 @@ add_search_result (RigEngine *engine,
   drag_bin = rut_drag_bin_new (engine->ctx);
   rut_drag_bin_set_payload (drag_bin, result);
   rut_bin_set_child (bin, drag_bin);
-  rut_refable_unref (drag_bin);
+  rut_object_unref (drag_bin);
 
   stack = rut_stack_new (engine->ctx, 0, 0);
   rut_drag_bin_set_child (drag_bin, stack);
-  rut_refable_unref (stack);
+  rut_object_unref (stack);
 
   region = rut_input_region_new_rectangle (0, 0, 100, 100,
                                            result_input_cb,
                                            closure);
   rut_stack_add (stack, region);
-  rut_refable_unref (region);
+  rut_object_unref (region);
 
   if (rut_object_get_type (result) == &rut_asset_type)
     {
@@ -1470,14 +1460,14 @@ add_search_result (RigEngine *engine,
         {
           RutImage *image = rut_image_new (engine->ctx, texture);
           rut_stack_add (stack, image);
-          rut_refable_unref (image);
+          rut_object_unref (image);
         }
       else
         {
           char *basename = g_path_get_basename (rut_asset_get_path (asset));
           RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
           rut_stack_add (stack, text);
-          rut_refable_unref (text);
+          rut_object_unref (text);
           g_free (basename);
         }
     }
@@ -1491,7 +1481,7 @@ add_search_result (RigEngine *engine,
       RutText *text;
 
       rut_stack_add (stack, vbox);
-      rut_refable_unref (vbox);
+      rut_object_unref (vbox);
 
 #warning "Create a sensible icon to represent entities"
       texture = rut_load_texture_from_data_file (engine->ctx,
@@ -1500,11 +1490,11 @@ add_search_result (RigEngine *engine,
       cogl_object_unref (texture);
 
       rut_box_layout_add (vbox, FALSE, image);
-      rut_refable_unref (image);
+      rut_object_unref (image);
 
       text = rut_text_new_with_text (engine->ctx, NULL, entity->label);
       rut_box_layout_add (vbox, false, text);
-      rut_refable_unref (text);
+      rut_object_unref (text);
     }
   else if (rut_object_get_type (result) == &rig_controller_type)
     {
@@ -1516,7 +1506,7 @@ add_search_result (RigEngine *engine,
       RutText *text;
 
       rut_stack_add (stack, vbox);
-      rut_refable_unref (vbox);
+      rut_object_unref (vbox);
 
 #warning "Create a sensible icon to represent controllers"
       texture = rut_load_texture_from_data_file (engine->ctx,
@@ -1525,11 +1515,11 @@ add_search_result (RigEngine *engine,
       cogl_object_unref (texture);
 
       rut_box_layout_add (vbox, false, image);
-      rut_refable_unref (image);
+      rut_object_unref (image);
 
       text = rut_text_new_with_text (engine->ctx, NULL, controller->label);
       rut_box_layout_add (vbox, FALSE, text);
-      rut_refable_unref (text);
+      rut_object_unref (text);
     }
 
   if (rut_object_get_type (result) == &rut_asset_type)
@@ -1547,7 +1537,7 @@ add_search_result (RigEngine *engine,
             }
 
           rut_flow_layout_add (engine->assets_geometry_results, bin);
-          rut_refable_unref (bin);
+          rut_object_unref (bin);
         }
       else if (rut_asset_has_tag (asset, "image"))
         {
@@ -1560,7 +1550,7 @@ add_search_result (RigEngine *engine,
             }
 
           rut_flow_layout_add (engine->assets_image_results, bin);
-          rut_refable_unref (bin);
+          rut_object_unref (bin);
         }
       else if (rut_asset_has_tag (asset, "video"))
         {
@@ -1573,7 +1563,7 @@ add_search_result (RigEngine *engine,
             }
 
           rut_flow_layout_add (engine->assets_video_results, bin);
-          rut_refable_unref (bin);
+          rut_object_unref (bin);
         }
       else
         {
@@ -1586,7 +1576,7 @@ add_search_result (RigEngine *engine,
             }
 
           rut_flow_layout_add (engine->assets_other_results, bin);
-          rut_refable_unref (bin);
+          rut_object_unref (bin);
         }
     }
   else if (rut_object_get_type (result) == &rut_entity_type)
@@ -1600,7 +1590,7 @@ add_search_result (RigEngine *engine,
         }
 
       rut_flow_layout_add (engine->entity_results, bin);
-      rut_refable_unref (bin);
+      rut_object_unref (bin);
     }
   else if (rut_object_get_type (result) == &rig_controller_type)
     {
@@ -1613,7 +1603,7 @@ add_search_result (RigEngine *engine,
         }
 
       rut_flow_layout_add (engine->controller_results, bin);
-      rut_refable_unref (bin);
+      rut_object_unref (bin);
     }
 
 
@@ -1726,7 +1716,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_fold_set_child (engine->search_results_fold,
                       engine->search_results_vbox);
-  rut_refable_unref (engine->search_results_vbox);
+  rut_object_unref (engine->search_results_vbox);
 
   for (l = engine->assets, i= 0; l; l = l->next, i++)
     {
@@ -1923,8 +1913,8 @@ init_resize_handle (RigEngine *engine)
 
       rut_graphable_add_child (engine->root, engine->resize_handle_transform);
 
-      rut_refable_unref (engine->resize_handle_transform);
-      rut_refable_unref (resize_handle);
+      rut_object_unref (engine->resize_handle_transform);
+      rut_object_unref (resize_handle);
       cogl_object_unref (resize_handle_texture);
     }
 
@@ -2019,13 +2009,13 @@ load_builtin_assets (RigEngine *engine)
 static void
 free_builtin_assets (RigEngine *engine)
 {
-  rut_refable_unref (engine->nine_slice_builtin_asset);
-  rut_refable_unref (engine->diamond_builtin_asset);
-  rut_refable_unref (engine->circle_builtin_asset);
-  rut_refable_unref (engine->pointalism_grid_builtin_asset);
-  rut_refable_unref (engine->text_builtin_asset);
-  rut_refable_unref (engine->hair_builtin_asset);
-  rut_refable_unref (engine->button_input_builtin_asset);
+  rut_object_unref (engine->nine_slice_builtin_asset);
+  rut_object_unref (engine->diamond_builtin_asset);
+  rut_object_unref (engine->circle_builtin_asset);
+  rut_object_unref (engine->pointalism_grid_builtin_asset);
+  rut_object_unref (engine->text_builtin_asset);
+  rut_object_unref (engine->hair_builtin_asset);
+  rut_object_unref (engine->button_input_builtin_asset);
 }
 
 static void
@@ -2047,7 +2037,7 @@ create_top_bar (RigEngine *engine)
   rut_box_layout_add (engine->top_vbox, FALSE, top_bar_stack);
 
   rut_stack_add (top_bar_stack, gradient);
-  rut_refable_unref (gradient);
+  rut_object_unref (gradient);
 
   engine->top_bar_hbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
@@ -2068,7 +2058,7 @@ create_top_bar (RigEngine *engine)
                                          engine,
                                          NULL); /* destroy callback */
   rut_box_layout_add (engine->top_bar_hbox_ltr, FALSE, connect_button);
-  rut_refable_unref (connect_button);
+  rut_object_unref (connect_button);
 }
 
 static void
@@ -2147,22 +2137,22 @@ create_camera_view (RigEngine *engine)
 
   rut_box_layout_add (engine->asset_panel_hbox, TRUE, stack);
 
-  rut_refable_unref (bottom_shim);
-  rut_refable_unref (bottom_stack);
-  rut_refable_unref (bottom_drop);
+  rut_object_unref (bottom_shim);
+  rut_object_unref (bottom_stack);
+  rut_object_unref (bottom_drop);
 
-  rut_refable_unref (left_shim);
-  rut_refable_unref (left_stack);
-  rut_refable_unref (left_drop);
+  rut_object_unref (left_shim);
+  rut_object_unref (left_stack);
+  rut_object_unref (left_drop);
 
   cogl_object_unref (bottom_drop_shadow);
   cogl_object_unref (left_drop_shadow);
 
-  rut_refable_unref (vbox);
-  rut_refable_unref (hbox);
-  rut_refable_unref (gradient);
-  rut_refable_unref (bin);
-  rut_refable_unref (stack);
+  rut_object_unref (vbox);
+  rut_object_unref (hbox);
+  rut_object_unref (gradient);
+  rut_object_unref (bin);
+  rut_object_unref (stack);
 }
 
 static void
@@ -2201,7 +2191,7 @@ create_toolbar (RigEngine *engine)
   RutIconToggleSet *toggle_set;
 
   rut_stack_add (stack, gradient);
-  rut_refable_unref (gradient);
+  rut_object_unref (gradient);
 
   engine->toolbar_vbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
@@ -2223,10 +2213,10 @@ create_toolbar (RigEngine *engine)
                                         RUT_ICON_TOGGLE_SET_PACKING_TOP_TO_BOTTOM);
   rut_icon_toggle_set_add (toggle_set, pointer_toggle,
                            RIG_TOOL_ID_SELECTION);
-  rut_refable_unref (pointer_toggle);
+  rut_object_unref (pointer_toggle);
   rut_icon_toggle_set_add (toggle_set, rotate_toggle,
                            RIG_TOOL_ID_ROTATION);
-  rut_refable_unref (rotate_toggle);
+  rut_object_unref (rotate_toggle);
 
   rut_icon_toggle_set_set_selection (toggle_set, RIG_TOOL_ID_SELECTION);
 
@@ -2236,7 +2226,7 @@ create_toolbar (RigEngine *engine)
                                               NULL);  /* destroy notify */
 
   rut_box_layout_add (engine->toolbar_vbox, false, toggle_set);
-  rut_refable_unref (toggle_set);
+  rut_object_unref (toggle_set);
 
   rut_stack_add (stack, bin);
 
@@ -2254,14 +2244,14 @@ create_properties_bar (RigEngine *engine)
   RutRectangle *bg;
 
   rut_stack_add (stack0, gradient);
-  rut_refable_unref (gradient);
+  rut_object_unref (gradient);
 
   rut_bin_set_left_padding (bin, 10);
   rut_bin_set_right_padding (bin, 5);
   rut_bin_set_bottom_padding (bin, 10);
   rut_bin_set_top_padding (bin, 5);
   rut_stack_add (stack0, bin);
-  rut_refable_unref (bin);
+  rut_object_unref (bin);
 
   rut_bin_set_child (bin, stack1);
 
@@ -2269,13 +2259,13 @@ create_properties_bar (RigEngine *engine)
                             0, 0, /* size */
                             1, 1, 1, 1);
   rut_stack_add (stack1, bg);
-  rut_refable_unref (bg);
+  rut_object_unref (bg);
 
   properties_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
   engine->properties_vp = properties_vp;
 
   rut_stack_add (stack1, properties_vp);
-  rut_refable_unref (properties_vp);
+  rut_object_unref (properties_vp);
 
   rut_ui_viewport_set_x_pannable (properties_vp, FALSE);
   rut_ui_viewport_set_y_pannable (properties_vp, TRUE);
@@ -2286,7 +2276,7 @@ create_properties_bar (RigEngine *engine)
   rut_ui_viewport_set_sync_widget (properties_vp, engine->inspector_bin);
 
   rut_box_layout_add (engine->properties_hbox, FALSE, stack0);
-  rut_refable_unref (stack0);
+  rut_object_unref (stack0);
 }
 
 typedef struct _SearchToggleState
@@ -2366,38 +2356,38 @@ create_asset_selectors (RigEngine *engine,
                                  "geometry.png",
                                  "geometry");
   rut_box_layout_add (hbox, FALSE, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "image-white.png",
                                  "image.png",
                                  "image");
   rut_box_layout_add (hbox, FALSE, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "video-white.png",
                                  "video.png",
                                  "video");
   rut_box_layout_add (hbox, FALSE, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "entity-white.png",
                                  "entity.png",
                                  "entity");
   rut_box_layout_add (hbox, FALSE, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   toggle = create_search_toggle (engine,
                                  "logic-white.png",
                                  "logic.png",
                                  "logic");
   rut_box_layout_add (hbox, FALSE, toggle);
-  rut_refable_unref (toggle);
+  rut_object_unref (toggle);
 
   rut_stack_add (icons_stack, hbox);
-  rut_refable_unref (hbox);
+  rut_object_unref (hbox);
 }
 
 static void
@@ -2418,7 +2408,7 @@ create_assets_view (RigEngine *engine)
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.2, 0.2, 0.2, 1);
   rut_stack_add (search_stack, bg);
-  rut_refable_unref (bg);
+  rut_object_unref (bg);
 
   entry = rut_entry_new (engine->ctx);
 
@@ -2436,32 +2426,32 @@ create_assets_view (RigEngine *engine)
                                       NULL);
 
   rut_bin_set_child (search_bin, entry);
-  rut_refable_unref (entry);
+  rut_object_unref (entry);
 
   rut_stack_add (search_stack, search_bin);
   rut_bin_set_left_padding (search_bin, 10);
   rut_bin_set_right_padding (search_bin, 10);
   rut_bin_set_top_padding (search_bin, 2);
   rut_bin_set_bottom_padding (search_bin, 2);
-  rut_refable_unref (search_bin);
+  rut_object_unref (search_bin);
 
   rut_box_layout_add (vbox, FALSE, search_stack);
-  rut_refable_unref (search_stack);
+  rut_object_unref (search_stack);
 
   bg = rut_rectangle_new4f (engine->ctx, 0, 0, 0.57, 0.57, 0.57, 1);
   rut_stack_add (icons_stack, bg);
-  rut_refable_unref (bg);
+  rut_object_unref (bg);
 
   create_asset_selectors (engine, icons_stack);
 
   rut_box_layout_add (vbox, FALSE, icons_stack);
-  rut_refable_unref (icons_stack);
+  rut_object_unref (icons_stack);
 
   rut_box_layout_add (vbox, TRUE, stack);
-  rut_refable_unref (stack);
+  rut_object_unref (stack);
 
   rut_stack_add (stack, gradient);
-  rut_refable_unref (gradient);
+  rut_object_unref (gradient);
 
 
   engine->search_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
@@ -2480,7 +2470,7 @@ create_assets_view (RigEngine *engine)
   rut_ui_viewport_set_x_pannable (engine->search_vp, FALSE);
 
   rut_box_layout_add (engine->asset_panel_hbox, FALSE, vbox);
-  rut_refable_unref (vbox);
+  rut_object_unref (vbox);
 }
 
 static void
@@ -2521,14 +2511,14 @@ controller_changed_cb (RigControllerView *view,
   if (engine->selected_controller)
     {
       rut_property_closure_destroy (engine->controller_progress_closure);
-      rut_refable_unref (engine->selected_controller);
+      rut_object_unref (engine->selected_controller);
     }
 
   engine->selected_controller = controller;
 
   if (controller)
     {
-      rut_refable_ref (controller);
+      rut_object_ref (controller);
 
       engine->controller_progress_closure =
         rut_property_connect_callback (&controller->props[RIG_CONTROLLER_PROP_PROGRESS],
@@ -2549,7 +2539,7 @@ create_controller_view (RigEngine *engine)
                                                        NULL);
 
   rig_split_view_set_child1 (engine->splits[0], engine->controller_view);
-  rut_refable_unref (engine->controller_view);
+  rut_object_unref (engine->controller_view);
 }
 #endif /* RIG_EDITOR_ENABLED */
 
@@ -2647,8 +2637,8 @@ ensure_light (RigEngine *engine)
           rut_material_set_receive_shadow (material, false);
           rut_material_set_cast_shadow (material, false);
 
-          rut_refable_unref (model);
-          rut_refable_unref (material);
+          rut_object_unref (model);
+          rut_object_unref (material);
         }
       else
         g_critical ("could not load model %s: %s", full_path, error->message);
@@ -2743,7 +2733,7 @@ ensure_play_camera (RigEngine *engine)
       entity = find_entity (engine->scene, "play-camera");
 
       if (entity)
-        engine->play_camera = rut_refable_ref (entity);
+        engine->play_camera = rut_object_ref (entity);
       else
         {
           engine->play_camera = rut_entity_new (engine->ctx);
@@ -2762,7 +2752,7 @@ ensure_play_camera (RigEngine *engine)
                                   RUT_COMPONENT_TYPE_CAMERA);
 
       if (engine->play_camera_component)
-        rut_refable_ref (engine->play_camera_component);
+        rut_object_ref (engine->play_camera_component);
       else
         {
           engine->play_camera_component =
@@ -2832,9 +2822,9 @@ ensure_play_camera (RigEngine *engine)
               rut_graphable_add_child (engine->play_camera,
                                        engine->play_camera_handle);
 
-              rut_refable_unref (model);
-              rut_refable_unref (material);
-              rut_refable_unref (mesh);
+              rut_object_unref (model);
+              rut_object_unref (material);
+              rut_object_unref (mesh);
 #endif
             }
         }
@@ -3046,13 +3036,13 @@ rig_engine_free_ui (RigEngine *engine)
     }
 
   for (l = engine->controllers; l; l = l->next)
-    rut_refable_unref (l->data);
+    rut_object_unref (l->data);
   g_list_free (engine->controllers);
   engine->controllers = NULL;
   engine->selected_controller = NULL;
 
   for (l = engine->assets; l; l = l->next)
-    rut_refable_unref (l->data);
+    rut_object_unref (l->data);
   g_list_free (engine->assets);
   engine->assets = NULL;
 
@@ -3064,24 +3054,24 @@ rig_engine_free_ui (RigEngine *engine)
 
   if (engine->scene)
     {
-      rut_refable_unref (engine->scene);
+      rut_object_unref (engine->scene);
       engine->scene = NULL;
     }
 
   if (engine->play_camera)
     {
-      rut_refable_unref (engine->play_camera);
+      rut_object_unref (engine->play_camera);
       engine->play_camera = NULL;
     }
   if (engine->play_camera_component)
     {
-      rut_refable_unref (engine->play_camera_component);
+      rut_object_unref (engine->play_camera_component);
       engine->play_camera_component = NULL;
     }
 #ifdef RIG_EDITOR_ENABLED
   if (engine->play_camera_handle)
    {
-     rut_refable_unref (engine->play_camera_handle);
+     rut_object_unref (engine->play_camera_handle);
      engine->play_camera_handle = NULL;
    }
 #endif /* RIG_EDITOR_ENABLED */
@@ -3123,9 +3113,9 @@ _rig_engine_free (void *object)
 
       rut_shell_remove_input_camera (shell, engine->camera, engine->root);
 
-      rut_refable_unref (engine->camera);
-      rut_refable_unref (engine->root);
-      rut_refable_unref (engine->main_camera_view);
+      rut_object_unref (engine->camera);
+      rut_object_unref (engine->root);
+      rut_object_unref (engine->main_camera_view);
 
       cogl_object_unref (engine->circle_node_attribute);
 
@@ -3135,18 +3125,18 @@ _rig_engine_free (void *object)
       if (_rig_in_editor_mode)
         {
           for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
-            rut_refable_unref (engine->splits[i]);
+            rut_object_unref (engine->splits[i]);
 
-          rut_refable_unref (engine->top_vbox);
-          rut_refable_unref (engine->top_hbox);
-          rut_refable_unref (engine->asset_panel_hbox);
-          rut_refable_unref (engine->properties_hbox);
+          rut_object_unref (engine->top_vbox);
+          rut_object_unref (engine->top_hbox);
+          rut_object_unref (engine->asset_panel_hbox);
+          rut_object_unref (engine->properties_hbox);
 
           if (engine->transparency_grid)
-            rut_refable_unref (engine->transparency_grid);
+            rut_object_unref (engine->transparency_grid);
         }
 
-      rut_refable_unref (engine->objects_selection);
+      rut_object_unref (engine->objects_selection);
 
       rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
 #endif
@@ -3175,7 +3165,7 @@ _rig_engine_free (void *object)
 
   rut_simple_introspectable_destroy (engine);
 
-  g_slice_free (RigEngine, engine);
+  rut_object_free (RigEngine, engine);
 }
 
 
@@ -3193,16 +3183,15 @@ _rig_engine_init_type (void)
   RutType *type = &rig_engine_type;
 #define TYPE RigEngine
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_engine_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_engine_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -3227,7 +3216,6 @@ _rig_engine_new_full (RutShell *shell,
                                          _rig_engine_init_type);
   CoglFramebuffer *fb;
 
-  engine->ref_count = 1;
 
   engine->shell = shell;
   engine->ctx = rut_shell_get_context (shell);
@@ -3262,7 +3250,7 @@ _rig_engine_new_full (RutShell *shell,
   engine->assets_registry = g_hash_table_new_full (g_str_hash,
                                                    g_str_equal,
                                                    g_free,
-                                                   rut_refable_unref);
+                                                   rut_object_unref);
 
   /*
    * Setup the entity scenegraph
@@ -3279,7 +3267,7 @@ _rig_engine_new_full (RutShell *shell,
 
   engine->top_stack = rut_stack_new (engine->ctx, 1, 1);
   rut_graphable_add_child (engine->root, engine->top_stack);
-  rut_refable_unref (engine->top_stack);
+  rut_object_unref (engine->top_stack);
 
   engine->camera = rut_camera_new (engine->ctx, NULL);
   rut_camera_set_clear (engine->camera, FALSE);
@@ -3555,7 +3543,7 @@ rig_register_asset (RigEngine *engine,
 
   g_hash_table_insert (engine->assets_registry,
                        key,
-                       rut_refable_ref (asset));
+                       rut_object_ref (asset));
 }
 
 RutAsset *
@@ -3822,31 +3810,31 @@ rig_load_asset_list (RigEngine *engine)
 
   enumerate_dir_for_assets (engine, assets_dir);
 
-  rut_refable_ref (engine->nine_slice_builtin_asset);
+  rut_object_ref (engine->nine_slice_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->nine_slice_builtin_asset);
 
-  rut_refable_ref (engine->diamond_builtin_asset);
+  rut_object_ref (engine->diamond_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->diamond_builtin_asset);
 
-  rut_refable_ref (engine->circle_builtin_asset);
+  rut_object_ref (engine->circle_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->circle_builtin_asset);
 
-  rut_refable_ref (engine->pointalism_grid_builtin_asset);
+  rut_object_ref (engine->pointalism_grid_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->pointalism_grid_builtin_asset);
 
-  rut_refable_ref (engine->text_builtin_asset);
+  rut_object_ref (engine->text_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->text_builtin_asset);
 
-  rut_refable_ref (engine->hair_builtin_asset);
+  rut_object_ref (engine->hair_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->hair_builtin_asset);
 
-  rut_refable_ref (engine->button_input_builtin_asset);
+  rut_object_ref (engine->button_input_builtin_asset);
   engine->assets = g_list_prepend (engine->assets,
                                    engine->button_input_builtin_asset);
 

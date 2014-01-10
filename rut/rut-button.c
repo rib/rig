@@ -46,8 +46,7 @@ typedef enum _ButtonState
 
 struct _RutButton
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -85,25 +84,25 @@ destroy_button_slices (RutButton *button)
 {
   if (button->background_normal)
     {
-      rut_refable_unref (button->background_normal);
+      rut_object_unref (button->background_normal);
       button->background_normal = NULL;
     }
 
   if (button->background_hover)
     {
-      rut_refable_unref (button->background_hover);
+      rut_object_unref (button->background_hover);
       button->background_hover = NULL;
     }
 
   if (button->background_active)
     {
-      rut_refable_unref (button->background_active);
+      rut_object_unref (button->background_active);
       button->background_active = NULL;
     }
 
   if (button->background_disabled)
     {
-      rut_refable_unref (button->background_disabled);
+      rut_object_unref (button->background_disabled);
       button->background_disabled = NULL;
     }
 }
@@ -142,16 +141,16 @@ _rut_button_free (void *object)
     }
 
   rut_graphable_remove_child (button->text);
-  rut_refable_unref (button->text);
+  rut_object_unref (button->text);
 
   rut_graphable_remove_child (button->text_transform);
-  rut_refable_unref (button->text_transform);
+  rut_object_unref (button->text_transform);
 
   rut_graphable_destroy (button);
 
   rut_shell_remove_pre_paint_callback_by_graphable (button->ctx->shell, button);
 
-  g_slice_free (RutButton, object);
+  rut_object_free (RutButton, object);
 }
 
 static void
@@ -238,12 +237,6 @@ RutType rut_button_type;
 static void
 _rut_button_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_button_free
-  };
-
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
       NULL, /* child add */
@@ -265,23 +258,19 @@ _rut_button_init_type (void)
   RutType *type = &rut_button_type;
 #define TYPE RutButton
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (TYPE, paintable),
-                          &paintable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_button_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -443,25 +432,17 @@ RutButton *
 rut_button_new (RutContext *ctx,
                 const char *label)
 {
-  RutButton *button = g_slice_new0 (RutButton);
+  RutButton *button =
+    rut_object_alloc0 (RutButton, &rut_button_type, _rut_button_init_type);
   GError *error = NULL;
   float text_width, text_height;
-  static CoglBool initialized = FALSE;
 
-  if (initialized == FALSE)
-    {
-      _rut_button_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (RUT_OBJECT (button), &rut_button_type);
-
-  button->ref_count = 1;
 
   rut_list_init (&button->on_click_cb_list);
 
-  rut_graphable_init (RUT_OBJECT (button));
-  rut_paintable_init (RUT_OBJECT (button));
+  rut_graphable_init (button);
+  rut_paintable_init (button);
 
   button->ctx = ctx;
 

@@ -40,11 +40,10 @@
 
 struct _RutDragBin
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
-  int ref_count;
 
   RutObject *child;
   RutObject *payload;
@@ -72,21 +71,21 @@ _rut_drag_bin_free (void *object)
   RutDragBin *bin = object;
 
   rut_drag_bin_set_child (bin, NULL);
-  rut_refable_unref (bin->payload);
+  rut_object_unref (bin->payload);
 
   if (!bin->in_drag)
     {
-      rut_refable_unref (bin->drag_overlay);
-      rut_refable_unref (bin->transform);
+      rut_object_unref (bin->drag_overlay);
+      rut_object_unref (bin->transform);
     }
 
   rut_shell_remove_pre_paint_callback_by_graphable (bin->ctx->shell, bin);
 
   rut_graphable_destroy (bin);
 
-  rut_refable_unref (bin->input_region);
+  rut_object_unref (bin->input_region);
 
-  g_slice_free (RutDragBin, bin);
+  rut_object_free (RutDragBin, bin);
 }
 
 #if 1
@@ -132,11 +131,6 @@ _rut_drag_bin_handle_event (RutObject *inputable,
 static void
 _rut_drag_bin_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_drag_bin_free
-  };
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
       NULL, /* child addded */
@@ -160,31 +154,27 @@ _rut_drag_bin_init_type (void)
   RutType *type = &rut_drag_bin_type;
 #define TYPE RutDragBin
 
-  rut_type_init (&rut_drag_bin_type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutDragBin, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutDragBin, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, stack),
-                          NULL); /* no vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
-                          0, /* no implied properties */
-                          &pickable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INPUTABLE,
-                          0, /* no implied properties */
-                          &inputable_vtable);
+  rut_type_init (&rut_drag_bin_type, G_STRINGIFY (TYPE), _rut_drag_bin_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (RutDragBin, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, stack),
+                      NULL); /* no vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PICKABLE,
+                      0, /* no implied properties */
+                      &pickable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INPUTABLE,
+                      0, /* no implied properties */
+                      &inputable_vtable);
 
 #undef TYPE
 }
@@ -322,7 +312,6 @@ rut_drag_bin_new (RutContext *ctx)
                                        &rut_drag_bin_type,
                                        _rut_drag_bin_init_type);
 
-  bin->ref_count = 1;
   bin->ctx = ctx;
 
   rut_graphable_init (bin);
@@ -331,7 +320,7 @@ rut_drag_bin_new (RutContext *ctx)
 
   bin->stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (bin, bin->stack);
-  rut_refable_unref (bin->stack);
+  rut_object_unref (bin->stack);
 
   bin->input_region =
     rut_input_region_new_rectangle (0, 0, 1, 1,
@@ -340,7 +329,7 @@ rut_drag_bin_new (RutContext *ctx)
 
   bin->bin = rut_bin_new (ctx);
   rut_stack_add (bin->stack, bin->bin);
-  rut_refable_unref (bin->bin);
+  rut_object_unref (bin->bin);
 
   bin->drag_overlay = rut_rectangle_new4f (ctx, 1, 1, 0.5, 0.5, 0.5, 0.5);
 
@@ -353,7 +342,7 @@ rut_drag_bin_new (RutContext *ctx)
                         0, 0, 0, 0,
                         100, 100);
   rut_graphable_add_child (bin->transform, bin->drag_icon);
-  rut_refable_unref (bin->drag_icon);
+  rut_object_unref (bin->drag_icon);
 
   return bin;
 }
@@ -371,7 +360,7 @@ rut_drag_bin_set_child (RutDragBin *bin,
   if (bin->child)
     {
       rut_graphable_remove_child (bin->child);
-      rut_refable_unref (bin->child);
+      rut_object_unref (bin->child);
     }
 
   bin->child = child_widget;
@@ -379,7 +368,7 @@ rut_drag_bin_set_child (RutDragBin *bin,
   if (child_widget)
     {
       rut_bin_set_child (bin->bin, child_widget);
-      rut_refable_ref (child_widget);
+      rut_object_ref (child_widget);
     }
 
   rut_shell_queue_redraw (bin->ctx->shell);
@@ -393,9 +382,9 @@ rut_drag_bin_set_payload (RutDragBin *bin,
     return;
 
   if (bin->payload)
-    rut_refable_unref (bin->payload);
+    rut_object_unref (bin->payload);
 
   bin->payload = payload;
   if (payload)
-    rut_refable_ref (payload);
+    rut_object_ref (payload);
 }

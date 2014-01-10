@@ -27,9 +27,8 @@
 
 struct _RigRenderer
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   GArray *journal;
 };
@@ -110,7 +109,7 @@ _rig_renderer_free (void *object)
   g_array_free (renderer->journal, TRUE);
   renderer->journal = NULL;
 
-  g_slice_free (RigRenderer, object);
+  rut_object_free (RigRenderer, object);
 }
 
 static void
@@ -144,11 +143,11 @@ set_entity_image_source_cache (RutEntity *entity,
   RigRendererPriv *priv = entity->renderer_priv;
 
   if (priv->image_source_caches[slot])
-    rut_refable_unref (priv->image_source_caches[slot]);
+    rut_object_unref (priv->image_source_caches[slot]);
 
   priv->image_source_caches[slot] = source;
   if (source)
-    rut_refable_ref (source);
+    rut_object_ref (source);
 }
 
 static RutImageSource*
@@ -231,13 +230,13 @@ _rig_renderer_free_priv (RutEntity *entity)
   for (i = 0; i < N_IMAGE_SOURCE_CACHE_SLOTS; i++)
     {
       if (image_source_caches[i])
-        rut_refable_unref (image_source_caches[i]);
+        rut_object_unref (image_source_caches[i]);
     }
 
   for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++)
     {
       if (primitive_caches[i])
-        rut_refable_unref (primitive_caches[i]);
+        rut_object_unref (primitive_caches[i]);
     }
 
   if (priv->preferred_size_closure)
@@ -252,11 +251,6 @@ RutType rig_renderer_type;
 static void
 _rig_renderer_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rig_renderer_free
-  };
 
   static RutRendererVTable renderer_vtable = {
       .notify_entity_changed = _rig_renderer_notify_entity_changed,
@@ -266,15 +260,11 @@ _rig_renderer_init_type (void)
   RutType *type = &rig_renderer_type;
 #define TYPE RigRenderer
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_RENDERER,
-                          0, /* no implied properties */
-                          &renderer_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_renderer_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_RENDERER,
+                      0, /* no implied properties */
+                      &renderer_vtable);
 
 #undef TYPE
 }
@@ -286,7 +276,6 @@ rig_renderer_new (RigEngine *engine)
                                              &rig_renderer_type,
                                              _rig_renderer_init_type);
 
-  renderer->ref_count = 1;
 
   renderer->journal = g_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
 
@@ -305,7 +294,7 @@ rig_journal_log (GArray *journal,
   g_array_set_size (journal, journal->len + 1);
   entry = &g_array_index (journal, RigJournalEntry, journal->len - 1);
 
-  entry->entity = rut_refable_ref (entity);
+  entry->entity = rut_object_ref (entity);
   entry->matrix = *matrix;
 }
 
@@ -330,7 +319,7 @@ static void
 reshape_cb (RutShape *shape, void *user_data)
 {
   RutComponentableProps *componentable =
-    rut_object_get_properties (shape, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (shape, RUT_TRAIT_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
   dirty_entity_pipelines (entity);
 }
@@ -339,7 +328,7 @@ static void
 nine_slice_changed_cb (RutNineSlice *nine_slice, void *user_data)
 {
   RutComponentableProps *componentable =
-    rut_object_get_properties (nine_slice, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (nine_slice, RUT_TRAIT_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
   _rig_renderer_notify_entity_changed (entity);
   dirty_entity_geometry (entity);
@@ -350,7 +339,7 @@ static void
 pointalism_changed_cb (RutPointalismGrid *grid, void *user_data)
 {
   RutComponentableProps *componentable =
-    rut_object_get_properties (grid, RUT_INTERFACE_ID_COMPONENTABLE);
+    rut_object_get_properties (grid, RUT_TRAIT_ID_COMPONENTABLE);
   RutEntity *entity = componentable->entity;
 
   dirty_entity_geometry (entity);
@@ -1414,10 +1403,10 @@ image_source_ready_cb (RutImageSource *source,
     }
 
   /* TODO: make shape/diamond/pointalism image-size-dependant */
-  if (rut_object_is (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT))
+  if (rut_object_is (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT))
     {
       RutImageSizeDependantVTable *dependant =
-        rut_object_get_vtable (geometry, RUT_INTERFACE_ID_IMAGE_SIZE_DEPENDENT);
+        rut_object_get_vtable (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT);
       dependant->set_image_size (geometry, width, height);
     }
   else if (rut_object_get_type (geometry) == &rut_shape_type)
@@ -1670,7 +1659,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
           continue;
         }
 
-      if (!rut_object_is (geometry, RUT_INTERFACE_ID_PRIMABLE))
+      if (!rut_object_is (geometry, RUT_TRAIT_ID_PRIMABLE))
         return;
 
       /*
@@ -1839,7 +1828,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
       cogl_object_unref (pipeline);
 
-      rut_refable_unref (entry->entity);
+      rut_object_unref (entry->entity);
     }
 
   cogl_framebuffer_pop_matrix (fb);
@@ -1936,7 +1925,7 @@ entitygraph_pre_paint_cb (RutObject *object,
   RutCamera *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       const CoglMatrix *matrix = rut_transformable_get_matrix (object);
       cogl_framebuffer_push_matrix (fb);
@@ -2012,7 +2001,7 @@ entitygraph_post_paint_cb (RutObject *object,
                            int depth,
                            void *user_data)
 {
-  if (rut_object_is (object, RUT_INTERFACE_ID_TRANSFORMABLE))
+  if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       RutPaintContext *rut_paint_ctx = user_data;
       CoglFramebuffer *fb = rut_camera_get_framebuffer (rut_paint_ctx->camera);

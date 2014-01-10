@@ -41,9 +41,8 @@ typedef enum _RutModelType
 
 struct _RutModel
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
   RutContext *ctx;
 
   RutComponentableProps component;

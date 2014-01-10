@@ -139,7 +139,7 @@ main (int argc, char **argv)
           editor.ui_filename = editor.engine->next_ui_filename;
           editor.engine->next_ui_filename = NULL;
 
-          rut_refable_unref (editor.frontend);
+          rut_object_unref (editor.frontend);
           editor.frontend = NULL;
           editor.engine = NULL;
         }
@@ -147,9 +147,9 @@ main (int argc, char **argv)
         break;
     }
 
-  rut_refable_unref (editor.frontend);
-  rut_refable_unref (editor.ctx);
-  rut_refable_unref (editor.shell);
+  rut_object_unref (editor.frontend);
+  rut_object_unref (editor.ctx);
+  rut_object_unref (editor.shell);
 
   return 0;
 }

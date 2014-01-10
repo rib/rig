@@ -1807,10 +1807,10 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_light_set_specular (light, &specular);
 
             rut_entity_add_component (entity, light);
-            rut_refable_unref (light);
+            rut_object_unref (light);
 
             if (unserializer->light == NULL)
-              unserializer->light = rut_refable_ref (entity);
+              unserializer->light = rut_object_ref (entity);
 
             register_unserializer_object (unserializer, light, component_id);
             break;
@@ -1828,7 +1828,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
             material = rut_material_new (unserializer->engine->ctx, NULL);
 
             rut_entity_add_component (entity, material);
-            rut_refable_unref (material);
+            rut_object_unref (material);
 
 #warning "todo: remove Component->Material compatibility"
             if (pb_material)
@@ -1915,9 +1915,9 @@ unserialize_components (RigPBUnSerializer *unserializer,
             model = rut_asset_get_model (asset);
             if (model)
               {
-                rut_refable_unref (asset);
+                rut_object_unref (asset);
                 rut_entity_add_component (entity, model);
-                rut_refable_unref (model);
+                rut_object_unref (model);
                 register_unserializer_object (unserializer, model, component_id);
               }
             break;
@@ -1937,7 +1937,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
               }
 
             rut_entity_add_component (entity, text);
-            rut_refable_unref (text);
+            rut_object_unref (text);
 
             register_unserializer_object (unserializer, text, component_id);
             break;
@@ -2010,7 +2010,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
               }
 
             rut_entity_add_component (entity, camera);
-            rut_refable_unref (camera);
+            rut_object_unref (camera);
 
             register_unserializer_object (unserializer, camera, component_id);
             break;
@@ -2110,7 +2110,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                                  pb_component->properties);
 
             rut_entity_add_component (entity, shape);
-            rut_refable_unref (shape);
+            rut_object_unref (shape);
 
             register_unserializer_object (unserializer, shape, component_id);
 
@@ -2122,7 +2122,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                    "Can't add shape component without "
                                    "an image source");
 
-                    rut_refable_unref (material);
+                    rut_object_unref (material);
                   }
               }
             break;
@@ -2140,7 +2140,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                                  pb_component->properties);
 
             rut_entity_add_component (entity, nine_slice);
-            rut_refable_unref (nine_slice);
+            rut_object_unref (nine_slice);
 
             register_unserializer_object (unserializer, nine_slice, component_id);
 
@@ -2190,7 +2190,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                        diamond_size, tex_width, tex_height);
 
             rut_entity_add_component (entity, diamond);
-            rut_refable_unref (diamond);
+            rut_object_unref (diamond);
 
             register_unserializer_object (unserializer, diamond, component_id);
 
@@ -2243,7 +2243,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                             width, height);
 
             rut_entity_add_component (entity, grid);
-            rut_refable_unref (grid);
+            rut_object_unref (grid);
 
             if (pb_grid->has_scale)
               rut_pointalism_grid_set_scale (grid, pb_grid->scale);
@@ -2264,7 +2264,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                    "Can't add pointalism grid component without "
                                    "an image source");
 
-                    rut_refable_unref (material);
+                    rut_object_unref (material);
                   }
               }
             break;
@@ -2275,7 +2275,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
             RutObject *geom;
 
             rut_entity_add_component (entity, hair);
-            rut_refable_unref (hair);
+            rut_object_unref (hair);
 
             set_properties_from_pb_boxed_values (unserializer,
                                                  hair,
@@ -2305,7 +2305,7 @@ unserialize_components (RigPBUnSerializer *unserializer,
 
                 rut_entity_remove_component (entity, geom);
                 rut_entity_add_component (entity, hair_geom);
-                rut_refable_unref (hair_geom);
+                rut_object_unref (hair_geom);
               }
 
             break;
@@ -2356,7 +2356,7 @@ unserialize_entities (RigPBUnSerializer *unserializer,
             {
               collect_error (unserializer,
                              "Invalid parent id referenced in entity element");
-              rut_refable_unref (entity);
+              rut_object_unref (entity);
               continue;
             }
 
@@ -2448,7 +2448,7 @@ unserialize_assets (RigPBUnSerializer *unserializer,
               continue;
             }
           asset = rut_asset_new_from_mesh (engine->ctx, mesh);
-          rut_refable_unref (mesh);
+          rut_object_unref (mesh);
         }
       else if (unserializer->engine->ctx->assets_location)
         {
@@ -2688,7 +2688,7 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
                                             property,
                                             path);
 
-          rut_refable_unref (path);
+          rut_object_unref (path);
         }
 
       if (pb_property->c_expression)
@@ -3132,11 +3132,11 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
 
   /* The mesh will take references on the attributes */
   for (i = 0; i < n_attributes; i++)
-    rut_refable_unref (attributes[i]);
+    rut_object_unref (attributes[i]);
 
   /* The attributes will take their own references on the buffers */
   for (i = 0; i < n_buffers; i++)
-    rut_refable_unref (named_buffers[i].buffer);
+    rut_object_unref (named_buffers[i].buffer);
 
   return mesh;
 
@@ -3145,13 +3145,13 @@ ERROR:
   g_warn_if_reached ();
 
   if (mesh)
-    rut_refable_unref (mesh);
+    rut_object_unref (mesh);
 
   for (i = 0; i < n_attributes; i++)
-    rut_refable_unref (attributes[i]);
+    rut_object_unref (attributes[i]);
 
   for (i = 0; i < n_buffers; i++)
-    rut_refable_unref (named_buffers[i].buffer);
+    rut_object_unref (named_buffers[i].buffer);
 
   return NULL;
 }

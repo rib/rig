@@ -543,7 +543,7 @@ rig_rotation_tool_destroy (RigRotationTool *tool)
   cogl_object_unref (tool->default_pipeline);
   cogl_object_unref (tool->rotation_tool);
   cogl_object_unref (tool->rotation_tool_handle);
-  rut_refable_unref (tool->rotation_circle);
+  rut_object_unref (tool->rotation_circle);
 
   if (tool->button_down)
     rut_shell_ungrab_input (tool->ctx->shell,

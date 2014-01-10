@@ -34,8 +34,7 @@ typedef struct _RigRPCPeer RigRPCPeer;
 
 struct _RigRPCServer
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   int port;
 
@@ -57,8 +56,7 @@ rig_rpc_server_shutdown (RigRPCServer *server);
 
 typedef struct _RigRPCClient
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   char *hostname;
   int port;
@@ -83,8 +81,7 @@ rig_rpc_client_disconnect (RigRPCClient *rpc_client);
 
 struct _RigRPCPeer
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   int fd;
 

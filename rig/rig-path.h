@@ -28,7 +28,7 @@ typedef struct _RigPath RigPath;
 
 struct _RigPath
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
   RutPropertyType type;
@@ -37,7 +37,6 @@ struct _RigPath
   RigNode *pos;
   RutList operation_cb_list;
 
-  int ref_count;
 };
 
 typedef enum

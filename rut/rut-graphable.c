@@ -20,13 +20,18 @@
 
 #include <config.h>
 
+#include <cogl/cogl.h>
+
 #include "rut-graphable.h"
+#include "rut-interfaces.h"
+#include "rut-util.h"
+#include "components/rut-camera.h"
 
 void
 rut_graphable_init (RutObject *object)
 {
   RutGraphableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
 
   props->parent = NULL;
   props->children.head = NULL;
@@ -38,7 +43,7 @@ void
 rut_graphable_destroy (RutObject *object)
 {
   RutGraphableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
 
   /* The node shouldn't have a parent, because if it did then it would
    * still have a reference and it shouldn't be being destroyed */
@@ -51,16 +56,16 @@ void
 rut_graphable_add_child (RutObject *parent, RutObject *child)
 {
   RutGraphableProps *parent_props =
-    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
   RutGraphableVTable *parent_vtable =
-    rut_object_get_vtable (parent, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_vtable (parent, RUT_TRAIT_ID_GRAPHABLE);
   RutGraphableProps *child_props =
-    rut_object_get_properties (child, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (child, RUT_TRAIT_ID_GRAPHABLE);
   RutGraphableVTable *child_vtable =
-    rut_object_get_vtable (child, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_vtable (child, RUT_TRAIT_ID_GRAPHABLE);
   RutObject *old_parent = child_props->parent;
 
-  rut_refable_claim (child, parent);
+  rut_object_claim (child, parent);
 
   if (old_parent)
     rut_graphable_remove_child (child);
@@ -80,7 +85,7 @@ void
 rut_graphable_remove_child (RutObject *child)
 {
   RutGraphableProps *child_props =
-    rut_object_get_properties (child, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (child, RUT_TRAIT_ID_GRAPHABLE);
   RutObject *parent = child_props->parent;
   RutGraphableVTable *parent_vtable;
   RutGraphableProps *parent_props;
@@ -88,8 +93,8 @@ rut_graphable_remove_child (RutObject *child)
   if (!parent)
     return;
 
-  parent_vtable = rut_object_get_vtable (parent, RUT_INTERFACE_ID_GRAPHABLE);
-  parent_props = rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+  parent_vtable = rut_object_get_vtable (parent, RUT_TRAIT_ID_GRAPHABLE);
+  parent_props = rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
 
   /* Note: we set ->parent to NULL here to avoid re-entrancy so
    * ->child_removed can be a general function for removing a child
@@ -100,14 +105,14 @@ rut_graphable_remove_child (RutObject *child)
     parent_vtable->child_removed (parent, child);
 
   g_queue_remove (&parent_props->children, child);
-  rut_refable_release (child, parent);
+  rut_object_release (child, parent);
 }
 
 void
 rut_graphable_remove_all_children (RutObject *parent)
 {
   RutGraphableProps *parent_props =
-    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
   RutObject *child;
 
   while ((child = g_queue_pop_tail (&parent_props->children)))
@@ -118,7 +123,7 @@ static RutObject *
 _rut_graphable_get_parent (RutObject *child)
 {
   RutGraphableProps *child_props =
-    rut_object_get_properties (child, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (child, RUT_TRAIT_ID_GRAPHABLE);
 
   return child_props->parent;
 }
@@ -133,7 +138,7 @@ RutObject *
 rut_graphable_first (RutObject *parent)
 {
   RutGraphableProps *graphable =
-    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
 
   if (graphable->children.head)
     return graphable->children.head->data;
@@ -145,7 +150,7 @@ RutObject *
 rut_graphable_nth (RutObject *parent, int n)
 {
   RutGraphableProps *graphable =
-    rut_object_get_properties (parent, RUT_INTERFACE_ID_GRAPHABLE);
+    rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
   GList *l;
   int i;
 
@@ -198,7 +203,7 @@ _rut_graphable_traverse_breadth (RutObject *graphable,
       else if (!(flags & RUT_TRAVERSE_VISIT_SKIP_CHILDREN))
         {
           RutGraphableProps *props =
-            rut_object_get_properties (graphable, RUT_INTERFACE_ID_GRAPHABLE);
+            rut_object_get_properties (graphable, RUT_TRAIT_ID_GRAPHABLE);
           GList *l;
           for (l = props->children.head; l; l = l->next)
             g_queue_push_tail (queue, l->data);
@@ -226,7 +231,7 @@ _rut_graphable_traverse_depth (RutObject *graphable,
   if (!(flags & RUT_TRAVERSE_VISIT_SKIP_CHILDREN))
     {
       RutGraphableProps *props =
-        rut_object_get_properties (graphable, RUT_INTERFACE_ID_GRAPHABLE);
+        rut_object_get_properties (graphable, RUT_TRAIT_ID_GRAPHABLE);
       GList *l;
 
       for (l = props->children.head; l; l = l->next)
@@ -295,7 +300,7 @@ _rut_graphable_paint_cb (RutObject *object,
 {
   RutPaintContext *paint_ctx = user_data;
   RutPaintableVTable *vtable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_PAINTABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_PAINTABLE);
 
   vtable->paint (object, paint_ctx);
 
@@ -329,7 +334,7 @@ rut_graphable_find_camera (RutObject *object)
       return RUT_CAMERA (object);
 
     graphable_priv =
-      rut_object_get_properties (object, RUT_INTERFACE_ID_GRAPHABLE);
+      rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
 
     object = graphable_priv->parent;
 
@@ -350,7 +355,7 @@ rut_graphable_apply_transform (RutObject *graphable,
 
   do {
     RutGraphableProps *graphable_priv =
-      rut_object_get_properties (node, RUT_INTERFACE_ID_GRAPHABLE);
+      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
 
     depth++;
 
@@ -364,11 +369,11 @@ rut_graphable_apply_transform (RutObject *graphable,
   do {
     RutGraphableProps *graphable_priv;
 
-    if (rut_object_is (node, RUT_INTERFACE_ID_TRANSFORMABLE))
+    if (rut_object_is (node, RUT_TRAIT_ID_TRANSFORMABLE))
       transform_nodes[i++] = node;
 
     graphable_priv =
-      rut_object_get_properties (node, RUT_INTERFACE_ID_GRAPHABLE);
+      rut_object_get_properties (node, RUT_TRAIT_ID_GRAPHABLE);
     node = graphable_priv->parent;
   } while (node);
 

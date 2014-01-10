@@ -56,7 +56,7 @@ typedef struct
 
 struct _RutInspector
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
   GList *objects;
@@ -73,7 +73,6 @@ struct _RutInspector
   RutInspectorControlledCallback controlled_changed_cb;
   void *user_data;
 
-  int ref_count;
 };
 
 RutType rut_inspector_type;
@@ -82,10 +81,8 @@ static void
 _rut_inspector_free (void *object)
 {
   RutInspector *inspector = object;
-  RutObject *reference_object = inspector->objects->data;
 
-  if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    g_list_foreach (inspector->objects, (GFunc)rut_refable_unref, NULL);
+  g_list_foreach (inspector->objects, (GFunc)rut_object_unref, NULL);
   g_list_free (inspector->objects);
   inspector->objects = NULL;
 
@@ -93,7 +90,7 @@ _rut_inspector_free (void *object)
 
   rut_graphable_destroy (inspector);
 
-  g_slice_free (RutInspector, inspector);
+  rut_object_free (RutInspector, inspector);
 }
 
 static void
@@ -115,20 +112,19 @@ _rut_inspector_init_type (void)
   RutType *type = &rut_inspector_type;
 #define TYPE RutInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_inspector_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, vbox),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_inspector_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, vbox),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -224,7 +220,7 @@ create_property_controls (RutInspector *inspector)
                        FALSE, /* don't clear */
                        sizeof (RutInspectorPropertyData));
 
-  if (rut_object_is (reference_object, RUT_INTERFACE_ID_INTROSPECTABLE))
+  if (rut_object_is (reference_object, RUT_TRAIT_ID_INTROSPECTABLE))
     rut_introspectable_foreach_property (reference_object,
                                          get_all_properties_cb,
                                          props);
@@ -244,16 +240,16 @@ create_property_controls (RutInspector *inspector)
 
       prop_data->stack = rut_stack_new (inspector->context, 1, 1);
       rut_box_layout_add (inspector->vbox, FALSE, prop_data->stack);
-      rut_refable_unref (prop_data->stack);
+      rut_object_unref (prop_data->stack);
 
       prop_data->drag_bin = rut_drag_bin_new (inspector->context);
       rut_graphable_add_child (prop_data->stack, prop_data->drag_bin);
-      rut_refable_unref (prop_data->drag_bin);
+      rut_object_unref (prop_data->drag_bin);
 
       bin = rut_bin_new (inspector->context);
       rut_bin_set_bottom_padding (bin, 5);
       rut_drag_bin_set_child (prop_data->drag_bin, bin);
-      rut_refable_unref (bin);
+      rut_object_unref (bin);
 
       control = rut_prop_inspector_new (inspector->context,
                                         prop_data->target_prop,
@@ -262,7 +258,7 @@ create_property_controls (RutInspector *inspector)
                                         true,
                                         prop_data);
       rut_bin_set_child (bin, control);
-      rut_refable_unref (control);
+      rut_object_unref (control);
 
       /* XXX: It could be better if the payload could represent the selection
        * of multiple properties when an inspector is inspecting multiple
@@ -283,14 +279,11 @@ rut_inspector_new (RutContext *context,
   RutInspector *inspector = rut_object_alloc0 (RutInspector,
                                                &rut_inspector_type,
                                                _rut_inspector_init_type);
-  RutObject *reference_object = objects->data;
 
-  inspector->ref_count = 1;
   inspector->context = context;
   inspector->objects = g_list_copy (objects);
 
-  if (rut_object_is (reference_object, RUT_INTERFACE_ID_REF_COUNTABLE))
-    g_list_foreach (objects, (GFunc)rut_refable_ref, NULL);
+  g_list_foreach (objects, (GFunc)rut_object_ref, NULL);
 
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->controlled_changed_cb = user_controlled_changed_cb;
@@ -301,7 +294,7 @@ rut_inspector_new (RutContext *context,
   inspector->vbox = rut_box_layout_new (context,
                                         RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   rut_graphable_add_child (inspector, inspector->vbox);
-  rut_refable_unref (inspector->vbox);
+  rut_object_unref (inspector->vbox);
 
   create_property_controls (inspector);
 

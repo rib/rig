@@ -55,7 +55,7 @@ typedef struct
 
 struct _RutDropDown
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -67,7 +67,6 @@ struct _RutDropDown
 
   int width, height;
 
-  int ref_count;
 
   /* Index of the selected value */
   int value_index;
@@ -286,7 +285,7 @@ _rut_drop_down_free (void *object)
 {
   RutDropDown *drop = object;
 
-  rut_refable_unref (drop->context);
+  rut_object_unref (drop->context);
   cogl_object_unref (drop->bg_pipeline);
   cogl_object_unref (drop->highlighted_bg_pipeline);
 
@@ -295,7 +294,7 @@ _rut_drop_down_free (void *object)
   rut_drop_down_clear_layouts (drop);
 
   rut_graphable_remove_child (drop->input_region);
-  rut_refable_unref (drop->input_region);
+  rut_object_unref (drop->input_region);
 
   rut_simple_introspectable_destroy (drop);
   rut_graphable_destroy (drop);
@@ -306,14 +305,8 @@ _rut_drop_down_free (void *object)
   if (drop->selector_outline_pipeline)
     cogl_object_unref (drop->selector_outline_pipeline);
 
-  g_slice_free (RutDropDown, drop);
+  rut_object_free (RutDropDown, drop);
 }
-
-RutRefableVTable _rut_drop_down_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_drop_down_free
-};
 
 typedef struct
 {
@@ -654,7 +647,7 @@ rut_drop_down_handle_click (RutDropDown *drop,
 
   /* Check whether putting the selector below the control would make
    * it go off the screen */
-  rut_graphable_get_modelview (RUT_OBJECT (drop), camera, &modelview);
+  rut_graphable_get_modelview (drop, camera, &modelview);
   projection = rut_camera_get_projection (camera);
   top_point[0] = drop->selector_x;
   top_point[1] = drop->selector_height + drop->height;
@@ -883,75 +876,68 @@ rut_drop_down_get_preferred_height (RutObject *object,
                              RUT_DROP_DOWN_EDGE_HEIGHT);
 }
 
-static RutGraphableVTable _rut_drop_down_graphable_vtable = {
-  NULL, /* child removed */
-  NULL, /* child addded */
-  NULL /* parent changed */
-};
-
-static RutPaintableVTable _rut_drop_down_paintable_vtable = {
-  _rut_drop_down_paint
-};
-
-static RutIntrospectableVTable _rut_drop_down_introspectable_vtable = {
-  rut_simple_introspectable_lookup_property,
-  rut_simple_introspectable_foreach_property
-};
-
-static RutSizableVTable _rut_drop_down_sizable_vtable = {
-  rut_drop_down_set_size,
-  rut_drop_down_get_size,
-  rut_drop_down_get_preferred_width,
-  rut_drop_down_get_preferred_height,
-  NULL /* add_preferred_size_callback */
-};
-
 static void
 _rut_drop_down_init_type (void)
 {
-  rut_type_init (&rut_drop_down_type, "RigDropDown");
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutDropDown, ref_count),
-                          &_rut_drop_down_refable_vtable);
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (RutDropDown, graphable),
-                          &_rut_drop_down_graphable_vtable);
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_PAINTABLE,
-                          offsetof (RutDropDown, paintable),
-                          &_rut_drop_down_paintable_vtable);
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &_rut_drop_down_introspectable_vtable);
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (RutDropDown, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (&rut_drop_down_type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &_rut_drop_down_sizable_vtable);
+  static RutGraphableVTable graphable_vtable = {
+    NULL, /* child removed */
+    NULL, /* child addded */
+    NULL /* parent changed */
+  };
+
+  static RutPaintableVTable paintable_vtable = {
+    _rut_drop_down_paint
+  };
+
+  static RutIntrospectableVTable introspectable_vtable = {
+    rut_simple_introspectable_lookup_property,
+    rut_simple_introspectable_foreach_property
+  };
+
+  static RutSizableVTable sizable_vtable = {
+    rut_drop_down_set_size,
+    rut_drop_down_get_size,
+    rut_drop_down_get_preferred_width,
+    rut_drop_down_get_preferred_height,
+    NULL /* add_preferred_size_callback */
+  };
+
+
+  RutType *type = &rut_drop_down_type;
+#define TYPE RutDropDown
+
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_drop_down_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PAINTABLE,
+                      offsetof (TYPE, paintable),
+                      &paintable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+
+#undef TYPE
 }
 
 RutDropDown *
 rut_drop_down_new (RutContext *context)
 {
-  RutDropDown *drop = g_slice_new0 (RutDropDown);
-  static CoglBool initialized = FALSE;
+  RutDropDown *drop =
+    rut_object_alloc0 (RutDropDown, &rut_drop_down_type, _rut_drop_down_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_init ();
-      _rut_drop_down_init_type ();
-
-      initialized = TRUE;
-    }
-
-  drop->ref_count = 1;
-  drop->context = rut_refable_ref (context);
+  drop->context = rut_object_ref (context);
 
   /* Set a dummy value so we can assume that value_index is always a
    * valid index */
@@ -961,10 +947,9 @@ rut_drop_down_new (RutContext *context)
 
   drop->font_description = rut_drop_down_create_font_description ();
 
-  rut_object_init (&drop->_parent, &rut_drop_down_type);
 
-  rut_paintable_init (RUT_OBJECT (drop));
-  rut_graphable_init (RUT_OBJECT (drop));
+  rut_paintable_init (drop);
+  rut_graphable_init (drop);
 
   rut_simple_introspectable_init (drop,
                                   _rut_drop_down_prop_specs,

@@ -42,13 +42,12 @@ typedef struct
 
 struct _RigCameraView
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RigEngine *engine;
 
   RutContext *context;
 
-  int ref_count;
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;

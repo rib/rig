@@ -28,8 +28,7 @@
 
 struct _RutShim
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -55,7 +54,7 @@ _rut_shim_free (void *object)
 
   rut_graphable_destroy (shim);
 
-  g_slice_free (RutShim, object);
+  rut_object_free (RutShim, object);
 }
 
 static void
@@ -145,11 +144,6 @@ RutType rut_shim_type;
 static void
 _rut_shim_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_shim_free
-  };
 
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child remove */
@@ -168,19 +162,15 @@ _rut_shim_init_type (void)
   RutType *type = &rut_shim_type;
 #define TYPE RutShim
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_shim_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
 
 #undef TYPE
 }
@@ -190,18 +180,10 @@ rut_shim_new (RutContext *ctx,
               float width,
               float height)
 {
-  RutShim *shim = g_slice_new0 (RutShim);
-  static CoglBool initialized = FALSE;
+  RutShim *shim =
+    rut_object_alloc0 (RutShim, &rut_shim_type, _rut_shim_init_type);
 
-  if (initialized == FALSE)
-    {
-      _rut_shim_init_type ();
-      initialized = TRUE;
-    }
 
-  rut_object_init (&shim->_parent, &rut_shim_type);
-
-  shim->ref_count = 1;
 
   shim->context = ctx;
 
@@ -287,12 +269,12 @@ rut_shim_set_child (RutShim *shim, RutObject *child)
       rut_graphable_remove_child (shim->child);
       rut_closure_disconnect (shim->child_preferred_size_closure);
       shim->child_preferred_size_closure = NULL;
-      rut_refable_unref (shim->child);
+      rut_object_unref (shim->child);
     }
 
   if (child)
     {
-      shim->child = rut_refable_ref (child);
+      shim->child = rut_object_ref (child);
       rut_graphable_add_child (shim, child);
 
       shim->child_preferred_size_closure =

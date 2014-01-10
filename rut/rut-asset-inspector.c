@@ -43,7 +43,7 @@ enum {
 
 struct _RutAssetInspector
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *ctx;
 
@@ -64,7 +64,6 @@ struct _RutAssetInspector
   RutSimpleIntrospectableProps introspectable;
   RutProperty properties[RUT_ASSET_INSPECTOR_N_PROPS];
 
-  int ref_count;
 
   unsigned int selected: 1;
 };
@@ -106,7 +105,7 @@ _rut_asset_inspector_free (void *object)
   RutAssetInspector *asset_inspector = object;
 
   _rut_asset_inspector_set_selected (asset_inspector, FALSE);
-  rut_refable_unref (asset_inspector->highlight);
+  rut_object_unref (asset_inspector->highlight);
   asset_inspector->highlight = NULL;
 
   rut_asset_inspector_set_asset (asset_inspector, NULL);
@@ -115,7 +114,7 @@ _rut_asset_inspector_free (void *object)
 
   rut_simple_introspectable_destroy (asset_inspector);
 
-  g_slice_free (RutAssetInspector, asset_inspector);
+  rut_object_free (RutAssetInspector, asset_inspector);
 }
 
 static void
@@ -132,7 +131,7 @@ _rut_asset_inspector_copy_selection (RutObject *object)
 {
   RutAssetInspector *asset_inspector = object;
 
-  return rut_refable_ref (asset_inspector->asset);
+  return rut_object_ref (asset_inspector->asset);
 }
 
 static void
@@ -148,11 +147,6 @@ RutType rut_asset_inspector_type;
 static void
 _rut_asset_inspector_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-      rut_refable_simple_ref,
-      rut_refable_simple_unref,
-      _rut_asset_inspector_free
-  };
   static RutGraphableVTable graphable_vtable = {
       NULL, /* child removed */
       NULL, /* child added */
@@ -178,36 +172,31 @@ _rut_asset_inspector_init_type (void)
   RutType *type = &rut_asset_inspector_type;
 #define TYPE RutAssetInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, shim),
-                          NULL); /* no vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SELECTABLE,
-                          0, /* no implied properties */
-                          &selectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_asset_inspector_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, shim),
+                      NULL); /* no vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SELECTABLE,
+                      0, /* no implied properties */
+                      &selectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -261,14 +250,14 @@ input_cb (RutInputRegion *region,
                                 0, 0, 0, 0,
                                 100, 100);
           rut_stack_add (asset_inspector->stack, asset_inspector->drop_preview);
-          rut_refable_unref (asset_inspector->drop_preview);
+          rut_object_unref (asset_inspector->drop_preview);
 
           asset_inspector->drop_preview_overlay =
             rut_rectangle_new4f (asset_inspector->ctx,
                                  1, 1, 0.5, 0.5, 0.5, 0.5);
           rut_stack_add (asset_inspector->stack,
                          asset_inspector->drop_preview_overlay);
-          rut_refable_unref (asset_inspector->drop_preview_overlay);
+          rut_object_unref (asset_inspector->drop_preview_overlay);
 
           _rut_asset_inspector_set_selected (asset_inspector, save_selected);
 
@@ -313,22 +302,13 @@ create_highlight_nine_slice (RutContext *ctx)
 RutAssetInspector *
 rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
 {
-  RutAssetInspector *asset_inspector = g_slice_new0 (RutAssetInspector);
-  static CoglBool initialized = FALSE;
+  RutAssetInspector *asset_inspector =
+    rut_object_alloc0 (RutAssetInspector, &rut_asset_inspector_type, _rut_asset_inspector_init_type);
   RutShim *shim;
   RutStack *stack;
 
-  if (initialized == FALSE)
-    {
-      _rut_asset_inspector_init_type ();
-
-      initialized = TRUE;
-    }
-
-  asset_inspector->ref_count = 1;
   asset_inspector->ctx = ctx;
 
-  rut_object_init (&asset_inspector->_parent, &rut_asset_inspector_type);
 
   rut_simple_introspectable_init (asset_inspector,
                                   _rut_asset_inspector_prop_specs,
@@ -341,12 +321,12 @@ rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
   shim = rut_shim_new (asset_inspector->ctx, 100, 100);
   rut_graphable_add_child (asset_inspector, shim);
   asset_inspector->shim = shim;
-  rut_refable_unref (shim);
+  rut_object_unref (shim);
 
   stack = rut_stack_new (asset_inspector->ctx, 0, 0);
   rut_shim_set_child (shim, stack);
   asset_inspector->stack = stack;
-  rut_refable_unref (stack);
+  rut_object_unref (stack);
 
   asset_inspector->highlight = create_highlight_nine_slice (asset_inspector->ctx);
 
@@ -355,7 +335,7 @@ rut_asset_inspector_new (RutContext *ctx, RutAssetType asset_type)
                                     input_cb,
                                     asset_inspector);
   rut_stack_add (stack, asset_inspector->input_region);
-  rut_refable_unref (asset_inspector->input_region);
+  rut_object_unref (asset_inspector->input_region);
 
   return asset_inspector;
 }
@@ -382,20 +362,20 @@ rut_asset_inspector_set_asset (RutObject *object, RutObject *asset_object)
 
   if (asset_inspector->asset)
     {
-      rut_refable_unref (asset_inspector->asset);
+      rut_object_unref (asset_inspector->asset);
       asset_inspector->asset = NULL;
 
       if (asset_inspector->image)
         {
           rut_graphable_remove_child (asset_inspector->image);
-          rut_refable_unref (asset_inspector->image);
+          rut_object_unref (asset_inspector->image);
           asset_inspector->image = NULL;
         }
     }
 
   if (asset_object)
     {
-      asset_inspector->asset = rut_refable_ref (asset);
+      asset_inspector->asset = rut_object_ref (asset);
 
       texture = rut_asset_get_texture (asset);
       if (texture)

@@ -55,9 +55,8 @@ struct _Closure
 
 typedef struct _Stream
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RigProtobufCDispatch *dispatch;
 
@@ -73,9 +72,8 @@ typedef struct _Stream
 
 struct _PB_RPC_Client
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   ProtobufCService service;
   Stream *stream;
@@ -169,9 +167,8 @@ struct _ProxyResponse
 
 struct _PB_RPC_Server
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RigProtobufCDispatch *dispatch;
   ProtobufCAllocator *allocator;
@@ -205,9 +202,8 @@ struct _PB_RPC_Server
 
 struct _PB_RPC_Peer
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   Stream *stream;
 
@@ -275,7 +271,7 @@ _rig_pb_rpc_client_free (void *object)
     }
 
   client->stream->client = NULL; /* disassociate client from stream state */
-  rut_refable_unref (client->stream);
+  rut_object_unref (client->stream);
 
   rig_protobuf_c_data_buffer_clear (&client->stream->incoming);
   rig_protobuf_c_data_buffer_clear (&client->stream->outgoing);
@@ -301,8 +297,7 @@ _rig_pb_rpc_client_init_type (void)
   RutType *type = &rig_pb_rpc_client_type;
 #define TYPE PB_RPC_Client
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_pb_rpc_client_free);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_client_free);
 
 #undef TYPE
 }
@@ -814,13 +809,12 @@ client_new (const ProtobufCServiceDescriptor *descriptor,
                                              &rig_pb_rpc_client_type,
                                              _rig_pb_rpc_client_init_type);
 
-  client->ref_count = 1;
 
   client->service.descriptor = descriptor;
   client->service.invoke = invoke_client_rpc;
   client->service.destroy = NULL; /* we rely on ref-counting instead */
 
-  client->stream = rut_refable_ref (stream);
+  client->stream = rut_object_ref (stream);
   stream->client = client;
 
   client->allocator = rig_protobuf_c_dispatch_peek_allocator (dispatch);
@@ -857,8 +851,7 @@ _stream_init_type (void)
   RutType *type = &stream_type;
 #define TYPE Stream
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _stream_free);
+  rut_type_init (type, G_STRINGIFY (TYPE), _stream_free);
 
 #undef TYPE
 }
@@ -872,7 +865,6 @@ stream_new (RigProtobufCDispatch *dispatch,
                                       &stream_type,
                                       _stream_init_type);
 
-  stream->ref_count = 1;
 
   /* We have to explicitly track the dispatch with the stream since
    * it may be referenced when freeing the stream after any client
@@ -900,7 +892,7 @@ rig_pb_rpc_client_new (PB_RPC_AddressType type,
 
   /* After calling client_new() the client will have taken ownership
    * of the stream */
-  rut_refable_unref (stream);
+  rut_object_unref (stream);
 
   client->address_type = type;
   client->name = g_strdup (name);
@@ -986,7 +978,7 @@ server_connection_close (PB_RPC_ServerConnection *conn)
 
   conn->stream->conn = NULL; /* disassociate server connection
                               * from stream state */
-  rut_refable_unref (conn->stream);
+  rut_object_unref (conn->stream);
 
   /* remove this connection from the server's list */
   GSK_LIST_REMOVE (GET_CONNECTION_LIST (conn->server), conn);
@@ -1041,8 +1033,7 @@ _rig_pb_rpc_server_init_type (void)
   RutType *type = &rig_pb_rpc_server_type;
 #define TYPE PB_RPC_Server
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_pb_rpc_server_free);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_server_free);
 
 #undef TYPE
 }
@@ -1531,7 +1522,7 @@ server_add_connection_with_stream (PB_RPC_Server *server,
 
   memset (conn, 0, sizeof (*conn));
 
-  conn->stream = rut_refable_ref (stream);
+  conn->stream = rut_object_ref (stream);
   stream->conn = conn;
 
   conn->server = server;
@@ -1576,7 +1567,7 @@ handle_server_listener_readable (int fd,
 
   /* Once the connection has been added the connection itself will
    * maintain a reference to the stream */
-  rut_refable_unref (stream);
+  rut_object_unref (stream);
 }
 
 static PB_RPC_Server *
@@ -1587,7 +1578,6 @@ server_new (ProtobufCService *service,
                                              &rig_pb_rpc_server_type,
                                              _rig_pb_rpc_server_init_type);
 
-  server->ref_count = 1;
   server->dispatch = dispatch;
   server->allocator = rig_protobuf_c_dispatch_peek_allocator (dispatch);
   server->service = service;
@@ -1901,10 +1891,10 @@ _rig_pb_rpc_peer_free (void *object)
   if (peer->idle)
     rig_protobuf_c_dispatch_remove_idle (peer->idle);
 
-  rut_refable_unref (peer->server);
-  rut_refable_unref (peer->client);
+  rut_object_unref (peer->server);
+  rut_object_unref (peer->client);
 
-  rut_refable_unref (peer->stream);
+  rut_object_unref (peer->stream);
 
   g_slice_free (PB_RPC_Peer, peer);
 }
@@ -1917,8 +1907,7 @@ _rig_pb_rpc_peer_init_type (void)
   RutType *type = &rig_pb_rpc_peer_type;
 #define TYPE PB_RPC_Peer
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rig_pb_rpc_peer_free);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_peer_free);
 
 #undef TYPE
 }
@@ -1952,7 +1941,6 @@ rig_pb_rpc_peer_new (int fd,
                                          &rig_pb_rpc_peer_type,
                                          _rig_pb_rpc_peer_init_type);
 
-  peer->ref_count = 1;
 
   peer->stream = stream_new (dispatch, fd);
 

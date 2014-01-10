@@ -39,7 +39,7 @@ enum {
 
 struct _RutNumberSlider
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
   RutContext *context;
 
@@ -51,7 +51,6 @@ struct _RutNumberSlider
 
   int decimal_places;
 
-  int ref_count;
 
   float min_value, max_value;
   float value;
@@ -95,7 +94,7 @@ _rut_number_slider_free (void *object)
   RutNumberSlider *slider = object;
 
   rut_graphable_remove_child (slider->input_region);
-  rut_refable_unref (slider->input_region);
+  rut_object_unref (slider->input_region);
 
   rut_simple_introspectable_destroy (slider);
   rut_graphable_destroy (slider);
@@ -103,7 +102,7 @@ _rut_number_slider_free (void *object)
   if (slider->markup_label)
     g_free (slider->markup_label);
 
-  g_slice_free (RutNumberSlider, slider);
+  rut_object_free (RutNumberSlider, slider);
 }
 
 typedef struct _EditState
@@ -380,28 +379,27 @@ _rut_number_slider_init_type (void)
   RutType *type = &rut_number_slider_type;
 #define TYPE RutNumberSlider
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_number_slider_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPOSITE_SIZABLE,
-                          offsetof (TYPE, text),
-                          NULL); /* no vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_number_slider_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPOSITE_SIZABLE,
+                      offsetof (TYPE, text),
+                      NULL); /* no vtable */
 
 #undef TYPE
 }
@@ -413,7 +411,6 @@ rut_number_slider_new (RutContext *context)
                                                &rut_number_slider_type,
                                                _rut_number_slider_init_type);
 
-  slider->ref_count = 1;
   slider->context = context;
   slider->step = 1.0f;
   slider->decimal_places = 2;
@@ -431,7 +428,7 @@ rut_number_slider_new (RutContext *context)
   rut_text_set_editable (slider->text, false);
   rut_text_set_activatable (slider->text, true);
   rut_graphable_add_child (slider, slider->text);
-  rut_refable_unref (slider->text);
+  rut_object_unref (slider->text);
 
   slider->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0,

@@ -164,7 +164,7 @@ _rut_camera_free (void *object)
 
   rut_simple_introspectable_destroy (camera);
 
-  g_slice_free (RutCamera, object);
+  rut_object_free (RutCamera, object);
 }
 
 CoglPrimitive *
@@ -327,11 +327,6 @@ RutType rut_camera_type;
 void
 _rut_camera_init_type (void)
 {
-  static RutRefableVTable refable_vtable = {
-    rut_refable_simple_ref,
-    rut_refable_simple_unref,
-    _rut_camera_free
-  };
 
   static RutComponentableVTable componentable_vtable = {
     .copy = _rut_camera_copy
@@ -345,23 +340,19 @@ _rut_camera_init_type (void)
   RutType *type = &rut_camera_type;
 #define TYPE RutCamera
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (TYPE, ref_count),
-                          &refable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_COMPONENTABLE,
-                          offsetof (TYPE, component),
-                          &componentable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INTROSPECTABLE,
-                          0, /* no implied properties */
-                          &introspectable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE,
-                          offsetof (TYPE, introspectable),
-                          NULL); /* no implied vtable */
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_camera_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_COMPONENTABLE,
+                      offsetof (TYPE, component),
+                      &componentable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      0, /* no implied properties */
+                      &introspectable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
 
 #undef TYPE
 }
@@ -369,13 +360,12 @@ _rut_camera_init_type (void)
 RutCamera *
 rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
 {
-  RutCamera *camera = g_slice_new0 (RutCamera);
+  RutCamera *camera =
+    rut_object_alloc0 (RutCamera, &rut_camera_type, _rut_camera_init_type);
 
-  camera->ctx = rut_refable_ref (ctx);
+  camera->ctx = rut_object_ref (ctx);
 
-  rut_object_init (&camera->_parent, &rut_camera_type);
 
-  camera->ref_count = 1;
 
   rut_simple_introspectable_init (camera,
                                   _rut_camera_prop_specs,
@@ -386,7 +376,7 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   rut_camera_set_background_color4f (camera, 0, 0, 0, 1);
   camera->clear_fb = TRUE;
 
-  //rut_graphable_init (RUT_OBJECT (camera));
+  //rut_graphable_init (camera);
 
   camera->orthographic = TRUE;
   camera->x1 = 0;
@@ -847,7 +837,7 @@ rut_camera_add_input_region (RutCamera *camera,
   if (g_list_find (camera->input_regions, region))
     return;
 
-  rut_refable_ref (region);
+  rut_object_ref (region);
   camera->input_regions = g_list_prepend (camera->input_regions, region);
 }
 
@@ -858,7 +848,7 @@ rut_camera_remove_input_region (RutCamera *camera,
   GList *link = g_list_find (camera->input_regions, region);
   if (link)
     {
-      rut_refable_unref (region);
+      rut_object_unref (region);
       camera->input_regions =
         g_list_delete_link (camera->input_regions, link);
     }

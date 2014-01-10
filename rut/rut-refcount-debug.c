@@ -655,6 +655,11 @@ _rut_refcount_debug_release (void *object, void *owner)
 
   if (--object_data->object_ref_count <= 0)
     {
+      if (object_data->object_ref_count != 0)
+        {
+          g_warning ("Reference less than zero but object still exists: "
+                     "corrupt ref_count for object %p", object);
+        }
       log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE, NULL);
       object_data->object = NULL;
       g_hash_table_remove (state->hash, object);

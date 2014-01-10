@@ -28,8 +28,7 @@
 
 struct _RutGraph
 {
-  RutObjectProps _parent;
-  int ref_count;
+  RutObjectBase _base;
 
   RutGraphableProps graphable;
 };
@@ -41,7 +40,7 @@ _rut_graph_free (void *object)
 
   rut_graphable_destroy (graph);
 
-  g_slice_free (RutGraph, object);
+  rut_object_free (RutGraph, object);
 }
 
 RutType rut_graph_type;
@@ -58,12 +57,11 @@ _rut_graph_init_type (void)
   RutType *type = &rut_graph_type;
 #define TYPE RutGraph
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_graph_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_graph_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
 
 #undef TYPE
 }
@@ -74,7 +72,6 @@ rut_graph_new (RutContext *ctx)
   RutGraph *graph = rut_object_alloc (RutGraph, &rut_graph_type,
                                       _rut_graph_init_type);
 
-  graph->ref_count = 1;
 
   rut_graphable_init (graph);
 

@@ -25,7 +25,7 @@ bool
 rut_mimable_has_text (RutObject *object)
 {
   RutMimableVTable *mimable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_MIMABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_MIMABLE);
 
   return mimable->has (object, RUT_MIMABLE_TYPE_TEXT);
 }
@@ -34,7 +34,7 @@ char *
 rut_mimable_get_text (RutObject *object)
 {
   RutMimableVTable *mimable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_MIMABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_MIMABLE);
 
   if (!mimable->has (object, RUT_MIMABLE_TYPE_TEXT))
     return NULL;

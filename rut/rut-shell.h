@@ -24,6 +24,8 @@
 
 #include <stdbool.h>
 
+#include <cogl/cogl.h>
+
 #include "rut-keysyms.h"
 #include "rut-object.h"
 #include "rut-types.h"

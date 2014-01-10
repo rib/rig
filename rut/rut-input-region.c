@@ -18,6 +18,8 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include <config.h>
+
 #include <cogl/cogl.h>
 
 #include "rut-input-region.h"
@@ -62,9 +64,8 @@ typedef union _RutInputShape
 
 struct _RutInputRegion
 {
-  RutObjectProps _parent;
+  RutObjectBase _base;
 
-  int ref_count;
 
   RutInputShape shape;
 
@@ -84,7 +85,7 @@ _rut_input_region_free (void *object)
 
   rut_graphable_destroy (region);
 
-  g_slice_free (RutInputRegion, region);
+  rut_object_free (RutInputRegion, region);
 }
 
 static void
@@ -303,24 +304,23 @@ _rut_input_region_init_type (void)
   RutType *type = &rut_input_region_type;
 #define TYPE RutInputRegion
 
-  rut_type_init (type, G_STRINGIFY (TYPE));
-  rut_type_add_refable (type, ref_count, _rut_input_region_free);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_GRAPHABLE,
-                          offsetof (TYPE, graphable),
-                          &graphable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_SIZABLE,
-                          0, /* no implied properties */
-                          &sizable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_PICKABLE,
-                          0, /* no implied properties */
-                          &pickable_vtable);
-  rut_type_add_interface (type,
-                          RUT_INTERFACE_ID_INPUTABLE,
-                          0, /* no implied properties */
-                          &inputable_vtable);
+  rut_type_init (type, G_STRINGIFY (TYPE), _rut_input_region_free);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_GRAPHABLE,
+                      offsetof (TYPE, graphable),
+                      &graphable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_SIZABLE,
+                      0, /* no implied properties */
+                      &sizable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_PICKABLE,
+                      0, /* no implied properties */
+                      &pickable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INPUTABLE,
+                      0, /* no implied properties */
+                      &inputable_vtable);
 
 #undef TYPE
 }
@@ -333,7 +333,6 @@ _rut_input_region_new_common (RutInputRegionCallback callback,
                                               &rut_input_region_type,
                                               _rut_input_region_init_type);
 
-  region->ref_count = 1;
 
   rut_graphable_init (region);
 

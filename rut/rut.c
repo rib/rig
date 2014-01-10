@@ -189,22 +189,12 @@ _rut_context_free (void *object)
   g_slice_free (RutContext, ctx);
 }
 
-static RutRefableVTable _rut_context_refable_vtable = {
-  rut_refable_simple_ref,
-  rut_refable_simple_unref,
-  _rut_context_free
-};
-
 RutType rut_context_type;
 
 static void
 _rut_context_init_type (void)
 {
-  rut_type_init (&rut_context_type, "RigContext");
-  rut_type_add_interface (&rut_context_type,
-                          RUT_INTERFACE_ID_REF_COUNTABLE,
-                          offsetof (RutContext, ref_count),
-                          &_rut_context_refable_vtable);
+  rut_type_init (&rut_context_type, "RutContext", _rut_context_free);
 }
 
 static void
@@ -316,19 +306,17 @@ rut_load_texture_from_data_file (RutContext *ctx,
 RutContext *
 rut_context_new (RutShell *shell)
 {
-  RutContext *context = g_new0 (RutContext, 1);
+  RutContext *context;
   CoglError *error = NULL;
 
   g_return_val_if_fail (shell != NULL, NULL);
 
-  _rut_init ();
-
-  rut_object_init (&context->_parent, &rut_context_type);
-
-  context->ref_count = 1;
+  context = rut_object_alloc0 (RutContext,
+                               &rut_context_type,
+                               _rut_context_init_type);
 
   rut_property_context_init (&context->property_ctx);
-  context->shell = rut_refable_ref (shell);
+  context->shell = rut_object_ref (shell);
 
   context->headless = rut_shell_get_headless (shell);
 
@@ -414,42 +402,4 @@ rut_set_assets_location (RutContext *context,
                          const char *assets_location)
 {
   context->assets_location = g_strdup (assets_location);
-}
-
-void
-_rut_init (void)
-{
-  static size_t init_status = 0;
-
-  if (g_once_init_enter (&init_status))
-    {
-      //bindtextdomain (GETTEXT_PACKAGE, RUT_LOCALEDIR);
-      //bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-
-      _rut_context_init_type ();
-      _rut_text_buffer_init_type ();
-      _rut_text_init_type ();
-      _rut_timeline_init_type ();
-      _rut_entity_init_type ();
-      _rut_asset_type_init ();
-      _rut_buffer_init_type ();
-      _rut_attribute_init_type ();
-      _rut_mesh_init_type ();
-      _rut_scroll_bar_init_type ();
-
-      /* components */
-      _rut_camera_init_type ();
-      _rut_light_init_type ();
-      _rut_model_init_type ();
-      _rut_material_init_type ();
-      _rut_diamond_init_type ();
-      _rut_diamond_slice_init_type ();
-      _rut_shape_init_type ();
-      _rut_shape_model_init_type ();
-      _rut_pointalism_grid_init_type ();
-      _rut_pointalism_grid_slice_init_type ();
-      _rut_hair_init_type ();
-
-      g_once_init_leave (&init_status, 1);
-    }
 }

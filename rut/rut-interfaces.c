@@ -28,90 +28,12 @@
 #include "components/rut-camera.h"
 #include "rut-refcount-debug.h"
 
-void *
-rut_refable_simple_ref (void *object)
-{
-  int *ref_count = rut_object_get_properties (object,
-                                               RUT_INTERFACE_ID_REF_COUNTABLE);
-  (*ref_count)++;
-  return object;
-}
-
-void
-rut_refable_simple_unref (void *object)
-{
-  int *ref_count = rut_object_get_properties (object,
-                                               RUT_INTERFACE_ID_REF_COUNTABLE);
-
-  if (--(*ref_count) < 1)
-    {
-      RutRefableVTable *vtable =
-        rut_object_get_vtable (object, RUT_INTERFACE_ID_REF_COUNTABLE);
-      g_assert (*ref_count == 0);
-      vtable->free (object);
-    }
-}
-
-void *
-rut_refable_ref (void *object)
-{
-  RutObject *obj = object;
-  const RutType *type = rut_object_get_type (obj);
-
-  RutRefableVTable *vtable =
-    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
-
-  _rut_refcount_debug_ref (object);
-
-  return vtable->ref (obj);
-}
-
-void
-rut_refable_unref (void *object)
-{
-  RutObject *obj = object;
-  const RutType *type = rut_object_get_type (obj);
-  RutRefableVTable *vtable =
-    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
-
-  _rut_refcount_debug_unref (object);
-
-  vtable->unref (obj);
-}
-
-void *
-rut_refable_claim (void *object, void *owner)
-{
-  RutObject *obj = object;
-  const RutType *type = rut_object_get_type (obj);
-
-  RutRefableVTable *vtable =
-    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
-
-  _rut_refcount_debug_claim (object, owner);
-
-  return vtable->ref (obj);
-}
-
-void
-rut_refable_release (void *object, void *owner)
-{
-  RutObject *obj = object;
-  const RutType *type = rut_object_get_type (obj);
-  RutRefableVTable *vtable =
-    type->interfaces[RUT_INTERFACE_ID_REF_COUNTABLE].vtable;
-
-  _rut_refcount_debug_release (object, owner);
-
-  vtable->unref (obj);
-}
-
 RutProperty *
 rut_introspectable_lookup_property (RutObject *object,
                                     const char *name)
 {
   RutIntrospectableVTable *introspectable_vtable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_INTROSPECTABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_INTROSPECTABLE);
 
   return introspectable_vtable->lookup_property (object, name);
 }
@@ -122,7 +44,7 @@ rut_introspectable_foreach_property (RutObject *object,
                                      void *user_data)
 {
   RutIntrospectableVTable *introspectable_vtable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_INTROSPECTABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_INTROSPECTABLE);
 
   introspectable_vtable->foreach_property (object, callback, user_data);
 }
@@ -164,7 +86,7 @@ rut_simple_introspectable_register_properties (RutObject *object,
                                                RutProperty *first_property)
 {
   RutSimpleIntrospectableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE);
   RutPropertySpec *first_spec = first_property->spec;
   int n;
 
@@ -182,7 +104,7 @@ rut_simple_introspectable_init (RutObject *object,
                                 RutProperty *properties)
 {
   RutSimpleIntrospectableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE);
   int n;
 
   for (n = 0; specs[n].name; n++)
@@ -202,7 +124,7 @@ void
 rut_simple_introspectable_destroy (RutObject *object)
 {
   RutSimpleIntrospectableProps *props =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE);
   RutProperty *properties = props->first_property;
   int i;
 
@@ -215,7 +137,7 @@ rut_simple_introspectable_lookup_property (RutObject *object,
                                            const char *name)
 {
   RutSimpleIntrospectableProps *priv =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE);
   int i;
 
   for (i = 0; i < priv->n_properties; i++)
@@ -234,7 +156,7 @@ rut_simple_introspectable_foreach_property (RutObject *object,
                                             void *user_data)
 {
   RutSimpleIntrospectableProps *priv =
-    rut_object_get_properties (object, RUT_INTERFACE_ID_SIMPLE_INTROSPECTABLE);
+    rut_object_get_properties (object, RUT_TRAIT_ID_SIMPLE_INTROSPECTABLE);
   int i;
 
   for (i = 0; i < priv->n_properties; i++)
@@ -248,7 +170,7 @@ const CoglMatrix *
 rut_transformable_get_matrix (RutObject *object)
 {
   RutTransformableVTable *transformable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_TRANSFORMABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_TRANSFORMABLE);
 
   return transformable->get_matrix (object);
 }
@@ -259,7 +181,7 @@ rut_sizable_set_size (RutObject *object,
                       float height)
 {
   RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
 
   sizable->set_size (object,
                      width,
@@ -272,7 +194,7 @@ rut_sizable_get_size (void *object,
                       float *height)
 {
   RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
 
   sizable->get_size (object,
                      width,
@@ -286,7 +208,7 @@ rut_sizable_get_preferred_width (RutObject *object,
                                  float *natural_width_p)
 {
   RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
 
   sizable->get_preferred_width (object,
                                 for_height,
@@ -301,7 +223,7 @@ rut_sizable_get_preferred_height (RutObject *object,
                                   float *natural_height_p)
 {
   RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
 
   sizable->get_preferred_height (object,
                                  for_width,
@@ -340,7 +262,7 @@ rut_sizable_add_preferred_size_callback (RutObject *object,
                                          RutClosureDestroyCallback destroy_cb)
 {
   RutSizableVTable *sizable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SIZABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SIZABLE);
 
   /* If the object has no implementation for the needs layout callback
    * then we'll assume its preferred size never changes. We'll return
@@ -373,7 +295,7 @@ CoglPrimitive *
 rut_primable_get_primitive (RutObject *object)
 {
   RutPrimableVTable *primable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_PRIMABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_PRIMABLE);
 
   return primable->get_primitive (object);
 }
@@ -382,7 +304,7 @@ void
 rut_selectable_cancel (RutObject *object)
 {
   RutSelectableVTable *selectable =
-    rut_object_get_vtable (object, RUT_INTERFACE_ID_SELECTABLE);
+    rut_object_get_vtable (object, RUT_TRAIT_ID_SELECTABLE);
 
   selectable->cancel (object);
 }
