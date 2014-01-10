@@ -99,21 +99,43 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
                             Rig__PropertyValue *pb_value,
                             const RutBoxed *value);
 
-RigPBUnSerializer *
-rig_pb_unserializer_new (RigEngine *engine);
 
 typedef bool (*RigPBUnSerializerObjectRegisterCallback) (void *object,
                                                          uint64_t id,
                                                          void *user_data);
+
+typedef void *(*RigPBUnSerializerIDToObjecCallback) (uint64_t id,
+                                                     void *user_data);
+
+
+struct _RigPBUnSerializer
+{
+  RigEngine *engine;
+
+  RigPBUnSerializerObjectRegisterCallback object_register_callback;
+  void *object_register_data;
+
+  RigPBUnSerializerIDToObjecCallback id_to_object_callback;
+  void *id_to_object_data;
+
+  GList *assets;
+  GList *entities;
+  RutEntity *light;
+  GList *controllers;
+
+  GHashTable *id_map;
+};
+
+void
+rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
+                          RigEngine *engine,
+                          bool with_id_map);
 
 void
 rig_pb_unserializer_set_object_register_callback (
                                  RigPBUnSerializer *unserializer,
                                  RigPBUnSerializerObjectRegisterCallback callback,
                                  void *user_data);
-
-typedef void *(*RigPBUnSerializerIDToObjecCallback) (uint64_t id,
-                                                     void *user_data);
 
 void
 rig_pb_unserializer_set_id_to_object_callback (
@@ -132,5 +154,11 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
 RutMesh *
 rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
                          Rig__Mesh *pb_mesh);
+
+void
+rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
+                         RutBoxed *boxed,
+                         RutPropertyType type,
+                         Rig__PropertyValue *pb_value);
 
 #endif /* __RIG_PB_H__ */

@@ -68,21 +68,22 @@ simulator__load (Rig__Simulator_Service *service,
   RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
-  RigPBUnSerializer *unserializer;
+  RigPBUnSerializer unserializer;
 
   g_return_if_fail (ui != NULL);
 
   g_print ("Simulator: UI Load Request\n");
 
-  unserializer = rig_pb_unserializer_new (engine);
+  rig_pb_unserializer_init (&unserializer, engine,
+                            true); /* with id-map */
 
-  rig_pb_unserializer_set_object_register_callback (unserializer,
+  rig_pb_unserializer_set_object_register_callback (&unserializer,
                                                     register_object_cb,
                                                     simulator);
 
-  rig_pb_unserialize_ui (unserializer, ui, false);
+  rig_pb_unserialize_ui (&unserializer, ui, false);
 
-  rig_pb_unserializer_destroy (unserializer);
+  rig_pb_unserializer_destroy (&unserializer);
 
   closure (&result, closure_data);
 }

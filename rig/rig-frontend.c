@@ -47,6 +47,12 @@ frontend__test (Rig__Frontend_Service *service,
   closure (&result, closure_data);
 }
 
+static void *
+pointer_id_to_object_cb (uint64_t id, void *user_data)
+{
+  return (void *)id;
+}
+
 static void
 frontend__update_ui (Rig__Frontend_Service *service,
                      const Rig__UIDiff *ui_diff,
@@ -58,10 +64,20 @@ frontend__update_ui (Rig__Frontend_Service *service,
     rig_pb_rpc_closure_get_connection_data (closure_data);
   int i;
   int n_changes;
+  RigPBUnSerializer unserializer;
+  RutBoxed boxed;
+  RutPropertyContext *prop_ctx = &frontend->engine->ctx->property_ctx;
 
   g_print ("Frontend: Update UI Request\n");
 
   g_return_if_fail (ui_diff != NULL);
+
+  rig_pb_unserializer_init (&unserializer, frontend->engine,
+                            false); /* no need for an id-map */
+
+  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+                                                 pointer_id_to_object_cb,
+                                                 NULL);
 
   n_changes = ui_diff->n_property_changes;
 
@@ -69,6 +85,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
     {
       Rig__PropertyChange *pb_change = ui_diff->property_changes[i];
       void *object;
+      RutProperty *property;
 
       if (!pb_change->has_object_id ||
           pb_change->object_id == 0 ||
@@ -85,7 +102,27 @@ frontend__update_ui (Rig__Frontend_Service *service,
                object,
                rut_object_get_type_name (object),
                pb_change->property_id);
+
+      property =
+        rut_introspectable_get_property (object, pb_change->property_id);
+      if (!property)
+        {
+          g_warning ("Frontend: Failed to find object property by id");
+          continue;
+        }
+
+      /* XXX: ideally we shouldn't need to init a RutBoxed and set
+       * that on a property, and instead we can just directly
+       * apply the value to the property we have. */
+      rig_pb_init_boxed_value (&unserializer,
+                               &boxed,
+                               property->spec->type,
+                               pb_change->value);
+
+      rut_property_set_boxed  (prop_ctx, property, &boxed);
     }
+
+  rig_pb_unserializer_destroy (&unserializer);
 
   closure (&ack, closure_data);
 }

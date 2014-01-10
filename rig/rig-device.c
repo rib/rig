@@ -95,9 +95,7 @@ rig_device_paint (RutShell *shell, void *user_data)
                              handle_run_frame_ack,
                              NULL);
 
-#warning "fixme: don't dispatch input events directly in the device process"
-  rut_shell_dispatch_input_events (shell);
-  //rut_shell_clear_input_queue (shell);
+  rut_shell_clear_input_queue (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
