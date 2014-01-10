@@ -167,7 +167,7 @@ RutType rut_scroll_bar_type;
 void
 _rut_scroll_bar_init_type (void)
 {
-  RutGraphableVTable graphable_vtable = {
+  static RutGraphableVTable graphable_vtable = {
     NULL, /* child remove */
     NULL, /* child add */
     NULL /* parent changed */
