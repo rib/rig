@@ -1380,6 +1380,26 @@ undo_redo_add_controller_apply (RigUndoJournal *journal,
    * the undo-redo operation. Assuming all controllers are
    * deterministic this would reset everything to how it was when
    * first applied.
+   *
+   * This will be fragile though and since we want to support
+   * non-deterministic controllers we need a better solution.
+   *
+   * A solution that would work, but be rather expensive is to take a
+   * snapshot of everything whenever anything is changed by the user
+   * so that whenever we need to undo something we can revert
+   * everything to the exact state is was in at the time it was
+   * changed. It's expected that this would become prohibitively
+   * expensive as UIs become more complex though.
+   *
+   * As a speed optimization we could have another mirror of the scene
+   * graph, a bit like we do for the simulator process except this
+   * mirror is only updated at each edit operation. In addition we can
+   * then snoop on the stream of property changes sent by the
+   * simulator and using this mirrored graph as a reference point we
+   * can keep a log of all property changes that happen as a
+   * side-effect between user edits. To reduce the size of logged
+   * side-effect property changes we could make sure to disable
+   * timelines when in edit mode.
    */
   rig_controller_set_active (add_controller->controller,
                              add_controller->active_state);
