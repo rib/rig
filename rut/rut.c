@@ -318,6 +318,8 @@ rut_context_new (RutShell *shell)
   rut_property_context_init (&context->property_ctx);
   context->shell = rut_object_ref (shell);
 
+  _rut_matrix_entry_identity_init (&context->identity_entry);
+
   context->headless = rut_shell_get_headless (shell);
 
   if (!context->headless)

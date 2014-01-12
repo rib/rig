@@ -58,20 +58,59 @@ rig_editor_fini (RutShell *shell, void *user_data)
 }
 
 static void
+handle_run_frame_ack (const Rig__RunFrameAck *ack,
+                      void *closure_data)
+{
+  RutShell *shell = closure_data;
+
+  rut_shell_finish_frame (shell);
+
+  g_print ("Editor: Run Frame ACK received\n");
+}
+
+static void
 rig_editor_paint (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
   RigEngine *engine = editor->engine;
+  RigFrontend *frontend = engine->frontend;
+  ProtobufCService *simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+  int n_events;
+  RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
+  Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
 
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
+  setup.n_events = n_events;
+  setup.events = rig_pb_serialize_input_events (engine, input_queue, n_events);
+
+  if (frontend->has_resized)
+    {
+      setup.has_width = true;
+      setup.width = engine->width;
+      setup.has_height = true;
+      setup.height = engine->height;
+      frontend->has_resized = false;
+    }
+
+  rig__simulator__run_frame (simulator_service,
+                             &setup,
+                             handle_run_frame_ack,
+                             shell);
+
   rut_shell_dispatch_input_events (shell);
+  //rut_shell_clear_input_queue (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
   rig_engine_paint (engine);
+
+  rut_shell_run_post_paint_callbacks (shell);
+
+  rut_shell_end_redraw (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

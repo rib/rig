@@ -48,6 +48,7 @@ struct _RigCameraView
 
   RutContext *context;
 
+  RutMatrixStack *matrix_stack;
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;

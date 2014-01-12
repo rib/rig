@@ -21,12 +21,13 @@
 #define _RIG_CONTROLLER_VIEW_H_
 
 #include <rut.h>
+
+typedef struct _RigControllerView RigControllerView;
+
 #include "rig-controller.h"
 #include "rig-undo-journal.h"
 
 extern RutType rig_controller_view_type;
-
-typedef struct _RigControllerView RigControllerView;
 
 RigControllerView *
 rig_controller_view_new (RigEngine *engine,

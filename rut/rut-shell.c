@@ -184,6 +184,11 @@ struct _RutShell
   RutList pre_paint_callbacks;
   CoglBool flushing_pre_paints;
 
+  RutList post_paint_callbacks;
+
+  int frame;
+  RutList frame_infos;
+
   /* A list of onscreen windows that the shell is manipulating */
   RutList onscreens;
 
@@ -835,23 +840,25 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
   *x = AMotionEvent_getX (event->native, 0);
   *y = AMotionEvent_getY (event->native, 0);
 #elif defined (USE_SDL)
-  RutSDLEvent *rut_sdl_event = event->native;
-  SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-  switch (sdl_event->type)
-    {
-    case SDL_MOUSEBUTTONDOWN:
-    case SDL_MOUSEBUTTONUP:
-      *x = sdl_event->button.x;
-      *y = sdl_event->button.y;
-      break;
-    case SDL_MOUSEMOTION:
-      *x = sdl_event->motion.x;
-      *y = sdl_event->motion.y;
-      break;
-    default:
-      g_warn_if_reached (); /* Not a motion event */
-      return;
-    }
+  {
+    RutSDLEvent *rut_sdl_event = event->native;
+    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
+    switch (sdl_event->type)
+      {
+      case SDL_MOUSEBUTTONDOWN:
+      case SDL_MOUSEBUTTONUP:
+        *x = sdl_event->button.x;
+        *y = sdl_event->button.y;
+        break;
+      case SDL_MOUSEMOTION:
+        *x = sdl_event->motion.x;
+        *y = sdl_event->motion.y;
+        break;
+      default:
+        g_warn_if_reached (); /* Not a motion event */
+        return;
+      }
+  }
 #else
 #error "Unknown input system"
 #endif
@@ -1398,6 +1405,8 @@ _rut_shell_free (void *object)
 
   _rut_shell_remove_all_input_cameras (shell);
 
+  rut_closure_list_disconnect_all (&shell->post_paint_callbacks);
+
   _rut_shell_fini (shell);
 
   rut_object_free (RutShell, shell);
@@ -1421,6 +1430,7 @@ rut_shell_new (bool headless,
   static bool initialized = false;
   RutShell *shell =
     rut_object_alloc0 (RutShell, &rut_shell_type, _rut_shell_init_type);
+  RutFrameInfo *frame_info;
 
   if (G_UNLIKELY (initialized == false))
     {
@@ -1446,9 +1456,55 @@ rut_shell_new (bool headless,
   shell->user_data = user_data;
 
   rut_list_init (&shell->pre_paint_callbacks);
+  rut_list_init (&shell->post_paint_callbacks);
   shell->flushing_pre_paints = FALSE;
 
+
+  rut_list_init (&shell->frame_infos);
+
+  frame_info = g_slice_new0 (RutFrameInfo);
+  rut_list_init (&frame_info->frame_callbacks);
+  rut_list_insert (shell->frame_infos.prev, &frame_info->list_node);
+
   return shell;
+}
+
+RutFrameInfo *
+rut_shell_get_frame_info (RutShell *shell)
+{
+  RutFrameInfo *head =
+    rut_container_of (shell->frame_infos.prev, head, list_node);
+  return head;
+}
+
+void
+rut_shell_end_redraw (RutShell *shell)
+{
+  RutFrameInfo *frame_info = g_slice_new0 (RutFrameInfo);
+
+  shell->frame++;
+
+  frame_info->frame = shell->frame;
+  rut_list_init (&frame_info->frame_callbacks);
+  rut_list_insert (shell->frame_infos.prev, &frame_info->list_node);
+}
+
+void
+rut_shell_finish_frame (RutShell *shell)
+{
+  RutFrameInfo *info =
+    rut_container_of (shell->frame_infos.next, info, list_node);
+
+  rut_list_remove (&info->list_node);
+
+  rut_closure_list_invoke (&info->frame_callbacks,
+                           RutShellFrameCallback,
+                           shell,
+                           info);
+
+  rut_closure_list_disconnect_all (&info->frame_callbacks);
+
+  g_slice_free (RutFrameInfo, info);
 }
 
 bool
@@ -1807,6 +1863,14 @@ void
 rut_shell_run_pre_paint_callbacks (RutShell *shell)
 {
   flush_pre_paint_callbacks (shell);
+}
+
+void
+rut_shell_run_post_paint_callbacks (RutShell *shell)
+{
+  rut_closure_list_invoke (&shell->post_paint_callbacks,
+                           RutShellPaintCallback,
+                           shell);
 }
 
 bool
@@ -2639,6 +2703,31 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
           break;
         }
     }
+}
+
+RutClosure *
+rut_shell_add_post_paint_callback (RutShell *shell,
+                                   RutPrePaintCallback callback,
+                                   void *user_data,
+                                   RutClosureDestroyCallback destroy)
+{
+  return rut_closure_list_add (&shell->post_paint_callbacks,
+                               callback,
+                               user_data,
+                               destroy);
+}
+
+RutClosure *
+rut_shell_add_frame_callback (RutShell *shell,
+                              RutShellFrameCallback callback,
+                              void *user_data,
+                              RutClosureDestroyCallback destroy)
+{
+  RutFrameInfo *info = rut_shell_get_frame_info (shell);
+  return rut_closure_list_add (&info->frame_callbacks,
+                               callback,
+                               user_data,
+                               destroy);
 }
 
 void

@@ -209,6 +209,10 @@ rig_slave_paint (RutShell *shell, void *user_data)
 
   rig_engine_paint (engine);
 
+  rut_shell_run_post_paint_callbacks (shell);
+
+  rut_shell_end_redraw (shell);
+
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
 }

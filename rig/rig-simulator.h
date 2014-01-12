@@ -25,12 +25,20 @@ typedef struct _RigSimulator RigSimulator;
 
 #include "rig-engine.h"
 
+typedef enum _RigSimulatorMode
+{
+  RIG_SIMULATOR_MODE_EDITOR=1,
+  RIG_SIMULATOR_MODE_DEVICE
+} RigSimulatorMode;
+
 /* The "simulator" is the process responsible for updating object
  * properties either in response to user input, the progression of
  * animations or running other forms of simulation such as physics.
  */
 struct _RigSimulator
 {
+  RigSimulatorMode mode;
+
   RutShell *shell;
   RutContext *ctx;
   RigEngine *engine;

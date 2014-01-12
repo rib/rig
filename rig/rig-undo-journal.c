@@ -22,6 +22,9 @@
 
 #include "rig-undo-journal.h"
 #include "rig-engine.h"
+#include "rig-pb.h"
+
+#include "rig.pb-c.h"
 
 typedef struct _UndoRedoOpImpl
 {
@@ -672,12 +675,18 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoSetProperty *set_property = &undo_redo->d.set_property;
   RigEngine *engine = journal->engine;
+  Rig__Operation__SetProperty *pb_set_property =
+    rig_pb_new (engine, Rig__Operation__SetProperty,
+                rig__operation__set_property__init);
 
-  rut_property_set_boxed (&journal->engine->ctx->property_ctx,
-                          set_property->property,
-                          &set_property->value1);
-
-  rig_reload_inspector_property (engine, set_property->property);
+  pb_set_property->object_id =
+    (intptr_t)set_property->property->object;
+  pb_set_property->property_id = set_property->property->spec->id;
+  pb_set_property->value =
+    rig_pb_new (engine, Rig__PropertyValue, rig__property_value__init);
+  rig_pb_property_value_init (journal->serializer,
+                              pb_set_property->value,
+                              &set_property->value1);
 }
 
 static UndoRedo *
@@ -754,6 +763,7 @@ undo_redo_set_controller_const_free (UndoRedo *undo_redo)
   rut_boxed_destroy (&set_controller_const->value1);
   g_slice_free (UndoRedo, undo_redo);
 }
+
 
 static void
 undo_redo_path_add_apply (RigUndoJournal *journal,
@@ -844,6 +854,7 @@ undo_redo_path_add_remove_free (UndoRedo *undo_redo)
   rut_object_unref (add_remove->controller);
   g_slice_free (UndoRedo, undo_redo);
 }
+
 
 static void
 undo_redo_path_modify_apply (RigUndoJournal *journal,
@@ -1493,72 +1504,72 @@ static UndoRedoOpImpl undo_redo_ops[] =
     {
       undo_redo_subjournal_apply,
       undo_redo_subjournal_invert,
-      undo_redo_subjournal_free
+      undo_redo_subjournal_free,
     },
     {
       undo_redo_set_property_apply,
       undo_redo_set_property_invert,
-      undo_redo_set_property_free
+      undo_redo_set_property_free,
     },
     {
       undo_redo_set_controlled_apply,
       undo_redo_set_controlled_invert,
-      undo_redo_set_controlled_free
+      undo_redo_set_controlled_free,
     },
     {
       undo_redo_set_control_method_apply,
       undo_redo_set_control_method_invert,
-      undo_redo_set_control_method_free
+      undo_redo_set_control_method_free,
     },
     {
       undo_redo_set_controller_const_apply,
       undo_redo_set_controller_const_invert,
-      undo_redo_set_controller_const_free
+      undo_redo_set_controller_const_free,
     },
     {
       undo_redo_path_add_apply,
       undo_redo_path_add_invert,
-      undo_redo_path_add_remove_free
+      undo_redo_path_add_remove_free,
     },
     {
       undo_redo_path_remove_apply,
       undo_redo_path_remove_invert,
-      undo_redo_path_add_remove_free
+      undo_redo_path_add_remove_free,
     },
     {
       undo_redo_path_modify_apply,
       undo_redo_path_modify_invert,
-      undo_redo_path_modify_free
+      undo_redo_path_modify_free,
     },
     {
       undo_redo_add_entity_apply,
       undo_redo_add_entity_invert,
-      undo_redo_add_delete_entity_free
+      undo_redo_add_delete_entity_free,
     },
     {
       undo_redo_delete_entity_apply,
       undo_redo_delete_entity_invert,
-      undo_redo_add_delete_entity_free
+      undo_redo_add_delete_entity_free,
     },
     {
       undo_redo_add_component_apply,
       undo_redo_add_component_invert,
-      undo_redo_add_delete_component_free
+      undo_redo_add_delete_component_free,
     },
     {
       undo_redo_delete_component_apply,
       undo_redo_delete_component_invert,
-      undo_redo_add_delete_component_free
+      undo_redo_add_delete_component_free,
     },
     {
       undo_redo_add_controller_apply,
       undo_redo_add_controller_invert,
-      undo_redo_add_remove_controller_free
+      undo_redo_add_remove_controller_free,
     },
     {
       undo_redo_remove_controller_apply,
       undo_redo_remove_controller_invert,
-      undo_redo_add_remove_controller_free
+      undo_redo_add_remove_controller_free,
     },
 
   };
@@ -1646,6 +1657,9 @@ rig_undo_journal_insert (RigUndoJournal *journal,
   if (apply)
     {
       UndoRedo *inverse;
+      RigPBSerializer *serializer =
+        rig_pb_serializer_new (journal->engine);
+      journal->serializer = serializer;
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
@@ -1667,6 +1681,9 @@ rig_undo_journal_insert (RigUndoJournal *journal,
           undo_redo_apply (journal, undo_redo);
           undo_redo_free (inverse);
         }
+
+      rig_pb_serializer_destroy (serializer);
+      journal->serializer = NULL;
     }
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
@@ -1693,7 +1710,13 @@ rig_undo_journal_revert (RigUndoJournal *journal)
 
   if (journal->apply_on_insert)
     {
+      /* XXX: we should probably be making sure to sync with the
+       * simulator here. Some operations can't be inverted until
+       * they have been applied first.
+       */
+
       UndoRedo *inverse = undo_redo_invert (op);
+      RigPBSerializer *serializer;
 
       if (!inverse)
         {
@@ -1701,8 +1724,14 @@ rig_undo_journal_revert (RigUndoJournal *journal)
           return NULL;
         }
 
+      serializer = rig_pb_serializer_new (journal->engine);
+      journal->serializer = serializer;
+
       undo_redo_apply (journal, inverse);
       undo_redo_free (inverse);
+
+      rig_pb_serializer_destroy (serializer);
+      journal->serializer = NULL;
     }
 
   rut_list_remove (&op->list_node);

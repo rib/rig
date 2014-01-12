@@ -285,7 +285,8 @@ shape_model_new (RutContext *ctx,
         mesh_new_p2t2t2 (COGL_VERTICES_MODE_TRIANGLES, n_vertices, vertices);
     }
 
-  shape_model->shape_texture = cogl_object_ref (ctx->circle_texture);
+  if (!ctx->headless)
+    shape_model->shape_texture = cogl_object_ref (ctx->circle_texture);
 
   pick_vertices[0].x = -half_size_x;
   pick_vertices[0].y = -half_size_y;

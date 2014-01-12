@@ -252,6 +252,22 @@ rut_shell_handle_stream_event (RutShell *shell,
                                RutStreamEvent *event);
 
 void
+rut_shell_run_post_paint_callbacks (RutShell *shell);
+
+/* Delimit the end of a frame, at this point the frame counter is
+ * incremented.
+ */
+void
+rut_shell_end_redraw (RutShell *shell);
+
+/* Called when a frame has really finished, e.g. when the Rig
+ * simulator has finished responding to a run_frame request, sent its
+ * update, the new frame has been rendered and presented to the user.
+ */
+void
+rut_shell_finish_frame (RutShell *shell);
+
+void
 rut_shell_add_input_camera (RutShell *shell,
                             RutCamera *camera,
                             RutObject *scenegraph);
@@ -462,6 +478,33 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
                                   RutObject *graphable,
                                   RutPrePaintCallback callback,
                                   void *user_data);
+
+RutClosure *
+rut_shell_add_post_paint_callback (RutShell *shell,
+                                   RutPrePaintCallback callback,
+                                   void *user_data,
+                                   RutClosureDestroyCallback destroy);
+
+typedef struct _RutFrameInfo
+{
+  RutList list_node;
+
+  int frame;
+  RutList frame_callbacks;
+} RutFrameInfo;
+
+RutFrameInfo *
+rut_shell_get_frame_info (RutShell *shell);
+
+typedef void (*RutShellFrameCallback) (RutShell *shell,
+                                       RutFrameInfo *info,
+                                       void *user_data);
+
+RutClosure *
+rut_shell_add_frame_callback (RutShell *shell,
+                              RutShellFrameCallback callback,
+                              void *user_data,
+                              RutClosureDestroyCallback destroy);
 
 /**
  * rut_shell_remove_pre_paint_callback_by_graphable:

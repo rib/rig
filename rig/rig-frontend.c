@@ -119,7 +119,8 @@ frontend__update_ui (Rig__Frontend_Service *service,
                                property->spec->type,
                                pb_change->value);
 
-      rut_property_set_boxed  (prop_ctx, property, &boxed);
+#warning "XXX: frontend updates are disabled"
+      //rut_property_set_boxed  (prop_ctx, property, &boxed);
     }
 
   rig_pb_unserializer_destroy (&unserializer);
