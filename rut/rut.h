@@ -12,6 +12,7 @@
 #include "rut-interfaces.h"
 #include "rut-introspectable.h"
 #include "rut-graphable.h"
+#include "rut-matrix-stack.h"
 #include "rut-meshable.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
