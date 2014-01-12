@@ -19,6 +19,8 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rig-path.h"
 #include "rig-node.h"
 
