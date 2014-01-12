@@ -92,7 +92,7 @@ void
 rig_pb_serialized_ui_destroy (Rig__UI *ui);
 
 Rig__Event **
-rig_pb_serialize_input_events (RigEngine *engine,
+rig_pb_serialize_input_events (RigPBSerializer *serializer,
                                RutList *input_queue,
                                int n_events);
 
