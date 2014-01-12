@@ -101,6 +101,8 @@ librut_la_SOURCES = \
     rut-interfaces.c \
     rut-graphable.h \
     rut-graphable.c \
+    rut-matrix-stack.h \
+    rut-matrix-stack.c \
     rut.c \
     rut-arcball.c \
     rut-transform-private.h \
