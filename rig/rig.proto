@@ -395,17 +395,148 @@ message Event
 
 message FrameSetup
 {
+  enum Mode { EDITOR=1; DEVICE=2; }
+
   optional uint32 width=1;
   optional uint32 height=2;
 
   //Input events relevant to this new frame...
   repeated Event events=3;
 
-  optional uint64 frame_id=4;
+  repeated PropertyChange changes=4;
+
+  optional uint64 frame_id=5;
 
   //Predicted presentation time...
-  optional uint64 for=5;
+  optional uint64 for=6;
 }
+
+message Operation
+{
+  //Change an object property, not associated with a controller
+  message SetProperty
+  {
+    required sint64 object_id=1;
+    required int32 property_id=2;
+    required PropertyValue value=3;
+  }
+  optional SetProperty set_property=1;
+
+  //Add a new entity to the scene
+  message AddEntity
+  {
+    required sint64 parent_entity_id=1;
+    required Entity entity=2;
+  }
+  optional AddEntity add_entity=2;
+
+  //Remove an entity from the scene
+  message DeleteEntity
+  {
+    required sint64 entity_id=1;
+  }
+  optional DeleteEntity delete_entity=3;
+
+  //Add a component to an entity
+  message AddComponent
+  {
+    required sint64 parent_entity_id=1;
+    required Entity.Component component=2;
+  }
+  optional AddComponent add_component=4;
+
+  message DeleteComponent
+  {
+    required sint64 component_id=1;
+  }
+  optional DeleteComponent delete_component=5;
+
+  message AddController
+  {
+    required Controller controller=1;
+  }
+  optional AddController add_controller=6;
+
+  message DeleteController
+  {
+    required sint64 controller_id=1;
+  }
+  optional DeleteController delete_controller=7;
+
+  //Change the constant associated with a controller property
+  message ControllerSetConst
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required PropertyValue value=4;
+  }
+  optional ControllerSetConst controller_set_const=8;
+
+  //Add a new controller property path node / key frame
+  message ControllerPathAddNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+    required PropertyValue value=5;
+  }
+  optional ControllerPathAddNode controller_path_add_node=9;
+
+  //Remove a node / key frame from a controller property path
+  message ControllerPathDeleteNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+  }
+  optional ControllerPathDeleteNode controller_path_delete_node=10;
+
+  //Change the value of a controller property path node / key frame
+  message ControllerPathSetNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+    required PropertyValue value=5;
+  }
+  optional ControllerPathSetNode controller_path_set_node=11;
+
+  //Associate a property with a controller
+  message ControllerAddProperty
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+  }
+  optional ControllerAddProperty controller_add_property=12;
+
+  //Disassociate a property from a controller
+  message ControllerRemoveProperty
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+  }
+  optional ControllerRemoveProperty controller_remove_property=13;
+
+  //Change the method of controlling a property
+  message ControllerPropertySetMethod
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+
+    enum Method { CONSTANT=1; PATH=2; BINDING=3; }
+
+    required Method method=4;
+  }
+  optional ControllerPropertySetMethod controller_property_set_method=14;
+}
+
 
 message RunFrameAck
 {

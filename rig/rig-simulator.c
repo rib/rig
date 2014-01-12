@@ -495,6 +495,10 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
   /* Stop logging property changes until the next frame. */
   simulator->ctx->property_ctx.log = false;
+
+  rut_shell_run_post_paint_callbacks (shell);
+
+  rut_shell_end_redraw (shell);
 }
 
 int

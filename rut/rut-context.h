@@ -8,6 +8,7 @@
 #include "rut-display-list.h"
 #include "rut-property.h"
 #include "rut-closure.h"
+#include "rut-matrix-stack.h"
 
 /* TODO: This header needs to be split up, since most of the APIs here
  * don't relate directly to the RutContext type. */
@@ -49,6 +50,8 @@ struct _RutContext
   RutShell *shell;
 
   RutSettings *settings;
+
+  RutMatrixEntry identity_entry;
 
   CoglContext *cogl_context;
 

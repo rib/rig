@@ -25,13 +25,14 @@
 
 #include <rut.h>
 
+typedef struct _RigUndoJournal RigUndoJournal;
+
 #include "rig-types.h"
 #include "rut-list.h"
 #include "rig-node.h"
 #include "rig-path.h"
 #include "rig-controller.h"
-
-typedef struct _RigUndoJournal RigUndoJournal;
+#include "rig-pb.h"
 
 typedef enum _UndoRedoOp
 {
@@ -76,6 +77,7 @@ typedef struct _UndoRedoPathAddRemove
   RutProperty *property;
   float t;
 
+#warning "XXX: figure out how UndoRedoPathAddRemove with async edits via the simulator"
   /* When we initially log to remove a node then we won't save
    * a value until we actually apply the operation and so we
    * need to track when this boxed value is valid... */
@@ -92,24 +94,6 @@ typedef struct _UndoRedoPathModify
   RutBoxed value0;
   RutBoxed value1;
 } UndoRedoPathModify;
-
-#if 0
-typedef struct _UndoRedoMovedPathNode
-{
-  RigController *controller;
-  RutObject *object;
-  RutProperty *property;
-  float old_time;
-  float new_time;
-} UndoRedoMovedPathNode;
-
-typedef struct _UndoRedoMovePathNodes
-{
-  RigController *controller;
-  UndoRedoMovedPathNode *nodes;
-  int n_nodes;
-} UndoRedoMovePathNodes;
-#endif
 
 typedef struct _UndoRedoSetControlled
 {
@@ -187,6 +171,8 @@ typedef struct _UndoRedo
 struct _RigUndoJournal
 {
   RigEngine *engine;
+
+  RigPBSerializer *serializer;
 
   /* List of operations that can be undone. The operations are
    * appended to the end of this list so that they are kept in order

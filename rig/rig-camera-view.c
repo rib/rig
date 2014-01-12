@@ -626,8 +626,11 @@ allocate_cb (RutObject *graphable,
     }
 #endif /* RIG_EDITOR_ENABLED */
 
-  rut_input_region_set_rectangle (view->input_region,
-                                  0, 0, view->width, view->height);
+  if (view->input_region)
+    {
+      rut_input_region_set_rectangle (view->input_region,
+                                      0, 0, view->width, view->height);
+    }
 
   if (view->entities_translate_grab_closure)
     {
@@ -1244,11 +1247,10 @@ transform_ray (CoglMatrix *transform,
 }
 
 static CoglPrimitive *
-create_picking_ray (RigEngine            *engine,
-                    CoglFramebuffer *fb,
-                    float            ray_position[3],
-                    float            ray_direction[3],
-                    float            length)
+create_picking_ray (RigEngine *engine,
+                    float ray_position[3],
+                    float ray_direction[3],
+                    float length)
 {
   CoglPrimitive *line;
   float points[6];
@@ -1269,7 +1271,7 @@ typedef struct _PickContext
 {
   RigEngine *engine;
   RutCamera *view_camera;
-  CoglFramebuffer *fb;
+  RutMatrixStack *matrix_stack;
   float x;
   float y;
   float *ray_origin;
@@ -1285,18 +1287,12 @@ entitygraph_pre_pick_cb (RutObject *object,
                          void *user_data)
 {
   PickContext *pick_ctx = user_data;
-  CoglFramebuffer *fb = pick_ctx->fb;
 
-  /* XXX: It could be nice if Cogl exposed matrix stacks directly, but for now
-   * we just take advantage of an arbitrary framebuffer matrix stack so that
-   * we can avoid repeated accumulating the transform of ancestors when
-   * traversing between scenegraph nodes that have common ancestors.
-   */
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       const CoglMatrix *matrix = rut_transformable_get_matrix (object);
-      cogl_framebuffer_push_matrix (fb);
-      cogl_framebuffer_transform (fb, matrix);
+      rut_matrix_stack_push (pick_ctx->matrix_stack);
+      rut_matrix_stack_multiply (pick_ctx->matrix_stack, matrix);
     }
 
   if (rut_object_get_type (object) == &rut_entity_type)
@@ -1319,7 +1315,7 @@ entitygraph_pre_pick_cb (RutObject *object,
         {
           if (rut_object_is (input, RUT_TRAIT_ID_PICKABLE))
             {
-              cogl_framebuffer_get_modelview_matrix (fb, &transform);
+              rut_matrix_stack_get (pick_ctx->matrix_stack, &transform);
 
               if (rut_pickable_pick (input,
                                      pick_ctx->view_camera,
@@ -1365,7 +1361,7 @@ entitygraph_pre_pick_cb (RutObject *object,
       memcpy (transformed_ray_direction,
               pick_ctx->ray_direction, 3 * sizeof (float));
 
-      cogl_framebuffer_get_modelview_matrix (fb, &transform);
+      rut_matrix_stack_get (pick_ctx->matrix_stack, &transform);
 
       transform_ray (&transform,
                      TRUE, /* inverse of the transform */
@@ -1429,7 +1425,7 @@ entitygraph_post_pick_cb (RutObject *object,
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
       PickContext *pick_ctx = user_data;
-      cogl_framebuffer_pop_matrix (pick_ctx->fb);
+      rut_matrix_stack_pop (pick_ctx->matrix_stack);
     }
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -1509,28 +1505,26 @@ move_entity_to_camera (RigCameraView *view,
 }
 
 static RutEntity *
-pick (RigEngine *engine,
+pick (RigCameraView *view,
       RutCamera *view_camera,
       float x,
       float y,
       float ray_origin[3],
       float ray_direction[3])
 {
+  RigEngine *engine = view->engine;
   PickContext pick_ctx;
 
   pick_ctx.engine = engine;
   pick_ctx.view_camera = view_camera;
-  pick_ctx.fb = rut_camera_get_framebuffer (view_camera);
+  //pick_ctx.fb = rut_camera_get_framebuffer (view_camera);
+  pick_ctx.matrix_stack = view->matrix_stack;
   pick_ctx.x = x;
   pick_ctx.y = y;
   pick_ctx.selected_distance = -G_MAXFLOAT;
   pick_ctx.selected_entity = NULL;
   pick_ctx.ray_origin = ray_origin;
   pick_ctx.ray_direction = ray_direction;
-
-  /* We are hijacking the framebuffer's matrix to track the graphable
-   * transforms so we need to initialise it to a known state */
-  cogl_framebuffer_identity_matrix (pick_ctx.fb);
 
   rut_graphable_traverse (engine->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
@@ -1652,13 +1646,12 @@ input_cb (RutInputEvent *event,
 
           engine->picking_ray =
             create_picking_ray (engine,
-                                rut_camera_get_framebuffer (view_camera),
                                 ray_position,
                                 ray_direction,
                                 len);
         }
 
-      picked_entity = pick (engine,
+      picked_entity = pick (view,
                             view_camera,
                             x, y,
                             ray_position,
@@ -1925,6 +1918,7 @@ input_cb (RutInputEvent *event,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
+#if 0
 static RutInputEventStatus
 device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
 {
@@ -1994,18 +1988,19 @@ device_mode_input_cb (RutInputEvent *event,
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
+#endif
 
 static RutInputEventStatus
 input_region_cb (RutInputRegion *region,
                  RutInputEvent *event,
                  void *user_data)
 {
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
+//#ifdef RIG_EDITOR_ENABLED
+//  if (_rig_in_editor_mode)
     return input_cb (event, user_data);
-  else
-#endif
-    return device_mode_input_cb (event, user_data);
+//  else
+//#endif
+//    return device_mode_input_cb (event, user_data);
 }
 
 static void
@@ -2067,13 +2062,16 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_init (view);
   rut_paintable_init (view);
 
-  if (!_rig_in_simulator_mode)
+  if (_rig_in_simulator_mode)
+    {
+      view->input_region =
+        rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
+      rut_graphable_add_child (view, view->input_region);
+    }
+  else
     view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
 
-  view->input_region =
-    rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
-
-  rut_graphable_add_child (view, view->input_region);
+  view->matrix_stack = rut_matrix_stack_new (ctx);
 
   /* Conceptually we rig the camera to an armature with a pivot fixed
    * at the current origin. This setup makes it straight forward to

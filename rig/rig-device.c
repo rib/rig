@@ -59,6 +59,10 @@ static void
 handle_run_frame_ack (const Rig__RunFrameAck *ack,
                       void *closure_data)
 {
+  RutShell *shell = closure_data;
+
+  rut_shell_finish_frame (shell);
+
   g_print ("Device: Run Frame ACK received\n");
 }
 
@@ -93,13 +97,17 @@ rig_device_paint (RutShell *shell, void *user_data)
   rig__simulator__run_frame (simulator_service,
                              &setup,
                              handle_run_frame_ack,
-                             NULL);
+                             shell);
 
   rut_shell_clear_input_queue (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
   rig_engine_paint (engine);
+
+  rut_shell_run_post_paint_callbacks (shell);
+
+  rut_shell_end_redraw (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

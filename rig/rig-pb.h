@@ -23,33 +23,35 @@
 
 #include <rut.h>
 
+typedef struct _RigPBSerializer RigPBSerializer;
+typedef struct _RigPBUnSerializer RigPBUnSerializer;
+
 #include "rig-engine.h"
 #include "rig.pb-c.h"
 
 typedef void (*PBMessageInitFunc) (void *message);
 
 static inline void *
-_rig_pb_new (RigEngine *engine,
+_rig_pb_new (RutMemoryStack *stack,
              size_t size,
              size_t alignment,
              void *_message_init)
 {
   PBMessageInitFunc message_init = _message_init;
 
-  void *msg = rut_memory_stack_memalign (engine->serialization_stack,
+  void *msg = rut_memory_stack_memalign (stack,
                                          size,
                                          alignment);
   message_init (msg);
   return msg;
 }
 
-#define rig_pb_new(engine, type, init) _rig_pb_new (engine, \
-                                                    sizeof (type), \
-                                                    RUT_UTIL_ALIGNOF (type), \
-                                                    init)
+#define rig_pb_new(engine, type, init) \
+  _rig_pb_new (engine->serialization_stack, \
+               sizeof (type), \
+               RUT_UTIL_ALIGNOF (type), \
+               init)
 
-typedef struct _RigPBSerializer RigPBSerializer;
-typedef struct _RigPBUnSerializer RigPBUnSerializer;
 
 typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
                                            void *user_data);
