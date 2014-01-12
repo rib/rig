@@ -103,6 +103,12 @@ ignore_free (void *allocator_data, void *ptr)
   /* NOP */
 }
 
+static void *
+stack_alloc (void *allocator_data, size_t size)
+{
+  return rut_memory_stack_alloc (allocator_data, size);
+}
+
 void
 rig_load (RigEngine *engine, const char *file)
 {
@@ -122,9 +128,9 @@ rig_load (RigEngine *engine, const char *file)
    * very cheaply before unpacking */
   ProtobufCAllocator protobuf_c_allocator =
     {
-      rut_memory_stack_alloc,
+      stack_alloc,
       ignore_free,
-      rut_memory_stack_alloc, /* tmp_alloc */
+      stack_alloc, /* tmp_alloc */
       8192, /* max_alloca */
       engine->serialization_stack /* allocator_data */
     };
