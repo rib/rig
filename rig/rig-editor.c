@@ -79,13 +79,17 @@ rig_editor_paint (RutShell *shell, void *user_data)
   int n_events;
   RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
   Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+  RigPBSerializer *serializer;
 
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
+  serializer = rig_pb_serializer_new (engine);
+
   setup.n_events = n_events;
-  setup.events = rig_pb_serialize_input_events (engine, input_queue, n_events);
+  setup.events =
+    rig_pb_serialize_input_events (serializer, input_queue, n_events);
 
   if (frontend->has_resized)
     {
@@ -100,6 +104,8 @@ rig_editor_paint (RutShell *shell, void *user_data)
                              &setup,
                              handle_run_frame_ack,
                              shell);
+
+  rig_pb_serializer_destroy (serializer);
 
   rut_shell_dispatch_input_events (shell);
   //rut_shell_clear_input_queue (shell);
