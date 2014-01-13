@@ -37,7 +37,9 @@ rig_device_init (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
 
-  device->frontend = rig_frontend_new (shell, device->ui_filename);
+  device->frontend = rig_frontend_new (shell,
+                                       RIG_FRONTEND_ID_DEVICE,
+                                       device->ui_filename);
   device->engine = device->frontend->engine;
 
   rut_shell_add_input_callback (device->shell,
@@ -74,8 +76,7 @@ rig_device_paint (RutShell *shell, void *user_data)
   RigFrontend *frontend = engine->frontend;
   ProtobufCService *simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
-  int n_events;
-  RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
+  RutInputQueue *input_queue = rut_shell_get_input_queue (shell);
   Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
   RigPBSerializer *serializer;
 
@@ -85,16 +86,19 @@ rig_device_paint (RutShell *shell, void *user_data)
 
   serializer = rig_pb_serializer_new (engine);
 
-  setup.n_events = n_events;
+  setup.has_play_mode = true;
+  setup.play_mode = engine->play_mode;
+
+  setup.n_events = input_queue->n_events;
   setup.events =
-    rig_pb_serialize_input_events (serializer, input_queue, n_events);
+    rig_pb_serialize_input_events (serializer, input_queue);
 
   if (frontend->has_resized)
     {
-      setup.has_width = true;
-      setup.width = engine->width;
-      setup.has_height = true;
-      setup.height = engine->height;
+      setup.has_view_width = true;
+      setup.view_width = engine->window_width;
+      setup.has_view_height = true;
+      setup.view_height = engine->window_height;
       frontend->has_resized = false;
     }
 
@@ -105,9 +109,11 @@ rig_device_paint (RutShell *shell, void *user_data)
 
   rig_pb_serializer_destroy (serializer);
 
-  rut_shell_clear_input_queue (shell);
+  rut_input_queue_clear (input_queue);
 
   rut_shell_run_pre_paint_callbacks (shell);
+
+  rut_shell_run_start_paint_callbacks (shell);
 
   rig_engine_paint (engine);
 

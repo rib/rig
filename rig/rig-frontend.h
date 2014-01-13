@@ -27,6 +27,14 @@ typedef struct _RigFrontend RigFrontend;
 #ifndef _RIG_FRONTEND_H_
 #define _RIG_FRONTEND_H_
 
+typedef enum _RigFrontendID
+{
+  RIG_FRONTEND_ID_EDITOR=1,
+  RIG_FRONTEND_ID_SLAVE,
+  RIG_FRONTEND_ID_DEVICE
+} RigFrontendID;
+
+
 /* The "frontend" is the main process that controls the running
  * of a Rig UI, either in device mode, as a slave or as an editor.
  *
@@ -38,6 +46,7 @@ struct _RigFrontend
 {
   RutObjectBase _base;
 
+  RigFrontendID id;
 
   RigEngine *engine;
 
@@ -55,6 +64,7 @@ struct _RigFrontend
 
 RigFrontend *
 rig_frontend_new (RutShell *shell,
+                  RigFrontendID id,
                   const char *ui_filename);
 
 void

@@ -25,11 +25,15 @@ typedef struct _RigSimulator RigSimulator;
 
 #include "rig-engine.h"
 
-typedef enum _RigSimulatorMode
+/*
+ * Simulator actions are sent back as requests to the frontend at the
+ * end of a frame.
+ */
+typedef enum _RigSimulatorActionType
 {
-  RIG_SIMULATOR_MODE_EDITOR=1,
-  RIG_SIMULATOR_MODE_DEVICE
-} RigSimulatorMode;
+  RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE=1,
+  RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT,
+} RigSimulatorActionType;
 
 /* The "simulator" is the process responsible for updating object
  * properties either in response to user input, the progression of
@@ -37,7 +41,7 @@ typedef enum _RigSimulatorMode
  */
 struct _RigSimulator
 {
-  RigSimulatorMode mode;
+  RigFrontendID frontend_id;
 
   RutShell *shell;
   RutContext *ctx;
@@ -46,19 +50,42 @@ struct _RigSimulator
   int fd;
   RigRPCPeer *simulator_peer;
 
+  float view_x;
+  float view_y;
+
   float last_pointer_x;
   float last_pointer_y;
 
   RutButtonState button_state;
 
   GHashTable *id_map;
+
+  RutList actions;
+  int n_actions;
 };
 
+void
+rig_simulator_init (RutShell *shell, void *user_data);
+
+void
+rig_simulator_fini (RutShell *shell, void *user_data);
+
+void
+rig_simulator_run_frame (RutShell *shell, void *user_data);
 
 void
 rig_simulator_stop_service (RigSimulator *simulator);
 
 void
 rig_simulator_stop_service (RigSimulator *simulator);
+
+void
+rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
+                                            bool enabled);
+
+void
+rig_simulator_action_select_object (RigSimulator *simulator,
+                                    RutObject *object,
+                                    RutSelectAction action);
 
 #endif /* _RIG_SIMULATOR_H_ */

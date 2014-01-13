@@ -67,13 +67,13 @@ static RutPropertySpec _rig_engine_prop_specs[] = {
     .name = "width",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigEngine, width)
+    .data_offset = offsetof (RigEngine, window_width)
   },
   {
     .name = "height",
     .flags = RUT_PROPERTY_FLAG_READABLE,
     .type = RUT_PROPERTY_TYPE_FLOAT,
-    .data_offset = offsetof (RigEngine, height)
+    .data_offset = offsetof (RigEngine, window_height)
   },
   {
     .name = "device_width",
@@ -198,8 +198,9 @@ rig_engine_paint (RigEngine *engine)
   RigPaintContext paint_ctx;
   RutPaintContext *rut_paint_ctx = &paint_ctx._parent;
 
-  rut_camera_set_framebuffer (engine->camera, fb);
+  rut_camera_set_framebuffer (engine->camera_2d, fb);
 
+#warning "FIXME: avoid clear overdraw between engine_paint and camera_view_paint"
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                             0.9, 0.9, 0.9, 1);
@@ -208,14 +209,14 @@ rig_engine_paint (RigEngine *engine)
   paint_ctx.renderer = engine->renderer;
 
   paint_ctx.pass = RIG_PASS_COLOR_BLENDED;
-  rut_paint_ctx->camera = engine->camera;
+  rut_paint_ctx->camera = engine->camera_2d;
 
-  rut_camera_flush (engine->camera);
+  rut_camera_flush (engine->camera_2d);
   rut_paint_graph_with_layers (engine->root,
                                scenegraph_pre_paint_cb,
                                scenegraph_post_paint_cb,
                                rut_paint_ctx);
-  rut_camera_end_frame (engine->camera);
+  rut_camera_end_frame (engine->camera_2d);
 
   cogl_onscreen_swap_buffers (COGL_ONSCREEN (fb));
 }
@@ -536,21 +537,17 @@ rig_reload_position_inspector (RigEngine *engine,
 }
 
 void
-rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled)
+rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 {
   engine->play_mode = enabled;
 
   if (engine->play_mode)
     {
-      engine->enable_dof = TRUE;
-      //engine->debug_pick_ray = 0;
       if (engine->light_handle)
         rut_graphable_remove_child (engine->light_handle);
     }
   else
     {
-      engine->enable_dof = FALSE;
-      //engine->debug_pick_ray = 1;
       if (engine->light && engine->light_handle)
         rut_graphable_add_child (engine->light, engine->light_handle);
     }
@@ -727,6 +724,13 @@ rig_select_object (RigEngine *engine,
 {
   RigObjectsSelection *selection = engine->objects_selection;
 
+  /* From the simulator we forward select actions to the frontend
+   * editor, but also do our own state tracking of what entities are
+   * selected.
+   */
+  if (engine->simulator)
+    rig_simulator_action_select_object (engine->simulator, object, action);
+
   /* For now we only support selecting multiple entities... */
   if (object && rut_object_get_type (object) != &rut_entity_type)
     action = RUT_SELECT_ACTION_REPLACE;
@@ -799,16 +803,18 @@ rig_select_object (RigEngine *engine,
     rut_shell_set_selection (engine->shell, engine->objects_selection);
 
   rut_shell_queue_redraw (engine->ctx->shell);
-  _rig_engine_update_inspector (engine);
+
+  if (engine->frontend)
+    _rig_engine_update_inspector (engine);
 }
 
 static void
 allocate (RigEngine *engine)
 {
-  //engine->main_width = engine->width - engine->left_bar_width - engine->right_bar_width;
-  //engine->main_height = engine->height - engine->top_bar_height - engine->bottom_bar_height;
+  //engine->main_width = engine->window_width - engine->left_bar_width - engine->right_bar_width;
+  //engine->main_height = engine->window_height - engine->top_bar_height - engine->bottom_bar_height;
 
-  rut_sizable_set_size (engine->top_stack, engine->width, engine->height);
+  rut_sizable_set_size (engine->top_stack, engine->window_width, engine->window_height);
 
 #ifdef RIG_EDITOR_ENABLED
   if (_rig_in_editor_mode)
@@ -819,21 +825,21 @@ allocate (RigEngine *engine)
 
           rut_transform_init_identity (transform);
           rut_transform_translate (transform,
-                                   engine->width - 18.0f,
-                                   engine->height - 18.0f,
+                                   engine->window_width - 18.0f,
+                                   engine->window_height - 18.0f,
                                    0.0f);
         }
     }
 #endif
 
   /* Update the window camera */
-  rut_camera_set_projection_mode (engine->camera, RUT_PROJECTION_ORTHOGRAPHIC);
-  rut_camera_set_orthographic_coordinates (engine->camera,
-                                           0, 0, engine->width, engine->height);
-  rut_camera_set_near_plane (engine->camera, -1);
-  rut_camera_set_far_plane (engine->camera, 100);
+  rut_camera_set_projection_mode (engine->camera_2d, RUT_PROJECTION_ORTHOGRAPHIC);
+  rut_camera_set_orthographic_coordinates (engine->camera_2d,
+                                           0, 0, engine->window_width, engine->window_height);
+  rut_camera_set_near_plane (engine->camera_2d, -1);
+  rut_camera_set_far_plane (engine->camera_2d, 100);
 
-  rut_camera_set_viewport (engine->camera, 0, 0, engine->width, engine->height);
+  rut_camera_set_viewport (engine->camera_2d, 0, 0, engine->window_width, engine->window_height);
 }
 
 void
@@ -841,8 +847,8 @@ rig_engine_resize (RigEngine *engine,
                    int width,
                    int height)
 {
-  engine->width = width;
-  engine->height = height;
+  engine->window_width = width;
+  engine->window_height = height;
 
   rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_WIDTH]);
   rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_HEIGHT]);
@@ -860,11 +866,6 @@ engine_onscreen_resize (CoglOnscreen *onscreen,
 
   g_return_if_fail (!_rig_in_simulator_mode);
 
-  engine->frontend->has_resized = true;
-  engine->frontend->pending_width = width;
-  engine->frontend->pending_height = height;
-
-#warning "FIXME: if the simulator is handling resizes then all corresponding property updates should come from the simulator!"
   rig_engine_resize (engine, width, height);
 }
 
@@ -3082,7 +3083,7 @@ rig_engine_set_onscreen_size (RigEngine *engine,
                               int width,
                               int height)
 {
-  if (engine->width == width && engine->height == height)
+  if (engine->window_width == width && engine->window_height == height)
     return;
 
   /* FIXME: This should probably be rut_shell api instead */
@@ -3111,15 +3112,13 @@ _rig_engine_free (void *object)
 
       free_builtin_assets (engine);
 
-      rut_shell_remove_input_camera (shell, engine->camera, engine->root);
+      rut_shell_remove_input_camera (shell, engine->camera_2d, engine->root);
 
-      rut_object_unref (engine->camera);
+      rut_object_unref (engine->camera_2d);
       rut_object_unref (engine->root);
       rut_object_unref (engine->main_camera_view);
 
       cogl_object_unref (engine->circle_node_attribute);
-
-      rut_dof_effect_free (engine->dof);
 
 #ifdef RIG_EDITOR_ENABLED
       if (_rig_in_editor_mode)
@@ -3212,13 +3211,21 @@ _rig_engine_new_full (RutShell *shell,
   engine->shell = shell;
   engine->ctx = rut_shell_get_context (shell);
 
+  engine->headless = engine->ctx->headless;
+
   if (ui_filename)
     engine->ui_filename = g_strdup (ui_filename);
 
   if (frontend)
-    engine->frontend = frontend;
+    {
+      engine->frontend_id = frontend->id;
+      engine->frontend = frontend;
+    }
   else if (simulator)
-    engine->simulator = simulator;
+    {
+      engine->frontend_id = simulator->frontend_id;
+      engine->simulator = simulator;
+    }
 
 
   cogl_matrix_init_identity (&engine->identity);
@@ -3261,25 +3268,32 @@ _rig_engine_new_full (RutShell *shell,
   rut_graphable_add_child (engine->root, engine->top_stack);
   rut_object_unref (engine->top_stack);
 
-  engine->camera = rut_camera_new (engine->ctx, NULL);
-  rut_camera_set_clear (engine->camera, FALSE);
+  engine->camera_2d = rut_camera_new (engine->ctx, NULL);
+  rut_camera_set_clear (engine->camera_2d, FALSE);
 
   /* XXX: Basically just a hack for now. We should have a
    * RutShellWindow type that internally creates a RutCamera that can
    * be used when handling input events in device coordinates.
    */
-  rut_shell_set_window_camera (shell, engine->camera);
+  rut_shell_set_window_camera (shell, engine->camera_2d);
 
-  rut_shell_add_input_camera (shell, engine->camera, engine->root);
+  rut_shell_add_input_camera (shell, engine->camera_2d, engine->root);
 
 #ifdef RIG_EDITOR_ENABLED
+
+  /* NB: The simulator also needs to track selections when in support
+   * of an editor. */
+  engine->objects_selection = _rig_objects_selection_new (engine);
+
   if (_rig_in_editor_mode)
     {
-      engine->objects_selection = _rig_objects_selection_new (engine);
-
       rut_list_init (&engine->tool_changed_cb_list);
 
       rig_engine_push_undo_subjournal (engine);
+
+      /* NB: in device mode we assume all inputs need to got to the
+       * simulator and we don't need a separate queue. */
+      engine->simulator_input_queue = rut_input_queue_new (engine->shell);
 
       /* Create a color gradient texture that can be used for debugging
        * shadow mapping.
@@ -3304,26 +3318,8 @@ _rig_engine_new_full (RutShell *shell,
     {
       engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
-      /*
-       * Depth of Field
-       */
-
-      engine->dof = rut_dof_effect_new (engine->ctx);
-      engine->enable_dof = FALSE;
-
       engine->circle_node_attribute =
         rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
-
-      /* picking ray */
-      engine->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
-      cogl_pipeline_set_color4f (engine->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
-
-#ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
-        rig_set_play_mode_enabled (engine, FALSE);
-      else
-#endif
-        rig_set_play_mode_enabled (engine, TRUE);
 
       engine->renderer = rig_renderer_new (engine);
       rig_renderer_init (engine);
@@ -3365,12 +3361,12 @@ _rig_engine_new_full (RutShell *shell,
       cogl_framebuffer_allocate (engine->onscreen, NULL);
 
       fb = engine->onscreen;
-      engine->width = cogl_framebuffer_get_width (fb);
-      engine->height  = cogl_framebuffer_get_height (fb);
+      engine->window_width = cogl_framebuffer_get_width (fb);
+      engine->window_height  = cogl_framebuffer_get_height (fb);
 
       engine->frontend->has_resized = true;
-      engine->frontend->pending_width = engine->width;
-      engine->frontend->pending_height = engine->height;
+      engine->frontend->pending_width = engine->window_width;
+      engine->frontend->pending_height = engine->window_height;
 
       rut_shell_add_onscreen (engine->shell, engine->onscreen);
 

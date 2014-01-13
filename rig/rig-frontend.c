@@ -50,7 +50,7 @@ frontend__test (Rig__Frontend_Service *service,
 static void *
 pointer_id_to_object_cb (uint64_t id, void *user_data)
 {
-  return (void *)id;
+  return (void *)(intptr_t)id;
 }
 
 static void
@@ -62,13 +62,15 @@ frontend__update_ui (Rig__Frontend_Service *service,
   Rig__UpdateUIAck ack = RIG__UPDATE_UIACK__INIT;
   RigFrontend *frontend =
     rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigEngine *engine = frontend->engine;
   int i;
   int n_changes;
+  int n_actions;
   RigPBUnSerializer unserializer;
   RutBoxed boxed;
   RutPropertyContext *prop_ctx = &frontend->engine->ctx->property_ctx;
 
-  g_print ("Frontend: Update UI Request\n");
+  //g_print ("Frontend: Update UI Request\n");
 
   g_return_if_fail (ui_diff != NULL);
 
@@ -96,12 +98,14 @@ frontend__update_ui (Rig__Frontend_Service *service,
           continue;
         }
 
-      object = (void *)pb_change->object_id;
+      object = (void *)(intptr_t)pb_change->object_id;
 
+#if 0
       g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
                object,
                rut_object_get_type_name (object),
                pb_change->property_id);
+#endif
 
       property =
         rut_introspectable_get_property (object, pb_change->property_id);
@@ -119,8 +123,34 @@ frontend__update_ui (Rig__Frontend_Service *service,
                                property->spec->type,
                                pb_change->value);
 
-#warning "XXX: frontend updates are disabled"
-      //rut_property_set_boxed  (prop_ctx, property, &boxed);
+//#warning "XXX: frontend updates are disabled"
+      rut_property_set_boxed  (prop_ctx, property, &boxed);
+    }
+
+  n_actions = ui_diff->n_actions;
+
+  for (i = 0; i < n_actions; i++)
+    {
+      Rig__SimulatorAction *pb_action = ui_diff->actions[i];
+      switch (pb_action->type)
+        {
+        case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
+          rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                                 pb_action->set_play_mode->enabled);
+          break;
+        case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
+          {
+            Rig__SimulatorAction__SelectObject *pb_select_object =
+              pb_action->select_object;
+
+            RutObject *object = (void *)(intptr_t)pb_select_object->object_id;
+            rig_select_object (engine,
+                               object,
+                               pb_select_object->action);
+            _rig_engine_update_inspector (engine);
+            break;
+          }
+        }
     }
 
   rig_pb_unserializer_destroy (&unserializer);
@@ -179,7 +209,7 @@ uint64_t
 object_to_pointer_id_cb (void *object,
                          void *user_data)
 {
-  return (uint64_t)object;
+  return (uint64_t)(intptr_t)object;
 }
 
 static void
@@ -255,6 +285,7 @@ _rig_frontend_init_type (void)
 
 RigFrontend *
 rig_frontend_new (RutShell *shell,
+                  RigFrontendID id,
                   const char *ui_filename)
 {
   pid_t pid;
@@ -281,6 +312,19 @@ rig_frontend_new (RutShell *shell,
 
       setenv ("_RIG_IPC_FD", fd_str, true);
 
+      switch (id)
+        {
+        case RIG_FRONTEND_ID_EDITOR:
+          setenv ("_RIG_FRONTEND", "editor", true);
+          break;
+        case RIG_FRONTEND_ID_SLAVE:
+          setenv ("_RIG_FRONTEND", "slave", true);
+          break;
+        case RIG_FRONTEND_ID_DEVICE:
+          setenv ("_RIG_FRONTEND", "device", true);
+          break;
+        }
+
 #ifdef RIG_ENABLE_DEBUG
       if (getenv ("RIG_SIMULATOR"))
         path = getenv ("RIG_SIMULATOR");
@@ -297,6 +341,8 @@ rig_frontend_new (RutShell *shell,
                                                  &rig_frontend_type,
                                                  _rig_frontend_init_type);
 
+
+      frontend->id = id;
 
       frontend->simulator_pid = pid;
       frontend->fd = sp[0];

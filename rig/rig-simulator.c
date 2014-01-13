@@ -13,6 +13,23 @@
 
 #include "rig.pb-c.h"
 
+
+typedef struct _RigSimulatorAction
+{
+  RigSimulatorActionType type;
+  RutList list_node;
+  union {
+    struct {
+      bool enabled;
+    } set_play_mode;
+    struct {
+      RutObject *object;
+      RutSelectAction action;
+    } select_object;
+  };
+} RigSimulatorAction;
+
+
 #if 0
 static char **_rig_editor_remaining_args = NULL;
 
@@ -40,6 +57,61 @@ simulator__test (Rig__Simulator_Service *service,
   g_print ("Simulator Service: Test Query\n");
 
   closure (&result, closure_data);
+}
+
+void
+rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
+                                            bool enabled)
+{
+  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
+
+  action->type = RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE;
+  action->set_play_mode.enabled = enabled;
+
+  rut_list_insert (simulator->actions.prev, &action->list_node);
+  simulator->n_actions++;
+}
+
+void
+rig_simulator_action_select_object (RigSimulator *simulator,
+                                    RutObject *object,
+                                    RutSelectAction select_action)
+{
+  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
+
+  action->type = RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT;
+  if (object)
+    action->select_object.object = rut_object_ref (object);
+  else
+    action->select_object.object = NULL;
+  action->select_object.action = select_action;
+
+  rut_list_insert (simulator->actions.prev, &action->list_node);
+  simulator->n_actions++;
+}
+
+static void
+clear_actions (RigSimulator *simulator)
+{
+  RigSimulatorAction *action, *tmp;
+
+  rut_list_for_each_safe (action, tmp, &simulator->actions, list_node)
+    {
+      switch (action->type)
+        {
+        case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
+          break;
+        case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
+          if (action->select_object.object)
+            rut_object_unref (action->select_object.object);
+          break;
+        }
+
+      rut_list_remove (&action->list_node);
+      g_slice_free (RigSimulatorAction, action);
+    }
+
+  simulator->n_actions = 0;
 }
 
 static bool
@@ -72,7 +144,7 @@ simulator__load (Rig__Simulator_Service *service,
 
   g_return_if_fail (ui != NULL);
 
-  g_print ("Simulator: UI Load Request\n");
+  //g_print ("Simulator: UI Load Request\n");
 
   rig_pb_unserializer_init (&unserializer, engine,
                             true); /* with id-map */
@@ -102,15 +174,24 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
   g_return_if_fail (setup != NULL);
 
-  g_print ("Simulator: Run Frame Request: n_events = %d\n",
-           setup->n_events);
+  //g_print ("Simulator: Run Frame Request: n_events = %d\n",
+  //         setup->n_events);
 
-  if (setup->has_width && setup->has_height &&
-      (engine->width != setup->width ||
-       engine->height != setup->height))
+  if (setup->has_view_width && setup->has_view_height &&
+      (engine->window_width != setup->view_width ||
+       engine->window_height != setup->view_height))
     {
-      rig_engine_resize (engine, setup->width, setup->height);
+      rig_engine_resize (engine, setup->view_width, setup->view_height);
     }
+
+  if (setup->has_view_x)
+    simulator->view_x = setup->view_x;
+  if (setup->has_view_y)
+    simulator->view_y = setup->view_y;
+
+  if (setup->has_play_mode)
+    rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                           setup->play_mode);
 
   for (i = 0; i < setup->n_events; i++)
     {
@@ -176,7 +257,13 @@ simulator__run_frame (Rig__Simulator_Service *service,
           event->type = RUT_STREAM_EVENT_POINTER_MOVE;
 
           if (pb_event->pointer_move->has_x)
-            event->pointer_move.x = pb_event->pointer_move->x;
+            {
+              /* Note: we can translate all simulator events to
+               * account for the position of a RutCameraView in
+               * an editor. */
+              event->pointer_move.x =
+                pb_event->pointer_move->x - simulator->view_x;
+            }
           else
             {
               g_warn_if_reached ();
@@ -184,7 +271,10 @@ simulator__run_frame (Rig__Simulator_Service *service,
             }
 
           if (pb_event->pointer_move->has_y)
-            event->pointer_move.y = pb_event->pointer_move->y;
+            {
+              event->pointer_move.y =
+                pb_event->pointer_move->y - simulator->view_y;
+            }
           else
             {
               g_warn_if_reached ();
@@ -194,28 +284,28 @@ simulator__run_frame (Rig__Simulator_Service *service,
           simulator->last_pointer_x = event->pointer_move.x;
           simulator->last_pointer_y = event->pointer_move.y;
 
-          g_print ("Event: Pointer move (%f, %f)\n",
+          g_print ("Simulator: Read Event: Pointer move (%f, %f)\n",
                    event->pointer_move.x, event->pointer_move.y);
           break;
         case RIG__EVENT__TYPE__POINTER_DOWN:
           event->type = RUT_STREAM_EVENT_POINTER_DOWN;
           simulator->button_state |= event->pointer_button.button;
           event->pointer_button.state |= event->pointer_button.button;
-          g_print ("Event: Pointer down\n");
+          g_print ("Simulator: Read Event: Pointer down\n");
           break;
         case RIG__EVENT__TYPE__POINTER_UP:
           event->type = RUT_STREAM_EVENT_POINTER_UP;
           simulator->button_state &= ~event->pointer_button.button;
           event->pointer_button.state &= ~event->pointer_button.button;
-          g_print ("Event: Pointer up\n");
+          g_print ("Simulator: Read Event: Pointer up\n");
           break;
         case RIG__EVENT__TYPE__KEY_DOWN:
           event->type = RUT_STREAM_EVENT_KEY_DOWN;
-          g_print ("Event: Key down\n");
+          g_print ("Simulator: Read Event: Key down\n");
           break;
         case RIG__EVENT__TYPE__KEY_UP:
           event->type = RUT_STREAM_EVENT_KEY_UP;
-          g_print ("Event: Key up\n");
+          g_print ("Simulator: Read Event: Key up\n");
           break;
         }
 
@@ -308,6 +398,8 @@ rig_simulator_init (RutShell *shell, void *user_data)
                                              NULL, /* key destroy */
                                              free_object_id);
 
+  rut_list_init (&simulator->actions);
+
   rig_simulator_start_service (simulator);
 
   simulator->engine = rig_engine_new_for_simulator (shell, simulator);
@@ -318,6 +410,8 @@ rig_simulator_fini (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
   RigEngine *engine = simulator->engine;
+
+  clear_actions (simulator);
 
   rut_object_unref (engine);
   simulator->engine = NULL;
@@ -332,7 +426,7 @@ static void
 handle_update_ui_ack (const Rig__UpdateUIAck *result,
                       void *closure_data)
 {
-  g_print ("Simulator: UI Update ACK received\n");
+  //g_print ("Simulator: UI Update ACK received\n");
 }
 
 typedef struct _SerializeChangesState
@@ -412,7 +506,7 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
   state->i = i;
 }
 
-static void
+void
 rig_simulator_run_frame (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
@@ -428,19 +522,21 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
    * can be sent back to the frontend process each frame. */
   simulator->ctx->property_ctx.log = true;
 
-  g_print ("Simulator: Start Frame\n");
+  //g_print ("Simulator: Start Frame\n");
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
+  rut_shell_run_start_paint_callbacks (shell);
+
   rut_shell_dispatch_input_events (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
 
-  g_print ("Simulator: Sending UI Update\n");
+  //g_print ("Simulator: Sending UI Update\n");
 
   n_changes = prop_ctx->log_len;
   serializer = rig_pb_serializer_new (engine);
@@ -484,6 +580,65 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
         }
     }
 
+  ui_diff.n_actions = simulator->n_actions;
+  if (ui_diff.n_actions)
+    {
+      Rig__SimulatorAction *pb_actions;
+      RigSimulatorAction *action, *tmp;
+      int i;
+
+      ui_diff.actions =
+        rut_memory_stack_memalign (engine->serialization_stack,
+                                   sizeof (void *) * ui_diff.n_actions,
+                                   RUT_UTIL_ALIGNOF (void *));
+      pb_actions =
+        rut_memory_stack_memalign (engine->serialization_stack,
+                                   sizeof (Rig__SimulatorAction) *
+                                   ui_diff.n_actions,
+                                   RUT_UTIL_ALIGNOF (Rig__SimulatorAction));
+
+      i = 0;
+      rut_list_for_each_safe (action, tmp, &simulator->actions, list_node)
+        {
+          Rig__SimulatorAction *pb_action = &pb_actions[i];
+
+          rig__simulator_action__init (pb_action);
+
+          pb_action->type = action->type;
+
+          switch (action->type)
+            {
+            case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
+              pb_action->set_play_mode =
+                rig_pb_new (engine,
+                            Rig__SimulatorAction__SetPlayMode,
+                            rig__simulator_action__set_play_mode__init);
+              pb_action->set_play_mode->enabled = action->set_play_mode.enabled;
+              break;
+            case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
+              pb_action->select_object =
+                rig_pb_new (engine,
+                            Rig__SimulatorAction__SelectObject,
+                            rig__simulator_action__select_object__init);
+              if (action->select_object.object)
+                {
+                  pb_action->select_object->object_id =
+                    get_object_id (simulator, action->select_object.object);
+                }
+              else
+                pb_action->select_object->object_id = 0;
+              pb_action->select_object->action = action->select_object.action;
+              break;
+            }
+
+          ui_diff.actions[i] = pb_action;
+
+          i++;
+        }
+    }
+
+  clear_actions (simulator);
+
   rig__frontend__update_ui (frontend_service,
                             &ui_diff,
                             handle_update_ui_ack,
@@ -499,53 +654,4 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   rut_shell_run_post_paint_callbacks (shell);
 
   rut_shell_end_redraw (shell);
-}
-
-int
-main (int argc, char **argv)
-{
-  RigSimulator simulator;
-  const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
-
-#if 0
-  GOptionContext *context = g_option_context_new (NULL);
-
-  g_option_context_add_main_entries (context, rut_editor_entries, NULL);
-
-  if (!g_option_context_parse (context, &argc, &argv, &error))
-    {
-      g_error ("Option parsing failed: %s\n", error->message);
-      return EXIT_FAILURE;
-    }
-#endif
-
-  if (!ipc_fd_str)
-    {
-      g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "
-               "environment variable");
-      return EXIT_FAILURE;
-    }
-
-  _rig_in_simulator_mode = true;
-
-  memset (&simulator, 0, sizeof (RigSimulator));
-
-  simulator.fd = strtol (ipc_fd_str, NULL, 10);
-
-  simulator.shell = rut_shell_new (true, /* headless */
-                                   rig_simulator_init,
-                                   rig_simulator_fini,
-                                   rig_simulator_run_frame,
-                                   &simulator);
-
-  simulator.ctx = rut_context_new (simulator.shell);
-
-  rut_context_init (simulator.ctx);
-
-  rut_shell_main (simulator.shell);
-
-  rut_object_unref (simulator.ctx);
-  rut_object_unref (simulator.shell);
-
-  return 0;
 }

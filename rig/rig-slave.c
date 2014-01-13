@@ -158,7 +158,9 @@ rig_slave_init (RutShell *shell, void *user_data)
   RigSlave *slave = user_data;
   RigEngine *engine;
 
-  slave->frontend = rig_frontend_new (shell, NULL);
+  slave->frontend = rig_frontend_new (shell,
+                                      RIG_FRONTEND_ID_SLAVE,
+                                      NULL);
 
   engine = slave->frontend->engine;
   slave->engine = slave->engine;
@@ -203,9 +205,11 @@ rig_slave_paint (RutShell *shell, void *user_data)
 
   rut_shell_update_timelines (shell);
 
-  rut_shell_dispatch_input_events (shell);
-
   rut_shell_run_pre_paint_callbacks (shell);
+
+  rut_shell_run_start_paint_callbacks (shell);
+
+  rut_shell_dispatch_input_events (shell);
 
   rig_engine_paint (engine);
 

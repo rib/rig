@@ -32,6 +32,15 @@ typedef enum _RigToolID
   RIG_TOOL_ID_ROTATION,
 } RigToolID;
 
+typedef enum _RutSelectAction
+{
+  /* replaces the current selection */
+  RUT_SELECT_ACTION_REPLACE,
+  /* toggles whether the given item is selected or not */
+  RUT_SELECT_ACTION_TOGGLE,
+} RutSelectAction;
+
+
 
 #include "rig-protobuf-c-rpc.h"
 #include "rig-rpc-network.h"
@@ -64,21 +73,23 @@ typedef struct _RigEntitesSelection
   RutList selection_events_cb_list;
 } RigObjectsSelection;
 
-
 extern RutType rig_engine_type;
 
 struct _RigEngine
 {
   RutObjectBase _base;
 
-  CoglBool play_mode;
+  RigFrontendID frontend_id;
+
+  bool headless;
+  bool play_mode;
 
   char *ui_filename;
   char *next_ui_filename;
 
   GHashTable *id_map;
 
-  RutCamera *camera;
+  RutCamera *camera_2d;
   RutObject *root;
   RutObject *scene;
 
@@ -102,6 +113,8 @@ struct _RigEngine
 
 #ifdef RIG_EDITOR_ENABLED
   RutMemoryStack *serialization_stack;
+
+  RutInputQueue *simulator_input_queue;
 
   RutText *search_text;
   GList *required_search_tags;
@@ -162,8 +175,8 @@ struct _RigEngine
   //RutSlider *slider;
   //RutProperty *slider_progress;
   RutRectangle *rect;
-  float width;
-  float height;
+  float window_width;
+  float window_height;
   //float main_x;
   //float main_y;
   //float main_width;
@@ -212,14 +225,6 @@ struct _RigEngine
   RutEntity *play_camera_handle;
 #endif
 
-  /* postprocessing */
-  CoglFramebuffer *postprocess;
-  RutDepthOfField *dof;
-  CoglBool enable_dof;
-
-  RutArcball arcball;
-  CoglQuaternion saved_rotation;
-
   float grab_x;
   float grab_y;
   float entity_grab_pos[3];
@@ -233,11 +238,6 @@ struct _RigEngine
   RutPropertyClosure *controller_progress_closure;
 
   RigObjectsSelection *objects_selection;
-
-  /* picking ray */
-  CoglPipeline *picking_ray_color;
-  CoglPrimitive *picking_ray;
-  CoglBool debug_pick_ray;
 
   /* The transparency grid widget that is displayed behind the assets list */
   RutImage *transparency_grid;
@@ -340,6 +340,9 @@ void
 rig_engine_handle_ui_update (RigEngine *engine);
 
 void
+rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
+
+void
 rig_register_asset (RigEngine *engine,
                     RutAsset *asset);
 
@@ -349,14 +352,6 @@ rig_lookup_asset (RigEngine *engine,
 
 RutAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
-
-typedef enum _RutSelectAction
-{
-  /* replaces the current selection */
-  RUT_SELECT_ACTION_REPLACE,
-  /* toggles whether the given item is selected or not */
-  RUT_SELECT_ACTION_TOGGLE,
-} RutSelectAction;
 
 void
 rig_select_object (RigEngine *engine,
@@ -370,9 +365,6 @@ rig_reload_inspector_property (RigEngine *engine,
 void
 rig_reload_position_inspector (RigEngine *engine,
                                RutEntity *entity);
-
-void
-rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled);
 
 void
 rig_engine_sync_slaves (RigEngine *engine);

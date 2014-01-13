@@ -1325,9 +1325,10 @@ rig_pb_serialized_ui_destroy (Rig__UI *ui)
 
 Rig__Event **
 rig_pb_serialize_input_events (RigPBSerializer *serializer,
-                               RutList *input_queue,
-                               int n_events)
+                               RutInputQueue *input_queue)
 {
+  RigEngine *engine = serializer->engine;
+  int n_events = input_queue->n_events;
   RutInputEvent *event, *tmp;
   Rig__Event **pb_events;
   int i;
@@ -1337,7 +1338,7 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
                                          RUT_UTIL_ALIGNOF (void *));
 
   i = 0;
-  rut_list_for_each_safe (event, tmp, input_queue, list_node)
+  rut_list_for_each_safe (event, tmp, &input_queue->events, list_node)
     {
       Rig__Event *pb_event = rig_pb_new (engine, Rig__Event, rig__event__init);
 
@@ -1352,7 +1353,7 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_MOTION_EVENT_ACTION_MOVE:
-                //g_print ("Serialize move\n");
+                g_print ("Serialize move\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
                 pb_event->pointer_move =
                   rig_pb_new (engine, Rig__Event__PointerMove,
@@ -1364,11 +1365,11 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
                 pb_event->pointer_move->y = rut_motion_event_get_y (event);
                 break;
               case RUT_MOTION_EVENT_ACTION_DOWN:
-                //g_print ("Serialize pointer down\n");
+                g_print ("Serialize pointer down\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
                 break;
               case RUT_MOTION_EVENT_ACTION_UP:
-                //g_print ("Serialize pointer up\n");
+                g_print ("Serialize pointer up\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
                 break;
               }
@@ -1396,11 +1397,11 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_KEY_EVENT_ACTION_DOWN:
-                //g_print ("Serialize key down\n");
+                g_print ("Serialize key down\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
                 break;
               case RUT_KEY_EVENT_ACTION_UP:
-                //g_print ("Serialize key down\n");
+                g_print ("Serialize key up\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_UP;
                 break;
               }

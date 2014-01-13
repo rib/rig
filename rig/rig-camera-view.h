@@ -40,6 +40,12 @@ typedef struct
   RutEntity *screen_pos; /* position screen in edit view */
 } RigCameraViewDeviceTransforms;
 
+typedef enum _RigCameraViewMode
+{
+  RIG_CAMERA_VIEW_MODE_PLAY = 1,
+  RIG_CAMERA_VIEW_MODE_EDIT,
+} RigCameraViewMode;
+
 struct _RigCameraView
 {
   RutObjectBase _base;
@@ -47,6 +53,13 @@ struct _RigCameraView
   RigEngine *engine;
 
   RutContext *context;
+
+  bool play_mode;
+
+  /* picking ray */
+  CoglPipeline *picking_ray_color;
+  CoglPrimitive *picking_ray;
+  bool debug_pick_ray;
 
   RutMatrixStack *matrix_stack;
 
@@ -81,6 +94,19 @@ struct _RigCameraView
    * with the device transforms */
   RutEntity *play_dummy_entity;
 
+#ifdef RIG_EDITOR_ENABLED
+  RutEntity *play_camera_handle;
+#endif
+
+  RutEntity *current_camera;
+  RutCamera *current_camera_component;
+
+  RutDepthOfField *dof;
+  bool enable_dof;
+
+  RutArcball arcball;
+  CoglQuaternion saved_rotation;
+
   RutEntity *view_camera;
   RutCamera *view_camera_component;
   float view_camera_z;
@@ -110,5 +136,9 @@ rig_camera_view_set_scene (RigCameraView *view,
 void
 rig_camera_view_set_play_camera (RigCameraView *view,
                                  RutEntity *play_camera);
+
+void
+rig_camera_view_set_play_mode_enabled (RigCameraView *view,
+                                       bool enabled);
 
 #endif /* _RIG_CAMERA_VIEW_H_ */

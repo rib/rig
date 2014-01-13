@@ -37,7 +37,9 @@ rig_editor_init (RutShell *shell, void *user_data)
   RigEditor *editor = user_data;
   RigEngine *engine;
 
-  editor->frontend = rig_frontend_new (shell, editor->ui_filename);
+  editor->frontend = rig_frontend_new (shell,
+                                       RIG_FRONTEND_ID_EDITOR,
+                                       editor->ui_filename);
 
   engine = editor->frontend->engine;
   editor->engine = engine;
@@ -76,29 +78,63 @@ rig_editor_paint (RutShell *shell, void *user_data)
   RigFrontend *frontend = engine->frontend;
   ProtobufCService *simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
-  int n_events;
-  RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
+  RutInputQueue *input_queue = engine->simulator_input_queue;
   Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
   RigPBSerializer *serializer;
+  float x, y, z;
 
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
+  /* XXX: These are a bit of a misnomer, since they happen before
+   * input handling. Typical pre-paint callbacks are allocation
+   * callbacks which we want run before painting and since we want
+   * input to be consistent with what we paint we want to make sure
+   * allocations are also up to date before input handling.
+   */
+  rut_shell_run_pre_paint_callbacks (shell);
+
+  /* Again we are immediately about to start painting but this is
+   * another set of callbacks that can hook into the start of
+   * processing a frame with the different (compared to pre-paint
+   * callbacks) that they aren't unregistered each frame and they
+   * aren't sorted with respect to a node in a graph.
+   */
+  rut_shell_run_start_paint_callbacks (shell);
+
+  rut_shell_dispatch_input_events (shell);
+
   serializer = rig_pb_serializer_new (engine);
 
-  setup.n_events = n_events;
+  setup.n_events = input_queue->n_events;
   setup.events =
-    rig_pb_serialize_input_events (serializer, input_queue, n_events);
+    rig_pb_serialize_input_events (serializer, input_queue);
 
   if (frontend->has_resized)
     {
-      setup.has_width = true;
-      setup.width = engine->width;
-      setup.has_height = true;
-      setup.height = engine->height;
+      setup.has_view_width = true;
+      setup.view_width = frontend->pending_width;
+      setup.has_view_height = true;
+      setup.view_height = frontend->pending_height;
       frontend->has_resized = false;
     }
+
+  /* Inform the simulator of the offset position of the main camera
+   * view so that it can transform its input events accordingly...
+   */
+  x = y = z = 0;
+  rut_graphable_fully_transform_point (engine->main_camera_view,
+                                       engine->camera_2d,
+                                       &x, &y, &z);
+  setup.has_view_x = true;
+  setup.view_x = RUT_UTIL_NEARBYINT (x);
+
+  setup.has_view_y = true;
+  setup.view_y = RUT_UTIL_NEARBYINT (y);
+
+  setup.has_play_mode = true;
+  setup.play_mode = engine->play_mode;
 
   rig__simulator__run_frame (simulator_service,
                              &setup,
@@ -107,10 +143,7 @@ rig_editor_paint (RutShell *shell, void *user_data)
 
   rig_pb_serializer_destroy (serializer);
 
-  rut_shell_dispatch_input_events (shell);
-  //rut_shell_clear_input_queue (shell);
-
-  rut_shell_run_pre_paint_callbacks (shell);
+  rut_input_queue_clear (input_queue);
 
   rig_engine_paint (engine);
 

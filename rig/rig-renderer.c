@@ -1953,7 +1953,9 @@ entitygraph_pre_paint_cb (RutObject *object,
         {
           if (!paint_ctx->engine->play_mode &&
               object == paint_ctx->engine->light)
-            draw_entity_camera_frustum (paint_ctx->engine, object, fb);
+            {
+              draw_entity_camera_frustum (paint_ctx->engine, object, fb);
+            }
           return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 

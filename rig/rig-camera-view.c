@@ -109,6 +109,9 @@ _rig_camera_view_free (void *object)
   rut_object_unref (view->play_dummy_entity);
   unref_device_transforms (&view->play_device_transforms);
 
+  if (view->dof)
+    rut_dof_effect_free (view->dof);
+
   rig_selection_tool_destroy (view->selection_tool);
   rig_rotation_tool_destroy (view->rotation_tool);
 
@@ -126,13 +129,13 @@ paint_overlays (RigCameraView *view,
   CoglBool draw_tools = FALSE;
   RutCamera *suspended_camera = paint_ctx->camera;
 
-  if (engine->debug_pick_ray && engine->picking_ray)
+  if (view->debug_pick_ray && view->picking_ray)
     {
       draw_pick_ray = TRUE;
       need_camera_flush = TRUE;
     }
 
-  if (_rig_in_editor_mode && !engine->play_mode)
+  if (!view->play_mode)
     {
       draw_tools = TRUE;
       need_camera_flush = TRUE;
@@ -149,7 +152,7 @@ paint_overlays (RigCameraView *view,
   /* Use this to visualize the depth-of-field alpha buffer... */
 #if 0
   CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-  cogl_pipeline_set_layer_texture (pipeline, 0, engine->dof.depth_pass);
+  cogl_pipeline_set_layer_texture (pipeline, 0, view->dof.depth_pass);
   cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
   cogl_framebuffer_draw_rectangle (fb,
                                    pipeline,
@@ -171,9 +174,9 @@ paint_overlays (RigCameraView *view,
 
   if (draw_pick_ray)
     {
-      cogl_primitive_draw (engine->picking_ray,
+      cogl_primitive_draw (view->picking_ray,
                            fb,
-                           engine->picking_ray_color);
+                           view->picking_ray_color);
     }
 
 #ifdef RIG_EDITOR_ENABLED
@@ -247,9 +250,9 @@ reset_play_camera (RigCameraView *view)
 }
 
 static void
-flush_viewport_for_camera (RigCameraView *view,
-                           RutCamera *window_camera,
-                           RutCamera *camera)
+update_camera_viewport (RigCameraView *view,
+                        RutCamera *window_camera,
+                        RutCamera *camera)
 {
   float x, y, z;
 
@@ -297,7 +300,7 @@ _rut_camera_view_paint (RutObject *object,
     return;
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode && !engine->play_mode)
+  if (!view->play_mode)
     {
       camera = view->view_camera;
       camera_component = view->view_camera_component;
@@ -316,7 +319,8 @@ _rut_camera_view_paint (RutObject *object,
     }
 
   rut_camera_set_framebuffer (camera_component, fb);
-  if (_rig_in_editor_mode)
+  if (engine->frontend &&
+      engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       cogl_framebuffer_draw_rectangle (fb,
                                        view->bg_pipeline,
@@ -331,11 +335,11 @@ _rut_camera_view_paint (RutObject *object,
   rig_camera_update_view (engine, engine->light, TRUE);
   rig_paint_camera_entity (engine->light, rig_paint_ctx, NULL);
 
-  flush_viewport_for_camera (view, paint_ctx->camera, camera_component);
+  update_camera_viewport (view, paint_ctx->camera, camera_component);
 
   rig_camera_update_view (engine, camera, FALSE);
 
-  if (engine->enable_dof)
+  if (view->enable_dof)
     {
       const float *viewport = rut_camera_get_viewport (camera_component);
       int width = viewport[2];
@@ -344,9 +348,9 @@ _rut_camera_view_paint (RutObject *object,
       int save_viewport_y = viewport[1];
       CoglFramebuffer *pass_fb;
 
-      rut_dof_effect_set_framebuffer_size (engine->dof, width, height);
+      rut_dof_effect_set_framebuffer_size (view->dof, width, height);
 
-      pass_fb = rut_dof_effect_get_depth_pass_fb (engine->dof);
+      pass_fb = rut_dof_effect_get_depth_pass_fb (view->dof);
       rut_camera_set_framebuffer (camera_component, pass_fb);
       rut_camera_set_viewport (camera_component, 0, 0, width, height);
 
@@ -359,7 +363,7 @@ _rut_camera_view_paint (RutObject *object,
       rig_paint_ctx->pass = RIG_PASS_DOF_DEPTH;
       rig_paint_camera_entity (camera, rig_paint_ctx, NULL);
 
-      pass_fb = rut_dof_effect_get_color_pass_fb (engine->dof);
+      pass_fb = rut_dof_effect_get_color_pass_fb (view->dof);
       rut_camera_set_framebuffer (camera_component, pass_fb);
 
       rut_camera_flush (camera_component);
@@ -384,7 +388,7 @@ _rut_camera_view_paint (RutObject *object,
                                width, height);
 
       rut_camera_resume (suspended_camera);
-      rut_dof_effect_draw_rectangle (engine->dof,
+      rut_dof_effect_draw_rectangle (view->dof,
                                      fb,
                                      0, 0, view->width, view->height);
     }
@@ -614,9 +618,10 @@ allocate_cb (RutObject *graphable,
   update_device_transforms (view);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
+  if (engine->frontend &&
+      engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
-      rut_arcball_init (&engine->arcball,
+      rut_arcball_init (&view->arcball,
                         view->width / 2,
                         view->height / 2,
                         sqrtf (view->width *
@@ -636,17 +641,9 @@ allocate_cb (RutObject *graphable,
     {
       GList *l;
 
-      /* FIXME: Is the light camera the correct one to use? It looks
-       * like the paint function will end up using it so this at least
-       * matches that. */
-      RutCamera *light_camera =
-        rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
-
-      rig_camera_update_view (engine, engine->light, TRUE);
-
-      flush_viewport_for_camera (view,
-                                 light_camera,
-                                 view->view_camera_component);
+      update_camera_viewport (view,
+                              engine->camera_2d,
+                              view->view_camera_component);
 
       rig_camera_update_view (engine, view->view_camera, FALSE);
 
@@ -671,6 +668,7 @@ rig_camera_view_set_size (void *object,
                           float height)
 {
   RigCameraView *view = object;
+  RigEngine *engine = view->engine;
 
   if (width == view->width && height == view->height)
     return;
@@ -679,6 +677,13 @@ rig_camera_view_set_size (void *object,
   view->height = height;
 
   view->dirty_viewport_size = TRUE;
+
+  if (engine->frontend)
+    {
+      engine->frontend->has_resized = true;
+      engine->frontend->pending_width = width;
+      engine->frontend->pending_height = height;
+    }
 
   queue_allocation (view);
 }
@@ -1269,6 +1274,7 @@ create_picking_ray (RigEngine *engine,
 
 typedef struct _PickContext
 {
+  RigCameraView *view;
   RigEngine *engine;
   RutCamera *view_camera;
   RutMatrixStack *matrix_stack;
@@ -1337,7 +1343,7 @@ entitygraph_pre_pick_cb (RutObject *object,
         }
       else
         {
-          if (_rig_in_editor_mode && !pick_ctx->engine->play_mode)
+          if (!pick_ctx->view->play_mode)
             {
               material = rut_entity_get_component (entity,
                                                    RUT_COMPONENT_TYPE_MATERIAL);
@@ -1515,9 +1521,9 @@ pick (RigCameraView *view,
   RigEngine *engine = view->engine;
   PickContext pick_ctx;
 
+  pick_ctx.view = view;
   pick_ctx.engine = engine;
   pick_ctx.view_camera = view_camera;
-  //pick_ctx.fb = rut_camera_get_framebuffer (view_camera);
   pick_ctx.matrix_stack = view->matrix_stack;
   pick_ctx.x = x;
   pick_ctx.y = y;
@@ -1570,6 +1576,31 @@ initialize_navigation_camera (RigCameraView *view)
   update_camera_position (view);
 
   update_device_transforms (view);
+}
+
+void
+rig_camera_view_set_play_mode_enabled (RigCameraView *view,
+                                       bool enabled)
+{
+  RigEngine *engine = view->engine;
+
+  view->play_mode = enabled;
+
+  if (enabled)
+    {
+      /* depth of field effect */
+      if (!engine->headless && !view->dof)
+        view->dof = rut_dof_effect_new (engine->ctx);
+      view->enable_dof = true;
+      rig_engine_set_play_mode_enabled (engine, true);
+    }
+  else
+    {
+      view->enable_dof = false;
+      rig_engine_set_play_mode_enabled (engine, false);
+    }
+
+  rut_shell_queue_redraw (engine->ctx->shell);
 }
 
 static RutInputEventStatus
@@ -1626,14 +1657,14 @@ input_cb (RutInputEvent *event,
                                 ray_position,
                                 ray_direction);
 
-      if (engine->debug_pick_ray)
+      if (view->debug_pick_ray)
         {
           float x1 = 0, y1 = 0, z1 = z_near, w1 = 1;
           float x2 = 0, y2 = 0, z2 = z_far, w2 = 1;
           float len;
 
-          if (engine->picking_ray)
-            cogl_object_unref (engine->picking_ray);
+          if (view->picking_ray)
+            cogl_object_unref (view->picking_ray);
 
           /* FIXME: This is a hack, we should intersect the ray with
            * the far plane to decide how long the debug primitive
@@ -1644,7 +1675,7 @@ input_cb (RutInputEvent *event,
                                        &x2, &y2, &z2, &w2);
           len = z2 - z1;
 
-          engine->picking_ray =
+          view->picking_ray =
             create_picking_ray (engine,
                                 ray_position,
                                 ray_direction,
@@ -1657,7 +1688,7 @@ input_cb (RutInputEvent *event,
                             ray_position,
                             ray_direction);
 
-      if (!_rig_in_editor_mode || engine->play_mode)
+      if (view->play_mode)
         {
           if (picked_entity)
             {
@@ -1706,17 +1737,17 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                ((modifiers & RUT_MODIFIER_SHIFT_ON) == 0))
         {
-          //engine->saved_rotation = *rut_entity_get_rotation (view->view_camera);
-          engine->saved_rotation = *rut_entity_get_rotation (view->view_camera_rotate);
+          //view->saved_rotation = *rut_entity_get_rotation (view->view_camera);
+          view->saved_rotation = *rut_entity_get_rotation (view->view_camera_rotate);
 
-          cogl_quaternion_init_identity (&engine->arcball.q_drag);
+          cogl_quaternion_init_identity (&view->arcball.q_drag);
 
-          //rut_arcball_mouse_down (&engine->arcball, engine->width - x, y);
-          rut_arcball_mouse_down (&engine->arcball, view->width - x, view->height - y);
+          //rut_arcball_mouse_down (&view->arcball, engine->width - x, y);
+          rut_arcball_mouse_down (&view->arcball, view->width - x, view->height - y);
           //g_print ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width - x), (int)(engine->height - y));
 
-          //print_quaternion (&engine->saved_rotation, "Saved Quaternion");
-          //print_quaternion (&engine->arcball.q_drag, "Arcball Initial Quaternion");
+          //print_quaternion (&view->saved_rotation, "Saved Quaternion");
+          //print_quaternion (&view->arcball.q_drag, "Arcball Initial Quaternion");
           //engine->button_down = TRUE;
 
           engine->grab_x = x;
@@ -1809,25 +1840,25 @@ input_cb (RutInputEvent *event,
           //if (!engine->button_down)
           //  break;
 
-          //rut_arcball_mouse_motion (&engine->arcball, engine->width - x, y);
-          rut_arcball_mouse_motion (&engine->arcball, view->width - x, view->height - y);
+          //rut_arcball_mouse_motion (&view->arcball, engine->width - x, y);
+          rut_arcball_mouse_motion (&view->arcball, view->width - x, view->height - y);
 #if 0
           g_print ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
-                   engine->arcball.center[0],
-                   engine->arcball.center[1],
+                   view->arcball.center[0],
+                   view->arcball.center[1],
                    x, y);
 #endif
 
           cogl_quaternion_multiply (&new_rotation,
-                                    &engine->saved_rotation,
-                                    &engine->arcball.q_drag);
+                                    &view->saved_rotation,
+                                    &view->arcball.q_drag);
 
           //rut_entity_set_rotation (view->view_camera, &new_rotation);
           rut_entity_set_rotation (view->view_camera_rotate, &new_rotation);
 
           //print_quaternion (&new_rotation, "New Rotation");
 
-          //print_quaternion (&engine->arcball.q_drag, "Arcball Quaternion");
+          //print_quaternion (&view->arcball.q_drag, "Arcball Quaternion");
 
           rut_shell_queue_redraw (engine->ctx->shell);
 
@@ -1836,7 +1867,7 @@ input_cb (RutInputEvent *event,
 
     }
 #ifdef RIG_EDITOR_ENABLED
-  else if (_rig_in_editor_mode)
+  else if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP)
@@ -1871,7 +1902,8 @@ input_cb (RutInputEvent *event,
                 break;
               }
             case RUT_KEY_p:
-              rig_set_play_mode_enabled (engine, !engine->play_mode);
+              rig_simulator_action_set_play_mode_enabled (engine->simulator,
+                                                          !view->play_mode);
               break;
             case RUT_KEY_j:
               if ((rut_key_event_get_modifier_state (event) &
@@ -1918,7 +1950,6 @@ input_cb (RutInputEvent *event,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 
-#if 0
 static RutInputEventStatus
 device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
 {
@@ -1988,19 +2019,62 @@ device_mode_input_cb (RutInputEvent *event,
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
-#endif
+
+static RutInputEventStatus
+simulator_implicit_grab_input_cb (RutInputEvent *event, void *user_data)
+{
+  RigCameraView *view = user_data;
+  RigEngine *engine = view->engine;
+
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+    {
+      rut_shell_ungrab_input (view->context->shell,
+                              simulator_implicit_grab_input_cb,
+                              view);
+    }
+
+  rut_input_queue_append (engine->simulator_input_queue, event);
+
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
+}
 
 static RutInputEventStatus
 input_region_cb (RutInputRegion *region,
                  RutInputEvent *event,
                  void *user_data)
 {
-//#ifdef RIG_EDITOR_ENABLED
-//  if (_rig_in_editor_mode)
+  RigCameraView *view = user_data;
+  RigEngine *engine = view->engine;
+
+  /* XXX: it could be nice if the way we forwarded events to the
+   * simulator was the same for the editor as for device mode,
+   * though it would also seem unnecessary to have any indirection
+   * for events in device mode where we currently just assume
+   * all events need to be forwarded to the simulator.
+   */
+  if (engine->frontend)
+    {
+      RigCameraView *view = user_data;
+      RigEngine *engine = view->engine;
+
+      if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+          rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+        {
+          rut_shell_grab_input (view->context->shell,
+                                rut_input_event_get_camera (event),
+                                simulator_implicit_grab_input_cb,
+                                view);
+        }
+
+      rut_input_queue_append (engine->simulator_input_queue, event);
+
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+  else if (!view->play_mode)
     return input_cb (event, user_data);
-//  else
-//#endif
-//    return device_mode_input_cb (event, user_data);
+  else
+    return device_mode_input_cb (event, user_data);
 }
 
 static void
@@ -2062,14 +2136,25 @@ rig_camera_view_new (RigEngine *engine)
   rut_graphable_init (view);
   rut_paintable_init (view);
 
-  if (_rig_in_simulator_mode)
-    {
-      view->input_region =
-        rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
-      rut_graphable_add_child (view, view->input_region);
-    }
+  view->input_region =
+    rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
+  rut_graphable_add_child (view, view->input_region);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
+    rig_camera_view_set_play_mode_enabled (view, false);
   else
-    view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
+#endif
+    rig_camera_view_set_play_mode_enabled (view, true);
+
+  if (!_rig_in_simulator_mode)
+    {
+      /* picking ray */
+      view->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);
+      cogl_pipeline_set_color4f (view->picking_ray_color, 1.0, 0.0, 0.0, 1.0);
+
+      view->bg_pipeline = cogl_pipeline_new (ctx->cogl_context);
+    }
 
   view->matrix_stack = rut_matrix_stack_new (ctx);
 
@@ -2117,7 +2202,8 @@ rig_camera_view_new (RigEngine *engine)
                            view->play_dummy_entity);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
+  if (engine->frontend &&
+      engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       view->tool_overlay = rut_graph_new (engine->ctx);
       rut_graphable_add_child (view, view->tool_overlay);
