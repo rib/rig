@@ -302,7 +302,10 @@ static RutObject *
 _rut_camera_copy (RutObject *obj)
 {
   RutCamera *camera = obj;
-  RutCamera *copy = rut_camera_new (camera->ctx, camera->fb);
+  RutCamera *copy = rut_camera_new (camera->ctx,
+                                    -1, /* ortho/vp width */
+                                    -1, /* ortho/vp height */
+                                    camera->fb); /* may be NULL */
 
   copy->clear_fb = camera->clear_fb;
 
@@ -350,14 +353,15 @@ _rut_camera_init_type (void)
 }
 
 RutCamera *
-rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
+rut_camera_new (RutContext *ctx,
+                float width,
+                float height,
+                CoglFramebuffer *framebuffer)
 {
   RutCamera *camera =
     rut_object_alloc0 (RutCamera, &rut_camera_type, _rut_camera_init_type);
 
   camera->ctx = rut_object_ref (ctx);
-
-
 
   rut_introspectable_init (camera,
                            _rut_camera_prop_specs,
@@ -373,8 +377,11 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   camera->orthographic = TRUE;
   camera->x1 = 0;
   camera->y1 = 0;
-  camera->x2 = 100;
-  camera->y2 = 100;
+  camera->x2 = width;
+  camera->y2 = height;
+
+  camera->viewport[2] = width;
+  camera->viewport[3] = height;
 
   camera->near = -1;
   camera->far = 100;
@@ -626,6 +633,14 @@ rut_camera_get_projection (RutCamera *camera)
                                               camera->near,
                                               camera->far,
                                               camera->zoom);
+
+          g_print ("XXXXXXXXXXXXXXX %d\n", (int)camera->ctx->headless);
+          g_print ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
+                   camera->fov,
+                   aspect_ratio,
+                   camera->near,
+                   camera->far,
+                   camera->zoom);
         }
 
       camera->projection_cache_age = camera->projection_age;

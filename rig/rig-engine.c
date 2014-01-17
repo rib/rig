@@ -809,6 +809,58 @@ rig_select_object (RigEngine *engine,
 }
 
 static void
+ensure_shadow_map (RigEngine *engine)
+{
+  CoglTexture2D *color_buffer;
+
+  /*
+   * Shadow mapping
+   */
+
+  /* Setup the shadow map */
+
+  g_warn_if_fail (engine->shadow_color == NULL);
+
+  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
+                                                engine->device_width * 2,
+                                                engine->device_height * 2);
+
+  engine->shadow_color = color_buffer;
+
+  g_warn_if_fail (engine->shadow_fb == NULL);
+
+  /* XXX: Right now there's no way to avoid allocating a color buffer. */
+  engine->shadow_fb =
+    cogl_offscreen_new_with_texture (color_buffer);
+  if (engine->shadow_fb == NULL)
+    g_critical ("could not create offscreen buffer");
+
+  /* retrieve the depth texture */
+  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
+                                              TRUE);
+
+  g_warn_if_fail (engine->shadow_map == NULL);
+
+  engine->shadow_map =
+    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
+}
+
+static void
+free_shadow_map (RigEngine *engine)
+{
+  if (engine->shadow_map)
+    {
+      cogl_object_unref (engine->shadow_map);
+      engine->shadow_map = NULL;
+    }
+  if (engine->shadow_fb)
+    {
+      cogl_object_unref (engine->shadow_fb);
+      engine->shadow_fb = NULL;
+    }
+}
+
+static void
 allocate (RigEngine *engine)
 {
   //engine->main_width = engine->window_width - engine->left_bar_width - engine->right_bar_width;
@@ -2582,7 +2634,10 @@ ensure_light (RigEngine *engine)
   camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
   if (!camera)
     {
-      camera = rut_camera_new (engine->ctx, engine->shadow_fb);
+      camera = rut_camera_new (engine->ctx,
+                               1000, /* ortho width */
+                               1000, /* ortho height */
+                               engine->shadow_fb);
 
       rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
       rut_camera_set_projection_mode (camera,
@@ -2594,7 +2649,7 @@ ensure_light (RigEngine *engine)
 
       rut_entity_add_component (engine->light, camera);
     }
-  else
+  else if (engine->shadow_fb)
     {
       CoglFramebuffer *fb = engine->shadow_fb;
       int width = cogl_framebuffer_get_width (fb);
@@ -2602,7 +2657,6 @@ ensure_light (RigEngine *engine)
       rut_camera_set_framebuffer (camera, fb);
       rut_camera_set_viewport (camera, 0, 0, width, height);
     }
-
 
 #ifdef RIG_EDITOR_ENABLED
   if (_rig_in_editor_mode)
@@ -2758,6 +2812,8 @@ ensure_play_camera (RigEngine *engine)
         {
           engine->play_camera_component =
             rut_camera_new (engine->ctx,
+                            -1, /* ortho/vp width */
+                            -1, /* ortho/vp height */
                             engine->onscreen);
 
           rut_entity_add_component (engine->play_camera,
@@ -2923,49 +2979,11 @@ create_debug_gradient (RigEngine *engine)
 void
 rig_engine_handle_ui_update (RigEngine *engine)
 {
-  CoglTexture2D *color_buffer;
-
   rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
 
   if (!_rig_in_simulator_mode)
     {
-      /*
-       * Shadow mapping
-       */
-
-      /* Setup the shadow map */
-
-      g_warn_if_fail (engine->shadow_color == NULL);
-
-      color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
-                                                    engine->device_width * 2,
-                                                    engine->device_height * 2);
-
-      engine->shadow_color = color_buffer;
-
-      g_warn_if_fail (engine->shadow_fb == NULL);
-
-      /* XXX: Right now there's no way to avoid allocating a color buffer. */
-      engine->shadow_fb =
-        cogl_offscreen_new_with_texture (color_buffer);
-      if (engine->shadow_fb == NULL)
-        g_critical ("could not create offscreen buffer");
-
-      /* retrieve the depth texture */
-      cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
-                                                  TRUE);
-
-      g_warn_if_fail (engine->shadow_map == NULL);
-
-      engine->shadow_map =
-        cogl_framebuffer_get_depth_texture (engine->shadow_fb);
-
-      /* Note: we currently require having exactly one scene light and
-       * play camera, so if we didn't already load them we create a default
-       * light and camera...
-       */
-      ensure_light (engine);
-      ensure_play_camera (engine);
+      ensure_shadow_map (engine);
 
 #ifdef RIG_EDITOR_ENABLED
       if (_rig_in_editor_mode)
@@ -2995,6 +3013,15 @@ rig_engine_handle_ui_update (RigEngine *engine)
         }
 #endif
     }
+
+  /* Note: we currently require having exactly one scene light and
+   * play camera, so if we didn't already load them we create a default
+   * light and camera...
+   *
+   * Note: we ensure the light after ensuring we have a shadow-map
+   */
+  ensure_light (engine);
+  ensure_play_camera (engine);
 }
 
 void
@@ -3024,17 +3051,7 @@ rig_engine_free_ui (RigEngine *engine)
       engine->shadow_color = NULL;
     }
 
-  if (engine->shadow_map)
-    {
-      cogl_object_unref (engine->shadow_map);
-      engine->shadow_map = NULL;
-    }
-
-  if (engine->shadow_fb)
-    {
-      cogl_object_unref (engine->shadow_fb);
-      engine->shadow_fb = NULL;
-    }
+  free_shadow_map (engine);
 
   for (l = engine->controllers; l; l = l->next)
     rut_object_unref (l->data);
@@ -3268,7 +3285,10 @@ _rig_engine_new_full (RutShell *shell,
   rut_graphable_add_child (engine->root, engine->top_stack);
   rut_object_unref (engine->top_stack);
 
-  engine->camera_2d = rut_camera_new (engine->ctx, NULL);
+  engine->camera_2d = rut_camera_new (engine->ctx,
+                                      -1, /* ortho/vp width */
+                                      -1, /* ortho/vp height */
+                                      NULL);
   rut_camera_set_clear (engine->camera_2d, FALSE);
 
   /* XXX: Basically just a hack for now. We should have a

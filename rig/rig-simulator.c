@@ -588,7 +588,7 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
   size_t offset;
   int i;
 
-  g_print ("Properties changed log %d:\n", bytes);
+  g_print ("Properties changed log %d bytes:\n", bytes);
 
   for (i = state->i, offset = 0;
        i < state->n_changes && (offset + step) <= bytes;

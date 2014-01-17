@@ -101,7 +101,7 @@ _rig_camera_view_free (void *object)
   rut_object_unref (view->view_camera_to_origin);
   rut_object_unref (view->view_camera_rotate);
   rut_object_unref (view->view_camera_armature);
-  rut_object_unref (view->view_camera_2d_view);
+  //rut_object_unref (view->view_camera_2d_view);
   rut_object_unref (view->view_camera);
   rut_object_unref (view->view_camera_component);
   unref_device_transforms (&view->view_device_transforms);
@@ -562,9 +562,9 @@ update_view_and_projection (RigCameraView *view)
                                     &rotation,
                                     &scale);
 
-  rut_entity_set_translate (view->view_camera_2d_view, -dx, -dy, -dz);
-  rut_entity_set_rotation (view->view_camera_2d_view, &rotation);
-  rut_entity_set_scale (view->view_camera_2d_view, 1.0 / scale);
+  //rut_entity_set_translate (view->view_camera_2d_view, -dx, -dy, -dz);
+  //rut_entity_set_rotation (view->view_camera_2d_view, &rotation);
+  //rut_entity_set_scale (view->view_camera_2d_view, 1.0 / scale);
 }
 
 static void
@@ -1374,6 +1374,15 @@ entitygraph_pre_pick_cb (RutObject *object,
                      transformed_ray_origin,
                      transformed_ray_direction);
 
+      g_print ("transformed ray %f,%f,%f %f,%f,%f\n",
+               transformed_ray_origin[0],
+               transformed_ray_origin[1],
+               transformed_ray_origin[2],
+               transformed_ray_direction[0],
+               transformed_ray_direction[1],
+               transformed_ray_direction[2]);
+
+
       /* intersect the transformed ray with the model engine */
       hit = rut_util_intersect_mesh (mesh,
                                      transformed_ray_origin,
@@ -1617,38 +1626,62 @@ input_cb (RutInputEvent *event,
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
       RutButtonState state;
-      RutCamera *view_camera;
-      float ray_position[3], ray_direction[3], screen_pos[2],
-            z_far, z_near;
+      float ray_position[3], ray_direction[3], screen_pos[2];
       const float *viewport;
       const CoglMatrix *inverse_projection;
       //CoglMatrix *camera_transform;
       const CoglMatrix *camera_view;
       CoglMatrix camera_transform;
       RutObject *picked_entity;
+      RutEntity *camera;
+      RutCamera *camera_component;
+      bool need_play_camera_reset = false;
 
-      rut_camera_transform_window_coordinate (view->view_camera_component,
-                                              &x, &y);
+#ifdef RIG_EDITOR_ENABLED
+      if (!view->play_mode)
+        {
+          camera = view->view_camera;
+          camera_component = view->view_camera_component;
+
+          /* With the editor, the camera view may be offset within a
+           * window... */
+          rut_camera_transform_window_coordinate (camera_component,
+                                                  &x, &y);
+        }
+      else
+#endif /* RIG_EDITOR_ENABLED */
+        {
+          prepare_play_camera_for_view (view);
+
+          camera = view->play_dummy_entity;
+          camera_component = view->play_camera_component;
+          need_play_camera_reset = true;
+        }
+
+      update_camera_viewport (view, engine->camera_2d, camera_component);
+      rig_camera_update_view (engine, camera, FALSE);
 
       state = rut_motion_event_get_button_state (event);
 
-      view_camera = rut_entity_get_component (view->view_camera,
-                                              RUT_COMPONENT_TYPE_CAMERA);
-      viewport = rut_camera_get_viewport (view_camera);
-      z_near = rut_camera_get_near_plane (view_camera);
-      z_far = rut_camera_get_far_plane (view_camera);
+      viewport = rut_camera_get_viewport (camera_component);
       inverse_projection =
-        rut_camera_get_inverse_projection (view_camera);
+        rut_camera_get_inverse_projection (camera_component);
+
+      g_print ("Camera inverse projection: %p\n", engine->simulator);
+      cogl_debug_matrix_print (inverse_projection);
 
 #if 0
-      camera_transform = rut_entity_get_transform (view->view_camera);
+      camera_transform = rut_entity_get_transform (camera);
 #else
-      camera_view = rut_camera_get_view_transform (view_camera);
+      camera_view = rut_camera_get_view_transform (camera_component);
       cogl_matrix_get_inverse (camera_view, &camera_transform);
 #endif
+      g_print ("Camera transform:\n");
+      cogl_debug_matrix_print (&camera_transform);
 
       screen_pos[0] = x;
       screen_pos[1] = y;
+      g_print ("screen pos x=%f, y=%f\n", x, y);
 
       rut_util_create_pick_ray (viewport,
                                 inverse_projection,
@@ -1657,8 +1690,18 @@ input_cb (RutInputEvent *event,
                                 ray_position,
                                 ray_direction);
 
+      g_print ("ray pos %f,%f,%f dir %f,%f,%f\n",
+               ray_position[0],
+               ray_position[1],
+               ray_position[2],
+               ray_direction[0],
+               ray_direction[1],
+               ray_direction[2]);
+
       if (view->debug_pick_ray)
         {
+          float z_near = rut_camera_get_near_plane (camera);
+          float z_far = rut_camera_get_far_plane (camera);
           float x1 = 0, y1 = 0, z1 = z_near, w1 = 1;
           float x2 = 0, y2 = 0, z2 = z_far, w2 = 1;
           float len;
@@ -1683,10 +1726,13 @@ input_cb (RutInputEvent *event,
         }
 
       picked_entity = pick (view,
-                            view_camera,
+                            camera_component,
                             x, y,
                             ray_position,
                             ray_direction);
+
+      if (need_play_camera_reset)
+        reset_play_camera (view);
 
       if (view->play_mode)
         {
@@ -2215,11 +2261,14 @@ rig_camera_view_new (RigEngine *engine)
                            view->view_camera);
   rut_entity_set_label (view->view_camera, "rig:camera");
 
-  view->view_camera_2d_view = rut_entity_new (engine->ctx);
+  //view->view_camera_2d_view = rut_entity_new (engine->ctx);
   //rut_graphable_add_child (view->view_camera_screen_pos, view->view_camera_2d_view); FIXME
-  rut_entity_set_label (view->view_camera_2d_view, "rig:camera_2d_view");
+  //rut_entity_set_label (view->view_camera_2d_view, "rig:camera_2d_view");
 
-  view->view_camera_component = rut_camera_new (engine->ctx, NULL);
+  view->view_camera_component = rut_camera_new (engine->ctx,
+                                                -1, /* ortho/vp width */
+                                                -1, /* ortho/vp height */
+                                                NULL);
   rut_camera_set_clear (view->view_camera_component, FALSE);
   rut_entity_add_component (view->view_camera, view->view_camera_component);
 

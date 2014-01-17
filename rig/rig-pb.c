@@ -1944,7 +1944,10 @@ unserialize_components (RigPBUnSerializer *unserializer,
           {
             Rig__Entity__Component__Camera *pb_camera = pb_component->camera;
             RutCamera *camera =
-              rut_camera_new (unserializer->engine->ctx, NULL);
+              rut_camera_new (unserializer->engine->ctx,
+                              -1, /* ortho/vp width */
+                              -1, /* ortho/vp height */
+                              NULL);
 
             if (pb_camera->viewport)
               {

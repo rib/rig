@@ -122,7 +122,10 @@ rut_downsampler_downsample (RutDownsampler *downsampler,
       downsampler->fb = offscreen;
 
       /* create the camera that will setup the scene for the render */
-      downsampler->camera = rut_camera_new (downsampler->ctx, downsampler->fb);
+      downsampler->camera = rut_camera_new (downsampler->ctx,
+                                            dest_width, /* ortho width */
+                                            dest_height, /* ortho height */
+                                            downsampler->fb);
       rut_camera_set_near_plane (downsampler->camera, -1.f);
       rut_camera_set_far_plane (downsampler->camera, 1.f);
     }
