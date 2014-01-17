@@ -243,7 +243,7 @@ rut_image_get_preferred_width (void *object,
         {
           if (for_height != -1.0f)
             {
-              float aspect = image->tex_width / image->tex_height;
+              float aspect = (float)image->tex_width / image->tex_height;
 
               /* Our preferrence is to have just enough space to be
                * able to show the image at 1:1, not to necessarily
@@ -302,7 +302,7 @@ rut_image_get_preferred_height (void *object,
         {
           if (for_width != -1.0f)
             {
-              float aspect = image->tex_height / image->tex_width;
+              float aspect = (float)image->tex_height / image->tex_width;
 
               /* Our preferrence is to have just enough space to be
                * able to show the image at 1:1, not to necessarily
