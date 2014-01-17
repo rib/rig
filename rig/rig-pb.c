@@ -57,6 +57,16 @@ struct _RigPBSerializer
   GHashTable *id_map;
 };
 
+const char *
+rig_pb_strdup (RigEngine *engine,
+               const char *string)
+{
+  int len = strlen (string);
+  void *mem = rut_memory_stack_memalign (engine->serialization_stack, len + 1, 1);
+  memcpy (mem, string, len + 1);
+  return mem;
+}
+
 static Rig__Color *
 pb_color_new (RigEngine *engine, const CoglColor *color)
 {
@@ -1583,10 +1593,10 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
     }
 }
 
-static void
-collect_error (RigPBUnSerializer *unserializer,
-               const char *format,
-               ...)
+void
+rig_pb_unserializer_collect_error (RigPBUnSerializer *unserializer,
+                                   const char *format,
+                                   ...)
 {
   va_list ap;
 
@@ -1630,7 +1640,9 @@ register_unserializer_object (RigPBUnSerializer *unserializer,
 
   if (g_hash_table_lookup (unserializer->id_map, key))
     {
-      collect_error (unserializer, "Duplicate unserializer object id %ld", id);
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Duplicate unserializer "
+                                         "object id %ld", id);
       return;
     }
 
@@ -1647,13 +1659,15 @@ set_property_from_pb_boxed (RigPBUnSerializer *unserializer,
 
   if (!pb_boxed->value)
     {
-      collect_error (unserializer, "Boxed property has no value");
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Boxed property has no value");
       return;
     }
 
   if (!pb_boxed->has_type)
     {
-      collect_error (unserializer, "Boxed property has no type");
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Boxed property has no type");
       return;
     }
 
@@ -1728,10 +1742,11 @@ set_properties_from_pb_boxed_values (RigPBUnSerializer *unserializer,
 
       if (!property)
         {
-          collect_error (unserializer,
-                         "Unknown property %s for object of type %s",
-                         pb_boxed->name,
-                         rut_object_get_type_name (object));
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Unknown property %s for object "
+                                             "of type %s",
+                                             pb_boxed->name,
+                                             rut_object_get_type_name (object));
           continue;
         }
 
@@ -1822,7 +1837,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_color_source_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 if (pb_material->normal_map &&
@@ -1835,7 +1851,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_normal_map_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 if (pb_material->alpha_mask &&
@@ -1848,7 +1865,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_alpha_mask_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 pb_init_color (unserializer->engine->ctx,
@@ -1887,7 +1905,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
             asset = unserializer_find_object (unserializer, pb_model->asset_id);
             if (!asset)
               {
-                collect_error (unserializer, "Invalid asset id");
+                rig_pb_unserializer_collect_error (unserializer,
+                                                   "Invalid asset id");
                 break;
               }
 
@@ -2097,9 +2116,10 @@ unserialize_components (RigPBUnSerializer *unserializer,
               {
                 if (!shape)
                   {
-                    collect_error (unserializer,
-                                   "Can't add shape component without "
-                                   "an image source");
+                    rig_pb_unserializer_collect_error (unserializer,
+                                                       "Can't add shape "
+                                                       "component without "
+                                                       "an image source");
 
                     rut_object_unref (material);
                   }
@@ -2239,9 +2259,10 @@ unserialize_components (RigPBUnSerializer *unserializer,
               {
                 if (!grid)
                   {
-                    collect_error (unserializer,
-                                   "Can't add pointalism grid component without "
-                                   "an image source");
+                    rig_pb_unserializer_collect_error (unserializer,
+                                                       "Can't add pointalism "
+                                                       "grid component without "
+                                                       "an image source");
 
                     rut_object_unref (material);
                   }
@@ -2320,7 +2341,8 @@ unserialize_entities (RigPBUnSerializer *unserializer,
       id = pb_entity->id;
       if (g_hash_table_lookup (unserializer->id_map, &id))
         {
-          collect_error (unserializer, "Duplicate entity id %d", (int)id);
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Duplicate entity id %d", (int)id);
           continue;
         }
 
@@ -2333,7 +2355,7 @@ unserialize_entities (RigPBUnSerializer *unserializer,
 
           if (!parent)
             {
-              collect_error (unserializer,
+              rig_pb_unserializer_collect_error (unserializer,
                              "Invalid parent id referenced in entity element");
               rut_object_unref (entity);
               continue;
@@ -2399,7 +2421,8 @@ unserialize_assets (RigPBUnSerializer *unserializer,
       id = pb_asset->id;
       if (g_hash_table_lookup (unserializer->id_map, &id))
         {
-          collect_error (unserializer, "Duplicate asset id %d", (int)id);
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Duplicate asset id %d", (int)id);
           return;
         }
 
@@ -2421,9 +2444,10 @@ unserialize_assets (RigPBUnSerializer *unserializer,
             rig_pb_unserialize_mesh (unserializer, pb_asset->mesh);
           if (!mesh)
             {
-              collect_error (unserializer,
-                             "Error unserializing mesh for asset id %d",
-                             (int)id);
+              rig_pb_unserializer_collect_error (unserializer,
+                                                 "Error unserializing mesh for "
+                                                 "asset id %d",
+                                                 (int)id);
               continue;
             }
           asset = rut_asset_new_from_mesh (engine->ctx, mesh);
@@ -2599,9 +2623,10 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
       object = unserializer_find_object (unserializer, object_id);
       if (!object)
         {
-          collect_error (unserializer,
-                         "Invalid object id %d referenced in property element",
-                         (int)object_id);
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Invalid object id %d referenced "
+                                             "in property element",
+                                             (int)object_id);
           continue;
         }
 
@@ -2621,17 +2646,18 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
       if (!property)
         {
-          collect_error (unserializer,
-                         "Invalid object property name given for "
-                         "controller property");
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Invalid object property name "
+                                             "given for controller property");
           continue;
         }
 
       if (!property->spec->animatable &&
           method != RIG_CONTROLLER_METHOD_CONSTANT)
         {
-          collect_error (unserializer,
-                         "Can't dynamically control non-animatable property");
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Can't dynamically control "
+                                             "non-animatable property");
           continue;
         }
 
@@ -2690,15 +2716,17 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
               if (!pb_dependency->has_object_id)
                 {
-                  collect_error (unserializer,
-                                 "Property dependency with no object ID");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Property dependency with "
+                                                     "no object ID");
                   break;
                 }
 
               if (!pb_dependency->name)
                 {
-                  collect_error (unserializer,
-                                 "Property dependency with no name");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Property dependency with "
+                                                     "no name");
                   break;
                 }
 
@@ -2707,19 +2735,21 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
                                           pb_dependency->object_id);
               if (!dependency_object)
                 {
-                  collect_error (unserializer,
-                                 "Failed to find dependency object "
-                                 "for property");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Failed to find dependency "
+                                                     "object for property");
                   break;
                 }
 
-              dependency = rut_introspectable_lookup_property (dependency_object,
-                                                               pb_dependency->name);
+              dependency =
+                rut_introspectable_lookup_property (dependency_object,
+                                                    pb_dependency->name);
               if (!dependency)
                 {
-                  collect_error (unserializer,
-                                 "Failed to introspect dependency object "
-                                 "for binding property");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Failed to introspect "
+                                                     "dependency object "
+                                                     "for binding property");
                   break;
                 }
 
@@ -2728,9 +2758,11 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
           if (j != pb_property->n_dependencies)
             {
-              collect_error (unserializer,
-                             "Not able to resolve all dependencies for "
-                             "property binding (skipping)");
+              rig_pb_unserializer_collect_error (unserializer,
+                                                 "Not able to resolve all "
+                                                 "dependencies for "
+                                                 "property binding "
+                                                 "(skipping)");
               continue;
             }
 

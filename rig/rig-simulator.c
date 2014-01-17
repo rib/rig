@@ -120,14 +120,47 @@ register_object_cb (void *object,
                     void *user_data)
 {
   RigSimulator *simulator = user_data;
-  uint64_t *object_id =
-    rut_magazine_chunk_alloc (_rig_simulator_object_id_magazine);
+  uint64_t *object_id;
 
+  g_return_val_if_fail (id != 0, true);
+
+  object_id = rut_magazine_chunk_alloc (_rig_simulator_object_id_magazine);
   *object_id = id;
 
   g_hash_table_insert (simulator->id_map, object, object_id);
 
-  return false; /* also register normally in rig-pb.c */
+  /* Editing commands need to be able to lookup objects from an id... */
+  if (simulator->editable)
+    {
+      RigPBUnSerializer *unserializer = simulator->unserializer;
+      if (g_hash_table_lookup (simulator->object_map, object_id))
+        {
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Simulator: Registered duplicate "
+                                             "object id %ld", id);
+          return true; /* don't then try and register in rig-pb.c */
+        }
+
+      g_hash_table_insert (simulator->object_map, object_id, object);
+
+      return true; /* no need to additionally register the object in rig-pb.c */
+    }
+  else
+    return false; /* also register normally in rig-pb.c */
+}
+
+static RutObject *
+lookup_object (RigSimulator *simulator,
+               uint64_t id)
+{
+  return g_hash_table_lookup (simulator->object_map, &id);
+}
+
+static void *
+lookup_object_cb (uint64_t id,
+                  void *user_data)
+{
+  return lookup_object (user_data, id);
 }
 
 static void
@@ -149,13 +182,26 @@ simulator__load (Rig__Simulator_Service *service,
   rig_pb_unserializer_init (&unserializer, engine,
                             true); /* with id-map */
 
+  simulator->unserializer = &unserializer;
   rig_pb_unserializer_set_object_register_callback (&unserializer,
                                                     register_object_cb,
                                                     simulator);
 
+  /* When the UI is mutable (running as an editor or slave) then
+   * we need the ability to lookup objects with an id so we
+   * hook into the unserializer so we can build up a map.
+   */
+  if (simulator->editable)
+    {
+      rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+                                                     lookup_object_cb,
+                                                     simulator);
+    }
+
   rig_pb_unserialize_ui (&unserializer, ui, false);
 
   rig_pb_unserializer_destroy (&unserializer);
+  simulator->unserializer = NULL;
 
   closure (&result, closure_data);
 }
@@ -170,9 +216,14 @@ simulator__run_frame (Rig__Simulator_Service *service,
   RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
+  RigPBUnSerializer unserializer;
+  RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
   int i;
 
   g_return_if_fail (setup != NULL);
+
+  rig_pb_unserializer_init (&unserializer, engine,
+                            false); /* no need for an id-map */
 
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
@@ -312,7 +363,52 @@ simulator__run_frame (Rig__Simulator_Service *service,
       rut_shell_handle_stream_event (engine->shell, event);
     }
 
+  /*
+   * Apply UI edit operations immediately
+   */
+
+  /* Setup the property context to log all property changes so they
+   * can be sent back to the frontend process at the end of the
+   * this frame */
+  simulator->ctx->property_ctx.log = true;
+
+  for (i = 0; i < setup->n_ops; i++)
+    {
+      Rig__Operation *pb_op = setup->ops[i];
+
+      switch (pb_op->type)
+        {
+        case RIG_FRONTEND_OP_TYPE_SET_PROPERTY:
+          {
+            RutObject *object = lookup_object (simulator,
+                                               pb_op->set_property->object_id);
+            RutProperty *property =
+              rut_introspectable_get_property (object,
+                                               pb_op->set_property->property_id);
+            RutBoxed boxed;
+
+            /* XXX: ideally we shouldn't need to init a RutBoxed and set
+             * that on a property, and instead we could just directly
+             * apply the value to the property we have. */
+            rig_pb_init_boxed_value (&unserializer,
+                                     &boxed,
+                                     property->spec->type,
+                                     pb_op->set_property->value);
+
+            /* Note: at this point the logging of property changes
+             * should be disabled in the simulator, so this shouldn't
+             * redundantly feed-back to the frontend process. */
+            rut_property_set_boxed  (prop_ctx, property, &boxed);
+            break;
+          }
+        }
+    }
+
+  simulator->ctx->property_ctx.log = false;
+
   rut_shell_queue_redraw (engine->shell);
+
+  rig_pb_unserializer_destroy (&unserializer);
 
   closure (&ack, closure_data);
 }
@@ -398,6 +494,19 @@ rig_simulator_init (RutShell *shell, void *user_data)
                                              NULL, /* key destroy */
                                              free_object_id);
 
+  if (simulator->editable)
+    {
+      /* Note: we dont' have a free function for the key because
+       * for every entry there is a corresponding entry in the
+       * ->id_map and the keys of this table are the values
+       * of the id_map table that will be freed when we destroy
+       * the id_map. */
+      simulator->object_map = g_hash_table_new_full (g_int64_hash,
+                                                     g_int64_equal,
+                                                     NULL,
+                                                     NULL);
+    }
+
   rut_list_init (&simulator->actions);
 
   rig_simulator_start_service (simulator);
@@ -418,6 +527,12 @@ rig_simulator_fini (RutShell *shell, void *user_data)
 
   g_hash_table_destroy (simulator->id_map);
   simulator->id_map = NULL;
+
+  if (simulator->object_map)
+    {
+      g_hash_table_destroy (simulator->object_map);
+      simulator->object_map = NULL;
+    }
 
   rig_simulator_stop_service (simulator);
 }

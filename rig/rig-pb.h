@@ -52,6 +52,14 @@ _rig_pb_new (RutMemoryStack *stack,
                RUT_UTIL_ALIGNOF (type), \
                init)
 
+const char *
+rig_pb_strdup (RigEngine *engine,
+               const char *string);
+
+void
+rig_pb_unserializer_collect_error (RigPBUnSerializer *unserializer,
+                                   const char *format,
+                                   ...);
 
 typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
                                            void *user_data);

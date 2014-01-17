@@ -31,6 +31,273 @@
 
 #include "rig.pb-c.h"
 
+typedef struct _RigFrontendOp
+{
+  RutList list_node;
+
+  RigFrontendOpType type;
+
+  union {
+    struct {
+      RutObject *object;
+    } register_object;
+    struct {
+      RutProperty *property;
+      RutBoxed value;
+    } set_property;
+    struct {
+      RutEntity *parent;
+      RutEntity *entity;
+    } add_entity;
+    struct {
+      RutEntity *entity;
+    } delete_entity;
+    struct {
+      RutEntity *parent;
+      RutComponent *component;
+    } add_component;
+    struct {
+      RutComponent *component;
+    } delete_component;
+    struct {
+      RigController *controller;
+    } add_controller;
+    struct {
+      RigController *controller;
+    } delete_controller;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      RutBoxed value;
+    } controller_set_const;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+      RutBoxed value;
+    } controller_path_add_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+    } controller_path_delete_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+      RutBoxed value;
+    } controller_path_set_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+    } controller_add_property;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+    } controller_remove_property;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      RigControllerMethod method;
+    } controller_property_set_method;
+  };
+
+} RigFrontendOp;
+
+static void
+clear_ops (RigFrontend *frontend)
+{
+  RigFrontendOp *op, *tmp;
+
+  rut_list_for_each_safe (op, tmp, &frontend->ops, list_node)
+    {
+      switch (op->type)
+        {
+        case RIG_FRONTEND_OP_TYPE_REGISTER_OBJECT:
+          {
+            rut_object_release (op->register_object.object, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_SET_PROPERTY:
+          {
+            rut_object_release (op->set_property.property->object, frontend);
+            break;
+          }
+        }
+
+      rut_list_remove (&op->list_node);
+      g_slice_free (RigFrontendOp, op);
+    }
+
+  frontend->n_ops = 0;
+}
+
+void
+rig_frontend_serialize_ops (RigFrontend *frontend,
+                            RigPBSerializer *serializer,
+                            Rig__FrameSetup *pb_frame_setup)
+{
+  RigEngine *engine = frontend->engine;
+  Rig__Operation *pb_ops;
+  RigFrontendOp *op, *tmp;
+  int i;
+
+  pb_frame_setup->n_ops = frontend->n_ops;
+  if (pb_frame_setup->n_ops == 0)
+    return;
+
+  pb_frame_setup->ops =
+    rut_memory_stack_memalign (engine->serialization_stack,
+                               sizeof (void *) * pb_frame_setup->n_ops,
+                               RUT_UTIL_ALIGNOF (void *));
+  pb_ops =
+    rut_memory_stack_memalign (engine->serialization_stack,
+                               sizeof (Rig__Operation) *
+                               pb_frame_setup->n_ops,
+                               RUT_UTIL_ALIGNOF (Rig__Operation));
+
+  i = 0;
+  rut_list_for_each_safe (op, tmp, &frontend->ops, list_node)
+    {
+      Rig__Operation *pb_op = &pb_ops[i];
+
+      rig__operation__init (pb_op);
+
+      pb_op->type = op->type;
+
+      switch (op->type)
+        {
+        case RIG_FRONTEND_OP_TYPE_REGISTER_OBJECT:
+          {
+            RutProperty *label_property;
+            const char *label;
+
+            pb_op->register_object =
+              rig_pb_new (engine, Rig__Operation__RegisterObject,
+                          rig__operation__register_object__init);
+            label_property =
+              rut_introspectable_lookup_property (op->register_object.object,
+                                                  "label");
+            label = rut_property_get_text (label_property);
+
+            pb_op->register_object->label = (char *)rig_pb_strdup (engine, label);
+            pb_op->register_object->object_id =
+              (intptr_t)op->register_object.object;
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_SET_PROPERTY:
+          {
+            Rig__Operation__SetProperty *pb_set_property =
+              rig_pb_new (engine, Rig__Operation__SetProperty,
+                          rig__operation__set_property__init);
+            pb_op->set_property = pb_set_property;
+
+            pb_set_property->object_id =
+              (intptr_t)op->set_property.property->object;
+            pb_set_property->property_id = op->set_property.property->id;
+            g_print ("DEBUG: id=%d name=%s\n", pb_set_property->property_id, op->set_property.property->spec->name);
+            pb_set_property->value = rig_pb_new (engine,
+                                                 Rig__PropertyValue,
+                                                 rig__property_value__init);
+            rig_pb_property_value_init (serializer,
+                                        pb_set_property->value,
+                                        &op->set_property.value);
+            break;
+          }
+        }
+
+      pb_frame_setup->ops[i] = pb_op;
+
+      i++;
+    }
+
+  clear_ops (frontend);
+}
+
+void
+rig_frontend_op_register_object (RigFrontend *frontend,
+                                 RutObject *object)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_REGISTER_OBJECT;
+  op->register_object.object = rut_object_claim (object, frontend);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_set_property (RigFrontend *frontend,
+                              RutProperty *property,
+                              RutBoxed *value)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_SET_PROPERTY;
+  op->set_property.property = property;
+  rut_boxed_copy (&op->set_property.value, value);
+
+  rut_object_claim (property->object, frontend);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_add_entity (RigFrontend *frontend,
+                            RutEntity *parent,
+                            RutEntity *entity)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  /* TODO */
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_delete_entity (RigFrontend *frontend,
+                               RutEntity *entity)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  /* TODO */
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_add_component (RigFrontend *frontend,
+                               RutEntity *entity,
+                               RutComponent *component)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  /* TODO */
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_delete_component (RigFrontend *frontend,
+                                  RutEntity *entity,
+                                  RutComponent *component)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  /* TODO */
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+
+
+
 static void
 frontend__test (Rig__Frontend_Service *service,
                 const Rig__Query *query,
@@ -100,7 +367,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
       object = (void *)(intptr_t)pb_change->object_id;
 
-#if 0
+#if 1
       g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
                object,
                rut_object_get_type_name (object),
@@ -346,6 +613,9 @@ rig_frontend_new (RutShell *shell,
 
       frontend->simulator_pid = pid;
       frontend->fd = sp[0];
+
+      rut_list_init (&frontend->ops);
+      frontend->n_ops = 0;
 
       rig_frontend_start_service (frontend);
 

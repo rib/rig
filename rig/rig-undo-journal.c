@@ -675,18 +675,10 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoSetProperty *set_property = &undo_redo->d.set_property;
   RigEngine *engine = journal->engine;
-  Rig__Operation__SetProperty *pb_set_property =
-    rig_pb_new (engine, Rig__Operation__SetProperty,
-                rig__operation__set_property__init);
 
-  pb_set_property->object_id =
-    (intptr_t)set_property->property->object;
-  pb_set_property->property_id = set_property->property->spec->id;
-  pb_set_property->value =
-    rig_pb_new (engine, Rig__PropertyValue, rig__property_value__init);
-  rig_pb_property_value_init (journal->serializer,
-                              pb_set_property->value,
-                              &set_property->value1);
+  rig_frontend_op_set_property (engine->frontend,
+                                set_property->property,
+                                &set_property->value1);
 }
 
 static UndoRedo *
@@ -1657,9 +1649,6 @@ rig_undo_journal_insert (RigUndoJournal *journal,
   if (apply)
     {
       UndoRedo *inverse;
-      RigPBSerializer *serializer =
-        rig_pb_serializer_new (journal->engine);
-      journal->serializer = serializer;
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
@@ -1667,6 +1656,15 @@ rig_undo_journal_insert (RigUndoJournal *journal,
        */
       undo_redo_apply (journal, undo_redo);
 
+      /* XXX: For now we have stopped exercising the inversion code
+       * for each undo-redo entry because it raises simulator
+       * synchronization difficulties (for operations that can't
+       * be inverted until they have been applied at least once we
+       * would need to wait until the simulator has responded to
+       * each operation before moving on)
+       */
+#warning "TODO: improve how we synchronize making scene edits with the simulator"
+#if 0
       /* XXX: Some operations can't be inverted until they have been
        * applied once. For example the UndoRedoPathAddRemove operation
        * will save the value of a path node when it is removed so the
@@ -1681,9 +1679,7 @@ rig_undo_journal_insert (RigUndoJournal *journal,
           undo_redo_apply (journal, undo_redo);
           undo_redo_free (inverse);
         }
-
-      rig_pb_serializer_destroy (serializer);
-      journal->serializer = NULL;
+#endif
     }
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
@@ -1724,14 +1720,8 @@ rig_undo_journal_revert (RigUndoJournal *journal)
           return NULL;
         }
 
-      serializer = rig_pb_serializer_new (journal->engine);
-      journal->serializer = serializer;
-
       undo_redo_apply (journal, inverse);
       undo_redo_free (inverse);
-
-      rig_pb_serializer_destroy (serializer);
-      journal->serializer = NULL;
     }
 
   rut_list_remove (&op->list_node);

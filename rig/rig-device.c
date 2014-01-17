@@ -102,6 +102,10 @@ rig_device_paint (RutShell *shell, void *user_data)
       frontend->has_resized = false;
     }
 
+  rig_frontend_serialize_ops (frontend,
+                              serializer,
+                              &setup);
+
   rig__simulator__run_frame (simulator_service,
                              &setup,
                              handle_run_frame_ack,

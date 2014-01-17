@@ -120,6 +120,10 @@ rig_editor_paint (RutShell *shell, void *user_data)
       frontend->has_resized = false;
     }
 
+  rig_frontend_serialize_ops (frontend,
+                              serializer,
+                              &setup);
+
   /* Inform the simulator of the offset position of the main camera
    * view so that it can transform its input events accordingly...
    */

@@ -172,8 +172,6 @@ struct _RigUndoJournal
 {
   RigEngine *engine;
 
-  RigPBSerializer *serializer;
-
   /* List of operations that can be undone. The operations are
    * appended to the end of this list so that they are kept in order
    * from the earliest added operation to the last added operation.

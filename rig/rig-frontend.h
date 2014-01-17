@@ -17,15 +17,12 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef _RIG_FRONTEND_H_
+#define _RIG_FRONTEND_H_
+
 #include <rut.h>
 
 typedef struct _RigFrontend RigFrontend;
-
-#include "rig-engine.h"
-
-
-#ifndef _RIG_FRONTEND_H_
-#define _RIG_FRONTEND_H_
 
 typedef enum _RigFrontendID
 {
@@ -33,6 +30,33 @@ typedef enum _RigFrontendID
   RIG_FRONTEND_ID_SLAVE,
   RIG_FRONTEND_ID_DEVICE
 } RigFrontendID;
+
+
+#include "rig-frontend.h"
+#include "rig-engine.h"
+#include "rig-simulator.h"
+#include "rig-pb.h"
+
+#include "rig.pb-c.h"
+
+typedef enum _RigFrontendOpType
+{
+  RIG_FRONTEND_OP_TYPE_REGISTER_OBJECT=1,
+  RIG_FRONTEND_OP_TYPE_SET_PROPERTY,
+  RIG_FRONTEND_OP_TYPE_ADD_ENTITY,
+  RIG_FRONTEND_OP_TYPE_DELETE_ENTITY,
+  RIG_FRONTEND_OP_TYPE_ADD_COMPONENT,
+  RIG_FRONTEND_OP_TYPE_DELETE_COMPONENT,
+  RIG_FRONTEND_OP_TYPE_ADD_CONTROLLER,
+  RIG_FRONTEND_OP_TYPE_DELETE_CONTROLLER,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_SET_CONST,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_ADD_NODE,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_DELETE_NODE,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_SET_NODE,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_ADD_PROPERTY,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
+  RIG_FRONTEND_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
+} RigFrontendOpType;
 
 
 /* The "frontend" is the main process that controls the running
@@ -59,6 +83,8 @@ struct _RigFrontend
   int pending_width;
   int pending_height;
 
+  RutList ops;
+  int n_ops;
 };
 
 
@@ -66,6 +92,20 @@ RigFrontend *
 rig_frontend_new (RutShell *shell,
                   RigFrontendID id,
                   const char *ui_filename);
+
+void
+rig_frontend_op_register_object (RigFrontend *frontend,
+                                 RutObject *object);
+
+void
+rig_frontend_op_set_property (RigFrontend *frontend,
+                              RutProperty *property,
+                              RutBoxed *value);
+
+void
+rig_frontend_serialize_ops (RigFrontend *frontend,
+                            RigPBSerializer *serializer,
+                            Rig__FrameSetup *pb_frame_setup);
 
 void
 rig_frontend_start_service (RigFrontend *frontend);

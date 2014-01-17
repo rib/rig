@@ -1695,13 +1695,20 @@ input_cb (RutInputEvent *event,
               RutObject *inputable =
                 rut_entity_get_component (picked_entity,
                                           RUT_COMPONENT_TYPE_INPUT);
+              RutProperty *label =
+                rut_introspectable_lookup_property (picked_entity, "label");
+              g_print ("Entity picked: %s\n", rut_property_get_text (label));
+
               if (inputable)
                 return rut_inputable_handle_event (inputable, event);
               else
                 return RUT_INPUT_EVENT_STATUS_UNHANDLED;
             }
           else
-            return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+            {
+              g_print ("No entity picked\n");
+              return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+            }
         }
       else if (action == RUT_MOTION_EVENT_ACTION_DOWN &&
                state == RUT_BUTTON_STATE_1)
@@ -1901,10 +1908,6 @@ input_cb (RutInputEvent *event,
 
                 break;
               }
-            case RUT_KEY_p:
-              rig_simulator_action_set_play_mode_enabled (engine->simulator,
-                                                          !view->play_mode);
-              break;
             case RUT_KEY_j:
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON) &&
@@ -2047,6 +2050,18 @@ input_region_cb (RutInputRegion *region,
   RigCameraView *view = user_data;
   RigEngine *engine = view->engine;
 
+  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
+      engine->simulator &&
+      rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+      rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP &&
+      rut_key_event_get_keysym (event) == RUT_KEY_p)
+    {
+#warning "the latency of updating the play mode state in the frontend is probably bad"
+      rig_simulator_action_set_play_mode_enabled (engine->simulator,
+                                                  !view->play_mode);
+      return RUT_INPUT_EVENT_STATUS_HANDLED;
+    }
+
   /* XXX: it could be nice if the way we forwarded events to the
    * simulator was the same for the editor as for device mode,
    * though it would also seem unnecessary to have any indirection
@@ -2069,12 +2084,25 @@ input_region_cb (RutInputRegion *region,
 
       rut_input_queue_append (engine->simulator_input_queue, event);
 
+      /* While editing we do picking in the editor itself since its
+       * the graph in the frontend process that gets edited and
+       * we then send operations to the simulator to update its
+       * UI description. */
+      if (!view->play_mode)
+        {
+          return input_cb (event, user_data);
+        }
+
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
-  else if (!view->play_mode)
-    return input_cb (event, user_data);
-  else
-    return device_mode_input_cb (event, user_data);
+  else if (view->play_mode)
+    {
+      /* While in play mode then we do picking in the simulator */
+      return input_cb (event, user_data);
+    }
+  //else
+  //  return device_mode_input_cb (event, user_data);
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
 static void

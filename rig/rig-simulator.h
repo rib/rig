@@ -43,6 +43,13 @@ struct _RigSimulator
 {
   RigFrontendID frontend_id;
 
+  /* when running as an editor or slave device then the UI
+   * can be edited at runtime and we handle some things a
+   * bit differently. For example we only need to be able
+   * to map ids to objects to support editing operations.
+   */
+  bool editable;
+
   RutShell *shell;
   RutContext *ctx;
   RigEngine *engine;
@@ -58,7 +65,12 @@ struct _RigSimulator
 
   RutButtonState button_state;
 
+  RigPBUnSerializer *unserializer;
+
   GHashTable *id_map;
+
+  /* Only initialized and maintained if editable == true */
+  GHashTable *object_map;
 
   RutList actions;
   int n_actions;
