@@ -103,6 +103,73 @@ rig_frontend_op_set_property (RigFrontend *frontend,
                               RutBoxed *value);
 
 void
+rig_frontend_op_add_entity (RigFrontend *frontend,
+                            RutEntity *parent,
+                            RutEntity *entity);
+
+void
+rig_frontend_op_delete_entity (RigFrontend *frontend,
+                               RutEntity *entity);
+
+void
+rig_frontend_op_add_component (RigFrontend *frontend,
+                               RutEntity *entity,
+                               RutComponent *component);
+
+void
+rig_frontend_op_delete_component (RigFrontend *frontend,
+                                  RutComponent *component);
+
+void
+rig_frontend_op_add_controller (RigFrontend *frontend,
+                                RigController *controller);
+
+void
+rig_frontend_op_delete_controller (RigFrontend *frontend,
+                                   RigController *controller);
+
+void
+rig_frontend_op_controller_set_const (RigFrontend *frontend,
+                                      RigController *controller,
+                                      RutProperty *property,
+                                      RutBoxed *value);
+
+void
+rig_frontend_op_add_path_node (RigFrontend *frontend,
+                               RigController *controller,
+                               RutProperty *property,
+                               float t,
+                               RutBoxed *value);
+
+void
+rig_frontend_op_controller_path_delete_node (RigFrontend *frontend,
+                                             RigController *controller,
+                                             RutProperty *property,
+                                             float t);
+
+void
+rig_frontend_op_controller_path_set_node (RigFrontend *frontend,
+                                          RigController *controller,
+                                          RutProperty *property,
+                                          float t,
+                                          RutBoxed *value);
+
+void
+rig_frontend_op_controller_add_property (RigFrontend *frontend,
+                                         RigController *controller,
+                                         RutProperty *property);
+
+void
+rig_frontend_op_controller_remove_property (RigFrontend *frontend,
+                                            RigController *controller,
+                                            RutProperty *property);
+
+void
+rig_frontend_op_controller_property_set_method (RigFrontend *frontend,
+                                                RigController *controller,
+                                                RutProperty *property,
+                                                RigControllerMethod method);
+void
 rig_frontend_serialize_ops (RigFrontend *frontend,
                             RigPBSerializer *serializer,
                             Rig__FrameSetup *pb_frame_setup);

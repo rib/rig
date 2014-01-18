@@ -53,7 +53,7 @@ typedef struct _RigFrontendOp
       RutEntity *entity;
     } delete_entity;
     struct {
-      RutEntity *parent;
+      RutEntity *entity;
       RutComponent *component;
     } add_component;
     struct {
@@ -121,6 +121,93 @@ clear_ops (RigFrontend *frontend)
         case RIG_FRONTEND_OP_TYPE_SET_PROPERTY:
           {
             rut_object_release (op->set_property.property->object, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_ADD_ENTITY:
+          {
+            rut_object_release (op->add_entity.parent, frontend);
+            rut_object_release (op->add_entity.entity, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_ENTITY:
+          {
+            rut_object_release (op->delete_entity.entity, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_ADD_COMPONENT:
+          {
+            rut_object_release (op->add_component.entity, frontend);
+            rut_object_release (op->add_component.component, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_COMPONENT:
+          {
+            rut_object_release (op->delete_component.component, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_ADD_CONTROLLER:
+          {
+            rut_object_release (op->add_controller.controller, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_CONTROLLER:
+          {
+            rut_object_release (op->delete_controller.controller, frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_SET_CONST:
+          {
+            rut_object_release (op->controller_set_const.controller, frontend);
+            rut_object_release (op->controller_set_const.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_ADD_NODE:
+          {
+            rut_object_release (op->controller_path_add_node.controller,
+                                frontend);
+            rut_object_release (op->controller_path_add_node.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_DELETE_NODE:
+          {
+            rut_object_release (op->controller_path_delete_node.controller,
+                                frontend);
+            rut_object_release (op->controller_path_delete_node.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_SET_NODE:
+          {
+            rut_object_release (op->controller_path_set_node.controller,
+                                frontend);
+            rut_object_release (op->controller_path_set_node.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_ADD_PROPERTY:
+          {
+            rut_object_release (op->controller_add_property.controller,
+                                frontend);
+            rut_object_release (op->controller_add_property.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_REMOVE_PROPERTY:
+          {
+            rut_object_release (op->controller_remove_property.controller,
+                                frontend);
+            rut_object_release (op->controller_remove_property.property->object,
+                                frontend);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD:
+          {
+            rut_object_release (op->controller_property_set_method.controller,
+                                frontend);
+            rut_object_release (op->controller_property_set_method.property->object,
+                                frontend);
             break;
           }
         }
@@ -195,7 +282,6 @@ rig_frontend_serialize_ops (RigFrontend *frontend,
             pb_set_property->object_id =
               (intptr_t)op->set_property.property->object;
             pb_set_property->property_id = op->set_property.property->id;
-            g_print ("DEBUG: id=%d name=%s\n", pb_set_property->property_id, op->set_property.property->spec->name);
             pb_set_property->value = rig_pb_new (engine,
                                                  Rig__PropertyValue,
                                                  rig__property_value__init);
@@ -204,6 +290,280 @@ rig_frontend_serialize_ops (RigFrontend *frontend,
                                         &op->set_property.value);
             break;
           }
+#if 0
+        case RIG_FRONTEND_OP_TYPE_:
+          {
+            Rig__Operation__FOO *pb_FLIBBLE =
+              rig_pb_new (engine, Rig__Operation__FOO,
+                          rig__operation__FLIBBLE__init);
+            pb_op->FLIBBLE = pb_FLIBBLE;
+
+            pb_FLIBBLE->object_id =
+              (intptr_t)op->FLIBBLE.property->object;
+            pb_FLIBBLE->property_id = op->FLIBBLE.property->id;
+            pb_FLIBBLE->value = rig_pb_new (engine,
+                                            Rig__PropertyValue,
+                                            rig__property_value__init);
+            rig_pb_property_value_init (serializer,
+                                        pb_FLIBBLE->value,
+                                        &op->FLIBBLE.value);
+            break;
+          }
+#endif
+        case RIG_FRONTEND_OP_TYPE_ADD_ENTITY:
+          {
+            Rig__Operation__AddEntity *pb_add_entity =
+              rig_pb_new (engine, Rig__Operation__AddEntity,
+                          rig__operation__add_entity__init);
+            pb_op->add_entity = pb_add_entity;
+
+            pb_add_entity->parent_entity_id = (intptr_t)op->add_entity.parent;
+            pb_add_entity->entity =
+              rig_pb_serialize_entity (serializer,
+                                       NULL,
+                                       op->add_entity.entity);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_ENTITY:
+          {
+            pb_op->delete_entity =
+              rig_pb_new (engine, Rig__Operation__DeleteEntity,
+                          rig__operation__delete_entity__init);
+
+            pb_op->delete_entity->entity_id =
+              (intptr_t)op->delete_entity.entity;
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_ADD_COMPONENT:
+          {
+            pb_op->add_component =
+              rig_pb_new (engine, Rig__Operation__AddComponent,
+                          rig__operation__add_component__init);
+
+            pb_op->add_component->parent_entity_id =
+              (intptr_t)op->add_component.entity;
+            pb_op->add_component->component =
+              rig_pb_serialize_component (serializer,
+                                          op->add_component.component);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_COMPONENT:
+          {
+            pb_op->delete_component =
+              rig_pb_new (engine, Rig__Operation__DeleteComponent,
+                          rig__operation__delete_component__init);
+
+            pb_op->delete_component->component_id =
+              (intptr_t)op->delete_component.component;
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_ADD_CONTROLLER:
+          {
+            pb_op->add_controller =
+              rig_pb_new (engine, Rig__Operation__AddController,
+                          rig__operation__add_controller__init);
+
+            pb_op->add_controller->controller =
+              rig_pb_serialize_controller (serializer,
+                                           op->add_controller.controller);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_DELETE_CONTROLLER:
+          {
+            pb_op->delete_controller =
+              rig_pb_new (engine, Rig__Operation__DeleteController,
+                          rig__operation__delete_controller__init);
+
+            pb_op->delete_controller->controller_id =
+              (intptr_t)op->delete_controller.controller;
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_CONTROLLER_SET_CONST:
+          {
+            pb_op->controller_set_const =
+              rig_pb_new (engine, Rig__Operation__ControllerSetConst,
+                          rig__operation__controller_set_const__init);
+
+            pb_op->controller_set_const->controller_id =
+              (intptr_t)op->controller_set_const.controller;
+            pb_op->controller_set_const->object_id =
+              (intptr_t)op->controller_set_const.property->object;
+            pb_op->controller_set_const->property_id =
+              (intptr_t)op->controller_set_const.property->id;
+            pb_op->controller_set_const->value =
+              rig_pb_new (engine,
+                          Rig__PropertyValue,
+                          rig__property_value__init);
+            rig_pb_property_value_init (serializer,
+                                        pb_op->controller_set_const->value,
+                                        &op->controller_set_const.value);
+            break;
+          }
+
+        /* XXX: How will operations such as add_entity be synchonized
+         * with the frontend?
+         *
+         * Simple property changes work because the simulator logs
+         * the property change when applying and sends an update
+         * back to the editor.
+         *
+         * As part of a bigger question:
+         * It is going to be desirable for logic to be able to
+         * instantiate new entities, add/delete components and
+         * manipulate Rigs, how is that going to be possible?
+         * - Firstly it implies we need to create corresponding
+         *   protocol for communicating changes from the simulator
+         *   to the frontend.
+         * - It raises the question of how, can we determine what
+         *   UI state should be saved, vs what state is a side
+         *   effect of running UI logic.
+         * - If the editor always maintained a pristine UI that
+         *   was never modified by UI logic it would even mean that
+         *   simple expressions to make object A follow object B
+         *   wouldn't be reflected unless in play mode and so the edit
+         *   area could become quite disconnected from the thing being
+         *   created.
+         *
+         *   We could have a flag set by the editor on all objects to
+         *   distinquish and ignore objects created by scripts when
+         *   saving. What about if the scripts modify editor objects?
+         *
+         *   Considering all ops:
+         *   add_entity: ok with a flag to ignore when saving
+         *   delete_entity: could dissallow deleting flagged entities
+         *                  can we assume this special rule will be
+         *                  acceptable since could should only ever
+         *                  try to delete things that it owns so it
+         *                  would be strange to want to try and delete
+         *                  an objected created with the editor.
+         *   add_component: ok with a flag to ignore when saving
+         *   delete_component: as with delete_entity, we can assume
+         *                     code shouldn't ever need to try and
+         *                     delete a component created with the
+         *                     editor.
+         *   add_controller: ok (with flag)
+         *   delete_controller: ok if not flagged
+         *   controller_set_const: ok if controller not flagged
+         *
+         *
+         *   XXX: I think we really we need to have a clean separation
+         *   between the state of "play mode" and "edit mode" and
+         *   initially simply say that no logic runs in edit mode.
+         *
+         *   Both the simulator and frontend should track separate
+         *   play vs edit UIs that can be switched between.
+         *
+         *   Should we run two simulators - for each mode?
+         *   This is similar in concept to being connected to slave
+         *   while editing. Edits would be forwarded to any slaves
+         *   and the simulator in play mode on a best effort basis
+         *   (you may be able to get into an inconsistent state but
+         *   we want the convenience of getting immediate feedback
+         *   for edits without having to always reset the play mode
+         *   state.)
+         */
+#warning "FIXME: resolve this issue"
+
+#if 0
+  //Add a new controller property path node / key frame
+  message ControllerPathAddNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+    required PropertyValue value=5;
+  }
+  optional ControllerPathAddNode controller_path_add_node=11;
+
+  //Remove a node / key frame from a controller property path
+  message ControllerPathDeleteNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+  }
+  optional ControllerPathDeleteNode controller_path_delete_node=12;
+
+  //Change the value of a controller property path node / key frame
+  message ControllerPathSetNode
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+    required float t=4;
+    required PropertyValue value=5;
+  }
+  optional ControllerPathSetNode controller_path_set_node=13;
+
+  //Associate a property with a controller
+  message ControllerAddProperty
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+  }
+  optional ControllerAddProperty controller_add_property=14;
+
+  //Disassociate a property from a controller
+  message ControllerRemoveProperty
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+  }
+  optional ControllerRemoveProperty controller_remove_property=15;
+
+  //Change the method of controlling a property
+  message ControllerPropertySetMethod
+  {
+    required sint64 controller_id=1;
+    required sint64 object_id=2;
+    required int32 property_id=3;
+
+    enum Method { CONSTANT=1; PATH=2; BINDING=3; }
+
+    required Method method=4;
+  }
+  optional ControllerPropertySetMethod controller_property_set_method=16;
+
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      RutBoxed value;
+    } controller_set_const;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+      RutBoxed value;
+    } controller_path_add_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+    } controller_path_delete_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      float t;
+      RutBoxed value;
+    } controller_path_set_node;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+    } controller_add_property;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+    } controller_remove_property;
+    struct {
+      RigController *controller;
+      RutProperty *property;
+      RigControllerMethod method;
+    } controller_property_set_method;
+#endif
         }
 
       pb_frame_setup->ops[i] = pb_op;
@@ -251,7 +611,9 @@ rig_frontend_op_add_entity (RigFrontend *frontend,
 {
   RigFrontendOp *op = g_slice_new (RigFrontendOp);
 
-  /* TODO */
+  op->type = RIG_FRONTEND_OP_TYPE_ADD_ENTITY;
+  op->add_entity.parent = rut_object_claim (parent, frontend);
+  op->add_entity.entity = rut_object_claim (entity, frontend);
 
   rut_list_insert (frontend->ops.prev, &op->list_node);
   frontend->n_ops++;
@@ -263,7 +625,8 @@ rig_frontend_op_delete_entity (RigFrontend *frontend,
 {
   RigFrontendOp *op = g_slice_new (RigFrontendOp);
 
-  /* TODO */
+  op->type = RIG_FRONTEND_OP_TYPE_DELETE_ENTITY;
+  op->delete_entity.entity = rut_object_claim (entity, frontend);
 
   rut_list_insert (frontend->ops.prev, &op->list_node);
   frontend->n_ops++;
@@ -276,7 +639,9 @@ rig_frontend_op_add_component (RigFrontend *frontend,
 {
   RigFrontendOp *op = g_slice_new (RigFrontendOp);
 
-  /* TODO */
+  op->type = RIG_FRONTEND_OP_TYPE_ADD_COMPONENT;
+  op->add_component.entity = rut_object_claim (entity, frontend);
+  op->add_component.component = rut_object_claim (component, frontend);
 
   rut_list_insert (frontend->ops.prev, &op->list_node);
   frontend->n_ops++;
@@ -284,19 +649,188 @@ rig_frontend_op_add_component (RigFrontend *frontend,
 
 void
 rig_frontend_op_delete_component (RigFrontend *frontend,
-                                  RutEntity *entity,
                                   RutComponent *component)
 {
   RigFrontendOp *op = g_slice_new (RigFrontendOp);
 
-  /* TODO */
+  op->type = RIG_FRONTEND_OP_TYPE_DELETE_COMPONENT;
+  op->delete_component.component = rut_object_claim (component, frontend);
 
   rut_list_insert (frontend->ops.prev, &op->list_node);
   frontend->n_ops++;
 }
 
+void
+rig_frontend_op_add_controller (RigFrontend *frontend,
+                                RigController *controller)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
 
+  op->type = RIG_FRONTEND_OP_TYPE_ADD_CONTROLLER;
+  op->add_controller.controller = rut_object_claim (controller, frontend);
 
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_delete_controller (RigFrontend *frontend,
+                                   RigController *controller)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_DELETE_CONTROLLER;
+  op->delete_controller.controller = rut_object_claim (controller, frontend);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_set_const (RigFrontend *frontend,
+                                      RigController *controller,
+                                      RutProperty *property,
+                                      RutBoxed *value)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_SET_CONST;
+  op->controller_set_const.controller = rut_object_claim (controller, frontend);
+  op->controller_set_const.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  rut_boxed_copy (&op->controller_set_const.value, value);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_add_path_node (RigFrontend *frontend,
+                               RigController *controller,
+                               RutProperty *property,
+                               float t,
+                               RutBoxed *value)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_ADD_NODE;
+  op->controller_path_add_node.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_path_add_node.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  op->controller_path_add_node.t = t;
+
+  rut_boxed_copy (&op->controller_path_add_node.value, value);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_path_delete_node (RigFrontend *frontend,
+                                             RigController *controller,
+                                             RutProperty *property,
+                                             float t)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_DELETE_NODE;
+  op->controller_path_delete_node.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_path_delete_node.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  op->controller_path_delete_node.t = t;
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_path_set_node (RigFrontend *frontend,
+                                          RigController *controller,
+                                          RutProperty *property,
+                                          float t,
+                                          RutBoxed *value)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_SET_NODE;
+  op->controller_path_set_node.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_path_set_node.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  op->controller_path_set_node.t = t;
+
+  rut_boxed_copy (&op->controller_path_set_node.value, value);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_add_property (RigFrontend *frontend,
+                                         RigController *controller,
+                                         RutProperty *property)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_ADD_PROPERTY;
+  op->controller_add_property.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_add_property.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_remove_property (RigFrontend *frontend,
+                                            RigController *controller,
+                                            RutProperty *property)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_REMOVE_PROPERTY;
+  op->controller_remove_property.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_remove_property.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
+void
+rig_frontend_op_controller_property_set_method (RigFrontend *frontend,
+                                                RigController *controller,
+                                                RutProperty *property,
+                                                RigControllerMethod method)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD;
+  op->controller_property_set_method.controller =
+    rut_object_claim (controller, frontend);
+  op->controller_property_set_method.property = property;
+
+  rut_object_claim (property->object, frontend);
+
+  op->controller_property_set_method.method = method;
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
 
 static void
 frontend__test (Rig__Frontend_Service *service,

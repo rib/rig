@@ -96,6 +96,19 @@ rig_pb_serializer_destroy (RigPBSerializer *serializer);
 Rig__UI *
 rig_pb_serialize_ui (RigPBSerializer *serializer);
 
+Rig__Entity *
+rig_pb_serialize_entity (RigPBSerializer *serializer,
+                         RutEntity *parent,
+                         RutEntity *entity);
+
+Rig__Entity__Component *
+rig_pb_serialize_component (RigPBSerializer *serializer,
+                            RutComponent *component);
+
+Rig__Controller *
+rig_pb_serialize_controller (RigPBSerializer *serializer,
+                             RigController *controller);
+
 void
 rig_pb_serialized_ui_destroy (Rig__UI *ui);
 
