@@ -36,8 +36,6 @@
 
 #include <windows.h>
 
-#include "cogl.h"
-
 #include "cogl-util.h"
 #include "cogl-winsys-private.h"
 #include "cogl-context-private.h"
