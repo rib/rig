@@ -111,9 +111,20 @@ void EnumGenerator::GenerateDefinition(io::Printer* printer) {
     }
   }
 
-  printer->Print(vars, "  _PROTOBUF_C_FORCE_ENUM_TO_BE_INT_SIZE($uc_name$)\n");
   printer->Outdent();
   printer->Print(vars, "} $classname$;\n");
+
+  //Note: we avoid adding a special enum value that explicitly forces
+  //the enum to be the same size as an int because that makes it
+  //awkward to enable -Wswitch warnings which are really useful for
+  //reminding you when you've forgotten to handle a particular enum
+  //value in a switch statement - a relatively common source of bugs.
+  //Instead we require that the compiler be passed compiler flags
+  //to disable packing enums if necessary, but double check the
+  //size with a static assertion.
+  printer->Print(vars, "_Static_assert(sizeof ($classname$) == sizeof (int),"
+                 "\"protobuf-c files expect all enums to have the same size as an int "
+                 "but your compiler is packing them into smaller sizes.\");\n");
 }
 
 void EnumGenerator::GenerateDescriptorDeclarations(io::Printer* printer) {
