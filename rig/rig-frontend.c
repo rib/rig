@@ -1006,24 +1006,21 @@ handle_load_response (const Rig__LoadResult *result,
   g_print ("Simulator: UI loaded\n");
 }
 
-uint64_t
+static uint64_t
 object_to_pointer_id_cb (void *object,
                          void *user_data)
 {
   return (uint64_t)(intptr_t)object;
 }
 
-static void
-frontend_peer_connected (PB_RPC_Client *pb_client,
-                         void *user_data)
+void
+rig_frontend_reload_uis (RigFrontend *frontend)
 {
-  RigPBSerializer *serializer;
-  RigFrontend *frontend = user_data;
+  RigEngine *engine = frontend->engine;
+  RigPBSerializer *serializer = rig_pb_serializer_new (engine);
   ProtobufCService *simulator_service =
-    rig_pb_rpc_client_get_service (pb_client);
-  Rig__UI *ui;
-
-  serializer = rig_pb_serializer_new (frontend->engine);
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+  Rig__UI *pb_ui;
 
   rig_pb_serializer_set_object_register_callback (serializer,
                                                   object_to_pointer_id_cb,
@@ -1036,13 +1033,59 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
                                       asset_filter_cb,
                                       NULL);
 
-  ui = rig_pb_serialize_ui (serializer);
+  if (frontend->id == RIG_FRONTEND_ID_EDITOR)
+    {
+      /* Note: as opposed to letting the simulator copy the edit mode
+       * UI itself to create a play mode UI we explicitly serialize
+       * both the edit and play mode UIs so we can forward pointer ids
+       * for all objects in both UIs...
+       */
 
-  rig__simulator__load (simulator_service, ui,
-                        handle_load_response,
-                        NULL);
+      pb_ui = rig_pb_serialize_ui (serializer,
+                                   false, /* edit mode */
+                                   engine->edit_mode_ui);
 
-  rig_pb_serialized_ui_destroy (ui);
+      rig__simulator__load (simulator_service, pb_ui,
+                            handle_load_response,
+                            NULL);
+
+      rig_pb_serialized_ui_destroy (pb_ui);
+
+      pb_ui = rig_pb_serialize_ui (serializer,
+                                   true, /* play mode */
+                                   engine->play_mode_ui);
+
+      rig__simulator__load (simulator_service, pb_ui,
+                            handle_load_response,
+                            NULL);
+
+      rig_pb_serialized_ui_destroy (pb_ui);
+    }
+  else
+    {
+      pb_ui = rig_pb_serialize_ui (serializer,
+                                   true, /* play mode */
+                                   engine->edit_mode_ui);
+
+      rig__simulator__load (simulator_service, pb_ui,
+                            handle_load_response,
+                            NULL);
+
+      rig_pb_serialized_ui_destroy (pb_ui);
+    }
+
+  rig_pb_serializer_destroy (serializer);
+}
+
+static void
+frontend_peer_connected (PB_RPC_Client *pb_client,
+                         void *user_data)
+{
+  RigFrontend *frontend = user_data;
+
+  frontend->connected = true;
+
+  rig_frontend_reload_uis (frontend);
 
 #if 0
   Rig__Query query = RIG__QUERY__INIT;
@@ -1051,8 +1094,6 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
   rig__simulator__test (simulator_service, &query,
                         handle_simulator_test_response, NULL);
 #endif
-
-  rig_pb_serializer_destroy (serializer);
 
   g_print ("Frontend peer connected\n");
 }
@@ -1066,8 +1107,6 @@ _rig_frontend_free (void *object)
 
   rut_object_unref (frontend->engine);
 
-  rig_frontend_stop_service (frontend);
-
   rut_object_free (RigFrontend, object);
 }
 
@@ -1076,21 +1115,16 @@ RutType rig_frontend_type;
 static void
 _rig_frontend_init_type (void)
 {
-  RutType *type = &rig_frontend_type;
-#define TYPE RigFrontend
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_frontend_free);
-
-#undef TYPE
+  rut_type_init (&rig_frontend_type, "RigFrontend", _rig_frontend_free);
 }
 
-RigFrontend *
-rig_frontend_new (RutShell *shell,
-                  RigFrontendID id,
-                  const char *ui_filename)
+void
+rig_frontend_spawn_simulator (RigFrontend *frontend)
 {
   pid_t pid;
   int sp[2];
+
+  g_return_if_fail (frontend->connected == false);
 
   /*
    * Spawn a simulator process...
@@ -1113,7 +1147,7 @@ rig_frontend_new (RutShell *shell,
 
       setenv ("_RIG_IPC_FD", fd_str, true);
 
-      switch (id)
+      switch (frontend->id)
         {
         case RIG_FRONTEND_ID_EDITOR:
           setenv ("_RIG_FRONTEND", "editor", true);
@@ -1134,30 +1168,35 @@ rig_frontend_new (RutShell *shell,
       if (execl (path, path, NULL) < 0)
         g_error ("Failed to run simulator process");
 
-      return NULL;
+      return;
     }
-  else
-    {
-      RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
-                                                 &rig_frontend_type,
-                                                 _rig_frontend_init_type);
 
+  frontend->simulator_pid = pid;
+  frontend->fd = sp[0];
 
-      frontend->id = id;
+  rig_frontend_start_service (frontend);
+}
 
-      frontend->simulator_pid = pid;
-      frontend->fd = sp[0];
+RigFrontend *
+rig_frontend_new (RutShell *shell,
+                  RigFrontendID id,
+                  const char *ui_filename)
+{
+  RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
+                                             &rig_frontend_type,
+                                             _rig_frontend_init_type);
 
-      rut_list_init (&frontend->ops);
-      frontend->n_ops = 0;
+  frontend->id = id;
 
-      rig_frontend_start_service (frontend);
+  rut_list_init (&frontend->ops);
+  frontend->n_ops = 0;
 
-      frontend->engine =
-        rig_engine_new_for_frontend (shell, frontend, ui_filename);
+  rig_frontend_spawn_simulator (frontend);
 
-      return frontend;
-    }
+  frontend->engine =
+    rig_engine_new_for_frontend (shell, frontend, ui_filename);
+
+  return frontend;
 }
 
 static void
@@ -1189,4 +1228,5 @@ rig_frontend_stop_service (RigFrontend *frontend)
 {
   rut_object_unref (frontend->frontend_peer);
   frontend->frontend_peer = NULL;
+  frontend->connected = false;
 }

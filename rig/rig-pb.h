@@ -27,6 +27,7 @@ typedef struct _RigPBSerializer RigPBSerializer;
 typedef struct _RigPBUnSerializer RigPBUnSerializer;
 
 #include "rig-engine.h"
+#include "rig-ui.h"
 #include "rig.pb-c.h"
 
 typedef void (*PBMessageInitFunc) (void *message);
@@ -74,6 +75,10 @@ rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
                                     RigPBAssetFilter filter,
                                     void *user_data);
 
+void
+rig_pb_serializer_set_only_asset_ids_enabled (RigPBSerializer *serializer,
+                                              bool only_ids);
+
 typedef uint64_t (*RigPBSerializerObjecRegisterCallback) (void *object,
                                                           void *user_data);
 
@@ -94,7 +99,9 @@ void
 rig_pb_serializer_destroy (RigPBSerializer *serializer);
 
 Rig__UI *
-rig_pb_serialize_ui (RigPBSerializer *serializer);
+rig_pb_serialize_ui (RigPBSerializer *serializer,
+                     bool play_mode,
+                     RigUI *ui);
 
 Rig__Entity *
 rig_pb_serialize_entity (RigPBSerializer *serializer,
@@ -129,6 +136,10 @@ typedef bool (*RigPBUnSerializerObjectRegisterCallback) (void *object,
 typedef void *(*RigPBUnSerializerIDToObjecCallback) (uint64_t id,
                                                      void *user_data);
 
+typedef RutAsset *(*RigPBUnSerializerAssetCallback) (RigPBUnSerializer *unserializer,
+                                                     Rig__Asset *pb_asset,
+                                                     void *user_data);
+
 
 struct _RigPBUnSerializer
 {
@@ -139,6 +150,9 @@ struct _RigPBUnSerializer
 
   RigPBUnSerializerIDToObjecCallback id_to_object_callback;
   void *id_to_object_data;
+
+  RigPBUnSerializerAssetCallback unserialize_asset_callback;
+  void *unserialize_asset_data;
 
   GList *assets;
   GList *entities;
@@ -166,12 +180,16 @@ rig_pb_unserializer_set_id_to_object_callback (
                                      void *user_data);
 
 void
+rig_pb_unserializer_set_asset_unserialize_callback (
+                                     RigPBUnSerializer *unserializer,
+                                     RigPBUnSerializerAssetCallback callback,
+                                     void *user_data);
+void
 rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer);
 
-void
+RigUI *
 rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
-                       const Rig__UI *pb_ui,
-                       bool skip_assets);
+                       const Rig__UI *pb_ui);
 
 RutMesh *
 rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,

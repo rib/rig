@@ -20,6 +20,8 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rig.pb-c.h"
 #include "rig-pb.h"
 #include "rig-engine.h"
@@ -39,6 +41,7 @@ struct _RigPBSerializer
   RigPBSerializerObjecToIDCallback object_to_id_callback;
   void *object_to_id_data;
 
+  bool only_asset_ids;
   GList *required_assets;
 
   int n_pb_entities;
@@ -941,6 +944,13 @@ rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
 }
 
 void
+rig_pb_serializer_set_only_asset_ids_enabled (RigPBSerializer *serializer,
+                                              bool only_ids)
+{
+  serializer->only_asset_ids = only_ids;
+}
+
+void
 rig_pb_serializer_set_object_register_callback (RigPBSerializer *serializer,
                                  RigPBSerializerObjecRegisterCallback callback,
                                  void *user_data)
@@ -1003,6 +1013,9 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
   int i;
 
   pb_asset = rig_pb_new (engine, Rig__Asset, rig__asset__init);
+
+  pb_asset->has_id = true;
+  pb_asset->id = serializer_lookup_object_id (serializer, asset);
 
   pb_asset->path = (char *)rut_asset_get_path (asset);
 
@@ -1177,6 +1190,16 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
   char *contents;
   size_t len;
 
+  if (serializer->only_asset_ids)
+    {
+      pb_asset = rig_pb_new (engine, Rig__Asset, rig__asset__init);
+
+      pb_asset->has_id = true;
+      pb_asset->id = serializer_lookup_object_id (serializer, asset);
+
+      return pb_asset;
+    }
+
   /* XXX: This should be renamed to _TYPE_MESH */
   if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_PLY_MODEL)
     return serialize_mesh_asset (serializer, asset);
@@ -1196,6 +1219,9 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
   g_free (full_path);
 
   pb_asset = rig_pb_new (engine, Rig__Asset, rig__asset__init);
+
+  pb_asset->has_id = true;
+  pb_asset->id = serializer_lookup_object_id (serializer, asset);
 
   pb_asset->path = (char *)path;
 
@@ -1261,70 +1287,66 @@ rig_pb_serialize_controller (RigPBSerializer *serializer,
 }
 
 Rig__UI *
-rig_pb_serialize_ui (RigPBSerializer *serializer)
+rig_pb_serialize_ui (RigPBSerializer *serializer,
+                     bool play_mode,
+                     RigUI *ui)
 {
   RigEngine *engine = serializer->engine;
   GList *l;
   int i;
-  Rig__UI *ui;
-  Rig__Device *device;
+  Rig__UI *pb_ui;
 
-  ui = rig_pb_new (engine, Rig__UI, rig__ui__init);
-  device = rig_pb_new (engine, Rig__Device, rig__device__init);
+  pb_ui = rig_pb_new (engine, Rig__UI, rig__ui__init);
 
-  ui->device = device;
-
-  device->has_width = TRUE;
-  device->width = engine->device_width;
-  device->has_height = TRUE;
-  device->height = engine->device_height;
-  device->background = pb_color_new (engine, &engine->background_color);
+  pb_ui->has_mode = true;
+  pb_ui->mode = play_mode ? RIG__UI__MODE__PLAY : RIG__UI__MODE__EDIT;
 
   /* Register all assets up front, but we only actually serialize those
    * assets that are referenced - indicated by a corresponding id lookup
    * in serializer_lookup_object_id()
    */
-  for (l = engine->assets; l; l = l->next)
+  for (l = ui->assets; l; l = l->next)
     register_serializer_object (serializer, l->data);
 
   serializer->n_pb_entities = 0;
-  rut_graphable_traverse (engine->scene,
+  rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           _rut_entitygraph_pre_serialize_cb,
                           NULL,
                           serializer);
 
-  ui->n_entities = serializer->n_pb_entities;
-  ui->entities = rut_memory_stack_memalign (engine->serialization_stack,
-                                            sizeof (void *) * ui->n_entities,
-                                            RUT_UTIL_ALIGNOF (void *));
+  pb_ui->n_entities = serializer->n_pb_entities;
+  pb_ui->entities =
+    rut_memory_stack_memalign (engine->serialization_stack,
+                               sizeof (void *) * pb_ui->n_entities,
+                               RUT_UTIL_ALIGNOF (void *));
   for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
-    ui->entities[i] = l->data;
+    pb_ui->entities[i] = l->data;
   g_list_free (serializer->pb_entities);
 
-  for (i = 0, l = engine->controllers; l; i++, l = l->next)
+  for (i = 0, l = ui->controllers; l; i++, l = l->next)
     register_serializer_object (serializer, l->data);
 
-  ui->n_controllers = g_list_length (engine->controllers);
-  if (ui->n_controllers)
+  pb_ui->n_controllers = g_list_length (ui->controllers);
+  if (pb_ui->n_controllers)
     {
-      ui->controllers =
+      pb_ui->controllers =
         rut_memory_stack_memalign (engine->serialization_stack,
-                                   sizeof (void *) * ui->n_controllers,
+                                   sizeof (void *) * pb_ui->n_controllers,
                                    RUT_UTIL_ALIGNOF (void *));
 
-      for (i = 0, l = engine->controllers; l; i++, l = l->next)
+      for (i = 0, l = ui->controllers; l; i++, l = l->next)
         {
           RigController *controller = l->data;
           Rig__Controller *pb_controller =
             rig_pb_serialize_controller (serializer, controller);
 
-          ui->controllers[i] = pb_controller;
+          pb_ui->controllers[i] = pb_controller;
         }
     }
 
-  ui->n_assets = g_list_length (serializer->required_assets);
-  if (ui->n_assets)
+  pb_ui->n_assets = g_list_length (serializer->required_assets);
+  if (pb_ui->n_assets)
     {
       RigPBAssetFilter save_filter = serializer->asset_filter;
       int i;
@@ -1335,25 +1357,23 @@ rig_pb_serialize_ui (RigPBSerializer *serializer)
        * the ids for serializing the assets themselves. */
       serializer->asset_filter = NULL;
 
-      ui->assets = rut_memory_stack_memalign (engine->serialization_stack,
-                                              ui->n_assets * sizeof (void *),
-                                              RUT_UTIL_ALIGNOF (void *));
+      pb_ui->assets =
+        rut_memory_stack_memalign (engine->serialization_stack,
+                                   pb_ui->n_assets * sizeof (void *),
+                                   RUT_UTIL_ALIGNOF (void *));
       for (i = 0, l = serializer->required_assets; l; i++, l = l->next)
         {
           RutAsset *asset = l->data;
           Rig__Asset *pb_asset = serialize_asset (serializer, asset);
 
-          pb_asset->has_id = true;
-          pb_asset->id = serializer_lookup_object_id (serializer, asset);
-
-          ui->assets[i] = pb_asset;
+          pb_ui->assets[i] = pb_asset;
         }
 
       /* restore the asset filter */
       serializer->asset_filter = save_filter;
     }
 
-  return ui;
+  return pb_ui;
 }
 
 void
@@ -2461,6 +2481,15 @@ unserialize_assets (RigPBUnSerializer *unserializer,
           return;
         }
 
+      if (unserializer->unserialize_asset_callback)
+        {
+          void *user_data = unserializer->unserialize_asset_data;
+          asset = unserializer->unserialize_asset_callback (unserializer,
+                                                            pb_asset,
+                                                            user_data);
+        }
+
+
       if (!pb_asset->path)
         continue;
 
@@ -2944,33 +2973,29 @@ rig_pb_unserializer_set_id_to_object_callback (
 }
 
 void
+rig_pb_unserializer_set_asset_unserialize_callback (
+                                     RigPBUnSerializer *unserializer,
+                                     RigPBUnSerializerAssetCallback callback,
+                                     void *user_data)
+{
+  unserializer->unserialize_asset_callback = callback;
+  unserializer->unserialize_asset_data = user_data;
+}
+
+void
 rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer)
 {
   if (unserializer->id_map)
     g_hash_table_destroy (unserializer->id_map);
 }
 
-void
+RigUI *
 rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
-                       const Rig__UI *pb_ui,
-                       bool skip_assets)
+                       const Rig__UI *pb_ui)
 {
+  RigUI *ui = rig_ui_new (unserializer->engine);
   RigEngine *engine = unserializer->engine;
   GList *l;
-
-  if (pb_ui->device)
-    {
-      Rig__Device *device = pb_ui->device;
-      if (device->has_width)
-        engine->device_width = device->width;
-      if (device->has_height)
-        engine->device_height = device->height;
-
-      if (device->background)
-        pb_init_color (engine->ctx,
-                       &engine->background_color,
-                       device->background);
-    }
 
   unserialize_assets (unserializer,
                       pb_ui->n_assets,
@@ -2984,26 +3009,24 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
                            pb_ui->n_controllers,
                            pb_ui->controllers);
 
-  rig_engine_free_ui (engine);
-
-  engine->scene = rut_graph_new (engine->ctx);
+  ui->scene = rut_graph_new (engine->ctx);
   for (l = unserializer->entities; l; l = l->next)
     {
       if (rut_graphable_get_parent (l->data) == NULL)
-        rut_graphable_add_child (engine->scene, l->data);
+        rut_graphable_add_child (ui->scene, l->data);
     }
 
-  if (unserializer->light)
-    engine->light = unserializer->light;
+  ui->light = unserializer->light;
 
-  engine->controllers = unserializer->controllers;
+  ui->controllers = unserializer->controllers;
 
-  if (!skip_assets)
-    engine->assets = unserializer->assets;
+  ui->assets = unserializer->assets;
 
-  rig_engine_handle_ui_update (engine);
+  /* Make sure the ui is complete, in case anything was missing from what we
+   * loaded... */
+  rig_ui_prepare (ui);
 
-  rut_shell_queue_redraw (engine->ctx->shell);
+  return ui;
 }
 
 typedef struct _NamedBuffer

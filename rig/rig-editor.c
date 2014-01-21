@@ -165,6 +165,7 @@ main (int argc, char **argv)
   RigEditor editor;
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
+  char *assets_location;
 
   gst_init (&argc, &argv);
 
@@ -201,33 +202,11 @@ main (int argc, char **argv)
 
   _rig_in_editor_mode = true;
 
-  /* XXX: This is a rather hacky way of handling opening new files due
-   * to how bad our resource management used be that it was easier to
-   * completely tear down the whole engine and start a-fresh. I think
-   * now it wouldn't be too tricky to support opening new files
-   * without using such a big hammer...
-   */
-  while (TRUE)
-    {
-      char *assets_location = g_path_get_dirname (editor.ui_filename);
-      rut_set_assets_location (editor.ctx, assets_location);
-      g_free (assets_location);
+  assets_location = g_path_get_dirname (editor.ui_filename);
+  rut_set_assets_location (editor.ctx, assets_location);
+  g_free (assets_location);
 
-      rut_shell_main (editor.shell);
-
-      if (editor.engine->next_ui_filename)
-        {
-          g_free (editor.ui_filename);
-          editor.ui_filename = editor.engine->next_ui_filename;
-          editor.engine->next_ui_filename = NULL;
-
-          rut_object_unref (editor.frontend);
-          editor.frontend = NULL;
-          editor.engine = NULL;
-        }
-      else
-        break;
-    }
+  rut_shell_main (editor.shell);
 
   rut_object_unref (editor.frontend);
   rut_object_unref (editor.ctx);

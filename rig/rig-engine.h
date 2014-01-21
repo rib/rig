@@ -85,13 +85,11 @@ struct _RigEngine
   bool play_mode;
 
   char *ui_filename;
-  char *next_ui_filename;
 
   GHashTable *id_map;
 
   RutCamera *camera_2d;
   RutObject *root;
-  RutObject *scene;
 
   CoglMatrix identity;
 
@@ -132,15 +130,6 @@ struct _RigEngine
   CoglTexture2D *shadow_color;
   CoglTexture *shadow_map;
 
-  float device_width;
-  float device_height;
-  CoglColor background_color;
-
-  //float width;
-  //RutProperty width_property;
-  //float height;
-  //RutProperty height_property;
-
   RutStack *top_stack;
   RutBin *top_bin;
   RutBoxLayout *top_vbox;
@@ -171,18 +160,14 @@ struct _RigEngine
   CoglAttribute *circle_node_attribute;
   int circle_node_n_verts;
 
-  //RutTransform *slider_transform;
-  //RutSlider *slider;
-  //RutProperty *slider_progress;
-  RutRectangle *rect;
   float window_width;
   float window_height;
-  //float main_x;
-  //float main_y;
-  //float main_width;
-  //float main_height;
+
   float screen_area_width;
   float screen_area_height;
+
+  float device_width;
+  float device_height;
 
   RutUIViewport *search_vp;
   RutFold *search_results_fold;
@@ -216,12 +201,8 @@ struct _RigEngine
   CoglMatrix main_view;
   float z_2d;
 
-  RutEntity *light;
-  RutEntity *light_handle;
-
-  RutEntity *play_camera;
-  RutCamera *play_camera_component;
 #ifdef RIG_EDITOR_ENABLED
+  RutEntity *light_handle;
   RutEntity *play_camera_handle;
 #endif
 
@@ -231,9 +212,6 @@ struct _RigEngine
   RutInputCallback key_focus_callback;
   float grab_progress;
 
-  GList *assets;
-
-  GList *controllers;
   RigController *selected_controller;
   RutPropertyClosure *controller_progress_closure;
 
@@ -294,6 +272,10 @@ struct _RigEngine
 
   GList *slave_masters;
 
+  RigUI *edit_mode_ui;
+  RigUI *play_mode_ui;
+  RigUI *current_ui;
+
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
 };
@@ -317,6 +299,10 @@ RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
                               RigSimulator *simulator);
 
+void
+rig_engine_load_file (RigEngine *engine,
+                      const char *filename);
+
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);
 
@@ -334,10 +320,11 @@ rig_engine_set_onscreen_size (RigEngine *engine,
                               int height);
 
 void
-rig_engine_free_ui (RigEngine *engine);
-
+rig_engine_set_edit_mode_ui (RigEngine *engine,
+                             RigUI *ui);
 void
-rig_engine_handle_ui_update (RigEngine *engine);
+rig_engine_set_play_mode_ui (RigEngine *engine,
+                             RigUI *ui);
 
 void
 rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);

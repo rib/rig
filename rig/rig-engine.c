@@ -536,6 +536,15 @@ rig_reload_position_inspector (RigEngine *engine,
     }
 }
 
+static void
+rig_engine_set_current_ui (RigEngine *engine,
+                           RigUI *ui)
+{
+  rig_camera_view_set_ui (engine->main_camera_view, ui);
+  engine->current_ui = ui;
+  rut_shell_queue_redraw (engine->ctx->shell);
+}
+
 void
 rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 {
@@ -543,16 +552,16 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 
   if (engine->play_mode)
     {
-      if (engine->light_handle)
-        rut_graphable_remove_child (engine->light_handle);
+      rig_engine_set_current_ui (engine, engine->play_mode_ui);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                             true);
     }
   else
     {
-      if (engine->light && engine->light_handle)
-        rut_graphable_add_child (engine->light, engine->light_handle);
+      rig_engine_set_current_ui (engine, engine->edit_mode_ui);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                             false);
     }
-
-  rut_shell_queue_redraw (engine->ctx->shell);
 }
 
 static void
@@ -736,7 +745,8 @@ rig_select_object (RigEngine *engine,
     action = RUT_SELECT_ACTION_REPLACE;
 
   if (object == engine->light_handle)
-    object = engine->light;
+    object = engine->edit_mode_ui->light;
+
 #if 0
   else if (entity == engine->play_camera_handle)
     entity = engine->play_camera;
@@ -806,58 +816,6 @@ rig_select_object (RigEngine *engine,
 
   if (engine->frontend)
     _rig_engine_update_inspector (engine);
-}
-
-static void
-ensure_shadow_map (RigEngine *engine)
-{
-  CoglTexture2D *color_buffer;
-
-  /*
-   * Shadow mapping
-   */
-
-  /* Setup the shadow map */
-
-  g_warn_if_fail (engine->shadow_color == NULL);
-
-  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
-                                                engine->device_width * 2,
-                                                engine->device_height * 2);
-
-  engine->shadow_color = color_buffer;
-
-  g_warn_if_fail (engine->shadow_fb == NULL);
-
-  /* XXX: Right now there's no way to avoid allocating a color buffer. */
-  engine->shadow_fb =
-    cogl_offscreen_new_with_texture (color_buffer);
-  if (engine->shadow_fb == NULL)
-    g_critical ("could not create offscreen buffer");
-
-  /* retrieve the depth texture */
-  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
-                                              TRUE);
-
-  g_warn_if_fail (engine->shadow_map == NULL);
-
-  engine->shadow_map =
-    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
-}
-
-static void
-free_shadow_map (RigEngine *engine)
-{
-  if (engine->shadow_map)
-    {
-      cogl_object_unref (engine->shadow_map);
-      engine->shadow_map = NULL;
-    }
-  if (engine->shadow_fb)
-    {
-      cogl_object_unref (engine->shadow_fb);
-      engine->shadow_fb = NULL;
-    }
 }
 
 static void
@@ -1356,7 +1314,7 @@ result_input_cb (RutInputRegion *region,
             {
               RutEntity *entity = rut_entity_new (engine->ctx);
               rig_undo_journal_add_entity (engine->undo_journal,
-                                           engine->scene,
+                                           engine->edit_mode_ui->scene,
                                            entity);
               rig_select_object (engine, entity, RUT_SELECT_ACTION_REPLACE);
               apply_result_input_with_entity (entity, closure);
@@ -1771,7 +1729,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
                       engine->search_results_vbox);
   rut_object_unref (engine->search_results_vbox);
 
-  for (l = engine->assets, i= 0; l; l = l->next, i++)
+  for (l = engine->edit_mode_ui->assets, i= 0; l; l = l->next, i++)
     {
       RutAsset *asset = l->data;
 
@@ -1789,7 +1747,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
   if (!engine->required_search_tags ||
       rut_util_find_tag (engine->required_search_tags, "entity"))
     {
-      rut_graphable_traverse (engine->scene,
+      rut_graphable_traverse (engine->edit_mode_ui->scene,
                               RUT_TRAVERSE_DEPTH_FIRST,
                               add_matching_entity_cb,
                               NULL, /* post visit */
@@ -1799,7 +1757,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
   if (!engine->required_search_tags ||
       rut_util_find_tag (engine->required_search_tags, "controller"))
     {
-      for (l = engine->controllers; l; l = l->next)
+      for (l = engine->edit_mode_ui->controllers; l; l = l->next)
         add_matching_controller (l->data, &state);
     }
 
@@ -2552,12 +2510,9 @@ controller_progress_changed_cb (RutProperty *progress_prop,
 }
 
 static void
-controller_changed_cb (RigControllerView *view,
-                       RigController *controller,
-                       void *user_data)
+set_selected_controller (RigEngine *engine,
+                         RigController *controller)
 {
-  RigEngine *engine = user_data;
-
   if (engine->selected_controller == controller)
     return;
 
@@ -2581,6 +2536,16 @@ controller_changed_cb (RigControllerView *view,
 }
 
 static void
+controller_changed_cb (RigControllerView *view,
+                       RigController *controller,
+                       void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  set_selected_controller (engine, controller);
+}
+
+static void
 create_controller_view (RigEngine *engine)
 {
   engine->controller_view =
@@ -2595,299 +2560,6 @@ create_controller_view (RigEngine *engine)
   rut_object_unref (engine->controller_view);
 }
 #endif /* RIG_EDITOR_ENABLED */
-
-static void
-ensure_light (RigEngine *engine)
-{
-  RutCamera *camera;
-
-  if (!engine->light)
-    {
-      RutLight *light;
-      float vector3[3];
-      CoglColor color;
-
-      engine->light = rut_entity_new (engine->ctx);
-      rut_entity_set_label (engine->light, "light");
-
-      vector3[0] = 0;
-      vector3[1] = 0;
-      vector3[2] = 500;
-      rut_entity_set_position (engine->light, vector3);
-
-      rut_entity_rotate_x_axis (engine->light, 20);
-      rut_entity_rotate_y_axis (engine->light, -20);
-
-      light = rut_light_new (engine->ctx);
-      cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
-      rut_light_set_ambient (light, &color);
-      cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
-      rut_light_set_diffuse (light, &color);
-      cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
-      rut_light_set_specular (light, &color);
-
-      rut_entity_add_component (engine->light, light);
-
-      rut_graphable_add_child (engine->scene, engine->light);
-    }
-
-  camera = rut_entity_get_component (engine->light, RUT_COMPONENT_TYPE_CAMERA);
-  if (!camera)
-    {
-      camera = rut_camera_new (engine->ctx,
-                               1000, /* ortho width */
-                               1000, /* ortho height */
-                               engine->shadow_fb);
-
-      rut_camera_set_background_color4f (camera, 0.f, .3f, 0.f, 1.f);
-      rut_camera_set_projection_mode (camera,
-                                      RUT_PROJECTION_ORTHOGRAPHIC);
-      rut_camera_set_orthographic_coordinates (camera,
-                                               -1000, -1000, 1000, 1000);
-      rut_camera_set_near_plane (camera, 1.1f);
-      rut_camera_set_far_plane (camera, 1500.f);
-
-      rut_entity_add_component (engine->light, camera);
-    }
-  else if (engine->shadow_fb)
-    {
-      CoglFramebuffer *fb = engine->shadow_fb;
-      int width = cogl_framebuffer_get_width (fb);
-      int height = cogl_framebuffer_get_height (fb);
-      rut_camera_set_framebuffer (camera, fb);
-      rut_camera_set_viewport (camera, 0, 0, width, height);
-    }
-
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-      char *full_path = rut_find_data_file ("light.ply");
-      GError *error = NULL;
-      RutMesh *mesh;
-
-      if (full_path == NULL)
-        g_critical ("could not find model \"light.ply\"");
-
-      mesh = rut_mesh_new_from_ply (engine->ctx,
-                                    full_path,
-                                    ply_attributes,
-                                    G_N_ELEMENTS (ply_attributes),
-                                    padding_status,
-                                    &error);
-      if (mesh)
-        {
-          RutModel *model = rut_model_new_from_asset_mesh (engine->ctx, mesh,
-                                                           FALSE, FALSE);
-          RutMaterial *material = rut_material_new (engine->ctx, NULL);
-
-          engine->light_handle = rut_entity_new (engine->ctx);
-          rut_entity_set_label (engine->light_handle, "rig:light_handle");
-          rut_entity_set_scale (engine->light_handle, 100);
-          rut_graphable_add_child (engine->light, engine->light_handle);
-
-          rut_entity_add_component (engine->light_handle, model);
-
-          rut_entity_add_component (engine->light_handle, material);
-          rut_material_set_receive_shadow (material, false);
-          rut_material_set_cast_shadow (material, false);
-
-          rut_object_unref (model);
-          rut_object_unref (material);
-        }
-      else
-        g_critical ("could not load model %s: %s", full_path, error->message);
-
-      g_free (full_path);
-    }
-#endif
-
-}
-
-typedef struct
-{
-  const char *label;
-  RutEntity *entity;
-} FindEntityData;
-
-static RutTraverseVisitFlags
-find_entity_cb (RutObject *object,
-                int depth,
-                void *user_data)
-{
-  FindEntityData *data = user_data;
-
-  if (rut_object_get_type (object) == &rut_entity_type &&
-      !strcmp (data->label, rut_entity_get_label (object)))
-    {
-      data->entity = object;
-      return RUT_TRAVERSE_VISIT_BREAK;
-    }
-
-  return RUT_TRAVERSE_VISIT_CONTINUE;
-}
-
-static RutEntity *
-find_entity (RutObject *root,
-             const char *label)
-{
-  FindEntityData data = { .label = label, .entity = NULL };
-
-  rut_graphable_traverse (root,
-                          RUT_TRAVERSE_DEPTH_FIRST,
-                          find_entity_cb,
-                          NULL, /* after_children_cb */
-                          &data);
-
-  return data.entity;
-}
-
-static void
-initialise_play_camera_position (RigEngine *engine)
-{
-  float fov_y = 10; /* y-axis field of view */
-  float aspect = (float) engine->device_width / (float) engine->device_height;
-  float z_near = 10; /* distance to near clipping plane */
-  float z_2d = 30;
-  float position[3];
-  float left, right, top;
-  float left_2d_plane, right_2d_plane;
-  float width_scale;
-  float width_2d_start;
-
-  /* Initialise the camera to the center of the device with a z
-   * position that will give it pixel aligned coordinates at the
-   * origin */
-  top = z_near * tan (fov_y * G_PI / 360.0);
-  left = -top * aspect;
-  right = top * aspect;
-
-  left_2d_plane = left / z_near * z_2d;
-  right_2d_plane = right / z_near * z_2d;
-
-  width_2d_start = right_2d_plane - left_2d_plane;
-
-  width_scale = width_2d_start / engine->device_width;
-
-  position[0] = engine->device_width / 2.0f;
-  position[1] = engine->device_height / 2.0f;
-  position[2] = z_2d / width_scale;
-
-  rut_entity_set_position (engine->play_camera, position);
-}
-
-static void
-ensure_play_camera (RigEngine *engine)
-{
-  if (!engine->play_camera)
-    {
-      RutObject *entity;
-
-      /* Check if there is already something labelled ‘play-camera’
-       * loaded from the project file */
-      entity = find_entity (engine->scene, "play-camera");
-
-      if (entity)
-        engine->play_camera = rut_object_ref (entity);
-      else
-        {
-          engine->play_camera = rut_entity_new (engine->ctx);
-          rut_entity_set_label (engine->play_camera, "play-camera");
-
-          initialise_play_camera_position (engine);
-
-          rut_graphable_add_child (engine->scene, engine->play_camera);
-        }
-    }
-
-  if (engine->play_camera_component == NULL)
-    {
-      engine->play_camera_component =
-        rut_entity_get_component (engine->play_camera,
-                                  RUT_COMPONENT_TYPE_CAMERA);
-
-      if (engine->play_camera_component)
-        rut_object_ref (engine->play_camera_component);
-      else
-        {
-          engine->play_camera_component =
-            rut_camera_new (engine->ctx,
-                            -1, /* ortho/vp width */
-                            -1, /* ortho/vp height */
-                            engine->onscreen);
-
-          rut_entity_add_component (engine->play_camera,
-                                    engine->play_camera_component);
-        }
-
-      rut_camera_set_clear (engine->play_camera_component, FALSE);
-    }
-
-  rig_camera_view_set_play_camera (engine->main_camera_view,
-                                   engine->play_camera);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode &&
-      engine->play_camera_handle == NULL)
-    {
-      RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-      char *model_path;
-
-      model_path = rut_find_data_file ("camera-model.ply");
-
-      if (model_path == NULL)
-        g_critical ("could not find model \"camera-model.ply\"");
-      else
-        {
-          RutMesh *mesh;
-          GError *error = NULL;
-
-          mesh = rut_mesh_new_from_ply (engine->ctx,
-                                        model_path,
-                                        ply_attributes,
-                                        G_N_ELEMENTS (ply_attributes),
-                                        padding_status,
-                                        &error);
-          if (mesh == NULL)
-            {
-              g_critical ("could not load model %s: %s",
-                          model_path,
-                          error->message);
-              g_clear_error (&error);
-            }
-          else
-            {
-              /* XXX: we'd like to show a model for the camera that
-               * can be used as a handle to select the camera in the
-               * editor but for the camera model tends to get in the
-               * way of editing so it's been disable for now */
-#if 0
-              RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
-              RutMaterial *material = rut_material_new (engine->ctx, NULL);
-
-              engine->play_camera_handle = rut_entity_new (engine->ctx);
-              rut_entity_set_label (engine->play_camera_handle,
-                                    "rig:play_camera_handle");
-
-              rut_entity_add_component (engine->play_camera_handle,
-                                        model);
-
-              rut_entity_add_component (engine->play_camera_handle,
-                                        material);
-              rut_material_set_receive_shadow (material, false);
-              rut_material_set_cast_shadow (material, FALSE);
-              rut_graphable_add_child (engine->play_camera,
-                                       engine->play_camera_handle);
-
-              rut_object_unref (model);
-              rut_object_unref (material);
-              rut_object_unref (mesh);
-#endif
-            }
-        }
-    }
-#endif /* RIG_EDITOR_ENABLED */
-}
 
 static void
 create_editor_ui (RigEngine *engine)
@@ -2976,123 +2648,318 @@ create_debug_gradient (RigEngine *engine)
   cogl_object_unref (offscreen);
 }
 
-void
-rig_engine_handle_ui_update (RigEngine *engine)
+static void
+add_light_handle (RigEngine *engine, RigUI *ui)
 {
-  rig_camera_view_set_scene (engine->main_camera_view, engine->scene);
+  //RutCamera *camera =
+  //  rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
+  RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+  char *full_path = rut_find_data_file ("light.ply");
+  GError *error = NULL;
+  RutMesh *mesh;
 
-  if (!_rig_in_simulator_mode)
+  if (full_path == NULL)
+    g_critical ("could not find model \"light.ply\"");
+
+  mesh = rut_mesh_new_from_ply (engine->ctx,
+                                full_path,
+                                ply_attributes,
+                                G_N_ELEMENTS (ply_attributes),
+                                padding_status,
+                                &error);
+  if (mesh)
     {
-      ensure_shadow_map (engine);
+      RutModel *model = rut_model_new_from_asset_mesh (engine->ctx, mesh,
+                                                       FALSE, FALSE);
+      RutMaterial *material = rut_material_new (engine->ctx, NULL);
 
-#ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
-        {
-          engine->grid_prim = rut_create_create_grid (engine->ctx,
-                                                      engine->device_width,
-                                                      engine->device_height,
-                                                      100,
-                                                      100);
-        }
+      engine->light_handle = rut_entity_new (engine->ctx);
+      rut_entity_set_label (engine->light_handle, "rig:light_handle");
+      rut_entity_set_scale (engine->light_handle, 100);
+      rut_graphable_add_child (ui->light, engine->light_handle);
 
-      if (!engine->controllers)
-        {
-          RigController *controller = rig_controller_new (engine, "Controller 0");
-          rig_controller_set_active (controller, true);
-          engine->controllers = g_list_prepend (engine->controllers, controller);
-        }
+      rut_entity_add_component (engine->light_handle, model);
 
-      if (_rig_in_editor_mode)
-        {
-          rig_controller_view_update_controller_list (engine->controller_view);
+      rut_entity_add_component (engine->light_handle, material);
+      rut_material_set_receive_shadow (material, false);
+      rut_material_set_cast_shadow (material, false);
 
-          rig_controller_view_set_controller (engine->controller_view,
-                                              engine->controllers->data);
+      rut_object_unref (model);
+      rut_object_unref (material);
+    }
+  else
+    g_critical ("could not load model %s: %s", full_path, error->message);
 
-          rig_load_asset_list (engine);
-        }
-#endif
+  g_free (full_path);
+}
+
+static void
+add_play_camera_handle (RigEngine *engine, RigUI *ui)
+{
+  RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
+  char *model_path;
+  RutMesh *mesh;
+  GError *error = NULL;
+
+  model_path = rut_find_data_file ("camera-model.ply");
+  if (model_path == NULL)
+    {
+      g_error ("could not find model \"camera-model.ply\"");
+      return;
     }
 
-  /* Note: we currently require having exactly one scene light and
-   * play camera, so if we didn't already load them we create a default
-   * light and camera...
-   *
-   * Note: we ensure the light after ensuring we have a shadow-map
-   */
-  ensure_light (engine);
-  ensure_play_camera (engine);
+  mesh = rut_mesh_new_from_ply (engine->ctx,
+                                model_path,
+                                ply_attributes,
+                                G_N_ELEMENTS (ply_attributes),
+                                padding_status,
+                                &error);
+  if (mesh == NULL)
+    {
+      g_critical ("could not load model %s: %s",
+                  model_path,
+                  error->message);
+      g_clear_error (&error);
+    }
+  else
+    {
+      /* XXX: we'd like to show a model for the camera that
+       * can be used as a handle to select the camera in the
+       * editor but for the camera model tends to get in the
+       * way of editing so it's been disable for now */
+#if 0
+      RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
+      RutMaterial *material = rut_material_new (engine->ctx, NULL);
+
+      engine->play_camera_handle = rut_entity_new (engine->ctx);
+      rut_entity_set_label (engine->play_camera_handle,
+                            "rig:play_camera_handle");
+
+      rut_entity_add_component (engine->play_camera_handle,
+                                model);
+
+      rut_entity_add_component (engine->play_camera_handle,
+                                material);
+      rut_material_set_receive_shadow (material, false);
+      rut_material_set_cast_shadow (material, FALSE);
+      rut_graphable_add_child (engine->play_camera,
+                               engine->play_camera_handle);
+
+      rut_object_unref (model);
+      rut_object_unref (material);
+      rut_object_unref (mesh);
+#endif
+    }
+}
+
+static void
+setup_shared_ui_state (RigEngine *engine)
+{
+  RigUI *ui = engine->edit_mode_ui ?
+    engine->edit_mode_ui : engine->play_mode_ui;
+  RutCamera *camera =
+    rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
+
+  if (engine->shadow_fb)
+    {
+      CoglFramebuffer *fb = engine->shadow_fb;
+      int width = cogl_framebuffer_get_width (fb);
+      int height = cogl_framebuffer_get_height (fb);
+      rut_camera_set_framebuffer (camera, fb);
+      rut_camera_set_viewport (camera, 0, 0, width, height);
+    }
+
+  /* XXX: this may be redundant, as the camera-view looks like it
+   * always sets the framebuffer when painting. */
+  //rut_camera_set_framebuffer (ui->play_camera_component,
+  //                            engine->onscreen);
 }
 
 void
-rig_engine_free_ui (RigEngine *engine)
+rig_engine_set_play_mode_ui (RigEngine *engine,
+                             RigUI *ui)
 {
-  GList *l;
+  bool first_ui = (engine->edit_mode_ui == NULL &&
+                   engine->play_mode_ui == NULL &&
+                   ui != NULL);
 
-#ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
-    {
-      rig_controller_view_set_controller (engine->controller_view,
-                                          NULL);
+  if (engine->play_mode_ui == ui)
+    return;
 
-      if (engine->grid_prim)
-        {
-          cogl_object_unref (engine->grid_prim);
-          engine->grid_prim = NULL;
-        }
+  rut_object_unref (engine->play_mode_ui);
+  engine->play_mode_ui = rut_object_ref (ui);
 
-      clear_search_results (engine);
-    }
-#endif
+  //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
+  //  free_shared_ui_state (engine);
 
-  if (engine->shadow_color)
-    {
-      cogl_object_unref (engine->shadow_color);
-      engine->shadow_color = NULL;
-    }
+  if (engine->play_mode)
+    rig_engine_set_current_ui (engine, ui);
 
-  free_shadow_map (engine);
+  if (!ui)
+    return;
 
-  for (l = engine->controllers; l; l = l->next)
-    rut_object_unref (l->data);
-  g_list_free (engine->controllers);
-  engine->controllers = NULL;
-  engine->selected_controller = NULL;
+  if (first_ui)
+    setup_shared_ui_state (engine);
+}
 
-  for (l = engine->assets; l; l = l->next)
-    rut_object_unref (l->data);
-  g_list_free (engine->assets);
-  engine->assets = NULL;
+static RutAsset *
+share_asset_cb (RigPBUnSerializer *unserializer,
+                Rig__Asset *pb_asset,
+                void *user_data)
+{
+  RutObject *obj = (RutObject *)(intptr_t)pb_asset->id;
+  return rut_object_ref (obj);
+}
 
+static uint64_t
+object_to_pointer_id_cb (void *object,
+                         void *user_data)
+{
+  return (uint64_t)(intptr_t)object;
+}
+
+static RigUI *
+rig_engine_copy_ui (RigEngine *engine, RigUI *ui)
+{
+  RigPBSerializer *serializer;
+  Rig__UI *pb_ui;
+  RigPBUnSerializer unserializer;
+  RigUI *copy;
+
+  /* For simplicity we use a serializer and unserializer to
+   * duplicate the UI, though potentially in the future we may
+   * want a more direct way of handling this.
+   */
+  serializer = rig_pb_serializer_new (engine);
+
+  /* We want to share references to assets between the two UIs
+   * since they should be immutable and so we make sure to
+   * only keep track of the ids (pointers to assets used) and
+   * we will also hook into the corresponding unserialize below
+   * to simply return the same objects. */
+  rig_pb_serializer_set_only_asset_ids_enabled (serializer, true);
+
+  rig_pb_serializer_set_object_register_callback (serializer,
+                                                  object_to_pointer_id_cb,
+                                                  NULL);
+  rig_pb_serializer_set_object_to_id_callback (serializer,
+                                               object_to_pointer_id_cb,
+                                               NULL);
+
+  pb_ui = rig_pb_serialize_ui (serializer,
+                               false, /* edit mode */
+                               ui);
+
+  rig_pb_unserializer_init (&unserializer,
+                            engine,
+                            true /* with id_map */);
+
+  rig_pb_unserializer_set_asset_unserialize_callback (&unserializer,
+                                                      share_asset_cb,
+                                                      NULL);
+
+  copy = rig_pb_unserialize_ui (&unserializer, pb_ui);
+
+  rig_pb_unserializer_destroy (&unserializer);
+
+  rig_pb_serialized_ui_destroy (pb_ui);
+
+  rut_object_unref (serializer);
+
+  return copy;
+}
+
+void
+rig_engine_set_edit_mode_ui (RigEngine *engine,
+                             RigUI *ui)
+{
+  bool first_ui = (engine->edit_mode_ui == NULL &&
+                   engine->play_mode_ui == NULL &&
+                   ui != NULL);
+
+  if (engine->edit_mode_ui == ui)
+    return;
+
+  /* Updating the edit mode ui implies we need to also replace
+   * any play mode ui too... */
+  rig_engine_set_play_mode_ui (engine, NULL);
+
+  rig_controller_view_set_controller (engine->controller_view,
+                                      NULL);
+
+  clear_search_results (engine);
   free_result_input_closures (engine);
 
-  /* NB: no extra reference is held on the light other than the
-   * reference for it being in the scenegraph. */
-  engine->light = NULL;
-
-  if (engine->scene)
+  if (engine->grid_prim)
     {
-      rut_object_unref (engine->scene);
-      engine->scene = NULL;
+      cogl_object_unref (engine->grid_prim);
+      engine->grid_prim = NULL;
     }
 
-  if (engine->play_camera)
-    {
-      rut_object_unref (engine->play_camera);
-      engine->play_camera = NULL;
-    }
-  if (engine->play_camera_component)
-    {
-      rut_object_unref (engine->play_camera_component);
-      engine->play_camera_component = NULL;
-    }
-#ifdef RIG_EDITOR_ENABLED
   if (engine->play_camera_handle)
-   {
-     rut_object_unref (engine->play_camera_handle);
-     engine->play_camera_handle = NULL;
-   }
-#endif /* RIG_EDITOR_ENABLED */
+    {
+      rut_object_unref (engine->play_camera_handle);
+      engine->play_camera_handle = NULL;
+    }
+
+  if (engine->light_handle)
+    {
+      rut_object_unref (engine->light_handle);
+      engine->light_handle = NULL;
+    }
+
+  rut_object_unref (engine->edit_mode_ui);
+  engine->edit_mode_ui = rut_object_ref (ui);
+
+  //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
+  //  free_shared_ui_state (engine);
+
+  if (engine->play_mode == false)
+    rig_engine_set_current_ui (engine, ui);
+
+  rig_engine_set_play_mode_enabled (engine, false);
+
+  if (!ui)
+    return;
+
+  if (first_ui)
+    setup_shared_ui_state (engine);
+
+  if (engine->frontend)
+    {
+      RigUI *play_mode_ui;
+
+      rig_controller_view_update_controller_list (engine->controller_view);
+
+      rig_controller_view_set_controller (engine->controller_view,
+                                          ui->controllers->data);
+
+      engine->grid_prim = rut_create_create_grid (engine->ctx,
+                                                  engine->device_width,
+                                                  engine->device_height,
+                                                  100,
+                                                  100);
+
+      rig_load_asset_list (engine);
+
+      /* Note: we only have to explicitly add light and camera handles
+       * in the editor frontend, since the whole UI will be serialized
+       * unconditionally when sending to the simulator, including any
+       * special entities we add...
+       */
+      add_light_handle (engine, ui);
+      add_play_camera_handle (engine, ui);
+
+      /* Whenever we replace the edit mode graph that implies we need
+       * to scrap and update the play mode graph, with a snapshot of
+       * the new edit mode graph.
+       */
+      play_mode_ui = rig_engine_copy_ui (engine, ui);
+      rig_engine_set_play_mode_enabled (engine, play_mode_ui);
+      rut_object_unref (play_mode_ui);
+
+      rig_frontend_reload_uis (engine->frontend);
+    }
 }
 
 void
@@ -3115,31 +2982,79 @@ rig_engine_set_onscreen_size (RigEngine *engine,
 }
 
 static void
+ensure_shadow_map (RigEngine *engine)
+{
+  CoglTexture2D *color_buffer;
+  //RigUI *ui = engine->edit_mode_ui ?
+  //  engine->edit_mode_ui : engine->play_mode_ui;
+
+  /*
+   * Shadow mapping
+   */
+
+  /* Setup the shadow map */
+
+  g_warn_if_fail (engine->shadow_color == NULL);
+
+  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
+                                                engine->device_width * 2,
+                                                engine->device_height * 2);
+
+  engine->shadow_color = color_buffer;
+
+  g_warn_if_fail (engine->shadow_fb == NULL);
+
+  /* XXX: Right now there's no way to avoid allocating a color buffer. */
+  engine->shadow_fb =
+    cogl_offscreen_new_with_texture (color_buffer);
+  if (engine->shadow_fb == NULL)
+    g_critical ("could not create offscreen buffer");
+
+  /* retrieve the depth texture */
+  cogl_framebuffer_set_depth_texture_enabled (engine->shadow_fb,
+                                              TRUE);
+
+  g_warn_if_fail (engine->shadow_map == NULL);
+
+  engine->shadow_map =
+    cogl_framebuffer_get_depth_texture (engine->shadow_fb);
+}
+
+static void
+free_shadow_map (RigEngine *engine)
+{
+  if (engine->shadow_map)
+    {
+      cogl_object_unref (engine->shadow_map);
+      engine->shadow_map = NULL;
+    }
+  if (engine->shadow_fb)
+    {
+      cogl_object_unref (engine->shadow_fb);
+      engine->shadow_fb = NULL;
+    }
+  if (engine->shadow_color)
+    {
+      cogl_object_unref (engine->shadow_color);
+      engine->shadow_color = NULL;
+    }
+}
+
+static void
 _rig_engine_free (void *object)
 {
   RigEngine *engine = object;
   RutShell *shell = engine->shell;
-  int i;
 
-  if (!_rig_in_simulator_mode)
+  if (engine->frontend)
     {
-      rig_renderer_fini (engine);
-
-      rig_engine_free_ui (engine);
-
-      free_builtin_assets (engine);
-
-      rut_shell_remove_input_camera (shell, engine->camera_2d, engine->root);
-
-      rut_object_unref (engine->camera_2d);
-      rut_object_unref (engine->root);
-      rut_object_unref (engine->main_camera_view);
-
-      cogl_object_unref (engine->circle_node_attribute);
-
 #ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
+      if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
         {
+          int i;
+
+          free_builtin_assets (engine);
+
           for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
             rut_object_unref (engine->splits[i]);
 
@@ -3150,18 +3065,19 @@ _rig_engine_free (void *object)
 
           if (engine->transparency_grid)
             rut_object_unref (engine->transparency_grid);
+
+          rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
         }
-
-      rut_object_unref (engine->objects_selection);
-
-      rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
 #endif
+      rig_renderer_fini (engine);
+
+      cogl_object_unref (engine->circle_node_attribute);
+
+      free_shadow_map (engine);
 
       cogl_object_unref (engine->onscreen);
 
       cogl_object_unref (engine->default_pipeline);
-
-      engine->frontend = NULL;
 
 #ifdef __APPLE__
       rig_osx_deinit (engine);
@@ -3174,24 +3090,27 @@ _rig_engine_free (void *object)
       }
 #endif /* USE_GTK */
     }
-  else
-    {
-      engine->simulator = NULL;
-    }
+
+  rut_object_unref (engine->objects_selection);
+
+  rig_engine_set_edit_mode_ui (engine, NULL);
+
+  rut_shell_remove_input_camera (shell, engine->camera_2d, engine->root);
+
+  rut_object_unref (engine->main_camera_view);
+  rut_object_unref (engine->camera_2d);
+  rut_object_unref (engine->root);
 
   rut_introspectable_destroy (engine);
 
   rut_object_free (RigEngine, engine);
 }
 
-
 RutType rig_engine_type;
 
 static void
 _rig_engine_init_type (void)
 {
-
-
   RutType *type = &rig_engine_type;
 #define TYPE RigEngine
 
@@ -3230,9 +3149,6 @@ _rig_engine_new_full (RutShell *shell,
 
   engine->headless = engine->ctx->headless;
 
-  if (ui_filename)
-    engine->ui_filename = g_strdup (ui_filename);
-
   if (frontend)
     {
       engine->frontend_id = frontend->id;
@@ -3268,13 +3184,11 @@ _rig_engine_new_full (RutShell *shell,
                                                    g_free,
                                                    rut_object_unref);
 
-  /*
-   * Setup the entity scenegraph
-   */
-  engine->scene = rut_graph_new (engine->ctx);
-
   engine->device_width = DEVICE_WIDTH;
   engine->device_height = DEVICE_HEIGHT;
+
+  if (engine->frontend)
+    ensure_shadow_map (engine);
 
   /*
    * Setup the 2D widget scenegraph
@@ -3344,19 +3258,24 @@ _rig_engine_new_full (RutShell *shell,
       engine->renderer = rig_renderer_new (engine);
       rig_renderer_init (engine);
 
-#warning "XXX: can we remove engine->background_color?"
-      cogl_color_init_from_4f (&engine->background_color, 0, 0, 0, 1);
-
 #ifndef __ANDROID__
-      if (engine->ui_filename)
+      if (ui_filename)
         {
           struct stat st;
 
-          stat (engine->ui_filename, &st);
+          stat (ui_filename, &st);
           if (S_ISREG (st.st_mode))
-            rig_load (engine, engine->ui_filename);
+            rig_engine_load_file (engine, ui_filename);
           else
-            rig_engine_handle_ui_update (engine);
+            {
+              RigUI *ui = rig_ui_new (engine);
+              rig_ui_prepare (ui);
+
+              if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
+                rig_engine_set_edit_mode_ui (engine, ui);
+              else
+                rig_engine_set_play_mode_ui (engine, ui);
+            }
         }
 #endif
 
@@ -3428,6 +3347,29 @@ _rig_engine_new_full (RutShell *shell,
     }
 
   return engine;
+}
+
+void
+rig_engine_load_file (RigEngine *engine,
+                      const char *filename)
+{
+  RigUI *ui;
+
+  engine->ui_filename = g_strdup (filename);
+
+  ui = rig_load (engine, filename);
+
+  if (!ui)
+    {
+      ui = rig_ui_new (engine);
+      rig_ui_prepare (ui);
+    }
+
+  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
+    rig_engine_set_edit_mode_ui (engine, ui);
+  else
+    rig_engine_set_play_mode_ui (engine, ui);
+
 }
 
 RigEngine *
@@ -3504,7 +3446,10 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  rig_select_object (engine, engine->play_camera, RUT_SELECT_ACTION_REPLACE);
+                  RutEntity *play_camera = engine->play_mode ?
+                    engine->play_mode_ui->play_camera : engine->edit_mode_ui->play_camera;
+
+                  rig_select_object (engine, play_camera, RUT_SELECT_ACTION_REPLACE);
                   _rig_engine_update_inspector (engine);
                   return RUT_INPUT_EVENT_STATUS_HANDLED;
                 }
@@ -3608,7 +3553,7 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   RutAsset *asset = NULL;
 
   /* Avoid loading duplicate assets... */
-  for (l = engine->assets; l; l = l->next)
+  for (l = engine->edit_mode_ui->assets; l; l = l->next)
     {
       RutAsset *existing = l->data;
 
@@ -3618,7 +3563,8 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 
   asset = rig_load_asset (engine, info, asset_file);
   if (asset)
-    engine->assets = g_list_prepend (engine->assets, asset);
+    engine->edit_mode_ui->assets =
+      g_list_prepend (engine->edit_mode_ui->assets, asset);
 }
 
 #if 0
@@ -3819,32 +3765,39 @@ rig_load_asset_list (RigEngine *engine)
   enumerate_dir_for_assets (engine, assets_dir);
 
   rut_object_ref (engine->nine_slice_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->nine_slice_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->nine_slice_builtin_asset);
 
   rut_object_ref (engine->diamond_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->diamond_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->diamond_builtin_asset);
 
   rut_object_ref (engine->circle_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->circle_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->circle_builtin_asset);
 
   rut_object_ref (engine->pointalism_grid_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->pointalism_grid_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->pointalism_grid_builtin_asset);
 
   rut_object_ref (engine->text_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->text_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->text_builtin_asset);
 
   rut_object_ref (engine->hair_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->hair_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->hair_builtin_asset);
 
   rut_object_ref (engine->button_input_builtin_asset);
-  engine->assets = g_list_prepend (engine->assets,
-                                   engine->button_input_builtin_asset);
+  engine->edit_mode_ui->assets =
+    g_list_prepend (engine->edit_mode_ui->assets,
+                    engine->button_input_builtin_asset);
 
   g_object_unref (assets_dir);
 

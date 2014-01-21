@@ -89,8 +89,7 @@ _rig_camera_view_free (void *object)
 {
   RigCameraView *view = object;
 
-  rig_camera_view_set_scene (view, NULL);
-  rig_camera_view_set_play_camera (view, NULL);
+  rig_camera_view_set_ui (view, NULL);
 
   rut_shell_remove_pre_paint_callback_by_graphable (view->context->shell, view);
 
@@ -295,9 +294,12 @@ _rut_camera_view_paint (RutObject *object,
   RutEntity *camera;
   RutCamera *camera_component;
   CoglBool need_play_camera_reset = FALSE;
+  RigUI *ui;
 
-  if (view->scene == NULL)
+  if (view->ui == NULL)
     return;
+
+  ui = view->ui;
 
 #ifdef RIG_EDITOR_ENABLED
   if (!view->play_mode)
@@ -332,8 +334,8 @@ _rut_camera_view_paint (RutObject *object,
   rut_camera_suspend (suspended_camera);
 
   rig_paint_ctx->pass = RIG_PASS_SHADOW;
-  rig_camera_update_view (engine, engine->light, TRUE);
-  rig_paint_camera_entity (engine->light, rig_paint_ctx, NULL);
+  rig_camera_update_view (engine, ui->light, TRUE);
+  rig_paint_camera_entity (ui->light, rig_paint_ctx, NULL);
 
   update_camera_viewport (view, paint_ctx->camera, camera_component);
 
@@ -1541,7 +1543,7 @@ pick (RigCameraView *view,
   pick_ctx.ray_origin = ray_origin;
   pick_ctx.ray_direction = ray_direction;
 
-  rut_graphable_traverse (engine->scene,
+  rut_graphable_traverse (view->ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           entitygraph_pre_pick_cb,
                           entitygraph_post_pick_cb,
@@ -1601,15 +1603,11 @@ rig_camera_view_set_play_mode_enabled (RigCameraView *view,
       if (!engine->headless && !view->dof)
         view->dof = rut_dof_effect_new (engine->ctx);
       view->enable_dof = true;
-      rig_engine_set_play_mode_enabled (engine, true);
     }
   else
     {
       view->enable_dof = false;
-      rig_engine_set_play_mode_enabled (engine, false);
     }
-
-  rut_shell_queue_redraw (engine->ctx->shell);
 }
 
 static RutInputEventStatus
@@ -1981,7 +1979,7 @@ input_cb (RutInputEvent *event,
 
               if (n_entities)
                 {
-                  RutEntity *parent = (RutEntity *)view->scene;
+                  RutEntity *parent = (RutEntity *)view->ui->scene;
                   GList *l;
 
                   for (l = selection->objects; l; l = l->next)
@@ -2022,7 +2020,7 @@ device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
             float dx = x - engine->grab_x;
             float progression = dx / engine->device_width;
 
-            rig_controller_set_progress (engine->controllers->data,
+            rig_controller_set_progress (view->ui->controllers->data,
                                          engine->grab_progress + progression);
 
             rut_shell_queue_redraw (engine->ctx->shell);
@@ -2054,7 +2052,7 @@ device_mode_input_cb (RutInputEvent *event,
             engine->grab_x = rut_motion_event_get_x (event);
             engine->grab_y = rut_motion_event_get_y (event);
             engine->grab_progress =
-              rig_controller_get_progress (engine->controllers->data);
+              rig_controller_get_progress (view->ui->controllers->data);
 
             /* TODO: Add rut_shell_implicit_grab_input() that handles releasing
              * the grab for you */
@@ -2216,10 +2214,10 @@ rig_camera_view_new (RigEngine *engine)
 
 #ifdef RIG_EDITOR_ENABLED
   if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
-    rig_camera_view_set_play_mode_enabled (view, false);
+    rig_engine_set_play_mode_enabled (engine, false);
   else
 #endif
-    rig_camera_view_set_play_mode_enabled (view, true);
+    rig_engine_set_play_mode_enabled (engine, true);
 
   if (!_rig_in_simulator_mode)
     {
@@ -2301,37 +2299,8 @@ rig_camera_view_new (RigEngine *engine)
 }
 
 void
-rig_camera_view_set_scene (RigCameraView *view,
-                           RutGraph *scene)
-{
-  if (view->scene == scene)
-    return;
-
-  if (view->scene)
-    {
-      rut_graphable_remove_child (view->view_camera_to_origin);
-      rut_shell_remove_input_camera (view->context->shell,
-                                     view->view_camera_component,
-                                     view->scene);
-    }
-
-  if (scene)
-    {
-      rut_graphable_add_child (scene, view->view_camera_to_origin);
-      rut_shell_add_input_camera (view->context->shell,
-                                  view->view_camera_component,
-                                  scene);
-      initialize_navigation_camera (view);
-    }
-
-  /* XXX: to avoid having a circular reference we don't take a
-   * reference on the scene... */
-  view->scene = scene;
-}
-
-void
-rig_camera_view_set_play_camera (RigCameraView *view,
-                                 RutEntity *play_camera)
+set_play_camera (RigCameraView *view,
+                 RutEntity *play_camera)
 {
   if (view->play_camera == play_camera)
     return;
@@ -2357,4 +2326,38 @@ rig_camera_view_set_play_camera (RigCameraView *view,
     }
   else
     view->play_camera_component = NULL;
+}
+
+void
+rig_camera_view_set_ui (RigCameraView *view,
+                        RigUI *ui)
+{
+  RutEntity *play_camera;
+
+  if (view->ui == ui)
+    return;
+
+  if (view->ui)
+    {
+      rut_graphable_remove_child (view->view_camera_to_origin);
+      rut_shell_remove_input_camera (view->context->shell,
+                                     view->view_camera_component,
+                                     view->ui->scene);
+    }
+
+  /* XXX: to avoid having a circular reference we don't take a
+   * reference on the ui... */
+  view->ui = ui;
+
+  if (ui)
+    {
+      rut_graphable_add_child (ui->scene, view->view_camera_to_origin);
+      rut_shell_add_input_camera (view->context->shell,
+                                  view->view_camera_component,
+                                  ui->scene);
+      initialize_navigation_camera (view);
+    }
+
+  play_camera = ui ? ui->play_camera : NULL;
+  set_play_camera (view, play_camera);
 }

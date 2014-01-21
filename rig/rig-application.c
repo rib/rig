@@ -137,8 +137,7 @@ open_activated (GSimpleAction *action,
       char *filename =
         gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
 
-      engine->next_ui_filename = filename;
-      rut_shell_quit (engine->shell);
+      rig_engine_load_file (engine, filename);
     }
 
   gtk_widget_destroy (dialog);

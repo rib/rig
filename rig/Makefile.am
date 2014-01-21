@@ -75,7 +75,9 @@ librig_la_SOURCES = \
 	rig-simulator.h \
 	rig-simulator.c \
 	rig-frontend.c \
-	rig-frontend.h
+	rig-frontend.h \
+	rig-ui.h \
+	rig-ui.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \

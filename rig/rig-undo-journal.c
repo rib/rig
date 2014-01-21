@@ -1080,7 +1080,7 @@ save_controller_properties (RigEngine *engine,
 
   rut_list_init (controller_properties);
 
-  for (l = engine->controllers; l; l = l->next)
+  for (l = engine->edit_mode_ui->controllers; l; l = l->next)
     {
       RigController *controller = l->data;
       UndoRedoControllerState *controller_state =
@@ -1363,8 +1363,9 @@ undo_redo_add_controller_apply (RigUndoJournal *journal,
   UndoRedoControllerState *controller_state;
   RigEngine *engine = journal->engine;
 
-  engine->controllers =
-    g_list_prepend (engine->controllers, add_controller->controller);
+  engine->edit_mode_ui->controllers =
+    g_list_prepend (engine->edit_mode_ui->controllers,
+                    add_controller->controller);
   rut_object_ref (add_controller->controller);
 
   rut_list_for_each (controller_state,
@@ -1431,6 +1432,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
     &undo_redo->d.add_remove_controller;
   UndoRedoControllerState *controller_state;
   RigEngine *engine = journal->engine;
+  RigUI *edit_mode_ui = engine->edit_mode_ui;
 
   if (!remove_controller->saved_controller_properties)
     {
@@ -1454,8 +1456,9 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
                                         prop_data->property);
     }
 
-  engine->controllers =
-    g_list_remove (engine->controllers, remove_controller->controller);
+  edit_mode_ui->controllers =
+    g_list_remove (edit_mode_ui->controllers,
+                   remove_controller->controller);
   rut_object_unref (remove_controller->controller);
 
   rig_controller_view_update_controller_list (engine->controller_view);
@@ -1464,7 +1467,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
       remove_controller->controller)
     {
       rig_controller_view_set_controller (engine->controller_view,
-                                          engine->controllers->data);
+                                          edit_mode_ui->controllers->data);
     }
 }
 
@@ -1648,12 +1651,14 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   if (apply)
     {
+#if 0
       UndoRedo *inverse;
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
        * alway verifying our ability to invert operations correctly...
        */
+#endif
       undo_redo_apply (journal, undo_redo);
 
       /* XXX: For now we have stopped exercising the inversion code
@@ -1712,7 +1717,6 @@ rig_undo_journal_revert (RigUndoJournal *journal)
        */
 
       UndoRedo *inverse = undo_redo_invert (op);
-      RigPBSerializer *serializer;
 
       if (!inverse)
         {

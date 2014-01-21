@@ -29,6 +29,7 @@ typedef struct _RigCameraView RigCameraView;
 #include "rig-engine.h"
 #include "rig-selection-tool.h"
 #include "rig-rotation-tool.h"
+#include "rig-ui.h"
 
 typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
 typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
@@ -54,6 +55,8 @@ struct _RigCameraView
 
   RutContext *context;
 
+  RigUI *ui;
+
   bool play_mode;
 
   /* picking ray */
@@ -69,8 +72,6 @@ struct _RigCameraView
   float width, height;
 
   CoglPipeline *bg_pipeline;
-
-  RutGraph *scene;
 
   float origin[3];
   //float saved_origin[3];
@@ -130,12 +131,8 @@ RigCameraView *
 rig_camera_view_new (RigEngine *engine);
 
 void
-rig_camera_view_set_scene (RigCameraView *view,
-                           RutGraph *scene);
-
-void
-rig_camera_view_set_play_camera (RigCameraView *view,
-                                 RutEntity *play_camera);
+rig_camera_view_set_ui (RigCameraView *view,
+                        RigUI *ui);
 
 void
 rig_camera_view_set_play_mode_enabled (RigCameraView *view,

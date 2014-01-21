@@ -165,7 +165,7 @@ lookup_object_cb (uint64_t id,
 
 static void
 simulator__load (Rig__Simulator_Service *service,
-                 const Rig__UI *ui,
+                 const Rig__UI *pb_ui,
                  Rig__LoadResult_Closure closure,
                  void *closure_data)
 {
@@ -174,8 +174,9 @@ simulator__load (Rig__Simulator_Service *service,
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
   RigPBUnSerializer unserializer;
+  RigUI *ui;
 
-  g_return_if_fail (ui != NULL);
+  g_return_if_fail (pb_ui != NULL);
 
   //g_print ("Simulator: UI Load Request\n");
 
@@ -198,10 +199,16 @@ simulator__load (Rig__Simulator_Service *service,
                                                      simulator);
     }
 
-  rig_pb_unserialize_ui (&unserializer, ui, false);
+  ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
 
   rig_pb_unserializer_destroy (&unserializer);
   simulator->unserializer = NULL;
+
+  g_warn_if_fail (pb_ui->has_mode);
+  if (pb_ui->mode == RIG__UI__MODE__EDIT)
+    rig_engine_set_edit_mode_ui (engine, ui);
+  else
+    rig_engine_set_play_mode_ui (engine, ui);
 
   closure (&result, closure_data);
 }

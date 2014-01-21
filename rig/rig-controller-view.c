@@ -4050,7 +4050,8 @@ controller_select_cb (RutProperty *value_property,
   RigControllerView *view = user_data;
   RigEngine *engine = view->engine;
   int value = rut_property_get_integer (value_property);
-  RigController *controller = g_list_nth_data (engine->controllers, value);
+  RigController *controller =
+    g_list_nth_data (engine->edit_mode_ui->controllers, value);
   rig_controller_view_set_controller (view, controller);
 }
 
@@ -4070,7 +4071,7 @@ on_controller_add_button_click_cb (RutIconButton *button, void *user_data)
 
       name = g_strdup_printf ("Controller %i", i);
 
-      for (l = engine->controllers; l; l = l->next)
+      for (l = engine->edit_mode_ui->controllers; l; l = l->next)
         {
           controller = l->data;
           if (strcmp (controller->label, name) == 0)
@@ -4291,10 +4292,10 @@ rig_controller_view_update_controller_list (RigControllerView *view)
   GList *l;
   int i;
 
-  n_controllers = g_list_length (engine->controllers);
+  n_controllers = g_list_length (engine->edit_mode_ui->controllers);
   controller_values = g_malloc (sizeof (RutDropDownValue) * n_controllers);
 
-  for (l = engine->controllers, i = 0; l; l = l->next, i++)
+  for (l = engine->edit_mode_ui->controllers, i = 0; l; l = l->next, i++)
     {
       RigController *controller = l->data;
       controller_values[i].name = controller->label;

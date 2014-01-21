@@ -145,17 +145,17 @@ rig_slave_master_sync_ui (RigSlaveMaster *master)
   RigEngine *engine = master->engine;
   ProtobufCService *service =
     rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
-  Rig__UI *ui;
+  Rig__UI *pb_ui;
 
   g_warn_if_fail (master->required_assets == NULL);
 
   serializer = rig_pb_serializer_new (engine);
 
-  ui = rig_pb_serialize_ui (serializer);
+  pb_ui = rig_pb_serialize_ui (serializer, true, engine->play_mode_ui);
 
-  rig__slave__load (service, ui, handle_load_response, NULL);
+  rig__slave__load (service, pb_ui, handle_load_response, NULL);
 
-  rig_pb_serialized_ui_destroy (ui);
+  rig_pb_serialized_ui_destroy (pb_ui);
 
   rig_pb_serializer_destroy (serializer);
 }

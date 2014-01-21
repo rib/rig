@@ -77,7 +77,7 @@ typedef struct _UndoRedoPathAddRemove
   RutProperty *property;
   float t;
 
-#warning "XXX: figure out how UndoRedoPathAddRemove with async edits via the simulator"
+//#warning "XXX: figure out how UndoRedoPathAddRemove with async edits via the simulator"
   /* When we initially log to remove a node then we won't save
    * a value until we actually apply the operation and so we
    * need to track when this boxed value is valid... */

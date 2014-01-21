@@ -78,6 +78,7 @@ struct _RigFrontend
 
   int fd;
   RigRPCPeer *frontend_peer;
+  bool connected;
 
   bool has_resized;
   int pending_width;
@@ -92,6 +93,9 @@ RigFrontend *
 rig_frontend_new (RutShell *shell,
                   RigFrontendID id,
                   const char *ui_filename);
+
+void
+rig_frontend_reload_uis (RigFrontend *frontend);
 
 void
 rig_frontend_op_register_object (RigFrontend *frontend,

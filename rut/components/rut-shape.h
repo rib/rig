@@ -121,6 +121,11 @@ void
 rut_shape_set_height (RutObject *obj, float height);
 
 void
+rut_shape_set_texture_size (RutShape *shape,
+                            int width,
+                            int height);
+
+void
 rut_shape_set_size (RutObject *self,
                     float width,
                     float height);

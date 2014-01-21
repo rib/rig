@@ -21,11 +21,12 @@
 #define _RUT_LOAD_SAVE_H_
 
 #include "rig-engine.h"
+#include "rig-ui.h"
 
 void
 rig_save (RigEngine *engine, const char *path);
 
-void
+RigUI *
 rig_load (RigEngine *engine, const char *file);
 
 #endif /* _RUT_LOAD_SAVE_H_ */

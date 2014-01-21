@@ -349,7 +349,7 @@ message Controller
 
 message UI
 {
-  enum Mode { FULL=1; PACKED=2; }
+  enum Mode { EDIT=1; PLAY=2; }
   optional Mode mode=5;
 
   optional Device device=1;
