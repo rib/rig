@@ -81,7 +81,8 @@ slave__load (Rig__Slave_Service *service,
   g_print ("UI Load Request\n");
 
   rig_pb_unserializer_init (&unserializer, engine,
-                            true); /* with id-map */
+                            true, /* with id-map */
+                            true);  /* rewind memory stack */
 
   ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
 

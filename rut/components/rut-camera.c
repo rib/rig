@@ -261,11 +261,11 @@ _rut_camera_flush_transforms (RutCamera *camera)
    * _flush() and use that camera before it is restored. */
   g_return_if_fail (camera->suspended == FALSE);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+  state = cogl_object_get_user_data (fb, &fb_camera_key);
   if (!state)
     {
       state = g_slice_new (CameraFlushState);
-      cogl_object_set_user_data (COGL_OBJECT (fb),
+      cogl_object_set_user_data (fb,
                                  &fb_camera_key,
                                  state,
                                  free_camera_flush_state);
@@ -1022,7 +1022,7 @@ rut_camera_suspend (RutCamera *camera)
 
   g_return_if_fail (camera->suspended == FALSE);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (camera->fb), &fb_camera_key);
+  state = cogl_object_get_user_data (camera->fb, &fb_camera_key);
 
   /* We only expect to be saving a camera that has been flushed */
   g_return_if_fail (state != NULL);
@@ -1056,7 +1056,7 @@ rut_camera_resume (RutCamera *camera)
    * to be touched so its transforms shouldn't have changed... */
   g_return_if_fail (camera->at_suspend_transform_age == camera->transform_age);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+  state = cogl_object_get_user_data (fb, &fb_camera_key);
 
   /* We only expect to be restoring a camera that has been flushed
    * before */

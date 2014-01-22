@@ -56,6 +56,7 @@ typedef enum _RigFrontendOpType
   RIG_FRONTEND_OP_TYPE_CONTROLLER_ADD_PROPERTY,
   RIG_FRONTEND_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
   RIG_FRONTEND_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
+  RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE,
 } RigFrontendOpType;
 
 
@@ -173,6 +174,11 @@ rig_frontend_op_controller_property_set_method (RigFrontend *frontend,
                                                 RigController *controller,
                                                 RutProperty *property,
                                                 RigControllerMethod method);
+
+void
+rig_frontend_op_set_play_mode (RigFrontend *frontend,
+                               bool play_mode_enabled);
+
 void
 rig_frontend_serialize_ops (RigFrontend *frontend,
                             RigPBSerializer *serializer,

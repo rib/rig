@@ -68,6 +68,10 @@ typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
 RigPBSerializer *
 rig_pb_serializer_new (RigEngine *engine);
 
+void
+rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
+                                               bool use_pointers);
+
 typedef bool (*RigPBAssetFilter) (RutAsset *asset, void *user_data);
 
 void
@@ -165,7 +169,8 @@ struct _RigPBUnSerializer
 void
 rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
                           RigEngine *engine,
-                          bool with_id_map);
+                          bool with_id_map,
+                          bool rewind_stack);
 
 void
 rig_pb_unserializer_set_object_register_callback (

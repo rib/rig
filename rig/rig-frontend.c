@@ -100,6 +100,9 @@ typedef struct _RigFrontendOp
       RutProperty *property;
       RigControllerMethod method;
     } controller_property_set_method;
+    struct {
+      bool play_mode_enabled;
+    } set_play_mode;
   };
 
 } RigFrontendOp;
@@ -210,6 +213,8 @@ clear_ops (RigFrontend *frontend)
                                 frontend);
             break;
           }
+        case RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE:
+            break;
         }
 
       rut_list_remove (&op->list_node);
@@ -564,6 +569,14 @@ rig_frontend_serialize_ops (RigFrontend *frontend,
       RigControllerMethod method;
     } controller_property_set_method;
 #endif
+
+        case RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE:
+          pb_op->set_play_mode =
+              rig_pb_new (engine, Rig__Operation__SetPlayMode,
+                          rig__operation__set_play_mode__init);
+          pb_op->set_play_mode->play_mode_enabled =
+            op->set_play_mode.play_mode_enabled;
+          break;
         }
 
       pb_frame_setup->ops[i] = pb_op;
@@ -832,6 +845,19 @@ rig_frontend_op_controller_property_set_method (RigFrontend *frontend,
   frontend->n_ops++;
 }
 
+void
+rig_frontend_op_set_play_mode (RigFrontend *frontend,
+                               bool play_mode_enabled)
+{
+  RigFrontendOp *op = g_slice_new (RigFrontendOp);
+
+  op->type = RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE;
+  op->set_play_mode.play_mode_enabled = play_mode_enabled;
+
+  rut_list_insert (frontend->ops.prev, &op->list_node);
+  frontend->n_ops++;
+}
+
 static void
 frontend__test (Rig__Frontend_Service *service,
                 const Rig__Query *query,
@@ -876,7 +902,8 @@ frontend__update_ui (Rig__Frontend_Service *service,
   g_return_if_fail (ui_diff != NULL);
 
   rig_pb_unserializer_init (&unserializer, frontend->engine,
-                            false); /* no need for an id-map */
+                            false, /* no need for an id-map */
+                            true); /* rewind memory stack */
 
   rig_pb_unserializer_set_id_to_object_callback (&unserializer,
                                                  pointer_id_to_object_cb,
@@ -935,10 +962,12 @@ frontend__update_ui (Rig__Frontend_Service *service,
       Rig__SimulatorAction *pb_action = ui_diff->actions[i];
       switch (pb_action->type)
         {
+#if 0
         case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
           rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
                                                  pb_action->set_play_mode->enabled);
           break;
+#endif
         case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
           {
             Rig__SimulatorAction__SelectObject *pb_select_object =
@@ -1016,11 +1045,18 @@ object_to_pointer_id_cb (void *object,
 void
 rig_frontend_reload_uis (RigFrontend *frontend)
 {
-  RigEngine *engine = frontend->engine;
-  RigPBSerializer *serializer = rig_pb_serializer_new (engine);
-  ProtobufCService *simulator_service =
-    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+  RigEngine *engine;
+  RigPBSerializer *serializer;
+  ProtobufCService *simulator_service;
   Rig__UI *pb_ui;
+
+  if (!frontend->connected)
+    return;
+
+  engine = frontend->engine;
+  serializer = rig_pb_serializer_new (engine);
+  simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
 
   rig_pb_serializer_set_object_register_callback (serializer,
                                                   object_to_pointer_id_cb,

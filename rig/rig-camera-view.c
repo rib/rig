@@ -2094,18 +2094,6 @@ input_region_cb (RutInputRegion *region,
   RigCameraView *view = user_data;
   RigEngine *engine = view->engine;
 
-  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
-      engine->simulator &&
-      rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
-      rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP &&
-      rut_key_event_get_keysym (event) == RUT_KEY_p)
-    {
-#warning "the latency of updating the play mode state in the frontend is probably bad"
-      rig_simulator_action_set_play_mode_enabled (engine->simulator,
-                                                  !view->play_mode);
-      return RUT_INPUT_EVENT_STATUS_HANDLED;
-    }
-
   /* XXX: it could be nice if the way we forwarded events to the
    * simulator was the same for the editor as for device mode,
    * though it would also seem unnecessary to have any indirection
@@ -2116,6 +2104,16 @@ input_region_cb (RutInputRegion *region,
     {
       RigCameraView *view = user_data;
       RigEngine *engine = view->engine;
+
+      if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
+          rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
+          rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP &&
+          rut_key_event_get_keysym (event) == RUT_KEY_p)
+        {
+          rig_engine_set_play_mode_enabled (engine, !engine->play_mode);
+          rig_frontend_op_set_play_mode (engine->frontend, engine->play_mode);
+          return RUT_INPUT_EVENT_STATUS_HANDLED;
+        }
 
       if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
           rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
@@ -2211,13 +2209,6 @@ rig_camera_view_new (RigEngine *engine)
   view->input_region =
     rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
   rut_graphable_add_child (view, view->input_region);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
-    rig_engine_set_play_mode_enabled (engine, false);
-  else
-#endif
-    rig_engine_set_play_mode_enabled (engine, true);
 
   if (!_rig_in_simulator_mode)
     {

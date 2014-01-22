@@ -59,6 +59,7 @@ simulator__test (Rig__Simulator_Service *service,
   closure (&result, closure_data);
 }
 
+#if 0
 void
 rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
                                             bool enabled)
@@ -71,6 +72,7 @@ rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
   rut_list_insert (simulator->actions.prev, &action->list_node);
   simulator->n_actions++;
 }
+#endif
 
 void
 rig_simulator_action_select_object (RigSimulator *simulator,
@@ -99,8 +101,10 @@ clear_actions (RigSimulator *simulator)
     {
       switch (action->type)
         {
+#if 0
         case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
           break;
+#endif
         case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
           if (action->select_object.object)
             rut_object_unref (action->select_object.object);
@@ -114,6 +118,13 @@ clear_actions (RigSimulator *simulator)
   simulator->n_actions = 0;
 }
 
+static RutObject *
+lookup_object (RigSimulator *simulator,
+               uint64_t id)
+{
+  return g_hash_table_lookup (simulator->object_map, &id);
+}
+
 static bool
 register_object_cb (void *object,
                     uint64_t id,
@@ -124,6 +135,14 @@ register_object_cb (void *object,
 
   g_return_val_if_fail (id != 0, true);
 
+  /* Assets can be shared between edit and play mode UIs so we
+   * don't want to complain if we detect them being registered
+   * multiple times
+   */
+  if (rut_object_get_type (object) == &rut_asset_type &&
+      lookup_object (simulator, id))
+    return true; /* no need to re-register in rig-pb.c */
+
   object_id = rut_magazine_chunk_alloc (_rig_simulator_object_id_magazine);
   *object_id = id;
 
@@ -133,7 +152,7 @@ register_object_cb (void *object,
   if (simulator->editable)
     {
       RigPBUnSerializer *unserializer = simulator->unserializer;
-      if (g_hash_table_lookup (simulator->object_map, object_id))
+      if (lookup_object (simulator, id))
         {
           rig_pb_unserializer_collect_error (unserializer,
                                              "Simulator: Registered duplicate "
@@ -147,13 +166,6 @@ register_object_cb (void *object,
     }
   else
     return false; /* also register normally in rig-pb.c */
-}
-
-static RutObject *
-lookup_object (RigSimulator *simulator,
-               uint64_t id)
-{
-  return g_hash_table_lookup (simulator->object_map, &id);
 }
 
 static void *
@@ -181,7 +193,8 @@ simulator__load (Rig__Simulator_Service *service,
   //g_print ("Simulator: UI Load Request\n");
 
   rig_pb_unserializer_init (&unserializer, engine,
-                            true); /* with id-map */
+                            true, /* with id-map */
+                            true); /* rewind memory stack */
 
   simulator->unserializer = &unserializer;
   rig_pb_unserializer_set_object_register_callback (&unserializer,
@@ -230,7 +243,8 @@ simulator__run_frame (Rig__Simulator_Service *service,
   g_return_if_fail (setup != NULL);
 
   rig_pb_unserializer_init (&unserializer, engine,
-                            false); /* no need for an id-map */
+                            false, /* no need for an id-map */
+                            true); /* rewind memory stack */
 
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
@@ -406,6 +420,12 @@ simulator__run_frame (Rig__Simulator_Service *service,
              * should be disabled in the simulator, so this shouldn't
              * redundantly feed-back to the frontend process. */
             rut_property_set_boxed  (prop_ctx, property, &boxed);
+            break;
+          }
+        case RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE:
+          {
+            bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
+            rig_engine_set_play_mode_enabled (engine, play_mode_enabled);
             break;
           }
         }
@@ -730,6 +750,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
           switch (action->type)
             {
+#if 0
             case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
               pb_action->set_play_mode =
                 rig_pb_new (engine,
@@ -737,6 +758,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
                             rig__simulator_action__set_play_mode__init);
               pb_action->set_play_mode->enabled = action->set_play_mode.enabled;
               break;
+#endif
             case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
               pb_action->select_object =
                 rig_pb_new (engine,

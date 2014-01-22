@@ -91,9 +91,9 @@ rig_simulator_stop_service (RigSimulator *simulator);
 void
 rig_simulator_stop_service (RigSimulator *simulator);
 
-void
-rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
-                                            bool enabled);
+//void
+//rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
+//                                            bool enabled);
 
 void
 rig_simulator_action_select_object (RigSimulator *simulator,

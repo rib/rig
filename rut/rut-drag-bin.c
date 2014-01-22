@@ -271,7 +271,7 @@ _rut_drag_bin_grab_input_cb (RutInputEvent *event,
         }
     }
 
-  return RUT_INPUT_EVENT_STATUS_UNHANDLED;
+  return RUT_INPUT_EVENT_STATUS_HANDLED;
 }
 
 static RutInputEventStatus

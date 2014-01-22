@@ -2752,29 +2752,6 @@ add_play_camera_handle (RigEngine *engine, RigUI *ui)
     }
 }
 
-static void
-setup_shared_ui_state (RigEngine *engine)
-{
-  RigUI *ui = engine->edit_mode_ui ?
-    engine->edit_mode_ui : engine->play_mode_ui;
-  RutCamera *camera =
-    rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
-
-  if (engine->shadow_fb)
-    {
-      CoglFramebuffer *fb = engine->shadow_fb;
-      int width = cogl_framebuffer_get_width (fb);
-      int height = cogl_framebuffer_get_height (fb);
-      rut_camera_set_framebuffer (camera, fb);
-      rut_camera_set_viewport (camera, 0, 0, width, height);
-    }
-
-  /* XXX: this may be redundant, as the camera-view looks like it
-   * always sets the framebuffer when painting. */
-  //rut_camera_set_framebuffer (ui->play_camera_component,
-  //                            engine->onscreen);
-}
-
 void
 rig_engine_set_play_mode_ui (RigEngine *engine,
                              RigUI *ui)
@@ -2786,8 +2763,14 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
   if (engine->play_mode_ui == ui)
     return;
 
-  rut_object_unref (engine->play_mode_ui);
-  engine->play_mode_ui = rut_object_ref (ui);
+  if (engine->play_mode_ui)
+    {
+      rut_object_unref (engine->play_mode_ui);
+      engine->play_mode_ui = NULL;
+    }
+
+  if (ui)
+    engine->play_mode_ui = rut_object_ref (ui);
 
   //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
   //  free_shared_ui_state (engine);
@@ -2798,8 +2781,8 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
   if (!ui)
     return;
 
-  if (first_ui)
-    setup_shared_ui_state (engine);
+  //if (first_ui)
+  //  setup_shared_ui_state (engine);
 }
 
 static RutAsset *
@@ -2809,13 +2792,6 @@ share_asset_cb (RigPBUnSerializer *unserializer,
 {
   RutObject *obj = (RutObject *)(intptr_t)pb_asset->id;
   return rut_object_ref (obj);
-}
-
-static uint64_t
-object_to_pointer_id_cb (void *object,
-                         void *user_data)
-{
-  return (uint64_t)(intptr_t)object;
 }
 
 static RigUI *
@@ -2839,12 +2815,10 @@ rig_engine_copy_ui (RigEngine *engine, RigUI *ui)
    * to simply return the same objects. */
   rig_pb_serializer_set_only_asset_ids_enabled (serializer, true);
 
-  rig_pb_serializer_set_object_register_callback (serializer,
-                                                  object_to_pointer_id_cb,
-                                                  NULL);
-  rig_pb_serializer_set_object_to_id_callback (serializer,
-                                               object_to_pointer_id_cb,
-                                               NULL);
+  /* By using pointers instead of an incrementing integer for the
+   * object IDs when serializing we can map assets back to the
+   * original asset which doesn't need to be copied. */
+  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
 
   pb_ui = rig_pb_serialize_ui (serializer,
                                false, /* edit mode */
@@ -2852,7 +2826,9 @@ rig_engine_copy_ui (RigEngine *engine, RigUI *ui)
 
   rig_pb_unserializer_init (&unserializer,
                             engine,
-                            true /* with id_map */);
+                            true, /* with id_map */
+                            false); /* don't rewind memory stack otherwise
+                                     * we'll trash the serialized pb_ui */
 
   rig_pb_unserializer_set_asset_unserialize_callback (&unserializer,
                                                       share_asset_cb,
@@ -2864,7 +2840,7 @@ rig_engine_copy_ui (RigEngine *engine, RigUI *ui)
 
   rig_pb_serialized_ui_destroy (pb_ui);
 
-  rut_object_unref (serializer);
+  rig_pb_serializer_destroy (serializer);
 
   return copy;
 }
@@ -2884,16 +2860,19 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
    * any play mode ui too... */
   rig_engine_set_play_mode_ui (engine, NULL);
 
-  rig_controller_view_set_controller (engine->controller_view,
-                                      NULL);
-
-  clear_search_results (engine);
-  free_result_input_closures (engine);
-
-  if (engine->grid_prim)
+  if (engine->frontend)
     {
-      cogl_object_unref (engine->grid_prim);
-      engine->grid_prim = NULL;
+      rig_controller_view_set_controller (engine->controller_view,
+                                          NULL);
+
+      clear_search_results (engine);
+      free_result_input_closures (engine);
+
+      if (engine->grid_prim)
+        {
+          cogl_object_unref (engine->grid_prim);
+          engine->grid_prim = NULL;
+        }
     }
 
   if (engine->play_camera_handle)
@@ -2908,7 +2887,8 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
       engine->light_handle = NULL;
     }
 
-  rut_object_unref (engine->edit_mode_ui);
+  if (engine->edit_mode_ui)
+    rut_object_unref (engine->edit_mode_ui);
   engine->edit_mode_ui = rut_object_ref (ui);
 
   //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
@@ -2922,8 +2902,8 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
   if (!ui)
     return;
 
-  if (first_ui)
-    setup_shared_ui_state (engine);
+  //if (first_ui)
+  //  setup_shared_ui_state (engine);
 
   if (engine->frontend)
     {
@@ -2955,7 +2935,7 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
        * the new edit mode graph.
        */
       play_mode_ui = rig_engine_copy_ui (engine, ui);
-      rig_engine_set_play_mode_enabled (engine, play_mode_ui);
+      rig_engine_set_play_mode_ui (engine, play_mode_ui);
       rut_object_unref (play_mode_ui);
 
       rig_frontend_reload_uis (engine->frontend);

@@ -530,6 +530,12 @@ message Operation
     required Method method=4;
   }
   optional ControllerPropertySetMethod controller_property_set_method=16;
+
+  message SetPlayMode
+  {
+    required bool play_mode_enabled=1;
+  }
+  optional SetPlayMode set_play_mode=17;
 }
 
 message FrameSetup

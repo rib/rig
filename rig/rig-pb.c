@@ -32,6 +32,8 @@ struct _RigPBSerializer
 {
   RigEngine *engine;
 
+  bool use_pointer_ids;
+
   RigPBAssetFilter asset_filter;
   void *asset_filter_data;
 
@@ -480,7 +482,11 @@ register_serializer_object (RigPBSerializer *serializer,
       return 0;
     }
 
-  id = serializer->next_id++;
+  if (serializer->use_pointer_ids)
+    id = (intptr_t)object;
+  else
+    id = serializer->next_id++;
+
   g_return_val_if_fail (id != 0, 0);
 
   id_value = rut_memory_stack_memalign (serializer->engine->serialization_stack,
@@ -935,6 +941,13 @@ rig_pb_serializer_new (RigEngine *engine)
 }
 
 void
+rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
+                                               bool use_pointers)
+{
+  serializer->use_pointer_ids = use_pointers;
+}
+
+void
 rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
                                     RigPBAssetFilter filter,
                                     void *user_data)
@@ -1323,6 +1336,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
   for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
     pb_ui->entities[i] = l->data;
   g_list_free (serializer->pb_entities);
+  serializer->pb_entities = NULL;
 
   for (i = 0, l = ui->controllers; l; i++, l = l->next)
     register_serializer_object (serializer, l->data);
@@ -1835,25 +1849,35 @@ unserialize_components (RigPBUnSerializer *unserializer,
           {
             Rig__Entity__Component__Light *pb_light = pb_component->light;
             RutLight *light;
-            CoglColor ambient;
-            CoglColor diffuse;
-            CoglColor specular;
 
             light = rut_light_new (unserializer->engine->ctx);
 
-            pb_init_color (unserializer->engine->ctx,
-                           &ambient, pb_light->ambient);
-            pb_init_color (unserializer->engine->ctx,
-                           &diffuse, pb_light->diffuse);
-            pb_init_color (unserializer->engine->ctx,
-                           &specular, pb_light->specular);
+            /* XXX: This is only for backwards compatibility... */
+            if (!pb_component->properties)
+              {
+                CoglColor ambient;
+                CoglColor diffuse;
+                CoglColor specular;
 
-            rut_light_set_ambient (light, &ambient);
-            rut_light_set_diffuse (light, &diffuse);
-            rut_light_set_specular (light, &specular);
+                pb_init_color (unserializer->engine->ctx,
+                               &ambient, pb_light->ambient);
+                pb_init_color (unserializer->engine->ctx,
+                               &diffuse, pb_light->diffuse);
+                pb_init_color (unserializer->engine->ctx,
+                               &specular, pb_light->specular);
+
+                rut_light_set_ambient (light, &ambient);
+                rut_light_set_diffuse (light, &diffuse);
+                rut_light_set_specular (light, &specular);
+              }
 
             rut_entity_add_component (entity, light);
             rut_object_unref (light);
+
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 light,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
 
             if (unserializer->light == NULL)
               unserializer->light = rut_object_ref (entity);
@@ -2488,13 +2512,12 @@ unserialize_assets (RigPBUnSerializer *unserializer,
                                                             pb_asset,
                                                             user_data);
         }
-
-
-      if (!pb_asset->path)
-        continue;
-
-      if (pb_asset->has_data)
+      else if (pb_asset->path &&
+               pb_asset->has_type &&
+               pb_asset->has_is_video &&
+               pb_asset->has_data)
         {
+
           asset = rut_asset_new_from_data (engine->ctx,
                                            pb_asset->path,
                                            pb_asset->type,
@@ -2517,7 +2540,8 @@ unserialize_assets (RigPBUnSerializer *unserializer,
           asset = rut_asset_new_from_mesh (engine->ctx, mesh);
           rut_object_unref (mesh);
         }
-      else if (unserializer->engine->ctx->assets_location)
+      else if (pb_asset->path &&
+               unserializer->engine->ctx->assets_location)
         {
           char *full_path =
             g_build_filename (unserializer->engine->ctx->assets_location,
@@ -2545,7 +2569,10 @@ unserialize_assets (RigPBUnSerializer *unserializer,
           register_unserializer_object (unserializer, asset, id);
         }
       else
-        g_warning ("Failed to load \"%s\" asset", pb_asset->path);
+        {
+          g_warning ("Failed to load \"%s\" asset",
+                     pb_asset->path ? pb_asset->path : "");
+        }
     }
 }
 
@@ -2935,7 +2962,8 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
 void
 rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
                           RigEngine *engine,
-                          bool with_id_map)
+                          bool with_id_map,
+                          bool rewind_stack)
 {
   memset (unserializer, 0, sizeof (RigPBUnSerializer));
 
@@ -2948,7 +2976,8 @@ rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
                                                g_int64_equal);
     }
 
-  rut_memory_stack_rewind (engine->serialization_stack);
+  if  (rewind_stack)
+    rut_memory_stack_rewind (engine->serialization_stack);
 }
 
 void
@@ -3012,8 +3041,12 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
   ui->scene = rut_graph_new (engine->ctx);
   for (l = unserializer->entities; l; l = l->next)
     {
+      g_print ("unserialized entiy %p\n", l->data);
       if (rut_graphable_get_parent (l->data) == NULL)
-        rut_graphable_add_child (ui->scene, l->data);
+        {
+          rut_graphable_add_child (ui->scene, l->data);
+          g_print ("%p added to scene %p\n", l->data, ui->scene);
+        }
     }
 
   ui->light = unserializer->light;

@@ -166,7 +166,8 @@ rig_load (RigEngine *engine, const char *file)
     }
 
   rig_pb_unserializer_init (&unserializer, engine,
-                            true); /* with id-map */
+                            true, /* with id-map */
+                            true); /* rewind memory stack */
 
   pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 
