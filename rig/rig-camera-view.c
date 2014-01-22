@@ -2074,7 +2074,7 @@ simulator_implicit_grab_input_cb (RutInputEvent *event, void *user_data)
   RigEngine *engine = view->engine;
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP)
     {
       rut_shell_ungrab_input (view->context->shell,
                               simulator_implicit_grab_input_cb,
@@ -2140,7 +2140,8 @@ input_region_cb (RutInputRegion *region,
   else if (view->play_mode)
     {
       /* While in play mode then we do picking in the simulator */
-      return input_cb (event, user_data);
+      //return input_cb (event, user_data);
+      return device_mode_input_cb (event, user_data);
     }
   //else
   //  return device_mode_input_cb (event, user_data);
