@@ -85,7 +85,7 @@ struct _RigFrontend
   int pending_width;
   int pending_height;
 
-  RutList ops;
+  GList *ops;
   int n_ops;
 };
 
