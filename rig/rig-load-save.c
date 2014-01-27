@@ -125,8 +125,8 @@ rig_load (RigEngine *engine, const char *file)
   RigUI *ui;
 
   /* We use a special allocator while unpacking protocol buffers
-   * that lets us use the serialization_stack. This means much
-   * less mucking about with the heap since the serialization_stack
+   * that lets us use the frame_stack. This means much
+   * less mucking about with the heap since the frame_stack
    * is a persistant, growable stack which we can just rewind
    * very cheaply before unpacking */
   ProtobufCAllocator protobuf_c_allocator =
@@ -135,7 +135,7 @@ rig_load (RigEngine *engine, const char *file)
       ignore_free,
       stack_alloc, /* tmp_alloc */
       8192, /* max_alloca */
-      engine->serialization_stack /* allocator_data */
+      engine->frame_stack /* allocator_data */
     };
 
   /* Simulators shouldn't be trying to load UIs directly */
@@ -165,9 +165,7 @@ rig_load (RigEngine *engine, const char *file)
       return NULL;
     }
 
-  rig_pb_unserializer_init (&unserializer, engine,
-                            true, /* with id-map */
-                            true); /* rewind memory stack */
+  rig_pb_unserializer_init (&unserializer, engine);
 
   pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 

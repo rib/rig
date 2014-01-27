@@ -45,6 +45,8 @@ typedef struct _RigSlave
   RigFrontend *frontend;
   RigEngine *engine;
 
+  GHashTable *edit_id_to_play_object_map;
+
 } RigSlave;
 
 static void
@@ -61,6 +63,48 @@ slave__test (Rig__Slave_Service *service,
   g_print ("Test Query\n");
 
   closure (&result, closure_data);
+}
+
+static RutMagazine *_rig_slave_object_id_magazine = NULL;
+
+static void
+free_object_id (void *id)
+{
+  rut_magazine_chunk_free (_rig_slave_object_id_magazine,, id);
+}
+
+static void *
+edit_id_to_object_cb (uint64_t id,
+                      void *user_data)
+{
+  RigSlave *slave = user_data;
+  return g_hash_table_lookup (slave->edit_id_to_play_object_map, &id);
+}
+
+static void *
+edit_id_to_object (RigSlave *slave, uint64_t id)
+{
+  return edit_id_to_object_cb (id, slave);
+}
+
+static void
+register_edit_mode_id_cb (void *object,
+                          uint64_t id,
+                          void *user_data)
+{
+  RigSlave *slave = user_data;
+  uint64_t &object_id;
+
+  if (edit_id_to_object (slave, id))
+    {
+      g_critical ("Tried to re-register object");
+      return;
+    }
+
+  object_id = rut_magazine_chunk_alloc (_rig_slave_object_id_magazine);
+  *object_id = id;
+
+  g_hash_table_insert (slave->edit_id_to_play_object_map, object_id, object);
 }
 
 static void
@@ -80,9 +124,36 @@ slave__load (Rig__Slave_Service *service,
 
   g_print ("UI Load Request\n");
 
-  rig_pb_unserializer_init (&unserializer, engine,
-                            true, /* with id-map */
-                            true);  /* rewind memory stack */
+  if (slave->edit_id_to_play_object_map)
+    {
+      rig_engine_set_play_mode_ui (engine, NULL);
+
+      g_hash_table_destroy (slave->edit_id_to_play_object_map);
+      slave->edit_id_to_play_object_map = NULL;
+    }
+
+  slave->edit_id_to_play_object_map =
+    g_hash_table_new (g_int64_hash, /* direct hash */
+                      g_int64_equal, /* direct key equal */
+                      free_object_id, /* key destroy */
+                      NULL); /* value destroy */
+
+  rig_pb_unserializer_init (&unserializer, engine);
+
+  rig_pb_unserializer_set_object_register_callback (&unserializer,
+                                                    register_edit_mode_id_cb,
+                                                    slave);
+
+  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+                                                 edit_id_to_object_cb,
+                                                 slave);
+
+  /* TODO: We need an object_to_id_map so that if any ui logic deletes
+   * an object then we can check to see if the object corresponds to
+   * an edit-mode object and if so remove its mapping from
+   * edit_id_to_play_object_map and make sure attempts to edit this
+   * object will fail gracefully.
+   */
 
   ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
 
@@ -111,6 +182,28 @@ slave__load (Rig__Slave_Service *service,
   closure (&result, closure_data);
 }
 
+static void
+slave__edit (Rig__Slave_Service *service,
+             const Rig__UIEdit *pb_ui_edit,
+             Rig__UIEditResult_Closure closure,
+             void *closure_data)
+{
+  Rig__UIEditResult result = RIG__UI_EDIT_RESULT__INIT;
+  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigEngine *engine = slave->engine;
+
+  if (!rig_engine_apply_pb_ui_edit (engine,
+                                    pb_ui_edit,
+                                    engine->play_mode_ui,
+                                    edit_id_to_object_cb,
+                                    slave))
+    {
+      result.has_status = true;
+      result.status = false;
+    }
+
+  closure (&result, closure_data);
+}
 
 static Rig__Slave_Service rig_slave_service =
   RIG__SLAVE__INIT(slave__);
@@ -168,10 +261,11 @@ rig_slave_init (RutShell *shell, void *user_data)
                                       NULL);
 
   engine = slave->frontend->engine;
-  slave->engine = slave->engine;
+  slave->engine = engine;
 
-  /* TODO: move from engine to frontend */
+  _rig_slave_object_id_magazine = engine->object_id_magazine;
 
+  /* TODO: move from engine to slave */
   engine->slave_service = rig_rpc_server_new (&rig_slave_service.base,
                                               server_error_handler,
                                               new_client_handler,
@@ -193,6 +287,8 @@ rig_slave_fini (RutShell *shell, void *user_data)
   /* TODO: move to frontend */
   rig_avahi_unregister_service (engine);
   rig_rpc_server_shutdown (engine->slave_service);
+
+  _rig_simulator_object_id_magazine = NULL;
 
   slave->engine = NULL;
 
@@ -221,6 +317,8 @@ rig_slave_paint (RutShell *shell, void *user_data)
   rut_shell_run_post_paint_callbacks (shell);
 
   rut_shell_end_redraw (shell);
+
+  rut_memory_stack_rewind (engine->frame_stack);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

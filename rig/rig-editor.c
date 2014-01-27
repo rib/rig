@@ -70,6 +70,71 @@ handle_run_frame_ack (const Rig__RunFrameAck *ack,
   g_print ("Editor: Run Frame ACK received\n");
 }
 
+#if 0
+static bool
+object_deleted_cb (uint63_t id, void *user_data)
+{
+  RigEngine *engine = user_data;
+  void *object (void *)(intptr_t)id;
+
+  g_hash_table_remove (engine->edit_to_play_object_map, object);
+}
+#endif
+
+static void
+handle_edit_operations (RigEditor *editor,
+                        RigPBSerializer *serializer,
+                        Rig__FrameSetup *setup)
+{
+  RigEngine *engine = editor->engine;
+  Rig__UIEdit *play_edits;
+
+  setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__ui_edit__init);
+  setup->edit->n_ops = engine->n_ops;
+  if (setup->edit->n_ops != 0)
+    pb_frame_setup->edit->ops = rig_engine_serialize_ops (engine, serializer);
+
+  setup->play_edit = NULL;
+#if 0
+  rig_pb_unserializer_init (&unserializer, engine);
+
+  rig_pb_unserializer_set_object_unregister_callback (&unserializer,
+                                                      object_deleted_cb,
+                                                      engine);
+#endif
+#error fixme
+
+  rig_engine_forward_pb_ui_edit_to_slaves (engine, pb_ui_edit);
+
+  rig_engine_apply_pb_ui_edit (engine,
+                               pb_ui_edit,
+                               engine->edit_mode_ui,
+                               nop_id_cast_cb, /* ids == obj ptrs */
+                               NULL); /* user data */
+
+  play_edits = rig_engine_map_pb_ui_edit (engine,
+                                          pb_ui_edit,
+                                          rig_engine_edit_id_to_play_object,
+                                          NULL);
+
+  status = rig_engine_apply_pb_ui_edit (engine,
+                                        pb_ui_edit,
+                                        engine->play_mode_ui,
+                                        nop_id_cast_cb, /* ids == obj ptrs */
+                                        NULL); /* user data */
+
+  /* XXX: send both sets of edits to the simulator */
+
+  setup.edit = pb_ui_edit;
+
+  if (status)
+    setup.play_edit = play_edits;
+  else
+    rig_engine_reset_play_mode_ui (engine);
+
+  rig_engine_clear_ops (engine);
+}
+
 static void
 rig_editor_paint (RutShell *shell, void *user_data)
 {
@@ -97,7 +162,7 @@ rig_editor_paint (RutShell *shell, void *user_data)
 
   /* Again we are immediately about to start painting but this is
    * another set of callbacks that can hook into the start of
-   * processing a frame with the different (compared to pre-paint
+   * processing a frame with the difference (compared to pre-paint
    * callbacks) that they aren't unregistered each frame and they
    * aren't sorted with respect to a node in a graph.
    */
@@ -120,9 +185,7 @@ rig_editor_paint (RutShell *shell, void *user_data)
       frontend->has_resized = false;
     }
 
-  rig_frontend_serialize_ops (frontend,
-                              serializer,
-                              &setup);
+  handle_edit_operations (editor, setup);
 
   /* Inform the simulator of the offset position of the main camera
    * view so that it can transform its input events accordingly...
@@ -154,6 +217,8 @@ rig_editor_paint (RutShell *shell, void *user_data)
   rut_shell_run_post_paint_callbacks (shell);
 
   rut_shell_end_redraw (shell);
+
+  rut_memory_stack_rewind (engine->frame_stack);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

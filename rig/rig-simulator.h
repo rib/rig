@@ -31,8 +31,9 @@ typedef struct _RigSimulator RigSimulator;
  */
 typedef enum _RigSimulatorActionType
 {
-  RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE=1,
-  RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT,
+  //RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE=1,
+  RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT = 1,
+  RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE,
 } RigSimulatorActionType;
 
 /* The "simulator" is the process responsible for updating object
@@ -67,10 +68,10 @@ struct _RigSimulator
 
   RigPBUnSerializer *unserializer;
 
-  GHashTable *id_map;
+  GHashTable *object_to_id_map;
 
   /* Only initialized and maintained if editable == true */
-  GHashTable *object_map;
+  GHashTable *id_to_object_map;
 
   RutList actions;
   int n_actions;

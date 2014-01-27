@@ -102,9 +102,7 @@ rig_device_paint (RutShell *shell, void *user_data)
       frontend->has_resized = false;
     }
 
-  rig_frontend_serialize_ops (frontend,
-                              serializer,
-                              &setup);
+  setup.edit = NULL;
 
   rig__simulator__run_frame (simulator_service,
                              &setup,
@@ -124,6 +122,8 @@ rig_device_paint (RutShell *shell, void *user_data)
   rut_shell_run_post_paint_callbacks (shell);
 
   rut_shell_end_redraw (shell);
+
+  rut_memory_stack_rewind (engine->frame_stack);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

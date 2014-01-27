@@ -676,9 +676,14 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   UndoRedoSetProperty *set_property = &undo_redo->d.set_property;
   RigEngine *engine = journal->engine;
 
-  rig_frontend_op_set_property (engine->frontend,
-                                set_property->property,
-                                &set_property->value1);
+  /*
+   * XXX: This modification needs to be multicast to the edit-mode and
+   * play-mode UIs as well as all connected slaves
+   */
+
+  rig_engine_op_set_property (engine,
+                              set_property->property,
+                              &set_property->value1);
 }
 
 static UndoRedo *
@@ -716,6 +721,7 @@ undo_redo_set_controller_const_apply (RigUndoJournal *journal, UndoRedo *undo_re
 {
   UndoRedoSetControllerConst *set_controller_const = &undo_redo->d.set_controller_const;
 
+#error "How do we multiplex modifications not just to the edit-mode graph, but also the play-mode graph and to slaves?"
   rig_controller_set_property_constant (set_controller_const->controller,
                                         set_controller_const->property,
                                         &set_controller_const->value1);

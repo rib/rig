@@ -70,6 +70,8 @@ message Mesh
 message Asset
 {
   optional sint64 id=1;
+  optional sint64 edit_id=7;
+
   optional string path=2;
 
   optional uint32 type=3;
@@ -263,6 +265,8 @@ message Entity
         }
 
       optional sint64 id=1;
+      optional sint64 edit_id=12;
+
       optional Type type=2;
       optional Light light=3;
 
@@ -281,6 +285,8 @@ message Entity
     }
 
   optional sint64 id=1;
+  optional sint64 edit_id=9;
+
   optional sint64 parent_id=2;
   optional string label=3;
   optional Vec3 position=4;
@@ -339,8 +345,10 @@ message Controller
       optional string c_expression=9;
     }
 
-  optional string name=3;
   optional sint64 id=1;
+  optional sint64 edit_id=5;
+
+  optional string name=3;
   repeated Property properties=2;
 
   //introspectable properties...
@@ -357,15 +365,6 @@ message UI
   repeated Asset assets=2;
   repeated Entity entities=3;
   repeated Controller controllers=4;
-}
-
-message LoadResult
-{
-}
-
-service Slave {
-  rpc Load (UI) returns (LoadResult);
-  rpc Test (Query) returns (TestResult);
 }
 
 message Event
@@ -398,7 +397,7 @@ message Event
 
 message Operation
 {
-  //See RigFrontendOpType
+  //See RigEngineOpType
   required uint32 type=1;
 
   message RegisterObject
@@ -538,6 +537,11 @@ message Operation
   optional SetPlayMode set_play_mode=17;
 }
 
+message UIEdit
+{
+  repeated Operation ops=1;
+}
+
 message FrameSetup
 {
   //Since in the editor the main edit area can be offset within a larger
@@ -562,7 +566,23 @@ message FrameSetup
   optional bool play_mode=9;
 
   //Edit operations to apply first
-  repeated Operation ops=10;
+  optional UIEdit edit=10;
+  optional UIEdit play_edit=11;
+}
+
+message LoadResult
+{
+}
+
+message UIEditResult
+{
+  optional bool status=1;
+}
+
+service Slave {
+  rpc Edit (UIEdit) returns (UIEditResult);
+  rpc Load (UI) returns (LoadResult);
+  rpc Test (Query) returns (TestResult);
 }
 
 
@@ -629,6 +649,9 @@ message UIDiff
 
   //batched requests from the simulator to the frontend
   repeated SimulatorAction actions=3;
+
+  //UI edits made by application logic
+  optional UIEdit edit=4;
 }
 
 message UpdateUIAck

@@ -86,8 +86,6 @@ struct _RigEngine
 
   char *ui_filename;
 
-  GHashTable *id_map;
-
   RutCamera *camera_2d;
   RutObject *root;
 
@@ -109,9 +107,11 @@ struct _RigEngine
   RutContext *ctx;
   CoglOnscreen *onscreen;
 
-#ifdef RIG_EDITOR_ENABLED
-  RutMemoryStack *serialization_stack;
+  RigPBSerializer *ops_serializer;
+  RutMemoryStack *frame_stack;
+  RutMagazine *object_id_magazine;
 
+#ifdef RIG_EDITOR_ENABLED
   RutInputQueue *simulator_input_queue;
 
   RutText *search_text;
@@ -274,7 +274,13 @@ struct _RigEngine
 
   RigUI *edit_mode_ui;
   RigUI *play_mode_ui;
+  /* Maps pointers to edit-mode objects to corresponding play-mode
+   * objects... */
+  GHashTable *edit_to_play_object_map;
   RigUI *current_ui;
+
+  GList *ops;
+  int n_ops;
 
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
@@ -396,5 +402,128 @@ rig_add_tool_changed_callback (RigEngine *engine,
                                void *user_data,
                                RutClosureDestroyCallback destroy_notify);
 
+typedef enum _RigEngineOpType
+{
+  RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
+  RIG_ENGINE_OP_TYPE_SET_PROPERTY,
+  RIG_ENGINE_OP_TYPE_ADD_ENTITY,
+  RIG_ENGINE_OP_TYPE_DELETE_ENTITY,
+  RIG_ENGINE_OP_TYPE_ADD_COMPONENT,
+  RIG_ENGINE_OP_TYPE_DELETE_COMPONENT,
+  RIG_ENGINE_OP_TYPE_ADD_CONTROLLER,
+  RIG_ENGINE_OP_TYPE_DELETE_CONTROLLER,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_SET_CONST,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_ADD_NODE,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_DELETE_NODE,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_SET_NODE,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
+  RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
+  RIG_ENGINE_OP_TYPE_SET_PLAY_MODE,
+} RigEngineOpType;
+
+
+void
+rig_engine_op_register_object (RigEngine *engine,
+                               RutObject *object);
+
+void
+rig_engine_op_set_property (RigEngine *engine,
+                            RutProperty *property,
+                            RutBoxed *value);
+
+void
+rig_engine_op_add_entity (RigEngine *engine,
+                          RutEntity *parent,
+                          RutEntity *entity);
+
+void
+rig_engine_op_delete_entity (RigEngine *engine,
+                             RutEntity *entity);
+
+void
+rig_engine_op_add_component (RigEngine *engine,
+                             RutEntity *entity,
+                             RutComponent *component);
+
+void
+rig_engine_op_delete_component (RigEngine *engine,
+                                RutComponent *component);
+
+void
+rig_engine_op_add_controller (RigEngine *engine,
+                              RigController *controller);
+
+void
+rig_engine_op_delete_controller (RigEngine *engine,
+                                 RigController *controller);
+
+void
+rig_engine_op_controller_set_const (RigEngine *engine,
+                                    RigController *controller,
+                                    RutProperty *property,
+                                    RutBoxed *value);
+
+void
+rig_engine_op_add_path_node (RigEngine *engine,
+                             RigController *controller,
+                             RutProperty *property,
+                             float t,
+                             RutBoxed *value);
+
+void
+rig_engine_op_controller_path_delete_node (RigEngine *engine,
+                                           RigController *controller,
+                                           RutProperty *property,
+                                           float t);
+
+void
+rig_engine_op_controller_path_set_node (RigEngine *engine,
+                                        RigController *controller,
+                                        RutProperty *property,
+                                        float t,
+                                        RutBoxed *value);
+
+void
+rig_engine_op_controller_add_property (RigEngine *engine,
+                                       RigController *controller,
+                                       RutProperty *property);
+
+void
+rig_engine_op_controller_remove_property (RigEngine *engine,
+                                          RigController *controller,
+                                          RutProperty *property);
+
+void
+rig_engine_op_controller_property_set_method (RigEngine *engine,
+                                              RigController *controller,
+                                              RutProperty *property,
+                                              RigControllerMethod method);
+
+void
+rig_engine_op_set_play_mode (RigEngine *engine,
+                             bool play_mode_enabled);
+
+Rig__Operation **
+rig_engine_serialize_ops (RigEngine *engine,
+                          RigPBSerializer *serializer);
+
+void
+rig_engine_clear_ops (RigEngine *engine);
+
+typedef void *(*RigEngineIdToObjectCallback) (uint64_t id, void *user_data);
+typedef void (*RigEngineRegisterIdCallback) (uint64_t id,
+                                             void *object,
+                                             void *user_data);
+typedef void (*RigEngineDeleteIdCallback) (uint64_t id, void *user_data);
+
+bool
+rig_engine_apply_pb_ui_edit (RigEngine *engine,
+                             Rig__UIEdit *pb_ui_edit,
+                             RigUI *ui,
+                             RigEngineIdToObjectCallback id_to_object_cb,
+                             RigEngineRegisterIdCallback register_id_cb,
+                             RigEngineDeleteIdCallback delete_id_cb,
+                             void *user_data)
 
 #endif /* _RUT_ENGINE_H_ */

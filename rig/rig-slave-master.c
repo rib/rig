@@ -47,7 +47,7 @@ slave_master_connected (PB_RPC_Client *pb_client,
 {
   RigSlaveMaster *master = user_data;
 
-  rig_slave_master_sync_ui (master);
+  rig_slave_master_reload_ui (master);
 
   g_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
@@ -139,7 +139,7 @@ rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
 }
 
 void
-rig_slave_master_sync_ui (RigSlaveMaster *master)
+rig_slave_master_reload_ui (RigSlaveMaster *master)
 {
   RigPBSerializer *serializer;
   RigEngine *engine = master->engine;
@@ -151,11 +151,33 @@ rig_slave_master_sync_ui (RigSlaveMaster *master)
 
   serializer = rig_pb_serializer_new (engine);
 
-  pb_ui = rig_pb_serialize_ui (serializer, true, engine->play_mode_ui);
+  /* NB: We always use the edit-mode-ui as the basis for any ui sent
+   * to a slave device so that the slave device can maintain a mapping
+   * from edit-mode IDs to its play-mode IDs so that we can handle
+   * edit operations in the slave.
+   */
+  pb_ui = rig_pb_serialize_ui (serializer, true, engine->edit_mode_ui);
 
   rig__slave__load (service, pb_ui, handle_load_response, NULL);
 
   rig_pb_serialized_ui_destroy (pb_ui);
 
   rig_pb_serializer_destroy (serializer);
+}
+
+static void
+handle_edit_response (const Rig__LoadResult *result,
+                      void *closure_data)
+{
+  g_print ("UI edited by slave\n");
+}
+
+void
+rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
+                                     Rig__UIEdit *pb_edit)
+{
+  ProtobufCService *service =
+    rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);
+
+  rig__slave__edit (service, pb_ui_edit, handle_edit_response, NULL);
 }

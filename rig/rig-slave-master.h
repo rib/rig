@@ -49,6 +49,10 @@ void
 rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address);
 
 void
-rig_slave_master_sync_ui (RigSlaveMaster *master);
+rig_slave_master_reload_ui (RigSlaveMaster *master);
+
+void
+rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
+                                     Rig__UIEdit *pb_edit);
 
 #endif /* __RIG_SLAVE_MASTER__ */

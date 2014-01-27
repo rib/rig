@@ -19,9 +19,11 @@ typedef struct _RigSimulatorAction
   RigSimulatorActionType type;
   RutList list_node;
   union {
+#if 0
     struct {
       bool enabled;
     } set_play_mode;
+#endif
     struct {
       RutObject *object;
       RutSelectAction action;
@@ -93,6 +95,17 @@ rig_simulator_action_select_object (RigSimulator *simulator,
 }
 
 static void
+rig_simulator_action_report_edit_failure (RigSimulator *simulator)
+{
+  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
+
+  action->type = RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE;
+
+  rut_list_insert (simulator->actions.prev, &action->list_node);
+  simulator->n_actions++;
+}
+
+static void
 clear_actions (RigSimulator *simulator)
 {
   RigSimulatorAction *action, *tmp;
@@ -122,16 +135,17 @@ static RutObject *
 lookup_object (RigSimulator *simulator,
                uint64_t id)
 {
-  return g_hash_table_lookup (simulator->object_map, &id);
+  void *id_ptr = (void *)(intptr_t)id;
+  return g_hash_table_lookup (simulator->id_to_object_map, id_ptr);
 }
 
-static bool
+static void
 register_object_cb (void *object,
                     uint64_t id,
                     void *user_data)
 {
   RigSimulator *simulator = user_data;
-  uint64_t *object_id;
+  void *id_ptr;
 
   g_return_val_if_fail (id != 0, true);
 
@@ -141,31 +155,17 @@ register_object_cb (void *object,
    */
   if (rut_object_get_type (object) == &rut_asset_type &&
       lookup_object (simulator, id))
-    return true; /* no need to re-register in rig-pb.c */
+    return;
 
-  object_id = rut_magazine_chunk_alloc (_rig_simulator_object_id_magazine);
-  *object_id = id;
+  /* NB: We can assume that all IDs fit in a native pointer since IDs
+   * sent to a simulator currently always correspond to pointers in
+   * the frontend which has to be running on the same machine.
+   */
 
-  g_hash_table_insert (simulator->id_map, object, object_id);
+  id_ptr = (void *)(intptr_t)id;
 
-  /* Editing commands need to be able to lookup objects from an id... */
-  if (simulator->editable)
-    {
-      RigPBUnSerializer *unserializer = simulator->unserializer;
-      if (lookup_object (simulator, id))
-        {
-          rig_pb_unserializer_collect_error (unserializer,
-                                             "Simulator: Registered duplicate "
-                                             "object id %ld", id);
-          return true; /* don't then try and register in rig-pb.c */
-        }
-
-      g_hash_table_insert (simulator->object_map, object_id, object);
-
-      return true; /* no need to additionally register the object in rig-pb.c */
-    }
-  else
-    return false; /* also register normally in rig-pb.c */
+  g_hash_table_insert (simulator->object_to_id_map, object, id_ptr);
+  g_hash_table_insert (simulator->id_to_object_map, id_ptr, object);
 }
 
 static void *
@@ -192,25 +192,17 @@ simulator__load (Rig__Simulator_Service *service,
 
   //g_print ("Simulator: UI Load Request\n");
 
-  rig_pb_unserializer_init (&unserializer, engine,
-                            true, /* with id-map */
-                            true); /* rewind memory stack */
+  rig_pb_unserializer_init (&unserializer, engine);
 
   simulator->unserializer = &unserializer;
+
   rig_pb_unserializer_set_object_register_callback (&unserializer,
                                                     register_object_cb,
                                                     simulator);
 
-  /* When the UI is mutable (running as an editor or slave) then
-   * we need the ability to lookup objects with an id so we
-   * hook into the unserializer so we can build up a map.
-   */
-  if (simulator->editable)
-    {
-      rig_pb_unserializer_set_id_to_object_callback (&unserializer,
-                                                     lookup_object_cb,
-                                                     simulator);
-    }
+  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+                                                 lookup_object_cb,
+                                                 simulator);
 
   ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
 
@@ -243,8 +235,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
   g_return_if_fail (setup != NULL);
 
   rig_pb_unserializer_init (&unserializer, engine,
-                            false, /* no need for an id-map */
-                            true); /* rewind memory stack */
+                            false); /* no need for an id-map */
 
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
@@ -387,51 +378,12 @@ simulator__run_frame (Rig__Simulator_Service *service,
   /*
    * Apply UI edit operations immediately
    */
-
-  /* Setup the property context to log all property changes so they
-   * can be sent back to the frontend process at the end of the
-   * this frame */
-  simulator->ctx->property_ctx.log = true;
-
-  for (i = 0; i < setup->n_ops; i++)
+  if (setup->edit)
     {
-      Rig__Operation *pb_op = setup->ops[i];
-
-      switch (pb_op->type)
-        {
-        case RIG_FRONTEND_OP_TYPE_SET_PROPERTY:
-          {
-            RutObject *object = lookup_object (simulator,
-                                               pb_op->set_property->object_id);
-            RutProperty *property =
-              rut_introspectable_get_property (object,
-                                               pb_op->set_property->property_id);
-            RutBoxed boxed;
-
-            /* XXX: ideally we shouldn't need to init a RutBoxed and set
-             * that on a property, and instead we could just directly
-             * apply the value to the property we have. */
-            rig_pb_init_boxed_value (&unserializer,
-                                     &boxed,
-                                     property->spec->type,
-                                     pb_op->set_property->value);
-
-            /* Note: at this point the logging of property changes
-             * should be disabled in the simulator, so this shouldn't
-             * redundantly feed-back to the frontend process. */
-            rut_property_set_boxed  (prop_ctx, property, &boxed);
-            break;
-          }
-        case RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE:
-          {
-            bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
-            rig_engine_set_play_mode_enabled (engine, play_mode_enabled);
-            break;
-          }
-        }
+#error "How do we make sure we track adding/removing object properly here?"
+      if (!rig_engine_apply_pb_ui_edit (engine, setup->edit))
+        rig_simulator_action_report_edit_failure (simulator);
     }
-
-  simulator->ctx->property_ctx.log = false;
 
   rut_shell_queue_redraw (engine->shell);
 
@@ -510,35 +462,26 @@ rig_simulator_init (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
 
-  if (!_rig_simulator_object_id_magazine)
-    {
-      _rig_simulator_object_id_magazine =
-        rut_magazine_new (sizeof (uint64_t), 1000);
-    }
+  /* NB: We can assume that all IDs fit in a native pointer since IDs
+   * sent to a simulator currently always correspond to pointers in
+   * the frontend which has to be running on the same machine.
+   */
 
-  simulator->id_map = g_hash_table_new_full (NULL, /* direct hash */
-                                             NULL, /* direct key equal */
-                                             NULL, /* key destroy */
-                                             free_object_id);
+  simulator->object_to_id_map =
+    g_hash_table_new_full (NULL, /* direct hash */
+                           NULL); /* direct key equal */
 
-  if (simulator->editable)
-    {
-      /* Note: we dont' have a free function for the key because
-       * for every entry there is a corresponding entry in the
-       * ->id_map and the keys of this table are the values
-       * of the id_map table that will be freed when we destroy
-       * the id_map. */
-      simulator->object_map = g_hash_table_new_full (g_int64_hash,
-                                                     g_int64_equal,
-                                                     NULL,
-                                                     NULL);
-    }
+  simulator->id_to_object_map =
+    g_hash_table_new_full (NULL, /* direct hash */
+                           NULL); /* direct key equal */
 
   rut_list_init (&simulator->actions);
 
   rig_simulator_start_service (simulator);
 
   simulator->engine = rig_engine_new_for_simulator (shell, simulator);
+
+  _rig_simulator_object_id_magazine = engine->object_id_magazine;
 }
 
 void
@@ -549,17 +492,19 @@ rig_simulator_fini (RutShell *shell, void *user_data)
 
   clear_actions (simulator);
 
+  g_hash_table_destroy (simulator->object_to_id_map);
+  simulator->object_to_id_map = NULL;
+
+  if (simulator->id_to_object_map)
+    {
+      g_hash_table_destroy (simulator->id_to_object_map);
+      simulator->id_to_object_map = NULL;
+    }
+
+  _rig_simulator_object_id_magazine = NULL;
+
   rut_object_unref (engine);
   simulator->engine = NULL;
-
-  g_hash_table_destroy (simulator->id_map);
-  simulator->id_map = NULL;
-
-  if (simulator->object_map)
-    {
-      g_hash_table_destroy (simulator->object_map);
-      simulator->object_map = NULL;
-    }
 
   rig_simulator_stop_service (simulator);
 }
@@ -584,7 +529,7 @@ typedef struct _SerializeChangesState
 uint64_t
 get_object_id (RigSimulator *simulator, void *object)
 {
-  uint64_t *id_ptr = g_hash_table_lookup (simulator->id_map, object);
+  uint64_t *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
 
   if (G_UNLIKELY (id_ptr == NULL))
     {
@@ -695,11 +640,11 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
       state.serializer = serializer;
 
       state.pb_changes =
-        rut_memory_stack_memalign (engine->serialization_stack,
+        rut_memory_stack_memalign (engine->frame_stack,
                                    sizeof (Rig__PropertyChange) * n_changes,
                                    RUT_UTIL_ALIGNOF (Rig__PropertyChange));
       state.pb_values =
-        rut_memory_stack_memalign (engine->serialization_stack,
+        rut_memory_stack_memalign (engine->frame_stack,
                                    sizeof (Rig__PropertyValue) * n_changes,
                                    RUT_UTIL_ALIGNOF (Rig__PropertyValue));
 
@@ -711,7 +656,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
                                        &state);
 
       ui_diff.property_changes =
-        rut_memory_stack_memalign (engine->serialization_stack,
+        rut_memory_stack_memalign (engine->frame_stack,
                                    sizeof (void *) * n_changes,
                                    RUT_UTIL_ALIGNOF (void *));
 
@@ -730,11 +675,11 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
       int i;
 
       ui_diff.actions =
-        rut_memory_stack_memalign (engine->serialization_stack,
+        rut_memory_stack_memalign (engine->frame_stack,
                                    sizeof (void *) * ui_diff.n_actions,
                                    RUT_UTIL_ALIGNOF (void *));
       pb_actions =
-        rut_memory_stack_memalign (engine->serialization_stack,
+        rut_memory_stack_memalign (engine->frame_stack,
                                    sizeof (Rig__SimulatorAction) *
                                    ui_diff.n_actions,
                                    RUT_UTIL_ALIGNOF (Rig__SimulatorAction));
@@ -753,7 +698,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 #if 0
             case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
               pb_action->set_play_mode =
-                rig_pb_new (engine,
+                rig_pb_new (serializer,
                             Rig__SimulatorAction__SetPlayMode,
                             rig__simulator_action__set_play_mode__init);
               pb_action->set_play_mode->enabled = action->set_play_mode.enabled;
@@ -761,7 +706,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 #endif
             case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
               pb_action->select_object =
-                rig_pb_new (engine,
+                rig_pb_new (serializer,
                             Rig__SimulatorAction__SelectObject,
                             rig__simulator_action__select_object__init);
               if (action->select_object.object)
@@ -798,4 +743,6 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   rut_shell_run_post_paint_callbacks (shell);
 
   rut_shell_end_redraw (shell);
+
+  rut_memory_stack_rewind (engine->frame_stack);
 }

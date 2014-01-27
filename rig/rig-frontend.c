@@ -31,453 +31,6 @@
 
 #include "rig.pb-c.h"
 
-void
-rig_frontend_serialize_ops (RigFrontend *frontend,
-                            RigPBSerializer *serializer,
-                            Rig__FrameSetup *pb_frame_setup)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_ops;
-  GList *l;
-
-  pb_frame_setup->n_ops = frontend->n_ops;
-  if (pb_frame_setup->n_ops == 0)
-    return;
-
-  pb_frame_setup->ops =
-    rut_memory_stack_memalign (engine->serialization_stack,
-                               sizeof (void *) * pb_frame_setup->n_ops,
-                               RUT_UTIL_ALIGNOF (void *));
-
-  for (l = frontend->ops; l; l = l->next)
-    pb_frame_setup->ops[i] = l->data;
-  g_list_free (frontend->ops);
-  frontend->ops = NULL;
-  frontend->n_ops = 0;
-
-#error fixme
-  /* XXX: How will operations such as add_entity be synchonized
-   * with the frontend?
-   *
-   * Simple property changes work because the simulator logs
-   * the property change when applying and sends an update
-   * back to the editor.
-   *
-   * As part of a bigger question:
-   * It is going to be desirable for logic to be able to
-   * instantiate new entities, add/delete components and
-   * manipulate Rigs, how is that going to be possible?
-   * - Firstly it implies we need to create corresponding
-   *   protocol for communicating changes from the simulator
-   *   to the frontend.
-   * - It raises the question of how, can we determine what
-   *   UI state should be saved, vs what state is a side
-   *   effect of running UI logic.
-   * - If the editor always maintained a pristine UI that
-   *   was never modified by UI logic it would even mean that
-   *   simple expressions to make object A follow object B
-   *   wouldn't be reflected unless in play mode and so the edit
-   *   area could become quite disconnected from the thing being
-   *   created.
-   *
-   *   We could have a flag set by the editor on all objects to
-   *   distinquish and ignore objects created by scripts when
-   *   saving. What about if the scripts modify editor objects?
-   *
-   *   Considering all ops:
-   *   add_entity: ok with a flag to ignore when saving
-   *   delete_entity: could dissallow deleting flagged entities
-   *                  can we assume this special rule will be
-   *                  acceptable since could should only ever
-   *                  try to delete things that it owns so it
-   *                  would be strange to want to try and delete
-   *                  an objected created with the editor.
-   *   add_component: ok with a flag to ignore when saving
-   *   delete_component: as with delete_entity, we can assume
-   *                     code shouldn't ever need to try and
-   *                     delete a component created with the
-   *                     editor.
-   *   add_controller: ok (with flag)
-   *   delete_controller: ok if not flagged
-   *   controller_set_const: ok if controller not flagged
-   *
-   *
-   *   XXX: I think we really we need to have a clean separation
-   *   between the state of "play mode" and "edit mode" and
-   *   initially simply say that no logic runs in edit mode.
-   *
-   *   Both the simulator and frontend should track separate
-   *   play vs edit UIs that can be switched between.
-   *
-   *   Should we run two simulators - for each mode?
-   *   This is similar in concept to being connected to slave
-   *   while editing. Edits would be forwarded to any slaves
-   *   and the simulator in play mode on a best effort basis
-   *   (you may be able to get into an inconsistent state but
-   *   we want the convenience of getting immediate feedback
-   *   for edits without having to always reset the play mode
-   *   state.)
-   */
-}
-
-void
-rig_frontend_op_register_object (RigFrontend *frontend,
-                                 RutObject *object)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-  RutProperty *label_property;
-  const char *label;
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_REGISTER_OBJECT;
-
-  pb_op->register_object =
-    rig_pb_new (engine, Rig__Operation__RegisterObject,
-                rig__operation__register_object__init);
-  label_property = rut_introspectable_lookup_property (object, "label");
-  label = rut_property_get_text (label_property);
-
-  pb_op->register_object->label = (char *)rig_pb_strdup (engine, label);
-  pb_op->register_object->object_id = (intptr_t)object;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_set_property (RigFrontend *frontend,
-                              RutProperty *property,
-                              RutBoxed *value)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_SET_PROPERTY;
-
-  pb_op->set_property =
-    rig_pb_new (engine, Rig__Operation__SetProperty,
-                rig__operation__set_property__init);
-
-  pb_op->set_property->object_id = (intptr_t)property->object;
-  pb_op->set_property->property_id = property->id;
-  pb_op->set_property->value = pb_property_value_new (serializer, value);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_add_entity (RigFrontend *frontend,
-                            RutEntity *parent,
-                            RutEntity *entity)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_ADD_ENTITY;
-
-  pb_op->add_entity = rig_pb_new (engine, Rig__Operation__AddEntity,
-                                  rig__operation__add_entity__init);
-
-  pb_op->add_entity->parent_entity_id = (intptr_t)parent;
-  pb_op->add_entity->entity = rig_pb_serialize_entity (serializer,
-                                                       NULL,
-                                                       entity);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_delete_entity (RigFrontend *frontend,
-                               RutEntity *entity)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_DELETE_ENTITY;
-
-  pb_op->delete_entity = rig_pb_new (engine, Rig__Operation__DeleteEntity,
-                                     rig__operation__delete_entity__init);
-
-  pb_op->delete_entity->entity_id = (intptr_t)entity;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_add_component (RigFrontend *frontend,
-                               RutEntity *entity,
-                               RutComponent *component)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_ADD_COMPONENT;
-
-  pb_op->add_component = rig_pb_new (engine, Rig__Operation__AddComponent,
-                                     rig__operation__add_component__init);
-
-  pb_op->add_component->parent_entity_id = (intptr_t)entity;
-  pb_op->add_component->component =
-    rig_pb_serialize_component (serializer, component);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_delete_component (RigFrontend *frontend,
-                                  RutComponent *component)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_DELETE_COMPONENT;
-
-  pb_op->delete_component = rig_pb_new (engine, Rig__Operation__DeleteComponent,
-                                        rig__operation__delete_component__init);
-  pb_op->delete_component->component_id = (intptr_t)component;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_add_controller (RigFrontend *frontend,
-                                RigController *controller)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_ADD_CONTROLLER;
-
-  pb_op->add_controller = rig_pb_new (engine, Rig__Operation__AddController,
-                                      rig__operation__add_controller__init);
-  pb_op->add_controller->controller =
-    rig_pb_serialize_controller (serializer, controller);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_delete_controller (RigFrontend *frontend,
-                                   RigController *controller)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_DELETE_CONTROLLER;
-
-  pb_op->delete_controller =
-    rig_pb_new (engine, Rig__Operation__DeleteController,
-                rig__operation__delete_controller__init);
-  pb_op->delete_controller->controller_id = (intptr_t)controller;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_set_const (RigFrontend *frontend,
-                                      RigController *controller,
-                                      RutProperty *property,
-                                      RutBoxed *value)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_SET_CONST;
-
-  pb_op->controller_set_const =
-    rig_pb_new (engine, Rig__Operation__ControllerSetConst,
-                rig__operation__controller_set_const__init);
-
-  pb_op->controller_set_const->controller_id = (intptr_t)controller;
-  pb_op->controller_set_const->object_id = (intptr_t)property->object;
-  pb_op->controller_set_const->property_id = property->id;
-  pb_op->controller_set_const->value =
-    pb_property_value_new (serializer, value);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_path_add_node (RigFrontend *frontend,
-                                          RigController *controller,
-                                          RutProperty *property,
-                                          float t,
-                                          RutBoxed *value)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_ADD_NODE;
-
-  pb_op->controller_path_add_node =
-    rig_pb_new (engine, Rig__Operation__ControllerPathAddNode,
-                rig__operation__controller_path_add_node__init);
-  pb_op->controller_path_add_node->controller_id = (intptr_t)controller;
-  pb_op->controller_path_add_node->object_id = (intptr_t)property->object;
-  pb_op->controller_path_add_node->property_id = property->id;
-  pb_op->controller_path_add_node->t = t;
-  pb_op->controller_path_add_node->value =
-    pb_property_value_new (serializer, value);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_path_delete_node (RigFrontend *frontend,
-                                             RigController *controller,
-                                             RutProperty *property,
-                                             float t)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_DELETE_NODE;
-
-  pb_op->controller_path_delete_node =
-    rig_pb_new (engine, Rig__Operation__ControllerPathDeleteNode,
-                rig__operation__controller_path_delete_node__init);
-  pb_op->controller_path_delete_node->controller_id = (intptr_t)controller;
-  pb_op->controller_path_delete_node->object_id = (intptr_t)property->object;
-  pb_op->controller_path_delete_node->property_id = property->id;
-  pb_op->controller_path_delete_node->t = t;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_path_set_node (RigFrontend *frontend,
-                                          RigController *controller,
-                                          RutProperty *property,
-                                          float t,
-                                          RutBoxed *value)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PATH_SET_NODE;
-
-  pb_op->controller_path_set_node =
-    rig_pb_new (engine, Rig__Operation__ControllerPathSetNode,
-                rig__operation__controller_path_set_node__init);
-  pb_op->controller_path_set_node->controller_id = (intptr_t)controller;
-  pb_op->controller_path_set_node->object_id = (intptr_t)property->object;
-  pb_op->controller_path_set_node->property_id = property->id;
-  pb_op->controller_path_set_node->t = t;
-  pb_op->controller_path_set_node->value =
-    pb_property_value_new (serializer, value);
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_add_property (RigFrontend *frontend,
-                                         RigController *controller,
-                                         RutProperty *property)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_ADD_PROPERTY;
-
-  pb_op->controller_add_property =
-    rig_pb_new (engine, Rig__Operation__ControllerAddProperty,
-                rig__operation__controller_add_property__init);
-  pb_op->controller_add_property->controller_id = (intptr_t)controller;
-  pb_op->controller_add_property->object_id = (intptr_t)property->object;
-  pb_op->controller_add_property->property_id = property->id;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_remove_property (RigFrontend *frontend,
-                                            RigController *controller,
-                                            RutProperty *property)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_REMOVE_PROPERTY;
-
-  pb_op->controller_remove_property =
-    rig_pb_new (engine, Rig__Operation__ControllerRemoveProperty,
-                rig__operation__controller_remove_property__init);
-  pb_op->controller_remove_property->controller_id = (intptr_t)controller;
-  pb_op->controller_remove_property->object_id = (intptr_t)property->object;
-  pb_op->controller_remove_property->property_id = property->id;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_controller_property_set_method (RigFrontend *frontend,
-                                                RigController *controller,
-                                                RutProperty *property,
-                                                RigControllerMethod method)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD;
-
-  pb_op->controller_property_set_method =
-    rig_pb_new (engine, Rig__Operation__ControllerPropertySetMethod,
-                rig__operation__controller_property_set_method__init);
-  pb_op->controller_property_set_method->controller_id = (intptr_t)controller;
-  pb_op->controller_property_set_method->object_id = (intptr_t)property->object;
-  pb_op->controller_property_set_method->property_id = property->id;
-  pb_op->controller_property_set_method->method = method;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
-void
-rig_frontend_op_set_play_mode (RigFrontend *frontend,
-                               bool play_mode_enabled)
-{
-  RigEngine *engine = frontend->engine;
-  Rig__Operation *pb_op = rig_pb_new (engine, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_FRONTEND_OP_TYPE_SET_PLAY_MODE;
-
-  pb_op->set_play_mode = rig_pb_new (engine, Rig__Operation__SetPlayMode,
-                                     rig__operation__set_play_mode__init);
-  pb_op->set_play_mode->play_mode_enabled = play_mode_enabled;
-
-  frontend->ops = g_list_prepend (frontend->ops, pb_op);
-  frontend->n_ops++;
-}
-
 static void
 frontend__test (Rig__Frontend_Service *service,
                 const Rig__Query *query,
@@ -492,6 +45,13 @@ frontend__test (Rig__Frontend_Service *service,
   g_print ("Frontend Service: Test Query\n");
 
   closure (&result, closure_data);
+}
+
+static void
+nop_register_object_cb (void *object,
+                        void *user_data)
+{
+  /* NOP */
 }
 
 static void *
@@ -521,9 +81,11 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
   g_return_if_fail (ui_diff != NULL);
 
-  rig_pb_unserializer_init (&unserializer, frontend->engine,
-                            false, /* no need for an id-map */
-                            true); /* rewind memory stack */
+  rig_pb_unserializer_init (&unserializer, frontend->engine);
+
+  rig_pb_unserializer_set_object_register_callback (&unserializer,
+                                                    nop_register_object_cb,
+                                                    NULL);
 
   rig_pb_unserializer_set_id_to_object_callback (&unserializer,
                                                  pointer_id_to_object_cb,
@@ -655,15 +217,8 @@ handle_load_response (const Rig__LoadResult *result,
   g_print ("Simulator: UI loaded\n");
 }
 
-static uint64_t
-object_to_pointer_id_cb (void *object,
-                         void *user_data)
-{
-  return (uint64_t)(intptr_t)object;
-}
-
 void
-rig_frontend_reload_uis (RigFrontend *frontend)
+rig_frontend_reload_simulator_uis (RigFrontend *frontend)
 {
   RigEngine *engine;
   RigPBSerializer *serializer;
@@ -678,12 +233,7 @@ rig_frontend_reload_uis (RigFrontend *frontend)
   simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
 
-  rig_pb_serializer_set_object_register_callback (serializer,
-                                                  object_to_pointer_id_cb,
-                                                  NULL);
-  rig_pb_serializer_set_object_to_id_callback (serializer,
-                                               object_to_pointer_id_cb,
-                                               NULL);
+  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
 
   rig_pb_serializer_set_asset_filter (serializer,
                                       asset_filter_cb,
@@ -718,10 +268,13 @@ rig_frontend_reload_uis (RigFrontend *frontend)
       rig_pb_serialized_ui_destroy (pb_ui);
     }
   else
+#error "A slave or device would only have a play_mode_ui"
+#error "For devices, we shouldn't ever reload the simulator ui"
+#error "For slaves, we should forward the serialized ui send from the editor, so we can maintain a mapping from edit-mode-ids to play-mode-ids in the slave's frontend and simulator, so we can apply edit operations"
     {
       pb_ui = rig_pb_serialize_ui (serializer,
                                    true, /* play mode */
-                                   engine->edit_mode_ui);
+                                   engine->play_mode_ui);
 
       rig__simulator__load (simulator_service, pb_ui,
                             handle_load_response,
@@ -741,7 +294,7 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
 
   frontend->connected = true;
 
-  rig_frontend_reload_uis (frontend);
+  rig_frontend_reload_simulator_uis (frontend);
 
 #if 0
   Rig__Query query = RIG__QUERY__INIT;
