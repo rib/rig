@@ -4471,11 +4471,11 @@ edit_id_to_play_id (RigEngine *engine, uint64_t edit_id)
   return (uint64_t)(intptr_t)ptr_play_id;
 }
 
-/* XXX: Note that not everything is deep-copied. For example
+/* XXX: Note that *not* everything is deep-copied. For example
  * Rig__PropertyValues that don't reference any object ids
  * will be shared. */
 Rig__UIEdit *
-map_edit_ops_to_play_mode (RigEngine *engine,
+rig_engine_map_pb_ui_edit (RigEngine *engine,
                            Rig__UIEdit *pb_ui_edit)
 {
   RigPBSerializer *serializer;
@@ -4524,7 +4524,8 @@ map_edit_ops_to_play_mode (RigEngine *engine,
                           src_pb_op->set_property);
 
             pb_op->set_property->object_id =
-              edit_id_to_play_id (src_pb_op->set_property->object_id);
+              edit_id_to_play_id (engine,
+                                  src_pb_op->set_property->object_id);
             pb_op->set_property->value = src_pb_op->set_property->value;
             break;
           }
@@ -4536,7 +4537,18 @@ map_edit_ops_to_play_mode (RigEngine *engine,
                                             src_pb_op->add_entity);
 
             pb_op->add_entity->parent_entity_id =
-              edit_id_to_play_id (src_pb_op->add_entity->parent_entity_id);
+              edit_id_to_play_id (engine,
+                                  src_pb_op->add_entity->parent_entity_id);
+
+            /* XXX: we assume that the new entity isn't currently
+             * associated with any components and so the serialized
+             * entity doesn't any object ids that need mapping.
+             *
+             * The id of the entity itself will correspond to an
+             * edit-mode object pointer, which can be used later to
+             * create a mapping from the new edit-mode entity and the
+             * new play-mode entity */
+            pb_op->add_entity->entity = src_pb_op->add_entity->entity;
             break;
           }
         case RIG_ENGINE_OP_TYPE_DELETE_ENTITY:
@@ -4547,19 +4559,133 @@ map_edit_ops_to_play_mode (RigEngine *engine,
                                                src_pb_op->delete_entity);
 
             pb_op->delete_entity->entity_id =
-              edit_id_to_play_id (src_pb_op->delete_entity->entity_id);
+              edit_id_to_play_id (engine,
+                                  src_pb_op->delete_entity->entity_id);
             break;
           }
         case RIG_ENGINE_OP_TYPE_ADD_COMPONENT:
           {
+            pb_op->add_component = rig_pb_dup (serializer,
+                                               Rig__Operation__AddComponent,
+                                               rig__operation__add_component__init,
+                                               src_pb_op->add_component);
 
+            pb_op->add_component->parent_entity_id =
+              edit_id_to_play_id (engine,
+                                  src_pb_op->add_component->parent_entity_id);
+
+            /* XXX: we assume that the new component isn't currently
+             * associated with any other object ids that need mapping.
+             *
+             * The id of the component itself will correspond to an
+             * edit-mode object pointer, which can be used later to
+             * create a mapping from the new edit-mode component and
+             * the new play-mode component */
+            pb_op->add_component->component =
+              src_pb_op->add_component->component;
             break;
           }
         case RIG_ENGINE_OP_TYPE_DELETE_COMPONENT:
           {
+            pb_op->delete_component =
+              rig_pb_dup (serializer,
+                          Rig__Operation__DeleteComponent,
+                          rig__operation__delete_component__init,
+                          src_pb_op->delete_component);
 
+            pb_op->delete_component->component_id =
+              edit_id_to_play_id (engine,
+                                  src_pb_op->delete_component->component_id);
             break;
           }
+#if 0
+      message AddController
+        {
+          required Controller controller=1;
+        }
+      optional AddController add_controller=8;
+
+      message DeleteController
+        {
+          required sint64 controller_id=1;
+        }
+      optional DeleteController delete_controller=9;
+
+      //Change the constant associated with a controller property
+      message ControllerSetConst
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required PropertyValue value=4;
+        }
+      optional ControllerSetConst controller_set_const=10;
+
+      //Add a new controller property path node / key frame
+      message ControllerPathAddNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+          required PropertyValue value=5;
+        }
+      optional ControllerPathAddNode controller_path_add_node=11;
+
+      //Remove a node / key frame from a controller property path
+      message ControllerPathDeleteNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+        }
+      optional ControllerPathDeleteNode controller_path_delete_node=12;
+
+      //Change the value of a controller property path node / key frame
+      message ControllerPathSetNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+          required PropertyValue value=5;
+        }
+      optional ControllerPathSetNode controller_path_set_node=13;
+
+      //Associate a property with a controller
+      message ControllerAddProperty
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+        }
+      optional ControllerAddProperty controller_add_property=14;
+
+      //Disassociate a property from a controller
+      message ControllerRemoveProperty
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+        }
+      optional ControllerRemoveProperty controller_remove_property=15;
+
+      //Change the method of controlling a property
+      message ControllerPropertySetMethod
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+
+          enum Method { CONSTANT=1; PATH=2; BINDING=3; }
+
+          required Method method=4;
+        }
+      optional ControllerPropertySetMethod controller_property_set_method=16;
+
+#endif
+
         case RIG_ENGINE_OP_TYPE_ADD_CONTROLLER:
           {
 
@@ -4617,6 +4743,246 @@ map_edit_ops_to_play_mode (RigEngine *engine,
 }
 
 bool
+rig_engine_pb_op_apply (RigEngine *engine,
+                        Rig__Operation *pb_op,
+                        RigUI *ui,
+                        RigEngineIdToObjectCallback id_to_object_cb,
+                        RigEngineRegisterIdCallback register_id_cb,
+                        RigEngineDeleteIdCallback delete_id_cb,
+                        void *user_data)
+{
+  switch (pb_op->type)
+    {
+    case RIG_ENGINE_OP_TYPE_SET_PROPERTY:
+        {
+          RutObject *object =
+            id_to_object_cb (pb_op->set_property->object_id);
+
+          RutProperty *property =
+            rut_introspectable_get_property (object,
+                                             pb_op->set_property->property_id);
+          RutBoxed boxed;
+
+          /* XXX: ideally we shouldn't need to init a RutBoxed and set
+           * that on a property, and instead we could just directly
+           * apply the value to the property we have. */
+          rig_pb_init_boxed_value (&unserializer,
+                                   &boxed,
+                                   property->spec->type,
+                                   pb_op->set_property->value);
+
+          /* Note: at this point the logging of property changes
+           * should be disabled in the simulator, so this shouldn't
+           * redundantly feed-back to the frontend process. */
+          rut_property_set_boxed  (prop_ctx, property, &boxed);
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_ADD_ENTITY:
+        {
+          RutEntity *parent = NULL;
+          RutEntity *entity;
+
+          g_warn_if_fail (pb_op->add_entity->entity->has_parent_id == false);
+
+          if (pb_op->add_entity->parent_entity_id)
+            {
+              parent = id_to_object_cb (pb_op->add_entity->parent_entity_id);
+              if (!parent)
+                goto ERROR;
+            }
+
+          entity = rig_pb_unserialize_entity (unserializer,
+                                              pb_op->add_entity->entity);
+
+          if (!entity)
+            goto ERROR;
+
+          register_id_cb (pb_op->add_entity->entity->id, entity, user_data);
+
+          if (parent)
+            rut_graphable_add_child (parent, entity);
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_DELETE_ENTITY:
+        {
+          RutEntity *entity =
+            id_to_object_cb (pb_op->delete_entity->entity_id, user_data);
+
+          if (!entity)
+            goto ERROR;
+
+          rut_graphable_remove_child (entity);
+
+          delete_id_cb (pb_op->add_entity->parent_entity_id, user_data);
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_ADD_COMPONENT:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_DELETE_COMPONENT:
+        {
+
+          break;
+        }
+#if 0
+      //Add a component to an entity
+      message AddComponent
+        {
+          required sint64 parent_entity_id=1;
+          required Entity.Component component=2;
+        }
+      optional AddComponent add_component=6;
+
+      message DeleteComponent
+        {
+          required sint64 component_id=1;
+        }
+      optional DeleteComponent delete_component=7;
+
+      message AddController
+        {
+          required Controller controller=1;
+        }
+      optional AddController add_controller=8;
+
+      message DeleteController
+        {
+          required sint64 controller_id=1;
+        }
+      optional DeleteController delete_controller=9;
+
+      //Change the constant associated with a controller property
+      message ControllerSetConst
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required PropertyValue value=4;
+        }
+      optional ControllerSetConst controller_set_const=10;
+
+      //Add a new controller property path node / key frame
+      message ControllerPathAddNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+          required PropertyValue value=5;
+        }
+      optional ControllerPathAddNode controller_path_add_node=11;
+
+      //Remove a node / key frame from a controller property path
+      message ControllerPathDeleteNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+        }
+      optional ControllerPathDeleteNode controller_path_delete_node=12;
+
+      //Change the value of a controller property path node / key frame
+      message ControllerPathSetNode
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+          required float t=4;
+          required PropertyValue value=5;
+        }
+      optional ControllerPathSetNode controller_path_set_node=13;
+
+      //Associate a property with a controller
+      message ControllerAddProperty
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+        }
+      optional ControllerAddProperty controller_add_property=14;
+
+      //Disassociate a property from a controller
+      message ControllerRemoveProperty
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+        }
+      optional ControllerRemoveProperty controller_remove_property=15;
+
+      //Change the method of controlling a property
+      message ControllerPropertySetMethod
+        {
+          required sint64 controller_id=1;
+          required sint64 object_id=2;
+          required int32 property_id=3;
+
+          enum Method { CONSTANT=1; PATH=2; BINDING=3; }
+
+          required Method method=4;
+        }
+      optional ControllerPropertySetMethod controller_property_set_method=16;
+
+#endif
+
+    case RIG_ENGINE_OP_TYPE_ADD_CONTROLLER:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_DELETE_CONTROLLER:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_SET_CONST:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_ADD_NODE:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_DELETE_NODE:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_SET_NODE:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD:
+        {
+
+          break;
+        }
+    case RIG_ENGINE_OP_TYPE_SET_PLAY_MODE:
+        {
+          bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
+          rig_engine_set_play_mode_enabled (engine, play_mode_enabled);
+          break;
+        }
+    }
+}
+
+bool
 rig_engine_apply_pb_ui_edit (RigEngine *engine,
                              Rig__UIEdit *pb_ui_edit,
                              RigUI *ui,
@@ -4634,234 +5000,38 @@ rig_engine_apply_pb_ui_edit (RigEngine *engine,
     {
       Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
-      switch (pb_op->type)
+      if (!rig_engine_pb_op_apply (engine, pb_op, ui,
+                                   id_to_object_cb,
+                                   register_id_cb,
+                                   delete_id_cb,
+                                   user_data))
         {
-        case RIG_ENGINE_OP_TYPE_SET_PROPERTY:
-          {
-            RutObject *object =
-              id_to_object_cb (pb_op->set_property->object_id);
-
-            RutProperty *property =
-              rut_introspectable_get_property (object,
-                                               pb_op->set_property->property_id);
-            RutBoxed boxed;
-
-            /* XXX: ideally we shouldn't need to init a RutBoxed and set
-             * that on a property, and instead we could just directly
-             * apply the value to the property we have. */
-            rig_pb_init_boxed_value (&unserializer,
-                                     &boxed,
-                                     property->spec->type,
-                                     pb_op->set_property->value);
-
-            /* Note: at this point the logging of property changes
-             * should be disabled in the simulator, so this shouldn't
-             * redundantly feed-back to the frontend process. */
-            rut_property_set_boxed  (prop_ctx, property, &boxed);
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_ADD_ENTITY:
-          {
-            RutEntity *parent = NULL;
-            RutEntity *entity;
-
-            g_warn_if_fail (pb_op->add_entity->entity->has_parent_id == false);
-
-            if (pb_op->add_entity->parent_entity_id)
-              {
-                parent = id_to_object_cb (pb_op->add_entity->parent_entity_id);
-                if (!parent)
-                  goto ERROR;
-              }
-
-            entity = rig_pb_unserialize_entity (unserializer,
-                                                pb_op->add_entity->entity);
-
-            if (!entity)
-              goto ERROR;
-
-            register_id_cb (pb_op->add_entity->entity->id, entity, user_data);
-
-            if (parent)
-              rut_graphable_add_child (parent, entity);
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_DELETE_ENTITY:
-          {
-            RutEntity *entity =
-              id_to_object_cb (pb_op->delete_entity->entity_id, user_data);
-
-            if (!entity)
-              goto ERROR;
-
-            rut_graphable_remove_child (entity);
-
-            delete_id_cb (pb_op->add_entity->parent_entity_id, user_data);
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_ADD_COMPONENT:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_DELETE_COMPONENT:
-          {
-
-            break;
-          }
-#if 0
-  //Add a component to an entity
-  message AddComponent
-  {
-    required sint64 parent_entity_id=1;
-    required Entity.Component component=2;
-  }
-  optional AddComponent add_component=6;
-
-  message DeleteComponent
-  {
-    required sint64 component_id=1;
-  }
-  optional DeleteComponent delete_component=7;
-
-  message AddController
-  {
-    required Controller controller=1;
-  }
-  optional AddController add_controller=8;
-
-  message DeleteController
-  {
-    required sint64 controller_id=1;
-  }
-  optional DeleteController delete_controller=9;
-
-  //Change the constant associated with a controller property
-  message ControllerSetConst
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-    required PropertyValue value=4;
-  }
-  optional ControllerSetConst controller_set_const=10;
-
-  //Add a new controller property path node / key frame
-  message ControllerPathAddNode
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-    required float t=4;
-    required PropertyValue value=5;
-  }
-  optional ControllerPathAddNode controller_path_add_node=11;
-
-  //Remove a node / key frame from a controller property path
-  message ControllerPathDeleteNode
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-    required float t=4;
-  }
-  optional ControllerPathDeleteNode controller_path_delete_node=12;
-
-  //Change the value of a controller property path node / key frame
-  message ControllerPathSetNode
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-    required float t=4;
-    required PropertyValue value=5;
-  }
-  optional ControllerPathSetNode controller_path_set_node=13;
-
-  //Associate a property with a controller
-  message ControllerAddProperty
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-  }
-  optional ControllerAddProperty controller_add_property=14;
-
-  //Disassociate a property from a controller
-  message ControllerRemoveProperty
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-  }
-  optional ControllerRemoveProperty controller_remove_property=15;
-
-  //Change the method of controlling a property
-  message ControllerPropertySetMethod
-  {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
-    required int32 property_id=3;
-
-    enum Method { CONSTANT=1; PATH=2; BINDING=3; }
-
-    required Method method=4;
-  }
-  optional ControllerPropertySetMethod controller_property_set_method=16;
-
-#endif
-
-        case RIG_ENGINE_OP_TYPE_ADD_CONTROLLER:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_DELETE_CONTROLLER:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_SET_CONST:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_ADD_NODE:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_DELETE_NODE:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_SET_NODE:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD:
-          {
-
-            break;
-          }
-        case RIG_ENGINE_OP_TYPE_SET_PLAY_MODE:
-          {
-            bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
-            rig_engine_set_play_mode_enabled (engine, play_mode_enabled);
-            break;
-          }
+          rig_pb_unserializer_destroy (&unserializer);
+          return false;
         }
     }
+
+  rig_pb_unserializer_destroy (&unserializer);
+
+  return true;
+}
+
+void
+rig_engine_register_play_mode_object (RigEngine *engine,
+                                      uint64_t id,
+                                      void *play_mode_object)
+{
+  void *edit_mode_object (void *)(intptr_t)id;
+
+  g_hash_table_insert (engine->edit_to_play_object_map,
+                       edit_mode_object, play_mode_object);
+}
+
+void
+rig_engine_unregister_play_mode_object (RigEngine *engine,
+                                        uint64_t id)
+{
+  void *edit_mode_object (void *)(intptr_t)id;
+
+  g_hash_table_remove (engine->edit_to_play_object_map, edit_mode_object);
 }

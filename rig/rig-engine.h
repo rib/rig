@@ -256,8 +256,11 @@ struct _RigEngine
 
   GHashTable *assets_registry;
 
+  /* TODO: The frontend, editor and simulator should be accessed as
+   * traits of the engine.
+   */
   RigFrontend *frontend; /* NULL if engine not acting as a frontend process */
-
+  RigEditor *editor; /* NULL if frontend isn't an editor */
   RigSimulator *simulator; /* NULL if engine not acting as a simulator */
 
   RigRPCServer *slave_service;
@@ -524,6 +527,19 @@ rig_engine_apply_pb_ui_edit (RigEngine *engine,
                              RigEngineIdToObjectCallback id_to_object_cb,
                              RigEngineRegisterIdCallback register_id_cb,
                              RigEngineDeleteIdCallback delete_id_cb,
-                             void *user_data)
+                             void *user_data);
+
+Rig__UIEdit *
+rig_engine_map_pb_ui_edit (RigEngine *engine,
+                           Rig__UIEdit *pb_ui_edit);
+
+void
+rig_engine_register_play_mode_object (RigEngine *engine,
+                                      uint64_t id,
+                                      void *object);
+
+void
+rig_engine_unregister_play_mode_object (RigEngine *engine,
+                                        uint64_t id);
 
 #endif /* _RUT_ENGINE_H_ */

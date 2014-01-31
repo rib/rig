@@ -37,12 +37,16 @@ rig_editor_init (RutShell *shell, void *user_data)
   RigEditor *editor = user_data;
   RigEngine *engine;
 
+  /* TODO: RigFrontend should be a trait of the engine */
   editor->frontend = rig_frontend_new (shell,
                                        RIG_FRONTEND_ID_EDITOR,
                                        editor->ui_filename);
 
   engine = editor->frontend->engine;
   editor->engine = engine;
+
+  /* TODO: RigEditor should be a trait of the engine */
+  engine->editor = editor;
 
   /* TODO move into editor */
   rig_avahi_run_browser (engine);
@@ -82,6 +86,25 @@ object_deleted_cb (uint63_t id, void *user_data)
 #endif
 
 static void
+register_id_cb (uint64_t id,
+                void *object,
+                void *user_data)
+{
+  RigEngine *engine = user_data;
+  rig_engine_register_edit_object (engine,
+                                   id,
+                                   object);
+}
+
+static void
+delete_id_cb (uint64_t id, void *user_data)
+{
+  RigEngine *engine = user_data;
+  rig_engine_unregister_edit_object (engine,
+                                     id);
+}
+
+static void
 handle_edit_operations (RigEditor *editor,
                         RigPBSerializer *serializer,
                         Rig__FrameSetup *setup)
@@ -110,18 +133,23 @@ handle_edit_operations (RigEditor *editor,
                                pb_ui_edit,
                                engine->edit_mode_ui,
                                nop_id_cast_cb, /* ids == obj ptrs */
-                               NULL); /* user data */
+                               nop_register_id_cb,
+                               nop_delete_id_cb,
+                               engine); /* user data */
 
-  play_edits = rig_engine_map_pb_ui_edit (engine,
-                                          pb_ui_edit,
-                                          rig_engine_edit_id_to_play_object,
-                                          NULL);
+  play_edits = rig_engine_map_pb_ui_edit (engine, pb_ui_edit);
 
+#error Check what we use as ids at this point?
+  /* Do we use play-mode pointer ids for modifying objects, and
+   * edit-mode pointer ids for new objects?
+   */
   status = rig_engine_apply_pb_ui_edit (engine,
                                         pb_ui_edit,
                                         engine->play_mode_ui,
                                         nop_id_cast_cb, /* ids == obj ptrs */
-                                        NULL); /* user data */
+                                        register_play_mode_object_cb,
+                                        unregister_play_mode_object_cb,
+                                        engine); /* user data */
 
   /* XXX: send both sets of edits to the simulator */
 
@@ -133,6 +161,21 @@ handle_edit_operations (RigEditor *editor,
     rig_engine_reset_play_mode_ui (engine);
 
   rig_engine_clear_ops (engine);
+}
+
+void
+rig_editor_pb_op_apply (RigEngine *engine,
+                        Rig__Operation *pb_op)
+{
+  bool status = rig_engine_pb_op_apply (engine,
+                                        pb_op,
+                                        engine->play_mode_ui,
+                                        nop_id_cast_cb, /* ids == obj ptrs */
+                                        register_play_mode_object_cb,
+                                        unregister_play_mode_object_cb,
+                                        engine); /* user data */
+
+  g_warn_if_fail (status);
 }
 
 static void

@@ -684,6 +684,16 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   rig_engine_op_set_property (engine,
                               set_property->property,
                               &set_property->value1);
+
+  /* We now immediately apply this operation in the frontend,
+   * otherwise if we were to batch undo redo operations it would be
+   * quite difficult to apply multiple operations that depend on each
+   * other in one frame.
+   */
+
+  rig_editor_pb_op_apply (engine,
+                          engine->ops->data, /* note: ops logged in reverse */
+                          engine->edit_mode_ui);
 }
 
 static UndoRedo *
