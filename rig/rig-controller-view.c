@@ -1195,7 +1195,7 @@ _rig_path_view_allocate_cb (RutObject *object,
   float to_pixel = rut_scale_get_pixel_scale (view->scale);
   float origin = rut_scale_get_offset (view->scale);
   float origin_px = origin * to_pixel;
-  GList *l;
+  RutQueueItem *item;
 
   rut_sizable_set_size (path_view->ui_viewport,
                         path_view->width, path_view->height);
@@ -1203,12 +1203,13 @@ _rig_path_view_allocate_cb (RutObject *object,
   rut_sizable_set_size (path_view->input_region,
                         path_view->width, path_view->height);
 
-  for (l = markers_graphable->children.head; l; l = l->next)
+  rut_list_for_each (item, &markers_graphable->children.items, list_node)
     {
-      RutTransform *transform = l->data;
+      RutTransform *transform = item->data;
       RutGraphableProps *transform_graphable =
         rut_object_get_properties (transform, RUT_TRAIT_ID_GRAPHABLE);
-      RigNodeMarker *marker = transform_graphable->children.head->data;
+      RigNodeMarker *marker =
+        rut_queue_peek_head (&transform_graphable->children);
       RigNode *node = marker->node;
 
       float t_px = node->t * length * to_pixel - origin_px;
@@ -1473,14 +1474,15 @@ rig_path_view_find_node_marker (RigPathView *path_view,
 {
   RutGraphableProps *graphable =
     rut_object_get_properties (path_view->markers, RUT_TRAIT_ID_GRAPHABLE);
-  GList *l;
+  RutQueueItem *item;
 
-  for (l = graphable->children.head; l; l = l->next)
+  rut_list_for_each (item, &graphable->children.items, list_node)
     {
-      RutTransform *transform = l->data;
+      RutTransform *transform = item->data;
       RutGraphableProps *transform_graphable =
         rut_object_get_properties (transform, RUT_TRAIT_ID_GRAPHABLE);
-      RigNodeMarker *marker = transform_graphable->children.head->data;
+      RigNodeMarker *marker =
+        rut_queue_peek_head (&transform_graphable->children);
 
       if (marker->node == node)
         return marker;

@@ -49,6 +49,7 @@ frontend__test (Rig__Frontend_Service *service,
 
 static void
 nop_register_object_cb (void *object,
+                        uint64_t id,
                         void *user_data)
 {
   /* NOP */
@@ -307,6 +308,28 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
   g_print ("Frontend peer connected\n");
 }
 
+/* TODO: should support a destroy_notify callback */
+void
+rig_frontend_sync (RigFrontend *frontend,
+                   void (*synchronized) (const Rig__SyncAck *result,
+                                         void *user_data),
+                   void *user_data)
+{
+  ProtobufCService *simulator_service;
+  Rig__Sync sync = RIG__SYNC__INIT;
+
+  if (!frontend->connected)
+    return;
+
+  simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+
+  rig__simulator__synchronize (simulator_service,
+                               &sync,
+                               synchronized,
+                               user_data);
+}
+
 static void
 _rig_frontend_free (void *object)
 {
@@ -396,9 +419,6 @@ rig_frontend_new (RutShell *shell,
                                              _rig_frontend_init_type);
 
   frontend->id = id;
-
-  rut_list_init (&frontend->ops);
-  frontend->n_ops = 0;
 
   rig_frontend_spawn_simulator (frontend);
 

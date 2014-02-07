@@ -166,7 +166,7 @@ rig_slave_master_reload_ui (RigSlaveMaster *master)
 }
 
 static void
-handle_edit_response (const Rig__LoadResult *result,
+handle_edit_response (const Rig__UIEditResult *result,
                       void *closure_data)
 {
   g_print ("UI edited by slave\n");
@@ -174,7 +174,7 @@ handle_edit_response (const Rig__LoadResult *result,
 
 void
 rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
-                                     Rig__UIEdit *pb_edit)
+                                     Rig__UIEdit *pb_ui_edit)
 {
   ProtobufCService *service =
     rig_pb_rpc_client_get_service (master->rpc_client->pb_rpc_client);

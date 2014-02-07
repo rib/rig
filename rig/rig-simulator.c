@@ -9,6 +9,7 @@
 #include <rut.h>
 
 #include "rig-engine.h"
+#include "rig-engine-op.h"
 #include "rig-pb.h"
 
 #include "rig.pb-c.h"
@@ -168,6 +169,16 @@ register_object_cb (void *object,
   g_hash_table_insert (simulator->id_to_object_map, id_ptr, object);
 }
 
+static void
+unregister_object (RigSimulator *simulator,
+                   void *object)
+{
+  void *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
+
+  g_hash_table_remove (simulator->object_to_id_map, object);
+  g_hash_table_remove (simulator->id_to_object_map, id_ptr);
+}
+
 static void *
 lookup_object_cb (uint64_t id,
                   void *user_data)
@@ -219,6 +230,14 @@ simulator__load (Rig__Simulator_Service *service,
 }
 
 static void
+queue_delete_object_cb (uint64_t id, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+  void *object = (void *)(intptr_t)id;
+  rut_queue_push_tail (simulator->queued_deletes, object);
+}
+
+static void
 simulator__run_frame (Rig__Simulator_Service *service,
                       const Rig__FrameSetup *setup,
                       Rig__RunFrameAck_Closure closure,
@@ -229,13 +248,12 @@ simulator__run_frame (Rig__Simulator_Service *service,
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
   RigPBUnSerializer unserializer;
-  RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
+  RutQueueItem *item;
   int i;
 
   g_return_if_fail (setup != NULL);
 
-  rig_pb_unserializer_init (&unserializer, engine,
-                            false); /* no need for an id-map */
+  rig_pb_unserializer_init (&unserializer, engine);
 
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
@@ -380,15 +398,75 @@ simulator__run_frame (Rig__Simulator_Service *service,
    */
   if (setup->edit)
     {
-#error "How do we make sure we track adding/removing object properly here?"
-      if (!rig_engine_apply_pb_ui_edit (engine, setup->edit))
+      /* modifications reference edit-mode ptr ids
+       * new objects use edit-mode ptr ids
+       * modifications of new objects reference edit-mode ptr ids
+       */
+      bool status =
+        rig_engine_apply_pb_ui_edit (engine,
+                                     setup->edit,
+                                     register_object_cb,
+                                     lookup_object_cb,
+                                     queue_delete_object_cb,
+                                     simulator); /* user data */
+
+      g_warn_if_fail (status);
+    }
+
+  if (setup->play_edit)
+    {
+      /* modifications reference play-mode ptr ids
+       * new objects use edit-mode ptr ids
+       * modifications of new objects reference play-mode ptr ids
+       */
+      bool status =
+        rig_engine_apply_pb_ui_edit (engine,
+                                     setup->play_edit,
+                                     register_object_cb,
+                                     lookup_object_cb,
+                                     queue_delete_object_cb,
+                                     simulator); /* user data */
+
+      g_warn_if_fail (status);
+
+      if (!status)
         rig_simulator_action_report_edit_failure (simulator);
     }
+
+  /* Object deletions are deferred...
+   *
+   * XXX: it could be better to defer object deletion until after we
+   * have finished processing this frame and sent our update back
+   * to the frontend.
+   */
+
+  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
+    {
+      unregister_object (simulator, item->data);
+      rut_object_unref (item->data);
+    }
+  rut_queue_clear (simulator->queued_deletes);
+
 
   rut_shell_queue_redraw (engine->shell);
 
   rig_pb_unserializer_destroy (&unserializer);
 
+  closure (&ack, closure_data);
+}
+
+static void
+simulator__synchronize (Rig__Simulator_Service *service,
+                        const Rig__Sync *sync,
+                        Rig__SyncAck_Closure closure,
+                        void *closure_data)
+{
+  Rig__SyncAck ack = RIG__SYNC_ACK__INIT;
+
+  /* XXX: currently we can assume that frames are processed
+   * synchronously and so there are implicitly no outstanding
+   * frames to process.
+   */
   closure (&ack, closure_data);
 }
 
@@ -451,16 +529,11 @@ rig_simulator_stop_service (RigSimulator *simulator)
   exit (1);
 }
 
-static void
-free_object_id (void *object_id)
-{
-  rut_magazine_chunk_free (_rig_simulator_object_id_magazine, object_id);
-}
-
 void
 rig_simulator_init (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
+  RigEngine *engine = simulator->engine;
 
   /* NB: We can assume that all IDs fit in a native pointer since IDs
    * sent to a simulator currently always correspond to pointers in
@@ -468,12 +541,14 @@ rig_simulator_init (RutShell *shell, void *user_data)
    */
 
   simulator->object_to_id_map =
-    g_hash_table_new_full (NULL, /* direct hash */
-                           NULL); /* direct key equal */
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
 
   simulator->id_to_object_map =
-    g_hash_table_new_full (NULL, /* direct hash */
-                           NULL); /* direct key equal */
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
+
+  simulator->queued_deletes = rut_queue_new ();
 
   rut_list_init (&simulator->actions);
 
@@ -502,6 +577,9 @@ rig_simulator_fini (RutShell *shell, void *user_data)
     }
 
   _rig_simulator_object_id_magazine = NULL;
+
+  rut_queue_free (simulator->queued_deletes);
+  simulator->queued_deletes = NULL;
 
   rut_object_unref (engine);
   simulator->engine = NULL;

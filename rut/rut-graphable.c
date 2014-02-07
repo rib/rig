@@ -26,6 +26,7 @@
 #include "rut-interfaces.h"
 #include "rut-util.h"
 #include "components/rut-camera.h"
+#include "rut-queue.h"
 
 void
 rut_graphable_init (RutObject *object)
@@ -34,9 +35,7 @@ rut_graphable_init (RutObject *object)
     rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
 
   props->parent = NULL;
-  props->children.head = NULL;
-  props->children.tail = NULL;
-  props->children.length = 0;
+  rut_queue_init (&props->children);
 }
 
 void
@@ -78,7 +77,7 @@ rut_graphable_add_child (RutObject *parent, RutObject *child)
     parent_vtable->child_added (parent, child);
 
   /* XXX: maybe this should be deferred to parent_vtable->child_added ? */
-  g_queue_push_tail (&parent_props->children, child);
+  rut_queue_push_tail (&parent_props->children, child);
 }
 
 void
@@ -104,7 +103,7 @@ rut_graphable_remove_child (RutObject *child)
   if (parent_vtable->child_removed)
     parent_vtable->child_removed (parent, child);
 
-  g_queue_remove (&parent_props->children, child);
+  rut_queue_remove (&parent_props->children, child);
   rut_object_release (child, parent);
 }
 
@@ -115,7 +114,7 @@ rut_graphable_remove_all_children (RutObject *parent)
     rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
   RutObject *child;
 
-  while ((child = g_queue_pop_tail (&parent_props->children)))
+  while ((child = rut_queue_pop_tail (&parent_props->children)))
     rut_graphable_remove_child (child);
 }
 
@@ -140,10 +139,7 @@ rut_graphable_first (RutObject *parent)
   RutGraphableProps *graphable =
     rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
 
-  if (graphable->children.head)
-    return graphable->children.head->data;
-  else
-    return NULL;
+  return rut_queue_peek_head (&graphable->children);
 }
 
 RutObject *
@@ -151,16 +147,8 @@ rut_graphable_nth (RutObject *parent, int n)
 {
   RutGraphableProps *graphable =
     rut_object_get_properties (parent, RUT_TRAIT_ID_GRAPHABLE);
-  GList *l;
-  int i;
 
-  for (l = graphable->children.head, i = 0; l && i < n; l = l->next, i++)
-    ;
-
-  if (l)
-    return l->data;
-  else
-    return NULL;
+  return rut_queue_peek_nth (&graphable->children, n);
 }
 
 RutObject *
@@ -180,20 +168,22 @@ _rut_graphable_traverse_breadth (RutObject *graphable,
                                  RutTraverseCallback callback,
                                  void *user_data)
 {
-  GQueue *queue = g_queue_new ();
+  RutQueue queue;
   int dummy;
   int current_depth = 0;
   RutTraverseVisitFlags flags = 0;
 
-  g_queue_push_tail (queue, graphable);
-  g_queue_push_tail (queue, &dummy); /* use to delimit depth changes */
+  rut_queue_init (&queue);
 
-  while ((graphable = g_queue_pop_head (queue)))
+  rut_queue_push_tail (&queue, graphable);
+  rut_queue_push_tail (&queue, &dummy); /* use to delimit depth changes */
+
+  while ((graphable = rut_queue_pop_head (&queue)))
     {
       if (graphable == &dummy)
         {
           current_depth++;
-          g_queue_push_tail (queue, &dummy);
+          rut_queue_push_tail (&queue, &dummy);
           continue;
         }
 
@@ -204,13 +194,14 @@ _rut_graphable_traverse_breadth (RutObject *graphable,
         {
           RutGraphableProps *props =
             rut_object_get_properties (graphable, RUT_TRAIT_ID_GRAPHABLE);
-          GList *l;
-          for (l = props->children.head; l; l = l->next)
-            g_queue_push_tail (queue, l->data);
+          RutQueueItem *item;
+
+          rut_list_for_each (item, &props->children.items, list_node)
+            {
+              rut_queue_push_tail (&queue, item->data);
+            }
         }
     }
-
-  g_queue_free (queue);
 
   return flags;
 }
@@ -232,11 +223,11 @@ _rut_graphable_traverse_depth (RutObject *graphable,
     {
       RutGraphableProps *props =
         rut_object_get_properties (graphable, RUT_TRAIT_ID_GRAPHABLE);
-      GList *l;
+      RutQueueItem *item, *tmp;
 
-      for (l = props->children.head; l; l = l->next)
+      rut_list_for_each_safe (item, tmp, &props->children.items, list_node)
         {
-          flags = _rut_graphable_traverse_depth (l->data,
+          flags = _rut_graphable_traverse_depth (item->data,
                                                  before_children_callback,
                                                  after_children_callback,
                                                  current_depth + 1,

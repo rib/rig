@@ -69,7 +69,7 @@ struct _RigPBSerializer
   void **properties_out;
 
   int next_id;
-  GHashTable *id_map;
+  GHashTable *object_to_id_map;
 };
 
 
@@ -161,6 +161,9 @@ uint64_t
 rig_pb_serializer_register_object (RigPBSerializer *serializer,
                                    void *object);
 
+uint64_t
+rig_pb_serializer_lookup_object_id (RigPBSerializer *serializer, void *object);
+
 void
 rig_pb_serializer_destroy (RigPBSerializer *serializer);
 
@@ -236,13 +239,12 @@ struct _RigPBUnSerializer
   RutEntity *light;
   GList *controllers;
 
-  GHashTable *id_map;
+  GHashTable *id_to_object_map;
 };
 
 void
 rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
-                          RigEngine *engine,
-                          bool with_id_map);
+                          RigEngine *engine);
 
 void
 rig_pb_unserializer_set_object_register_callback (

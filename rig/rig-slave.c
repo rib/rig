@@ -46,6 +46,9 @@ typedef struct _RigSlave
   RigEngine *engine;
 
   GHashTable *edit_id_to_play_object_map;
+  GHashTable *play_object_to_edit_id_map;
+
+  RutQueue *queued_deletes;
 
 } RigSlave;
 
@@ -74,37 +77,50 @@ free_object_id (void *id)
 }
 
 static void *
-edit_id_to_object_cb (uint64_t id,
-                      void *user_data)
+lookup_object_cb (uint64_t id,
+                  void *user_data)
 {
   RigSlave *slave = user_data;
   return g_hash_table_lookup (slave->edit_id_to_play_object_map, &id);
 }
 
 static void *
-edit_id_to_object (RigSlave *slave, uint64_t id)
+lookup_object (RigSlave *slave, uint64_t id)
 {
-  return edit_id_to_object_cb (id, slave);
+  return lookup_object_cb (id, slave);
 }
 
 static void
-register_edit_mode_id_cb (void *object,
-                          uint64_t id,
-                          void *user_data)
+register_object_cb (void *play_mode_object,
+                    uint64_t edit_mode_id,
+                    void *user_data)
 {
   RigSlave *slave = user_data;
-  uint64_t &object_id;
+  uint64_t *object_id;
 
-  if (edit_id_to_object (slave, id))
+  if (lookup_object (slave, edit_mode_id))
     {
       g_critical ("Tried to re-register object");
       return;
     }
 
+  /* XXX: We need a mechanism for hooking into frontend edits that
+   * happen as a result of UI logic so we can make sure to unregister
+   * objects that might be deleted by UI logic. */
+
   object_id = rut_magazine_chunk_alloc (_rig_slave_object_id_magazine);
-  *object_id = id;
+  *object_id = edit_mode_id;
 
   g_hash_table_insert (slave->edit_id_to_play_object_map, object_id, object);
+  g_hash_table_insert (slave->play_object_to_edit_id_map, object, object_id);
+}
+
+static void
+queue_delete_object_cb (uint64_t id, void *user_data)
+{
+  RigSlave *slave = user_data;
+  void *object = (void *)(intptr_t)id;
+  rut_queue_push_tail (slave->queued_deletes, object);
 }
 
 static void
@@ -130,30 +146,32 @@ slave__load (Rig__Slave_Service *service,
 
       g_hash_table_destroy (slave->edit_id_to_play_object_map);
       slave->edit_id_to_play_object_map = NULL;
+      g_hash_table_destroy (slave->play_object_to_edit_id_map);
+      slave->play_object_to_edit_id_map = NULL;
     }
 
   slave->edit_id_to_play_object_map =
-    g_hash_table_new (g_int64_hash, /* direct hash */
-                      g_int64_equal, /* direct key equal */
+    g_hash_table_new (g_int64_hash,
+                      g_int64_equal, /* key equal */
                       free_object_id, /* key destroy */
                       NULL); /* value destroy */
+
+  /* Note: we don't have a free function for the value because we
+   * share object_ids between both hash-tables and need to be
+   * careful not to double free them. */
+  slave->play_object_to_edit_id_map =
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
 
   rig_pb_unserializer_init (&unserializer, engine);
 
   rig_pb_unserializer_set_object_register_callback (&unserializer,
-                                                    register_edit_mode_id_cb,
+                                                    register_object_cb,
                                                     slave);
 
   rig_pb_unserializer_set_id_to_object_callback (&unserializer,
-                                                 edit_id_to_object_cb,
+                                                 lookup_object_cb,
                                                  slave);
-
-  /* TODO: We need an object_to_id_map so that if any ui logic deletes
-   * an object then we can check to see if the object corresponds to
-   * an edit-mode object and if so remove its mapping from
-   * edit_id_to_play_object_map and make sure attempts to edit this
-   * object will fail gracefully.
-   */
 
   ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
 
@@ -191,16 +209,36 @@ slave__edit (Rig__Slave_Service *service,
   Rig__UIEditResult result = RIG__UI_EDIT_RESULT__INIT;
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
+  RutQueueItem *item;
 
   if (!rig_engine_apply_pb_ui_edit (engine,
                                     pb_ui_edit,
-                                    engine->play_mode_ui,
-                                    edit_id_to_object_cb,
+                                    register_object_cb,
+                                    lookup_object_cb,
+                                    queue_delete_object_cb
                                     slave))
     {
       result.has_status = true;
       result.status = false;
     }
+  /* XXX: we need to synchonize with the simulator, and then forward
+   * edits to the simulator too. */
+#error todo: forward edits to simulator too
+
+  /* Lazily delete objects... */
+  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
+    {
+      uint64_t *object_id =
+        g_hash_table_lookup (slave->play_object_to_edit_id_map, item->data);
+
+      g_hash_table_remove (slave->edit_id_to_play_object_map, object_id);
+      g_hash_table_remove (slave->play_object_to_edit_id_map, item->data);
+
+      rut_object_unref (item->data);
+    }
+  rut_queue_clear (simulator->queued_deletes);
+
+  rut_shell_queue_redraw (engine->shell);
 
   closure (&result, closure_data);
 }
@@ -256,6 +294,8 @@ rig_slave_init (RutShell *shell, void *user_data)
   RigSlave *slave = user_data;
   RigEngine *engine;
 
+  slave->queued_deletes = rut_queue_new ();
+
   slave->frontend = rig_frontend_new (shell,
                                       RIG_FRONTEND_ID_SLAVE,
                                       NULL);
@@ -294,6 +334,9 @@ rig_slave_fini (RutShell *shell, void *user_data)
 
   rut_object_unref (slave->frontend);
   slave->frontend = NULL;
+
+  rut_queue_free (slave->queued_deletes);
+  slave->queued_deletes = NULL;
 }
 
 static void

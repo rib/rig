@@ -74,6 +74,13 @@ rig_frontend_new (RutShell *shell,
 void
 rig_frontend_reload_simulator_uis (RigFrontend *frontend);
 
+/* TODO: should support a destroy_notify callback */
+void
+rig_frontend_sync (RigFrontend *frontend,
+                   void (*synchronized) (const Rig__SyncAck *result,
+                                         void *user_data),
+                   void *user_data);
+
 void
 rig_frontend_start_service (RigFrontend *frontend);
 

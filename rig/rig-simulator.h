@@ -75,6 +75,8 @@ struct _RigSimulator
 
   RutList actions;
   int n_actions;
+
+  RutQueue *queued_deletes;
 };
 
 void

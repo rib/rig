@@ -2110,7 +2110,7 @@ input_region_cb (RutInputRegion *region,
           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_UP &&
           rut_key_event_get_keysym (event) == RUT_KEY_p)
         {
-          rig_engine_set_play_mode_enabled (engine, !engine->play_mode);
+          rig_editor_set_play_mode_enabled (engine->editor, !engine->play_mode);
           rig_frontend_op_set_play_mode (engine->frontend, engine->play_mode);
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }

@@ -1,13 +1,32 @@
-#include "config.h"
+/*
+ * Rig
+ *
+ * Copyright (C) 2013,2014  Intel Corporation.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+
+#include <config.h>
 
 #include <stdlib.h>
 #include <glib.h>
 
 #include <rut.h>
-#include <rig-engine.h>
-#include <rig-engine.h>
-#include <rig-avahi.h>
-#include <cogl-gst/cogl-gst.h>
+
+#include "rig-engine.h"
+#include "rig-avahi.h"
 
 static char **_rig_editor_remaining_args = NULL;
 
@@ -18,7 +37,7 @@ static const GOptionEntry _rig_editor_entries[] =
   { 0 }
 };
 
-typedef struct _RigEditor
+struct _RigEditor
 {
   RutShell *shell;
   RutContext *ctx;
@@ -28,7 +47,8 @@ typedef struct _RigEditor
 
   char *ui_filename;
 
-} RigEditor;
+  GList *suspended_controllers;
+};
 
 
 void
@@ -36,6 +56,9 @@ rig_editor_init (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
   RigEngine *engine;
+
+  editor->edit_mode_deletes = rut_queue_new ();
+  editor->play_mode_deletes = rut_queue_new ();
 
   /* TODO: RigFrontend should be a trait of the engine */
   editor->frontend = rig_frontend_new (shell,
@@ -59,8 +82,20 @@ rig_editor_init (RutShell *shell, void *user_data)
 void
 rig_editor_fini (RutShell *shell, void *user_data)
 {
-  /* NOP: (We currently free the engine when necessary in main()
-   * due to the way we check for new files to open) */
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
+  GList *l;
+
+  for (l = editor->suspend_play_mode_controllers; l; l = l->next)
+    rut_object_unref (l->data);
+  g_list_free (editor->suspend_play_mode_controllers);
+  editor->suspend_play_mode_controllers = NULL;
+
+  rut_queue_free (editor->edit_mode_deletes);
+  rut_queue_free (editor->play_mode_deletes);
+
+  rut_object_unref (engine);
+  editor->engine = NULL;
 }
 
 static void
@@ -85,23 +120,64 @@ object_deleted_cb (uint63_t id, void *user_data)
 }
 #endif
 
-static void
-register_id_cb (uint64_t id,
-                void *object,
-                void *user_data)
+static void *
+nop_id_cast_cb (uint64_t id, void *user_data)
 {
-  RigEngine *engine = user_data;
-  rig_engine_register_edit_object (engine,
-                                   id,
-                                   object);
+  return (void *)(uintptr_t)id;
 }
 
 static void
-delete_id_cb (uint64_t id, void *user_data)
+nop_register_id_cb (void *object,
+                    uint64_t id,
+                    void *user_data)
+{
+  /* NOP */
+}
+
+static void
+nop_unregister_id_cb (uint64_t id, void *user_data)
+{
+  /* NOP */
+}
+
+static void
+register_play_mode_object_cb (void *play_mode_object,
+                              uint64_t edit_mode_id,
+                              void *user_data)
 {
   RigEngine *engine = user_data;
-  rig_engine_unregister_edit_object (engine,
-                                     id);
+  rig_engine_register_play_mode_object (engine,
+                                        edit_mode_id,
+                                        play_mode_object);
+}
+
+static void
+queue_delete_edit_mode_object_cb (uint64_t edit_mode_id, void *user_data)
+{
+  RigEditor *editor = user_data;
+  void *edit_mode_object = (void *)(intptr_t)play_mode_id;
+  rut_queue_push_tail (editor->edit_mode_deletes, edit_mode_object);
+}
+
+static void
+queue_delete_play_mode_object_cb (uint64_t play_mode_id, void *user_data)
+{
+  RigEditor *editor = user_data;
+  void *play_mode_object = (void *)(intptr_t)play_mode_id;
+  rut_queue_push_tail (editor->play_mode_deletes, play_mode_object);
+}
+
+static uint64_t
+map_id_cb (uint64_t id, void *user_data)
+{
+  RigEngine *engine = user_data;
+  uint64_t id;
+
+  id = rig_engine_edit_id_to_play_id (engine, id);
+
+  g_warn_if_fail (id);
+
+  return id;
 }
 
 static void
@@ -111,6 +187,8 @@ handle_edit_operations (RigEditor *editor,
 {
   RigEngine *engine = editor->engine;
   Rig__UIEdit *play_edits;
+  GList *l;
+  RutQueueItem *item;
 
   setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__ui_edit__init);
   setup->edit->n_ops = engine->n_ops;
@@ -118,67 +196,82 @@ handle_edit_operations (RigEditor *editor,
     pb_frame_setup->edit->ops = rig_engine_serialize_ops (engine, serializer);
 
   setup->play_edit = NULL;
+
+  /* Edit operations are applied as they are made so we don't need to
+   * apply them here. */
 #if 0
-  rig_pb_unserializer_init (&unserializer, engine);
-
-  rig_pb_unserializer_set_object_unregister_callback (&unserializer,
-                                                      object_deleted_cb,
-                                                      engine);
-#endif
-#error fixme
-
-  rig_engine_forward_pb_ui_edit_to_slaves (engine, pb_ui_edit);
-
   rig_engine_apply_pb_ui_edit (engine,
-                               pb_ui_edit,
-                               engine->edit_mode_ui,
-                               nop_id_cast_cb, /* ids == obj ptrs */
+                               setup->edit,
                                nop_register_id_cb,
-                               nop_delete_id_cb,
+                               nop_id_cast_cb, /* ids == obj ptrs */
+                               queue_delete_edit_mode_id_cb,
                                engine); /* user data */
+#endif
 
-  play_edits = rig_engine_map_pb_ui_edit (engine, pb_ui_edit);
-
-#error Check what we use as ids at this point?
-  /* Do we use play-mode pointer ids for modifying objects, and
-   * edit-mode pointer ids for new objects?
+  /* Note: that operations that modify existing objects will
+   * refer to play-mode objects after this mapping, but operations
+   * that create new objects will use the original edit-mode ids.
+   *
+   * This allows us to maintain a mapping from edit-mode objects
+   * to new play-mode objects via the register/unregister callbacks
+   * given when applying these operations to the play-mode ui
    */
-  status = rig_engine_apply_pb_ui_edit (engine,
-                                        pb_ui_edit,
-                                        engine->play_mode_ui,
-                                        nop_id_cast_cb, /* ids == obj ptrs */
-                                        register_play_mode_object_cb,
-                                        unregister_play_mode_object_cb,
-                                        engine); /* user data */
+  play_edits = rig_engine_map_pb_ui_edit (engine,
+                                          setup->edit,
+                                          map_id_cb,
+                                          register_play_mode_object_cb,
+                                          nop_id_cast_cb, /* ids == obj ptrs */
+                                          queue_delete_play_mode_object_cb,
+                                          engine); /* user data */
 
-  /* XXX: send both sets of edits to the simulator */
+  /* Forward both sets of edits to the simulator... */
 
-  setup.edit = pb_ui_edit;
-
-  if (status)
+  if (play_edits)
     setup.play_edit = play_edits;
   else
     rig_engine_reset_play_mode_ui (engine);
+
+  /* Forward edits to all slaves... */
+  for (l = engine->slave_masters; l; l = l->next)
+    rig_slave_master_forward_pb_ui_edit (l->data, setup->edit);
+
+
+  /* Note: Object deletions are deferred so that all edit-to-play mode
+   * and play-to-edit mode mappings remain valid until we have
+   * finished applying all the operations.
+   */
+
+  rut_list_for_each (item, &editor->edit_mode_deletes, list_node)
+    {
+      rig_engine_unregister_edit_object (engine, item->data);
+      rut_object_unref (item->data);
+    }
+  rut_queue_clear (&editor->edit_mode_deletes);
+
+  rut_list_for_each (item, &editor->play_mode_deletes, list_node)
+    {
+      rig_engine_unregister_play_mode_object (engine, item->data);
+      rut_object_unref (item->data);
+    }
+  rut_queue_clear (&editor->play_mode_deletes);
 
   rig_engine_clear_ops (engine);
 }
 
 void
-rig_editor_pb_op_apply (RigEngine *engine,
-                        Rig__Operation *pb_op)
+rig_editor_apply_last_op (RigEngine *engine)
 {
+  Rig__Operation *pb_op = rut_queue_peek_tail (engine->ops);
   bool status = rig_engine_pb_op_apply (engine,
                                         pb_op,
-                                        engine->play_mode_ui,
+                                        nop_register_id_cb,
                                         nop_id_cast_cb, /* ids == obj ptrs */
-                                        register_play_mode_object_cb,
-                                        unregister_play_mode_object_cb,
+                                        queue_delete_edit_mode_object_cb,
                                         engine); /* user data */
-
   g_warn_if_fail (status);
 }
 
-static void
+void
 rig_editor_paint (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
@@ -267,58 +360,95 @@ rig_editor_paint (RutShell *shell, void *user_data)
     rut_shell_queue_redraw (shell);
 }
 
-int
-main (int argc, char **argv)
+static void
+suspend_play_mode_controllers (RigEditor *editor)
 {
-  RigEditor editor;
-  GOptionContext *context = g_option_context_new (NULL);
-  GError *error = NULL;
-  char *assets_location;
+  RigEngine *engine = editor->engine;
+  RigUI *ui = engine->play_mode_ui;
+  RutBoxed boxed_false;
+  GList *l;
 
-  gst_init (&argc, &argv);
+  boxed_false.type = RUT_PROPERTY_TYPE_BOOLEAN;
+  boxed_false.d.boolean_val = false;
 
-  g_option_context_add_main_entries (context, _rig_editor_entries, NULL);
-
-  if (!g_option_context_parse (context, &argc, &argv, &error))
+  for (l = ui->controllers; l; l = l->next)
     {
-      fprintf (stderr, "option parsing failed: %s\n", error->message);
-      exit (EXIT_FAILURE);
+      RigController *controller = l->data;
+
+      if (controller->active)
+        {
+          RutProperty *active_property =
+            rut_introspectable_get_property (controller,
+                                             RIG_CONTROLLER_PROP_SUSPENDED);
+
+          rig_engine_op_set_property (engine,
+                                      active_property,
+                                      &boxed_false);
+          rig_editor_apply_last_op (editor);
+
+          editor->suspended_controllers =
+            g_list_prepend (editor->suspended_controllers, controller);
+
+          /* We take a reference on all suspended controllers so we
+           * don't need to worry if any of the controllers are deleted
+           * while in edit mode. */
+          rut_object_ref (controller);
+        }
+    }
+}
+
+static void
+resume_play_mode_controllers (RigEditor *editor)
+{
+  RigEngine *engine = editor->engine;
+  RutBoxed boxed_true;
+  GList *l;
+
+  boxed_true.type = RUT_PROPERTY_TYPE_BOOLEAN;
+  boxed_true.d.boolean_val = true;
+
+  for (l = editor->suspended_controllers; l; l = l->next)
+    {
+      RigController *controller = l->data;
+      RutProperty *active_property =
+        rut_introspectable_get_property (controller,
+                                         RIG_CONTROLLER_PROP_SUSPENDED);
+
+      rig_engine_op_set_property (engine,
+                                  active_property,
+                                  &boxed_false);
+      rig_editor_apply_last_op (editor);
+
+      rut_object_unref (controller);
     }
 
-  if (_rig_editor_remaining_args == NULL ||
-      _rig_editor_remaining_args[0] == NULL)
+  g_list_free (editor->suspended_controllers);
+  editor->suspended_controllers = NULL;
+}
+
+void
+rig_editor_set_play_mode_enabled (RigEditor *editor, bool enabled)
+{
+  RigEngine *engine = editor->engine;
+
+  engine->play_mode = enabled;
+
+  if (engine->play_mode)
     {
-      fprintf (stderr,
-               "A filename argument for the UI description file is required. "
-               "Pass a non-existing file to create it.\n");
-      exit (EXIT_FAILURE);
+      /* No edit operations should have been queued up while in play
+       * mode... */
+      g_warn_if_fail (engine->ops->len == 0);
+
+      rig_engine_set_current_ui (engine, engine->play_mode_ui);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                             true);
+      resume_play_mode_controllers (editor);
     }
-
-  memset (&editor, 0, sizeof (RigEditor));
-
-  editor.ui_filename = g_strdup (_rig_editor_remaining_args[0]);
-
-  editor.shell = rut_shell_new (false, /* not headless */
-                                rig_editor_init,
-                                rig_editor_fini,
-                                rig_editor_paint,
-                                &editor);
-
-  editor.ctx = rut_context_new (editor.shell);
-
-  rut_context_init (editor.ctx);
-
-  _rig_in_editor_mode = true;
-
-  assets_location = g_path_get_dirname (editor.ui_filename);
-  rut_set_assets_location (editor.ctx, assets_location);
-  g_free (assets_location);
-
-  rut_shell_main (editor.shell);
-
-  rut_object_unref (editor.frontend);
-  rut_object_unref (editor.ctx);
-  rut_object_unref (editor.shell);
-
-  return 0;
+  else
+    {
+      suspend_play_mode_controllers (editor);
+      rig_engine_set_current_ui (engine, engine->edit_mode_ui);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
+                                             false);
+    }
 }

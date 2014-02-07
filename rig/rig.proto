@@ -600,6 +600,14 @@ message PrivateID
   optional sint64 object_id=2;
 }
 
+message Sync
+{
+}
+
+message SyncAck
+{
+}
+
 // The simulator service as used from the renderer
 service Simulator {
 
@@ -611,6 +619,12 @@ service Simulator {
   //When completed the simulator will issue an UpdateUI request
   //TODO: Add throttling mechanism
   rpc RunFrame (FrameSetup) returns (RunFrameAck);
+
+  //XXX: The ACK will only be sent after all outstanding frames
+  //have been processed. This can be used by the editor to
+  //ensure the simulator is idle before directly modifying the
+  //frontend UI state.
+  rpc Synchronize (Sync) returns (SyncAck);
 
   rpc Test (Query) returns (TestResult);
 }

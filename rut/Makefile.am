@@ -118,6 +118,8 @@ librut_la_SOURCES = \
     rut-memory-stack.c \
     rut-magazine.h \
     rut-magazine.c \
+    rut-queue.h \
+    rut-queue.c \
     rut-list.c \
     rut-list.h \
     rut-util.c \

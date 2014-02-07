@@ -14,15 +14,19 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RUT_ENGINE_H_
-#define _RUT_ENGINE_H_
+#ifndef _RIG_ENGINE_H_
+#define _RIG_ENGINE_H_
 
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
+
+
+#include "rig-editor.h"
 
 /* Forward declare since there is a circular dependency between this
  * header and rig-camera-view.h which depends on this typedef... */
@@ -280,10 +284,10 @@ struct _RigEngine
   /* Maps pointers to edit-mode objects to corresponding play-mode
    * objects... */
   GHashTable *edit_to_play_object_map;
+  GHashTable *play_to_edit_object_map;
   RigUI *current_ui;
 
-  GList *ops;
-  int n_ops;
+  RutQueue *ops;
 
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
@@ -334,9 +338,6 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
 void
 rig_engine_set_play_mode_ui (RigEngine *engine,
                              RigUI *ui);
-
-void
-rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
 
 void
 rig_register_asset (RigEngine *engine,
@@ -405,141 +406,20 @@ rig_add_tool_changed_callback (RigEngine *engine,
                                void *user_data,
                                RutClosureDestroyCallback destroy_notify);
 
-typedef enum _RigEngineOpType
-{
-  RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
-  RIG_ENGINE_OP_TYPE_SET_PROPERTY,
-  RIG_ENGINE_OP_TYPE_ADD_ENTITY,
-  RIG_ENGINE_OP_TYPE_DELETE_ENTITY,
-  RIG_ENGINE_OP_TYPE_ADD_COMPONENT,
-  RIG_ENGINE_OP_TYPE_DELETE_COMPONENT,
-  RIG_ENGINE_OP_TYPE_ADD_CONTROLLER,
-  RIG_ENGINE_OP_TYPE_DELETE_CONTROLLER,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_SET_CONST,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_ADD_NODE,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_DELETE_NODE,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_PATH_SET_NODE,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
-  RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
-  RIG_ENGINE_OP_TYPE_SET_PLAY_MODE,
-} RigEngineOpType;
-
-
-void
-rig_engine_op_register_object (RigEngine *engine,
-                               RutObject *object);
-
-void
-rig_engine_op_set_property (RigEngine *engine,
-                            RutProperty *property,
-                            RutBoxed *value);
-
-void
-rig_engine_op_add_entity (RigEngine *engine,
-                          RutEntity *parent,
-                          RutEntity *entity);
-
-void
-rig_engine_op_delete_entity (RigEngine *engine,
-                             RutEntity *entity);
-
-void
-rig_engine_op_add_component (RigEngine *engine,
-                             RutEntity *entity,
-                             RutComponent *component);
-
-void
-rig_engine_op_delete_component (RigEngine *engine,
-                                RutComponent *component);
-
-void
-rig_engine_op_add_controller (RigEngine *engine,
-                              RigController *controller);
-
-void
-rig_engine_op_delete_controller (RigEngine *engine,
-                                 RigController *controller);
-
-void
-rig_engine_op_controller_set_const (RigEngine *engine,
-                                    RigController *controller,
-                                    RutProperty *property,
-                                    RutBoxed *value);
-
-void
-rig_engine_op_add_path_node (RigEngine *engine,
-                             RigController *controller,
-                             RutProperty *property,
-                             float t,
-                             RutBoxed *value);
-
-void
-rig_engine_op_controller_path_delete_node (RigEngine *engine,
-                                           RigController *controller,
-                                           RutProperty *property,
-                                           float t);
-
-void
-rig_engine_op_controller_path_set_node (RigEngine *engine,
-                                        RigController *controller,
-                                        RutProperty *property,
-                                        float t,
-                                        RutBoxed *value);
-
-void
-rig_engine_op_controller_add_property (RigEngine *engine,
-                                       RigController *controller,
-                                       RutProperty *property);
-
-void
-rig_engine_op_controller_remove_property (RigEngine *engine,
-                                          RigController *controller,
-                                          RutProperty *property);
-
-void
-rig_engine_op_controller_property_set_method (RigEngine *engine,
-                                              RigController *controller,
-                                              RutProperty *property,
-                                              RigControllerMethod method);
-
-void
-rig_engine_op_set_play_mode (RigEngine *engine,
-                             bool play_mode_enabled);
-
-Rig__Operation **
-rig_engine_serialize_ops (RigEngine *engine,
-                          RigPBSerializer *serializer);
-
-void
-rig_engine_clear_ops (RigEngine *engine);
-
-typedef void *(*RigEngineIdToObjectCallback) (uint64_t id, void *user_data);
-typedef void (*RigEngineRegisterIdCallback) (uint64_t id,
-                                             void *object,
-                                             void *user_data);
-typedef void (*RigEngineDeleteIdCallback) (uint64_t id, void *user_data);
-
-bool
-rig_engine_apply_pb_ui_edit (RigEngine *engine,
-                             Rig__UIEdit *pb_ui_edit,
-                             RigUI *ui,
-                             RigEngineIdToObjectCallback id_to_object_cb,
-                             RigEngineRegisterIdCallback register_id_cb,
-                             RigEngineDeleteIdCallback delete_id_cb,
-                             void *user_data);
-
-Rig__UIEdit *
-rig_engine_map_pb_ui_edit (RigEngine *engine,
-                           Rig__UIEdit *pb_ui_edit);
-
 void
 rig_engine_register_play_mode_object (RigEngine *engine,
-                                      uint64_t id,
-                                      void *object);
+                                      uint64_t edit_mode_id,
+                                      void *play_mode_object);
 
 void
 rig_engine_unregister_play_mode_object (RigEngine *engine,
-                                        uint64_t id);
+                                        void *play_mode_object);
 
-#endif /* _RUT_ENGINE_H_ */
+void
+rig_engine_unregister_edit_mode_object (RigEngine *engine,
+                                        void *edit_mode_object);
+
+uint64_t
+rig_engine_edit_id_to_play_id (RigEngine *engine, uint64_t edit_id);
+
+#endif /* _RIG_ENGINE_H_ */

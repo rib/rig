@@ -18,6 +18,19 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* A few notes about how journal operations are applied:
+ *
+ * Applying journal operations will result in queuing lower-level
+ * engine operations. Engine operations are then used to apply changes
+ * to the edit-mode and play-mode uis; can be forwarded to the
+ * simulator process and forwarded to all slave devices.
+ *
+ * When applying journal operations, we immediately apply the
+ * corresponding engine operations to the edit-mode ui state. If we
+ * didn't then it would be difficult to batch edit operations that
+ * depend on each other.
+ */
+
 #include <config.h>
 
 #include "rig-undo-journal.h"
@@ -676,24 +689,10 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   UndoRedoSetProperty *set_property = &undo_redo->d.set_property;
   RigEngine *engine = journal->engine;
 
-  /*
-   * XXX: This modification needs to be multicast to the edit-mode and
-   * play-mode UIs as well as all connected slaves
-   */
-
   rig_engine_op_set_property (engine,
                               set_property->property,
                               &set_property->value1);
-
-  /* We now immediately apply this operation in the frontend,
-   * otherwise if we were to batch undo redo operations it would be
-   * quite difficult to apply multiple operations that depend on each
-   * other in one frame.
-   */
-
-  rig_editor_pb_op_apply (engine,
-                          engine->ops->data, /* note: ops logged in reverse */
-                          engine->edit_mode_ui);
+  rig_editor_apply_last_op (engine->editor);
 }
 
 static UndoRedo *
@@ -731,10 +730,11 @@ undo_redo_set_controller_const_apply (RigUndoJournal *journal, UndoRedo *undo_re
 {
   UndoRedoSetControllerConst *set_controller_const = &undo_redo->d.set_controller_const;
 
-#error "How do we multiplex modifications not just to the edit-mode graph, but also the play-mode graph and to slaves?"
-  rig_controller_set_property_constant (set_controller_const->controller,
-                                        set_controller_const->property,
-                                        &set_controller_const->value1);
+  rig_engine_op_controller_set_const (journal->engine,
+                                      set_controller_const->controller,
+                                      set_controller_const->property,
+                                      &set_controller_const->value1);
+  rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (journal->engine,
                                  set_controller_const->property);
@@ -782,10 +782,12 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
 
   g_return_if_fail (add_remove->have_value == true);
 
-  rig_controller_insert_path_value (add_remove->controller,
-                                    add_remove->property,
-                                    add_remove->t,
-                                    &add_remove->value);
+  rig_engine_op_controller_path_add_node (engine,
+                                          add_remove->controller,
+                                          add_remove->property,
+                                          add_remove->t,
+                                          &add_remove->value);
+  rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -826,9 +828,11 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
       add_remove->have_value = true;
     }
 
-  rig_controller_remove_path_value (add_remove->controller,
-                                    add_remove->property,
-                                    add_remove->t);
+  rig_engine_op_controller_path_delete_node (engine,
+                                             add_remove->controller,
+                                             add_remove->property,
+                                             add_remove->t);
+  rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -871,10 +875,12 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
   UndoRedoPathModify *modify = &undo_redo->d.path_modify;
   RigEngine *engine = journal->engine;
 
-  rig_controller_insert_path_value (modify->controller,
-                                    modify->property,
-                                    modify->t,
-                                    &modify->value1);
+  rig_engine_op_controller_path_set_node (engine,
+                                          modify->controller,
+                                          modify->property,
+                                          modify->t,
+                                          &modify->value1);
+  rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, modify->property);
 }
@@ -1588,6 +1594,8 @@ static UndoRedoOpImpl undo_redo_ops[] =
 static void
 undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
+  Rig__Operation *pb_op;
+
   g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
   undo_redo_ops[undo_redo->op].apply (journal, undo_redo);

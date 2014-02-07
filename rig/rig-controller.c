@@ -43,6 +43,20 @@ static RutPropertySpec _rig_controller_prop_specs[] = {
     .flags = RUT_PROPERTY_FLAG_READWRITE,
     .animatable = TRUE
   },
+  { /* This property supersedes the "active" property and is used by
+       the editor to suspend controllers in edit-mode without the
+       risk of inadvertantly triggering bindings if it were to
+       directly change the "active" property */
+    .name = "suspended",
+    .nick = "Suspended",
+    .blurb = "Whether the controller is suspended from actively asserting "
+      "control over its properties",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = rig_controller_get_suspended,
+    .setter.boolean_type = rig_controller_set_suspended,
+    .flags = 0, /* PRIVATE */
+    .animatable = FALSE
+  },
   {
     .name = "auto_deactivate",
     .nick = "Auto Deactivate",
@@ -295,18 +309,10 @@ deactivate_property_binding (RigControllerPropData *prop_data,
   rut_property_remove_binding (prop_data->property);
 }
 
-void
-rig_controller_set_active (RutObject *object,
-                           bool active)
+static void
+update_effective_active_state (RigController *controller )
 {
-  RigController *controller = object;
-
-  if (controller->active == active)
-    return;
-
-  controller->active = active;
-
-  if (active)
+  if (controller->active && !controller->suspended)
     {
       rig_controller_foreach_property (controller,
                                        activate_property_binding,
@@ -318,6 +324,20 @@ rig_controller_set_active (RutObject *object,
                                        deactivate_property_binding,
                                        controller);
     }
+}
+
+void
+rig_controller_set_active (RutObject *object,
+                           bool active)
+{
+  RigController *controller = object;
+
+  if (controller->active == active)
+    return;
+
+  controller->active = active;
+
+  update_effective_active_state (controller);
 
   rut_property_dirty (&controller->context->property_ctx,
                       &controller->props[RIG_CONTROLLER_PROP_ACTIVE]);
@@ -329,6 +349,31 @@ rig_controller_get_active (RutObject *object)
   RigController *controller = object;
 
   return controller->active;
+}
+
+void
+rig_controller_set_suspended (RutObject *object,
+                              bool suspended)
+{
+  RigController *controller = object;
+
+  if (controller->suspended == suspended)
+    return;
+
+  controller->suspended = suspended;
+
+  update_effective_active_state (controller);
+
+  rut_property_dirty (&controller->context->property_ctx,
+                      &controller->props[RIG_CONTROLLER_PROP_SUSPENDED]);
+}
+
+bool
+rig_controller_get_suspended (RutObject *object)
+{
+  RigController *controller = object;
+
+  return controller->suspended;
 }
 
 void

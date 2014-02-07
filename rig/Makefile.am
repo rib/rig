@@ -40,6 +40,8 @@ EXTRA_DIST += protobuf-c-rpc/README
 librig_la_SOURCES = \
 	$(rig_protobuf_c_rpc_sources) \
 	rig-engine.c \
+	rig-engine-op.h \
+	rig-engine-op.c \
 	rig-node.c \
 	rig-node.h \
 	rig-path.c \
@@ -81,6 +83,8 @@ librig_la_SOURCES = \
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
+	rig-editor.h \
+	rig-editor.c \
 	rig-undo-journal.h \
 	rig-undo-journal.c \
 	rig-rotation-tool.h \
@@ -111,7 +115,7 @@ common_ldadd = \
 librig_la_LIBS = $(common_ldadd)
 
 rig_SOURCES = \
-	rig-editor.c
+	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
 
 rig_slave_SOURCES = \
