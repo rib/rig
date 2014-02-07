@@ -295,10 +295,10 @@ void
 rig_undo_journal_log_subjournal (RigUndoJournal *journal,
                                  RigUndoJournal *subjournal);
 
-CoglBool
+bool
 rig_undo_journal_undo (RigUndoJournal *journal);
 
-CoglBool
+bool
 rig_undo_journal_redo (RigUndoJournal *journal);
 
 RigUndoJournal *

@@ -46,7 +46,7 @@ typedef struct _UndoRedoOpImpl
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
 
-static bool
+static void
 rig_undo_journal_insert (RigUndoJournal *journal,
                          UndoRedo *undo_redo);
 
@@ -1649,18 +1649,26 @@ rig_undo_journal_flush_redos (RigUndoJournal *journal)
   rut_list_insert_list (journal->undo_ops.prev, &reversed_operations);
 }
 
-static bool
+static void
 rig_undo_journal_insert (RigUndoJournal *journal,
                          UndoRedo *undo_redo)
 {
+  RigEngine *engine = journal->engine;
   bool apply;
 
-  g_return_val_if_fail (undo_redo != NULL, FALSE);
-  g_return_val_if_fail (journal->inserting == FALSE, FALSE);
+  g_return_if_fail (undo_redo != NULL);
+  g_return_if_fail (journal->inserting == FALSE);
+
+  if (engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      undo_redo_free (undo_redo);
+      return;
+    }
 
   rig_undo_journal_flush_redos (journal);
 
-  journal->inserting = TRUE;
+  journal->inserting = true;
 
   apply = journal->apply_on_insert;
 
@@ -1715,11 +1723,7 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   dump_journal (journal, 0);
 
-  journal->inserting = FALSE;
-
-  rig_engine_sync_slaves (journal->engine);
-
-  return TRUE;
+  journal->inserting = false;
 }
 
 /* This api can be used to undo the last operation without freeing
@@ -1757,9 +1761,15 @@ rig_undo_journal_revert (RigUndoJournal *journal)
   return op;
 }
 
-CoglBool
+bool
 rig_undo_journal_undo (RigUndoJournal *journal)
 {
+  if (journal->engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      return false;
+    }
+
   if (!rut_list_empty (&journal->undo_ops))
     {
       UndoRedo *op = rig_undo_journal_revert (journal);
@@ -1772,19 +1782,25 @@ rig_undo_journal_undo (RigUndoJournal *journal)
 
       dump_journal (journal, 0);
 
-      return TRUE;
+      return true;
     }
   else
-    return FALSE;
+    return false;
 }
 
-CoglBool
+bool
 rig_undo_journal_redo (RigUndoJournal *journal)
 {
   UndoRedo *op;
 
+  if (journal->engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      return false;
+    }
+
   if (rut_list_empty (&journal->redo_ops))
-    return FALSE;
+    return false;
 
   op = rut_container_of (journal->redo_ops.prev, op, list_node);
 
@@ -1796,7 +1812,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 
   dump_journal (journal, 0);
 
-  return TRUE;
+  return true;
 }
 
 RigUndoJournal *
