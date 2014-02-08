@@ -7,15 +7,10 @@ A few exceptions are:
   This license is essentially identical to the MIT license with
   the option to refer to a web address for a copy of the notice
   in documentation.
-- cogl-point-in-poly.c is under a 3 clause BSD license
+- cogl-point-in-poly.c is under a permissive 3 clause BSD license
 - stb_image.c is public domain.
 
 Please see individual files for details.
-
-deps/glib is licensed under the LGPL (please see individual files for
-details and deps/glib/COPYING for a copy of the LGPL license) This
-code is only referenced when building Cogl with the --standalone
-configure option.
 
 --
 The MIT License
@@ -25,7 +20,10 @@ Copyright (C) 2009-2014 Intel Corporation.
 Copyright (C) 2010,2012 Red Hat, Inc.
 Copyright (C) 1999-2005 Brian Paul   All Rights Reserved.
 Copyright (C) 2011,2012 Collabora Ltd.
-Copyright (c) 2008-2011 Kristian Høgsberg
+Copyright (C) 2008-2011 Kristian Høgsberg
+Copyright (C) 2006-2011 Novell, Inc.
+Copyright (C) 2011-2012 Xamarin Inc.
+Copyright (C) 2011 Jeffrey Stedfast
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

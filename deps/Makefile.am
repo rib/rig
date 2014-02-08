@@ -1,5 +1,5 @@
 SUBDIRS =
 
 if !USE_GLIB
-SUBDIRS += glib gmodule
+SUBDIRS += eglib
 endif

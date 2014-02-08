@@ -145,8 +145,7 @@ if BUILD_COGL_PATH
 test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la
 endif
 if !USE_GLIB
-test_conformance_LDADD += $(top_builddir)/deps/glib/libglib.la
-test_conformance_LDADD += $(top_builddir)/deps/gmodule/libgmodule.la
+test_conformance_LDADD += $(top_builddir)/deps/eglib/src/libeglib.la
 endif
 test_conformance_LDFLAGS = -export-dynamic
 

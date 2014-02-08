@@ -53,7 +53,6 @@
 #include "cogl-private.h"
 
 #include <glib.h>
-#include <glib/gprintf.h>
 #include <string.h>
 
 static void _cogl_pipeline_free (CoglPipeline *tex);

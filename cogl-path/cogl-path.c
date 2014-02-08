@@ -32,7 +32,12 @@
  *  Robert Bragg  <robert@linux.intel.com>
  */
 
-#include "config.h"
+#include <config.h>
+
+#include <glib.h>
+
+#include <string.h>
+#include <math.h>
 
 #include "cogl-util.h"
 #include "cogl-object.h"
@@ -49,8 +54,6 @@
 #include "cogl-primitive-private.h"
 #include "tesselator/tesselator.h"
 
-#include <string.h>
-#include <math.h>
 
 #define _COGL_MAX_BEZ_RECURSE_DEPTH 16
 

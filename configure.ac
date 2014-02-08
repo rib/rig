@@ -66,12 +66,19 @@ dnl ================================================================
 # updating the version number in advance of a release.
 m4_define([cogl_release_status], [git])
 
+
+dnl ================================================================
+dnl Setup autoconf
+dnl ================================================================
 AC_INIT(cogl, [cogl_version])
 AC_CONFIG_SRCDIR(cogl/cogl.h)
 AC_CONFIG_AUX_DIR([build])
 AC_CONFIG_MACRO_DIR([build/autotools])
 AC_CONFIG_HEADERS(config.h)
 AC_GNU_SOURCE
+
+AC_CANONICAL_SYSTEM
+AC_CANONICAL_HOST
 
 dnl ================================================================
 dnl Required versions for dependencies
@@ -178,22 +185,92 @@ AC_SUBST(LIBM)
 dnl ================================================================
 dnl See what platform we are building for
 dnl ================================================================
-AC_CANONICAL_HOST
-AC_MSG_CHECKING([if building for some Win32 platform])
-AS_CASE([$host],
-        [*-*-mingw*|*-*-cygwin*],
-        [
-          COGL_EXTRA_LDFLAGS="$COGL_EXTRA_LDFLAGS -no-undefined"
-          platform_win32=yes
-        ],
 
-        [platform_win32=no]
-)
-AC_MSG_RESULT([$platform_win32])
-AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
+AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
+AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
+
+platform_darwin=no
+platform_android=no
+platform_win32=no
 
 AC_CHECK_HEADER([OpenGL/gl.h], [platform_quartz=yes], [platform_quartz=no])
+
+case $host in
+*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
+    PATHSEP='\\'
+    SEARCHSEP=';'
+    OS="WIN32"
+    PIDTYPE='void *'
+    COGL_EXTRA_LDFLAGS="$COGL_EXTRA_LDFLAGS -no-undefined"
+    platform_win32=yes
+    ;;
+*-*darwin*)
+    platform_darwin=yes
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
+    PIDTYPE='int'
+    ;;
+*-*-linux-android*)
+    platform_android=yes
+        AC_DEFINE(PLATFORM_ANDROID,1,[Targeting the Android platform])
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
+    PIDTYPE='int'
+    ;;
+*)
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
+    PIDTYPE='int'
+    ;;
+esac
+
+AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
 AM_CONDITIONAL(OS_QUARTZ, [test "$platform_quartz" = "yes"])
+
+case $target in
+arm*-darwin*)
+    CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
+    ;;
+i*86-*-darwin*)
+    ORDER=G_LITTLE_ENDIAN
+    ;;
+esac
+
+target_osx=no
+target_ios=no
+
+if test "x$platform_darwin" = "xyes"; then
+        AC_TRY_COMPILE([#include "TargetConditionals.h"],[
+        #if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
+        #error fail this for ios
+        #endif
+        return 0;
+        ], [
+                AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
+                target_osx=yes
+        ], [
+                AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
+                target_ios=yes
+        ])
+   AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
+fi
+
+AC_SUBST(ORDER)
+AC_SUBST(CFLAGS)
+AC_SUBST(PATHSEP)
+AC_SUBST(SEARCHSEP)
+AC_SUBST(OS)
+AC_SUBST(PIDTYPE)
+AM_CONDITIONAL(HOST_WIN32, test x$OS = xWIN32)
+AM_CONDITIONAL(TARGET_WIN32, test x$OS = xWIN32)
+AM_CONDITIONAL(PLATFORM_DARWIN, test x$platform_darwin = xyes)
+AM_CONDITIONAL(PLATFORM_ANDROID, test x$platform_android = xyes)
+
+
+
 
 dnl ================================================================
 dnl Handle extra configure options
@@ -452,13 +529,8 @@ AS_IF([test "x$enable_glib" = "xyes"],
         COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES gobject-2.0 gmodule-no-export-2.0"
       ],
       [
-        AS_GLIBCONFIG([deps/glib])
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps/glib"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps/glib"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps/gmodule"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps/gmodule"
+        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps/eglib/src"
+        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps/eglib/src"
         EXPERIMENTAL_CONFIG=yes
         EXPERIMENTAL_OPTIONS="$EXPERIMENTAL_OPTIONS --disable-glib,"
         enable_nls=no
@@ -1331,11 +1403,130 @@ AS_IF([test "x$enable_emscripten" = "xno"],
 dnl 'memmem' is a GNU extension but we have a simple fallback
 AC_CHECK_FUNCS([memmem])
 
+
 dnl This is used in the cogl-gles2-gears example but it is a GNU extension
 save_libs="$LIBS"
 LIBS="$LIBS $LIBM"
 AC_CHECK_FUNCS([sincos])
 LIBS="$save_libs"
+
+
+dnl ================================================================
+dnl eglib checks.
+dnl ================================================================
+
+GNUC_PRETTY=
+GNUC_UNUSED=
+BREAKPOINT="G_STMT_START { raise (SIGTRAP); } G_STMT_END"
+if test x$GCC = xyes; then
+   GNUC_UNUSED='__attribute__((__unused__))'
+   GNUC_NORETURN='__attribute__((__noreturn__))'
+   case $host_cpu in
+     i*86|x86_64) BREAKPOINT="G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END" ;;
+   esac
+fi
+AC_SUBST(GNUC_PRETTY)
+AC_SUBST(GNUC_UNUSED)
+AC_SUBST(GNUC_NORETURN)
+AC_SUBST(BREAKPOINT)
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
+
+#
+# iOS detection of strndup and getpwuid_r is faulty for some reason
+# so let's simply avoid it
+#
+if test x$target_ios = xno; then
+AC_CHECK_FUNCS(strndup getpwuid_r)
+fi
+
+AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
+AM_ICONV()
+AC_SEARCH_LIBS(sqrtf, m)
+
+# nanosleep may not be part of libc, also search it in other libraries
+AC_SEARCH_LIBS(nanosleep, rt)
+
+AC_SEARCH_LIBS(dlopen, dl)
+old_ldflags="${LDFLAGS}"
+LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
+if test $found_export_dynamic = no; then
+        LDFLAGS="${old_ldflags}"
+fi
+
+AC_MSG_CHECKING(for varargs macros)
+AC_TRY_COMPILE([],[
+int foo (int i, int j);
+#define bar(...) foo (1, __VA_ARGS__)
+void main () {
+         bar (2);
+}
+],have_iso_varargs=yes,have_iso_varargs=no)
+AC_MSG_RESULT($have_iso_varargs)
+G_HAVE_ISO_VARARGS=0
+if test "x$have_iso_varargs" = "xyes"; then
+   G_HAVE_ISO_VARARGS=1
+fi
+AC_SUBST(G_HAVE_ISO_VARARGS)
+
+AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h localcharset.h sys/types.h)
+AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
+AC_SUBST(HAVE_ALLOCA_H)
+
+
+if test $ac_cv_sizeof_void_p = $ac_cv_sizeof_int; then
+   GPOINTER_TO_INT="((gint) (ptr))"
+   GPOINTER_TO_UINT="((guint) (ptr))"
+   GINT_TO_POINTER="((gpointer) (v))"
+   GUINT_TO_POINTER="((gpointer) (v))"
+   GSIZE="int"
+   GSIZE_FORMAT='"u"'
+   G_GUINT64_FORMAT='"llu"'
+   G_GINT64_FORMAT='"lld"'
+   G_GUINT32_FORMAT='"lu"'
+   G_GINT32_FORMAT='"ld"'
+elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
+   GPOINTER_TO_INT="((gint)(long) (ptr))"
+   GPOINTER_TO_UINT="((guint)(long) (ptr))"
+   GINT_TO_POINTER="((gpointer)(glong) (v))"
+   GUINT_TO_POINTER="((gpointer)(gulong) (v))"
+   GSIZE="long"
+   GSIZE_FORMAT='"lu"'
+   G_GUINT64_FORMAT='"lu"'
+   G_GINT64_FORMAT='"ld"'
+   G_GUINT32_FORMAT='"u"'
+   G_GINT32_FORMAT='"d"'
+elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
+   GPOINTER_TO_INT="((gint)(long long) (ptr))"
+   GPOINTER_TO_UINT="((guint)(unsigned long long) (ptr))"
+   GINT_TO_POINTER="((gpointer)(long long) (v))"
+   GUINT_TO_POINTER="((gpointer)(unsigned long long) (v))"
+   GSIZE="long long"
+   GSIZE_FORMAT='"I64u"'
+   G_GUINT64_FORMAT='"I64u"'
+   G_GINT64_FORMAT='"I64i"'
+   G_GUINT32_FORMAT='"I32u"'
+   G_GINT32_FORMAT='"I32i"'
+else
+   AC_MSG_ERROR([unsupported pointer size])
+fi
+
+AC_SUBST(GPOINTER_TO_INT)
+AC_SUBST(GPOINTER_TO_UINT)
+AC_SUBST(GINT_TO_POINTER)
+AC_SUBST(GUINT_TO_POINTER)
+AC_SUBST(GSIZE)
+AC_SUBST(GSIZE_FORMAT)
+AC_SUBST(G_GUINT64_FORMAT)
+AC_SUBST(G_GINT64_FORMAT)
+AC_SUBST(G_GUINT32_FORMAT)
+AC_SUBST(G_GINT32_FORMAT)
+
 
 dnl ================================================================
 dnl Platform values
@@ -1439,9 +1630,11 @@ build/win32/Makefile
 build/win32/vs9/Makefile
 build/win32/vs10/Makefile
 deps/Makefile
-deps/glib/Makefile
-deps/gmodule/Makefile
-deps/gmodule/gmoduleconf.h
+deps/eglib/Makefile
+deps/eglib/m4/Makefile
+deps/eglib/src/Makefile
+deps/eglib/src/eglib-config.h
+deps/eglib/test/Makefile
 test-fixtures/Makefile
 cogl/Makefile
 cogl/cogl2.pc

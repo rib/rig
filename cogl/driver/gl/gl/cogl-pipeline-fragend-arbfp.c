@@ -31,9 +31,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-debug.h"
 #include "cogl-context-private.h"
@@ -54,7 +52,6 @@
 #include "cogl-profile.h"
 
 #include <glib.h>
-#include <glib/gprintf.h>
 #include <string.h>
 
 /* This might not be defined on GLES */

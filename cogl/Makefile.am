@@ -24,10 +24,6 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/driver/gl/gles 		\
 	$(NULL)
 
-if !USE_GLIB
-	AM_CPPFLAGS += -I$(top_builddir)/deps/glib
-endif
-
 AM_CPPFLAGS += \
 	-DG_LOG_DOMAIN=\"Cogl\" 	\
 	-DCOGL_COMPILATION		\
@@ -490,8 +486,7 @@ lib_LTLIBRARIES += libcogl2.la
 
 libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
 if !USE_GLIB
-libcogl2_la_LIBADD += $(top_builddir)/deps/glib/libglib.la
-libcogl2_la_LIBADD += $(top_builddir)/deps/gmodule/libgmodule.la
+libcogl2_la_LIBADD += $(top_builddir)/deps/eglib/src/libeglib.la
 endif
 if UNIT_TESTS
 libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la

@@ -179,8 +179,7 @@ _cogl_parse_debug_string (const char *value,
     {
       g_printerr ("\n\n%28s\n", _("Supported debug values:"));
 #define OPT(MASK_NAME, GROUP, NAME, NAME_FORMATTED, DESCRIPTION) \
-      g_printerr ("%28s %s\n", NAME ":", g_dgettext (GETTEXT_PACKAGE, \
-                                                     DESCRIPTION));
+      g_printerr ("%28s %s\n", NAME ":", _(DESCRIPTION));
 #include "cogl-debug-options.h"
       g_printerr ("\n%28s\n", _("Special debug values:"));
       OPT (IGNORED, "ignored", "all", "ignored", \

@@ -1,0 +1,7 @@
+Please refer to the Git history for a log of source code changes.
+
+This eglib api was originally copied from the mono project:
+
+https://github.com/mono/mono/tree/master/eglib
+
+Our inital snapshot was taken from commit d50c836721f22df7

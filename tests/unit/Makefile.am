@@ -71,8 +71,7 @@ test_unit_LDADD = \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(LIBM)
 if !USE_GLIB
-test_unit_LDADD += $(top_builddir)/deps/glib/libglib.la
-test_unit_LDADD += $(top_builddir)/deps/gmodule/libgmodule.la
+test_unit_LDADD += $(top_builddir)/deps/eglib/src/libeglib.la
 endif
 test_unit_LDFLAGS = -export-dynamic
 

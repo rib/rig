@@ -3,10 +3,6 @@ include $(top_srcdir)/build/autotools/Makefile.am.silent
 AM_CPPFLAGS = \
 	-I$(top_srcdir)
 
-if !USE_GLIB
-AM_CPPFLAGS += -I$(top_builddir)/deps/glib
-endif
-
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
 	$(COGL_EXTRA_CFLAGS)
@@ -23,7 +19,7 @@ common_ldadd = \
 	$(LIBM)
 
 if !USE_GLIB
-common_ldadd += $(top_builddir)/deps/glib/libglib.la
+common_ldadd += $(top_builddir)/deps/eglib/src/libeglib.la
 endif
 
 programs = cogl-info
