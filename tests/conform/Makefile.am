@@ -69,7 +69,7 @@ test_sources = \
 	test-texture-rg.c \
 	$(NULL)
 
-if !USING_EMSCRIPTEN
+if USE_GLIB
 # test-fence depends on the glib mainloop so it won't compile if using
 # emscripten which builds in standalone mode.
 test_sources += test-fence.c
@@ -132,10 +132,6 @@ AM_CPPFLAGS = \
 	-I$(top_builddir)/cogl \
 	-I$(top_srcdir)/test-fixtures
 
-if !USE_GLIB
-AM_CPPFLAGS += -I$(top_builddir)/deps/glib
-endif
-
 AM_CPPFLAGS += \
 	-DCOGL_DISABLE_DEPRECATED \
 	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\"
@@ -145,11 +141,12 @@ test_conformance_LDADD = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(LIBM)
-if !USE_GLIB
-test_conformance_LDADD += $(top_builddir)/deps/glib/libglib.la
-endif
 if BUILD_COGL_PATH
 test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la
+endif
+if !USE_GLIB
+test_conformance_LDADD += $(top_builddir)/deps/glib/libglib.la
+test_conformance_LDADD += $(top_builddir)/deps/gmodule/libgmodule.la
 endif
 test_conformance_LDFLAGS = -export-dynamic
 

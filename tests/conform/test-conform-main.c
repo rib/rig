@@ -147,7 +147,9 @@ main (int argc, char **argv)
   ADD_TEST (test_euler_quaternion, 0, 0);
   ADD_TEST (test_color_hsl, 0, 0);
 
+#ifdef COGL_HAS_GLIB_SUPPORT
   ADD_TEST (test_fence, TEST_REQUIREMENT_FENCE, 0);
+#endif
 
   ADD_TEST (test_texture_no_allocate, 0, 0);
 
