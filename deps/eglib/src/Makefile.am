@@ -49,8 +49,6 @@ libeglib_la_SOURCES = \
 	gspawn.c	\
 	gfile.c		\
 	gfile-posix.c	\
-	gpattern.c	\
-	gmarkup.c	\
 	gutf8.c		\
 	gunicode.c	\
 	unicode-data.h	\

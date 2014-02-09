@@ -20,9 +20,7 @@ SOURCES = \
 	spawn.c		\
 	timer.c		\
 	file.c		\
-	pattern.c	\
 	dir.c		\
-	markup.c	\
 	unicode.c	\
 	utf8.c		\
 	endian.c	\
