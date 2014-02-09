@@ -1631,7 +1631,6 @@ build/win32/vs9/Makefile
 build/win32/vs10/Makefile
 deps/Makefile
 deps/eglib/Makefile
-deps/eglib/m4/Makefile
 deps/eglib/src/Makefile
 deps/eglib/src/eglib-config.h
 deps/eglib/test/Makefile
