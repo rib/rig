@@ -180,6 +180,18 @@ unregister_object (RigSimulator *simulator,
 }
 
 static void *
+unregister_id (RigSimulator *simulator, uint64_t id)
+{
+  void *id_ptr = (void *)(uintptr_t)id;
+  void *object = g_hash_table_lookup (simulator->id_to_object_map, id_ptr);
+
+  g_hash_table_remove (simulator->object_to_id_map, object);
+  g_hash_table_remove (simulator->id_to_object_map, id_ptr);
+
+  return object;
+}
+
+static void *
 lookup_object_cb (uint64_t id,
                   void *user_data)
 {
@@ -249,9 +261,24 @@ simulator__run_frame (Rig__Simulator_Service *service,
   RigEngine *engine = simulator->engine;
   RigPBUnSerializer unserializer;
   RutQueueItem *item;
+  int n_object_registrations;
   int i;
 
   g_return_if_fail (setup != NULL);
+
+  /* Update all of our temporary IDs to real IDs given to us by the
+   * frontend. */
+  n_object_registrations = setup->n_object_registrations;
+  if (n_object_registrations)
+    {
+      for (i = 0; i < n_object_registrations; i++)
+        {
+          Rig__ObjectRegistration *pb_registration =
+            setup->n_object_registrations[i];
+          void *object = unregister_id (simulator, pb_registration->temp_id);
+          register_object_cb (object, pb_registration->real_id, simulator);
+        }
+    }
 
   rig_pb_unserializer_init (&unserializer, engine);
 
@@ -396,12 +423,23 @@ simulator__run_frame (Rig__Simulator_Service *service,
   /*
    * Apply UI edit operations immediately
    */
+
+  if (setup->play_edit)
+    {
+      bool status =
+        rig_engine_apply_pb_ui_edit (engine,
+                                     setup->play_edit,
+                                     register_object_cb,
+                                     lookup_object_cb,
+                                     queue_delete_object_cb,
+                                     simulator); /* user data */
+
+      if (!status)
+        rig_simulator_action_report_edit_failure (simulator);
+    }
+
   if (setup->edit)
     {
-      /* modifications reference edit-mode ptr ids
-       * new objects use edit-mode ptr ids
-       * modifications of new objects reference edit-mode ptr ids
-       */
       bool status =
         rig_engine_apply_pb_ui_edit (engine,
                                      setup->edit,
@@ -413,42 +451,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
       g_warn_if_fail (status);
     }
 
-  if (setup->play_edit)
-    {
-      /* modifications reference play-mode ptr ids
-       * new objects use edit-mode ptr ids
-       * modifications of new objects reference play-mode ptr ids
-       */
-      bool status =
-        rig_engine_apply_pb_ui_edit (engine,
-                                     setup->play_edit,
-                                     register_object_cb,
-                                     lookup_object_cb,
-                                     queue_delete_object_cb,
-                                     simulator); /* user data */
-
-      g_warn_if_fail (status);
-
-      if (!status)
-        rig_simulator_action_report_edit_failure (simulator);
-    }
-
-  /* Object deletions are deferred...
-   *
-   * XXX: it could be better to defer object deletion until after we
-   * have finished processing this frame and sent our update back
-   * to the frontend.
-   */
-
-  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
-    {
-      unregister_object (simulator, item->data);
-      rut_object_unref (item->data);
-    }
-  rut_queue_clear (simulator->queued_deletes);
-
-
-  rut_shell_queue_redraw (engine->shell);
+  rut_shell_queue_redraw_real (engine->shell);
 
   rig_pb_unserializer_destroy (&unserializer);
 
@@ -529,11 +532,129 @@ rig_simulator_stop_service (RigSimulator *simulator)
   exit (1);
 }
 
+#if 0
+static void *
+nop_id_cast_cb (uint64_t id, void *user_data)
+{
+  return (void *)(uintptr_t)id;
+}
+#endif
+
+static void
+apply_op_cb (Rig__Operation *pb_op, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+  RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
+  bool status;
+
+  /* We sequence all operations relative to the property updates that
+   * are being logged, so that the frontend will be able to replay
+   * operation and property updates in the same order.
+   */
+  pb_op->has_sequence = true;
+  pb_op->sequence = prop_ctx->log_len;
+
+  status = rig_engine_pb_op_apply (&simulator->apply_op_ctx, pb_op);
+  g_warn_if_fail (status);
+
+  rut_queue_push_tail (simulator->ops, pb_op);
+}
+
+static uint64_t
+temporarily_register_object_cb (void *object, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+
+  /* XXX: Since we know that the frontend will always allocate aligned
+   * pointers as IDs we can use any odd number as a temporary ID */
+  uint64_t id = simulator->next_tmp_id += 2;
+
+  void *id_ptr = (void *)(intptr_t)id;
+
+  register_object_cb (object, id, simulator);
+
+  //g_hash_table_insert (simulator->object_to_tmp_id_map, object, id_ptr);
+}
+
+static uint64_t
+lookup_object_id (RigSimulator *simulator, void *object)
+{
+  void *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
+
+  if (G_UNLIKELY (id_ptr == NULL))
+    {
+      const char *label = "";
+      if (rut_object_is (object, RUT_TRAIT_ID_INTROSPECTABLE))
+        {
+          RutProperty *label_prop =
+            rut_introspectable_lookup_property (object, "label");
+          if (label_prop)
+            label = rut_property_get_text (label_prop);
+        }
+      g_warning ("Can't find an ID for unregistered object %p(%s,label=\"%s\")",
+                 object,
+                 rut_object_get_type_name (object),
+                 label);
+      return 0;
+    }
+  else
+    return (uint64_t)(uintptr_t)id_ptr;
+}
+
+static uint64_t
+lookup_object_id_cb (void *object, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+  return lookup_object_id (simulator, object);
+
+#if 0
+  void *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
+  if (id_ptr)
+    return (uint64_t)(intptr_t)id_ptr;
+
+  /* If we didn't find an id in object_to_id_map that implies the
+   * object is currently associated with a temporary id... */
+
+  id_ptr = g_hash_table_lookup (simulator->object_to_tmp_id_map, object);
+  return (uint64_t)(intptr_t)id_ptr;
+#endif
+}
+
 void
 rig_simulator_init (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
   RigEngine *engine = simulator->engine;
+
+  simulator->redraw_queued = false;
+
+  /* XXX: Since we know that the frontend will always allocate aligned
+   * pointers as IDs we can use any odd number as a temporary ID */
+  simulator->next_tmp_id = 1;
+
+  /* The ops_unserializer is used to unserializer the operations in
+   * Rig__UIEdit messages from an editor frontend before they are
+   * applied */
+  rig_pb_unserializer_init (&simulator->ops_unserializer, engine);
+  rig_engine_op_apply_context_init (&simulator->apply_op_ctx,
+                                    &simulator->ops_unserializer,
+                                    register_object_cb,
+                                    lookup_object_cb,
+                                    queue_delete_object_cb,
+                                    simulator); /* user data */
+
+  rig_engine_set_apply_op_callback (engine, apply_op_cb, simulator);
+
+
+  /* The ops_serializer is used to serialize operations generated by
+   * UI logic in the simulator that will be forwarded to the frontend.
+   */
+  rig_pb_serializer_set_object_register_callback (engine->ops_serializer,
+                                                  temporarily_register_object_cb,
+                                                  simulator);
+  rig_pb_serializer_set_object_to_id_callback (engine->ops_serializer,
+                                               lookup_object_id_cb,
+                                               simulator);
 
   /* NB: We can assume that all IDs fit in a native pointer since IDs
    * sent to a simulator currently always correspond to pointers in
@@ -547,6 +668,15 @@ rig_simulator_init (RutShell *shell, void *user_data)
   simulator->id_to_object_map =
     g_hash_table_new (NULL, /* direct hash */
                       NULL); /* direct key equal */
+
+#if 0
+  /* When we create new objects in the simulator they are given a
+   * temporary ID that we know won't collide with IDs from the
+   * frontend... */
+  simulator->object_to_tmp_id_map =
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
+#endif
 
   simulator->queued_deletes = rut_queue_new ();
 
@@ -570,16 +700,19 @@ rig_simulator_fini (RutShell *shell, void *user_data)
   g_hash_table_destroy (simulator->object_to_id_map);
   simulator->object_to_id_map = NULL;
 
-  if (simulator->id_to_object_map)
-    {
-      g_hash_table_destroy (simulator->id_to_object_map);
-      simulator->id_to_object_map = NULL;
-    }
+  g_hash_table_destroy (simulator->id_to_object_map);
+  simulator->id_to_object_map = NULL;
+
+  //g_hash_table_destroy (simulator->object_to_tmp_id_map);
+  //simulator->object_to_tmp_id_map = NULL;
 
   _rig_simulator_object_id_magazine = NULL;
 
   rut_queue_free (simulator->queued_deletes);
   simulator->queued_deletes = NULL;
+
+  rig_engine_op_apply_context_destroy (&simulator->apply_op_ctx);
+  rig_pb_unserializer_destroy (&simulator->ops_unserializer);
 
   rut_object_unref (engine);
   simulator->engine = NULL;
@@ -603,31 +736,6 @@ typedef struct _SerializeChangesState
   int n_changes;
   int i;
 } SerializeChangesState;
-
-uint64_t
-get_object_id (RigSimulator *simulator, void *object)
-{
-  uint64_t *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
-
-  if (G_UNLIKELY (id_ptr == NULL))
-    {
-      const char *label = "";
-      if (rut_object_is (object, RUT_TRAIT_ID_INTROSPECTABLE))
-        {
-          RutProperty *label_prop =
-            rut_introspectable_lookup_property (object, "label");
-          if (label_prop)
-            label = rut_property_get_text (label_prop);
-        }
-      g_warning ("Can't find an ID for unregistered object %p(%s,label=\"%s\")",
-                 object,
-                 rut_object_get_type_name (object),
-                 label);
-      return 0;
-    }
-  else
-    return *id_ptr;
-}
 
 static void
 stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
@@ -653,7 +761,7 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
       rig__property_value__init (pb_value);
 
       pb_change->has_object_id = true;
-      pb_change->object_id = get_object_id (simulator, change->object);
+      pb_change->object_id = lookup_object_id (simulator, change->object);
       pb_change->has_property_id = true;
       pb_change->property_id = change->prop_id;
       rig_pb_property_value_init (state->serializer, pb_value, &change->boxed);
@@ -682,6 +790,8 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
   int n_changes;
   RigPBSerializer *serializer;
+
+  simulator->redraw_queued = false;
 
   /* Setup the property context to log all property changes so they
    * can be sent back to the frontend process each frame. */
@@ -790,7 +900,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
               if (action->select_object.object)
                 {
                   pb_action->select_object->object_id =
-                    get_object_id (simulator, action->select_object.object);
+                    lookup_object_id (simulator, action->select_object.object);
                 }
               else
                 pb_action->select_object->object_id = 0;
@@ -820,7 +930,34 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
   rut_shell_run_post_paint_callbacks (shell);
 
-  rut_shell_end_redraw (shell);
+  /* Garbage collect deleted objects
+   *
+   * XXX: We defer the freeing of objects until we have finished a
+   * frame so that we can send our ui update back to the frontend
+   * faster and handle freeing while we wait for new work from the
+   * frontend.
+   */
+  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
+    {
+      unregister_object (simulator, item->data);
+      rut_object_unref (item->data);
+    }
+  rut_queue_clear (simulator->queued_deletes);
 
   rut_memory_stack_rewind (engine->frame_stack);
+
+  rut_shell_end_redraw (shell);
+}
+
+/* Redrawing in the simulator is driven by the frontend issuing
+ * RunFrame requests, so we hook into rut_shell_queue_redraw()
+ * just to record that we have work to do, but still wait for
+ * a request from the frontend.
+ */
+void
+rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+
+  simulator->redraw_queued = true;
 }

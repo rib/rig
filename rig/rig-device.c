@@ -58,17 +58,6 @@ rig_device_fini (RutShell *shell, void *user_data)
 }
 
 static void
-handle_run_frame_ack (const Rig__RunFrameAck *ack,
-                      void *closure_data)
-{
-  RutShell *shell = closure_data;
-
-  rut_shell_finish_frame (shell);
-
-  g_print ("Device: Run Frame ACK received\n");
-}
-
-static void
 rig_device_paint (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
@@ -76,42 +65,45 @@ rig_device_paint (RutShell *shell, void *user_data)
   RigFrontend *frontend = engine->frontend;
   ProtobufCService *simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
-  RutInputQueue *input_queue = rut_shell_get_input_queue (shell);
-  Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
-  RigPBSerializer *serializer;
 
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
 
-  serializer = rig_pb_serializer_new (engine);
-
-  setup.has_play_mode = true;
-  setup.play_mode = engine->play_mode;
-
-  setup.n_events = input_queue->n_events;
-  setup.events =
-    rig_pb_serialize_input_events (serializer, input_queue);
-
-  if (frontend->has_resized)
+  /* XXX: we only kick off a new frame in the simulator if it's not
+   * still busy... */
+  if (!frontend->ui_update_pending)
     {
-      setup.has_view_width = true;
-      setup.view_width = engine->window_width;
-      setup.has_view_height = true;
-      setup.view_height = engine->window_height;
-      frontend->has_resized = false;
+      RutInputQueue *input_queue = rut_shell_get_input_queue (shell);
+      Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+      RigPBSerializer *serializer;
+
+      serializer = rig_pb_serializer_new (engine);
+
+      setup.has_play_mode = true;
+      setup.play_mode = engine->play_mode;
+
+      setup.n_events = input_queue->n_events;
+      setup.events =
+        rig_pb_serialize_input_events (serializer, input_queue);
+
+      if (frontend->has_resized)
+        {
+          setup.has_view_width = true;
+          setup.view_width = engine->window_width;
+          setup.has_view_height = true;
+          setup.view_height = engine->window_height;
+          frontend->has_resized = false;
+        }
+
+      setup.edit = NULL;
+
+      rig_frontend_run_simulator_frame (frontend, &setup);
+
+      rig_pb_serializer_destroy (serializer);
+
+      rut_input_queue_clear (input_queue);
     }
-
-  setup.edit = NULL;
-
-  rig__simulator__run_frame (simulator_service,
-                             &setup,
-                             handle_run_frame_ack,
-                             shell);
-
-  rig_pb_serializer_destroy (serializer);
-
-  rut_input_queue_clear (input_queue);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
@@ -121,9 +113,19 @@ rig_device_paint (RutShell *shell, void *user_data)
 
   rut_shell_run_post_paint_callbacks (shell);
 
+  /* XXX: If the simulator is running slowly then it's possible that
+   * some state needs to be maintained for longer than one frontend
+   * frame, so make sure we aren't going to trash state we need to
+   * send to the simulator here... */
+#error "XXX: do we ever queue up input events/stuff destined for the sim using the frame stack?"
+  rut_memory_stack_rewind (engine->frame_stack);
+
   rut_shell_end_redraw (shell);
 
-  rut_memory_stack_rewind (engine->frame_stack);
+  /* FIXME: we should hook into an asynchronous notification of
+   * when rendering has finished for determining when a frame is
+   * finished. */
+  rut_shell_finish_frame (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);

@@ -63,6 +63,10 @@ struct _RigFrontend
   bool has_resized;
   int pending_width;
   int pending_height;
+
+  bool ui_update_pending;
+
+  GHashTable *tmp_id_to_object_map;
 };
 
 
@@ -80,6 +84,10 @@ rig_frontend_sync (RigFrontend *frontend,
                    void (*synchronized) (const Rig__SyncAck *result,
                                          void *user_data),
                    void *user_data);
+
+void
+rig_frontend_run_simulator_frame (RigFrontend *frontend,
+                                  Rig__FrameSetup *setup);
 
 void
 rig_frontend_start_service (RigFrontend *frontend);

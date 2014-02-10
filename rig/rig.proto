@@ -399,13 +399,7 @@ message Operation
 {
   //See RigEngineOpType
   required uint32 type=1;
-
-  message RegisterObject
-  {
-    required string label=1;
-    required sint64 object_id=2;
-  }
-  optional RegisterObject register_object=2;
+  optional uint32 sequence=2;
 
   //Change an object property, not associated with a controller
   message SetProperty
@@ -530,11 +524,13 @@ message Operation
   }
   optional ControllerPropertySetMethod controller_property_set_method=16;
 
-  message SetPlayMode
-  {
-    required bool play_mode_enabled=1;
-  }
-  optional SetPlayMode set_play_mode=17;
+  //message SetPlayMode
+  //{
+  //  required bool play_mode_enabled=1;
+  //}
+  //optional SetPlayMode set_play_mode=17;
+
+  //XXX: next id = 17
 }
 
 message UIEdit
@@ -542,8 +538,16 @@ message UIEdit
   repeated Operation ops=1;
 }
 
+message ObjectRegistration
+{
+  required sint64 temp_id;
+  required sint64 real_id;
+}
+
 message FrameSetup
 {
+  repeated ObjectRegistration object_registrations=12;
+
   //Since in the editor the main edit area can be offset within a larger
   //window we need to inform the simulator of the transforms involved so
   //it can correctly handle input events without us needing to transform
@@ -556,8 +560,6 @@ message FrameSetup
   //Input events relevant to this new frame...
   repeated Event events=5;
 
-  repeated PropertyChange changes=6;
-
   optional uint64 frame_id=7;
 
   //Predicted presentation time...
@@ -565,9 +567,8 @@ message FrameSetup
 
   optional bool play_mode=9;
 
-  //Edit operations to apply first
-  optional UIEdit edit=10;
-  optional UIEdit play_edit=11;
+  optional UIEdit edit=10; //operations for the edit-mode ui
+  optional UIEdit play_edit=11; //operations for the play-mode ui
 }
 
 message LoadResult
@@ -664,8 +665,14 @@ message UIDiff
   //batched requests from the simulator to the frontend
   repeated SimulatorAction actions=3;
 
+  repeated sint64 temp_ids=6;
+
   //UI edits made by application logic
   optional UIEdit edit=4;
+
+  //Set to true if something is animated and we need
+  //to run another frame
+  optional bool queue_frame=5;
 }
 
 message UpdateUIAck

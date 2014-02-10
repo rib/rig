@@ -1489,6 +1489,32 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
   return pb_events;
 }
 
+Rig__Operation **
+rig_pb_serialize_ops_queue (RigPBSerializer *serializer,
+                            RutQueue *ops)
+{
+  Rig__Operation **pb_ops;
+  RutQueueItem *item;
+  int i;
+
+  if (!ops->len)
+    return NULL;
+
+  pb_ops =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * ops->len,
+                               RUT_UTIL_ALIGNOF (void *));
+
+  i = 0;
+  rut_list_for_each (item, &ops->items, list_node)
+    {
+      pb_ops[i++] = item->data;
+    }
+
+  return pb_ops;
+}
+
+
 static void
 pb_init_color (RutContext *ctx,
                CoglColor *color,

@@ -94,6 +94,10 @@ main (int argc, char **argv)
                                    rig_simulator_run_frame,
                                    &simulator);
 
+  rut_shell_set_queue_redraw_callback (simulator.shell,
+                                       rig_simulator_queue_redraw_hook,
+                                       &simulator);
+
   simulator.ctx = rut_context_new (simulator.shell);
 
   rut_context_init (simulator.ctx);

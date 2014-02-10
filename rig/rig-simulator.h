@@ -44,6 +44,8 @@ struct _RigSimulator
 {
   RigFrontendID frontend_id;
 
+  bool redraw_queued;
+
   /* when running as an editor or slave device then the UI
    * can be edited at runtime and we handle some things a
    * bit differently. For example we only need to be able
@@ -69,9 +71,8 @@ struct _RigSimulator
   RigPBUnSerializer *unserializer;
 
   GHashTable *object_to_id_map;
-
-  /* Only initialized and maintained if editable == true */
   GHashTable *id_to_object_map;
+  //GHashTable *object_to_tmp_id_map;
 
   RutList actions;
   int n_actions;
@@ -87,6 +88,9 @@ rig_simulator_fini (RutShell *shell, void *user_data);
 
 void
 rig_simulator_run_frame (RutShell *shell, void *user_data);
+
+void
+rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data);
 
 void
 rig_simulator_stop_service (RigSimulator *simulator);

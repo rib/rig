@@ -48,14 +48,82 @@ struct _RigEditor
   char *ui_filename;
 
   GList *suspended_controllers;
+
+  RutQueue *edit_ops;
+
+  /* Ops queued here will only be sent to the simulator and
+   * they won't be mapped from edit-mode to play-mode.
+   *
+   * These are used for example to tell the simulator to suspend
+   * controllers when switching into edit-mode.
+   */
+  RutQueue *sim_only_ops;
+
+  RigPBUnSerializer ops_unserializer;
+  RigEngineOpApplyContext apply_op_ctx;
 };
 
+static void
+nop_register_id_cb (void *object,
+                    uint64_t id,
+                    void *user_data)
+{
+  /* NOP */
+}
+
+static void *
+nop_id_cast_cb (uint64_t id, void *user_data)
+{
+  return (void *)(uintptr_t)id;
+}
+
+static void
+nop_unregister_id_cb (uint64_t id, void *user_data)
+{
+  /* NOP */
+}
+
+static void
+queue_delete_edit_mode_object_cb (uint64_t edit_mode_id, void *user_data)
+{
+  RigEditor *editor = user_data;
+  void *edit_mode_object = (void *)(intptr_t)play_mode_id;
+  rut_queue_push_tail (editor->edit_mode_deletes, edit_mode_object);
+}
+
+static void
+apply_edit_op_cb (Rig__Operation *pb_op,
+                  void *user_data)
+{
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
+
+  bool status = rig_engine_pb_op_apply (&editor->apply_op_ctx, pb_op);
+  g_warn_if_fail (status);
+
+  rut_queue_push_tail (editor->edit_ops, pb_op);
+
+#if 0
+  switch (pb_op->type)
+    {
+    case RIG_ENGINE_OP_TYPE_SET_PLAY_MODE:
+      break;
+    default:
+      play_mode_op = rig_engine_pb_op_map ();
+      rut_queue_push_tail (editor->play_ops, play_mode_op);
+      break;
+    }
+#endif
+}
 
 void
 rig_editor_init (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
   RigEngine *engine;
+
+  editor->edit_ops = rut_queue_new ();
+  editor->sim_only_ops = rut_queue_new ();
 
   editor->edit_mode_deletes = rut_queue_new ();
   editor->play_mode_deletes = rut_queue_new ();
@@ -70,6 +138,18 @@ rig_editor_init (RutShell *shell, void *user_data)
 
   /* TODO: RigEditor should be a trait of the engine */
   engine->editor = editor;
+
+  rig_engine_set_apply_op_callback (engine,
+                                    apply_edit_op_cb,
+                                    editor);
+
+  rig_pb_unserializer_init (&editor->ops_unserializer, engine);
+  rig_engine_op_apply_context_init (&editor->apply_op_ctx,
+                                    &editor->ops_unserializer,
+                                    nop_register_id_cb,
+                                    nop_id_cast_cb, /* ids == obj ptrs */
+                                    queue_delete_edit_mode_object_cb,
+                                    editor); /* user data */
 
   /* TODO move into editor */
   rig_avahi_run_browser (engine);
@@ -86,6 +166,9 @@ rig_editor_fini (RutShell *shell, void *user_data)
   RigEngine *engine = editor->engine;
   GList *l;
 
+  rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
+  rig_pb_unserializer_destroy (&editor->ops_unserializer);
+
   for (l = editor->suspend_play_mode_controllers; l; l = l->next)
     rut_object_unref (l->data);
   g_list_free (editor->suspend_play_mode_controllers);
@@ -93,6 +176,14 @@ rig_editor_fini (RutShell *shell, void *user_data)
 
   rut_queue_free (editor->edit_mode_deletes);
   rut_queue_free (editor->play_mode_deletes);
+
+  rut_queue_clear (editor->edit_ops);
+  rut_queue_free (editor->edit_ops);
+  editor->edit_ops = NULL;
+
+  rut_queue_clear (editor->sim_only_ops);
+  rut_queue_free (editor->sim_only_ops);
+  editor->sim_only_ops = NULL;
 
   rut_object_unref (engine);
   editor->engine = NULL;
@@ -120,26 +211,6 @@ object_deleted_cb (uint63_t id, void *user_data)
 }
 #endif
 
-static void *
-nop_id_cast_cb (uint64_t id, void *user_data)
-{
-  return (void *)(uintptr_t)id;
-}
-
-static void
-nop_register_id_cb (void *object,
-                    uint64_t id,
-                    void *user_data)
-{
-  /* NOP */
-}
-
-static void
-nop_unregister_id_cb (uint64_t id, void *user_data)
-{
-  /* NOP */
-}
-
 static void
 register_play_mode_object_cb (void *play_mode_object,
                               uint64_t edit_mode_id,
@@ -149,14 +220,6 @@ register_play_mode_object_cb (void *play_mode_object,
   rig_engine_register_play_mode_object (engine,
                                         edit_mode_id,
                                         play_mode_object);
-}
-
-static void
-queue_delete_edit_mode_object_cb (uint64_t edit_mode_id, void *user_data)
-{
-  RigEditor *editor = user_data;
-  void *edit_mode_object = (void *)(intptr_t)play_mode_id;
-  rut_queue_push_tail (editor->edit_mode_deletes, edit_mode_object);
 }
 
 static void
@@ -180,6 +243,35 @@ map_id_cb (uint64_t id, void *user_data)
   return id;
 }
 
+static Rig__UIEdit *
+serialize_ops (RigEditor *editor)
+{
+  Rig__Operation **pb_ops;
+  RutQueueItem *item;
+  int n_ops = editor->edit_ops->len + editor->sim_only_ops->len;
+  int i;
+
+  if (!n_ops)
+    return NULL;
+
+  pb_ops =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * n_ops,
+                               RUT_UTIL_ALIGNOF (void *));
+
+  i = 0;
+  rut_list_for_each (item, &editor->edit_ops->items, list_node)
+    {
+      pb_ops[i++] = item->data;
+    }
+  rut_list_for_each (item, &editor->sim_only_ops->items, list_node)
+    {
+      pb_ops[i++] = item->data;
+    }
+
+  return pb_ops;
+}
+
 static void
 handle_edit_operations (RigEditor *editor,
                         RigPBSerializer *serializer,
@@ -190,23 +282,35 @@ handle_edit_operations (RigEditor *editor,
   GList *l;
   RutQueueItem *item;
 
+  /* XXX: we have some ops relating to entering play-mode that we need
+   * to make sure happen after editing the play-mode and edit-mode uis
+   *
+   * Options:
+   * We add a hook into the engine_op_ functions for mapping at the
+   * same time as we apply edits, and queues into a separate play_ops
+   * queue.
+   *
+   * Operations that don't make sense to map wouldn't be.
+   *
+   * In the simulator we can always apply play-mode ops first, which
+   * means if we have ops relating to switching to/from play-mode then
+   * they will be applied last.
+   */
+#error "having separate edit_ops and play_ops and sim_only_ops is a bit ugly"
   setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__ui_edit__init);
-  setup->edit->n_ops = engine->n_ops;
+  setup->edit->n_ops = editor->edit_ops->len + editor->sim_only_ops->len;
   if (setup->edit->n_ops != 0)
-    pb_frame_setup->edit->ops = rig_engine_serialize_ops (engine, serializer);
+    {
+      pb_frame_setup->edit->ops =
+        serialize_ops (editor);
+    }
 
   setup->play_edit = NULL;
 
-  /* Edit operations are applied as they are made so we don't need to
-   * apply them here. */
-#if 0
-  rig_engine_apply_pb_ui_edit (engine,
-                               setup->edit,
-                               nop_register_id_cb,
-                               nop_id_cast_cb, /* ids == obj ptrs */
-                               queue_delete_edit_mode_id_cb,
-                               engine); /* user data */
-#endif
+  /* XXX:
+   * Edit operations are applied as they are made so we don't need to
+   * apply them here.
+   */
 
   /* Note: that operations that modify existing objects will
    * refer to play-mode objects after this mapping, but operations
@@ -255,20 +359,8 @@ handle_edit_operations (RigEditor *editor,
     }
   rut_queue_clear (&editor->play_mode_deletes);
 
-  rig_engine_clear_ops (engine);
-}
-
-void
-rig_editor_apply_last_op (RigEngine *engine)
-{
-  Rig__Operation *pb_op = rut_queue_peek_tail (engine->ops);
-  bool status = rig_engine_pb_op_apply (engine,
-                                        pb_op,
-                                        nop_register_id_cb,
-                                        nop_id_cast_cb, /* ids == obj ptrs */
-                                        queue_delete_edit_mode_object_cb,
-                                        engine); /* user data */
-  g_warn_if_fail (status);
+#error check me
+  rut_queue_clear (editor->ops);
 }
 
 void
@@ -279,10 +371,6 @@ rig_editor_paint (RutShell *shell, void *user_data)
   RigFrontend *frontend = engine->frontend;
   ProtobufCService *simulator_service =
     rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
-  RutInputQueue *input_queue = engine->simulator_input_queue;
-  Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
-  RigPBSerializer *serializer;
-  float x, y, z;
 
   rut_shell_start_redraw (shell);
 
@@ -306,55 +394,71 @@ rig_editor_paint (RutShell *shell, void *user_data)
 
   rut_shell_dispatch_input_events (shell);
 
-  serializer = rig_pb_serializer_new (engine);
-
-  setup.n_events = input_queue->n_events;
-  setup.events =
-    rig_pb_serialize_input_events (serializer, input_queue);
-
-  if (frontend->has_resized)
+#error "If the simulator is running slowly then it's possible that we won't kick a new frame and so we might also no toggle play mode or send important edits!?"
+  if (!frontend->ui_update_pending)
     {
-      setup.has_view_width = true;
-      setup.view_width = frontend->pending_width;
-      setup.has_view_height = true;
-      setup.view_height = frontend->pending_height;
-      frontend->has_resized = false;
+      Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+      RutInputQueue *input_queue = engine->simulator_input_queue;
+      RigPBSerializer *serializer;
+      float x, y, z;
+
+      serializer = rig_pb_serializer_new (engine);
+
+      setup.n_events = input_queue->n_events;
+      setup.events =
+        rig_pb_serialize_input_events (serializer, input_queue);
+
+      if (frontend->has_resized)
+        {
+          setup.has_view_width = true;
+          setup.view_width = frontend->pending_width;
+          setup.has_view_height = true;
+          setup.view_height = frontend->pending_height;
+          frontend->has_resized = false;
+        }
+
+      handle_edit_operations (editor, setup);
+
+      /* Inform the simulator of the offset position of the main camera
+       * view so that it can transform its input events accordingly...
+       */
+      x = y = z = 0;
+      rut_graphable_fully_transform_point (engine->main_camera_view,
+                                           engine->camera_2d,
+                                           &x, &y, &z);
+      setup.has_view_x = true;
+      setup.view_x = RUT_UTIL_NEARBYINT (x);
+
+      setup.has_view_y = true;
+      setup.view_y = RUT_UTIL_NEARBYINT (y);
+
+      setup.has_play_mode = true;
+      setup.play_mode = engine->play_mode;
+
+      rig_frontend_run_simulator_frame (frontend, &setup);
+
+      rig_pb_serializer_destroy (serializer);
+
+      rut_input_queue_clear (input_queue);
     }
-
-  handle_edit_operations (editor, setup);
-
-  /* Inform the simulator of the offset position of the main camera
-   * view so that it can transform its input events accordingly...
-   */
-  x = y = z = 0;
-  rut_graphable_fully_transform_point (engine->main_camera_view,
-                                       engine->camera_2d,
-                                       &x, &y, &z);
-  setup.has_view_x = true;
-  setup.view_x = RUT_UTIL_NEARBYINT (x);
-
-  setup.has_view_y = true;
-  setup.view_y = RUT_UTIL_NEARBYINT (y);
-
-  setup.has_play_mode = true;
-  setup.play_mode = engine->play_mode;
-
-  rig__simulator__run_frame (simulator_service,
-                             &setup,
-                             handle_run_frame_ack,
-                             shell);
-
-  rig_pb_serializer_destroy (serializer);
-
-  rut_input_queue_clear (input_queue);
 
   rig_engine_paint (engine);
 
   rut_shell_run_post_paint_callbacks (shell);
 
+  /* XXX: If the simulator is running slowly then it's possible that
+   * some state needs to be maintained for longer than one frontend
+   * frame, so make sure we aren't going to trash state we need to
+   * send to the simulator here... */
+#error "XXX: do we ever queue up input events/stuff destined for the sim using the frame stack?"
+  rut_memory_stack_rewind (engine->frame_stack);
+
   rut_shell_end_redraw (shell);
 
-  rut_memory_stack_rewind (engine->frame_stack);
+  /* FIXME: we should hook into an asynchronous notification of
+   * when rendering has finished for determining when a frame is
+   * finished. */
+  rut_shell_finish_frame (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
@@ -371,6 +475,15 @@ suspend_play_mode_controllers (RigEditor *editor)
   boxed_false.type = RUT_PROPERTY_TYPE_BOOLEAN;
   boxed_false.d.boolean_val = false;
 
+  /* Unlike most edit operations (which we map to play-mode ops,
+   * forward to slaves and to the simulator), the operations we want to
+   * queue here should only be sent to the simulator, and they don't
+   * need to be mapped...
+   */
+  rig_engine_set_apply_op_callback (engine,
+                                    apply_sim_only_op_cb,
+                                    editor);
+
   for (l = ui->controllers; l; l = l->next)
     {
       RigController *controller = l->data;
@@ -381,10 +494,15 @@ suspend_play_mode_controllers (RigEditor *editor)
             rut_introspectable_get_property (controller,
                                              RIG_CONTROLLER_PROP_SUSPENDED);
 
+#error fixme
+          /* XXX: we need to de-activate these controllers in the
+           * frontend and the simulator, but unlike other operations
+           * we are applying them directly to the play-mode objects
+           * and so they shouldn't be mapped - nor should they be
+           * forwarded to slaves :-/ urgh! */
           rig_engine_op_set_property (engine,
                                       active_property,
                                       &boxed_false);
-          rig_editor_apply_last_op (editor);
 
           editor->suspended_controllers =
             g_list_prepend (editor->suspended_controllers, controller);
@@ -395,6 +513,10 @@ suspend_play_mode_controllers (RigEditor *editor)
           rut_object_ref (controller);
         }
     }
+
+  rig_engine_set_apply_op_callback (engine,
+                                    apply_sim_only_op_cb,
+                                    editor);
 }
 
 static void
@@ -417,7 +539,6 @@ resume_play_mode_controllers (RigEditor *editor)
       rig_engine_op_set_property (engine,
                                   active_property,
                                   &boxed_false);
-      rig_editor_apply_last_op (editor);
 
       rut_object_unref (controller);
     }

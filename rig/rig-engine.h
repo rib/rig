@@ -287,7 +287,9 @@ struct _RigEngine
   GHashTable *play_to_edit_object_map;
   RigUI *current_ui;
 
-  RutQueue *ops;
+  void (*apply_op_callback) (Rig__Operation *pb_op,
+                             void *user_data);
+  void *apply_op_data;
 
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
@@ -421,5 +423,11 @@ rig_engine_unregister_edit_mode_object (RigEngine *engine,
 
 uint64_t
 rig_engine_edit_id_to_play_id (RigEngine *engine, uint64_t edit_id);
+
+void
+rig_engine_set_apply_op_callback (RigEngine *engine,
+                                  void (*callback) (Rig__Operation *pb_op,
+                                                    void *user_data),
+                                  void *user_data);
 
 #endif /* _RIG_ENGINE_H_ */

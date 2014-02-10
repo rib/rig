@@ -46,38 +46,7 @@ typedef struct _RigEngineOpMapContext
   void *user_data;
 } RigEngineOpMapContext;
 
-
-Rig__Operation **
-rig_engine_serialize_ops (RigEngine *engine,
-                          RigPBSerializer *serializer)
-{
-  Rig__Operation **pb_ops;
-  RutQueueItem *item;
-  int i;
-
-  if (!engine->ops->len)
-    return NULL;
-
-  pb_ops =
-    rut_memory_stack_memalign (engine->frame_stack,
-                               sizeof (void *) * engine->ops->len,
-                               RUT_UTIL_ALIGNOF (void *));
-
-  i = 0;
-  rut_list_for_each (item, &engine->ops->items, list_node)
-    {
-      pb_ops[i++] = item->data;
-    }
-
-  return pb_ops;
-}
-
-void
-rig_engine_clear_ops (RigEngine *engine)
-{
-  rut_queue_clear (engine->ops);
-}
-
+#if 0
 void
 rig_engine_op_register_object (RigEngine *engine,
                                RutObject *object)
@@ -99,8 +68,9 @@ rig_engine_op_register_object (RigEngine *engine,
   pb_op->register_object->label = (char *)rig_pb_strdup (serializer, label);
   pb_op->register_object->object_id = (intptr_t)object;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
+#endif
 
 void
 rig_engine_op_set_property (RigEngine *engine,
@@ -121,7 +91,7 @@ rig_engine_op_set_property (RigEngine *engine,
   pb_op->set_property->property_id = property->id;
   pb_op->set_property->value = pb_property_value_new (serializer, value);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -192,7 +162,7 @@ rig_engine_op_add_entity (RigEngine *engine,
                                                        NULL,
                                                        entity);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -268,7 +238,7 @@ rig_engine_op_delete_entity (RigEngine *engine,
 
   pb_op->delete_entity->entity_id = (intptr_t)entity;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -324,7 +294,7 @@ rig_engine_op_add_component (RigEngine *engine,
   pb_op->add_component->component =
     rig_pb_serialize_component (serializer, component);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -357,7 +327,7 @@ rig_engine_op_delete_component (RigEngine *engine,
                                         rig__operation__delete_component__init);
   pb_op->delete_component->component_id = (intptr_t)component;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -391,7 +361,7 @@ rig_engine_op_add_controller (RigEngine *engine,
   pb_op->add_controller->controller =
     rig_pb_serialize_controller (serializer, controller);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -425,7 +395,7 @@ rig_engine_op_delete_controller (RigEngine *engine,
                 rig__operation__delete_controller__init);
   pb_op->delete_controller->controller_id = (intptr_t)controller;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -466,7 +436,7 @@ rig_engine_op_controller_set_const (RigEngine *engine,
   pb_op->controller_set_const->value =
     pb_property_value_new (serializer, value);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -508,7 +478,7 @@ rig_engine_op_controller_path_add_node (RigEngine *engine,
   pb_op->controller_path_add_node->value =
     pb_property_value_new (serializer, value);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -547,7 +517,7 @@ rig_engine_op_controller_path_delete_node (RigEngine *engine,
   pb_op->controller_path_delete_node->property_id = property->id;
   pb_op->controller_path_delete_node->t = t;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -589,7 +559,7 @@ rig_engine_op_controller_path_set_node (RigEngine *engine,
   pb_op->controller_path_set_node->value =
     pb_property_value_new (serializer, value);
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -626,7 +596,7 @@ rig_engine_op_controller_add_property (RigEngine *engine,
   pb_op->controller_add_property->object_id = (intptr_t)property->object;
   pb_op->controller_add_property->property_id = property->id;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -663,7 +633,7 @@ rig_engine_op_controller_remove_property (RigEngine *engine,
   pb_op->controller_remove_property->object_id = (intptr_t)property->object;
   pb_op->controller_remove_property->property_id = property->id;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -702,7 +672,7 @@ rig_engine_op_controller_property_set_method (RigEngine *engine,
   pb_op->controller_property_set_method->property_id = property->id;
   pb_op->controller_property_set_method->method = method;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -721,6 +691,7 @@ _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
 
 }
 
+#if 0
 void
 rig_engine_op_set_play_mode (RigEngine *engine,
                              bool play_mode_enabled)
@@ -735,7 +706,7 @@ rig_engine_op_set_play_mode (RigEngine *engine,
                                      rig__operation__set_play_mode__init);
   pb_op->set_play_mode->play_mode_enabled = play_mode_enabled;
 
-  rut_queue_push_tail (engine->ops, pb_op);
+  engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
 static bool
@@ -743,7 +714,7 @@ _apply_op_set_play_mode (RigEngineOpApplyContext *ctx,
                          Rig__Operation *pb_op)
 {
   bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
-  rig_engine_set_play_mode_enabled (ctx->engine, play_mode_enabled);
+  rig_editor_set_play_mode_enabled (ctx->engine->editor, play_mode_enabled);
 
   return true;
 }
@@ -755,6 +726,7 @@ _map_op_set_play_mode (RigEngineOpMapContext *ctx,
 {
   /* NOP */
 }
+#endif
 
 typedef struct _RigEngineOperation
 {
@@ -825,10 +797,12 @@ static RigEngineOperation _rig_engine_ops[] =
     _apply_op_controller_property_set_method,
     _map_op_controller_property_set_method,
   },
+#if 0
   {
     _apply_op_set_play_mode,
     _map_op_set_play_mode,
   }
+#endif
 };
 
 /* This function maps Rig__UIEdit operations from one ID space to
@@ -918,67 +892,48 @@ rig_engine_map_pb_ui_edit (RigEngine *engine,
   return mapped_pb_ui_edits;
 }
 
-bool
-rig_engine_pb_op_apply (RigEngine *engine,
-                        Rig__Operation *pb_op,
-                        RigEngineRegisterIdCallback register_id_cb,
-                        RigEngineIdToObjectCallback id_to_object_cb,
-                        RigEngineDeleteIdCallback queue_delete_id_cb,
-                        void *user_data)
+void
+rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
+                                  RigPBUnSerializer *unserializer,
+                                  RigEngineRegisterIdCallback register_id_cb,
+                                  RigEngineIdToObjectCallback id_to_object_cb,
+                                  RigEngineDeleteIdCallback queue_delete_id_cb,
+                                  void *user_data)
 {
-  RigEngineOpApplyContext ctx;
-  RigPBUnSerializer unserializer;
-  bool status;
+  ctx->engine = unserializer->engine;
+  ctx->unserializer = &unserializer;
+  ctx->id_to_object_cb = id_to_object_cb;
+  ctx->register_id_cb = register_id_cb;
+  ctx->queue_delete_id_cb = queue_delete_id_cb;
+  ctx->user_data = user_data;
+}
 
-  rig_pb_unserializer_init (&unserializer, engine);
-
-  ctx.engine = engine;
-  ctx.unserializer = &unserializer;
-  ctx.id_to_object_cb = id_to_object_cb;
-  ctx.register_id_cb = register_id_cb;
-  ctx.queue_delete_id_cb = queue_delete_id_cb;
-  ctx.user_data = user_data;
-
-  status = _rig_engine_ops[pb_op->type].apply_op (&ctx, pb_op);
-
-  rig_pb_unserializer_destroy (&unserializer);
-
-  return status;
+void
+rig_engine_op_apply_context_destroy (RigEngineOpApplyContext *ctx)
+{
+  /* Currently, nothing to clean up */
 }
 
 bool
-rig_engine_apply_pb_ui_edit (RigEngine *engine,
-                             Rig__UIEdit *pb_ui_edit,
-                             RigEngineRegisterIdCallback register_id_cb,
-                             RigEngineIdToObjectCallback id_to_object_cb,
-                             RigEngineDeleteIdCallback queue_delete_id_cb,
-                             void *user_data)
+rig_engine_pb_op_apply (RigEngineOpApplyContext *ctx,
+                        Rig__Operation *pb_op)
 {
-  RigPBUnSerializer unserializer;
-  RigEngineOpApplyContext ctx;
+  return _rig_engine_ops[pb_op->type].apply_op (ctx, pb_op);
+}
+
+bool
+rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
+                             Rig__UIEdit *pb_ui_edit)
+{
   int i;
-
-  rig_pb_unserializer_init (&unserializer, engine);
-
-  ctx.engine = engine;
-  ctx.unserializer = &unserializer;
-  ctx.id_to_object_cb = id_to_object_cb;
-  ctx.register_id_cb = register_id_cb;
-  ctx.queue_delete_id_cb = queue_delete_id_cb;
-  ctx.user_data = user_data;
 
   for (i = 0; i < pb_ui_edit->n_ops; i++)
     {
       Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
       if (!_rig_engine_ops[pb_op->type].apply_op (&ctx, pb_op))
-        {
-          rig_pb_unserializer_destroy (&unserializer);
-          return false;
-        }
+        return false;
     }
-
-  rig_pb_unserializer_destroy (&unserializer);
 
   return true;
 }

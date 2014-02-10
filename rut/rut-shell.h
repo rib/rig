@@ -360,6 +360,19 @@ rut_shell_ungrab_key_focus (RutShell *shell);
 void
 rut_shell_queue_redraw (RutShell *shell);
 
+void
+rut_shell_set_queue_redraw_callback (RutShell *shell,
+                                     void (*callback) (RutShell *shell,
+                                                       void *user_data),
+                                     void *user_data);
+
+/* You can hook into rut_shell_queue_redraw() via
+ * rut_shell_set_queue_redraw_callback() but then it if you really
+ * want to queue a redraw with the platform mainloop it is your
+ * responsibility to call rut_shell_queue_redraw_real() */
+void
+rut_shell_queue_redraw_real (RutShell *shell);
+
 RutCamera *
 rut_input_event_get_camera (RutInputEvent *event);
 

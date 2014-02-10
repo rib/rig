@@ -197,6 +197,10 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
                             Rig__PropertyValue *pb_value,
                             const RutBoxed *value);
 
+Rig__Operation **
+rig_pb_serialize_ops_queue (RigPBSerializer *serializer,
+                            RutQueue *ops);
+
 Rig__PropertyValue *
 pb_property_value_new (RigPBSerializer *serializer,
                        const RutBoxed *value);

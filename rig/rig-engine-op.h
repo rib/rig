@@ -24,8 +24,8 @@
 
 typedef enum _RigEngineOpType
 {
-  RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
-  RIG_ENGINE_OP_TYPE_SET_PROPERTY,
+  //RIG_ENGINE_OP_TYPE_REGISTER_OBJECT=1,
+  RIG_ENGINE_OP_TYPE_SET_PROPERTY = 1,
   RIG_ENGINE_OP_TYPE_ADD_ENTITY,
   RIG_ENGINE_OP_TYPE_DELETE_ENTITY,
   RIG_ENGINE_OP_TYPE_ADD_COMPONENT,
@@ -39,13 +39,15 @@ typedef enum _RigEngineOpType
   RIG_ENGINE_OP_TYPE_CONTROLLER_ADD_PROPERTY,
   RIG_ENGINE_OP_TYPE_CONTROLLER_REMOVE_PROPERTY,
   RIG_ENGINE_OP_TYPE_CONTROLLER_PROPERTY_SET_METHOD,
-  RIG_ENGINE_OP_TYPE_SET_PLAY_MODE,
+  //RIG_ENGINE_OP_TYPE_SET_PLAY_MODE,
 } RigEngineOpType;
 
 
+#if 0
 void
 rig_engine_op_register_object (RigEngine *engine,
                                RutObject *object);
+#endif
 
 void
 rig_engine_op_set_property (RigEngine *engine,
@@ -120,16 +122,15 @@ rig_engine_op_controller_property_set_method (RigEngine *engine,
                                               RutProperty *property,
                                               RigControllerMethod method);
 
+#if 0
 void
 rig_engine_op_set_play_mode (RigEngine *engine,
                              bool play_mode_enabled);
+#endif
 
 Rig__Operation **
 rig_engine_serialize_ops (RigEngine *engine,
                           RigPBSerializer *serializer);
-
-void
-rig_engine_clear_ops (RigEngine *engine);
 
 typedef void *(*RigEngineIdToObjectCallback) (uint64_t id, void *user_data);
 typedef void (*RigEngineRegisterIdCallback) (void *object,
@@ -137,21 +138,24 @@ typedef void (*RigEngineRegisterIdCallback) (void *object,
                                              void *user_data);
 typedef void (*RigEngineDeleteIdCallback) (uint64_t id, void *user_data);
 
-bool
-rig_engine_pb_op_apply (RigEngine *engine,
-                        Rig__Operation *pb_op,
-                        RigEngineRegisterIdCallback register_id_cb,
-                        RigEngineIdToObjectCallback id_to_object_cb,
-                        RigEngineDeleteIdCallback queue_delete_id_cb,
-                        void *user_data);
+void
+rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
+                                  RigPBUnSerializer *unserializer,
+                                  RigEngineRegisterIdCallback register_id_cb,
+                                  RigEngineIdToObjectCallback id_to_object_cb,
+                                  RigEngineDeleteIdCallback queue_delete_id_cb,
+                                  void *user_data);
+
+void
+rig_engine_op_apply_context_destroy (RigEngineOpApplyContext *ctx);
 
 bool
-rig_engine_apply_pb_ui_edit (RigEngine *engine,
-                             Rig__UIEdit *pb_ui_edit,
-                             RigEngineRegisterIdCallback register_id_cb,
-                             RigEngineIdToObjectCallback id_to_object_cb,
-                             RigEngineDeleteIdCallback queue_delete_id_cb,
-                             void *user_data);
+rig_engine_pb_op_apply (RigEngineOpApplyContext *ctx,
+                        Rig__Operation *pb_op);
+
+bool
+rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
+                             Rig__UIEdit *pb_ui_edit);
 
 typedef uint64_t (*RigEngineMapIDCallback) (uint64_t edit_id, void *user_data);
 

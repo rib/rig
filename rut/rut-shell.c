@@ -172,7 +172,11 @@ struct _RutShell
   RutObject *clipboard;
 
   int glib_paint_idle;
-  CoglBool redraw_queued;
+  bool redraw_queued;
+
+  void (*queue_redraw_callback) (RutShell *shell,
+                                 void *user_data);
+  void *queue_redraw_data;
 
   /* Queue of callbacks to be invoked before painting. If
    * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
@@ -1754,9 +1758,9 @@ flush_pre_paint_callbacks (RutShell *shell)
 void
 rut_shell_start_redraw (RutShell *shell)
 {
-  g_return_if_fail (shell->redraw_queued == TRUE);
+  g_return_if_fail (shell->redraw_queued == true);
 
-  shell->redraw_queued = FALSE;
+  shell->redraw_queued = false;
 #ifndef __ANDROID__
   g_source_remove (shell->glib_paint_idle);
   shell->glib_paint_idle = 0;
@@ -2362,14 +2366,33 @@ rut_shell_ungrab_input (RutShell *shell,
 }
 
 void
-rut_shell_queue_redraw (RutShell *shell)
+rut_shell_queue_redraw_real (RutShell *shell)
 {
-  shell->redraw_queued = TRUE;
+  shell->redraw_queued = true;
 
 #ifndef __ANDROID__
   if (shell->glib_paint_idle <= 0)
     shell->glib_paint_idle = g_idle_add (glib_paint_cb, shell);
 #endif
+}
+
+void
+rut_shell_queue_redraw (RutShell *shell)
+{
+  if (shell->queue_redraw_callback)
+    shell->queue_redraw_callback (shell->queue_redraw_data);
+  else
+    rut_shell_queue_redraw_real (shell);
+}
+
+void
+rut_shell_set_queue_redraw_callback (RutShell *shell,
+                                     void (*callback) (RutShell *shell,
+                                                       void *user_data),
+                                     void *user_data)
+{
+  shell->queue_redraw_callback = callback;
+  shell->queue_redraw_data = user_data;
 }
 
 enum {

@@ -48,17 +48,88 @@ frontend__test (Rig__Frontend_Service *service,
 }
 
 static void
-nop_register_object_cb (void *object,
-                        uint64_t id,
-                        void *user_data)
+register_object_cb (void *object,
+                    uint64_t id,
+                    void *user_data)
 {
-  /* NOP */
+  RigFrontend *frontend = user_data;
+
+  /* If the ID is an odd number that implies it is a temporary ID that
+   * we need to be able map... */
+  if (id & 1)
+    {
+      void *id_ptr = (void *)(uintptr_t)id;
+      g_hash_table_insert (frontend->tmp_id_to_object_map, id_ptr, object);
+    }
 }
 
 static void *
-pointer_id_to_object_cb (uint64_t id, void *user_data)
+lookup_object (RigFrontend *frontend, uint64_t id)
 {
-  return (void *)(intptr_t)id;
+  /* If the ID is an odd number that implies it is a temporary ID that
+   * needs mapping... */
+  if (id & 1)
+    {
+      void *id_ptr = (void *)(uintptr_t)id;
+      return g_hash_table_lookup (frontend->tmp_id_to_object_map, id_ptr);
+    }
+  else /* Otherwise we can assume the ID corresponds to an object pointer */
+    return (void *)(intptr_t)id;
+}
+
+static void *
+lookup_object_cb (uint64_t id, void *user_data)
+{
+  RigFrontend *frontend = user_data;
+  return lookup_object (frontend, id);
+}
+
+static void
+apply_property_change (RigFrontend *frontend,
+                       RigPBUnSerializer *unserializer,
+                       Rig__PropertyChange *pb_change)
+{
+  void *object;
+  RutProperty *property;
+  RutBoxed boxed;
+
+  if (!pb_change->has_object_id ||
+      pb_change->object_id == 0 ||
+      !pb_change->has_property_id ||
+      !pb_change->value)
+    {
+      g_warning ("Frontend: Invalid property change received");
+      continue;
+    }
+
+  object = lookup_object (frontend, pb_change->object_id);
+
+#if 1
+  g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
+           object,
+           rut_object_get_type_name (object),
+           pb_change->property_id);
+#endif
+
+  property =
+    rut_introspectable_get_property (object, pb_change->property_id);
+  if (!property)
+    {
+      g_warning ("Frontend: Failed to find object property by id");
+      continue;
+    }
+
+  /* XXX: ideally we shouldn't need to init a RutBoxed and set
+   * that on a property, and instead we can just directly
+   * apply the value to the property we have. */
+  rig_pb_init_boxed_value (unserializer,
+                           &boxed,
+                           property->spec->type,
+                           pb_change->value);
+
+  //#warning "XXX: frontend updates are disabled"
+  rut_property_set_boxed  (&frontend->engine->ctx->property_ctx,
+                           property, &boxed);
 }
 
 static void
@@ -71,75 +142,69 @@ frontend__update_ui (Rig__Frontend_Service *service,
   RigFrontend *frontend =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = frontend->engine;
-  int i;
+  int i, j;
   int n_changes;
   int n_actions;
   RigPBUnSerializer unserializer;
   RutBoxed boxed;
-  RutPropertyContext *prop_ctx = &frontend->engine->ctx->property_ctx;
 
   //g_print ("Frontend: Update UI Request\n");
+
+  frontend->ui_update_pending = false;
 
   g_return_if_fail (ui_diff != NULL);
 
   rig_pb_unserializer_init (&unserializer, frontend->engine);
 
   rig_pb_unserializer_set_object_register_callback (&unserializer,
-                                                    nop_register_object_cb,
-                                                    NULL);
+                                                    register_object_cb,
+                                                    frontend);
 
   rig_pb_unserializer_set_id_to_object_callback (&unserializer,
-                                                 pointer_id_to_object_cb,
-                                                 NULL);
+                                                 lookup_object_cb,
+                                                 frontend);
 
   n_changes = ui_diff->n_property_changes;
 
-  for (i = 0; i < n_changes; i++)
+  rig_engine_op_apply_context_init (&apply_ctx,
+                                    &unserializer,
+                                    register_object_cb,
+                                    lookup_object_cb,
+                                    queue_delete_object_cb,
+                                    simulator);
+
+
+  /* For compactness, property changes are serialized separately from
+   * more general UI edit operations and so we need to take care that
+   * we apply property changes and edit operations in the correct
+   * order, using the operation sequences to relate to the sequence
+   * of property changes.
+   */
+  j = 0;
+  for (i = 0; i < pb_ui_edit->n_ops; i++)
     {
-      Rig__PropertyChange *pb_change = ui_diff->property_changes[i];
-      void *object;
-      RutProperty *property;
+      Rig__Operation *pb_op = pb_ui_edit->ops[i];
+      int until = pb_op->sequence;
 
-      if (!pb_change->has_object_id ||
-          pb_change->object_id == 0 ||
-          !pb_change->has_property_id ||
-          !pb_change->value)
+      for (; j < until; j++)
         {
-          g_warning ("Frontend: Invalid property change received");
-          continue;
+          Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
+          apply_property_change (frontend, &unserializer, pb_change);
         }
 
-      object = (void *)(intptr_t)pb_change->object_id;
+      status = _rig_engine_ops[pb_op->type].apply_op (&apply_ctx, pb_op);
 
-#if 1
-      g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
-               object,
-               rut_object_get_type_name (object),
-               pb_change->property_id);
-#endif
-
-      property =
-        rut_introspectable_get_property (object, pb_change->property_id);
-      if (!property)
-        {
-          g_warning ("Frontend: Failed to find object property by id");
-          continue;
-        }
-
-      /* XXX: ideally we shouldn't need to init a RutBoxed and set
-       * that on a property, and instead we can just directly
-       * apply the value to the property we have. */
-      rig_pb_init_boxed_value (&unserializer,
-                               &boxed,
-                               property->spec->type,
-                               pb_change->value);
-
-//#warning "XXX: frontend updates are disabled"
-      rut_property_set_boxed  (prop_ctx, property, &boxed);
+      g_warn_if_fail (status);
     }
 
-  n_actions = ui_diff->n_actions;
+  for (; j < ui_diff->n_changes; j++)
+    {
+      Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
+      apply_property_change (frontend, &unserializer, pb_change);
+    }
 
+
+  n_actions = ui_diff->n_actions;
   for (i = 0; i < n_actions; i++)
     {
       Rig__SimulatorAction *pb_action = ui_diff->actions[i];
@@ -167,6 +232,9 @@ frontend__update_ui (Rig__Frontend_Service *service,
     }
 
   rig_pb_unserializer_destroy (&unserializer);
+
+  if (ui_diff->has_queued_frame)
+    rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
 }
@@ -331,6 +399,86 @@ rig_frontend_sync (RigFrontend *frontend,
 }
 
 static void
+frame_running_ack (const Rig__RunFrameAck *ack,
+                   void *closure_data)
+{
+  g_print ("Frontend: Run Frame ACK received from simulator\n");
+}
+
+typedef struct _RegistrationState
+{
+  int index;
+  Rig__ObjectRegistration *pb_registrations;
+  Rig__ObjectRegistration **object_registrations;
+} RegistrationState;
+
+static void
+register_temporary_cb (gpointer key,
+                       gpointer value,
+                       gpointer user_data)
+{
+  RegistrationState *state = user_data;
+  Rig__ObjectRegistration *pb_registration = state->registrations[state->index];
+  uint64_t id = (uint64_t)(uintptr_t)key;
+  void *object = value;
+
+  rig__object_registration__init (pb_registration);
+  pb_registration->temp_id = id;
+  pb_registration->real_id = (uint64_t)(uintptr_t)object;
+
+  state->object_registrations[state->index++] = pb_registration;
+}
+
+void
+rig_frontend_run_simulator_frame (RigFrontend *frontend,
+                                  Rig__FrameSetup *setup)
+{
+  ProtobufCService *simulator_service;
+  int n_temps;
+
+  if (!frontend->connected)
+    return;
+
+  simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+
+  /* When UI logic in the simulator creates objects, they are
+   * initially given a temporary ID until the corresponding object
+   * has been created in the frontend. Before running the
+   * next simulator frame we send it back the real IDs that have been
+   * registered to replace those temporary IDs...
+   */
+  n_temps = g_hash_table_size (frontend->tmp_id_to_object_map);
+  if (n_temps)
+    {
+      RegistrationState state;
+
+      setup->n_object_registrations = n_temps;
+      setup->object_registrations =
+        rut_memory_stack_memalign (engine->frame_stack,
+                                   sizeof (void *) * n_temps,
+                                   RUT_UTIL_ALIGNOF (void *));
+
+      state.index = 0;
+      state.object_registrations = setup->object_registrations;
+      state.pb_registrations =
+        rut_memory_stack_memalign (engine->frame_stack,
+                                   sizeof (Rig__ObjectRegistration) * n_temps,
+                                   RUT_UTIL_ALIGNOF (Rig__ObjectRegistration));
+
+      g_hash_table_foreach_remove (frontend->tmp_id_to_object_map,
+                                   register_temporary_cb,
+                                   &state);
+    }
+
+  rig__simulator__run_frame (simulator_service,
+                             &setup,
+                             frame_running_ack,
+                             NULL); /* user data */
+  frontend->ui_update_pending = true;
+}
+
+static void
 _rig_frontend_free (void *object)
 {
   RigFrontend *frontend = object;
@@ -338,6 +486,8 @@ _rig_frontend_free (void *object)
   rig_frontend_stop_service (frontend);
 
   rut_object_unref (frontend->engine);
+
+  g_hash_table_destroy (frontend->tmp_id_to_object_map);
 
   rut_object_free (RigFrontend, object);
 }
@@ -419,6 +569,8 @@ rig_frontend_new (RutShell *shell,
                                              _rig_frontend_init_type);
 
   frontend->id = id;
+
+  frontend->tmp_id_to_object_map = g_hash_table_new (NULL, NULL);
 
   rig_frontend_spawn_simulator (frontend);
 

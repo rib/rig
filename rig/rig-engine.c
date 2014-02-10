@@ -2950,7 +2950,7 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
   if (engine->play_mode == false)
     rig_engine_set_current_ui (engine, ui);
 
-  rig_engine_set_play_mode_enabled (engine, false);
+  rig_editor_set_play_mode_enabled (engine->editor, false);
 
   if (!ui)
     return;
@@ -3128,8 +3128,6 @@ _rig_engine_free (void *object)
   rut_object_unref (engine->camera_2d);
   rut_object_unref (engine->root);
 
-  rut_queue_free (engine->ops);
-
   rig_pb_serializer_destroy (engine->ops_serializer);
 
   rut_memory_stack_free (engine->frame_stack);
@@ -3213,8 +3211,6 @@ _rig_engine_new_full (RutShell *shell,
                                                    g_str_equal,
                                                    g_free,
                                                    rut_object_unref);
-
-  engine->ops = rut_queue_new ();
 
   engine->device_width = DEVICE_WIDTH;
   engine->device_height = DEVICE_HEIGHT;
@@ -3920,4 +3916,13 @@ rig_engine_edit_id_to_play_id (RigEngine *engine, uint64_t edit_id)
                          ptr_edit_id);
 
   return (uint64_t)(intptr_t)ptr_play_id;
+}
+void
+rig_engine_set_apply_op_callback (RigEngine *engine,
+                                  void (*callback) (Rig__Operation *pb_op,
+                                                    void *user_data),
+                                  void *user_data)
+{
+  engine->apply_op_callback = callback;
+  engine->apply_op_data = user_data;
 }
