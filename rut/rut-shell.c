@@ -2380,7 +2380,7 @@ void
 rut_shell_queue_redraw (RutShell *shell)
 {
   if (shell->queue_redraw_callback)
-    shell->queue_redraw_callback (shell->queue_redraw_data);
+    shell->queue_redraw_callback (shell, shell->queue_redraw_data);
   else
     rut_shell_queue_redraw_real (shell);
 }

@@ -24,6 +24,8 @@
 typedef struct _RigSimulator RigSimulator;
 
 #include "rig-engine.h"
+#include "rig-engine-op.h"
+#include "rig-pb.h"
 
 /*
  * Simulator actions are sent back as requests to the frontend at the
@@ -68,16 +70,23 @@ struct _RigSimulator
 
   RutButtonState button_state;
 
-  RigPBUnSerializer *unserializer;
+  RigPBUnSerializer *ui_unserializer;
+  RigPBUnSerializer *ops_unserializer;
+  RigPBSerializer *ops_serializer;
+
+  RigEngineOpApplyContext apply_op_ctx;
 
   GHashTable *object_to_id_map;
   GHashTable *id_to_object_map;
   //GHashTable *object_to_tmp_id_map;
+  uint64_t next_tmp_id;
 
   RutList actions;
   int n_actions;
 
   RutQueue *queued_deletes;
+
+  RutQueue *ops;
 };
 
 void

@@ -92,6 +92,8 @@ struct _RigController
   bool active;
   bool auto_deactivate;
 
+  bool suspended;
+
   RutTimeline *timeline;
   double elapsed;
 

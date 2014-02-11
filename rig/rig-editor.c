@@ -59,7 +59,7 @@ struct _RigEditor
    */
   RutQueue *sim_only_ops;
 
-  RigPBUnSerializer ops_unserializer;
+  RigPBUnSerializer *ops_unserializer;
   RigEngineOpApplyContext apply_op_ctx;
 };
 
@@ -143,9 +143,9 @@ rig_editor_init (RutShell *shell, void *user_data)
                                     apply_edit_op_cb,
                                     editor);
 
-  rig_pb_unserializer_init (&editor->ops_unserializer, engine);
+  editor->ops_unserializer = rig_pb_unserializer_new (engine);
   rig_engine_op_apply_context_init (&editor->apply_op_ctx,
-                                    &editor->ops_unserializer,
+                                    editor->ops_unserializer,
                                     nop_register_id_cb,
                                     nop_id_cast_cb, /* ids == obj ptrs */
                                     queue_delete_edit_mode_object_cb,
@@ -167,7 +167,7 @@ rig_editor_fini (RutShell *shell, void *user_data)
   GList *l;
 
   rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
-  rig_pb_unserializer_destroy (&editor->ops_unserializer);
+  rig_pb_unserializer_destroy (editor->ops_unserializer);
 
   for (l = editor->suspend_play_mode_controllers; l; l = l->next)
     rut_object_unref (l->data);
@@ -268,7 +268,7 @@ serialize_ops (RigEditor *editor)
     {
       pb_ops[i++] = item->data;
     }
-
+#error "what was the decision about sim_only_ops?"
   return pb_ops;
 }
 

@@ -138,6 +138,16 @@ typedef void (*RigEngineRegisterIdCallback) (void *object,
                                              void *user_data);
 typedef void (*RigEngineDeleteIdCallback) (uint64_t id, void *user_data);
 
+typedef struct _RigEngineOpApplyContext
+{
+  RigEngine *engine;
+  RigPBUnSerializer *unserializer;
+  RigEngineIdToObjectCallback id_to_object_cb;
+  RigEngineRegisterIdCallback register_id_cb;
+  RigEngineDeleteIdCallback queue_delete_id_cb;
+  void *user_data;
+} RigEngineOpApplyContext;
+
 void
 rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
                                   RigPBUnSerializer *unserializer,

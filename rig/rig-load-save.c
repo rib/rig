@@ -120,7 +120,7 @@ rig_load (RigEngine *engine, const char *file)
   size_t len;
   GError *error = NULL;
   gboolean needs_munmap = FALSE;
-  RigPBUnSerializer unserializer;
+  RigPBUnSerializer *unserializer;
   Rig__UI *pb_ui;
   RigUI *ui;
 
@@ -165,11 +165,11 @@ rig_load (RigEngine *engine, const char *file)
       return NULL;
     }
 
-  rig_pb_unserializer_init (&unserializer, engine);
+  unserializer = rig_pb_unserializer_new (engine);
 
   pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 
-  ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
+  ui = rig_pb_unserialize_ui (unserializer, pb_ui);
 
   rig__ui__free_unpacked (pb_ui, &protobuf_c_allocator);
 
@@ -178,7 +178,7 @@ rig_load (RigEngine *engine, const char *file)
   else
     g_free (contents);
 
-  rig_pb_unserializer_destroy (&unserializer);
+  rig_pb_unserializer_destroy (unserializer);
 
   return ui;
 }

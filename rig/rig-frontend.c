@@ -145,7 +145,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
   int i, j;
   int n_changes;
   int n_actions;
-  RigPBUnSerializer unserializer;
+  RigPBUnSerializer *unserializer;
   RutBoxed boxed;
 
   //g_print ("Frontend: Update UI Request\n");
@@ -154,20 +154,20 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
   g_return_if_fail (ui_diff != NULL);
 
-  rig_pb_unserializer_init (&unserializer, frontend->engine);
+  unserializer = rig_pb_unserializer_new (frontend->engine);
 
-  rig_pb_unserializer_set_object_register_callback (&unserializer,
+  rig_pb_unserializer_set_object_register_callback (unserializer,
                                                     register_object_cb,
                                                     frontend);
 
-  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+  rig_pb_unserializer_set_id_to_object_callback (unserializer,
                                                  lookup_object_cb,
                                                  frontend);
 
   n_changes = ui_diff->n_property_changes;
 
   rig_engine_op_apply_context_init (&apply_ctx,
-                                    &unserializer,
+                                    unserializer,
                                     register_object_cb,
                                     lookup_object_cb,
                                     queue_delete_object_cb,
@@ -189,7 +189,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
       for (; j < until; j++)
         {
           Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
-          apply_property_change (frontend, &unserializer, pb_change);
+          apply_property_change (frontend, unserializer, pb_change);
         }
 
       status = _rig_engine_ops[pb_op->type].apply_op (&apply_ctx, pb_op);
@@ -200,7 +200,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
   for (; j < ui_diff->n_changes; j++)
     {
       Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
-      apply_property_change (frontend, &unserializer, pb_change);
+      apply_property_change (frontend, unserializer, pb_change);
     }
 
 
@@ -231,7 +231,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
         }
     }
 
-  rig_pb_unserializer_destroy (&unserializer);
+  rig_pb_unserializer_destroy (unserializer);
 
   if (ui_diff->has_queued_frame)
     rut_shell_queue_redraw (engine->shell);
@@ -287,7 +287,8 @@ handle_load_response (const Rig__LoadResult *result,
 }
 
 void
-rig_frontend_reload_simulator_uis (RigFrontend *frontend)
+rig_frontend_reload_simulator_uis (RigFrontend *frontend,
+                                   bool play_mode)
 {
   RigEngine *engine;
   RigPBSerializer *serializer;

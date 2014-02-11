@@ -2815,7 +2815,7 @@ rig_engine_derive_play_mode_ui (RigEngine *engine,
 {
   RigPBSerializer *serializer;
   Rig__UI *pb_ui;
-  RigPBUnSerializer unserializer;
+  RigPBUnSerializer *unserializer;
   RigUI *copy;
 
   /* For simplicity we use a serializer and unserializer to
@@ -2840,23 +2840,23 @@ rig_engine_derive_play_mode_ui (RigEngine *engine,
                                false, /* edit mode */
                                src_ui);
 
-  rig_pb_unserializer_init (&unserializer, engine);
+  unserializer = rig_pb_unserializer_new (engine);
 
-  rig_pb_unserializer_set_object_register_callback (&unserializer,
+  rig_pb_unserializer_set_object_register_callback (unserializer,
                                                     register_play_mode_object_cb,
                                                     engine);
 
-  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+  rig_pb_unserializer_set_id_to_object_callback (unserializer,
                                                  lookup_play_mode_object_cb,
                                                  engine);
 
-  rig_pb_unserializer_set_asset_unserialize_callback (&unserializer,
+  rig_pb_unserializer_set_asset_unserialize_callback (unserializer,
                                                       share_asset_cb,
                                                       NULL);
 
-  copy = rig_pb_unserialize_ui (&unserializer, pb_ui);
+  copy = rig_pb_unserialize_ui (unserializer, pb_ui);
 
-  rig_pb_unserializer_destroy (&unserializer);
+  rig_pb_unserializer_destroy (unserializer);
 
   rig_pb_serialized_ui_destroy (pb_ui);
 

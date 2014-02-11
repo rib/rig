@@ -133,7 +133,7 @@ slave__load (Rig__Slave_Service *service,
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
   float width, height;
-  RigPBUnSerializer unserializer;
+  RigPBUnSerializer *unserializer;
   RigUI *ui;
 
   g_return_if_fail (pb_ui != NULL);
@@ -163,19 +163,19 @@ slave__load (Rig__Slave_Service *service,
     g_hash_table_new (NULL, /* direct hash */
                       NULL); /* direct key equal */
 
-  rig_pb_unserializer_init (&unserializer, engine);
+  unserializer = rig_pb_unserializer_new (engine);
 
-  rig_pb_unserializer_set_object_register_callback (&unserializer,
+  rig_pb_unserializer_set_object_register_callback (unserializer,
                                                     register_object_cb,
                                                     slave);
 
-  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
+  rig_pb_unserializer_set_id_to_object_callback (unserializer,
                                                  lookup_object_cb,
                                                  slave);
 
-  ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
+  ui = rig_pb_unserialize_ui (unserializer, pb_ui);
 
-  rig_pb_unserializer_destroy (&unserializer);
+  rig_pb_unserializer_destroy (unserializer);
 
   rig_engine_set_play_mode_ui (engine, ui);
 

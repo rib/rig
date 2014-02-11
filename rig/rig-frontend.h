@@ -76,7 +76,8 @@ rig_frontend_new (RutShell *shell,
                   const char *ui_filename);
 
 void
-rig_frontend_reload_simulator_uis (RigFrontend *frontend);
+rig_frontend_reload_simulator_uis (RigFrontend *frontend,
+                                   bool play_mode);
 
 /* TODO: should support a destroy_notify callback */
 void

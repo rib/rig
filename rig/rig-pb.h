@@ -246,9 +246,8 @@ struct _RigPBUnSerializer
   GHashTable *id_to_object_map;
 };
 
-void
-rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
-                          RigEngine *engine);
+RigPBUnSerializer *
+rig_pb_unserializer_new (RigEngine *engine);
 
 void
 rig_pb_unserializer_set_object_register_callback (

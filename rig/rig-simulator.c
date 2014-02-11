@@ -123,6 +123,8 @@ clear_actions (RigSimulator *simulator)
           if (action->select_object.object)
             rut_object_unref (action->select_object.object);
           break;
+        case RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE:
+          break;
         }
 
       rut_list_remove (&action->list_node);
@@ -208,29 +210,13 @@ simulator__load (Rig__Simulator_Service *service,
   RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
-  RigPBUnSerializer unserializer;
   RigUI *ui;
 
   g_return_if_fail (pb_ui != NULL);
 
   //g_print ("Simulator: UI Load Request\n");
 
-  rig_pb_unserializer_init (&unserializer, engine);
-
-  simulator->unserializer = &unserializer;
-
-  rig_pb_unserializer_set_object_register_callback (&unserializer,
-                                                    register_object_cb,
-                                                    simulator);
-
-  rig_pb_unserializer_set_id_to_object_callback (&unserializer,
-                                                 lookup_object_cb,
-                                                 simulator);
-
-  ui = rig_pb_unserialize_ui (&unserializer, pb_ui);
-
-  rig_pb_unserializer_destroy (&unserializer);
-  simulator->unserializer = NULL;
+  ui = rig_pb_unserialize_ui (simulator->ui_unserializer, pb_ui);
 
   g_warn_if_fail (pb_ui->has_mode);
   if (pb_ui->mode == RIG__UI__MODE__EDIT)
@@ -259,8 +245,6 @@ simulator__run_frame (Rig__Simulator_Service *service,
   RigSimulator *simulator =
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = simulator->engine;
-  RigPBUnSerializer unserializer;
-  RutQueueItem *item;
   int n_object_registrations;
   int i;
 
@@ -274,13 +258,17 @@ simulator__run_frame (Rig__Simulator_Service *service,
       for (i = 0; i < n_object_registrations; i++)
         {
           Rig__ObjectRegistration *pb_registration =
-            setup->n_object_registrations[i];
+            setup->object_registrations[i];
           void *object = unregister_id (simulator, pb_registration->temp_id);
           register_object_cb (object, pb_registration->real_id, simulator);
         }
     }
 
-  rig_pb_unserializer_init (&unserializer, engine);
+  /* Reset our temporary ID counter.
+   *
+   * Note: Since we know that the frontend will always allocate aligned
+   * pointers as IDs we can use any odd number as a temporary ID... */
+  simulator->next_tmp_id = 1;
 
   //g_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
@@ -426,13 +414,8 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
   if (setup->play_edit)
     {
-      bool status =
-        rig_engine_apply_pb_ui_edit (engine,
-                                     setup->play_edit,
-                                     register_object_cb,
-                                     lookup_object_cb,
-                                     queue_delete_object_cb,
-                                     simulator); /* user data */
+      bool status = rig_engine_apply_pb_ui_edit (&simulator->apply_op_ctx,
+                                                 setup->play_edit);
 
       if (!status)
         rig_simulator_action_report_edit_failure (simulator);
@@ -440,20 +423,13 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
   if (setup->edit)
     {
-      bool status =
-        rig_engine_apply_pb_ui_edit (engine,
-                                     setup->edit,
-                                     register_object_cb,
-                                     lookup_object_cb,
-                                     queue_delete_object_cb,
-                                     simulator); /* user data */
+      bool status = rig_engine_apply_pb_ui_edit (&simulator->apply_op_ctx,
+                                                 setup->edit);
 
       g_warn_if_fail (status);
     }
 
   rut_shell_queue_redraw_real (engine->shell);
-
-  rig_pb_unserializer_destroy (&unserializer);
 
   closure (&ack, closure_data);
 }
@@ -544,7 +520,7 @@ static void
 apply_op_cb (Rig__Operation *pb_op, void *user_data)
 {
   RigSimulator *simulator = user_data;
-  RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
+  RutPropertyContext *prop_ctx = &simulator->engine->ctx->property_ctx;
   bool status;
 
   /* We sequence all operations relative to the property updates that
@@ -569,11 +545,13 @@ temporarily_register_object_cb (void *object, void *user_data)
    * pointers as IDs we can use any odd number as a temporary ID */
   uint64_t id = simulator->next_tmp_id += 2;
 
-  void *id_ptr = (void *)(intptr_t)id;
+  //void *id_ptr = (void *)(intptr_t)id;
 
   register_object_cb (object, id, simulator);
 
   //g_hash_table_insert (simulator->object_to_tmp_id_map, object, id_ptr);
+
+  return id;
 }
 
 static uint64_t
@@ -625,6 +603,7 @@ rig_simulator_init (RutShell *shell, void *user_data)
 {
   RigSimulator *simulator = user_data;
   RigEngine *engine = simulator->engine;
+  RigPBUnSerializer *ui_unserializer;
 
   simulator->redraw_queued = false;
 
@@ -632,12 +611,12 @@ rig_simulator_init (RutShell *shell, void *user_data)
    * pointers as IDs we can use any odd number as a temporary ID */
   simulator->next_tmp_id = 1;
 
-  /* The ops_unserializer is used to unserializer the operations in
+  /* The ops_unserializer is used to unserialize the operations in
    * Rig__UIEdit messages from an editor frontend before they are
    * applied */
-  rig_pb_unserializer_init (&simulator->ops_unserializer, engine);
+  simulator->ops_unserializer = rig_pb_unserializer_new (engine);
   rig_engine_op_apply_context_init (&simulator->apply_op_ctx,
-                                    &simulator->ops_unserializer,
+                                    simulator->ops_unserializer,
                                     register_object_cb,
                                     lookup_object_cb,
                                     queue_delete_object_cb,
@@ -680,6 +659,23 @@ rig_simulator_init (RutShell *shell, void *user_data)
 
   simulator->queued_deletes = rut_queue_new ();
 
+  simulator->ops = rut_queue_new ();
+
+
+  /*
+   * This general unserializer is used to unserialize UIs in
+   * simulator__load for example...
+   */
+  ui_unserializer = rig_pb_unserializer_new (engine);
+  rig_pb_unserializer_set_object_register_callback (ui_unserializer,
+                                                    register_object_cb,
+                                                    simulator);
+  rig_pb_unserializer_set_id_to_object_callback (ui_unserializer,
+                                                 lookup_object_cb,
+                                                 simulator);
+  simulator->ui_unserializer = ui_unserializer;
+
+
   rut_list_init (&simulator->actions);
 
   rig_simulator_start_service (simulator);
@@ -697,6 +693,8 @@ rig_simulator_fini (RutShell *shell, void *user_data)
 
   clear_actions (simulator);
 
+  rig_pb_unserializer_destroy (simulator->ui_unserializer);
+
   g_hash_table_destroy (simulator->object_to_id_map);
   simulator->object_to_id_map = NULL;
 
@@ -712,7 +710,7 @@ rig_simulator_fini (RutShell *shell, void *user_data)
   simulator->queued_deletes = NULL;
 
   rig_engine_op_apply_context_destroy (&simulator->apply_op_ctx);
-  rig_pb_unserializer_destroy (&simulator->ops_unserializer);
+  rig_pb_unserializer_destroy (simulator->ops_unserializer);
 
   rut_object_unref (engine);
   simulator->engine = NULL;
@@ -790,6 +788,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
   int n_changes;
   RigPBSerializer *serializer;
+  RutQueueItem *item;
 
   simulator->redraw_queued = false;
 
@@ -855,6 +854,13 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
         }
     }
 
+  ui_diff.edit = rig_pb_new (simulator->ops_serializer,
+                             Rig__UIEdit,
+                             rig__uiedit__init);
+  ui_diff.edit->ops =
+    rig_pb_serialize_ops_queue (simulator->ops_serializer, simulator->ops);
+  rut_queue_clear (simulator->ops);
+
   ui_diff.n_actions = simulator->n_actions;
   if (ui_diff.n_actions)
     {
@@ -892,6 +898,12 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
               pb_action->set_play_mode->enabled = action->set_play_mode.enabled;
               break;
 #endif
+            case RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE:
+              pb_action->report_edit_failure =
+                rig_pb_new (serializer,
+                            Rig__SimulatorAction__ReportEditFailure,
+                            rig__simulator_action__report_edit_failure__init);
+              break;
             case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
               pb_action->select_object =
                 rig_pb_new (serializer,
@@ -915,6 +927,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
     }
 
   clear_actions (simulator);
+
 
   rig__frontend__update_ui (frontend_service,
                             &ui_diff,

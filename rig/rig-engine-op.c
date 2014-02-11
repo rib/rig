@@ -29,16 +29,6 @@
 
 #include "rig.pb-c.h"
 
-typedef struct _RigEngineOpApplyContext
-{
-  RigEngine *engine;
-  RigPBUnSerializer *unserializer;
-  RigEngineIdToObjectCallback id_to_object_cb;
-  RigEngineRegisterIdCallback register_id_cb;
-  RigEngineDeleteIdCallback queue_delete_id_cb;
-  void *user_data;
-} RigEngineOpApplyContext;
-
 typedef struct _RigEngineOpMapContext
 {
   RigPBSerializer *serializer;
@@ -901,7 +891,7 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
                                   void *user_data)
 {
   ctx->engine = unserializer->engine;
-  ctx->unserializer = &unserializer;
+  ctx->unserializer = unserializer;
   ctx->id_to_object_cb = id_to_object_cb;
   ctx->register_id_cb = register_id_cb;
   ctx->queue_delete_id_cb = queue_delete_id_cb;
@@ -931,7 +921,7 @@ rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
     {
       Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
-      if (!_rig_engine_ops[pb_op->type].apply_op (&ctx, pb_op))
+      if (!_rig_engine_ops[pb_op->type].apply_op (ctx, pb_op))
         return false;
     }
 

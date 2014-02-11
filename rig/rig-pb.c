@@ -3035,11 +3035,10 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
     }
 }
 
-void
-rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
-                          RigEngine *engine)
+RigPBUnSerializer *
+rig_pb_unserializer_new (RigEngine *engine)
 {
-  memset (unserializer, 0, sizeof (RigPBUnSerializer));
+  RigPBUnSerializer *unserializer = g_slice_new0 (RigPBUnSerializer);
 
   unserializer->engine = engine;
   unserializer->stack = engine->frame_stack;
@@ -3050,6 +3049,8 @@ rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
   unserializer->object_unregister_callback =
     default_unserializer_unregister_object_cb;
   unserializer->object_unregister_data = unserializer;
+
+  return unserializer;
 }
 
 void
