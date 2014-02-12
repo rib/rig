@@ -113,6 +113,7 @@ struct _RigEngine
 
   RigPBSerializer *ops_serializer;
   RutMemoryStack *frame_stack;
+  RutMemoryStack *sim_frame_stack;
   RutMagazine *object_id_magazine;
 
 #ifdef RIG_EDITOR_ENABLED

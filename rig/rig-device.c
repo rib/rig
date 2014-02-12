@@ -68,8 +68,6 @@ rig_device_paint (RutShell *shell, void *user_data)
 
   rut_shell_start_redraw (shell);
 
-  rut_shell_update_timelines (shell);
-
   /* XXX: we only kick off a new frame in the simulator if it's not
    * still busy... */
   if (!frontend->ui_update_pending)
@@ -103,7 +101,11 @@ rig_device_paint (RutShell *shell, void *user_data)
       rig_pb_serializer_destroy (serializer);
 
       rut_input_queue_clear (input_queue);
+
+      rut_memory_stack_rewind (engine->sim_frame_stack);
     }
+
+  rut_shell_update_timelines (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 

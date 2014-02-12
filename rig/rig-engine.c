@@ -3131,6 +3131,8 @@ _rig_engine_free (void *object)
   rig_pb_serializer_destroy (engine->ops_serializer);
 
   rut_memory_stack_free (engine->frame_stack);
+  rut_memory_stack_free (engine->sim_frame_stack);
+
   rut_magazine_free (engine->object_id_magazine);
 
   rut_introspectable_destroy (engine);
@@ -3199,11 +3201,35 @@ _rig_engine_new_full (RutShell *shell,
                            _rig_engine_prop_specs,
                            engine->properties);
 
-  engine->frame_stack = rut_memory_stack_new (8192);
-
   engine->object_id_magazine = rut_magazine_new (sizeof (uint64_t), 1000);
 
+  /* The frame stack is a very cheap way to allocate memory that will
+   * be automatically freed at the end of the next frame (or current
+   * frame if one is already being processed.)
+   */
+  engine->frame_stack = rut_memory_stack_new (8192);
+
+  /* Since the frame rate of the frontend may not match the frame rate
+   * of the simulator, we maintain a separate frame stack for
+   * allocations whose lifetime is tied to a simulation frame, not a
+   * frontend frame...
+   */
+  if (frontend)
+    engine->sim_frame_stack = rut_memory_stack_new (8192);
+
   engine->ops_serializer = rig_pb_serializer_new (engine);
+
+  if (frontend)
+    {
+      /* By default a RigPBSerializer will use engine->frame_stack,
+       * but operations generated in a frontend need to be batched
+       * until they can be sent to the simulator which may be longer
+       * than one frontend frame so we need to use the sim_frame_stack
+       * instead...
+       */
+      rig_pb_serializer_set_stack (engine->ops_serializer,
+                                   engine->sim_frame_stack);
+    }
 
   rig_pb_serializer_set_use_pointer_ids_enabled (engine->ops_serializer, true);
 

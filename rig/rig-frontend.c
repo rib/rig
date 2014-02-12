@@ -237,6 +237,14 @@ frontend__update_ui (Rig__Frontend_Service *service,
     rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
+
+  /* XXX: The current use case we have for up update callbacks
+   * requires that the frontend be in-sync with the simulator so
+   * we invoke them after we have applied all the operations from
+   * the simulator */
+  rut_closure_list_invoke (&frontend->ui_update_cb_list,
+                           RigFrontendUIUpdateCallback,
+                           frontend);
 }
 
 static Rig__Frontend_Service rig_frontend_service =
@@ -287,8 +295,9 @@ handle_load_response (const Rig__LoadResult *result,
 }
 
 void
-rig_frontend_reload_simulator_uis (RigFrontend *frontend,
-                                   bool play_mode)
+rig_frontend_reload_simulator_ui (RigFrontend *frontend,
+                                  RigUI *ui,
+                                  bool play_mode)
 {
   RigEngine *engine;
   RigPBSerializer *serializer;
@@ -309,51 +318,19 @@ rig_frontend_reload_simulator_uis (RigFrontend *frontend,
                                       asset_filter_cb,
                                       NULL);
 
-  if (frontend->id == RIG_FRONTEND_ID_EDITOR)
-    {
-      /* Note: as opposed to letting the simulator copy the edit mode
-       * UI itself to create a play mode UI we explicitly serialize
-       * both the edit and play mode UIs so we can forward pointer ids
-       * for all objects in both UIs...
-       */
+  pb_ui = rig_pb_serialize_ui (serializer, play_mode, ui);
 
-      pb_ui = rig_pb_serialize_ui (serializer,
-                                   false, /* edit mode */
-                                   engine->edit_mode_ui);
+  rig__simulator__load (simulator_service, pb_ui,
+                        handle_load_response,
+                        NULL);
 
-      rig__simulator__load (simulator_service, pb_ui,
-                            handle_load_response,
-                            NULL);
+  rig_pb_serialized_ui_destroy (pb_ui);
 
-      rig_pb_serialized_ui_destroy (pb_ui);
+  rig_pb_serializer_destroy (serializer);
 
-      pb_ui = rig_pb_serialize_ui (serializer,
-                                   true, /* play mode */
-                                   engine->play_mode_ui);
-
-      rig__simulator__load (simulator_service, pb_ui,
-                            handle_load_response,
-                            NULL);
-
-      rig_pb_serialized_ui_destroy (pb_ui);
-    }
-  else
 #error "A slave or device would only have a play_mode_ui"
 #error "For devices, we shouldn't ever reload the simulator ui"
 #error "For slaves, we should forward the serialized ui send from the editor, so we can maintain a mapping from edit-mode-ids to play-mode-ids in the slave's frontend and simulator, so we can apply edit operations"
-    {
-      pb_ui = rig_pb_serialize_ui (serializer,
-                                   true, /* play mode */
-                                   engine->play_mode_ui);
-
-      rig__simulator__load (simulator_service, pb_ui,
-                            handle_load_response,
-                            NULL);
-
-      rig_pb_serialized_ui_destroy (pb_ui);
-    }
-
-  rig_pb_serializer_destroy (serializer);
 }
 
 static void
@@ -364,7 +341,11 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
 
   frontend->connected = true;
 
-  rig_frontend_reload_simulator_uis (frontend);
+  if (frontend->simulator_connected_callback)
+    {
+      void *user_data = frontend->simulator_connected_data;
+      frontend->simulator_connected_callback (user_data);
+    }
 
 #if 0
   Rig__Query query = RIG__QUERY__INIT;
@@ -375,6 +356,15 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
 #endif
 
   g_print ("Frontend peer connected\n");
+}
+
+void
+rig_frontend_set_simulator_connected_callback (RigFrontend *frontend,
+                                               void (*callback) (void *user_data),
+                                               void *user_data)
+{
+  frontend->simulator_connected_callback = callback;
+  frontend->simulator_connected_data = user_data;
 }
 
 /* TODO: should support a destroy_notify callback */
@@ -484,6 +474,8 @@ _rig_frontend_free (void *object)
 {
   RigFrontend *frontend = object;
 
+  rut_closure_list_disconnect_all (&frontend->ui_update_cb_list);
+
   rig_frontend_stop_service (frontend);
 
   rut_object_unref (frontend->engine);
@@ -573,6 +565,8 @@ rig_frontend_new (RutShell *shell,
 
   frontend->tmp_id_to_object_map = g_hash_table_new (NULL, NULL);
 
+  rut_list_init (&frontend->ui_update_cb_list);
+
   rig_frontend_spawn_simulator (frontend);
 
   frontend->engine =
@@ -611,4 +605,16 @@ rig_frontend_stop_service (RigFrontend *frontend)
   rut_object_unref (frontend->frontend_peer);
   frontend->frontend_peer = NULL;
   frontend->connected = false;
+}
+
+RutClosure *
+rig_frontend_add_ui_update_callback (RigFrontend *frontend,
+                                     RigFrontendUIUpdateCallback callback,
+                                     void *user_data,
+                                     RutClosureDestroyCallback destroy)
+{
+  return rut_closure_list_add (&frontend->ui_update_cb_list,
+                               callback,
+                               user_data,
+                               destroy);
 }

@@ -116,6 +116,27 @@ apply_edit_op_cb (Rig__Operation *pb_op,
 #endif
 }
 
+static void
+simulator_connected_cb (void *user_data)
+{
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
+  RigFrontend *frontend = editor->frontend;
+
+  /* Note: as opposed to letting the simulator copy the edit mode
+   * UI itself to create a play mode UI we explicitly serialize
+   * both the edit and play mode UIs so we can forward pointer ids
+   * for all objects in both UIs...
+   */
+
+  rig_frontend_reload_simulator_uis (frontend,
+                                     engine->edit_mode_ui,
+                                     false);
+  rig_frontend_reload_simulator_uis (frontend,
+                                     engine->play_mode_ui,
+                                     true);
+}
+
 void
 rig_editor_init (RutShell *shell, void *user_data)
 {
@@ -138,6 +159,11 @@ rig_editor_init (RutShell *shell, void *user_data)
 
   /* TODO: RigEditor should be a trait of the engine */
   engine->editor = editor;
+
+
+  rig_frontend_set_simulator_connected_callback (editor->frontend,
+                                                 simulator_connected_cb,
+                                                 editor);
 
   rig_engine_set_apply_op_callback (engine,
                                     apply_edit_op_cb,
@@ -299,11 +325,8 @@ handle_edit_operations (RigEditor *editor,
 #error "having separate edit_ops and play_ops and sim_only_ops is a bit ugly"
   setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__ui_edit__init);
   setup->edit->n_ops = editor->edit_ops->len + editor->sim_only_ops->len;
-  if (setup->edit->n_ops != 0)
-    {
-      pb_frame_setup->edit->ops =
-        serialize_ops (editor);
-    }
+  if (setup->edit->n_ops)
+    pb_frame_setup->edit->ops = serialize_ops (editor);
 
   setup->play_edit = NULL;
 
@@ -359,6 +382,15 @@ handle_edit_operations (RigEditor *editor,
     }
   rut_queue_clear (&editor->play_mode_deletes);
 
+  /* XXX: If edit operations are allocated on the frame stack then
+   * if the simulator is running slowly it's possible that we might
+   * render several frontend frames before coming to send edit
+   * operations to the simulator, by which time we will have trashed
+   * our operations?
+   *
+   * XXX: should we add a ->sim_frame_stack too?
+   */
+#error "Check if edit operations are allocated on the frame_stack?"
 #error check me
   rut_queue_clear (editor->ops);
 }
@@ -440,6 +472,8 @@ rig_editor_paint (RutShell *shell, void *user_data)
       rig_pb_serializer_destroy (serializer);
 
       rut_input_queue_clear (input_queue);
+
+      rut_memory_stack_rewind (engine->sim_frame_stack);
     }
 
   rig_engine_paint (engine);

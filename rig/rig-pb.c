@@ -909,6 +909,13 @@ rig_pb_serializer_new (RigEngine *engine)
 }
 
 void
+rig_pb_serializer_set_stack (RigPBSerializer *serializer,
+                             RutMemoryStack *stack)
+{
+  serializer->stack = stack;
+}
+
+void
 rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
                                                bool use_pointers)
 {
@@ -3052,6 +3059,14 @@ rig_pb_unserializer_new (RigEngine *engine)
 
   return unserializer;
 }
+
+void
+rig_pb_unserializer_set_stack (RigPBUnSerializer *unserializer,
+                               RutMemoryStack *stack)
+{
+  unserializer->stack = stack;
+}
+
 
 void
 rig_pb_unserializer_set_object_register_callback (

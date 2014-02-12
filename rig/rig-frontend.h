@@ -66,6 +66,9 @@ struct _RigFrontend
 
   bool ui_update_pending;
 
+  void (*simulator_connected_callback) (void *user_data);
+  void *simulator_connected_data;
+
   GHashTable *tmp_id_to_object_map;
 };
 
@@ -77,6 +80,7 @@ rig_frontend_new (RutShell *shell,
 
 void
 rig_frontend_reload_simulator_uis (RigFrontend *frontend,
+                                   RigUI *ui,
                                    bool play_mode);
 
 /* TODO: should support a destroy_notify callback */
@@ -95,5 +99,19 @@ rig_frontend_start_service (RigFrontend *frontend);
 
 void
 rig_frontend_stop_service (RigFrontend *frontend);
+
+void
+rig_frontend_set_simulator_connected_callback (RigFrontend *frontend,
+                                               void (*callback) (void *user_data),
+                                               void *user_data);
+
+typedef void (*RigFrontendUIUpdateCallback) (RigFrontend *frontend,
+                                             void *user_data);
+
+RutClosure *
+rig_frontend_add_ui_update_callback (RigFrontend *frontend,
+                                     RigFrontendUIUpdateCallback callback,
+                                     void *user_data,
+                                     RutClosureDestroyCallback destroy);
 
 #endif /* _RIG_FRONTEND_H_ */
