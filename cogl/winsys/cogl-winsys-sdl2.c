@@ -61,6 +61,7 @@ typedef struct _CoglDisplaySdl2
 {
   SDL_Window *dummy_window;
   SDL_GLContext *context;
+  CoglBool have_onscreen;
 } CoglDisplaySdl2;
 
 typedef struct _CoglOnscreenSdl2
@@ -499,6 +500,32 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
   int width, height;
   SDL_WindowFlags flags;
 
+#ifdef __ANDROID__
+  {
+    CoglDisplay *display = framebuffer->context->display;
+    CoglDisplaySdl2 *sdl_display = display->winsys;
+    int win_width, win_height;
+
+    if (sdl_display->have_onscreen)
+      {
+        _cogl_set_error (error, COGL_WINSYS_ERROR,
+                         COGL_WINSYS_ERROR_CREATE_ONSCREEN,
+                         "Android platform only supports a single "
+                         "onscreen window");
+        return FALSE;
+      }
+
+    window = sdl_display->dummy_window;
+
+    SDL_GetWindowSize (window, &win_width, &win_height);
+
+    _cogl_framebuffer_winsys_update_size (framebuffer, win_width, win_height);
+
+    sdl_display->have_onscreen = TRUE;
+  }
+
+#else /* __ANDROID__ */
+
   width = cogl_framebuffer_get_width (framebuffer);
   height = cogl_framebuffer_get_height (framebuffer);
 
@@ -513,7 +540,6 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                              0, 0, /* x/y */
                              width, height,
                              flags);
-
   if (window == NULL)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
@@ -522,6 +548,8 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                        SDL_GetError ());
       return FALSE;
     }
+
+#endif /* __ANDROID__ */
 
   SDL_SetWindowData (window, COGL_SDL_WINDOW_DATA_KEY, onscreen);
 
