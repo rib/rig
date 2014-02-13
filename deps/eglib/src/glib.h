@@ -14,11 +14,8 @@
 #pragma include_alias(<eglib-config.h>, <eglib-config.hw>)
 #endif
 
-/* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
-#else
 #include <stdint.h>
-#endif
+#include <inttypes.h>
 
 #include <eglib-config.h>
 
@@ -67,21 +64,9 @@ typedef const void *   gconstpointer;
 typedef char           gchar;
 typedef unsigned char  guchar;
 
-/* VS 2010 and later have stdint.h */
-#if defined(_MSC_VER) && _MSC_VER < 1600
-typedef __int8			gint8;
-typedef unsigned __int8		guint8;
-typedef __int16			gint16;
-typedef unsigned __int16	guint16;
-typedef __int32			gint32;
-typedef unsigned __int32	guint32;
-typedef __int64			gint64;
-typedef unsigned __int64	guint64;
-typedef float			gfloat;
-typedef double			gdouble;
-typedef int			gboolean;
-#else
-/* Types defined in terms of the stdint.h */
+typedef size_t         gsize;
+typedef ssize_t        gssize;
+
 typedef int8_t         gint8;
 typedef uint8_t        guint8;
 typedef int16_t        gint16;
@@ -93,7 +78,6 @@ typedef uint64_t       guint64;
 typedef float          gfloat;
 typedef double         gdouble;
 typedef int32_t        gboolean;
-#endif
 
 typedef guint16 gunichar2;
 typedef guint32 gunichar;
@@ -123,6 +107,11 @@ typedef guint32 gunichar;
 #define G_MAXUINT64	     UINT64_MAX
 #define G_MAXFLOAT           FLT_MAX
 
+#define G_GUINT64_FORMAT     PRIu64
+#define G_GINT64_FORMAT      PRId64
+#define G_GUINT32_FORMAT     PRIu32
+#define G_GINT32_FORMAT      PRId32
+
 #define G_LITTLE_ENDIAN 1234
 #define G_BIG_ENDIAN    4321
 #define G_STMT_START    do
@@ -135,15 +124,75 @@ typedef guint32 gunichar;
 #define G_GINT64_CONSTANT(val)  (val##LL)
 #define G_GUINT64_CONSTANT(val) (val##UL)
 
-#ifndef ABS
-#define ABS(a)         ((a) > 0 ? (a) : -(a))
-#endif
+#define GPOINTER_TO_INT(ptr)   ((gint)(intptr_t)(ptr))
+#define GPOINTER_TO_UINT(ptr)  ((guint)(uintptr_t)(ptr))
+#define GINT_TO_POINTER(v)     ((gpointer)(intptr_t)(v))
+#define GUINT_TO_POINTER(v)    ((gpointer)(uintptr_t)(v))
 
 #define G_STRUCT_OFFSET(p_type,field) offsetof(p_type,field)
 
 #define G_STRLOC __FILE__ ":" G_STRINGIFY(__LINE__) ":"
 
 #define G_CONST_RETURN const
+
+#define G_BYTE_ORDER G_LITTLE_ENDIAN
+
+#if defined(__GNUC__)
+#  define G_GNUC_UNUSED                       __attribute__((__unused__))
+#  define G_GNUC_NORETURN                     __attribute__((__noreturn__))
+#  define G_LIKELY(expr)                      (__builtin_expect ((expr) != 0, 1))
+#  define G_UNLIKELY(expr)                    (__builtin_expect ((expr) != 0, 0))
+#  define G_GNUC_PRINTF(format_idx, arg_idx)  __attribute__((__format__ (__printf__, format_idx, arg_idx)))
+#else
+#  define G_GNUC_UNUSED
+#  define G_GNUC_NORETURN
+#  define G_LIKELY(expr) (expr)
+#  define G_UNLIKELY(expr) (expr)
+#  define G_GNUC_PRINTF(format_idx, arg_idx)
+#endif
+
+#if defined(__GNUC__)
+#  define G_STRFUNC ((const char *)(__PRETTY_FUNCTION__))
+#elif defined (_MSC_VER)
+#  define G_STRFUNC ((const char*) (__FUNCTION__))
+#else
+#  define G_STRFUNC ((const char*) (__func__))
+#endif
+
+#if defined (_MSC_VER)
+#  define G_VA_COPY(dest, src) ((dest) = (src))
+#else
+#  define G_VA_COPY(dest, src) va_copy (dest, src)
+#endif
+
+#ifdef OS_UNIX
+#define G_BREAKPOINT() G_STMT_START { raise (SIGTRAP); } G_STMT_END
+#else
+#define G_BREAKPOINT()
+#endif
+
+#if defined (__native_client__)
+#undef G_BREAKPOINT
+#define G_BREAKPOINT()
+#endif
+
+#ifndef ABS
+#define ABS(a)    ((a) > 0 ? (a) : -(a))
+#endif
+
+#ifndef MAX
+#define MAX(a,b)  (((a)>(b)) ? (a) : (b))
+#endif
+
+#ifndef MIN
+#define MIN(a,b)  (((a)<(b)) ? (a) : (b))
+#endif
+
+#ifndef CLAMP
+#define CLAMP(a,low,high) (((a) < (low)) ? (low) : (((a) > (high)) ? (high) : (a)))
+#endif
+
+
 
 /*
  * Allocation
@@ -806,42 +855,6 @@ gboolean       g_unichar_isspace (gunichar c);
 gboolean       g_unichar_isxdigit (gunichar c);
 gint           g_unichar_xdigit_value (gunichar c);
 GUnicodeBreakType   g_unichar_break_type (gunichar c);
-
-#ifndef MAX
-#define MAX(a,b) (((a)>(b)) ? (a) : (b))
-#endif
-
-#ifndef MIN
-#define MIN(a,b) (((a)<(b)) ? (a) : (b))
-#endif
-
-#ifndef CLAMP
-#define CLAMP(a,low,high) (((a) < (low)) ? (low) : (((a) > (high)) ? (high) : (a)))
-#endif
-
-#if defined(__GNUC__)
-#  define G_LIKELY(expr) (__builtin_expect ((expr) != 0, 1))
-#  define G_UNLIKELY(expr) (__builtin_expect ((expr) != 0, 0))
-#  define G_GNUC_PRINTF(format_idx, arg_idx) __attribute__((__format__ (__printf__, format_idx, arg_idx)))
-#else
-#  define G_LIKELY(expr) (expr)
-#  define G_UNLIKELY(expr) (expr)
-#  define G_GNUC_PRINTF(format_idx, arg_idx)
-#endif
-
-#if defined(__GNUC__)
-#  define G_STRFUNC ((const char *)(__PRETTY_FUNCTION__))
-#elif defined (_MSC_VER)
-#  define G_STRFUNC ((const char*) (__FUNCTION__))
-#else
-#  define G_STRFUNC ((const char*) (__func__))
-#endif
-
-#if defined (_MSC_VER)
-#  define G_VA_COPY(dest, src) ((dest) = (src))
-#else
-#  define G_VA_COPY(dest, src) va_copy (dest, src)
-#endif
 
 #define  g_assert(x)     G_STMT_START { if (G_UNLIKELY (!(x))) g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x);  } G_STMT_END
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); } G_STMT_END

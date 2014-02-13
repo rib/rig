@@ -1415,25 +1415,6 @@ dnl ================================================================
 dnl eglib checks.
 dnl ================================================================
 
-GNUC_PRETTY=
-GNUC_UNUSED=
-BREAKPOINT="G_STMT_START { raise (SIGTRAP); } G_STMT_END"
-if test x$GCC = xyes; then
-   GNUC_UNUSED='__attribute__((__unused__))'
-   GNUC_NORETURN='__attribute__((__noreturn__))'
-   case $host_cpu in
-     i*86|x86_64) BREAKPOINT="G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END" ;;
-   esac
-fi
-AC_SUBST(GNUC_PRETTY)
-AC_SUBST(GNUC_UNUSED)
-AC_SUBST(GNUC_NORETURN)
-AC_SUBST(BREAKPOINT)
-
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(void *)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
 
 #
@@ -1459,73 +1440,9 @@ if test $found_export_dynamic = no; then
         LDFLAGS="${old_ldflags}"
 fi
 
-AC_MSG_CHECKING(for varargs macros)
-AC_TRY_COMPILE([],[
-int foo (int i, int j);
-#define bar(...) foo (1, __VA_ARGS__)
-void main () {
-         bar (2);
-}
-],have_iso_varargs=yes,have_iso_varargs=no)
-AC_MSG_RESULT($have_iso_varargs)
-G_HAVE_ISO_VARARGS=0
-if test "x$have_iso_varargs" = "xyes"; then
-   G_HAVE_ISO_VARARGS=1
-fi
-AC_SUBST(G_HAVE_ISO_VARARGS)
-
 AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h localcharset.h sys/types.h)
 AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
 AC_SUBST(HAVE_ALLOCA_H)
-
-
-if test $ac_cv_sizeof_void_p = $ac_cv_sizeof_int; then
-   GPOINTER_TO_INT="((gint) (ptr))"
-   GPOINTER_TO_UINT="((guint) (ptr))"
-   GINT_TO_POINTER="((gpointer) (v))"
-   GUINT_TO_POINTER="((gpointer) (v))"
-   GSIZE="int"
-   GSIZE_FORMAT='"u"'
-   G_GUINT64_FORMAT='"llu"'
-   G_GINT64_FORMAT='"lld"'
-   G_GUINT32_FORMAT='"lu"'
-   G_GINT32_FORMAT='"ld"'
-elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
-   GPOINTER_TO_INT="((gint)(long) (ptr))"
-   GPOINTER_TO_UINT="((guint)(long) (ptr))"
-   GINT_TO_POINTER="((gpointer)(glong) (v))"
-   GUINT_TO_POINTER="((gpointer)(gulong) (v))"
-   GSIZE="long"
-   GSIZE_FORMAT='"lu"'
-   G_GUINT64_FORMAT='"lu"'
-   G_GINT64_FORMAT='"ld"'
-   G_GUINT32_FORMAT='"u"'
-   G_GINT32_FORMAT='"d"'
-elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
-   GPOINTER_TO_INT="((gint)(long long) (ptr))"
-   GPOINTER_TO_UINT="((guint)(unsigned long long) (ptr))"
-   GINT_TO_POINTER="((gpointer)(long long) (v))"
-   GUINT_TO_POINTER="((gpointer)(unsigned long long) (v))"
-   GSIZE="long long"
-   GSIZE_FORMAT='"I64u"'
-   G_GUINT64_FORMAT='"I64u"'
-   G_GINT64_FORMAT='"I64i"'
-   G_GUINT32_FORMAT='"I32u"'
-   G_GINT32_FORMAT='"I32i"'
-else
-   AC_MSG_ERROR([unsupported pointer size])
-fi
-
-AC_SUBST(GPOINTER_TO_INT)
-AC_SUBST(GPOINTER_TO_UINT)
-AC_SUBST(GINT_TO_POINTER)
-AC_SUBST(GUINT_TO_POINTER)
-AC_SUBST(GSIZE)
-AC_SUBST(GSIZE_FORMAT)
-AC_SUBST(G_GUINT64_FORMAT)
-AC_SUBST(G_GINT64_FORMAT)
-AC_SUBST(G_GUINT32_FORMAT)
-AC_SUBST(G_GINT32_FORMAT)
 
 
 dnl ================================================================
