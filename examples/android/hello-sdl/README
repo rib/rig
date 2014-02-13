@@ -1,0 +1,26 @@
+Before building this example you need to symlink a copy of the SDL
+source under the jni/ directory:
+
+$ cd jni/
+$ ln -s /path/to/sdl-source SDL
+
+You may need to update the project for your target:
+
+$ android list target
+$ android update project -p . -t android-15
+
+Build the example by running:
+
+$ ndk-build
+
+Or a debug build with:
+
+$ ndk-build NDK_BUILD=1
+
+Package the example by running:
+
+$ ant debug
+
+Install the example to a device with:
+
+$ ant debug install
