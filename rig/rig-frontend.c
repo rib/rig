@@ -99,7 +99,7 @@ apply_property_change (RigFrontend *frontend,
       !pb_change->value)
     {
       g_warning ("Frontend: Invalid property change received");
-      continue;
+      return;
     }
 
   object = lookup_object (frontend, pb_change->object_id);
@@ -116,7 +116,7 @@ apply_property_change (RigFrontend *frontend,
   if (!property)
     {
       g_warning ("Frontend: Failed to find object property by id");
-      continue;
+      return;
     }
 
   /* XXX: ideally we shouldn't need to init a RutBoxed and set
@@ -130,6 +130,28 @@ apply_property_change (RigFrontend *frontend,
   //#warning "XXX: frontend updates are disabled"
   rut_property_set_boxed  (&frontend->engine->ctx->property_ctx,
                            property, &boxed);
+}
+
+static void
+queue_delete_object_cb (uint64_t id, void *user_data)
+{
+  RigFrontend *frontend = user_data;
+  void *object;
+
+  /* If the ID is an odd number that implies it is a temporary ID that
+   * needs mapping... */
+  if (id & 1)
+    {
+      void *id_ptr = (void *)(uintptr_t)id;
+      object = g_hash_table_lookup (frontend->tmp_id_to_object_map, id_ptr);
+
+      /* Remove the mapping immediately */
+      g_hash_table_remove (frontend->tmp_id_to_object_map, id_ptr);
+    }
+  else
+    object = (void *)(intptr_t)id;
+
+  rig_engine_queue_delete (frontend->engine, object);
 }
 
 static void
@@ -147,6 +169,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
   int n_actions;
   RigPBUnSerializer *unserializer;
   RutBoxed boxed;
+  RigEngineOpApplyContext *apply_op_ctx;
 
   //g_print ("Frontend: Update UI Request\n");
 
@@ -154,25 +177,10 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
   g_return_if_fail (ui_diff != NULL);
 
-  unserializer = rig_pb_unserializer_new (frontend->engine);
-
-  rig_pb_unserializer_set_object_register_callback (unserializer,
-                                                    register_object_cb,
-                                                    frontend);
-
-  rig_pb_unserializer_set_id_to_object_callback (unserializer,
-                                                 lookup_object_cb,
-                                                 frontend);
-
   n_changes = ui_diff->n_property_changes;
 
-  rig_engine_op_apply_context_init (&apply_ctx,
-                                    unserializer,
-                                    register_object_cb,
-                                    lookup_object_cb,
-                                    queue_delete_object_cb,
-                                    simulator);
-
+  apply_op_ctx = &frontend->apply_op_ctx;
+  unserializer = fronted->prop_change_unserializer;
 
   /* For compactness, property changes are serialized separately from
    * more general UI edit operations and so we need to take care that
@@ -192,7 +200,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
           apply_property_change (frontend, unserializer, pb_change);
         }
 
-      status = _rig_engine_ops[pb_op->type].apply_op (&apply_ctx, pb_op);
+      status = _rig_engine_ops[pb_op->type].apply_op (apply_op_ctx, pb_op);
 
       g_warn_if_fail (status);
     }
@@ -202,7 +210,6 @@ frontend__update_ui (Rig__Frontend_Service *service,
       Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
       apply_property_change (frontend, unserializer, pb_change);
     }
-
 
   n_actions = ui_diff->n_actions;
   for (i = 0; i < n_actions; i++)
@@ -231,14 +238,12 @@ frontend__update_ui (Rig__Frontend_Service *service,
         }
     }
 
-  rig_pb_unserializer_destroy (unserializer);
-
   if (ui_diff->has_queued_frame)
     rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
 
-  /* XXX: The current use case we have for up update callbacks
+  /* XXX: The current use case we have forui update callbacks
    * requires that the frontend be in-sync with the simulator so
    * we invoke them after we have applied all the operations from
    * the simulator */
@@ -291,7 +296,25 @@ static void
 handle_load_response (const Rig__LoadResult *result,
                       void *closure_data)
 {
-  g_print ("Simulator: UI loaded\n");
+  g_print ("Frontend: UI loaded response received from simulator\n");
+}
+
+void
+rig_frontend_forward_simulator_ui (RigFrontend *frontend,
+                                   Rig__UI *pb_ui,
+                                   bool play_mode)
+{
+  ProtobufCService *simulator_service;
+
+  if (!frontend->connected)
+    return;
+
+  simulator_service =
+    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
+
+  rig__simulator__load (simulator_service, pb_ui,
+                        handle_load_response,
+                        NULL);
 }
 
 void
@@ -309,8 +332,6 @@ rig_frontend_reload_simulator_ui (RigFrontend *frontend,
 
   engine = frontend->engine;
   serializer = rig_pb_serializer_new (engine);
-  simulator_service =
-    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
 
   rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
 
@@ -320,17 +341,11 @@ rig_frontend_reload_simulator_ui (RigFrontend *frontend,
 
   pb_ui = rig_pb_serialize_ui (serializer, play_mode, ui);
 
-  rig__simulator__load (simulator_service, pb_ui,
-                        handle_load_response,
-                        NULL);
+  rig_frontend_forward_simulator_ui (frontend, pb_ui, play_mode);
 
   rig_pb_serialized_ui_destroy (pb_ui);
 
   rig_pb_serializer_destroy (serializer);
-
-#error "A slave or device would only have a play_mode_ui"
-#error "For devices, we shouldn't ever reload the simulator ui"
-#error "For slaves, we should forward the serialized ui send from the editor, so we can maintain a mapping from edit-mode-ids to play-mode-ids in the slave's frontend and simulator, so we can apply edit operations"
 }
 
 static void
@@ -474,6 +489,9 @@ _rig_frontend_free (void *object)
 {
   RigFrontend *frontend = object;
 
+  rig_engine_op_apply_context_destroy (&frontend->apply_op_ctx);
+  rig_pb_unserializer_destroy (frontend->prop_change_unserializer);
+
   rut_closure_list_disconnect_all (&frontend->ui_update_cb_list);
 
   rig_frontend_stop_service (frontend);
@@ -560,6 +578,7 @@ rig_frontend_new (RutShell *shell,
   RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
                                              &rig_frontend_type,
                                              _rig_frontend_init_type);
+  RigPBUnSerializer *unserializer;
 
   frontend->id = id;
 
@@ -567,10 +586,25 @@ rig_frontend_new (RutShell *shell,
 
   rut_list_init (&frontend->ui_update_cb_list);
 
+  rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
+                                    register_object_cb,
+                                    lookup_object_cb,
+                                    queue_delete_object_cb,
+                                    frontend);
+
   rig_frontend_spawn_simulator (frontend);
 
   frontend->engine =
     rig_engine_new_for_frontend (shell, frontend, ui_filename);
+
+  unserializer = rig_pb_unserializer_new (frontend->engine);
+  /* Just to make sure we don't mistakenly use this unserializer to
+   * register any objects... */
+  rig_pb_unserializer_set_object_register_callback (unserializer, NULL, NULL);
+  rig_pb_unserializer_set_id_to_object_callback (unserializer,
+                                                 lookup_object_cb,
+                                                 frontend);
+  frontend->prop_change_unserializer = unserializer;
 
   return frontend;
 }

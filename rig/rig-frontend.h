@@ -69,6 +69,9 @@ struct _RigFrontend
   void (*simulator_connected_callback) (void *user_data);
   void *simulator_connected_data;
 
+  RigEngineOpApplyContext apply_op_ctx;
+  RigPBUnSerializer *prop_change_unserializer;
+
   GHashTable *tmp_id_to_object_map;
 };
 
@@ -79,9 +82,14 @@ rig_frontend_new (RutShell *shell,
                   const char *ui_filename);
 
 void
-rig_frontend_reload_simulator_uis (RigFrontend *frontend,
-                                   RigUI *ui,
+rig_frontend_forward_simulator_ui (RigFrontend *frontend,
+                                   Rig__UI *pb_ui,
                                    bool play_mode);
+
+void
+rig_frontend_reload_simulator_ui (RigFrontend *frontend,
+                                  RigUI *ui,
+                                  bool play_mode);
 
 /* TODO: should support a destroy_notify callback */
 void

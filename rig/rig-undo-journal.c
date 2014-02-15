@@ -692,7 +692,7 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   rig_engine_op_set_property (engine,
                               set_property->property,
                               &set_property->value1);
-  rig_editor_apply_last_op (engine->editor);
+  //rig_editor_apply_last_op (engine->editor);
 }
 
 static UndoRedo *
@@ -734,7 +734,7 @@ undo_redo_set_controller_const_apply (RigUndoJournal *journal, UndoRedo *undo_re
                                       set_controller_const->controller,
                                       set_controller_const->property,
                                       &set_controller_const->value1);
-  rig_editor_apply_last_op (engine->editor);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (journal->engine,
                                  set_controller_const->property);
@@ -787,7 +787,7 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
                                           add_remove->property,
                                           add_remove->t,
                                           &add_remove->value);
-  rig_editor_apply_last_op (engine->editor);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -832,7 +832,7 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
                                              add_remove->controller,
                                              add_remove->property,
                                              add_remove->t);
-  rig_editor_apply_last_op (engine->editor);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -880,7 +880,7 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
                                           modify->property,
                                           modify->t,
                                           &modify->value1);
-  rig_editor_apply_last_op (engine->editor);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, modify->property);
 }

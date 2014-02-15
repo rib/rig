@@ -282,15 +282,16 @@ struct _RigEngine
 
   RigUI *edit_mode_ui;
   RigUI *play_mode_ui;
-  /* Maps pointers to edit-mode objects to corresponding play-mode
-   * objects... */
-  GHashTable *edit_to_play_object_map;
-  GHashTable *play_to_edit_object_map;
   RigUI *current_ui;
+
+  RutQueue *queued_deletes;
 
   void (*apply_op_callback) (Rig__Operation *pb_op,
                              void *user_data);
   void *apply_op_data;
+
+  void (*ui_load_callback) (void *user_data);
+  void *ui_load_data;
 
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
@@ -410,25 +411,24 @@ rig_add_tool_changed_callback (RigEngine *engine,
                                RutClosureDestroyCallback destroy_notify);
 
 void
-rig_engine_register_play_mode_object (RigEngine *engine,
-                                      uint64_t edit_mode_id,
-                                      void *play_mode_object);
-
-void
-rig_engine_unregister_play_mode_object (RigEngine *engine,
-                                        void *play_mode_object);
-
-void
-rig_engine_unregister_edit_mode_object (RigEngine *engine,
-                                        void *edit_mode_object);
-
-uint64_t
-rig_engine_edit_id_to_play_id (RigEngine *engine, uint64_t edit_id);
-
-void
 rig_engine_set_apply_op_callback (RigEngine *engine,
                                   void (*callback) (Rig__Operation *pb_op,
                                                     void *user_data),
                                   void *user_data);
+
+void
+rig_engine_set_ui_load_callback (RigEngine *engine,
+                                 void (*callback) (void *user_data),
+                                 void *user_data);
+
+void
+rig_engine_queue_delete (RigEngine *engine,
+                         void *user_data);
+
+void
+rig_engine_garbage_collect (RigEngine *engine,
+                            void (*object_callback) (RutObject *object,
+                                                     void *user_data),
+                            void *user_data);
 
 #endif /* _RIG_ENGINE_H_ */

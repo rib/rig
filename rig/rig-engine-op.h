@@ -150,7 +150,6 @@ typedef struct _RigEngineOpApplyContext
 
 void
 rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
-                                  RigPBUnSerializer *unserializer,
                                   RigEngineRegisterIdCallback register_id_cb,
                                   RigEngineIdToObjectCallback id_to_object_cb,
                                   RigEngineDeleteIdCallback queue_delete_id_cb,

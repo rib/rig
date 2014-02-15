@@ -47,6 +47,13 @@ struct _RigEditor
 
   char *ui_filename;
 
+  /* The edit_to_play_object_map hash table lets us map an edit-mode
+   * object into a corresponding play-mode object so we can make best
+   * effort attempts to apply edit operations to the play-mode ui.
+   */
+  GHashTable *edit_to_play_object_map;
+  GHashTable *play_to_edit_object_map;
+
   GList *suspended_controllers;
 
   RutQueue *edit_ops;
@@ -59,7 +66,6 @@ struct _RigEditor
    */
   RutQueue *sim_only_ops;
 
-  RigPBUnSerializer *ops_unserializer;
   RigEngineOpApplyContext apply_op_ctx;
 };
 
@@ -88,7 +94,7 @@ queue_delete_edit_mode_object_cb (uint64_t edit_mode_id, void *user_data)
 {
   RigEditor *editor = user_data;
   void *edit_mode_object = (void *)(intptr_t)play_mode_id;
-  rut_queue_push_tail (editor->edit_mode_deletes, edit_mode_object);
+  rig_engine_queue_delete (editor->engine, edit_mode_object);
 }
 
 static void
@@ -137,6 +143,161 @@ simulator_connected_cb (void *user_data)
                                      true);
 }
 
+static void *
+lookup_play_mode_object_cb (uint64_t edit_mode_id,
+                            void *user_data)
+{
+  RigEngine *engine = user_data;
+  return g_hash_table_lookup (engine->edit_to_play_object_map, &edit_mode_id);
+}
+
+static void
+register_play_mode_object_cb (void *play_mode_object,
+                              uint64_t edit_mode_id,
+                              void *user_data)
+{
+  RigEngine *engine = user_data;
+  void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
+
+  /* NB: in this case we know the ids fit inside a pointer and
+   * the hash table keys are pointers
+   */
+
+  g_hash_table_insert (engine->edit_to_play_object_map,
+                       edit_mode_object, play_mode_object);
+  g_hash_table_insert (engine->play_to_edit_object_map,
+                       play_mode_object, edit_mode_object);
+}
+
+static RutAsset *
+share_asset_cb (RigPBUnSerializer *unserializer,
+                Rig__Asset *pb_asset,
+                void *user_data)
+{
+  RutObject *obj = (RutObject *)(intptr_t)pb_asset->id;
+  return rut_object_ref (obj);
+}
+
+static RigUI *
+derive_play_mode_ui (RigEditor *editor)
+{
+  RigEngine *engine = editor->engine;
+  RigUI *src_ui = engine->edit_mode_ui;
+  RigPBSerializer *serializer;
+  Rig__UI *pb_ui;
+  RigPBUnSerializer *unserializer;
+  RigUI *copy;
+
+  rig_engine_set_play_mode_ui (engine, NULL);
+
+  g_warn_if_fail (editor->edit_to_play_object_map == NULL);
+  g_warn_if_fail (editor->play_to_edit_object_map == NULL);
+
+  editor->edit_to_play_object_map =
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
+  editor->play_to_edit_object_map =
+    g_hash_table_new (NULL, /* direct hash */
+                      NULL); /* direct key equal */
+
+  /* For simplicity we use a serializer and unserializer to
+   * duplicate the UI, though potentially in the future we may
+   * want a more direct way of handling this.
+   */
+  serializer = rig_pb_serializer_new (engine);
+
+  /* We want to share references to assets between the two UIs
+   * since they should be immutable and so we make sure to
+   * only keep track of the ids (pointers to assets used) and
+   * we will also hook into the corresponding unserialize below
+   * to simply return the same objects. */
+  rig_pb_serializer_set_only_asset_ids_enabled (serializer, true);
+
+  /* By using pointers instead of an incrementing integer for the
+   * object IDs when serializing we can map assets back to the
+   * original asset which doesn't need to be copied. */
+  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
+
+  pb_ui = rig_pb_serialize_ui (serializer,
+                               false, /* play mode */
+                               src_ui);
+
+  unserializer = rig_pb_unserializer_new (engine);
+
+  rig_pb_unserializer_set_object_register_callback (unserializer,
+                                                    register_play_mode_object_cb,
+                                                    editor);
+
+  rig_pb_unserializer_set_id_to_object_callback (unserializer,
+                                                 lookup_play_mode_object_cb,
+                                                 editor);
+
+  rig_pb_unserializer_set_asset_unserialize_callback (unserializer,
+                                                      share_asset_cb,
+                                                      NULL);
+
+  copy = rig_pb_unserialize_ui (unserializer, pb_ui);
+
+  rig_pb_unserializer_destroy (unserializer);
+
+  rig_pb_serialized_ui_destroy (pb_ui);
+
+  rig_pb_serializer_destroy (serializer);
+
+  return copy;
+}
+
+static void
+reset_play_mode_ui (RigEditor *editor)
+{
+  RigEngine *engine = editor->engine;
+  RigUI *play_mode_ui;
+
+  if (editor->edit_to_play_object_map)
+    {
+      g_hash_table_destroy (editor->edit_to_play_object_map);
+      g_hash_table_destroy (editor->play_to_edit_object_map);
+      editor->edit_to_play_object_map = NULL;
+      editor->play_to_edit_object_map = NULL;
+    }
+
+  play_mode_ui = derive_play_mode_ui (engine);
+  rig_engine_set_play_mode_ui (engine, play_mode_ui);
+  rut_object_unref (play_mode_ui);
+
+  rig_frontend_reload_simulator_uis (engine->frontend);
+}
+
+static void
+on_ui_load_cb (RigEditor *editor)
+{
+  RigEngine *engine = editor->engine;
+
+  /* TODO: move controller_view into RigEditor */
+
+  rig_controller_view_update_controller_list (engine->controller_view);
+
+  rig_controller_view_set_controller (engine->controller_view,
+                                      ui->controllers->data);
+
+  engine->grid_prim = rut_create_create_grid (engine->ctx,
+                                              engine->device_width,
+                                              engine->device_height,
+                                              100,
+                                              100);
+
+  rig_load_asset_list (engine);
+
+  add_light_handle (engine, ui);
+  add_play_camera_handle (engine, ui);
+
+  /* Whenever we replace the edit mode graph that implies we need
+   * to scrap and update the play mode graph, with a snapshot of
+   * the new edit mode graph.
+   */
+  reset_play_mode_ui (editor);
+}
+
 void
 rig_editor_init (RutShell *shell, void *user_data)
 {
@@ -145,9 +306,6 @@ rig_editor_init (RutShell *shell, void *user_data)
 
   editor->edit_ops = rut_queue_new ();
   editor->sim_only_ops = rut_queue_new ();
-
-  editor->edit_mode_deletes = rut_queue_new ();
-  editor->play_mode_deletes = rut_queue_new ();
 
   /* TODO: RigFrontend should be a trait of the engine */
   editor->frontend = rig_frontend_new (shell,
@@ -165,13 +323,10 @@ rig_editor_init (RutShell *shell, void *user_data)
                                                  simulator_connected_cb,
                                                  editor);
 
-  rig_engine_set_apply_op_callback (engine,
-                                    apply_edit_op_cb,
-                                    editor);
+  rig_engine_set_apply_op_callback (engine, apply_edit_op_cb, editor);
+  rig_engine_set_ui_load_callback (engine, on_ui_load_cb, editor);
 
-  editor->ops_unserializer = rig_pb_unserializer_new (engine);
   rig_engine_op_apply_context_init (&editor->apply_op_ctx,
-                                    editor->ops_unserializer,
                                     nop_register_id_cb,
                                     nop_id_cast_cb, /* ids == obj ptrs */
                                     queue_delete_edit_mode_object_cb,
@@ -193,15 +348,11 @@ rig_editor_fini (RutShell *shell, void *user_data)
   GList *l;
 
   rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
-  rig_pb_unserializer_destroy (editor->ops_unserializer);
 
   for (l = editor->suspend_play_mode_controllers; l; l = l->next)
     rut_object_unref (l->data);
   g_list_free (editor->suspend_play_mode_controllers);
   editor->suspend_play_mode_controllers = NULL;
-
-  rut_queue_free (editor->edit_mode_deletes);
-  rut_queue_free (editor->play_mode_deletes);
 
   rut_queue_clear (editor->edit_ops);
   rut_queue_free (editor->edit_ops);
@@ -238,14 +389,24 @@ object_deleted_cb (uint63_t id, void *user_data)
 #endif
 
 static void
+register_play_mode_object (RigEngine *engine,
+                           uint64_t edit_mode_id,
+                           void *play_mode_object)
+{
+  void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
+
+  g_hash_table_insert (engine->edit_to_play_object_map,
+                       edit_mode_object, play_mode_object);
+  g_hash_table_insert (engine->play_to_edit_object_map,
+                       play_mode_object, edit_mode_object);
+}
+
+static void
 register_play_mode_object_cb (void *play_mode_object,
                               uint64_t edit_mode_id,
                               void *user_data)
 {
-  RigEngine *engine = user_data;
-  rig_engine_register_play_mode_object (engine,
-                                        edit_mode_id,
-                                        play_mode_object);
+  register_play_mode_object (user_data, edit_mode_id, play_mode_object);
 }
 
 static void
@@ -253,7 +414,18 @@ queue_delete_play_mode_object_cb (uint64_t play_mode_id, void *user_data)
 {
   RigEditor *editor = user_data;
   void *play_mode_object = (void *)(intptr_t)play_mode_id;
-  rut_queue_push_tail (editor->play_mode_deletes, play_mode_object);
+  rig_engine_queue_delete (editor->engine, play_mode_object);
+}
+
+static uint64_t
+edit_id_to_play_id (RigEngine *engine, uint64_t edit_id)
+{
+  void *ptr_edit_id = (void *)(intptr_t)edit_id;
+  void *ptr_play_id =
+    g_hash_table_lookup (engine->edit_to_play_object_map,
+                         ptr_edit_id);
+
+  return (uint64_t)(intptr_t)ptr_play_id;
 }
 
 static uint64_t
@@ -262,8 +434,8 @@ map_id_cb (uint64_t id, void *user_data)
   RigEngine *engine = user_data;
   uint64_t id;
 
-  id = rig_engine_edit_id_to_play_id (engine, id);
-
+  id = edit_id_to_play_id (engine, id);
+#error "isn't it expected that this can fail, since ui logic can delete objects from the play-mode ui?"
   g_warn_if_fail (id);
 
   return id;
@@ -356,43 +528,44 @@ handle_edit_operations (RigEditor *editor,
   if (play_edits)
     setup.play_edit = play_edits;
   else
-    rig_engine_reset_play_mode_ui (engine);
+    {
+      /* Note: it's always possible that applying edits directly to
+       * the play-mode ui can fail and in that case we simply reset
+       * the play mode ui...
+       */
+      reset_play_mode_ui (editor);
+    }
 
   /* Forward edits to all slaves... */
   for (l = engine->slave_masters; l; l = l->next)
     rig_slave_master_forward_pb_ui_edit (l->data, setup->edit);
 
+  rut_queue_clear (editor->edit_ops);
+}
 
-  /* Note: Object deletions are deferred so that all edit-to-play mode
-   * and play-to-edit mode mappings remain valid until we have
-   * finished applying all the operations.
-   */
+static void
+delete_object_cb (RutObject *object, void *user_data)
+{
+  RigEditor *editor = user_data;
+  void *edit_mode_object;
+  void *play_mode_object;
 
-  rut_list_for_each (item, &editor->edit_mode_deletes, list_node)
+  edit_mode_object =
+    g_hash_table_lookup (editor->play_to_edit_object_map, object);
+  if (edit_mode_object)
+    play_mode_object = object;
+  else
     {
-      rig_engine_unregister_edit_object (engine, item->data);
-      rut_object_unref (item->data);
-    }
-  rut_queue_clear (&editor->edit_mode_deletes);
+      play_mode_object =
+        g_hash_table_lookup (editor->edit_to_play_object_map, object);
 
-  rut_list_for_each (item, &editor->play_mode_deletes, list_node)
-    {
-      rig_engine_unregister_play_mode_object (engine, item->data);
-      rut_object_unref (item->data);
-    }
-  rut_queue_clear (&editor->play_mode_deletes);
+      g_warn_if_fail (play_mode_object);
 
-  /* XXX: If edit operations are allocated on the frame stack then
-   * if the simulator is running slowly it's possible that we might
-   * render several frontend frames before coming to send edit
-   * operations to the simulator, by which time we will have trashed
-   * our operations?
-   *
-   * XXX: should we add a ->sim_frame_stack too?
-   */
-#error "Check if edit operations are allocated on the frame_stack?"
-#error check me
-  rut_queue_clear (editor->ops);
+      edit_mode_object = object;
+    }
+
+  g_hash_table_remove (editor->edit_to_play_object_map, edit_mode_object);
+  g_hash_table_remove (editor->play_to_edit_object_map, play_mode_object);
 }
 
 void
@@ -478,13 +651,12 @@ rig_editor_paint (RutShell *shell, void *user_data)
 
   rig_engine_paint (engine);
 
+  rig_engine_garbage_collect (engine,
+                              delete_object_cb,
+                              editor);
+
   rut_shell_run_post_paint_callbacks (shell);
 
-  /* XXX: If the simulator is running slowly then it's possible that
-   * some state needs to be maintained for longer than one frontend
-   * frame, so make sure we aren't going to trash state we need to
-   * send to the simulator here... */
-#error "XXX: do we ever queue up input events/stuff destined for the sim using the frame stack?"
   rut_memory_stack_rewind (engine->frame_stack);
 
   rut_shell_end_redraw (shell);
@@ -592,7 +764,7 @@ rig_editor_set_play_mode_enabled (RigEditor *editor, bool enabled)
     {
       /* No edit operations should have been queued up while in play
        * mode... */
-      g_warn_if_fail (engine->ops->len == 0);
+      g_warn_if_fail (editor->edit_ops->len == 0);
 
       rig_engine_set_current_ui (engine, engine->play_mode_ui);
       rig_camera_view_set_play_mode_enabled (engine->main_camera_view,

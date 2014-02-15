@@ -32,15 +32,28 @@ static const GOptionEntry _rig_device_entries[] =
   { 0 }
 };
 
+static void
+on_ui_load_cb (RigDevice *device)
+{
+  rig_frontend_reload_simulator_ui (device->frontend,
+                                    device->engine->play_mode_ui,
+                                    true); /* play mode ui */
+}
+
 void
 rig_device_init (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
+  RigEngine *engine;
 
   device->frontend = rig_frontend_new (shell,
                                        RIG_FRONTEND_ID_DEVICE,
                                        device->ui_filename);
-  device->engine = device->frontend->engine;
+
+  engine = device->frontend->engine;
+  device->engine = engine;
+
+  rig_engine_set_ui_load_callback (engine, on_ui_load_cb, device);
 
   rut_shell_add_input_callback (device->shell,
                                 rig_engine_input_handler,
@@ -113,13 +126,12 @@ rig_device_paint (RutShell *shell, void *user_data)
 
   rig_engine_paint (engine);
 
+  rig_engine_garbage_collect (engine,
+                              NULL, /* callback */
+                              NULL); /* user_data */
+
   rut_shell_run_post_paint_callbacks (shell);
 
-  /* XXX: If the simulator is running slowly then it's possible that
-   * some state needs to be maintained for longer than one frontend
-   * frame, so make sure we aren't going to trash state we need to
-   * send to the simulator here... */
-#error "XXX: do we ever queue up input events/stuff destined for the sim using the frame stack?"
   rut_memory_stack_rewind (engine->frame_stack);
 
   rut_shell_end_redraw (shell);

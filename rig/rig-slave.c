@@ -49,15 +49,16 @@ typedef struct _RigSlave
   GHashTable *play_object_to_edit_id_map;
 
   RigPBUnSerializer *ui_unserializer;
-  RigPBUnSerializer *ops_unserializer;
 
   RigEngineOpApplyContext apply_op_ctx;
 
-  RutQueue *queued_deletes;
+  RutClosure *ui_load_closure;
+  Rig__UI *pending_ui_load;
+  Rig__LoadResult_Closure *pending_ui_load_closure;
+  void *pending_ui_load_closure_data;
 
   RutClosure *ui_update_closure;
-
-  Rig__UIEdit pending_edit_closure;
+  Rig__UIEdit pending_edit;
   Rig__UIEditResult_Closure pending_edit_closure;
   void *pending_edit_closure_data;
 
@@ -131,25 +132,20 @@ queue_delete_object_cb (uint64_t id, void *user_data)
 {
   RigSlave *slave = user_data;
   void *object = (void *)(intptr_t)id;
-  rut_queue_push_tail (slave->queued_deletes, object);
+  rig_engine_queue_delete (slave->engine, object);
 }
 
 static void
-slave__load (Rig__Slave_Service *service,
-             const Rig__UI *pb_ui,
-             Rig__LoadResult_Closure closure,
-             void *closure_data)
+load_ui (RigSlave *slave)
 {
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
-  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
   float width, height;
   RigPBUnSerializer *unserializer;
+  Rig__UI *pb_ui = slave->pending_ui_load;
   RigUI *ui;
 
   g_return_if_fail (pb_ui != NULL);
-
-  g_print ("UI Load Request\n");
 
   if (slave->edit_id_to_play_object_map)
     {
@@ -190,6 +186,9 @@ slave__load (Rig__Slave_Service *service,
 
   rig_engine_set_play_mode_ui (engine, ui);
 
+  rig_frontend_forward_simulator_ui (slave->frontend, pb_ui,
+                                     true); /* play mode */
+
   if (option_width > 0 && option_height > 0)
     {
       width = option_width;
@@ -208,13 +207,71 @@ slave__load (Rig__Slave_Service *service,
 
   rig_engine_set_onscreen_size (engine, width, height);
 
-  closure (&result, closure_data);
+  slave->pending_ui_load_closure (&result, slave->pending_ui_load_closure_data);
+
+  slave->pending_ui_load = NULL;
+  slave->pending_ui_load_closure = NULL;
+  slave->pending_ui_load_closure_data = NULL;
+}
+
+/* When this is called we know that the frontend is in sync with the
+ * simulator which has just sent the frontend a ui-update that has
+ * been applied and so we can apply edits without fear of conflicting
+ * with the simulator...
+ */
+static void
+ui_load_cb (RigFrontend *frontend, void *user_data)
+{
+  RigSlave *slave = user_data;
+
+  rut_closure_disconnect (slave->ui_load_closure);
+  slave->ui_load_closure = NULL;
+  load_ui (slave);
+}
+
+static void
+slave__load (Rig__Slave_Service *service,
+             const Rig__UI *pb_ui,
+             Rig__LoadResult_Closure closure,
+             void *closure_data)
+{
+  Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
+  RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+
+  g_print ("Slave: UI Load Request\n");
+
+  slave->pending_ui_load = pb_ui;
+  slave->pending_ui_load_closure = closure;
+  slave->pending_ui_load_closure_data = closure_data;
+
+  /* Discard any pending edit, since it's now redundant... */
+  if (slave->pending_edit)
+    {
+      Rig__UIEditResult result = RIG__UI_EDIT_RESULT__INIT;
+      slave->pending_edit_closure (&result,
+                                   slave->pending_edit_closure_data);
+      slave->pending_edit = NULL;
+      slave->pending_edit_closure = NULL;
+      slave->pending_edit_closure_data = NULL;
+    }
+
+  /* XXX: If the simulator is busy we need to synchonize with it
+   * before applying any edits... */
+  if (!frontend->ui_update_pending)
+    load_ui (slave);
+  else
+    {
+      slave->ui_load_closure =
+        rig_frontend_add_ui_update_callback (slave->frontend,
+                                             ui_load_cb,
+                                             slave);
+    }
 }
 
 static void
 apply_pending_edits (RigSlave *slave)
 {
-  Rig__UIEditResult result = RIG__UI_EDIT_RESULT__INIT;
+  RutQueueItem *item;
 
   /* Note: Since a slave device is effectively always running in
    * play-mode the state of the UI is unpredictable and it's always
@@ -233,27 +290,12 @@ apply_pending_edits (RigSlave *slave)
       result.status = false;
     }
 
-  /* Lazily delete objects... */
-  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
-    {
-      uint64_t *object_id =
-        g_hash_table_lookup (slave->play_object_to_edit_id_map, item->data);
-
-      g_hash_table_remove (slave->edit_id_to_play_object_map, object_id);
-      g_hash_table_remove (slave->play_object_to_edit_id_map, item->data);
-
-      rut_object_unref (item->data);
-    }
-  rut_queue_clear (simulator->queued_deletes);
-
   rut_shell_queue_redraw (engine->shell);
 
-  slave->pending_edit_closure (&result, slave->pending_edit_closure_data);
-
-#error "maybe don'e clear pending_edit, so we can refer to it for sending edits to the simulator"
-  slave->pending_edit = NULL;
-  slave->pending_edit_closure = NULL;
-  slave->pending_edit_closure_data = NULL;
+  /* XXX: This edit isn't finished until we start the next paint where
+   * we will then forward these edits to the simulator too and so
+   * we don't call slave->pending_edit_closure() yet.
+   */
 }
 
 /* When this is called we know that the frontend is in sync with the
@@ -268,9 +310,7 @@ ui_updated_cb (RigFrontend *frontend, void *user_data)
 
   rut_closure_disconnect (slave->ui_update_closure);
   slave->ui_update_closure = NULL;
-
-  if (slave->pending_edit)
-    apply_pending_edits (slave);
+  apply_pending_edits (slave);
 }
 
 static void
@@ -281,7 +321,8 @@ slave__edit (Rig__Slave_Service *service,
 {
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
-  RutQueueItem *item;
+
+  g_print ("Slave: UI Edit Request\n");
 
   slave->pending_edit = pb_ui_edit;
   slave->pending_edit_closure = closure;
@@ -353,8 +394,6 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   slave->ui_update_closure = NULL;
 
-  slave->queued_deletes = rut_queue_new ();
-
   slave->frontend = rig_frontend_new (shell,
                                       RIG_FRONTEND_ID_SLAVE,
                                       NULL);
@@ -364,18 +403,11 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   _rig_slave_object_id_magazine = engine->object_id_magazine;
 
-  /* The ops_unserializer is used to unserialize the operations in
-   * Rig__UIEdit messages from an editor before they are applied */
-  slave->ops_unserializer = rig_pb_unserializer_new (engine);
-
   rig_engine_op_apply_context_init (&slave->apply_op_ctx,
-                                    slave->ops_unserializer,
                                     register_object_cb,
                                     lookup_object_cb,
                                     queue_delete_object_cb,
                                     slave); /* user data */
-
-  slave->queued_deletes = rut_queue_new ();
 
   /* TODO: move from engine to slave */
   engine->slave_service = rig_rpc_server_new (&rig_slave_service.base,
@@ -402,11 +434,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
       slave->ui_update_closure = NULL;
     }
 
-  rut_queue_free (slave->queued_deletes);
-  slave->queued_deletes = NULL;
-
   rig_engine_op_apply_context_destroy (&slave->apply_op_ctx);
-  rig_pb_unserializer_destroy (slave->ops_unserializer);
 
   /* TODO: move to frontend */
   rig_avahi_unregister_service (engine);
@@ -418,9 +446,28 @@ rig_slave_fini (RutShell *shell, void *user_data)
 
   rut_object_unref (slave->frontend);
   slave->frontend = NULL;
+}
 
-  rut_queue_free (slave->queued_deletes);
-  slave->queued_deletes = NULL;
+/* Note: here we have to consider objects that are deleted via edit
+ * operations (where we can expect corresponding entries in
+ * play_object_to_edit_id_map and edit_id_to_play_object_map) and
+ * objects deleted via a ui_update from the simulator, due to some ui
+ * logic (where the deleted play-mode object may not have a
+ * corresponding edit-mode id).
+ */
+static void
+object_delete_cb (RutObject *object,
+                  void *user_data)
+{
+  RigSlave *slave = user_data;
+  uint64_t *object_id =
+    g_hash_table_lookup (slave->play_object_to_edit_id_map, item->data);
+
+  if (object_id)
+    {
+      g_hash_table_remove (slave->edit_id_to_play_object_map, object_id);
+      g_hash_table_remove (slave->play_object_to_edit_id_map, item->data);
+    }
 }
 
 static void
@@ -457,15 +504,19 @@ rig_slave_paint (RutShell *shell, void *user_data)
           frontend->has_resized = false;
         }
 
-      setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__ui_edit__init);
-      setup->edit->n_ops = editor->edit_ops->len + editor->sim_only_ops->len;
-      if (setup->edit->n_ops)
-        pb_frame_setup->edit->ops = serialize_ops (editor);
-
-#error "FIXME: forward edits to simulator"
-      setup.edit = NULL;
+      /* Forward any received edits to the simulator too */
+      if (slave->pending_edit)
+        setup->edit = slave->pending_edit;
 
       rig_frontend_run_simulator_frame (frontend, &setup);
+
+      if (slave->pending_edit)
+        {
+          slave->pending_edit_closure (&result, slave->pending_edit_closure_data);
+          slave->pending_edit = NULL;
+          slave->pending_edit_closure = NULL;
+          slave->pending_edit_closure_data = NULL;
+        }
 
       rig_pb_serializer_destroy (serializer);
 
@@ -481,6 +532,10 @@ rig_slave_paint (RutShell *shell, void *user_data)
   rut_shell_run_start_paint_callbacks (shell);
 
   rig_engine_paint (engine);
+
+  rig_engine_garbage_collect (engine,
+                              object_delete_cb,
+                              slave);
 
   rut_shell_run_post_paint_callbacks (shell);
 

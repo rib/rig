@@ -91,6 +91,7 @@ _apply_op_set_property (RigEngineOpApplyContext *ctx,
   Rig__Operation__SetProperty *set_property = pb_op->set_property;
   RutObject *object = ctx->id_to_object_cb (set_property->object_id,
                                             ctx->user_data);
+#error "doesn't this need to explicitly check in case the lookup fails?"
   RutProperty *property =
     rut_introspectable_get_property (object,
                                      set_property->property_id);
@@ -125,6 +126,7 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
                 rig__operation__set_property__init,
                 src_pb_op->set_property);
 
+#error "doesn't this need to be able to fail? can't a mapping fail if a play-mode object that we are trying to edit has been deleted?"
   pb_op->set_property->object_id =
     ctx->map_id_cb (src_pb_op->set_property->object_id, ctx->user_data);
   pb_op->set_property->value = src_pb_op->set_property->value;
@@ -884,14 +886,16 @@ rig_engine_map_pb_ui_edit (RigEngine *engine,
 
 void
 rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
-                                  RigPBUnSerializer *unserializer,
                                   RigEngineRegisterIdCallback register_id_cb,
                                   RigEngineIdToObjectCallback id_to_object_cb,
                                   RigEngineDeleteIdCallback queue_delete_id_cb,
                                   void *user_data)
 {
   ctx->engine = unserializer->engine;
-  ctx->unserializer = unserializer;
+
+  ctx->unserializer = rig_pb_unserializer_new (engine);
+  rig_pb_unserializer_set_id_to_object_callback (ctx->unserializer, id_to_object_cb);
+
   ctx->id_to_object_cb = id_to_object_cb;
   ctx->register_id_cb = register_id_cb;
   ctx->queue_delete_id_cb = queue_delete_id_cb;
@@ -901,7 +905,7 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
 void
 rig_engine_op_apply_context_destroy (RigEngineOpApplyContext *ctx)
 {
-  /* Currently, nothing to clean up */
+  rig_pb_unserializer_destroy (ctx->unserializer);
 }
 
 bool
