@@ -89,6 +89,7 @@ struct _RigEngine
   bool play_mode;
 
   char *ui_filename;
+  RutClosure *finish_ui_load_closure;
 
   RutCamera *camera_2d;
   RutObject *root;
@@ -116,6 +117,7 @@ struct _RigEngine
   RutMemoryStack *sim_frame_stack;
   RutMagazine *object_id_magazine;
 
+  /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
   RutInputQueue *simulator_input_queue;
 
@@ -136,6 +138,9 @@ struct _RigEngine
   CoglTexture *shadow_map;
 
   RutStack *top_stack;
+  RigCameraView *main_camera_view;
+
+  /* XXX: Move to RigEditor */
   RutBin *top_bin;
   RutBoxLayout *top_vbox;
   RutBoxLayout *top_hbox;
@@ -146,19 +151,15 @@ struct _RigEngine
   RutBoxLayout *toolbar_vbox;
   RutBoxLayout *properties_hbox;
   RigSplitView *splits[1];
-
   //RutBevel *main_area_bevel;
-  RigCameraView *main_camera_view;
   RutStack *icon_bar_stack;
   RutStack *left_bar_stack;
   //RutTransform *left_bar_transform;
   //RutTransform *right_bar_transform;
   RutStack *right_bar_stack;
   //RutTransform *main_transform;
-
   RutStack *bottom_bar_stack;
   //RutTransform *bottom_bar_transform;
-
   //RutTransform *screen_area_transform;
 
   CoglPrimitive *grid_prim;
@@ -174,6 +175,7 @@ struct _RigEngine
   float device_width;
   float device_height;
 
+  /* XXX: Move to RigEditor */
   RutUIViewport *search_vp;
   RutFold *search_results_fold;
   RutBoxLayout *search_results_vbox;
@@ -184,6 +186,7 @@ struct _RigEngine
   RutFlowLayout *assets_video_results;
   RutFlowLayout *assets_other_results;
 
+  /* XXX: Move to RigEditor */
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *nine_slice_builtin_asset;
@@ -194,6 +197,7 @@ struct _RigEngine
   GList *result_input_closures;
   GList *asset_enumerators;
 
+  /* XXX: Move to RigEditor */
   RutUIViewport *tool_vp;
   RutUIViewport *properties_vp;
   RutBin *inspector_bin;
@@ -201,11 +205,13 @@ struct _RigEngine
   RutObject *inspector;
   GList *all_inspectors;
 
+  /* XXX: Move to RigEditor */
   RigControllerView *controller_view;
 
   CoglMatrix main_view;
   float z_2d;
 
+  /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
   RutEntity *light_handle;
   RutEntity *play_camera_handle;
@@ -285,6 +291,8 @@ struct _RigEngine
   RigUI *current_ui;
 
   RutQueue *queued_deletes;
+
+  GList *suspended_controllers;
 
   void (*apply_op_callback) (Rig__Operation *pb_op,
                              void *user_data);
@@ -423,12 +431,15 @@ rig_engine_set_ui_load_callback (RigEngine *engine,
 
 void
 rig_engine_queue_delete (RigEngine *engine,
-                         void *user_data);
+                         RutObject *object);
 
 void
 rig_engine_garbage_collect (RigEngine *engine,
                             void (*object_callback) (RutObject *object,
                                                      void *user_data),
                             void *user_data);
+
+void
+rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
 
 #endif /* _RIG_ENGINE_H_ */

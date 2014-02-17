@@ -20,11 +20,6 @@ typedef struct _RigSimulatorAction
   RigSimulatorActionType type;
   RutList list_node;
   union {
-#if 0
-    struct {
-      bool enabled;
-    } set_play_mode;
-#endif
     struct {
       RutObject *object;
       RutSelectAction action;
@@ -61,21 +56,6 @@ simulator__test (Rig__Simulator_Service *service,
 
   closure (&result, closure_data);
 }
-
-#if 0
-void
-rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
-                                            bool enabled)
-{
-  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
-
-  action->type = RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE;
-  action->set_play_mode.enabled = enabled;
-
-  rut_list_insert (simulator->actions.prev, &action->list_node);
-  simulator->n_actions++;
-}
-#endif
 
 void
 rig_simulator_action_select_object (RigSimulator *simulator,
@@ -224,6 +204,8 @@ simulator__load (Rig__Simulator_Service *service,
   else
     rig_engine_set_play_mode_ui (engine, ui);
 
+  rut_object_unref (ui);
+
   closure (&result, closure_data);
 }
 
@@ -286,8 +268,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
     simulator->view_y = setup->view_y;
 
   if (setup->has_play_mode)
-    rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
-                                           setup->play_mode);
+    rig_engine_set_play_mode_enabled (engine, setup->play_mode);
 
   for (i = 0; i < setup->n_events; i++)
     {
@@ -611,12 +592,8 @@ rig_simulator_init (RutShell *shell, void *user_data)
    * pointers as IDs we can use any odd number as a temporary ID */
   simulator->next_tmp_id = 1;
 
-  /* The ops_unserializer is used to unserialize the operations in
-   * Rig__UIEdit messages from an editor frontend before they are
-   * applied */
-  simulator->ops_unserializer = rig_pb_unserializer_new (engine);
   rig_engine_op_apply_context_init (&simulator->apply_op_ctx,
-                                    simulator->ops_unserializer,
+                                    engine,
                                     register_object_cb,
                                     lookup_object_cb,
                                     queue_delete_object_cb,
@@ -710,7 +687,6 @@ rig_simulator_fini (RutShell *shell, void *user_data)
   simulator->queued_deletes = NULL;
 
   rig_engine_op_apply_context_destroy (&simulator->apply_op_ctx);
-  rig_pb_unserializer_destroy (simulator->ops_unserializer);
 
   rut_object_unref (engine);
   simulator->engine = NULL;
@@ -889,15 +865,6 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
           switch (action->type)
             {
-#if 0
-            case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
-              pb_action->set_play_mode =
-                rig_pb_new (serializer,
-                            Rig__SimulatorAction__SetPlayMode,
-                            rig__simulator_action__set_play_mode__init);
-              pb_action->set_play_mode->enabled = action->set_play_mode.enabled;
-              break;
-#endif
             case RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE:
               pb_action->report_edit_failure =
                 rig_pb_new (serializer,

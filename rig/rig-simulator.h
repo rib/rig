@@ -33,7 +33,6 @@ typedef struct _RigSimulator RigSimulator;
  */
 typedef enum _RigSimulatorActionType
 {
-  //RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE=1,
   RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT = 1,
   RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE,
 } RigSimulatorActionType;
@@ -106,10 +105,6 @@ rig_simulator_stop_service (RigSimulator *simulator);
 
 void
 rig_simulator_stop_service (RigSimulator *simulator);
-
-//void
-//rig_simulator_action_set_play_mode_enabled (RigSimulator *simulator,
-//                                            bool enabled);
 
 void
 rig_simulator_action_select_object (RigSimulator *simulator,

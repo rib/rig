@@ -64,7 +64,13 @@ struct _RigFrontend
   int pending_width;
   int pending_height;
 
+  bool pending_play_mode_enabled;
+
+  RutClosure *simulator_queue_frame_closure;
+
   bool ui_update_pending;
+
+  RutList ui_update_cb_list;
 
   void (*simulator_connected_callback) (void *user_data);
   void *simulator_connected_data;
@@ -121,5 +127,15 @@ rig_frontend_add_ui_update_callback (RigFrontend *frontend,
                                      RigFrontendUIUpdateCallback callback,
                                      void *user_data,
                                      RutClosureDestroyCallback destroy);
+
+void
+rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
+                                          bool play_mode_enabled);
+
+/* Similar to rut_shell_queue_redraw() but for queuing a new simulator
+ * frame. If the simulator is currently busy this waits until we
+ * recieve an update from the simulator and then queues a redraw. */
+void
+rig_frontend_queue_simulator_frame (RigFrontend *frontend);
 
 #endif /* _RIG_FRONTEND_H_ */

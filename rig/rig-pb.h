@@ -135,6 +135,10 @@ RigPBSerializer *
 rig_pb_serializer_new (RigEngine *engine);
 
 void
+rig_pb_serializer_set_stack (RigPBSerializer *serializer,
+                             RutMemoryStack *stack);
+
+void
 rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
                                                bool use_pointers);
 

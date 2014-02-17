@@ -52,15 +52,13 @@ typedef struct _RigSlave
 
   RigEngineOpApplyContext apply_op_ctx;
 
+  RutQueue *edits_for_sim;
+  RutQueue *pending_edits;
+
   RutClosure *ui_load_closure;
   Rig__UI *pending_ui_load;
   Rig__LoadResult_Closure *pending_ui_load_closure;
   void *pending_ui_load_closure_data;
-
-  RutClosure *ui_update_closure;
-  Rig__UIEdit pending_edit;
-  Rig__UIEditResult_Closure pending_edit_closure;
-  void *pending_edit_closure_data;
 
 } RigSlave;
 
@@ -240,6 +238,14 @@ slave__load (Rig__Slave_Service *service,
 
   g_print ("Slave: UI Load Request\n");
 
+  /* Discard any previous pending ui load, since it's now redundant */
+  if (slave->pending_ui_load)
+    {
+      Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
+      slave->pending_ui_load_closure (&result,
+                                      slave->pending_ui_load_closure_data);
+    }
+
   slave->pending_ui_load = pb_ui;
   slave->pending_ui_load_closure = closure;
   slave->pending_ui_load_closure_data = closure_data;
@@ -255,6 +261,7 @@ slave__load (Rig__Slave_Service *service,
       slave->pending_edit_closure_data = NULL;
     }
 
+
   /* XXX: If the simulator is busy we need to synchonize with it
    * before applying any edits... */
   if (!frontend->ui_update_pending)
@@ -268,34 +275,56 @@ slave__load (Rig__Slave_Service *service,
     }
 }
 
+typedef struct _PendingEdit
+{
+  RigSlave *slave;
+  RutClosure *ui_update_closure;
+
+  Rig__UIEdit edit;
+  Rig__UIEditResult_Closure closure;
+  void *closure_data;
+} PendingEdit;
+
 static void
 apply_pending_edits (RigSlave *slave)
 {
   RutQueueItem *item;
 
-  /* Note: Since a slave device is effectively always running in
-   * play-mode the state of the UI is unpredictable and it's always
-   * possible that edits made in an editor can no longer be applied to
-   * the current state of a slave device (for example an object
-   * being edited may have been deleted by some UI logic)
-   *
-   * We apply edits on a best-effort basis, and if they fail we
-   * report that status back to the editor so that it can inform the
-   * user who can choose to reset the slave.
-   */
-  if (!rig_engine_apply_pb_ui_edit (&slave->apply_op_ctx,
-                                    slave->pending_edit))
+  rut_list_for_each (item, slave->pending_edits->items, list_node)
     {
-      result.has_status = true;
-      result.status = false;
+      PendingEdit *pending_edit = item->data;
+
+      /* Note: Since a slave device is effectively always running in
+       * play-mode the state of the UI is unpredictable and it's
+       * always possible that edits made in an editor can no longer be
+       * applied to the current state of a slave device (for example
+       * an object being edited may have been deleted by some UI
+       * logic)
+       *
+       * We apply edits on a best-effort basis, and if they fail we
+       * report that status back to the editor so that it can inform
+       * the user who can choose to reset the slave.
+       */
+      if (!rig_engine_apply_pb_ui_edit (slave->apply_op_ctx,
+                                        pending_edit->edit))
+        {
+          pending_edit->status = false;
+        }
+
+      /* The next step is to forward the edits to the simulator the
+       * next time we enter rig_slave_paint() and setup the next
+       * frame for the simulator.
+       *
+       * XXX: the pending_edit->closure() will be called in
+       * rig_slave_paint().
+       */
+      rut_queue_push_tail (slave->edits_for_sim, pending_edit);
     }
+  rut_queue_clear (slave->pending_edits);
 
+  /* Ensure we will forward edits to the simulator in
+   * rig_slave_paint()... */
   rut_shell_queue_redraw (engine->shell);
-
-  /* XXX: This edit isn't finished until we start the next paint where
-   * we will then forward these edits to the simulator too and so
-   * we don't call slave->pending_edit_closure() yet.
-   */
 }
 
 /* When this is called we know that the frontend is in sync with the
@@ -310,6 +339,7 @@ ui_updated_cb (RigFrontend *frontend, void *user_data)
 
   rut_closure_disconnect (slave->ui_update_closure);
   slave->ui_update_closure = NULL;
+
   apply_pending_edits (slave);
 }
 
@@ -321,12 +351,17 @@ slave__edit (Rig__Slave_Service *service,
 {
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = slave->engine;
+  PendingEdit *pending_edit = g_slice_new0 (PendingEdit);
 
   g_print ("Slave: UI Edit Request\n");
 
-  slave->pending_edit = pb_ui_edit;
-  slave->pending_edit_closure = closure;
-  slave->pending_edit_closure_data = closure_data;
+  pending_edit->slave = slave;
+  pending_edit->edit = pb_ui_edit;
+  pending_edit->status = true;
+  pending_edit->closure = closure;
+  pending_edit->closure_data = closure_data;
+
+  rut_queue_push_tail (slave->pending_edits, pending_edit);
 
   /* XXX: If the simulator is busy we need to synchonize with it
    * before applying any edits... */
@@ -334,10 +369,13 @@ slave__edit (Rig__Slave_Service *service,
     apply_pending_edits (slave);
   else
     {
-      slave->ui_update_closure =
-        rig_frontend_add_ui_update_callback (slave->frontend,
-                                             ui_updated_cb,
-                                             slave);
+      if (!slave->ui_update_closure)
+        {
+          slave->ui_update_closure =
+            rig_frontend_add_ui_update_callback (slave->frontend,
+                                                 ui_updated_cb,
+                                                 slave);
+        }
     }
 }
 
@@ -404,10 +442,14 @@ rig_slave_init (RutShell *shell, void *user_data)
   _rig_slave_object_id_magazine = engine->object_id_magazine;
 
   rig_engine_op_apply_context_init (&slave->apply_op_ctx,
+                                    engine,
                                     register_object_cb,
                                     lookup_object_cb,
                                     queue_delete_object_cb,
                                     slave); /* user data */
+
+  slave->pending_edits = rut_queue_new ();
+  slave->edits_for_sim = rut_queue_new ();
 
   /* TODO: move from engine to slave */
   engine->slave_service = rig_rpc_server_new (&rig_slave_service.base,
@@ -433,6 +475,14 @@ rig_slave_fini (RutShell *shell, void *user_data)
       rut_closure_disconnect (slave->ui_update_closure);
       slave->ui_update_closure = NULL;
     }
+
+  rut_list_for_each (item, slave->pending_edits->items, list_node)
+    g_slice_free (PendingEdit, item->data);
+  rut_queue_free (slave->pending_edits);
+
+  rut_list_for_each (item, slave->edits_for_sim->items, list_node)
+    g_slice_free (PendingEdit, item->data);
+  rut_queue_free (slave->edits_for_sim);
 
   rig_engine_op_apply_context_destroy (&slave->apply_op_ctx);
 
@@ -485,6 +535,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
       RutInputQueue *input_queue = rut_shell_get_input_queue (shell);
       Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
       RigPBSerializer *serializer;
+      PendingEdit *pending_edit = NULL;
 
       serializer = rig_pb_serializer_new (engine);
 
@@ -504,18 +555,40 @@ rig_slave_paint (RutShell *shell, void *user_data)
           frontend->has_resized = false;
         }
 
-      /* Forward any received edits to the simulator too */
-      if (slave->pending_edit)
-        setup->edit = slave->pending_edit;
+      /* Forward any received edits to the simulator too.
+       *
+       * Note: Although we may have a backlog of edits from the
+       * editor, we can currently only send one Rig__UIEdit per
+       * frame...
+       */
+      if (slave->edits_for_sim->len)
+        {
+          pending_edit = rut_queue_pop_head (slave->edits_for_sim);
+
+          /* Note: we disregard whether we failed to apply the edits
+           * in the frontend, since some of the edit operations may
+           * succeed, and as long as we can report the error to the
+           * user they can decided if they want to reset the slave
+           * device.
+           */
+          setup->edit = pending_edit->edit;
+        }
 
       rig_frontend_run_simulator_frame (frontend, &setup);
 
-      if (slave->pending_edit)
+      if (pending_edit)
         {
-          slave->pending_edit_closure (&result, slave->pending_edit_closure_data);
-          slave->pending_edit = NULL;
-          slave->pending_edit_closure = NULL;
-          slave->pending_edit_closure_data = NULL;
+          Rig__UIEditResult result = RIG__UIEDIT_RESULT__INIT;
+
+          if (pending_edit->status == false)
+            {
+              result.has_status = true;
+              result.status = false;
+            }
+
+          pending_edit->closure (&result, pending_edit->closure_data);
+
+          g_slice_free (PendingEdit, pending_edit);
         }
 
       rig_pb_serializer_destroy (serializer);
@@ -543,8 +616,15 @@ rig_slave_paint (RutShell *shell, void *user_data)
 
   rut_shell_end_redraw (shell);
 
-  if (rut_shell_check_timelines (shell))
-    rut_shell_queue_redraw (shell);
+  /* XXX: It would probably be better if we could send multiple
+   * Rig__UIEdits in one go when setting up a simulator frame so we
+   * wouldn't need to use this trick of continuously queuing redraws
+   * to flush the edits through to the simulator.
+   */
+  if (rut_shell_check_timelines (shell) || slave->edits_for_sim->len)
+    {
+      rut_shell_queue_redraw (shell);
+    }
 }
 
 #ifdef __ANDROID__

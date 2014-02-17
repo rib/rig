@@ -26,6 +26,8 @@
 #include <rut.h>
 #include <cogl-gst/cogl-gst.h>
 
+#include "rig-editor.h"
+
 static char **_rig_editor_remaining_args = NULL;
 
 static const GOptionEntry _rig_editor_entries[] =
@@ -38,7 +40,7 @@ static const GOptionEntry _rig_editor_entries[] =
 int
 main (int argc, char **argv)
 {
-  RigEditor *editor = g_new0 (RigEditor);
+  RigEditor *editor = g_new0 (RigEditor, 1);
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
   char *assets_location;

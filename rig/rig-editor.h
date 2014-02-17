@@ -29,6 +29,8 @@
 
 typedef struct _RigEditor RigEditor;
 
+extern RutType rig_engine_type;
+
 void
 rig_editor_init (RutShell *shell, void *user_data);
 
@@ -38,10 +40,32 @@ rig_editor_fini (RutShell *shell, void *user_data);
 void
 rig_editor_paint (RutShell *shell, void *user_data);
 
+/* FIXME: move necessary state to RigEditor and update this
+ * api to take a RigEditor pointer */
+void
+rig_editor_create_ui (RigEngine *engine);
+
 void
 rig_editor_apply_last_op (RigEngine *engine);
 
+/* XXX: This rather esoteric prototype is used as a 'read_callback' to
+ * rut_asset_thumbnail and is called whenever an asset's thumnail has
+ * been updated.
+ *
+ * It would probably be better to just have a
+ * rig_editor_reload_thumbnails(RigEditor *editor) considering that
+ * all this function does is trigger an asset search to refresh the
+ * assets view.
+ */
 void
-rig_editor_set_play_mode_enabled (RigEditor *editor, bool enabled);
+rig_editor_refresh_thumbnails (RutAsset *video, void *user_data);
+
+/* FIXME: move necessary state to RigEditor and update this
+ * api to take a RigEditor pointer */
+void
+rig_editor_clear_search_results (RigEngine *engine);
+
+void
+rig_editor_free_result_input_closures (RigEngine *engine);
 
 #endif /* _RIG_EDITOR_H_ */

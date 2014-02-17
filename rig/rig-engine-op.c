@@ -29,39 +29,6 @@
 
 #include "rig.pb-c.h"
 
-typedef struct _RigEngineOpMapContext
-{
-  RigPBSerializer *serializer;
-  RigEngineMapIDCallback map_id_cb;
-  void *user_data;
-} RigEngineOpMapContext;
-
-#if 0
-void
-rig_engine_op_register_object (RigEngine *engine,
-                               RutObject *object)
-{
-  RigPBSerializer *serializer = engine->ops_serializer;
-  Rig__Operation *pb_op = rig_pb_new (serializer, Rig__Operation,
-                                      rig__operation__init);
-  RutProperty *label_property;
-  const char *label;
-
-  pb_op->type = RIG_ENGINE_OP_TYPE_REGISTER_OBJECT;
-
-  pb_op->register_object =
-    rig_pb_new (serializer, Rig__Operation__RegisterObject,
-                rig__operation__register_object__init);
-  label_property = rut_introspectable_lookup_property (object, "label");
-  label = rut_property_get_text (label_property);
-
-  pb_op->register_object->label = (char *)rig_pb_strdup (serializer, label);
-  pb_op->register_object->object_id = (intptr_t)object;
-
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
-}
-#endif
-
 void
 rig_engine_op_set_property (RigEngine *engine,
                             RutProperty *property,
@@ -91,11 +58,14 @@ _apply_op_set_property (RigEngineOpApplyContext *ctx,
   Rig__Operation__SetProperty *set_property = pb_op->set_property;
   RutObject *object = ctx->id_to_object_cb (set_property->object_id,
                                             ctx->user_data);
-#error "doesn't this need to explicitly check in case the lookup fails?"
-  RutProperty *property =
-    rut_introspectable_get_property (object,
-                                     set_property->property_id);
+  RutProperty *property;
   RutBoxed boxed;
+
+  if (!object)
+    return false;
+
+  property = rut_introspectable_get_property (object,
+                                              set_property->property_id);
 
   /* XXX: ideally we shouldn't need to init a RutBoxed and set
    * that on a property, and instead we could just directly
@@ -110,25 +80,27 @@ _apply_op_set_property (RigEngineOpApplyContext *ctx,
    * redundantly feed-back to the frontend process. */
   rut_property_set_boxed (&ctx->engine->ctx->property_ctx,
                           property, &boxed);
-
-  return true;
 }
 
-static void
+static bool
 _map_op_set_property (RigEngineOpMapContext *ctx,
                       Rig__Operation *src_pb_op,
                       Rig__Operation *pb_op)
 
 {
-  pb_op->set_property =
-    rig_pb_dup (ctx->serializer,
-                Rig__Operation__SetProperty,
-                rig__operation__set_property__init,
-                src_pb_op->set_property);
+  pb_op->set_property = rig_pb_dup (ctx->serializer,
+                                    Rig__Operation__SetProperty,
+                                    rig__operation__set_property__init,
+                                    src_pb_op->set_property);
 
-#error "doesn't this need to be able to fail? can't a mapping fail if a play-mode object that we are trying to edit has been deleted?"
   pb_op->set_property->object_id =
     ctx->map_id_cb (src_pb_op->set_property->object_id, ctx->user_data);
+
+  /* Note: we assume allocations are on the frame_stack so we don't
+   * need to explicitly free anything here... */
+  if (!pb_op->set_property->object_id)
+    return false;
+
   pb_op->set_property->value = src_pb_op->set_property->value;
 }
 
@@ -189,7 +161,7 @@ _apply_op_add_entity (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_add_entity (RigEngineOpMapContext *ctx,
                     Rig__Operation *src_pb_op,
                     Rig__Operation *pb_op)
@@ -201,6 +173,11 @@ _map_op_add_entity (RigEngineOpMapContext *ctx,
 
   pb_op->add_entity->parent_entity_id =
     ctx->map_id_cb (src_pb_op->add_entity->parent_entity_id, ctx->user_data);
+
+  /* Note: we assume allocations are on the frame_stack so we don't
+   * need to explicitly free anything here... */
+  if (!pb_op->add_entity->parent_entity_id)
+    return false;
 
   /* XXX: we assume that the new entity isn't currently
    * associated with any components and so the serialized
@@ -240,9 +217,6 @@ _apply_op_delete_entity (RigEngineOpApplyContext *ctx,
   RutEntity *entity =
     ctx->id_to_object_cb (pb_op->delete_entity->entity_id, ctx->user_data);
 
-  if (!entity)
-    return false;
-
   /* We want deletion to happen lazily so we take a reference before
    * removing it from the graph. */
   rut_object_ref (entity);
@@ -254,7 +228,7 @@ _apply_op_delete_entity (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_delete_entity (RigEngineOpMapContext *ctx,
                        Rig__Operation *src_pb_op,
                        Rig__Operation *pb_op)
@@ -266,6 +240,11 @@ _map_op_delete_entity (RigEngineOpMapContext *ctx,
 
   pb_op->delete_entity->entity_id =
     ctx->map_id_cb (src_pb_op->delete_entity->entity_id, ctx->user_data);
+
+  /* Note: we assume allocations are on the frame_stack so we don't
+   * need to explicitly free anything here... */
+  if (!pb_op->delete_entity->entity_id)
+    return false;
 }
 
 void
@@ -297,7 +276,7 @@ _apply_op_add_component (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_add_component (RigEngineOpMapContext *ctx,
                        Rig__Operation *src_pb_op,
                        Rig__Operation *pb_op)
@@ -330,7 +309,7 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_delete_component (RigEngineOpMapContext *ctx,
                           Rig__Operation *src_pb_op,
                           Rig__Operation *pb_op)
@@ -364,7 +343,7 @@ _apply_op_add_controller (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_add_controller (RigEngineOpMapContext *ctx,
                         Rig__Operation *src_pb_op,
                         Rig__Operation *pb_op)
@@ -398,7 +377,7 @@ _apply_op_delete_controller (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_delete_controller (RigEngineOpMapContext *ctx,
                            Rig__Operation *src_pb_op,
                            Rig__Operation *pb_op)
@@ -439,7 +418,7 @@ _apply_op_controller_set_const (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_set_const (RigEngineOpMapContext *ctx,
                               Rig__Operation *src_pb_op,
                               Rig__Operation *pb_op)
@@ -481,7 +460,7 @@ _apply_op_controller_path_add_node (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_path_add_node (RigEngineOpMapContext *ctx,
                                   Rig__Operation *src_pb_op,
                                   Rig__Operation *pb_op)
@@ -520,7 +499,7 @@ _apply_op_controller_path_delete_node (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_path_delete_node (RigEngineOpMapContext *ctx,
                                      Rig__Operation *src_pb_op,
                                      Rig__Operation *pb_op)
@@ -562,7 +541,7 @@ _apply_op_controller_path_set_node (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_path_set_node (RigEngineOpMapContext *ctx,
                                   Rig__Operation *src_pb_op,
                                   Rig__Operation *pb_op)
@@ -599,7 +578,7 @@ _apply_op_controller_add_property (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_add_property (RigEngineOpMapContext *ctx,
                                  Rig__Operation *src_pb_op,
                                  Rig__Operation *pb_op)
@@ -636,7 +615,7 @@ _apply_op_controller_remove_property (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_remove_property (RigEngineOpMapContext *ctx,
                                     Rig__Operation *src_pb_op,
                                     Rig__Operation *pb_op)
@@ -675,7 +654,7 @@ _apply_op_controller_property_set_method (RigEngineOpApplyContext *ctx,
   return true;
 }
 
-static void
+static bool
 _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
                                         Rig__Operation *src_pb_op,
                                         Rig__Operation *pb_op)
@@ -683,49 +662,12 @@ _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
 
 }
 
-#if 0
-void
-rig_engine_op_set_play_mode (RigEngine *engine,
-                             bool play_mode_enabled)
-{
-  RigPBSerializer *serializer = engine->ops_serializer;
-  Rig__Operation *pb_op = rig_pb_new (serializer, Rig__Operation,
-                                      rig__operation__init);
-
-  pb_op->type = RIG_ENGINE_OP_TYPE_SET_PLAY_MODE;
-
-  pb_op->set_play_mode = rig_pb_new (serializer, Rig__Operation__SetPlayMode,
-                                     rig__operation__set_play_mode__init);
-  pb_op->set_play_mode->play_mode_enabled = play_mode_enabled;
-
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
-}
-
-static bool
-_apply_op_set_play_mode (RigEngineOpApplyContext *ctx,
-                         Rig__Operation *pb_op)
-{
-  bool play_mode_enabled = pb_op->set_play_mode->play_mode_enabled;
-  rig_editor_set_play_mode_enabled (ctx->engine->editor, play_mode_enabled);
-
-  return true;
-}
-
-static void
-_map_op_set_play_mode (RigEngineOpMapContext *ctx,
-                       Rig__Operation *src_pb_op,
-                       Rig__Operation *pb_op)
-{
-  /* NOP */
-}
-#endif
-
 typedef struct _RigEngineOperation
 {
   bool (*apply_op) (RigEngineOpApplyContext *ctx,
                     Rig__Operation *pb_op);
 
-  void (*map_op) (RigEngineOpMapContext *ctx,
+  bool (*map_op) (RigEngineOpMapContext *ctx,
                   Rig__Operation *src_pb_op,
                   Rig__Operation *pb_op);
 
@@ -789,13 +731,42 @@ static RigEngineOperation _rig_engine_ops[] =
     _apply_op_controller_property_set_method,
     _map_op_controller_property_set_method,
   },
-#if 0
-  {
-    _apply_op_set_play_mode,
-    _map_op_set_play_mode,
-  }
-#endif
 };
+
+void
+rig_engine_op_map_context_init (RigEngineOpMapContext *map_ctx,
+                                RigEngine *engine,
+                                uint64_t (*map_id_cb) (uint64_t id_in,
+                                                       void *user_data),
+                                void (*register_id_cb) (void *object,
+                                                        uint64_t id,
+                                                        void *user_data),
+                                void *(*id_to_object_cb) (uint64_t id,
+                                                          void *user_data),
+                                void (*queue_delete_id_cb) (uint64_t id,
+                                                            void *user_data),
+                                void *user_data)
+{
+  rig_engine_op_apply_context_init (&map_ctx->apply_ctx,
+                                    engine,
+                                    register_id_cb,
+                                    id_to_object_cb,
+                                    queue_delete_id_cb,
+                                    user_data);
+
+  map_ctx->serializer = rig_pb_serializer_new (engine);
+  rig_pb_serializer_set_use_pointer_ids_enabled (map_ctx->serializer, true);
+
+  map_ctx->map_id_cb = map_id_cb;
+  map_ctx->user_data = user_data;
+}
+
+void
+rig_engine_op_map_context_destroy (RigEngineOpMapContext *map_ctx)
+{
+  rig_pb_serializer_destroy (map_ctx->serializer);
+  rig_engine_op_apply_context_destroy (&map_ctx->apply_ctx);
+}
 
 /* This function maps Rig__UIEdit operations from one ID space to
  * another and at the same time applies those operations with the
@@ -807,35 +778,27 @@ static RigEngineOperation _rig_engine_ops[] =
  * Rig__PropertyValues that don't reference any object ids
  * will be shared.
  *
- * This function returns NULL if it fails to apply anything.
+ * This function won't apply any operations that can't be mapped.
+ *
+ * The returned Rig__UIEdit will contain as many operations as can
+ * successfully be mapped.
+ *
+ * Since this api effectively validates all operations before applying
+ * them, this api is also used to apply edit operations in a slave
+ * device even though no mapping is really required.
  *
  * All the operations will be allocated on the engine->frame_stack
  * so there is nothing to explicitly free.
  */
 Rig__UIEdit *
-rig_engine_map_pb_ui_edit (RigEngine *engine,
-                           Rig__UIEdit *pb_ui_edit,
-                           RigEngineMapIDCallback map_id_cb,
-                           RigEngineRegisterIdCallback register_id_cb,
-                           RigEngineIdToObjectCallback id_to_object_cb,
-                           RigEngineDeleteIdCallback queue_delete_id_cb,
-                           void *user_data)
+rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
+                           Rig__UIEdit *pb_ui_edit)
 {
   RigPBSerializer *serializer;
   Rig__UIEdit *mapped_pb_ui_edits;
   Rig__Operation *pb_ops;
-  RigEngineOpApplyContext apply_ctx;
-  RigEngineOpMapContext map_ctx;
+  RigEngineOpApplyContext *apply_ctx = &map_ctx->apply_ctx;
   int i;
-
-  apply_ctx.engine = engine;
-  apply_ctx.id_to_object_cb = id_to_object_cb;
-  apply_ctx.register_id_cb = register_id_cb;
-  apply_ctx.queue_delete_id_cb = queue_delete_id_cb;
-  apply_ctx.user_data = user_data;
-
-  serializer = rig_pb_serializer_new (engine);
-  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
 
   mapped_pb_ui_edits = rig_pb_new (serializer, Rig__UIEdit, rig__uiedit__init);
   mapped_pb_ui_edits->n_ops = pb_ui_edit->n_ops;
@@ -853,11 +816,7 @@ rig_engine_map_pb_ui_edit (RigEngine *engine,
                                        mapped_pb_ui_edits->n_ops),
                                       RUT_UTIL_ALIGNOF (Rig__Operation));
 
-  map_ctx.serializer = serializer;
-  map_ctx.map_id_cb = map_id_cb;
-  map_ctx.user_data = user_data;
-
-  for (i = 0; i < pb_ui_edit->n_ops; i++)
+  for (i = 0; i < pb_ui_edit->n_ops; )
     {
       Rig__Operation *src_pb_op = pb_ui_edit->ops[i];
       Rig__Operation *pb_op = &pb_ops[i];
@@ -868,16 +827,21 @@ rig_engine_map_pb_ui_edit (RigEngine *engine,
 
       pb_op->type = src_pb_op->type;
 
-      _rig_engine_ops [pb_op->type].map_op (&map_ctx, src_pb_op, pb_op);
-      if (!_rig_engine_ops [pb_op->type].apply_op (&apply_ctx, pb_op))
+      if (!_rig_engine_ops [pb_op->type].map_op (map_ctx, src_pb_op, pb_op))
         {
           /* Note: all of the operations are allocated on the
            * frame-stack so we don't need to explicitly free anything.
            */
-          rig_pb_serializer_destroy (serializer);
-          return NULL;
+          continue;
         }
+
+      if (!_rig_engine_ops [pb_op->type].apply_op (apply_ctx, pb_op))
+        continue;
+
+      i++;
     }
+
+  pb_ui_edit->n_ops = i;
 
   rig_pb_serializer_destroy (serializer);
 
@@ -886,15 +850,22 @@ rig_engine_map_pb_ui_edit (RigEngine *engine,
 
 void
 rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
-                                  RigEngineRegisterIdCallback register_id_cb,
-                                  RigEngineIdToObjectCallback id_to_object_cb,
-                                  RigEngineDeleteIdCallback queue_delete_id_cb,
+                                  RigEngine *engine,
+                                  void (*register_id_cb) (void *object,
+                                                          uint64_t id,
+                                                          void *user_data),
+                                  void *(*id_to_object_cb) (uint64_t id,
+                                                            void *user_data),
+                                  void (*queue_delete_id_cb) (uint64_t id,
+                                                              void *user_data),
                                   void *user_data)
 {
-  ctx->engine = unserializer->engine;
+  ctx->engine = engine;
 
   ctx->unserializer = rig_pb_unserializer_new (engine);
-  rig_pb_unserializer_set_id_to_object_callback (ctx->unserializer, id_to_object_cb);
+  rig_pb_unserializer_set_id_to_object_callback (ctx->unserializer,
+                                                 id_to_object_cb,
+                                                 user_data);
 
   ctx->id_to_object_cb = id_to_object_cb;
   ctx->register_id_cb = register_id_cb;
@@ -920,14 +891,18 @@ rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
                              Rig__UIEdit *pb_ui_edit)
 {
   int i;
+  bool status = true;
 
   for (i = 0; i < pb_ui_edit->n_ops; i++)
     {
       Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
       if (!_rig_engine_ops[pb_op->type].apply_op (ctx, pb_op))
-        return false;
+        {
+          status = false;
+          continue;
+        }
     }
 
-  return true;
+  return status;
 }

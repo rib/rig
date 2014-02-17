@@ -156,7 +156,7 @@ queue_delete_object_cb (uint64_t id, void *user_data)
 
 static void
 frontend__update_ui (Rig__Frontend_Service *service,
-                     const Rig__UIDiff *ui_diff,
+                     const Rig__UIDiff *pb_ui_diff,
                      Rig__UpdateUIAck_Closure closure,
                      void *closure_data)
 {
@@ -165,22 +165,24 @@ frontend__update_ui (Rig__Frontend_Service *service,
     rig_pb_rpc_closure_get_connection_data (closure_data);
   RigEngine *engine = frontend->engine;
   int i, j;
-  int n_changes;
+  int n_property_changes;
   int n_actions;
   RigPBUnSerializer *unserializer;
-  RutBoxed boxed;
   RigEngineOpApplyContext *apply_op_ctx;
+  Rig__UIEdit *pb_ui_edit;
 
   //g_print ("Frontend: Update UI Request\n");
 
   frontend->ui_update_pending = false;
 
-  g_return_if_fail (ui_diff != NULL);
+  g_return_if_fail (pb_ui_diff != NULL);
 
-  n_changes = ui_diff->n_property_changes;
+  n_property_changes = pb_ui_diff->n_property_changes;
 
   apply_op_ctx = &frontend->apply_op_ctx;
-  unserializer = fronted->prop_change_unserializer;
+  unserializer = frontend->prop_change_unserializer;
+
+  pb_ui_edit = pb_ui_diff->edit;
 
   /* For compactness, property changes are serialized separately from
    * more general UI edit operations and so we need to take care that
@@ -189,32 +191,36 @@ frontend__update_ui (Rig__Frontend_Service *service,
    * of property changes.
    */
   j = 0;
-  for (i = 0; i < pb_ui_edit->n_ops; i++)
+  if (pb_ui_edit)
     {
-      Rig__Operation *pb_op = pb_ui_edit->ops[i];
-      int until = pb_op->sequence;
-
-      for (; j < until; j++)
+      for (i = 0; i < pb_ui_edit->n_ops; i++)
         {
-          Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
-          apply_property_change (frontend, unserializer, pb_change);
+          Rig__Operation *pb_op = pb_ui_edit->ops[i];
+          int until = pb_op->sequence;
+          bool status;
+
+          for (; j < until; j++)
+            {
+              Rig__PropertyChange *pb_change = pb_ui_diff->property_changes[j];
+              apply_property_change (frontend, unserializer, pb_change);
+            }
+
+          status = rig_engine_pb_op_apply (apply_op_ctx, pb_op);
+
+          g_warn_if_fail (status);
         }
-
-      status = _rig_engine_ops[pb_op->type].apply_op (apply_op_ctx, pb_op);
-
-      g_warn_if_fail (status);
     }
 
-  for (; j < ui_diff->n_changes; j++)
+  for (; j < n_property_changes; j++)
     {
-      Rig__PropertyChange *pb_change = ui_diff->property_changes[j];
+      Rig__PropertyChange *pb_change = pb_ui_diff->property_changes[j];
       apply_property_change (frontend, unserializer, pb_change);
     }
 
-  n_actions = ui_diff->n_actions;
+  n_actions = pb_ui_diff->n_actions;
   for (i = 0; i < n_actions; i++)
     {
-      Rig__SimulatorAction *pb_action = ui_diff->actions[i];
+      Rig__SimulatorAction *pb_action = pb_ui_diff->actions[i];
       switch (pb_action->type)
         {
 #if 0
@@ -238,7 +244,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
         }
     }
 
-  if (ui_diff->has_queued_frame)
+  if (pb_ui_diff->has_queue_frame)
     rut_shell_queue_redraw (engine->shell);
 
   closure (&ack, closure_data);
@@ -324,7 +330,6 @@ rig_frontend_reload_simulator_ui (RigFrontend *frontend,
 {
   RigEngine *engine;
   RigPBSerializer *serializer;
-  ProtobufCService *simulator_service;
   Rig__UI *pb_ui;
 
   if (!frontend->connected)
@@ -408,6 +413,18 @@ static void
 frame_running_ack (const Rig__RunFrameAck *ack,
                    void *closure_data)
 {
+  RigFrontend *frontend = closure_data;
+  RigEngine *engine = frontend->engine;
+
+  /* At this point we know that the simulator has now switched modes
+   * and so we can finish the switch in the frontend...
+   */
+  if (frontend->pending_play_mode_enabled != engine->play_mode)
+    {
+      rig_engine_set_play_mode_enabled (engine,
+                                        frontend->pending_play_mode_enabled);
+    }
+
   g_print ("Frontend: Run Frame ACK received from simulator\n");
 }
 
@@ -418,13 +435,13 @@ typedef struct _RegistrationState
   Rig__ObjectRegistration **object_registrations;
 } RegistrationState;
 
-static void
+static gboolean
 register_temporary_cb (gpointer key,
                        gpointer value,
                        gpointer user_data)
 {
   RegistrationState *state = user_data;
-  Rig__ObjectRegistration *pb_registration = state->registrations[state->index];
+  Rig__ObjectRegistration *pb_registration = &state->pb_registrations[state->index];
   uint64_t id = (uint64_t)(uintptr_t)key;
   void *object = value;
 
@@ -433,12 +450,15 @@ register_temporary_cb (gpointer key,
   pb_registration->real_id = (uint64_t)(uintptr_t)object;
 
   state->object_registrations[state->index++] = pb_registration;
+
+  return true;
 }
 
 void
 rig_frontend_run_simulator_frame (RigFrontend *frontend,
                                   Rig__FrameSetup *setup)
 {
+  RigEngine *engine = frontend->engine;
   ProtobufCService *simulator_service;
   int n_temps;
 
@@ -478,9 +498,10 @@ rig_frontend_run_simulator_frame (RigFrontend *frontend,
     }
 
   rig__simulator__run_frame (simulator_service,
-                             &setup,
+                             setup,
                              frame_running_ack,
-                             NULL); /* user data */
+                             frontend); /* user data */
+
   frontend->ui_update_pending = true;
 }
 
@@ -586,16 +607,17 @@ rig_frontend_new (RutShell *shell,
 
   rut_list_init (&frontend->ui_update_cb_list);
 
-  rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
-                                    register_object_cb,
-                                    lookup_object_cb,
-                                    queue_delete_object_cb,
-                                    frontend);
-
   rig_frontend_spawn_simulator (frontend);
 
   frontend->engine =
     rig_engine_new_for_frontend (shell, frontend, ui_filename);
+
+  rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
+                                    frontend->engine,
+                                    register_object_cb,
+                                    lookup_object_cb,
+                                    queue_delete_object_cb,
+                                    frontend);
 
   unserializer = rig_pb_unserializer_new (frontend->engine);
   /* Just to make sure we don't mistakenly use this unserializer to
@@ -651,4 +673,38 @@ rig_frontend_add_ui_update_callback (RigFrontend *frontend,
                                callback,
                                user_data,
                                destroy);
+}
+
+static void
+queue_simulator_frame_cb (RigFrontend *frontend,
+                          void *user_data)
+{
+  rut_shell_queue_redraw (frontend->engine->shell);
+}
+
+/* Similar to rut_shell_queue_redraw() but for queuing a new simulator
+ * frame. If the simulator is currently busy this waits until we
+ * recieve an update from the simulator and then queues a redraw. */
+void
+rig_frontend_queue_simulator_frame (RigFrontend *frontend)
+{
+  if (!frontend->ui_update_pending)
+    rut_shell_queue_redraw (frontend->engine->shell);
+  else if (!frontend->simulator_queue_frame_closure)
+    {
+      frontend->simulator_queue_frame_closure =
+        rig_frontend_add_ui_update_callback (frontend,
+                                             queue_simulator_frame_cb,
+                                             frontend,
+                                             NULL); /* destroy */
+    }
+}
+
+void
+rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
+                                          bool play_mode_enabled)
+{
+  frontend->pending_play_mode_enabled = play_mode_enabled;
+
+  rig_frontend_queue_simulator_frame (frontend);
 }
