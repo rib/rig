@@ -53,11 +53,12 @@ typedef struct _RigSlave
   RigEngineOpApplyContext apply_op_ctx;
 
   RutQueue *edits_for_sim;
+  RutClosure *ui_update_closure;
   RutQueue *pending_edits;
 
   RutClosure *ui_load_closure;
-  Rig__UI *pending_ui_load;
-  Rig__LoadResult_Closure *pending_ui_load_closure;
+  const Rig__UI *pending_ui_load;
+  Rig__LoadResult_Closure pending_ui_load_closure;
   void *pending_ui_load_closure_data;
 
 } RigSlave;
@@ -83,7 +84,7 @@ static RutMagazine *_rig_slave_object_id_magazine = NULL;
 static void
 free_object_id (void *id)
 {
-  rut_magazine_chunk_free (_rig_slave_object_id_magazine,, id);
+  rut_magazine_chunk_free (_rig_slave_object_id_magazine, id);
 }
 
 static void *
@@ -101,7 +102,7 @@ lookup_object (RigSlave *slave, uint64_t id)
 }
 
 static void
-register_object_cb (void *play_mode_object,
+register_object_cb (void *object,
                     uint64_t edit_mode_id,
                     void *user_data)
 {
@@ -140,7 +141,7 @@ load_ui (RigSlave *slave)
   RigEngine *engine = slave->engine;
   float width, height;
   RigPBUnSerializer *unserializer;
-  Rig__UI *pb_ui = slave->pending_ui_load;
+  const Rig__UI *pb_ui = slave->pending_ui_load;
   RigUI *ui;
 
   g_return_if_fail (pb_ui != NULL);
@@ -156,10 +157,10 @@ load_ui (RigSlave *slave)
     }
 
   slave->edit_id_to_play_object_map =
-    g_hash_table_new (g_int64_hash,
-                      g_int64_equal, /* key equal */
-                      free_object_id, /* key destroy */
-                      NULL); /* value destroy */
+    g_hash_table_new_full (g_int64_hash,
+                           g_int64_equal, /* key equal */
+                           free_object_id, /* key destroy */
+                           NULL); /* value destroy */
 
   /* Note: we don't have a free function for the value because we
    * share object_ids between both hash-tables and need to be
@@ -227,14 +228,28 @@ ui_load_cb (RigFrontend *frontend, void *user_data)
   load_ui (slave);
 }
 
+typedef struct _PendingEdit
+{
+  RigSlave *slave;
+  RutClosure *ui_update_closure;
+
+  const Rig__UIEdit *edit;
+  Rig__UIEditResult_Closure closure;
+  void *closure_data;
+
+  bool status;
+} PendingEdit;
+
+
 static void
 slave__load (Rig__Slave_Service *service,
              const Rig__UI *pb_ui,
              Rig__LoadResult_Closure closure,
              void *closure_data)
 {
-  Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
+  RigFrontend *frontend = slave->frontend;
+  RutQueueItem *item;
 
   g_print ("Slave: UI Load Request\n");
 
@@ -251,16 +266,15 @@ slave__load (Rig__Slave_Service *service,
   slave->pending_ui_load_closure_data = closure_data;
 
   /* Discard any pending edit, since it's now redundant... */
-  if (slave->pending_edit)
+  rut_list_for_each (item, &slave->pending_edits->items, list_node)
     {
-      Rig__UIEditResult result = RIG__UI_EDIT_RESULT__INIT;
-      slave->pending_edit_closure (&result,
-                                   slave->pending_edit_closure_data);
-      slave->pending_edit = NULL;
-      slave->pending_edit_closure = NULL;
-      slave->pending_edit_closure_data = NULL;
-    }
+      Rig__UIEditResult result = RIG__UIEDIT_RESULT__INIT;
+      PendingEdit *pending_edit = item->data;
 
+      pending_edit->closure (&result, pending_edit->closure_data);
+
+      g_slice_free (PendingEdit, pending_edit);
+    }
 
   /* XXX: If the simulator is busy we need to synchonize with it
    * before applying any edits... */
@@ -269,28 +283,19 @@ slave__load (Rig__Slave_Service *service,
   else
     {
       slave->ui_load_closure =
-        rig_frontend_add_ui_update_callback (slave->frontend,
+        rig_frontend_add_ui_update_callback (frontend,
                                              ui_load_cb,
-                                             slave);
+                                             slave,
+                                             NULL); /* destroy */
     }
 }
-
-typedef struct _PendingEdit
-{
-  RigSlave *slave;
-  RutClosure *ui_update_closure;
-
-  Rig__UIEdit edit;
-  Rig__UIEditResult_Closure closure;
-  void *closure_data;
-} PendingEdit;
 
 static void
 apply_pending_edits (RigSlave *slave)
 {
   RutQueueItem *item;
 
-  rut_list_for_each (item, slave->pending_edits->items, list_node)
+  rut_list_for_each (item, &slave->pending_edits->items, list_node)
     {
       PendingEdit *pending_edit = item->data;
 
@@ -305,7 +310,7 @@ apply_pending_edits (RigSlave *slave)
        * report that status back to the editor so that it can inform
        * the user who can choose to reset the slave.
        */
-      if (!rig_engine_apply_pb_ui_edit (slave->apply_op_ctx,
+      if (!rig_engine_apply_pb_ui_edit (&slave->apply_op_ctx,
                                         pending_edit->edit))
         {
           pending_edit->status = false;
@@ -324,7 +329,7 @@ apply_pending_edits (RigSlave *slave)
 
   /* Ensure we will forward edits to the simulator in
    * rig_slave_paint()... */
-  rut_shell_queue_redraw (engine->shell);
+  rut_shell_queue_redraw (slave->engine->shell);
 }
 
 /* When this is called we know that the frontend is in sync with the
@@ -350,8 +355,8 @@ slave__edit (Rig__Slave_Service *service,
              void *closure_data)
 {
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
-  RigEngine *engine = slave->engine;
   PendingEdit *pending_edit = g_slice_new0 (PendingEdit);
+  RigFrontend *frontend = slave->frontend;
 
   g_print ("Slave: UI Edit Request\n");
 
@@ -372,9 +377,10 @@ slave__edit (Rig__Slave_Service *service,
       if (!slave->ui_update_closure)
         {
           slave->ui_update_closure =
-            rig_frontend_add_ui_update_callback (slave->frontend,
+            rig_frontend_add_ui_update_callback (frontend,
                                                  ui_updated_cb,
-                                                 slave);
+                                                 slave,
+                                                 NULL); /* destroy */
         }
     }
 }
@@ -469,6 +475,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
   RigEngine *engine = slave->engine;
+  RutQueueItem *item;
 
   if (slave->ui_update_closure)
     {
@@ -476,11 +483,11 @@ rig_slave_fini (RutShell *shell, void *user_data)
       slave->ui_update_closure = NULL;
     }
 
-  rut_list_for_each (item, slave->pending_edits->items, list_node)
+  rut_list_for_each (item, &slave->pending_edits->items, list_node)
     g_slice_free (PendingEdit, item->data);
   rut_queue_free (slave->pending_edits);
 
-  rut_list_for_each (item, slave->edits_for_sim->items, list_node)
+  rut_list_for_each (item, &slave->edits_for_sim->items, list_node)
     g_slice_free (PendingEdit, item->data);
   rut_queue_free (slave->edits_for_sim);
 
@@ -489,8 +496,6 @@ rig_slave_fini (RutShell *shell, void *user_data)
   /* TODO: move to frontend */
   rig_avahi_unregister_service (engine);
   rig_rpc_server_shutdown (engine->slave_service);
-
-  _rig_simulator_object_id_magazine = NULL;
 
   slave->engine = NULL;
 
@@ -511,12 +516,12 @@ object_delete_cb (RutObject *object,
 {
   RigSlave *slave = user_data;
   uint64_t *object_id =
-    g_hash_table_lookup (slave->play_object_to_edit_id_map, item->data);
+    g_hash_table_lookup (slave->play_object_to_edit_id_map, object);
 
   if (object_id)
     {
       g_hash_table_remove (slave->edit_id_to_play_object_map, object_id);
-      g_hash_table_remove (slave->play_object_to_edit_id_map, item->data);
+      g_hash_table_remove (slave->play_object_to_edit_id_map, object);
     }
 }
 
@@ -525,6 +530,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
   RigEngine *engine = slave->engine;
+  RigFrontend *frontend = engine->frontend;
 
   rut_shell_start_redraw (shell);
 
@@ -571,7 +577,8 @@ rig_slave_paint (RutShell *shell, void *user_data)
            * user they can decided if they want to reset the slave
            * device.
            */
-          setup->edit = pending_edit->edit;
+          /* FIXME: protoc-c should declare this member as const */
+          setup.edit = (Rig__UIEdit *)pending_edit->edit;
         }
 
       rig_frontend_run_simulator_frame (frontend, &setup);

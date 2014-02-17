@@ -33,8 +33,10 @@ static const GOptionEntry _rig_device_entries[] =
 };
 
 static void
-on_ui_load_cb (RigDevice *device)
+on_ui_load_cb (void *user_data)
 {
+  RigDevice *device = user_data;
+
   rig_frontend_reload_simulator_ui (device->frontend,
                                     device->engine->play_mode_ui,
                                     true); /* play mode ui */
@@ -76,8 +78,6 @@ rig_device_paint (RutShell *shell, void *user_data)
   RigDevice *device = user_data;
   RigEngine *engine = device->engine;
   RigFrontend *frontend = engine->frontend;
-  ProtobufCService *simulator_service =
-    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
 
   rut_shell_start_redraw (shell);
 

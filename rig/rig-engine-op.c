@@ -794,7 +794,7 @@ Rig__UIEdit *
 rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
                            Rig__UIEdit *pb_ui_edit)
 {
-  RigPBSerializer *serializer;
+  RigPBSerializer *serializer = map_ctx->serializer;
   Rig__UIEdit *mapped_pb_ui_edits;
   Rig__Operation *pb_ops;
   RigEngineOpApplyContext *apply_ctx = &map_ctx->apply_ctx;
@@ -888,7 +888,7 @@ rig_engine_pb_op_apply (RigEngineOpApplyContext *ctx,
 
 bool
 rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
-                             Rig__UIEdit *pb_ui_edit)
+                             const Rig__UIEdit *pb_ui_edit)
 {
   int i;
   bool status = true;

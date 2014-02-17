@@ -307,7 +307,7 @@ handle_load_response (const Rig__LoadResult *result,
 
 void
 rig_frontend_forward_simulator_ui (RigFrontend *frontend,
-                                   Rig__UI *pb_ui,
+                                   const Rig__UI *pb_ui,
                                    bool play_mode)
 {
   ProtobufCService *simulator_service;

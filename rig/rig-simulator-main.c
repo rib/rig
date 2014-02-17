@@ -64,8 +64,6 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  _rig_in_simulator_mode = true;
-
   memset (&simulator, 0, sizeof (RigSimulator));
 
   if (strcmp (frontend, "editor") == 0)

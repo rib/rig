@@ -1331,7 +1331,8 @@ android_init (RutShell *shell)
 {
   cogl_android_set_native_window (shell->app->window);
 
-  shell->init_cb (shell, shell->user_data);
+  if (shell->init_cb)
+    shell->init_cb (shell, shell->user_data);
   return 0;
 }
 
@@ -2265,7 +2266,8 @@ rut_shell_main (RutShell *shell)
 
           if (shell->app->destroyRequested != 0)
             {
-              shell->fini_cb (shell, shell->user_data);
+              if (shell->fini_cb)
+                shell->fini_cb (shell, shell->user_data);
               return;
             }
 
@@ -2280,7 +2282,8 @@ rut_shell_main (RutShell *shell)
 
   GSource *cogl_source;
 
-  shell->init_cb (shell, shell->user_data);
+  if (shell->init_cb)
+    shell->init_cb (shell, shell->user_data);
 
   if (!shell->headless)
     {
@@ -2321,7 +2324,8 @@ rut_shell_main (RutShell *shell)
       }
   }
 
-  shell->fini_cb (shell, shell->user_data);
+  if (shell->fini_cb)
+    shell->fini_cb (shell, shell->user_data);
 
 #ifdef USE_SDL
   g_main_context_set_poll_func (g_main_context_default (),

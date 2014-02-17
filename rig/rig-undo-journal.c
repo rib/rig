@@ -1594,8 +1594,6 @@ static UndoRedoOpImpl undo_redo_ops[] =
 static void
 undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
-  Rig__Operation *pb_op;
-
   g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
   undo_redo_ops[undo_redo->op].apply (journal, undo_redo);

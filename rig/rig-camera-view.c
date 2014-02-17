@@ -2211,7 +2211,7 @@ rig_camera_view_new (RigEngine *engine)
     rut_input_region_new_rectangle (0, 0, 0, 0, input_region_cb, view);
   rut_graphable_add_child (view, view->input_region);
 
-  if (!_rig_in_simulator_mode)
+  if (engine->frontend)
     {
       /* picking ray */
       view->picking_ray_color = cogl_pipeline_new (engine->ctx->cogl_context);

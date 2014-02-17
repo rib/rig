@@ -163,7 +163,7 @@ rig_engine_pb_op_apply (RigEngineOpApplyContext *ctx,
 
 bool
 rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
-                             Rig__UIEdit *pb_ui_edit);
+                             const Rig__UIEdit *pb_ui_edit);
 
 typedef struct _RigEngineOpMapContext
 {

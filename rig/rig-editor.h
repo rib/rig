@@ -29,16 +29,17 @@
 
 typedef struct _RigEditor RigEditor;
 
-extern RutType rig_engine_type;
+extern RutType rig_editor_type;
+
+RigEditor *
+rig_editor_new (const char *filename);
 
 void
-rig_editor_init (RutShell *shell, void *user_data);
+rig_editor_run (RigEditor *editor);
 
 void
-rig_editor_fini (RutShell *shell, void *user_data);
-
-void
-rig_editor_paint (RutShell *shell, void *user_data);
+rig_editor_load_file (RigEditor *editor,
+                      const char *filename);
 
 /* FIXME: move necessary state to RigEditor and update this
  * api to take a RigEditor pointer */

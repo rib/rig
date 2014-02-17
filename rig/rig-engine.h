@@ -307,12 +307,6 @@ struct _RigEngine
 
 /* FIXME: find a better place to put these prototypes */
 
-#ifdef RIG_EDITOR_ENABLED
-extern bool _rig_in_editor_mode;
-#endif
-
-extern bool _rig_in_simulator_mode;
-
 extern RutType rig_objects_selection_type;
 
 RigEngine *

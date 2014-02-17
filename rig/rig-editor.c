@@ -61,14 +61,6 @@ struct _RigEditor
 
   RutQueue *edit_ops;
 
-  /* Ops queued here will only be sent to the simulator and
-   * they won't be mapped from edit-mode to play-mode.
-   *
-   * These are used for example to tell the simulator to suspend
-   * controllers when switching into edit-mode.
-   */
-  RutQueue *sim_only_ops;
-
   RigEngineOpApplyContext apply_op_ctx;
   RigEngineOpMapContext map_op_ctx;
 };
@@ -2363,105 +2355,6 @@ rig_editor_create_ui (RigEngine *engine)
   init_resize_handle (engine);
 }
 
-void
-rig_editor_init (RutShell *shell, void *user_data)
-{
-  RigEditor *editor = user_data;
-  RigEngine *engine;
-
-  editor->edit_ops = rut_queue_new ();
-  editor->sim_only_ops = rut_queue_new ();
-
-  /* TODO: RigFrontend should be a trait of the engine */
-  editor->frontend = rig_frontend_new (shell,
-                                       RIG_FRONTEND_ID_EDITOR,
-                                       editor->ui_filename);
-
-  engine = editor->frontend->engine;
-  editor->engine = engine;
-
-  /* TODO: RigEditor should be a trait of the engine */
-  engine->editor = editor;
-
-
-  rig_frontend_set_simulator_connected_callback (editor->frontend,
-                                                 simulator_connected_cb,
-                                                 editor);
-
-  rig_engine_set_apply_op_callback (engine, apply_edit_op_cb, editor);
-  rig_engine_set_ui_load_callback (engine, on_ui_load_cb, editor);
-
-  rig_engine_op_apply_context_init (&editor->apply_op_ctx,
-                                    engine,
-                                    nop_register_id_cb,
-                                    nop_id_cast_cb, /* ids == obj ptrs */
-                                    queue_delete_edit_mode_object_cb,
-                                    editor); /* user data */
-
-  rig_engine_op_map_context_init (&editor->map_op_ctx,
-                                  engine,
-                                  map_id_cb,
-                                  register_play_mode_object_cb,
-                                  nop_id_cast_cb, /* ids == obj ptrs */
-                                  queue_delete_play_mode_object_cb,
-                                  editor); /* user data */
-
-  /* TODO move into editor */
-  rig_avahi_run_browser (engine);
-
-  rut_shell_add_input_callback (editor->shell,
-                                rig_engine_input_handler,
-                                engine, NULL);
-}
-
-void
-rig_editor_fini (RutShell *shell, void *user_data)
-{
-  RigEditor *editor = user_data;
-  RigEngine *engine = editor->engine;
-
-  rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
-  rig_engine_op_map_context_destroy (&editor->map_op_ctx);
-
-  rut_queue_clear (editor->edit_ops);
-  rut_queue_free (editor->edit_ops);
-  editor->edit_ops = NULL;
-
-  rut_queue_clear (editor->sim_only_ops);
-  rut_queue_free (editor->sim_only_ops);
-  editor->sim_only_ops = NULL;
-
-  rut_object_unref (engine);
-  editor->engine = NULL;
-}
-
-static void
-_rig_engine_free (RutObject *object)
-{
-  RigEngine *engine = object'
-
-  rut_object_free (RigEngine, engine);
-}
-
-RutType rig_engine_type;
-
-static void
-_rig_engine_init_type (void)
-{
-  rut_type_init (&rig_engine_type, "RigEngine", _rig_engine_free);
-}
-
-#if 0
-static bool
-object_deleted_cb (uint63_t id, void *user_data)
-{
-  RigEngine *engine = user_data;
-  void *object (void *)(intptr_t)id;
-
-  g_hash_table_remove (engine->edit_to_play_object_map, object);
-}
-#endif
-
 static Rig__Operation **
 serialize_ops (RigEditor *editor, RigPBSerializer *serializer)
 {
@@ -2566,8 +2459,8 @@ delete_object_cb (RutObject *object, void *user_data)
   g_hash_table_remove (editor->play_to_edit_object_map, play_mode_object);
 }
 
-void
-rig_editor_paint (RutShell *shell, void *user_data)
+static void
+rig_editor_redraw (RutShell *shell, void *user_data)
 {
   RigEditor *editor = user_data;
   RigEngine *engine = editor->engine;
@@ -2667,3 +2560,131 @@ rig_editor_paint (RutShell *shell, void *user_data)
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
 }
+
+static void
+_rig_editor_free (RutObject *object)
+{
+  RigEditor *editor = object;
+
+  rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
+  rig_engine_op_map_context_destroy (&editor->map_op_ctx);
+
+  rut_queue_clear (editor->edit_ops);
+  rut_queue_free (editor->edit_ops);
+
+  rut_object_unref (editor->engine);
+
+  rut_object_unref (editor->frontend);
+  rut_object_unref (editor->ctx);
+  rut_object_unref (editor->shell);
+
+  rut_object_free (RigEditor, editor);
+}
+
+RutType rig_editor_type;
+
+static void
+_rig_editor_init_type (void)
+{
+  rut_type_init (&rig_engine_type, "RigEditor", _rig_editor_free);
+}
+
+RigEditor *
+rig_editor_new (const char *filename)
+{
+  RigEditor *editor = rut_object_alloc0 (RigEditor,
+                                         &rig_editor_type,
+                                         _rig_editor_init_type);
+  char *assets_location;
+  RigEngine *engine;
+
+  editor->shell = rut_shell_new (false, /* not headless */
+                                 NULL, /* shell init */
+                                 NULL, /* shell fini */
+                                 rig_editor_redraw,
+                                 editor);
+
+  editor->ctx = rut_context_new (editor->shell);
+  rut_context_init (editor->ctx);
+
+  editor->ui_filename = g_strdup (filename);
+
+  assets_location = g_path_get_dirname (editor->ui_filename);
+  rut_set_assets_location (editor->ctx, assets_location);
+  g_free (assets_location);
+
+  editor->edit_ops = rut_queue_new ();
+
+  /* TODO: RigFrontend should be a trait of the engine */
+  editor->frontend = rig_frontend_new (editor->shell,
+                                       RIG_FRONTEND_ID_EDITOR,
+                                       editor->ui_filename);
+
+  engine = editor->frontend->engine;
+  editor->engine = engine;
+
+  /* TODO: RigEditor should be a trait of the engine */
+  engine->editor = editor;
+
+  rig_frontend_set_simulator_connected_callback (editor->frontend,
+                                                 simulator_connected_cb,
+                                                 editor);
+
+  rig_engine_set_apply_op_callback (engine, apply_edit_op_cb, editor);
+  rig_engine_set_ui_load_callback (engine, on_ui_load_cb, editor);
+
+  rig_engine_op_apply_context_init (&editor->apply_op_ctx,
+                                    engine,
+                                    nop_register_id_cb,
+                                    nop_id_cast_cb, /* ids == obj ptrs */
+                                    queue_delete_edit_mode_object_cb,
+                                    editor); /* user data */
+
+  rig_engine_op_map_context_init (&editor->map_op_ctx,
+                                  engine,
+                                  map_id_cb,
+                                  register_play_mode_object_cb,
+                                  nop_id_cast_cb, /* ids == obj ptrs */
+                                  queue_delete_play_mode_object_cb,
+                                  editor); /* user data */
+
+  /* TODO move into editor */
+  rig_avahi_run_browser (engine);
+
+  rut_shell_add_input_callback (editor->shell,
+                                rig_engine_input_handler,
+                                engine, NULL);
+
+  return editor;
+}
+
+void
+rig_editor_load_file (RigEditor *editor,
+                      const char *filename)
+{
+  /* FIXME: report an error to the user! */
+  g_return_if_fail (editor->engine->play_mode == false);
+
+  if (editor->ui_filename)
+    g_free (editor->ui_filename);
+
+  editor->ui_filename = g_strdup (filename);
+  rig_engine_load_file (editor->engine, filename);
+}
+
+void
+rig_editor_run (RigEditor *editor)
+{
+  rut_shell_main (editor->shell);
+}
+
+#if 0
+static bool
+object_deleted_cb (uint63_t id, void *user_data)
+{
+  RigEngine *engine = user_data;
+  void *object (void *)(intptr_t)id;
+
+  g_hash_table_remove (engine->edit_to_play_object_map, object);
+}
+#endif

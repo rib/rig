@@ -40,10 +40,9 @@ static const GOptionEntry _rig_editor_entries[] =
 int
 main (int argc, char **argv)
 {
-  RigEditor *editor = g_new0 (RigEditor, 1);
   GOptionContext *context = g_option_context_new (NULL);
+  RigEditor *editor;
   GError *error = NULL;
-  char *assets_location;
 
   gst_init (&argc, &argv);
 
@@ -64,31 +63,11 @@ main (int argc, char **argv)
       exit (EXIT_FAILURE);
     }
 
-  editor->ui_filename = g_strdup (_rig_editor_remaining_args[0]);
+  editor = rig_editor_new (_rig_editor_remaining_args[0]);
 
-  editor->shell = rut_shell_new (false, /* not headless */
-                                rig_editor_init,
-                                rig_editor_fini,
-                                rig_editor_paint,
-                                &editor);
+  rig_editor_run (editor);
 
-  editor->ctx = rut_context_new (editor.shell);
-
-  rut_context_init (editor->ctx);
-
-  _rig_in_editor_mode = true;
-
-  assets_location = g_path_get_dirname (editor->ui_filename);
-  rut_set_assets_location (editor->ctx, assets_location);
-  g_free (assets_location);
-
-  rut_shell_main (editor.shell);
-
-  rut_object_unref (editor->frontend);
-  rut_object_unref (editor->ctx);
-  rut_object_unref (editor->shell);
-
-  g_free (editor);
+  rut_object_unref (editor);
 
   return 0;
 }

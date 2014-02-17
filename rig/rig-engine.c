@@ -35,6 +35,7 @@
 
 
 #include <cogl/cogl.h>
+#include <cogl/cogl-sdl.h>
 
 #include <rut.h>
 #include <rut-bin.h>
@@ -92,12 +93,6 @@ static RutPropertySpec _rig_engine_prop_specs[] = {
 
 static RigObjectsSelection *
 _rig_objects_selection_new (RigEngine *engine);
-
-#ifdef RIG_EDITOR_ENABLED
-bool _rig_in_editor_mode = FALSE;
-#endif
-
-bool _rig_in_simulator_mode = FALSE;
 
 static RutTraverseVisitFlags
 scenegraph_pre_paint_cb (RutObject *object,
@@ -516,7 +511,7 @@ rig_engine_dirty_properties_menu (RutImageSource *source,
 {
 #ifdef RIG_EDITOR_ENABLED
   RigEngine *engine = user_data;
-  if (_rig_in_editor_mode)
+  if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     _rig_engine_update_inspector (engine);
 #endif
 }
@@ -806,7 +801,7 @@ allocate (RigEngine *engine)
   rut_sizable_set_size (engine->top_stack, engine->window_width, engine->window_height);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (_rig_in_editor_mode)
+  if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       if (engine->resize_handle_transform)
         {
@@ -853,7 +848,7 @@ engine_onscreen_resize (CoglOnscreen *onscreen,
 {
   RigEngine *engine = user_data;
 
-  g_return_if_fail (!_rig_in_simulator_mode);
+  g_return_if_fail (engine->simulator == NULL);
 
   rig_engine_resize (engine, width, height);
 }
@@ -1427,7 +1422,7 @@ _rig_engine_new_full (RutShell *shell,
    * of an editor. */
   engine->objects_selection = _rig_objects_selection_new (engine);
 
-  if (_rig_in_editor_mode)
+  if (frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       rut_list_init (&engine->tool_changed_cb_list);
 
@@ -1456,7 +1451,7 @@ _rig_engine_new_full (RutShell *shell,
     }
 
 
-  if (!_rig_in_simulator_mode)
+  if (engine->frontend)
     {
       engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
@@ -1484,7 +1479,7 @@ _rig_engine_new_full (RutShell *shell,
 #endif
 
 #ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode)
+      if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
         {
           engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
                                                 1000, 700);
@@ -1507,6 +1502,7 @@ _rig_engine_new_full (RutShell *shell,
       engine->window_width = cogl_framebuffer_get_width (fb);
       engine->window_height  = cogl_framebuffer_get_height (fb);
 
+      /* FIXME: avoid poking into engine->frontend here... */
       engine->frontend->has_resized = true;
       engine->frontend->pending_width = engine->window_width;
       engine->frontend->pending_height = engine->window_height;
@@ -1587,7 +1583,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
     {
     case RUT_INPUT_EVENT_TYPE_KEY:
 #ifdef RIG_EDITOR_ENABLED
-      if (_rig_in_editor_mode &&
+      if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
           rut_key_event_get_action (event) == RUT_KEY_EVENT_ACTION_DOWN)
         {
           switch (rut_key_event_get_keysym (event))
@@ -1712,8 +1708,13 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
     asset = rut_asset_new_ply_model (engine->ctx, path, inferred_tags);
 
 #ifdef RIG_EDITOR_ENABLED
-  if (asset && _rig_in_editor_mode && rut_asset_needs_thumbnail (asset))
-    rut_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
+  if (engine->frontend &&
+      engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
+      asset &&
+      rut_asset_needs_thumbnail (asset))
+    {
+      rut_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
+    }
 #endif
 
   g_list_free (inferred_tags);

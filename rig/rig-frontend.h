@@ -36,6 +36,7 @@ typedef enum _RigFrontendID
 #include "rig-engine.h"
 #include "rig-simulator.h"
 #include "rig-pb.h"
+#include "rig-engine-op.h"
 
 #include "rig.pb-c.h"
 
@@ -89,7 +90,7 @@ rig_frontend_new (RutShell *shell,
 
 void
 rig_frontend_forward_simulator_ui (RigFrontend *frontend,
-                                   Rig__UI *pb_ui,
+                                   const Rig__UI *pb_ui,
                                    bool play_mode);
 
 void
