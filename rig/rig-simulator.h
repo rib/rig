@@ -43,6 +43,8 @@ typedef enum _RigSimulatorActionType
  */
 struct _RigSimulator
 {
+  RutObjectBase _base;
+
   RigFrontendID frontend_id;
 
   bool redraw_queued;
@@ -71,8 +73,6 @@ struct _RigSimulator
 
   RigPBUnSerializer *ui_unserializer;
   RigPBUnSerializer *ops_unserializer;
-  RigPBSerializer *ops_serializer;
-
   RigEngineOpApplyContext apply_op_ctx;
 
   GHashTable *object_to_id_map;
@@ -88,11 +88,14 @@ struct _RigSimulator
   RutQueue *ops;
 };
 
-void
-rig_simulator_init (RutShell *shell, void *user_data);
+extern RutType rig_simulator_type;
+
+RigSimulator *
+rig_simulator_new (RigFrontendID frontend_id,
+                   int fd);
 
 void
-rig_simulator_fini (RutShell *shell, void *user_data);
+rig_simulator_run (RigSimulator *simulator);
 
 void
 rig_simulator_run_frame (RutShell *shell, void *user_data);

@@ -47,7 +47,9 @@ free_item (RutQueueItem *item)
 RutQueue *
 rut_queue_new (void)
 {
-  return g_new0 (RutQueue, 1);
+  RutQueue *queue = g_new (RutQueue, 1);
+  rut_list_init (&queue->items);
+  return queue;
 }
 
 void

@@ -16,6 +16,8 @@ static char **_rig_device_remaining_args = NULL;
 
 typedef struct _RigDevice
 {
+  RutObjectBase _base;
+
   RutShell *shell;
   RutContext *ctx;
   RigFrontend *frontend;
@@ -33,47 +35,7 @@ static const GOptionEntry _rig_device_entries[] =
 };
 
 static void
-on_ui_load_cb (void *user_data)
-{
-  RigDevice *device = user_data;
-
-  rig_frontend_reload_simulator_ui (device->frontend,
-                                    device->engine->play_mode_ui,
-                                    true); /* play mode ui */
-}
-
-void
-rig_device_init (RutShell *shell, void *user_data)
-{
-  RigDevice *device = user_data;
-  RigEngine *engine;
-
-  device->frontend = rig_frontend_new (shell,
-                                       RIG_FRONTEND_ID_DEVICE,
-                                       device->ui_filename);
-
-  engine = device->frontend->engine;
-  device->engine = engine;
-
-  rig_engine_set_ui_load_callback (engine, on_ui_load_cb, device);
-
-  rut_shell_add_input_callback (device->shell,
-                                rig_engine_input_handler,
-                                device->engine, NULL);
-}
-
-void
-rig_device_fini (RutShell *shell, void *user_data)
-{
-  RigDevice *device = user_data;
-  RigEngine *engine = device->engine;
-
-  rut_object_unref (engine);
-  device->engine = NULL;
-}
-
-static void
-rig_device_paint (RutShell *shell, void *user_data)
+rig_device_redraw (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
   RigEngine *engine = device->engine;
@@ -145,13 +107,88 @@ rig_device_paint (RutShell *shell, void *user_data)
     rut_shell_queue_redraw (shell);
 }
 
+static void
+simulator_connected_cb (void *user_data)
+{
+  RigDevice *device = user_data;
+  RigEngine *engine = device->engine;
+
+  rig_frontend_reload_simulator_ui (device->frontend,
+                                    engine->play_mode_ui,
+                                    true); /* play mode ui */
+}
+
+static void
+_rig_device_free (void *object)
+{
+  RigDevice *device = object;
+
+  rut_object_unref (device->engine);
+
+  rut_object_unref (device->ctx);
+  rut_object_unref (device->shell);
+
+  rut_object_free (RigDevice, device);
+}
+
+static RutType rig_device_type;
+
+static void
+_rig_device_init_type (void)
+{
+  rut_type_init (&rig_device_type, "RigDevice", _rig_device_free);
+}
+
+static RigDevice *
+rig_device_new (const char *filename)
+{
+  RigDevice *device = rut_object_alloc0 (RigDevice,
+                                         &rig_device_type,
+                                         _rig_device_init_type);
+  RigEngine *engine;
+  char *assets_location;
+
+  device->ui_filename = g_strdup (filename);
+
+  device->shell = rut_shell_new (false, /* not headless */
+                                 NULL, /* no init func */
+                                 NULL, /* no fini func */
+                                 rig_device_redraw,
+                                 device);
+
+  device->ctx = rut_context_new (device->shell);
+
+  rut_context_init (device->ctx);
+
+  assets_location = g_path_get_dirname (device->ui_filename);
+  rut_set_assets_location (device->ctx, assets_location);
+  g_free (assets_location);
+
+  device->frontend = rig_frontend_new (device->shell,
+                                       RIG_FRONTEND_ID_DEVICE,
+                                       device->ui_filename,
+                                       true); /* start in play mode */
+
+  engine = device->frontend->engine;
+  device->engine = engine;
+
+  rig_frontend_set_simulator_connected_callback (device->frontend,
+                                                 simulator_connected_cb,
+                                                 device);
+
+  rut_shell_add_input_callback (device->shell,
+                                rig_engine_input_handler,
+                                device->engine, NULL);
+
+  return device;
+}
+
 int
 main (int argc, char **argv)
 {
   GOptionContext *context = g_option_context_new (NULL);
-  RigDevice device;
+  RigDevice *device;
   GError *error = NULL;
-  char *assets_location;
 
   gst_init (&argc, &argv);
 
@@ -171,27 +208,11 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  memset (&device, 0, sizeof (RigDevice));
+  device = rig_device_new (_rig_device_remaining_args[0]);
 
-  device.ui_filename = g_strdup (_rig_device_remaining_args[0]);
+  rut_shell_main (device->shell);
 
-  device.shell = rut_shell_new (false, /* not headless */
-                                rig_device_init,
-                                rig_device_fini,
-                                rig_device_paint,
-                                &device);
-
-  device.ctx = rut_context_new (device.shell);
-
-  rut_context_init (device.ctx);
-
-  assets_location = g_path_get_dirname (device.ui_filename);
-  rut_set_assets_location (device.ctx, assets_location);
-
-  rut_shell_main (device.shell);
-
-  rut_object_unref (device.ctx);
-  rut_object_unref (device.shell);
+  rut_object_unref (device);
 
   return 0;
 }

@@ -34,9 +34,10 @@
 int
 main (int argc, char **argv)
 {
-  RigSimulator simulator;
+  RigSimulator *simulator;
   const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
   const char *frontend = getenv ("_RIG_FRONTEND");
+  RigFrontendID frontend_id;
 
 #if 0
   GOptionContext *context = g_option_context_new (NULL);
@@ -64,46 +65,24 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  memset (&simulator, 0, sizeof (RigSimulator));
-
   if (strcmp (frontend, "editor") == 0)
-    {
-      simulator.frontend_id = RIG_FRONTEND_ID_EDITOR;
-      simulator.editable = true;
-    }
+    frontend_id = RIG_FRONTEND_ID_EDITOR;
   else if (strcmp (frontend, "slave") == 0)
-    {
-      simulator.frontend_id = RIG_FRONTEND_ID_SLAVE;
-      simulator.editable = true;
-    }
+    frontend_id = RIG_FRONTEND_ID_SLAVE;
   else if (strcmp (frontend, "device") == 0)
-    simulator.frontend_id = RIG_FRONTEND_ID_DEVICE;
+    frontend_id = RIG_FRONTEND_ID_DEVICE;
   else
     {
       g_error ("Spurious _RIG_FRONTEND environment variable value");
       return EXIT_FAILURE;
     }
 
-  simulator.fd = strtol (ipc_fd_str, NULL, 10);
+  simulator = rig_simulator_new (frontend_id,
+                                 strtol (ipc_fd_str, NULL, 10));
 
-  simulator.shell = rut_shell_new (true, /* headless */
-                                   rig_simulator_init,
-                                   rig_simulator_fini,
-                                   rig_simulator_run_frame,
-                                   &simulator);
+  rig_simulator_run (simulator);
 
-  rut_shell_set_queue_redraw_callback (simulator.shell,
-                                       rig_simulator_queue_redraw_hook,
-                                       &simulator);
-
-  simulator.ctx = rut_context_new (simulator.shell);
-
-  rut_context_init (simulator.ctx);
-
-  rut_shell_main (simulator.shell);
-
-  rut_object_unref (simulator.ctx);
-  rut_object_unref (simulator.shell);
+  rut_object_unref (simulator);
 
   return 0;
 }

@@ -59,9 +59,6 @@ rut_property_init (RutProperty *property,
                    void *object,
                    uint8_t id)
 {
-  /* Properties that are neither readable nor writable are a bit
-   * pointless so something has probably gone wrong */
-  g_warn_if_fail ((spec->flags & RUT_PROPERTY_FLAG_READWRITE) != 0);
   /* If the property is readable there should be some way to read it */
   g_warn_if_fail ((spec->flags & RUT_PROPERTY_FLAG_READABLE) == 0 ||
                   spec->data_offset != 0 ||

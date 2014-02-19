@@ -119,33 +119,13 @@ apply_edit_op_cb (Rig__Operation *pb_op,
 #endif
 }
 
-static void
-simulator_connected_cb (void *user_data)
-{
-  RigEditor *editor = user_data;
-  RigEngine *engine = editor->engine;
-  RigFrontend *frontend = editor->frontend;
-
-  /* Note: as opposed to letting the simulator copy the edit mode
-   * UI itself to create a play mode UI we explicitly serialize
-   * both the edit and play mode UIs so we can forward pointer ids
-   * for all objects in both UIs...
-   */
-
-  rig_frontend_reload_simulator_ui (frontend,
-                                    engine->edit_mode_ui,
-                                    false);
-  rig_frontend_reload_simulator_ui (frontend,
-                                    engine->play_mode_ui,
-                                    true);
-}
-
 static void *
 lookup_play_mode_object_cb (uint64_t edit_mode_id,
                             void *user_data)
 {
   RigEditor *editor = user_data;
-  return g_hash_table_lookup (editor->edit_to_play_object_map, &edit_mode_id);
+  void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
+  return g_hash_table_lookup (editor->edit_to_play_object_map, edit_mode_object);
 }
 
 static void
@@ -1677,6 +1657,33 @@ on_ui_load_cb (void *user_data)
   reset_play_mode_ui (editor);
 }
 
+static void
+simulator_connected_cb (void *user_data)
+{
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
+  RigFrontend *frontend = editor->frontend;
+
+  /* Note: as opposed to letting the simulator copy the edit mode
+   * UI itself to create a play mode UI we explicitly serialize
+   * both the edit and play mode UIs so we can forward pointer ids
+   * for all objects in both UIs...
+   */
+
+  rig_frontend_reload_simulator_ui (frontend,
+                                    engine->edit_mode_ui,
+                                    false);
+
+  /* XXX: we should have a more consistent way to register this
+   * ui load callback. Currently it's not possible to set the
+   * callback until after we have created a RigFrontend which
+   * creates our RigEngine, but since we pass a filename in
+   * when creating the engine we can actually load a UI before
+   * we register our callback.
+   */
+  on_ui_load_cb (editor);
+}
+
 static RutNineSlice *
 load_gradient_image (RutContext *ctx,
                      const char *filename)
@@ -2586,7 +2593,7 @@ RutType rig_editor_type;
 static void
 _rig_editor_init_type (void)
 {
-  rut_type_init (&rig_engine_type, "RigEditor", _rig_editor_free);
+  rut_type_init (&rig_editor_type, "RigEditor", _rig_editor_free);
 }
 
 RigEditor *
@@ -2618,7 +2625,8 @@ rig_editor_new (const char *filename)
   /* TODO: RigFrontend should be a trait of the engine */
   editor->frontend = rig_frontend_new (editor->shell,
                                        RIG_FRONTEND_ID_EDITOR,
-                                       editor->ui_filename);
+                                       editor->ui_filename,
+                                       false); /* start in edit mode */
 
   engine = editor->frontend->engine;
   editor->engine = engine;

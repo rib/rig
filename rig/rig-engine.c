@@ -980,7 +980,12 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
   //  free_shared_ui_state (engine);
 
   if (engine->play_mode)
-    rig_engine_set_current_ui (engine, ui);
+    {
+      rig_engine_set_current_ui (engine, ui);
+      rig_ui_resume (ui);
+    }
+  else
+    rig_ui_suspend (ui);
 
   if (!ui)
     return;
@@ -993,7 +998,8 @@ void
 rig_engine_set_edit_mode_ui (RigEngine *engine,
                              RigUI *ui)
 {
-  g_return_if_fail (engine->frontend->ui_update_pending == false);
+  g_return_if_fail (engine->simulator ||
+                    engine->frontend->ui_update_pending == false);
   g_return_if_fail (engine->play_mode == false);
 
   //bool first_ui = (engine->edit_mode_ui == NULL &&
@@ -1142,7 +1148,6 @@ _rig_engine_free (void *object)
 {
   RigEngine *engine = object;
   RutShell *shell = engine->shell;
-  GList *l;
 
   if (engine->frontend)
     {
@@ -1188,10 +1193,6 @@ _rig_engine_free (void *object)
       }
 #endif /* USE_GTK */
     }
-
-  for (l = engine->suspended_controllers; l; l = l->next)
-    rut_object_unref (l->data);
-  g_list_free (engine->suspended_controllers);
 
   rut_object_unref (engine->objects_selection);
 
@@ -1318,7 +1319,8 @@ static RigEngine *
 _rig_engine_new_full (RutShell *shell,
                       const char *ui_filename,
                       RigFrontend *frontend,
-                      RigSimulator *simulator)
+                      RigSimulator *simulator,
+                      bool play_mode)
 {
   RigEngine *engine = rut_object_alloc0 (RigEngine, &rig_engine_type,
                                          _rig_engine_init_type);
@@ -1450,8 +1452,10 @@ _rig_engine_new_full (RutShell *shell,
       rut_stack_add (engine->top_stack, engine->main_camera_view);
     }
 
+  /* Initialize the current mode */
+  rig_engine_set_play_mode_enabled (engine, play_mode);
 
-  if (engine->frontend)
+  if (frontend)
     {
       engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
@@ -1500,7 +1504,7 @@ _rig_engine_new_full (RutShell *shell,
 
       fb = engine->onscreen;
       engine->window_width = cogl_framebuffer_get_width (fb);
-      engine->window_height  = cogl_framebuffer_get_height (fb);
+      engine->window_height = cogl_framebuffer_get_height (fb);
 
       /* FIXME: avoid poking into engine->frontend here... */
       engine->frontend->has_resized = true;
@@ -1551,17 +1555,19 @@ _rig_engine_new_full (RutShell *shell,
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
-                              RigSimulator *simulator)
+                              RigSimulator *simulator,
+                              bool play_mode)
 {
-  return _rig_engine_new_full (shell, NULL, NULL, simulator);
+  return _rig_engine_new_full (shell, NULL, NULL, simulator, play_mode);
 }
 
 RigEngine *
 rig_engine_new_for_frontend (RutShell *shell,
                              RigFrontend *frontend,
-                             const char *ui_filename)
+                             const char *ui_filename,
+                             bool play_mode)
 {
-  return _rig_engine_new_full (shell, ui_filename, frontend, NULL);
+  return _rig_engine_new_full (shell, ui_filename, frontend, NULL, play_mode);
 }
 
 RutInputEventStatus
@@ -1795,75 +1801,6 @@ rig_engine_garbage_collect (RigEngine *engine,
   rut_queue_clear (engine->queued_deletes);
 }
 
-static void
-suspend_play_mode_controllers (RigEngine *engine)
-{
-  RigUI *ui = engine->play_mode_ui;
-  GList *l;
-
-#if 0
-  /* Unlike most edit operations (which we map to play-mode ops,
-   * forward to slaves and to the simulator), the operations we want to
-   * queue here should only be sent to the simulator, and they don't
-   * need to be mapped...
-   */
-  rig_engine_set_apply_op_callback (engine,
-                                    apply_sim_only_op_cb,
-                                    editor);
-#endif
-
-  for (l = ui->controllers; l; l = l->next)
-    {
-      RigController *controller = l->data;
-
-      if (controller->active)
-        {
-          RutProperty *active_property =
-            rut_introspectable_get_property (controller,
-                                             RIG_CONTROLLER_PROP_SUSPENDED);
-
-          rut_property_set_boolean (&engine->ctx->property_ctx,
-                                    active_property, false);
-
-          engine->suspended_controllers =
-            g_list_prepend (engine->suspended_controllers, controller);
-
-          /* We take a reference on all suspended controllers so we
-           * don't need to worry if any of the controllers are deleted
-           * while in edit mode. */
-          rut_object_ref (controller);
-        }
-    }
-
-#if 0
-  rig_engine_set_apply_op_callback (engine,
-                                    apply_sim_only_op_cb,
-                                    editor);
-#endif
-}
-
-static void
-resume_play_mode_controllers (RigEngine *engine)
-{
-  GList *l;
-
-  for (l = engine->suspended_controllers; l; l = l->next)
-    {
-      RigController *controller = l->data;
-      RutProperty *active_property =
-        rut_introspectable_get_property (controller,
-                                         RIG_CONTROLLER_PROP_SUSPENDED);
-
-      rut_property_set_boolean (&engine->ctx->property_ctx,
-                                active_property, false);
-
-      rut_object_unref (controller);
-    }
-
-  g_list_free (engine->suspended_controllers);
-  engine->suspended_controllers = NULL;
-}
-
 void
 rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 {
@@ -1871,16 +1808,16 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 
   if (engine->play_mode)
     {
+      if (engine->play_mode_ui)
+        rig_ui_resume (engine->play_mode_ui);
       rig_engine_set_current_ui (engine, engine->play_mode_ui);
-      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
-                                             true);
-      resume_play_mode_controllers (engine);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view, true);
     }
   else
     {
-      suspend_play_mode_controllers (engine);
       rig_engine_set_current_ui (engine, engine->edit_mode_ui);
-      rig_camera_view_set_play_mode_enabled (engine->main_camera_view,
-                                             false);
+      rig_camera_view_set_play_mode_enabled (engine->main_camera_view, false);
+      if (engine->play_mode_ui)
+        rig_ui_suspend (engine->play_mode_ui);
     }
 }

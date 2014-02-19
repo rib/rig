@@ -50,6 +50,9 @@ struct _RigUI
   RutEntity *light;
   RutEntity *play_camera;
   RutCamera *play_camera_component;
+
+  GList *suspended_controllers;
+  bool suspended;
 };
 
 RigUI *
@@ -57,5 +60,11 @@ rig_ui_new (RigEngine *engine);
 
 void
 rig_ui_prepare (RigUI *ui);
+
+void
+rig_ui_suspend (RigUI *ui);
+
+void
+rig_ui_resume (RigUI *ui);
 
 #endif /* _RIG_UI_H_ */

@@ -894,7 +894,7 @@ rig_pb_serializer_new (RigEngine *engine)
   RigPBSerializer *serializer = g_slice_new0 (RigPBSerializer);
 
   serializer->engine = engine;
-  serializer->stack = serializer->stack;
+  serializer->stack = engine->frame_stack;
 
   serializer->object_register_callback = default_serializer_register_object_cb;
   serializer->object_register_data = serializer;
@@ -1598,7 +1598,10 @@ unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
       return unserializer->id_to_object_callback (id, user_data);
     }
 
-  return g_hash_table_lookup (unserializer->id_to_object_map, &id);
+  if (unserializer->id_to_object_map)
+    return g_hash_table_lookup (unserializer->id_to_object_map, &id);
+  else
+    return NULL;
 }
 
 void
@@ -2581,7 +2584,7 @@ unserialize_assets (RigPBUnSerializer *unserializer,
         continue;
 
       id = pb_asset->id;
-      if (g_hash_table_lookup (unserializer->id_to_object_map, &id))
+      if (unserializer_find_object (unserializer, id))
         {
           rig_pb_unserializer_collect_error (unserializer,
                                              "Duplicate asset id %d", (int)id);

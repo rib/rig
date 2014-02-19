@@ -33,6 +33,10 @@ _rig_ui_free (void *object)
   RigUI *ui = object;
   GList *l;
 
+  for (l = ui->suspended_controllers; l; l = l->next)
+    rut_object_unref (l->data);
+  g_list_free (ui->suspended_controllers);
+
   for (l = ui->controllers; l; l = l->next)
     rut_object_unref (l->data);
   g_list_free (ui->controllers);
@@ -262,4 +266,67 @@ rig_ui_prepare (RigUI *ui)
     }
 
   rut_camera_set_clear (ui->play_camera_component, false);
+}
+
+void
+rig_ui_suspend (RigUI *ui)
+{
+  RigEngine *engine = ui->engine;
+  GList *l;
+
+  if (ui->suspended)
+    return;
+
+  for (l = ui->controllers; l; l = l->next)
+    {
+      RigController *controller = l->data;
+
+      if (controller->active)
+        {
+          RutProperty *suspended_property =
+            rut_introspectable_get_property (controller,
+                                             RIG_CONTROLLER_PROP_SUSPENDED);
+
+          rut_property_set_boolean (&engine->ctx->property_ctx,
+                                    suspended_property, false);
+
+          ui->suspended_controllers =
+            g_list_prepend (ui->suspended_controllers, controller);
+
+          /* We take a reference on all suspended controllers so we
+           * don't need to worry if any of the controllers are deleted
+           * while in edit mode. */
+          rut_object_ref (controller);
+        }
+    }
+
+  ui->suspended = true;
+}
+
+void
+rig_ui_resume (RigUI *ui)
+{
+  RigEngine *engine = ui->engine;
+  GList *l;
+
+  if (!ui->suspended)
+    return;
+
+  for (l = ui->suspended_controllers; l; l = l->next)
+    {
+      RigController *controller = l->data;
+      RutProperty *suspended_property =
+        rut_introspectable_get_property (controller,
+                                         RIG_CONTROLLER_PROP_SUSPENDED);
+
+      rut_property_set_boolean (&engine->ctx->property_ctx,
+                                suspended_property, false);
+
+      rut_object_unref (controller);
+    }
+
+  g_list_free (ui->suspended_controllers);
+  ui->suspended_controllers = NULL;
+
+  ui->suspended = false;
 }

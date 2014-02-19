@@ -292,8 +292,6 @@ struct _RigEngine
 
   RutQueue *queued_deletes;
 
-  GList *suspended_controllers;
-
   void (*apply_op_callback) (Rig__Operation *pb_op,
                              void *user_data);
   void *apply_op_data;
@@ -312,11 +310,13 @@ extern RutType rig_objects_selection_type;
 RigEngine *
 rig_engine_new_for_frontend (RutShell *shell,
                              RigFrontend *frontend,
-                             const char *ui_filename);
+                             const char *ui_filename,
+                             bool play_mode);
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
-                              RigSimulator *simulator);
+                              RigSimulator *simulator,
+                              bool play_mode);
 
 void
 rig_engine_load_file (RigEngine *engine,

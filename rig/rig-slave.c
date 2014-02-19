@@ -440,7 +440,8 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   slave->frontend = rig_frontend_new (shell,
                                       RIG_FRONTEND_ID_SLAVE,
-                                      NULL);
+                                      NULL,
+                                      true); /* start in play mode */
 
   engine = slave->frontend->engine;
   slave->engine = engine;

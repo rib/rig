@@ -171,6 +171,20 @@ frontend__update_ui (Rig__Frontend_Service *service,
   RigEngineOpApplyContext *apply_op_ctx;
   Rig__UIEdit *pb_ui_edit;
 
+#if 0
+  frontend->ui_update_pending = false;
+
+  closure (&ack, closure_data);
+
+  /* XXX: The current use case we have forui update callbacks
+   * requires that the frontend be in-sync with the simulator so
+   * we invoke them after we have applied all the operations from
+   * the simulator */
+  rut_closure_list_invoke (&frontend->ui_update_cb_list,
+                           RigFrontendUIUpdateCallback,
+                           frontend);
+  return;
+#endif
   //g_print ("Frontend: Update UI Request\n");
 
   frontend->ui_update_pending = false;
@@ -594,7 +608,8 @@ rig_frontend_spawn_simulator (RigFrontend *frontend)
 RigFrontend *
 rig_frontend_new (RutShell *shell,
                   RigFrontendID id,
-                  const char *ui_filename)
+                  const char *ui_filename,
+                  bool play_mode)
 {
   RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
                                              &rig_frontend_type,
@@ -603,6 +618,8 @@ rig_frontend_new (RutShell *shell,
 
   frontend->id = id;
 
+  frontend->pending_play_mode_enabled = play_mode;
+
   frontend->tmp_id_to_object_map = g_hash_table_new (NULL, NULL);
 
   rut_list_init (&frontend->ui_update_cb_list);
@@ -610,7 +627,7 @@ rig_frontend_new (RutShell *shell,
   rig_frontend_spawn_simulator (frontend);
 
   frontend->engine =
-    rig_engine_new_for_frontend (shell, frontend, ui_filename);
+    rig_engine_new_for_frontend (shell, frontend, ui_filename, play_mode);
 
   rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
                                     frontend->engine,

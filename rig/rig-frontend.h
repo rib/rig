@@ -86,7 +86,8 @@ struct _RigFrontend
 RigFrontend *
 rig_frontend_new (RutShell *shell,
                   RigFrontendID id,
-                  const char *ui_filename);
+                  const char *ui_filename,
+                  bool play_mode);
 
 void
 rig_frontend_forward_simulator_ui (RigFrontend *frontend,
