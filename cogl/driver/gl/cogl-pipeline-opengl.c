@@ -47,7 +47,7 @@
 
 #include <test-fixtures/test-unit.h>
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 /*
@@ -103,17 +103,17 @@ _cogl_get_texture_unit (int index_)
     {
       int i;
       int prev_len = ctx->texture_units->len;
-      ctx->texture_units = g_array_set_size (ctx->texture_units, index_ + 1);
+      ctx->texture_units = u_array_set_size (ctx->texture_units, index_ + 1);
       for (i = prev_len; i <= index_; i++)
         {
           CoglTextureUnit *unit =
-            &g_array_index (ctx->texture_units, CoglTextureUnit, i);
+            &u_array_index (ctx->texture_units, CoglTextureUnit, i);
 
           texture_unit_init (ctx, unit, i);
         }
     }
 
-  return &g_array_index (ctx->texture_units, CoglTextureUnit, index_);
+  return &u_array_index (ctx->texture_units, CoglTextureUnit, index_);
 }
 
 void
@@ -126,10 +126,10 @@ _cogl_destroy_texture_units (void)
   for (i = 0; i < ctx->texture_units->len; i++)
     {
       CoglTextureUnit *unit =
-        &g_array_index (ctx->texture_units, CoglTextureUnit, i);
+        &u_array_index (ctx->texture_units, CoglTextureUnit, i);
       texture_unit_free (unit);
     }
-  g_array_free (ctx->texture_units, TRUE);
+  u_array_free (ctx->texture_units, TRUE);
 }
 
 void
@@ -207,7 +207,7 @@ _cogl_delete_gl_texture (GLuint gl_texture)
   for (i = 0; i < ctx->texture_units->len; i++)
     {
       CoglTextureUnit *unit =
-        &g_array_index (ctx->texture_units, CoglTextureUnit, i);
+        &u_array_index (ctx->texture_units, CoglTextureUnit, i);
 
       if (unit->gl_texture == gl_texture)
         {
@@ -235,7 +235,7 @@ _cogl_pipeline_texture_storage_change_notify (CoglTexture *texture)
   for (i = 0; i < ctx->texture_units->len; i++)
     {
       CoglTextureUnit *unit =
-        &g_array_index (ctx->texture_units, CoglTextureUnit, i);
+        &u_array_index (ctx->texture_units, CoglTextureUnit, i);
 
       if (unit->layer &&
           _cogl_pipeline_layer_get_texture (unit->layer) == texture)
@@ -321,13 +321,13 @@ _cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type)
 
 #else
 
-      g_warning ("Unexpected use of GLSL fragend!");
+      u_warning ("Unexpected use of GLSL fragend!");
 
 #endif /* COGL_PIPELINE_FRAGEND_GLSL */
     }
 #ifndef COGL_PIPELINE_FRAGEND_ARBFP
   else if (type == COGL_PIPELINE_PROGRAM_TYPE_ARBFP)
-    g_warning ("Unexpected use of ARBFP fragend!");
+    u_warning ("Unexpected use of ARBFP fragend!");
 #endif /* COGL_PIPELINE_FRAGEND_ARBFP */
 
   ctx->current_fragment_program_type = type;
@@ -354,7 +354,7 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
 
         case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
           /* It doesn't make sense to enable ARBfp for the vertex program */
-          g_assert_not_reached ();
+          u_assert_not_reached ();
           break;
 
         case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
@@ -367,7 +367,7 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
         {
         case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
           /* It doesn't make sense to enable ARBfp for the vertex program */
-          g_assert_not_reached ();
+          u_assert_not_reached ();
           break;
 
         case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
@@ -384,13 +384,13 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
 
 #else
 
-      g_warning ("Unexpected use of GLSL vertend!");
+      u_warning ("Unexpected use of GLSL vertend!");
 
 #endif /* COGL_PIPELINE_VERTEND_GLSL */
     }
 #ifndef COGL_PIPELINE_VERTEND_ARBFP
   else if (type == COGL_PIPELINE_PROGRAM_TYPE_ARBFP)
-    g_warning ("Unexpected use of ARBFP vertend!");
+    u_warning ("Unexpected use of ARBFP vertend!");
 #endif /* COGL_PIPELINE_VERTEND_ARBFP */
 
   ctx->current_vertex_program_type = type;
@@ -464,21 +464,21 @@ UNIT_TEST (check_gl_blend_enable,
   CoglPipeline *pipeline = cogl_pipeline_new (test_ctx);
 
   /* By default blending should be disabled */
-  g_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
+  u_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
 
   cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 1, 1);
   _cogl_framebuffer_flush_journal (test_fb);
 
   /* After drawing an opaque rectangle blending should still be
    * disabled */
-  g_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
+  u_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
 
   cogl_pipeline_set_color4f (pipeline, 0, 0, 0, 0);
   cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 1, 1);
   _cogl_framebuffer_flush_journal (test_fb);
 
   /* After drawing a transparent rectangle blending should be enabled */
-  g_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 1);
+  u_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 1);
 
   cogl_pipeline_set_blend (pipeline, "RGBA=ADD(SRC_COLOR, 0)", NULL);
   cogl_framebuffer_draw_rectangle (test_fb, pipeline, 0, 0, 1, 1);
@@ -486,7 +486,7 @@ UNIT_TEST (check_gl_blend_enable,
 
   /* After setting a blend string that effectively disables blending
    * then blending should be disabled */
-  g_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
+  u_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
 }
 
 static void
@@ -642,7 +642,7 @@ _cogl_pipeline_flush_color_blend_alpha_depth_state (
           switch (cull_face_state->mode)
             {
             case COGL_PIPELINE_CULL_FACE_MODE_NONE:
-              g_assert_not_reached ();
+              u_assert_not_reached ();
 
             case COGL_PIPELINE_CULL_FACE_MODE_FRONT:
               GE( ctx, glCullFace (GL_FRONT) );
@@ -707,7 +707,7 @@ get_max_activateable_texture_units (void)
 {
   _COGL_GET_CONTEXT (ctx, 0);
 
-  if (G_UNLIKELY (ctx->max_activateable_texture_units == -1))
+  if (U_UNLIKELY (ctx->max_activateable_texture_units == -1))
     {
       GLint values[3];
       int n_values = 0;
@@ -764,7 +764,7 @@ get_max_activateable_texture_units (void)
         }
 #endif
 
-      g_assert (n_values <= G_N_ELEMENTS (values) &&
+      u_assert (n_values <= U_N_ELEMENTS (values) &&
                 n_values > 0);
 
       /* Use the maximum value */
@@ -797,13 +797,13 @@ flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
   /* There may not be enough texture units so we can bail out if
    * that's the case...
    */
-  if (G_UNLIKELY (unit_index >= get_max_activateable_texture_units ()))
+  if (U_UNLIKELY (unit_index >= get_max_activateable_texture_units ()))
     {
       static CoglBool shown_warning = FALSE;
 
       if (!shown_warning)
         {
-          g_warning ("Your hardware does not have enough texture units"
+          u_warning ("Your hardware does not have enough texture units"
                      "to handle this many texture layers");
           shown_warning = TRUE;
         }
@@ -1016,7 +1016,7 @@ foreach_texture_unit_update_filter_and_wrap_modes (void)
   for (i = 0; i < ctx->texture_units->len; i++)
     {
       CoglTextureUnit *unit =
-        &g_array_index (ctx->texture_units, CoglTextureUnit, i);
+        &u_array_index (ctx->texture_units, CoglTextureUnit, i);
 
       if (unit->layer)
         {
@@ -1098,7 +1098,7 @@ vertend_add_layer_cb (CoglPipelineLayer *layer,
 
   /* Either generate per layer code snippets or setup the
    * fixed function glTexEnv for each layer... */
-  if (G_LIKELY (vertend->add_layer (pipeline,
+  if (U_LIKELY (vertend->add_layer (pipeline,
                                     layer,
                                     state->layer_differences[unit_index],
                                     state->framebuffer)))
@@ -1123,7 +1123,7 @@ fragend_add_layer_cb (CoglPipelineLayer *layer,
 
   /* Either generate per layer code snippets or setup the
    * fixed function glTexEnv for each layer... */
-  if (G_LIKELY (fragend->add_layer (pipeline,
+  if (U_LIKELY (fragend->add_layer (pipeline,
                                     layer,
                                     state->layer_differences[unit_index])))
     state->added_layer = TRUE;
@@ -1268,7 +1268,7 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
   if (n_layers)
     {
       CoglPipelineCompareLayersState state;
-      layer_differences = g_alloca (sizeof (unsigned long) * n_layers);
+      layer_differences = u_alloca (sizeof (unsigned long) * n_layers);
       memset (layer_differences, 0, sizeof (unsigned long) * n_layers);
       state.i = 0;
       state.layer_differences = layer_differences;
@@ -1325,7 +1325,7 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
 
       progend = _cogl_pipeline_progends[i];
 
-      if (G_UNLIKELY (!progend->start (pipeline)))
+      if (U_UNLIKELY (!progend->start (pipeline)))
         continue;
 
       vertend = _cogl_pipeline_vertends[progend->vertend];
@@ -1345,10 +1345,10 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
                                              vertend_add_layer_cb,
                                              &state);
 
-      if (G_UNLIKELY (state.error_adding_layer))
+      if (U_UNLIKELY (state.error_adding_layer))
         continue;
 
-      if (G_UNLIKELY (!vertend->end (pipeline, pipelines_difference)))
+      if (U_UNLIKELY (!vertend->end (pipeline, pipelines_difference)))
         continue;
 
       /* Now prepare the fragment processing state (fragend)
@@ -1369,17 +1369,17 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
                                              fragend_add_layer_cb,
                                              &state);
 
-      if (G_UNLIKELY (state.error_adding_layer))
+      if (U_UNLIKELY (state.error_adding_layer))
         continue;
 
       if (!state.added_layer)
         {
           if (fragend->passthrough &&
-              G_UNLIKELY (!fragend->passthrough (pipeline)))
+              U_UNLIKELY (!fragend->passthrough (pipeline)))
             continue;
         }
 
-      if (G_UNLIKELY (!fragend->end (pipeline, pipelines_difference)))
+      if (U_UNLIKELY (!fragend->end (pipeline, pipelines_difference)))
         continue;
 
       if (progend->end)

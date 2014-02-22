@@ -95,7 +95,7 @@ _cogl_texture_driver_gen (CoglContext *ctx,
       break;
 
     default:
-      g_assert_not_reached();
+      u_assert_not_reached();
     }
 
   return tex;
@@ -118,8 +118,8 @@ prep_gl_for_pixels_upload_full (CoglContext *ctx,
     }
   else
     {
-      g_assert (pixels_src_x == 0);
-      g_assert (pixels_src_y == 0);
+      u_assert (pixels_src_x == 0);
+      u_assert (pixels_src_y == 0);
     }
 
   _cogl_texture_gl_prep_alignment_for_pixels_upload (ctx, pixels_rowstride);

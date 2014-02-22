@@ -237,7 +237,7 @@ cogl_sub_texture_new (CoglContext *ctx,
   _COGL_RETURN_VAL_IF_FAIL (sub_x + sub_width <= next_width, NULL);
   _COGL_RETURN_VAL_IF_FAIL (sub_y + sub_height <= next_height, NULL);
 
-  sub_tex = g_new (CoglSubTexture, 1);
+  sub_tex = u_new (CoglSubTexture, 1);
 
   tex = COGL_TEXTURE (sub_tex);
 

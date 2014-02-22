@@ -200,7 +200,7 @@ make_texture (void)
   guchar *tex_data, *p;
   CoglTexture *tex;
 
-  tex_data = g_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
+  tex_data = u_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
 
   for (p = tex_data + TEXTURE_SIZE * TEXTURE_SIZE * 4; p > tex_data;)
     {
@@ -250,6 +250,6 @@ test_backface_culling (void)
   cogl_object_unref (state.texture);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

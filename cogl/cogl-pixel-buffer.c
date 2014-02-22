@@ -43,7 +43,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-private.h"
 #include "cogl-util.h"
@@ -79,7 +79,7 @@ cogl_pixel_buffer_new (CoglContext *context,
                        const void *data,
                        CoglError **error)
 {
-  CoglPixelBuffer *pixel_buffer = g_slice_new0 (CoglPixelBuffer);
+  CoglPixelBuffer *pixel_buffer = u_slice_new0 (CoglPixelBuffer);
   CoglBuffer *buffer = COGL_BUFFER (pixel_buffer);
 
   /* parent's constructor */
@@ -114,6 +114,6 @@ _cogl_pixel_buffer_free (CoglPixelBuffer *buffer)
   /* parent's destructor */
   _cogl_buffer_fini (COGL_BUFFER (buffer));
 
-  g_slice_free (CoglPixelBuffer, buffer);
+  u_slice_free (CoglPixelBuffer, buffer);
 }
 

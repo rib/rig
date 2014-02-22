@@ -31,7 +31,7 @@ create_texture (int size)
   /* Create a red, green or blue texture depending on the size */
   color = COLOR_FOR_SIZE (size);
 
-  p = data = g_malloc (size * size * 4);
+  p = data = u_malloc (size * size * 4);
 
   /* Fill the data with the color but fade the opacity out with
      increasing y coordinates so that we can see the blending it the
@@ -77,7 +77,7 @@ verify_texture (CoglTexture *texture, int size)
 
   color = COLOR_FOR_SIZE (size);
 
-  p = data = g_malloc (size * size * 4);
+  p = data = u_malloc (size * size * 4);
 
   cogl_texture_get_data (texture,
                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
@@ -141,5 +141,5 @@ test_atlas_migration (void)
     cogl_object_unref (textures[tex_num]);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

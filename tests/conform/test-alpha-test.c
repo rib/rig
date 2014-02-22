@@ -68,6 +68,6 @@ test_alpha_test (void)
                            0x0000ffff);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

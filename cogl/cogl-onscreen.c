@@ -77,7 +77,7 @@ cogl_onscreen_new (CoglContext *ctx, int width, int height)
      is not premultiplied in case it is being used for some special
      purpose. */
 
-  onscreen = g_new0 (CoglOnscreen, 1);
+  onscreen = u_new0 (CoglOnscreen, 1);
   _cogl_framebuffer_init (COGL_FRAMEBUFFER (onscreen),
                           ctx,
                           COGL_FRAMEBUFFER_TYPE_ONSCREEN,
@@ -100,9 +100,9 @@ _cogl_onscreen_free (CoglOnscreen *onscreen)
   _cogl_closure_list_disconnect_all (&onscreen->frame_closures);
   _cogl_closure_list_disconnect_all (&onscreen->dirty_closures);
 
-  while ((frame_info = g_queue_pop_tail (&onscreen->pending_frame_infos)))
+  while ((frame_info = u_queue_pop_tail (&onscreen->pending_frame_infos)))
     cogl_object_unref (frame_info);
-  g_queue_clear (&onscreen->pending_frame_infos);
+  u_queue_clear (&onscreen->pending_frame_infos);
 
   winsys->onscreen_deinit (onscreen);
   _COGL_RETURN_IF_FAIL (onscreen->winsys == NULL);
@@ -110,7 +110,7 @@ _cogl_onscreen_free (CoglOnscreen *onscreen)
   /* Chain up to parent */
   _cogl_framebuffer_free (framebuffer);
 
-  g_free (onscreen);
+  u_free (onscreen);
 }
 
 static void
@@ -150,7 +150,7 @@ _cogl_dispatch_onscreen_cb (CoglContext *context)
       cogl_object_unref (onscreen);
       cogl_object_unref (info);
 
-      g_slice_free (CoglOnscreenEvent, event);
+      u_slice_free (CoglOnscreenEvent, event);
     }
 
   while (!_cogl_list_empty (&context->onscreen_dirty_queue))
@@ -169,7 +169,7 @@ _cogl_dispatch_onscreen_cb (CoglContext *context)
 
       cogl_object_unref (qe->onscreen);
 
-      g_slice_free (CoglOnscreenQueuedDirty, qe);
+      u_slice_free (CoglOnscreenQueuedDirty, qe);
     }
 }
 
@@ -194,7 +194,7 @@ _cogl_onscreen_queue_dirty (CoglOnscreen *onscreen,
                             const CoglOnscreenDirtyInfo *info)
 {
   CoglContext *ctx = COGL_FRAMEBUFFER (onscreen)->context;
-  CoglOnscreenQueuedDirty *qe = g_slice_new (CoglOnscreenQueuedDirty);
+  CoglOnscreenQueuedDirty *qe = u_slice_new (CoglOnscreenQueuedDirty);
 
   qe->onscreen = cogl_object_ref (onscreen);
   qe->info = *info;
@@ -224,7 +224,7 @@ _cogl_onscreen_queue_event (CoglOnscreen *onscreen,
 {
   CoglContext *ctx = COGL_FRAMEBUFFER (onscreen)->context;
 
-  CoglOnscreenEvent *event = g_slice_new (CoglOnscreenEvent);
+  CoglOnscreenEvent *event = u_slice_new (CoglOnscreenEvent);
 
   event->onscreen = cogl_object_ref (onscreen);
   event->info = cogl_object_ref (info);
@@ -248,7 +248,7 @@ cogl_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
 
   info = _cogl_frame_info_new ();
   info->frame_counter = onscreen->frame_counter;
-  g_queue_push_tail (&onscreen->pending_frame_infos, info);
+  u_queue_push_tail (&onscreen->pending_frame_infos, info);
 
   _cogl_framebuffer_flush_journal (framebuffer);
 
@@ -264,9 +264,9 @@ cogl_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
     {
       CoglFrameInfo *info;
 
-      g_warn_if_fail (onscreen->pending_frame_infos.length == 1);
+      u_warn_if_fail (onscreen->pending_frame_infos.length == 1);
 
-      info = g_queue_pop_tail (&onscreen->pending_frame_infos);
+      info = u_queue_pop_tail (&onscreen->pending_frame_infos);
 
       _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_SYNC, info);
       _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_COMPLETE, info);
@@ -297,7 +297,7 @@ cogl_onscreen_swap_region (CoglOnscreen *onscreen,
 
   info = _cogl_frame_info_new ();
   info->frame_counter = onscreen->frame_counter;
-  g_queue_push_tail (&onscreen->pending_frame_infos, info);
+  u_queue_push_tail (&onscreen->pending_frame_infos, info);
 
   _cogl_framebuffer_flush_journal (framebuffer);
 
@@ -320,9 +320,9 @@ cogl_onscreen_swap_region (CoglOnscreen *onscreen,
     {
       CoglFrameInfo *info;
 
-      g_warn_if_fail (onscreen->pending_frame_infos.length == 1);
+      u_warn_if_fail (onscreen->pending_frame_infos.length == 1);
 
-      info = g_queue_pop_tail (&onscreen->pending_frame_infos);
+      info = u_queue_pop_tail (&onscreen->pending_frame_infos);
 
       _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_SYNC, info);
       _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_COMPLETE, info);

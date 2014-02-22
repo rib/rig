@@ -36,7 +36,7 @@
 #include "cogl-closure-list-private.h"
 #include "cogl-list.h"
 
-#include <glib.h>
+#include <ulib.h>
 
 #ifdef COGL_HAS_WIN32_SUPPORT
 #include <windows.h>
@@ -90,7 +90,7 @@ struct _CoglOnscreen
   int64_t swap_frame_counter; /* frame counter at last all to
                                * cogl_onscreen_swap_region() or
                                * cogl_onscreen_swap_buffers() */
-  GQueue pending_frame_infos;
+  UQueue pending_frame_infos;
 
   void *winsys;
 };

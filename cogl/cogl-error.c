@@ -29,26 +29,43 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-types.h"
 #include "cogl-util.h"
 #include "cogl-error-private.h"
 
+#include <ulib.h>
+
+#ifdef COGL_HAS_GLIB_SUPPORT
 #include <glib.h>
+
+#define _RealError              GError
+#define _real_error_free        g_error_free
+#define _real_error_copy        g_error_copy
+#define _real_error_matches     g_error_matches
+#define _real_error_new_valist  g_error_new_valist
+
+#else
+
+#define _RealError              UError
+#define _real_error_free        u_error_free
+#define _real_error_copy        u_error_copy
+#define _real_error_matches     u_error_matches
+#define _real_error_new_valist  u_error_new_valist
+
+#endif
 
 void
 cogl_error_free (CoglError *error)
 {
-  g_error_free ((GError *)error);
+  _real_error_free ((_RealError *)error);
 }
 
 CoglError *
 cogl_error_copy (CoglError *error)
 {
-  return (CoglError *)g_error_copy ((GError *)error);
+  return (CoglError *)_real_error_copy ((_RealError *)error);
 }
 
 CoglBool
@@ -56,7 +73,7 @@ cogl_error_matches (CoglError *error,
                     uint32_t domain,
                     int code)
 {
-  return g_error_matches ((GError *)error, domain, code);
+  return _real_error_matches ((_RealError *)error, domain, code);
 }
 
 #define ERROR_OVERWRITTEN_WARNING \
@@ -72,7 +89,7 @@ _cogl_set_error (CoglError **error,
                  const char *format,
                  ...)
 {
-  GError *new;
+  _RealError *new;
 
   va_list args;
 
@@ -80,18 +97,18 @@ _cogl_set_error (CoglError **error,
 
   if (error == NULL)
     {
-      g_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
+      u_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
       va_end (args);
       return;
     }
 
-  new = g_error_new_valist (domain, code, format, args);
+  new = _real_error_new_valist (domain, code, format, args);
   va_end (args);
 
   if (*error == NULL)
     *error = (CoglError *)new;
   else
-    g_warning (ERROR_OVERWRITTEN_WARNING, new->message);
+    u_warning (ERROR_OVERWRITTEN_WARNING, new->message);
 }
 
 void
@@ -111,11 +128,11 @@ _cogl_propagate_error (CoglError **dest,
 
   if (dest == NULL)
     {
-      g_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
+      u_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
       cogl_error_free (src);
     }
   else if (*dest)
-    g_warning (ERROR_OVERWRITTEN_WARNING, src->message);
+    u_warning (ERROR_OVERWRITTEN_WARNING, src->message);
   else
     *dest = src;
 }

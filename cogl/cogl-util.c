@@ -157,7 +157,7 @@ _cogl_util_popcount_table[256] =
  */
 static CoglPixelFormat
 _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
-                                         unsigned long g_mask,
+                                         unsigned long u_mask,
                                          unsigned long b_mask,
                                          int depth, int bpp,
                                          CoglBool check_bgr,
@@ -167,22 +167,22 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
   CoglPixelFormat image_format;
 
   if (depth == 24 && bpp == 24 &&
-      r_mask == 0xff0000 && g_mask == 0xff00 && b_mask == 0xff)
+      r_mask == 0xff0000 && u_mask == 0xff00 && b_mask == 0xff)
     {
       return COGL_PIXEL_FORMAT_RGB_888;
     }
   else if ((depth == 24 || depth == 32) && bpp == 32 &&
-           r_mask == 0xff0000 && g_mask == 0xff00 && b_mask == 0xff)
+           r_mask == 0xff0000 && u_mask == 0xff00 && b_mask == 0xff)
     {
       return COGL_PIXEL_FORMAT_ARGB_8888_PRE;
     }
   else if ((depth == 30 || depth == 32) &&
-           r_mask == 0x3ff00000 && g_mask == 0xffc00 && b_mask == 0x3ff)
+           r_mask == 0x3ff00000 && u_mask == 0xffc00 && b_mask == 0x3ff)
     {
       return COGL_PIXEL_FORMAT_ARGB_2101010_PRE;
     }
   else if (depth == 16 && bpp == 16 &&
-           r_mask == 0xf800 && g_mask == 0x7e0 && b_mask == 0x1f)
+           r_mask == 0xf800 && u_mask == 0x7e0 && b_mask == 0x1f)
     {
       return COGL_PIXEL_FORMAT_RGB_565;
     }
@@ -194,7 +194,7 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
   if (check_bgr)
     {
       image_format =
-        _cogl_util_pixel_format_from_masks_real (b_mask, g_mask, r_mask,
+        _cogl_util_pixel_format_from_masks_real (b_mask, u_mask, r_mask,
                                                  depth, bpp,
                                                  FALSE,
                                                  TRUE,
@@ -211,7 +211,7 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
 
       image_format =
         _cogl_util_pixel_format_from_masks_real (r_mask >> shift,
-                                                 g_mask >> shift,
+                                                 u_mask >> shift,
                                                  b_mask >> shift,
                                                  depth, bpp,
                                                  TRUE,
@@ -226,13 +226,13 @@ _cogl_util_pixel_format_from_masks_real (unsigned long r_mask,
 
 CoglPixelFormat
 _cogl_util_pixel_format_from_masks (unsigned long r_mask,
-                                    unsigned long g_mask,
+                                    unsigned long u_mask,
                                     unsigned long b_mask,
                                     int depth, int bpp,
                                     CoglBool byte_order_is_lsb_first)
 {
   CoglPixelFormat image_format =
-    _cogl_util_pixel_format_from_masks_real (r_mask, g_mask, b_mask,
+    _cogl_util_pixel_format_from_masks_real (r_mask, u_mask, b_mask,
                                              depth, bpp,
                                              TRUE,
                                              TRUE,
@@ -241,9 +241,9 @@ _cogl_util_pixel_format_from_masks (unsigned long r_mask,
   if (!image_format)
     {
       const char *byte_order[] = { "MSB first", "LSB first" };
-      g_warning ("Could not find a matching pixel format for red mask=0x%lx,"
+      u_warning ("Could not find a matching pixel format for red mask=0x%lx,"
                  "green mask=0x%lx, blue mask=0x%lx at depth=%d, bpp=%d "
-                 "and byte order=%s\n", r_mask, g_mask, b_mask, depth, bpp,
+                 "and byte order=%s\n", r_mask, u_mask, b_mask, depth, bpp,
                  byte_order[!!byte_order_is_lsb_first]);
       return 0;
     }

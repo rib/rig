@@ -35,6 +35,8 @@
 #include <gst/riff/riff-ids.h>
 #include <string.h>
 
+#include <ulib.h>
+
 /* We just need the public Cogl api for cogl-gst but we first need to
  * undef COGL_COMPILATION to avoid getting an error that normally
  * checks cogl.h isn't used internally. */
@@ -197,7 +199,7 @@ cogl_gst_video_sink_attach_frame (CoglGstVideoSink *sink,
   CoglGstVideoSinkPrivate *priv = sink->priv;
   int i;
 
-  for (i = 0; i < G_N_ELEMENTS (priv->frame); i++)
+  for (i = 0; i < U_N_ELEMENTS (priv->frame); i++)
     if (priv->frame[i] != NULL)
       cogl_pipeline_set_layer_texture (pln, i + priv->custom_start,
                                        priv->frame[i]);
@@ -407,7 +409,7 @@ clear_frame_textures (CoglGstVideoSink *sink)
   CoglGstVideoSinkPrivate *priv = sink->priv;
   int i;
 
-  for (i = 0; i < G_N_ELEMENTS (priv->frame); i++)
+  for (i = 0; i < U_N_ELEMENTS (priv->frame); i++)
     {
       if (priv->frame[i] == NULL)
         break;

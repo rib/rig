@@ -213,7 +213,7 @@ main (int argc, char **argv)
    */
   data.indices = cogl_get_rectangle_indices (ctx, 6 /* n_rectangles */);
   data.prim = cogl_primitive_new_p3t2 (ctx, COGL_VERTICES_MODE_TRIANGLES,
-                                       G_N_ELEMENTS (vertices),
+                                       sizeof (vertices) / sizeof (vertices[0]),
                                        vertices);
   /* Each face will have 6 indices so we have 6 * 6 indices in total... */
   cogl_primitive_set_indices (data.prim,

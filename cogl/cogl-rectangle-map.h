@@ -29,7 +29,7 @@
 #ifndef __COGL_RECTANGLE_MAP_H
 #define __COGL_RECTANGLE_MAP_H
 
-#include <glib.h>
+#include <ulib.h>
 #include "cogl-types.h"
 
 typedef struct _CoglRectangleMap      CoglRectangleMap;
@@ -48,7 +48,7 @@ struct _CoglRectangleMapEntry
 CoglRectangleMap *
 _cogl_rectangle_map_new (unsigned int width,
                          unsigned int height,
-                         GDestroyNotify value_destroy_func);
+                         UDestroyNotify value_destroy_func);
 
 CoglBool
 _cogl_rectangle_map_add (CoglRectangleMap *map,

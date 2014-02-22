@@ -193,7 +193,7 @@ _cogl_pipeline_set_layer_texture_type (CoglPipeline *pipeline,
             {
               layer->differences &= ~change;
 
-              g_assert (layer->owner == pipeline);
+              u_assert (layer->owner == pipeline);
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);
@@ -267,7 +267,7 @@ _cogl_pipeline_set_layer_texture_data (CoglPipeline *pipeline,
               if (layer->texture != NULL)
                 cogl_object_unref (layer->texture);
 
-              g_assert (layer->owner == pipeline);
+              u_assert (layer->owner == pipeline);
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);
@@ -348,7 +348,7 @@ cogl_pipeline_set_layer_null_texture (CoglPipeline *pipeline,
     case COGL_TEXTURE_TYPE_3D:
       if (ctx->default_gl_texture_3d_tex == NULL)
         {
-          g_warning ("The default 3D texture was set on a pipeline but "
+          u_warning ("The default 3D texture was set on a pipeline but "
                      "3D textures are not supported");
           texture_type = COGL_TEXTURE_TYPE_2D;
           return;
@@ -358,7 +358,7 @@ cogl_pipeline_set_layer_null_texture (CoglPipeline *pipeline,
     case COGL_TEXTURE_TYPE_RECTANGLE:
       if (ctx->default_gl_texture_rect_tex == NULL)
         {
-          g_warning ("The default rectangle texture was set on a pipeline but "
+          u_warning ("The default rectangle texture was set on a pipeline but "
                      "rectangle textures are not supported");
           texture_type = COGL_TEXTURE_TYPE_2D;
         }
@@ -401,7 +401,7 @@ _cogl_pipeline_set_layer_sampler_state (CoglPipeline *pipeline,
             {
               layer->differences &= ~change;
 
-              g_assert (layer->owner == pipeline);
+              u_assert (layer->owner == pipeline);
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);
@@ -769,7 +769,7 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
         {
           static CoglBool warning_seen = FALSE;
           if (!warning_seen)
-            g_warning ("Point sprite texture coordinates are enabled "
+            u_warning ("Point sprite texture coordinates are enabled "
                        "for a layer but the GL driver does not support it.");
           warning_seen = TRUE;
         }
@@ -812,7 +812,7 @@ cogl_pipeline_set_layer_point_sprite_coords_enabled (CoglPipeline *pipeline,
             {
               layer->differences &= ~change;
 
-              g_assert (layer->owner == pipeline);
+              u_assert (layer->owner == pipeline);
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);
@@ -1137,7 +1137,7 @@ setup_texture_combine_state (CoglBlendStringStatement *statement,
           texture_combine_src[i] = COGL_PIPELINE_COMBINE_SOURCE_PREVIOUS;
           break;
         default:
-          g_warning ("Unexpected texture combine source");
+          u_warning ("Unexpected texture combine source");
           texture_combine_src[i] = COGL_PIPELINE_COMBINE_SOURCE_TEXTURE;
         }
 
@@ -1240,7 +1240,7 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
         {
           layer->differences &= ~state;
 
-          g_assert (layer->owner == pipeline);
+          u_assert (layer->owner == pipeline);
           if (layer->differences == 0)
             _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                          layer);
@@ -1320,7 +1320,7 @@ cogl_pipeline_set_layer_combine_constant (CoglPipeline *pipeline,
             {
               layer->differences &= ~state;
 
-              g_assert (layer->owner == pipeline);
+              u_assert (layer->owner == pipeline);
               if (layer->differences == 0)
                 _cogl_pipeline_prune_empty_layer_difference (pipeline,
                                                              layer);

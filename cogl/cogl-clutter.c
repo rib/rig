@@ -33,7 +33,7 @@
 #include "config.h"
 #endif
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 #include "cogl-util.h"

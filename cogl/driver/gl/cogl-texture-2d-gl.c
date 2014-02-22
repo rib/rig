@@ -242,7 +242,7 @@ allocate_from_bitmap (CoglTexture2D *tex_2d,
         }
       else
         {
-          g_warning ("Failed to read first pixel of bitmap for "
+          u_warning ("Failed to read first pixel of bitmap for "
                      "glGenerateMipmap fallback");
           cogl_error_free (ignore);
           memset (tex_2d->first_pixel.data, 0,
@@ -464,13 +464,13 @@ _cogl_texture_2d_gl_allocate (CoglTexture *tex,
 #if defined (COGL_HAS_EGL_SUPPORT) && defined (EGL_KHR_image_base)
       return allocate_from_egl_image (tex_2d, loader, error);
 #else
-      g_return_val_if_reached (FALSE);
+      u_return_val_if_reached (FALSE);
 #endif
     case COGL_TEXTURE_SOURCE_TYPE_GL_FOREIGN:
       return allocate_from_gl_foreign (tex_2d, loader, error);
     }
 
-  g_return_val_if_reached (FALSE);
+  u_return_val_if_reached (FALSE);
 }
 
 void
@@ -693,7 +693,7 @@ _cogl_texture_2d_gl_copy_from_bitmap (CoglTexture2D *tex_2d,
         }
       else
         {
-          g_warning ("Failed to read first bitmap pixel for "
+          u_warning ("Failed to read first bitmap pixel for "
                      "glGenerateMipmap fallback");
           cogl_error_free (ignore);
           memset (tex_2d->first_pixel.data, 0, bpp);

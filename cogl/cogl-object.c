@@ -33,7 +33,7 @@
 #include "config.h"
 #endif
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 #include "cogl-util.h"
@@ -81,13 +81,13 @@ _cogl_object_default_unref (void *object)
               for (i = 0; i < obj->user_data_array->len; i++)
                 {
                   CoglUserDataEntry *entry =
-                    &g_array_index (obj->user_data_array,
+                    &u_array_index (obj->user_data_array,
                                     CoglUserDataEntry, i);
 
                   if (entry->destroy)
                     entry->destroy (entry->user_data, obj);
                 }
-              g_array_free (obj->user_data_array, TRUE);
+              u_array_free (obj->user_data_array, TRUE);
             }
         }
 
@@ -126,12 +126,12 @@ _cogl_object_find_entry (CoglObject *object, CoglUserDataKey *key)
         entry = current;
     }
 
-  if (G_UNLIKELY (object->user_data_array != NULL))
+  if (U_UNLIKELY (object->user_data_array != NULL))
     {
       for (i = 0; i < object->user_data_array->len; i++)
         {
           CoglUserDataEntry *current =
-            &g_array_index (object->user_data_array, CoglUserDataEntry, i);
+            &u_array_index (object->user_data_array, CoglUserDataEntry, i);
 
           if (current->key == key)
             return current;
@@ -164,7 +164,7 @@ _cogl_object_set_user_data (CoglObject *object,
   entry = _cogl_object_find_entry (object, key);
   if (entry)
     {
-      if (G_LIKELY (entry->destroy))
+      if (U_LIKELY (entry->destroy))
         entry->destroy (entry->user_data, object);
     }
   else
@@ -175,21 +175,21 @@ _cogl_object_set_user_data (CoglObject *object,
       if (user_data == NULL)
         return;
 
-      if (G_LIKELY (object->n_user_data_entries <
+      if (U_LIKELY (object->n_user_data_entries <
                     COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES))
         entry = &object->user_data_entry[object->n_user_data_entries++];
       else
         {
-          if (G_UNLIKELY (object->user_data_array == NULL))
+          if (U_UNLIKELY (object->user_data_array == NULL))
             {
               object->user_data_array =
-                g_array_new (FALSE, FALSE, sizeof (CoglUserDataEntry));
+                u_array_new (FALSE, FALSE, sizeof (CoglUserDataEntry));
             }
 
-          g_array_set_size (object->user_data_array,
+          u_array_set_size (object->user_data_array,
                             object->user_data_array->len + 1);
           entry =
-            &g_array_index (object->user_data_array, CoglUserDataEntry,
+            &u_array_index (object->user_data_array, CoglUserDataEntry,
                             object->user_data_array->len - 1);
 
           object->n_user_data_entries++;
@@ -230,7 +230,7 @@ cogl_object_get_user_data (CoglObject *object, CoglUserDataKey *key)
       for (i = 0; i < object->user_data_array->len; i++)
         {
           CoglUserDataEntry *entry =
-            &g_array_index (object->user_data_array, CoglUserDataEntry, i);
+            &u_array_index (object->user_data_array, CoglUserDataEntry, i);
 
           if (entry->key == key)
             return entry->user_data;
@@ -244,12 +244,12 @@ void
 cogl_debug_object_foreach_type (CoglDebugObjectForeachTypeCallback func,
                                 void *user_data)
 {
-  GHashTableIter iter;
+  UHashTableIter iter;
   unsigned int *instance_count;
   CoglDebugObjectTypeInfo info;
 
-  g_hash_table_iter_init (&iter, _cogl_debug_instances);
-  while (g_hash_table_iter_next (&iter,
+  u_hash_table_iter_init (&iter, _cogl_debug_instances);
+  while (u_hash_table_iter_next (&iter,
                                  (void *) &info.name,
                                  (void *) &instance_count))
     {
@@ -262,13 +262,13 @@ static void
 print_instances_cb (const CoglDebugObjectTypeInfo *info,
                     void *user_data)
 {
-  g_print ("\t%s: %u\n", info->name, info->instance_count);
+  u_print ("\t%s: %u\n", info->name, info->instance_count);
 }
 
 void
 cogl_debug_object_print_instances (void)
 {
-  g_print ("Cogl instances:\n");
+  u_print ("Cogl instances:\n");
 
   cogl_debug_object_foreach_type (print_instances_cb, NULL);
 }

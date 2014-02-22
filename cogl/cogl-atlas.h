@@ -60,8 +60,8 @@ struct _CoglAtlas
 
   CoglAtlasUpdatePositionCallback update_position_cb;
 
-  GHookList pre_reorganize_callbacks;
-  GHookList post_reorganize_callbacks;
+  UHookList pre_reorganize_callbacks;
+  UHookList post_reorganize_callbacks;
 };
 
 CoglAtlas *
@@ -89,14 +89,14 @@ _cogl_atlas_copy_rectangle (CoglAtlas *atlas,
 
 void
 _cogl_atlas_add_reorganize_callback (CoglAtlas            *atlas,
-                                     GHookFunc             pre_callback,
-                                     GHookFunc             post_callback,
+                                     UHookFunc             pre_callback,
+                                     UHookFunc             post_callback,
                                      void                 *user_data);
 
 void
 _cogl_atlas_remove_reorganize_callback (CoglAtlas            *atlas,
-                                        GHookFunc             pre_callback,
-                                        GHookFunc             post_callback,
+                                        UHookFunc             pre_callback,
+                                        UHookFunc             post_callback,
                                         void                 *user_data);
 
 CoglBool

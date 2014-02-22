@@ -40,13 +40,13 @@
 #include "cogl-pipeline-layer-private.h"
 #include "cogl-node-private.h"
 
-#include <glib.h>
+#include <ulib.h>
 
 typedef struct
 {
   int parent_id;
   int *node_id_ptr;
-  GString *graph;
+  UString *graph;
   int indent;
 } PrintDebugState;
 
@@ -57,16 +57,16 @@ dump_layer_cb (CoglNode *node, void *user_data)
   PrintDebugState *state = user_data;
   int layer_id = *state->node_id_ptr;
   PrintDebugState state_out;
-  GString *changes_label;
+  UString *changes_label;
   CoglBool changes = FALSE;
 
   if (state->parent_id >= 0)
-    g_string_append_printf (state->graph, "%*slayer%p -> layer%p;\n",
+    u_string_append_printf (state->graph, "%*slayer%p -> layer%p;\n",
                             state->indent, "",
                             layer->_parent.parent,
                             layer);
 
-  g_string_append_printf (state->graph,
+  u_string_append_printf (state->graph,
                           "%*slayer%p [label=\"layer=0x%p\\n"
                           "ref count=%d\" "
                           "color=\"blue\"];\n",
@@ -75,8 +75,8 @@ dump_layer_cb (CoglNode *node, void *user_data)
                           layer,
                           COGL_OBJECT (layer)->ref_count);
 
-  changes_label = g_string_new ("");
-  g_string_append_printf (changes_label,
+  changes_label = u_string_new ("");
+  u_string_append_printf (changes_label,
                           "%*slayer%p -> layer_state%d [weight=100];\n"
                           "%*slayer_state%d [shape=box label=\"",
                           state->indent, "",
@@ -88,7 +88,7 @@ dump_layer_cb (CoglNode *node, void *user_data)
   if (layer->differences & COGL_PIPELINE_LAYER_STATE_UNIT)
     {
       changes = TRUE;
-      g_string_append_printf (changes_label,
+      u_string_append_printf (changes_label,
                               "\\lunit=%u\\n",
                               layer->unit_index);
     }
@@ -96,16 +96,16 @@ dump_layer_cb (CoglNode *node, void *user_data)
   if (layer->differences & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
     {
       changes = TRUE;
-      g_string_append_printf (changes_label,
+      u_string_append_printf (changes_label,
                               "\\ltexture=%p\\n",
                               layer->texture);
     }
 
   if (changes)
     {
-      g_string_append_printf (changes_label, "\"];\n");
-      g_string_append (state->graph, changes_label->str);
-      g_string_free (changes_label, TRUE);
+      u_string_append_printf (changes_label, "\"];\n");
+      u_string_append (state->graph, changes_label->str);
+      u_string_free (changes_label, TRUE);
     }
 
   state_out.parent_id = layer_id;
@@ -129,7 +129,7 @@ dump_layer_ref_cb (CoglPipelineLayer *layer, void *data)
   PrintDebugState *state = data;
   int pipeline_id = *state->node_id_ptr;
 
-  g_string_append_printf (state->graph,
+  u_string_append_printf (state->graph,
                           "%*spipeline_state%d -> layer%p;\n",
                           state->indent, "",
                           pipeline_id,
@@ -145,17 +145,17 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
   PrintDebugState *state = user_data;
   int pipeline_id = *state->node_id_ptr;
   PrintDebugState state_out;
-  GString *changes_label;
+  UString *changes_label;
   CoglBool changes = FALSE;
   CoglBool layers = FALSE;
 
   if (state->parent_id >= 0)
-    g_string_append_printf (state->graph, "%*spipeline%d -> pipeline%d;\n",
+    u_string_append_printf (state->graph, "%*spipeline%d -> pipeline%d;\n",
                             state->indent, "",
                             state->parent_id,
                             pipeline_id);
 
-  g_string_append_printf (state->graph,
+  u_string_append_printf (state->graph,
                           "%*spipeline%d [label=\"pipeline=0x%p\\n"
                           "ref count=%d\\n"
                           "breadcrumb=\\\"%s\\\"\" color=\"red\"];\n",
@@ -171,8 +171,8 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
 #endif
                           );
 
-  changes_label = g_string_new ("");
-  g_string_append_printf (changes_label,
+  changes_label = u_string_new ("");
+  u_string_append_printf (changes_label,
                           "%*spipeline%d -> pipeline_state%d [weight=100];\n"
                           "%*spipeline_state%d [shape=box label=\"",
                           state->indent, "",
@@ -185,7 +185,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
   if (pipeline->differences & COGL_PIPELINE_STATE_COLOR)
     {
       changes = TRUE;
-      g_string_append_printf (changes_label,
+      u_string_append_printf (changes_label,
                               "\\lcolor=0x%02X%02X%02X%02X\\n",
                               cogl_color_get_red_byte (&pipeline->color),
                               cogl_color_get_green_byte (&pipeline->color),
@@ -213,7 +213,7 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
         default:
           blend_enable_name = "UNKNOWN";
         }
-      g_string_append_printf (changes_label,
+      u_string_append_printf (changes_label,
                               "\\lblend=%s\\n",
                               blend_enable_name);
     }
@@ -222,20 +222,20 @@ dump_pipeline_cb (CoglNode *node, void *user_data)
     {
       changes = TRUE;
       layers = TRUE;
-      g_string_append_printf (changes_label, "\\ln_layers=%d\\n",
+      u_string_append_printf (changes_label, "\\ln_layers=%d\\n",
                               pipeline->n_layers);
     }
 
   if (changes)
     {
-      g_string_append_printf (changes_label, "\"];\n");
-      g_string_append (state->graph, changes_label->str);
-      g_string_free (changes_label, TRUE);
+      u_string_append_printf (changes_label, "\"];\n");
+      u_string_append (state->graph, changes_label->str);
+      u_string_free (changes_label, TRUE);
     }
 
   if (layers)
     {
-      g_list_foreach (pipeline->layer_differences,
+      u_list_foreach (pipeline->layer_differences,
                       (GFunc)dump_layer_ref_cb,
                       state);
     }
@@ -264,7 +264,7 @@ _cogl_debug_dump_pipelines_dot_file (const char *filename);
 void
 _cogl_debug_dump_pipelines_dot_file (const char *filename)
 {
-  GString *graph;
+  UString *graph;
   PrintDebugState layer_state;
   PrintDebugState pipeline_state;
   int layer_id = 0;
@@ -275,8 +275,8 @@ _cogl_debug_dump_pipelines_dot_file (const char *filename)
   if (!ctx->default_pipeline)
     return;
 
-  graph = g_string_new ("");
-  g_string_append_printf (graph, "digraph {\n");
+  graph = u_string_new ("");
+  u_string_append_printf (graph, "digraph {\n");
 
   layer_state.graph = graph;
   layer_state.parent_id = -1;
@@ -290,12 +290,12 @@ _cogl_debug_dump_pipelines_dot_file (const char *filename)
   pipeline_state.indent = 0;
   dump_pipeline_cb ((CoglNode *)ctx->default_pipeline, &pipeline_state);
 
-  g_string_append_printf (graph, "}\n");
+  u_string_append_printf (graph, "}\n");
 
   if (filename)
-    g_file_set_contents (filename, graph->str, -1, NULL);
+    u_file_set_contents (filename, graph->str, -1, NULL);
   else
-    g_print ("%s", graph->str);
+    u_print ("%s", graph->str);
 
-  g_string_free (graph, TRUE);
+  u_string_free (graph, TRUE);
 }

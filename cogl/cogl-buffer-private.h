@@ -35,7 +35,7 @@
 #ifndef __COGL_BUFFER_PRIVATE_H__
 #define __COGL_BUFFER_PRIVATE_H__
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-object-private.h"
 #include "cogl-buffer.h"

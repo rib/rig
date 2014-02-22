@@ -226,7 +226,7 @@ setup_generic_const_attribute (CoglContext *context,
                                         attribute->d.constant.boxed.v.matrix));
       break;
     default:
-      g_warn_if_reached ();
+      u_warn_if_reached ();
     }
 }
 
@@ -294,7 +294,7 @@ setup_legacy_buffered_attribute (CoglContext *ctx,
 #endif
       break;
     default:
-      g_warn_if_reached ();
+      u_warn_if_reached ();
     }
 }
 
@@ -355,7 +355,7 @@ setup_legacy_const_attribute (CoglContext *ctx,
           GE (ctx, glVertex4f (vector[0], vector[1], vector[2], vector[3]));
           break;
         default:
-          g_warn_if_reached ();
+          u_warn_if_reached ();
         }
     }
 }
@@ -423,7 +423,7 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
         break;
       }
 
-  if (G_UNLIKELY (layers_state->options.flags))
+  if (U_UNLIKELY (layers_state->options.flags))
     {
       /* If we haven't already created a derived pipeline... */
       if (!copy)
@@ -446,13 +446,13 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
        *                 sizeof (options) != 0)
        *       {
        *         cogl_object_unref (overrides->weak_pipeline);
-       *         g_slice_free (Overrides, overrides);
+       *         u_slice_free (Overrides, overrides);
        *         overrides = NULL;
        *       }
        *   }
        * if (!overrides)
        *   {
-       *     overrides = g_slice_new (Overrides);
+       *     overrides = u_slice_new (Overrides);
        *     overrides->weak_pipeline =
        *       cogl_pipeline_weak_copy (pipeline);
        *     _cogl_pipeline_apply_overrides (overrides->weak_pipeline,

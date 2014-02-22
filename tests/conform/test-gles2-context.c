@@ -258,7 +258,7 @@ create_gles2_framebuffer (const CoglGLES2Vtable *gles2,
 
   status = gles2->glCheckFramebufferStatus (GL_FRAMEBUFFER);
   if (cogl_test_verbose ())
-    g_print ("status for gles2 framebuffer = 0x%x %s\n",
+    u_print ("status for gles2 framebuffer = 0x%x %s\n",
              status, status == GL_FRAMEBUFFER_COMPLETE ? "(complete)" : "(?)");
 
   gles2->glBindFramebuffer (GL_FRAMEBUFFER, 0);
@@ -368,7 +368,7 @@ test_gles2_context (void)
   test_gles2_read_pixels ();
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 
 static GLuint
@@ -609,7 +609,7 @@ static void
 verify_read_pixels (const PaintData *data)
 {
   int stride = data->fb_width * 4;
-  uint8_t *buf = g_malloc (data->fb_height * stride);
+  uint8_t *buf = u_malloc (data->fb_height * stride);
 
   data->gles2->glReadPixels (0, 0, /* x/y */
                              data->fb_width, data->fb_height,
@@ -663,7 +663,7 @@ test_gles2_context_fbo (void)
   data.fb_width = cogl_framebuffer_get_width (test_fb);
   data.fb_height = cogl_framebuffer_get_height (test_fb);
 
-  for (i = 0; i < G_N_ELEMENTS (paint_methods); i++)
+  for (i = 0; i < U_N_ELEMENTS (paint_methods); i++)
     {
       CoglTexture *offscreen_texture;
       CoglOffscreen *offscreen;
@@ -752,7 +752,7 @@ verify_region (const CoglGLES2Vtable *gles2,
 {
   uint8_t *buf, *p;
 
-  buf = g_malloc (width * height * 4);
+  buf = u_malloc (width * height * 4);
 
   gles2->glReadPixels (x, y, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 

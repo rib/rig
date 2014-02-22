@@ -29,7 +29,7 @@
 #ifndef __COGL_BLIT_H
 #define __COGL_BLIT_H
 
-#include <glib.h>
+#include <ulib.h>
 #include "cogl-object-private.h"
 #include "cogl-texture.h"
 #include "cogl-framebuffer.h"
@@ -69,7 +69,7 @@ struct _CoglBlitData
 
   const CoglBlitMode *blit_mode;
 
-  /* If we're not using an FBO then we g_malloc a buffer and copy the
+  /* If we're not using an FBO then we u_malloc a buffer and copy the
      complete texture data in */
   unsigned char *image_data;
   CoglPixelFormat format;

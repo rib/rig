@@ -166,14 +166,14 @@ cogl_error_matches (CoglError *error,
  * COGL_GLIB_ERROR:
  * @COGL_ERROR: A #CoglError thrown by the Cogl api or %NULL
  *
- * Simply casts a #CoglError to a #CoglError
+ * Simply casts a #CoglError to a #GError
  *
  * If Cogl is built with GLib support then it can safely be assumed
  * that a CoglError is a GError and can be used directly with the
  * GError api.
  */
 #ifdef COGL_HAS_GLIB_SUPPORT
-#define COGL_GLIB_ERROR(COGL_ERROR) ((CoglError *)COGL_ERROR)
+#define COGL_GLIB_ERROR(COGL_ERROR) ((GError *)COGL_ERROR)
 #endif
 
 COGL_END_DECLS

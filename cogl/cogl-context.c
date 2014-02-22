@@ -84,16 +84,16 @@ static CoglContext *_cogl_context = NULL;
 static void
 _cogl_init_feature_overrides (CoglContext *ctx)
 {
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_VBOS)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_VBOS)))
     COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_VBOS, FALSE);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_PBOS)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_PBOS)))
     COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_PBOS, FALSE);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_ARBFP)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_ARBFP)))
     COGL_FLAGS_SET (ctx->private_features, COGL_PRIVATE_FEATURE_ARBFP, FALSE);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_GLSL)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_GLSL)))
     {
       COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_GLSL, FALSE);
       COGL_FLAGS_SET (ctx->features,
@@ -101,7 +101,7 @@ _cogl_init_feature_overrides (CoglContext *ctx)
                       FALSE);
     }
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_NPOT_TEXTURES)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_NPOT_TEXTURES)))
     {
       COGL_FLAGS_SET (ctx->features, COGL_FEATURE_ID_TEXTURE_NPOT, FALSE);
       COGL_FLAGS_SET (ctx->features,
@@ -158,7 +158,7 @@ cogl_context_new (CoglDisplay *display,
 #endif
 
   /* Allocate context memory */
-  context = g_malloc0 (sizeof (CoglContext));
+  context = u_malloc0 (sizeof (CoglContext));
 
   /* Convert the context into an object immediately in case any of the
      code below wants to verify that the context pointer is a valid
@@ -187,7 +187,7 @@ cogl_context_new (CoglDisplay *display,
       CoglRenderer *renderer = cogl_renderer_new ();
       if (!cogl_renderer_connect (renderer, error))
         {
-          g_free (context);
+          u_free (context);
           return NULL;
         }
 
@@ -200,7 +200,7 @@ cogl_context_new (CoglDisplay *display,
   if (!cogl_display_setup (display, error))
     {
       cogl_object_unref (display);
-      g_free (context);
+      u_free (context);
       return NULL;
     }
 
@@ -216,19 +216,19 @@ cogl_context_new (CoglDisplay *display,
   context->driver_vtable = display->renderer->driver_vtable;
   context->texture_driver = display->renderer->texture_driver;
 
-  for (i = 0; i < G_N_ELEMENTS (context->private_features); i++)
+  for (i = 0; i < U_N_ELEMENTS (context->private_features); i++)
     context->private_features[i] |= display->renderer->private_features[i];
 
   winsys = _cogl_context_get_winsys (context);
   if (!winsys->context_init (context, error))
     {
       cogl_object_unref (display);
-      g_free (context);
+      u_free (context);
       return NULL;
     }
 
   context->attribute_name_states_hash =
-    g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+    u_hash_table_new_full (u_str_hash, u_str_equal, u_free, u_free);
   context->attribute_name_index_map = NULL;
   context->n_attribute_names = 0;
 
@@ -238,8 +238,8 @@ cogl_context_new (CoglDisplay *display,
 
 
   context->uniform_names =
-    g_ptr_array_new_with_free_func ((GDestroyNotify) g_free);
-  context->uniform_name_hash = g_hash_table_new (g_str_hash, g_str_equal);
+    u_ptr_array_new_with_free_func ((UDestroyNotify) u_free);
+  context->uniform_name_hash = u_hash_table_new (u_str_hash, u_str_equal);
   context->n_uniform_names = 0;
 
   /* Initialise the driver specific state */
@@ -278,7 +278,7 @@ cogl_context_new (CoglDisplay *display,
   context->flushed_matrix_mode = COGL_MATRIX_MODELVIEW;
 
   context->texture_units =
-    g_array_new (FALSE, FALSE, sizeof (CoglTextureUnit));
+    u_array_new (FALSE, FALSE, sizeof (CoglTextureUnit));
 
   if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ANY_GL))
     {
@@ -289,8 +289,8 @@ cogl_context_new (CoglDisplay *display,
     }
 
   context->opaque_color_pipeline = cogl_pipeline_new (context);
-  context->codegen_header_buffer = g_string_new ("");
-  context->codegen_source_buffer = g_string_new ("");
+  context->codegen_header_buffer = u_string_new ("");
+  context->codegen_source_buffer = u_string_new ("");
 
   context->default_gl_texture_2d_tex = NULL;
   context->default_gl_texture_3d_tex = NULL;
@@ -305,10 +305,10 @@ cogl_context_new (CoglDisplay *display,
   _cogl_list_init (&context->onscreen_events_queue);
   _cogl_list_init (&context->onscreen_dirty_queue);
 
-  g_queue_init (&context->gles2_context_stack);
+  u_queue_init (&context->gles2_context_stack);
 
   context->journal_flush_attributes_array =
-    g_array_new (TRUE, FALSE, sizeof (CoglAttribute *));
+    u_array_new (TRUE, FALSE, sizeof (CoglAttribute *));
   context->journal_clip_bounds = NULL;
 
   context->current_pipeline = NULL;
@@ -433,9 +433,9 @@ cogl_context_new (CoglDisplay *display,
   cogl_object_unref (white_pixel_bitmap);
 
   context->atlases = NULL;
-  g_hook_list_init (&context->atlas_reorganize_callbacks, sizeof (GHook));
+  u_hook_list_init (&context->atlas_reorganize_callbacks, sizeof (UHook));
 
-  context->buffer_map_fallback_array = g_byte_array_new ();
+  context->buffer_map_fallback_array = u_byte_array_new ();
   context->buffer_map_fallback_in_use = FALSE;
 
   /* As far as I can tell, GL_POINT_SPRITE doesn't have any effect
@@ -474,12 +474,12 @@ _cogl_context_free (CoglContext *context)
   if (context->blit_texture_pipeline)
     cogl_object_unref (context->blit_texture_pipeline);
 
-  g_warn_if_fail (context->gles2_context_stack.length == 0);
+  u_warn_if_fail (context->gles2_context_stack.length == 0);
 
   if (context->journal_flush_attributes_array)
-    g_array_free (context->journal_flush_attributes_array, TRUE);
+    u_array_free (context->journal_flush_attributes_array, TRUE);
   if (context->journal_clip_bounds)
-    g_array_free (context->journal_clip_bounds, TRUE);
+    u_array_free (context->journal_clip_bounds, TRUE);
 
   if (context->rectangle_byte_indices)
     cogl_object_unref (context->rectangle_byte_indices);
@@ -499,8 +499,8 @@ _cogl_context_free (CoglContext *context)
   if (context->current_clip_stack_valid)
     _cogl_clip_stack_unref (context->current_clip_stack);
 
-  g_slist_free (context->atlases);
-  g_hook_list_clear (&context->atlas_reorganize_callbacks);
+  u_slist_free (context->atlases);
+  u_hook_list_clear (&context->atlas_reorganize_callbacks);
 
   _cogl_bitmask_destroy (&context->enabled_builtin_attributes);
   _cogl_bitmask_destroy (&context->enable_builtin_attributes_tmp);
@@ -523,17 +523,17 @@ _cogl_context_free (CoglContext *context)
 
   _cogl_destroy_texture_units ();
 
-  g_ptr_array_free (context->uniform_names, TRUE);
-  g_hash_table_destroy (context->uniform_name_hash);
+  u_ptr_array_free (context->uniform_names, TRUE);
+  u_hash_table_destroy (context->uniform_name_hash);
 
-  g_hash_table_destroy (context->attribute_name_states_hash);
-  g_array_free (context->attribute_name_index_map, TRUE);
+  u_hash_table_destroy (context->attribute_name_states_hash);
+  u_array_free (context->attribute_name_index_map, TRUE);
 
-  g_byte_array_free (context->buffer_map_fallback_array, TRUE);
+  u_byte_array_free (context->buffer_map_fallback_array, TRUE);
 
   cogl_object_unref (context->display);
 
-  g_free (context);
+  u_free (context);
 }
 
 CoglContext *
@@ -610,13 +610,13 @@ _cogl_context_get_gl_extensions (CoglContext *context)
 
       context->glGetIntegerv (GL_NUM_EXTENSIONS, &num_extensions);
 
-      ret = g_malloc (sizeof (char *) * (num_extensions + 1));
+      ret = u_malloc (sizeof (char *) * (num_extensions + 1));
 
       for (i = 0; i < num_extensions; i++)
         {
           const char *ext =
             (const char *) context->glGetStringi (GL_EXTENSIONS, i);
-          ret[i] = g_strdup (ext);
+          ret[i] = u_strdup (ext);
         }
 
       ret[num_extensions] = NULL;
@@ -627,10 +627,10 @@ _cogl_context_get_gl_extensions (CoglContext *context)
       const char *all_extensions =
         (const char *) context->glGetString (GL_EXTENSIONS);
 
-      ret = g_strsplit (all_extensions, " ", 0 /* max tokens */);
+      ret = u_strsplit (all_extensions, " ", 0 /* max tokens */);
     }
 
-  if ((env_disabled_extensions = g_getenv ("COGL_DISABLE_GL_EXTENSIONS"))
+  if ((env_disabled_extensions = u_getenv ("COGL_DISABLE_GL_EXTENSIONS"))
       || _cogl_config_disable_gl_extensions)
     {
       char **split_env_disabled_extensions;
@@ -639,7 +639,7 @@ _cogl_context_get_gl_extensions (CoglContext *context)
 
       if (env_disabled_extensions)
         split_env_disabled_extensions =
-          g_strsplit (env_disabled_extensions,
+          u_strsplit (env_disabled_extensions,
                       ",",
                       0 /* no max tokens */);
       else
@@ -647,7 +647,7 @@ _cogl_context_get_gl_extensions (CoglContext *context)
 
       if (_cogl_config_disable_gl_extensions)
         split_conf_disabled_extensions =
-          g_strsplit (_cogl_config_disable_gl_extensions,
+          u_strsplit (_cogl_config_disable_gl_extensions,
                       ",",
                       0 /* no max tokens */);
       else
@@ -672,16 +672,16 @@ _cogl_context_get_gl_extensions (CoglContext *context)
           continue;
 
         disabled:
-          g_free (*src);
+          u_free (*src);
           continue;
         }
 
       *dst = NULL;
 
       if (split_env_disabled_extensions)
-        g_strfreev (split_env_disabled_extensions);
+        u_strfreev (split_env_disabled_extensions);
       if (split_conf_disabled_extensions)
-        g_strfreev (split_conf_disabled_extensions);
+        u_strfreev (split_conf_disabled_extensions);
     }
 
   return ret;
@@ -692,7 +692,7 @@ _cogl_context_get_gl_version (CoglContext *context)
 {
   const char *version_override;
 
-  if ((version_override = g_getenv ("COGL_OVERRIDE_GL_VERSION")))
+  if ((version_override = u_getenv ("COGL_OVERRIDE_GL_VERSION")))
     return version_override;
   else if (_cogl_config_override_gl_version)
     return _cogl_config_override_gl_version;

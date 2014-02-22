@@ -49,7 +49,7 @@ cogl_snippet_new (CoglSnippetHook hook,
                   const char *declarations,
                   const char *post)
 {
-  CoglSnippet *snippet = g_slice_new0 (CoglSnippet);
+  CoglSnippet *snippet = u_slice_new0 (CoglSnippet);
 
   _cogl_snippet_object_new (snippet);
 
@@ -74,7 +74,7 @@ _cogl_snippet_modify (CoglSnippet *snippet)
 {
   if (snippet->immutable)
     {
-      g_warning ("A CoglSnippet should not be modified once it has been "
+      u_warning ("A CoglSnippet should not be modified once it has been "
                  "attached to a pipeline. Any modifications after that point "
                  "will be ignored.");
 
@@ -93,8 +93,8 @@ cogl_snippet_set_declarations (CoglSnippet *snippet,
   if (!_cogl_snippet_modify (snippet))
     return;
 
-  g_free (snippet->declarations);
-  snippet->declarations = declarations ? g_strdup (declarations) : NULL;
+  u_free (snippet->declarations);
+  snippet->declarations = declarations ? u_strdup (declarations) : NULL;
 }
 
 const char *
@@ -114,8 +114,8 @@ cogl_snippet_set_pre (CoglSnippet *snippet,
   if (!_cogl_snippet_modify (snippet))
     return;
 
-  g_free (snippet->pre);
-  snippet->pre = pre ? g_strdup (pre) : NULL;
+  u_free (snippet->pre);
+  snippet->pre = pre ? u_strdup (pre) : NULL;
 }
 
 const char *
@@ -135,8 +135,8 @@ cogl_snippet_set_replace (CoglSnippet *snippet,
   if (!_cogl_snippet_modify (snippet))
     return;
 
-  g_free (snippet->replace);
-  snippet->replace = replace ? g_strdup (replace) : NULL;
+  u_free (snippet->replace);
+  snippet->replace = replace ? u_strdup (replace) : NULL;
 }
 
 const char *
@@ -156,8 +156,8 @@ cogl_snippet_set_post (CoglSnippet *snippet,
   if (!_cogl_snippet_modify (snippet))
     return;
 
-  g_free (snippet->post);
-  snippet->post = post ? g_strdup (post) : NULL;
+  u_free (snippet->post);
+  snippet->post = post ? u_strdup (post) : NULL;
 }
 
 const char *
@@ -177,9 +177,9 @@ _cogl_snippet_make_immutable (CoglSnippet *snippet)
 static void
 _cogl_snippet_free (CoglSnippet *snippet)
 {
-  g_free (snippet->declarations);
-  g_free (snippet->pre);
-  g_free (snippet->replace);
-  g_free (snippet->post);
-  g_slice_free (CoglSnippet, snippet);
+  u_free (snippet->declarations);
+  u_free (snippet->pre);
+  u_free (snippet->replace);
+  u_free (snippet->post);
+  u_slice_free (CoglSnippet, snippet);
 }

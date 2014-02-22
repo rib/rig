@@ -63,12 +63,12 @@ struct _CoglAtlasTexture
 
 void
 _cogl_atlas_texture_add_reorganize_callback (CoglContext *ctx,
-                                             GHookFunc callback,
+                                             UHookFunc callback,
                                              void *user_data);
 
 void
 _cogl_atlas_texture_remove_reorganize_callback (CoglContext *ctx,
-                                                GHookFunc callback,
+                                                UHookFunc callback,
                                                 void *user_data);
 
 CoglBool

@@ -194,5 +194,5 @@ test_offscreen (void)
   test_flush (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

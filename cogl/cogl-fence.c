@@ -90,7 +90,7 @@ static int64_t
 _cogl_fence_poll_prepare (void *source)
 {
   CoglContext *context = source;
-  GList *l;
+  UList *l;
 
   /* If there are any pending fences in any of the journals then we
    * need to flush the journal otherwise the fence will never be
@@ -165,7 +165,7 @@ cogl_framebuffer_add_fence_callback (CoglFramebuffer *framebuffer,
   if (!COGL_FLAGS_GET (context->features, COGL_FEATURE_ID_FENCE))
     return NULL;
 
-  fence = g_slice_new (CoglFenceClosure);
+  fence = u_slice_new (CoglFenceClosure);
   fence->framebuffer = framebuffer;
   fence->callback = callback;
   fence->user_data = user_data;
@@ -210,7 +210,7 @@ cogl_framebuffer_cancel_fence_callback (CoglFramebuffer *framebuffer,
 #endif
     }
 
-  g_slice_free (CoglFenceClosure, fence);
+  u_slice_free (CoglFenceClosure, fence);
 }
 
 void

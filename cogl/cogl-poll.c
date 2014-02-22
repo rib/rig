@@ -53,7 +53,7 @@ cogl_poll_renderer_get_info (CoglRenderer *renderer,
                              int *n_poll_fds,
                              int64_t *timeout)
 {
-  GList *l, *next;
+  UList *l, *next;
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_renderer (renderer), 0);
   _COGL_RETURN_VAL_IF_FAIL (poll_fds != NULL, 0);
@@ -95,7 +95,7 @@ cogl_poll_renderer_dispatch (CoglRenderer *renderer,
                              const CoglPollFD *poll_fds,
                              int n_poll_fds)
 {
-  GList *l, *next;
+  UList *l, *next;
 
   _COGL_RETURN_IF_FAIL (cogl_is_renderer (renderer));
 
@@ -136,7 +136,7 @@ find_pollfd (CoglRenderer *renderer, int fd)
 
   for (i = 0; i < renderer->poll_fds->len; i++)
     {
-      CoglPollFD *pollfd = &g_array_index (renderer->poll_fds, CoglPollFD, i);
+      CoglPollFD *pollfd = &u_array_index (renderer->poll_fds, CoglPollFD, i);
 
       if (pollfd->fd == fd)
         return i;
@@ -149,12 +149,12 @@ void
 _cogl_poll_renderer_remove_fd (CoglRenderer *renderer, int fd)
 {
   int i = find_pollfd (renderer, fd);
-  GList *l;
+  UList *l;
 
   if (i < 0)
     return;
 
-  g_array_remove_index_fast (renderer->poll_fds, i);
+  u_array_remove_index_fast (renderer->poll_fds, i);
   renderer->poll_fds_age++;
 
   for (l = renderer->poll_sources; l; l = l->next)
@@ -163,8 +163,8 @@ _cogl_poll_renderer_remove_fd (CoglRenderer *renderer, int fd)
       if (source->fd == fd)
         {
           renderer->poll_sources =
-            g_list_delete_link (renderer->poll_sources, l);
-          g_slice_free (CoglPollSource, source);
+            u_list_delete_link (renderer->poll_sources, l);
+          u_slice_free (CoglPollSource, source);
           break;
         }
     }
@@ -178,11 +178,11 @@ _cogl_poll_renderer_modify_fd (CoglRenderer *renderer,
   int fd_index = find_pollfd (renderer, fd);
 
   if (fd_index == -1)
-    g_warn_if_reached ();
+    u_warn_if_reached ();
   else
     {
       CoglPollFD *pollfd =
-        &g_array_index (renderer->poll_sources, CoglPollFD, fd_index);
+        &u_array_index (renderer->poll_sources, CoglPollFD, fd_index);
 
       pollfd->events = events;
       renderer->poll_fds_age++;
@@ -205,15 +205,15 @@ _cogl_poll_renderer_add_fd (CoglRenderer *renderer,
 
   _cogl_poll_renderer_remove_fd (renderer, fd);
 
-  source = g_slice_new0 (CoglPollSource);
+  source = u_slice_new0 (CoglPollSource);
   source->fd = fd;
   source->prepare = prepare;
   source->dispatch = dispatch;
   source->user_data = user_data;
 
-  renderer->poll_sources = g_list_prepend (renderer->poll_sources, source);
+  renderer->poll_sources = u_list_prepend (renderer->poll_sources, source);
 
-  g_array_append_val (renderer->poll_fds, pollfd);
+  u_array_append_val (renderer->poll_fds, pollfd);
   renderer->poll_fds_age++;
 }
 
@@ -225,13 +225,13 @@ _cogl_poll_renderer_add_source (CoglRenderer *renderer,
 {
   CoglPollSource *source;
 
-  source = g_slice_new0 (CoglPollSource);
+  source = u_slice_new0 (CoglPollSource);
   source->fd = -1;
   source->prepare = prepare;
   source->dispatch = dispatch;
   source->user_data = user_data;
 
-  renderer->poll_sources = g_list_prepend (renderer->poll_sources, source);
+  renderer->poll_sources = u_list_prepend (renderer->poll_sources, source);
 
   return source;
 }
@@ -240,15 +240,15 @@ void
 _cogl_poll_renderer_remove_source (CoglRenderer *renderer,
                                    CoglPollSource *source)
 {
-  GList *l;
+  UList *l;
 
   for (l = renderer->poll_sources; l; l = l->next)
     {
       if (l->data == source)
         {
           renderer->poll_sources =
-            g_list_delete_link (renderer->poll_sources, l);
-          g_slice_free (CoglPollSource, source);
+            u_list_delete_link (renderer->poll_sources, l);
+          u_slice_free (CoglPollSource, source);
           break;
         }
     }

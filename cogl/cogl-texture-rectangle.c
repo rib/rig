@@ -90,8 +90,8 @@ _cogl_texture_rectangle_gl_flush_legacy_texobj_wrap_modes (CoglTexture *tex,
   if (tex_rect->gl_legacy_texobj_wrap_mode_s != wrap_mode_s ||
       tex_rect->gl_legacy_texobj_wrap_mode_t != wrap_mode_t)
     {
-      g_assert (can_use_wrap_mode (wrap_mode_s));
-      g_assert (can_use_wrap_mode (wrap_mode_t));
+      u_assert (can_use_wrap_mode (wrap_mode_s));
+      u_assert (can_use_wrap_mode (wrap_mode_t));
 
       _cogl_bind_gl_texture_transient (GL_TEXTURE_RECTANGLE_ARB,
                                        tex_rect->gl_texture,
@@ -176,7 +176,7 @@ _cogl_texture_rectangle_create_base (CoglContext *ctx,
                                      CoglPixelFormat internal_format,
                                      CoglTextureLoader *loader)
 {
-  CoglTextureRectangle *tex_rect = g_new (CoglTextureRectangle, 1);
+  CoglTextureRectangle *tex_rect = u_new (CoglTextureRectangle, 1);
   CoglTexture *tex = COGL_TEXTURE (tex_rect);
 
   _cogl_texture_init (tex, ctx, width, height,
@@ -482,7 +482,7 @@ _cogl_texture_rectangle_allocate (CoglTexture *tex,
       break;
     }
 
-  g_return_val_if_reached (FALSE);
+  u_return_val_if_reached (FALSE);
 }
 
 CoglTextureRectangle *
@@ -606,7 +606,7 @@ _cogl_texture_rectangle_gl_flush_legacy_texobj_filters (CoglTexture *tex,
     return;
 
   /* Rectangle textures don't support mipmapping */
-  g_assert (min_filter == GL_LINEAR || min_filter == GL_NEAREST);
+  u_assert (min_filter == GL_LINEAR || min_filter == GL_NEAREST);
 
   /* Store new values */
   tex_rect->gl_legacy_texobj_min_filter = min_filter;
@@ -627,7 +627,7 @@ _cogl_texture_rectangle_pre_paint (CoglTexture *tex,
                                    CoglTexturePrePaintFlags flags)
 {
   /* Rectangle textures don't support mipmaps */
-  g_assert ((flags & COGL_TEXTURE_NEEDS_MIPMAP) == 0);
+  u_assert ((flags & COGL_TEXTURE_NEEDS_MIPMAP) == 0);
 }
 
 static void

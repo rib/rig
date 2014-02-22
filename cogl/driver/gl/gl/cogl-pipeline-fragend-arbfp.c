@@ -51,7 +51,7 @@
 #include "cogl-color-private.h"
 #include "cogl-profile.h"
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 /* This might not be defined on GLES */
@@ -75,7 +75,7 @@ typedef struct
   int ref_count;
 
   /* XXX: only valid during codegen */
-  GString *source;
+  UString *source;
   GLuint gl_program;
   UnitState *unit_state;
   int next_constant_id;
@@ -95,9 +95,9 @@ shader_state_new (int n_layers,
 {
   CoglPipelineShaderState *shader_state;
 
-  shader_state = g_slice_new0 (CoglPipelineShaderState);
+  shader_state = u_slice_new0 (CoglPipelineShaderState);
   shader_state->ref_count = 1;
-  shader_state->unit_state = g_new0 (UnitState, n_layers);
+  shader_state->unit_state = u_new0 (UnitState, n_layers);
   shader_state->cache_entry = cache_entry;
 
   return shader_state;
@@ -136,9 +136,9 @@ destroy_shader_state (void *user_data,
           shader_state->gl_program = 0;
         }
 
-      g_free (shader_state->unit_state);
+      u_free (shader_state->unit_state);
 
-      g_slice_free (CoglPipelineShaderState, shader_state);
+      u_slice_free (CoglPipelineShaderState, shader_state);
     }
 }
 
@@ -216,7 +216,7 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
   /* If we haven't yet found an existing program then before we resort to
    * generating a new arbfp program we see if we can find a suitable
    * program in the pipeline_cache. */
-  if (G_LIKELY (!(COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_PROGRAM_CACHES))))
+  if (U_LIKELY (!(COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_PROGRAM_CACHES))))
     {
       cache_entry =
         _cogl_pipeline_cache_get_fragment_template (ctx->pipeline_cache,
@@ -234,10 +234,10 @@ _cogl_pipeline_fragend_arbfp_start (CoglPipeline *pipeline,
     {
       shader_state = shader_state_new (n_layers, cache_entry);
 
-      /* We reuse a single grow-only GString for code-gen */
-      g_string_set_size (ctx->codegen_source_buffer, 0);
+      /* We reuse a single grow-only UString for code-gen */
+      u_string_set_size (ctx->codegen_source_buffer, 0);
       shader_state->source = ctx->codegen_source_buffer;
-      g_string_append (shader_state->source,
+      u_string_append (shader_state->source,
                        "!!ARBfp1.0\n"
                        "TEMP output;\n"
                        "TEMP tmp0, tmp1, tmp2, tmp3, tmp4;\n"
@@ -280,7 +280,7 @@ texture_type_to_arbfp_string (CoglTextureType texture_type)
       return "RECT";
     }
 
-  g_warn_if_reached ();
+  u_warn_if_reached ();
 
   return "2D";
 }
@@ -292,14 +292,14 @@ setup_texture_source (CoglPipelineShaderState *shader_state,
 {
   if (!shader_state->unit_state[unit_index].sampled)
     {
-      if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)))
-        g_string_append_printf (shader_state->source,
+      if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)))
+        u_string_append_printf (shader_state->source,
                                 "TEMP texel%d;\n"
                                 "MOV texel%d, one;\n",
                                 unit_index,
                                 unit_index);
       else
-        g_string_append_printf (shader_state->source,
+        u_string_append_printf (shader_state->source,
                                 "TEMP texel%d;\n"
                                 "TEX texel%d,fragment.texcoord[%d],"
                                 "texture[%d],%s;\n",
@@ -337,20 +337,20 @@ typedef struct _CoglPipelineFragendARBfpArg
 } CoglPipelineFragendARBfpArg;
 
 static void
-append_arg (GString *source, const CoglPipelineFragendARBfpArg *arg)
+append_arg (UString *source, const CoglPipelineFragendARBfpArg *arg)
 {
   switch (arg->type)
     {
     case COGL_PIPELINE_FRAGEND_ARBFP_ARG_TYPE_TEXTURE:
-      g_string_append_printf (source, "texel%d%s",
+      u_string_append_printf (source, "texel%d%s",
                               arg->texture_unit, arg->swizzle);
       break;
     case COGL_PIPELINE_FRAGEND_ARBFP_ARG_TYPE_CONSTANT:
-      g_string_append_printf (source, "program.local[%d]%s",
+      u_string_append_printf (source, "program.local[%d]%s",
                               arg->constant_id, arg->swizzle);
       break;
     case COGL_PIPELINE_FRAGEND_ARBFP_ARG_TYPE_SIMPLE:
-      g_string_append_printf (source, "%s%s",
+      u_string_append_printf (source, "%s%s",
                               arg->name, arg->swizzle);
       break;
     }
@@ -418,7 +418,7 @@ setup_arg (CoglPipeline *pipeline,
             static CoglBool warning_seen = FALSE;
             if (!warning_seen)
               {
-                g_warning ("The application is trying to use a texture "
+                u_warning ("The application is trying to use a texture "
                            "combine with a layer number that does not exist");
                 warning_seen = TRUE;
               }
@@ -449,11 +449,11 @@ setup_arg (CoglPipeline *pipeline,
     case COGL_PIPELINE_COMBINE_OP_SRC_COLOR:
       break;
     case COGL_PIPELINE_COMBINE_OP_ONE_MINUS_SRC_COLOR:
-      g_string_append_printf (shader_state->source,
+      u_string_append_printf (shader_state->source,
                               "SUB tmp%d, one, ",
                               arg_index);
       append_arg (shader_state->source, arg);
-      g_string_append_printf (shader_state->source, ";\n");
+      u_string_append_printf (shader_state->source, ";\n");
       arg->type = COGL_PIPELINE_FRAGEND_ARBFP_ARG_TYPE_SIMPLE;
       arg->name = tmp_name[arg_index];
       arg->swizzle = "";
@@ -465,21 +465,21 @@ setup_arg (CoglPipeline *pipeline,
         arg->swizzle = ".a";
       break;
     case COGL_PIPELINE_COMBINE_OP_ONE_MINUS_SRC_ALPHA:
-      g_string_append_printf (shader_state->source,
+      u_string_append_printf (shader_state->source,
                               "SUB tmp%d, one, ",
                               arg_index);
       append_arg (shader_state->source, arg);
       /* avoid a swizzle if we know RGB are going to be masked
        * in the end anyway */
       if (mask != COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
-        g_string_append_printf (shader_state->source, ".a;\n");
+        u_string_append_printf (shader_state->source, ".a;\n");
       else
-        g_string_append_printf (shader_state->source, ";\n");
+        u_string_append_printf (shader_state->source, ";\n");
       arg->type = COGL_PIPELINE_FRAGEND_ARBFP_ARG_TYPE_SIMPLE;
       arg->name = tmp_name[arg_index];
       break;
     default:
-      g_error ("Unknown texture combine operator %d", op);
+      u_error ("Unknown texture combine operator %d", op);
       break;
     }
 }
@@ -534,42 +534,42 @@ append_function (CoglPipeline *pipeline,
       mask_name = "";
       break;
     default:
-      g_error ("Unknown channel mask %d", mask);
+      u_error ("Unknown channel mask %d", mask);
       mask_name = "";
     }
 
   switch (function)
     {
     case COGL_PIPELINE_COMBINE_FUNC_ADD:
-      g_string_append_printf (shader_state->source,
+      u_string_append_printf (shader_state->source,
                               "ADD_SAT output%s, ",
                               mask_name);
       break;
     case COGL_PIPELINE_COMBINE_FUNC_MODULATE:
       /* Note: no need to saturate since we can assume operands
        * have values in the range [0,1] */
-      g_string_append_printf (shader_state->source, "MUL output%s, ",
+      u_string_append_printf (shader_state->source, "MUL output%s, ",
                               mask_name);
       break;
     case COGL_PIPELINE_COMBINE_FUNC_REPLACE:
       /* Note: no need to saturate since we can assume operand
        * has a value in the range [0,1] */
-      g_string_append_printf (shader_state->source, "MOV output%s, ",
+      u_string_append_printf (shader_state->source, "MOV output%s, ",
                               mask_name);
       break;
     case COGL_PIPELINE_COMBINE_FUNC_SUBTRACT:
-      g_string_append_printf (shader_state->source,
+      u_string_append_printf (shader_state->source,
                               "SUB_SAT output%s, ",
                               mask_name);
       break;
     case COGL_PIPELINE_COMBINE_FUNC_ADD_SIGNED:
-      g_string_append_printf (shader_state->source, "ADD tmp3%s, ",
+      u_string_append_printf (shader_state->source, "ADD tmp3%s, ",
                               mask_name);
       append_arg (shader_state->source, &args[0]);
-      g_string_append (shader_state->source, ", ");
+      u_string_append (shader_state->source, ", ");
       append_arg (shader_state->source, &args[1]);
-      g_string_append (shader_state->source, ";\n");
-      g_string_append_printf (shader_state->source,
+      u_string_append (shader_state->source, ";\n");
+      u_string_append_printf (shader_state->source,
                               "SUB_SAT output%s, tmp3, half",
                               mask_name);
       n_args = 0;
@@ -598,20 +598,20 @@ append_function (CoglPipeline *pipeline,
          * output = 4 * DP3 (src0 - 0.5, src1 - 0.5)
          */
 
-        g_string_append (shader_state->source, "MAD tmp3, two, ");
+        u_string_append (shader_state->source, "MAD tmp3, two, ");
         append_arg (shader_state->source, &args[0]);
-        g_string_append (shader_state->source, ", minus_one;\n");
+        u_string_append (shader_state->source, ", minus_one;\n");
 
         if (!fragend_arbfp_args_equal (&args[0], &args[1]))
           {
-            g_string_append (shader_state->source, "MAD tmp4, two, ");
+            u_string_append (shader_state->source, "MAD tmp4, two, ");
             append_arg (shader_state->source, &args[1]);
-            g_string_append (shader_state->source, ", minus_one;\n");
+            u_string_append (shader_state->source, ", minus_one;\n");
           }
         else
           tmp4 = "tmp3";
 
-        g_string_append_printf (shader_state->source,
+        u_string_append_printf (shader_state->source,
                                 "DP3_SAT output%s, tmp3, %s",
                                 mask_name, tmp4);
         n_args = 0;
@@ -623,18 +623,18 @@ append_function (CoglPipeline *pipeline,
 
       /* NB: GL_INTERPOLATE = arg0*arg2 + arg1*(1-arg2)
        * but LRP dst, a, b, c = b*a + c*(1-a) */
-      g_string_append_printf (shader_state->source, "LRP output%s, ",
+      u_string_append_printf (shader_state->source, "LRP output%s, ",
                               mask_name);
       append_arg (shader_state->source, &args[2]);
-      g_string_append (shader_state->source, ", ");
+      u_string_append (shader_state->source, ", ");
       append_arg (shader_state->source, &args[0]);
-      g_string_append (shader_state->source, ", ");
+      u_string_append (shader_state->source, ", ");
       append_arg (shader_state->source, &args[1]);
       n_args = 0;
       break;
     default:
-      g_error ("Unknown texture combine function %d", function);
-      g_string_append_printf (shader_state->source, "MUL_SAT output%s, ",
+      u_error ("Unknown texture combine function %d", function);
+      u_string_append_printf (shader_state->source, "MUL_SAT output%s, ",
                               mask_name);
       n_args = 2;
       break;
@@ -644,10 +644,10 @@ append_function (CoglPipeline *pipeline,
     append_arg (shader_state->source, &args[0]);
   if (n_args > 1)
     {
-      g_string_append (shader_state->source, ", ");
+      u_string_append (shader_state->source, ", ");
       append_arg (shader_state->source, &args[1]);
     }
-  g_string_append (shader_state->source, ";\n");
+  u_string_append (shader_state->source, ";\n");
 }
 
 static void
@@ -774,7 +774,7 @@ _cogl_pipeline_fragend_arbfp_passthrough (CoglPipeline *pipeline)
   if (!shader_state->source)
     return TRUE;
 
-  g_string_append (shader_state->source,
+  u_string_append (shader_state->source,
                    "MOV output, fragment.color.primary;\n");
   return TRUE;
 }
@@ -833,12 +833,12 @@ _cogl_pipeline_fragend_arbfp_end (CoglPipeline *pipeline,
 
       COGL_COUNTER_INC (_cogl_uprof_context, fragend_arbfp_compile_counter);
 
-      g_string_append (shader_state->source,
+      u_string_append (shader_state->source,
                        "MOV result.color,output;\n");
-      g_string_append (shader_state->source, "END\n");
+      u_string_append (shader_state->source, "END\n");
 
-      if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
-        g_message ("pipeline program:\n%s", shader_state->source->str);
+      if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
+        u_message ("pipeline program:\n%s", shader_state->source->str);
 
       GE (ctx, glGenPrograms (1, &shader_state->gl_program));
 
@@ -853,7 +853,7 @@ _cogl_pipeline_fragend_arbfp_end (CoglPipeline *pipeline,
                             shader_state->source->str);
       if (ctx->glGetError () != GL_NO_ERROR)
         {
-          g_warning ("\n%s\n%s",
+          u_warning ("\n%s\n%s",
                      shader_state->source->str,
                      ctx->glGetString (GL_PROGRAM_ERROR_STRING_ARB));
         }

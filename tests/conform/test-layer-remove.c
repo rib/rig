@@ -141,5 +141,5 @@ test_layer_remove (void)
   cogl_object_unref (pipeline1);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

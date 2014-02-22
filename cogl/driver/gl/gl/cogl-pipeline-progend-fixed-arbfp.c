@@ -51,7 +51,7 @@ _cogl_pipeline_progend_fixed_arbfp_start (CoglPipeline *pipeline)
 {
   _COGL_GET_CONTEXT (ctx, FALSE);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FIXED)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FIXED)))
     return FALSE;
 
   if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_FIXED))

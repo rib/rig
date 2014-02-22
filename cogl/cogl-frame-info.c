@@ -43,7 +43,7 @@ _cogl_frame_info_new (void)
 {
   CoglFrameInfo *info;
 
-  info = g_slice_new0 (CoglFrameInfo);
+  info = u_slice_new0 (CoglFrameInfo);
 
   return _cogl_frame_info_object_new (info);
 }
@@ -51,7 +51,7 @@ _cogl_frame_info_new (void)
 static void
 _cogl_frame_info_free (CoglFrameInfo *info)
 {
-  g_slice_free (CoglFrameInfo, info);
+  u_slice_free (CoglFrameInfo, info);
 }
 
 int64_t

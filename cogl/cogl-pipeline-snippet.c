@@ -47,7 +47,7 @@
 void
 _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
 {
-  GList *first_snippet, *l;
+  UList *first_snippet, *l;
   CoglSnippet *snippet;
   int snippet_num = 0;
   int n_snippets = 0;
@@ -79,7 +79,7 @@ _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
   if (n_snippets == 0)
     {
       if (data->return_type)
-        g_string_append_printf (data->source_buf,
+        u_string_append_printf (data->source_buf,
                                 "\n"
                                 "%s\n"
                                 "%s (%s)\n"
@@ -93,7 +93,7 @@ _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
                                 data->chain_function,
                                 data->arguments ? data->arguments : "");
       else
-        g_string_append_printf (data->source_buf,
+        u_string_append_printf (data->source_buf,
                                 "\n"
                                 "void\n"
                                 "%s (%s)\n"
@@ -118,9 +118,9 @@ _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
           const char *source;
 
           if ((source = cogl_snippet_get_declarations (snippet)))
-            g_string_append (data->source_buf, source);
+            u_string_append (data->source_buf, source);
 
-          g_string_append_printf (data->source_buf,
+          u_string_append_printf (data->source_buf,
                                   "\n"
                                   "%s\n",
                                   data->return_type ?
@@ -128,81 +128,81 @@ _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data)
                                   "void");
 
           if (snippet_num + 1 < n_snippets)
-            g_string_append_printf (data->source_buf,
+            u_string_append_printf (data->source_buf,
                                     "%s_%i",
                                     data->function_prefix,
                                     snippet_num);
           else
-            g_string_append (data->source_buf, data->final_name);
+            u_string_append (data->source_buf, data->final_name);
 
-          g_string_append (data->source_buf, " (");
+          u_string_append (data->source_buf, " (");
 
           if (data->argument_declarations)
-            g_string_append (data->source_buf, data->argument_declarations);
+            u_string_append (data->source_buf, data->argument_declarations);
 
-          g_string_append (data->source_buf,
+          u_string_append (data->source_buf,
                            ")\n"
                            "{\n");
 
           if (data->return_type && !data->return_variable_is_argument)
-            g_string_append_printf (data->source_buf,
+            u_string_append_printf (data->source_buf,
                                     "  %s %s;\n"
                                     "\n",
                                     data->return_type,
                                     data->return_variable);
 
           if ((source = cogl_snippet_get_pre (snippet)))
-            g_string_append (data->source_buf, source);
+            u_string_append (data->source_buf, source);
 
           /* Chain on to the next function, or bypass it if there is
              a replace string */
           if ((source = cogl_snippet_get_replace (snippet)))
-            g_string_append (data->source_buf, source);
+            u_string_append (data->source_buf, source);
           else
             {
-              g_string_append (data->source_buf, "  ");
+              u_string_append (data->source_buf, "  ");
 
               if (data->return_type)
-                g_string_append_printf (data->source_buf,
+                u_string_append_printf (data->source_buf,
                                         "%s = ",
                                         data->return_variable);
 
               if (snippet_num > 0)
-                g_string_append_printf (data->source_buf,
+                u_string_append_printf (data->source_buf,
                                         "%s_%i",
                                         data->function_prefix,
                                         snippet_num - 1);
               else
-                g_string_append (data->source_buf, data->chain_function);
+                u_string_append (data->source_buf, data->chain_function);
 
-              g_string_append (data->source_buf, " (");
+              u_string_append (data->source_buf, " (");
 
               if (data->arguments)
-                g_string_append (data->source_buf, data->arguments);
+                u_string_append (data->source_buf, data->arguments);
 
-              g_string_append (data->source_buf, ");\n");
+              u_string_append (data->source_buf, ");\n");
             }
 
           if ((source = cogl_snippet_get_post (snippet)))
-            g_string_append (data->source_buf, source);
+            u_string_append (data->source_buf, source);
 
           if (data->return_type)
-            g_string_append_printf (data->source_buf,
+            u_string_append_printf (data->source_buf,
                                     "  return %s;\n",
                                     data->return_variable);
 
-          g_string_append (data->source_buf, "}\n");
+          u_string_append (data->source_buf, "}\n");
           snippet_num++;
         }
     }
 }
 
 void
-_cogl_pipeline_snippet_generate_declarations (GString *declarations_buf,
+_cogl_pipeline_snippet_generate_declarations (UString *declarations_buf,
                                               CoglSnippetHook hook,
                                               CoglPipelineSnippetList *snippets)
 {
-  GList *l;
+  UList *l;
 
   for (l = snippets->entries; l; l = l->next)
     {
@@ -213,7 +213,7 @@ _cogl_pipeline_snippet_generate_declarations (GString *declarations_buf,
           const char *source;
 
           if ((source = cogl_snippet_get_declarations (snippet)))
-            g_string_append (declarations_buf, source);
+            u_string_append (declarations_buf, source);
         }
     }
 }
@@ -221,14 +221,14 @@ _cogl_pipeline_snippet_generate_declarations (GString *declarations_buf,
 void
 _cogl_pipeline_snippet_list_free (CoglPipelineSnippetList *list)
 {
-  GList *l, *tmp;
+  UList *l, *tmp;
 
   for (l = list->entries; l; l = tmp)
     {
       tmp = l->next;
 
       cogl_object_unref (l->data);
-      g_list_free_1 (l);
+      u_list_free_1 (l);
     }
 }
 
@@ -236,7 +236,7 @@ void
 _cogl_pipeline_snippet_list_add (CoglPipelineSnippetList *list,
                                  CoglSnippet *snippet)
 {
-  list->entries = g_list_append (list->entries, cogl_object_ref (snippet));
+  list->entries = u_list_append (list->entries, cogl_object_ref (snippet));
 
   _cogl_snippet_make_immutable (snippet);
 }
@@ -245,11 +245,11 @@ void
 _cogl_pipeline_snippet_list_copy (CoglPipelineSnippetList *dst,
                                   const CoglPipelineSnippetList *src)
 {
-  GQueue queue = G_QUEUE_INIT;
-  const GList *l;
+  UQueue queue = U_QUEUE_INIT;
+  const UList *l;
 
   for (l = src->entries; l; l = l->next)
-    g_queue_push_tail (&queue, cogl_object_ref (l->data));
+    u_queue_push_tail (&queue, cogl_object_ref (l->data));
 
   dst->entries = queue.head;
 }
@@ -258,7 +258,7 @@ void
 _cogl_pipeline_snippet_list_hash (CoglPipelineSnippetList *list,
                                   unsigned int *hash)
 {
-  GList *l;
+  UList *l;
 
   for (l = list->entries; l; l = l->next)
     {
@@ -274,7 +274,7 @@ CoglBool
 _cogl_pipeline_snippet_list_equal (CoglPipelineSnippetList *list0,
                                    CoglPipelineSnippetList *list1)
 {
-  GList *l0, *l1;
+  UList *l0, *l1;
 
   for (l0 = list0->entries, l1 = list1->entries;
        l0 && l1;

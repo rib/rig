@@ -57,6 +57,6 @@ test_sparse_pipeline (void)
      work */
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

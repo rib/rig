@@ -97,7 +97,7 @@ _cogl_texture_driver_gen (CoglContext *ctx,
       break;
 
     default:
-      g_assert_not_reached();
+      u_assert_not_reached();
     }
 
   /* If the driver doesn't support alpha textures directly then we'll

@@ -58,7 +58,7 @@ cogl_primitive_new_with_attributes (CoglVerticesMode mode,
   CoglPrimitive *primitive;
   int i;
 
-  primitive = g_slice_alloc (sizeof (CoglPrimitive) +
+  primitive = u_slice_alloc (sizeof (CoglPrimitive) +
                              sizeof (CoglAttribute *) * (n_attributes - 1));
   primitive->mode = mode;
   primitive->first_vertex = 0;
@@ -121,7 +121,7 @@ cogl_primitive_new (CoglVerticesMode mode,
     ;
   va_end (ap);
 
-  attributes = g_alloca (sizeof (CoglAttribute *) * n_attributes);
+  attributes = u_alloca (sizeof (CoglAttribute *) * n_attributes);
 
   va_start (ap, n_vertices);
   for (i = 0; (attribute = va_arg (ap, CoglAttribute *)); i++)
@@ -384,13 +384,13 @@ _cogl_primitive_free (CoglPrimitive *primitive)
     cogl_object_unref (primitive->attributes[i]);
 
   if (primitive->attributes != &primitive->embedded_attribute)
-    g_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
+    u_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
                    primitive->attributes);
 
   if (primitive->indices)
     cogl_object_unref (primitive->indices);
 
-  g_slice_free1 (sizeof (CoglPrimitive) +
+  u_slice_free1 (sizeof (CoglPrimitive) +
                  sizeof (CoglAttribute *) *
                  (primitive->n_embedded_attributes - 1), primitive);
 }
@@ -401,7 +401,7 @@ warn_about_midscene_changes (void)
   static CoglBool seen = FALSE;
   if (!seen)
     {
-      g_warning ("Mid-scene modification of primitives has "
+      u_warning ("Mid-scene modification of primitives has "
                  "undefined results\n");
       seen = TRUE;
     }
@@ -416,7 +416,7 @@ cogl_primitive_set_attributes (CoglPrimitive *primitive,
 
   _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
 
-  if (G_UNLIKELY (primitive->immutable_ref))
+  if (U_UNLIKELY (primitive->immutable_ref))
     {
       warn_about_midscene_changes ();
       return;
@@ -441,17 +441,17 @@ cogl_primitive_set_attributes (CoglPrimitive *primitive,
   if (n_attributes <= primitive->n_embedded_attributes)
     {
       if (primitive->attributes != &primitive->embedded_attribute)
-        g_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
+        u_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
                        primitive->attributes);
       primitive->attributes = &primitive->embedded_attribute;
     }
   else
     {
       if (primitive->attributes != &primitive->embedded_attribute)
-        g_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
+        u_slice_free1 (sizeof (CoglAttribute *) * primitive->n_attributes,
                        primitive->attributes);
       primitive->attributes =
-        g_slice_alloc (sizeof (CoglAttribute *) * n_attributes);
+        u_slice_alloc (sizeof (CoglAttribute *) * n_attributes);
     }
 
   memcpy (primitive->attributes, attributes,
@@ -474,7 +474,7 @@ cogl_primitive_set_first_vertex (CoglPrimitive *primitive,
 {
   _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
 
-  if (G_UNLIKELY (primitive->immutable_ref))
+  if (U_UNLIKELY (primitive->immutable_ref))
     {
       warn_about_midscene_changes ();
       return;
@@ -514,7 +514,7 @@ cogl_primitive_set_mode (CoglPrimitive *primitive,
 {
   _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
 
-  if (G_UNLIKELY (primitive->immutable_ref))
+  if (U_UNLIKELY (primitive->immutable_ref))
     {
       warn_about_midscene_changes ();
       return;
@@ -530,7 +530,7 @@ cogl_primitive_set_indices (CoglPrimitive *primitive,
 {
   _COGL_RETURN_IF_FAIL (cogl_is_primitive (primitive));
 
-  if (G_UNLIKELY (primitive->immutable_ref))
+  if (U_UNLIKELY (primitive->immutable_ref))
     {
       warn_about_midscene_changes ();
       return;

@@ -43,7 +43,7 @@
 #include "cogl-pipeline-snippet-private.h"
 #include "cogl-sampler-cache-private.h"
 
-#include <glib.h>
+#include <ulib.h>
 
 typedef struct _CoglPipelineLayer     CoglPipelineLayer;
 #define COGL_PIPELINE_LAYER(OBJECT) ((CoglPipelineLayer *)OBJECT)

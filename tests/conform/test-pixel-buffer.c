@@ -160,7 +160,7 @@ test_pixel_buffer_map (void)
                  0xff0000ff);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 
 void
@@ -175,7 +175,7 @@ test_pixel_buffer_set_data (void)
 
   stride = cogl_bitmap_get_rowstride (bitmap);
 
-  data = g_malloc (stride * BITMAP_SIZE);
+  data = u_malloc (stride * BITMAP_SIZE);
 
   generate_bitmap_data (data, stride);
 
@@ -206,14 +206,14 @@ test_pixel_buffer_set_data (void)
                  0xff0000ff);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 
 static CoglTexture *
 create_white_texture (void)
 {
   CoglTexture2D *texture;
-  uint8_t *data = g_malloc (BITMAP_SIZE * BITMAP_SIZE * 4);
+  uint8_t *data = u_malloc (BITMAP_SIZE * BITMAP_SIZE * 4);
 
   memset (data, 255, BITMAP_SIZE * BITMAP_SIZE * 4);
 
@@ -269,5 +269,5 @@ test_pixel_buffer_sub_region (void)
                  0xffffffff);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

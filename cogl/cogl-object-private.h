@@ -32,7 +32,7 @@
 #ifndef __COGL_OBJECT_PRIVATE_H
 #define __COGL_OBJECT_PRIVATE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-types.h"
 #include "cogl-object.h"
@@ -80,7 +80,7 @@ struct _CoglObject
 
   CoglUserDataEntry user_data_entry[
     COGL_OBJECT_N_PRE_ALLOCATED_USER_DATA_ENTRIES];
-  GArray           *user_data_array;
+  UArray           *user_data_array;
   int               n_user_data_entries;
 
   unsigned int      ref_count;
@@ -95,17 +95,17 @@ struct _CoglObject
   COGL_NOTE (OBJECT, "COGL " G_STRINGIFY (type_name) " NEW   %p %i",    \
              (obj), (obj)->ref_count)
 
-#define _COGL_OBJECT_DEBUG_REF(type_name, object)       G_STMT_START {  \
+#define _COGL_OBJECT_DEBUG_REF(type_name, object)       U_STMT_START {  \
   CoglObject *__obj = (CoglObject *)object;                             \
   COGL_NOTE (OBJECT, "COGL %s REF %p %i",                               \
              (__obj)->klass->name,                                      \
-             (__obj), (__obj)->ref_count);              } G_STMT_END
+             (__obj), (__obj)->ref_count);              } U_STMT_END
 
-#define _COGL_OBJECT_DEBUG_UNREF(type_name, object)     G_STMT_START {  \
+#define _COGL_OBJECT_DEBUG_UNREF(type_name, object)     U_STMT_START {  \
   CoglObject *__obj = (CoglObject *)object;                             \
   COGL_NOTE (OBJECT, "COGL %s UNREF %p %i",                             \
              (__obj)->klass->name,                                      \
-             (__obj), (__obj)->ref_count - 1);          } G_STMT_END
+             (__obj), (__obj)->ref_count - 1);          } U_STMT_END
 
 #define COGL_OBJECT_DEBUG_FREE(obj)                                     \
   COGL_NOTE (OBJECT, "COGL %s FREE %p",                                 \
@@ -160,7 +160,7 @@ _cogl_##type_name##_object_new (Cogl##TypeName *new_obj)                \
                                                                         \
       if (_cogl_debug_instances == NULL)                                \
         _cogl_debug_instances =                                         \
-          g_hash_table_new (g_str_hash, g_str_equal);                   \
+          u_hash_table_new (u_str_hash, u_str_equal);                   \
                                                                         \
       obj->klass->virt_free =                                           \
         _cogl_object_##type_name##_indirect_free;                       \
@@ -168,7 +168,7 @@ _cogl_##type_name##_object_new (Cogl##TypeName *new_obj)                \
         _cogl_object_default_unref;                                     \
       obj->klass->name = "Cogl"#TypeName,                               \
                                                                         \
-      g_hash_table_insert (_cogl_debug_instances,                       \
+      u_hash_table_insert (_cogl_debug_instances,                       \
                            (void *) obj->klass->name,                   \
                            &_cogl_object_##type_name##_count);          \
                                                                         \

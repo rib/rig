@@ -230,6 +230,6 @@ test_depth_test (void)
   paint (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

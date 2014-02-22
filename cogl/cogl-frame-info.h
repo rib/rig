@@ -39,9 +39,8 @@
 
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-output.h>
-#include <glib.h>
 
-G_BEGIN_DECLS
+COGL_BEGIN_DECLS
 
 typedef struct _CoglFrameInfo CoglFrameInfo;
 #define COGL_FRAME_INFO(X) ((CoglFrameInfo *)(X))
@@ -130,6 +129,6 @@ float cogl_frame_info_get_refresh_rate (CoglFrameInfo *info);
 CoglOutput *
 cogl_frame_info_get_output (CoglFrameInfo *info);
 
-G_END_DECLS
+COGL_END_DECLS
 
 #endif /* __COGL_FRAME_INFO_H */

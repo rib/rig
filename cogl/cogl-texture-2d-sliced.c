@@ -157,21 +157,21 @@ _cogl_texture_2d_sliced_allocate_waste_buffer (CoglTexture2DSliced *tex_2ds,
 
   /* If the texture has any waste then allocate a buffer big enough to
      fill the gaps */
-  last_x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan,
+  last_x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan,
                                 tex_2ds->slice_x_spans->len - 1);
-  last_y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan,
+  last_y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan,
                                 tex_2ds->slice_y_spans->len - 1);
   if (last_x_span->waste > 0 || last_y_span->waste > 0)
     {
       int bpp = _cogl_pixel_format_get_bytes_per_pixel (format);
       CoglSpan  *first_x_span
-        = &g_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
+        = &u_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
       CoglSpan  *first_y_span
-        = &g_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
+        = &u_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
       unsigned int right_size = first_y_span->size * last_x_span->waste;
       unsigned int bottom_size = first_x_span->size * last_y_span->waste;
 
-      waste_buf = g_malloc (MAX (right_size, bottom_size) * bpp);
+      waste_buf = u_malloc (MAX (right_size, bottom_size) * bpp);
     }
 
   return waste_buf;
@@ -358,7 +358,7 @@ _cogl_texture_2d_sliced_upload_bitmap (CoglTexture2DSliced *tex_2ds,
   /* Iterate vertical slices */
   for (y = 0; y < tex_2ds->slice_y_spans->len; ++y)
     {
-      y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan, y);
+      y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan, y);
 
       /* Iterate horizontal slices */
       for (x = 0; x < tex_2ds->slice_x_spans->len; ++x)
@@ -366,10 +366,10 @@ _cogl_texture_2d_sliced_upload_bitmap (CoglTexture2DSliced *tex_2ds,
           int slice_num = y * tex_2ds->slice_x_spans->len + x;
           CoglSpanIter x_iter, y_iter;
 
-          x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan, x);
+          x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan, x);
 
           /* Pick the gl texture object handle */
-          slice_tex = g_array_index (tex_2ds->slice_textures,
+          slice_tex = u_array_index (tex_2ds->slice_textures,
                                      CoglTexture2D *, slice_num);
 
           if (!cogl_texture_set_region_from_bitmap (COGL_TEXTURE (slice_tex),
@@ -386,7 +386,7 @@ _cogl_texture_2d_sliced_upload_bitmap (CoglTexture2DSliced *tex_2ds,
                                                     error))
             {
               if (waste_buf)
-                g_free (waste_buf);
+                u_free (waste_buf);
               return FALSE;
             }
 
@@ -416,14 +416,14 @@ _cogl_texture_2d_sliced_upload_bitmap (CoglTexture2DSliced *tex_2ds,
                                                   error)) /* dst_y */
             {
               if (waste_buf)
-                g_free (waste_buf);
+                u_free (waste_buf);
               return FALSE;
             }
         }
     }
 
   if (waste_buf)
-    g_free (waste_buf);
+    u_free (waste_buf);
 
   return TRUE;
 }
@@ -471,7 +471,7 @@ _cogl_texture_2d_sliced_upload_subregion (CoglTexture2DSliced *tex_2ds,
        _cogl_span_iter_next (&y_iter),
        source_y += inter_h )
     {
-      y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan,
+      y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan,
                                y_iter.index);
 
       /* Iterate horizontal spans */
@@ -491,7 +491,7 @@ _cogl_texture_2d_sliced_upload_subregion (CoglTexture2DSliced *tex_2ds,
         {
           int slice_num;
 
-          x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan,
+          x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan,
                                    x_iter.index);
 
           /* Pick intersection width and height */
@@ -505,7 +505,7 @@ _cogl_texture_2d_sliced_upload_subregion (CoglTexture2DSliced *tex_2ds,
           slice_num = y_iter.index * tex_2ds->slice_x_spans->len + x_iter.index;
 
           /* Pick slice texture */
-          slice_tex = g_array_index (tex_2ds->slice_textures,
+          slice_tex = u_array_index (tex_2ds->slice_textures,
                                      CoglTexture2D *, slice_num);
 
           if (!cogl_texture_set_region_from_bitmap (COGL_TEXTURE (slice_tex),
@@ -520,7 +520,7 @@ _cogl_texture_2d_sliced_upload_subregion (CoglTexture2DSliced *tex_2ds,
                                                     error))
             {
               if (waste_buf)
-                g_free (waste_buf);
+                u_free (waste_buf);
               return FALSE;
             }
 
@@ -535,14 +535,14 @@ _cogl_texture_2d_sliced_upload_subregion (CoglTexture2DSliced *tex_2ds,
                                                   error))
             {
               if (waste_buf)
-                g_free (waste_buf);
+                u_free (waste_buf);
               return FALSE;
             }
         }
     }
 
   if (waste_buf)
-    g_free (waste_buf);
+    u_free (waste_buf);
 
   return TRUE;
 }
@@ -551,7 +551,7 @@ static int
 _cogl_rect_slices_for_size (int     size_to_fill,
                             int     max_span_size,
                             int     max_waste,
-                            GArray *out_spans)
+                            UArray *out_spans)
 {
   int       n_spans = 0;
   CoglSpan  span;
@@ -566,7 +566,7 @@ _cogl_rect_slices_for_size (int     size_to_fill,
     {
       /* Add another slice span of same size */
       if (out_spans)
-        g_array_append_val (out_spans, span);
+        u_array_append_val (out_spans, span);
       span.start   += span.size;
       size_to_fill -= span.size;
       n_spans++;
@@ -577,7 +577,7 @@ _cogl_rect_slices_for_size (int     size_to_fill,
     {
       span.size = size_to_fill;
       if (out_spans)
-        g_array_append_val (out_spans, span);
+        u_array_append_val (out_spans, span);
       n_spans++;
     }
 
@@ -588,7 +588,7 @@ static int
 _cogl_pot_slices_for_size (int    size_to_fill,
                            int    max_span_size,
                            int    max_waste,
-                           GArray *out_spans)
+                           UArray *out_spans)
 {
   int      n_spans = 0;
   CoglSpan span;
@@ -609,7 +609,7 @@ _cogl_pot_slices_for_size (int    size_to_fill,
         {
           /* Not yet - add a span of this size */
           if (out_spans)
-            g_array_append_val (out_spans, span);
+            u_array_append_val (out_spans, span);
 
           span.start   += span.size;
           size_to_fill -= span.size;
@@ -624,7 +624,7 @@ _cogl_pot_slices_for_size (int    size_to_fill,
           span.size = _cogl_util_next_p2 (size_to_fill);
           span.waste = span.size - size_to_fill;
           if (out_spans)
-            g_array_append_val (out_spans, span);
+            u_array_append_val (out_spans, span);
 
           return ++n_spans;
         }
@@ -634,7 +634,7 @@ _cogl_pot_slices_for_size (int    size_to_fill,
           while (span.size - size_to_fill > max_waste)
             {
               span.size /= 2;
-              g_assert (span.size > 0);
+              u_assert (span.size > 0);
             }
         }
     }
@@ -655,7 +655,7 @@ _cogl_texture_2d_sliced_gl_flush_legacy_texobj_wrap_modes (CoglTexture *tex,
   /* Pass the set wrap mode on to all of the child textures */
   for (i = 0; i < tex_2ds->slice_textures->len; i++)
     {
-      CoglTexture2D *slice_tex = g_array_index (tex_2ds->slice_textures,
+      CoglTexture2D *slice_tex = u_array_index (tex_2ds->slice_textures,
                                                 CoglTexture2D *,
                                                 i);
 
@@ -671,13 +671,13 @@ free_spans (CoglTexture2DSliced *tex_2ds)
 {
   if (tex_2ds->slice_x_spans != NULL)
     {
-      g_array_free (tex_2ds->slice_x_spans, TRUE);
+      u_array_free (tex_2ds->slice_x_spans, TRUE);
       tex_2ds->slice_x_spans = NULL;
     }
 
   if (tex_2ds->slice_y_spans != NULL)
     {
-      g_array_free (tex_2ds->slice_y_spans, TRUE);
+      u_array_free (tex_2ds->slice_y_spans, TRUE);
       tex_2ds->slice_y_spans = NULL;
     }
 }
@@ -696,7 +696,7 @@ setup_spans (CoglContext *ctx,
   int n_x_slices;
   int n_y_slices;
 
-  int   (*slices_for_size) (int, int, int, GArray*);
+  int   (*slices_for_size) (int, int, int, UArray*);
 
   /* Initialize size of largest slice according to supported features */
   if (cogl_has_feature (ctx, COGL_FEATURE_ID_TEXTURE_NPOT))
@@ -737,11 +737,11 @@ setup_spans (CoglContext *ctx,
       n_y_slices = 1;
 
       /* Init span arrays */
-      tex_2ds->slice_x_spans = g_array_sized_new (FALSE, FALSE,
+      tex_2ds->slice_x_spans = u_array_sized_new (FALSE, FALSE,
                                                   sizeof (CoglSpan),
                                                   1);
 
-      tex_2ds->slice_y_spans = g_array_sized_new (FALSE, FALSE,
+      tex_2ds->slice_y_spans = u_array_sized_new (FALSE, FALSE,
                                                   sizeof (CoglSpan),
                                                   1);
 
@@ -749,11 +749,11 @@ setup_spans (CoglContext *ctx,
       span.start = 0;
       span.size = max_width;
       span.waste = max_width - width;
-      g_array_append_val (tex_2ds->slice_x_spans, span);
+      u_array_append_val (tex_2ds->slice_x_spans, span);
 
       span.size = max_height;
       span.waste = max_height - height;
-      g_array_append_val (tex_2ds->slice_y_spans, span);
+      u_array_append_val (tex_2ds->slice_y_spans, span);
     }
   else
     {
@@ -771,7 +771,7 @@ setup_spans (CoglContext *ctx,
 
           if (max_width == 0 || max_height == 0)
             {
-              /* Maybe it would be ok to just g_warn_if_reached() for this
+              /* Maybe it would be ok to just u_warn_if_reached() for this
                * codepath */
               _cogl_set_error (error,
                                COGL_TEXTURE_ERROR,
@@ -792,11 +792,11 @@ setup_spans (CoglContext *ctx,
                                     NULL);
 
       /* Init span arrays with reserved size */
-      tex_2ds->slice_x_spans = g_array_sized_new (FALSE, FALSE,
+      tex_2ds->slice_x_spans = u_array_sized_new (FALSE, FALSE,
                                                   sizeof (CoglSpan),
                                                   n_x_slices);
 
-      tex_2ds->slice_y_spans = g_array_sized_new (FALSE, FALSE,
+      tex_2ds->slice_y_spans = u_array_sized_new (FALSE, FALSE,
                                                   sizeof (CoglSpan),
                                                   n_y_slices);
 
@@ -823,11 +823,11 @@ free_slices (CoglTexture2DSliced *tex_2ds)
       for (i = 0; i < tex_2ds->slice_textures->len; i++)
         {
           CoglTexture2D *slice_tex =
-            g_array_index (tex_2ds->slice_textures, CoglTexture2D *, i);
+            u_array_index (tex_2ds->slice_textures, CoglTexture2D *, i);
           cogl_object_unref (slice_tex);
         }
 
-      g_array_free (tex_2ds->slice_textures, TRUE);
+      u_array_free (tex_2ds->slice_textures, TRUE);
     }
 
   free_spans (tex_2ds);
@@ -866,20 +866,20 @@ allocate_slices (CoglTexture2DSliced *tex_2ds,
   n_y_slices = tex_2ds->slice_y_spans->len;
   n_slices = n_x_slices * n_y_slices;
 
-  tex_2ds->slice_textures = g_array_sized_new (FALSE, FALSE,
+  tex_2ds->slice_textures = u_array_sized_new (FALSE, FALSE,
                                                sizeof (CoglTexture2D *),
                                                n_slices);
 
   /* Allocate each slice */
   for (y = 0; y < n_y_slices; ++y)
     {
-      y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan, y);
+      y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan, y);
 
       for (x = 0; x < n_x_slices; ++x)
         {
           CoglTexture *slice;
 
-          x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan, x);
+          x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan, x);
 
           COGL_NOTE (SLICING, "CREATE SLICE (%d,%d)\tsize (%d,%d)",
                      x, y,
@@ -892,7 +892,7 @@ allocate_slices (CoglTexture2DSliced *tex_2ds,
 
           _cogl_texture_copy_internal_format (tex, slice);
 
-          g_array_append_val (tex_2ds->slice_textures, slice);
+          u_array_append_val (tex_2ds->slice_textures, slice);
           if (!cogl_texture_allocate (slice, error))
             {
               free_slices (tex_2ds);
@@ -921,7 +921,7 @@ _cogl_texture_2d_sliced_create_base (CoglContext *ctx,
                                      CoglPixelFormat internal_format,
                                      CoglTextureLoader *loader)
 {
-  CoglTexture2DSliced *tex_2ds = g_new0 (CoglTexture2DSliced, 1);
+  CoglTexture2DSliced *tex_2ds = u_new0 (CoglTexture2DSliced, 1);
 
   _cogl_texture_init (COGL_TEXTURE (tex_2ds), ctx, width, height,
                       internal_format, loader,
@@ -1145,7 +1145,7 @@ _cogl_texture_2d_sliced_allocate (CoglTexture *tex,
       break;
     }
 
-  g_return_val_if_reached (FALSE);
+  u_return_val_if_reached (FALSE);
 }
 
 static CoglBool
@@ -1159,7 +1159,7 @@ _cogl_texture_2d_sliced_is_foreign (CoglTexture *tex)
     return FALSE;
 
   /* Pass the call on to the first slice */
-  slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
+  slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
   return _cogl_texture_is_foreign (COGL_TEXTURE (slice_tex));
 }
 
@@ -1193,13 +1193,13 @@ _cogl_texture_2d_sliced_can_hardware_repeat (CoglTexture *tex)
     return FALSE;
 
   /* If there's any waste then we can't hardware repeat */
-  x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
-  y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
+  x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
+  y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
   if (x_span->waste > 0 || y_span->waste > 0)
     return FALSE;
 
   /* Otherwise pass the query on to the single slice texture */
-  slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
+  slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
   return _cogl_texture_can_hardware_repeat (COGL_TEXTURE (slice_tex));
 }
 
@@ -1213,17 +1213,17 @@ _cogl_texture_2d_sliced_transform_coords_to_gl (CoglTexture *tex,
   CoglSpan *y_span;
   CoglTexture2D *slice_tex;
 
-  g_assert (!_cogl_texture_2d_sliced_is_sliced (tex));
+  u_assert (!_cogl_texture_2d_sliced_is_sliced (tex));
 
   /* Don't include the waste in the texture coordinates */
-  x_span = &g_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
-  y_span = &g_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
+  x_span = &u_array_index (tex_2ds->slice_x_spans, CoglSpan, 0);
+  y_span = &u_array_index (tex_2ds->slice_y_spans, CoglSpan, 0);
 
   *s *= tex->width / (float)x_span->size;
   *t *= tex->height / (float)y_span->size;
 
   /* Let the child texture further transform the coords */
-  slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
+  slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
   _cogl_texture_transform_coords_to_gl (COGL_TEXTURE (slice_tex), s, t);
 }
 
@@ -1270,7 +1270,7 @@ _cogl_texture_2d_sliced_get_gl_texture (CoglTexture *tex,
   if (tex_2ds->slice_textures->len < 1)
     return FALSE;
 
-  slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
+  slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
 
   return cogl_texture_get_gl_texture (COGL_TEXTURE (slice_tex),
                                       out_gl_handle, out_gl_target);
@@ -1292,7 +1292,7 @@ _cogl_texture_2d_sliced_gl_flush_legacy_texobj_filters (CoglTexture *tex,
      GL */
   for (i = 0; i < tex_2ds->slice_textures->len; i++)
     {
-      slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, i);
+      slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, i);
       _cogl_texture_gl_flush_legacy_texobj_filters (COGL_TEXTURE (slice_tex),
                                                     min_filter, mag_filter);
     }
@@ -1310,7 +1310,7 @@ _cogl_texture_2d_sliced_pre_paint (CoglTexture *tex,
   /* Pass the pre-paint on to every slice */
   for (i = 0; i < tex_2ds->slice_textures->len; i++)
     {
-      CoglTexture2D *slice_tex = g_array_index (tex_2ds->slice_textures,
+      CoglTexture2D *slice_tex = u_array_index (tex_2ds->slice_textures,
                                                 CoglTexture2D *, i);
       _cogl_texture_pre_paint (COGL_TEXTURE (slice_tex), flags);
     }
@@ -1327,7 +1327,7 @@ _cogl_texture_2d_sliced_ensure_non_quad_rendering (CoglTexture *tex)
   /* Pass the call on to every slice */
   for (i = 0; i < tex_2ds->slice_textures->len; i++)
     {
-      CoglTexture2D *slice_tex = g_array_index (tex_2ds->slice_textures,
+      CoglTexture2D *slice_tex = u_array_index (tex_2ds->slice_textures,
                                                 CoglTexture2D *, i);
       _cogl_texture_ensure_non_quad_rendering (COGL_TEXTURE (slice_tex));
     }
@@ -1386,7 +1386,7 @@ _cogl_texture_2d_sliced_get_gl_format (CoglTexture *tex)
   cogl_texture_allocate (tex, NULL); /* (abort on error) */
 
   /* Pass the call on to the first slice */
-  slice_tex = g_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
+  slice_tex = u_array_index (tex_2ds->slice_textures, CoglTexture2D *, 0);
   return _cogl_texture_gl_get_format (COGL_TEXTURE (slice_tex));
 }
 

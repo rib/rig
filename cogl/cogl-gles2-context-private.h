@@ -35,7 +35,7 @@
 #ifndef __COGL_GLES2_CONTEXT_PRIVATE_H
 #define __COGL_GLES2_CONTEXT_PRIVATE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-object-private.h"
 #include "cogl-framebuffer-private.h"
@@ -83,7 +83,7 @@ typedef struct
   GLuint object_id;
 
   /* List of shaders attached to this program */
-  GList *attached_shaders;
+  UList *attached_shaders;
 
   /* Reference count. There can be up to two references. One of these
    * will exist between glCreateProgram and glDeleteShader, the other
@@ -156,8 +156,8 @@ struct _CoglGLES2Context
    * list, we don't really want to expose this outside of the Cogl API
    * so we will assume it is undefined behaviour if an application
    * relies on this. */
-  GHashTable *shader_map;
-  GHashTable *program_map;
+  UHashTable *shader_map;
+  UHashTable *program_map;
 
   /* Currently in use program. We need to keep track of this so that
    * we can keep a reference to the data for the program while it is
@@ -185,11 +185,11 @@ struct _CoglGLES2Context
 
   /* A hash table of CoglGLES2TextureObjects indexed by the texture
    * object ID so that we can track some state */
-  GHashTable *texture_object_map;
+  UHashTable *texture_object_map;
 
   /* Array of CoglGLES2TextureUnits to keep track of state for each
    * texture unit */
-  GArray *texture_units;
+  UArray *texture_units;
 
   /* The currently active texture unit indexed from 0 (not from
    * GL_TEXTURE0) */

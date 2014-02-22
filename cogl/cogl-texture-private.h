@@ -192,7 +192,7 @@ struct _CoglTexture
   CoglObject _parent;
   CoglContext *context;
   CoglTextureLoader *loader;
-  GList *framebuffers;
+  UList *framebuffers;
   int max_level;
   int width;
   int height;
@@ -318,7 +318,7 @@ void
 _cogl_texture_associate_framebuffer (CoglTexture *texture,
                                      CoglFramebuffer *framebuffer);
 
-const GList *
+const UList *
 _cogl_texture_get_associated_framebuffers (CoglTexture *texture);
 
 void

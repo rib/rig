@@ -15,7 +15,7 @@ typedef struct _TestState
 static CoglTexture *
 create_texture (TestUtilsTextureFlags flags)
 {
-  uint8_t *data = g_malloc (TEX_SIZE * TEX_SIZE * 4), *p = data;
+  uint8_t *data = u_malloc (TEX_SIZE * TEX_SIZE * 4), *p = data;
   CoglTexture *tex;
   int x, y;
 
@@ -83,7 +83,7 @@ draw_tests (TestState *state)
 {
   int i;
 
-  for (i = 0; i < G_N_ELEMENTS (wrap_modes); i += 2)
+  for (i = 0; i < U_N_ELEMENTS (wrap_modes); i += 2)
     {
       CoglPipelineWrapMode wrap_mode_s, wrap_mode_t;
       CoglPipeline *pipeline;
@@ -111,7 +111,7 @@ validate_set (TestState *state, int offset)
   uint8_t data[TEX_SIZE * 2 * TEX_SIZE * 2 * 4], *p;
   int x, y, i;
 
-  for (i = 0; i < G_N_ELEMENTS (wrap_modes); i += 2)
+  for (i = 0; i < U_N_ELEMENTS (wrap_modes); i += 2)
     {
       CoglPipelineWrapMode wrap_mode_s, wrap_mode_t;
 
@@ -200,5 +200,5 @@ test_wrap_modes (void)
   paint (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

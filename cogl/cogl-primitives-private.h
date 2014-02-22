@@ -31,7 +31,7 @@
 #ifndef __COGL_PRIMITIVES_PRIVATE_H
 #define __COGL_PRIMITIVES_PRIVATE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 COGL_BEGIN_DECLS
 

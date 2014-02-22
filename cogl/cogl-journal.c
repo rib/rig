@@ -46,7 +46,7 @@
 #include "cogl-private.h"
 
 #include <string.h>
-#include <gmodule.h>
+#include <umodule.h>
 #include <math.h>
 
 /* XXX NB:
@@ -104,7 +104,7 @@ typedef struct _CoglJournalFlushState
   CoglJournal *journal;
 
   CoglAttributeBuffer *attribute_buffer;
-  GArray *attributes;
+  UArray *attributes;
   int current_attribute;
 
   size_t stride;
@@ -133,21 +133,21 @@ _cogl_journal_free (CoglJournal *journal)
   int i;
 
   if (journal->entries)
-    g_array_free (journal->entries, TRUE);
+    u_array_free (journal->entries, TRUE);
   if (journal->vertices)
-    g_array_free (journal->vertices, TRUE);
+    u_array_free (journal->vertices, TRUE);
 
   for (i = 0; i < COGL_JOURNAL_VBO_POOL_SIZE; i++)
     if (journal->vbo_pool[i])
       cogl_object_unref (journal->vbo_pool[i]);
 
-  g_slice_free (CoglJournal, journal);
+  u_slice_free (CoglJournal, journal);
 }
 
 CoglJournal *
 _cogl_journal_new (CoglFramebuffer *framebuffer)
 {
-  CoglJournal *journal = g_slice_new0 (CoglJournal);
+  CoglJournal *journal = u_slice_new0 (CoglJournal);
 
   /* The journal keeps a pointer back to the framebuffer because there
      is effectively a 1:1 mapping between journals and framebuffers.
@@ -157,8 +157,8 @@ _cogl_journal_new (CoglFramebuffer *framebuffer)
      the journal is the only thing keeping it alive */
   journal->framebuffer = framebuffer;
 
-  journal->entries = g_array_new (FALSE, FALSE, sizeof (CoglJournalEntry));
-  journal->vertices = g_array_new (FALSE, FALSE, sizeof (float));
+  journal->entries = u_array_new (FALSE, FALSE, sizeof (CoglJournalEntry));
+  journal->vertices = u_array_new (FALSE, FALSE, sizeof (float));
 
   _cogl_list_init (&journal->pending_fences);
 
@@ -171,7 +171,7 @@ _cogl_journal_dump_logged_quad (uint8_t *data, int n_layers)
   size_t stride = GET_JOURNAL_ARRAY_STRIDE_FOR_N_LAYERS (n_layers);
   int i;
 
-  g_print ("n_layers = %d; rgba=0x%02X%02X%02X%02X\n",
+  u_print ("n_layers = %d; rgba=0x%02X%02X%02X%02X\n",
            n_layers, data[0], data[1], data[2], data[3]);
 
   data += 4;
@@ -181,14 +181,14 @@ _cogl_journal_dump_logged_quad (uint8_t *data, int n_layers)
       float *v = (float *)data + (i * stride);
       int j;
 
-      g_print ("v%d: x = %f, y = %f", i, v[0], v[1]);
+      u_print ("v%d: x = %f, y = %f", i, v[0], v[1]);
 
       for (j = 0; j < n_layers; j++)
         {
           float *t = v + 2 + TEX_STRIDE * j;
-          g_print (", tx%d = %f, ty%d = %f", j, t[0], j, t[1]);
+          u_print (", tx%d = %f, ty%d = %f", j, t[0], j, t[1]);
         }
-      g_print ("\n");
+      u_print ("\n");
     }
 }
 
@@ -198,7 +198,7 @@ _cogl_journal_dump_quad_vertices (uint8_t *data, int n_layers)
   size_t stride = GET_JOURNAL_VB_STRIDE_FOR_N_LAYERS (n_layers);
   int i;
 
-  g_print ("n_layers = %d; stride = %d; pos stride = %d; color stride = %d; "
+  u_print ("n_layers = %d; stride = %d; pos stride = %d; color stride = %d; "
            "tex stride = %d; stride in bytes = %d\n",
            n_layers, (int)stride, POS_STRIDE, COLOR_STRIDE,
            TEX_STRIDE, (int)stride * 4);
@@ -209,19 +209,19 @@ _cogl_journal_dump_quad_vertices (uint8_t *data, int n_layers)
       uint8_t *c = data + (POS_STRIDE * 4) + (i * stride * 4);
       int j;
 
-      if (G_UNLIKELY (COGL_DEBUG_ENABLED
+      if (U_UNLIKELY (COGL_DEBUG_ENABLED
                       (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
-        g_print ("v%d: x = %f, y = %f, rgba=0x%02X%02X%02X%02X",
+        u_print ("v%d: x = %f, y = %f, rgba=0x%02X%02X%02X%02X",
                  i, v[0], v[1], c[0], c[1], c[2], c[3]);
       else
-        g_print ("v%d: x = %f, y = %f, z = %f, rgba=0x%02X%02X%02X%02X",
+        u_print ("v%d: x = %f, y = %f, z = %f, rgba=0x%02X%02X%02X%02X",
                  i, v[0], v[1], v[2], c[0], c[1], c[2], c[3]);
       for (j = 0; j < n_layers; j++)
         {
           float *t = v + POS_STRIDE + COLOR_STRIDE + TEX_STRIDE * j;
-          g_print (", tx%d = %f, ty%d = %f", j, t[0], j, t[1]);
+          u_print (", tx%d = %f, ty%d = %f", j, t[0], j, t[1]);
         }
-      g_print ("\n");
+      u_print ("\n");
     }
 }
 
@@ -231,7 +231,7 @@ _cogl_journal_dump_quad_batch (uint8_t *data, int n_layers, int n_quads)
   size_t byte_stride = GET_JOURNAL_VB_STRIDE_FOR_N_LAYERS (n_layers) * 4;
   int i;
 
-  g_print ("_cogl_journal_dump_quad_batch: n_layers = %d, n_quads = %d\n",
+  u_print ("_cogl_journal_dump_quad_batch: n_layers = %d, n_quads = %d\n",
            n_layers, n_quads);
   for (i = 0; i < n_quads; i++)
     _cogl_journal_dump_quad_vertices (data + byte_stride * 2 * i, n_layers);
@@ -293,10 +293,10 @@ _cogl_journal_flush_modelview_and_entries (CoglJournalEntry *batch_start,
 
   COGL_TIMER_START (_cogl_uprof_context, time_flush_modelview_and_entries);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
-    g_print ("BATCHING:     modelview batch len = %d\n", batch_len);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
+    u_print ("BATCHING:     modelview batch len = %d\n", batch_len);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
     _cogl_context_set_current_modelview_entry (ctx,
                                                batch_start->modelview_entry);
 
@@ -352,7 +352,7 @@ _cogl_journal_flush_modelview_and_entries (CoglJournalEntry *batch_start,
    * issues, visually seeing what is batched and debugging blending
    * issues, plus it looks quite cool.
    */
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_RECTANGLES)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_RECTANGLES)))
     {
       static CoglPipeline *outline = NULL;
       uint8_t color_intensity;
@@ -427,14 +427,14 @@ _cogl_journal_flush_pipeline_and_entries (CoglJournalEntry *batch_start,
 
   COGL_TIMER_START (_cogl_uprof_context, time_flush_pipeline_entries);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
-    g_print ("BATCHING:    pipeline batch len = %d\n", batch_len);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
+    u_print ("BATCHING:    pipeline batch len = %d\n", batch_len);
 
   state->pipeline = batch_start->pipeline;
 
   /* If we haven't transformed the quads in software then we need to also break
    * up batches according to changes in the modelview matrix... */
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
     {
       batch_and_call (batch_start,
                       batch_len,
@@ -478,7 +478,7 @@ create_attribute_cb (CoglPipeline *pipeline,
   CreateAttributeState *state = user_data;
   CoglJournalFlushState *flush_state = state->flush_state;
   CoglAttribute **attribute_entry =
-    &g_array_index (flush_state->attributes,
+    &u_array_index (flush_state->attributes,
                     CoglAttribute *,
                     state->current + 2);
   const char *names[] = {
@@ -503,7 +503,7 @@ create_attribute_cb (CoglPipeline *pipeline,
    *  GET_JOURNAL_VB_STRIDE_FOR_N_LAYERS for details)
    */
   name = layer_number < 8 ? (char *)names[layer_number] :
-    g_strdup_printf ("cogl_tex_coord%d_in", layer_number);
+    u_strdup_printf ("cogl_tex_coord%d_in", layer_number);
 
   /* XXX: it may be worth having some form of static initializer for
    * attributes... */
@@ -518,7 +518,7 @@ create_attribute_cb (CoglPipeline *pipeline,
                         COGL_ATTRIBUTE_TYPE_FLOAT);
 
   if (layer_number >= 8)
-    g_free (name);
+    u_free (name);
 
   state->current++;
 
@@ -549,9 +549,9 @@ _cogl_journal_flush_texcoord_vbo_offsets_and_entries (
   /* NB: attributes 0 and 1 are position and color */
 
   for (i = 2; i < state->attributes->len; i++)
-    cogl_object_unref (g_array_index (state->attributes, CoglAttribute *, i));
+    cogl_object_unref (u_array_index (state->attributes, CoglAttribute *, i));
 
-  g_array_set_size (state->attributes, batch_start->n_layers + 2);
+  u_array_set_size (state->attributes, batch_start->n_layers + 2);
 
   create_attrib_state.current = 0;
   create_attrib_state.flush_state = state;
@@ -599,8 +599,8 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
   COGL_TIMER_START (_cogl_uprof_context,
                     time_flush_vbo_texcoord_pipeline_entries);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
-    g_print ("BATCHING:   vbo offset batch len = %d\n", batch_len);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
+    u_print ("BATCHING:   vbo offset batch len = %d\n", batch_len);
 
   /* XXX NB:
    * Our journal's vertex data is arranged as follows:
@@ -616,11 +616,11 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
   state->stride = stride;
 
   for (i = 0; i < state->attributes->len; i++)
-    cogl_object_unref (g_array_index (state->attributes, CoglAttribute *, i));
+    cogl_object_unref (u_array_index (state->attributes, CoglAttribute *, i));
 
-  g_array_set_size (state->attributes, 2);
+  u_array_set_size (state->attributes, 2);
 
-  attribute_entry = &g_array_index (state->attributes, CoglAttribute *, 0);
+  attribute_entry = &u_array_index (state->attributes, CoglAttribute *, 0);
   *attribute_entry = cogl_attribute_new (state->attribute_buffer,
                                          "cogl_position_in",
                                          stride,
@@ -628,7 +628,7 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
                                          N_POS_COMPONENTS,
                                          COGL_ATTRIBUTE_TYPE_FLOAT);
 
-  attribute_entry = &g_array_index (state->attributes, CoglAttribute *, 1);
+  attribute_entry = &u_array_index (state->attributes, CoglAttribute *, 1);
   *attribute_entry =
     cogl_attribute_new (state->attribute_buffer,
                         "cogl_color_in",
@@ -648,7 +648,7 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
    */
   state->current_vertex = 0;
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
     {
       uint8_t *verts;
 
@@ -675,8 +675,8 @@ _cogl_journal_flush_vbo_offsets_and_entries (CoglJournalEntry *batch_start,
 
   /* progress forward through the VBO containing all our vertices */
   state->array_offset += (stride * 4 * batch_len);
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
-    g_print ("new vbo offset = %lu\n", (unsigned long)state->array_offset);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
+    u_print ("new vbo offset = %lu\n", (unsigned long)state->array_offset);
 
   COGL_TIMER_STOP (_cogl_uprof_context,
                    time_flush_vbo_texcoord_pipeline_entries);
@@ -719,8 +719,8 @@ _cogl_journal_flush_clip_stacks_and_entries (CoglJournalEntry *batch_start,
   COGL_TIMER_START (_cogl_uprof_context,
                     time_flush_clip_stack_pipeline_entries);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
-    g_print ("BATCHING:  clip stack batch len = %d\n", batch_len);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
+    u_print ("BATCHING:  clip stack batch len = %d\n", batch_len);
 
   _cogl_clip_stack_flush (batch_start->clip_stack, framebuffer);
 
@@ -735,7 +735,7 @@ _cogl_journal_flush_clip_stacks_and_entries (CoglJournalEntry *batch_start,
    * matrix here. We need to do this after flushing the clip stack
    * because the clip stack flushing code can modify the current
    * modelview matrix entry */
-  if (G_LIKELY (!(COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM))))
+  if (U_LIKELY (!(COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM))))
     _cogl_context_set_current_modelview_entry (ctx, &ctx->identity_entry);
 
   /* Setting up the clip state can sometimes also update the current
@@ -972,15 +972,15 @@ maybe_software_clip_entries (CoglJournalEntry      *batch_start,
      whether we can clip all of the entries so we don't want to do the
      rest of the dependant calculations until we're sure we can. */
   if (ctx->journal_clip_bounds == NULL)
-    ctx->journal_clip_bounds = g_array_new (FALSE, FALSE, sizeof (ClipBounds));
-  g_array_set_size (ctx->journal_clip_bounds, batch_len);
+    ctx->journal_clip_bounds = u_array_new (FALSE, FALSE, sizeof (ClipBounds));
+  u_array_set_size (ctx->journal_clip_bounds, batch_len);
 
   for (entry_num = 0; entry_num < batch_len; entry_num++)
     {
       CoglJournalEntry *journal_entry = batch_start + entry_num;
       CoglJournalEntry *prev_journal_entry =
         entry_num ? batch_start + (entry_num - 1) : NULL;
-      ClipBounds *clip_bounds = &g_array_index (ctx->journal_clip_bounds,
+      ClipBounds *clip_bounds = &u_array_index (ctx->journal_clip_bounds,
                                                 ClipBounds, entry_num);
 
       if (!can_software_clip_entry (journal_entry, prev_journal_entry,
@@ -996,9 +996,9 @@ maybe_software_clip_entries (CoglJournalEntry      *batch_start,
   for (entry_num = 0; entry_num < batch_len; entry_num++)
     {
       CoglJournalEntry *journal_entry = batch_start + entry_num;
-      float *verts = &g_array_index (journal->vertices, float,
+      float *verts = &u_array_index (journal->vertices, float,
                                      journal_entry->array_offset + 1);
-      ClipBounds *clip_bounds = &g_array_index (ctx->journal_clip_bounds,
+      ClipBounds *clip_bounds = &u_array_index (ctx->journal_clip_bounds,
                                                 ClipBounds, entry_num);
 
       software_clip_entry (journal_entry, verts, clip_bounds);
@@ -1076,7 +1076,7 @@ upload_vertices (CoglJournal *journal,
                  const CoglJournalEntry *entries,
                  int n_entries,
                  size_t needed_vbo_len,
-                 GArray *vertices)
+                 UArray *vertices)
 {
   CoglAttributeBuffer *attribute_buffer;
   CoglBuffer *buffer;
@@ -1087,7 +1087,7 @@ upload_vertices (CoglJournal *journal,
   CoglMatrixEntry *last_modelview_entry = NULL;
   CoglMatrix modelview;
 
-  g_assert (needed_vbo_len);
+  u_assert (needed_vbo_len);
 
   attribute_buffer = create_attribute_buffer (journal, needed_vbo_len * 4);
   buffer = COGL_BUFFER (attribute_buffer);
@@ -1096,7 +1096,7 @@ upload_vertices (CoglJournal *journal,
   vout = _cogl_buffer_map_range_for_fill_or_fallback (buffer,
                                                       0, /* offset */
                                                       needed_vbo_len * 4);
-  vin = &g_array_index (vertices, float, 0);
+  vin = &u_array_index (vertices, float, 0);
 
   /* Expand the number of vertices from 2 to 4 while uploading */
   for (entry_num = 0; entry_num < n_entries; entry_num++)
@@ -1111,7 +1111,7 @@ upload_vertices (CoglJournal *journal,
         memcpy (vout + vb_stride * i + POS_STRIDE, vin, 4);
       vin++;
 
-      if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
+      if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_TRANSFORM)))
         {
           vout[vb_stride * 0] = vin[0];
           vout[vb_stride * 0 + 1] = vin[1];
@@ -1182,14 +1182,14 @@ _cogl_journal_discard (CoglJournal *journal)
   for (i = 0; i < journal->entries->len; i++)
     {
       CoglJournalEntry *entry =
-        &g_array_index (journal->entries, CoglJournalEntry, i);
+        &u_array_index (journal->entries, CoglJournalEntry, i);
       _cogl_pipeline_journal_unref (entry->pipeline);
       cogl_matrix_entry_unref (entry->modelview_entry);
       _cogl_clip_stack_unref (entry->clip_stack);
     }
 
-  g_array_set_size (journal->entries, 0);
-  g_array_set_size (journal->vertices, 0);
+  u_array_set_size (journal->entries, 0);
+  u_array_set_size (journal->vertices, 0);
   journal->needed_vbo_len = 0;
   journal->fast_read_pixel_count = 0;
 
@@ -1246,7 +1246,7 @@ _cogl_journal_all_entries_within_bounds (CoglJournal *journal,
   for (i = 1; i < journal->entries->len; i++)
     {
       CoglBool found_reference = FALSE;
-      entry = &g_array_index (journal->entries, CoglJournalEntry, i);
+      entry = &u_array_index (journal->entries, CoglJournalEntry, i);
 
       for (clip_entry = entry->clip_stack;
            clip_entry;
@@ -1319,8 +1319,8 @@ _cogl_journal_flush (CoglJournal *journal)
    * that the timer isn't started recursively. */
   COGL_TIMER_START (_cogl_uprof_context, flush_timer);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
-    g_print ("BATCHING: journal len = %d\n", journal->entries->len);
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_BATCHING)))
+    u_print ("BATCHING: journal len = %d\n", journal->entries->len);
 
   /* NB: the journal deals with flushing the modelview stack and clip
      state manually */
@@ -1339,7 +1339,7 @@ _cogl_journal_flush (CoglJournal *journal)
 
   state.attributes = ctx->journal_flush_attributes_array;
 
-  if (G_UNLIKELY ((COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_CLIP)) == 0))
+  if (U_UNLIKELY ((COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_SOFTWARE_CLIP)) == 0))
     {
       /* We do an initial walk of the journal to analyse the clip stack
          batches to see if we can do software clipping. We do this as a
@@ -1357,7 +1357,7 @@ _cogl_journal_flush (CoglJournal *journal)
      modifies the entries */
   state.attribute_buffer =
     upload_vertices (journal,
-                     &g_array_index (journal->entries, CoglJournalEntry, 0),
+                     &u_array_index (journal->entries, CoglJournalEntry, 0),
                      journal->entries->len,
                      journal->needed_vbo_len,
                      journal->vertices);
@@ -1393,8 +1393,8 @@ _cogl_journal_flush (CoglJournal *journal)
                   &state); /* data */
 
   for (i = 0; i < state.attributes->len; i++)
-    cogl_object_unref (g_array_index (state.attributes, CoglAttribute *, i));
-  g_array_set_size (state.attributes, 0);
+    cogl_object_unref (u_array_index (state.attributes, CoglAttribute *, i));
+  u_array_set_size (state.attributes, 0);
 
   cogl_object_unref (state.attribute_buffer);
 
@@ -1412,7 +1412,7 @@ add_framebuffer_deps_cb (CoglPipelineLayer *layer, void *user_data)
 {
   CoglFramebuffer *framebuffer = user_data;
   CoglTexture *texture = _cogl_pipeline_layer_get_texture_real (layer);
-  const GList *l;
+  const UList *l;
 
   if (!texture)
     return TRUE;
@@ -1474,8 +1474,8 @@ _cogl_journal_log_quad (CoglJournal  *journal,
   stride = GET_JOURNAL_ARRAY_STRIDE_FOR_N_LAYERS (n_layers);
 
   next_vert = journal->vertices->len;
-  g_array_set_size (journal->vertices, next_vert + 2 * stride + 1);
-  v = &g_array_index (journal->vertices, float, next_vert);
+  u_array_set_size (journal->vertices, next_vert + 2 * stride + 1);
+  v = &u_array_index (journal->vertices, float, next_vert);
 
   /* We calculate the needed size of the vbo as we go because it
      depends on the number of layers in each entry and it's not easy
@@ -1503,16 +1503,16 @@ _cogl_journal_log_quad (CoglJournal  *journal,
       memcpy (t + stride, tex_coords + i * 4 + 2, sizeof (float) * 2);
     }
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_JOURNAL)))
     {
-      g_print ("Logged new quad:\n");
-      v = &g_array_index (journal->vertices, float, next_vert);
+      u_print ("Logged new quad:\n");
+      v = &u_array_index (journal->vertices, float, next_vert);
       _cogl_journal_dump_logged_quad ((uint8_t *)v, n_layers);
     }
 
   next_entry = journal->entries->len;
-  g_array_set_size (journal->entries, next_entry + 1);
-  entry = &g_array_index (journal->entries, CoglJournalEntry, next_entry);
+  u_array_set_size (journal->entries, next_entry + 1);
+  entry = &u_array_index (journal->entries, CoglJournalEntry, next_entry);
 
   entry->n_layers = n_layers;
   entry->array_offset = next_vert;
@@ -1520,20 +1520,20 @@ _cogl_journal_log_quad (CoglJournal  *journal,
   final_pipeline = pipeline;
 
   flush_options.flags = 0;
-  if (G_UNLIKELY (cogl_pipeline_get_n_layers (pipeline) != n_layers))
+  if (U_UNLIKELY (cogl_pipeline_get_n_layers (pipeline) != n_layers))
     {
       disable_layers = (1 << n_layers) - 1;
       disable_layers = ~disable_layers;
       flush_options.disable_layers = disable_layers;
       flush_options.flags |= COGL_PIPELINE_FLUSH_DISABLE_MASK;
     }
-  if (G_UNLIKELY (layer0_override_texture))
+  if (U_UNLIKELY (layer0_override_texture))
     {
       flush_options.flags |= COGL_PIPELINE_FLUSH_LAYER0_OVERRIDE;
       flush_options.layer0_override_texture = layer0_override_texture;
     }
 
-  if (G_UNLIKELY (flush_options.flags))
+  if (U_UNLIKELY (flush_options.flags))
     {
       final_pipeline = cogl_pipeline_copy (pipeline);
       _cogl_pipeline_apply_overrides (final_pipeline, &flush_options);
@@ -1544,7 +1544,7 @@ _cogl_journal_log_quad (CoglJournal  *journal,
   clip_stack = _cogl_framebuffer_get_clip_stack (framebuffer);
   entry->clip_stack = _cogl_clip_stack_ref (clip_stack);
 
-  if (G_UNLIKELY (final_pipeline != pipeline))
+  if (U_UNLIKELY (final_pipeline != pipeline))
     cogl_object_unref (final_pipeline);
 
   modelview_stack =
@@ -1555,7 +1555,7 @@ _cogl_journal_log_quad (CoglJournal  *journal,
                                          add_framebuffer_deps_cb,
                                          framebuffer);
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_BATCHING)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_BATCHING)))
     _cogl_journal_flush (journal);
 
   COGL_TIMER_STOP (_cogl_uprof_context, log_timer);
@@ -1770,8 +1770,8 @@ _cogl_journal_try_read_pixel (CoglJournal *journal,
   for (i = journal->entries->len - 1; i >= 0; i--)
     {
       CoglJournalEntry *entry =
-        &g_array_index (journal->entries, CoglJournalEntry, i);
-      uint8_t *color = (uint8_t *)&g_array_index (journal->vertices, float,
+        &u_array_index (journal->entries, CoglJournalEntry, i);
+      uint8_t *color = (uint8_t *)&u_array_index (journal->vertices, float,
                                                 entry->array_offset);
       float *vertices = (float *)color + 1;
       float poly[16];

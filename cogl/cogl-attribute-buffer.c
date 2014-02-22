@@ -48,7 +48,7 @@ CoglAttributeBuffer *
 cogl_attribute_buffer_new_with_size (CoglContext *context,
                                      size_t bytes)
 {
-  CoglAttributeBuffer *buffer = g_slice_new (CoglAttributeBuffer);
+  CoglAttributeBuffer *buffer = u_slice_new (CoglAttributeBuffer);
 
   /* parent's constructor */
   _cogl_buffer_initialize (COGL_BUFFER (buffer),
@@ -96,6 +96,6 @@ _cogl_attribute_buffer_free (CoglAttributeBuffer *array)
   /* parent's destructor */
   _cogl_buffer_fini (COGL_BUFFER (array));
 
-  g_slice_free (CoglAttributeBuffer, array);
+  u_slice_free (CoglAttributeBuffer, array);
 }
 

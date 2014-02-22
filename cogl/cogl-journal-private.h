@@ -50,8 +50,8 @@ typedef struct _CoglJournal
      will cause the journal to flush */
   CoglFramebuffer *framebuffer;
 
-  GArray *entries;
-  GArray *vertices;
+  UArray *entries;
+  UArray *vertices;
   size_t needed_vbo_len;
 
   /* A pool of attribute buffers is used so that we can avoid repeatedly

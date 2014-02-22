@@ -54,8 +54,8 @@ struct _CoglSamplerCache
      pointer instead of the whole state and the second is used so that
      only a single GL sampler object will be created for each unique
      GL state. */
-  GHashTable *hash_table_cogl;
-  GHashTable *hash_table_gl;
+  UHashTable *hash_table_cogl;
+  UHashTable *hash_table_gl;
 
   /* This is used for generated fake unique sampler object numbers
      when the sampler object extension is not supported */
@@ -174,15 +174,15 @@ hash_sampler_state_cogl (const void *key)
 CoglSamplerCache *
 _cogl_sampler_cache_new (CoglContext *context)
 {
-  CoglSamplerCache *cache = g_new (CoglSamplerCache, 1);
+  CoglSamplerCache *cache = u_new (CoglSamplerCache, 1);
 
   /* No reference is taken on the context because it would create a
      circular reference */
   cache->context = context;
 
-  cache->hash_table_gl = g_hash_table_new (hash_sampler_state_gl,
+  cache->hash_table_gl = u_hash_table_new (hash_sampler_state_gl,
                                            sampler_state_equal_gl);
-  cache->hash_table_cogl = g_hash_table_new (hash_sampler_state_cogl,
+  cache->hash_table_cogl = u_hash_table_new (hash_sampler_state_cogl,
                                              sampler_state_equal_cogl);
   cache->next_fake_sampler_object_number = 1;
 
@@ -206,13 +206,13 @@ _cogl_sampler_cache_get_entry_gl (CoglSamplerCache *cache,
 {
   CoglSamplerCacheEntry *entry;
 
-  entry = g_hash_table_lookup (cache->hash_table_gl, key);
+  entry = u_hash_table_lookup (cache->hash_table_gl, key);
 
   if (entry == NULL)
     {
       CoglContext *context = cache->context;
 
-      entry = g_slice_dup (CoglSamplerCacheEntry, key);
+      entry = u_slice_dup (CoglSamplerCacheEntry, key);
 
       if (_cogl_has_private_feature (context,
                                      COGL_PRIVATE_FEATURE_SAMPLER_OBJECTS))
@@ -248,7 +248,7 @@ _cogl_sampler_cache_get_entry_gl (CoglSamplerCache *cache,
           entry->sampler_object = cache->next_fake_sampler_object_number++;
         }
 
-      g_hash_table_insert (cache->hash_table_gl, entry, entry);
+      u_hash_table_insert (cache->hash_table_gl, entry, entry);
     }
 
   return entry;
@@ -260,14 +260,14 @@ _cogl_sampler_cache_get_entry_cogl (CoglSamplerCache *cache,
 {
   CoglSamplerCacheEntry *entry;
 
-  entry = g_hash_table_lookup (cache->hash_table_cogl, key);
+  entry = u_hash_table_lookup (cache->hash_table_cogl, key);
 
   if (entry == NULL)
     {
       CoglSamplerCacheEntry canonical_key;
       CoglSamplerCacheEntry *gl_entry;
 
-      entry = g_slice_dup (CoglSamplerCacheEntry, key);
+      entry = u_slice_dup (CoglSamplerCacheEntry, key);
 
       /* Get the sampler object number from the canonical GL version
          of the sampler state cache */
@@ -276,7 +276,7 @@ _cogl_sampler_cache_get_entry_cogl (CoglSamplerCache *cache,
       gl_entry = _cogl_sampler_cache_get_entry_gl (cache, &canonical_key);
       entry->sampler_object = gl_entry->sampler_object;
 
-      g_hash_table_insert (cache->hash_table_cogl, entry, entry);
+      u_hash_table_insert (cache->hash_table_cogl, entry, entry);
     }
 
   return entry;
@@ -339,7 +339,7 @@ hash_table_free_gl_cb (void *key,
                                  COGL_PRIVATE_FEATURE_SAMPLER_OBJECTS))
     GE( context, glDeleteSamplers (1, &entry->sampler_object) );
 
-  g_slice_free (CoglSamplerCacheEntry, entry);
+  u_slice_free (CoglSamplerCacheEntry, entry);
 }
 
 static void
@@ -349,23 +349,23 @@ hash_table_free_cogl_cb (void *key,
 {
   CoglSamplerCacheEntry *entry = value;
 
-  g_slice_free (CoglSamplerCacheEntry, entry);
+  u_slice_free (CoglSamplerCacheEntry, entry);
 }
 
 void
 _cogl_sampler_cache_free (CoglSamplerCache *cache)
 {
-  g_hash_table_foreach (cache->hash_table_gl,
+  u_hash_table_foreach (cache->hash_table_gl,
                         hash_table_free_gl_cb,
                         cache->context);
 
-  g_hash_table_destroy (cache->hash_table_gl);
+  u_hash_table_destroy (cache->hash_table_gl);
 
-  g_hash_table_foreach (cache->hash_table_cogl,
+  u_hash_table_foreach (cache->hash_table_cogl,
                         hash_table_free_cogl_cb,
                         cache->context);
 
-  g_hash_table_destroy (cache->hash_table_cogl);
+  u_hash_table_destroy (cache->hash_table_cogl);
 
-  g_free (cache);
+  u_free (cache);
 }

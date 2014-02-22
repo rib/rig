@@ -162,7 +162,7 @@ struct _CoglFramebuffer
 
   /* The scene of a given framebuffer may depend on images in other
    * framebuffers... */
-  GList              *deps;
+  UList              *deps;
 
   /* As part of an optimization for reading-back single pixels from a
    * framebuffer in some simple cases where the geometry is still
@@ -200,7 +200,7 @@ typedef enum {
 typedef struct _CoglGLFramebuffer
 {
   GLuint fbo_handle;
-  GList *renderbuffers;
+  UList *renderbuffers;
   int samples_per_pixel;
 } CoglGLFramebuffer;
 

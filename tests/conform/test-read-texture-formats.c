@@ -211,5 +211,5 @@ test_read_texture_formats (void)
   cogl_object_unref (tex_2d);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

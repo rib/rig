@@ -31,7 +31,7 @@
 #ifndef __COGL_RENDERER_PRIVATE_H
 #define __COGL_RENDERER_PRIVATE_H
 
-#include <gmodule.h>
+#include <umodule.h>
 
 #include "cogl-object-private.h"
 #include "cogl-winsys-private.h"
@@ -57,15 +57,15 @@ struct _CoglRenderer
   const CoglTextureDriver *texture_driver;
   const CoglWinsysVtable *winsys_vtable;
   CoglWinsysID winsys_id_override;
-  GList *constraints;
+  UList *constraints;
 
-  GArray *poll_fds;
+  UArray *poll_fds;
   int poll_fds_age;
-  GList *poll_sources;
+  UList *poll_sources;
 
   CoglList idle_closures;
 
-  GList *outputs;
+  UList *outputs;
 
 #ifdef COGL_HAS_XLIB_SUPPORT
   Display *foreign_xdpy;
@@ -80,7 +80,7 @@ struct _CoglRenderer
   unsigned long private_features
     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)];
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
-  GModule *libgl_module;
+  UModule *libgl_module;
 #endif
 
 #if defined (COGL_HAS_EGL_PLATFORM_WAYLAND_SUPPORT)
@@ -98,7 +98,7 @@ struct _CoglRenderer
 #endif
 
   /* List of callback functions that will be given every native event */
-  GSList *event_filters;
+  USList *event_filters;
   void *winsys;
 };
 

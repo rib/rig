@@ -402,5 +402,5 @@ test_pipeline_uniforms (void)
   destroy_state (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

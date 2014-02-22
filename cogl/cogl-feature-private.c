@@ -80,7 +80,7 @@ _cogl_feature_check (CoglRenderer *renderer,
            namespace += strlen (namespace) + 1)
         {
           const char *extension;
-          GString *full_extension_name = g_string_new ("");
+          UString *full_extension_name = u_string_new ("");
 
           /* If the namespace part contains a ':' then the suffix for
              the function names is different from the name space */
@@ -99,18 +99,18 @@ _cogl_feature_check (CoglRenderer *renderer,
                *extension;
                extension += strlen (extension) + 1)
             {
-              g_string_assign (full_extension_name, driver_prefix);
-              g_string_append_c (full_extension_name, '_');
-              g_string_append_len (full_extension_name,
+              u_string_assign (full_extension_name, driver_prefix);
+              u_string_append_c (full_extension_name, '_');
+              u_string_append_len (full_extension_name,
                                    namespace, namespace_len);
-              g_string_append_c (full_extension_name, '_');
-              g_string_append (full_extension_name, extension);
+              u_string_append_c (full_extension_name, '_');
+              u_string_append (full_extension_name, extension);
               if (_cogl_check_extension (full_extension_name->str,
                                          extensions))
                 break;
             }
 
-          g_string_free (full_extension_name, TRUE);
+          u_string_free (full_extension_name, TRUE);
 
           /* If we found an extension with this namespace then use it
              as the suffix */
@@ -135,12 +135,12 @@ _cogl_feature_check (CoglRenderer *renderer,
       void *func;
       char *full_function_name;
 
-      full_function_name = g_strconcat (data->functions[func_num].name,
+      full_function_name = u_strconcat (data->functions[func_num].name,
                                         suffix, NULL);
       func = _cogl_renderer_get_proc_address (renderer,
                                               full_function_name,
                                               in_core);
-      g_free (full_function_name);
+      u_free (full_function_name);
 
       if (func == NULL)
         goto error;
@@ -171,7 +171,7 @@ error:
                        namespaces, extension_names)                     \
   static const CoglFeatureFunction cogl_ext_ ## name ## _funcs[] = {
 #define COGL_EXT_FUNCTION(ret, name, args)                          \
-  { G_STRINGIFY (name), G_STRUCT_OFFSET (CoglContext, name) },
+  { G_STRINGIFY (name), U_STRUCT_OFFSET (CoglContext, name) },
 #define COGL_EXT_END()                      \
   { NULL, 0 },                                  \
   };
@@ -205,7 +205,7 @@ _cogl_feature_check_ext_functions (CoglContext *context,
 {
   int i;
 
-  for (i = 0; i < G_N_ELEMENTS (cogl_feature_ext_functions_data); i++)
+  for (i = 0; i < U_N_ELEMENTS (cogl_feature_ext_functions_data); i++)
     _cogl_feature_check (context->display->renderer,
                          "GL", cogl_feature_ext_functions_data + i,
                          gl_major, gl_minor, context->driver,

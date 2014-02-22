@@ -43,7 +43,7 @@
 
 #include <string.h>
 
-#include <glib.h>
+#include <ulib.h>
 
 void
 _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
@@ -56,15 +56,15 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
   const char *vertex_boilerplate;
   const char *fragment_boilerplate;
 
-  const char **strings = g_alloca (sizeof (char *) * (count_in + 4));
-  GLint *lengths = g_alloca (sizeof (GLint) * (count_in + 4));
+  const char **strings = u_alloca (sizeof (char *) * (count_in + 4));
+  GLint *lengths = u_alloca (sizeof (GLint) * (count_in + 4));
   char *version_string;
   int count = 0;
 
   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
 
-  version_string = g_strdup_printf ("#version %i\n\n",
+  version_string = u_strdup_printf ("#version %i\n\n",
                                     ctx->glsl_version_to_use);
   strings[count] = version_string;
   lengths[count++] = -1;
@@ -101,28 +101,28 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
     }
   count += count_in;
 
-  if (G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
+  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
     {
-      GString *buf = g_string_new (NULL);
+      UString *buf = u_string_new (NULL);
       int i;
 
-      g_string_append_printf (buf,
+      u_string_append_printf (buf,
                               "%s shader:\n",
                               shader_gl_type == GL_VERTEX_SHADER ?
                               "vertex" : "fragment");
       for (i = 0; i < count; i++)
         if (lengths[i] != -1)
-          g_string_append_len (buf, strings[i], lengths[i]);
+          u_string_append_len (buf, strings[i], lengths[i]);
         else
-          g_string_append (buf, strings[i]);
+          u_string_append (buf, strings[i]);
 
-      g_message ("%s", buf->str);
+      u_message ("%s", buf->str);
 
-      g_string_free (buf, TRUE);
+      u_string_free (buf, TRUE);
     }
 
   GE( ctx, glShaderSource (shader_gl_handle, count,
                            (const char **) strings, lengths) );
 
-  g_free (version_string);
+  u_free (version_string);
 }

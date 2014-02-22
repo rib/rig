@@ -86,7 +86,7 @@ test_blend (TestState *state,
 	{
 	  g_debug ("Failed to test blend string %s: %s",
 		   blend_string, error->message);
-	  g_print ("Skipping\n");
+	  u_print ("Skipping\n");
 	}
       return;
     }
@@ -109,14 +109,14 @@ test_blend (TestState *state,
 
   if (cogl_test_verbose ())
     {
-      g_print ("test_blend (%d, %d):\n%s\n", x, y, blend_string);
-      g_print ("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
-      g_print ("  dst color = %02x, %02x, %02x, %02x\n", Dr, Dg, Db, Da);
+      u_print ("test_blend (%d, %d):\n%s\n", x, y, blend_string);
+      u_print ("  src color = %02x, %02x, %02x, %02x\n", Sr, Sg, Sb, Sa);
+      u_print ("  dst color = %02x, %02x, %02x, %02x\n", Dr, Dg, Db, Da);
       if (blend_constant != BLEND_CONSTANT_UNUSED)
-        g_print ("  blend constant = %02x, %02x, %02x, %02x\n",
+        u_print ("  blend constant = %02x, %02x, %02x, %02x\n",
                  Br, Bg, Bb, Ba);
       else
-        g_print ("  blend constant = UNUSED\n");
+        u_print ("  blend constant = UNUSED\n");
     }
 
   test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
@@ -132,7 +132,7 @@ make_texture (uint32_t color)
   uint8_t a = MASK_ALPHA (color);
   CoglTexture *tex;
 
-  tex_data = g_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
+  tex_data = u_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
 
   for (p = tex_data + QUAD_WIDTH * QUAD_WIDTH * 4; p > tex_data;)
     {
@@ -226,14 +226,14 @@ test_tex_combine (TestState *state,
 
   if (cogl_test_verbose ())
     {
-      g_print ("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
-      g_print ("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
-      g_print ("  texture 1 color = 0x%08lX\n", (unsigned long)tex1_color);
+      u_print ("test_tex_combine (%d, %d):\n%s\n", x, y, combine_string);
+      u_print ("  texture 0 color = 0x%08lX\n", (unsigned long)tex0_color);
+      u_print ("  texture 1 color = 0x%08lX\n", (unsigned long)tex1_color);
       if (combine_constant != TEX_CONSTANT_UNUSED)
-        g_print ("  combine constant = %02x, %02x, %02x, %02x\n",
+        u_print ("  combine constant = %02x, %02x, %02x, %02x\n",
                  Cr, Cg, Cb, Ca);
       else
-        g_print ("  combine constant = UNUSED\n");
+        u_print ("  combine constant = UNUSED\n");
     }
 
   test_utils_check_pixel (test_fb, x_off, y_off, expected_result);
@@ -369,6 +369,6 @@ test_blend_strings (void)
   paint (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

@@ -258,8 +258,8 @@ cogl_color_equal (const void *v1, const void *v2)
 CoglColor *
 cogl_color_copy (const CoglColor *color)
 {
-  if (G_LIKELY (color))
-    return g_slice_dup (CoglColor, color);
+  if (U_LIKELY (color))
+    return u_slice_dup (CoglColor, color);
 
   return NULL;
 }
@@ -267,8 +267,8 @@ cogl_color_copy (const CoglColor *color)
 void
 cogl_color_free (CoglColor *color)
 {
-  if (G_LIKELY (color))
-    g_slice_free (CoglColor, color);
+  if (U_LIKELY (color))
+    u_slice_free (CoglColor, color);
 }
 
 void

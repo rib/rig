@@ -57,15 +57,15 @@ _cogl_atlas_new (CoglPixelFormat texture_format,
                  CoglAtlasFlags flags,
                  CoglAtlasUpdatePositionCallback update_position_cb)
 {
-  CoglAtlas *atlas = g_new (CoglAtlas, 1);
+  CoglAtlas *atlas = u_new (CoglAtlas, 1);
 
   atlas->update_position_cb = update_position_cb;
   atlas->map = NULL;
   atlas->texture = NULL;
   atlas->flags = flags;
   atlas->texture_format = texture_format;
-  g_hook_list_init (&atlas->pre_reorganize_callbacks, sizeof (GHook));
-  g_hook_list_init (&atlas->post_reorganize_callbacks, sizeof (GHook));
+  u_hook_list_init (&atlas->pre_reorganize_callbacks, sizeof (UHook));
+  u_hook_list_init (&atlas->post_reorganize_callbacks, sizeof (UHook));
 
   return _cogl_atlas_object_new (atlas);
 }
@@ -80,10 +80,10 @@ _cogl_atlas_free (CoglAtlas *atlas)
   if (atlas->map)
     _cogl_rectangle_map_free (atlas->map);
 
-  g_hook_list_clear (&atlas->pre_reorganize_callbacks);
-  g_hook_list_clear (&atlas->post_reorganize_callbacks);
+  u_hook_list_clear (&atlas->pre_reorganize_callbacks);
+  u_hook_list_clear (&atlas->post_reorganize_callbacks);
 
-  g_free (atlas);
+  u_free (atlas);
 }
 
 typedef struct _CoglAtlasRepositionData
@@ -296,7 +296,7 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
       int bpp = _cogl_pixel_format_get_bytes_per_pixel (atlas->texture_format);
 
       /* Create a buffer of zeroes to initially clear the texture */
-      clear_data = g_malloc0 (width * height * bpp);
+      clear_data = u_malloc0 (width * height * bpp);
       clear_bmp = cogl_bitmap_new_for_data (ctx,
                                             width,
                                             height,
@@ -318,7 +318,7 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
 
       cogl_object_unref (clear_bmp);
 
-      g_free (clear_data);
+      u_free (clear_data);
     }
   else
     {
@@ -355,13 +355,13 @@ _cogl_atlas_compare_size_cb (const void *a,
 static void
 _cogl_atlas_notify_pre_reorganize (CoglAtlas *atlas)
 {
-  g_hook_list_invoke (&atlas->pre_reorganize_callbacks, FALSE);
+  u_hook_list_invoke (&atlas->pre_reorganize_callbacks, FALSE);
 }
 
 static void
 _cogl_atlas_notify_post_reorganize (CoglAtlas *atlas)
 {
-  g_hook_list_invoke (&atlas->post_reorganize_callbacks, FALSE);
+  u_hook_list_invoke (&atlas->post_reorganize_callbacks, FALSE);
 }
 
 CoglBool
@@ -409,12 +409,12 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
   /* Get an array of all the textures currently in the atlas. */
   data.n_textures = 0;
   if (atlas->map == NULL)
-    data.textures = g_malloc (sizeof (CoglAtlasRepositionData));
+    data.textures = u_malloc (sizeof (CoglAtlasRepositionData));
   else
     {
       unsigned int n_rectangles =
         _cogl_rectangle_map_get_n_rectangles (atlas->map);
-      data.textures = g_malloc (sizeof (CoglAtlasRepositionData) *
+      data.textures = u_malloc (sizeof (CoglAtlasRepositionData) *
                                 (n_rectangles + 1));
       _cogl_rectangle_map_foreach (atlas->map,
                                    _cogl_atlas_get_rectangles_cb,
@@ -528,7 +528,7 @@ _cogl_atlas_reserve_space (CoglAtlas             *atlas,
       ret = TRUE;
     }
 
-  g_free (data.textures);
+  u_free (data.textures);
 
   _cogl_atlas_notify_post_reorganize (atlas);
 
@@ -643,48 +643,48 @@ _cogl_atlas_copy_rectangle (CoglAtlas *atlas,
 
 void
 _cogl_atlas_add_reorganize_callback (CoglAtlas            *atlas,
-                                     GHookFunc             pre_callback,
-                                     GHookFunc             post_callback,
+                                     UHookFunc             pre_callback,
+                                     UHookFunc             post_callback,
                                      void                 *user_data)
 {
   if (pre_callback)
     {
-      GHook *hook = g_hook_alloc (&atlas->post_reorganize_callbacks);
+      UHook *hook = u_hook_alloc (&atlas->post_reorganize_callbacks);
       hook->func = pre_callback;
       hook->data = user_data;
-      g_hook_prepend (&atlas->pre_reorganize_callbacks, hook);
+      u_hook_prepend (&atlas->pre_reorganize_callbacks, hook);
     }
   if (post_callback)
     {
-      GHook *hook = g_hook_alloc (&atlas->pre_reorganize_callbacks);
+      UHook *hook = u_hook_alloc (&atlas->pre_reorganize_callbacks);
       hook->func = post_callback;
       hook->data = user_data;
-      g_hook_prepend (&atlas->post_reorganize_callbacks, hook);
+      u_hook_prepend (&atlas->post_reorganize_callbacks, hook);
     }
 }
 
 void
 _cogl_atlas_remove_reorganize_callback (CoglAtlas            *atlas,
-                                        GHookFunc             pre_callback,
-                                        GHookFunc             post_callback,
+                                        UHookFunc             pre_callback,
+                                        UHookFunc             post_callback,
                                         void                 *user_data)
 {
   if (pre_callback)
     {
-      GHook *hook = g_hook_find_func_data (&atlas->pre_reorganize_callbacks,
+      UHook *hook = u_hook_find_func_data (&atlas->pre_reorganize_callbacks,
                                            FALSE,
                                            pre_callback,
                                            user_data);
       if (hook)
-        g_hook_destroy_link (&atlas->pre_reorganize_callbacks, hook);
+        u_hook_destroy_link (&atlas->pre_reorganize_callbacks, hook);
     }
   if (post_callback)
     {
-      GHook *hook = g_hook_find_func_data (&atlas->post_reorganize_callbacks,
+      UHook *hook = u_hook_find_func_data (&atlas->post_reorganize_callbacks,
                                            FALSE,
                                            post_callback,
                                            user_data);
       if (hook)
-        g_hook_destroy_link (&atlas->post_reorganize_callbacks, hook);
+        u_hook_destroy_link (&atlas->post_reorganize_callbacks, hook);
     }
 }

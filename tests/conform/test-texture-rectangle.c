@@ -21,7 +21,7 @@ create_source_rect (void)
   GLint prev_unpack_skip_rows;
   GLint prev_unpack_skip_pixles;
   GLint prev_rectangle_binding;
-  uint8_t *data = g_malloc (256 * 256 * 4), *p = data;
+  uint8_t *data = u_malloc (256 * 256 * 4), *p = data;
   CoglHandle tex;
   GLuint gl_tex;
 
@@ -87,7 +87,7 @@ static CoglHandle
 create_source_2d (void)
 {
   int x, y;
-  uint8_t *data = g_malloc (256 * 256 * 4), *p = data;
+  uint8_t *data = u_malloc (256 * 256 * 4), *p = data;
   CoglHandle tex;
 
   for (y = 0; y < 256; y++)
@@ -163,7 +163,7 @@ validate_result (TestState *state)
   uint8_t *data, *p;
   int x, y;
 
-  p = data = g_malloc (512 * 384 * 4);
+  p = data = u_malloc (512 * 384 * 4);
 
   cogl_read_pixels (0, 0, 512, 384,
                     COGL_READ_PIXELS_COLOR_BUFFER,
@@ -268,9 +268,9 @@ test_texture_rectangle (TestUtilsGTestFixture *fixture,
       g_signal_handler_disconnect (state.stage, paint_handler);
 
       if (cogl_test_verbose ())
-        g_print ("OK\n");
+        u_print ("OK\n");
     }
   else if (cogl_test_verbose ())
-    g_print ("Skipping\n");
+    u_print ("Skipping\n");
 }
 

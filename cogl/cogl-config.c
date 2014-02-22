@@ -30,14 +30,14 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-debug.h"
 #include "cogl-config-private.h"
 
+#ifdef COGL_HAS_GLIB_SUPPORT
 #include <glib.h>
+#endif
 
 char *_cogl_config_driver;
 char *_cogl_config_renderer;
@@ -91,7 +91,7 @@ _cogl_config_process (GKeyFile *key_file)
       g_free (value);
     }
 
-  for (i = 0; i < G_N_ELEMENTS (cogl_config_string_options); i++)
+  for (i = 0; i < U_N_ELEMENTS (cogl_config_string_options); i++)
     {
       const char *conf_name = cogl_config_string_options[i].conf_name;
       char **variable = cogl_config_string_options[i].variable;

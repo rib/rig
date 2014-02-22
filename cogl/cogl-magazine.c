@@ -57,14 +57,14 @@
 
 #include "cogl-memory-stack-private.h"
 #include "cogl-magazine-private.h"
-#include <glib.h>
+#include <ulib.h>
 
 #define ROUND_UP_8(X) ((X + (8 - 1)) & ~(8 - 1))
 
 CoglMagazine *
 _cogl_magazine_new (size_t chunk_size, int initial_chunk_count)
 {
-  CoglMagazine *magazine = g_new0 (CoglMagazine, 1);
+  CoglMagazine *magazine = u_new0 (CoglMagazine, 1);
 
   chunk_size = MAX (chunk_size, sizeof (CoglMagazineChunk));
   chunk_size = ROUND_UP_8 (chunk_size);
@@ -80,5 +80,5 @@ void
 _cogl_magazine_free (CoglMagazine *magazine)
 {
   _cogl_memory_stack_free (magazine->stack);
-  g_free (magazine);
+  u_free (magazine);
 }

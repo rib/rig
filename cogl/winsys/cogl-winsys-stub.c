@@ -56,18 +56,18 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
                                         const char *name,
                                         CoglBool in_core)
 {
-  static GModule *module = NULL;
+  static UModule *module = NULL;
 
   /* this should find the right function if the program is linked against a
    * library providing it */
-  if (G_UNLIKELY (module == NULL))
-    module = g_module_open (NULL, 0);
+  if (U_UNLIKELY (module == NULL))
+    module = u_module_open (NULL, 0);
 
   if (module)
     {
       void *symbol;
 
-      if (g_module_symbol (module, name, &symbol))
+      if (u_module_symbol (module, name, &symbol))
         return symbol;
     }
 

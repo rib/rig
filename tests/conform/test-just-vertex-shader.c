@@ -99,5 +99,5 @@ test_just_vertex_shader (void)
   validate_result (test_fb);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

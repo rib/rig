@@ -34,7 +34,7 @@
 #ifndef __COGL_SNIPPET_PRIVATE_H
 #define __COGL_SNIPPET_PRIVATE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-snippet.h"
 #include "cogl-object-private.h"

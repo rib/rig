@@ -98,7 +98,7 @@ enum {
 uint32_t
 _cogl_gles2_context_error_domain (void)
 {
-  return g_quark_from_static_string ("cogl-gles2-context-error-quark");
+  return u_quark_from_static_string ("cogl-gles2-context-error-quark");
 }
 
 static void
@@ -107,7 +107,7 @@ shader_data_unref (CoglGLES2Context *context,
 {
   if (--shader_data->ref_count < 1)
     /* Removing the hash table entry should also destroy the data */
-    g_hash_table_remove (context->shader_map,
+    u_hash_table_remove (context->shader_map,
                          GINT_TO_POINTER (shader_data->object_id));
 }
 
@@ -116,7 +116,7 @@ program_data_unref (CoglGLES2ProgramData *program_data)
 {
   if (--program_data->ref_count < 1)
     /* Removing the hash table entry should also destroy the data */
-    g_hash_table_remove (program_data->context->program_map,
+    u_hash_table_remove (program_data->context->program_map,
                          GINT_TO_POINTER (program_data->object_id));
 }
 
@@ -124,7 +124,7 @@ static void
 detach_shader (CoglGLES2ProgramData *program_data,
                CoglGLES2ShaderData *shader_data)
 {
-  GList *l;
+  UList *l;
 
   for (l = program_data->attached_shaders; l; l = l->next)
     {
@@ -132,7 +132,7 @@ detach_shader (CoglGLES2ProgramData *program_data,
         {
           shader_data_unref (program_data->context, shader_data);
           program_data->attached_shaders =
-            g_list_delete_link (program_data->attached_shaders, l);
+            u_list_delete_link (program_data->attached_shaders, l);
           break;
         }
     }
@@ -141,7 +141,7 @@ detach_shader (CoglGLES2ProgramData *program_data,
 static CoglBool
 is_symbol_character (char ch)
 {
-  return g_ascii_isalnum (ch) || ch == '_';
+  return u_ascii_isalnum (ch) || ch == '_';
 }
 
 static void
@@ -198,7 +198,7 @@ update_current_flip_state (CoglGLES2Context *gles2_ctx)
 static GLuint
 get_current_texture_2d_object (CoglGLES2Context *gles2_ctx)
 {
-  return g_array_index (gles2_ctx->texture_units,
+  return u_array_index (gles2_ctx->texture_units,
                         CoglGLES2TextureUnitData,
                         gles2_ctx->current_texture_unit).current_texture_2d;
 }
@@ -216,14 +216,14 @@ set_texture_object_data (CoglGLES2Context *gles2_ctx,
 
   /* We want to keep track of all texture objects where the data is
    * created by this context so that we can delete them later */
-  texture_object = g_hash_table_lookup (gles2_ctx->texture_object_map,
+  texture_object = u_hash_table_lookup (gles2_ctx->texture_object_map,
                                         GUINT_TO_POINTER (texture_id));
   if (texture_object == NULL)
     {
-      texture_object = g_slice_new0 (CoglGLES2TextureObjectData);
+      texture_object = u_slice_new0 (CoglGLES2TextureObjectData);
       texture_object->object_id = texture_id;
 
-      g_hash_table_insert (gles2_ctx->texture_object_map,
+      u_hash_table_insert (gles2_ctx->texture_object_map,
                            GUINT_TO_POINTER (texture_id),
                            texture_object);
     }
@@ -271,7 +271,7 @@ copy_flipped_texture (CoglGLES2Context *gles2_ctx,
   CoglTexture2D *dst_texture;
   CoglPixelFormat internal_format;
 
-  tex_object_data = g_hash_table_lookup (gles2_ctx->texture_object_map,
+  tex_object_data = u_hash_table_lookup (gles2_ctx->texture_object_map,
                                          GUINT_TO_POINTER (tex_id));
 
   /* We can't do anything if the application hasn't set a level 0
@@ -552,7 +552,7 @@ gl_read_pixels_wrapper (GLint x,
       bytes_per_row = bpp * width;
       stride = ((bytes_per_row + gles2_ctx->pack_alignment - 1) &
                 ~(gles2_ctx->pack_alignment - 1));
-      temprow = g_alloca (bytes_per_row);
+      temprow = u_alloca (bytes_per_row);
 
       /* vertically flip the buffer in-place */
       for (y = 0; y < height / 2; y++)
@@ -684,14 +684,14 @@ gl_create_shader_wrapper (GLenum type)
 
   if (id != 0)
     {
-      CoglGLES2ShaderData *data = g_slice_new (CoglGLES2ShaderData);
+      CoglGLES2ShaderData *data = u_slice_new (CoglGLES2ShaderData);
 
       data->object_id = id;
       data->type = type;
       data->ref_count = 1;
       data->deleted = FALSE;
 
-      g_hash_table_insert (gles2_ctx->shader_map,
+      u_hash_table_insert (gles2_ctx->shader_map,
                            GINT_TO_POINTER (id),
                            data);
     }
@@ -705,7 +705,7 @@ gl_delete_shader_wrapper (GLuint shader)
   CoglGLES2Context *gles2_ctx = current_gles2_context;
   CoglGLES2ShaderData *shader_data;
 
-  if ((shader_data = g_hash_table_lookup (gles2_ctx->shader_map,
+  if ((shader_data = u_hash_table_lookup (gles2_ctx->shader_map,
                                           GINT_TO_POINTER (shader))) &&
       !shader_data->deleted)
     {
@@ -726,7 +726,7 @@ gl_create_program_wrapper (void)
 
   if (id != 0)
     {
-      CoglGLES2ProgramData *data = g_slice_new (CoglGLES2ProgramData);
+      CoglGLES2ProgramData *data = u_slice_new (CoglGLES2ProgramData);
 
       data->object_id = id;
       data->attached_shaders = NULL;
@@ -736,7 +736,7 @@ gl_create_program_wrapper (void)
       data->flip_vector_location = 0;
       data->flip_vector_state = COGL_GLES2_FLIP_STATE_UNKNOWN;
 
-      g_hash_table_insert (gles2_ctx->program_map,
+      u_hash_table_insert (gles2_ctx->program_map,
                            GINT_TO_POINTER (id),
                            data);
     }
@@ -750,7 +750,7 @@ gl_delete_program_wrapper (GLuint program)
   CoglGLES2Context *gles2_ctx = current_gles2_context;
   CoglGLES2ProgramData *program_data;
 
-  if ((program_data = g_hash_table_lookup (gles2_ctx->program_map,
+  if ((program_data = u_hash_table_lookup (gles2_ctx->program_map,
                                            GINT_TO_POINTER (program))) &&
       !program_data->deleted)
     {
@@ -767,7 +767,7 @@ gl_use_program_wrapper (GLuint program)
   CoglGLES2Context *gles2_ctx = current_gles2_context;
   CoglGLES2ProgramData *program_data;
 
-  program_data = g_hash_table_lookup (gles2_ctx->program_map,
+  program_data = u_hash_table_lookup (gles2_ctx->program_map,
                                       GINT_TO_POINTER (program));
 
   if (program_data)
@@ -788,16 +788,16 @@ gl_attach_shader_wrapper (GLuint program,
   CoglGLES2ProgramData *program_data;
   CoglGLES2ShaderData *shader_data;
 
-  if ((program_data = g_hash_table_lookup (gles2_ctx->program_map,
+  if ((program_data = u_hash_table_lookup (gles2_ctx->program_map,
                                            GINT_TO_POINTER (program))) &&
-      (shader_data = g_hash_table_lookup (gles2_ctx->shader_map,
+      (shader_data = u_hash_table_lookup (gles2_ctx->shader_map,
                                           GINT_TO_POINTER (shader))) &&
       /* Ignore attempts to attach a shader that is already attached */
-      g_list_find (program_data->attached_shaders, shader_data) == NULL)
+      u_list_find (program_data->attached_shaders, shader_data) == NULL)
     {
       shader_data->ref_count++;
       program_data->attached_shaders =
-        g_list_prepend (program_data->attached_shaders, shader_data);
+        u_list_prepend (program_data->attached_shaders, shader_data);
     }
 
   gles2_ctx->context->glAttachShader (program, shader);
@@ -811,9 +811,9 @@ gl_detach_shader_wrapper (GLuint program,
   CoglGLES2ProgramData *program_data;
   CoglGLES2ShaderData *shader_data;
 
-  if ((program_data = g_hash_table_lookup (gles2_ctx->program_map,
+  if ((program_data = u_hash_table_lookup (gles2_ctx->program_map,
                                            GINT_TO_POINTER (program))) &&
-      (shader_data = g_hash_table_lookup (gles2_ctx->shader_map,
+      (shader_data = u_hash_table_lookup (gles2_ctx->shader_map,
                                           GINT_TO_POINTER (shader))))
     detach_shader (program_data, shader_data);
 
@@ -829,12 +829,12 @@ gl_shader_source_wrapper (GLuint shader,
   CoglGLES2Context *gles2_ctx = current_gles2_context;
   CoglGLES2ShaderData *shader_data;
 
-  if ((shader_data = g_hash_table_lookup (gles2_ctx->shader_map,
+  if ((shader_data = u_hash_table_lookup (gles2_ctx->shader_map,
                                           GINT_TO_POINTER (shader))) &&
       shader_data->type == GL_VERTEX_SHADER)
     {
-      char **string_copy = g_alloca ((count + 1) * sizeof (char *));
-      int *length_copy = g_alloca ((count + 1) * sizeof (int));
+      char **string_copy = u_alloca ((count + 1) * sizeof (char *));
+      int *length_copy = u_alloca ((count + 1) * sizeof (int));
       int i;
 
       /* Replace any occurences of the symbol 'main' with a different
@@ -850,7 +850,7 @@ gl_shader_source_wrapper (GLuint shader,
           else
             string_length = length[i];
 
-          string_copy[i] = g_memdup (string[i], string_length);
+          string_copy[i] = u_memdup (string[i], string_length);
 
           replace_token (string_copy[i],
                          "main",
@@ -871,7 +871,7 @@ gl_shader_source_wrapper (GLuint shader,
       /* Note: we don't need to free the last entry in string_copy[]
        * because it is our static wrapper string... */
       for (i = 0; i < count; i++)
-        g_free (string_copy[i]);
+        u_free (string_copy[i]);
     }
   else
     gles2_ctx->context->glShaderSource (shader, count, string, length);
@@ -892,7 +892,7 @@ gl_get_shader_source_wrapper (GLuint shader,
                                          &length,
                                          source);
 
-  if ((shader_data = g_hash_table_lookup (gles2_ctx->shader_map,
+  if ((shader_data = u_hash_table_lookup (gles2_ctx->shader_map,
                                           GINT_TO_POINTER (shader))) &&
       shader_data->type == GL_VERTEX_SHADER)
     {
@@ -932,7 +932,7 @@ gl_link_program_wrapper (GLuint program)
 
   gles2_ctx->context->glLinkProgram (program);
 
-  program_data = g_hash_table_lookup (gles2_ctx->program_map,
+  program_data = u_hash_table_lookup (gles2_ctx->program_map,
                                       GINT_TO_POINTER (program));
 
   if (program_data)
@@ -1350,7 +1350,7 @@ gl_active_texture_wrapper (GLenum texture)
   if (texture_unit >= 0 && texture_unit < 512)
     {
       gles2_ctx->current_texture_unit = texture_unit;
-      g_array_set_size (gles2_ctx->texture_units,
+      u_array_set_size (gles2_ctx->texture_units,
                         MAX (texture_unit, gles2_ctx->texture_units->len));
     }
 }
@@ -1373,7 +1373,7 @@ gl_delete_textures_wrapper (GLsizei n,
            texture_unit++)
         {
           CoglGLES2TextureUnitData *unit =
-            &g_array_index (gles2_ctx->texture_units,
+            &u_array_index (gles2_ctx->texture_units,
                             CoglGLES2TextureUnitData,
                             texture_unit);
 
@@ -1384,7 +1384,7 @@ gl_delete_textures_wrapper (GLsizei n,
       /* Remove the binding. We can do this immediately because unlike
        * shader objects the deletion isn't delayed until the object is
        * unbound */
-      g_hash_table_remove (gles2_ctx->texture_object_map,
+      u_hash_table_remove (gles2_ctx->texture_object_map,
                            GUINT_TO_POINTER (textures[texture_index]));
     }
 }
@@ -1400,7 +1400,7 @@ gl_bind_texture_wrapper (GLenum target,
   if (target == GL_TEXTURE_2D)
     {
       CoglGLES2TextureUnitData *unit =
-        &g_array_index (gles2_ctx->texture_units,
+        &u_array_index (gles2_ctx->texture_units,
                         CoglGLES2TextureUnitData,
                         gles2_ctx->current_texture_unit);
       unit->current_texture_2d = texture;
@@ -1440,7 +1440,7 @@ static void
 _cogl_gles2_offscreen_free (CoglGLES2Offscreen *gles2_offscreen)
 {
   _cogl_list_remove (&gles2_offscreen->link);
-  g_slice_free (CoglGLES2Offscreen, gles2_offscreen);
+  u_slice_free (CoglGLES2Offscreen, gles2_offscreen);
 }
 
 static void
@@ -1479,7 +1479,7 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
 {
   CoglContext *ctx = gles2_context->context;
   const CoglWinsysVtable *winsys;
-  GList *objects, *l;
+  UList *objects, *l;
 
   if (gles2_context->current_program)
     program_data_unref (gles2_context->current_program);
@@ -1489,30 +1489,30 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
    * share list as Cogl's context these won't get deleted by default.
    * FIXME: we should do this for all of the other resources too, like
    * textures */
-  objects = g_hash_table_get_values (gles2_context->program_map);
+  objects = u_hash_table_get_values (gles2_context->program_map);
   for (l = objects; l; l = l->next)
     force_delete_program_object (gles2_context, l->data);
-  g_list_free (objects);
-  objects = g_hash_table_get_values (gles2_context->shader_map);
+  u_list_free (objects);
+  objects = u_hash_table_get_values (gles2_context->shader_map);
   for (l = objects; l; l = l->next)
     force_delete_shader_object (gles2_context, l->data);
-  g_list_free (objects);
-  objects = g_hash_table_get_values (gles2_context->texture_object_map);
+  u_list_free (objects);
+  objects = u_hash_table_get_values (gles2_context->texture_object_map);
   for (l = objects; l; l = l->next)
     force_delete_texture_object (gles2_context, l->data);
-  g_list_free (objects);
+  u_list_free (objects);
 
   /* All of the program and shader objects should now be destroyed */
-  if (g_hash_table_size (gles2_context->program_map) > 0)
-    g_warning ("Program objects have been leaked from a CoglGLES2Context");
-  if (g_hash_table_size (gles2_context->shader_map) > 0)
-    g_warning ("Shader objects have been leaked from a CoglGLES2Context");
+  if (u_hash_table_size (gles2_context->program_map) > 0)
+    u_warning ("Program objects have been leaked from a CoglGLES2Context");
+  if (u_hash_table_size (gles2_context->shader_map) > 0)
+    u_warning ("Shader objects have been leaked from a CoglGLES2Context");
 
-  g_hash_table_destroy (gles2_context->program_map);
-  g_hash_table_destroy (gles2_context->shader_map);
+  u_hash_table_destroy (gles2_context->program_map);
+  u_hash_table_destroy (gles2_context->shader_map);
 
-  g_hash_table_destroy (gles2_context->texture_object_map);
-  g_array_free (gles2_context->texture_units, TRUE);
+  u_hash_table_destroy (gles2_context->texture_object_map);
+  u_array_free (gles2_context->texture_units, TRUE);
 
   winsys = ctx->display->renderer->winsys_vtable;
   winsys->destroy_gles2_context (gles2_context);
@@ -1532,15 +1532,15 @@ _cogl_gles2_context_free (CoglGLES2Context *gles2_context)
                                  NULL);
     }
 
-  g_free (gles2_context->vtable);
+  u_free (gles2_context->vtable);
 
-  g_free (gles2_context);
+  u_free (gles2_context);
 }
 
 static void
 free_shader_data (CoglGLES2ShaderData *data)
 {
-  g_slice_free (CoglGLES2ShaderData, data);
+  u_slice_free (CoglGLES2ShaderData, data);
 }
 
 static void
@@ -1550,13 +1550,13 @@ free_program_data (CoglGLES2ProgramData *data)
     detach_shader (data,
                    data->attached_shaders->data);
 
-  g_slice_free (CoglGLES2ProgramData, data);
+  u_slice_free (CoglGLES2ProgramData, data);
 }
 
 static void
 free_texture_object_data (CoglGLES2TextureObjectData *data)
 {
-  g_slice_free (CoglGLES2TextureObjectData, data);
+  u_slice_free (CoglGLES2TextureObjectData, data);
 }
 
 CoglGLES2Context *
@@ -1574,7 +1574,7 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
       return NULL;
     }
 
-  gles2_ctx = g_malloc0 (sizeof (CoglGLES2Context));
+  gles2_ctx = u_malloc0 (sizeof (CoglGLES2Context));
 
   gles2_ctx->context = ctx;
 
@@ -1584,7 +1584,7 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
   gles2_ctx->winsys = winsys->context_create_gles2_context (ctx, error);
   if (gles2_ctx->winsys == NULL)
     {
-      g_free (gles2_ctx);
+      u_free (gles2_ctx);
       return NULL;
     }
 
@@ -1595,7 +1595,7 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
   gles2_ctx->front_face = GL_CCW;
   gles2_ctx->pack_alignment = 4;
 
-  gles2_ctx->vtable = g_malloc0 (sizeof (CoglGLES2Vtable));
+  gles2_ctx->vtable = u_malloc0 (sizeof (CoglGLES2Vtable));
 #define COGL_EXT_BEGIN(name, \
                        min_gl_major, min_gl_minor, \
                        gles_availability, \
@@ -1650,27 +1650,27 @@ cogl_gles2_context_new (CoglContext *ctx, CoglError **error)
   gles2_ctx->vtable->glTexImage2D = gl_tex_image_2d_wrapper;
 
   gles2_ctx->shader_map =
-    g_hash_table_new_full (g_direct_hash,
-                           g_direct_equal,
+    u_hash_table_new_full (u_direct_hash,
+                           u_direct_equal,
                            NULL, /* key_destroy */
-                           (GDestroyNotify) free_shader_data);
+                           (UDestroyNotify) free_shader_data);
   gles2_ctx->program_map =
-    g_hash_table_new_full (g_direct_hash,
-                           g_direct_equal,
+    u_hash_table_new_full (u_direct_hash,
+                           u_direct_equal,
                            NULL, /* key_destroy */
-                           (GDestroyNotify) free_program_data);
+                           (UDestroyNotify) free_program_data);
 
   gles2_ctx->texture_object_map =
-    g_hash_table_new_full (g_direct_hash,
-                           g_direct_equal,
+    u_hash_table_new_full (u_direct_hash,
+                           u_direct_equal,
                            NULL, /* key_destroy */
-                           (GDestroyNotify) free_texture_object_data);
+                           (UDestroyNotify) free_texture_object_data);
 
-  gles2_ctx->texture_units = g_array_new (FALSE, /* not zero terminated */
+  gles2_ctx->texture_units = u_array_new (FALSE, /* not zero terminated */
                                           TRUE, /* clear */
                                           sizeof (CoglGLES2TextureUnitData));
   gles2_ctx->current_texture_unit = 0;
-  g_array_set_size (gles2_ctx->texture_units, 1);
+  u_array_set_size (gles2_ctx->texture_units, 1);
 
   return _cogl_gles2_context_object_new (gles2_ctx);
 }
@@ -1723,7 +1723,7 @@ _cogl_gles2_offscreen_allocate (CoglOffscreen *offscreen,
       return NULL;
     }
 
-  gles2_offscreen = g_slice_new0 (CoglGLES2Offscreen);
+  gles2_offscreen = u_slice_new0 (CoglGLES2Offscreen);
 
   _cogl_texture_get_level_size (offscreen->texture,
                                 offscreen->texture_level,
@@ -1743,7 +1743,7 @@ _cogl_gles2_offscreen_allocate (CoglOffscreen *offscreen,
     {
       winsys->restore_context (framebuffer->context);
 
-      g_slice_free (CoglGLES2Offscreen, gles2_offscreen);
+      u_slice_free (CoglGLES2Offscreen, gles2_offscreen);
 
       _cogl_set_error (error, COGL_FRAMEBUFFER_ERROR,
                    COGL_FRAMEBUFFER_ERROR_ALLOCATE,
@@ -1786,9 +1786,9 @@ cogl_push_gles2_context (CoglContext *ctx,
    * don't currently track the read/write buffers as part of the stack
    * entries so we explicitly don't allow the same context to be
    * pushed multiple times. */
-  if (g_queue_find (&ctx->gles2_context_stack, gles2_ctx))
+  if (u_queue_find (&ctx->gles2_context_stack, gles2_ctx))
     {
-      g_critical ("Pushing the same GLES2 context multiple times isn't "
+      u_critical ("Pushing the same GLES2 context multiple times isn't "
                   "supported");
       return FALSE;
     }
@@ -1864,7 +1864,7 @@ cogl_push_gles2_context (CoglContext *ctx,
       return FALSE;
     }
 
-  g_queue_push_tail (&ctx->gles2_context_stack, gles2_ctx);
+  u_queue_push_tail (&ctx->gles2_context_stack, gles2_ctx);
 
   /* The last time this context was pushed may have been with a
    * different offscreen draw framebuffer and so if GL framebuffer 0
@@ -1919,9 +1919,9 @@ cogl_pop_gles2_context (CoglContext *ctx)
 
   _COGL_RETURN_IF_FAIL (ctx->gles2_context_stack.length > 0);
 
-  g_queue_pop_tail (&ctx->gles2_context_stack);
+  u_queue_pop_tail (&ctx->gles2_context_stack);
 
-  gles2_ctx = g_queue_peek_tail (&ctx->gles2_context_stack);
+  gles2_ctx = u_queue_peek_tail (&ctx->gles2_context_stack);
 
   if (gles2_ctx)
     {

@@ -20,7 +20,7 @@
 #include <cogl/cogl.h>
 #endif
 
-#include <glib.h>
+#include <ulib.h>
 
 /* We don't really care about functions that are defined without a
    header for the unit tests so we can just disable it here */

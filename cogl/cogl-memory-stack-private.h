@@ -31,7 +31,7 @@
 #ifndef __COGL_MEMORY_STACK__
 #define __COGL_MEMORY_STACK__
 
-#include <glib.h>
+#include <ulib.h>
 
 typedef struct _CoglMemoryStack CoglMemoryStack;
 

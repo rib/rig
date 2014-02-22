@@ -80,6 +80,6 @@ test_version (void)
   g_assert_cmpstr (version, ==, "version = " COGL_VERSION_STRING);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

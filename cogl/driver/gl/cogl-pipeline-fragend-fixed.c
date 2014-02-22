@@ -48,7 +48,7 @@
 #include "cogl-blend-string.h"
 #include "cogl-profile.h"
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 #ifndef GL_TEXTURE_RECTANGLE_ARB
@@ -64,7 +64,7 @@ _cogl_disable_texture_unit (int unit_index)
 
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
-  unit = &g_array_index (ctx->texture_units, CoglTextureUnit, unit_index);
+  unit = &u_array_index (ctx->texture_units, CoglTextureUnit, unit_index);
 
   if (unit->enabled_gl_target)
     {
@@ -141,7 +141,7 @@ translate_sources (CoglPipeline *pipeline,
               static CoglBool warning_seen = FALSE;
               if (!warning_seen)
                 {
-                  g_warning ("The application is trying to use a texture "
+                  u_warning ("The application is trying to use a texture "
                              "combine with a layer number that does not exist");
                   warning_seen = TRUE;
                 }
@@ -175,7 +175,7 @@ _cogl_pipeline_fragend_fixed_add_layer (CoglPipeline *pipeline,
    */
   _cogl_set_active_texture_unit (unit_index);
 
-  if (G_UNLIKELY (unit_index >= get_max_texture_units ()))
+  if (U_UNLIKELY (unit_index >= get_max_texture_units ()))
     {
       _cogl_disable_texture_unit (unit_index);
       /* TODO: although this isn't considered an error that
@@ -218,7 +218,7 @@ _cogl_pipeline_fragend_fixed_add_layer (CoglPipeline *pipeline,
             GE (ctx, glDisable (unit->enabled_gl_target));
 
           /* Enable the new target */
-          if (!G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)))
+          if (!U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)))
             {
               GE (ctx, glEnable (gl_target));
               unit->enabled_gl_target = gl_target;
@@ -232,7 +232,7 @@ _cogl_pipeline_fragend_fixed_add_layer (CoglPipeline *pipeline,
        * texture unit has been disabled for some time so we need to assert that
        * it's enabled now.
        */
-      if (!G_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)) &&
+      if (!U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_TEXTURING)) &&
           unit->enabled_gl_target == 0)
         {
           _cogl_set_active_texture_unit (unit_index);

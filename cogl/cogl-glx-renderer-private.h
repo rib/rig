@@ -31,7 +31,7 @@
 #ifndef __COGL_RENDERER_GLX_PRIVATE_H
 #define __COGL_RENDERER_GLX_PRIVATE_H
 
-#include <gmodule.h>
+#include <umodule.h>
 #include "cogl-object-private.h"
 #include "cogl-xlib-renderer-private.h"
 
@@ -57,8 +57,8 @@ typedef struct _CoglGLXRenderer
     COGL_GLX_UST_IS_OTHER
   } ust_type;
 
-  /* GModule pointing to libGL which we use to get glX functions out of */
-  GModule *libgl_module;
+  /* UModule pointing to libGL which we use to get glX functions out of */
+  UModule *libgl_module;
 
   CoglClosure *flush_notifications_idle;
 

@@ -31,7 +31,7 @@
 #ifndef __COGL_BOXED_VALUE_H
 #define __COGL_BOXED_VALUE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-context.h"
 
@@ -58,11 +58,11 @@ typedef struct _CoglBoxedValue
 } CoglBoxedValue;
 
 #define _cogl_boxed_value_init(bv)              \
-  G_STMT_START {                                \
+  U_STMT_START {                                \
     CoglBoxedValue *_bv = (bv);                 \
     _bv->type = COGL_BOXED_NONE;                \
     _bv->count = 1;                             \
-  } G_STMT_END
+  } U_STMT_END
 
 CoglBool
 _cogl_boxed_value_equal (const CoglBoxedValue *bva,

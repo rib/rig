@@ -78,7 +78,7 @@
 #include <cogl-matrix-private.h>
 #include <cogl-quaternion-private.h>
 
-#include <glib.h>
+#include <ulib.h>
 #include <math.h>
 #include <string.h>
 
@@ -365,7 +365,7 @@ print_matrix_floats (const char *prefix, const float m[16])
 {
   int i;
   for (i = 0;i < 4; i++)
-    g_print ("%s\t%f %f %f %f\n", prefix, m[i], m[4+i], m[8+i], m[12+i] );
+    u_print ("%s\t%f %f %f %f\n", prefix, m[i], m[4+i], m[8+i], m[12+i] );
 }
 
 void
@@ -374,11 +374,11 @@ _cogl_matrix_prefix_print (const char *prefix, const CoglMatrix *matrix)
   if (!(matrix->flags & MAT_DIRTY_TYPE))
     {
       _COGL_RETURN_IF_FAIL (matrix->type < COGL_MATRIX_N_TYPES);
-      g_print ("%sMatrix type: %s, flags: %x\n",
+      u_print ("%sMatrix type: %s, flags: %x\n",
                prefix, types[matrix->type], (int)matrix->flags);
     }
   else
-    g_print ("%sMatrix type: DIRTY, flags: %x\n",
+    u_print ("%sMatrix type: DIRTY, flags: %x\n",
              prefix, (int)matrix->flags);
 
   print_matrix_floats (prefix, (float *)matrix);
@@ -1911,7 +1911,7 @@ cogl_matrix_equal (const void *v1, const void *v2)
 
   /* We want to avoid having a fuzzy _equal() function (e.g. that uses
    * an arbitrary epsilon value) since this function noteably conforms
-   * to the prototype suitable for use with g_hash_table_new() and a
+   * to the prototype suitable for use with u_hash_table_new() and a
    * fuzzy hash function isn't really appropriate for comparing hash
    * table keys since it's possible that you could end up fetching
    * different values if you end up with multiple similar keys in use
@@ -1948,8 +1948,8 @@ cogl_matrix_equal (const void *v1, const void *v2)
 CoglMatrix *
 cogl_matrix_copy (const CoglMatrix *matrix)
 {
-  if (G_LIKELY (matrix))
-    return g_slice_dup (CoglMatrix, matrix);
+  if (U_LIKELY (matrix))
+    return u_slice_dup (CoglMatrix, matrix);
 
   return NULL;
 }
@@ -1957,7 +1957,7 @@ cogl_matrix_copy (const CoglMatrix *matrix)
 void
 cogl_matrix_free (CoglMatrix *matrix)
 {
-  g_slice_free (CoglMatrix, matrix);
+  u_slice_free (CoglMatrix, matrix);
 }
 
 const float *

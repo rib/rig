@@ -31,7 +31,7 @@
 #ifndef __COGL_FEATURE_PRIVATE_H
 #define __COGL_FEATURE_PRIVATE_H
 
-#include <glib.h>
+#include <ulib.h>
 
 
 #define COGL_CHECK_GL_VERSION(driver_major, driver_minor, \

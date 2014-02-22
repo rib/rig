@@ -42,27 +42,27 @@
 const char *
 _cogl_gl_error_to_string (GLenum error_code);
 
-#define GE(ctx, x)                      G_STMT_START {  \
+#define GE(ctx, x)                      U_STMT_START {  \
   GLenum __err;                                         \
   (ctx)->x;                                             \
   while ((__err = (ctx)->glGetError ()) != GL_NO_ERROR) \
     {                                                   \
-      g_warning ("%s: GL error (%d): %s\n",             \
+      u_warning ("%s: GL error (%d): %s\n",             \
                  G_STRLOC,                              \
                  __err,                                 \
                  _cogl_gl_error_to_string (__err));     \
-    }                                   } G_STMT_END
+    }                                   } U_STMT_END
 
-#define GE_RET(ret, ctx, x)             G_STMT_START {  \
+#define GE_RET(ret, ctx, x)             U_STMT_START {  \
   GLenum __err;                                         \
   ret = (ctx)->x;                                       \
   while ((__err = (ctx)->glGetError ()) != GL_NO_ERROR) \
     {                                                   \
-      g_warning ("%s: GL error (%d): %s\n",             \
+      u_warning ("%s: GL error (%d): %s\n",             \
                  G_STRLOC,                              \
                  __err,                                 \
                  _cogl_gl_error_to_string (__err));     \
-    }                                   } G_STMT_END
+    }                                   } U_STMT_END
 
 #else /* !COGL_GL_DEBUG */
 

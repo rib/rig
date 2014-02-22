@@ -18,7 +18,7 @@ typedef struct _TestState
 static CoglHandle
 make_texture (void)
 {
-  guchar *tex_data = g_malloc (TEX_SIZE * TEX_SIZE * 3), *p = tex_data;
+  guchar *tex_data = u_malloc (TEX_SIZE * TEX_SIZE * 3), *p = tex_data;
   CoglHandle tex;
   int x, y;
 
@@ -132,5 +132,5 @@ test_texture_mipmaps (TestUtilsGTestFixture *fixture,
   g_source_remove (idle_source);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

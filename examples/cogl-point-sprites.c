@@ -1,8 +1,9 @@
-#include <cogl/cogl.h>
-#include <glib.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+
+#include <cogl/cogl.h>
+#include <glib.h>
 
 #define N_FIREWORKS 32
 /* Units per second per second */

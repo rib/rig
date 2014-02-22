@@ -185,7 +185,7 @@ test_paint (TestState *state)
   cogl_pipeline_set_layer_texture (pipeline, 0, tex);
   cogl_object_unref (tex);
 
-  for (i = 0; i < G_N_ELEMENTS (test_prim_funcs); i++)
+  for (i = 0; i < U_N_ELEMENTS (test_prim_funcs); i++)
     {
       CoglPrimitive *prim;
       uint32_t expected_color = PRIM_COLOR;
@@ -330,5 +330,5 @@ test_primitive (void)
   test_copy (&state);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

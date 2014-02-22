@@ -164,7 +164,7 @@ _cogl_pipeline_layer_copy_differences (CoglPipelineLayer *dest,
   if ((differences & COGL_PIPELINE_LAYER_STATE_NEEDS_BIG_STATE) &&
       !dest->has_big_state)
     {
-      dest->big_state = g_slice_new (CoglPipelineLayerBigState);
+      dest->big_state = u_slice_new (CoglPipelineLayerBigState);
       dest->has_big_state = TRUE;
     }
 
@@ -186,7 +186,7 @@ _cogl_pipeline_layer_copy_differences (CoglPipelineLayer *dest,
         {
         case COGL_PIPELINE_LAYER_STATE_COUNT:
         case COGL_PIPELINE_LAYER_STATE_UNIT_INDEX:
-          g_warn_if_reached ();
+          u_warn_if_reached ();
           break;
 
         case COGL_PIPELINE_LAYER_STATE_TEXTURE_TYPE_INDEX:
@@ -279,7 +279,7 @@ _cogl_pipeline_layer_init_multi_property_sparse_state (
     case COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS:
     case COGL_PIPELINE_LAYER_STATE_COMBINE_CONSTANT:
     case COGL_PIPELINE_LAYER_STATE_SAMPLER:
-      g_return_if_reached ();
+      u_return_if_reached ();
 
     /* XXX: technically we could probably even consider these as
      * single property state-groups from the pov that currently the
@@ -430,7 +430,7 @@ init_layer_state:
   if (change & COGL_PIPELINE_LAYER_STATE_NEEDS_BIG_STATE &&
       !layer->has_big_state)
     {
-      layer->big_state = g_slice_new (CoglPipelineLayerBigState);
+      layer->big_state = u_slice_new (CoglPipelineLayerBigState);
       layer->has_big_state = TRUE;
     }
 
@@ -479,7 +479,7 @@ _cogl_pipeline_layer_set_parent (CoglPipelineLayer *layer,
 CoglPipelineLayer *
 _cogl_pipeline_layer_copy (CoglPipelineLayer *src)
 {
-  CoglPipelineLayer *layer = g_slice_new (CoglPipelineLayer);
+  CoglPipelineLayer *layer = u_slice_new (CoglPipelineLayer);
 
   _cogl_pipeline_node_init (COGL_NODE (layer));
 
@@ -521,15 +521,15 @@ unsigned long
 _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
                                           CoglPipelineLayer *layer1)
 {
-  GSList *head0 = NULL;
-  GSList *head1 = NULL;
+  USList *head0 = NULL;
+  USList *head1 = NULL;
   CoglPipelineLayer *node0;
   CoglPipelineLayer *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  GSList *common_ancestor0;
-  GSList *common_ancestor1;
+  USList *common_ancestor0;
+  USList *common_ancestor1;
   unsigned long layers_difference = 0;
 
   /* Algorithm:
@@ -547,7 +547,7 @@ _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
 
   for (node0 = layer0; node0; node0 = _cogl_pipeline_layer_get_parent (node0))
     {
-      GSList *link = alloca (sizeof (GSList));
+      USList *link = alloca (sizeof (USList));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -555,7 +555,7 @@ _cogl_pipeline_layer_compare_differences (CoglPipelineLayer *layer0,
     }
   for (node1 = layer1; node1; node1 = _cogl_pipeline_layer_get_parent (node1))
     {
-      GSList *link = alloca (sizeof (GSList));
+      USList *link = alloca (sizeof (USList));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -634,7 +634,7 @@ _cogl_pipeline_layer_resolve_authorities (CoglPipelineLayer *layer,
     }
   while ((authority = _cogl_pipeline_layer_get_parent (authority)));
 
-  g_assert (remaining == 0);
+  u_assert (remaining == 0);
 }
 
 CoglBool
@@ -738,17 +738,17 @@ _cogl_pipeline_layer_free (CoglPipelineLayer *layer)
     _cogl_pipeline_snippet_list_free (&layer->big_state->fragment_snippets);
 
   if (layer->differences & COGL_PIPELINE_LAYER_STATE_NEEDS_BIG_STATE)
-    g_slice_free (CoglPipelineLayerBigState, layer->big_state);
+    u_slice_free (CoglPipelineLayerBigState, layer->big_state);
 
-  g_slice_free (CoglPipelineLayer, layer);
+  u_slice_free (CoglPipelineLayer, layer);
 }
 
 void
 _cogl_pipeline_init_default_layers (void)
 {
-  CoglPipelineLayer *layer = g_slice_new0 (CoglPipelineLayer);
+  CoglPipelineLayer *layer = u_slice_new0 (CoglPipelineLayer);
   CoglPipelineLayerBigState *big_state =
-    g_slice_new0 (CoglPipelineLayerBigState);
+    u_slice_new0 (CoglPipelineLayerBigState);
   CoglPipelineLayer *new;
 
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
@@ -817,7 +817,7 @@ _cogl_pipeline_init_default_layers (void)
    */
   ctx->default_layer_n = _cogl_pipeline_layer_copy (layer);
   new = _cogl_pipeline_set_layer_unit (NULL, ctx->default_layer_n, 1);
-  g_assert (new == ctx->default_layer_n);
+  u_assert (new == ctx->default_layer_n);
   /* Since we passed a newly allocated layer we don't expect that
    * _set_layer_unit() will have to allocate *another* layer. */
 

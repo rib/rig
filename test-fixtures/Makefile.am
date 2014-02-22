@@ -4,12 +4,10 @@ noinst_LTLIBRARIES = libtest-fixtures.la
 libtest_fixtures_la_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_builddir)/cogl \
+	-I$(top_srcdir)/deps/ulib/src \
+	-I$(top_builddir)/deps/ulib/src \
 	-Wall \
 	$(NULL)
-
-if !USE_GLIB
-libtest_fixtures_la_CPPFLAGS += -I$(top_builddir)/deps/glib
-endif
 
 libtest_fixtures_la_CPPFLAGS += \
 	-DCOGL_DISABLE_DEPRECATED \

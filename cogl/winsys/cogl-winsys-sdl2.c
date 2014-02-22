@@ -95,7 +95,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 {
   SDL_VideoQuit ();
 
-  g_slice_free (CoglRendererSdl2, renderer->winsys);
+  u_slice_free (CoglRendererSdl2, renderer->winsys);
 }
 
 static CoglBool
@@ -111,7 +111,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
       return FALSE;
     }
 
-  renderer->winsys = g_slice_new0 (CoglRendererSdl2);
+  renderer->winsys = u_slice_new0 (CoglRendererSdl2);
 
   return TRUE;
 }
@@ -129,7 +129,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
   if (sdl_display->dummy_window)
     SDL_DestroyWindow (sdl_display->dummy_window);
 
-  g_slice_free (CoglDisplaySdl2, display->winsys);
+  u_slice_free (CoglDisplaySdl2, display->winsys);
   display->winsys = NULL;
 }
 
@@ -160,7 +160,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
 
-  sdl_display = g_slice_new0 (CoglDisplaySdl2);
+  sdl_display = u_slice_new0 (CoglDisplaySdl2);
   display->winsys = sdl_display;
 
   set_gl_attribs_from_framebuffer_config (&display->onscreen_template->config);
@@ -218,7 +218,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
     case COGL_DRIVER_GL3:
       /* The first character of the version string will be a digit if
        * it's normal GL */
-      if (!g_ascii_isdigit (gl_version[0]))
+      if (!u_ascii_isdigit (gl_version[0]))
         {
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_INIT,
@@ -238,7 +238,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       break;
 
     case COGL_DRIVER_GLES2:
-      if (!g_str_has_prefix (gl_version, "OpenGL ES 2"))
+      if (!u_str_has_prefix (gl_version, "OpenGL ES 2"))
         {
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_INIT,
@@ -249,7 +249,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       break;
 
     case COGL_DRIVER_GLES1:
-      if (!g_str_has_prefix (gl_version, "OpenGL ES 1"))
+      if (!u_str_has_prefix (gl_version, "OpenGL ES 1"))
         {
           _cogl_set_error (error, COGL_WINSYS_ERROR,
                            COGL_WINSYS_ERROR_INIT,
@@ -260,7 +260,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       break;
 
     default:
-      g_assert_not_reached ();
+      u_assert_not_reached ();
     }
 
   return TRUE;
@@ -301,7 +301,7 @@ flush_pending_resize_notifications_idle (void *user_data)
   _cogl_closure_disconnect (sdl_renderer->resize_notify_idle);
   sdl_renderer->resize_notify_idle = NULL;
 
-  g_list_foreach (context->framebuffers,
+  u_list_foreach (context->framebuffers,
                   flush_pending_notifications_cb,
                   NULL);
 }
@@ -386,10 +386,10 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
 
-  context->winsys = g_new0 (CoglContextSdl2, 1);
+  context->winsys = u_new0 (CoglContextSdl2, 1);
 
-  if (G_UNLIKELY (renderer->sdl_event_type_set == FALSE))
-    g_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
+  if (U_UNLIKELY (renderer->sdl_event_type_set == FALSE))
+    u_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
              "must be called during initialization");
 
   if (!_cogl_context_update_features (context, error))
@@ -423,7 +423,7 @@ _cogl_winsys_context_deinit (CoglContext *context)
                                        sdl_event_filter_cb,
                                        context);
 
-  g_free (context->winsys);
+  u_free (context->winsys);
 }
 
 static void
@@ -485,7 +485,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
       sdl_onscreen->window = NULL;
     }
 
-  g_slice_free (CoglOnscreenSdl2, sdl_onscreen);
+  u_slice_free (CoglOnscreenSdl2, sdl_onscreen);
   onscreen->winsys = NULL;
 }
 
@@ -525,7 +525,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
 
   SDL_SetWindowData (window, COGL_SDL_WINDOW_DATA_KEY, onscreen);
 
-  onscreen->winsys = g_slice_new (CoglOnscreenSdl2);
+  onscreen->winsys = u_slice_new (CoglOnscreenSdl2);
   sdl_onscreen = onscreen->winsys;
   sdl_onscreen->window = window;
 

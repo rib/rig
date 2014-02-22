@@ -529,8 +529,8 @@ AS_IF([test "x$enable_glib" = "xyes"],
         COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES gobject-2.0 gmodule-no-export-2.0"
       ],
       [
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps/eglib/src"
-        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps/eglib/src"
+        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_srcdir)/deps/ulib/src"
+        COGL_EXTRA_CFLAGS="$COGL_EXTRA_CFLAGS -I\$(top_builddir)/deps/ulib/src"
         EXPERIMENTAL_CONFIG=yes
         EXPERIMENTAL_OPTIONS="$EXPERIMENTAL_OPTIONS --disable-glib,"
         enable_nls=no
@@ -1412,7 +1412,7 @@ LIBS="$save_libs"
 
 
 dnl ================================================================
-dnl eglib checks.
+dnl ulib checks.
 dnl ================================================================
 
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
@@ -1547,10 +1547,10 @@ build/win32/Makefile
 build/win32/vs9/Makefile
 build/win32/vs10/Makefile
 deps/Makefile
-deps/eglib/Makefile
-deps/eglib/src/Makefile
-deps/eglib/src/eglib-config.h
-deps/eglib/test/Makefile
+deps/ulib/Makefile
+deps/ulib/src/Makefile
+deps/ulib/src/ulib-config.h
+deps/ulib/test/Makefile
 test-fixtures/Makefile
 cogl/Makefile
 cogl/cogl2.pc

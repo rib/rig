@@ -95,7 +95,7 @@ validate_cogl_attribute_name (const char *name,
       *layer_number = strtoul (name + 9, &endptr, 10);
       if (strcmp (endptr, "_in") != 0)
 	{
-	  g_warning ("Texture coordinate attributes should either be named "
+	  u_warning ("Texture coordinate attributes should either be named "
                      "\"cogl_tex_coord_in\" or named with a texture unit index "
                      "like \"cogl_tex_coord2_in\"\n");
           return FALSE;
@@ -111,7 +111,7 @@ validate_cogl_attribute_name (const char *name,
     *name_id = COGL_ATTRIBUTE_NAME_ID_POINT_SIZE_ARRAY;
   else
     {
-      g_warning ("Unknown cogl_* attribute name cogl_%s\n", name);
+      u_warning ("Unknown cogl_* attribute name cogl_%s\n", name);
       return FALSE;
     }
 
@@ -122,9 +122,9 @@ CoglAttributeNameState *
 _cogl_attribute_register_attribute_name (CoglContext *context,
                                          const char *name)
 {
-  CoglAttributeNameState *name_state = g_new (CoglAttributeNameState, 1);
+  CoglAttributeNameState *name_state = u_new (CoglAttributeNameState, 1);
   int name_index = context->n_attribute_names++;
-  char *name_copy = g_strdup (name);
+  char *name_copy = u_strdup (name);
 
   name_state->name = NULL;
   name_state->name_index = name_index;
@@ -147,22 +147,22 @@ _cogl_attribute_register_attribute_name (CoglContext *context,
   if (name_state->name == NULL)
     name_state->name = name_copy;
 
-  g_hash_table_insert (context->attribute_name_states_hash,
+  u_hash_table_insert (context->attribute_name_states_hash,
                        name_copy, name_state);
 
-  if (G_UNLIKELY (context->attribute_name_index_map == NULL))
+  if (U_UNLIKELY (context->attribute_name_index_map == NULL))
     context->attribute_name_index_map =
-      g_array_new (FALSE, FALSE, sizeof (void *));
+      u_array_new (FALSE, FALSE, sizeof (void *));
 
-  g_array_set_size (context->attribute_name_index_map, name_index + 1);
+  u_array_set_size (context->attribute_name_index_map, name_index + 1);
 
-  g_array_index (context->attribute_name_index_map,
+  u_array_index (context->attribute_name_index_map,
                  CoglAttributeNameState *, name_index) = name_state;
 
   return name_state;
 
 error:
-  g_free (name_state);
+  u_free (name_state);
   return NULL;
 }
 
@@ -173,18 +173,18 @@ validate_n_components (const CoglAttributeNameState *name_state,
   switch (name_state->name_id)
     {
     case COGL_ATTRIBUTE_NAME_ID_POSITION_ARRAY:
-      if (G_UNLIKELY (n_components == 1))
+      if (U_UNLIKELY (n_components == 1))
         {
-          g_critical ("glVertexPointer doesn't allow 1 component vertex "
+          u_critical ("glVertexPointer doesn't allow 1 component vertex "
                       "positions so we currently only support \"cogl_vertex\" "
                       "attributes where n_components == 2, 3 or 4");
           return FALSE;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_COLOR_ARRAY:
-      if (G_UNLIKELY (n_components != 3 && n_components != 4))
+      if (U_UNLIKELY (n_components != 3 && n_components != 4))
         {
-          g_critical ("glColorPointer expects 3 or 4 component colors so we "
+          u_critical ("glColorPointer expects 3 or 4 component colors so we "
                       "currently only support \"cogl_color\" attributes where "
                       "n_components == 3 or 4");
           return FALSE;
@@ -193,18 +193,18 @@ validate_n_components (const CoglAttributeNameState *name_state,
     case COGL_ATTRIBUTE_NAME_ID_TEXTURE_COORD_ARRAY:
       break;
     case COGL_ATTRIBUTE_NAME_ID_NORMAL_ARRAY:
-      if (G_UNLIKELY (n_components != 3))
+      if (U_UNLIKELY (n_components != 3))
         {
-          g_critical ("glNormalPointer expects 3 component normals so we "
+          u_critical ("glNormalPointer expects 3 component normals so we "
                       "currently only support \"cogl_normal\" attributes "
                       "where n_components == 3");
           return FALSE;
         }
       break;
     case COGL_ATTRIBUTE_NAME_ID_POINT_SIZE_ARRAY:
-      if (G_UNLIKELY (n_components != 1))
+      if (U_UNLIKELY (n_components != 1))
         {
-          g_critical ("The point size attribute can only have one "
+          u_critical ("The point size attribute can only have one "
                       "component");
           return FALSE;
         }
@@ -224,14 +224,14 @@ cogl_attribute_new (CoglAttributeBuffer *attribute_buffer,
                     int n_components,
                     CoglAttributeType type)
 {
-  CoglAttribute *attribute = g_slice_new (CoglAttribute);
+  CoglAttribute *attribute = u_slice_new (CoglAttribute);
   CoglBuffer *buffer = COGL_BUFFER (attribute_buffer);
   CoglContext *ctx = buffer->context;
 
   attribute->is_buffered = TRUE;
 
   attribute->name_state =
-    g_hash_table_lookup (ctx->attribute_name_states_hash, name);
+    u_hash_table_lookup (ctx->attribute_name_states_hash, name);
   if (!attribute->name_state)
     {
       CoglAttributeNameState *name_state =
@@ -274,10 +274,10 @@ _cogl_attribute_new_const (CoglContext *context,
                            CoglBool transpose,
                            const float *value)
 {
-  CoglAttribute *attribute = g_slice_new (CoglAttribute);
+  CoglAttribute *attribute = u_slice_new (CoglAttribute);
 
   attribute->name_state =
-    g_hash_table_lookup (context->attribute_name_states_hash, name);
+    u_hash_table_lookup (context->attribute_name_states_hash, name);
   if (!attribute->name_state)
     {
       CoglAttributeNameState *name_state =
@@ -480,7 +480,7 @@ warn_about_midscene_changes (void)
   static CoglBool seen = FALSE;
   if (!seen)
     {
-      g_warning ("Mid-scene modification of attributes has "
+      u_warning ("Mid-scene modification of attributes has "
                  "undefined results\n");
       seen = TRUE;
     }
@@ -492,7 +492,7 @@ cogl_attribute_set_normalized (CoglAttribute *attribute,
 {
   _COGL_RETURN_IF_FAIL (cogl_is_attribute (attribute));
 
-  if (G_UNLIKELY (attribute->immutable_ref))
+  if (U_UNLIKELY (attribute->immutable_ref))
     warn_about_midscene_changes ();
 
   attribute->normalized = normalized;
@@ -514,7 +514,7 @@ cogl_attribute_set_buffer (CoglAttribute *attribute,
   _COGL_RETURN_IF_FAIL (cogl_is_attribute (attribute));
   _COGL_RETURN_IF_FAIL (attribute->is_buffered);
 
-  if (G_UNLIKELY (attribute->immutable_ref))
+  if (U_UNLIKELY (attribute->immutable_ref))
     warn_about_midscene_changes ();
 
   cogl_object_ref (attribute_buffer);
@@ -555,7 +555,7 @@ _cogl_attribute_free (CoglAttribute *attribute)
   else
     _cogl_boxed_value_destroy (&attribute->d.constant.boxed);
 
-  g_slice_free (CoglAttribute, attribute);
+  u_slice_free (CoglAttribute, attribute);
 }
 
 static CoglBool
@@ -589,7 +589,7 @@ validate_layer_cb (CoglPipeline *pipeline,
 
   if (!_cogl_texture_can_hardware_repeat (texture))
     {
-      g_warning ("Disabling layer %d of the current source material, "
+      u_warning ("Disabling layer %d of the current source material, "
                  "because texturing with the vertex buffer API is not "
                  "currently supported using sliced textures, or textures "
                  "with waste\n", layer_index);

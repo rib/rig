@@ -114,7 +114,7 @@ update_hints_to_gl_enum (CoglBuffer *buffer)
 #endif
     }
 
-  g_assert_not_reached ();
+  u_assert_not_reached ();
 }
 
 static GLenum
@@ -131,7 +131,7 @@ convert_bind_target_to_gl_target (CoglBufferBindTarget target)
       case COGL_BUFFER_BIND_TARGET_INDEX_BUFFER:
         return GL_ELEMENT_ARRAY_BUFFER;
       default:
-        g_return_val_if_reached (COGL_BUFFER_BIND_TARGET_PIXEL_UNPACK);
+        u_return_val_if_reached (COGL_BUFFER_BIND_TARGET_PIXEL_UNPACK);
     }
 }
 

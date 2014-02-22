@@ -41,5 +41,5 @@ test_color_hsl (void)
   cogl_assert_float(color.alpha, 1.0f);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

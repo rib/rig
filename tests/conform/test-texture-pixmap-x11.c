@@ -88,7 +88,7 @@ check_paint (TestState *state, int x, int y, int scale)
 {
   uint8_t *data, *p, update_value = 0;
 
-  p = data = g_malloc (PIXMAP_WIDTH * PIXMAP_HEIGHT * 4);
+  p = data = u_malloc (PIXMAP_WIDTH * PIXMAP_HEIGHT * 4);
 
   cogl_read_pixels (x, y, PIXMAP_WIDTH / scale, PIXMAP_HEIGHT / scale,
                     COGL_READ_PIXELS_COLOR_BUFFER,
@@ -233,12 +233,12 @@ test_texture_pixmap_x11 (TestUtilsGTestFixture *fixture,
   XFreePixmap (state.display, state.pixmap);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 
 #else /* COGL_HAS_XLIB */
 
   if (cogl_test_verbose ())
-   g_print ("Skipping\n");
+   u_print ("Skipping\n");
 
 #endif /* COGL_HAS_XLIB */
 }

@@ -87,7 +87,7 @@ _cogl_gpu_info_parse_version_string (const char *version_string,
   for (i = 0; ; i++)
     {
       errno = 0;
-      part = g_ascii_strtoull (version_string,
+      part = u_ascii_strtoull (version_string,
                                (char **) &version_string,
                                10);
 
@@ -443,7 +443,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
 
   /* If it is a development build then we'll just leave the micro
      number as 0 */
-  if (g_str_has_prefix (v, "-devel"))
+  if (u_str_has_prefix (v, "-devel"))
     return TRUE;
 
   /* Otherwise there should be a micro version number */
@@ -451,7 +451,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
     return FALSE;
 
   errno = 0;
-  micro_part = g_ascii_strtoull (v + 1, NULL /* endptr */, 10 /* base */);
+  micro_part = u_ascii_strtoull (v + 1, NULL /* endptr */, 10 /* base */);
   if (errno || micro_part > COGL_VERSION_MAX_COMPONENT_VALUE)
     return FALSE;
 
@@ -474,10 +474,10 @@ UNIT_TEST (check_mesa_driver_package_parser,
   int i;
   int version;
 
-  for (i = 0; i < G_N_ELEMENTS (test_strings); i++)
+  for (i = 0; i < U_N_ELEMENTS (test_strings); i++)
     {
-      g_assert (check_mesa_driver_package (&test_strings[i], &version));
-      g_assert_cmpint (version, ==, COGL_VERSION_ENCODE (9, 2, 0));
+      u_assert (check_mesa_driver_package (&test_strings[i], &version));
+      u_assert_cmpint (version, ==, COGL_VERSION_ENCODE (9, 2, 0));
     }
 }
 

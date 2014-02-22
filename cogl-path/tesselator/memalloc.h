@@ -29,20 +29,20 @@
  */
 
 /* This is a simple replacement for memalloc from the SGI tesselator
-   code to force it to use glib's allocation instead */
+   code to force it to use ulib's allocation instead */
 
 #ifndef __MEMALLOC_H__
 #define __MEMALLOC_H__
 
-#include <glib.h>
+#include <ulib.h>
 
-#define memRealloc g_realloc
-#define memAlloc   g_malloc
-#define memFree    g_free
+#define memRealloc u_realloc
+#define memAlloc   u_malloc
+#define memFree    u_free
 #define memInit(x) 1
 
 /* tess.c defines TRUE and FALSE itself unconditionally so we need to
-   undefine it from the glib headers */
+   undefine it from the ulib headers */
 #undef TRUE
 #undef FALSE
 

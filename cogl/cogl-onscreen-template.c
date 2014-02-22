@@ -47,13 +47,13 @@ COGL_OBJECT_DEFINE (OnscreenTemplate, onscreen_template);
 static void
 _cogl_onscreen_template_free (CoglOnscreenTemplate *onscreen_template)
 {
-  g_slice_free (CoglOnscreenTemplate, onscreen_template);
+  u_slice_free (CoglOnscreenTemplate, onscreen_template);
 }
 
 CoglOnscreenTemplate *
 cogl_onscreen_template_new (void)
 {
-  CoglOnscreenTemplate *onscreen_template = g_slice_new0 (CoglOnscreenTemplate);
+  CoglOnscreenTemplate *onscreen_template = u_slice_new0 (CoglOnscreenTemplate);
   char *user_config;
 
   onscreen_template->config.swap_throttled = TRUE;

@@ -122,7 +122,7 @@ set_clip_plane (CoglFramebuffer *framebuffer,
   switch (ctx->driver)
     {
     default:
-      g_assert_not_reached ();
+      u_assert_not_reached ();
       break;
 
     case COGL_DRIVER_GLES1:

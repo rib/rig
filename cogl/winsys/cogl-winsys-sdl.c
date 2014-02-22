@@ -88,7 +88,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 {
   SDL_Quit ();
 
-  g_slice_free (CoglRendererSdl, renderer->winsys);
+  u_slice_free (CoglRendererSdl, renderer->winsys);
 }
 
 static CoglBool
@@ -123,7 +123,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
       return FALSE;
     }
 
-  renderer->winsys = g_slice_new0 (CoglRendererSdl);
+  renderer->winsys = u_slice_new0 (CoglRendererSdl);
 
   return TRUE;
 }
@@ -137,7 +137,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
 
   /* No need to destroy the surface - it is freed by SDL_Quit */
 
-  g_slice_free (CoglDisplaySdl, display->winsys);
+  u_slice_free (CoglDisplaySdl, display->winsys);
   display->winsys = NULL;
 }
 
@@ -166,7 +166,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
 
-  sdl_display = g_slice_new0 (CoglDisplaySdl);
+  sdl_display = u_slice_new0 (CoglDisplaySdl);
   display->winsys = sdl_display;
 
   set_gl_attribs_from_framebuffer_config (&display->onscreen_template->config);
@@ -203,7 +203,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 #endif
 
     default:
-      g_assert_not_reached ();
+      u_assert_not_reached ();
     }
 
   /* There's no way to know what size the application will need until
@@ -309,8 +309,8 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
   CoglRenderer *renderer = context->display->renderer;
 
-  if (G_UNLIKELY (renderer->sdl_event_type_set == FALSE))
-    g_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
+  if (U_UNLIKELY (renderer->sdl_event_type_set == FALSE))
+    u_error ("cogl_sdl_renderer_set_event_type() or cogl_sdl_context_new() "
              "must be called during initialization");
 
   _cogl_renderer_add_native_filter (renderer,

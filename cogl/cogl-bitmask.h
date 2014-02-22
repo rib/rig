@@ -32,7 +32,7 @@
 #ifndef __COGL_BITMASK_H
 #define __COGL_BITMASK_H
 
-#include <glib.h>
+#include <ulib.h>
 #include "cogl-util.h"
 
 COGL_BEGIN_DECLS
@@ -47,8 +47,8 @@ COGL_BEGIN_DECLS
  *
  * Internally a CoglBitmask is a pointer. If the least significant bit
  * of the pointer is 1 then the rest of the bits are directly used as
- * part of the bitmask, otherwise it is a pointer to a GArray of
- * unsigned ints. This relies on the fact the g_malloc will return a
+ * part of the bitmask, otherwise it is a pointer to a UArray of
+ * unsigned ints. This relies on the fact the u_malloc will return a
  * pointer aligned to at least two bytes (so that the least
  * significant bit of the address is always 0). It also assumes that
  * the size of a pointer is always greater than or equal to the size
@@ -72,7 +72,7 @@ typedef struct _CoglBitmaskImaginaryType *CoglBitmask;
   ((void *) ((((unsigned long) (bits)) << 1UL) | 1UL))
 
 /* Internal helper macro to determine whether this bitmask has a
-   GArray allocated or whether the pointer is just used directly */
+   UArray allocated or whether the pointer is just used directly */
 #define _cogl_bitmask_has_array(bitmask) \
   (!(_cogl_bitmask_to_number (bitmask) & 1UL))
 
@@ -88,7 +88,7 @@ typedef struct _CoglBitmaskImaginaryType *CoglBitmask;
  * zero
  */
 #define _cogl_bitmask_init(bitmask) \
-  G_STMT_START { *(bitmask) = _cogl_bitmask_from_bits (0); } G_STMT_END
+  U_STMT_START { *(bitmask) = _cogl_bitmask_from_bits (0); } U_STMT_END
 
 CoglBool
 _cogl_bitmask_get_from_array (const CoglBitmask *bitmask,
@@ -232,7 +232,7 @@ static inline void
 _cogl_bitmask_destroy (CoglBitmask *bitmask)
 {
   if (_cogl_bitmask_has_array (bitmask))
-    g_array_free ((GArray *) *bitmask, TRUE);
+    u_array_free ((UArray *) *bitmask, TRUE);
 }
 
 /*

@@ -74,7 +74,7 @@ _cogl_quaternion_print (CoglQuaternion *quarternion);
 void
 _cogl_quaternion_print (CoglQuaternion *quaternion)
 {
-  g_print ("[ %6.4f (%6.4f, %6.4f, %6.4f)]\n",
+  u_print ("[ %6.4f (%6.4f, %6.4f, %6.4f)]\n",
            quaternion->w,
            quaternion->x,
            quaternion->y,
@@ -335,9 +335,9 @@ cogl_quaternion_equal (const void *v1, const void *v2)
 CoglQuaternion *
 cogl_quaternion_copy (const CoglQuaternion *src)
 {
-  if (G_LIKELY (src))
+  if (U_LIKELY (src))
     {
-      CoglQuaternion *new = g_slice_new (CoglQuaternion);
+      CoglQuaternion *new = u_slice_new (CoglQuaternion);
       memcpy (new, src, sizeof (float) * 4);
       return new;
     }
@@ -348,7 +348,7 @@ cogl_quaternion_copy (const CoglQuaternion *src)
 void
 cogl_quaternion_free (CoglQuaternion *quaternion)
 {
-  g_slice_free (CoglQuaternion, quaternion);
+  u_slice_free (CoglQuaternion, quaternion);
 }
 
 float
@@ -531,7 +531,7 @@ cogl_quaternion_slerp (CoglQuaternion *result,
     }
 
   /* If we have two unit quaternions the dot should be <= 1.0 */
-  g_assert (cos_difference < 1.1f);
+  u_assert (cos_difference < 1.1f);
 
 
   /* Determine the interpolation factors for each quaternion, simply using
@@ -618,7 +618,7 @@ cogl_quaternion_nlerp (CoglQuaternion *result,
     }
 
   /* If we have two unit quaternions the dot should be <= 1.0 */
-  g_assert (cos_difference < 1.1f);
+  u_assert (cos_difference < 1.1f);
 
   fa = 1.0f - t;
   fb = t;

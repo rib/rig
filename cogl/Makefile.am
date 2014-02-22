@@ -22,6 +22,8 @@ AM_CPPFLAGS = \
 	-I$(srcdir)/driver/gl 			\
 	-I$(srcdir)/driver/gl/gl 		\
 	-I$(srcdir)/driver/gl/gles 		\
+	-I$(top_srcdir)/deps/ulib/src		\
+	-I$(top_builddir)/deps/ulib/src		\
 	$(NULL)
 
 AM_CPPFLAGS += \
@@ -485,9 +487,7 @@ endif
 lib_LTLIBRARIES += libcogl2.la
 
 libcogl2_la_LIBADD = $(LIBM) $(COGL_DEP_LIBS) $(COGL_EXTRA_LDFLAGS)
-if !USE_GLIB
-libcogl2_la_LIBADD += $(top_builddir)/deps/eglib/src/libeglib.la
-endif
+libcogl2_la_LIBADD += $(top_builddir)/deps/ulib/src/libulib.la
 if UNIT_TESTS
 libcogl2_la_LIBADD += $(top_builddir)/test-fixtures/libtest-fixtures.la
 endif

@@ -132,8 +132,8 @@ cogl_pango_glyph_cache_new (CoglContext *ctx,
   cache->hash_table = g_hash_table_new_full
     (cogl_pango_glyph_cache_hash_func,
      cogl_pango_glyph_cache_equal_func,
-     (GDestroyNotify) cogl_pango_glyph_cache_key_free,
-     (GDestroyNotify) cogl_pango_glyph_cache_value_free);
+     (UDestroyNotify) cogl_pango_glyph_cache_key_free,
+     (UDestroyNotify) cogl_pango_glyph_cache_value_free);
 
   cache->atlases = NULL;
   g_hook_list_init (&cache->reorganize_callbacks, sizeof (GHook));

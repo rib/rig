@@ -89,13 +89,13 @@ test_copy_replace_texture (void)
     {
       int i;
 
-      g_print ("Alive textures:");
+      u_print ("Alive textures:");
 
       for (i = 0; i < N_PIPELINES * N_LAYERS; i++)
         if ((alive_texture_mask & (1 << (i + 1))))
-          g_print (" %i", i);
+          u_print (" %i", i);
 
-      g_print ("\n");
+      u_print ("\n");
     }
 
   /* Ideally there should only be the textures from the last pipeline
@@ -116,5 +116,5 @@ test_copy_replace_texture (void)
   g_assert_cmpint (alive_texture_mask, ==, 0);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

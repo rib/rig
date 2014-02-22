@@ -46,7 +46,7 @@ create_primitives (CoglPrimitive *primitives[2])
 
   primitives[0] = cogl_primitive_new_p2c4 (test_ctx,
                                            COGL_VERTICES_MODE_TRIANGLE_STRIP,
-                                           G_N_ELEMENTS (vertex_data),
+                                           U_N_ELEMENTS (vertex_data),
                                            vertex_data);
   cogl_primitive_set_n_vertices (primitives[0], 4);
 
@@ -117,6 +117,6 @@ test_primitive_and_journal (void)
   cogl_framebuffer_pop_clip (test_fb);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

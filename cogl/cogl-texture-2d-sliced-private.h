@@ -36,15 +36,15 @@
 #include "cogl-texture-private.h"
 #include "cogl-texture-2d-sliced.h"
 
-#include <glib.h>
+#include <ulib.h>
 
 struct _CoglTexture2DSliced
 {
   CoglTexture _parent;
 
-  GArray *slice_x_spans;
-  GArray *slice_y_spans;
-  GArray *slice_textures;
+  UArray *slice_x_spans;
+  UArray *slice_y_spans;
+  UArray *slice_textures;
   int max_waste;
   CoglPixelFormat internal_format;
 };

@@ -36,7 +36,7 @@
 
 #include "cogl-color.h"
 
-#include <glib.h>
+#include <ulib.h>
 
 /* cogl-pipeline.c wants to be able to hash CoglColor data so it needs
  * the exact data size to be able to avoid reading the padding bytes.

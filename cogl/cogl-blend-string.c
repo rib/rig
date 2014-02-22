@@ -38,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <glib.h>
+#include <ulib.h>
 
 #include "cogl-context-private.h"
 #include "cogl-debug.h"
@@ -128,7 +128,7 @@ static CoglBlendStringFunctionInfo blend_functions[] = {
 uint32_t
 cogl_blend_string_error_domain (void)
 {
-  return g_quark_from_static_string ("cogl-blend-string-error-quark");
+  return u_quark_from_static_string ("cogl-blend-string-error-quark");
 }
 
 void
@@ -205,7 +205,7 @@ error:
 
   if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
     {
-      g_debug ("Invalid texture combine string: %s",
+      u_debug ("Invalid texture combine string: %s",
                error_string);
     }
   return FALSE;
@@ -315,7 +315,7 @@ error:
 
   if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
     {
-      g_debug ("Invalid %s string: %s",
+      u_debug ("Invalid %s string: %s",
                context == COGL_BLEND_STRING_CONTEXT_BLENDING ?
                "blend" : "texture combine",
                error_string);
@@ -333,30 +333,30 @@ print_argument (CoglBlendStringArgument *arg)
       "RGBA"
   };
 
-  g_print (" Arg:\n");
-  g_print ("  is zero = %s\n", arg->source.is_zero ? "yes" : "no");
+  u_print (" Arg:\n");
+  u_print ("  is zero = %s\n", arg->source.is_zero ? "yes" : "no");
   if (!arg->source.is_zero)
     {
-      g_print ("  color source = %s\n", arg->source.info->name);
-      g_print ("  one minus = %s\n", arg->source.one_minus ? "yes" : "no");
-      g_print ("  mask = %s\n", mask_names[arg->source.mask]);
-      g_print ("  texture = %d\n", arg->source.texture);
-      g_print ("\n");
-      g_print ("  factor is_one = %s\n", arg->factor.is_one ? "yes" : "no");
-      g_print ("  factor is_src_alpha_saturate = %s\n",
+      u_print ("  color source = %s\n", arg->source.info->name);
+      u_print ("  one minus = %s\n", arg->source.one_minus ? "yes" : "no");
+      u_print ("  mask = %s\n", mask_names[arg->source.mask]);
+      u_print ("  texture = %d\n", arg->source.texture);
+      u_print ("\n");
+      u_print ("  factor is_one = %s\n", arg->factor.is_one ? "yes" : "no");
+      u_print ("  factor is_src_alpha_saturate = %s\n",
                arg->factor.is_src_alpha_saturate ? "yes" : "no");
-      g_print ("  factor is_color = %s\n", arg->factor.is_color ? "yes" : "no");
+      u_print ("  factor is_color = %s\n", arg->factor.is_color ? "yes" : "no");
       if (arg->factor.is_color)
         {
-          g_print ("  factor color:is zero = %s\n",
+          u_print ("  factor color:is zero = %s\n",
                    arg->factor.source.is_zero ? "yes" : "no");
-          g_print ("  factor color:color source = %s\n",
+          u_print ("  factor color:color source = %s\n",
                    arg->factor.source.info->name);
-          g_print ("  factor color:one minus = %s\n",
+          u_print ("  factor color:one minus = %s\n",
                    arg->factor.source.one_minus ? "yes" : "no");
-          g_print ("  factor color:mask = %s\n",
+          u_print ("  factor color:mask = %s\n",
                    mask_names[arg->factor.source.mask]);
-          g_print ("  factor color:texture = %d\n",
+          u_print ("  factor color:texture = %d\n",
                    arg->factor.source.texture);
         }
     }
@@ -371,10 +371,10 @@ print_statement (int num, CoglBlendStringStatement *statement)
       "RGBA"
   };
   int i;
-  g_print ("Statement %d:\n", num);
-  g_print (" Destination channel mask = %s\n",
+  u_print ("Statement %d:\n", num);
+  u_print (" Destination channel mask = %s\n",
            mask_names[statement->mask]);
-  g_print (" Function = %s\n", statement->function->name);
+  u_print (" Function = %s\n", statement->function->name);
   for (i = 0; i < statement->function->argc; i++)
     print_argument (&statement->args[i]);
 }
@@ -392,12 +392,12 @@ get_function_info (const char *mark,
   if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
     {
       functions = blend_functions;
-      array_len = G_N_ELEMENTS (blend_functions);
+      array_len = U_N_ELEMENTS (blend_functions);
     }
   else
     {
       functions = tex_combine_functions;
-      array_len = G_N_ELEMENTS (tex_combine_functions);
+      array_len = U_N_ELEMENTS (tex_combine_functions);
     }
 
   for (i = 0; i < array_len; i++)
@@ -422,17 +422,17 @@ get_color_src_info (const char *mark,
   if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
     {
       sources = blending_color_sources;
-      array_len = G_N_ELEMENTS (blending_color_sources);
+      array_len = U_N_ELEMENTS (blending_color_sources);
     }
   else
     {
       sources = tex_combine_color_sources;
-      array_len = G_N_ELEMENTS (tex_combine_color_sources);
+      array_len = U_N_ELEMENTS (tex_combine_color_sources);
     }
 
   if (len >= 8 &&
       strncmp (mark, "TEXTURE_", 8) == 0 &&
-      g_ascii_isdigit (mark[8]))
+      u_ascii_isdigit (mark[8]))
     {
       return &tex_combine_texture_n_color_source;
     }
@@ -450,13 +450,13 @@ get_color_src_info (const char *mark,
 static CoglBool
 is_symbol_char (const char c)
 {
-  return (g_ascii_isalpha (c) || c == '_') ? TRUE : FALSE;
+  return (u_ascii_isalpha (c) || c == '_') ? TRUE : FALSE;
 }
 
 static CoglBool
 is_alphanum_char (const char c)
 {
-  return (g_ascii_isalnum (c) || c == '_') ? TRUE : FALSE;
+  return (u_ascii_isalnum (c) || c == '_') ? TRUE : FALSE;
 }
 
 static CoglBool
@@ -493,7 +493,7 @@ parse_argument (const char *string, /* original user string */
 
   do
     {
-      if (g_ascii_isspace (*p))
+      if (u_ascii_isspace (*p))
         continue;
 
       if (*p == '\0')
@@ -745,7 +745,7 @@ error:
 
     if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
       {
-        g_debug ("Syntax error for argument %d at offset %d: %s",
+        u_debug ("Syntax error for argument %d at offset %d: %s",
                  current_arg, offset, error_string);
       }
     return FALSE;
@@ -781,7 +781,7 @@ _cogl_blend_string_compile (const char *string,
 
   do
     {
-      if (g_ascii_isspace (*p))
+      if (u_ascii_isspace (*p))
         continue;
 
       if (*p == '\0')
@@ -925,7 +925,7 @@ error:
 
       if (COGL_DEBUG_ENABLED (COGL_DEBUG_BLEND_STRINGS))
         {
-          g_debug ("Syntax error at offset %d: %s",
+          u_debug ("Syntax error at offset %d: %s",
                    offset, error_string);
         }
       return 0;
@@ -983,15 +983,15 @@ _cogl_blend_string_test (void)
                                               &error);
       if (!count)
         {
-          g_print ("Failed to parse string:\n%s\n%s\n",
+          u_print ("Failed to parse string:\n%s\n%s\n",
                    strings[i].string,
                    error->message);
           cogl_error_free (error);
           error = NULL;
           continue;
         }
-      g_print ("Original:\n");
-      g_print ("%s\n", strings[i].string);
+      u_print ("Original:\n");
+      u_print ("%s\n", strings[i].string);
       if (count > 0)
         print_statement (0, &statements[0]);
       if (count > 1)

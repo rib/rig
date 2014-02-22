@@ -34,7 +34,7 @@
 
 #include "cogl-framebuffer-nop-private.h"
 
-#include <glib.h>
+#include <ulib.h>
 #include <string.h>
 
 void

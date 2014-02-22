@@ -99,10 +99,10 @@ _cogl_unpremult_alpha_first (uint8_t *dst)
  * is important for a == 255 - we want to get exactly c.
  */
 #define MULT(d,a,t)                             \
-  G_STMT_START {                                \
+  U_STMT_START {                                \
     t = d * a + 128;                            \
     d = ((t >> 8) + t) >> 8;                    \
-  } G_STMT_END
+  } U_STMT_END
 
 inline static void
 _cogl_premult_alpha_last (uint8_t *dst)
@@ -322,7 +322,7 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
     case COGL_PIXEL_FORMAT_DEPTH_32:
     case COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
     case COGL_PIXEL_FORMAT_ANY:
-      g_assert_not_reached ();
+      u_assert_not_reached ();
 
     case COGL_PIXEL_FORMAT_A_8:
     case COGL_PIXEL_FORMAT_RG_88:
@@ -354,7 +354,7 @@ _cogl_bitmap_needs_short_temp_buffer (CoglPixelFormat format)
       return TRUE;
     }
 
-  g_assert_not_reached ();
+  u_assert_not_reached ();
 }
 
 CoglBool
@@ -437,7 +437,7 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
   use_16 = _cogl_bitmap_needs_short_temp_buffer (dst_format);
 
   /* Allocate a buffer to hold a temporary RGBA row */
-  tmp_row = g_malloc (width *
+  tmp_row = u_malloc (width *
                       (use_16 ? sizeof (uint16_t) : sizeof (uint8_t)) * 4);
 
   /* FIXME: Optimize */
@@ -479,7 +479,7 @@ _cogl_bitmap_convert_into_bitmap (CoglBitmap *src_bmp,
   _cogl_bitmap_unmap (src_bmp);
   _cogl_bitmap_unmap (dst_bmp);
 
-  g_free (tmp_row);
+  u_free (tmp_row);
 
   return TRUE;
 }
@@ -642,7 +642,7 @@ _cogl_bitmap_unpremult (CoglBitmap *bmp,
   if (_cogl_bitmap_can_fast_premult (format))
     tmp_row = NULL;
   else
-    tmp_row = g_malloc (sizeof (uint16_t) * 4 * width);
+    tmp_row = u_malloc (sizeof (uint16_t) * 4 * width);
 
   for (y = 0; y < height; y++)
     {
@@ -672,7 +672,7 @@ _cogl_bitmap_unpremult (CoglBitmap *bmp,
         }
     }
 
-  g_free (tmp_row);
+  u_free (tmp_row);
 
   _cogl_bitmap_unmap (bmp);
 
@@ -709,7 +709,7 @@ _cogl_bitmap_premult (CoglBitmap *bmp,
   if (_cogl_bitmap_can_fast_premult (format))
     tmp_row = NULL;
   else
-    tmp_row = g_malloc (sizeof (uint16_t) * 4 * width);
+    tmp_row = u_malloc (sizeof (uint16_t) * 4 * width);
 
   for (y = 0; y < height; y++)
     {
@@ -736,7 +736,7 @@ _cogl_bitmap_premult (CoglBitmap *bmp,
         }
     }
 
-  g_free (tmp_row);
+  u_free (tmp_row);
 
   _cogl_bitmap_unmap (bmp);
 

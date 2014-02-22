@@ -162,7 +162,7 @@ _cogl_atlas_texture_post_reorganize_cb (void *user_data)
       CoglAtlasTextureGetRectanglesData data;
       unsigned int i;
 
-      data.textures = g_new (CoglAtlasTexture *,
+      data.textures = u_new (CoglAtlasTexture *,
                              _cogl_rectangle_map_get_n_rectangles (atlas->map));
       data.n_textures = 0;
 
@@ -184,11 +184,11 @@ _cogl_atlas_texture_post_reorganize_cb (void *user_data)
             cogl_object_unref (data.textures[i]);
         }
 
-      g_free (data.textures);
+      u_free (data.textures);
     }
 
   /* Notify any listeners that an atlas has changed */
-  g_hook_list_invoke (&ctx->atlas_reorganize_callbacks, FALSE);
+  u_hook_list_invoke (&ctx->atlas_reorganize_callbacks, FALSE);
 }
 
 static void
@@ -197,7 +197,7 @@ _cogl_atlas_texture_atlas_destroyed_cb (void *user_data)
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   /* Remove the atlas from the global list */
-  ctx->atlases = g_slist_remove (ctx->atlases, user_data);
+  ctx->atlases = u_slist_remove (ctx->atlases, user_data);
 }
 
 static CoglAtlas *
@@ -214,7 +214,7 @@ _cogl_atlas_texture_create_atlas (CoglContext *ctx)
                                        _cogl_atlas_texture_post_reorganize_cb,
                                        atlas);
 
-  ctx->atlases = g_slist_prepend (ctx->atlases, atlas);
+  ctx->atlases = u_slist_prepend (ctx->atlases, atlas);
 
   /* Set some data on the atlas so we can get notification when it is
      destroyed in order to remove it from the list. ctx->atlases
@@ -662,7 +662,7 @@ _cogl_atlas_texture_create_base (CoglContext *ctx,
 
   /* We need to allocate the texture now because we need the pointer
      to set as the data for the rectangle in the atlas */
-  atlas_tex = g_new0 (CoglAtlasTexture, 1);
+  atlas_tex = u_new0 (CoglAtlasTexture, 1);
   /* Mark it as having no atlas so we don't try to unref it in
      _cogl_atlas_texture_post_reorganize_cb */
   atlas_tex->atlas = NULL;
@@ -712,7 +712,7 @@ allocate_space (CoglAtlasTexture *atlas_tex,
   CoglTexture *tex = COGL_TEXTURE (atlas_tex);
   CoglContext *ctx = tex->context;
   CoglAtlas *atlas;
-  GSList *l;
+  USList *l;
 
   /* If the texture is in a strange format then we won't use it */
   if (!_cogl_atlas_texture_can_use_format (internal_format))
@@ -883,7 +883,7 @@ _cogl_atlas_texture_allocate (CoglTexture *tex,
       break;
     }
 
-  g_return_val_if_reached (FALSE);
+  u_return_val_if_reached (FALSE);
 }
 
 static CoglAtlasTexture *
@@ -976,27 +976,27 @@ cogl_atlas_texture_new_from_file (CoglContext *ctx,
 
 void
 _cogl_atlas_texture_add_reorganize_callback (CoglContext *ctx,
-                                             GHookFunc callback,
+                                             UHookFunc callback,
                                              void *user_data)
 {
-  GHook *hook = g_hook_alloc (&ctx->atlas_reorganize_callbacks);
+  UHook *hook = u_hook_alloc (&ctx->atlas_reorganize_callbacks);
   hook->func = callback;
   hook->data = user_data;
-  g_hook_prepend (&ctx->atlas_reorganize_callbacks, hook);
+  u_hook_prepend (&ctx->atlas_reorganize_callbacks, hook);
 }
 
 void
 _cogl_atlas_texture_remove_reorganize_callback (CoglContext *ctx,
-                                                GHookFunc callback,
+                                                UHookFunc callback,
                                                 void *user_data)
 {
-  GHook *hook = g_hook_find_func_data (&ctx->atlas_reorganize_callbacks,
+  UHook *hook = u_hook_find_func_data (&ctx->atlas_reorganize_callbacks,
                                        FALSE,
                                        callback,
                                        user_data);
 
   if (hook)
-    g_hook_destroy_link (&ctx->atlas_reorganize_callbacks, hook);
+    u_hook_destroy_link (&ctx->atlas_reorganize_callbacks, hook);
 }
 
 static CoglTextureType

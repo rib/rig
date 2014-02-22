@@ -77,5 +77,5 @@ test_euler_quaternion (void)
   /* FIXME: This needs a lot more tests! */
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }

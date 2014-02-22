@@ -103,7 +103,7 @@ cogl_foreach_feature (CoglContext *ctx,
 void
 _cogl_flush (CoglContext *ctx)
 {
-  GList *l;
+  UList *l;
 
   for (l = ctx->framebuffers; l; l = l->next)
     _cogl_framebuffer_flush_journal (l->data);
@@ -112,7 +112,7 @@ _cogl_flush (CoglContext *ctx)
 uint32_t
 _cogl_driver_error_domain (void)
 {
-  return g_quark_from_static_string ("cogl-driver-error-quark");
+  return u_quark_from_static_string ("cogl-driver-error-quark");
 }
 
 /* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
@@ -158,7 +158,7 @@ _cogl_transform_point (const CoglMatrix *matrix_mv,
 uint32_t
 _cogl_system_error_domain (void)
 {
-  return g_quark_from_static_string ("cogl-system-error-quark");
+  return u_quark_from_static_string ("cogl-system-error-quark");
 }
 
 void
@@ -171,10 +171,6 @@ _cogl_init (void)
 #ifdef ENABLE_NLS
       bindtextdomain (GETTEXT_PACKAGE, COGL_LOCALEDIR);
       bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
-#endif
-
-#ifdef COGL_HAS_GTYPE_SUPPORT
-      g_type_init ();
 #endif
 
       _cogl_config_read ();

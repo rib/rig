@@ -135,7 +135,7 @@ _cogl_span_iter_begin (CoglSpanIter *iter,
         }
     }
   else
-    g_warn_if_reached ();
+    u_warn_if_reached ();
 
   iter->cover_start = cover_start;
   iter->cover_end = cover_end;
@@ -167,7 +167,7 @@ _cogl_span_iter_next (CoglSpanIter *iter)
         }
     }
   else
-    g_warn_if_reached ();
+    u_warn_if_reached ();
 
   /* Update intersection */
   _cogl_span_iter_update (iter);

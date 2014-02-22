@@ -248,6 +248,6 @@ test_materials (TestUtilsGTestFixture *fixture,
   g_source_remove (idle_source);
 
   if (cogl_test_verbose ())
-    g_print ("OK\n");
+    u_print ("OK\n");
 }
 

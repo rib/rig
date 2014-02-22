@@ -77,7 +77,7 @@ typedef struct _CoglTexturePixmapEGL
 static CoglOnscreen *
 find_onscreen_for_xid (CoglContext *context, uint32_t xid)
 {
-  GList *l;
+  UList *l;
 
   for (l = context->framebuffers; l; l = l->next)
     {
@@ -128,7 +128,7 @@ flush_pending_resize_notifications_idle (void *user_data)
   _cogl_closure_disconnect (egl_renderer->resize_notify_idle);
   egl_renderer->resize_notify_idle = NULL;
 
-  g_list_foreach (context->framebuffers,
+  u_list_foreach (context->framebuffers,
                   flush_pending_resize_notifications_cb,
                   NULL);
 }
@@ -258,7 +258,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 
   eglTerminate (egl_renderer->edpy);
 
-  g_slice_free (CoglRendererEGL, egl_renderer);
+  u_slice_free (CoglRendererEGL, egl_renderer);
 }
 
 static CoglBool
@@ -268,7 +268,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   CoglRendererEGL *egl_renderer;
   CoglXlibRenderer *xlib_renderer;
 
-  renderer->winsys = g_slice_new0 (CoglRendererEGL);
+  renderer->winsys = u_slice_new0 (CoglRendererEGL);
   egl_renderer = renderer->winsys;
   xlib_renderer = _cogl_xlib_renderer_get_data (renderer);
 
@@ -297,7 +297,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   CoglDisplayEGL *egl_display = display->winsys;
   CoglDisplayXlib *xlib_display;
 
-  xlib_display = g_slice_new0 (CoglDisplayXlib);
+  xlib_display = u_slice_new0 (CoglDisplayXlib);
   egl_display->platform = xlib_display;
 
   return TRUE;
@@ -308,7 +308,7 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
 {
   CoglDisplayEGL *egl_display = display->winsys;
 
-  g_slice_free (CoglDisplayXlib, egl_display->platform);
+  u_slice_free (CoglDisplayXlib, egl_display->platform);
 }
 
 static CoglBool
@@ -471,7 +471,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
         }
     }
 
-  xlib_onscreen = g_slice_new (CoglOnscreenXlib);
+  xlib_onscreen = u_slice_new (CoglOnscreenXlib);
   egl_onscreen->platform = xlib_onscreen;
 
   xlib_onscreen->xwin = xwin;
@@ -512,9 +512,9 @@ _cogl_winsys_egl_onscreen_deinit (CoglOnscreen *onscreen)
 
   if (_cogl_xlib_renderer_untrap_errors (renderer,
                                          &old_state) != Success)
-    g_warning ("X Error while destroying X window");
+    u_warning ("X Error while destroying X window");
 
-  g_slice_free (CoglOnscreenXlib, xlib_onscreen);
+  u_slice_free (CoglOnscreenXlib, xlib_onscreen);
 }
 
 static void
@@ -719,7 +719,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
       return FALSE;
     }
 
-  egl_tex_pixmap = g_new0 (CoglTexturePixmapEGL, 1);
+  egl_tex_pixmap = u_new0 (CoglTexturePixmapEGL, 1);
 
   egl_tex_pixmap->image =
     _cogl_egl_create_image (ctx,
@@ -728,7 +728,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
                             attribs);
   if (egl_tex_pixmap->image == EGL_NO_IMAGE_KHR)
     {
-      g_free (egl_tex_pixmap);
+      u_free (egl_tex_pixmap);
       return FALSE;
     }
 
@@ -770,7 +770,7 @@ _cogl_winsys_texture_pixmap_x11_free (CoglTexturePixmapX11 *tex_pixmap)
     _cogl_egl_destroy_image (ctx, egl_tex_pixmap->image);
 
   tex_pixmap->winsys = NULL;
-  g_free (egl_tex_pixmap);
+  u_free (egl_tex_pixmap);
 }
 
 static CoglBool
