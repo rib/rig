@@ -80,6 +80,8 @@ _apply_op_set_property (RigEngineOpApplyContext *ctx,
    * redundantly feed-back to the frontend process. */
   rut_property_set_boxed (&ctx->engine->ctx->property_ctx,
                           property, &boxed);
+
+  return true;
 }
 
 static bool
@@ -102,6 +104,8 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
     return false;
 
   pb_op->set_property->value = src_pb_op->set_property->value;
+
+  return true;
 }
 
 void
@@ -190,6 +194,8 @@ _map_op_add_entity (RigEngineOpMapContext *ctx,
    */
 
   pb_op->add_entity->entity = src_pb_op->add_entity->entity;
+
+  return true;
 }
 
 void
