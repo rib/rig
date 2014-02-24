@@ -233,6 +233,8 @@ RigProtobufCDispatch *rig_protobuf_c_dispatch_new (ProtobufCAllocator *allocator
   rv->base.last_dispatch_secs = tv.tv_sec;
   rv->base.last_dispatch_usecs = tv.tv_usec;
 
+  rv->base.has_timeout = 0;
+
   return &rv->base;
 }
 
