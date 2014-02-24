@@ -172,7 +172,7 @@ rut_queue_clear (RutQueue *queue)
 
   rut_list_for_each_safe (item, tmp, &queue->items, list_node)
     free_item (item);
-  queue->len = 0;
+  rut_queue_init (queue);
 }
 
 void
