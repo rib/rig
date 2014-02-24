@@ -20,6 +20,7 @@
 #include "rut-input-region.h"
 #include "rut-context.h"
 #include "rut-shell.h"
+#include "rut-os.h"
 #include "rut-bitmask.h"
 #include "rut-memory-stack.h"
 #include "rut-magazine.h"
