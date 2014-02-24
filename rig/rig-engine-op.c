@@ -902,8 +902,6 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
 
   pb_ui_edit->n_ops = i;
 
-  rig_pb_serializer_destroy (serializer);
-
   return mapped_pb_ui_edits;
 }
 
