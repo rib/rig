@@ -29,6 +29,6 @@ void
 rig_osx_init (RigEngine *engine);
 
 void
-rig_osx_deinit (RigEngine *osx_data);
+rig_osx_deinit (RigEngine *engine);
 
 #endif /* _RUT_OSX_H_ */

@@ -18,9 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -36,19 +34,19 @@
 
 @interface Controller : NSObject
 {
-  RigData *data;
+  RigEngine *engine;
 }
 
 @end
 
 @implementation Controller
 
-- (id) init:(RigData *) data_in
+- (id) init:(RigEngine *) engine_in
 {
   self = [super init];
 
   if (self)
-    self->data = data_in;
+    self->engine = engine_in;
 
   return self;
 }
@@ -68,7 +66,7 @@
   [dialog setCanChooseDirectories:NO];
   [dialog setAllowsMultipleSelection:NO];
 
-  dir = g_path_get_dirname (data->ui_filename);
+  dir = g_path_get_dirname (engine->ui_filename);
   dir_string = [[NSString alloc] initWithUTF8String:dir];
   url = [NSURL fileURLWithPath:dir_string];
   [dialog setDirectoryURL:url];
@@ -83,15 +81,14 @@
 	{
 	  NSString *filename = [files objectAtIndex:0];
 
-          data->next_ui_filename = g_strdup ([filename UTF8String]);
-          rut_shell_quit (data->shell);
+          rig_engine_load_file (engine, [filename UTF8String]);
 	}
     }
 }
 
 - (void) saveAction:(id) sender
 {
-  rig_save (data, data->ui_filename);
+  rig_save (engine, engine->ui_filename);
 }
 
 - (void) saveAsAction:(id) sender
@@ -213,16 +210,16 @@ check_update_messages (void)
 }
 
 void
-rig_osx_init (RigData *data)
+rig_osx_init (RigEngine *engine)
 {
   RigOSXData *osx_data;
-  CoglOnscreen *onscreen = data->onscreen;
+  CoglOnscreen *onscreen = engine->onscreen;
   SDL_Window *window = cogl_sdl_onscreen_get_window (onscreen);
   SDL_SysWMinfo info;
   int i;
 
   osx_data = g_new0 (RigOSXData, 1);
-  data->osx_data = osx_data;
+  engine->osx_data = osx_data;
 
   SDL_VERSION (&info.version);
 
@@ -231,7 +228,7 @@ rig_osx_init (RigData *data)
 
   osx_data->pool = [[NSAutoreleasePool alloc] init];
 
-  osx_data->controller = [[Controller alloc] init:data];
+  osx_data->controller = [[Controller alloc] init:engine];
 
   [info.info.cocoa.window setShowsResizeIndicator:YES];
 
@@ -267,9 +264,9 @@ rig_osx_init (RigData *data)
 }
 
 void
-rig_osx_deinit (RigData *data)
+rig_osx_deinit (RigEngine *engine)
 {
-  RigOSXData *osx_data = data->osx_data;
+  RigOSXData *osx_data = engine->osx_data;
 
   if (osx_data->file_menu)
     [osx_data->file_menu release];
