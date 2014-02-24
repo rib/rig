@@ -135,7 +135,7 @@ struct _RutShell
   struct android_app* app;
 #endif
 
-  RutList input_queue;
+  RutInputQueue *input_queue;
   int input_queue_len;
 
   RutContext *rut_ctx;
@@ -172,7 +172,11 @@ struct _RutShell
   RutObject *clipboard;
 
   int glib_paint_idle;
-  CoglBool redraw_queued;
+  bool redraw_queued;
+
+  void (*queue_redraw_callback) (RutShell *shell,
+                                 void *user_data);
+  void *queue_redraw_data;
 
   /* Queue of callbacks to be invoked before painting. If
    * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
@@ -184,6 +188,7 @@ struct _RutShell
   RutList pre_paint_callbacks;
   CoglBool flushing_pre_paints;
 
+  RutList start_paint_callbacks;
   RutList post_paint_callbacks;
 
   int frame;
@@ -833,35 +838,36 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
         default:
           g_warn_if_reached ();
         }
-      return;
     }
-
+  else
+    {
 #ifdef __ANDROID__
-  *x = AMotionEvent_getX (event->native, 0);
-  *y = AMotionEvent_getY (event->native, 0);
+      *x = AMotionEvent_getX (event->native, 0);
+      *y = AMotionEvent_getY (event->native, 0);
 #elif defined (USE_SDL)
-  {
-    RutSDLEvent *rut_sdl_event = event->native;
-    SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
-    switch (sdl_event->type)
       {
-      case SDL_MOUSEBUTTONDOWN:
-      case SDL_MOUSEBUTTONUP:
-        *x = sdl_event->button.x;
-        *y = sdl_event->button.y;
-        break;
-      case SDL_MOUSEMOTION:
-        *x = sdl_event->motion.x;
-        *y = sdl_event->motion.y;
-        break;
-      default:
-        g_warn_if_reached (); /* Not a motion event */
-        return;
+        RutSDLEvent *rut_sdl_event = event->native;
+        SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
+        switch (sdl_event->type)
+          {
+          case SDL_MOUSEBUTTONDOWN:
+          case SDL_MOUSEBUTTONUP:
+            *x = sdl_event->button.x;
+            *y = sdl_event->button.y;
+            break;
+          case SDL_MOUSEMOTION:
+            *x = sdl_event->motion.x;
+            *y = sdl_event->motion.y;
+            break;
+          default:
+            g_warn_if_reached (); /* Not a motion event */
+            return;
+          }
       }
-  }
 #else
 #error "Unknown input system"
 #endif
+    }
 
   if (transform)
     {
@@ -1151,6 +1157,8 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
   CoglOnscreen *onscreen = NULL;
   RutShellOnscreen *shell_onscreen = NULL;
 
+  g_print ("event\n");
+
   onscreen = rut_input_event_get_onscreen (event);
 
   if (onscreen)
@@ -1190,6 +1198,10 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    g_print ("Motion 0\n");
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    g_print ("Drop offer 0\n");
   event->camera = shell->window_camera;
 
   rut_list_for_each_safe (c, tmp, &shell->input_cb_list, list_node)
@@ -1201,6 +1213,10 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         goto handled;
     }
 
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    g_print ("Motion 1\n");
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    g_print ("Drop offer 1\n");
   rut_list_for_each_safe (grab, shell->next_grab, &shell->grabs, list_node)
     {
       RutCamera *old_camera = event->camera;
@@ -1220,6 +1236,10 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    g_print ("Motion 2\n");
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    g_print ("Drop offer 2\n");
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
@@ -1247,6 +1267,10 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
         }
     }
 
+  if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    g_print ("Motion 3\n");
+  else if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_DROP_OFFER)
+    g_print ("Drop offer 3\n");
   /* If nothing has handled the event by now we'll try to pick a
    * single object from the scenegraphs attached to the cameras that
    * will handle the event */
@@ -1325,7 +1349,8 @@ android_init (RutShell *shell)
 {
   cogl_android_set_native_window (shell->app->window);
 
-  shell->init_cb (shell, shell->user_data);
+  if (shell->init_cb)
+    shell->init_cb (shell, shell->user_data);
   return 0;
 }
 
@@ -1405,6 +1430,7 @@ _rut_shell_free (void *object)
 
   _rut_shell_remove_all_input_cameras (shell);
 
+  rut_closure_list_disconnect_all (&shell->start_paint_callbacks);
   rut_closure_list_disconnect_all (&shell->post_paint_callbacks);
 
   _rut_shell_fini (shell);
@@ -1446,6 +1472,8 @@ rut_shell_new (bool headless,
 
   shell->headless = headless;
 
+  shell->input_queue = rut_input_queue_new (shell);
+
   rut_list_init (&shell->input_cb_list);
   rut_list_init (&shell->grabs);
   rut_list_init (&shell->onscreens);
@@ -1456,6 +1484,7 @@ rut_shell_new (bool headless,
   shell->user_data = user_data;
 
   rut_list_init (&shell->pre_paint_callbacks);
+  rut_list_init (&shell->start_paint_callbacks);
   rut_list_init (&shell->post_paint_callbacks);
   shell->flushing_pre_paints = FALSE;
 
@@ -1526,7 +1555,6 @@ void
 _rut_shell_init (RutShell *shell)
 {
 #ifdef USE_SDL
-  rut_list_init (&shell->input_queue);
   shell->sdl_keymod = SDL_GetModState ();
   shell->sdl_buttons = SDL_GetMouseState (NULL, NULL);
 #endif
@@ -1745,12 +1773,13 @@ flush_pre_paint_callbacks (RutShell *shell)
   shell->flushing_pre_paints = FALSE;
 }
 
+
 void
 rut_shell_start_redraw (RutShell *shell)
 {
-  g_return_if_fail (shell->redraw_queued == TRUE);
+  g_return_if_fail (shell->redraw_queued == true);
 
-  shell->redraw_queued = FALSE;
+  shell->redraw_queued = false;
 #ifndef __ANDROID__
   g_source_remove (shell->glib_paint_idle);
   shell->glib_paint_idle = 0;
@@ -1787,39 +1816,97 @@ free_input_event (RutShell *shell, RutInputEvent *event)
 void
 rut_shell_dispatch_input_events (RutShell *shell)
 {
+  RutInputQueue *input_queue = shell->input_queue;
   RutInputEvent *event, *tmp;
 
-  rut_list_for_each_safe (event, tmp, &shell->input_queue, list_node)
+  rut_list_for_each_safe (event, tmp, &input_queue->events, list_node)
     {
+      /* XXX: we remove the event from the queue before dispatching it
+       * so that it can potentially be deferred to another input queue
+       * during the dispatch. For example the Rig editor will re-queue
+       * events received for a RutCameraView to be forwarded to the
+       * simulator process. */
+      rut_input_queue_remove (shell->input_queue, event);
+
       rut_shell_dispatch_input_event (shell, event);
-      rut_list_remove (&event->list_node);
-      free_input_event (shell, event);
+
+      /* Only free the event if it hasn't been re-queued
+       * TODO: perhaps make RutInputEvent into a ref-counted object
+       */
+      if (event->list_node.prev == NULL && event->list_node.next == NULL)
+        {
+          free_input_event (shell, event);
+        }
     }
 
-  shell->input_queue_len = 0;
+  g_warn_if_fail (input_queue->n_events == 0);
 }
 
-RutList *
-rut_shell_get_input_queue (RutShell *shell,
-                           int *length)
+RutInputQueue *
+rut_shell_get_input_queue (RutShell *shell)
 {
-  if (length)
-    *length = shell->input_queue_len;
-  return &shell->input_queue;
+  return shell->input_queue;
+}
+
+RutInputQueue *
+rut_input_queue_new (RutShell *shell)
+{
+  RutInputQueue *queue = g_slice_new0 (RutInputQueue);
+
+  queue->shell = shell;
+  rut_list_init (&queue->events);
+  queue->n_events = 0;
+
+  return queue;
 }
 
 void
-rut_shell_clear_input_queue (RutShell *shell)
+rut_input_queue_append (RutInputQueue *queue,
+                        RutInputEvent *event)
 {
+  if (queue->shell->headless)
+    {
+#if 0
+      g_print ("input_queue_append %p %d\n", event, event->type);
+      if (event->type == RUT_INPUT_EVENT_TYPE_KEY)
+        g_print ("> is key\n");
+      else
+        g_print ("> not key\n");
+#endif
+    }
+  rut_list_insert (queue->events.prev, &event->list_node);
+  queue->n_events++;
+}
+
+void
+rut_input_queue_remove (RutInputQueue *queue,
+                        RutInputEvent *event)
+{
+  rut_list_remove (&event->list_node);
+  queue->n_events--;
+}
+
+void
+rut_input_queue_destroy (RutInputQueue *queue)
+{
+  rut_input_queue_clear (queue);
+
+  g_slice_free (RutInputQueue, queue);
+}
+
+void
+rut_input_queue_clear (RutInputQueue *input_queue)
+{
+  RutShell *shell = input_queue->shell;
   RutInputEvent *event, *tmp;
 
-  rut_list_for_each_safe (event, tmp, &shell->input_queue, list_node)
+  rut_list_for_each_safe (event, tmp, &input_queue->events, list_node)
     {
       rut_list_remove (&event->list_node);
       free_input_event (shell, event);
     }
 
-  shell->input_queue_len = 0;
+  input_queue->n_events = 0;
 }
 
 void
@@ -1834,6 +1921,7 @@ rut_shell_handle_stream_event (RutShell *shell,
   RutInputEvent *event = g_slice_alloc (sizeof (RutInputEvent));
   event->native = stream_event;
 
+  event->type = 0;
   event->shell = shell;
   event->input_transform = NULL;
 
@@ -1850,8 +1938,18 @@ rut_shell_handle_stream_event (RutShell *shell,
       break;
     }
 
-  rut_list_insert (shell->input_queue.prev, &event->list_node);
-  shell->input_queue_len++;
+  /* Note: we don't use a default: case since we want the
+   * compiler to warn us when we forget to handle a new
+   * enum */
+  if (!event->type)
+    {
+      g_warning ("Shell: Spurious stream event type %d\n",
+                 stream_event->type);
+      g_slice_free (RutInputEvent, event);
+      return;
+    }
+
+  rut_input_queue_append (shell->input_queue, event);
 
   /* FIXME: we need a separate status so we can trigger a new
    * frame, but if the input doesn't affect anything then we
@@ -1863,6 +1961,14 @@ void
 rut_shell_run_pre_paint_callbacks (RutShell *shell)
 {
   flush_pre_paint_callbacks (shell);
+}
+
+void
+rut_shell_run_start_paint_callbacks (RutShell *shell)
+{
+  rut_closure_list_invoke (&shell->start_paint_callbacks,
+                           RutShellPaintCallback,
+                           shell);
 }
 
 void
@@ -2027,8 +2133,9 @@ sdl_handle_event (RutShell *shell, SDL_Event *sdl_event)
       rut_sdl_event->buttons = shell->sdl_buttons;
       rut_sdl_event->mod_state = shell->sdl_keymod;
 
-      rut_list_insert (shell->input_queue.prev, &event->list_node);
-      shell->input_queue_len++;
+      g_print ("sdl_handle_event: queue %d\n", rand());
+      rut_input_queue_append (shell->input_queue, event);
+
       /* FIXME: we need a separate status so we can trigger a new
        * frame, but if the input doesn't affect anything then we
        * want to avoid any actual rendering. */
@@ -2180,7 +2287,8 @@ rut_shell_main (RutShell *shell)
 
           if (shell->app->destroyRequested != 0)
             {
-              shell->fini_cb (shell, shell->user_data);
+              if (shell->fini_cb)
+                shell->fini_cb (shell, shell->user_data);
               return;
             }
 
@@ -2195,7 +2303,8 @@ rut_shell_main (RutShell *shell)
 
   GSource *cogl_source;
 
-  shell->init_cb (shell, shell->user_data);
+  if (shell->init_cb)
+    shell->init_cb (shell, shell->user_data);
 
   if (!shell->headless)
     {
@@ -2236,7 +2345,8 @@ rut_shell_main (RutShell *shell)
       }
   }
 
-  shell->fini_cb (shell, shell->user_data);
+  if (shell->fini_cb)
+    shell->fini_cb (shell, shell->user_data);
 
 #ifdef USE_SDL
   g_main_context_set_poll_func (g_main_context_default (),
@@ -2281,14 +2391,33 @@ rut_shell_ungrab_input (RutShell *shell,
 }
 
 void
-rut_shell_queue_redraw (RutShell *shell)
+rut_shell_queue_redraw_real (RutShell *shell)
 {
-  shell->redraw_queued = TRUE;
+  shell->redraw_queued = true;
 
 #ifndef __ANDROID__
   if (shell->glib_paint_idle <= 0)
     shell->glib_paint_idle = g_idle_add (glib_paint_cb, shell);
 #endif
+}
+
+void
+rut_shell_queue_redraw (RutShell *shell)
+{
+  if (shell->queue_redraw_callback)
+    shell->queue_redraw_callback (shell, shell->queue_redraw_data);
+  else
+    rut_shell_queue_redraw_real (shell);
+}
+
+void
+rut_shell_set_queue_redraw_callback (RutShell *shell,
+                                     void (*callback) (RutShell *shell,
+                                                       void *user_data),
+                                     void *user_data)
+{
+  shell->queue_redraw_callback = callback;
+  shell->queue_redraw_data = user_data;
 }
 
 enum {
@@ -2466,7 +2595,7 @@ _rut_slider_input_cb (RutInputRegion *region,
 {
   RutSlider *slider = user_data;
 
-  g_print ("Slider input\n");
+  //g_print ("Slider input\n");
 
   if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
@@ -2612,7 +2741,7 @@ rut_slider_set_progress (RutObject *obj,
 
   rut_shell_queue_redraw (slider->ctx->shell);
 
-  g_print ("progress = %f\n", slider->progress);
+  //g_print ("progress = %f\n", slider->progress);
 }
 
 void
@@ -2706,8 +2835,21 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
 }
 
 RutClosure *
+rut_shell_add_start_paint_callback (RutShell *shell,
+                                    RutShellPaintCallback callback,
+                                    void *user_data,
+                                    RutClosureDestroyCallback destroy)
+{
+  return rut_closure_list_add (&shell->start_paint_callbacks,
+                               callback,
+                               user_data,
+                               destroy);
+}
+
+
+RutClosure *
 rut_shell_add_post_paint_callback (RutShell *shell,
-                                   RutPrePaintCallback callback,
+                                   RutShellPaintCallback callback,
                                    void *user_data,
                                    RutClosureDestroyCallback destroy)
 {

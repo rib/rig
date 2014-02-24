@@ -18,6 +18,19 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+/* A few notes about how journal operations are applied:
+ *
+ * Applying journal operations will result in queuing lower-level
+ * engine operations. Engine operations are then used to apply changes
+ * to the edit-mode and play-mode uis; can be forwarded to the
+ * simulator process and forwarded to all slave devices.
+ *
+ * When applying journal operations, we immediately apply the
+ * corresponding engine operations to the edit-mode ui state. If we
+ * didn't then it would be difficult to batch edit operations that
+ * depend on each other.
+ */
+
 #include <config.h>
 
 #include "rig-undo-journal.h"
@@ -33,7 +46,7 @@ typedef struct _UndoRedoOpImpl
   void (*free) (UndoRedo *undo_redo);
 } UndoRedoOpImpl;
 
-static bool
+static void
 rig_undo_journal_insert (RigUndoJournal *journal,
                          UndoRedo *undo_redo);
 
@@ -675,18 +688,11 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
   UndoRedoSetProperty *set_property = &undo_redo->d.set_property;
   RigEngine *engine = journal->engine;
-  Rig__Operation__SetProperty *pb_set_property =
-    rig_pb_new (engine, Rig__Operation__SetProperty,
-                rig__operation__set_property__init);
 
-  pb_set_property->object_id =
-    (intptr_t)set_property->property->object;
-  pb_set_property->property_id = set_property->property->spec->id;
-  pb_set_property->value =
-    rig_pb_new (engine, Rig__PropertyValue, rig__property_value__init);
-  rig_pb_property_value_init (journal->serializer,
-                              pb_set_property->value,
+  rig_engine_op_set_property (engine,
+                              set_property->property,
                               &set_property->value1);
+  //rig_editor_apply_last_op (engine->editor);
 }
 
 static UndoRedo *
@@ -724,9 +730,11 @@ undo_redo_set_controller_const_apply (RigUndoJournal *journal, UndoRedo *undo_re
 {
   UndoRedoSetControllerConst *set_controller_const = &undo_redo->d.set_controller_const;
 
-  rig_controller_set_property_constant (set_controller_const->controller,
-                                        set_controller_const->property,
-                                        &set_controller_const->value1);
+  rig_engine_op_controller_set_const (journal->engine,
+                                      set_controller_const->controller,
+                                      set_controller_const->property,
+                                      &set_controller_const->value1);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (journal->engine,
                                  set_controller_const->property);
@@ -774,10 +782,12 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
 
   g_return_if_fail (add_remove->have_value == true);
 
-  rig_controller_insert_path_value (add_remove->controller,
-                                    add_remove->property,
-                                    add_remove->t,
-                                    &add_remove->value);
+  rig_engine_op_controller_path_add_node (engine,
+                                          add_remove->controller,
+                                          add_remove->property,
+                                          add_remove->t,
+                                          &add_remove->value);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -818,9 +828,11 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
       add_remove->have_value = true;
     }
 
-  rig_controller_remove_path_value (add_remove->controller,
-                                    add_remove->property,
-                                    add_remove->t);
+  rig_engine_op_controller_path_delete_node (engine,
+                                             add_remove->controller,
+                                             add_remove->property,
+                                             add_remove->t);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -863,10 +875,12 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
   UndoRedoPathModify *modify = &undo_redo->d.path_modify;
   RigEngine *engine = journal->engine;
 
-  rig_controller_insert_path_value (modify->controller,
-                                    modify->property,
-                                    modify->t,
-                                    &modify->value1);
+  rig_engine_op_controller_path_set_node (engine,
+                                          modify->controller,
+                                          modify->property,
+                                          modify->t,
+                                          &modify->value1);
+  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, modify->property);
 }
@@ -1088,7 +1102,7 @@ save_controller_properties (RigEngine *engine,
 
   rut_list_init (controller_properties);
 
-  for (l = engine->controllers; l; l = l->next)
+  for (l = engine->edit_mode_ui->controllers; l; l = l->next)
     {
       RigController *controller = l->data;
       UndoRedoControllerState *controller_state =
@@ -1371,8 +1385,9 @@ undo_redo_add_controller_apply (RigUndoJournal *journal,
   UndoRedoControllerState *controller_state;
   RigEngine *engine = journal->engine;
 
-  engine->controllers =
-    g_list_prepend (engine->controllers, add_controller->controller);
+  engine->edit_mode_ui->controllers =
+    g_list_prepend (engine->edit_mode_ui->controllers,
+                    add_controller->controller);
   rut_object_ref (add_controller->controller);
 
   rut_list_for_each (controller_state,
@@ -1439,6 +1454,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
     &undo_redo->d.add_remove_controller;
   UndoRedoControllerState *controller_state;
   RigEngine *engine = journal->engine;
+  RigUI *edit_mode_ui = engine->edit_mode_ui;
 
   if (!remove_controller->saved_controller_properties)
     {
@@ -1462,8 +1478,9 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
                                         prop_data->property);
     }
 
-  engine->controllers =
-    g_list_remove (engine->controllers, remove_controller->controller);
+  edit_mode_ui->controllers =
+    g_list_remove (edit_mode_ui->controllers,
+                   remove_controller->controller);
   rut_object_unref (remove_controller->controller);
 
   rig_controller_view_update_controller_list (engine->controller_view);
@@ -1472,7 +1489,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
       remove_controller->controller)
     {
       rig_controller_view_set_controller (engine->controller_view,
-                                          engine->controllers->data);
+                                          edit_mode_ui->controllers->data);
     }
 }
 
@@ -1630,18 +1647,26 @@ rig_undo_journal_flush_redos (RigUndoJournal *journal)
   rut_list_insert_list (journal->undo_ops.prev, &reversed_operations);
 }
 
-static bool
+static void
 rig_undo_journal_insert (RigUndoJournal *journal,
                          UndoRedo *undo_redo)
 {
+  RigEngine *engine = journal->engine;
   bool apply;
 
-  g_return_val_if_fail (undo_redo != NULL, FALSE);
-  g_return_val_if_fail (journal->inserting == FALSE, FALSE);
+  g_return_if_fail (undo_redo != NULL);
+  g_return_if_fail (journal->inserting == FALSE);
+
+  if (engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      undo_redo_free (undo_redo);
+      return;
+    }
 
   rig_undo_journal_flush_redos (journal);
 
-  journal->inserting = TRUE;
+  journal->inserting = true;
 
   apply = journal->apply_on_insert;
 
@@ -1656,17 +1681,25 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   if (apply)
     {
+#if 0
       UndoRedo *inverse;
-      RigPBSerializer *serializer =
-        rig_pb_serializer_new (journal->engine);
-      journal->serializer = serializer;
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
        * alway verifying our ability to invert operations correctly...
        */
+#endif
       undo_redo_apply (journal, undo_redo);
 
+      /* XXX: For now we have stopped exercising the inversion code
+       * for each undo-redo entry because it raises simulator
+       * synchronization difficulties (for operations that can't
+       * be inverted until they have been applied at least once we
+       * would need to wait until the simulator has responded to
+       * each operation before moving on)
+       */
+#warning "TODO: improve how we synchronize making scene edits with the simulator"
+#if 0
       /* XXX: Some operations can't be inverted until they have been
        * applied once. For example the UndoRedoPathAddRemove operation
        * will save the value of a path node when it is removed so the
@@ -1681,20 +1714,14 @@ rig_undo_journal_insert (RigUndoJournal *journal,
           undo_redo_apply (journal, undo_redo);
           undo_redo_free (inverse);
         }
-
-      rig_pb_serializer_destroy (serializer);
-      journal->serializer = NULL;
+#endif
     }
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
 
   dump_journal (journal, 0);
 
-  journal->inserting = FALSE;
-
-  rig_engine_sync_slaves (journal->engine);
-
-  return TRUE;
+  journal->inserting = false;
 }
 
 /* This api can be used to undo the last operation without freeing
@@ -1716,7 +1743,6 @@ rig_undo_journal_revert (RigUndoJournal *journal)
        */
 
       UndoRedo *inverse = undo_redo_invert (op);
-      RigPBSerializer *serializer;
 
       if (!inverse)
         {
@@ -1724,14 +1750,8 @@ rig_undo_journal_revert (RigUndoJournal *journal)
           return NULL;
         }
 
-      serializer = rig_pb_serializer_new (journal->engine);
-      journal->serializer = serializer;
-
       undo_redo_apply (journal, inverse);
       undo_redo_free (inverse);
-
-      rig_pb_serializer_destroy (serializer);
-      journal->serializer = NULL;
     }
 
   rut_list_remove (&op->list_node);
@@ -1739,9 +1759,15 @@ rig_undo_journal_revert (RigUndoJournal *journal)
   return op;
 }
 
-CoglBool
+bool
 rig_undo_journal_undo (RigUndoJournal *journal)
 {
+  if (journal->engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      return false;
+    }
+
   if (!rut_list_empty (&journal->undo_ops))
     {
       UndoRedo *op = rig_undo_journal_revert (journal);
@@ -1754,19 +1780,25 @@ rig_undo_journal_undo (RigUndoJournal *journal)
 
       dump_journal (journal, 0);
 
-      return TRUE;
+      return true;
     }
   else
-    return FALSE;
+    return false;
 }
 
-CoglBool
+bool
 rig_undo_journal_redo (RigUndoJournal *journal)
 {
   UndoRedo *op;
 
+  if (journal->engine->play_mode)
+    {
+      g_warning ("Ignoring attempt to edit UI while in play mode");
+      return false;
+    }
+
   if (rut_list_empty (&journal->redo_ops))
-    return FALSE;
+    return false;
 
   op = rut_container_of (journal->redo_ops.prev, op, list_node);
 
@@ -1778,7 +1810,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 
   dump_journal (journal, 0);
 
-  return TRUE;
+  return true;
 }
 
 RigUndoJournal *

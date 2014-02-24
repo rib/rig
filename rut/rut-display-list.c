@@ -176,7 +176,7 @@ _rut_test_list_splice (void)
  *
  * A display list is currently represented as a linked list of GList nodes
  * although the api we want is a cross between the g_list_ api and the
- * g_queue_ api so we have a wrapper api instead to make display list
+ * rut_queue_ api so we have a wrapper api instead to make display list
  * manipulation less confusing and error prone.
  *
  * Two common manipulations to do on display lists are "splicing" and

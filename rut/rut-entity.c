@@ -588,7 +588,7 @@ rut_entity_copy (RutEntity *entity)
   RutGraphableProps *graph_props =
     rut_object_get_properties (entity, RUT_TRAIT_ID_GRAPHABLE);
   int i;
-  GList *l;
+  RutQueueItem *item;
 
   copy->label = NULL;
 
@@ -612,9 +612,9 @@ rut_entity_copy (RutEntity *entity)
       rut_object_unref (component_copy);
     }
 
-  for (l = graph_props->children.head; l; l = l->next)
+  rut_list_for_each (item, &graph_props->children.items, list_node)
     {
-      RutObject *child = l->data;
+      RutObject *child = item->data;
       RutObject *child_copy;
 
       if (rut_object_get_type (child) != &rut_entity_type)

@@ -24,6 +24,7 @@
 #include "rut-type.h"
 #include "rut-object.h"
 #include "rut-types.h"
+#include "rut-queue.h"
 
 typedef struct _RutGraphableVTable
 {
@@ -38,7 +39,7 @@ typedef struct _RutGraphableVTable
 typedef struct _RutGraphableProps
 {
   RutObject *parent;
-  GQueue children;
+  RutQueue children;
 } RutGraphableProps;
 
 #if 0

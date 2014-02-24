@@ -40,6 +40,8 @@ EXTRA_DIST += protobuf-c-rpc/README
 librig_la_SOURCES = \
 	$(rig_protobuf_c_rpc_sources) \
 	rig-engine.c \
+	rig-engine-op.h \
+	rig-engine-op.c \
 	rig-node.c \
 	rig-node.h \
 	rig-path.c \
@@ -73,11 +75,16 @@ librig_la_SOURCES = \
 	rig-slave-master.c \
 	rig.pb-c.c \
 	rig-simulator.h \
+	rig-simulator.c \
 	rig-frontend.c \
-	rig-frontend.h
+	rig-frontend.h \
+	rig-ui.h \
+	rig-ui.c
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
+	rig-editor.h \
+	rig-editor.c \
 	rig-undo-journal.h \
 	rig-undo-journal.c \
 	rig-rotation-tool.h \
@@ -108,7 +115,7 @@ common_ldadd = \
 librig_la_LIBS = $(common_ldadd)
 
 rig_SOURCES = \
-	rig-editor.c
+	rig-editor-main.c
 rig_LDADD = $(common_ldadd)
 
 rig_slave_SOURCES = \
@@ -121,5 +128,5 @@ rig_device_LDADD = $(common_ldadd)
 
 #TODO: Avoid linking with Cogl and SDL in the simulator...
 rig_simulator_SOURCES = \
-	rig-simulator.c
+	rig-simulator-main.c
 rig_simulator_LDADD = $(common_ldadd)

@@ -1,7 +1,7 @@
 /*
- * Rut
+ * Rig
  *
- * Copyright (C) 2013 Intel Corporation.
+ * Copyright (C) 2014  Intel Corporation.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -16,43 +16,55 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
- *
  */
 
-#ifndef __RIG_SLAVE_MASTER__
-#define __RIG_SLAVE_MASTER__
+#ifndef _RIG_UI_H_
+#define _RIG_UI_H_
 
 #include <glib.h>
 
-#include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
+#include <rut.h>
 
-#include "rig-slave-address.h"
-#include "rig-rpc-network.h"
+typedef struct _RigUI RigUI;
+
+#include "rut-object.h"
 #include "rig-engine.h"
 
-typedef struct _RigSlaveMaster
+/* This structure encapsulates all the dynamic state for a UI
+ *
+ * When running the editor we distinguish the edit mode UI from
+ * the play mode UI so that all UI logic involved in play mode
+ * does not affect the state of the UI that gets saved.
+ */
+struct _RigUI
 {
   RutObjectBase _base;
 
   RigEngine *engine;
 
-  RigSlaveAddress *slave_address;
-  RigRPCClient *rpc_client;
-  bool connected;
-  GHashTable *registry;
+  GList *assets;
 
-  GList *required_assets;
+  RutObject *scene;
+  GList *controllers;
 
-} RigSlaveMaster;
+  RutEntity *light;
+  RutEntity *play_camera;
+  RutCamera *play_camera_component;
+
+  GList *suspended_controllers;
+  bool suspended;
+};
+
+RigUI *
+rig_ui_new (RigEngine *engine);
 
 void
-rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address);
+rig_ui_prepare (RigUI *ui);
 
 void
-rig_slave_master_reload_ui (RigSlaveMaster *master);
+rig_ui_suspend (RigUI *ui);
 
 void
-rig_slave_master_forward_pb_ui_edit (RigSlaveMaster *master,
-                                     Rig__UIEdit *pb_edit);
+rig_ui_resume (RigUI *ui);
 
-#endif /* __RIG_SLAVE_MASTER__ */
+#endif /* _RIG_UI_H_ */

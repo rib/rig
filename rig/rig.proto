@@ -70,6 +70,8 @@ message Mesh
 message Asset
 {
   optional sint64 id=1;
+  optional sint64 edit_id=7;
+
   optional string path=2;
 
   optional uint32 type=3;
@@ -182,8 +184,10 @@ message Entity
   message Component
     {
       enum Type { LIGHT=1; MATERIAL=2; SHAPE=3; DIAMOND=4; MODEL=5;
-          TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10; }
+          TEXT=6; CAMERA=7; POINTALISM_GRID=8; NINE_SLICE=9; HAIR=10;
+          BUTTON_INPUT=11; }
 
+      //Deprecated (just rely on boxed properties)
       message Light
         {
           optional Color ambient=1;
@@ -203,6 +207,7 @@ message Entity
           optional AlphaMask alpha_mask=7;
         }
 
+      //Deprecated (just rely on boxed properties)
       message Shape
         {
           optional bool shaped=2;
@@ -260,6 +265,8 @@ message Entity
         }
 
       optional sint64 id=1;
+      optional sint64 edit_id=12;
+
       optional Type type=2;
       optional Light light=3;
 
@@ -278,6 +285,8 @@ message Entity
     }
 
   optional sint64 id=1;
+  optional sint64 edit_id=9;
+
   optional sint64 parent_id=2;
   optional string label=3;
   optional Vec3 position=4;
@@ -336,8 +345,10 @@ message Controller
       optional string c_expression=9;
     }
 
-  optional string name=3;
   optional sint64 id=1;
+  optional sint64 edit_id=5;
+
+  optional string name=3;
   repeated Property properties=2;
 
   //introspectable properties...
@@ -346,7 +357,7 @@ message Controller
 
 message UI
 {
-  enum Mode { FULL=1; PACKED=2; }
+  enum Mode { EDIT=1; PLAY=2; }
   optional Mode mode=5;
 
   optional Device device=1;
@@ -354,15 +365,6 @@ message UI
   repeated Asset assets=2;
   repeated Entity entities=3;
   repeated Controller controllers=4;
-}
-
-message LoadResult
-{
-}
-
-service Slave {
-  rpc Load (UI) returns (LoadResult);
-  rpc Test (Query) returns (TestResult);
 }
 
 message Event
@@ -393,26 +395,12 @@ message Event
   optional Key key=5;
 }
 
-message FrameSetup
-{
-  enum Mode { EDITOR=1; DEVICE=2; }
-
-  optional uint32 width=1;
-  optional uint32 height=2;
-
-  //Input events relevant to this new frame...
-  repeated Event events=3;
-
-  repeated PropertyChange changes=4;
-
-  optional uint64 frame_id=5;
-
-  //Predicted presentation time...
-  optional uint64 for=6;
-}
-
 message Operation
 {
+  //See RigEngineOpType
+  required uint32 type=1;
+  optional uint32 sequence=2;
+
   //Change an object property, not associated with a controller
   message SetProperty
   {
@@ -420,7 +408,7 @@ message Operation
     required int32 property_id=2;
     required PropertyValue value=3;
   }
-  optional SetProperty set_property=1;
+  optional SetProperty set_property=3;
 
   //Add a new entity to the scene
   message AddEntity
@@ -428,14 +416,14 @@ message Operation
     required sint64 parent_entity_id=1;
     required Entity entity=2;
   }
-  optional AddEntity add_entity=2;
+  optional AddEntity add_entity=4;
 
   //Remove an entity from the scene
   message DeleteEntity
   {
     required sint64 entity_id=1;
   }
-  optional DeleteEntity delete_entity=3;
+  optional DeleteEntity delete_entity=5;
 
   //Add a component to an entity
   message AddComponent
@@ -443,25 +431,25 @@ message Operation
     required sint64 parent_entity_id=1;
     required Entity.Component component=2;
   }
-  optional AddComponent add_component=4;
+  optional AddComponent add_component=6;
 
   message DeleteComponent
   {
     required sint64 component_id=1;
   }
-  optional DeleteComponent delete_component=5;
+  optional DeleteComponent delete_component=7;
 
   message AddController
   {
     required Controller controller=1;
   }
-  optional AddController add_controller=6;
+  optional AddController add_controller=8;
 
   message DeleteController
   {
     required sint64 controller_id=1;
   }
-  optional DeleteController delete_controller=7;
+  optional DeleteController delete_controller=9;
 
   //Change the constant associated with a controller property
   message ControllerSetConst
@@ -471,7 +459,7 @@ message Operation
     required int32 property_id=3;
     required PropertyValue value=4;
   }
-  optional ControllerSetConst controller_set_const=8;
+  optional ControllerSetConst controller_set_const=10;
 
   //Add a new controller property path node / key frame
   message ControllerPathAddNode
@@ -482,7 +470,7 @@ message Operation
     required float t=4;
     required PropertyValue value=5;
   }
-  optional ControllerPathAddNode controller_path_add_node=9;
+  optional ControllerPathAddNode controller_path_add_node=11;
 
   //Remove a node / key frame from a controller property path
   message ControllerPathDeleteNode
@@ -492,7 +480,7 @@ message Operation
     required int32 property_id=3;
     required float t=4;
   }
-  optional ControllerPathDeleteNode controller_path_delete_node=10;
+  optional ControllerPathDeleteNode controller_path_delete_node=12;
 
   //Change the value of a controller property path node / key frame
   message ControllerPathSetNode
@@ -503,7 +491,7 @@ message Operation
     required float t=4;
     required PropertyValue value=5;
   }
-  optional ControllerPathSetNode controller_path_set_node=11;
+  optional ControllerPathSetNode controller_path_set_node=13;
 
   //Associate a property with a controller
   message ControllerAddProperty
@@ -512,7 +500,7 @@ message Operation
     required sint64 object_id=2;
     required int32 property_id=3;
   }
-  optional ControllerAddProperty controller_add_property=12;
+  optional ControllerAddProperty controller_add_property=14;
 
   //Disassociate a property from a controller
   message ControllerRemoveProperty
@@ -521,7 +509,7 @@ message Operation
     required sint64 object_id=2;
     required int32 property_id=3;
   }
-  optional ControllerRemoveProperty controller_remove_property=13;
+  optional ControllerRemoveProperty controller_remove_property=15;
 
   //Change the method of controlling a property
   message ControllerPropertySetMethod
@@ -534,7 +522,68 @@ message Operation
 
     required Method method=4;
   }
-  optional ControllerPropertySetMethod controller_property_set_method=14;
+  optional ControllerPropertySetMethod controller_property_set_method=16;
+
+  //message SetPlayMode
+  //{
+  //  required bool play_mode_enabled=1;
+  //}
+  //optional SetPlayMode set_play_mode=17;
+
+  //XXX: next id = 17
+}
+
+message UIEdit
+{
+  repeated Operation ops=1;
+}
+
+message ObjectRegistration
+{
+  required sint64 temp_id=1;
+  required sint64 real_id=2;
+}
+
+message FrameSetup
+{
+  repeated ObjectRegistration object_registrations=12;
+
+  //Since in the editor the main edit area can be offset within a larger
+  //window we need to inform the simulator of the transforms involved so
+  //it can correctly handle input events without us needing to transform
+  //all of the input coordinates.
+  optional uint32 view_x=1;
+  optional uint32 view_y=2;
+  optional uint32 view_width=3;
+  optional uint32 view_height=4;
+
+  //Input events relevant to this new frame...
+  repeated Event events=5;
+
+  optional uint64 frame_id=7;
+
+  //Predicted presentation time...
+  optional uint64 for=8;
+
+  optional bool play_mode=9;
+
+  optional UIEdit edit=10; //operations for the edit-mode ui
+  optional UIEdit play_edit=11; //operations for the play-mode ui
+}
+
+message LoadResult
+{
+}
+
+message UIEditResult
+{
+  optional bool status=1;
+}
+
+service Slave {
+  rpc Edit (UIEdit) returns (UIEditResult);
+  rpc Load (UI) returns (LoadResult);
+  rpc Test (Query) returns (TestResult);
 }
 
 
@@ -552,6 +601,14 @@ message PrivateID
   optional sint64 object_id=2;
 }
 
+message Sync
+{
+}
+
+message SyncAck
+{
+}
+
 // The simulator service as used from the renderer
 service Simulator {
 
@@ -564,6 +621,12 @@ service Simulator {
   //TODO: Add throttling mechanism
   rpc RunFrame (FrameSetup) returns (RunFrameAck);
 
+  //XXX: The ACK will only be sent after all outstanding frames
+  //have been processed. This can be used by the editor to
+  //ensure the simulator is idle before directly modifying the
+  //frontend UI state.
+  rpc Synchronize (Sync) returns (SyncAck);
+
   rpc Test (Query) returns (TestResult);
 }
 
@@ -574,10 +637,47 @@ message PropertyChange
   optional PropertyValue value=3;
 }
 
+message SimulatorAction
+{
+  //See RigSimulatorActionType
+  required uint32 type=1;
+
+  //message SetPlayMode
+  //{
+  //  required bool enabled=1;
+  //}
+  //optional SetPlayMode set_play_mode=2;
+
+  message SelectObject
+  {
+    required sint64 object_id=1;
+    //See RutSelectAction
+    required uint32 action=2;
+  }
+  optional SelectObject select_object=2;
+
+  message ReportEditFailure
+  {
+  }
+  optional ReportEditFailure report_edit_failure=3;
+}
+
 message UIDiff
 {
   optional uint64 frame_id=1;
   repeated PropertyChange property_changes=2;
+
+  //batched requests from the simulator to the frontend
+  repeated SimulatorAction actions=3;
+
+  repeated sint64 temp_ids=6;
+
+  //UI edits made by application logic
+  optional UIEdit edit=4;
+
+  //Set to true if something is animated and we need
+  //to run another frame
+  optional bool queue_frame=5;
 }
 
 message UpdateUIAck

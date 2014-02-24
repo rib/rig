@@ -56,6 +56,18 @@ rut_introspectable_copy_properties (RutPropertyContext *property_ctx,
                                     RutObject *src,
                                     RutObject *dst);
 
+#if 0
+static inline int
+rut_introspectable_get_property_id (RutObject *object,
+                                    RutProperty *property)
+{
+  RutIntrospectableProps *introspectable =
+    rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
+
+  return property - introspectable->first_property;
+}
+#endif
+
 static inline RutProperty *
 rut_introspectable_get_property (RutObject *object,
                                  int id)

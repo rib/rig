@@ -233,12 +233,29 @@ rut_shell_dispatch_input_events (RutShell *shell);
 RutInputEventStatus
 rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event);
 
-RutList *
-rut_shell_get_input_queue (RutShell *shell,
-                           int *length);
+typedef struct _RutInputQueue
+{
+  RutShell *shell;
+  RutList events;
+  int n_events;
+} RutInputQueue;
+
+RutInputQueue *
+rut_input_queue_new (RutShell *shell);
 
 void
-rut_shell_clear_input_queue (RutShell *shell);
+rut_input_queue_append (RutInputQueue *queue,
+                        RutInputEvent *event);
+
+void
+rut_input_queue_remove (RutInputQueue *queue,
+                        RutInputEvent *event);
+
+void
+rut_input_queue_clear (RutInputQueue *queue);
+
+RutInputQueue *
+rut_shell_get_input_queue (RutShell *shell);
 
 void
 rut_shell_run_pre_paint_callbacks (RutShell *shell);
@@ -250,6 +267,9 @@ rut_shell_check_timelines (RutShell *shell);
 void
 rut_shell_handle_stream_event (RutShell *shell,
                                RutStreamEvent *event);
+
+void
+rut_shell_run_start_paint_callbacks (RutShell *shell);
 
 void
 rut_shell_run_post_paint_callbacks (RutShell *shell);
@@ -339,6 +359,19 @@ rut_shell_ungrab_key_focus (RutShell *shell);
 
 void
 rut_shell_queue_redraw (RutShell *shell);
+
+void
+rut_shell_set_queue_redraw_callback (RutShell *shell,
+                                     void (*callback) (RutShell *shell,
+                                                       void *user_data),
+                                     void *user_data);
+
+/* You can hook into rut_shell_queue_redraw() via
+ * rut_shell_set_queue_redraw_callback() but then it if you really
+ * want to queue a redraw with the platform mainloop it is your
+ * responsibility to call rut_shell_queue_redraw_real() */
+void
+rut_shell_queue_redraw_real (RutShell *shell);
 
 RutCamera *
 rut_input_event_get_camera (RutInputEvent *event);
@@ -480,8 +513,14 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
                                   void *user_data);
 
 RutClosure *
+rut_shell_add_start_paint_callback (RutShell *shell,
+                                    RutShellPaintCallback callback,
+                                    void *user_data,
+                                    RutClosureDestroyCallback destroy);
+
+RutClosure *
 rut_shell_add_post_paint_callback (RutShell *shell,
-                                   RutPrePaintCallback callback,
+                                   RutShellPaintCallback callback,
                                    void *user_data,
                                    RutClosureDestroyCallback destroy);
 

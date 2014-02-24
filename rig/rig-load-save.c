@@ -86,7 +86,9 @@ rig_save (RigEngine *engine, const char *path)
 
   serializer = rig_pb_serializer_new (engine);
 
-  ui = rig_pb_serialize_ui (serializer);
+  ui = rig_pb_serialize_ui (serializer,
+                            false, /* edit mode */
+                            engine->edit_mode_ui);
 
   rig__ui__pack_to_buffer (ui, &buffered_file.base );
 
@@ -109,7 +111,7 @@ stack_alloc (void *allocator_data, size_t size)
   return rut_memory_stack_alloc (allocator_data, size);
 }
 
-void
+RigUI *
 rig_load (RigEngine *engine, const char *file)
 {
   struct stat sb;
@@ -118,12 +120,13 @@ rig_load (RigEngine *engine, const char *file)
   size_t len;
   GError *error = NULL;
   gboolean needs_munmap = FALSE;
-  RigPBUnSerializer unserializer;
-  Rig__UI *ui;
+  RigPBUnSerializer *unserializer;
+  Rig__UI *pb_ui;
+  RigUI *ui;
 
   /* We use a special allocator while unpacking protocol buffers
-   * that lets us use the serialization_stack. This means much
-   * less mucking about with the heap since the serialization_stack
+   * that lets us use the frame_stack. This means much
+   * less mucking about with the heap since the frame_stack
    * is a persistant, growable stack which we can just rewind
    * very cheaply before unpacking */
   ProtobufCAllocator protobuf_c_allocator =
@@ -132,14 +135,17 @@ rig_load (RigEngine *engine, const char *file)
       ignore_free,
       stack_alloc, /* tmp_alloc */
       8192, /* max_alloca */
-      engine->serialization_stack /* allocator_data */
+      engine->frame_stack /* allocator_data */
     };
+
+  /* Simulators shouldn't be trying to load UIs directly */
+  g_return_if_fail (engine->frontend);
 
   if (g_str_has_suffix (file, ".xml"))
     {
       g_warning ("Loading xml UI descriptions in Rig is no longer "
                  "supported, only .rig files can be loaded");
-      return;
+      return NULL;
     }
 
   fd = open (file, O_CLOEXEC);
@@ -156,22 +162,23 @@ rig_load (RigEngine *engine, const char *file)
                                  &error))
     {
       g_warning ("Failed to load ui description: %s", error->message);
-      return;
+      return NULL;
     }
 
-  rig_pb_unserializer_init (&unserializer, engine,
-                            true); /* with id-map */
+  unserializer = rig_pb_unserializer_new (engine);
 
-  ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
+  pb_ui = rig__ui__unpack (&protobuf_c_allocator, len, contents);
 
-  rig_pb_unserialize_ui (&unserializer, ui, false);
+  ui = rig_pb_unserialize_ui (unserializer, pb_ui);
 
-  rig__ui__free_unpacked (ui, &protobuf_c_allocator);
+  rig__ui__free_unpacked (pb_ui, &protobuf_c_allocator);
 
   if (needs_munmap)
     munmap (contents, len);
   else
     g_free (contents);
 
-  rig_pb_unserializer_destroy (&unserializer);
+  rig_pb_unserializer_destroy (unserializer);
+
+  return ui;
 }

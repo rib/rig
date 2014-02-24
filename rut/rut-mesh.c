@@ -37,12 +37,7 @@ RutType rut_buffer_type;
 void
 _rut_buffer_init_type (void)
 {
-  RutType *type = &rut_buffer_type;
-#define TYPE RutBuffer
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_buffer_free);
-
-#undef TYPE
+  rut_type_init (&rut_buffer_type, "RutBuffer", _rut_buffer_free);
 }
 
 RutBuffer *
@@ -72,12 +67,7 @@ RutType rut_attribute_type;
 void
 _rut_attribute_init_type (void)
 {
-  RutType *type = &rut_attribute_type;
-#define TYPE RutAttribute
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_attribute_free);
-
-#undef TYPE
+  rut_type_init (&rut_attribute_type, "RutAttribute", _rut_attribute_free);
 }
 
 RutAttribute *
@@ -108,6 +98,7 @@ rut_attribute_set_normalized (RutAttribute *attribute,
 {
   attribute->normalized = normalized;
 }
+
 static void
 _rut_mesh_free (RutObject *object)
 {
@@ -126,12 +117,7 @@ RutType rut_mesh_type;
 void
 _rut_mesh_init_type (void)
 {
-  RutType *type = &rut_mesh_type;
-#define TYPE RutMesh
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_mesh_free);
-
-#undef TYPE
+  rut_type_init (&rut_mesh_type, "RutMesh", _rut_mesh_free);
 }
 
 RutMesh *

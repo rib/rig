@@ -32,7 +32,10 @@ void
 _rut_camera_init_type (void);
 
 RutCamera *
-rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer);
+rut_camera_new (RutContext *ctx,
+                float width,
+                float height,
+                CoglFramebuffer *framebuffer); /* may be NULL */
 
 void
 rut_camera_set_background_color4f (RutCamera *camera,

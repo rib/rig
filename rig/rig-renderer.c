@@ -1335,7 +1335,7 @@ FOUND:
     rut_graphable_get_transform (entity, &model_transform);
 
     get_light_modelviewprojection (&model_transform,
-                                   engine->light,
+                                   engine->current_ui->light,
                                    &light_projection,
                                    &light_shadow_matrix);
 
@@ -1712,9 +1712,11 @@ rig_renderer_flush_journal (RigRenderer *renderer,
       else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
                 paint_ctx->pass == RIG_PASS_COLOR_BLENDED))
         {
+          RigUI *ui = paint_ctx->engine->current_ui;
+          RutLight *light =
+            rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_LIGHT);
           int location;
-          RutLight *light = rut_entity_get_component (paint_ctx->engine->light,
-                                                      RUT_COMPONENT_TYPE_LIGHT);
+
           /* FIXME: only update the lighting uniforms when the light has
            * actually moved! */
           rut_light_set_uniforms (light, pipeline);
@@ -1952,8 +1954,10 @@ entitygraph_pre_paint_cb (RutObject *object,
       if (!geometry)
         {
           if (!paint_ctx->engine->play_mode &&
-              object == paint_ctx->engine->light)
-            draw_entity_camera_frustum (paint_ctx->engine, object, fb);
+              object == paint_ctx->engine->current_ui->light)
+            {
+              draw_entity_camera_frustum (paint_ctx->engine, object, fb);
+            }
           return RUT_TRAVERSE_VISIT_CONTINUE;
         }
 
@@ -2054,7 +2058,7 @@ rig_paint_camera_entity (RutEntity *view_camera,
       cogl_object_unref (pipeline);
     }
 
-  rut_graphable_traverse (engine->scene,
+  rut_graphable_traverse (engine->current_ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           entitygraph_pre_paint_cb,
                           entitygraph_post_paint_cb,

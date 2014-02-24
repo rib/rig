@@ -29,6 +29,7 @@ typedef struct _RigCameraView RigCameraView;
 #include "rig-engine.h"
 #include "rig-selection-tool.h"
 #include "rig-rotation-tool.h"
+#include "rig-ui.h"
 
 typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
 typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
@@ -40,6 +41,12 @@ typedef struct
   RutEntity *screen_pos; /* position screen in edit view */
 } RigCameraViewDeviceTransforms;
 
+typedef enum _RigCameraViewMode
+{
+  RIG_CAMERA_VIEW_MODE_PLAY = 1,
+  RIG_CAMERA_VIEW_MODE_EDIT,
+} RigCameraViewMode;
+
 struct _RigCameraView
 {
   RutObjectBase _base;
@@ -47,6 +54,15 @@ struct _RigCameraView
   RigEngine *engine;
 
   RutContext *context;
+
+  RigUI *ui;
+
+  bool play_mode;
+
+  /* picking ray */
+  CoglPipeline *picking_ray_color;
+  CoglPrimitive *picking_ray;
+  bool debug_pick_ray;
 
   RutMatrixStack *matrix_stack;
 
@@ -56,8 +72,6 @@ struct _RigCameraView
   float width, height;
 
   CoglPipeline *bg_pipeline;
-
-  RutGraph *scene;
 
   float origin[3];
   //float saved_origin[3];
@@ -80,6 +94,19 @@ struct _RigCameraView
    * stolen from the play camera entity so that it can be transformed
    * with the device transforms */
   RutEntity *play_dummy_entity;
+
+#ifdef RIG_EDITOR_ENABLED
+  RutEntity *play_camera_handle;
+#endif
+
+  RutEntity *current_camera;
+  RutCamera *current_camera_component;
+
+  RutDepthOfField *dof;
+  bool enable_dof;
+
+  RutArcball arcball;
+  CoglQuaternion saved_rotation;
 
   RutEntity *view_camera;
   RutCamera *view_camera_component;
@@ -104,11 +131,11 @@ RigCameraView *
 rig_camera_view_new (RigEngine *engine);
 
 void
-rig_camera_view_set_scene (RigCameraView *view,
-                           RutGraph *scene);
+rig_camera_view_set_ui (RigCameraView *view,
+                        RigUI *ui);
 
 void
-rig_camera_view_set_play_camera (RigCameraView *view,
-                                 RutEntity *play_camera);
+rig_camera_view_set_play_mode_enabled (RigCameraView *view,
+                                       bool enabled);
 
 #endif /* _RIG_CAMERA_VIEW_H_ */

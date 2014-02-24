@@ -20,49 +20,29 @@
 
 #include <config.h>
 
+#include <math.h>
+
 #include "rig.pb-c.h"
 #include "rig-pb.h"
 #include "rig-engine.h"
 
 #include <rut.h>
 
-struct _RigPBSerializer
+const char *
+rig_pb_strdup (RigPBSerializer *serializer,
+               const char *string)
 {
-  RigEngine *engine;
-
-  RigPBAssetFilter asset_filter;
-  void *asset_filter_data;
-
-  RigPBSerializerObjecRegisterCallback object_register_callback;
-  void *object_register_data;
-
-  RigPBSerializerObjecToIDCallback object_to_id_callback;
-  void *object_to_id_data;
-
-  GList *required_assets;
-
-  int n_pb_entities;
-  GList *pb_entities;
-
-  int n_pb_components;
-  GList *pb_components;
-
-  int n_pb_properties;
-  GList *pb_properties;
-
-  int n_properties;
-  void **properties_out;
-
-  int next_id;
-  GHashTable *id_map;
-};
+  int len = strlen (string);
+  void *mem = rut_memory_stack_memalign (serializer->stack, len + 1, 1);
+  memcpy (mem, string, len + 1);
+  return mem;
+}
 
 static Rig__Color *
-pb_color_new (RigEngine *engine, const CoglColor *color)
+pb_color_new (RigPBSerializer *serializer, const CoglColor *color)
 {
-  Rig__Color *pb_color = rig_pb_new (engine, Rig__Color, rig__color__init);
-  pb_color->hex = rut_memory_stack_alloc (engine->serialization_stack,
-                                          10); /* #rrggbbaa */
+  Rig__Color *pb_color = rig_pb_new (serializer, Rig__Color, rig__color__init);
+  pb_color->hex = rut_memory_stack_alloc (serializer->stack, 10); /* #rrggbbaa */
   snprintf (pb_color->hex, 10, "#%02x%02x%02x%02x",
             cogl_color_get_red_byte (color),
             cogl_color_get_green_byte (color),
@@ -73,10 +53,10 @@ pb_color_new (RigEngine *engine, const CoglColor *color)
 }
 
 static Rig__Rotation *
-pb_rotation_new (RigEngine *engine, const CoglQuaternion *quaternion)
+pb_rotation_new (RigPBSerializer *serializer, const CoglQuaternion *quaternion)
 {
   Rig__Rotation *pb_rotation =
-    rig_pb_new (engine, Rig__Rotation, rig__rotation__init);
+    rig_pb_new (serializer, Rig__Rotation, rig__rotation__init);
   float angle = cogl_quaternion_get_rotation_angle (quaternion);
   float axis[3];
 
@@ -91,12 +71,12 @@ pb_rotation_new (RigEngine *engine, const CoglQuaternion *quaternion)
 }
 
 static Rig__Vec3 *
-pb_vec3_new (RigEngine *engine,
+pb_vec3_new (RigPBSerializer *serializer,
              float x,
              float y,
              float z)
 {
-  Rig__Vec3 *pb_vec3 = rig_pb_new (engine, Rig__Vec3, rig__vec3__init);
+  Rig__Vec3 *pb_vec3 = rig_pb_new (serializer, Rig__Vec3, rig__vec3__init);
 
   pb_vec3->x = x;
   pb_vec3->y = y;
@@ -106,13 +86,13 @@ pb_vec3_new (RigEngine *engine,
 }
 
 static Rig__Vec4 *
-pb_vec4_new (RigEngine *engine,
+pb_vec4_new (RigPBSerializer *serializer,
              float x,
              float y,
              float z,
              float w)
 {
-  Rig__Vec4 *pb_vec4 = rig_pb_new (engine, Rig__Vec4, rig__vec4__init);
+  Rig__Vec4 *pb_vec4 = rig_pb_new (serializer, Rig__Vec4, rig__vec4__init);
 
   pb_vec4->x = x;
   pb_vec4->y = y;
@@ -123,16 +103,16 @@ pb_vec4_new (RigEngine *engine,
 }
 
 static Rig__Path *
-pb_path_new (RigEngine *engine, RigPath *path)
+pb_path_new (RigPBSerializer *serializer, RigPath *path)
 {
-  Rig__Path *pb_path = rig_pb_new (engine, Rig__Path, rig__path__init);
+  Rig__Path *pb_path = rig_pb_new (serializer, Rig__Path, rig__path__init);
   RigNode *node;
   int i;
 
   if (!path->length)
     return pb_path;
 
-  pb_path->nodes = rut_memory_stack_memalign (engine->serialization_stack,
+  pb_path->nodes = rut_memory_stack_memalign (serializer->stack,
                                               sizeof (void *) * path->length,
                                               RUT_UTIL_ALIGNOF (void *));
   pb_path->n_nodes = path->length;
@@ -141,14 +121,14 @@ pb_path_new (RigEngine *engine, RigPath *path)
   rut_list_for_each (node, &path->nodes, list_node)
     {
       Rig__Node *pb_node =
-        rig_pb_new (engine, Rig__Node, rig__node__init);
+        rig_pb_new (serializer, Rig__Node, rig__node__init);
 
       pb_path->nodes[i] = pb_node;
 
       pb_node->has_t = TRUE;
       pb_node->t = node->t;
 
-      pb_node->value = rig_pb_new (engine,
+      pb_node->value = rig_pb_new (serializer,
                                    Rig__PropertyValue,
                                    rig__property_value__init);
 
@@ -169,7 +149,7 @@ pb_path_new (RigEngine *engine, RigPath *path)
         case RUT_PROPERTY_TYPE_VEC3:
             {
               float *vec3 = node->boxed.d.vec3_val;
-              pb_node->value->vec3_value = pb_vec3_new (engine,
+              pb_node->value->vec3_value = pb_vec3_new (serializer,
                                                         vec3[0],
                                                         vec3[1],
                                                         vec3[2]);
@@ -178,7 +158,7 @@ pb_path_new (RigEngine *engine, RigPath *path)
         case RUT_PROPERTY_TYPE_VEC4:
             {
               float *vec4 = node->boxed.d.vec4_val;
-              pb_node->value->vec4_value = pb_vec4_new (engine,
+              pb_node->value->vec4_value = pb_vec4_new (serializer,
                                                         vec4[0],
                                                         vec4[1],
                                                         vec4[2],
@@ -188,13 +168,13 @@ pb_path_new (RigEngine *engine, RigPath *path)
         case RUT_PROPERTY_TYPE_COLOR:
             {
               pb_node->value->color_value =
-                pb_color_new (engine, &node->boxed.d.color_val);
+                pb_color_new (serializer, &node->boxed.d.color_val);
               break;
             }
         case RUT_PROPERTY_TYPE_QUATERNION:
             {
               pb_node->value->quaternion_value =
-                pb_rotation_new (engine, &node->boxed.d.quaternion_val);
+                pb_rotation_new (serializer, &node->boxed.d.quaternion_val);
               break;
             }
         case RUT_PROPERTY_TYPE_INTEGER:
@@ -229,52 +209,11 @@ pb_path_new (RigEngine *engine, RigPath *path)
   return pb_path;
 }
 
-static uint64_t
-serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
-{
-  uint64_t id;
-
-  if (rut_object_get_type (object) == &rut_asset_type)
-    {
-      bool need_asset = true;
-
-      if (serializer->asset_filter)
-        {
-          need_asset = serializer->asset_filter (object,
-                                                 serializer->asset_filter_data);
-        }
-
-      if (need_asset)
-        {
-          serializer->required_assets =
-            g_list_prepend (serializer->required_assets, object);
-        }
-    }
-
-  if (serializer->object_to_id_callback)
-    {
-      id = serializer->object_to_id_callback (object,
-                                              serializer->object_to_id_data);
-    }
-  else
-    {
-      uint64_t *id_ptr = g_hash_table_lookup (serializer->id_map, object);
-      g_return_val_if_fail (id_ptr, 0);
-      id = *id_ptr;
-    }
-
-  g_warn_if_fail (id);
-
-  return id;
-}
-
 void
 rig_pb_property_value_init (RigPBSerializer *serializer,
                             Rig__PropertyValue *pb_value,
                             const RutBoxed *value)
 {
-  RigEngine *engine = serializer->engine;
-
   switch (value->type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
@@ -308,18 +247,18 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
 
     case RUT_PROPERTY_TYPE_QUATERNION:
       pb_value->quaternion_value =
-        pb_rotation_new (engine, &value->d.quaternion_val);
+        pb_rotation_new (serializer, &value->d.quaternion_val);
       break;
 
     case RUT_PROPERTY_TYPE_VEC3:
-      pb_value->vec3_value = pb_vec3_new (engine,
+      pb_value->vec3_value = pb_vec3_new (serializer,
                                           value->d.vec3_val[0],
                                           value->d.vec3_val[1],
                                           value->d.vec3_val[2]);
       break;
 
     case RUT_PROPERTY_TYPE_VEC4:
-      pb_value->vec4_value = pb_vec4_new (engine,
+      pb_value->vec4_value = pb_vec4_new (serializer,
                                           value->d.vec4_val[0],
                                           value->d.vec4_val[1],
                                           value->d.vec4_val[2],
@@ -327,7 +266,7 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
       break;
 
     case RUT_PROPERTY_TYPE_COLOR:
-      pb_value->color_value = pb_color_new (engine, &value->d.color_val);
+      pb_value->color_value = pb_color_new (serializer, &value->d.color_val);
       break;
 
     case RUT_PROPERTY_TYPE_ENUM:
@@ -342,7 +281,8 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
 
       if (value->d.asset_val)
         {
-          uint64_t id = serializer_lookup_object_id (serializer, value->d.asset_val);
+          uint64_t id =
+            rig_pb_serializer_lookup_object_id (serializer, value->d.asset_val);
 
           g_warn_if_fail (id != 0);
 
@@ -358,7 +298,8 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
 
       if (value->d.object_val)
         {
-          uint64_t id = serializer_lookup_object_id (serializer, value->d.object_val);
+          uint64_t id =
+            rig_pb_serializer_lookup_object_id (serializer, value->d.object_val);
 
           g_warn_if_fail (id != 0);
 
@@ -375,13 +316,12 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
     }
 }
 
-static Rig__PropertyValue *
+Rig__PropertyValue *
 pb_property_value_new (RigPBSerializer *serializer,
                        const RutBoxed *value)
 {
-  RigEngine *engine = serializer->engine;
   Rig__PropertyValue *pb_value =
-    rig_pb_new (engine, Rig__PropertyValue, rig__property_value__init);
+    rig_pb_new (serializer, Rig__PropertyValue, rig__property_value__init);
 
   rig_pb_property_value_init (serializer, pb_value, value);
 
@@ -434,9 +374,8 @@ pb_boxed_new (RigPBSerializer *serializer,
               const char *name,
               const RutBoxed *boxed)
 {
-  RigEngine *engine = serializer->engine;
   Rig__Boxed *pb_boxed =
-    rig_pb_new (engine, Rig__Boxed, rig__boxed__init);
+    rig_pb_new (serializer, Rig__Boxed, rig__boxed__init);
 
   pb_boxed->name = (char *)name;
   pb_boxed->has_type = TRUE;
@@ -444,41 +383,6 @@ pb_boxed_new (RigPBSerializer *serializer,
   pb_boxed->value = pb_property_value_new (serializer, boxed);
 
   return pb_boxed;
-}
-
-static uint64_t
-register_serializer_object (RigPBSerializer *serializer,
-                            void *object)
-{
-  uint64_t id;
-  uint64_t *id_value;
-
-  if (serializer->object_register_callback)
-    {
-      void *object_register_data = serializer->object_register_data;
-      id = serializer->object_register_callback (object, object_register_data);
-      g_return_val_if_fail (id != 0, 0);
-      return id;
-    }
-
-  if (g_hash_table_lookup (serializer->id_map, object))
-    {
-      g_critical ("Duplicate save object id %d", (int)id);
-      return 0;
-    }
-
-  id = serializer->next_id++;
-  g_return_val_if_fail (id != 0, 0);
-
-  id_value = rut_memory_stack_memalign (serializer->engine->serialization_stack,
-                                        sizeof (uint64_t),
-                                        RUT_UTIL_ALIGNOF (uint64_t));
-
-  *id_value = id;
-
-  g_hash_table_insert (serializer->id_map, object, id_value);
-
-  return id;
 }
 
 static void
@@ -513,8 +417,6 @@ serialize_instrospectable_properties (RutObject *object,
                                       void **properties_out,
                                       RigPBSerializer *serializer)
 {
-  RigEngine *engine = serializer->engine;
-
   serializer->n_properties = 0;
   rut_introspectable_foreach_property (object,
                                        count_instrospectables_cb,
@@ -522,7 +424,7 @@ serialize_instrospectable_properties (RutObject *object,
   *n_properties_out = serializer->n_properties;
 
   serializer->properties_out = *properties_out =
-    rut_memory_stack_memalign (engine->serialization_stack,
+    rut_memory_stack_memalign (serializer->stack,
                                sizeof (void *) * serializer->n_properties,
                                RUT_UTIL_ALIGNOF (void *));
 
@@ -532,47 +434,32 @@ serialize_instrospectable_properties (RutObject *object,
                                        serializer);
 }
 
-static void
-serialize_component_cb (RutComponent *component,
-                        void *user_data)
+Rig__Entity__Component *
+rig_pb_serialize_component (RigPBSerializer *serializer,
+                            RutComponent *component)
 {
   const RutType *type = rut_object_get_type (component);
-  RigPBSerializer *serializer = user_data;
-  RigEngine *engine = serializer->engine;
-  int component_id;
   Rig__Entity__Component *pb_component;
+  int component_id;
 
-  pb_component = rig_pb_new (engine,
+  pb_component = rig_pb_new (serializer,
                              Rig__Entity__Component,
                              rig__entity__component__init);
 
-  serializer->n_pb_components++;
-  serializer->pb_components = g_list_prepend (serializer->pb_components, pb_component);
+  component_id = rig_pb_serializer_register_object (serializer, component);
 
-  component_id = register_serializer_object (serializer, component);
-
-  pb_component->has_id = TRUE;
+  pb_component->has_id = true;
   pb_component->id = component_id;
 
-  pb_component->has_type = TRUE;
+  pb_component->has_type = true;
 
   if (type == &rut_light_type)
     {
-      RutLight *light = RUT_LIGHT (component);
-      const CoglColor *ambient = rut_light_get_ambient (light);
-      const CoglColor *diffuse = rut_light_get_diffuse (light);
-      const CoglColor *specular = rut_light_get_specular (light);
-      Rig__Entity__Component__Light *pb_light;
-
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__LIGHT;
-      pb_light = rig_pb_new (engine,
-                             Rig__Entity__Component__Light,
-                             rig__entity__component__light__init);
-      pb_component->light = pb_light;
-
-      pb_light->ambient = pb_color_new (engine, ambient);
-      pb_light->diffuse = pb_color_new (engine, diffuse);
-      pb_light->specular = pb_color_new (engine, specular);
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
   else if (type == &rut_material_type)
     {
@@ -593,60 +480,61 @@ serialize_component_cb (RutComponent *component,
   else if (type == &rut_diamond_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
-      pb_component->diamond = rig_pb_new (engine,
+      pb_component->diamond = rig_pb_new (serializer,
                                           Rig__Entity__Component__Diamond,
                                           rig__entity__component__diamond__init);
-      pb_component->diamond->has_size = TRUE;
+      pb_component->diamond->has_size = true;
       pb_component->diamond->size = rut_diamond_get_size (RUT_DIAMOND (component));
     }
   else if (type == &rut_pointalism_grid_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID;
       pb_component->grid =
-        rig_pb_new (engine,
+        rig_pb_new (serializer,
                     Rig__Entity__Component__PointalismGrid,
                     rig__entity__component__pointalism_grid__init);
 
-      pb_component->grid->has_scale = TRUE;
+      pb_component->grid->has_scale = true;
       pb_component->grid->scale = rut_pointalism_grid_get_scale (RUT_POINTALISM_GRID (component));
 
-      pb_component->grid->has_z = TRUE;
+      pb_component->grid->has_z = true;
       pb_component->grid->z = rut_pointalism_grid_get_z (RUT_POINTALISM_GRID (component));
 
-      pb_component->grid->has_cell_size = TRUE;
+      pb_component->grid->has_cell_size = true;
       pb_component->grid->cell_size = rut_pointalism_grid_get_cell_size (RUT_POINTALISM_GRID (component));
 
-      pb_component->grid->has_lighter = TRUE;
+      pb_component->grid->has_lighter = true;
       pb_component->grid->lighter = rut_pointalism_grid_get_lighter (RUT_POINTALISM_GRID (component));
     }
   else if (type == &rut_model_type)
     {
       RutModel *model = RUT_MODEL (component);
-      uint64_t asset_id = serializer_lookup_object_id (serializer,
-                                                       rut_model_get_asset (model));
+      uint64_t asset_id =
+        rig_pb_serializer_lookup_object_id (serializer,
+                                            rut_model_get_asset (model));
 
       /* XXX: we don't support serializing a model loaded from a RutMesh */
       g_warn_if_fail (asset_id != 0);
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MODEL;
-      pb_component->model = rig_pb_new (engine,
+      pb_component->model = rig_pb_new (serializer,
                                         Rig__Entity__Component__Model,
                                         rig__entity__component__model__init);
 
       if (asset_id)
         {
-          pb_component->model->has_asset_id = TRUE;
+          pb_component->model->has_asset_id = true;
           pb_component->model->asset_id = asset_id;
         }
     }
   else if (type == &rut_text_type)
     {
-      RutText *text = RUT_TEXT (component);
+      RutText *text = (RutText *)component;
       const CoglColor *color;
       Rig__Entity__Component__Text *pb_text;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__TEXT;
-      pb_text = rig_pb_new (engine,
+      pb_text = rig_pb_new (serializer,
                             Rig__Entity__Component__Text,
                             rig__entity__component__text__init);
       pb_component->text = pb_text;
@@ -655,7 +543,7 @@ serialize_component_cb (RutComponent *component,
 
       pb_text->text = (char *)rut_text_get_text (text);
       pb_text->font = (char *)rut_text_get_font_name (text);
-      pb_text->color = pb_color_new (engine, color);
+      pb_text->color = pb_color_new (serializer, color);
     }
   else if (type == &rut_camera_type)
     {
@@ -663,19 +551,19 @@ serialize_component_cb (RutComponent *component,
       Rig__Entity__Component__Camera *pb_camera;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__CAMERA;
-      pb_camera = rig_pb_new (engine,
+      pb_camera = rig_pb_new (serializer,
                               Rig__Entity__Component__Camera,
                               rig__entity__component__camera__init);
       pb_component->camera = pb_camera;
 
-      pb_camera->has_projection_mode = TRUE;
+      pb_camera->has_projection_mode = true;
       switch (rut_camera_get_projection_mode (camera))
         {
         case RUT_PROJECTION_ORTHOGRAPHIC:
           pb_camera->projection_mode =
             RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__ORTHOGRAPHIC;
 
-          pb_camera->ortho = rig_pb_new (engine,
+          pb_camera->ortho = rig_pb_new (serializer,
                                          Rig__OrthoCoords,
                                          rig__ortho_coords__init);
           pb_camera->ortho->x0 = camera->x1;
@@ -686,12 +574,12 @@ serialize_component_cb (RutComponent *component,
         case RUT_PROJECTION_PERSPECTIVE:
           pb_camera->projection_mode =
             RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE;
-          pb_camera->has_field_of_view = TRUE;
+          pb_camera->has_field_of_view = true;
           pb_camera->field_of_view = camera->fov;
           break;
         }
 
-      pb_camera->viewport = rig_pb_new (engine,
+      pb_camera->viewport = rig_pb_new (serializer,
                                         Rig__Viewport,
                                         rig__viewport__init);
 
@@ -702,22 +590,22 @@ serialize_component_cb (RutComponent *component,
 
       if (camera->zoom != 1)
         {
-          pb_camera->has_zoom = TRUE;
+          pb_camera->has_zoom = true;
           pb_camera->zoom = camera->zoom;
         }
 
-      pb_camera->has_focal_distance = TRUE;
+      pb_camera->has_focal_distance = true;
       pb_camera->focal_distance = camera->focal_distance;
 
-      pb_camera->has_depth_of_field = TRUE;
+      pb_camera->has_depth_of_field = true;
       pb_camera->depth_of_field = camera->depth_of_field;
 
-      pb_camera->has_near_plane = TRUE;
+      pb_camera->has_near_plane = true;
       pb_camera->near_plane = camera->near;
-      pb_camera->has_far_plane = TRUE;
+      pb_camera->has_far_plane = true;
       pb_camera->far_plane = camera->far;
 
-      pb_camera->background = pb_color_new (engine, &camera->bg_color);
+      pb_camera->background = pb_color_new (serializer, &camera->bg_color);
     }
   else if (type == &rut_nine_slice_type)
     {
@@ -735,7 +623,101 @@ serialize_component_cb (RutComponent *component,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
+  else if (type == &rut_button_input_type)
+    {
+      pb_component->type = RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT;
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
+    }
 
+  return pb_component;
+}
+
+void
+serialize_component_cb (RutComponent *component,
+                        void *user_data)
+{
+  RigPBSerializer *serializer = user_data;
+  Rig__Entity__Component *pb_component =
+    rig_pb_serialize_component (serializer, component);
+
+  serializer->n_pb_components++;
+  serializer->pb_components = g_list_prepend (serializer->pb_components, pb_component);
+}
+
+Rig__Entity *
+rig_pb_serialize_entity (RigPBSerializer *serializer,
+                         RutEntity *parent,
+                         RutEntity *entity)
+{
+  Rig__Entity *pb_entity =
+    rig_pb_new (serializer, Rig__Entity, rig__entity__init);
+  const CoglQuaternion *q;
+  const char *label;
+  Rig__Vec3 *position;
+  float scale;
+  GList *l;
+  int i;
+
+  pb_entity->has_id = true;
+  pb_entity->id = rig_pb_serializer_register_object (serializer, entity);
+
+  if (parent && rut_object_get_type (parent) == &rut_entity_type)
+    {
+      uint64_t id = rig_pb_serializer_lookup_object_id (serializer, parent);
+      if (id)
+        {
+          pb_entity->has_parent_id = true;
+          pb_entity->parent_id = id;
+        }
+      else
+        g_warning ("Failed to find id of parent entity\n");
+    }
+
+  label = rut_entity_get_label (entity);
+  if (label && *label)
+    {
+      pb_entity->label = (char *)label;
+    }
+
+  q = rut_entity_get_rotation (entity);
+
+  position = rig_pb_new (serializer, Rig__Vec3, rig__vec3__init);
+  position->x = rut_entity_get_x (entity);
+  position->y = rut_entity_get_y (entity);
+  position->z = rut_entity_get_z (entity);
+  pb_entity->position = position;
+
+  scale = rut_entity_get_scale (entity);
+  if (scale != 1)
+    {
+      pb_entity->has_scale = TRUE;
+      pb_entity->scale = scale;
+    }
+
+  pb_entity->rotation = pb_rotation_new (serializer, q);
+
+  serializer->n_pb_components = 0;
+  serializer->pb_components = NULL;
+  rut_entity_foreach_component (entity,
+                                serialize_component_cb,
+                                serializer);
+
+  pb_entity->n_components = serializer->n_pb_components;
+  pb_entity->components =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * pb_entity->n_components,
+                               RUT_UTIL_ALIGNOF (void *));
+
+  for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
+    pb_entity->components[i] = l->data;
+  g_list_free (serializer->pb_components);
+  serializer->pb_components = NULL;
+  serializer->n_pb_components = 0;
+
+  return pb_entity;
 }
 
 static RutTraverseVisitFlags
@@ -744,17 +726,11 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
                                    void *user_data)
 {
   RigPBSerializer *serializer = user_data;
-  RigEngine *engine = serializer->engine;
   const RutType *type = rut_object_get_type (object);
   RutObject *parent = rut_graphable_get_parent (object);
   RutEntity *entity;
-  const CoglQuaternion *q;
-  const char *label;
   Rig__Entity *pb_entity;
-  Rig__Vec3 *position;
-  float scale;
-  GList *l;
-  int i;
+  const char *label;
 
   if (type != &rut_entity_type)
     {
@@ -771,79 +747,24 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
   if (label && strncmp ("rig:", label, 4) == 0)
     return RUT_TRAVERSE_VISIT_CONTINUE;
 
-
-  pb_entity = rig_pb_new (engine, Rig__Entity, rig__entity__init);
+  pb_entity = rig_pb_serialize_entity (serializer, parent, entity);
 
   serializer->n_pb_entities++;
   serializer->pb_entities = g_list_prepend (serializer->pb_entities, pb_entity);
-
-  pb_entity->has_id = TRUE;
-  pb_entity->id = register_serializer_object (serializer, entity);
-
-  if (parent && rut_object_get_type (parent) == &rut_entity_type)
-    {
-      uint64_t id = serializer_lookup_object_id (serializer, parent);
-      if (id)
-        {
-          pb_entity->has_parent_id = TRUE;
-          pb_entity->parent_id = id;
-        }
-      else
-        g_warning ("Failed to find id of parent entity\n");
-    }
-
-  if (label && *label)
-    {
-      pb_entity->label = (char *)label;
-    }
-
-  q = rut_entity_get_rotation (entity);
-
-  position = rig_pb_new (engine, Rig__Vec3, rig__vec3__init);
-  position->x = rut_entity_get_x (entity);
-  position->y = rut_entity_get_y (entity);
-  position->z = rut_entity_get_z (entity);
-  pb_entity->position = position;
-
-  scale = rut_entity_get_scale (entity);
-  if (scale != 1)
-    {
-      pb_entity->has_scale = TRUE;
-      pb_entity->scale = scale;
-    }
-
-  pb_entity->rotation = pb_rotation_new (engine, q);
-
-  serializer->n_pb_components = 0;
-  serializer->pb_components = NULL;
-  rut_entity_foreach_component (entity,
-                                serialize_component_cb,
-                                serializer);
-
-  pb_entity->n_components = serializer->n_pb_components;
-  pb_entity->components =
-    rut_memory_stack_memalign (engine->serialization_stack,
-                               sizeof (void *) * pb_entity->n_components,
-                               RUT_UTIL_ALIGNOF (void *));
-
-  for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
-    pb_entity->components[i] = l->data;
-  g_list_free (serializer->pb_components);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
 static void
-serialize_property_cb (RigControllerPropData *prop_data,
-                       void *user_data)
+serialize_controller_property_cb (RigControllerPropData *prop_data,
+                                  void *user_data)
 {
   RigPBSerializer *serializer = user_data;
-  RigEngine *engine = serializer->engine;
   RutObject *object;
   uint64_t id;
 
   Rig__Controller__Property *pb_property =
-    rig_pb_new (engine,
+    rig_pb_new (serializer,
                 Rig__Controller__Property,
                 rig__controller__property__init);
 
@@ -852,12 +773,11 @@ serialize_property_cb (RigControllerPropData *prop_data,
 
   object = prop_data->property->object;
 
-  id = serializer_lookup_object_id (serializer, object);
+  id = rig_pb_serializer_lookup_object_id (serializer, object);
   if (!id)
     g_warning ("Failed to find id of object\n");
 
-
-  pb_property->has_object_id = TRUE;
+  pb_property->has_object_id = true;
   pb_property->object_id = id;
 
   pb_property->name = (char *)prop_data->property->spec->name;
@@ -879,7 +799,93 @@ serialize_property_cb (RigControllerPropData *prop_data,
   pb_property->constant = pb_property_value_new (serializer, &prop_data->constant_value);
 
   if (prop_data->path && prop_data->path->length)
-    pb_property->path = pb_path_new (engine, prop_data->path);
+    pb_property->path = pb_path_new (serializer, prop_data->path);
+}
+
+static uint64_t
+default_serializer_register_object_cb (void *object,
+                                       void *user_data)
+{
+  RigPBSerializer *serializer = user_data;
+  void *id_ptr = (void *)(intptr_t)serializer->next_id++;
+
+  if (!serializer->object_to_id_map)
+    {
+      serializer->object_to_id_map =
+        g_hash_table_new (NULL, /* direct hash */
+                          NULL); /* direct key equal */
+    }
+
+  if (g_hash_table_lookup (serializer->object_to_id_map, object))
+    {
+      g_critical ("Duplicate save object id %p", id_ptr);
+      return 0;
+    }
+
+  g_hash_table_insert (serializer->object_to_id_map, object, id_ptr);
+
+  return (uint64_t)(intptr_t)id_ptr;
+}
+
+static uint64_t
+serializer_register_pointer_id_object_cb (void *object, void *user_data)
+{
+  return (uint64_t)(intptr_t)object;
+}
+
+uint64_t
+rig_pb_serializer_register_object (RigPBSerializer *serializer,
+                                   void *object)
+{
+  void *object_register_data = serializer->object_register_data;
+  return serializer->object_register_callback (object, object_register_data);
+}
+
+uint64_t
+default_serializer_lookup_object_id_cb (void *object,
+                                        void *user_data)
+{
+  RigPBSerializer *serializer = user_data;
+  void *id_ptr;
+
+  g_return_val_if_fail (object, 0);
+
+  id_ptr = g_hash_table_lookup (serializer->object_to_id_map, object);
+
+  g_return_val_if_fail (id_ptr, 0);
+
+  return (uint64_t)(intptr_t)id_ptr;
+}
+
+uint64_t
+serializer_lookup_pointer_object_id_cb (void *object,
+                                        void *user_data)
+{
+  g_return_val_if_fail (object, 0);
+  return (uint64_t)(intptr_t)object;
+}
+
+uint64_t
+rig_pb_serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
+{
+  if (rut_object_get_type (object) == &rut_asset_type)
+    {
+      bool need_asset = true;
+
+      if (serializer->asset_filter)
+        {
+          need_asset = serializer->asset_filter (object,
+                                                 serializer->asset_filter_data);
+        }
+
+      if (need_asset)
+        {
+          serializer->required_assets =
+            g_list_prepend (serializer->required_assets, object);
+        }
+    }
+
+  return serializer->object_to_id_callback (object, serializer->object_to_id_data);
 }
 
 RigPBSerializer *
@@ -888,18 +894,50 @@ rig_pb_serializer_new (RigEngine *engine)
   RigPBSerializer *serializer = g_slice_new0 (RigPBSerializer);
 
   serializer->engine = engine;
+  serializer->stack = engine->frame_stack;
 
-  /* This hash table maps object pointers to uint64_t ids while saving */
-  serializer->id_map = g_hash_table_new (NULL, /* direct hash */
-                                         NULL); /* direct key equal */
+  serializer->object_register_callback = default_serializer_register_object_cb;
+  serializer->object_register_data = serializer;
+  serializer->object_to_id_callback = default_serializer_lookup_object_id_cb;
+  serializer->object_to_id_data = serializer;
 
   /* NB: We have to reserve 0 here so we can tell if lookups into the
    * id_map fail. */
   serializer->next_id = 1;
 
-  rut_memory_stack_rewind (engine->serialization_stack);
-
   return serializer;
+}
+
+void
+rig_pb_serializer_set_stack (RigPBSerializer *serializer,
+                             RutMemoryStack *stack)
+{
+  serializer->stack = stack;
+}
+
+void
+rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
+                                               bool use_pointers)
+{
+  if (use_pointers)
+    {
+      serializer->object_register_callback =
+        serializer_register_pointer_id_object_cb;
+      serializer->object_register_data = serializer;
+
+      serializer->object_to_id_callback =
+        serializer_lookup_pointer_object_id_cb;
+      serializer->object_to_id_data = serializer;
+    }
+  else
+    {
+      /* we don't have a way to save/restore the above callbacks, so
+       * really this function is currently just an internal
+       * convenience for setting up the callbacks for the common case
+       * where we want ids to simply correspond to pointers
+       */
+      g_warn_if_reached ();
+    }
 }
 
 void
@@ -909,6 +947,13 @@ rig_pb_serializer_set_asset_filter (RigPBSerializer *serializer,
 {
   serializer->asset_filter = filter;
   serializer->asset_filter_data = user_data;
+}
+
+void
+rig_pb_serializer_set_only_asset_ids_enabled (RigPBSerializer *serializer,
+                                              bool only_ids)
+{
+  serializer->only_asset_ids = only_ids;
 }
 
 void
@@ -935,7 +980,8 @@ rig_pb_serializer_destroy (RigPBSerializer *serializer)
   if (serializer->required_assets)
     g_list_free (serializer->required_assets);
 
-  g_hash_table_destroy (serializer->id_map);
+  if (serializer->object_to_id_map)
+    g_hash_table_destroy (serializer->object_to_id_map);
 
   g_slice_free (RigPBSerializer, serializer);
 }
@@ -944,11 +990,11 @@ static Rig__Buffer *
 serialize_buffer (RigPBSerializer *serializer, RutBuffer *buffer)
 {
   Rig__Buffer *pb_buffer =
-    rig_pb_new (serializer->engine, Rig__Buffer, rig__buffer__init);
+    rig_pb_new (serializer, Rig__Buffer, rig__buffer__init);
 
   pb_buffer->has_id = true;
   pb_buffer->id =
-    register_serializer_object (serializer, buffer);
+    rig_pb_serializer_register_object (serializer, buffer);
 
   /* NB: The serialized asset points directly to the RutMesh
    * data to avoid copying it... */
@@ -962,7 +1008,6 @@ serialize_buffer (RigPBSerializer *serializer, RutBuffer *buffer)
 static Rig__Asset *
 serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
 {
-  RigEngine *engine = serializer->engine;
   RutMesh *mesh = rut_asset_get_mesh (asset);
   Rig__Asset *pb_asset;
   RutBuffer **buffers;
@@ -973,7 +1018,10 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
   Rig__Mesh *pb_mesh;
   int i;
 
-  pb_asset = rig_pb_new (engine, Rig__Asset, rig__asset__init);
+  pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+  pb_asset->has_id = true;
+  pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
 
   pb_asset->path = (char *)rut_asset_get_path (asset);
 
@@ -982,7 +1030,7 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
 
   /* The maximum number of pb_buffers we may need = n_attributes plus 1 in case
    * there is an index buffer... */
-  pb_buffers = rut_memory_stack_memalign (engine->serialization_stack,
+  pb_buffers = rut_memory_stack_memalign (serializer->stack,
                                           sizeof (void *) * (mesh->n_attributes + 1),
                                           RUT_UTIL_ALIGNOF (void *));
 
@@ -1023,13 +1071,13 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
       pb_buffers[n_buffers++] = pb_buffer;
     }
 
-  attributes= rut_memory_stack_memalign (engine->serialization_stack,
+  attributes= rut_memory_stack_memalign (serializer->stack,
                                          sizeof (void *) * mesh->n_attributes,
                                          RUT_UTIL_ALIGNOF (void *));
   for (i = 0; i < mesh->n_attributes; i++)
     {
       Rig__Attribute *pb_attribute =
-        rig_pb_new (engine, Rig__Attribute, rig__attribute__init);
+        rig_pb_new (serializer, Rig__Attribute, rig__attribute__init);
       Rig__Attribute__Type type;
 
       pb_attribute->has_buffer_id = true;
@@ -1068,7 +1116,7 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
       attributes[i] = pb_attribute;
     }
 
-  pb_asset->mesh = rig_pb_new (engine, Rig__Mesh, rig__mesh__init);
+  pb_asset->mesh = rig_pb_new (serializer, Rig__Mesh, rig__mesh__init);
   pb_mesh = pb_asset->mesh;
 
   pb_mesh->has_mode = true;
@@ -1139,7 +1187,6 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
   g_warn_if_reached ();
   return NULL;
 #else
-  RigEngine *engine = serializer->engine;
   RutContext *ctx = rut_asset_get_context (asset);
   const char *path = rut_asset_get_path (asset);
   char *full_path;
@@ -1147,6 +1194,16 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
   GError *error = NULL;
   char *contents;
   size_t len;
+
+  if (serializer->only_asset_ids)
+    {
+      pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+      pb_asset->has_id = true;
+      pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
+
+      return pb_asset;
+    }
 
   /* XXX: This should be renamed to _TYPE_MESH */
   if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_PLY_MODEL)
@@ -1166,7 +1223,10 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
 
   g_free (full_path);
 
-  pb_asset = rig_pb_new (engine, Rig__Asset, rig__asset__init);
+  pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+  pb_asset->has_id = true;
+  pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
 
   pb_asset->path = (char *)path;
 
@@ -1191,127 +1251,133 @@ serialized_asset_destroy (Rig__Asset *serialized_asset)
     g_free (serialized_asset->data.data);
 }
 
-Rig__UI *
-rig_pb_serialize_ui (RigPBSerializer *serializer)
+Rig__Controller *
+rig_pb_serialize_controller (RigPBSerializer *serializer,
+                             RigController *controller)
 {
-  RigEngine *engine = serializer->engine;
+  Rig__Controller *pb_controller =
+    rig_pb_new (serializer, Rig__Controller, rig__controller__init);
   GList *l;
   int i;
-  Rig__UI *ui;
-  Rig__Device *device;
 
-  ui = rig_pb_new (engine, Rig__UI, rig__ui__init);
-  device = rig_pb_new (engine, Rig__Device, rig__device__init);
+  pb_controller->has_id = true;
+  pb_controller->id = rig_pb_serializer_lookup_object_id (serializer, controller);
 
-  ui->device = device;
+  pb_controller->name = controller->label;
 
-  device->has_width = TRUE;
-  device->width = engine->device_width;
-  device->has_height = TRUE;
-  device->height = engine->device_height;
-  device->background = pb_color_new (engine, &engine->background_color);
+  serialize_instrospectable_properties (controller,
+                                        &pb_controller->n_controller_properties,
+                                        (void **)&pb_controller->controller_properties,
+                                        serializer);
+
+  serializer->n_pb_properties = 0;
+  serializer->pb_properties = NULL;
+  rig_controller_foreach_property (controller,
+                                   serialize_controller_property_cb,
+                                   serializer);
+
+  pb_controller->n_properties = serializer->n_pb_properties;
+  pb_controller->properties =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * pb_controller->n_properties,
+                               RUT_UTIL_ALIGNOF (void *));
+  for (i = 0, l = serializer->pb_properties; l; i++, l = l->next)
+    pb_controller->properties[i] = l->data;
+  g_list_free (serializer->pb_properties);
+  serializer->n_pb_properties = 0;
+  serializer->pb_properties = NULL;
+
+  return pb_controller;
+}
+
+Rig__UI *
+rig_pb_serialize_ui (RigPBSerializer *serializer,
+                     bool play_mode,
+                     RigUI *ui)
+{
+  GList *l;
+  int i;
+  Rig__UI *pb_ui;
+
+  pb_ui = rig_pb_new (serializer, Rig__UI, rig__ui__init);
+
+  pb_ui->has_mode = true;
+  pb_ui->mode = play_mode ? RIG__UI__MODE__PLAY : RIG__UI__MODE__EDIT;
 
   /* Register all assets up front, but we only actually serialize those
    * assets that are referenced - indicated by a corresponding id lookup
-   * in serializer_lookup_object_id()
+   * in rig_pb_serializer_lookup_object_id()
    */
-  for (l = engine->assets; l; l = l->next)
-    register_serializer_object (serializer, l->data);
+  for (l = ui->assets; l; l = l->next)
+    rig_pb_serializer_register_object (serializer, l->data);
 
   serializer->n_pb_entities = 0;
-  rut_graphable_traverse (engine->scene,
+  rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           _rut_entitygraph_pre_serialize_cb,
                           NULL,
                           serializer);
 
-  ui->n_entities = serializer->n_pb_entities;
-  ui->entities = rut_memory_stack_memalign (engine->serialization_stack,
-                                            sizeof (void *) * ui->n_entities,
-                                            RUT_UTIL_ALIGNOF (void *));
+  pb_ui->n_entities = serializer->n_pb_entities;
+  pb_ui->entities =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * pb_ui->n_entities,
+                               RUT_UTIL_ALIGNOF (void *));
   for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
-    ui->entities[i] = l->data;
+    pb_ui->entities[i] = l->data;
   g_list_free (serializer->pb_entities);
+  serializer->pb_entities = NULL;
 
-  for (i = 0, l = engine->controllers; l; i++, l = l->next)
-    register_serializer_object (serializer, l->data);
+  for (i = 0, l = ui->controllers; l; i++, l = l->next)
+    rig_pb_serializer_register_object (serializer, l->data);
 
-  ui->n_controllers = g_list_length (engine->controllers);
-  if (ui->n_controllers)
+  pb_ui->n_controllers = g_list_length (ui->controllers);
+  if (pb_ui->n_controllers)
     {
-      ui->controllers =
-        rut_memory_stack_memalign (engine->serialization_stack,
-                                   sizeof (void *) * ui->n_controllers,
+      pb_ui->controllers =
+        rut_memory_stack_memalign (serializer->stack,
+                                   sizeof (void *) * pb_ui->n_controllers,
                                    RUT_UTIL_ALIGNOF (void *));
 
-      for (i = 0, l = engine->controllers; l; i++, l = l->next)
+      for (i = 0, l = ui->controllers; l; i++, l = l->next)
         {
           RigController *controller = l->data;
           Rig__Controller *pb_controller =
-            rig_pb_new (engine, Rig__Controller, rig__controller__init);
-          GList *l2;
-          int j;
+            rig_pb_serialize_controller (serializer, controller);
 
-          ui->controllers[i] = pb_controller;
-
-          pb_controller->has_id = TRUE;
-          pb_controller->id = serializer_lookup_object_id (serializer, controller);
-
-          pb_controller->name = controller->label;
-
-          serialize_instrospectable_properties (controller,
-                                                &pb_controller->n_controller_properties,
-                                                (void **)&pb_controller->controller_properties,
-                                                serializer);
-
-          serializer->n_pb_properties = 0;
-          serializer->pb_properties = NULL;
-          rig_controller_foreach_property (controller,
-                                           serialize_property_cb,
-                                           serializer);
-
-          pb_controller->n_properties = serializer->n_pb_properties;
-          pb_controller->properties =
-            rut_memory_stack_memalign (engine->serialization_stack,
-                                       sizeof (void *) * pb_controller->n_properties,
-                                       RUT_UTIL_ALIGNOF (void *));
-          for (j = 0, l2 = serializer->pb_properties; l2; j++, l2 = l2->next)
-            pb_controller->properties[j] = l2->data;
-          g_list_free (serializer->pb_properties);
+          pb_ui->controllers[i] = pb_controller;
         }
     }
 
-  ui->n_assets = g_list_length (serializer->required_assets);
-  if (ui->n_assets)
+  pb_ui->n_assets = g_list_length (serializer->required_assets);
+  if (pb_ui->n_assets)
     {
       RigPBAssetFilter save_filter = serializer->asset_filter;
       int i;
 
       /* Temporarily disable the asset filter that is called in
-       * serializer_lookup_object_id() since we have already filtered
-       * all of the assets required and we now only need to lookup
-       * the ids for serializing the assets themselves. */
+       * rig_pb_serializer_lookup_object_id() since we have already
+       * filtered all of the assets required and we now only need to
+       * lookup the ids for serializing the assets themselves. */
       serializer->asset_filter = NULL;
 
-      ui->assets = rut_memory_stack_memalign (engine->serialization_stack,
-                                              ui->n_assets * sizeof (void *),
-                                              RUT_UTIL_ALIGNOF (void *));
+      pb_ui->assets =
+        rut_memory_stack_memalign (serializer->stack,
+                                   pb_ui->n_assets * sizeof (void *),
+                                   RUT_UTIL_ALIGNOF (void *));
       for (i = 0, l = serializer->required_assets; l; i++, l = l->next)
         {
           RutAsset *asset = l->data;
           Rig__Asset *pb_asset = serialize_asset (serializer, asset);
 
-          pb_asset->has_id = true;
-          pb_asset->id = serializer_lookup_object_id (serializer, asset);
-
-          ui->assets[i] = pb_asset;
+          pb_ui->assets[i] = pb_asset;
         }
 
       /* restore the asset filter */
       serializer->asset_filter = save_filter;
     }
 
-  return ui;
+  return pb_ui;
 }
 
 void
@@ -1325,21 +1391,21 @@ rig_pb_serialized_ui_destroy (Rig__UI *ui)
 
 Rig__Event **
 rig_pb_serialize_input_events (RigPBSerializer *serializer,
-                               RutList *input_queue,
-                               int n_events)
+                               RutInputQueue *input_queue)
 {
+  int n_events = input_queue->n_events;
   RutInputEvent *event, *tmp;
   Rig__Event **pb_events;
   int i;
 
-  pb_events = rut_memory_stack_memalign (engine->serialization_stack,
+  pb_events = rut_memory_stack_memalign (serializer->stack,
                                          n_events * sizeof (void *),
                                          RUT_UTIL_ALIGNOF (void *));
 
   i = 0;
-  rut_list_for_each_safe (event, tmp, input_queue, list_node)
+  rut_list_for_each_safe (event, tmp, &input_queue->events, list_node)
     {
-      Rig__Event *pb_event = rig_pb_new (engine, Rig__Event, rig__event__init);
+      Rig__Event *pb_event = rig_pb_new (serializer, Rig__Event, rig__event__init);
 
       pb_event->has_type = true;
 
@@ -1352,10 +1418,10 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_MOTION_EVENT_ACTION_MOVE:
-                //g_print ("Serialize move\n");
+                g_print ("Serialize move\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
                 pb_event->pointer_move =
-                  rig_pb_new (engine, Rig__Event__PointerMove,
+                  rig_pb_new (serializer, Rig__Event__PointerMove,
                               rig__event__pointer_move__init);
 
                 pb_event->pointer_move->has_x = true;
@@ -1364,11 +1430,11 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
                 pb_event->pointer_move->y = rut_motion_event_get_y (event);
                 break;
               case RUT_MOTION_EVENT_ACTION_DOWN:
-                //g_print ("Serialize pointer down\n");
+                g_print ("Serialize pointer down\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
                 break;
               case RUT_MOTION_EVENT_ACTION_UP:
-                //g_print ("Serialize pointer up\n");
+                g_print ("Serialize pointer up\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
                 break;
               }
@@ -1380,7 +1446,7 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
               case RUT_MOTION_EVENT_ACTION_UP:
               case RUT_MOTION_EVENT_ACTION_DOWN:
                 pb_event->pointer_button =
-                  rig_pb_new (engine, Rig__Event__PointerButton,
+                  rig_pb_new (serializer, Rig__Event__PointerButton,
                               rig__event__pointer_button__init);
                 pb_event->pointer_button->has_button = true;
                 pb_event->pointer_button->button =
@@ -1396,17 +1462,17 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_KEY_EVENT_ACTION_DOWN:
-                //g_print ("Serialize key down\n");
+                g_print ("Serialize key down\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
                 break;
               case RUT_KEY_EVENT_ACTION_UP:
-                //g_print ("Serialize key down\n");
+                g_print ("Serialize key up\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_UP;
                 break;
               }
 
             pb_event->key =
-              rig_pb_new (engine, Rig__Event__Key, rig__event__key__init);
+              rig_pb_new (serializer, Rig__Event__Key, rig__event__key__init);
             pb_event->key->has_keysym = true;
             pb_event->key->keysym =
               rut_key_event_get_keysym (event);
@@ -1429,6 +1495,32 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
 
   return pb_events;
 }
+
+Rig__Operation **
+rig_pb_serialize_ops_queue (RigPBSerializer *serializer,
+                            RutQueue *ops)
+{
+  Rig__Operation **pb_ops;
+  RutQueueItem *item;
+  int i;
+
+  if (!ops->len)
+    return NULL;
+
+  pb_ops =
+    rut_memory_stack_memalign (serializer->stack,
+                               sizeof (void *) * ops->len,
+                               RUT_UTIL_ALIGNOF (void *));
+
+  i = 0;
+  rut_list_for_each (item, &ops->items, list_node)
+    {
+      pb_ops[i++] = item->data;
+    }
+
+  return pb_ops;
+}
+
 
 static void
 pb_init_color (RutContext *ctx,
@@ -1506,7 +1598,10 @@ unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
       return unserializer->id_to_object_callback (id, user_data);
     }
 
-  return g_hash_table_lookup (unserializer->id_map, &id);
+  if (unserializer->id_to_object_map)
+    return g_hash_table_lookup (unserializer->id_to_object_map, &id);
+  else
+    return NULL;
 }
 
 void
@@ -1582,10 +1677,10 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
     }
 }
 
-static void
-collect_error (RigPBUnSerializer *unserializer,
-               const char *format,
-               ...)
+void
+rig_pb_unserializer_collect_error (RigPBUnSerializer *unserializer,
+                                   const char *format,
+                                   ...)
 {
   va_list ap;
 
@@ -1606,20 +1701,38 @@ collect_error (RigPBUnSerializer *unserializer,
 }
 
 static void
-register_unserializer_object (RigPBUnSerializer *unserializer,
-                              void *object,
-                              uint64_t id)
+default_unserializer_unregister_object_cb (uint64_t id,
+                                           void *user_data)
 {
+  RigPBUnSerializer *unserializer = user_data;
+  if (!g_hash_table_remove (unserializer->id_to_object_map, &id))
+    g_warning ("Tried to unregister an id that wasn't previously registered");
+}
+
+void
+rig_pb_unserializer_unregister_object (RigPBUnSerializer *unserializer,
+                                       uint64_t id)
+{
+  void *user_data = unserializer->object_unregister_data;
+  unserializer->object_unregister_callback (id, user_data);
+}
+
+static void
+default_unserializer_register_object_cb (void *object,
+                                         uint64_t id,
+                                         void *user_data)
+{
+  RigPBUnSerializer *unserializer = user_data;
   uint64_t *key;
 
-  if (unserializer->object_register_callback)
+  if (!unserializer->id_to_object_map)
     {
-      void *user_data = unserializer->object_register_data;
-      if (unserializer->object_register_callback (object, id, user_data))
-        return;
+      /* This hash table maps from uint64_t ids to objects while loading */
+      unserializer->id_to_object_map =
+        g_hash_table_new (g_int64_hash, g_int64_equal);
     }
 
-  key = rut_memory_stack_memalign (unserializer->engine->serialization_stack,
+  key = rut_memory_stack_memalign (unserializer->stack,
                                    sizeof (uint64_t),
                                    RUT_UTIL_ALIGNOF (uint64_t));
 
@@ -1627,13 +1740,24 @@ register_unserializer_object (RigPBUnSerializer *unserializer,
 
   g_return_if_fail (id != 0);
 
-  if (g_hash_table_lookup (unserializer->id_map, key))
+  if (g_hash_table_lookup (unserializer->id_to_object_map, key))
     {
-      collect_error (unserializer, "Duplicate unserializer object id %ld", id);
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Duplicate unserializer "
+                                         "object id %ld", id);
       return;
     }
 
-  g_hash_table_insert (unserializer->id_map, key, object);
+  g_hash_table_insert (unserializer->id_to_object_map, key, object);
+}
+
+void
+rig_pb_unserializer_register_object (RigPBUnSerializer *unserializer,
+                                     void *object,
+                                     uint64_t id)
+{
+  unserializer->object_register_callback (object, id,
+                                          unserializer->object_register_data);
 }
 
 static void
@@ -1646,13 +1770,15 @@ set_property_from_pb_boxed (RigPBUnSerializer *unserializer,
 
   if (!pb_boxed->value)
     {
-      collect_error (unserializer, "Boxed property has no value");
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Boxed property has no value");
       return;
     }
 
   if (!pb_boxed->has_type)
     {
-      collect_error (unserializer, "Boxed property has no type");
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Boxed property has no type");
       return;
     }
 
@@ -1727,10 +1853,11 @@ set_properties_from_pb_boxed_values (RigPBUnSerializer *unserializer,
 
       if (!property)
         {
-          collect_error (unserializer,
-                         "Unknown property %s for object of type %s",
-                         pb_boxed->name,
-                         rut_object_get_type_name (object));
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Unknown property %s for object "
+                                             "of type %s",
+                                             pb_boxed->name,
+                                             rut_object_get_type_name (object));
           continue;
         }
 
@@ -1767,30 +1894,41 @@ unserialize_components (RigPBUnSerializer *unserializer,
           {
             Rig__Entity__Component__Light *pb_light = pb_component->light;
             RutLight *light;
-            CoglColor ambient;
-            CoglColor diffuse;
-            CoglColor specular;
 
             light = rut_light_new (unserializer->engine->ctx);
 
-            pb_init_color (unserializer->engine->ctx,
-                           &ambient, pb_light->ambient);
-            pb_init_color (unserializer->engine->ctx,
-                           &diffuse, pb_light->diffuse);
-            pb_init_color (unserializer->engine->ctx,
-                           &specular, pb_light->specular);
+            /* XXX: This is only for backwards compatibility... */
+            if (!pb_component->properties)
+              {
+                CoglColor ambient;
+                CoglColor diffuse;
+                CoglColor specular;
 
-            rut_light_set_ambient (light, &ambient);
-            rut_light_set_diffuse (light, &diffuse);
-            rut_light_set_specular (light, &specular);
+                pb_init_color (unserializer->engine->ctx,
+                               &ambient, pb_light->ambient);
+                pb_init_color (unserializer->engine->ctx,
+                               &diffuse, pb_light->diffuse);
+                pb_init_color (unserializer->engine->ctx,
+                               &specular, pb_light->specular);
+
+                rut_light_set_ambient (light, &ambient);
+                rut_light_set_diffuse (light, &diffuse);
+                rut_light_set_specular (light, &specular);
+              }
 
             rut_entity_add_component (entity, light);
             rut_object_unref (light);
 
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 light,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+
             if (unserializer->light == NULL)
               unserializer->light = rut_object_ref (entity);
 
-            register_unserializer_object (unserializer, light, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 light, component_id);
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__MATERIAL:
@@ -1821,7 +1959,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_color_source_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 if (pb_material->normal_map &&
@@ -1834,7 +1973,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_normal_map_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 if (pb_material->alpha_mask &&
@@ -1847,7 +1987,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                     if (asset)
                       rut_material_set_alpha_mask_asset (material, asset);
                     else
-                      collect_error (unserializer, "Invalid asset id");
+                      rig_pb_unserializer_collect_error (unserializer,
+                                                         "Invalid asset id");
                   }
 
                 pb_init_color (unserializer->engine->ctx,
@@ -1871,7 +2012,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
 
             have_material = true;
 
-            register_unserializer_object (unserializer, material, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 material, component_id);
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
@@ -1886,7 +2028,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
             asset = unserializer_find_object (unserializer, pb_model->asset_id);
             if (!asset)
               {
-                collect_error (unserializer, "Invalid asset id");
+                rig_pb_unserializer_collect_error (unserializer,
+                                                   "Invalid asset id");
                 break;
               }
 
@@ -1896,7 +2039,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                 rut_object_unref (asset);
                 rut_entity_add_component (entity, model);
                 rut_object_unref (model);
-                register_unserializer_object (unserializer, model, component_id);
+                rig_pb_unserializer_register_object (unserializer,
+                                                     model, component_id);
               }
             break;
           }
@@ -1917,14 +2061,18 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_entity_add_component (entity, text);
             rut_object_unref (text);
 
-            register_unserializer_object (unserializer, text, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 text, component_id);
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
           {
             Rig__Entity__Component__Camera *pb_camera = pb_component->camera;
             RutCamera *camera =
-              rut_camera_new (unserializer->engine->ctx, NULL);
+              rut_camera_new (unserializer->engine->ctx,
+                              -1, /* ortho/vp width */
+                              -1, /* ortho/vp height */
+                              NULL);
 
             if (pb_camera->viewport)
               {
@@ -1990,7 +2138,25 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_entity_add_component (entity, camera);
             rut_object_unref (camera);
 
-            register_unserializer_object (unserializer, camera, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 camera, component_id);
+            break;
+          }
+        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
+          {
+            RutButtonInput *button_input =
+              rut_button_input_new (unserializer->engine->ctx);
+
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 button_input,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+
+            rut_entity_add_component (entity, button_input);
+            rut_object_unref (button_input);
+
+            rig_pb_unserializer_register_object (unserializer,
+                                                 button_input, component_id);
             break;
           }
         case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
@@ -2090,15 +2256,17 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_entity_add_component (entity, shape);
             rut_object_unref (shape);
 
-            register_unserializer_object (unserializer, shape, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 shape, component_id);
 
             ERROR_SHAPE:
               {
                 if (!shape)
                   {
-                    collect_error (unserializer,
-                                   "Can't add shape component without "
-                                   "an image source");
+                    rig_pb_unserializer_collect_error (unserializer,
+                                                       "Can't add shape "
+                                                       "component without "
+                                                       "an image source");
 
                     rut_object_unref (material);
                   }
@@ -2120,7 +2288,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_entity_add_component (entity, nine_slice);
             rut_object_unref (nine_slice);
 
-            register_unserializer_object (unserializer, nine_slice, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 nine_slice, component_id);
 
             break;
           }
@@ -2170,7 +2339,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
             rut_entity_add_component (entity, diamond);
             rut_object_unref (diamond);
 
-            register_unserializer_object (unserializer, diamond, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 diamond, component_id);
 
             break;
           }
@@ -2232,15 +2402,17 @@ unserialize_components (RigPBUnSerializer *unserializer,
             if (pb_grid->has_lighter)
               rut_pointalism_grid_set_lighter (grid, pb_grid->lighter);
 
-            register_unserializer_object (unserializer, grid, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 grid, component_id);
 
             ERROR_POINTALISM:
               {
                 if (!grid)
                   {
-                    collect_error (unserializer,
-                                   "Can't add pointalism grid component without "
-                                   "an image source");
+                    rig_pb_unserializer_collect_error (unserializer,
+                                                       "Can't add pointalism "
+                                                       "grid component without "
+                                                       "an image source");
 
                     rut_object_unref (material);
                   }
@@ -2260,7 +2432,8 @@ unserialize_components (RigPBUnSerializer *unserializer,
                                                  pb_component->n_properties,
                                                  pb_component->properties);
 
-            register_unserializer_object (unserializer, hair, component_id);
+            rig_pb_unserializer_register_object (unserializer,
+                                                 hair, component_id);
 
 
 #warning "FIXME: don't derive complex hair meshes on the fly at runtime!"
@@ -2294,9 +2467,81 @@ unserialize_components (RigPBUnSerializer *unserializer,
         case RIG__ENTITY__COMPONENT__TYPE__MODEL:
         case RIG__ENTITY__COMPONENT__TYPE__TEXT:
         case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
+        case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
           break;
         }
     }
+}
+
+RutEntity *
+rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
+                           Rig__Entity *pb_entity)
+{
+  RutEntity *entity;
+  uint64_t id;
+  bool force_material = false;
+
+  if (!pb_entity->has_id)
+    return NULL;
+
+  id = pb_entity->id;
+  if (unserializer_find_object (unserializer, id))
+    {
+      rig_pb_unserializer_collect_error (unserializer,
+                                         "Duplicate entity id %d", (int)id);
+      return NULL;
+    }
+
+  entity = rut_entity_new (unserializer->engine->ctx);
+
+  if (pb_entity->has_parent_id)
+    {
+      uint64_t parent_id = pb_entity->parent_id;
+      RutEntity *parent = unserializer_find_object (unserializer, parent_id);
+
+      if (!parent)
+        {
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Invalid parent id referenced in "
+                                             "entity element");
+          rut_object_unref (entity);
+          return NULL;
+        }
+
+      rut_graphable_add_child (parent, entity);
+    }
+
+  if (pb_entity->label)
+    rut_entity_set_label (entity, pb_entity->label);
+
+  if (pb_entity->position)
+    {
+      Rig__Vec3 *pos = pb_entity->position;
+      float position[3] = {
+          pos->x,
+          pos->y,
+          pos->z
+      };
+      rut_entity_set_position (entity, position);
+    }
+  if (pb_entity->rotation)
+    {
+      CoglQuaternion q;
+
+      pb_init_quaternion (&q, pb_entity->rotation);
+
+      rut_entity_set_rotation (entity, &q);
+    }
+  if (pb_entity->has_scale)
+    rut_entity_set_scale (entity, pb_entity->scale);
+
+#warning "remove entity::cast_shadow compatibility"
+  if (pb_entity->has_cast_shadow)
+    force_material = true;
+
+  unserialize_components (unserializer, entity, pb_entity, force_material);
+
+  return entity;
 }
 
 static void
@@ -2308,70 +2553,13 @@ unserialize_entities (RigPBUnSerializer *unserializer,
 
   for (i = 0; i < n_entities; i++)
     {
-      Rig__Entity *pb_entity = entities[i];
-      RutEntity *entity;
-      uint64_t id;
-      bool force_material = false;
+      RutEntity *entity = rig_pb_unserialize_entity (unserializer, entities[i]);
 
-      if (!pb_entity->has_id)
+      if (!entity)
         continue;
 
-      id = pb_entity->id;
-      if (g_hash_table_lookup (unserializer->id_map, &id))
-        {
-          collect_error (unserializer, "Duplicate entity id %d", (int)id);
-          continue;
-        }
-
-      entity = rut_entity_new (unserializer->engine->ctx);
-
-      if (pb_entity->has_parent_id)
-        {
-          unsigned int parent_id = pb_entity->parent_id;
-          RutEntity *parent = unserializer_find_object (unserializer, parent_id);
-
-          if (!parent)
-            {
-              collect_error (unserializer,
-                             "Invalid parent id referenced in entity element");
-              rut_object_unref (entity);
-              continue;
-            }
-
-          rut_graphable_add_child (parent, entity);
-        }
-
-      if (pb_entity->label)
-        rut_entity_set_label (entity, pb_entity->label);
-
-      if (pb_entity->position)
-        {
-          Rig__Vec3 *pos = pb_entity->position;
-          float position[3] = {
-              pos->x,
-              pos->y,
-              pos->z
-          };
-          rut_entity_set_position (entity, position);
-        }
-      if (pb_entity->rotation)
-        {
-          CoglQuaternion q;
-
-          pb_init_quaternion (&q, pb_entity->rotation);
-
-          rut_entity_set_rotation (entity, &q);
-        }
-      if (pb_entity->has_scale)
-        rut_entity_set_scale (entity, pb_entity->scale);
-
-#warning "remove entity::cast_shadow compatibility"
-      if (pb_entity->has_cast_shadow)
-        force_material = true;
-
-      unserialize_components (unserializer, entity, pb_entity, force_material);
-
-      register_unserializer_object (unserializer, entity, id);
+      rig_pb_unserializer_register_object (unserializer,
+                                           entity, entities[i]->id);
 
       unserializer->entities =
         g_list_prepend (unserializer->entities, entity);
@@ -2396,17 +2584,26 @@ unserialize_assets (RigPBUnSerializer *unserializer,
         continue;
 
       id = pb_asset->id;
-      if (g_hash_table_lookup (unserializer->id_map, &id))
+      if (unserializer_find_object (unserializer, id))
         {
-          collect_error (unserializer, "Duplicate asset id %d", (int)id);
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Duplicate asset id %d", (int)id);
           return;
         }
 
-      if (!pb_asset->path)
-        continue;
-
-      if (pb_asset->has_data)
+      if (unserializer->unserialize_asset_callback)
         {
+          void *user_data = unserializer->unserialize_asset_data;
+          asset = unserializer->unserialize_asset_callback (unserializer,
+                                                            pb_asset,
+                                                            user_data);
+        }
+      else if (pb_asset->path &&
+               pb_asset->has_type &&
+               pb_asset->has_is_video &&
+               pb_asset->has_data)
+        {
+
           asset = rut_asset_new_from_data (engine->ctx,
                                            pb_asset->path,
                                            pb_asset->type,
@@ -2420,15 +2617,17 @@ unserialize_assets (RigPBUnSerializer *unserializer,
             rig_pb_unserialize_mesh (unserializer, pb_asset->mesh);
           if (!mesh)
             {
-              collect_error (unserializer,
-                             "Error unserializing mesh for asset id %d",
-                             (int)id);
+              rig_pb_unserializer_collect_error (unserializer,
+                                                 "Error unserializing mesh for "
+                                                 "asset id %d",
+                                                 (int)id);
               continue;
             }
           asset = rut_asset_new_from_mesh (engine->ctx, mesh);
           rut_object_unref (mesh);
         }
-      else if (unserializer->engine->ctx->assets_location)
+      else if (pb_asset->path &&
+               unserializer->engine->ctx->assets_location)
         {
           char *full_path =
             g_build_filename (unserializer->engine->ctx->assets_location,
@@ -2453,10 +2652,13 @@ unserialize_assets (RigPBUnSerializer *unserializer,
         {
           unserializer->assets =
             g_list_prepend (unserializer->assets, asset);
-          register_unserializer_object (unserializer, asset, id);
+          rig_pb_unserializer_register_object (unserializer, asset, id);
         }
       else
-        g_warning ("Failed to load \"%s\" asset", pb_asset->path);
+        {
+          g_warning ("Failed to load \"%s\" asset",
+                     pb_asset->path ? pb_asset->path : "");
+        }
     }
 }
 
@@ -2598,9 +2800,10 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
       object = unserializer_find_object (unserializer, object_id);
       if (!object)
         {
-          collect_error (unserializer,
-                         "Invalid object id %d referenced in property element",
-                         (int)object_id);
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Invalid object id %d referenced "
+                                             "in property element",
+                                             (int)object_id);
           continue;
         }
 
@@ -2620,17 +2823,18 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
       if (!property)
         {
-          collect_error (unserializer,
-                         "Invalid object property name given for "
-                         "controller property");
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Invalid object property name "
+                                             "given for controller property");
           continue;
         }
 
       if (!property->spec->animatable &&
           method != RIG_CONTROLLER_METHOD_CONSTANT)
         {
-          collect_error (unserializer,
-                         "Can't dynamically control non-animatable property");
+          rig_pb_unserializer_collect_error (unserializer,
+                                             "Can't dynamically control "
+                                             "non-animatable property");
           continue;
         }
 
@@ -2689,15 +2893,17 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
               if (!pb_dependency->has_object_id)
                 {
-                  collect_error (unserializer,
-                                 "Property dependency with no object ID");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Property dependency with "
+                                                     "no object ID");
                   break;
                 }
 
               if (!pb_dependency->name)
                 {
-                  collect_error (unserializer,
-                                 "Property dependency with no name");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Property dependency with "
+                                                     "no name");
                   break;
                 }
 
@@ -2706,19 +2912,21 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
                                           pb_dependency->object_id);
               if (!dependency_object)
                 {
-                  collect_error (unserializer,
-                                 "Failed to find dependency object "
-                                 "for property");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Failed to find dependency "
+                                                     "object for property");
                   break;
                 }
 
-              dependency = rut_introspectable_lookup_property (dependency_object,
-                                                               pb_dependency->name);
+              dependency =
+                rut_introspectable_lookup_property (dependency_object,
+                                                    pb_dependency->name);
               if (!dependency)
                 {
-                  collect_error (unserializer,
-                                 "Failed to introspect dependency object "
-                                 "for binding property");
+                  rig_pb_unserializer_collect_error (unserializer,
+                                                     "Failed to introspect "
+                                                     "dependency object "
+                                                     "for binding property");
                   break;
                 }
 
@@ -2727,9 +2935,11 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
           if (j != pb_property->n_dependencies)
             {
-              collect_error (unserializer,
-                             "Not able to resolve all dependencies for "
-                             "property binding (skipping)");
+              rig_pb_unserializer_collect_error (unserializer,
+                                                 "Not able to resolve all "
+                                                 "dependencies for "
+                                                 "property binding "
+                                                 "(skipping)");
               continue;
             }
 
@@ -2809,7 +3019,7 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
         g_list_prepend (unserializer->controllers, controller);
 
       if (id)
-        register_unserializer_object (unserializer, controller, id);
+        rig_pb_unserializer_register_object (unserializer, controller, id);
     }
 
   for (i = 0; i < n_controllers; i++)
@@ -2835,24 +3045,31 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
     }
 }
 
-void
-rig_pb_unserializer_init (RigPBUnSerializer *unserializer,
-                          RigEngine *engine,
-                          bool with_id_map)
+RigPBUnSerializer *
+rig_pb_unserializer_new (RigEngine *engine)
 {
-  memset (unserializer, 0, sizeof (RigPBUnSerializer));
+  RigPBUnSerializer *unserializer = g_slice_new0 (RigPBUnSerializer);
 
   unserializer->engine = engine;
+  unserializer->stack = engine->frame_stack;
 
-  if (with_id_map)
-    {
-      /* This hash table maps from uint64_t ids to objects while loading */
-      unserializer->id_map = g_hash_table_new (g_int64_hash,
-                                               g_int64_equal);
-    }
+  unserializer->object_register_callback =
+    default_unserializer_register_object_cb;
+  unserializer->object_register_data = unserializer;
+  unserializer->object_unregister_callback =
+    default_unserializer_unregister_object_cb;
+  unserializer->object_unregister_data = unserializer;
 
-  rut_memory_stack_rewind (engine->serialization_stack);
+  return unserializer;
 }
+
+void
+rig_pb_unserializer_set_stack (RigPBUnSerializer *unserializer,
+                               RutMemoryStack *stack)
+{
+  unserializer->stack = stack;
+}
+
 
 void
 rig_pb_unserializer_set_object_register_callback (
@@ -2862,7 +3079,16 @@ rig_pb_unserializer_set_object_register_callback (
 {
   unserializer->object_register_callback = callback;
   unserializer->object_register_data = user_data;
+}
 
+void
+rig_pb_unserializer_set_object_unregister_callback (
+                                 RigPBUnSerializer *unserializer,
+                                 RigPBUnSerializerObjectUnRegisterCallback callback,
+                                 void *user_data)
+{
+  unserializer->object_unregister_callback = callback;
+  unserializer->object_unregister_data = user_data;
 }
 
 void
@@ -2876,33 +3102,29 @@ rig_pb_unserializer_set_id_to_object_callback (
 }
 
 void
-rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer)
+rig_pb_unserializer_set_asset_unserialize_callback (
+                                     RigPBUnSerializer *unserializer,
+                                     RigPBUnSerializerAssetCallback callback,
+                                     void *user_data)
 {
-  if (unserializer->id_map)
-    g_hash_table_destroy (unserializer->id_map);
+  unserializer->unserialize_asset_callback = callback;
+  unserializer->unserialize_asset_data = user_data;
 }
 
 void
-rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
-                       const Rig__UI *pb_ui,
-                       bool skip_assets)
+rig_pb_unserializer_destroy (RigPBUnSerializer *unserializer)
 {
+  if (unserializer->id_to_object_map)
+    g_hash_table_destroy (unserializer->id_to_object_map);
+}
+
+RigUI *
+rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
+                       const Rig__UI *pb_ui)
+{
+  RigUI *ui = rig_ui_new (unserializer->engine);
   RigEngine *engine = unserializer->engine;
   GList *l;
-
-  if (pb_ui->device)
-    {
-      Rig__Device *device = pb_ui->device;
-      if (device->has_width)
-        engine->device_width = device->width;
-      if (device->has_height)
-        engine->device_height = device->height;
-
-      if (device->background)
-        pb_init_color (engine->ctx,
-                       &engine->background_color,
-                       device->background);
-    }
 
   unserialize_assets (unserializer,
                       pb_ui->n_assets,
@@ -2916,26 +3138,28 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
                            pb_ui->n_controllers,
                            pb_ui->controllers);
 
-  rig_engine_free_ui (engine);
-
-  engine->scene = rut_graph_new (engine->ctx);
+  ui->scene = rut_graph_new (engine->ctx);
   for (l = unserializer->entities; l; l = l->next)
     {
+      g_print ("unserialized entiy %p\n", l->data);
       if (rut_graphable_get_parent (l->data) == NULL)
-        rut_graphable_add_child (engine->scene, l->data);
+        {
+          rut_graphable_add_child (ui->scene, l->data);
+          g_print ("%p added to scene %p\n", l->data, ui->scene);
+        }
     }
 
-  if (unserializer->light)
-    engine->light = unserializer->light;
+  ui->light = unserializer->light;
 
-  engine->controllers = unserializer->controllers;
+  ui->controllers = unserializer->controllers;
 
-  if (!skip_assets)
-    engine->assets = unserializer->assets;
+  ui->assets = unserializer->assets;
 
-  rig_engine_handle_ui_update (engine);
+  /* Make sure the ui is complete, in case anything was missing from what we
+   * loaded... */
+  rig_ui_prepare (ui);
 
-  rut_shell_queue_redraw (engine->ctx->shell);
+  return ui;
 }
 
 typedef struct _NamedBuffer

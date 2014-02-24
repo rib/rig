@@ -77,7 +77,7 @@ typedef struct _UndoRedoPathAddRemove
   RutProperty *property;
   float t;
 
-#warning "XXX: figure out how UndoRedoPathAddRemove with async edits via the simulator"
+//#warning "XXX: figure out how UndoRedoPathAddRemove with async edits via the simulator"
   /* When we initially log to remove a node then we won't save
    * a value until we actually apply the operation and so we
    * need to track when this boxed value is valid... */
@@ -171,8 +171,6 @@ typedef struct _UndoRedo
 struct _RigUndoJournal
 {
   RigEngine *engine;
-
-  RigPBSerializer *serializer;
 
   /* List of operations that can be undone. The operations are
    * appended to the end of this list so that they are kept in order
@@ -297,10 +295,10 @@ void
 rig_undo_journal_log_subjournal (RigUndoJournal *journal,
                                  RigUndoJournal *subjournal);
 
-CoglBool
+bool
 rig_undo_journal_undo (RigUndoJournal *journal);
 
-CoglBool
+bool
 rig_undo_journal_redo (RigUndoJournal *journal);
 
 RigUndoJournal *

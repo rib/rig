@@ -261,11 +261,11 @@ _rut_camera_flush_transforms (RutCamera *camera)
    * _flush() and use that camera before it is restored. */
   g_return_if_fail (camera->suspended == FALSE);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+  state = cogl_object_get_user_data (fb, &fb_camera_key);
   if (!state)
     {
       state = g_slice_new (CameraFlushState);
-      cogl_object_set_user_data (COGL_OBJECT (fb),
+      cogl_object_set_user_data (fb,
                                  &fb_camera_key,
                                  state,
                                  free_camera_flush_state);
@@ -302,7 +302,10 @@ static RutObject *
 _rut_camera_copy (RutObject *obj)
 {
   RutCamera *camera = obj;
-  RutCamera *copy = rut_camera_new (camera->ctx, camera->fb);
+  RutCamera *copy = rut_camera_new (camera->ctx,
+                                    -1, /* ortho/vp width */
+                                    -1, /* ortho/vp height */
+                                    camera->fb); /* may be NULL */
 
   copy->clear_fb = camera->clear_fb;
 
@@ -350,14 +353,15 @@ _rut_camera_init_type (void)
 }
 
 RutCamera *
-rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
+rut_camera_new (RutContext *ctx,
+                float width,
+                float height,
+                CoglFramebuffer *framebuffer)
 {
   RutCamera *camera =
     rut_object_alloc0 (RutCamera, &rut_camera_type, _rut_camera_init_type);
 
   camera->ctx = rut_object_ref (ctx);
-
-
 
   rut_introspectable_init (camera,
                            _rut_camera_prop_specs,
@@ -373,8 +377,11 @@ rut_camera_new (RutContext *ctx, CoglFramebuffer *framebuffer)
   camera->orthographic = TRUE;
   camera->x1 = 0;
   camera->y1 = 0;
-  camera->x2 = 100;
-  camera->y2 = 100;
+  camera->x2 = width;
+  camera->y2 = height;
+
+  camera->viewport[2] = width;
+  camera->viewport[3] = height;
 
   camera->near = -1;
   camera->far = 100;
@@ -626,6 +633,14 @@ rut_camera_get_projection (RutCamera *camera)
                                               camera->near,
                                               camera->far,
                                               camera->zoom);
+
+          g_print ("XXXXXXXXXXXXXXX %d\n", (int)camera->ctx->headless);
+          g_print ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
+                   camera->fov,
+                   aspect_ratio,
+                   camera->near,
+                   camera->far,
+                   camera->zoom);
         }
 
       camera->projection_cache_age = camera->projection_age;
@@ -1007,7 +1022,7 @@ rut_camera_suspend (RutCamera *camera)
 
   g_return_if_fail (camera->suspended == FALSE);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (camera->fb), &fb_camera_key);
+  state = cogl_object_get_user_data (camera->fb, &fb_camera_key);
 
   /* We only expect to be saving a camera that has been flushed */
   g_return_if_fail (state != NULL);
@@ -1041,7 +1056,7 @@ rut_camera_resume (RutCamera *camera)
    * to be touched so its transforms shouldn't have changed... */
   g_return_if_fail (camera->at_suspend_transform_age == camera->transform_age);
 
-  state = cogl_object_get_user_data (COGL_OBJECT (fb), &fb_camera_key);
+  state = cogl_object_get_user_data (fb, &fb_camera_key);
 
   /* We only expect to be restoring a camera that has been flushed
    * before */

@@ -32,6 +32,7 @@ typedef struct _RigController RigController;
 enum {
   RIG_CONTROLLER_PROP_LABEL,
   RIG_CONTROLLER_PROP_ACTIVE,
+  RIG_CONTROLLER_PROP_SUSPENDED, /* private */
   RIG_CONTROLLER_PROP_AUTO_DEACTIVATE,
   RIG_CONTROLLER_PROP_LOOP,
   RIG_CONTROLLER_PROP_RUNNING,
@@ -90,6 +91,8 @@ struct _RigController
 
   bool active;
   bool auto_deactivate;
+
+  bool suspended;
 
   RutTimeline *timeline;
   double elapsed;
@@ -151,6 +154,18 @@ rig_controller_set_active (RutObject *controller,
 
 bool
 rig_controller_get_active (RutObject *controller);
+
+/* Note: The suspended state overrides the active state and is
+ * intended to be used by the editor as a way of disabling controllers
+ * when in edit-mode but without inadvertently triggering any bindings
+ * which could happen by directly touching the active property
+ */
+void
+rig_controller_set_suspended (RutObject *object,
+                              bool suspended);
+
+bool
+rig_controller_get_suspended (RutObject *object);
 
 void
 rig_controller_set_auto_deactivate (RutObject *controller,

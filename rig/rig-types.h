@@ -20,7 +20,7 @@
 #ifndef _RIG_TYPES_H_
 #define _RIG_TYPES_H_
 
-/* This header exists to resolve circular header dependecies that
+/* This header exists to resolve circular header dependencies that
  * occur from having pointers to lots of engine types from the RigEngine
  * struct that also themselves need to refer back to the RigEngine
  * struct */

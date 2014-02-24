@@ -14,15 +14,19 @@
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with this library. If not, see <http://www.gnu.org/licenses/>.
+ * License along with this library. If not, see
+ * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _RUT_ENGINE_H_
-#define _RUT_ENGINE_H_
+#ifndef _RIG_ENGINE_H_
+#define _RIG_ENGINE_H_
 
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
+
+
+#include "rig-editor.h"
 
 /* Forward declare since there is a circular dependency between this
  * header and rig-camera-view.h which depends on this typedef... */
@@ -31,6 +35,15 @@ typedef enum _RigToolID
   RIG_TOOL_ID_SELECTION = 1,
   RIG_TOOL_ID_ROTATION,
 } RigToolID;
+
+typedef enum _RutSelectAction
+{
+  /* replaces the current selection */
+  RUT_SELECT_ACTION_REPLACE,
+  /* toggles whether the given item is selected or not */
+  RUT_SELECT_ACTION_TOGGLE,
+} RutSelectAction;
+
 
 
 #include "rig-protobuf-c-rpc.h"
@@ -64,23 +77,22 @@ typedef struct _RigEntitesSelection
   RutList selection_events_cb_list;
 } RigObjectsSelection;
 
-
 extern RutType rig_engine_type;
 
 struct _RigEngine
 {
   RutObjectBase _base;
 
-  CoglBool play_mode;
+  RigFrontendID frontend_id;
+
+  bool headless;
+  bool play_mode;
 
   char *ui_filename;
-  char *next_ui_filename;
+  RutClosure *finish_ui_load_closure;
 
-  GHashTable *id_map;
-
-  RutCamera *camera;
+  RutCamera *camera_2d;
   RutObject *root;
-  RutObject *scene;
 
   CoglMatrix identity;
 
@@ -100,8 +112,14 @@ struct _RigEngine
   RutContext *ctx;
   CoglOnscreen *onscreen;
 
+  RigPBSerializer *ops_serializer;
+  RutMemoryStack *frame_stack;
+  RutMemoryStack *sim_frame_stack;
+  RutMagazine *object_id_magazine;
+
+  /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
-  RutMemoryStack *serialization_stack;
+  RutInputQueue *simulator_input_queue;
 
   RutText *search_text;
   GList *required_search_tags;
@@ -119,16 +137,10 @@ struct _RigEngine
   CoglTexture2D *shadow_color;
   CoglTexture *shadow_map;
 
-  float device_width;
-  float device_height;
-  CoglColor background_color;
-
-  //float width;
-  //RutProperty width_property;
-  //float height;
-  //RutProperty height_property;
-
   RutStack *top_stack;
+  RigCameraView *main_camera_view;
+
+  /* XXX: Move to RigEditor */
   RutBin *top_bin;
   RutBoxLayout *top_vbox;
   RutBoxLayout *top_hbox;
@@ -139,38 +151,31 @@ struct _RigEngine
   RutBoxLayout *toolbar_vbox;
   RutBoxLayout *properties_hbox;
   RigSplitView *splits[1];
-
   //RutBevel *main_area_bevel;
-  RigCameraView *main_camera_view;
   RutStack *icon_bar_stack;
   RutStack *left_bar_stack;
   //RutTransform *left_bar_transform;
   //RutTransform *right_bar_transform;
   RutStack *right_bar_stack;
   //RutTransform *main_transform;
-
   RutStack *bottom_bar_stack;
   //RutTransform *bottom_bar_transform;
-
   //RutTransform *screen_area_transform;
 
   CoglPrimitive *grid_prim;
   CoglAttribute *circle_node_attribute;
   int circle_node_n_verts;
 
-  //RutTransform *slider_transform;
-  //RutSlider *slider;
-  //RutProperty *slider_progress;
-  RutRectangle *rect;
-  float width;
-  float height;
-  //float main_x;
-  //float main_y;
-  //float main_width;
-  //float main_height;
+  float window_width;
+  float window_height;
+
   float screen_area_width;
   float screen_area_height;
 
+  float device_width;
+  float device_height;
+
+  /* XXX: Move to RigEditor */
   RutUIViewport *search_vp;
   RutFold *search_results_fold;
   RutBoxLayout *search_results_vbox;
@@ -181,6 +186,7 @@ struct _RigEngine
   RutFlowLayout *assets_video_results;
   RutFlowLayout *assets_other_results;
 
+  /* XXX: Move to RigEditor */
   RutAsset *text_builtin_asset;
   RutAsset *circle_builtin_asset;
   RutAsset *nine_slice_builtin_asset;
@@ -191,6 +197,7 @@ struct _RigEngine
   GList *result_input_closures;
   GList *asset_enumerators;
 
+  /* XXX: Move to RigEditor */
   RutUIViewport *tool_vp;
   RutUIViewport *properties_vp;
   RutBin *inspector_bin;
@@ -198,27 +205,17 @@ struct _RigEngine
   RutObject *inspector;
   GList *all_inspectors;
 
+  /* XXX: Move to RigEditor */
   RigControllerView *controller_view;
 
   CoglMatrix main_view;
   float z_2d;
 
-  RutEntity *light;
-  RutEntity *light_handle;
-
-  RutEntity *play_camera;
-  RutCamera *play_camera_component;
+  /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
+  RutEntity *light_handle;
   RutEntity *play_camera_handle;
 #endif
-
-  /* postprocessing */
-  CoglFramebuffer *postprocess;
-  RutDepthOfField *dof;
-  CoglBool enable_dof;
-
-  RutArcball arcball;
-  CoglQuaternion saved_rotation;
 
   float grab_x;
   float grab_y;
@@ -226,18 +223,10 @@ struct _RigEngine
   RutInputCallback key_focus_callback;
   float grab_progress;
 
-  GList *assets;
-
-  GList *controllers;
   RigController *selected_controller;
   RutPropertyClosure *controller_progress_closure;
 
   RigObjectsSelection *objects_selection;
-
-  /* picking ray */
-  CoglPipeline *picking_ray_color;
-  CoglPrimitive *picking_ray;
-  CoglBool debug_pick_ray;
 
   /* The transparency grid widget that is displayed behind the assets list */
   RutImage *transparency_grid;
@@ -278,8 +267,11 @@ struct _RigEngine
 
   GHashTable *assets_registry;
 
+  /* TODO: The frontend, editor and simulator should be accessed as
+   * traits of the engine.
+   */
   RigFrontend *frontend; /* NULL if engine not acting as a frontend process */
-
+  RigEditor *editor; /* NULL if frontend isn't an editor */
   RigSimulator *simulator; /* NULL if engine not acting as a simulator */
 
   RigRPCServer *slave_service;
@@ -294,28 +286,41 @@ struct _RigEngine
 
   GList *slave_masters;
 
+  RigUI *edit_mode_ui;
+  RigUI *play_mode_ui;
+  RigUI *current_ui;
+
+  RutQueue *queued_deletes;
+
+  void (*apply_op_callback) (Rig__Operation *pb_op,
+                             void *user_data);
+  void *apply_op_data;
+
+  void (*ui_load_callback) (void *user_data);
+  void *ui_load_data;
+
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_ENGINE_N_PROPS];
 };
 
 /* FIXME: find a better place to put these prototypes */
 
-#ifdef RIG_EDITOR_ENABLED
-extern bool _rig_in_editor_mode;
-#endif
-
-extern bool _rig_in_simulator_mode;
-
 extern RutType rig_objects_selection_type;
 
 RigEngine *
 rig_engine_new_for_frontend (RutShell *shell,
                              RigFrontend *frontend,
-                             const char *ui_filename);
+                             const char *ui_filename,
+                             bool play_mode);
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
-                              RigSimulator *simulator);
+                              RigSimulator *simulator,
+                              bool play_mode);
+
+void
+rig_engine_load_file (RigEngine *engine,
+                      const char *filename);
 
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);
@@ -334,10 +339,11 @@ rig_engine_set_onscreen_size (RigEngine *engine,
                               int height);
 
 void
-rig_engine_free_ui (RigEngine *engine);
-
+rig_engine_set_edit_mode_ui (RigEngine *engine,
+                             RigUI *ui);
 void
-rig_engine_handle_ui_update (RigEngine *engine);
+rig_engine_set_play_mode_ui (RigEngine *engine,
+                             RigUI *ui);
 
 void
 rig_register_asset (RigEngine *engine,
@@ -349,14 +355,6 @@ rig_lookup_asset (RigEngine *engine,
 
 RutAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
-
-typedef enum _RutSelectAction
-{
-  /* replaces the current selection */
-  RUT_SELECT_ACTION_REPLACE,
-  /* toggles whether the given item is selected or not */
-  RUT_SELECT_ACTION_TOGGLE,
-} RutSelectAction;
 
 void
 rig_select_object (RigEngine *engine,
@@ -370,9 +368,6 @@ rig_reload_inspector_property (RigEngine *engine,
 void
 rig_reload_position_inspector (RigEngine *engine,
                                RutEntity *entity);
-
-void
-rig_set_play_mode_enabled (RigEngine *engine, CoglBool enabled);
 
 void
 rig_engine_sync_slaves (RigEngine *engine);
@@ -417,5 +412,28 @@ rig_add_tool_changed_callback (RigEngine *engine,
                                void *user_data,
                                RutClosureDestroyCallback destroy_notify);
 
+void
+rig_engine_set_apply_op_callback (RigEngine *engine,
+                                  void (*callback) (Rig__Operation *pb_op,
+                                                    void *user_data),
+                                  void *user_data);
 
-#endif /* _RUT_ENGINE_H_ */
+void
+rig_engine_set_ui_load_callback (RigEngine *engine,
+                                 void (*callback) (void *user_data),
+                                 void *user_data);
+
+void
+rig_engine_queue_delete (RigEngine *engine,
+                         RutObject *object);
+
+void
+rig_engine_garbage_collect (RigEngine *engine,
+                            void (*object_callback) (RutObject *object,
+                                                     void *user_data),
+                            void *user_data);
+
+void
+rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
+
+#endif /* _RIG_ENGINE_H_ */

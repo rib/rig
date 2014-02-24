@@ -16,6 +16,8 @@ static char **_rig_device_remaining_args = NULL;
 
 typedef struct _RigDevice
 {
+  RutObjectBase _base;
+
   RutShell *shell;
   RutContext *ctx;
   RigFrontend *frontend;
@@ -32,100 +34,161 @@ static const GOptionEntry _rig_device_entries[] =
   { 0 }
 };
 
-void
-rig_device_init (RutShell *shell, void *user_data)
-{
-  RigDevice *device = user_data;
-
-  device->frontend = rig_frontend_new (shell, device->ui_filename);
-  device->engine = device->frontend->engine;
-
-  rut_shell_add_input_callback (device->shell,
-                                rig_engine_input_handler,
-                                device->engine, NULL);
-}
-
-void
-rig_device_fini (RutShell *shell, void *user_data)
-{
-  RigDevice *device = user_data;
-  RigEngine *engine = device->engine;
-
-  rut_object_unref (engine);
-  device->engine = NULL;
-}
-
 static void
-handle_run_frame_ack (const Rig__RunFrameAck *ack,
-                      void *closure_data)
-{
-  RutShell *shell = closure_data;
-
-  rut_shell_finish_frame (shell);
-
-  g_print ("Device: Run Frame ACK received\n");
-}
-
-static void
-rig_device_paint (RutShell *shell, void *user_data)
+rig_device_redraw (RutShell *shell, void *user_data)
 {
   RigDevice *device = user_data;
   RigEngine *engine = device->engine;
   RigFrontend *frontend = engine->frontend;
-  ProtobufCService *simulator_service =
-    rig_pb_rpc_client_get_service (frontend->frontend_peer->pb_rpc_client);
-  int n_events;
-  RutList *input_queue = rut_shell_get_input_queue (shell, &n_events);
-  Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
-  RigPBSerializer *serializer;
 
   rut_shell_start_redraw (shell);
 
-  rut_shell_update_timelines (shell);
-
-  serializer = rig_pb_serializer_new (engine);
-
-  setup.n_events = n_events;
-  setup.events =
-    rig_pb_serialize_input_events (serializer, input_queue, n_events);
-
-  if (frontend->has_resized)
+  /* XXX: we only kick off a new frame in the simulator if it's not
+   * still busy... */
+  if (!frontend->ui_update_pending)
     {
-      setup.has_width = true;
-      setup.width = engine->width;
-      setup.has_height = true;
-      setup.height = engine->height;
-      frontend->has_resized = false;
+      RutInputQueue *input_queue = rut_shell_get_input_queue (shell);
+      Rig__FrameSetup setup = RIG__FRAME_SETUP__INIT;
+      RigPBSerializer *serializer;
+
+      serializer = rig_pb_serializer_new (engine);
+
+      setup.has_play_mode = true;
+      setup.play_mode = engine->play_mode;
+
+      setup.n_events = input_queue->n_events;
+      setup.events =
+        rig_pb_serialize_input_events (serializer, input_queue);
+
+      if (frontend->has_resized)
+        {
+          setup.has_view_width = true;
+          setup.view_width = engine->window_width;
+          setup.has_view_height = true;
+          setup.view_height = engine->window_height;
+          frontend->has_resized = false;
+        }
+
+      setup.edit = NULL;
+
+      rig_frontend_run_simulator_frame (frontend, &setup);
+
+      rig_pb_serializer_destroy (serializer);
+
+      rut_input_queue_clear (input_queue);
+
+      rut_memory_stack_rewind (engine->sim_frame_stack);
     }
 
-  rig__simulator__run_frame (simulator_service,
-                             &setup,
-                             handle_run_frame_ack,
-                             shell);
-
-  rig_pb_serializer_destroy (serializer);
-
-  rut_shell_clear_input_queue (shell);
+  rut_shell_update_timelines (shell);
 
   rut_shell_run_pre_paint_callbacks (shell);
 
+  rut_shell_run_start_paint_callbacks (shell);
+
   rig_engine_paint (engine);
+
+  rig_engine_garbage_collect (engine,
+                              NULL, /* callback */
+                              NULL); /* user_data */
 
   rut_shell_run_post_paint_callbacks (shell);
 
+  rut_memory_stack_rewind (engine->frame_stack);
+
   rut_shell_end_redraw (shell);
+
+  /* FIXME: we should hook into an asynchronous notification of
+   * when rendering has finished for determining when a frame is
+   * finished. */
+  rut_shell_finish_frame (shell);
 
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
+}
+
+static void
+simulator_connected_cb (void *user_data)
+{
+  RigDevice *device = user_data;
+  RigEngine *engine = device->engine;
+
+  rig_frontend_reload_simulator_ui (device->frontend,
+                                    engine->play_mode_ui,
+                                    true); /* play mode ui */
+}
+
+static void
+_rig_device_free (void *object)
+{
+  RigDevice *device = object;
+
+  rut_object_unref (device->engine);
+
+  rut_object_unref (device->ctx);
+  rut_object_unref (device->shell);
+
+  rut_object_free (RigDevice, device);
+}
+
+static RutType rig_device_type;
+
+static void
+_rig_device_init_type (void)
+{
+  rut_type_init (&rig_device_type, "RigDevice", _rig_device_free);
+}
+
+static RigDevice *
+rig_device_new (const char *filename)
+{
+  RigDevice *device = rut_object_alloc0 (RigDevice,
+                                         &rig_device_type,
+                                         _rig_device_init_type);
+  RigEngine *engine;
+  char *assets_location;
+
+  device->ui_filename = g_strdup (filename);
+
+  device->shell = rut_shell_new (false, /* not headless */
+                                 NULL, /* no init func */
+                                 NULL, /* no fini func */
+                                 rig_device_redraw,
+                                 device);
+
+  device->ctx = rut_context_new (device->shell);
+
+  rut_context_init (device->ctx);
+
+  assets_location = g_path_get_dirname (device->ui_filename);
+  rut_set_assets_location (device->ctx, assets_location);
+  g_free (assets_location);
+
+  device->frontend = rig_frontend_new (device->shell,
+                                       RIG_FRONTEND_ID_DEVICE,
+                                       device->ui_filename,
+                                       true); /* start in play mode */
+
+  engine = device->frontend->engine;
+  device->engine = engine;
+
+  rig_frontend_set_simulator_connected_callback (device->frontend,
+                                                 simulator_connected_cb,
+                                                 device);
+
+  rut_shell_add_input_callback (device->shell,
+                                rig_engine_input_handler,
+                                device->engine, NULL);
+
+  return device;
 }
 
 int
 main (int argc, char **argv)
 {
   GOptionContext *context = g_option_context_new (NULL);
-  RigDevice device;
+  RigDevice *device;
   GError *error = NULL;
-  char *assets_location;
 
   gst_init (&argc, &argv);
 
@@ -145,27 +208,11 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  memset (&device, 0, sizeof (RigDevice));
+  device = rig_device_new (_rig_device_remaining_args[0]);
 
-  device.ui_filename = g_strdup (_rig_device_remaining_args[0]);
+  rut_shell_main (device->shell);
 
-  device.shell = rut_shell_new (false, /* not headless */
-                                rig_device_init,
-                                rig_device_fini,
-                                rig_device_paint,
-                                &device);
-
-  device.ctx = rut_context_new (device.shell);
-
-  rut_context_init (device.ctx);
-
-  assets_location = g_path_get_dirname (device.ui_filename);
-  rut_set_assets_location (device.ctx, assets_location);
-
-  rut_shell_main (device.shell);
-
-  rut_object_unref (device.ctx);
-  rut_object_unref (device.shell);
+  rut_object_unref (device);
 
   return 0;
 }

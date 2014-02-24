@@ -157,11 +157,6 @@ typedef struct _RutPropertySpec
    */
   size_t data_offset;
 
-  /* Most property specs are tracked in a per-type array with
-   * enums that are used to index into the array
-   */
-  int id;
-
   /* Note: these are optional. If the property value doesn't
    * need validation then the setter can be left as NULL
    * and if the value is always up to date the getter can
@@ -259,7 +254,10 @@ struct _RutProperty
   /* Most properties are stored in an array associated with an object
    * with an enum to index the array. This will be an index into the
    * array in that case and serves as a unique identifier for the
-   * property for the associated object. */
+   * property for the associated object.
+   *
+   * XXX: consider moving this into the spec:
+   */
   uint8_t id; /* NB: This implies we can have no more
                  than 255 properties per object */
 };

@@ -28,6 +28,7 @@
 #include "rut-mesh.h"
 #include "rut-mesh-ply.h"
 #include "rut-meshable.h"
+#include "rut-queue.h"
 
 #include "components/rut-model.h"
 
@@ -1093,17 +1094,17 @@ grow_texture_patch (RutModel *model, TexturePatch *patch)
 {
   RutModelPrivate *priv = model->priv;
   CoglBool *visited = g_new (CoglBool, priv->n_polygons);
-  GQueue *stack = g_queue_new ();
+  RutQueue *stack = rut_queue_new ();
   int i;
 
   for (i = 0; i < priv->n_polygons; i++)
     visited[i] = FALSE;
 
-  g_queue_push_tail (stack, patch->root);
+  rut_queue_push_tail (stack, patch->root);
 
-  while (!g_queue_is_empty (stack))
+  while (!rut_queue_is_empty (stack))
     {
-      Polygon *parent = g_queue_pop_tail (stack);
+      Polygon *parent = rut_queue_pop_tail (stack);
 
       if (visited[parent->id])
         continue;
@@ -1125,7 +1126,7 @@ grow_texture_patch (RutModel *model, TexturePatch *patch)
               if (extract_texture_coordinates (patch, child))
                 {
                   patch->polygons = g_list_prepend (patch->polygons, child);
-                  g_queue_push_tail (stack, child);
+                  rut_queue_push_tail (stack, child);
                   child->uncovered = FALSE;
                 }
             }
@@ -1133,7 +1134,7 @@ grow_texture_patch (RutModel *model, TexturePatch *patch)
     }
 
   g_free (visited);
-  g_queue_free (stack);
+  rut_queue_free (stack);
 }
 
 TexturePatch*
