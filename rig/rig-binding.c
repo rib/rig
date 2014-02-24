@@ -336,7 +336,8 @@ generate_function_node (RigBinding *binding)
                                    binding,
                                    NULL); /* destroy */
 
-  update_function_node (binding);
+  if (!engine->simulator)
+    update_function_node (binding);
 }
 
 void
