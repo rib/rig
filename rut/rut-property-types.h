@@ -4,7 +4,7 @@ SCALAR_TYPE(double, double, DOUBLE)
 SCALAR_TYPE(integer, int, INTEGER)
 SCALAR_TYPE(enum, int, ENUM)
 SCALAR_TYPE(uint32, uint32_t, UINT32)
-SCALAR_TYPE(boolean, CoglBool, BOOLEAN)
+SCALAR_TYPE(boolean, bool, BOOLEAN)
 
 POINTER_TYPE(object, RutObject *, OBJECT)
 POINTER_TYPE(asset, RutAsset *, ASSET)

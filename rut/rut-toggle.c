@@ -55,13 +55,13 @@ struct _RutToggle
 
   RutContext *ctx;
 
-  CoglBool state;
-  CoglBool enabled;
+  bool state;
+  bool enabled;
 
   /* While we have the input grabbed we want to reflect what
    * the state will be when the mouse button is released
    * without actually changing the state... */
-  CoglBool tentative_set;
+  bool tentative_set;
 
   /* FIXME: we don't need a separate tick for every toggle! */
   PangoLayout *tick;

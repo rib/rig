@@ -63,9 +63,9 @@ struct _RutShape
 
   RutContext *ctx;
 
-  int width;
-  int height;
-  CoglBool shaped;
+  float width;
+  float height;
+  bool shaped;
 
   RutShapeModel *model;
 
