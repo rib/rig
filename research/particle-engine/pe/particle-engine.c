@@ -116,7 +116,7 @@ inline void particle_engine_push_buffer(struct particle_engine *engine,
 {
 	CoglError *error = NULL;
 
-	engine->vertices = cogl_buffer_map(COGL_BUFFER(engine->attribute_buffer),
+	engine->vertices = cogl_buffer_map(engine->attribute_buffer,
 					   access, hints, &error);
 
 	if (error != NULL) {
@@ -127,7 +127,7 @@ inline void particle_engine_push_buffer(struct particle_engine *engine,
 
 inline void particle_engine_pop_buffer(struct particle_engine *engine)
 {
-	cogl_buffer_unmap(COGL_BUFFER(engine->attribute_buffer));
+	cogl_buffer_unmap(engine->attribute_buffer);
 }
 
 inline float *particle_engine_get_particle_position(struct particle_engine *engine,

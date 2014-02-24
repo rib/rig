@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
 	onscreen = cogl_onscreen_new(demo.ctx, WIDTH, HEIGHT);
 
-	demo.fb = COGL_FRAMEBUFFER(onscreen);
+	demo.fb = onscreen;
 	demo.width = cogl_framebuffer_get_width(demo.fb);
 	demo.height = cogl_framebuffer_get_height(demo.fb);
 
