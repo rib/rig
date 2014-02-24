@@ -9,7 +9,7 @@ ORIGDIR=`pwd`
 cd $srcdir
 PROJECT=Rig
 TEST_TYPE=-f
-FILE=rig/jni/rig-engine.c
+FILE=rig/rig-engine.c
 
 test $TEST_TYPE $FILE || {
 	echo "You must run this script in the top-level $PROJECT directory"
