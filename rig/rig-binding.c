@@ -325,8 +325,8 @@ generate_function_node (RigBinding *binding)
 
   binding->function_node =
     rig_code_node_new (engine,
-                       engine->codegen_string0->str,
-                       engine->codegen_string1->str);
+                       NULL, /* pre */
+                       NULL); /* post */
 
   rut_graphable_add_child (engine->code_graph, binding->function_node);
   rut_object_unref (binding->function_node);
