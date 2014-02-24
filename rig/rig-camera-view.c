@@ -1733,6 +1733,16 @@ input_cb (RutInputEvent *event,
                             ray_position,
                             ray_direction);
 
+#if 0
+      if (picked_entity)
+        {
+          RutProperty *label =
+            rut_introspectable_lookup_property (picked_entity, "label");
+
+          g_print ("Entity picked: %s\n", rut_property_get_text (label));
+        }
+#endif
+
       if (need_play_camera_reset)
         reset_play_camera (view);
 
@@ -1743,8 +1753,8 @@ input_cb (RutInputEvent *event,
               RutObject *inputable =
                 rut_entity_get_component (picked_entity,
                                           RUT_COMPONENT_TYPE_INPUT);
-              RutProperty *label =
-                rut_introspectable_lookup_property (picked_entity, "label");
+              //RutProperty *label =
+              //  rut_introspectable_lookup_property (picked_entity, "label");
               //g_print ("Entity picked: %s\n", rut_property_get_text (label));
 
               if (inputable)
@@ -2119,23 +2129,25 @@ input_region_cb (RutInputRegion *region,
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
 
-      if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
-          rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+      if (view->play_mode)
         {
-          rut_shell_grab_input (view->context->shell,
-                                rut_input_event_get_camera (event),
-                                simulator_implicit_grab_input_cb,
-                                view);
+          if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
+              rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
+            {
+              rut_shell_grab_input (view->context->shell,
+                                    rut_input_event_get_camera (event),
+                                    simulator_implicit_grab_input_cb,
+                                    view);
+            }
+
+          rut_input_queue_append (engine->simulator_input_queue, event);
         }
-
-      rut_input_queue_append (engine->simulator_input_queue, event);
-
-      /* While editing we do picking in the editor itself since its
-       * the graph in the frontend process that gets edited and
-       * we then send operations to the simulator to update its
-       * UI description. */
-      if (!view->play_mode)
+      else
         {
+          /* While editing we do picking in the editor itself since its
+           * the graph in the frontend process that gets edited and
+           * we then send operations to the simulator to update its
+           * UI description. */
           return input_cb (event, user_data);
         }
 
