@@ -97,8 +97,14 @@ rig_code_node_new (RigEngine *engine,
 
   rut_list_init (&node->link_closures);
 
-  node->pre = g_strdup (pre);
-  node->post = g_strdup (post);
+  /* Note: in device mode and in the simulator we avoid
+   * tracing any source code. */
+
+  if (pre)
+    node->pre = g_strdup (pre);
+
+  if (post)
+    node->post = g_strdup (post);
 
   return node;
 }
