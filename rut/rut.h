@@ -7,6 +7,7 @@
 
 #include "rut-global.h"
 #include "rut-type.h"
+#include "rut-exception.h"
 #include "rut-object.h"
 #include "rut-property.h"
 #include "rut-interfaces.h"
