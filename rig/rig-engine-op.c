@@ -416,11 +416,36 @@ rig_engine_op_controller_set_const (RigEngine *engine,
   engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
+static RigController *
+lookup_object (RigEngineOpApplyContext *ctx,
+               uint64_t object_id)
+{
+  return ctx->id_to_object_cb (object_id, ctx->user_data);
+}
+
 static bool
 _apply_op_controller_set_const (RigEngineOpApplyContext *ctx,
                                 Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerSetConst *set_const = pb_op->controller_set_const;
+  RigController *controller = lookup_object (ctx, set_const->controller_id);
+  RutObject *object = lookup_object (ctx, set_const->object_id);
+  RutProperty *property;
+  RutBoxed boxed;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, set_const->property_id);
+
+  rig_pb_init_boxed_value (ctx->unserializer,
+                           &boxed,
+                           property->spec->type,
+                           set_const->value);
+
+  rig_controller_set_property_constant (controller,
+                                        property,
+                                        &boxed);
   return true;
 }
 
@@ -429,7 +454,30 @@ _map_op_controller_set_const (RigEngineOpMapContext *ctx,
                               Rig__Operation *src_pb_op,
                               Rig__Operation *pb_op)
 {
+  pb_op->controller_set_const =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerSetConst,
+                rig__operation__controller_set_const__init,
+                src_pb_op->controller_set_const);
 
+  pb_op->controller_set_const->controller_id =
+    ctx->map_id_cb (src_pb_op->controller_set_const->controller_id,
+                    ctx->user_data);
+
+  /* Note: we assume allocations are on the frame_stack so we don't
+   * need to explicitly free anything here... */
+  if (!pb_op->controller_set_const->controller_id)
+    return false;
+
+  pb_op->controller_set_const->object_id =
+    ctx->map_id_cb (src_pb_op->controller_set_const->object_id, ctx->user_data);
+
+  /* Note: we assume allocations are on the frame_stack so we don't
+   * need to explicitly free anything here... */
+  if (!pb_op->controller_set_const->object_id)
+    return false;
+
+  return true;
 }
 
 void
