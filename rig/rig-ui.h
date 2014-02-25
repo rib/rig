@@ -73,4 +73,7 @@ rig_ui_suspend (RigUI *ui);
 void
 rig_ui_resume (RigUI *ui);
 
+RutEntity *
+rig_ui_find_entity (RigUI *ui, const char *label);
+
 #endif /* _RIG_UI_H_ */
