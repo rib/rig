@@ -154,6 +154,14 @@ _rut_button_input_free (void *object)
 {
   RutButtonInput *button_input = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   rut_introspectable_destroy (button_input);
 
   rut_object_free (RutButtonInput, object);

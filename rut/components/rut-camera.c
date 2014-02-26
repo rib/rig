@@ -157,7 +157,16 @@ _rut_camera_free (void *object)
 {
   RutCamera *camera = object;
 
-  cogl_object_unref (camera->fb);
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
+  if (camera->fb)
+    cogl_object_unref (camera->fb);
 
   while (camera->input_regions)
     rut_camera_remove_input_region (camera, camera->input_regions->data);

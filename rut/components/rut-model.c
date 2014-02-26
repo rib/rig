@@ -118,6 +118,14 @@ _rut_model_free (void *object)
 {
   RutModel *model = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   if (model->primitive)
     cogl_object_unref (model->primitive);
 
@@ -1351,6 +1359,23 @@ rut_model_new_from_asset_mesh (RutContext *ctx,
   model->type = RUT_MODEL_TYPE_FILE;
   model->mesh = rut_mesh_copy (mesh);
 
+  /* XXX: needs_normals/needs_tex_coords currently only determine
+   * whether we should initialize these attributes, not actually add
+   * them if they are completely missing.
+   *
+   * FIXME: we should handle the case where the attributes are
+   * completely missing.
+   */
+#ifdef RIG_ENABLE_DEBUG
+  g_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
+                                                 "cogl_normal_in"),
+                        NULL);
+
+  g_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
+                                                 "cogl_tex_coord0_in"),
+                        NULL);
+#endif
+
   attribute = rut_mesh_find_attribute (model->mesh, "cogl_position_in");
 
   model->min_x = G_MAXFLOAT;
@@ -1455,12 +1480,12 @@ rut_model_new_from_asset_mesh (RutContext *ctx,
 
 RutModel *
 rut_model_new_from_asset (RutContext *ctx,
-                          RutAsset *asset,
-                          bool needs_normals,
-                          bool needs_tex_coords)
+                          RutAsset *asset)
 {
   RutMesh *mesh = rut_asset_get_mesh (asset);
   RutModel *model;
+  bool needs_normals = !rut_asset_get_mesh_has_normals (asset);
+  bool needs_tex_coords = !rut_asset_get_mesh_has_tex_coords (asset);
 
   if (!mesh)
     return NULL;

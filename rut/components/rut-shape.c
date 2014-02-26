@@ -310,7 +310,16 @@ _rut_shape_free (void *object)
 {
   RutShape *shape = object;
 
-  rut_object_unref (shape->model);
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
+  if (shape->model)
+    rut_object_unref (shape->model);
 
   rut_introspectable_destroy (shape);
 

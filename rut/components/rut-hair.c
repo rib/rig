@@ -478,6 +478,14 @@ _rut_hair_free (void *object)
   RutHair *hair = object;
   int i;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   for (i = 0; i < hair->n_shells; i++)
     {
       CoglTexture *texture = g_array_index (hair->shell_textures, CoglTexture *, i);

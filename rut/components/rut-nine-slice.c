@@ -335,6 +335,14 @@ _rut_nine_slice_free (void *object)
 {
   RutNineSlice *nine_slice = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   rut_closure_list_disconnect_all (&nine_slice->updated_cb_list);
 
   if (nine_slice->texture)

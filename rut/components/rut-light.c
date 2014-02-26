@@ -116,6 +116,15 @@ static void
 _rut_light_free (void *object)
 {
   RutLight *light = object;
+
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   rut_object_free (RutLight, light);
 }
 

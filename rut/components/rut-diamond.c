@@ -39,6 +39,14 @@ _rut_diamond_slice_free (void *object)
 {
   RutDiamondSlice *diamond_slice = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   rut_object_unref (diamond_slice->mesh);
 
   rut_object_free (RutDiamondSlice, object);
