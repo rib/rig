@@ -261,6 +261,21 @@ activate_property_binding (RigControllerPropData *prop_data,
                            void *user_data)
 {
   RigController *controller = user_data;
+  RutProperty *property = prop_data->property;
+
+  if (property->binding)
+    {
+      /* FIXME: we should find a way of reporting this to the
+       * user when running in an editor!! */
+      char *debug_name =
+        rig_engine_get_object_debug_name (prop_data->property->object);
+      g_warning ("Controller collision for \"%s\" property on %s",
+                 prop_data->property->spec->name,
+                 debug_name);
+      g_free (debug_name);
+
+      return;
+    }
 
   switch (prop_data->method)
     {
@@ -272,16 +287,21 @@ activate_property_binding (RigControllerPropData *prop_data,
          * value once on activate, we add a binding for the property
          * so we can block conflicting bindings being set while this
          * controller is active...
+         *
+         * FIXME: We should probably not make the dummy binding depend
+         * on the active property since it may lead to a lot of
+         * redundant callbacks when activating/deactivating
+         * controllers.
          */
         active_prop = &controller->props[RIG_CONTROLLER_PROP_ACTIVE];
-        rut_property_set_binding (prop_data->property,
+        rut_property_set_binding (property,
                                   dummy_binding_cb,
                                   prop_data,
                                   active_prop,
                                   NULL); /* sentinal */
 
         rut_property_set_boxed (&controller->context->property_ctx,
-                                prop_data->property,
+                                property,
                                 &prop_data->constant_value);
         break;
       }
@@ -289,7 +309,8 @@ activate_property_binding (RigControllerPropData *prop_data,
       {
         RutProperty *progress_prop =
           &controller->props[RIG_CONTROLLER_PROP_PROGRESS];
-        rut_property_set_binding (prop_data->property,
+
+        rut_property_set_binding (property,
                                   assert_path_value_cb,
                                   prop_data,
                                   progress_prop,
