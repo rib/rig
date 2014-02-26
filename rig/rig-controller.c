@@ -330,10 +330,16 @@ deactivate_property_binding (RigControllerPropData *prop_data,
   rut_property_remove_binding (prop_data->property);
 }
 
-static void
-update_effective_active_state (RigController *controller )
+static bool
+effective_active (RigController *controller)
 {
-  if (controller->active && !controller->suspended)
+  return controller->active && !controller->suspended;
+}
+
+static void
+update_effective_active_state (RigController *controller)
+{
+  if (effective_active (controller))
     {
       rig_controller_foreach_property (controller,
                                        activate_property_binding,
@@ -684,7 +690,7 @@ rig_controller_add_property (RigController *controller,
                        property,
                        prop_data);
 
-  if (controller->active)
+  if (effective_active (controller))
     activate_property_binding (prop_data, controller);
 
   rut_closure_list_invoke (&controller->operation_cb_list,
@@ -703,7 +709,7 @@ rig_controller_remove_property (RigController *controller,
 
   if (prop_data)
     {
-      if (controller->active)
+      if (effective_active (controller))
         deactivate_property_binding (prop_data, controller);
 
       rut_closure_list_invoke (&controller->operation_cb_list,
@@ -731,7 +737,7 @@ rig_controller_set_property_method (RigController *controller,
 
   prop_data->method = method;
 
-  if (controller->active)
+  if (effective_active (controller))
     {
       deactivate_property_binding (prop_data, controller);
       activate_property_binding (prop_data, controller);
@@ -757,7 +763,7 @@ rig_controller_set_property_constant (RigController *controller,
   rut_boxed_destroy (&prop_data->constant_value);
   rut_boxed_copy (&prop_data->constant_value, boxed_value);
 
-  if (controller->active &&
+  if (effective_active (controller) &&
       prop_data->method == RIG_CONTROLLER_METHOD_CONSTANT)
     {
       rut_property_set_boxed (&controller->context->property_ctx,
@@ -784,7 +790,7 @@ rig_controller_set_property_path (RigController *controller,
   prop_data->path = rut_object_ref (path);
 #warning "FIXME: what if this changes the length of the controller?"
 
-  if (controller->active &&
+  if (effective_active (controller) &&
       prop_data->method == RIG_CONTROLLER_METHOD_PATH)
     {
       assert_path_value_cb (prop_data->property, prop_data);
@@ -922,7 +928,7 @@ rig_controller_insert_path_value (RigController *controller,
 
   rig_path_insert_boxed (path, normalized_t, value);
 
-  if (controller->active &&
+  if (effective_active (controller) &&
       prop_data->method == RIG_CONTROLLER_METHOD_PATH)
     {
       assert_path_value_cb (property, prop_data);
@@ -996,7 +1002,7 @@ rig_controller_remove_path_value (RigController *controller,
         update_length (controller, max_t * length);
     }
 
-  if (controller->active &&
+  if (effective_active (controller) &&
       prop_data->method == RIG_CONTROLLER_METHOD_PATH)
     {
       assert_path_value_cb (property, prop_data);
