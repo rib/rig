@@ -1551,11 +1551,13 @@ pick (RigCameraView *view,
                           entitygraph_post_pick_cb,
                           &pick_ctx);
 
+#if 0
   if (pick_ctx.selected_entity)
     {
       g_message ("Hit entity, triangle #%d, distance %.2f",
                  pick_ctx.selected_index, pick_ctx.selected_distance);
     }
+#endif
 
   return pick_ctx.selected_entity;
 }
