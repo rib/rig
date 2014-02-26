@@ -281,12 +281,13 @@ rig_ui_prepare (RigUI *ui)
     }
 
   rut_camera_set_clear (ui->play_camera_component, false);
+
+  rig_ui_suspend (ui);
 }
 
 void
 rig_ui_suspend (RigUI *ui)
 {
-  RigEngine *engine = ui->engine;
   GList *l;
 
   if (ui->suspended)
@@ -296,23 +297,15 @@ rig_ui_suspend (RigUI *ui)
     {
       RigController *controller = l->data;
 
-      if (controller->active)
-        {
-          RutProperty *suspended_property =
-            rut_introspectable_get_property (controller,
-                                             RIG_CONTROLLER_PROP_SUSPENDED);
+      rig_controller_set_suspended (controller, true);
 
-          rut_property_set_boolean (&engine->ctx->property_ctx,
-                                    suspended_property, false);
+      ui->suspended_controllers =
+        g_list_prepend (ui->suspended_controllers, controller);
 
-          ui->suspended_controllers =
-            g_list_prepend (ui->suspended_controllers, controller);
-
-          /* We take a reference on all suspended controllers so we
-           * don't need to worry if any of the controllers are deleted
-           * while in edit mode. */
-          rut_object_ref (controller);
-        }
+      /* We take a reference on all suspended controllers so we
+       * don't need to worry if any of the controllers are deleted
+       * while in edit mode. */
+      rut_object_ref (controller);
     }
 
   ui->suspended = true;
@@ -321,7 +314,6 @@ rig_ui_suspend (RigUI *ui)
 void
 rig_ui_resume (RigUI *ui)
 {
-  RigEngine *engine = ui->engine;
   GList *l;
 
   if (!ui->suspended)
@@ -330,13 +322,8 @@ rig_ui_resume (RigUI *ui)
   for (l = ui->suspended_controllers; l; l = l->next)
     {
       RigController *controller = l->data;
-      RutProperty *suspended_property =
-        rut_introspectable_get_property (controller,
-                                         RIG_CONTROLLER_PROP_SUSPENDED);
 
-      rut_property_set_boolean (&engine->ctx->property_ctx,
-                                suspended_property, false);
-
+      rig_controller_set_suspended (controller, false);
       rut_object_unref (controller);
     }
 
