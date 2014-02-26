@@ -447,4 +447,7 @@ rig_engine_garbage_collect (RigEngine *engine,
 void
 rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
 
+char *
+rig_engine_get_object_debug_name (RutObject *object);
+
 #endif /* _RIG_ENGINE_H_ */

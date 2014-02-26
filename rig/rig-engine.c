@@ -1827,3 +1827,23 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
         rig_ui_suspend (engine->play_mode_ui);
     }
 }
+
+char *
+rig_engine_get_object_debug_name (RutObject *object)
+{
+  if (rut_object_get_type (object) == &rut_entity_type)
+    return g_strdup_printf ("%p(label=\"%s\")", object, rut_entity_get_label (object));
+  else if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
+    {
+      RutComponentableProps *component_props =
+        rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+      RutEntity *entity = component_props->entity;
+      const char *entity_label;
+      if (entity)
+        entity_label = entity ? rut_entity_get_label (entity) : "";
+      return g_strdup_printf ("%p(label=\"%s\"::%s)", entity_label,
+                              rut_object_get_type_name (object), NULL);
+    }
+  else
+    return g_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));
+}
