@@ -213,6 +213,7 @@ librut_la_LDFLAGS = \
     -export-dynamic \
     -export-symbols-regex "(^rut.*)|(^_rut.*)"
 librut_la_CFLAGS = \
+    $(RIG_EXTRA_CPPFLAGS) \
     @RIG_DEP_CFLAGS@ \
     @RIG_EXTRA_CFLAGS@
 librut_la_CPPFLAGS = \
