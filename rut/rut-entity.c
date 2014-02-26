@@ -444,8 +444,29 @@ rut_entity_add_component (RutEntity *entity,
 {
   RutComponentableProps *component =
     rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+
+#ifdef RIG_ENABLE_DEBUG
+  {
+    int i;
+
+    g_return_if_fail (component->entity == NULL);
+
+    for (i = 0; i < entity->components->len; i++)
+      {
+        RutObject *existing = g_ptr_array_index (entity->components, i);
+
+        RutComponentableProps *existing_component =
+          rut_object_get_properties (existing, RUT_TRAIT_ID_COMPONENTABLE);
+
+        g_return_if_fail (existing != object);
+        g_return_if_fail (existing_component->type != component->type);
+      }
+  }
+#endif
+
   component->entity = entity;
-  rut_object_ref (object);
+
+  rut_object_claim (object, entity);
   g_ptr_array_add (entity->components, object);
 }
 
@@ -456,7 +477,7 @@ rut_entity_remove_component (RutEntity *entity,
   RutComponentableProps *component =
     rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
   component->entity = NULL;
-  rut_object_unref (object);
+  rut_object_release (object, entity);
   g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
 }
 
