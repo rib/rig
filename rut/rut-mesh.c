@@ -325,7 +325,7 @@ foreach_vertex (RutMesh *mesh,
     }
 }
 
-static CoglBool
+static bool
 collect_attribute_state (RutMesh *mesh,
                          uint8_t **bases,
                          int *strides,
@@ -369,6 +369,7 @@ rut_mesh_foreach_vertex (RutMesh *mesh,
   int n_attributes = 0;
   uint8_t **bases;
   int *strides;
+  bool ready;
 
   va_start (ap, first_attribute);
   do {
@@ -380,8 +381,10 @@ rut_mesh_foreach_vertex (RutMesh *mesh,
   strides = g_alloca (sizeof (int) * n_attributes);
 
   va_start (ap, first_attribute);
-  collect_attribute_state (mesh, bases, strides, first_attribute, ap);
+  ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
+
+  g_return_if_fail (ready);
 
   foreach_vertex (mesh, callback, user_data, FALSE,
                   bases, strides, n_attributes);
@@ -398,6 +401,7 @@ rut_mesh_foreach_index (RutMesh *mesh,
   int n_attributes = 0;
   uint8_t **bases;
   int *strides;
+  bool ready;
 
   va_start (ap, first_attribute);
   do {
@@ -409,8 +413,10 @@ rut_mesh_foreach_index (RutMesh *mesh,
   strides = g_alloca (sizeof (int) * n_attributes);
 
   va_start (ap, first_attribute);
-  collect_attribute_state (mesh, bases, strides, first_attribute, ap);
+  ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
+
+  g_return_if_fail (ready);
 
   foreach_vertex (mesh, callback, user_data, TRUE,
                   bases, strides, n_attributes);
@@ -483,6 +489,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
   void **data2;
   void **tri_v[3];
   int tri_i[3];
+  bool ready;
 
   switch (mesh->mode)
     {
@@ -515,8 +522,10 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
   tri_v[2] = data2;
 
   va_start (ap, first_attribute);
-  collect_attribute_state (mesh, bases, strides, first_attribute, ap);
+  ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
+
+  g_return_if_fail (ready);
 
 #define SWAP_TRIANGLE_VERTICES(V0, V1) \
   do { \
