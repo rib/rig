@@ -32,11 +32,16 @@
 #include "rut-object.h"
 #include "rut-types.h"
 
-#ifndef RUT_ASSET_TYPEDEF
-/* Note: we avoid including rut-asset.h to avoid a circular
+/* FIXME: instead of supporting RigAsset properties we should
+ * support declaring type validation information for
+ * RutObject propertys. You should be able to specify a
+ * specific RutType or a mask of interfaces.
+ */
+#ifndef RIG_ASSET_TYPEDEF
+/* Note: we avoid including rig-asset.h to avoid a circular
  * dependency */
-typedef struct _RutAsset RutAsset;
-#define RUT_ASSET_TYPEDEF
+typedef struct _RigAsset RigAsset;
+#define RIG_ASSET_TYPEDEF
 #endif
 
 /* Note that rut-property-bare.h does not include all necessary

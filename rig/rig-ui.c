@@ -26,6 +26,7 @@
 
 #include "rig-ui.h"
 #include "rig-code.h"
+#include "rig-entity.h"
 
 
 static void
@@ -97,7 +98,7 @@ rig_ui_set_dso_data (RigUI *ui, uint8_t *data, int len)
 typedef struct
 {
   const char *label;
-  RutEntity *entity;
+  RigEntity *entity;
 } FindEntityData;
 
 static RutTraverseVisitFlags
@@ -107,8 +108,8 @@ find_entity_cb (RutObject *object,
 {
   FindEntityData *data = user_data;
 
-  if (rut_object_get_type (object) == &rut_entity_type &&
-      !strcmp (data->label, rut_entity_get_label (object)))
+  if (rut_object_get_type (object) == &rig_entity_type &&
+      !strcmp (data->label, rig_entity_get_label (object)))
     {
       data->entity = object;
       return RUT_TRAVERSE_VISIT_BREAK;
@@ -117,7 +118,7 @@ find_entity_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
-RutEntity *
+RigEntity *
 rig_ui_find_entity (RigUI *ui, const char *label)
 {
   FindEntityData data = { .label = label, .entity = NULL };
@@ -163,7 +164,7 @@ initialise_play_camera_position (RigEngine *engine,
   position[1] = engine->device_height / 2.0f;
   position[2] = z_2d / width_scale;
 
-  rut_entity_set_position (ui->play_camera, position);
+  rig_entity_set_position (ui->play_camera, position);
 }
 
 void
@@ -171,46 +172,46 @@ rig_ui_prepare (RigUI *ui)
 {
   RigEngine *engine = ui->engine;
   RigController *controller;
-  RutCamera *light_camera;
+  RutObject *light_camera;
 
   if (!ui->scene)
     ui->scene = rut_graph_new (engine->ctx);
 
   if (!ui->light)
     {
-      RutLight *light;
+      RigLight *light;
       float vector3[3];
       CoglColor color;
 
-      ui->light = rut_entity_new (engine->ctx);
-      rut_entity_set_label (ui->light, "light");
+      ui->light = rig_entity_new (engine->ctx);
+      rig_entity_set_label (ui->light, "light");
 
       vector3[0] = 0;
       vector3[1] = 0;
       vector3[2] = 500;
-      rut_entity_set_position (ui->light, vector3);
+      rig_entity_set_position (ui->light, vector3);
 
-      rut_entity_rotate_x_axis (ui->light, 20);
-      rut_entity_rotate_y_axis (ui->light, -20);
+      rig_entity_rotate_x_axis (ui->light, 20);
+      rig_entity_rotate_y_axis (ui->light, -20);
 
-      light = rut_light_new (engine->ctx);
+      light = rig_light_new (engine->ctx);
       cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
-      rut_light_set_ambient (light, &color);
+      rig_light_set_ambient (light, &color);
       cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
-      rut_light_set_diffuse (light, &color);
+      rig_light_set_diffuse (light, &color);
       cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
-      rut_light_set_specular (light, &color);
+      rig_light_set_specular (light, &color);
 
-      rut_entity_add_component (ui->light, light);
+      rig_entity_add_component (ui->light, light);
 
       rut_graphable_add_child (ui->scene, ui->light);
     }
 
-  light_camera = rut_entity_get_component (ui->light,
+  light_camera = rig_entity_get_component (ui->light,
                                            RUT_COMPONENT_TYPE_CAMERA);
   if (!light_camera)
     {
-      light_camera = rut_camera_new (engine->ctx,
+      light_camera = rig_camera_new (engine,
                                      1000, /* ortho/vp width */
                                      1000, /* ortho/vp height */
                                      NULL);
@@ -223,7 +224,7 @@ rig_ui_prepare (RigUI *ui)
       rut_camera_set_near_plane (light_camera, 1.1f);
       rut_camera_set_far_plane (light_camera, 1500.f);
 
-      rut_entity_add_component (ui->light, light_camera);
+      rig_entity_add_component (ui->light, light_camera);
     }
 
   if (engine->frontend)
@@ -252,8 +253,8 @@ rig_ui_prepare (RigUI *ui)
         ui->play_camera = rut_object_ref (ui->play_camera);
       else
         {
-          ui->play_camera = rut_entity_new (engine->ctx);
-          rut_entity_set_label (ui->play_camera, "play-camera");
+          ui->play_camera = rig_entity_new (engine->ctx);
+          rig_entity_set_label (ui->play_camera, "play-camera");
 
           initialise_play_camera_position (engine, ui);
 
@@ -264,19 +265,19 @@ rig_ui_prepare (RigUI *ui)
   if (!ui->play_camera_component)
     {
       ui->play_camera_component =
-        rut_entity_get_component (ui->play_camera, RUT_COMPONENT_TYPE_CAMERA);
+        rig_entity_get_component (ui->play_camera, RUT_COMPONENT_TYPE_CAMERA);
 
       if (ui->play_camera_component)
         rut_object_ref (ui->play_camera_component);
       else
         {
           ui->play_camera_component =
-            rut_camera_new (engine->ctx,
+            rig_camera_new (engine,
                             -1, /* ortho/vp width */
                             -1, /* ortho/vp height */
                             engine->onscreen);
 
-          rut_entity_add_component (ui->play_camera, ui->play_camera_component);
+          rig_entity_add_component (ui->play_camera, ui->play_camera_component);
         }
     }
 

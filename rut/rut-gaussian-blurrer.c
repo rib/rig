@@ -23,7 +23,6 @@
 #include <math.h>
 
 #include "rut-gaussian-blurrer.h"
-#include "rut/components/rut-camera.h"
 
 /*
  * RutGaussianBlur

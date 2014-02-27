@@ -34,8 +34,8 @@
 #include "rut-input-region.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
-
-#include "components/rut-camera.h"
+#include "rut-introspectable.h"
+#include "rut-camera.h"
 
 enum {
   RUT_COLOR_BUTTON_PROP_COLOR,
@@ -131,7 +131,7 @@ _rut_color_button_paint (RutObject *object,
                          RutPaintContext *paint_ctx)
 {
   RutColorButton *button = (RutColorButton *) object;
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   CoglPipeline *tl_pipeline;
   CoglPipeline *br_pipeline;
@@ -432,7 +432,7 @@ picker_input_region_cb (RutInputRegion *region,
 
 static void
 show_picker (RutColorButton *button,
-             RutCamera *camera)
+             RutObject *camera)
 {
   RutObject *root, *parent;
   RutProperty *picker_color_prop;
@@ -538,7 +538,7 @@ button_grab_input_cb (RutInputEvent *event,
                       void *user_data)
 {
   RutColorButton *button = user_data;
-  RutCamera *camera = rut_input_event_get_camera (event);
+  RutObject *camera = rut_input_event_get_camera (event);
   CoglBool depressed;
   float x, y;
 
@@ -591,7 +591,7 @@ button_input_region_cb (RutInputRegion *region,
                         void *user_data)
 {
   RutColorButton *button = user_data;
-  RutCamera *camera;
+  RutObject *camera;
 
   if (!button->have_button_grab &&
       button->picker == NULL &&

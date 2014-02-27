@@ -33,7 +33,7 @@
 #include "rut-composite-sizable.h"
 #include "rut-input-region.h"
 
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 typedef enum _IconButtonState
 {
@@ -158,7 +158,7 @@ _rut_icon_button_init_type (void)
 
 typedef struct _IconButtonGrabState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutIconButton *button;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
@@ -244,7 +244,7 @@ _rut_icon_button_grab_input_cb (RutInputEvent *event,
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
           float width, height;
-          RutCamera *camera = state->camera;
+          RutObject *camera = state->camera;
 
           rut_camera_unproject_coord (camera,
                                       &state->transform,

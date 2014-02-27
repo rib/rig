@@ -300,7 +300,7 @@ typedef struct _LoadState
 } LoadState;
 
 bool
-asset_filter_cb (RutAsset *asset,
+asset_filter_cb (RigAsset *asset,
                  void *user_data)
 {
   bool *play_mode = user_data;
@@ -311,17 +311,17 @@ asset_filter_cb (RutAsset *asset,
   if (*play_mode)
     return false;
 
-  switch (rut_asset_get_type (asset))
+  switch (rig_asset_get_type (asset))
     {
-    case RUT_ASSET_TYPE_BUILTIN:
-    case RUT_ASSET_TYPE_TEXTURE:
-    case RUT_ASSET_TYPE_NORMAL_MAP:
-    case RUT_ASSET_TYPE_ALPHA_MASK:
+    case RIG_ASSET_TYPE_BUILTIN:
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK:
       return false; /* these assets aren't needed in the simulator */
-    case RUT_ASSET_TYPE_PLY_MODEL:
+    case RIG_ASSET_TYPE_MESH:
       return true; /* keep mesh assets for picking */
       //g_print ("Serialization requires asset %s\n",
-      //         rut_asset_get_path (asset));
+      //         rig_asset_get_path (asset));
       break;
     }
 

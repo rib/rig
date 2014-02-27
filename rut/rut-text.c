@@ -38,7 +38,7 @@
 #include "rut-color.h"
 #include "rut-meshable.h"
 
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 /* This is only defined since GLib 2.31.0. The documentation says that
  * it is available since 2.28 but that is a lie. */
@@ -1623,7 +1623,7 @@ static void
 selection_paint (RutText *text,
                  RutPaintContext *paint_ctx)
 {
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   float paint_opacity = rut_text_get_paint_opacity (text);
 
@@ -2219,7 +2219,7 @@ rut_text_motion_grab (RutInputEvent *event,
                       void *user_data)
 {
   RutText *text = user_data;
-  RutCamera *camera = rut_input_event_get_camera (event);
+  RutObject *camera = rut_input_event_get_camera (event);
   float x, y;
   int index_, offset;
   const char *text_str;
@@ -2304,7 +2304,7 @@ rut_text_button_press (RutText *text,
   int index_;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
-  RutCamera *camera;
+  RutObject *camera;
 
   g_print ("RutText Button Press!\n");
   /* we'll steal keyfocus if we need it */
@@ -2644,7 +2644,7 @@ rut_text_paint (RutObject *object,
                 RutPaintContext *paint_ctx)
 {
   RutText *text = object;
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   PangoLayout *layout;
   //RutBox alloc;
@@ -3162,10 +3162,6 @@ _rut_text_init_type (void)
       _rut_text_add_preferred_size_callback
   };
 
-  static RutComponentableVTable componentable_vtable = {
-      0
-  };
-
   static RutMeshableVTable meshable_vtable = {
       .get_mesh = rut_text_get_pick_mesh
   };
@@ -3180,10 +3176,6 @@ _rut_text_init_type (void)
 #define TYPE RutText
 
   rut_type_init (&rut_text_type, G_STRINGIFY (TYPE), _rut_text_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_COMPONENTABLE,
-                      offsetof (TYPE, component),
-                      &componentable_vtable);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -3225,10 +3217,6 @@ rut_text_new_full (RutContext *ctx,
   int i, password_hint_time;
 
   rut_object_unref (mesh_buffer);
-
-
-  text->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
-
 
   rut_list_init (&text->preferred_size_cb_list);
   rut_list_init (&text->delete_text_cb_list);

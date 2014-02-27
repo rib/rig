@@ -26,7 +26,7 @@
 #include "rut-object.h"
 
 typedef bool (*RutPickablePick) (RutObject *pickable,
-                                 RutCamera *camera,
+                                 RutObject *camera,
                                  const CoglMatrix *graphable_modelview,
                                  float x,
                                  float y);
@@ -38,7 +38,7 @@ typedef struct _RutPickableVTable
 
 static inline bool
 rut_pickable_pick (RutObject *pickable,
-                   RutCamera *camera,
+                   RutObject *camera,
                    const CoglMatrix *graphable_modelview,
                    float x,
                    float y)

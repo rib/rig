@@ -584,7 +584,7 @@ rig_path_insert_text (RigPath *path,
 void
 rig_path_insert_asset (RigPath *path,
                       float t,
-                      RutAsset *value)
+                      RigAsset *value)
 {
   RigNode *node = rig_path_find_node (path, t);
 
@@ -731,7 +731,7 @@ rig_path_lerp_property (RigPath *path,
       }
     case RUT_PROPERTY_TYPE_ASSET:
       {
-        RutAsset *value;
+        RigAsset *value;
         rig_node_asset_lerp (n0, n1, t, &value);
         rut_property_set_asset (&path->ctx->property_ctx,
                                 property, value);

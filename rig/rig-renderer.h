@@ -53,15 +53,15 @@ GArray *
 rig_journal_new (void);
 
 void
-rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass);
+rig_camera_update_view (RigEngine *engine, RigEntity *camera, CoglBool shadow_pass);
 
 void
-rig_paint_camera_entity (RutEntity *view_camera,
+rig_paint_camera_entity (RigEntity *view_camera,
                          RigPaintContext *paint_ctx,
-                         RutCamera *play_camera);
+                         RutObject *play_camera);
 
 void
-rig_renderer_dirty_entity_state (RutEntity *entity);
+rig_renderer_dirty_entity_state (RigEntity *entity);
 
 void
 rig_renderer_init (RigEngine *engine);

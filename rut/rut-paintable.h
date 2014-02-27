@@ -43,7 +43,7 @@ typedef struct _RutQueuedPaint
 
 typedef struct _RutPaintContext
 {
-  RutCamera *camera;
+  RutObject *camera;
 
   /* The next two members are used to implement a layer mechanism so
    * that widgets can draw something above all other widgets without

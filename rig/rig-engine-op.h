@@ -56,16 +56,16 @@ rig_engine_op_set_property (RigEngine *engine,
 
 void
 rig_engine_op_add_entity (RigEngine *engine,
-                          RutEntity *parent,
-                          RutEntity *entity);
+                          RigEntity *parent,
+                          RigEntity *entity);
 
 void
 rig_engine_op_delete_entity (RigEngine *engine,
-                             RutEntity *entity);
+                             RigEntity *entity);
 
 void
 rig_engine_op_add_component (RigEngine *engine,
-                             RutEntity *entity,
+                             RigEntity *entity,
                              RutComponent *component);
 
 void

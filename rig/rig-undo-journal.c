@@ -469,8 +469,8 @@ rig_undo_journal_set_property (RigUndoJournal *journal,
 
 void
 rig_undo_journal_add_entity (RigUndoJournal *journal,
-                             RutEntity *parent_entity,
-                             RutEntity *entity)
+                             RigEntity *parent_entity,
+                             RigEntity *entity)
 {
   UndoRedo *undo_redo;
   UndoRedoAddDeleteEntity *add_entity;
@@ -502,14 +502,14 @@ delete_entity_component_cb (RutComponent *component,
 
 void
 rig_undo_journal_delete_entity (RigUndoJournal *journal,
-                                RutEntity *entity)
+                                RigEntity *entity)
 {
   RigUndoJournal *sub_journal = rig_undo_journal_new (journal->engine);
   UndoRedo *undo_redo;
   UndoRedoAddDeleteEntity *delete_entity;
-  RutEntity *parent = rut_graphable_get_parent (entity);
+  RigEntity *parent = rut_graphable_get_parent (entity);
 
-  rut_entity_foreach_component_safe (entity,
+  rig_entity_foreach_component_safe (entity,
                                      delete_entity_component_cb,
                                      sub_journal);
 
@@ -530,7 +530,7 @@ rig_undo_journal_delete_entity (RigUndoJournal *journal,
 
 void
 rig_undo_journal_add_component (RigUndoJournal *journal,
-                                RutEntity *entity,
+                                RigEntity *entity,
                                 RutObject *component)
 {
   UndoRedo *undo_redo;
@@ -561,7 +561,7 @@ rig_undo_journal_delete_component (RigUndoJournal *journal,
   UndoRedoAddDeleteComponent *delete_component;
   RutComponentableProps *componentable =
     rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
-  RutEntity *entity = componentable->entity;
+  RigEntity *entity = componentable->entity;
 
   undo_redo = g_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_COMPONENT_OP;
@@ -1301,7 +1301,7 @@ undo_redo_delete_component_apply (RigUndoJournal *journal,
                                         prop_data->property);
     }
 
-  rut_entity_remove_component (delete_component->parent_entity,
+  rig_entity_remove_component (delete_component->parent_entity,
                                delete_component->deleted_component);
 
   _rig_engine_update_inspector (journal->engine);
@@ -1324,7 +1324,7 @@ undo_redo_add_component_apply (RigUndoJournal *journal,
   UndoRedoAddDeleteComponent *add_component = &undo_redo->d.add_delete_component;
   UndoRedoControllerState *controller_state;
 
-  rut_entity_add_component (add_component->parent_entity,
+  rig_entity_add_component (add_component->parent_entity,
                             add_component->deleted_component);
 
   rut_list_for_each (controller_state,

@@ -32,16 +32,12 @@
 #include "rut-bitmask.h"
 #include "rut-global.h"
 #include "rut-context.h"
-#include "rut-camera-private.h"
 #include "rut-transform-private.h"
 #include "rut-text.h"
 #include "rut-timeline.h"
 #include "rut-text-buffer.h"
-#include "rut-entity.h"
-#include "rut-components.h"
 #include "rut-geometry.h"
 #include "rut-scroll-bar.h"
-#include "rut-image-source.h"
 
 typedef struct _RutTextureCacheEntry
 {
@@ -165,8 +161,6 @@ static void
 _rut_context_free (void *object)
 {
   RutContext *ctx = object;
-
-  _rut_destroy_image_source_wrappers (ctx);
 
   rut_property_context_destroy (&ctx->property_ctx);
 
@@ -377,8 +371,6 @@ rut_context_new (RutShell *shell)
       context->pango_font_desc = pango_font_description_new ();
       pango_font_description_set_family (context->pango_font_desc, "Sans");
       pango_font_description_set_size (context->pango_font_desc, 14 * PANGO_SCALE);
-
-      _rut_init_image_source_wrappers_cache (context);
     }
 
   _rut_shell_associate_context (shell, context);

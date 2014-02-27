@@ -22,8 +22,22 @@
 
 #include <rut.h>
 
+/* XXX: this is actually in the rig/ directory and we need to
+ * rename it... */
+#include "rut-renderer.h"
+
 #include "rig-engine.h"
 #include "rig-renderer.h"
+
+#include "components/rig-camera.h"
+#include "components/rig-diamond.h"
+#include "components/rig-hair.h"
+#include "components/rig-light.h"
+#include "components/rig-material.h"
+#include "components/rig-model.h"
+#include "components/rig-nine-slice.h"
+#include "components/rig-pointalism-grid.h"
+#include "components/rig-shape.h"
 
 struct _RigRenderer
 {
@@ -51,7 +65,7 @@ typedef enum _SourceType
 
 typedef struct _RigJournalEntry
 {
-  RutEntity *entity;
+  RigEntity *entity;
   CoglMatrix matrix;
 } RigJournalEntry;
 
@@ -95,7 +109,7 @@ typedef struct _RigRendererPriv
   RigRenderer *renderer;
 
   CoglPipeline *pipeline_caches[N_PIPELINE_CACHE_SLOTS];
-  RutImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
+  RigImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
   CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
 
   RutClosure *preferred_size_closure;
@@ -113,7 +127,7 @@ _rig_renderer_free (void *object)
 }
 
 static void
-set_entity_pipeline_cache (RutEntity *entity,
+set_entity_pipeline_cache (RigEntity *entity,
                            int slot,
                            CoglPipeline *pipeline)
 {
@@ -128,7 +142,7 @@ set_entity_pipeline_cache (RutEntity *entity,
 }
 
 static CoglPipeline *
-get_entity_pipeline_cache (RutEntity *entity,
+get_entity_pipeline_cache (RigEntity *entity,
                            int slot)
 {
   RigRendererPriv *priv = entity->renderer_priv;
@@ -136,9 +150,9 @@ get_entity_pipeline_cache (RutEntity *entity,
 }
 
 static void
-set_entity_image_source_cache (RutEntity *entity,
+set_entity_image_source_cache (RigEntity *entity,
                                int slot,
-                               RutImageSource *source)
+                               RigImageSource *source)
 {
   RigRendererPriv *priv = entity->renderer_priv;
 
@@ -150,8 +164,8 @@ set_entity_image_source_cache (RutEntity *entity,
     rut_object_ref (source);
 }
 
-static RutImageSource*
-get_entity_image_source_cache (RutEntity *entity,
+static RigImageSource*
+get_entity_image_source_cache (RigEntity *entity,
                                int slot)
 {
   RigRendererPriv *priv = entity->renderer_priv;
@@ -160,7 +174,7 @@ get_entity_image_source_cache (RutEntity *entity,
 }
 
 static void
-set_entity_primitive_cache (RutEntity *entity,
+set_entity_primitive_cache (RigEntity *entity,
                             int slot,
                             CoglPrimitive *primitive)
 {
@@ -175,7 +189,7 @@ set_entity_primitive_cache (RutEntity *entity,
 }
 
 static CoglPrimitive *
-get_entity_primitive_cache (RutEntity *entity,
+get_entity_primitive_cache (RigEntity *entity,
                             int slot)
 {
   RigRendererPriv *priv = entity->renderer_priv;
@@ -184,7 +198,7 @@ get_entity_primitive_cache (RutEntity *entity,
 }
 
 static void
-dirty_entity_pipelines (RutEntity *entity)
+dirty_entity_pipelines (RigEntity *entity)
 {
   set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_UNBLENDED, NULL);
   set_entity_pipeline_cache (entity, CACHE_SLOT_COLOR_BLENDED, NULL);
@@ -192,14 +206,14 @@ dirty_entity_pipelines (RutEntity *entity)
 }
 
 static void
-dirty_entity_geometry (RutEntity *entity)
+dirty_entity_geometry (RigEntity *entity)
 {
   set_entity_primitive_cache (entity, 0, NULL);
 }
 
 /* TODO: allow more fine grained discarding of cached renderer state */
 static void
-_rig_renderer_notify_entity_changed (RutEntity *entity)
+_rig_renderer_notify_entity_changed (RigEntity *entity)
 {
   if (!entity->renderer_priv)
     return;
@@ -213,11 +227,11 @@ _rig_renderer_notify_entity_changed (RutEntity *entity)
 }
 
 static void
-_rig_renderer_free_priv (RutEntity *entity)
+_rig_renderer_free_priv (RigEntity *entity)
 {
   RigRendererPriv *priv = entity->renderer_priv;
   CoglPipeline **pipeline_caches = priv->pipeline_caches;
-  RutImageSource **image_source_caches = priv->image_source_caches;
+  RigImageSource **image_source_caches = priv->image_source_caches;
   CoglPrimitive **primitive_caches = priv->primitive_caches;
   int i;
 
@@ -285,7 +299,7 @@ rig_renderer_new (RigEngine *engine)
 static void
 rig_journal_log (GArray *journal,
                  RigPaintContext *paint_ctx,
-                 RutEntity *entity,
+                 RigEntity *entity,
                  const CoglMatrix *matrix)
 {
 
@@ -316,31 +330,31 @@ sort_entry_cb (const RigJournalEntry *entry0,
 }
 
 static void
-reshape_cb (RutShape *shape, void *user_data)
+reshape_cb (RigShape *shape, void *user_data)
 {
   RutComponentableProps *componentable =
     rut_object_get_properties (shape, RUT_TRAIT_ID_COMPONENTABLE);
-  RutEntity *entity = componentable->entity;
+  RigEntity *entity = componentable->entity;
   dirty_entity_pipelines (entity);
 }
 
 static void
-nine_slice_changed_cb (RutNineSlice *nine_slice, void *user_data)
+nine_slice_changed_cb (RigNineSlice *nine_slice, void *user_data)
 {
   RutComponentableProps *componentable =
     rut_object_get_properties (nine_slice, RUT_TRAIT_ID_COMPONENTABLE);
-  RutEntity *entity = componentable->entity;
+  RigEntity *entity = componentable->entity;
   _rig_renderer_notify_entity_changed (entity);
   dirty_entity_geometry (entity);
 }
 
 /* Called if the geometry of the pointalism grid has changed... */
 static void
-pointalism_changed_cb (RutPointalismGrid *grid, void *user_data)
+pointalism_changed_cb (RigPointalismGrid *grid, void *user_data)
 {
   RutComponentableProps *componentable =
     rut_object_get_properties (grid, RUT_TRAIT_ID_COMPONENTABLE);
-  RutEntity *entity = componentable->entity;
+  RigEntity *entity = componentable->entity;
 
   dirty_entity_geometry (entity);
 }
@@ -517,7 +531,7 @@ rig_renderer_init (RigEngine *engine)
                       /* definitions */
                       "uniform float material_alpha_threshold;\n",
                       /* post */
-                      "if (rut_image_source_sample4 (\n"
+                      "if (rig_image_source_sample4 (\n"
                       "    cogl_tex_coord4_in.st).r < \n"
                       "    material_alpha_threshold)\n"
                       "  discard;\n");
@@ -573,10 +587,10 @@ rig_renderer_init (RigEngine *engine)
 
     "float grey;\n"
 
-    "av_color = rut_image_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
-    "av_color += rut_image_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
-    "av_color += rut_image_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
-    "av_color += rut_image_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
+    "av_color = rig_image_source_sample1 (vec2 (cell_st.x, cell_st.z));\n"
+    "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.z));\n"
+    "av_color += rig_image_source_sample1 (vec2 (cell_st.y, cell_st.w));\n"
+    "av_color += rig_image_source_sample1 (vec2 (cell_st.x, cell_st.w));\n"
     "av_color /= 4.0;\n"
 
     "grey = av_color.r * 0.2126 + av_color.g * 0.7152 + av_color.b * 0.0722;\n"
@@ -665,7 +679,7 @@ rig_renderer_init (RigEngine *engine)
 
          "vec3 L = normalize(light_direction);\n"
 
-         "vec3 N = rut_image_source_sample7(cogl_tex_coord7_in.st).rgb;\n"
+         "vec3 N = rig_image_source_sample7(cogl_tex_coord7_in.st).rgb;\n"
          "N = 2.0 * N - 1.0;\n"
          "N = normalize(N);\n"
 
@@ -909,31 +923,31 @@ rig_renderer_fini (RigEngine *engine)
 static void
 add_material_for_mask (CoglPipeline *pipeline,
                        RigEngine *engine,
-                       RutMaterial *material,
-                       RutImageSource **sources)
+                       RigMaterial *material,
+                       RigImageSource **sources)
 {
   if (sources[SOURCE_TYPE_ALPHA_MASK])
     {
       /* XXX: We assume a video source is opaque and so never add to
        * mask pipeline. */
-      if (!rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
+      if (!rig_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
         {
-          rut_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK],
+          rig_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK],
                                            pipeline);
           cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
         }
     }
 
   if (sources[SOURCE_TYPE_COLOR])
-    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
 }
 
 static CoglPipeline *
 get_entity_mask_pipeline (RigEngine *engine,
-                          RutEntity *entity,
+                          RigEntity *entity,
                           RutObject *geometry,
-                          RutMaterial *material,
-                          RutImageSource **sources,
+                          RigMaterial *material,
+                          RigImageSource **sources,
                           GetPipelineFlags flags)
 {
   CoglPipeline *pipeline;
@@ -943,16 +957,16 @@ get_entity_mask_pipeline (RigEngine *engine,
   if (pipeline)
     {
       if (sources[SOURCE_TYPE_COLOR] &&
-          rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+          rut_object_get_type (geometry) == &rig_pointalism_grid_type)
         {
           int location;
           int scale, z;
 
-          if (rut_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
-            rut_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
+          if (rig_image_source_get_is_video (sources[SOURCE_TYPE_COLOR]))
+            rig_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
 
-          scale = rut_pointalism_grid_get_scale (geometry);
-          z = rut_pointalism_grid_get_z (geometry);
+          scale = rig_pointalism_grid_get_scale (geometry);
+          z = rig_pointalism_grid_get_z (geometry);
 
           location = cogl_pipeline_get_uniform_location (pipeline,
                                                          "scale_factor");
@@ -963,7 +977,7 @@ get_entity_mask_pipeline (RigEngine *engine,
 
           location = cogl_pipeline_get_uniform_location (pipeline, "anti_scale");
 
-          if (rut_pointalism_grid_get_lighter (geometry))
+          if (rig_pointalism_grid_get_lighter (geometry))
             cogl_pipeline_set_uniform_1i (pipeline, location, 1);
           else
             cogl_pipeline_set_uniform_1i (pipeline, location, 0);
@@ -972,8 +986,8 @@ get_entity_mask_pipeline (RigEngine *engine,
       if (sources[SOURCE_TYPE_ALPHA_MASK])
         {
           int location;
-          if (rut_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
-            rut_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
+          if (rig_image_source_get_is_video (sources[SOURCE_TYPE_ALPHA_MASK]))
+            rig_image_source_attach_frame (sources[SOURCE_TYPE_COLOR], pipeline);
 
           location = cogl_pipeline_get_uniform_location (pipeline,
                        "material_alpha_threshold");
@@ -984,22 +998,22 @@ get_entity_mask_pipeline (RigEngine *engine,
       return cogl_object_ref (pipeline);
     }
 
-  if (rut_object_get_type (geometry) == &rut_diamond_type)
+  if (rut_object_get_type (geometry) == &rig_diamond_type)
     {
       pipeline = cogl_object_ref (engine->dof_diamond_pipeline);
-      rut_diamond_apply_mask (geometry, pipeline);
+      rig_diamond_apply_mask (geometry, pipeline);
 
       if (material)
         add_material_for_mask (pipeline, engine, material, sources);
     }
-  else if (rut_object_get_type (geometry) == &rut_shape_type)
+  else if (rut_object_get_type (geometry) == &rig_shape_type)
     {
       pipeline = cogl_pipeline_copy (engine->dof_unshaped_pipeline);
 
-      if (rut_shape_get_shaped (geometry))
+      if (rig_shape_get_shaped (geometry))
         {
           CoglTexture *shape_texture =
-            rut_shape_get_shape_texture (geometry);
+            rig_shape_get_shape_texture (geometry);
 
           cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
         }
@@ -1007,14 +1021,14 @@ get_entity_mask_pipeline (RigEngine *engine,
       if (material)
         add_material_for_mask (pipeline, engine, material, sources);
     }
-  else if (rut_object_get_type (geometry) == &rut_nine_slice_type)
+  else if (rut_object_get_type (geometry) == &rig_nine_slice_type)
     {
       pipeline = cogl_pipeline_copy (engine->dof_unshaped_pipeline);
 
       if (material)
         add_material_for_mask (pipeline, engine, material, sources);
     }
-  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type)
     {
       pipeline = cogl_pipeline_copy (engine->dof_diamond_pipeline);
 
@@ -1022,18 +1036,18 @@ get_entity_mask_pipeline (RigEngine *engine,
         {
           if (sources[SOURCE_TYPE_COLOR])
             {
-              rut_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
-              rut_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
-              rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+              rig_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
+              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
               cogl_pipeline_add_snippet (pipeline,
                                          engine->pointalism_vertex_snippet);
              }
 
           if (sources[SOURCE_TYPE_ALPHA_MASK])
             {
-              rut_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-              rut_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
-              rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+              rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
+              rig_image_source_set_default_sample (sources[SOURCE_TYPE_COLOR], FALSE);
+              rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
               cogl_pipeline_add_snippet (pipeline, engine->alpha_mask_snippet);
             }
         }
@@ -1048,7 +1062,7 @@ get_entity_mask_pipeline (RigEngine *engine,
 
 static void
 get_light_modelviewprojection (const CoglMatrix *model_transform,
-                               RutEntity  *light,
+                               RigEntity  *light,
                                const CoglMatrix *light_projection,
                                CoglMatrix *light_mvp)
 {
@@ -1065,7 +1079,7 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
     .5f, .5f, .5f, 1.f
   };
 
-  light_transform = rut_entity_get_transform (light);
+  light_transform = rig_entity_get_transform (light);
   cogl_matrix_get_inverse (light_transform, &light_view);
 
   cogl_matrix_init_from_array (light_mvp, bias);
@@ -1076,7 +1090,7 @@ get_light_modelviewprojection (const CoglMatrix *model_transform,
 }
 
 static void
-image_source_changed_cb (RutImageSource *source,
+image_source_changed_cb (RigImageSource *source,
                          void *user_data)
 {
   RigEngine *engine = user_data;
@@ -1086,10 +1100,10 @@ image_source_changed_cb (RutImageSource *source,
 
 static CoglPipeline *
 get_entity_color_pipeline (RigEngine *engine,
-                           RutEntity *entity,
+                           RigEntity *entity,
                            RutObject *geometry,
-                           RutMaterial *material,
-                           RutImageSource **sources,
+                           RigMaterial *material,
+                           RigImageSource **sources,
                            GetPipelineFlags flags,
                            CoglBool blended)
 {
@@ -1107,7 +1121,7 @@ get_entity_color_pipeline (RigEngine *engine,
    * from a small set of templates.
    */
 
-  hair = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
+  hair = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
 
   if (blended)
     {
@@ -1134,11 +1148,11 @@ get_entity_color_pipeline (RigEngine *engine,
   pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   if (sources[SOURCE_TYPE_COLOR])
-    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
+    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_COLOR], pipeline);
   if (sources[SOURCE_TYPE_ALPHA_MASK])
-    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK], pipeline);
+    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_ALPHA_MASK], pipeline);
   if (sources[SOURCE_TYPE_NORMAL_MAP])
-    rut_image_source_setup_pipeline (sources[SOURCE_TYPE_NORMAL_MAP], pipeline);
+    rig_image_source_setup_pipeline (sources[SOURCE_TYPE_NORMAL_MAP], pipeline);
 
   cogl_pipeline_set_color4f (pipeline, 0.8f, 0.8f, 0.8f, 1.f);
 
@@ -1160,41 +1174,41 @@ get_entity_color_pipeline (RigEngine *engine,
   if (sources[SOURCE_TYPE_NORMAL_MAP])
     cogl_pipeline_add_snippet (pipeline, engine->normal_map_vertex_snippet);
 
-  if (rut_material_get_receive_shadow (material))
+  if (rig_material_get_receive_shadow (material))
     cogl_pipeline_add_snippet (pipeline, engine->shadow_mapping_vertex_snippet);
 
-  if (rut_object_get_type (geometry) == &rut_nine_slice_type)
+  if (rut_object_get_type (geometry) == &rig_nine_slice_type)
     {
 #warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rut_nine_slice_add_update_callback ((RutNineSlice *)geometry,
+      rig_nine_slice_add_update_callback ((RigNineSlice *)geometry,
                                           nine_slice_changed_cb,
                                           NULL,
                                           NULL);
     }
-  else if (rut_object_get_type (geometry) == &rut_shape_type)
+  else if (rut_object_get_type (geometry) == &rig_shape_type)
     {
       CoglTexture *shape_texture;
 
-      if (rut_shape_get_shaped (geometry))
+      if (rig_shape_get_shaped (geometry))
         {
           shape_texture =
-            rut_shape_get_shape_texture (geometry);
+            rig_shape_get_shape_texture (geometry);
           cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
         }
 
 #warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rut_shape_add_reshaped_callback (geometry,
+      rig_shape_add_reshaped_callback (geometry,
                                        reshape_cb,
                                        NULL,
                                        NULL);
     }
-  else if (rut_object_get_type (geometry) == &rut_diamond_type)
-    rut_diamond_apply_mask (geometry, pipeline);
-  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type &&
+  else if (rut_object_get_type (geometry) == &rig_diamond_type)
+    rig_diamond_apply_mask (geometry, pipeline);
+  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type &&
            sources[SOURCE_TYPE_COLOR])
     {
 #warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rut_pointalism_grid_add_update_callback ((RutPointalismGrid *)geometry,
+      rig_pointalism_grid_add_update_callback ((RigPointalismGrid *)geometry,
                                                pointalism_changed_cb,
                                                NULL,
                                                NULL);
@@ -1215,9 +1229,9 @@ get_entity_color_pipeline (RigEngine *engine,
   /*if (hair)
     {
       cogl_pipeline_add_snippet (pipeline, engine->hair_fin_snippet);
-      rut_hair_set_uniform_location (hair, pipeline,
-                                     blended ? RUT_HAIR_SHELL_POSITION_BLENDED :
-                                     RUT_HAIR_SHELL_POSITION_UNBLENDED);
+      rig_hair_set_uniform_location (hair, pipeline,
+                                     blended ? RIG_HAIR_SHELL_POSITION_BLENDED :
+                                     RIG_HAIR_SHELL_POSITION_UNBLENDED);
     }*/
 
   /* and fragment shader */
@@ -1249,10 +1263,10 @@ get_entity_color_pipeline (RigEngine *engine,
       fin_pipeline = cogl_pipeline_copy (pipeline);
       cogl_pipeline_add_snippet (fin_pipeline, engine->hair_fin_snippet);
       cogl_pipeline_add_snippet (pipeline, engine->hair_vertex_snippet);
-      rut_hair_set_uniform_location (hair, pipeline,
-                                     blended ? RUT_HAIR_SHELL_POSITION_BLENDED :
-                                     RUT_HAIR_SHELL_POSITION_UNBLENDED);
-      rut_hair_set_uniform_location (hair, fin_pipeline, RUT_HAIR_LENGTH);
+      rig_hair_set_uniform_location (hair, pipeline,
+                                     blended ? RIG_HAIR_SHELL_POSITION_BLENDED :
+                                     RIG_HAIR_SHELL_POSITION_UNBLENDED);
+      rig_hair_set_uniform_location (hair, fin_pipeline, RIG_HAIR_LENGTH);
     }
   else if (sources[SOURCE_TYPE_COLOR] ||
            sources[SOURCE_TYPE_ALPHA_MASK] ||
@@ -1272,7 +1286,7 @@ get_entity_color_pipeline (RigEngine *engine,
     cogl_pipeline_add_snippet (pipeline, engine->simple_lighting_snippet);
 
 
-  if (rut_material_get_receive_shadow (material))
+  if (rig_material_get_receive_shadow (material))
     {
       /* Hook the shadow map sampling */
 
@@ -1357,25 +1371,25 @@ FOUND:
 
     for (i = 0; i < 3; i++)
       if (sources[i])
-        rut_image_source_attach_frame (sources[i], pipeline);
+        rig_image_source_attach_frame (sources[i], pipeline);
   }
 
   return pipeline;
 }
 
 static void
-image_source_ready_cb (RutImageSource *source,
+image_source_ready_cb (RigImageSource *source,
                        void *user_data)
 {
-  RutEntity *entity = user_data;
-  RutContext *ctx = rut_entity_get_context (entity);
-  RutImageSource *color_src;
+  RigEntity *entity = user_data;
+  RutContext *ctx = rig_entity_get_context (entity);
+  RigImageSource *color_src;
   RutObject *geometry;
-  RutMaterial *material;
+  RigMaterial *material;
   int width, height;
 
-  geometry = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
-  material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+  geometry = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+  material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
   dirty_entity_pipelines (entity);
 
@@ -1389,15 +1403,15 @@ image_source_ready_cb (RutImageSource *source,
   if (source != color_src)
     return;
 
-  if (rut_image_source_get_is_video (source))
+  if (rig_image_source_get_is_video (source))
     {
       width = 640;
       height = cogl_gst_video_sink_get_height_for_width (
-                 rut_image_source_get_sink (source), width);
+                 rig_image_source_get_sink (source), width);
     }
   else
     {
-      CoglTexture *texture = rut_image_source_get_texture (source);
+      CoglTexture *texture = rig_image_source_get_texture (source);
       width = cogl_texture_get_width (texture);
       height = cogl_texture_get_height (texture);
     }
@@ -1409,32 +1423,32 @@ image_source_ready_cb (RutImageSource *source,
         rut_object_get_vtable (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT);
       dependant->set_image_size (geometry, width, height);
     }
-  else if (rut_object_get_type (geometry) == &rut_shape_type)
-    rut_shape_set_texture_size (geometry, width, height);
-  else if (rut_object_get_type (geometry) == &rut_diamond_type)
+  else if (rut_object_get_type (geometry) == &rig_shape_type)
+    rig_shape_set_texture_size (geometry, width, height);
+  else if (rut_object_get_type (geometry) == &rig_diamond_type)
     {
-      RutDiamond *diamond = geometry;
-      float size = rut_diamond_get_size (diamond);
+      RigDiamond *diamond = geometry;
+      float size = rig_diamond_get_size (diamond);
 
-      rut_entity_remove_component (entity, geometry);
-      diamond = rut_diamond_new (ctx, size, width, height);
-      rut_entity_add_component (entity, diamond);
+      rig_entity_remove_component (entity, geometry);
+      diamond = rig_diamond_new (ctx, size, width, height);
+      rig_entity_add_component (entity, diamond);
     }
-  else if (rut_object_get_type (geometry) == &rut_pointalism_grid_type)
+  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type)
     {
-      RutPointalismGrid *grid = geometry;
+      RigPointalismGrid *grid = geometry;
       float cell_size, scale, z;
       CoglBool lighter;
 
-      cell_size = rut_pointalism_grid_get_cell_size (grid);
-      scale = rut_pointalism_grid_get_scale (grid);
-      z = rut_pointalism_grid_get_z (grid);
-      lighter = rut_pointalism_grid_get_lighter (grid);
+      cell_size = rig_pointalism_grid_get_cell_size (grid);
+      scale = rig_pointalism_grid_get_scale (grid);
+      z = rig_pointalism_grid_get_z (grid);
+      lighter = rig_pointalism_grid_get_lighter (grid);
 
-      rut_entity_remove_component (entity, geometry);
-      grid = rut_pointalism_grid_new (ctx, cell_size, width, height);
+      rig_entity_remove_component (entity, geometry);
+      grid = rig_pointalism_grid_new (ctx, cell_size, width, height);
 
-      rut_entity_add_component (entity, grid);
+      rig_entity_add_component (entity, grid);
       grid->pointalism_scale = scale;
       grid->pointalism_z = z;
       grid->pointalism_lighter = lighter;
@@ -1443,19 +1457,19 @@ image_source_ready_cb (RutImageSource *source,
 
 static CoglPipeline *
 get_entity_pipeline (RigEngine *engine,
-                     RutEntity *entity,
+                     RigEntity *entity,
                      RutComponent *geometry,
                      RigPass pass)
 {
-  RutMaterial *material =
-    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-  RutImageSource *sources[3];
+  RigMaterial *material =
+    rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+  RigImageSource *sources[3];
   GetPipelineFlags flags = 0;
-  RutAsset *asset;
+  RigAsset *asset;
 
   g_return_if_fail (material != NULL);
 
-  /* FIXME: Instead of having rut_entity apis for caching image
+  /* FIXME: Instead of having rig_entity apis for caching image
    * sources, we should allow the renderer to track arbitrary
    * private state with entities so it can better manage caches
    * of different kinds of derived, renderer specific state.
@@ -1477,47 +1491,47 @@ get_entity_pipeline (RigEngine *engine,
 
   if (asset && !sources[SOURCE_TYPE_COLOR])
     {
-      sources[SOURCE_TYPE_COLOR] = rut_image_source_new (engine->ctx, asset);
+      sources[SOURCE_TYPE_COLOR] = rig_image_source_new (engine, asset);
 
       set_entity_image_source_cache (entity,
                                      SOURCE_TYPE_COLOR,
                                      sources[SOURCE_TYPE_COLOR]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
                                            rig_engine_dirty_properties_menu,
                                            engine, NULL);
-      rut_image_source_add_on_changed_callback (sources[SOURCE_TYPE_COLOR],
+      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_COLOR],
                                                 image_source_changed_cb,
                                                 engine,
                                                 NULL);
 
-      rut_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
+      rig_image_source_set_first_layer (sources[SOURCE_TYPE_COLOR], 1);
     }
 
   asset = material->alpha_mask_asset;
 
   if (asset && !sources[SOURCE_TYPE_ALPHA_MASK])
     {
-      sources[SOURCE_TYPE_ALPHA_MASK] = rut_image_source_new (engine->ctx, asset);
+      sources[SOURCE_TYPE_ALPHA_MASK] = rig_image_source_new (engine, asset);
 
       set_entity_image_source_cache (entity, 1, sources[SOURCE_TYPE_ALPHA_MASK]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                            rig_engine_dirty_properties_menu,
                                            engine, NULL);
-      rut_image_source_add_on_changed_callback (sources[SOURCE_TYPE_ALPHA_MASK],
+      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                                 image_source_changed_cb,
                                                 engine,
                                                 NULL);
 
-      rut_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
-      rut_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK],
+      rig_image_source_set_first_layer (sources[SOURCE_TYPE_ALPHA_MASK], 4);
+      rig_image_source_set_default_sample (sources[SOURCE_TYPE_ALPHA_MASK],
                                            FALSE);
     }
 
@@ -1525,23 +1539,23 @@ get_entity_pipeline (RigEngine *engine,
 
   if (asset && !sources[SOURCE_TYPE_NORMAL_MAP])
     {
-      sources[SOURCE_TYPE_NORMAL_MAP] = rut_image_source_new (engine->ctx, asset);
+      sources[SOURCE_TYPE_NORMAL_MAP] = rig_image_source_new (engine, asset);
 
       set_entity_image_source_cache (entity, 2, sources[SOURCE_TYPE_NORMAL_MAP]);
 #warning "FIXME: we need to track this as renderer priv since we're leaking closures a.t.m"
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rut_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
+      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                            rig_engine_dirty_properties_menu,
                                            engine, NULL);
-      rut_image_source_add_on_changed_callback (sources[SOURCE_TYPE_NORMAL_MAP],
+      rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                                 image_source_changed_cb,
                                                 engine,
                                                 NULL);
 
-      rut_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
-      rut_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP],
+      rig_image_source_set_first_layer (sources[SOURCE_TYPE_NORMAL_MAP], 7);
+      rig_image_source_set_default_sample (sources[SOURCE_TYPE_NORMAL_MAP],
                                            FALSE);
     }
 
@@ -1582,7 +1596,7 @@ get_normal_matrix (const CoglMatrix *matrix,
 }
 
 static void
-ensure_renderer_priv (RutEntity *entity, RigRenderer *renderer)
+ensure_renderer_priv (RigEntity *entity, RigRenderer *renderer)
 {
   /* If this entity was last renderered with some other renderer then
    * we free any private state associated with the previous renderer
@@ -1609,7 +1623,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 {
   GArray *journal = renderer->journal;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RutCamera *camera = rut_paint_ctx->camera;
+  RutObject *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   int start, dir, end;
   int i;
@@ -1641,15 +1655,15 @@ rig_renderer_flush_journal (RigRenderer *renderer,
   for (i = start; i != end; i += dir)
     {
       RigJournalEntry *entry = &g_array_index (journal, RigJournalEntry, i);
-      RutEntity *entity = entry->entity;
+      RigEntity *entity = entry->entity;
       RutObject *geometry =
-        rut_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
+        rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
       CoglPipeline *pipeline;
       CoglPrimitive *primitive;
       float normal_matrix[9];
-      RutMaterial *material;
+      RigMaterial *material;
       CoglPipeline *fin_pipeline = NULL;
-      RutHair *hair;
+      RigHair *hair;
 
       if (rut_object_get_type (geometry) == &rut_text_type &&
           paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
@@ -1671,14 +1685,14 @@ rig_renderer_flush_journal (RigRenderer *renderer,
                                       geometry,
                                       paint_ctx->pass);
 
-      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+      material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
-      hair  = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
+      hair  = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_HAIR);
       if (hair)
         {
-          rut_hair_update_state (hair);
+          rig_hair_update_state (hair);
 
-          if (rut_object_get_type (geometry) == &rut_model_type)
+          if (rut_object_get_type (geometry) == &rig_model_type)
             {
               if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
                 {
@@ -1705,26 +1719,26 @@ rig_renderer_flush_journal (RigRenderer *renderer,
           /* FIXME: avoid updating these uniforms for every primitive if
            * the focal parameters haven't change! */
           set_focal_parameters (pipeline,
-                                camera->focal_distance,
-                                camera->depth_of_field);
+                                rut_camera_get_focal_distance (camera),
+                                rut_camera_get_depth_of_field (camera));
 
         }
       else if ((paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED ||
                 paint_ctx->pass == RIG_PASS_COLOR_BLENDED))
         {
           RigUI *ui = paint_ctx->engine->current_ui;
-          RutLight *light =
-            rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_LIGHT);
+          RigLight *light =
+            rig_entity_get_component (ui->light, RUT_COMPONENT_TYPE_LIGHT);
           int location;
 
           /* FIXME: only update the lighting uniforms when the light has
            * actually moved! */
-          rut_light_set_uniforms (light, pipeline);
+          rig_light_set_uniforms (light, pipeline);
 
           /* FIXME: only update the material uniforms when the material has
            * actually changed! */
           if (material)
-            rut_material_flush_uniforms (material, pipeline);
+            rig_material_flush_uniforms (material, pipeline);
 
           get_normal_matrix (&entry->matrix, normal_matrix);
 
@@ -1738,10 +1752,10 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
           if (fin_pipeline)
             {
-              rut_light_set_uniforms (light, fin_pipeline);
+              rig_light_set_uniforms (light, fin_pipeline);
 
               if (material)
-                rut_material_flush_uniforms (material, fin_pipeline);
+                rig_material_flush_uniforms (material, fin_pipeline);
 
               cogl_pipeline_set_uniform_matrix (fin_pipeline,
                                             location,
@@ -1753,8 +1767,8 @@ rig_renderer_flush_journal (RigRenderer *renderer,
               cogl_pipeline_set_layer_texture (fin_pipeline, 11,
                                                hair->fin_texture);
 
-              rut_hair_set_uniform_float_value (hair, fin_pipeline,
-                                                RUT_HAIR_LENGTH,
+              rig_hair_set_uniform_float_value (hair, fin_pipeline,
+                                                RIG_HAIR_LENGTH,
                                                 hair->length);
             }
         }
@@ -1779,17 +1793,17 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
           if (fin_pipeline)
             {
-              RutModel *model = geometry;
+              RigModel *model = geometry;
               cogl_primitive_draw (model->fin_primitive, fb, fin_pipeline);
             }
 
           if (paint_ctx->pass == RIG_PASS_COLOR_BLENDED)
-            uniform = RUT_HAIR_SHELL_POSITION_BLENDED;
+            uniform = RIG_HAIR_SHELL_POSITION_BLENDED;
           else if (paint_ctx->pass == RIG_PASS_COLOR_UNBLENDED)
-            uniform = RUT_HAIR_SHELL_POSITION_UNBLENDED;
+            uniform = RIG_HAIR_SHELL_POSITION_UNBLENDED;
           else if (paint_ctx->pass == RIG_PASS_DOF_DEPTH ||
                    paint_ctx->pass == RIG_PASS_SHADOW)
-            uniform = RUT_HAIR_SHELL_POSITION_SHADOW;
+            uniform = RIG_HAIR_SHELL_POSITION_SHADOW;
 
           /* FIXME: only update the hair uniforms when they change! */
           /* FIXME: avoid needing to query the uniform locations by
@@ -1799,7 +1813,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
           cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
-          rut_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
+          rig_hair_set_uniform_float_value (hair, pipeline, uniform, 0);
 
           /* TODO: we should be drawing the original base model as
            * the interior, with depth write and test enabled to
@@ -1819,7 +1833,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
               texture = g_array_index (hair->shell_textures, CoglTexture *, i);
               cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
-              rut_hair_set_uniform_float_value (hair, pipeline, uniform,
+              rig_hair_set_uniform_float_value (hair, pipeline, uniform,
                                                 hair_pos);
 
               cogl_primitive_draw (primitive, fb, pipeline);
@@ -1839,10 +1853,10 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 }
 
 void
-rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pass)
+rig_camera_update_view (RigEngine *engine, RigEntity *camera, CoglBool shadow_pass)
 {
-  RutCamera *camera_component =
-    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
+  RutObject *camera_component =
+    rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
   CoglMatrix transform;
   CoglMatrix inverse_transform;
   CoglMatrix view;
@@ -1872,13 +1886,13 @@ rig_camera_update_view (RigEngine *engine, RutEntity *camera, CoglBool shadow_pa
 
 static void
 draw_entity_camera_frustum (RigEngine *engine,
-                            RutEntity *entity,
+                            RigEntity *entity,
                             CoglFramebuffer *fb)
 {
-  RutCamera *camera =
-    rut_entity_get_component (entity, RUT_COMPONENT_TYPE_CAMERA);
+  RutObject *camera =
+    rig_entity_get_component (entity, RUT_COMPONENT_TYPE_CAMERA);
   CoglPrimitive *primitive = rut_camera_create_frustum_primitive (camera);
-  CoglPipeline *pipeline = cogl_pipeline_new (rut_cogl_context);
+  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
   CoglDepthState depth_state;
 
   /* enable depth testing */
@@ -1924,7 +1938,7 @@ entitygraph_pre_paint_cb (RutObject *object,
   RigPaintContext *paint_ctx = user_data;
   RutPaintContext *rut_paint_ctx = user_data;
   RigRenderer *renderer = paint_ctx->renderer;
-  RutCamera *camera = rut_paint_ctx->camera;
+  RutObject *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
@@ -1934,23 +1948,23 @@ entitygraph_pre_paint_cb (RutObject *object,
       cogl_framebuffer_transform (fb, matrix);
     }
 
-  if (rut_object_get_type (object) == &rut_entity_type)
+  if (rut_object_get_type (object) == &rig_entity_type)
     {
-      RutEntity *entity = object;
-      RutMaterial *material;
+      RigEntity *entity = object;
+      RigMaterial *material;
       RutObject *geometry;
       CoglMatrix matrix;
       RigRendererPriv *priv;
 
-      material = rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
-      if (!material || !rut_material_get_visible (material))
+      material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+      if (!material || !rig_material_get_visible (material))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
-      if (paint_ctx->pass == RIG_PASS_SHADOW && !rut_material_get_cast_shadow (material))
+      if (paint_ctx->pass == RIG_PASS_SHADOW && !rig_material_get_cast_shadow (material))
         return RUT_TRAVERSE_VISIT_CONTINUE;
 
       geometry =
-        rut_entity_get_component (object, RUT_COMPONENT_TYPE_GEOMETRY);
+        rig_entity_get_component (object, RUT_COMPONENT_TYPE_GEOMETRY);
       if (!geometry)
         {
           if (!paint_ctx->engine->play_mode &&
@@ -2024,14 +2038,14 @@ entitygraph_post_paint_cb (RutObject *object,
  * of the play camera to visualize while rendering the view camera.
  */
 void
-rig_paint_camera_entity (RutEntity *view_camera,
+rig_paint_camera_entity (RigEntity *view_camera,
                          RigPaintContext *paint_ctx,
-                         RutCamera *play_camera)
+                         RutObject *play_camera)
 {
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
-  RutCamera *saved_camera = rut_paint_ctx->camera;
-  RutCamera *camera =
-    rut_entity_get_component (view_camera, RUT_COMPONENT_TYPE_CAMERA);
+  RutObject *saved_camera = rut_paint_ctx->camera;
+  RutObject *camera =
+    rig_entity_get_component (view_camera, RUT_COMPONENT_TYPE_CAMERA);
   RigRenderer *renderer = paint_ctx->renderer;
   RigEngine *engine = paint_ctx->engine;
   CoglContext *ctx = engine->ctx->cogl_context;
@@ -2046,15 +2060,17 @@ rig_paint_camera_entity (RutEntity *view_camera,
       camera != play_camera)
     {
       CoglPipeline *pipeline = cogl_pipeline_new (ctx);
+      const CoglColor *bg_color = rut_camera_get_background_color (play_camera);
       cogl_pipeline_set_color4f (pipeline,
-                                 play_camera->bg_color.red,
-                                 play_camera->bg_color.green,
-                                 play_camera->bg_color.blue,
-                                 play_camera->bg_color.alpha);
+                                 bg_color->red,
+                                 bg_color->green,
+                                 bg_color->blue,
+                                 bg_color->alpha);
       cogl_framebuffer_draw_rectangle (fb,
                                        pipeline,
                                        0, 0,
-                                       engine->device_width, engine->device_height);
+                                       engine->device_width,
+                                       engine->device_height);
       cogl_object_unref (pipeline);
     }
 

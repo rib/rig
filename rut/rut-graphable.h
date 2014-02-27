@@ -43,7 +43,7 @@ typedef struct _RutGraphableProps
 } RutGraphableProps;
 
 #if 0
-RutCamera *
+RutObject *
 rut_graphable_find_camera (RutObject *object);
 #endif
 
@@ -135,12 +135,12 @@ rut_graphable_get_transform (RutObject *graphable,
 
 void
 rut_graphable_get_modelview (RutObject *graphable,
-                             RutCamera *camera,
+                             RutObject *camera,
                              CoglMatrix *transform);
 
 void
 rut_graphable_fully_transform_point (RutObject *graphable,
-                                     RutCamera *camera,
+                                     RutObject *camera,
                                      float *x,
                                      float *y,
                                      float *z);

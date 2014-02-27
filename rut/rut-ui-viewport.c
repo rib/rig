@@ -33,8 +33,8 @@
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
-
-#include "components/rut-camera.h"
+#include "rut-introspectable.h"
+#include "rut-camera.h"
 
 enum {
   RUT_UI_VIEWPORT_PROP_WIDTH,
@@ -276,7 +276,7 @@ rut_ui_viewport_add_preferred_size_callback (void *object,
 
 static bool
 _rut_ui_viewport_pick (RutObject *inputable,
-                       RutCamera *camera,
+                       RutObject *camera,
                        const CoglMatrix *modelview,
                        float x,
                        float y)

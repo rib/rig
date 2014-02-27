@@ -29,7 +29,7 @@
 #include "rut-paintable.h"
 #include "rut-icon.h"
 #include "rut-image.h"
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 struct _RutIcon
 {

@@ -66,9 +66,9 @@ rotation_tool_grab_cb (RutInputEvent *event,
       {
         CoglQuaternion camera_rotation;
         CoglQuaternion new_rotation;
-        RutEntity *parent;
+        RigEntity *parent;
         CoglQuaternion parent_inverse;
-        RutEntity *entity = tool->selected_entity;
+        RigEntity *entity = tool->selected_entity;
         float x = rut_motion_event_get_x (event);
         float y = rut_motion_event_get_y (event);
         RigRotationToolEventType event_type = RIG_ROTATION_TOOL_DRAG;
@@ -88,7 +88,7 @@ rotation_tool_grab_cb (RutInputEvent *event,
          */
         parent = rut_graphable_get_parent (entity);
 
-        rut_entity_get_view_rotations (parent,
+        rig_entity_get_view_rotations (parent,
                                        tool->camera,
                                        &parent_inverse);
         cogl_quaternion_invert (&parent_inverse);
@@ -145,7 +145,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
       rut_motion_event_get_button_state (event) == RUT_BUTTON_STATE_1)
     {
-      RutEntity *entity = tool->selected_entity;
+      RigEntity *entity = tool->selected_entity;
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
 
@@ -159,11 +159,11 @@ on_rotation_tool_clicked (RutInputRegion *region,
                         tool->screen_pos[1],
                         128);
 
-      rut_entity_get_view_rotations (entity,
+      rig_entity_get_view_rotations (entity,
                                      tool->camera,
                                      &tool->start_view_rotations);
 
-      tool->start_rotation = *rut_entity_get_rotation (entity);
+      tool->start_rotation = *rig_entity_get_rotation (entity);
 
       cogl_quaternion_init_identity (&tool->arcball.q_drag);
 
@@ -181,11 +181,11 @@ static void
 update_selection_state (RigRotationTool *tool)
 {
   RigObjectsSelection *selection = tool->view->engine->objects_selection;
-  RutCamera *camera = tool->camera_component;
+  RutObject *camera = tool->camera_component;
 
   if (tool->active &&
       g_list_length (selection->objects) == 1 &&
-      rut_object_get_type (selection->objects->data) == &rut_entity_type)
+      rut_object_get_type (selection->objects->data) == &rig_entity_type)
     {
       if (!tool->selected_entity)
         rut_camera_add_input_region (camera, tool->rotation_circle);
@@ -224,7 +224,7 @@ tool_event_cb (RigRotationTool *tool,
                void *user_data)
 {
   RigEngine *engine = tool->view->engine;
-  RutEntity *entity;
+  RigEntity *entity;
 
   g_return_if_fail (engine->objects_selection->objects);
 
@@ -238,7 +238,7 @@ tool_event_cb (RigRotationTool *tool,
   switch (type)
     {
     case RIG_ROTATION_TOOL_DRAG:
-      rut_entity_set_rotation (entity, new_rotation);
+      rig_entity_set_rotation (entity, new_rotation);
       rut_shell_queue_redraw (engine->shell);
       break;
 
@@ -250,7 +250,7 @@ tool_event_cb (RigRotationTool *tool,
 
         /* Revert the rotation before logging the new rotation into
          * the journal... */
-        rut_entity_set_rotation (entity, start_rotation);
+        rig_entity_set_rotation (entity, start_rotation);
 
         value.type = RUT_PROPERTY_TYPE_QUATERNION;
         value.d.quaternion_val = *new_rotation;
@@ -262,7 +262,7 @@ tool_event_cb (RigRotationTool *tool,
       break;
 
     case RIG_ROTATION_TOOL_CANCEL:
-      rut_entity_set_rotation (entity, start_rotation);
+      rig_entity_set_rotation (entity, start_rotation);
       rut_shell_queue_redraw (engine->shell);
       break;
     }
@@ -279,12 +279,12 @@ rig_rotation_tool_new (RigCameraView *view)
 
   tool->camera = view->view_camera;
   tool->camera_component =
-    rut_entity_get_component (tool->camera, RUT_COMPONENT_TYPE_CAMERA);
+    rig_entity_get_component (tool->camera, RUT_COMPONENT_TYPE_CAMERA);
 
   rut_list_init (&tool->rotation_event_cb_list);
 
   /* pipeline to draw the tool */
-  tool->default_pipeline = cogl_pipeline_new (rut_cogl_context);
+  tool->default_pipeline = cogl_pipeline_new (ctx->cogl_context);
 
   /* rotation tool */
   tool->rotation_tool = rut_create_rotation_tool_primitive (ctx, 64);
@@ -334,17 +334,17 @@ rig_rotation_tool_set_active (RigRotationTool *tool,
 }
 
 static void
-get_modelview_matrix (RutEntity  *camera,
-                      RutEntity  *entity,
+get_modelview_matrix (RigEntity  *camera,
+                      RigEntity  *entity,
                       CoglMatrix *modelview)
 {
-  RutCamera *camera_component =
-    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
+  RutObject *camera_component =
+    rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
   *modelview = *rut_camera_get_view_transform (camera_component);
 
   cogl_matrix_multiply (modelview,
                         modelview,
-                        rut_entity_get_transform (entity));
+                        rig_entity_get_transform (entity));
 }
 
 /* Scale from OpenGL normalized device coordinates (ranging from -1 to 1)
@@ -360,7 +360,7 @@ get_modelview_matrix (RutEntity  *camera,
 void
 update_position (RigRotationTool *tool)
 {
-  RutCamera *camera = tool->camera_component;
+  RutObject *camera = tool->camera_component;
   CoglMatrix transform;
   const CoglMatrix *projection;
   float scale_thingy[4], screen_space[4], x, y;
@@ -433,13 +433,13 @@ get_scale_for_length (RigRotationTool *tool, float length)
 }
 
 static void
-get_rotation (RutEntity *camera,
-              RutEntity *entity,
+get_rotation (RigEntity *camera,
+              RigEntity *entity,
               CoglMatrix *rotation)
 {
   CoglQuaternion q;
 
-  rut_entity_get_view_rotations (entity, camera, &q);
+  rig_entity_get_view_rotations (entity, camera, &q);
   cogl_matrix_init_from_quaternion (rotation, &q);
 }
 

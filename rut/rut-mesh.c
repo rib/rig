@@ -271,7 +271,7 @@ static void
 foreach_vertex (RutMesh *mesh,
                 RutMeshVertexCallback callback,
                 void *user_data,
-                CoglBool ignore_indices,
+                bool ignore_indices,
                 uint8_t **bases,
                 int *strides,
                 int n_attributes)

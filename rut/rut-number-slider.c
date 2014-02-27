@@ -109,7 +109,7 @@ typedef struct _EditState
 {
   RutNumberSlider *slider;
 
-  RutCamera *camera;
+  RutObject *camera;
 
   RutClosure *activate_closure;
 

@@ -24,11 +24,9 @@
 
 #include "rut-input-region.h"
 #include "rut-util.h"
-#include "rut-camera-private.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
-
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 typedef enum _RutInputShapeType
 {
@@ -134,7 +132,7 @@ rect_to_screen_polygon (RutInputShapeRectange *rectangle,
 
 static bool
 _rut_input_region_pick (RutObject *inputable,
-                        RutCamera *camera,
+                        RutObject *camera,
                         const CoglMatrix *graphable_modelview,
                         float x,
                         float y)
@@ -145,9 +143,14 @@ _rut_input_region_pick (RutObject *inputable,
   float poly[16];
   const CoglMatrix *view = rut_camera_get_view_transform (camera);
 
+  /* XXX: if we get rid of hud mode we can also avoid needing
+   * a pointer to a RutContext */
 #warning "todo: simplify RutInputRegion by removing ::hud_mode"
   if (region->hud_mode)
-    modelview = &camera->ctx->identity_matrix;
+    {
+      RutContext *ctx = rut_camera_get_context (camera);
+      modelview = &ctx->identity_matrix;
+    }
   else
     {
       if (graphable_modelview)
@@ -168,10 +171,12 @@ _rut_input_region_pick (RutObject *inputable,
           {
             const CoglMatrix *projection =
               rut_camera_get_projection (camera);
+            const float *viewport =
+              rut_camera_get_viewport (camera);
             rect_to_screen_polygon (&region->shape.rectangle,
                                     modelview,
                                     projection,
-                                    camera->viewport,
+                                    viewport,
                                     poly);
           }
         else

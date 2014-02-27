@@ -44,7 +44,7 @@ typedef struct _ControlPoint
 struct _EntityState
 {
   RigSelectionTool *tool;
-  RutEntity *entity;
+  RigEntity *entity;
 
   GList *control_points;
 };
@@ -239,7 +239,7 @@ objects_selection_event_cb (RigObjectsSelection *selection,
   if (!tool->active && event == RIG_OBJECTS_SELECTION_ADD_EVENT)
     return;
 
-  if (rut_object_get_type (object) != &rut_entity_type)
+  if (rut_object_get_type (object) != &rig_entity_type)
     return;
 
   for (l = tool->selected_entities; l; l = l->next)
@@ -296,12 +296,12 @@ rig_selection_tool_new (RigCameraView *view,
 
   tool->camera = view->view_camera;
   tool->camera_component =
-    rut_entity_get_component (tool->camera, RUT_COMPONENT_TYPE_CAMERA);
+    rig_entity_get_component (tool->camera, RUT_COMPONENT_TYPE_CAMERA);
 
   rut_list_init (&tool->selection_event_cb_list);
 
   /* pipeline to draw the tool */
-  tool->default_pipeline = cogl_pipeline_new (rut_cogl_context);
+  tool->default_pipeline = cogl_pipeline_new (ctx->cogl_context);
 
   return tool;
 }
@@ -350,21 +350,21 @@ rig_selection_tool_set_active (RigSelectionTool *tool,
 }
 
 static void
-get_modelview_matrix (RutEntity  *camera,
-                      RutEntity  *entity,
+get_modelview_matrix (RigEntity  *camera,
+                      RigEntity  *entity,
                       CoglMatrix *modelview)
 {
-  RutCamera *camera_component =
-    rut_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
+  RutObject *camera_component =
+    rig_entity_get_component (camera, RUT_COMPONENT_TYPE_CAMERA);
   *modelview = *rut_camera_get_view_transform (camera_component);
 
   cogl_matrix_multiply (modelview,
                         modelview,
-                        rut_entity_get_transform (entity));
+                        rig_entity_get_transform (entity));
 }
 
 bool
-map_window_coords_to_overlay_coord (RutCamera *camera, /* 2d ui camera */
+map_window_coords_to_overlay_coord (RutObject *camera, /* 2d ui camera */
                                     RutObject *overlay, /* camera-view overlay */
                                     float *x,
                                     float *y)
@@ -399,9 +399,9 @@ map_window_coords_to_overlay_coord (RutCamera *camera, /* 2d ui camera */
 
 void
 update_control_point_positions (RigSelectionTool *tool,
-                                RutCamera *paint_camera) /* 2d ui camera */
+                                RutObject *paint_camera) /* 2d ui camera */
 {
-  RutCamera *camera = tool->camera_component;
+  RutObject *camera = tool->camera_component;
   GList *l;
 
   for (l = tool->selected_entities; l; l = l->next)
@@ -474,7 +474,7 @@ update_control_point_positions (RigSelectionTool *tool,
 
 void
 rig_selection_tool_update (RigSelectionTool *tool,
-                           RutCamera *paint_camera)
+                           RutObject *paint_camera)
 {
   g_return_if_fail (tool->active);
 

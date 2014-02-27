@@ -25,6 +25,7 @@
 
 #include "rig-code.h"
 #include "rig-binding.h"
+#include "rig-prop-inspector.h"
 
 typedef struct _RigBindingView RigBindingView;
 
@@ -218,7 +219,7 @@ add_dependency (RigBindingView *binding_view,
     {
       RutComponentableProps *component =
         rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-      RutEntity *entity = component->entity;
+      RigEntity *entity = component->entity;
       label_prop = rut_introspectable_lookup_property (entity, "label");
       /* XXX: Hack to drop the "Rut" prefix from the name... */
       component_str = rut_object_get_type_name (object) + 3;
@@ -298,9 +299,9 @@ drop_region_input_cb (RutInputRegion *region,
     {
       RutObject *payload = rut_drop_offer_event_get_payload (event);
 
-      if (rut_object_get_type (payload) == &rut_prop_inspector_type)
+      if (rut_object_get_type (payload) == &rig_prop_inspector_type)
         {
-          RutProperty *property = rut_prop_inspector_get_property (payload);
+          RutProperty *property = rig_prop_inspector_get_property (payload);
 
           g_print ("Drop Offer\n");
 
@@ -323,9 +324,9 @@ drop_region_input_cb (RutInputRegion *region,
       remove_dependency (binding_view, binding_view->preview_dependency_prop);
       binding_view->preview_dependency_prop = NULL;
 
-      if (rut_object_get_type (payload) == &rut_prop_inspector_type)
+      if (rut_object_get_type (payload) == &rig_prop_inspector_type)
         {
-          RutProperty *property = rut_prop_inspector_get_property (payload);
+          RutProperty *property = rig_prop_inspector_get_property (payload);
 
           add_dependency (binding_view, property, false);
 

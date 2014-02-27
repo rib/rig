@@ -27,6 +27,7 @@ typedef enum _RutTraitID
   RUT_TRAIT_ID_RENDERER,
   RUT_TRAIT_ID_SELECTABLE,
   RUT_TRAIT_ID_MIMABLE,
+  RUT_TRAIT_ID_CAMERA,
 } RutTraitID;
 
 typedef void (*RutTraitDestructor) (void *object);

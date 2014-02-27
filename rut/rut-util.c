@@ -280,7 +280,7 @@ typedef struct _IntersectState
   bool found;
 } IntersectState;
 
-static CoglBool
+static bool
 intersect_triangle_cb (void **attributes_v0,
                        void **attributes_v1,
                        void **attributes_v2,
@@ -360,25 +360,6 @@ rut_util_one_at_a_time_mix (unsigned int hash)
   return hash;
 }
 
-CoglPipeline *
-rut_util_create_texture_pipeline (CoglTexture *texture)
-{
-  static CoglPipeline *template = NULL, *new_pipeline;
-
-  if (G_UNLIKELY (template == NULL))
-    {
-      template = cogl_pipeline_new (rut_cogl_context);
-      cogl_pipeline_set_layer_null_texture (template,
-					    0,
-					    COGL_TEXTURE_TYPE_2D);
-    }
-
-  new_pipeline = cogl_pipeline_copy (template);
-  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
-
-  return new_pipeline;
-}
-
 static const float jitter_offsets[32] =
 {
   0.375f, 0.4375f,
@@ -455,7 +436,7 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
   cogl_object_unref (pipeline);
 }
 
-CoglBool
+bool
 rut_util_find_tag (const GList *tags,
                    const char *tag)
 {
@@ -554,11 +535,11 @@ rut_util_distribute_natural_allocation (int extra_space,
   return extra_space;
 }
 
-CoglBool
+bool
 rut_util_is_boolean_env_set (const char *variable)
 {
   char *val = getenv (variable);
-  CoglBool ret;
+  bool ret;
 
   if (!val)
     return FALSE;

@@ -57,6 +57,10 @@
 #include "rig-slave-master.h"
 #include "rig-frontend.h"
 #include "rig-simulator.h"
+#include "rig-image-source.h"
+#include "rig-inspector.h"
+
+#include "components/rig-camera.h"
 
 //#define DEVICE_WIDTH 480.0
 //#define DEVICE_HEIGHT 800.0
@@ -100,7 +104,7 @@ scenegraph_pre_paint_cb (RutObject *object,
                          void *user_data)
 {
   RutPaintContext *rut_paint_ctx = user_data;
-  RutCamera *camera = rut_paint_ctx->camera;
+  RutObject *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
 #if 0
@@ -222,7 +226,7 @@ rig_reload_inspector_property (RigEngine *engine,
       GList *l;
 
       for (l = engine->all_inspectors; l; l = l->next)
-        rut_inspector_reload_property (l->data, property);
+        rig_inspector_reload_property (l->data, property);
     }
 }
 
@@ -246,7 +250,7 @@ inspector_property_changed_cb (RutProperty *inspected_property,
 
 static void
 inspector_controlled_changed_cb (RutProperty *property,
-                                 CoglBool value,
+                                 bool value,
                                  void *user_data)
 {
   RigEngine *engine = user_data;
@@ -260,7 +264,7 @@ inspector_controlled_changed_cb (RutProperty *property,
 typedef struct
 {
   RigEngine *engine;
-  RutInspector *inspector;
+  RigInspector *inspector;
 } InitControlledStateData;
 
 static void
@@ -281,17 +285,17 @@ init_property_controlled_state_cb (RutProperty *property,
         rig_controller_find_prop_data_for_property (controller, property);
 
       if (prop_data)
-        rut_inspector_set_property_controlled (data->inspector, property, TRUE);
+        rig_inspector_set_property_controlled (data->inspector, property, TRUE);
     }
 }
 
-static RutInspector *
+static RigInspector *
 create_inspector (RigEngine *engine,
                   GList *objects)
 {
   RutObject *reference_object = objects->data;
-  RutInspector *inspector =
-    rut_inspector_new (engine->ctx,
+  RigInspector *inspector =
+    rig_inspector_new (engine->ctx,
                        objects,
                        inspector_property_changed_cb,
                        inspector_controlled_changed_cb,
@@ -347,7 +351,7 @@ create_components_inspector (RigEngine *engine,
                              GList *components)
 {
   RutComponent *reference_component = components->data;
-  RutInspector *inspector = create_inspector (engine, components);
+  RigInspector *inspector = create_inspector (engine, components);
   const char *name = rut_object_get_type_name (reference_component);
   char *label;
   RutFold *fold;
@@ -398,7 +402,7 @@ create_components_inspector (RigEngine *engine,
 }
 
 RutObject *
-find_component (RutEntity *entity,
+find_component (RigEntity *entity,
                 RutComponentType type)
 {
   int i;
@@ -441,7 +445,7 @@ match_and_create_components_inspector_cb (RutComponent *reference_component,
 
       /* If there is no component of the same type attached to all the
        * other entities then don't list the component */
-      RutComponent *component = rut_entity_get_component (l->data, type);
+      RutComponent *component = rig_entity_get_component (l->data, type);
       if (!component)
         goto EXIT;
 
@@ -470,7 +474,7 @@ _rig_engine_update_inspector (RigEngine *engine)
 
   /* This will drop the last reference to any current
    * engine->inspector_box_layout and also any indirect references
-   * to existing RutInspectors */
+   * to existing RigInspectors */
   rut_bin_set_child (engine->inspector_bin, NULL);
 
   engine->inspector_box_layout =
@@ -493,12 +497,12 @@ _rig_engine_update_inspector (RigEngine *engine)
       engine->all_inspectors =
         g_list_prepend (engine->all_inspectors, engine->inspector);
 
-      if (rut_object_get_type (reference_object) == &rut_entity_type)
+      if (rut_object_get_type (reference_object) == &rig_entity_type)
         {
           state.engine = engine;
           state.entities = objects;
 
-          rut_entity_foreach_component (reference_object,
+          rig_entity_foreach_component (reference_object,
                                         match_and_create_components_inspector_cb,
                                         &state);
         }
@@ -506,7 +510,7 @@ _rig_engine_update_inspector (RigEngine *engine)
 }
 
 void
-rig_engine_dirty_properties_menu (RutImageSource *source,
+rig_engine_dirty_properties_menu (RigImageSource *source,
                                   void *user_data)
 {
 #ifdef RIG_EDITOR_ENABLED
@@ -518,14 +522,14 @@ rig_engine_dirty_properties_menu (RutImageSource *source,
 
 void
 rig_reload_position_inspector (RigEngine *engine,
-                               RutEntity *entity)
+                               RigEntity *entity)
 {
   if (engine->inspector)
     {
       RutProperty *property =
         rut_introspectable_lookup_property (entity, "position");
 
-      rut_inspector_reload_property (engine->inspector, property);
+      rig_inspector_reload_property (engine->inspector, property);
     }
 }
 
@@ -555,10 +559,10 @@ _rig_objects_selection_copy (RutObject *object)
 
   for (l = selection->objects; l; l = l->next)
     {
-      if (rut_object_get_type (l->data) == &rut_entity_type)
+      if (rut_object_get_type (l->data) == &rig_entity_type)
         {
           copy->objects =
-            g_list_prepend (copy->objects, rut_entity_copy (l->data));
+            g_list_prepend (copy->objects, rig_entity_copy (l->data));
         }
       else
         {
@@ -715,7 +719,7 @@ rig_select_object (RigEngine *engine,
     rig_simulator_action_select_object (engine->simulator, object, action);
 
   /* For now we only support selecting multiple entities... */
-  if (object && rut_object_get_type (object) != &rut_entity_type)
+  if (object && rut_object_get_type (object) != &rig_entity_type)
     action = RUT_SELECT_ACTION_REPLACE;
 
   if (object == engine->light_handle)
@@ -857,51 +861,51 @@ static void
 load_builtin_assets (RigEngine *engine)
 {
 
-  engine->nine_slice_builtin_asset = rut_asset_new_builtin (engine->ctx, "nine-slice.png");
-  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "nine-slice");
-  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geometry");
+  engine->nine_slice_builtin_asset = rig_asset_new_builtin (engine->ctx, "nine-slice.png");
+  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "nine-slice");
+  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geometry");
 
-  engine->diamond_builtin_asset = rut_asset_new_builtin (engine->ctx, "diamond.png");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
+  engine->diamond_builtin_asset = rig_asset_new_builtin (engine->ctx, "diamond.png");
+  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
+  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
 
-  engine->circle_builtin_asset = rut_asset_new_builtin (engine->ctx, "circle.png");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
+  engine->circle_builtin_asset = rig_asset_new_builtin (engine->ctx, "circle.png");
+  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
+  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
+  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
 
-  engine->pointalism_grid_builtin_asset = rut_asset_new_builtin (engine->ctx,
+  engine->pointalism_grid_builtin_asset = rig_asset_new_builtin (engine->ctx,
                                             "pointalism.png");
-  rut_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "grid");
-  rut_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
+  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "grid");
+  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
                               "pointalism");
-  rut_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
+  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
                               "geometry");
 
-  engine->text_builtin_asset = rut_asset_new_builtin (engine->ctx, "fonts.png");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "text");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "label");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
-  rut_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
+  engine->text_builtin_asset = rig_asset_new_builtin (engine->ctx, "fonts.png");
+  rig_asset_add_inferred_tag (engine->text_builtin_asset, "text");
+  rig_asset_add_inferred_tag (engine->text_builtin_asset, "label");
+  rig_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
 
-  engine->hair_builtin_asset = rut_asset_new_builtin (engine->ctx, "hair.png");
-  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
-  rut_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
+  engine->hair_builtin_asset = rig_asset_new_builtin (engine->ctx, "hair.png");
+  rig_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
+  rig_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
 
-  engine->button_input_builtin_asset = rut_asset_new_builtin (engine->ctx,
+  engine->button_input_builtin_asset = rig_asset_new_builtin (engine->ctx,
                                                                "button.png");
-  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "button");
-  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "builtin");
-  rut_asset_add_inferred_tag (engine->button_input_builtin_asset, "input");
+  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "button");
+  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "input");
 }
 
 static void
@@ -932,7 +936,7 @@ create_debug_gradient (RigEngine *engine)
   CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
 
   engine->gradient =
-    cogl_texture_2d_new_with_size (rut_cogl_context, 200, 200);
+    cogl_texture_2d_new_with_size (engine->ctx->cogl_context, 200, 200);
 
   offscreen = cogl_offscreen_new_with_texture (engine->gradient);
 
@@ -1102,7 +1106,7 @@ ensure_shadow_map (RigEngine *engine)
 
   g_warn_if_fail (engine->shadow_color == NULL);
 
-  color_buffer = cogl_texture_2d_new_with_size (rut_cogl_context,
+  color_buffer = cogl_texture_2d_new_with_size (engine->ctx->cogl_context,
                                                 engine->device_width * 2,
                                                 engine->device_height * 2);
 
@@ -1186,6 +1190,8 @@ _rig_engine_free (void *object)
       cogl_object_unref (engine->onscreen);
 
       cogl_object_unref (engine->default_pipeline);
+
+      _rig_destroy_image_source_wrappers (engine);
 
 #ifdef __APPLE__
       rig_osx_deinit (engine);
@@ -1409,14 +1415,14 @@ _rig_engine_new_full (RutShell *shell,
   rut_graphable_add_child (engine->root, engine->top_stack);
   rut_object_unref (engine->top_stack);
 
-  engine->camera_2d = rut_camera_new (engine->ctx,
+  engine->camera_2d = rig_camera_new (engine,
                                       -1, /* ortho/vp width */
                                       -1, /* ortho/vp height */
                                       NULL);
-  rut_camera_set_clear (engine->camera_2d, FALSE);
+  rut_camera_set_clear (engine->camera_2d, false);
 
   /* XXX: Basically just a hack for now. We should have a
-   * RutShellWindow type that internally creates a RutCamera that can
+   * RutShellWindow type that internally creates a RigCamera that can
    * be used when handling input events in device coordinates.
    */
   rut_shell_set_window_camera (shell, engine->camera_2d);
@@ -1467,6 +1473,8 @@ _rig_engine_new_full (RutShell *shell,
 
       engine->circle_node_attribute =
         rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
+
+      _rig_init_image_source_wrappers_cache (engine);
 
       engine->renderer = rig_renderer_new (engine);
       rig_renderer_init (engine);
@@ -1635,7 +1643,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
               if ((rut_key_event_get_modifier_state (event) &
                    RUT_MODIFIER_CTRL_ON))
                 {
-                  RutEntity *play_camera = engine->play_mode ?
+                  RigEntity *play_camera = engine->play_mode ?
                     engine->play_mode_ui->play_camera : engine->edit_mode_ui->play_camera;
 
                   rig_select_object (engine, play_camera, RUT_SELECT_ACTION_REPLACE);
@@ -1651,7 +1659,9 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
 
     case RUT_INPUT_EVENT_TYPE_MOTION:
     case RUT_INPUT_EVENT_TYPE_TEXT:
+    case RUT_INPUT_EVENT_TYPE_DROP_OFFER:
     case RUT_INPUT_EVENT_TYPE_DROP:
+    case RUT_INPUT_EVENT_TYPE_DROP_CANCEL:
       break;
     }
 
@@ -1679,30 +1689,30 @@ add_light_cb (RutInputRegion *region,
 
 void
 rig_register_asset (RigEngine *engine,
-                    RutAsset *asset)
+                    RigAsset *asset)
 {
-  char *key = g_strdup (rut_asset_get_path (asset));
+  char *key = g_strdup (rig_asset_get_path (asset));
 
   g_hash_table_insert (engine->assets_registry,
                        key,
                        rut_object_ref (asset));
 }
 
-RutAsset *
+RigAsset *
 rig_lookup_asset (RigEngine *engine,
                   const char *path)
 {
   return g_hash_table_lookup (engine->assets_registry, path);
 }
 
-RutAsset *
+RigAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *inferred_tags = NULL;
-  RutAsset *asset = NULL;
+  RigAsset *asset = NULL;
 
   inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
 
@@ -1710,22 +1720,22 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
       rut_util_find_tag (inferred_tags, "video"))
     {
       if (rut_util_find_tag (inferred_tags, "normal-maps"))
-        asset = rut_asset_new_normal_map (engine->ctx, path, inferred_tags);
+        asset = rig_asset_new_normal_map (engine->ctx, path, inferred_tags);
       else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-        asset = rut_asset_new_alpha_mask (engine->ctx, path, inferred_tags);
+        asset = rig_asset_new_alpha_mask (engine->ctx, path, inferred_tags);
       else
-        asset = rut_asset_new_texture (engine->ctx, path, inferred_tags);
+        asset = rig_asset_new_texture (engine->ctx, path, inferred_tags);
     }
   else if (rut_util_find_tag (inferred_tags, "ply"))
-    asset = rut_asset_new_ply_model (engine->ctx, path, inferred_tags);
+    asset = rig_asset_new_ply_model (engine->ctx, path, inferred_tags);
 
 #ifdef RIG_EDITOR_ENABLED
   if (engine->frontend &&
       engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
       asset &&
-      rut_asset_needs_thumbnail (asset))
+      rig_asset_needs_thumbnail (asset))
     {
-      rut_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
+      rig_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
     }
 #endif
 
@@ -1831,18 +1841,18 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
 char *
 rig_engine_get_object_debug_name (RutObject *object)
 {
-  if (rut_object_get_type (object) == &rut_entity_type)
-    return g_strdup_printf ("%p(label=\"%s\")", object, rut_entity_get_label (object));
+  if (rut_object_get_type (object) == &rig_entity_type)
+    return g_strdup_printf ("%p(label=\"%s\")", object, rig_entity_get_label (object));
   else if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
     {
       RutComponentableProps *component_props =
         rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-      RutEntity *entity = component_props->entity;
+      RigEntity *entity = component_props->entity;
       const char *entity_label;
       if (entity)
-        entity_label = entity ? rut_entity_get_label (entity) : "";
-      return g_strdup_printf ("%p(label=\"%s\"::%s)", entity_label,
-                              rut_object_get_type_name (object), NULL);
+        entity_label = entity ? rig_entity_get_label (entity) : "";
+      return g_strdup_printf ("%p(label=\"%s\"::%s)", entity, entity_label,
+                              rut_object_get_type_name (object));
     }
   else
     return g_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));

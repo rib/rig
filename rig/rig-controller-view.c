@@ -31,6 +31,7 @@
 #include "rig-undo-journal.h"
 #include "rig-engine.h"
 #include "rig-binding-view.h"
+#include "rig-prop-inspector.h"
 
 #define RIG_CONTROLLER_VIEW_N_PROPERTY_COLUMNS 3
 
@@ -512,7 +513,7 @@ typedef struct _MarkerGrabState
   float min_drag_offset;
   float max_drag_offset;
 
-  RutCamera *camera;
+  RutObject *camera;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
 } MarkerGrabState;
@@ -716,7 +717,7 @@ marker_grab_input_cb (RutInputEvent *event,
     {
       RutContext *ctx = view->context;
       RutShell *shell = ctx->shell;
-      RutCamera *camera = state->camera;
+      RutObject *camera = state->camera;
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
 
@@ -1543,7 +1544,7 @@ typedef struct _PathViewGrabState
   RigControllerView *view;
   RigPathView *path_view;
 
-  RutCamera *camera;
+  RutObject *camera;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
 } PathViewGrabState;
@@ -1559,7 +1560,7 @@ path_view_grab_input_cb (RutInputEvent *event,
     {
       RutContext *ctx = view->context;
       RutShell *shell = ctx->shell;
-      RutCamera *camera = state->camera;
+      RutObject *camera = state->camera;
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
       float focus_offset;
@@ -2078,7 +2079,7 @@ update_method_control (RigControllerPropertyView *prop_view)
   switch (prop_view->prop_data->method)
     {
     case RIG_CONTROLLER_METHOD_CONSTANT:
-      column->control = rut_prop_inspector_new (ctx,
+      column->control = rig_prop_inspector_new (ctx,
                                                 prop_view->prop_data->property,
                                                 const_property_changed_cb,
                                                 NULL, /* controlled changed */
@@ -2308,11 +2309,11 @@ compare_properties_cb (RigControllerPropertyView *prop_view_a,
   if (object_a != object_b)
     {
       /* Make sure to list entity properties first */
-      if (object_type_a == &rut_entity_type &&
-          object_type_b != &rut_entity_type)
+      if (object_type_a == &rig_entity_type &&
+          object_type_b != &rig_entity_type)
         return -1;
-      else if (object_type_b == &rut_entity_type &&
-               object_type_a != &rut_entity_type)
+      else if (object_type_b == &rig_entity_type &&
+               object_type_a != &rig_entity_type)
         return 1;
       else
         return (long)object_a - (long)object_b;
@@ -3434,7 +3435,6 @@ rig_controller_view_update_timeline_progress (RigControllerView *view,
   rut_timeline_set_progress (view->timeline, progress);
   rut_shell_queue_redraw (view->context->shell);
 }
-#endif
 
 static RigNode *
 rig_controller_view_find_node_in_path (RigControllerView *view,
@@ -3451,7 +3451,6 @@ rig_controller_view_find_node_in_path (RigControllerView *view,
   return NULL;
 }
 
-#if 0
 static CoglBool
 rig_controller_view_find_node (RigControllerView *view,
                                RutInputEvent *event,

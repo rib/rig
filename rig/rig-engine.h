@@ -25,8 +25,11 @@
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
 
+#include <gmodule.h>
+#include <gio/gio.h>
 
 #include "rig-editor.h"
+#include "rig-image-source.h"
 
 /* Forward declare since there is a circular dependency between this
  * header and rig-camera-view.h which depends on this typedef... */
@@ -60,6 +63,7 @@ typedef enum _RutSelectAction
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-code.h"
+#include "rig-image-source.h"
 
 enum {
   RIG_ENGINE_PROP_WIDTH,
@@ -92,12 +96,14 @@ struct _RigEngine
   char *ui_filename;
   RutClosure *finish_ui_load_closure;
 
-  RutCamera *camera_2d;
+  RutObject *camera_2d;
   RutObject *root;
 
   CoglMatrix identity;
 
   CoglTexture *gradient;
+
+  GHashTable *image_source_wrappers;
 
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
@@ -198,13 +204,13 @@ struct _RigEngine
   RutFlowLayout *assets_other_results;
 
   /* XXX: Move to RigEditor */
-  RutAsset *text_builtin_asset;
-  RutAsset *circle_builtin_asset;
-  RutAsset *nine_slice_builtin_asset;
-  RutAsset *diamond_builtin_asset;
-  RutAsset *pointalism_grid_builtin_asset;
-  RutAsset *hair_builtin_asset;
-  RutAsset *button_input_builtin_asset;
+  RigAsset *text_builtin_asset;
+  RigAsset *circle_builtin_asset;
+  RigAsset *nine_slice_builtin_asset;
+  RigAsset *diamond_builtin_asset;
+  RigAsset *pointalism_grid_builtin_asset;
+  RigAsset *hair_builtin_asset;
+  RigAsset *button_input_builtin_asset;
   GList *result_input_closures;
   GList *asset_enumerators;
 
@@ -224,8 +230,8 @@ struct _RigEngine
 
   /* XXX: Move to RigEditor */
 #ifdef RIG_EDITOR_ENABLED
-  RutEntity *light_handle;
-  RutEntity *play_camera_handle;
+  RigEntity *light_handle;
+  RigEntity *play_camera_handle;
 #endif
 
   float grab_x;
@@ -358,13 +364,13 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
 
 void
 rig_register_asset (RigEngine *engine,
-                    RutAsset *asset);
+                    RigAsset *asset);
 
-RutAsset *
+RigAsset *
 rig_lookup_asset (RigEngine *engine,
                   const char *path);
 
-RutAsset *
+RigAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
 
 void
@@ -378,13 +384,13 @@ rig_reload_inspector_property (RigEngine *engine,
 
 void
 rig_reload_position_inspector (RigEngine *engine,
-                               RutEntity *entity);
+                               RigEntity *entity);
 
 void
 rig_engine_sync_slaves (RigEngine *engine);
 
 void
-rig_engine_dirty_properties_menu (RutImageSource *source,
+rig_engine_dirty_properties_menu (RigImageSource *source,
                                   void *user_data);
 
 void

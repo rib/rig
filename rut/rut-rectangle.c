@@ -27,7 +27,7 @@
 
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
-#include "rut-camera-private.h"
+#include "rut-camera.h"
 #include "rut-rectangle.h"
 
 struct _RutRectangle
@@ -61,9 +61,9 @@ _rut_rectangle_paint (RutObject *object,
                       RutPaintContext *paint_ctx)
 {
   RutRectangle *rectangle = object;
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
 
-  cogl_framebuffer_draw_rectangle (camera->fb,
+  cogl_framebuffer_draw_rectangle (rut_camera_get_framebuffer (camera),
                                    rectangle->pipeline,
                                    0, 0,
                                    rectangle->width,

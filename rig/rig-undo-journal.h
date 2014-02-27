@@ -33,6 +33,7 @@ typedef struct _RigUndoJournal RigUndoJournal;
 #include "rig-path.h"
 #include "rig-controller.h"
 #include "rig-pb.h"
+#include "rig-entity.h"
 
 typedef enum _UndoRedoOp
 {
@@ -125,15 +126,15 @@ typedef struct
 
 typedef struct _UndoRedoAddDeleteEntity
 {
-  RutEntity *parent_entity;
-  RutEntity *deleted_entity;
+  RigEntity *parent_entity;
+  RigEntity *deleted_entity;
   bool saved_controller_properties;
   RutList controller_properties;
 } UndoRedoAddDeleteEntity;
 
 typedef struct _UndoRedoAddDeleteComponent
 {
-  RutEntity *parent_entity;
+  RigEntity *parent_entity;
   RutObject *deleted_component;
   bool saved_controller_properties;
   RutList controller_properties;
@@ -263,16 +264,16 @@ rig_undo_journal_set_property (RigUndoJournal *journal,
 
 void
 rig_undo_journal_add_entity (RigUndoJournal *journal,
-                             RutEntity *parent_entity,
-                             RutEntity *entity);
+                             RigEntity *parent_entity,
+                             RigEntity *entity);
 
 void
 rig_undo_journal_delete_entity (RigUndoJournal *journal,
-                                RutEntity *entity);
+                                RigEntity *entity);
 
 void
 rig_undo_journal_add_component (RigUndoJournal *journal,
-                                RutEntity *entity,
+                                RigEntity *entity,
                                 RutObject *component);
 
 void

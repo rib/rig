@@ -24,7 +24,6 @@
 #include <cogl/cogl.h>
 
 #include "rut-context.h"
-#include "rut-camera-private.h"
 
 typedef struct _RutGaussianBlurrer
 {

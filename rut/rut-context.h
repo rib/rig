@@ -73,8 +73,6 @@ struct _RutContext
 
   RutPropertyContext property_ctx;
 
-  GHashTable *image_source_wrappers;
-
   CoglPipeline *single_texture_2d_template;
 
   GSList *timelines;

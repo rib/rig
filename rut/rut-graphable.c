@@ -25,7 +25,7 @@
 #include "rut-graphable.h"
 #include "rut-interfaces.h"
 #include "rut-util.h"
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 #include "rut-queue.h"
 
 void
@@ -303,7 +303,7 @@ _rut_graphable_paint_cb (RutObject *object,
 
 void
 rut_graphable_paint (RutObject *root,
-                     RutCamera *camera)
+                     RutObject *camera)
 {
   RutPaintContext paint_ctx;
 
@@ -318,14 +318,14 @@ rut_graphable_paint (RutObject *root,
 #endif
 
 #if 0
-RutCamera *
+RutObject *
 rut_graphable_find_camera (RutObject *object)
 {
   do {
     RutGraphableProps *graphable_priv;
 
-    if (rut_object_get_type (object) == &rut_camera_type)
-      return RUT_CAMERA (object);
+    if (rut_object_is (object, RUT_TRAIT_ID_CAMERA))
+      return object;
 
     graphable_priv =
       rut_object_get_properties (object, RUT_TRAIT_ID_GRAPHABLE);
@@ -388,7 +388,7 @@ rut_graphable_get_transform (RutObject *graphable,
 
 void
 rut_graphable_get_modelview (RutObject *graphable,
-                             RutCamera *camera,
+                             RutObject *camera,
                              CoglMatrix *transform)
 {
   const CoglMatrix *view = rut_camera_get_view_transform (camera);
@@ -398,7 +398,7 @@ rut_graphable_get_modelview (RutObject *graphable,
 
 void
 rut_graphable_fully_transform_point (RutObject *graphable,
-                                     RutCamera *camera,
+                                     RutObject *camera,
                                      float *x,
                                      float *y,
                                      float *z)

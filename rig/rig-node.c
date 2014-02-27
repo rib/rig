@@ -238,7 +238,7 @@ void
 rig_node_asset_lerp (RigNode *a,
                      RigNode *b,
                      float t,
-                     RutAsset **value)
+                     RigAsset **value)
 {
   if (a->t >= b->t)
     *value = a->boxed.d.asset_val;
@@ -463,7 +463,7 @@ rig_node_new_for_text (float t, const char *value)
 }
 
 RigNode *
-rig_node_new_for_asset (float t, RutAsset *value)
+rig_node_new_for_asset (float t, RigAsset *value)
 {
   RigNode *node = g_slice_new (RigNode);
   node->t = t;

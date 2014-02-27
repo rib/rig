@@ -20,7 +20,7 @@
 #ifndef _RIG_CAMERA_VIEW_H_
 #define _RIG_CAMERA_VIEW_H_
 
-#include "rut.h"
+#include <rut.h>
 
 /* Forward declare this since there is a circluar header dependency
  * between rig-camera-view.h and rig-engine.h */
@@ -30,15 +30,16 @@ typedef struct _RigCameraView RigCameraView;
 #include "rig-selection-tool.h"
 #include "rig-rotation-tool.h"
 #include "rig-ui.h"
+#include "rig-dof-effect.h"
 
 typedef struct _EntityTranslateGrabClosure EntityTranslateGrabClosure;
 typedef struct _EntitiesTranslateGrabClosure EntitiesTranslateGrabClosure;
 
 typedef struct
 {
-  RutEntity *origin_offset; /* negative offset */
-  RutEntity *dev_scale; /* scale to fit device coords */
-  RutEntity *screen_pos; /* position screen in edit view */
+  RigEntity *origin_offset; /* negative offset */
+  RigEntity *dev_scale; /* scale to fit device coords */
+  RigEntity *screen_pos; /* position screen in edit view */
 } RigCameraViewDeviceTransforms;
 
 typedef enum _RigCameraViewMode
@@ -80,36 +81,36 @@ struct _RigCameraView
 
   EntitiesTranslateGrabClosure *entities_translate_grab_closure;
 
-  RutEntity *view_camera_to_origin; /* move to origin */
-  RutEntity *view_camera_rotate; /* armature rotate rotate */
-  RutEntity *view_camera_armature; /* armature length */
-  RutEntity *view_camera_2d_view; /* setup 2d view, origin top-left */
+  RigEntity *view_camera_to_origin; /* move to origin */
+  RigEntity *view_camera_rotate; /* armature rotate rotate */
+  RigEntity *view_camera_armature; /* armature length */
+  RigEntity *view_camera_2d_view; /* setup 2d view, origin top-left */
   RigCameraViewDeviceTransforms view_device_transforms;
 
-  RutEntity *play_camera;
-  RutCamera *play_camera_component;
+  RigEntity *play_camera;
+  RutObject *play_camera_component;
   RigCameraViewDeviceTransforms play_device_transforms;
   /* This entity is added as a child of all of the play device
    * transforms. During paint the camera component is temporarily
    * stolen from the play camera entity so that it can be transformed
    * with the device transforms */
-  RutEntity *play_dummy_entity;
+  RigEntity *play_dummy_entity;
 
 #ifdef RIG_EDITOR_ENABLED
-  RutEntity *play_camera_handle;
+  RigEntity *play_camera_handle;
 #endif
 
-  RutEntity *current_camera;
-  RutCamera *current_camera_component;
+  RigEntity *current_camera;
+  RutObject *current_camera_component;
 
-  RutDepthOfField *dof;
+  RigDepthOfField *dof;
   bool enable_dof;
 
   RutArcball arcball;
   CoglQuaternion saved_rotation;
 
-  RutEntity *view_camera;
-  RutCamera *view_camera_component;
+  RigEntity *view_camera;
+  RutObject *view_camera_component;
   float view_camera_z;
   RutInputRegion *input_region;
 

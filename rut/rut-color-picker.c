@@ -30,8 +30,8 @@
 #include "rut-property.h"
 #include "rut-input-region.h"
 #include "rut-color-picker.h"
-
-#include "components/rut-camera.h"
+#include "rut-introspectable.h"
+#include "rut-camera.h"
 
 enum {
   RUT_COLOR_PICKER_PROP_COLOR,
@@ -448,7 +448,7 @@ _rut_color_picker_paint (RutObject *object,
                          RutPaintContext *paint_ctx)
 {
   RutColorPicker *picker = (RutColorPicker *) object;
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
 
   cogl_framebuffer_draw_rectangle (fb,
@@ -782,7 +782,7 @@ input_region_cb (RutInputRegion *region,
                  void *user_data)
 {
   RutColorPicker *picker = user_data;
-  RutCamera *camera;
+  RutObject *camera;
   float x, y;
 
   if (picker->grab == RUT_COLOR_PICKER_GRAB_NONE &&

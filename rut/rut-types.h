@@ -9,10 +9,6 @@ extern RutType rut_context_type;
 typedef struct _RutShell RutShell;
 extern RutType rut_shell_type;
 
-typedef struct _RutCamera RutCamera;
-#define RUT_CAMERA(X) ((RutCamera *)X)
-extern RutType rut_camera_type;
-
 typedef struct _RutInputRegion RutInputRegion;
 extern RutType rut_input_region_type;
 
@@ -71,13 +67,18 @@ typedef enum _RutAxis
   RUT_AXIS_Z
 } RutAxis;
 
-typedef enum _RutAssetType {
-  RUT_ASSET_TYPE_BUILTIN,
-  RUT_ASSET_TYPE_TEXTURE,
-  RUT_ASSET_TYPE_NORMAL_MAP,
-  RUT_ASSET_TYPE_ALPHA_MASK,
-  RUT_ASSET_TYPE_PLY_MODEL, /* TODO: rename to _TYPE_MESH */
-} RutAssetType;
+/* FIXME: avoid this Rig typedef being in rut/
+ *
+ * Obviously we shouldn't ideally have Rig typedefs in Rut but this is
+ * currently required because we want RigAsset based properties
+ */
+typedef enum _RigAssetType {
+  RIG_ASSET_TYPE_BUILTIN,
+  RIG_ASSET_TYPE_TEXTURE,
+  RIG_ASSET_TYPE_NORMAL_MAP,
+  RIG_ASSET_TYPE_ALPHA_MASK,
+  RIG_ASSET_TYPE_MESH,
+} RigAssetType;
 
 typedef struct _RutPreferredSize
 {

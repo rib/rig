@@ -25,10 +25,11 @@
 #include "rut-shell.h"
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
-#include "rut-camera-private.h"
+#include "rut-camera.h"
 #include "rut-scroll-bar.h"
 #include "rut-color.h"
 #include "rut-input-region.h"
+#include "rut-introspectable.h"
 
 #define THICKNESS 20
 #define HANDLE_THICKNESS 15
@@ -125,32 +126,33 @@ static void
 _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
 {
   RutScrollBar *scroll_bar = RUT_SCROLL_BAR (object);
+  CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
-  cogl_framebuffer_push_matrix (paint_ctx->camera->fb);
+  cogl_framebuffer_push_matrix (fb);
 
   if (scroll_bar->axis == RUT_AXIS_X)
     {
-      cogl_framebuffer_translate (paint_ctx->camera->fb,
+      cogl_framebuffer_translate (fb,
                                   scroll_bar->handle_pos, 0, 0);
     }
   else
     {
-      cogl_framebuffer_translate (paint_ctx->camera->fb, 0,
+      cogl_framebuffer_translate (fb, 0,
                                   scroll_bar->handle_pos, 0);
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
+      cogl_framebuffer_draw_rectangle (fb,
                                        scroll_bar->rounded_pipeline,
                                        0, 0,
                                        HANDLE_THICKNESS,
                                        HANDLE_THICKNESS);
 
-      cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
+      cogl_framebuffer_draw_rectangle (fb,
                                        scroll_bar->rounded_pipeline,
                                        0,
                                        scroll_bar->handle_len - HANDLE_THICKNESS,
                                        HANDLE_THICKNESS,
                                        scroll_bar->handle_len);
 
-      cogl_framebuffer_draw_textured_rectangle (paint_ctx->camera->fb,
+      cogl_framebuffer_draw_textured_rectangle (fb,
                                                 scroll_bar->rounded_pipeline,
                                                 0,
                                                 HANDLE_THICKNESS / 2,
@@ -159,7 +161,7 @@ _rut_scroll_bar_paint (RutObject *object, RutPaintContext *paint_ctx)
                                                 0, 0.5, 1, 0.5);
     }
 
-  cogl_framebuffer_pop_matrix (paint_ctx->camera->fb);
+  cogl_framebuffer_pop_matrix (fb);
 }
 
 RutType rut_scroll_bar_type;

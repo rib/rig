@@ -54,8 +54,45 @@ librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/rut/librut.l
 librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0 -Wl,--unresolved-symbols=ignore-all
 #-fuse-ld=gold
 
+
 librig_la_SOURCES = \
 	$(rig_protobuf_c_rpc_sources) \
+	components/rig-hair.h \
+	components/rig-hair.c \
+	components/rig-camera.h \
+	components/rig-camera.c \
+	components/rig-light.h \
+	components/rig-light.c \
+	components/rig-model.h \
+	components/rig-model.c \
+	components/rig-material.h \
+	components/rig-material.c \
+	components/rig-diamond.h \
+	components/rig-diamond.c \
+	components/rig-shape.h \
+	components/rig-shape.c \
+	components/rig-nine-slice.h \
+	components/rig-nine-slice.c \
+	components/rig-pointalism-grid.h \
+	components/rig-pointalism-grid.c \
+	components/rig-button-input.h \
+	components/rig-button-input.c \
+	rig-entity.h \
+	rig-entity.c \
+	rig-asset.h \
+	rig-asset.c \
+	rig-asset-inspector.h \
+	rig-asset-inspector.c \
+	rig-prop-inspector.h \
+	rig-prop-inspector.c \
+	rig-inspector.h \
+	rig-inspector.c \
+	rig-image-source.h \
+	rig-image-source.c \
+	rig-downsampler.h \
+	rig-downsampler.c \
+	rig-dof-effect.h \
+	rig-dof-effect.c \
 	rig-engine.c \
 	rig-engine-op.h \
 	rig-engine-op.c \
@@ -80,6 +117,8 @@ librig_la_SOURCES = \
     	rig-camera-view.h \
     	rig-camera-view.c \
 	rig-types.h \
+	rut-renderer.h \
+	rut-renderer.c \
 	rig-renderer.h \
 	rig-renderer.c \
 	rig-engine.h \

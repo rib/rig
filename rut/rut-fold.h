@@ -24,7 +24,7 @@
 #include "rut-box-layout.h"
 #include "rut-text.h"
 
-#include "components/rut-nine-slice.h"
+#include "rut-nine-slice.h"
 
 extern RutType rut_fold_type;
 

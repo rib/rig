@@ -24,7 +24,7 @@
 #include <config.h>
 
 #include "rut-paintable.h"
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 void
 rut_paintable_init (RutObject *object)

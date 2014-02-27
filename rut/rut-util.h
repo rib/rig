@@ -129,9 +129,6 @@ rut_util_one_at_a_time_hash (unsigned int hash,
 unsigned int
 rut_util_one_at_a_time_mix (unsigned int hash);
 
-CoglPipeline *
-rut_util_create_texture_pipeline (CoglTexture *texture);
-
 void
 rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                                     CoglPrimitive *prim,
@@ -139,7 +136,7 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                                     float green,
                                     float blue);
 
-CoglBool
+bool
 rut_util_find_tag (const GList *tags,
                    const char *tag);
 
@@ -175,7 +172,7 @@ rut_util_distribute_natural_allocation (int extra_space,
                                         unsigned int n_requested_sizes,
                                         RutPreferredSize *sizes);
 
-CoglBool
+bool
 rut_util_is_boolean_env_set (const char *variable);
 
 void

@@ -74,7 +74,7 @@ struct _RutAttribute
 
   RutBuffer *buffer;
   const char *name;
-  CoglBool normalized;
+  bool normalized;
   size_t stride;
   size_t offset;
   int n_components;
@@ -173,9 +173,9 @@ RutAttribute *
 rut_mesh_find_attribute (RutMesh *mesh,
                          const char *attribute_name);
 
-typedef CoglBool (*RutMeshVertexCallback) (void **attribute_data,
-                                           int vertex_index,
-                                           void *user_data);
+typedef bool (*RutMeshVertexCallback) (void **attribute_data,
+                                       int vertex_index,
+                                       void *user_data);
 
 void
 rut_mesh_foreach_vertex (RutMesh *mesh,
@@ -191,13 +191,13 @@ rut_mesh_foreach_index (RutMesh *mesh,
                         const char *first_attribute_name,
                         ...) G_GNUC_NULL_TERMINATED;
 
-typedef CoglBool (*RutMeshTriangleCallback) (void **attribute_data_v0,
-                                             void **attribute_data_v1,
-                                             void **attribute_data_v2,
-                                             int v0_index,
-                                             int v1_index,
-                                             int v2_index,
-                                             void *user_data);
+typedef bool (*RutMeshTriangleCallback) (void **attribute_data_v0,
+                                         void **attribute_data_v1,
+                                         void **attribute_data_v2,
+                                         int v0_index,
+                                         int v1_index,
+                                         int v2_index,
+                                         void *user_data);
 
 void
 rut_mesh_foreach_triangle (RutMesh *mesh,

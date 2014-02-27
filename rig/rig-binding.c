@@ -133,9 +133,9 @@ get_property_codegen_info (RutProperty *property,
       break;
     case RUT_PROPERTY_TYPE_ASSET:
       *type_name = "asset";
-      *var_decl_pre = "RutAsset *";
+      *var_decl_pre = "RigAsset *";
       *var_decl_post = "";
-      *get_val_pre = "const RutAsset *";
+      *get_val_pre = "const RigAsset *";
       break;
     case RUT_PROPERTY_TYPE_POINTER:
       *type_name = "pointer";

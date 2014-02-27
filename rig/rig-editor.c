@@ -25,11 +25,24 @@
 
 #include <rut.h>
 
+#include "rut-renderer.h"
+
 #include "rig-engine.h"
 #include "rig-avahi.h"
 #include "rig-slave-master.h"
 
 #include "rig.pb-c.h"
+
+#include "components/rig-button-input.h"
+#include "components/rig-camera.h"
+#include "components/rig-diamond.h"
+#include "components/rig-hair.h"
+#include "components/rig-light.h"
+#include "components/rig-material.h"
+#include "components/rig-model.h"
+#include "components/rig-nine-slice.h"
+#include "components/rig-pointalism-grid.h"
+#include "components/rig-shape.h"
 
 static char **_rig_editor_remaining_args = NULL;
 
@@ -181,7 +194,7 @@ map_id_cb (uint64_t id, void *user_data)
   return edit_id_to_play_id (editor, id);
 }
 
-static RutAsset *
+static RigAsset *
 share_asset_cb (RigPBUnSerializer *unserializer,
                 Rig__Asset *pb_asset,
                 void *user_data)
@@ -301,46 +314,46 @@ rig_editor_free_result_input_closures (RigEngine *engine)
 
 static void
 apply_asset_input_with_entity (RigEngine *engine,
-                               RutAsset *asset,
-                               RutEntity *entity)
+                               RigAsset *asset,
+                               RigEntity *entity)
 {
   RigUndoJournal *sub_journal;
-  RutAssetType type = rut_asset_get_type (asset);
-  RutMaterial *material;
+  RigAssetType type = rig_asset_get_type (asset);
+  RigMaterial *material;
   RutObject *geom;
 
   rig_engine_push_undo_subjournal (engine);
 
   switch (type)
     {
-    case RUT_ASSET_TYPE_TEXTURE:
-    case RUT_ASSET_TYPE_NORMAL_MAP:
-    case RUT_ASSET_TYPE_ALPHA_MASK:
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK:
         {
           material =
-            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
           if (!material)
             {
-              material = rut_material_new (engine->ctx, asset);
+              material = rig_material_new (engine->ctx, asset);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, material);
             }
 
-          if (type == RUT_ASSET_TYPE_TEXTURE)
-            rut_material_set_color_source_asset (material, asset);
-          else if (type == RUT_ASSET_TYPE_NORMAL_MAP)
-            rut_material_set_normal_map_asset (material, asset);
-          else if (type == RUT_ASSET_TYPE_ALPHA_MASK)
-            rut_material_set_alpha_mask_asset (material, asset);
+          if (type == RIG_ASSET_TYPE_TEXTURE)
+            rig_material_set_color_source_asset (material, asset);
+          else if (type == RIG_ASSET_TYPE_NORMAL_MAP)
+            rig_material_set_normal_map_asset (material, asset);
+          else if (type == RIG_ASSET_TYPE_ALPHA_MASK)
+            rig_material_set_alpha_mask_asset (material, asset);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
           if (!geom)
             {
-              RutShape *shape = rut_shape_new (engine->ctx, TRUE, 0, 0);
+              RigShape *shape = rig_shape_new (engine->ctx, TRUE, 0, 0);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, shape);
               geom = shape;
@@ -348,28 +361,28 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           break;
         }
-    case RUT_ASSET_TYPE_PLY_MODEL:
+    case RIG_ASSET_TYPE_MESH:
         {
-          RutModel *model;
+          RigModel *model;
           float x_range, y_range, z_range, max_range;
 
           material =
-            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
           if (!material)
             {
-              material = rut_material_new (engine->ctx, asset);
+              material = rig_material_new (engine->ctx, asset);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, material);
             }
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_model_type)
+          if (geom && rut_object_get_type (geom) == &rig_model_type)
             {
               model = geom;
-              if (rut_model_get_asset (model) == asset)
+              if (rig_model_get_asset (model) == asset)
                 break;
               else
                 rig_undo_journal_delete_component (engine->undo_journal, model);
@@ -377,7 +390,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
-          model = rut_model_new_from_asset (engine->ctx, asset);
+          model = rig_model_new_from_asset (engine->ctx, asset);
           rig_undo_journal_add_component (engine->undo_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
@@ -390,26 +403,26 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (z_range > max_range)
             max_range = z_range;
 
-          rut_entity_set_scale (entity, 200.0 / max_range);
+          rig_entity_set_scale (entity, 200.0 / max_range);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
 
           break;
         }
-    case RUT_ASSET_TYPE_BUILTIN:
+    case RIG_ASSET_TYPE_BUILTIN:
       if (asset == engine->text_builtin_asset)
         {
           RutText *text;
           CoglColor color;
-          RutHair *hair;
+          RigHair *hair;
 
-          hair = rut_entity_get_component (entity,
+          hair = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_HAIR);
 
           if (hair)
             rig_undo_journal_delete_component (engine->undo_journal, hair);
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
           if (geom && rut_object_get_type (geom) == &rut_text_type)
@@ -426,27 +439,27 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->circle_builtin_asset)
         {
-          RutShape *shape;
+          RigShape *shape;
           int tex_width = 200, tex_height = 200;
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_shape_type)
+          if (geom && rut_object_get_type (geom) == &rig_shape_type)
             break;
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
-            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
+            rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
 
           if (material)
             {
-              RutAsset *texture_asset =
-                rut_material_get_color_source_asset (material);
+              RigAsset *texture_asset =
+                rig_material_get_color_source_asset (material);
               if (texture_asset)
                 {
-                  if (rut_asset_get_is_video (texture_asset))
+                  if (rig_asset_get_is_video (texture_asset))
                     {
                       /* XXX: until we start decoding the
                        * video we don't know the size of the
@@ -460,14 +473,14 @@ apply_asset_input_with_entity (RigEngine *engine,
                   else
                     {
                       CoglTexture *texture =
-                        rut_asset_get_texture (texture_asset);
+                        rig_asset_get_texture (texture_asset);
                       tex_width = cogl_texture_get_width (texture);
                       tex_height = cogl_texture_get_height (texture);
                     }
                 }
             }
 
-          shape = rut_shape_new (engine->ctx, TRUE, tex_width,
+          shape = rig_shape_new (engine->ctx, TRUE, tex_width,
                                  tex_height);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, shape);
@@ -476,28 +489,28 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->diamond_builtin_asset)
         {
-          RutDiamond *diamond;
+          RigDiamond *diamond;
           int tex_width = 200, tex_height = 200;
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_diamond_type)
+          if (geom && rut_object_get_type (geom) == &rig_diamond_type)
             break;
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
-            rut_entity_get_component (entity,
+            rig_entity_get_component (entity,
                                       RUT_COMPONENT_TYPE_MATERIAL);
 
           if (material)
             {
-              RutAsset *texture_asset =
-                rut_material_get_color_source_asset (material);
+              RigAsset *texture_asset =
+                rig_material_get_color_source_asset (material);
               if (texture_asset)
                 {
-                  if (rut_asset_get_is_video (texture_asset))
+                  if (rig_asset_get_is_video (texture_asset))
                     {
                       /* XXX: until we start decoding the
                        * video we don't know the size of the
@@ -511,14 +524,14 @@ apply_asset_input_with_entity (RigEngine *engine,
                   else
                     {
                       CoglTexture *texture =
-                        rut_asset_get_texture (texture_asset);
+                        rig_asset_get_texture (texture_asset);
                       tex_width = cogl_texture_get_width (texture);
                       tex_height = cogl_texture_get_height (texture);
                     }
                 }
             }
 
-          diamond = rut_diamond_new (engine->ctx, 200, tex_width,
+          diamond = rig_diamond_new (engine->ctx, 200, tex_width,
                                      tex_height);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, diamond);
@@ -527,28 +540,28 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->nine_slice_builtin_asset)
         {
-          RutNineSlice *nine_slice;
+          RigNineSlice *nine_slice;
           int tex_width = 200, tex_height = 200;
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_nine_slice_type)
+          if (geom && rut_object_get_type (geom) == &rig_nine_slice_type)
             break;
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
-            rut_entity_get_component (entity,
+            rig_entity_get_component (entity,
                                       RUT_COMPONENT_TYPE_MATERIAL);
 
           if (material)
             {
-              RutAsset *color_source_asset =
-                rut_material_get_color_source_asset (material);
+              RigAsset *color_source_asset =
+                rig_material_get_color_source_asset (material);
               if (color_source_asset)
                 {
-                  if (rut_asset_get_is_video (color_source_asset))
+                  if (rig_asset_get_is_video (color_source_asset))
                     {
                       /* XXX: until we start decoding the
                        * video we don't know the size of the
@@ -562,14 +575,14 @@ apply_asset_input_with_entity (RigEngine *engine,
                   else
                     {
                       CoglTexture *texture =
-                        rut_asset_get_texture (color_source_asset);
+                        rig_asset_get_texture (color_source_asset);
                       tex_width = cogl_texture_get_width (texture);
                       tex_height = cogl_texture_get_height (texture);
                     }
                 }
             }
 
-          nine_slice = rut_nine_slice_new (engine->ctx, NULL,
+          nine_slice = rig_nine_slice_new (engine->ctx, NULL,
                                            0, 0, 0, 0,
                                            tex_width, tex_height);
           rig_undo_journal_add_component (engine->undo_journal,
@@ -579,14 +592,14 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->pointalism_grid_builtin_asset)
         {
-          RutPointalismGrid *grid;
+          RigPointalismGrid *grid;
           int tex_width = 200, tex_height = 200;
 
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
           if (geom && rut_object_get_type (geom) ==
-              &rut_pointalism_grid_type)
+              &rig_pointalism_grid_type)
             {
               break;
             }
@@ -594,16 +607,16 @@ apply_asset_input_with_entity (RigEngine *engine,
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
           material =
-            rut_entity_get_component (entity,
+            rig_entity_get_component (entity,
                                       RUT_COMPONENT_TYPE_MATERIAL);
 
           if (material)
             {
-              RutAsset *texture_asset =
-                rut_material_get_color_source_asset (material);
+              RigAsset *texture_asset =
+                rig_material_get_color_source_asset (material);
               if (texture_asset)
                 {
-                  if (rut_asset_get_is_video (texture_asset))
+                  if (rig_asset_get_is_video (texture_asset))
                     {
                       tex_width = 640;
                       tex_height = 480;
@@ -611,14 +624,14 @@ apply_asset_input_with_entity (RigEngine *engine,
                   else
                     {
                       CoglTexture *texture =
-                        rut_asset_get_texture (texture_asset);
+                        rig_asset_get_texture (texture_asset);
                       tex_width = cogl_texture_get_width (texture);
                       tex_height = cogl_texture_get_height (texture);
                     }
                 }
             }
 
-          grid = rut_pointalism_grid_new (engine->ctx, 20, tex_width,
+          grid = rig_pointalism_grid_new (engine->ctx, 20, tex_width,
                                           tex_height);
 
           rig_undo_journal_add_component (engine->undo_journal, entity, grid);
@@ -627,22 +640,22 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->hair_builtin_asset)
         {
-          RutHair *hair = rut_entity_get_component (entity,
+          RigHair *hair = rig_entity_get_component (entity,
                                                     RUT_COMPONENT_TYPE_HAIR);
           if (hair)
             break;
 
-          hair = rut_hair_new (engine->ctx);
+          hair = rig_hair_new (engine->ctx);
           rig_undo_journal_add_component (engine->undo_journal, entity, hair);
-          geom = rut_entity_get_component (entity,
+          geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
-          if (geom && rut_object_get_type (geom) == &rut_model_type)
+          if (geom && rut_object_get_type (geom) == &rig_model_type)
             {
-              RutModel *hair_geom = rut_model_new_for_hair (geom);
+              RigModel *hair_geom = rig_model_new_for_hair (geom);
 
-              rut_hair_set_length (hair,
-                                   rut_model_get_default_hair_length (hair_geom));
+              rig_hair_set_length (hair,
+                                   rig_model_get_default_hair_length (hair_geom));
 
               rig_undo_journal_delete_component (engine->undo_journal, geom);
               rig_undo_journal_add_component (engine->undo_journal,
@@ -653,12 +666,12 @@ apply_asset_input_with_entity (RigEngine *engine,
         }
       else if (asset == engine->button_input_builtin_asset)
         {
-          RutButtonInput *button_input =
-            rut_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
+          RigButtonInput *button_input =
+            rig_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
           if (button_input)
             break;
 
-          button_input = rut_button_input_new (engine->ctx);
+          button_input = rig_button_input_new (engine->ctx);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, button_input);
 
@@ -676,14 +689,14 @@ apply_asset_input_with_entity (RigEngine *engine,
 }
 
 static void
-apply_result_input_with_entity (RutEntity *entity,
+apply_result_input_with_entity (RigEntity *entity,
                                 ResultInputClosure *closure)
 {
-  if (rut_object_get_type (closure->result) == &rut_asset_type)
+  if (rut_object_get_type (closure->result) == &rig_asset_type)
     apply_asset_input_with_entity (closure->engine,
                                    closure->result,
                                    entity);
-  else if (rut_object_get_type (closure->result) == &rut_entity_type)
+  else if (rut_object_get_type (closure->result) == &rig_entity_type)
     rig_select_object (closure->engine,
                        closure->result,
                        RUT_SELECT_ACTION_REPLACE);
@@ -715,7 +728,7 @@ result_input_cb (RutInputRegion *region,
             }
           else
             {
-              RutEntity *entity = rut_entity_new (engine->ctx);
+              RigEntity *entity = rig_entity_new (engine->ctx);
               rig_undo_journal_add_entity (engine->undo_journal,
                                            engine->edit_mode_ui->scene,
                                            entity);
@@ -826,11 +839,11 @@ add_search_result (RigEngine *engine,
   rut_stack_add (stack, region);
   rut_object_unref (region);
 
-  if (rut_object_get_type (result) == &rut_asset_type)
+  if (rut_object_get_type (result) == &rig_asset_type)
     {
-      RutAsset *asset = result;
+      RigAsset *asset = result;
 
-      texture = rut_asset_get_texture (asset);
+      texture = rig_asset_get_texture (asset);
 
       if (texture)
         {
@@ -840,16 +853,16 @@ add_search_result (RigEngine *engine,
         }
       else
         {
-          char *basename = g_path_get_basename (rut_asset_get_path (asset));
+          char *basename = g_path_get_basename (rig_asset_get_path (asset));
           RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
           rut_stack_add (stack, text);
           rut_object_unref (text);
           g_free (basename);
         }
     }
-  else if (rut_object_get_type (result) == &rut_entity_type)
+  else if (rut_object_get_type (result) == &rig_entity_type)
     {
-      RutEntity *entity = result;
+      RigEntity *entity = result;
       RutBoxLayout *vbox =
         rut_box_layout_new (engine->ctx,
                             RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
@@ -898,11 +911,11 @@ add_search_result (RigEngine *engine,
       rut_object_unref (text);
     }
 
-  if (rut_object_get_type (result) == &rut_asset_type)
+  if (rut_object_get_type (result) == &rig_asset_type)
     {
-      RutAsset *asset = result;
+      RigAsset *asset = result;
 
-      if (rut_asset_has_tag (asset, "geometry"))
+      if (rig_asset_has_tag (asset, "geometry"))
         {
           if (!engine->assets_geometry_results)
             {
@@ -915,7 +928,7 @@ add_search_result (RigEngine *engine,
           rut_flow_layout_add (engine->assets_geometry_results, bin);
           rut_object_unref (bin);
         }
-      else if (rut_asset_has_tag (asset, "image"))
+      else if (rig_asset_has_tag (asset, "image"))
         {
           if (!engine->assets_image_results)
             {
@@ -928,7 +941,7 @@ add_search_result (RigEngine *engine,
           rut_flow_layout_add (engine->assets_image_results, bin);
           rut_object_unref (bin);
         }
-      else if (rut_asset_has_tag (asset, "video"))
+      else if (rig_asset_has_tag (asset, "video"))
         {
           if (!engine->assets_video_results)
             {
@@ -955,7 +968,7 @@ add_search_result (RigEngine *engine,
           rut_object_unref (bin);
         }
     }
-  else if (rut_object_get_type (result) == &rut_entity_type)
+  else if (rut_object_get_type (result) == &rig_entity_type)
     {
       if (!engine->entity_results)
         {
@@ -1001,9 +1014,9 @@ add_matching_entity_cb (RutObject *object,
                         int depth,
                         void *user_data)
 {
-  if (rut_object_get_type (object) == &rut_entity_type)
+  if (rut_object_get_type (object) == &rig_entity_type)
     {
-      RutEntity *entity = object;
+      RigEntity *entity = object;
       SearchState *state = user_data;
 
       if (state->search == NULL)
@@ -1048,7 +1061,7 @@ add_matching_controller (RigController *controller,
 
 static CoglBool
 asset_matches_search (RigEngine *engine,
-                      RutAsset *asset,
+                      RigAsset *asset,
                       const char *search)
 {
   GList *l;
@@ -1060,7 +1073,7 @@ asset_matches_search (RigEngine *engine,
 
   for (l = engine->required_search_tags; l; l = l->next)
     {
-      if (rut_asset_has_tag (asset, l->data))
+      if (rig_asset_has_tag (asset, l->data))
         {
           found = true;
           break;
@@ -1073,10 +1086,10 @@ asset_matches_search (RigEngine *engine,
   if (!search)
     return TRUE;
 
-  inferred_tags = rut_asset_get_inferred_tags (asset);
+  inferred_tags = rig_asset_get_inferred_tags (asset);
   tags = g_strsplit_set (search, " \t", 0);
 
-  path = rut_asset_get_path (asset);
+  path = rig_asset_get_path (asset);
   if (path)
     {
       if (strstr (path, search))
@@ -1133,7 +1146,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
 
   for (l = engine->edit_mode_ui->assets, i= 0; l; l = l->next, i++)
     {
-      RutAsset *asset = l->data;
+      RigAsset *asset = l->data;
 
       if (!asset_matches_search (engine, asset, search))
         continue;
@@ -1187,7 +1200,7 @@ rig_run_search (RigEngine *engine)
 }
 
 void
-rig_editor_refresh_thumbnails (RutAsset *video, void *user_data)
+rig_editor_refresh_thumbnails (RigAsset *video, void *user_data)
 {
   rig_run_search (user_data);
 }
@@ -1205,14 +1218,14 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *l;
-  RutAsset *asset = NULL;
+  RigAsset *asset = NULL;
 
   /* Avoid loading duplicate assets... */
   for (l = engine->edit_mode_ui->assets; l; l = l->next)
     {
-      RutAsset *existing = l->data;
+      RigAsset *existing = l->data;
 
-      if (strcmp (rut_asset_get_path (existing), path) == 0)
+      if (strcmp (rig_asset_get_path (existing), path) == 0)
         return;
     }
 
@@ -1526,8 +1539,8 @@ static RutPLYAttribute ply_attributes[] =
 static void
 add_light_handle (RigEngine *engine, RigUI *ui)
 {
-  //RutCamera *camera =
-  //  rut_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
+  //RigCamera *camera =
+  //  rig_entity_get_component (ui->light, RUT_COMPONENT_TYPE_CAMERA);
   RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
   char *full_path = rut_find_data_file ("light.ply");
   GError *error = NULL;
@@ -1544,20 +1557,20 @@ add_light_handle (RigEngine *engine, RigUI *ui)
                                 &error);
   if (mesh)
     {
-      RutModel *model = rut_model_new_from_asset_mesh (engine->ctx, mesh,
+      RigModel *model = rig_model_new_from_asset_mesh (engine->ctx, mesh,
                                                        FALSE, FALSE);
-      RutMaterial *material = rut_material_new (engine->ctx, NULL);
+      RigMaterial *material = rig_material_new (engine->ctx, NULL);
 
-      engine->light_handle = rut_entity_new (engine->ctx);
-      rut_entity_set_label (engine->light_handle, "rig:light_handle");
-      rut_entity_set_scale (engine->light_handle, 100);
+      engine->light_handle = rig_entity_new (engine->ctx);
+      rig_entity_set_label (engine->light_handle, "rig:light_handle");
+      rig_entity_set_scale (engine->light_handle, 100);
       rut_graphable_add_child (ui->light, engine->light_handle);
 
-      rut_entity_add_component (engine->light_handle, model);
+      rig_entity_add_component (engine->light_handle, model);
 
-      rut_entity_add_component (engine->light_handle, material);
-      rut_material_set_receive_shadow (material, false);
-      rut_material_set_cast_shadow (material, false);
+      rig_entity_add_component (engine->light_handle, material);
+      rig_material_set_receive_shadow (material, false);
+      rig_material_set_cast_shadow (material, false);
 
       rut_object_unref (model);
       rut_object_unref (material);
@@ -1603,20 +1616,20 @@ add_play_camera_handle (RigEngine *engine, RigUI *ui)
        * editor but for the camera model tends to get in the
        * way of editing so it's been disable for now */
 #if 0
-      RutModel *model = rut_model_new_from_mesh (engine->ctx, mesh);
-      RutMaterial *material = rut_material_new (engine->ctx, NULL);
+      RigModel *model = rig_model_new_from_mesh (engine->ctx, mesh);
+      RigMaterial *material = rig_material_new (engine->ctx, NULL);
 
-      engine->play_camera_handle = rut_entity_new (engine->ctx);
-      rut_entity_set_label (engine->play_camera_handle,
+      engine->play_camera_handle = rig_entity_new (engine->ctx);
+      rig_entity_set_label (engine->play_camera_handle,
                             "rig:play_camera_handle");
 
-      rut_entity_add_component (engine->play_camera_handle,
+      rig_entity_add_component (engine->play_camera_handle,
                                 model);
 
-      rut_entity_add_component (engine->play_camera_handle,
+      rig_entity_add_component (engine->play_camera_handle,
                                 material);
-      rut_material_set_receive_shadow (material, false);
-      rut_material_set_cast_shadow (material, FALSE);
+      rig_material_set_receive_shadow (material, false);
+      rig_material_set_cast_shadow (material, FALSE);
       rut_graphable_add_child (engine->play_camera,
                                engine->play_camera_handle);
 
@@ -1686,7 +1699,7 @@ simulator_connected_cb (void *user_data)
   on_ui_load_cb (editor);
 }
 
-static RutNineSlice *
+static RigNineSlice *
 load_gradient_image (RutContext *ctx,
                      const char *filename)
 {
@@ -1697,7 +1710,7 @@ load_gradient_image (RutContext *ctx,
                                      &error);
   if (gradient)
     {
-      return rut_nine_slice_new (ctx,
+      return rig_nine_slice_new (ctx,
                                  gradient,
                                  0, 0, 0, 0, 0, 0);
     }
@@ -1733,7 +1746,7 @@ create_top_bar (RigEngine *engine)
                          "connect-white.png",
                          "connect.png");
   RutIcon *icon = rut_icon_new (engine->ctx, "settings-icon.png");
-  RutNineSlice *gradient =
+  RigNineSlice *gradient =
     load_gradient_image (engine->ctx, "top-bar-gradient.png");
 
   rut_box_layout_add (engine->top_vbox, FALSE, top_bar_stack);
@@ -1767,7 +1780,7 @@ create_camera_view (RigEngine *engine)
 {
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
   RutBin *bin = rut_bin_new (engine->ctx);
-  RutNineSlice *gradient =
+  RigNineSlice *gradient =
     load_gradient_image (engine->ctx, "document-bg-gradient.png");
   CoglTexture *left_drop_shadow;
   CoglTexture *bottom_drop_shadow;
@@ -1775,10 +1788,10 @@ create_camera_view (RigEngine *engine)
                                            RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
   RutBoxLayout *vbox = rut_box_layout_new (engine->ctx,
                                            RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  RutNineSlice *left_drop;
+  RigNineSlice *left_drop;
   RutStack *left_stack;
   RutBin *left_shim;
-  RutNineSlice *bottom_drop;
+  RigNineSlice *bottom_drop;
   RutStack *bottom_stack;
   RutBin *bottom_shim;
 
@@ -1803,7 +1816,7 @@ create_camera_view (RigEngine *engine)
        * actually visible...
        */
 
-  left_drop = rut_nine_slice_new (engine->ctx,
+  left_drop = rig_nine_slice_new (engine->ctx,
                                   left_drop_shadow,
                                   10 /* top */,
                                   0, /* right */
@@ -1812,7 +1825,7 @@ create_camera_view (RigEngine *engine)
                                   0, 0);
   left_stack = rut_stack_new (engine->ctx, 0, 0);
   left_shim = rut_bin_new (engine->ctx);
-  bottom_drop = rut_nine_slice_new (engine->ctx,
+  bottom_drop = rig_nine_slice_new (engine->ctx,
                                     bottom_drop_shadow,
                                     0, 10, 0, 0, 0, 0);
   bottom_stack = rut_stack_new (engine->ctx, 0, 0);
@@ -1884,7 +1897,7 @@ static void
 create_toolbar (RigEngine *engine)
 {
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
-  RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
+  RigNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
   RutIcon *icon = rut_icon_new (engine->ctx, "chevron-icon.png");
   RutBin *bin = rut_bin_new (engine->ctx);
   RutIconToggle *pointer_toggle;
@@ -1940,7 +1953,7 @@ create_properties_bar (RigEngine *engine)
   RutStack *stack0 = rut_stack_new (engine->ctx, 0, 0);
   RutStack *stack1 = rut_stack_new (engine->ctx, 0, 0);
   RutBin *bin = rut_bin_new (engine->ctx);
-  RutNineSlice *gradient = load_gradient_image (engine->ctx, "document-bg-gradient.png");
+  RigNineSlice *gradient = load_gradient_image (engine->ctx, "document-bg-gradient.png");
   RutUIViewport *properties_vp;
   RutRectangle *bg;
 
@@ -2100,7 +2113,7 @@ create_assets_view (RigEngine *engine)
   RutBin *search_bin = rut_bin_new (engine->ctx);
   RutStack *icons_stack = rut_stack_new (engine->ctx, 0, 0);
   RutStack *stack = rut_stack_new (engine->ctx, 0, 0);
-  RutNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
+  RigNineSlice *gradient = load_gradient_image (engine->ctx, "toolbar-bg-gradient.png");
   RutRectangle *bg;
   RutEntry *entry;
   RutText *text;

@@ -35,8 +35,8 @@
 #include "rut-pickable.h"
 #include "rut-input-region.h"
 
-#include "components/rut-nine-slice.h"
-#include "components/rut-camera.h"
+#include "rut-nine-slice.h"
+#include "rut-camera.h"
 
 struct _RutDragBin
 {
@@ -101,7 +101,7 @@ _rut_drag_bin_set_size (RutObject *object, float width, float height)
 
 static bool
 _rut_drag_bin_pick (RutObject *inputable,
-                    RutCamera *camera,
+                    RutObject *camera,
                     const CoglMatrix *modelview,
                     float x,
                     float y)
@@ -213,7 +213,7 @@ cancel_drag (RutDragBin *bin)
 
 typedef struct _DragState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutDragBin *bin;
   float press_x;
   float press_y;

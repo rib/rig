@@ -41,11 +41,11 @@
 #include <config.h>
 
 #include <glib.h>
+#include <gio/gio.h>
 
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
 
-#include "rut-camera-private.h"
 #include "rut-transform-private.h"
 #include "rut-shell.h"
 #include "rut-util.h"
@@ -58,9 +58,9 @@
 #include "rut-transform.h"
 #include "rut-input-region.h"
 #include "rut-mimable.h"
-
-#include "components/rut-nine-slice.h"
-#include "components/rut-camera.h"
+#include "rut-introspectable.h"
+#include "rut-nine-slice.h"
+#include "rut-camera.h"
 
 #ifdef __ANDROID__
 #include <android_native_app_glue.h>
@@ -75,7 +75,7 @@ typedef struct
 {
   RutList list_node;
   RutInputCallback callback;
-  RutCamera *camera;
+  RutObject *camera;
   void *user_data;
 } RutShellGrab;
 
@@ -148,8 +148,8 @@ struct _RutShell
   RutList input_cb_list;
   GList *input_cameras;
 
-  /* Use to handle input events in window coordinates */
-  RutCamera *window_camera;
+  /* Used to handle input events in window coordinates */
+  RutObject *window_camera;
 
   /* Last known position of the mouse */
   float mouse_x;
@@ -276,13 +276,13 @@ rut_shell_add_input_callback (RutShell *shell,
 
 typedef struct _InputCamera
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutObject *scenegraph;
 } InputCamera;
 
 void
 rut_shell_add_input_camera (RutShell *shell,
-                            RutCamera *camera,
+                            RutObject *camera,
                             RutObject *scenegraph)
 {
   InputCamera *input_camera = g_slice_new (InputCamera);
@@ -308,7 +308,7 @@ input_camera_free (InputCamera *input_camera)
 
 void
 rut_shell_remove_input_camera (RutShell *shell,
-                               RutCamera *camera,
+                               RutObject *camera,
                                RutObject *scenegraph)
 {
   GList *l;
@@ -339,7 +339,7 @@ _rut_shell_remove_all_input_cameras (RutShell *shell)
   shell->input_cameras = NULL;
 }
 
-RutCamera *
+RutObject *
 rut_input_event_get_camera (RutInputEvent *event)
 {
   return event->camera;
@@ -904,7 +904,7 @@ rut_motion_event_unproject (RutInputEvent *event,
 {
   CoglMatrix transform;
   CoglMatrix inverse_transform;
-  RutCamera *camera = rut_input_event_get_camera (event);
+  RutObject *camera = rut_input_event_get_camera (event);
 
   rut_graphable_get_modelview (graphable, camera, &transform);
 
@@ -1001,7 +1001,7 @@ rect_to_screen_polygon (float x0,
 
 typedef struct _CameraPickState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutInputEvent *event;
   float x, y;
   RutObject *picked_object;
@@ -1016,11 +1016,14 @@ camera_pre_pick_region_cb (RutObject *object,
 
   if (rut_object_get_type (object) == &rut_ui_viewport_type)
     {
-      RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
+      RutUIViewport *ui_viewport = object;
+      RutObject *camera = state->camera;
+      const CoglMatrix *view = rut_camera_get_view_transform (camera);
+      const CoglMatrix *projection = rut_camera_get_projection (camera);
+      const float *viewport = rut_camera_get_viewport (camera);
+      RutObject *parent = rut_graphable_get_parent (object);
       CoglMatrix transform;
       float poly[16];
-      RutObject *parent = rut_graphable_get_parent (object);
-      const CoglMatrix *view = rut_camera_get_view_transform (state->camera);
 
       transform = *view;
       rut_graphable_apply_transform (parent, &transform);
@@ -1029,8 +1032,8 @@ camera_pre_pick_region_cb (RutObject *object,
                               rut_ui_viewport_get_width (ui_viewport),
                               rut_ui_viewport_get_height (ui_viewport),
                               &transform,
-                              &state->camera->projection,
-                              state->camera->viewport,
+                              projection,
+                              viewport,
                               poly);
 
       if (!rut_util_point_in_screen_poly (state->x, state->y,
@@ -1040,9 +1043,9 @@ camera_pre_pick_region_cb (RutObject *object,
 
   if (rut_object_is (object, RUT_TRAIT_ID_PICKABLE) &&
       rut_pickable_pick (object,
-                          state->camera,
-                          NULL, /* pre-computed modelview */
-                          state->x, state->y))
+                         state->camera,
+                         NULL, /* pre-computed modelview */
+                         state->x, state->y))
     {
       state->picked_object = object;
     }
@@ -1055,7 +1058,7 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
                                         RutInputEvent *event)
 {
   RutObject *picked_object = NULL;
-  RutCamera *picked_camera = NULL;
+  RutObject *picked_camera = NULL;
   GList *l;
 
   /* Key events by default go to the object that has key focus. If
@@ -1070,14 +1073,14 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
-      RutCamera *camera = input_camera->camera;
+      RutObject *camera = input_camera->camera;
       RutObject *scenegraph = input_camera->scenegraph;
       float x = shell->mouse_x;
       float y = shell->mouse_y;
       CameraPickState state;
 
       event->camera = camera;
-      event->input_transform = &camera->input_transform;
+      event->input_transform = rut_camera_get_input_transform (camera);
 
       if (scenegraph)
         {
@@ -1104,7 +1107,7 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
   if (picked_object)
     {
       event->camera = picked_camera;
-      event->input_transform = &picked_camera->input_transform;
+      event->input_transform = rut_camera_get_input_transform (picked_camera);
     }
 
   return picked_object;
@@ -1209,7 +1212,7 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
 
   rut_list_for_each_safe (grab, shell->next_grab, &shell->grabs, list_node)
     {
-      RutCamera *old_camera = event->camera;
+      RutObject *old_camera = event->camera;
       RutInputEventStatus grab_status;
 
       if (grab->camera)
@@ -1229,13 +1232,14 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
   for (l = shell->input_cameras; l; l = l->next)
     {
       InputCamera *input_camera = l->data;
-      RutCamera *camera = input_camera->camera;
+      RutObject *camera = input_camera->camera;
+      GList *input_regions = rut_camera_get_input_regions (camera);
       GList *l2;
 
       event->camera = camera;
-      event->input_transform = &camera->input_transform;
+      event->input_transform = rut_camera_get_input_transform (camera);
 
-      for (l2 = camera->input_regions; l2; l2 = l2->next)
+      for (l2 = input_regions; l2; l2 = l2->next)
         {
           RutInputRegion *region = l2->data;
 
@@ -1543,7 +1547,7 @@ _rut_shell_init (RutShell *shell)
 }
 
 void
-rut_shell_set_window_camera (RutShell *shell, RutCamera *window_camera)
+rut_shell_set_window_camera (RutShell *shell, RutObject *window_camera)
 {
   shell->window_camera = window_camera;
 }
@@ -1806,7 +1810,7 @@ rut_shell_dispatch_input_events (RutShell *shell)
       /* XXX: we remove the event from the queue before dispatching it
        * so that it can potentially be deferred to another input queue
        * during the dispatch. For example the Rig editor will re-queue
-       * events received for a RutCameraView to be forwarded to the
+       * events received for a RutObjectView to be forwarded to the
        * simulator process. */
       rut_input_queue_remove (shell->input_queue, event);
 
@@ -2339,7 +2343,7 @@ rut_shell_main (RutShell *shell)
 
 void
 rut_shell_grab_input (RutShell *shell,
-                      RutCamera *camera,
+                      RutObject *camera,
                       RutInputCallback callback,
                       void *user_data)
 {
@@ -2416,7 +2420,7 @@ struct _RutSlider
 
   /* FIXME: It also doesn't seem right to have to save a pointer
    * to the camera here so we can queue a redraw */
-  //RutCamera *camera;
+  //RutObject *camera;
 
   RutGraphableProps graphable;
   RutPaintableProps paintable;
@@ -2484,7 +2488,7 @@ _rut_slider_paint (RutObject *object, RutPaintContext *paint_ctx)
 #if 0
 static void
 _rut_slider_set_camera (RutObject *object,
-                        RutCamera *camera)
+                        RutObject *camera)
 {
   RutSlider *slider = RUT_SLIDER (object);
 

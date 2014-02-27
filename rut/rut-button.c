@@ -29,8 +29,8 @@
 #include "rut-input-region.h"
 #include "rut-button.h"
 
-#include "components/rut-camera.h"
-#include "components/rut-nine-slice.h"
+#include "rut-camera.h"
+#include "rut-nine-slice.h"
 
 #define BUTTON_HPAD 10
 #define BUTTON_VPAD 23
@@ -277,7 +277,7 @@ _rut_button_init_type (void)
 
 typedef struct _ButtonGrabState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutButton *button;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
@@ -313,7 +313,7 @@ _rut_button_grab_input_cb (RutInputEvent *event,
         {
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
-          RutCamera *camera = state->camera;
+          RutObject *camera = state->camera;
 
           rut_camera_unproject_coord (camera,
                                       &state->transform,

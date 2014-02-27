@@ -29,8 +29,12 @@ typedef struct _RigPBUnSerializer RigPBUnSerializer;
 #include "rig-engine.h"
 #include "rig-ui.h"
 #include "rig.pb-c.h"
+#include "rig-entity.h"
 
-typedef bool (*RigPBAssetFilter) (RutAsset *asset, void *user_data);
+#include "components/rig-camera.h"
+#include "components/rig-light.h"
+
+typedef bool (*RigPBAssetFilter) (RigAsset *asset, void *user_data);
 
 typedef uint64_t (*RigPBSerializerObjecRegisterCallback) (void *object,
                                                           void *user_data);
@@ -128,7 +132,7 @@ const char *
 rig_pb_strdup (RigPBSerializer *serializer,
                const char *string);
 
-typedef void (*RigAssetReferenceCallback) (RutAsset *asset,
+typedef void (*RigAssetReferenceCallback) (RigAsset *asset,
                                            void *user_data);
 
 RigPBSerializer *
@@ -178,8 +182,8 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
 
 Rig__Entity *
 rig_pb_serialize_entity (RigPBSerializer *serializer,
-                         RutEntity *parent,
-                         RutEntity *entity);
+                         RigEntity *parent,
+                         RigEntity *entity);
 
 Rig__Entity__Component *
 rig_pb_serialize_component (RigPBSerializer *serializer,
@@ -219,7 +223,7 @@ typedef void (*RigPBUnSerializerObjectUnRegisterCallback) (uint64_t id,
 typedef void *(*RigPBUnSerializerIDToObjecCallback) (uint64_t id,
                                                      void *user_data);
 
-typedef RutAsset *(*RigPBUnSerializerAssetCallback) (RigPBUnSerializer *unserializer,
+typedef RigAsset *(*RigPBUnSerializerAssetCallback) (RigPBUnSerializer *unserializer,
                                                      Rig__Asset *pb_asset,
                                                      void *user_data);
 
@@ -244,7 +248,7 @@ struct _RigPBUnSerializer
 
   GList *assets;
   GList *entities;
-  RutEntity *light;
+  RigEntity *light;
   GList *controllers;
 
   GHashTable *id_to_object_map;
@@ -313,10 +317,10 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
  * an entity. */
 RutObject *
 rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
-                              RutEntity *entity,
+                              RigEntity *entity,
                               Rig__Entity__Component *pb_component);
 
-RutEntity *
+RigEntity *
 rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
                            Rig__Entity *pb_entity);
 

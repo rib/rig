@@ -7,7 +7,7 @@ SCALAR_TYPE(uint32, uint32_t, UINT32)
 SCALAR_TYPE(boolean, bool, BOOLEAN)
 
 POINTER_TYPE(object, RutObject *, OBJECT)
-POINTER_TYPE(asset, RutAsset *, ASSET)
+POINTER_TYPE(asset, RigAsset *, ASSET)
 POINTER_TYPE(pointer, void *, POINTER)
 
 COMPOSITE_TYPE(quaternion, CoglQuaternion, QUATERNION)

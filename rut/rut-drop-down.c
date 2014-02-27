@@ -34,7 +34,7 @@
 #include "rut-pickable.h"
 #include "rut-input-region.h"
 
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 #define RUT_DROP_DOWN_EDGE_WIDTH 8
 #define RUT_DROP_DOWN_EDGE_HEIGHT 16
@@ -360,7 +360,7 @@ static void
 rut_drop_down_paint_selector (RutDropDown *drop,
                               RutPaintContext *paint_ctx)
 {
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   int i, y_pos = drop->selector_y + 3;
 
@@ -425,7 +425,7 @@ static void
 rut_drop_down_paint_button (RutDropDown *drop,
                             RutPaintContext *paint_ctx)
 {
-  RutCamera *camera = paint_ctx->camera;
+  RutObject *camera = paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   RutDropDownRectangle coords[7];
   int translation = drop->width - RUT_DROP_DOWN_EDGE_WIDTH;
@@ -620,7 +620,7 @@ rut_drop_down_handle_click (RutDropDown *drop,
 {
   CoglMatrix modelview;
   const CoglMatrix *projection;
-  RutCamera *camera = rut_input_event_get_camera (event);
+  RutObject *camera = rut_input_event_get_camera (event);
   float top_point[4];
   int i;
 
@@ -728,7 +728,7 @@ rut_drop_down_input_cb (RutInputEvent *event,
     }
   else
     {
-      RutCamera *camera = rut_input_event_get_camera (event);
+      RutObject *camera = rut_input_event_get_camera (event);
 
       highlighted = rut_pickable_pick (drop->input_region,
                                         camera,
@@ -751,7 +751,7 @@ rut_drop_down_input_region_cb (RutInputRegion *region,
                                void *user_data)
 {
   RutDropDown *drop = user_data;
-  RutCamera *camera;
+  RutObject *camera;
 
   if (!drop->button_down &&
       !drop->selector_shown &&

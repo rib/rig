@@ -22,11 +22,23 @@
 
 #include <math.h>
 
+#include <rut.h>
+
 #include "rig.pb-c.h"
 #include "rig-pb.h"
 #include "rig-engine.h"
+#include "rig-entity.h"
 
-#include <rut.h>
+#include "components/rig-button-input.h"
+#include "components/rig-camera.h"
+#include "components/rig-diamond.h"
+#include "components/rig-hair.h"
+#include "components/rig-light.h"
+#include "components/rig-material.h"
+#include "components/rig-model.h"
+#include "components/rig-nine-slice.h"
+#include "components/rig-pointalism-grid.h"
+#include "components/rig-shape.h"
 
 const char *
 rig_pb_strdup (RigPBSerializer *serializer,
@@ -453,7 +465,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
 
   pb_component->has_type = true;
 
-  if (type == &rut_light_type)
+  if (type == &rig_light_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__LIGHT;
       serialize_instrospectable_properties (component,
@@ -461,7 +473,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
-  else if (type == &rut_material_type)
+  else if (type == &rig_material_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__MATERIAL;
       serialize_instrospectable_properties (component,
@@ -469,7 +481,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
-  else if (type == &rut_shape_type)
+  else if (type == &rig_shape_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__SHAPE;
       serialize_instrospectable_properties (component,
@@ -477,16 +489,16 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
-  else if (type == &rut_diamond_type)
+  else if (type == &rig_diamond_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
       pb_component->diamond = rig_pb_new (serializer,
                                           Rig__Entity__Component__Diamond,
                                           rig__entity__component__diamond__init);
       pb_component->diamond->has_size = true;
-      pb_component->diamond->size = rut_diamond_get_size (RUT_DIAMOND (component));
+      pb_component->diamond->size = rig_diamond_get_size (RIG_DIAMOND (component));
     }
-  else if (type == &rut_pointalism_grid_type)
+  else if (type == &rig_pointalism_grid_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID;
       pb_component->grid =
@@ -495,23 +507,23 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                     rig__entity__component__pointalism_grid__init);
 
       pb_component->grid->has_scale = true;
-      pb_component->grid->scale = rut_pointalism_grid_get_scale (RUT_POINTALISM_GRID (component));
+      pb_component->grid->scale = rig_pointalism_grid_get_scale (RIG_POINTALISM_GRID (component));
 
       pb_component->grid->has_z = true;
-      pb_component->grid->z = rut_pointalism_grid_get_z (RUT_POINTALISM_GRID (component));
+      pb_component->grid->z = rig_pointalism_grid_get_z (RIG_POINTALISM_GRID (component));
 
       pb_component->grid->has_cell_size = true;
-      pb_component->grid->cell_size = rut_pointalism_grid_get_cell_size (RUT_POINTALISM_GRID (component));
+      pb_component->grid->cell_size = rig_pointalism_grid_get_cell_size (RIG_POINTALISM_GRID (component));
 
       pb_component->grid->has_lighter = true;
-      pb_component->grid->lighter = rut_pointalism_grid_get_lighter (RUT_POINTALISM_GRID (component));
+      pb_component->grid->lighter = rig_pointalism_grid_get_lighter (RIG_POINTALISM_GRID (component));
     }
-  else if (type == &rut_model_type)
+  else if (type == &rig_model_type)
     {
-      RutModel *model = RUT_MODEL (component);
+      RigModel *model = (RigModel *)component;
       uint64_t asset_id =
         rig_pb_serializer_lookup_object_id (serializer,
-                                            rut_model_get_asset (model));
+                                            rig_model_get_asset (model));
 
       /* XXX: we don't support serializing a model loaded from a RutMesh */
       g_warn_if_fail (asset_id != 0);
@@ -545,10 +557,12 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
       pb_text->font = (char *)rut_text_get_font_name (text);
       pb_text->color = pb_color_new (serializer, color);
     }
-  else if (type == &rut_camera_type)
+  else if (type == &rig_camera_type)
     {
-      RutCamera *camera = (RutCamera *)component;
+      RigCamera *camera = (RigCamera *)component;
       Rig__Entity__Component__Camera *pb_camera;
+      const float *viewport;
+      float zoom;
 
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__CAMERA;
       pb_camera = rig_pb_new (serializer,
@@ -566,16 +580,17 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
           pb_camera->ortho = rig_pb_new (serializer,
                                          Rig__OrthoCoords,
                                          rig__ortho_coords__init);
-          pb_camera->ortho->x0 = camera->x1;
-          pb_camera->ortho->y0 = camera->y1;
-          pb_camera->ortho->x1 = camera->x2;
-          pb_camera->ortho->y1 = camera->y2;
+          rut_camera_get_orthographic_coordinates (camera,
+                                                   &pb_camera->ortho->x0,
+                                                   &pb_camera->ortho->y0,
+                                                   &pb_camera->ortho->x1,
+                                                   &pb_camera->ortho->y1);
           break;
         case RUT_PROJECTION_PERSPECTIVE:
           pb_camera->projection_mode =
             RIG__ENTITY__COMPONENT__CAMERA__PROJECTION_MODE__PERSPECTIVE;
           pb_camera->has_field_of_view = true;
-          pb_camera->field_of_view = camera->fov;
+          pb_camera->field_of_view = rut_camera_get_field_of_view (camera);
           break;
         }
 
@@ -583,31 +598,34 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                         Rig__Viewport,
                                         rig__viewport__init);
 
-      pb_camera->viewport->x = camera->viewport[0];
-      pb_camera->viewport->y = camera->viewport[1];
-      pb_camera->viewport->width = camera->viewport[2];
-      pb_camera->viewport->height = camera->viewport[3];
+      viewport = rut_camera_get_viewport (camera);
+      pb_camera->viewport->x = viewport[0];
+      pb_camera->viewport->y = viewport[1];
+      pb_camera->viewport->width = viewport[2];
+      pb_camera->viewport->height = viewport[3];
 
-      if (camera->zoom != 1)
+      zoom = rut_camera_get_zoom (camera);
+      if (zoom != 1)
         {
           pb_camera->has_zoom = true;
-          pb_camera->zoom = camera->zoom;
+          pb_camera->zoom = zoom;
         }
 
       pb_camera->has_focal_distance = true;
-      pb_camera->focal_distance = camera->focal_distance;
+      pb_camera->focal_distance = rut_camera_get_focal_distance (camera);
 
       pb_camera->has_depth_of_field = true;
-      pb_camera->depth_of_field = camera->depth_of_field;
+      pb_camera->depth_of_field = rut_camera_get_depth_of_field (camera);
 
       pb_camera->has_near_plane = true;
-      pb_camera->near_plane = camera->near;
+      pb_camera->near_plane = rut_camera_get_near_plane (camera);
       pb_camera->has_far_plane = true;
-      pb_camera->far_plane = camera->far;
+      pb_camera->far_plane = rut_camera_get_far_plane (camera);
 
-      pb_camera->background = pb_color_new (serializer, &camera->bg_color);
+      pb_camera->background =
+        pb_color_new (serializer, rut_camera_get_background_color (camera));
     }
-  else if (type == &rut_nine_slice_type)
+  else if (type == &rig_nine_slice_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE;
       serialize_instrospectable_properties (component,
@@ -615,7 +633,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
-  else if (type == &rut_hair_type)
+  else if (type == &rig_hair_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__HAIR;
       serialize_instrospectable_properties (component,
@@ -623,7 +641,7 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                                             (void **)&pb_component->properties,
                                             serializer);
     }
-  else if (type == &rut_button_input_type)
+  else if (type == &rig_button_input_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT;
       serialize_instrospectable_properties (component,
@@ -649,8 +667,8 @@ serialize_component_cb (RutComponent *component,
 
 Rig__Entity *
 rig_pb_serialize_entity (RigPBSerializer *serializer,
-                         RutEntity *parent,
-                         RutEntity *entity)
+                         RigEntity *parent,
+                         RigEntity *entity)
 {
   Rig__Entity *pb_entity =
     rig_pb_new (serializer, Rig__Entity, rig__entity__init);
@@ -664,7 +682,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
   pb_entity->has_id = true;
   pb_entity->id = rig_pb_serializer_register_object (serializer, entity);
 
-  if (parent && rut_object_get_type (parent) == &rut_entity_type)
+  if (parent && rut_object_get_type (parent) == &rig_entity_type)
     {
       uint64_t id = rig_pb_serializer_lookup_object_id (serializer, parent);
       if (id)
@@ -676,21 +694,21 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
         g_warning ("Failed to find id of parent entity\n");
     }
 
-  label = rut_entity_get_label (entity);
+  label = rig_entity_get_label (entity);
   if (label && *label)
     {
       pb_entity->label = (char *)label;
     }
 
-  q = rut_entity_get_rotation (entity);
+  q = rig_entity_get_rotation (entity);
 
   position = rig_pb_new (serializer, Rig__Vec3, rig__vec3__init);
-  position->x = rut_entity_get_x (entity);
-  position->y = rut_entity_get_y (entity);
-  position->z = rut_entity_get_z (entity);
+  position->x = rig_entity_get_x (entity);
+  position->y = rig_entity_get_y (entity);
+  position->z = rig_entity_get_z (entity);
   pb_entity->position = position;
 
-  scale = rut_entity_get_scale (entity);
+  scale = rig_entity_get_scale (entity);
   if (scale != 1)
     {
       pb_entity->has_scale = TRUE;
@@ -701,7 +719,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
 
   serializer->n_pb_components = 0;
   serializer->pb_components = NULL;
-  rut_entity_foreach_component (entity,
+  rig_entity_foreach_component (entity,
                                 serialize_component_cb,
                                 serializer);
 
@@ -721,18 +739,18 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
 }
 
 static RutTraverseVisitFlags
-_rut_entitygraph_pre_serialize_cb (RutObject *object,
+_rig_entitygraph_pre_serialize_cb (RutObject *object,
                                    int depth,
                                    void *user_data)
 {
   RigPBSerializer *serializer = user_data;
   const RutType *type = rut_object_get_type (object);
   RutObject *parent = rut_graphable_get_parent (object);
-  RutEntity *entity;
+  RigEntity *entity;
   Rig__Entity *pb_entity;
   const char *label;
 
-  if (type != &rut_entity_type)
+  if (type != &rig_entity_type)
     {
       g_warning ("Can't save non-entity graphables\n");
       return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -743,7 +761,7 @@ _rut_entitygraph_pre_serialize_cb (RutObject *object,
   /* NB: labels with a "rig:" prefix imply that this is an internal
    * entity that shouldn't be saved (such as the editing camera
    * entities) */
-  label = rut_entity_get_label (entity);
+  label = rig_entity_get_label (entity);
   if (label && strncmp ("rig:", label, 4) == 0)
     return RUT_TRAVERSE_VISIT_CONTINUE;
 
@@ -915,7 +933,7 @@ serializer_lookup_pointer_object_id_cb (void *object,
 uint64_t
 rig_pb_serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
 {
-  if (rut_object_get_type (object) == &rut_asset_type)
+  if (rut_object_get_type (object) == &rig_asset_type)
     {
       bool need_asset = true;
 
@@ -1053,9 +1071,9 @@ serialize_buffer (RigPBSerializer *serializer, RutBuffer *buffer)
 }
 
 static Rig__Asset *
-serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
+serialize_mesh_asset (RigPBSerializer *serializer, RigAsset *asset)
 {
-  RutMesh *mesh = rut_asset_get_mesh (asset);
+  RutMesh *mesh = rig_asset_get_mesh (asset);
   Rig__Asset *pb_asset;
   RutBuffer **buffers;
   int n_buffers = 0;
@@ -1070,10 +1088,10 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
   pb_asset->has_id = true;
   pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
 
-  pb_asset->path = (char *)rut_asset_get_path (asset);
+  pb_asset->path = (char *)rig_asset_get_path (asset);
 
   pb_asset->has_type = true;
-  pb_asset->type = RUT_ASSET_TYPE_PLY_MODEL;
+  pb_asset->type = RIG_ASSET_TYPE_MESH;
 
   /* The maximum number of pb_buffers we may need = n_attributes plus 1 in case
    * there is an index buffer... */
@@ -1228,14 +1246,14 @@ serialize_mesh_asset (RigPBSerializer *serializer, RutAsset *asset)
 }
 
 static Rig__Asset *
-serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
+serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
 {
 #ifdef __ANDROID__
   g_warn_if_reached ();
   return NULL;
 #else
-  RutContext *ctx = rut_asset_get_context (asset);
-  const char *path = rut_asset_get_path (asset);
+  RutContext *ctx = rig_asset_get_context (asset);
+  const char *path = rig_asset_get_path (asset);
   char *full_path;
   Rig__Asset *pb_asset;
   GError *error = NULL;
@@ -1253,7 +1271,7 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
     }
 
   /* XXX: This should be renamed to _TYPE_MESH */
-  if (rut_asset_get_type (asset) == RUT_ASSET_TYPE_PLY_MODEL)
+  if (rig_asset_get_type (asset) == RIG_ASSET_TYPE_MESH)
     return serialize_mesh_asset (serializer, asset);
 
   full_path = g_build_filename (ctx->assets_location, path, NULL);
@@ -1278,10 +1296,10 @@ serialize_asset (RigPBSerializer *serializer, RutAsset *asset)
   pb_asset->path = (char *)path;
 
   pb_asset->has_type = TRUE;
-  pb_asset->type = rut_asset_get_type (asset);
+  pb_asset->type = rig_asset_get_type (asset);
 
   pb_asset->has_is_video = true;
-  pb_asset->is_video = rut_asset_get_is_video (asset);
+  pb_asset->is_video = rig_asset_get_is_video (asset);
 
   pb_asset->has_data = true;
   pb_asset->data.data = (uint8_t *)contents;
@@ -1361,7 +1379,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
   serializer->n_pb_entities = 0;
   rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
-                          _rut_entitygraph_pre_serialize_cb,
+                          _rig_entitygraph_pre_serialize_cb,
                           NULL,
                           serializer);
 
@@ -1414,7 +1432,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
                                    RUT_UTIL_ALIGNOF (void *));
       for (i = 0, l = serializer->required_assets; l; i++, l = l->next)
         {
-          RutAsset *asset = l->data;
+          RigAsset *asset = l->data;
           Rig__Asset *pb_asset = serialize_asset (serializer, asset);
 
           pb_ui->assets[i] = pb_asset;
@@ -1921,7 +1939,7 @@ set_properties_from_pb_boxed_values (RigPBUnSerializer *unserializer,
 
 RutObject *
 rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
-                              RutEntity *entity,
+                              RigEntity *entity,
                               Rig__Entity__Component *pb_component)
 {
   uint64_t component_id;
@@ -1939,9 +1957,9 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__LIGHT:
       {
         Rig__Entity__Component__Light *pb_light = pb_component->light;
-        RutLight *light;
+        RigLight *light;
 
-        light = rut_light_new (unserializer->engine->ctx);
+        light = rig_light_new (unserializer->engine->ctx);
 
         /* XXX: This is only for backwards compatibility... */
         if (!pb_component->properties)
@@ -1957,12 +1975,12 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             pb_init_color (unserializer->engine->ctx,
                            &specular, pb_light->specular);
 
-            rut_light_set_ambient (light, &ambient);
-            rut_light_set_diffuse (light, &diffuse);
-            rut_light_set_specular (light, &specular);
+            rig_light_set_ambient (light, &ambient);
+            rig_light_set_diffuse (light, &diffuse);
+            rig_light_set_specular (light, &specular);
           }
 
-        rut_entity_add_component (entity, light);
+        rig_entity_add_component (entity, light);
         rut_object_unref (light);
 
         set_properties_from_pb_boxed_values (unserializer,
@@ -1981,15 +1999,15 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
       {
         Rig__Entity__Component__Material *pb_material =
           pb_component->material;
-        RutMaterial *material;
+        RigMaterial *material;
         CoglColor ambient;
         CoglColor diffuse;
         CoglColor specular;
-        RutAsset *asset;
+        RigAsset *asset;
 
-        material = rut_material_new (unserializer->engine->ctx, NULL);
+        material = rig_material_new (unserializer->engine->ctx, NULL);
 
-        rut_entity_add_component (entity, material);
+        rig_entity_add_component (entity, material);
         rut_object_unref (material);
 
 #warning "todo: remove Component->Material compatibility"
@@ -2003,7 +2021,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
                 asset = unserializer_find_object (unserializer,
                                                   pb_texture->asset_id);
                 if (asset)
-                  rut_material_set_color_source_asset (material, asset);
+                  rig_material_set_color_source_asset (material, asset);
                 else
                   rig_pb_unserializer_collect_error (unserializer,
                                                      "Invalid asset id");
@@ -2017,7 +2035,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
                 asset = unserializer_find_object (unserializer,
                                                   pb_normal_map->asset_id);
                 if (asset)
-                  rut_material_set_normal_map_asset (material, asset);
+                  rig_material_set_normal_map_asset (material, asset);
                 else
                   rig_pb_unserializer_collect_error (unserializer,
                                                      "Invalid asset id");
@@ -2031,7 +2049,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
                 asset = unserializer_find_object (unserializer,
                                                   pb_alpha_mask->asset_id);
                 if (asset)
-                  rut_material_set_alpha_mask_asset (material, asset);
+                  rig_material_set_alpha_mask_asset (material, asset);
                 else
                   rig_pb_unserializer_collect_error (unserializer,
                                                      "Invalid asset id");
@@ -2044,11 +2062,11 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             pb_init_color (unserializer->engine->ctx,
                            &specular, pb_material->specular);
 
-            rut_material_set_ambient (material, &ambient);
-            rut_material_set_diffuse (material, &diffuse);
-            rut_material_set_specular (material, &specular);
+            rig_material_set_ambient (material, &ambient);
+            rig_material_set_diffuse (material, &diffuse);
+            rig_material_set_specular (material, &specular);
             if (pb_material->has_shininess)
-              rut_material_set_shininess (material, pb_material->shininess);
+              rig_material_set_shininess (material, pb_material->shininess);
           }
 
         set_properties_from_pb_boxed_values (unserializer,
@@ -2063,9 +2081,9 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__MODEL:
       {
         Rig__Entity__Component__Model *pb_model = pb_component->model;
-        RutAsset *asset;
+        RigAsset *asset;
         RutMesh *mesh;
-        RutModel *model;
+        RigModel *model;
 
         if (!pb_model->has_asset_id)
           {
@@ -2082,7 +2100,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             return NULL;
           }
 
-        mesh = rut_asset_get_mesh (asset);
+        mesh = rig_asset_get_mesh (asset);
         if (!mesh)
           {
             rig_pb_unserializer_collect_error (unserializer,
@@ -2091,10 +2109,10 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             return NULL;
           }
 
-        model = rut_model_new_from_asset (unserializer->engine->ctx, asset);
+        model = rig_model_new_from_asset (unserializer->engine->ctx, asset);
         if (model)
           {
-            rut_entity_add_component (entity, model);
+            rig_entity_add_component (entity, model);
             rut_object_unref (model);
             rig_pb_unserializer_register_object (unserializer,
                                                  model, component_id);
@@ -2122,7 +2140,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             rut_text_set_color (text, &color);
           }
 
-        rut_entity_add_component (entity, text);
+        rig_entity_add_component (entity, text);
         rut_object_unref (text);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2132,8 +2150,8 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__CAMERA:
       {
         Rig__Entity__Component__Camera *pb_camera = pb_component->camera;
-        RutCamera *camera =
-          rut_camera_new (unserializer->engine->ctx,
+        RigCamera *camera =
+          rig_camera_new (unserializer->engine,
                           -1, /* ortho/vp width */
                           -1, /* ortho/vp height */
                           NULL);
@@ -2199,7 +2217,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             rut_camera_set_background_color (camera, &color);
           }
 
-        rut_entity_add_component (entity, camera);
+        rig_entity_add_component (entity, camera);
         rut_object_unref (camera);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2208,15 +2226,15 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
       }
     case RIG__ENTITY__COMPONENT__TYPE__BUTTON_INPUT:
       {
-        RutButtonInput *button_input =
-          rut_button_input_new (unserializer->engine->ctx);
+        RigButtonInput *button_input =
+          rig_button_input_new (unserializer->engine->ctx);
 
         set_properties_from_pb_boxed_values (unserializer,
                                              button_input,
                                              pb_component->n_properties,
                                              pb_component->properties);
 
-        rut_entity_add_component (entity, button_input);
+        rig_entity_add_component (entity, button_input);
         rut_object_unref (button_input);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2226,10 +2244,10 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
     case RIG__ENTITY__COMPONENT__TYPE__SHAPE:
       {
         Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
-        RutMaterial *material;
-        RutAsset *asset = NULL;
+        RigMaterial *material;
+        RigAsset *asset = NULL;
         CoglTexture *texture = NULL;
-        RutShape *shape;
+        RigShape *shape;
         bool shaped = false;
         int width, height;
 
@@ -2239,24 +2257,24 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             if (pb_shape->has_shaped)
               shaped = pb_shape->shaped;
 
-            material = rut_entity_get_component (entity,
+            material = rig_entity_get_component (entity,
                                                  RUT_COMPONENT_TYPE_MATERIAL);
 
             /* We need to know the size of the texture before we can create
              * a shape component */
             if (material)
-              asset = rut_material_get_color_source_asset (material);
+              asset = rig_material_get_color_source_asset (material);
 
             if (asset)
               {
-                if (rut_asset_get_is_video (asset))
+                if (rig_asset_get_is_video (asset))
                   {
                     width = 640;
                     height = 480;
                   }
                 else
                   {
-                    texture = rut_asset_get_texture (asset);
+                    texture = rig_asset_get_texture (asset);
                     if (texture)
                       {
                         width = cogl_texture_get_width (texture);
@@ -2271,7 +2289,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
           }
 
 
-        shape = rut_shape_new (unserializer->engine->ctx,
+        shape = rig_shape_new (unserializer->engine->ctx,
                                shaped,
                                width, height);
 
@@ -2280,7 +2298,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
                                              pb_component->n_properties,
                                              pb_component->properties);
 
-        rut_entity_add_component (entity, shape);
+        rig_entity_add_component (entity, shape);
         rut_object_unref (shape);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2300,8 +2318,8 @@ ERROR_SHAPE:
       }
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
       {
-        RutNineSlice *nine_slice =
-          rut_nine_slice_new (unserializer->engine->ctx,
+        RigNineSlice *nine_slice =
+          rig_nine_slice_new (unserializer->engine->ctx,
                               NULL,
                               0, 0, 0, 0, /* left, right, top, bottom */
                               0, 0); /* width, height */
@@ -2310,7 +2328,7 @@ ERROR_SHAPE:
                                              pb_component->n_properties,
                                              pb_component->properties);
 
-        rut_entity_add_component (entity, nine_slice);
+        rig_entity_add_component (entity, nine_slice);
         rut_object_unref (nine_slice);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2322,34 +2340,34 @@ ERROR_SHAPE:
       {
         Rig__Entity__Component__Diamond *pb_diamond = pb_component->diamond;
         float diamond_size = 100;
-        RutMaterial *material;
-        RutAsset *asset = NULL;
+        RigMaterial *material;
+        RigAsset *asset = NULL;
         CoglTexture *texture = NULL;
-        RutDiamond *diamond;
+        RigDiamond *diamond;
         float tex_width = 200;
         float tex_height = 200;
 
         if (pb_diamond->has_size)
           diamond_size = pb_diamond->size;
 
-        material = rut_entity_get_component (entity,
+        material = rig_entity_get_component (entity,
                                              RUT_COMPONENT_TYPE_MATERIAL);
 
         /* We need to know the size of the texture before we can create
          * a diamond component */
         if (material)
-          asset = rut_material_get_color_source_asset (material);
+          asset = rig_material_get_color_source_asset (material);
 
         if (asset)
           {
-            if (rut_asset_get_is_video (asset))
+            if (rig_asset_get_is_video (asset))
               {
                 tex_width = 640;
                 tex_height = 480;
               }
             else
               {
-                texture = rut_asset_get_texture (asset);
+                texture = rig_asset_get_texture (asset);
                 if (texture)
                   {
                     tex_width = cogl_texture_get_width (texture);
@@ -2358,10 +2376,10 @@ ERROR_SHAPE:
               }
           }
 
-        diamond = rut_diamond_new (unserializer->engine->ctx,
+        diamond = rig_diamond_new (unserializer->engine->ctx,
                                    diamond_size, tex_width, tex_height);
 
-        rut_entity_add_component (entity, diamond);
+        rig_entity_add_component (entity, diamond);
         rut_object_unref (diamond);
 
         rig_pb_unserializer_register_object (unserializer,
@@ -2372,10 +2390,10 @@ ERROR_SHAPE:
     case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
       {
         Rig__Entity__Component__PointalismGrid *pb_grid = pb_component->grid;
-        RutMaterial *material;
-        RutAsset *asset = NULL;
+        RigMaterial *material;
+        RigAsset *asset = NULL;
         CoglTexture *texture = NULL;
-        RutPointalismGrid *grid;
+        RigPointalismGrid *grid;
         float width, height;
         float cell_size;
 
@@ -2384,22 +2402,22 @@ ERROR_SHAPE:
         else
           cell_size = 20;
 
-        material = rut_entity_get_component (entity,
+        material = rig_entity_get_component (entity,
                                              RUT_COMPONENT_TYPE_MATERIAL);
 
         if (material)
-          asset = rut_material_get_color_source_asset (material);
+          asset = rig_material_get_color_source_asset (material);
 
         if (asset)
           {
-            if (rut_asset_get_is_video (asset))
+            if (rig_asset_get_is_video (asset))
               {
                 width = 640;
                 height = 480;
               }
             else
               {
-                texture = rut_asset_get_texture (asset);
+                texture = rig_asset_get_texture (asset);
                 if (texture)
                   {
                     width = cogl_texture_get_width (texture);
@@ -2412,20 +2430,20 @@ ERROR_SHAPE:
         else
           goto ERROR_POINTALISM;
 
-        grid = rut_pointalism_grid_new (unserializer->engine->ctx, cell_size,
+        grid = rig_pointalism_grid_new (unserializer->engine->ctx, cell_size,
                                         width, height);
 
-        rut_entity_add_component (entity, grid);
+        rig_entity_add_component (entity, grid);
         rut_object_unref (grid);
 
         if (pb_grid->has_scale)
-          rut_pointalism_grid_set_scale (grid, pb_grid->scale);
+          rig_pointalism_grid_set_scale (grid, pb_grid->scale);
 
         if (pb_grid->has_z)
-          rut_pointalism_grid_set_z (grid, pb_grid->z);
+          rig_pointalism_grid_set_z (grid, pb_grid->z);
 
         if (pb_grid->has_lighter)
-          rut_pointalism_grid_set_lighter (grid, pb_grid->lighter);
+          rig_pointalism_grid_set_lighter (grid, pb_grid->lighter);
 
         rig_pb_unserializer_register_object (unserializer,
                                              grid, component_id);
@@ -2446,10 +2464,10 @@ ERROR_POINTALISM:
       }
     case RIG__ENTITY__COMPONENT__TYPE__HAIR:
       {
-        RutHair *hair = rut_hair_new (unserializer->engine->ctx);
+        RigHair *hair = rig_hair_new (unserializer->engine->ctx);
         RutObject *geom;
 
-        rut_entity_add_component (entity, hair);
+        rig_entity_add_component (entity, hair);
         rut_object_unref (hair);
 
         set_properties_from_pb_boxed_values (unserializer,
@@ -2471,15 +2489,15 @@ ERROR_POINTALISM:
          * saving an loading a hair mesh that is derived offline.
          */
 
-        geom = rut_entity_get_component (entity,
+        geom = rig_entity_get_component (entity,
                                          RUT_COMPONENT_TYPE_GEOMETRY);
 
-        if (geom && rut_object_get_type (geom) == &rut_model_type)
+        if (geom && rut_object_get_type (geom) == &rig_model_type)
           {
-            RutModel *hair_geom = rut_model_new_for_hair (geom);
+            RigModel *hair_geom = rig_model_new_for_hair (geom);
 
-            rut_entity_remove_component (entity, geom);
-            rut_entity_add_component (entity, hair_geom);
+            rig_entity_remove_component (entity, geom);
+            rig_entity_add_component (entity, hair_geom);
             rut_object_unref (hair_geom);
           }
 
@@ -2496,7 +2514,7 @@ ERROR_POINTALISM:
 
 static void
 unserialize_components (RigPBUnSerializer *unserializer,
-                        RutEntity *entity,
+                        RigEntity *entity,
                         Rig__Entity *pb_entity,
                         bool force_material)
 {
@@ -2541,15 +2559,15 @@ unserialize_components (RigPBUnSerializer *unserializer,
 
 #warning "todo: remove entity:cast_shadow compatibility"
   if (force_material &&
-      !rut_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL))
+      !rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL))
     {
-      RutMaterial *material =
-        rut_material_new (unserializer->engine->ctx, NULL);
+      RigMaterial *material =
+        rig_material_new (unserializer->engine->ctx, NULL);
 
-      rut_entity_add_component (entity, material);
+      rig_entity_add_component (entity, material);
 
       if (pb_entity->has_cast_shadow)
-        rut_material_set_cast_shadow (material, pb_entity->cast_shadow);
+        rig_material_set_cast_shadow (material, pb_entity->cast_shadow);
     }
 
   for (i = 0; i < pb_entity->n_components; i++)
@@ -2588,11 +2606,11 @@ unserialize_components (RigPBUnSerializer *unserializer,
     }
 }
 
-RutEntity *
+RigEntity *
 rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
                            Rig__Entity *pb_entity)
 {
-  RutEntity *entity;
+  RigEntity *entity;
   uint64_t id;
   bool force_material = false;
 
@@ -2607,12 +2625,12 @@ rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
       return NULL;
     }
 
-  entity = rut_entity_new (unserializer->engine->ctx);
+  entity = rig_entity_new (unserializer->engine->ctx);
 
   if (pb_entity->has_parent_id)
     {
       uint64_t parent_id = pb_entity->parent_id;
-      RutEntity *parent = unserializer_find_object (unserializer, parent_id);
+      RigEntity *parent = unserializer_find_object (unserializer, parent_id);
 
       if (!parent)
         {
@@ -2631,7 +2649,7 @@ rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
     }
 
   if (pb_entity->label)
-    rut_entity_set_label (entity, pb_entity->label);
+    rig_entity_set_label (entity, pb_entity->label);
 
   if (pb_entity->position)
     {
@@ -2641,7 +2659,7 @@ rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
           pos->y,
           pos->z
       };
-      rut_entity_set_position (entity, position);
+      rig_entity_set_position (entity, position);
     }
   if (pb_entity->rotation)
     {
@@ -2649,10 +2667,10 @@ rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
 
       pb_init_quaternion (&q, pb_entity->rotation);
 
-      rut_entity_set_rotation (entity, &q);
+      rig_entity_set_rotation (entity, &q);
     }
   if (pb_entity->has_scale)
-    rut_entity_set_scale (entity, pb_entity->scale);
+    rig_entity_set_scale (entity, pb_entity->scale);
 
 #warning "remove entity::cast_shadow compatibility"
   if (pb_entity->has_cast_shadow)
@@ -2672,7 +2690,7 @@ unserialize_entities (RigPBUnSerializer *unserializer,
 
   for (i = 0; i < n_entities; i++)
     {
-      RutEntity *entity = rig_pb_unserialize_entity (unserializer, entities[i]);
+      RigEntity *entity = rig_pb_unserialize_entity (unserializer, entities[i]);
 
       if (!entity)
         continue;
@@ -2697,7 +2715,7 @@ unserialize_assets (RigPBUnSerializer *unserializer,
     {
       Rig__Asset *pb_asset = assets[i];
       uint64_t id;
-      RutAsset *asset = NULL;
+      RigAsset *asset = NULL;
 
       if (!pb_asset->has_id)
         continue;
@@ -2722,7 +2740,7 @@ unserialize_assets (RigPBUnSerializer *unserializer,
                pb_asset->has_is_video &&
                pb_asset->has_data)
         {
-          asset = rut_asset_new_from_data (engine->ctx,
+          asset = rig_asset_new_from_data (engine->ctx,
                                            pb_asset->path,
                                            pb_asset->type,
                                            pb_asset->is_video,
@@ -2741,7 +2759,7 @@ unserialize_assets (RigPBUnSerializer *unserializer,
                                                  (int)id);
               continue;
             }
-          asset = rut_asset_new_from_mesh (engine->ctx, mesh);
+          asset = rig_asset_new_from_mesh (engine->ctx, mesh);
           rut_object_unref (mesh);
         }
       else if (pb_asset->path &&
@@ -2929,10 +2947,10 @@ unserialize_controller_properties (RigPBUnSerializer *unserializer,
 
 #warning "todo: remove entity::cast_shadow compatibility"
       if (!property &&
-          rut_object_get_type (object) == &rut_entity_type &&
+          rut_object_get_type (object) == &rig_entity_type &&
           strcmp (pb_property->name, "cast_shadow") == 0)
         {
-          object = rut_entity_get_component (object,
+          object = rig_entity_get_component (object,
                                              RUT_COMPONENT_TYPE_MATERIAL);
           if (object)
             property = rut_introspectable_lookup_property (object,

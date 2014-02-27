@@ -28,13 +28,12 @@
 
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
-#include "rut-camera-private.h"
 #include "rut-transform.h"
 #include "rut-text.h"
 #include "rut-scale.h"
 #include "rut-input-region.h"
 
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 
 static void
 _rut_scale_set_user_scale (RutObject *object, float factor);
@@ -268,7 +267,7 @@ _rut_scale_paint (RutObject *object,
 {
   RutScale *scale = object;
   float to_pixel = scale->pixel_scale;
-  //RutCamera *camera = paint_ctx->camera;
+  //RutObject *camera = paint_ctx->camera;
 
   switch (paint_ctx->layer_number)
     {
@@ -293,10 +292,14 @@ _rut_scale_paint (RutObject *object,
         float x0 = scale->focus_offset * to_pixel -
           scale->start_offset * to_pixel;
         if (x0 >= 0 && x0 < scale->width)
-          cogl_framebuffer_draw_rectangle (paint_ctx->camera->fb,
-                                           scale->pipeline,
-                                           x0, 0,
-                                           x0 + 1, scale->height);
+          {
+            CoglFramebuffer *fb =
+              rut_camera_get_framebuffer (paint_ctx->camera);
+            cogl_framebuffer_draw_rectangle (fb,
+                                             scale->pipeline,
+                                             x0, 0,
+                                             x0 + 1, scale->height);
+          }
       }
       break;
     }
@@ -583,7 +586,7 @@ static RutPropertySpec _rut_scale_prop_specs[] = {
 
 typedef struct _GrabState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutScale *scale;
   CoglMatrix transform;
   CoglMatrix inverse_transform;
@@ -619,7 +622,7 @@ _rut_scale_grab_input_cb (RutInputEvent *event,
         {
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
-          RutCamera *camera = state->camera;
+          RutObject *camera = state->camera;
 
           rut_camera_unproject_coord (camera,
                                       &state->transform,

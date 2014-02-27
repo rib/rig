@@ -134,7 +134,7 @@ register_object_cb (void *object,
    * don't want to complain if we detect them being registered
    * multiple times
    */
-  if (rut_object_get_type (object) == &rut_asset_type &&
+  if (rut_object_get_type (object) == &rig_asset_type &&
       lookup_object (simulator, id))
     return;
 
@@ -206,7 +206,7 @@ simulator__load (Rig__Simulator_Service *service,
    * This implies that we can't simply rely on rut object ref counting
    * alone to destroy UI objects!
    *
-   * TODO: Add an explicit rut_entity_reap() api that can traverse
+   * TODO: Add an explicit rig_entity_reap() api that can traverse
    * a graph of entities and components and queue them for deletion.
    * We will need this anyway for UI operations that need to delete
    * objects and this lets us use our existing way of intercepting
@@ -362,7 +362,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
           if (pb_event->pointer_move->has_x)
             {
               /* Note: we can translate all simulator events to
-               * account for the position of a RutCameraView in
+               * account for the position of a RigCameraView in
                * an editor. */
               event->pointer_move.x =
                 pb_event->pointer_move->x - simulator->view_x;

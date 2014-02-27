@@ -28,7 +28,8 @@
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
 #include "rut-image.h"
-#include "components/rut-camera.h"
+#include "rut-camera.h"
+#include "rut-introspectable.h"
 
 enum {
   RUT_IMAGE_PROP_DRAW_MODE,

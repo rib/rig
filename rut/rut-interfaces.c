@@ -25,7 +25,7 @@
 #include "rut-transform-private.h"
 #include "rut-property.h"
 #include "rut-util.h"
-#include "components/rut-camera.h"
+#include "rut-camera.h"
 #include "rut-refcount-debug.h"
 
 const CoglMatrix *

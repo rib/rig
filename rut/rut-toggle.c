@@ -24,12 +24,12 @@
 #include "rut-toggle.h"
 #include "rut-interfaces.h"
 #include "rut-paintable.h"
-#include "rut-camera-private.h"
+#include "rut-camera.h"
 #include "rut-inputable.h"
 #include "rut-pickable.h"
 #include "rut-input-region.h"
-
-#include "components/rut-camera.h"
+#include "rut-introspectable.h"
+#include "rut-camera.h"
 
 #define RUT_TOGGLE_BOX_WIDTH 15
 #define RUT_TOGGLE_BOX_RIGHT_PAD 5
@@ -164,8 +164,8 @@ _rut_toggle_paint (RutObject *object,
                    RutPaintContext *paint_ctx)
 {
   RutToggle *toggle = object;
-  RutCamera *camera = paint_ctx->camera;
-  CoglFramebuffer *fb = camera->fb;
+  RutObject *camera = paint_ctx->camera;
+  CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
   int icon_width;
 
   if (toggle->selected_icon)
@@ -217,7 +217,7 @@ _rut_toggle_paint (RutObject *object,
                                        box_y + RUT_TOGGLE_BOX_WIDTH - 2);
 
       if (toggle->state || toggle->tentative_set)
-        cogl_pango_show_layout (camera->fb,
+        cogl_pango_show_layout (rut_camera_get_framebuffer (camera),
                                 toggle->tick,
                                 0, 0,
                                 &toggle->tick_color);
@@ -225,7 +225,7 @@ _rut_toggle_paint (RutObject *object,
       icon_width = RUT_TOGGLE_BOX_WIDTH;
     }
 
-  cogl_pango_show_layout (camera->fb,
+  cogl_pango_show_layout (rut_camera_get_framebuffer (camera),
                           toggle->label,
                           icon_width + RUT_TOGGLE_BOX_RIGHT_PAD, 0,
                           &toggle->text_color);
@@ -356,7 +356,7 @@ _rut_toggle_init_type (void)
 
 typedef struct _ToggleGrabState
 {
-  RutCamera *camera;
+  RutObject *camera;
   RutInputRegion *region;
   RutToggle *toggle;
 } ToggleGrabState;

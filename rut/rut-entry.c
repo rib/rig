@@ -29,7 +29,7 @@
 #include "rut-transform.h"
 #include "rut-entry.h"
 
-#include "components/rut-nine-slice.h"
+#include "rut-nine-slice.h"
 
 enum {
   RUT_ENTRY_PROP_WIDTH,

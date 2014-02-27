@@ -29,6 +29,7 @@ typedef struct _RigUI RigUI;
 
 #include "rut-object.h"
 #include "rig-engine.h"
+#include "rig-entity.h"
 
 /* This structure encapsulates all the dynamic state for a UI
  *
@@ -47,9 +48,9 @@ struct _RigUI
   RutObject *scene;
   GList *controllers;
 
-  RutEntity *light;
-  RutEntity *play_camera;
-  RutCamera *play_camera_component;
+  RigEntity *light;
+  RigEntity *play_camera;
+  RutObject *play_camera_component;
 
   uint8_t *dso_data;
   int dso_len;
@@ -73,7 +74,7 @@ rig_ui_suspend (RigUI *ui);
 void
 rig_ui_resume (RigUI *ui);
 
-RutEntity *
+RigEntity *
 rig_ui_find_entity (RigUI *ui, const char *label);
 
 #endif /* _RIG_UI_H_ */

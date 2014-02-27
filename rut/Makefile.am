@@ -1,26 +1,10 @@
 
 lib_LTLIBRARIES = librut.la
 
-components_source_h = \
-    components/rut-camera.h \
-    components/rut-light.h \
-    components/rut-model.h \
-    components/rut-material.h \
-    components/rut-diamond.h \
-    components/rut-shape.h \
-    components/rut-nine-slice.h \
-    components/rut-button-input.h \
-    components/rut-pointalism-grid.h \
-    components/rut-hair.h
-
 source_h = \
-    $(components_source_h) \
     rut-exception.h \
     rut-os.h \
     rut-color.h \
-    rut-image-source.h \
-    rut-entity.h \
-    rut-components.h \
     rut-type.h \
     rut-object.h \
     rut-types.h \
@@ -42,16 +26,11 @@ source_h = \
     rut-vec3-slider.h \
     rut-paintable.h \
     rut-drop-down.h \
-    rut-inspector.h \
-    rut-prop-inspector.h \
     rut-closure.h \
-    rut-asset.h \
     rut-stack.h \
     rut-entry.h \
     rut-gaussian-blurrer.h \
-    rut-downsampler.h \
     rut-toggle.h \
-    rut-dof-effect.h \
     rut-mesh.h \
     rut-mesh-ply.h \
     rut-ui-viewport.h \
@@ -72,8 +51,7 @@ source_h = \
     rut-fixed.h \
     rut-fold.h \
     rut-refcount-debug.h \
-    rut-icon-button.h \
-    rut-asset-inspector.h
+    rut-icon-button.h
 
 # Headers that will need to be available for compiling code at runtime
 # and so need to be installed...
@@ -85,24 +63,12 @@ runtime_headersdir = $(prefix)/share/rig/codegen_includes
 runtime_headers_DATA = $(runtime_headers)
 
 librut_la_SOURCES = \
-    components/rut-camera.c \
-    components/rut-light.c \
-    components/rut-model.c \
-    components/rut-material.c \
-    components/rut-diamond.c \
-    components/rut-shape.c \
-    components/rut-nine-slice.c \
-    components/rut-pointalism-grid.c \
-    components/rut-hair.c \
-    components/rut-button-input.c \
     rply.c \
     rply.h \
     color-table.h \
     rut-exception.c \
     rut-os.c \
     rut-color.c \
-    rut-image-source.c \
-    rut-entity.c \
     rut-type.c \
     rut-object.c \
     rut-property.h \
@@ -118,7 +84,6 @@ librut_la_SOURCES = \
     rut.c \
     rut-arcball.c \
     rut-transform-private.h \
-    rut-camera-private.h \
     rut-volume.c \
     rut-volume-private.h \
     rut-planes.c \
@@ -144,21 +109,18 @@ librut_la_SOURCES = \
     rut-vec3-slider.c \
     rut-paintable.c \
     rut-drop-down.c \
-    rut-inspector.c \
-    rut-prop-inspector.c \
     rut-closure.c \
-    rut-asset.c \
     rut-stack.c \
     rut-entry.c \
     rut-gaussian-blurrer.c \
-    rut-downsampler.c \
     rut-toggle.c \
-    rut-dof-effect.c \
     rut-mesh.c \
     rut-mesh-ply.c \
     rut-ui-viewport.c \
     rut-scroll-bar.c \
     rut-image.c \
+    rut-nine-slice.h \
+    rut-nine-slice.c \
     rut-color-picker.c \
     rut-color-button.c \
     rut-box-layout.c \
@@ -178,10 +140,6 @@ librut_la_SOURCES = \
     rut-composite-sizable.c \
     rut-shim.h \
     rut-shim.c \
-    rut-asset-inspector.h \
-    rut-asset-inspector.c \
-    rut-renderer.h \
-    rut-renderer.c \
     rut-mimable.h \
     rut-mimable.c \
     rut-drag-bin.h \
@@ -196,6 +154,8 @@ librut_la_SOURCES = \
     rut-input-region.c \
     gstmemsrc.h \
     gstmemsrc.c \
+    rut-camera.h \
+    rut-camera.c \
     $(source_h)
 
 if !HAVE_ANDROID
@@ -222,6 +182,3 @@ librut_la_CPPFLAGS = \
 
 # rut_headersdir =  $(includedir)/rut
 # rut_headers_DATA = $(source_h)
-
-# rut_components_headersdir =  $(includedir)/rut/components
-# rut_components_headers_DATA = $(components_source_h)

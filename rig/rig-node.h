@@ -102,7 +102,7 @@ void
 rig_node_asset_lerp (RigNode *a,
                      RigNode *b,
                      float t,
-                     RutAsset **value);
+                     RigAsset **value);
 
 void
 rig_node_object_lerp (RigNode *a,
@@ -152,7 +152,7 @@ RigNode *
 rig_node_new_for_text (float t, const char *value);
 
 RigNode *
-rig_node_new_for_asset (float t, RutAsset *value);
+rig_node_new_for_asset (float t, RigAsset *value);
 
 RigNode *
 rig_node_new_for_object (float t, RutObject *value);

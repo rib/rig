@@ -136,8 +136,8 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
 
 void
 rig_engine_op_add_entity (RigEngine *engine,
-                          RutEntity *parent,
-                          RutEntity *entity)
+                          RigEntity *parent,
+                          RigEntity *entity)
 {
   RigPBSerializer *serializer = engine->ops_serializer;
   Rig__Operation *pb_op;
@@ -164,8 +164,8 @@ _apply_op_add_entity (RigEngineOpApplyContext *ctx,
                       Rig__Operation *pb_op)
 {
   Rig__Operation__AddEntity *add_entity = pb_op->add_entity;
-  RutEntity *parent = NULL;
-  RutEntity *entity;
+  RigEntity *parent = NULL;
+  RigEntity *entity;
 
   g_warn_if_fail (add_entity->entity->has_parent_id == false);
 
@@ -241,7 +241,7 @@ _map_op_add_entity (RigEngineOpMapContext *ctx,
 
 void
 rig_engine_op_delete_entity (RigEngine *engine,
-                             RutEntity *entity)
+                             RigEntity *entity)
 {
   RigPBSerializer *serializer = engine->ops_serializer;
   Rig__Operation *pb_op = rig_pb_new (serializer, Rig__Operation,
@@ -261,7 +261,7 @@ static bool
 _apply_op_delete_entity (RigEngineOpApplyContext *ctx,
                          Rig__Operation *pb_op)
 {
-  RutEntity *entity = (void *)(intptr_t)pb_op->delete_entity->entity_id;
+  RigEntity *entity = (void *)(intptr_t)pb_op->delete_entity->entity_id;
 
   /* We want deletion to happen lazily so we take a reference before
    * removing it from the graph. */
@@ -302,7 +302,7 @@ _map_op_delete_entity (RigEngineOpMapContext *ctx,
 
 void
 rig_engine_op_add_component (RigEngine *engine,
-                             RutEntity *entity,
+                             RigEntity *entity,
                              RutComponent *component)
 {
   RigPBSerializer *serializer = engine->ops_serializer;
@@ -325,7 +325,7 @@ static bool
 _apply_op_add_component (RigEngineOpApplyContext *ctx,
                          Rig__Operation *pb_op)
 {
-  RutEntity *entity = (void *)(intptr_t)pb_op->add_component->parent_entity_id;
+  RigEntity *entity = (void *)(intptr_t)pb_op->add_component->parent_entity_id;
   RutComponent *component;
 
   if (!entity)
@@ -395,7 +395,7 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
   RutComponent *component =
     (void *)(intptr_t)pb_op->delete_component->component_id;
   RutComponentableProps *props;
-  RutEntity *entity;
+  RigEntity *entity;
 
   if (component)
     return false;
@@ -409,7 +409,7 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
    * removing it from the entity. */
   rut_object_ref (component);
 
-  rut_entity_remove_component (entity, component);
+  rig_entity_remove_component (entity, component);
 
   ctx->queue_delete_id_cb (pb_op->delete_component->component_id, ctx->user_data);
 

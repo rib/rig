@@ -38,6 +38,12 @@ typedef enum _RutPropertyType
   RUT_PROPERTY_TYPE_VEC4,
   RUT_PROPERTY_TYPE_COLOR,
   RUT_PROPERTY_TYPE_OBJECT,
+
+  /* FIXME: instead of supporting RigAsset properties we should
+   * support declaring type validation information for RutObject
+   * propertys. You should be able to specify a specific RutType or a
+   * mask of interfaces.
+   */
   RUT_PROPERTY_TYPE_ASSET,
   RUT_PROPERTY_TYPE_POINTER,
 } RutPropertyType;
@@ -122,7 +128,7 @@ typedef struct _RutPropertyValidationObject
 
 typedef struct _RutPropertyValidationAsset
 {
-  RutAssetType type;
+  RigAssetType type;
 } RutPropertyValidationAsset;
 
 typedef union _RutPropertyValidation
@@ -178,7 +184,7 @@ typedef struct _RutPropertySpec
     const float *(* vec3_type) (void *object);
     const float *(* vec4_type) (void *object);
     void *(* object_type) (void *object);
-    RutAsset *(* asset_type) (RutObject *object);
+    RigAsset *(* asset_type) (RutObject *object);
     void *(* pointer_type) (void *object);
 
     /* This is just used to check the pointer against NULL */
@@ -200,7 +206,7 @@ typedef struct _RutPropertySpec
     void (* vec3_type) (void *object, const float value[3]);
     void (* vec4_type) (void *object, const float value[4]);
     void (* object_type) (void *object, void *value);
-    void (* asset_type) (RutObject *object, RutAsset *value);
+    void (* asset_type) (RutObject *object, RigAsset *value);
     void (* pointer_type) (void *object, void *value);
 
     /* This is just used to check the pointer against NULL */

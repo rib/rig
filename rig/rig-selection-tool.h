@@ -27,6 +27,7 @@
 #include <rut.h>
 
 #include "rig-camera-view.h"
+#include "rig-entity.h"
 
 typedef struct _RigSelectionTool
 {
@@ -34,8 +35,8 @@ typedef struct _RigSelectionTool
 
   RigCameraView *view;
 
-  RutEntity *camera;
-  RutCamera *camera_component; /* camera component of the camera above */
+  RigEntity *camera;
+  RutObject *camera_component; /* camera component of the camera above */
 
   RutGraph *tool_overlay;
 
@@ -79,7 +80,7 @@ rig_selection_tool_add_event_callback (RigSelectionTool *tool,
 
 void
 rig_selection_tool_update (RigSelectionTool *tool,
-                           RutCamera *paint_camera);
+                           RutObject *paint_camera);
 
 void
 rig_selection_tool_destroy (RigSelectionTool *tool);

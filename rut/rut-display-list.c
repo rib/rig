@@ -191,7 +191,7 @@ _rut_test_list_splice (void)
  * pass in dummy head arguments to these functions and assert that
  * modification of the head wasn't required.
  *   Note: to make this work it requires that the outermost display
- *   list owned by a RutCamera must add at least one link into the
+ *   list owned by a RutObject must add at least one link into the
  *   display list before allowing any splice or unsplice operations.
  *
  * A complete command sequence is created from a scene-graph by

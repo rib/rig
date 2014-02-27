@@ -114,7 +114,7 @@ typedef struct _RutInputEvent
   RutList list_node;
   RutInputEventType type;
   RutShell *shell;
-  RutCamera *camera;
+  RutObject *camera;
   const CoglMatrix *input_transform;
 
   void *native;
@@ -174,14 +174,14 @@ rut_shell_get_headless (RutShell *shell);
 
 /* XXX: Basically just a hack for now to effectively relate input events to
  * a CoglFramebuffer and so we have a way to consistently associate a
- * RutCamera with all input events.
+ * camera with all input events.
  *
  * The camera should provide an orthographic projection into input device
  * coordinates and it's assume to be automatically updated according to
  * window resizes.
  */
 void
-rut_shell_set_window_camera (RutShell *shell, RutCamera *window_camera);
+rut_shell_set_window_camera (RutShell *shell, RutObject *window_camera);
 
 #ifdef __ANDROID__
 RutShell *
@@ -289,19 +289,19 @@ rut_shell_finish_frame (RutShell *shell);
 
 void
 rut_shell_add_input_camera (RutShell *shell,
-                            RutCamera *camera,
+                            RutObject *camera,
                             RutObject *scenegraph);
 
 void
 rut_shell_remove_input_camera (RutShell *shell,
-                               RutCamera *camera,
+                               RutObject *camera,
                                RutObject *scenegraph);
 
 
 /**
  * rut_shell_grab_input:
  * @shell: The #RutShell
- * @camera: An optional #RutCamera to set on grabbed events
+ * @camera: An optional camera to set on grabbed events
  * @callback: A callback to give all events to
  * @user_data: A pointer to pass to the callback
  *
@@ -319,7 +319,7 @@ rut_shell_remove_input_camera (RutShell *shell,
  */
 void
 rut_shell_grab_input (RutShell *shell,
-                      RutCamera *camera,
+                      RutObject *camera,
                       RutInputCallback callback,
                       void *user_data);
 
@@ -373,7 +373,7 @@ rut_shell_set_queue_redraw_callback (RutShell *shell,
 void
 rut_shell_queue_redraw_real (RutShell *shell);
 
-RutCamera *
+RutObject *
 rut_input_event_get_camera (RutInputEvent *event);
 
 RutInputEventType

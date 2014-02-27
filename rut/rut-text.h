@@ -31,7 +31,7 @@
 #include "rut-text-buffer.h"
 #include "rut-closure.h"
 #include "rut-paintable.h"
-#include "rut-entity.h"
+#include "rut-introspectable.h"
 
 #include <pango/pango.h>
 
@@ -53,7 +53,6 @@ G_BEGIN_DECLS
 
 
 typedef struct _RutText RutText;
-#define RUT_TEXT(X) ((RutText *)X)
 extern RutType rut_text_type;
 
 typedef struct _LayoutCache
@@ -123,9 +122,6 @@ enum
 struct _RutText
 {
   RutObjectBase _base;
-
-
-  RutComponentableProps component;
 
   RutContext *ctx;
 
@@ -547,8 +543,8 @@ rut_text_set_hint_text (RutObject *text,
  *
  * |[
  *   /&ast; the order is important &ast;/
- *   rut_text_set_text (RUT_TEXT (actor), markup);
- *   rut_text_set_use_markup (RUT_TEXT (actor), TRUE);
+ *   rut_text_set_text (actor, markup);
+ *   rut_text_set_use_markup (actor, TRUE);
  * ]|
  */
 void

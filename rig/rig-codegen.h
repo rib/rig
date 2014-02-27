@@ -13,8 +13,8 @@ typedef struct _RutUIEnum RutUIEnum;
 
 typedef struct _RutPropertyContext RutPropertyContext;
 
-typedef void RutAsset;
-typedef int RutAssetType;
+typedef void RigAsset;
+typedef int RigAssetType;
 
 typedef struct _RutMemoryStack RutMemoryStack;
 

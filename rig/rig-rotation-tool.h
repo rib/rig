@@ -34,13 +34,13 @@ typedef struct _RigRotationTool
 
   RigCameraView *view;
 
-  RutEntity *camera;
-  RutCamera *camera_component; /* camera component of the camera above */
+  RigEntity *camera;
+  RutObject *camera_component; /* camera component of the camera above */
 
   bool active;
   RutClosure *objects_selection_closure;
 
-  RutEntity *selected_entity;
+  RigEntity *selected_entity;
 
   CoglPipeline *default_pipeline;
   CoglPrimitive *rotation_tool;
