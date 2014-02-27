@@ -168,6 +168,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
   int n_property_changes;
   int n_actions;
   RigPBUnSerializer *unserializer;
+  RigEngineOpMapContext *map_op_ctx;
   RigEngineOpApplyContext *apply_op_ctx;
   Rig__UIEdit *pb_ui_edit;
 
@@ -193,6 +194,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
   n_property_changes = pb_ui_diff->n_property_changes;
 
+  map_op_ctx = &frontend->map_op_ctx;
   apply_op_ctx = &frontend->apply_op_ctx;
   unserializer = frontend->prop_change_unserializer;
 
@@ -211,7 +213,6 @@ frontend__update_ui (Rig__Frontend_Service *service,
         {
           Rig__Operation *pb_op = pb_ui_edit->ops[i];
           int until = pb_op->sequence;
-          bool status;
 
           for (; j < until; j++)
             {
@@ -219,9 +220,17 @@ frontend__update_ui (Rig__Frontend_Service *service,
               apply_property_change (frontend, unserializer, pb_change);
             }
 
-          status = rig_engine_pb_op_apply (apply_op_ctx, pb_op);
+          if (!rig_engine_pb_op_map (map_op_ctx, pb_op))
+            {
+              g_warning ("Frontend: Failed to ID map simulator operation");
+              continue;
+            }
 
-          g_warn_if_fail (status);
+          if (!rig_engine_pb_op_apply (apply_op_ctx, pb_op))
+            {
+              g_warning ("Frontend: Failed to apply simulator operation");
+              continue;
+            }
         }
     }
 
@@ -554,6 +563,7 @@ _rig_frontend_free (void *object)
     g_free (frontend->pending_dso_data);
 
   rig_engine_op_apply_context_destroy (&frontend->apply_op_ctx);
+  rig_engine_op_map_context_destroy (&frontend->map_op_ctx);
   rig_pb_unserializer_destroy (frontend->prop_change_unserializer);
 
   rut_closure_list_disconnect_all (&frontend->ui_update_cb_list);
@@ -639,6 +649,12 @@ rig_frontend_spawn_simulator (RigFrontend *frontend)
   rig_frontend_start_service (frontend);
 }
 
+static uint64_t
+map_id_cb (uint64_t simulator_id, void *user_data)
+{
+  return (uint64_t)(uintptr_t)lookup_object (user_data, simulator_id);
+}
+
 RigFrontend *
 rig_frontend_new (RutShell *shell,
                   RigFrontendID id,
@@ -663,10 +679,14 @@ rig_frontend_new (RutShell *shell,
   frontend->engine =
     rig_engine_new_for_frontend (shell, frontend, ui_filename, play_mode);
 
+  rig_engine_op_map_context_init (&frontend->map_op_ctx,
+                                  frontend->engine,
+                                  map_id_cb,
+                                  frontend);
+
   rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
                                     frontend->engine,
                                     register_object_cb,
-                                    lookup_object_cb,
                                     queue_delete_object_cb,
                                     frontend);
 

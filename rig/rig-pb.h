@@ -308,6 +308,14 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
                          RutPropertyType type,
                          Rig__PropertyValue *pb_value);
 
+/* Note: this will also add the component to the given entity, since
+ * many components can't be configured until they are associated with
+ * an entity. */
+RutObject *
+rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
+                              RutEntity *entity,
+                              Rig__Entity__Component *pb_component);
+
 RutEntity *
 rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
                            Rig__Entity *pb_entity);

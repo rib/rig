@@ -987,7 +987,7 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
       rig_engine_set_current_ui (engine, ui);
       rig_ui_resume (ui);
     }
-  else
+  else if (ui)
     rig_ui_suspend (ui);
 
   //if (!ui)

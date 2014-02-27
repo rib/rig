@@ -76,6 +76,7 @@ struct _RigFrontend
   void (*simulator_connected_callback) (void *user_data);
   void *simulator_connected_data;
 
+  RigEngineOpMapContext map_op_ctx;
   RigEngineOpApplyContext apply_op_ctx;
   RigPBUnSerializer *prop_change_unserializer;
 

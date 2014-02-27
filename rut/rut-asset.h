@@ -39,7 +39,7 @@ typedef struct _RutAsset RutAsset;
 
 void _rut_asset_type_init (void);
 
-CoglBool
+bool
 rut_file_info_is_asset (GFileInfo *info, const char *name);
 
 RutAsset *
@@ -93,10 +93,7 @@ rut_asset_get_texture (RutAsset *asset);
 RutMesh *
 rut_asset_get_mesh (RutAsset *asset);
 
-RutObject *
-rut_asset_get_model (RutAsset *asset);
-
-CoglBool
+bool
 rut_asset_get_is_video (RutAsset *asset);
 
 void
@@ -106,7 +103,7 @@ rut_asset_set_inferred_tags (RutAsset *asset,
 const GList *
 rut_asset_get_inferred_tags (RutAsset *asset);
 
-CoglBool
+bool
 rut_asset_has_tag (RutAsset *asset, const char *tag);
 
 GList *
@@ -131,5 +128,11 @@ rut_asset_get_data (RutAsset *asset);
 
 size_t
 rut_asset_get_data_len (RutAsset *asset);
+
+bool
+rut_asset_get_mesh_has_tex_coords (RutAsset *asset);
+
+bool
+rut_asset_get_mesh_has_normals (RutAsset *asset);
 
 #endif /* _RUT_ASSET_H_ */

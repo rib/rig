@@ -45,7 +45,6 @@ struct _RutAsset
 {
   RutObjectBase _base;
 
-
   RutContext *ctx;
 
 #if 0
@@ -62,8 +61,11 @@ struct _RutAsset
   size_t data_len;
 
   CoglTexture *texture;
+
   RutMesh *mesh;
-  RutModel *model;
+  bool has_tex_coords;
+  bool has_normals;
+
   bool is_video;
 
   GList *inferred_tags;
@@ -223,7 +225,7 @@ typedef struct _RigThumbnailGenerator
   GstElement *pipeline;
   GstElement *bin;
   CoglGstVideoSink *sink;
-  CoglBool seek_done;
+  bool seek_done;
 }RigThumbnailGenerator;
 
 static void
@@ -270,7 +272,7 @@ rut_video_grab_thumbnail (void *instance,
   g_free (generator);
 }
 
-static CoglBool
+static gboolean
 rut_thumbnail_generator_seek (GstBus *bus,
                               GstMessage *msg,
                               void *user_data)
@@ -330,9 +332,10 @@ rut_video_generate_thumbnail (RutAsset *asset)
 }
 
 static CoglTexture *
-rut_model_get_thumbnail (RutContext *ctx,
-                         RutModel *model)
+generate_mesh_thumbnail (RutAsset *asset)
 {
+  RutContext *ctx = asset->ctx;
+  RutModel *model = rut_model_new_from_asset (ctx, asset);
   RutMesh *mesh;
   CoglTexture *thumbnail;
   CoglOffscreen *offscreen;
@@ -367,6 +370,9 @@ rut_model_get_thumbnail (RutContext *ctx,
   float mat_spec[4] = {0.5, 0.5, 0.5, 1.0};
   int location;
 
+  /* XXX: currently we don't just directly refer to asset->mesh
+   * since this may be missing normals and texture coordinates
+   */
   mesh = rut_model_get_mesh (model);
 
   thumbnail =
@@ -507,6 +513,8 @@ rut_model_get_thumbnail (RutContext *ctx,
   cogl_object_unref (pipeline);
   cogl_object_unref (frame_buffer);
 
+  rut_object_unref (model);
+
   return thumbnail;
 }
 
@@ -577,8 +585,6 @@ rut_asset_new_full (RutContext *ctx,
       {
         RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
         GError *error = NULL;
-        CoglBool needs_normals = FALSE;
-        CoglBool needs_tex_coords = FALSE;
 
         asset->mesh = rut_mesh_new_from_ply (ctx,
                                              real_path,
@@ -597,14 +603,16 @@ rut_asset_new_full (RutContext *ctx,
           }
 
         if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-          needs_normals = TRUE;
+          asset->has_normals = false;
+        else
+          asset->has_normals = true;
 
         if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-          needs_tex_coords = TRUE;
+          asset->has_tex_coords = false;
+        else
+          asset->has_tex_coords = true;
 
-        asset->model = rut_model_new_from_asset (ctx, asset, needs_normals,
-                                                 needs_tex_coords);
-        asset->texture = rut_model_get_thumbnail (ctx, asset->model);
+        asset->texture = generate_mesh_thumbnail (asset);
 
         break;
       }
@@ -626,7 +634,7 @@ static CoglBitmap *
 bitmap_new_from_pixbuf (CoglContext *ctx,
                         GdkPixbuf *pixbuf)
 {
-  CoglBool has_alpha;
+  bool has_alpha;
   GdkColorspace color_space;
   CoglPixelFormat pixel_format;
   int width;
@@ -763,8 +771,6 @@ rut_asset_new_from_data (RutContext *ctx,
             {
               RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
               GError *error = NULL;
-              CoglBool needs_normals = FALSE;
-              CoglBool needs_tex_coords = FALSE;
 
               asset->mesh =
                 rut_mesh_new_from_ply_data (ctx,
@@ -784,15 +790,16 @@ rut_asset_new_from_data (RutContext *ctx,
                 }
 
               if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-                needs_normals = TRUE;
+                asset->has_normals = false;
+              else
+                asset->has_normals = true;
 
               if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-                needs_tex_coords = TRUE;
+                asset->has_tex_coords = false;
+              else
+                asset->has_tex_coords = true;
 
-              asset->model = rut_model_new_from_asset (ctx, asset,
-                                                       needs_normals,
-                                                       needs_tex_coords);
-              asset->texture = rut_model_get_thumbnail (ctx, asset->model);
+              asset->texture = generate_mesh_thumbnail (asset);
 
               break;
             }
@@ -808,34 +815,36 @@ rut_asset_new_from_mesh (RutContext *ctx,
 {
   RutAsset *asset =
     rut_object_alloc0 (RutAsset, &rut_asset_type, _rut_asset_init_type);
-  bool needs_normals = true;
-  bool needs_tex_coords = true;
   int i;
-
-
 
   asset->ctx = ctx;
 
   asset->type = RUT_ASSET_TYPE_PLY_MODEL;
 
   asset->mesh = rut_object_ref (mesh);
+  asset->has_normals = false;
+  asset->has_tex_coords = false;
 
   for (i = 0; i < mesh->n_attributes; i++)
     {
       if (strcmp (mesh->attributes[i]->name, "cogl_normal_in") == 0)
-        needs_normals = false;
+        asset->has_normals = true;
       else if (strcmp (mesh->attributes[i]->name, "cogl_tex_coord0_in") == 0)
-        needs_tex_coords = false;
+        asset->has_tex_coords = true;
     }
+
+  /* XXX: for ply mesh handling the needs_normals/tex_coords refers
+   * to needing to initialize these attributes, since we guarantee
+   * that the mesh itself will always have cogl_normal_in and
+   * cogl_tex_coord0_in attributes.
+   */
+#warning "fixme: not consistent with ply mesh handling where we guarantee at least padded normals/tex_coords"
 
   /* FIXME: assets should only be used in the Rig editor so we
    * shouldn't have to consider this... */
   if (!asset->ctx->headless)
     {
-      asset->model = rut_model_new_from_asset (ctx, asset,
-                                               needs_normals,
-                                               needs_tex_coords);
-      asset->texture = rut_model_get_thumbnail (ctx, asset->model);
+      asset->texture = generate_mesh_thumbnail (asset);
     }
 
   return asset;
@@ -919,13 +928,7 @@ rut_asset_get_mesh (RutAsset *asset)
   return asset->mesh;
 }
 
-RutObject *
-rut_asset_get_model (RutAsset *asset)
-{
-  return asset->model;
-}
-
-CoglBool
+bool
 rut_asset_get_is_video (RutAsset *asset)
 {
   return asset->is_video;
@@ -958,7 +961,7 @@ rut_asset_get_inferred_tags (RutAsset *asset)
   return asset->inferred_tags;
 }
 
-CoglBool
+bool
 rut_asset_has_tag (RutAsset *asset, const char *tag)
 {
   GList *l;
@@ -976,7 +979,7 @@ get_extension (const char *path)
   return ext ? ext + 1 : NULL;
 }
 
-CoglBool
+bool
 rut_file_info_is_asset (GFileInfo *info, const char *name)
 {
   const char *content_type = g_file_info_get_content_type (info);
@@ -1135,4 +1138,16 @@ size_t
 rut_asset_get_data_len (RutAsset *asset)
 {
   return asset->data_len;
+}
+
+bool
+rut_asset_get_mesh_has_tex_coords (RutAsset *asset)
+{
+  return asset->has_tex_coords;
+}
+
+bool
+rut_asset_get_mesh_has_normals (RutAsset *asset)
+{
+  return asset->has_normals;
 }

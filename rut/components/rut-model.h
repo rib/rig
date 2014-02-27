@@ -94,9 +94,7 @@ rut_model_new_from_asset_mesh (RutContext *ctx,
 
 RutModel *
 rut_model_new_from_asset (RutContext *ctx,
-                          RutAsset *asset,
-                          bool needs_normals,
-                          bool needs_tex_coords);
+                          RutAsset *asset);
 
 RutModel *
 rut_model_new_for_hair (RutModel *base);

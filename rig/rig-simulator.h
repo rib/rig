@@ -74,6 +74,7 @@ struct _RigSimulator
   RigPBUnSerializer *ui_unserializer;
   RigPBUnSerializer *ops_unserializer;
   RigEngineOpApplyContext apply_op_ctx;
+  RigEngineOpMapContext map_op_ctx;
 
   GHashTable *object_to_id_map;
   GHashTable *id_to_object_map;

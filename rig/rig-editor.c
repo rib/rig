@@ -62,7 +62,9 @@ struct _RigEditor
   RutQueue *edit_ops;
 
   RigEngineOpApplyContext apply_op_ctx;
+  RigEngineOpCopyContext copy_op_ctx;
   RigEngineOpMapContext map_op_ctx;
+  RigEngineOpApplyContext play_apply_op_ctx;
 };
 
 static void
@@ -73,13 +75,13 @@ nop_register_id_cb (void *object,
   /* NOP */
 }
 
+#if 0
 static void *
 nop_id_cast_cb (uint64_t id, void *user_data)
 {
   return (void *)(uintptr_t)id;
 }
 
-#if 0
 static void
 nop_unregister_id_cb (uint64_t id, void *user_data)
 {
@@ -367,7 +369,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           if (geom && rut_object_get_type (geom) == &rut_model_type)
             {
               model = geom;
-              if (model == rut_asset_get_model (asset))
+              if (rut_model_get_asset (model) == asset)
                 break;
               else
                 rig_undo_journal_delete_component (engine->undo_journal, model);
@@ -375,7 +377,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
-          model = rut_asset_get_model (asset);
+          model = rut_model_new_from_asset (engine->ctx, asset);
           rig_undo_journal_add_component (engine->undo_journal, entity, model);
 
           x_range = model->max_x - model->min_x;
@@ -2418,13 +2420,17 @@ handle_edit_operations (RigEditor *editor,
    * to new play-mode objects via the register/unregister callbacks
    * given when applying these operations to the play-mode ui
    */
-  play_edits = rig_engine_map_pb_ui_edit (&editor->map_op_ctx,
-                                          pb_frame_setup->edit);
+  play_edits = rig_engine_copy_pb_ui_edit (&editor->copy_op_ctx,
+                                           pb_frame_setup->edit);
 
   /* Forward both sets of edits to the simulator... */
 
-  if (play_edits)
-    pb_frame_setup->play_edit = play_edits;
+  if (rig_engine_map_pb_ui_edit (&editor->map_op_ctx,
+                                 &editor->play_apply_op_ctx,
+                                 play_edits))
+    {
+      pb_frame_setup->play_edit = play_edits;
+    }
   else
     {
       /* Note: it's always possible that applying edits directly to
@@ -2574,7 +2580,9 @@ _rig_editor_free (RutObject *object)
   RigEditor *editor = object;
 
   rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
+  rig_engine_op_copy_context_destroy (&editor->copy_op_ctx);
   rig_engine_op_map_context_destroy (&editor->map_op_ctx);
+  rig_engine_op_apply_context_destroy (&editor->play_apply_op_ctx);
 
   rut_queue_clear (editor->edit_ops);
   rut_queue_free (editor->edit_ops);
@@ -2644,17 +2652,22 @@ rig_editor_new (const char *filename)
   rig_engine_op_apply_context_init (&editor->apply_op_ctx,
                                     engine,
                                     nop_register_id_cb,
-                                    nop_id_cast_cb, /* ids == obj ptrs */
                                     queue_delete_edit_mode_object_cb,
                                     editor); /* user data */
+
+  rig_engine_op_copy_context_init (&editor->copy_op_ctx,
+                                   engine);
 
   rig_engine_op_map_context_init (&editor->map_op_ctx,
                                   engine,
                                   map_id_cb,
-                                  register_play_mode_object_cb,
-                                  nop_id_cast_cb, /* ids == obj ptrs */
-                                  queue_delete_play_mode_object_cb,
                                   editor); /* user data */
+
+  rig_engine_op_apply_context_init (&editor->play_apply_op_ctx,
+                                    engine,
+                                    register_play_mode_object_cb,
+                                    queue_delete_play_mode_object_cb,
+                                    editor); /* user data */
 
   /* TODO move into editor */
   rig_avahi_run_browser (engine);

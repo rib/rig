@@ -50,6 +50,7 @@ typedef struct _RigSlave
 
   RigPBUnSerializer *ui_unserializer;
 
+  RigEngineOpMapContext map_op_ctx;
   RigEngineOpApplyContext apply_op_ctx;
 
   RutQueue *edits_for_sim;
@@ -233,7 +234,7 @@ typedef struct _PendingEdit
   RigSlave *slave;
   RutClosure *ui_update_closure;
 
-  const Rig__UIEdit *edit;
+  Rig__UIEdit *edit;
   Rig__UIEditResult_Closure closure;
   void *closure_data;
 
@@ -310,8 +311,9 @@ apply_pending_edits (RigSlave *slave)
        * report that status back to the editor so that it can inform
        * the user who can choose to reset the slave.
        */
-      if (!rig_engine_apply_pb_ui_edit (&slave->apply_op_ctx,
-                                        pending_edit->edit))
+      if (!rig_engine_map_pb_ui_edit (&slave->map_op_ctx,
+                                      &slave->apply_op_ctx,
+                                      pending_edit->edit))
         {
           pending_edit->status = false;
         }
@@ -361,7 +363,7 @@ slave__edit (Rig__Slave_Service *service,
   g_print ("Slave: UI Edit Request\n");
 
   pending_edit->slave = slave;
-  pending_edit->edit = pb_ui_edit;
+  pending_edit->edit = (Rig__UIEdit *)pb_ui_edit;
   pending_edit->status = true;
   pending_edit->closure = closure;
   pending_edit->closure_data = closure_data;
@@ -430,6 +432,14 @@ server_error_handler (PB_RPC_Error_Code code,
   engine->slave_service = NULL;
 }
 
+static uint64_t
+map_edit_id_to_play_object_cb (uint64_t edit_id,
+                               void *user_data)
+{
+  void *play_object = lookup_object (user_data, edit_id);
+  return (uint64_t)(uintptr_t)play_object;
+}
+
 void
 rig_slave_init (RutShell *shell, void *user_data)
 {
@@ -448,10 +458,14 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   _rig_slave_object_id_magazine = engine->object_id_magazine;
 
+  rig_engine_op_map_context_init (&slave->map_op_ctx,
+                                  engine,
+                                  map_edit_id_to_play_object_cb,
+                                  slave); /* user data */
+
   rig_engine_op_apply_context_init (&slave->apply_op_ctx,
                                     engine,
                                     register_object_cb,
-                                    lookup_object_cb,
                                     queue_delete_object_cb,
                                     slave); /* user data */
 
@@ -492,6 +506,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
     g_slice_free (PendingEdit, item->data);
   rut_queue_free (slave->edits_for_sim);
 
+  rig_engine_op_map_context_destroy (&slave->map_op_ctx);
   rig_engine_op_apply_context_destroy (&slave->apply_op_ctx);
 
   /* TODO: move to frontend */

@@ -69,8 +69,7 @@ message Mesh
 
 message Asset
 {
-  optional sint64 id=1;
-  optional sint64 edit_id=7;
+  optional sint64 id=1; //XXX ID
 
   optional string path=2;
 
@@ -107,19 +106,19 @@ message Rotation
 //Deprecated
 message Texture
 {
-  optional sint64 asset_id=1;
+  optional sint64 asset_id=1; //XXX ID
 }
 
 //Deprecated
 message NormalMap
 {
-  optional sint64 asset_id=1;
+  optional sint64 asset_id=1; //XXX ID
 }
 
 //Deprecated
 message AlphaMask
 {
-  optional sint64 asset_id=1;
+  optional sint64 asset_id=1; //XXX ID
 }
 
 message Viewport
@@ -161,7 +160,7 @@ message PropertyValue
   optional int32 enum_value=5;
   optional int32 uint32_value=6;
   optional bool boolean_value=7;
-  optional sint64 object_value=8;
+  optional sint64 object_value=8; //XXX ID
   //XXX: we never expect to serialize a pointer
   optional Rotation quaternion_value=9;
   optional Color color_value=10;
@@ -169,7 +168,7 @@ message PropertyValue
   optional Vec4 vec4_value=13;
 
   optional string text_value=14;
-  optional sint64 asset_value=15;
+  optional sint64 asset_value=15; //XXX ID
 }
 
 message Boxed
@@ -220,7 +219,7 @@ message Entity
 
       message Model
         {
-          optional sint64 asset_id=1;
+          optional sint64 asset_id=1; //XXX ID
         }
 
       message Text
@@ -264,8 +263,7 @@ message Entity
           optional bool lighter=4;
         }
 
-      optional sint64 id=1;
-      optional sint64 edit_id=12;
+      optional sint64 id=1; //XXX ID
 
       optional Type type=2;
       optional Light light=3;
@@ -284,10 +282,9 @@ message Entity
       repeated Boxed properties=11;
     }
 
-  optional sint64 id=1;
-  optional sint64 edit_id=9;
+  optional sint64 id=1; //XXX ID
 
-  optional sint64 parent_id=2;
+  optional sint64 parent_id=2; //XXX ID
   optional string label=3;
   optional Vec3 position=4;
   optional float scale=5;
@@ -321,7 +318,7 @@ message Controller
     {
       enum Method { CONSTANT=1; PATH=2; C_BINDING=3; }
 
-      optional sint64 object_id=1;
+      optional sint64 object_id=1; //XXX ID
       optional string name=3;
 
       optional Method method=7;
@@ -334,7 +331,7 @@ message Controller
 
       message Dependency
         {
-          optional sint64 object_id=1;
+          optional sint64 object_id=1; //XXX ID
           optional string name=2;
         }
 
@@ -345,8 +342,7 @@ message Controller
       optional string c_expression=9;
     }
 
-  optional sint64 id=1;
-  optional sint64 edit_id=5;
+  optional sint64 id=1; //XXX ID
 
   optional string name=3;
   repeated Property properties=2;
@@ -406,7 +402,7 @@ message Operation
   //Change an object property, not associated with a controller
   message SetProperty
   {
-    required sint64 object_id=1;
+    required sint64 object_id=1; //XXX ID
     required int32 property_id=2;
     required PropertyValue value=3;
   }
@@ -415,7 +411,7 @@ message Operation
   //Add a new entity to the scene
   message AddEntity
   {
-    required sint64 parent_entity_id=1;
+    required sint64 parent_entity_id=1; //XXX ID
     required Entity entity=2;
   }
   optional AddEntity add_entity=4;
@@ -423,21 +419,21 @@ message Operation
   //Remove an entity from the scene
   message DeleteEntity
   {
-    required sint64 entity_id=1;
+    required sint64 entity_id=1; //XXX ID
   }
   optional DeleteEntity delete_entity=5;
 
   //Add a component to an entity
   message AddComponent
   {
-    required sint64 parent_entity_id=1;
+    required sint64 parent_entity_id=1; //XXX ID
     required Entity.Component component=2;
   }
   optional AddComponent add_component=6;
 
   message DeleteComponent
   {
-    required sint64 component_id=1;
+    required sint64 component_id=1; //XXX ID
   }
   optional DeleteComponent delete_component=7;
 
@@ -449,15 +445,15 @@ message Operation
 
   message DeleteController
   {
-    required sint64 controller_id=1;
+    required sint64 controller_id=1; //XXX ID
   }
   optional DeleteController delete_controller=9;
 
   //Change the constant associated with a controller property
   message ControllerSetConst
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
     required PropertyValue value=4;
   }
@@ -466,8 +462,8 @@ message Operation
   //Add a new controller property path node / key frame
   message ControllerPathAddNode
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
     required float t=4;
     required PropertyValue value=5;
@@ -477,8 +473,8 @@ message Operation
   //Remove a node / key frame from a controller property path
   message ControllerPathDeleteNode
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
     required float t=4;
   }
@@ -487,8 +483,8 @@ message Operation
   //Change the value of a controller property path node / key frame
   message ControllerPathSetNode
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
     required float t=4;
     required PropertyValue value=5;
@@ -498,8 +494,8 @@ message Operation
   //Associate a property with a controller
   message ControllerAddProperty
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
   }
   optional ControllerAddProperty controller_add_property=14;
@@ -507,8 +503,8 @@ message Operation
   //Disassociate a property from a controller
   message ControllerRemoveProperty
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
   }
   optional ControllerRemoveProperty controller_remove_property=15;
@@ -516,8 +512,8 @@ message Operation
   //Change the method of controlling a property
   message ControllerPropertySetMethod
   {
-    required sint64 controller_id=1;
-    required sint64 object_id=2;
+    required sint64 controller_id=1; //XXX ID
+    required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
 
     enum Method { CONSTANT=1; PATH=2; BINDING=3; }
@@ -599,12 +595,6 @@ message RegisterInternalAck
 {
 }
 
-message PrivateID
-{
-  optional string name=1;
-  optional sint64 object_id=2;
-}
-
 message Sync
 {
 }
@@ -636,7 +626,7 @@ service Simulator {
 
 message PropertyChange
 {
-  optional sint64 object_id=1;
+  optional sint64 object_id=1; //XXX ID
   optional int32 property_id=2;
   optional PropertyValue value=3;
 }
@@ -654,7 +644,7 @@ message SimulatorAction
 
   message SelectObject
   {
-    required sint64 object_id=1;
+    required sint64 object_id=1; //XXX ID
     //See RutSelectAction
     required uint32 action=2;
   }

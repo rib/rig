@@ -136,7 +136,6 @@ typedef struct _RigEngineOpApplyContext
 {
   RigEngine *engine;
   RigPBUnSerializer *unserializer;
-  void *(*id_to_object_cb) (uint64_t id, void *user_data);
   void (*register_id_cb) (void *object, uint64_t id, void *user_data);
   void (*queue_delete_id_cb) (uint64_t id, void *user_data);
   void *user_data;
@@ -148,8 +147,6 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
                                   void (*register_id_cb) (void *object,
                                                           uint64_t id,
                                                           void *user_data),
-                                  void *(*id_to_object_cb) (uint64_t id,
-                                                            void *user_data),
                                   void (*queue_delete_id_cb) (uint64_t id,
                                                               void *user_data),
                                   void *user_data);
@@ -165,23 +162,28 @@ bool
 rig_engine_apply_pb_ui_edit (RigEngineOpApplyContext *ctx,
                              const Rig__UIEdit *pb_ui_edit);
 
+typedef struct _RigEngineOpCopyContext
+{
+  RigEngine *engine;
+  RigPBSerializer *serializer;
+} RigEngineOpCopyContext;
+
+void
+rig_engine_op_copy_context_init (RigEngineOpCopyContext *copy_ctx,
+                                 RigEngine *engine);
+
+void
+rig_engine_op_copy_context_destroy (RigEngineOpCopyContext *copy_ctx);
+
+Rig__UIEdit *
+rig_engine_copy_pb_ui_edit (RigEngineOpCopyContext *copy_ctx,
+                            Rig__UIEdit *pb_ui_edit);
+
 typedef struct _RigEngineOpMapContext
 {
   RigEngine *engine;
 
-  RigEngineOpApplyContext apply_ctx;
-
-  RigPBSerializer *serializer;
-
   uint64_t (*map_id_cb) (uint64_t id_in, void *user_data);
-  void (*register_id_cb) (void *object,
-                          uint64_t id,
-                          void *user_data);
-  void *(*id_to_object_cb) (uint64_t id,
-                            void *user_data);
-  void (*queue_delete_id_cb) (uint64_t id,
-                              void *user_data);
-
   void *user_data;
 } RigEngineOpMapContext;
 
@@ -190,20 +192,18 @@ rig_engine_op_map_context_init (RigEngineOpMapContext *ctx,
                                 RigEngine *engine,
                                 uint64_t (*map_id_cb) (uint64_t id_in,
                                                        void *user_data),
-                                void (*register_id_cb) (void *object,
-                                                        uint64_t id,
-                                                        void *user_data),
-                                void *(*id_to_object_cb) (uint64_t id,
-                                                          void *user_data),
-                                void (*queue_delete_id_cb) (uint64_t id,
-                                                            void *user_data),
                                 void *user_data);
 
 void
 rig_engine_op_map_context_destroy (RigEngineOpMapContext *ctx);
 
-Rig__UIEdit *
-rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_op_ctx,
+bool
+rig_engine_pb_op_map (RigEngineOpMapContext *ctx,
+                      Rig__Operation *pb_op);
+
+bool
+rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
+                           RigEngineOpApplyContext *apply_ctx,
                            Rig__UIEdit *pb_ui_edit);
 
 #endif /* _RIG_ENGINE_OP_H_ */
