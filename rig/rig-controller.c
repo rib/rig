@@ -783,7 +783,7 @@ rig_controller_set_property_path (RigController *controller,
 
   if (prop_data->path)
     {
-      rut_closure_disconnect (prop_data->path_change_closure);
+      //rut_closure_disconnect (prop_data->path_change_closure);
       rut_object_unref (prop_data->path);
     }
 
