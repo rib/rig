@@ -1095,7 +1095,7 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
                            RigEngineOpApplyContext *apply_ctx,
                            Rig__UIEdit *pb_ui_edit)
 {
-  bool failure = false;
+  bool status = true;
   int i;
 
   for (i = 0; i < pb_ui_edit->n_ops; i++)
@@ -1104,7 +1104,7 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
 
       if (!_rig_engine_ops [pb_op->type].map_op (map_ctx, pb_op))
         {
-          failure = true;
+          status = false;
 
           /* Note: all of the operations are allocated on the
            * frame-stack so we don't need to explicitly free anything.
@@ -1115,11 +1115,11 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
       if (apply_ctx)
         {
           if (!_rig_engine_ops [pb_op->type].apply_op (apply_ctx, pb_op))
-            failure = true;
+            status = false;
         }
     }
 
-  return failure;
+  return status;
 }
 
 void
