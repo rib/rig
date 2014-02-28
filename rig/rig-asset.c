@@ -95,6 +95,15 @@ _rig_asset_free (void *object)
   rut_object_free (RigAsset, asset);
 }
 
+void
+rig_asset_reap (RigAsset *asset, RigEngine *engine)
+{
+  /* Assets don't currently contain any other objects that would need
+   * to be explicitly unregistered */
+
+  rig_engine_queue_delete (engine, asset);
+}
+
 /* This is for copy & paste where we don't currently want a deep copy */
 static RutObject *
 _rig_asset_copy (RutObject *mimable)

@@ -26,6 +26,8 @@
 
 #include <rut.h>
 
+#include "rig-types.h"
+
 typedef struct _RutComponent RutComponent;
 
 typedef struct _RigEntity RigEntity;
@@ -230,5 +232,11 @@ rig_entity_foreach_component_safe (RigEntity *entity,
 
 void
 rig_entity_notify_changed (RigEntity *entity);
+
+void
+rig_entity_reap (RigEntity *entity, RigEngine *engine);
+
+void
+rig_component_reap (RutObject *component, RigEngine *engine);
 
 #endif /* __RUT_ENTITY_H__ */

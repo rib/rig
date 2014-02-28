@@ -74,7 +74,8 @@ struct _RigSimulator
   RigPBUnSerializer *ui_unserializer;
   RigPBUnSerializer *ops_unserializer;
   RigEngineOpApplyContext apply_op_ctx;
-  RigEngineOpMapContext map_op_ctx;
+  RigEngineOpMapContext map_to_sim_objects_op_ctx;
+  RigEngineOpMapContext map_to_frontend_ids_op_ctx;
 
   GHashTable *object_to_id_map;
   GHashTable *id_to_object_map;
@@ -83,8 +84,6 @@ struct _RigSimulator
 
   RutList actions;
   int n_actions;
-
-  RutQueue *queued_deletes;
 
   RutQueue *ops;
 };

@@ -128,14 +128,6 @@ register_object_cb (void *object,
 }
 
 static void
-queue_delete_object_cb (uint64_t id, void *user_data)
-{
-  RigSlave *slave = user_data;
-  void *object = (void *)(intptr_t)id;
-  rig_engine_queue_delete (slave->engine, object);
-}
-
-static void
 load_ui (RigSlave *slave)
 {
   Rig__LoadResult result = RIG__LOAD_RESULT__INIT;
@@ -466,7 +458,7 @@ rig_slave_init (RutShell *shell, void *user_data)
   rig_engine_op_apply_context_init (&slave->apply_op_ctx,
                                     engine,
                                     register_object_cb,
-                                    queue_delete_object_cb,
+                                    NULL, /* unregister id */
                                     slave); /* user data */
 
   slave->pending_edits = rut_queue_new ();

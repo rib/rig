@@ -7,6 +7,8 @@
 
 #include <rut.h>
 
+#include "rig-types.h"
+
 /* XXX: The definition of an "asset" is getting a big confusing.
  * Initially it used to represent things created in third party
  * programs that you might want to import into Rig. It lets us
@@ -133,5 +135,8 @@ rig_asset_get_mesh_has_tex_coords (RigAsset *asset);
 
 bool
 rig_asset_get_mesh_has_normals (RigAsset *asset);
+
+void
+rig_asset_reap (RigAsset *asset, RigEngine *engine);
 
 #endif /* _RIG_ASSET_H_ */

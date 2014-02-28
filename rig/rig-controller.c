@@ -139,6 +139,16 @@ _rig_controller_free (RutObject *object)
   rut_object_free (RigController, controller);
 }
 
+void
+rig_controller_reap (RigController *controller, RigEngine *engine)
+{
+  /* Currently controllers don't own any objects that need to be
+   * explicitly reaped
+   */
+
+  rig_engine_queue_delete (engine, controller);
+}
+
 RutType rig_controller_type;
 
 static void

@@ -973,13 +973,14 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
 
   if (engine->play_mode_ui)
     {
-      rut_object_unref (engine->play_mode_ui);
+      rig_ui_reap (engine->play_mode_ui);
+      rut_object_release (engine->play_mode_ui, engine);
       engine->play_mode_ui = NULL;
     }
 
   if (ui)
     {
-      engine->play_mode_ui = rut_object_ref (ui);
+      engine->play_mode_ui = rut_object_claim (ui, engine);
       rig_code_update_dso (engine, ui->dso_data, ui->dso_len);
     }
 
@@ -1048,8 +1049,11 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
     }
 
   if (engine->edit_mode_ui)
-    rut_object_unref (engine->edit_mode_ui);
-  engine->edit_mode_ui = rut_object_ref (ui);
+    {
+      rig_ui_reap (engine->edit_mode_ui);
+      rut_object_release (engine->edit_mode_ui, engine);
+    }
+  engine->edit_mode_ui = rut_object_claim (ui, engine);
 
   //if (engine->edit_mode_ui == NULL && engine->play_mode_ui == NULL)
   //  free_shared_ui_state (engine);
@@ -1797,6 +1801,7 @@ void
 rig_engine_queue_delete (RigEngine *engine,
                          RutObject *object)
 {
+  rut_object_claim (object, engine);
   rut_queue_push_tail (engine->queued_deletes, object);
 }
 
@@ -1812,7 +1817,7 @@ rig_engine_garbage_collect (RigEngine *engine,
     {
       if (object_callback)
         object_callback (item->data, user_data);
-      rut_object_unref (item->data);
+      rut_object_release (item->data, engine);
     }
   rut_queue_clear (engine->queued_deletes);
 }

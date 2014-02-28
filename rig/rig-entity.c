@@ -20,8 +20,10 @@
 
 #include <config.h>
 
-#include "rig-entity.h"
 #include "rut-renderer.h"
+
+#include "rig-entity.h"
+#include "rig-engine.h"
 
 static RutPropertySpec _rig_entity_prop_specs[] = {
   {
@@ -90,6 +92,105 @@ _rig_entity_free (void *object)
 
   rut_object_free (RigEntity, entity);
 }
+
+void
+rig_entity_reap (RigEntity *entity, RigEngine *engine)
+{
+  int i;
+
+  for (i = 0; i < entity->components->len; i++)
+    {
+      RutObject *component = g_ptr_array_index (entity->components, i);
+      RutComponentableProps *componentable =
+        rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
+
+      /* XXX: any changes made here should be consistent with how
+       * rig_entity_remove_component() works too. */
+
+      /* disassociate the component from the entity */
+      componentable->entity = NULL;
+
+      /* We want to defer garbage collection until the end of a frame
+       * so we pass our reference to the engine */
+      rut_object_claim (component, engine);
+      rut_object_release (component, entity);
+
+      rig_engine_queue_delete (engine, component);
+    }
+  g_ptr_array_set_size (entity->components, 0);
+
+  rig_engine_queue_delete (engine, entity);
+}
+
+void
+rig_component_reap (RutObject *component, RigEngine *engine)
+{
+  /* Currently no components reference any other objects that need
+   * to be garbage collected. */
+
+  rig_engine_queue_delete (engine, component);
+}
+
+void
+rig_entity_add_component (RigEntity *entity,
+                          RutObject *object)
+{
+  RutComponentableProps *component =
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+
+#ifdef RIG_ENABLE_DEBUG
+  {
+    int i;
+
+    g_return_if_fail (component->entity == NULL);
+
+    for (i = 0; i < entity->components->len; i++)
+      {
+        RutObject *existing = g_ptr_array_index (entity->components, i);
+
+        RutComponentableProps *existing_component =
+          rut_object_get_properties (existing, RUT_TRAIT_ID_COMPONENTABLE);
+
+        g_return_if_fail (existing != object);
+        g_return_if_fail (existing_component->type != component->type);
+      }
+  }
+#endif
+
+  component->entity = entity;
+
+  rut_object_claim (object, entity);
+  g_ptr_array_add (entity->components, object);
+}
+
+/* XXX: any changes made here should be consistent with how
+ * rig_entity_reap() works too. */
+void
+rig_entity_remove_component (RigEntity *entity,
+                             RutObject *object)
+{
+  RutComponentableProps *component =
+    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+  component->entity = NULL;
+  rut_object_release (object, entity);
+  g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
+}
+
+void
+rig_entity_translate (RigEntity *entity,
+                      float tx,
+                      float ty,
+                      float tz)
+{
+  float pos[3] = {
+      entity->position[1] + tx,
+      entity->position[1] + ty,
+      entity->position[2] + tz,
+  };
+
+  rig_entity_set_position (entity, pos);
+}
+
 
 RutType rig_entity_type;
 
@@ -436,64 +537,6 @@ rig_entity_get_transform (RutObject *self)
   entity->dirty = FALSE;
 
   return &entity->transform;
-}
-
-void
-rig_entity_add_component (RigEntity *entity,
-                          RutObject *object)
-{
-  RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-
-#ifdef RIG_ENABLE_DEBUG
-  {
-    int i;
-
-    g_return_if_fail (component->entity == NULL);
-
-    for (i = 0; i < entity->components->len; i++)
-      {
-        RutObject *existing = g_ptr_array_index (entity->components, i);
-
-        RutComponentableProps *existing_component =
-          rut_object_get_properties (existing, RUT_TRAIT_ID_COMPONENTABLE);
-
-        g_return_if_fail (existing != object);
-        g_return_if_fail (existing_component->type != component->type);
-      }
-  }
-#endif
-
-  component->entity = entity;
-
-  rut_object_claim (object, entity);
-  g_ptr_array_add (entity->components, object);
-}
-
-void
-rig_entity_remove_component (RigEntity *entity,
-                             RutObject *object)
-{
-  RutComponentableProps *component =
-    rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-  component->entity = NULL;
-  rut_object_release (object, entity);
-  g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
-}
-
-void
-rig_entity_translate (RigEntity *entity,
-                      float tx,
-                      float ty,
-                      float tz)
-{
-  float pos[3] = {
-      entity->position[1] + tx,
-      entity->position[1] + ty,
-      entity->position[2] + tz,
-  };
-
-  rig_entity_set_position (entity, pos);
 }
 
 void

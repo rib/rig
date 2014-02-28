@@ -77,4 +77,7 @@ rig_ui_resume (RigUI *ui);
 RigEntity *
 rig_ui_find_entity (RigUI *ui, const char *label);
 
+void
+rig_ui_reap (RigUI *ui);
+
 #endif /* _RIG_UI_H_ */

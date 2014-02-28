@@ -65,6 +65,61 @@ _rig_ui_free (void *object)
   rut_object_free (RigUI, object);
 }
 
+static RutTraverseVisitFlags
+reap_entity_cb (RutObject *object,
+                int depth,
+                void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  /* The root node is a RutGraph that shouldn't be reaped */
+  if (rut_object_get_type (object) != &rig_entity_type)
+    return RUT_TRAVERSE_VISIT_CONTINUE;
+
+  rig_entity_reap (object, engine);
+
+  rut_graphable_remove_child (object);
+
+  return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+void
+rig_ui_reap (RigUI *ui)
+{
+  RigEngine *engine = ui->engine;
+  GList *l;
+
+  rut_graphable_traverse (ui->scene,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          reap_entity_cb,
+                          NULL, /* post paint */
+                          ui->engine);
+
+  for (l = ui->controllers; l; l = l->next)
+    {
+      RigController *controller = l->data;
+
+      /* We want to defer garbage collection until the end of a frame
+       * so we take a reference on the entity before removing it from
+       * the scenegraph... */
+      rut_object_claim (controller, engine);
+
+      rut_object_release (controller, ui);
+
+      rig_engine_queue_delete (engine, controller);
+
+      rig_controller_reap (controller, engine);
+    }
+
+  /* We could potentially leave these to be freed in _free() but it
+   * seems a bit ugly to keep the list containing pointers to
+   * controllers no longer owned by the ui. */
+  g_list_free (ui->controllers);
+  ui->controllers = NULL;
+
+  rig_engine_queue_delete (engine, ui);
+}
+
 RutType rig_ui_type;
 
 static void
@@ -173,6 +228,7 @@ rig_ui_prepare (RigUI *ui)
   RigEngine *engine = ui->engine;
   RigController *controller;
   RutObject *light_camera;
+  GList *l;
 
   if (!ui->scene)
     ui->scene = rut_graph_new (engine->ctx);
@@ -241,6 +297,18 @@ rig_ui_prepare (RigUI *ui)
       controller = rig_controller_new (engine, "Controller 0");
       rig_controller_set_active (controller, true);
       ui->controllers = g_list_prepend (ui->controllers, controller);
+    }
+
+  /* Explcitly transfer ownership of controllers to the UI for
+   * improved ref-count debugging.
+   *
+   * XXX: don't RIG_ENABLE_DEBUG guard this without also
+   * updating rig_ui_reap()
+   */
+  for (l = ui->controllers; l; l = l->next)
+    {
+      rut_object_claim (l->data, ui);
+      rut_object_unref (l->data);
     }
 
   if (!ui->play_camera)
@@ -332,4 +400,28 @@ rig_ui_resume (RigUI *ui)
   ui->suspended_controllers = NULL;
 
   ui->suspended = false;
+}
+
+static RutTraverseVisitFlags
+print_entity_cb (RutObject *object,
+                 int depth,
+                 void *user_data)
+{
+  char *name = rig_engine_get_object_debug_name (object);
+
+  g_print ("%*s%s", depth, " ", name);
+
+  g_free (name);
+
+  return RUT_TRAVERSE_VISIT_CONTINUE;
+}
+
+void
+rig_ui_print (RigUI *ui)
+{
+  rut_graphable_traverse (ui->scene,
+                          RUT_TRAVERSE_DEPTH_FIRST,
+                          print_entity_cb,
+                          NULL, /* post paint */
+                          NULL); /* user data */
 }

@@ -29,6 +29,69 @@
 
 #include "rig.pb-c.h"
 
+static bool
+map_ids (RigEngineOpMapContext *ctx,
+         int64_t **id_ptrs)
+{
+  void *user_data = ctx->user_data;
+  int i;
+
+  for (i = 0; id_ptrs[i]; i++)
+    {
+      int64_t *id_ptr = id_ptrs[i];
+      *id_ptr = ctx->map_id_cb (*id_ptr, user_data);
+      if (!*id_ptr)
+        return false;
+    }
+
+  return true;
+}
+
+static bool
+map_id (RigEngineOpMapContext *ctx,
+        int64_t *id_ptr)
+{
+  *id_ptr = ctx->map_id_cb (*id_ptr, ctx->user_data);
+  if (!*id_ptr)
+    return false;
+  return true;
+}
+
+static Rig__PropertyValue *
+maybe_copy_property_value (RigEngineOpCopyContext *ctx,
+                           Rig__PropertyValue *src_value)
+{
+  if (src_value->has_object_value || src_value->has_asset_value)
+    {
+      return rig_pb_dup (ctx->serializer,
+                         Rig__PropertyValue,
+                         rig__property_value__init,
+                         src_value);
+    }
+  else
+    return src_value;
+}
+
+static bool
+maybe_map_property_value (RigEngineOpMapContext *ctx,
+                          Rig__PropertyValue *value)
+{
+  if (value->has_object_value)
+    {
+      value->object_value = ctx->map_id_cb (value->object_value, ctx->user_data);
+      if (!value->object_value)
+        return false;
+    }
+  else if (value->has_asset_value)
+    {
+      value->asset_value = ctx->map_id_cb (value->asset_value, ctx->user_data);
+      if (!value->asset_value)
+        return false;
+    }
+
+  return true;
+}
+
 void
 rig_engine_op_set_property (RigEngine *engine,
                             RutProperty *property,
@@ -94,14 +157,8 @@ _copy_op_set_property (RigEngineOpCopyContext *ctx,
                                     rig__operation__set_property__init,
                                     src_pb_op->set_property);
 
-  if (pb_op->set_property->value->has_object_value ||
-      pb_op->set_property->value->has_asset_value)
-    {
-      pb_op->set_property->value = rig_pb_dup (ctx->serializer,
-                                               Rig__PropertyValue,
-                                               rig__property_value__init,
-                                               src_pb_op->set_property->value);
-    }
+  pb_op->set_property->value =
+    maybe_copy_property_value (ctx, src_pb_op->set_property->value);
 }
 
 static bool
@@ -110,26 +167,12 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
 {
   Rig__Operation__SetProperty *set_property = pb_op->set_property;
   Rig__PropertyValue *value = set_property->value;
-  set_property->object_id = ctx->map_id_cb (set_property->object_id,
-                                            ctx->user_data);
 
-  /* Note: we assume allocations are on the frame_stack so we don't
-   * need to explicitly free anything here... */
-  if (!set_property->object_id)
+  if (!map_id (ctx, &set_property->object_id))
     return false;
 
-  if (value->has_object_value)
-    {
-      value->object_value = ctx->map_id_cb (value->object_value, ctx->user_data);
-      if (!value->object_value)
-        return false;
-    }
-  else if (value->has_asset_value)
-    {
-      value->asset_value = ctx->map_id_cb (value->asset_value, ctx->user_data);
-      if (!value->asset_value)
-        return false;
-    }
+  if (!maybe_map_property_value (ctx, value))
+    return false;
 
   return true;
 }
@@ -218,12 +261,7 @@ static bool
 _map_op_add_entity (RigEngineOpMapContext *ctx,
                     Rig__Operation *pb_op)
 {
-  pb_op->add_entity->parent_entity_id =
-    ctx->map_id_cb (pb_op->add_entity->parent_entity_id, ctx->user_data);
-
-  /* Note: we assume allocations are on the frame_stack so we don't
-   * need to explicitly free anything here... */
-  if (!pb_op->add_entity->parent_entity_id)
+  if (!map_id (ctx, &pb_op->add_entity->parent_entity_id))
     return false;
 
   /* XXX: we assume that the new entity isn't currently
@@ -263,13 +301,11 @@ _apply_op_delete_entity (RigEngineOpApplyContext *ctx,
 {
   RigEntity *entity = (void *)(intptr_t)pb_op->delete_entity->entity_id;
 
-  /* We want deletion to happen lazily so we take a reference before
-   * removing it from the graph. */
-  rut_object_ref (entity);
+  rig_entity_reap (entity, ctx->engine);
 
   rut_graphable_remove_child (entity);
 
-  ctx->queue_delete_id_cb (pb_op->delete_entity->entity_id, ctx->user_data);
+  ctx->unregister_id_cb (pb_op->delete_entity->entity_id, ctx->user_data);
 
   return true;
 }
@@ -289,12 +325,7 @@ static bool
 _map_op_delete_entity (RigEngineOpMapContext *ctx,
                        Rig__Operation *pb_op)
 {
-  pb_op->delete_entity->entity_id =
-    ctx->map_id_cb (pb_op->delete_entity->entity_id, ctx->user_data);
-
-  /* Note: we assume allocations are on the frame_stack so we don't
-   * need to explicitly free anything here... */
-  if (!pb_op->delete_entity->entity_id)
+  if (!map_id (ctx, &pb_op->delete_entity->entity_id))
     return false;
 
   return true;
@@ -361,10 +392,7 @@ static bool
 _map_op_add_component (RigEngineOpMapContext *ctx,
                        Rig__Operation *pb_op)
 {
-  pb_op->add_component->parent_entity_id =
-    ctx->map_id_cb (pb_op->add_component->parent_entity_id, ctx->user_data);
-
-  if (!pb_op->add_component->parent_entity_id)
+  if (!map_id (ctx, &pb_op->add_component->parent_entity_id))
     return false;
 
   return true;
@@ -405,13 +433,11 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
   if (entity)
     return false;
 
-  /* We want deletion to happen lazily so we take a reference before
-   * removing it from the entity. */
-  rut_object_ref (component);
+  rig_component_reap (component, ctx->engine);
 
   rig_entity_remove_component (entity, component);
 
-  ctx->queue_delete_id_cb (pb_op->delete_component->component_id, ctx->user_data);
+  ctx->unregister_id_cb (pb_op->delete_component->component_id, ctx->user_data);
 
   return true;
 }
@@ -432,12 +458,7 @@ static bool
 _map_op_delete_component (RigEngineOpMapContext *ctx,
                           Rig__Operation *pb_op)
 {
-  pb_op->delete_component->component_id =
-    ctx->map_id_cb (pb_op->delete_component->component_id, ctx->user_data);
-
-  /* Note: we assume allocations are on the frame_stack so we don't
-   * need to explicitly free anything here... */
-  if (!pb_op->delete_component->component_id)
+  if (!map_id (ctx, &pb_op->delete_component->component_id))
     return false;
 
   return true;
@@ -590,22 +611,23 @@ _copy_op_controller_set_const (RigEngineOpCopyContext *ctx,
                 src_pb_op->controller_set_const);
 
   pb_op->controller_set_const->value =
-    rig_pb_dup (ctx->serializer,
-                Rig__PropertyValue,
-                rig__property_value__init,
-                src_pb_op->set_property->value);
+    maybe_copy_property_value (ctx, src_pb_op->controller_set_const->value);
 }
 
 static bool
 _map_op_controller_set_const (RigEngineOpMapContext *ctx,
                               Rig__Operation *pb_op)
 {
-  pb_op->controller_set_const->object_id =
-    ctx->map_id_cb (pb_op->controller_set_const->object_id, ctx->user_data);
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_set_const->object_id,
+      &pb_op->controller_set_const->controller_id,
+      NULL
+  };
 
-  /* Note: we assume allocations are on the frame_stack so we don't
-   * need to explicitly free anything here... */
-  if (!pb_op->controller_set_const->object_id)
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (!maybe_map_property_value (ctx, pb_op->controller_set_const->value))
     return false;
 
   return true;
@@ -1122,14 +1144,19 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
   return status;
 }
 
+static void
+nop_unregister_id_cb (uint64_t id, void *user_data)
+{
+}
+
 void
 rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
                                   RigEngine *engine,
                                   void (*register_id_cb) (void *object,
                                                           uint64_t id,
                                                           void *user_data),
-                                  void (*queue_delete_id_cb) (uint64_t id,
-                                                              void *user_data),
+                                  void (*unregister_id_cb) (uint64_t id,
+                                                            void *user_data),
                                   void *user_data)
 {
   ctx->engine = engine;
@@ -1137,7 +1164,8 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
   ctx->unserializer = rig_pb_unserializer_new (engine);
 
   ctx->register_id_cb = register_id_cb;
-  ctx->queue_delete_id_cb = queue_delete_id_cb;
+  ctx->unregister_id_cb =
+    unregister_id_cb ? unregister_id_cb : nop_unregister_id_cb;
   ctx->user_data = user_data;
 }
 

@@ -11,6 +11,7 @@
 #include "rig-engine.h"
 #include "rig-engine-op.h"
 #include "rig-pb.h"
+#include "rig-ui.h"
 
 #include "rig.pb-c.h"
 
@@ -150,9 +151,9 @@ register_object_cb (void *object,
 }
 
 static void
-unregister_object (RigSimulator *simulator,
-                   void *object)
+unregister_object_cb (void *object, void *user_data)
 {
+  RigSimulator *simulator = user_data;
   void *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
 
   g_hash_table_remove (simulator->object_to_id_map, object);
@@ -200,21 +201,12 @@ simulator__load (Rig__Simulator_Service *service,
   else
     rig_engine_set_play_mode_ui (engine, NULL);
 
-  /* XXX: Feck! how can we intercept rut_object_unref() to be able to
-   * unregister entities?
-   *
-   * This implies that we can't simply rely on rut object ref counting
-   * alone to destroy UI objects!
-   *
-   * TODO: Add an explicit rig_entity_reap() api that can traverse
-   * a graph of entities and components and queue them for deletion.
-   * We will need this anyway for UI operations that need to delete
-   * objects and this lets us use our existing way of intercepting
-   * deletion to unregister objects.
+  /* Kick garbage collection now so that all the objects being
+   * replaced are unregistered before before we load the new UI.
    */
-
-  //rig_engine_garbage_collect (engine);
-#warning "xxx: should we also clear simulator->queued_deletes here?"
+  rig_engine_garbage_collect (engine,
+                              unregister_object_cb,
+                              simulator);
 
   ui = rig_pb_unserialize_ui (simulator->ui_unserializer, pb_ui);
 
@@ -227,14 +219,6 @@ simulator__load (Rig__Simulator_Service *service,
   rut_object_unref (ui);
 
   closure (&result, closure_data);
-}
-
-static void
-queue_delete_object_cb (uint64_t id, void *user_data)
-{
-  RigSimulator *simulator = user_data;
-  void *object = (void *)(intptr_t)id;
-  rut_queue_push_tail (simulator->queued_deletes, object);
 }
 
 static void
@@ -421,17 +405,20 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
   if (setup->play_edit)
     {
-      bool status = rig_engine_apply_pb_ui_edit (&simulator->apply_op_ctx,
-                                                 setup->play_edit);
-
-      if (!status)
-        rig_simulator_action_report_edit_failure (simulator);
+      if (!rig_engine_map_pb_ui_edit (&simulator->map_to_sim_objects_op_ctx,
+                                      &simulator->apply_op_ctx,
+                                      setup->play_edit))
+        {
+          rig_simulator_action_report_edit_failure (simulator);
+        }
     }
 
   if (setup->edit)
     {
-      bool status = rig_engine_apply_pb_ui_edit (&simulator->apply_op_ctx,
-                                                 setup->edit);
+      bool status =
+        rig_engine_map_pb_ui_edit (&simulator->map_to_sim_objects_op_ctx,
+                                   &simulator->apply_op_ctx,
+                                   setup->edit);
 
       g_warn_if_fail (status);
     }
@@ -612,8 +599,6 @@ _rig_simulator_free (void *object)
 
   //g_hash_table_destroy (simulator->object_to_tmp_id_map);
 
-  rut_queue_free (simulator->queued_deletes);
-
   rig_engine_op_apply_context_destroy (&simulator->apply_op_ctx);
 
   rut_object_unref (simulator->engine);
@@ -635,12 +620,19 @@ _rig_simulator_init_type (void)
 }
 
 static uint64_t
-map_id_cb (uint64_t id, void *user_data)
+map_id_to_sim_object_cb (uint64_t id, void *user_data)
+{
+  RigSimulator *simulator = user_data;
+  void *object = lookup_object (simulator, id);
+  return (uint64_t)(uintptr_t)object;
+}
+
+static uint64_t
+map_id_to_frontend_id_cb (uint64_t id, void *user_data)
 {
   RigSimulator *simulator = user_data;
   void *object = (void *)(uintptr_t)id;
-
-  return lookup_object_id (simulator, object);
+  lookup_object_id (simulator, object);
 }
 
 static uint64_t
@@ -718,8 +710,6 @@ rig_simulator_new (RigFrontendID frontend_id,
                       NULL); /* direct key equal */
 #endif
 
-  simulator->queued_deletes = rut_queue_new ();
-
   simulator->ops = rut_queue_new ();
 
   rut_list_init (&simulator->actions);
@@ -748,14 +738,19 @@ rig_simulator_new (RigFrontendID frontend_id,
   rig_engine_op_apply_context_init (&simulator->apply_op_ctx,
                                     engine,
                                     register_object_cb,
-                                    queue_delete_object_cb,
+                                    NULL, /* unregister id */
                                     simulator); /* user data */
 
   rig_engine_set_apply_op_callback (engine, apply_op_cb, simulator);
 
-  rig_engine_op_map_context_init (&simulator->map_op_ctx,
+  rig_engine_op_map_context_init (&simulator->map_to_sim_objects_op_ctx,
                                   engine,
-                                  map_id_cb,
+                                  map_id_to_sim_object_cb,
+                                  simulator); /* user data */
+
+  rig_engine_op_map_context_init (&simulator->map_to_frontend_ids_op_ctx,
+                                  engine,
+                                  map_id_to_frontend_id_cb,
                                   simulator); /* user data */
 
   /* The ops_serializer is used to serialize operations generated by
@@ -849,7 +844,6 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   RutPropertyContext *prop_ctx = &engine->ctx->property_ctx;
   int n_changes;
   RigPBSerializer *serializer;
-  RutQueueItem *item;
 
   simulator->redraw_queued = false;
 
@@ -952,7 +946,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
     rig_pb_serialize_ops_queue (engine->ops_serializer, simulator->ops);
   rut_queue_clear (simulator->ops);
 
-  rig_engine_map_pb_ui_edit (&simulator->map_op_ctx,
+  rig_engine_map_pb_ui_edit (&simulator->map_to_frontend_ids_op_ctx,
                              NULL, /* no apply ctx, since ops already applied */
                              ui_diff.edit);
 
@@ -1036,13 +1030,9 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
    * faster and handle freeing while we wait for new work from the
    * frontend.
    */
-#warning "can we use rig_engine_garbage_collect() instead here?"
-  rut_list_for_each (item, &simulator->queued_deletes->items, list_node)
-    {
-      unregister_object (simulator, item->data);
-      rut_object_unref (item->data);
-    }
-  rut_queue_clear (simulator->queued_deletes);
+  rig_engine_garbage_collect (engine,
+                              unregister_object_cb,
+                              simulator);
 
   rut_memory_stack_rewind (engine->frame_stack);
 

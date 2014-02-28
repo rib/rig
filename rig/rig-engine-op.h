@@ -137,7 +137,7 @@ typedef struct _RigEngineOpApplyContext
   RigEngine *engine;
   RigPBUnSerializer *unserializer;
   void (*register_id_cb) (void *object, uint64_t id, void *user_data);
-  void (*queue_delete_id_cb) (uint64_t id, void *user_data);
+  void (*unregister_id_cb) (uint64_t id, void *user_data);
   void *user_data;
 } RigEngineOpApplyContext;
 
@@ -147,8 +147,8 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
                                   void (*register_id_cb) (void *object,
                                                           uint64_t id,
                                                           void *user_data),
-                                  void (*queue_delete_id_cb) (uint64_t id,
-                                                              void *user_data),
+                                  void (*unregister_id_cb) (uint64_t id,
+                                                            void *user_data),
                                   void *user_data);
 
 void

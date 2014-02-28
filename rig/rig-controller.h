@@ -278,4 +278,7 @@ rig_controller_remove_path_value (RigController *controller,
                                   RutProperty *property,
                                   float t);
 
+void
+rig_controller_reap (RigController *controller, RigEngine *engine);
+
 #endif /* _RUT_CONTROLLER_H_ */

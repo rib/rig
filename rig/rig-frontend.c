@@ -133,7 +133,7 @@ apply_property_change (RigFrontend *frontend,
 }
 
 static void
-queue_delete_object_cb (uint64_t id, void *user_data)
+unregister_id_cb (uint64_t id, void *user_data)
 {
   RigFrontend *frontend = user_data;
   void *object;
@@ -148,10 +148,6 @@ queue_delete_object_cb (uint64_t id, void *user_data)
       /* Remove the mapping immediately */
       g_hash_table_remove (frontend->tmp_id_to_object_map, id_ptr);
     }
-  else
-    object = (void *)(intptr_t)id;
-
-  rig_engine_queue_delete (frontend->engine, object);
 }
 
 static void
@@ -687,7 +683,7 @@ rig_frontend_new (RutShell *shell,
   rig_engine_op_apply_context_init (&frontend->apply_op_ctx,
                                     frontend->engine,
                                     register_object_cb,
-                                    queue_delete_object_cb,
+                                    unregister_id_cb,
                                     frontend);
 
   unserializer = rig_pb_unserializer_new (frontend->engine);

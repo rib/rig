@@ -103,14 +103,6 @@ nop_unregister_id_cb (uint64_t id, void *user_data)
 #endif
 
 static void
-queue_delete_edit_mode_object_cb (uint64_t edit_mode_id, void *user_data)
-{
-  RigEditor *editor = user_data;
-  void *edit_mode_object = (void *)(intptr_t)edit_mode_id;
-  rig_engine_queue_delete (editor->engine, edit_mode_object);
-}
-
-static void
 apply_edit_op_cb (Rig__Operation *pb_op,
                   void *user_data)
 {
@@ -167,14 +159,6 @@ register_play_mode_object_cb (void *play_mode_object,
 {
   RigEditor *editor = user_data;
   register_play_mode_object (editor, edit_mode_id, play_mode_object);
-}
-
-static void
-queue_delete_play_mode_object_cb (uint64_t play_mode_id, void *user_data)
-{
-  RigEditor *editor = user_data;
-  void *play_mode_object = (void *)(intptr_t)play_mode_id;
-  rig_engine_queue_delete (editor->engine, play_mode_object);
 }
 
 static uint64_t
@@ -2665,7 +2649,7 @@ rig_editor_new (const char *filename)
   rig_engine_op_apply_context_init (&editor->apply_op_ctx,
                                     engine,
                                     nop_register_id_cb,
-                                    queue_delete_edit_mode_object_cb,
+                                    NULL, /* unregister id */
                                     editor); /* user data */
 
   rig_engine_op_copy_context_init (&editor->copy_op_ctx,
@@ -2679,7 +2663,7 @@ rig_editor_new (const char *filename)
   rig_engine_op_apply_context_init (&editor->play_apply_op_ctx,
                                     engine,
                                     register_play_mode_object_cb,
-                                    queue_delete_play_mode_object_cb,
+                                    NULL, /* unregister id */
                                     editor); /* user data */
 
   /* TODO move into editor */
