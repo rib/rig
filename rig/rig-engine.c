@@ -1059,6 +1059,7 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
   //  free_shared_ui_state (engine);
 
   rig_engine_set_current_ui (engine, engine->edit_mode_ui);
+  rig_ui_resume (ui);
 
   //if (!ui)
   //  return;
