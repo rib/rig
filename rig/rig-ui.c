@@ -408,9 +408,7 @@ print_entity_cb (RutObject *object,
                  void *user_data)
 {
   char *name = rig_engine_get_object_debug_name (object);
-
-  g_print ("%*s%s", depth, " ", name);
-
+  g_print ("%*s%s\n", depth, " ", name);
   g_free (name);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -419,9 +417,28 @@ print_entity_cb (RutObject *object,
 void
 rig_ui_print (RigUI *ui)
 {
+  GList *l;
+
+  g_print ("Scenegraph:\n");
   rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
                           print_entity_cb,
                           NULL, /* post paint */
                           NULL); /* user data */
+
+  g_print ("Controllers:\n");
+  for (l = ui->controllers; l; l = l->next)
+    {
+      char *name = rig_engine_get_object_debug_name (l->data);
+      g_print ("  %s\n", name);
+      g_free (name);
+    }
+
+  g_print ("Assets:\n");
+  for (l = ui->assets; l; l = l->next)
+    {
+      char *name = rig_engine_get_object_debug_name (l->data);
+      g_print ("  %s\n", name);
+      g_free (name);
+    }
 }
