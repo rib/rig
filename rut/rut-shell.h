@@ -320,7 +320,8 @@ rut_shell_remove_input_camera (RutShell *shell,
 void
 rut_shell_grab_input (RutShell *shell,
                       RutObject *camera,
-                      RutInputCallback callback,
+                      RutInputEventStatus (*callback) (RutInputEvent *event,
+                                                       void *user_data),
                       void *user_data);
 
 /**
@@ -335,7 +336,20 @@ rut_shell_grab_input (RutShell *shell,
  */
 void
 rut_shell_ungrab_input (RutShell *shell,
-                        RutInputCallback callback,
+                        RutInputEventStatus (*callback) (RutInputEvent *event,
+                                                         void *user_data),
+                        void *user_data);
+
+/*
+ * Use this API for the common case of grabbing input for a pointer
+ * when we receive a button press and want to grab until a
+ * corresponding button release.
+ */
+void
+rut_shell_grab_pointer (RutShell *shell,
+                        RutObject *camera,
+                        RutInputEventStatus (*callback) (RutInputEvent *event,
+                                                         void *user_data),
                         void *user_data);
 
 /**

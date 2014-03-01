@@ -68,10 +68,6 @@ static RutInputEventStatus
 rut_number_slider_text_grab_cb (RutInputEvent *event,
                                 void *user_data);
 
-static RutInputEventStatus
-rut_number_slider_grab_input_cb (RutInputEvent *event,
-                                 void *user_data);
-
 
 RutType rut_number_slider_type;
 
@@ -157,10 +153,6 @@ end_text_edit (EditState *state)
 
   rut_shell_ungrab_input (slider->context->shell,
                           rut_number_slider_text_grab_cb,
-                          state);
-
-  rut_shell_ungrab_input (slider->context->shell,
-                          rut_number_slider_grab_input_cb,
                           state);
 
   g_slice_free (EditState, state);
@@ -286,9 +278,6 @@ rut_number_slider_grab_input_cb (RutInputEvent *event,
   if ((rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1) == 0)
     {
       state->button_down = FALSE;
-      rut_shell_ungrab_input (slider->context->shell,
-                              rut_number_slider_grab_input_cb,
-                              user_data);
 
       /* If we weren't dragging then this must have been an attempt to
        * click somewhere on the widget */
@@ -324,10 +313,10 @@ rut_number_slider_input_region_cb (RutInputRegion *region,
       state->button_x = rut_motion_event_get_x (event);
       state->button_y = rut_motion_event_get_y (event);
 
-      rut_shell_grab_input (slider->context->shell,
-                            state->camera,
-                            rut_number_slider_grab_input_cb,
-                            state);
+      rut_shell_grab_pointer (slider->context->shell,
+                              state->camera,
+                              rut_number_slider_grab_input_cb,
+                              state);
 
       rut_shell_queue_redraw (slider->context->shell);
 

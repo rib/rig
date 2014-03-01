@@ -67,6 +67,7 @@
 #include <glib-android/glib-android.h>
 #elif defined (USE_SDL)
 #include "rut-sdl-keysyms.h"
+#include "SDL_syswm.h"
 #endif
 
 #include "gstmemsrc.h"
@@ -121,8 +122,10 @@ struct _RutShell
    * or output graphics directly. */
   bool headless;
 #ifdef USE_SDL
+  SDL_SYSWM_TYPE sdl_subsystem;
   SDL_Keymod sdl_keymod;
   uint32_t sdl_buttons;
+  bool x11_grabbed;
 #endif
 
 #ifdef __ANDROID__
@@ -243,6 +246,8 @@ typedef struct
   CoglBool cursor_set;
 
 #if defined(USE_SDL)
+  SDL_SysWMinfo sdl_info;
+  SDL_Window *sdl_window;
   SDL_Cursor *cursor_image;
 #endif
 } RutShellOnscreen;
@@ -2236,6 +2241,18 @@ rut_shell_add_onscreen (RutShell *shell,
                              shell_onscreen,
                              destroy_onscreen_cb);
   rut_list_insert (&shell->onscreens, &shell_onscreen->link);
+
+#ifdef USE_SDL
+  {
+    SDL_Window *sdl_window =
+      cogl_sdl_onscreen_get_window (shell_onscreen->onscreen);
+
+    SDL_VERSION (&shell_onscreen->sdl_info.version);
+    SDL_GetWindowWMInfo(sdl_window, &shell_onscreen->sdl_info);
+
+    shell->sdl_subsystem = shell_onscreen->sdl_info.subsystem;
+  }
+#endif
 }
 
 void
@@ -2373,6 +2390,107 @@ rut_shell_ungrab_input (RutShell *shell,
         _rut_shell_remove_grab_link (shell, grab);
         break;
       }
+}
+
+typedef struct _PointerGrab
+{
+  RutShell *shell;
+  RutInputEventStatus (*callback) (RutInputEvent *event,
+                                   void *user_data);
+  void *user_data;
+  RutButtonState button_mask;
+  bool x11_grabbed;
+} PointerGrab;
+
+static RutInputEventStatus
+pointer_grab_cb (RutInputEvent *event, void *user_data)
+{
+  PointerGrab *grab = user_data;
+  RutInputEventStatus status = grab->callback (event, grab->user_data);
+
+  if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
+    {
+      RutButtonState current = rut_motion_event_get_button_state (event);
+      RutButtonState last_button = 1<<(ffs (current) - 1);
+
+      if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_UP &&
+          ((rut_motion_event_get_button_state (event) & last_button) == 0))
+        {
+          RutShell *shell = grab->shell;
+          g_slice_free (PointerGrab, grab);
+          rut_shell_ungrab_input (shell,
+                                  pointer_grab_cb,
+                                  user_data);
+
+
+          /* X11 doesn't implicitly grab the mouse on pointer-down events
+           * so we have to do it explicitly... */
+          if (grab->x11_grabbed)
+            {
+              RutShellOnscreen *shell_onscreen =
+                rut_container_of (shell->onscreens.next, shell_onscreen, link);
+              Display *dpy = shell_onscreen->sdl_info.info.x11.display;
+
+              if (shell->x11_grabbed)
+                {
+                  XUngrabPointer (dpy, CurrentTime);
+                  XUngrabKeyboard (dpy, CurrentTime);
+                  shell->x11_grabbed = false;
+                }
+            }
+        }
+    }
+
+  return status;
+}
+
+void
+rut_shell_grab_pointer (RutShell *shell,
+                        RutObject *camera,
+                        RutInputEventStatus (*callback) (RutInputEvent *event,
+                                                         void *user_data),
+                        void *user_data)
+{
+
+  PointerGrab *grab = g_slice_new0 (PointerGrab);
+
+  grab->shell = shell;
+  grab->callback = callback;
+  grab->user_data = user_data;
+
+  rut_shell_grab_input (shell,
+                        camera,
+                        pointer_grab_cb,
+                        grab);
+
+  /* X11 doesn't implicitly grab the mouse on pointer-down events
+   * so we have to do it explicitly... */
+  if (shell->sdl_subsystem == SDL_SYSWM_X11)
+    {
+      RutShellOnscreen *shell_onscreen =
+        rut_container_of (shell->onscreens.next, shell_onscreen, link);
+      Display *dpy = shell_onscreen->sdl_info.info.x11.display;
+      Window win = shell_onscreen->sdl_info.info.x11.window;
+
+      g_warn_if_fail (shell->x11_grabbed == false);
+
+      if (XGrabPointer (dpy, win, False,
+                        PointerMotionMask|ButtonPressMask|ButtonReleaseMask,
+                        GrabModeAsync, /* pointer mode */
+                        GrabModeAsync, /* keyboard mode */
+                        None, /* confine to */
+                        None, /* cursor */
+                        CurrentTime) == GrabSuccess)
+        {
+          grab->x11_grabbed = true;
+          shell->x11_grabbed = true;
+        }
+
+      XGrabKeyboard(dpy, win, False,
+                    GrabModeAsync,
+                    GrabModeAsync,
+                    CurrentTime);
+    }
 }
 
 void
