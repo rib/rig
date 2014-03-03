@@ -664,4 +664,16 @@ rut_shell_drop (RutShell *shell);
 void
 rut_shell_take_drop_offer (RutShell *shell, RutObject *taker);
 
+#if 0
+typedef void (*RutShellSignalCallback) (RutShell *shell,
+                                        int signal,
+                                        void *user_data);
+
+RutClosure *
+rut_shell_add_signal_callback (RutShell *shell,
+                               RutShellSignalCallback callback,
+                               void *user_data,
+                               RutClosureDestroyCallback destroy_cb);
+#endif
+
 #endif /* _RUT_SHELL_H_ */

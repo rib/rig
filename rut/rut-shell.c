@@ -40,6 +40,10 @@
 
 #include <config.h>
 
+#if 0
+#include <signal.h>
+#endif
+
 #include <glib.h>
 #include <gio/gio.h>
 
@@ -126,6 +130,11 @@ struct _RutShell
   SDL_Keymod sdl_keymod;
   uint32_t sdl_buttons;
   bool x11_grabbed;
+#endif
+
+#if 0
+  int signal_read_fd;
+  RutList signal_cb_list;
 #endif
 
 #ifdef __ANDROID__
@@ -1542,12 +1551,98 @@ _rut_shell_associate_context (RutShell *shell,
   shell->rut_ctx = context;
 }
 
+#if 0
+static int signal_write_fd;
+
+void
+signal_handler (int sig)
+{
+  switch (sig)
+    {
+    case SIGCHLD:
+      write (signal_write_fd, &sig, sizeof (sig));
+      break;
+    }
+}
+
+gboolean
+dispatch_signal_source (GSource *source,
+                        GSourceFunc callback,
+                        void *user_data)
+{
+  RutShell *shell = user_data;
+
+  do {
+    int sig;
+    int ret = read (shell->signal_read_fd, &sig, sizeof (sig));
+    if (ret != sizeof (sig))
+      {
+        if (ret == 0)
+          return TRUE;
+        else if (ret < 0 && errno == EINTR)
+          continue;
+        else
+          {
+            g_warning ("Error reading signal fd: %s", strerror (errno));
+            return FALSE;
+          }
+      }
+
+    g_print ("Signal received: %d\n", sig);
+
+    rut_closure_list_invoke (&shell->signal_cb_list,
+                             RutShellSignalCallback,
+                             shell,
+                             sig);
+  } while (1);
+
+  return TRUE;
+}
+#endif
+
 void
 _rut_shell_init (RutShell *shell)
 {
 #ifdef USE_SDL
   shell->sdl_keymod = SDL_GetModState ();
   shell->sdl_buttons = SDL_GetMouseState (NULL, NULL);
+#endif
+
+  /* XXX: for some reason handling SGICHLD like this interferes
+   * with GApplication... */
+#if 0
+  {
+    int fds[2];
+    if (pipe (fds) == 0)
+      {
+        struct sigaction act = {
+            .sa_handler = signal_handler,
+            .sa_flags = SA_NOCLDSTOP,
+        };
+        GSourceFuncs funcs = {
+            .prepare = NULL,
+            .check = NULL,
+            .dispatch = dispatch_signal_source,
+            .finalize = NULL
+        };
+        GSource *source;
+
+        shell->signal_read_fd = fds[0];
+        signal_write_fd = fds[1];
+
+        sigemptyset (&act.sa_mask);
+        sigaction (SIGCHLD, &act, NULL);
+
+        source = g_source_new (&funcs, sizeof (GSource));
+        g_source_add_unix_fd (source, fds[0], G_IO_IN);
+        /* Actually we don't care about the callback, we just want to
+         * pass some data to the dispatch callback... */
+        g_source_set_callback (source, NULL, shell, NULL);
+        g_source_attach (source, NULL);
+
+        rut_list_init (&shell->signal_cb_list);
+      }
+  }
 #endif
 }
 
@@ -3311,3 +3406,17 @@ rut_shell_take_drop_offer (RutShell *shell, RutObject *taker)
 
   shell->drop_offer_taker = rut_object_ref (taker);
 }
+
+#if 0
+RutClosure *
+rut_shell_add_signal_callback (RutShell *shell,
+                               RutShellSignalCallback callback,
+                               void *user_data,
+                               RutClosureDestroyCallback destroy_cb)
+{
+  return rut_closure_list_add (&shell->signal_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
+}
+#endif

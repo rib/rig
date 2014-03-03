@@ -32,6 +32,9 @@
 #include "rig.pb-c.h"
 
 static void
+spawn_simulator (RigFrontend *frontend);
+
+static void
 frontend__test (Rig__Frontend_Service *service,
                 const Rig__Query *query,
                 Rig__TestResult_Closure closure,
@@ -579,8 +582,31 @@ _rig_frontend_init_type (void)
   rut_type_init (&rig_frontend_type, "RigFrontend", _rig_frontend_free);
 }
 
-void
-rig_frontend_spawn_simulator (RigFrontend *frontend)
+static void
+simulator_sigchild_cb (GPid pid,
+                       int status,
+                       void *user_data)
+{
+  RigFrontend *frontend = user_data;
+  RigEngine *engine = frontend->engine;
+
+  rig_frontend_stop_service (frontend);
+
+  g_print ("SIGCHLD received: Simulator Gone!");
+
+  if (frontend->id == RIG_FRONTEND_ID_EDITOR)
+    {
+      if (engine->play_mode)
+        {
+          rig_engine_set_play_mode_enabled (engine, false);
+          frontend->pending_play_mode_enabled = false;
+        }
+      spawn_simulator (frontend);
+    }
+}
+
+static void
+spawn_simulator (RigFrontend *frontend)
 {
   pid_t pid;
   int sp[2];
@@ -644,6 +670,9 @@ rig_frontend_spawn_simulator (RigFrontend *frontend)
   frontend->simulator_pid = pid;
   frontend->fd = sp[0];
 
+  if (frontend->id == RIG_FRONTEND_ID_EDITOR)
+    g_child_watch_add (pid, simulator_sigchild_cb, frontend);
+
   rig_frontend_start_service (frontend);
 }
 
@@ -672,7 +701,7 @@ rig_frontend_new (RutShell *shell,
 
   rut_list_init (&frontend->ui_update_cb_list);
 
-  rig_frontend_spawn_simulator (frontend);
+  spawn_simulator (frontend);
 
   frontend->engine =
     rig_engine_new_for_frontend (shell, frontend, ui_filename, play_mode);
