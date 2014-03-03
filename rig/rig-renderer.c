@@ -112,7 +112,10 @@ typedef struct _RigRendererPriv
   RigImageSource *image_source_caches[N_IMAGE_SOURCE_CACHE_SLOTS];
   CoglPrimitive *primitive_caches[N_PRIMITIVE_CACHE_SLOTS];
 
+  RutClosure *pointalism_grid_update_closure;
   RutClosure *preferred_size_closure;
+  RutClosure *nine_slice_closure;
+  RutClosure *reshaped_closure;
 } RigRendererPriv;
 
 static void
@@ -250,11 +253,20 @@ _rig_renderer_free_priv (RigEntity *entity)
   for (i = 0; i < N_PRIMITIVE_CACHE_SLOTS; i++)
     {
       if (primitive_caches[i])
-        rut_object_unref (primitive_caches[i]);
+        cogl_object_unref (primitive_caches[i]);
     }
+
+  if (priv->pointalism_grid_update_closure)
+    rut_closure_disconnect (priv->pointalism_grid_update_closure);
 
   if (priv->preferred_size_closure)
     rut_closure_disconnect (priv->preferred_size_closure);
+
+  if (priv->nine_slice_closure)
+    rut_closure_disconnect (priv->nine_slice_closure);
+
+  if (priv->reshaped_closure)
+    rut_closure_disconnect (priv->reshaped_closure);
 
   g_slice_free (RigRendererPriv, priv);
   entity->renderer_priv = NULL;
@@ -1107,6 +1119,7 @@ get_entity_color_pipeline (RigEngine *engine,
                            GetPipelineFlags flags,
                            CoglBool blended)
 {
+  RigRendererPriv *priv = entity->renderer_priv;
   CoglDepthState depth_state;
   CoglPipeline *pipeline;
   CoglPipeline *fin_pipeline;
@@ -1177,13 +1190,14 @@ get_entity_color_pipeline (RigEngine *engine,
   if (rig_material_get_receive_shadow (material))
     cogl_pipeline_add_snippet (pipeline, engine->shadow_mapping_vertex_snippet);
 
-  if (rut_object_get_type (geometry) == &rig_nine_slice_type)
+  if (rut_object_get_type (geometry) == &rig_nine_slice_type &&
+      !priv->nine_slice_closure)
     {
-#warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rig_nine_slice_add_update_callback ((RigNineSlice *)geometry,
-                                          nine_slice_changed_cb,
-                                          NULL,
-                                          NULL);
+      priv->nine_slice_closure =
+        rig_nine_slice_add_update_callback ((RigNineSlice *)geometry,
+                                            nine_slice_changed_cb,
+                                            NULL,
+                                            NULL);
     }
   else if (rut_object_get_type (geometry) == &rig_shape_type)
     {
@@ -1196,22 +1210,29 @@ get_entity_color_pipeline (RigEngine *engine,
           cogl_pipeline_set_layer_texture (pipeline, 0, shape_texture);
         }
 
-#warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rig_shape_add_reshaped_callback (geometry,
-                                       reshape_cb,
-                                       NULL,
-                                       NULL);
+      if (priv->reshaped_closure)
+        {
+          priv->reshaped_closure =
+            rig_shape_add_reshaped_callback (geometry,
+                                             reshape_cb,
+                                             NULL,
+                                             NULL);
+        }
     }
   else if (rut_object_get_type (geometry) == &rig_diamond_type)
     rig_diamond_apply_mask (geometry, pipeline);
   else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type &&
            sources[SOURCE_TYPE_COLOR])
     {
-#warning "FIXME: This is going to leak closures, if we've already registered a callback!"
-      rig_pointalism_grid_add_update_callback ((RigPointalismGrid *)geometry,
-                                               pointalism_changed_cb,
-                                               NULL,
-                                               NULL);
+      if (!priv->pointalism_grid_update_closure)
+        {
+          RigPointalismGrid *grid = (RigPointalismGrid *)geometry;
+          priv->pointalism_grid_update_closure =
+            rig_pointalism_grid_add_update_callback (grid,
+                                                     pointalism_changed_cb,
+                                                     NULL,
+                                                     NULL);
+        }
 
       cogl_pipeline_set_layer_texture (pipeline, 0,
                                        engine->ctx->circle_texture);
