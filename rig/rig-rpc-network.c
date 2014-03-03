@@ -494,8 +494,6 @@ _rig_rpc_peer_free (void *object)
 {
   RigRPCPeer *rpc_peer = object;
 
-  rut_object_unref (rpc_peer->pb_rpc_client);
-  rut_object_unref (rpc_peer->pb_rpc_server);
   rut_object_unref (rpc_peer->pb_rpc_peer);
 
   rut_object_free (RigRPCPeer, rpc_peer);
