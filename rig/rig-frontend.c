@@ -773,6 +773,9 @@ void
 rig_frontend_queue_set_play_mode_enabled (RigFrontend *frontend,
                                           bool play_mode_enabled)
 {
+  if (frontend->pending_play_mode_enabled == play_mode_enabled)
+    return;
+
   frontend->pending_play_mode_enabled = play_mode_enabled;
 
   rig_frontend_queue_simulator_frame (frontend);
