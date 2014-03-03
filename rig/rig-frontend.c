@@ -143,7 +143,6 @@ unregister_id_cb (uint64_t id, void *user_data)
   if (id & 1)
     {
       void *id_ptr = (void *)(uintptr_t)id;
-      object = g_hash_table_lookup (frontend->tmp_id_to_object_map, id_ptr);
 
       /* Remove the mapping immediately */
       g_hash_table_remove (frontend->tmp_id_to_object_map, id_ptr);
