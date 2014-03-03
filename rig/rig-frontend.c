@@ -625,15 +625,19 @@ rig_frontend_spawn_simulator (RigFrontend *frontend)
 #ifdef RIG_ENABLE_DEBUG
       if (getenv ("RIG_SIMULATOR"))
         path = getenv ("RIG_SIMULATOR");
-#endif
+
+      if (execlp ("libtool", "libtool", "e", "./rig-simulator", NULL))
+        g_error ("Failed to run simulator process via libtool");
 
 #if 0
-      if (execlp ("valgrind", "valgrind", "--track-origins=yes", path, NULL))
+      if (execlp ("libtool", "libtool", "e", "valgrind", path, NULL))
         g_error ("Failed to run simulator process under valgrind");
 #endif
 
+#else
       if (execl (path, path, NULL) < 0)
         g_error ("Failed to run simulator process");
+#endif
 
       return;
     }
