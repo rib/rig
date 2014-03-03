@@ -136,7 +136,6 @@ static void
 unregister_id_cb (uint64_t id, void *user_data)
 {
   RigFrontend *frontend = user_data;
-  void *object;
 
   /* If the ID is an odd number that implies it is a temporary ID that
    * needs mapping... */
