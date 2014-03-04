@@ -835,7 +835,8 @@ _stream_free (void *object)
   Stream *stream = object;
 
 #warning "track whether stream->fd is foreign"
-  rig_protobuf_c_dispatch_close_fd (stream->dispatch, stream->fd);
+  if (stream->fd != -1)
+    rig_protobuf_c_dispatch_close_fd (stream->dispatch, stream->fd);
 
   rig_protobuf_c_data_buffer_clear (&stream->incoming);
   rig_protobuf_c_data_buffer_clear (&stream->outgoing);

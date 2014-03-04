@@ -63,6 +63,9 @@
 #include <limits.h>
 #include <errno.h>
 #include <signal.h>
+
+#include <glib.h>
+
 #include "rig-protobuf-c-dispatch.h"
 #include "gskrbtreemacros.h"
 #include "gsklistmacros.h"
@@ -534,6 +537,9 @@ rig_protobuf_c_dispatch_fd_closed(RigProtobufCDispatch *dispatch,
 {
   RealDispatch *d = (RealDispatch *) dispatch;
   FDMap *fm;
+
+  g_return_if_fail (fd != -1);
+
 #if DEBUG_DISPATCH
   fprintf (stderr, "dispatch: fd %d closed\n", fd);
 #endif
