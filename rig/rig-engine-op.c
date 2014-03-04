@@ -362,6 +362,10 @@ _apply_op_add_component (RigEngineOpApplyContext *ctx,
   if (!entity)
     return false;
 
+  /* XXX: Note: this will also add the component to the entity
+   * since some components can't be configured before being
+   * added to an entity.
+   */
   component = rig_pb_unserialize_component (ctx->unserializer,
                                             entity,
                                             pb_op->add_component->component);
@@ -425,12 +429,12 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
   RutComponentableProps *props;
   RigEntity *entity;
 
-  if (component)
+  if (!component)
     return false;
 
   props = rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
   entity = props->entity;
-  if (entity)
+  if (!entity)
     return false;
 
   rig_component_reap (component, ctx->engine);
@@ -486,7 +490,19 @@ static bool
 _apply_op_add_controller (RigEngineOpApplyContext *ctx,
                           Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Controller *pb_controller = pb_op->add_controller->controller;
+  RigController *controller =
+    rig_pb_unserialize_controller_bare (ctx->unserializer,
+                                        pb_controller);
+
+  rig_pb_unserialize_controller_properties (ctx->unserializer,
+                                            controller,
+                                            pb_controller->n_properties,
+                                            pb_controller->properties);
+
+  rig_ui_add_controller (ctx->ui, controller);
+  rut_object_unref (controller);
+
   return true;
 }
 
@@ -495,7 +511,9 @@ _copy_op_add_controller (RigEngineOpCopyContext *ctx,
                          Rig__Operation *src_pb_op,
                          Rig__Operation *pb_op)
 {
-
+  /* XXX: Nothing needs to be mapped for this operation */
+  pb_op->add_controller->controller = src_pb_op->add_controller->controller;
+  return;
 }
 
 
@@ -503,7 +521,8 @@ static bool
 _map_op_add_controller (RigEngineOpMapContext *ctx,
                         Rig__Operation *pb_op)
 {
-
+  /* XXX: Nothing needs to be mapped for this operation */
+  return true;
 }
 
 void
@@ -528,7 +547,19 @@ static bool
 _apply_op_delete_controller (RigEngineOpApplyContext *ctx,
                              Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  RigController *controller =
+    (void *)(intptr_t)pb_op->delete_controller->controller_id;
+
+  if (!controller)
+    return false;
+
+  rig_controller_reap (controller, ctx->engine);
+
+  rig_ui_remove_controller (ctx->ui, controller);
+
+  ctx->unregister_id_cb (pb_op->delete_controller->controller_id,
+                         ctx->user_data);
+
   return true;
 }
 
@@ -537,15 +568,21 @@ _copy_op_delete_controller (RigEngineOpCopyContext *ctx,
                             Rig__Operation *src_pb_op,
                             Rig__Operation *pb_op)
 {
-
+  pb_op->delete_controller =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__DeleteController,
+                rig__operation__delete_controller__init,
+                src_pb_op->delete_controller);
 }
-
 
 static bool
 _map_op_delete_controller (RigEngineOpMapContext *ctx,
                            Rig__Operation *pb_op)
 {
+  if (!map_id (ctx, &pb_op->delete_controller->controller_id))
+    return false;
 
+  return true;
 }
 
 void
@@ -663,7 +700,28 @@ static bool
 _apply_op_controller_path_add_node (RigEngineOpApplyContext *ctx,
                                     Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerPathAddNode *add_node =
+    pb_op->controller_path_add_node;
+  RigController *controller = (void *)(intptr_t)add_node->controller_id;
+  RutObject *object = (void *)(intptr_t)add_node->object_id;
+  RutProperty *property;
+  RutBoxed boxed;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, add_node->property_id);
+
+  rig_pb_init_boxed_value (ctx->unserializer,
+                           &boxed,
+                           property->spec->type,
+                           add_node->value);
+
+  rig_controller_insert_path_value (controller,
+                                    property,
+                                    add_node->t,
+                                    &boxed);
+
   return true;
 }
 
@@ -672,15 +730,33 @@ _copy_op_controller_path_add_node (RigEngineOpCopyContext *ctx,
                                    Rig__Operation *src_pb_op,
                                    Rig__Operation *pb_op)
 {
+  pb_op->controller_path_add_node =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerPathAddNode,
+                rig__operation__controller_path_add_node__init,
+                src_pb_op->controller_path_add_node);
 
+  pb_op->controller_path_add_node->value =
+    maybe_copy_property_value (ctx, src_pb_op->controller_path_add_node->value);
 }
-
 
 static bool
 _map_op_controller_path_add_node (RigEngineOpMapContext *ctx,
                                   Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_path_add_node->object_id,
+      &pb_op->controller_path_add_node->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (!maybe_map_property_value (ctx, pb_op->controller_path_add_node->value))
+    return false;
+
+  return true;
 }
 
 void
@@ -710,7 +786,20 @@ static bool
 _apply_op_controller_path_delete_node (RigEngineOpApplyContext *ctx,
                                        Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerPathDeleteNode *delete_node =
+    pb_op->controller_path_delete_node;
+  RigController *controller = (void *)(intptr_t)delete_node->controller_id;
+  RutObject *object = (void *)(intptr_t)delete_node->object_id;
+  RutProperty *property;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, delete_node->property_id);
+
+  rig_controller_remove_path_value (controller,
+                                    property,
+                                    delete_node->t);
   return true;
 }
 
@@ -719,15 +808,27 @@ _copy_op_controller_path_delete_node (RigEngineOpCopyContext *ctx,
                                       Rig__Operation *src_pb_op,
                                       Rig__Operation *pb_op)
 {
-
+  pb_op->controller_path_delete_node =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerPathDeleteNode,
+                rig__operation__controller_path_delete_node__init,
+                src_pb_op->controller_path_delete_node);
 }
-
 
 static bool
 _map_op_controller_path_delete_node (RigEngineOpMapContext *ctx,
                                      Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_path_delete_node->object_id,
+      &pb_op->controller_path_delete_node->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  return true;
 }
 
 void
@@ -756,28 +857,70 @@ rig_engine_op_controller_path_set_node (RigEngine *engine,
   engine->apply_op_callback (pb_op, engine->apply_op_data);
 }
 
+/* XXX: This is equivalent to _add_path_node so should be redundant! */
 static bool
 _apply_op_controller_path_set_node (RigEngineOpApplyContext *ctx,
                                     Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerPathSetNode *set_node =
+    pb_op->controller_path_set_node;
+  RigController *controller = (void *)(intptr_t)set_node->controller_id;
+  RutObject *object = (void *)(intptr_t)set_node->object_id;
+  RutProperty *property;
+  RutBoxed boxed;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, set_node->property_id);
+
+  rig_pb_init_boxed_value (ctx->unserializer,
+                           &boxed,
+                           property->spec->type,
+                           set_node->value);
+
+  rig_controller_insert_path_value (controller,
+                                    property,
+                                    set_node->t,
+                                    &boxed);
+
   return true;
 }
 
+/* XXX: This is equivalent to _add_path_node so should be redundant! */
 static void
 _copy_op_controller_path_set_node (RigEngineOpCopyContext *ctx,
                                    Rig__Operation *src_pb_op,
                                    Rig__Operation *pb_op)
 {
+  pb_op->controller_path_set_node =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerPathSetNode,
+                rig__operation__controller_path_set_node__init,
+                src_pb_op->controller_path_set_node);
 
+  pb_op->controller_path_set_node->value =
+    maybe_copy_property_value (ctx, src_pb_op->controller_path_set_node->value);
 }
 
-
+/* XXX: This is equivalent to _add_path_node so should be redundant! */
 static bool
 _map_op_controller_path_set_node (RigEngineOpMapContext *ctx,
                                   Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_path_set_node->object_id,
+      &pb_op->controller_path_set_node->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (!maybe_map_property_value (ctx, pb_op->controller_path_set_node->value))
+    return false;
+
+  return true;
 }
 
 void
@@ -805,7 +948,19 @@ static bool
 _apply_op_controller_add_property (RigEngineOpApplyContext *ctx,
                                    Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerAddProperty *add_property =
+    pb_op->controller_add_property;
+  RigController *controller = (void *)(intptr_t)add_property->controller_id;
+  RutObject *object = (void *)(intptr_t)add_property->object_id;
+  RutProperty *property;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, add_property->property_id);
+
+  rig_controller_add_property (controller, property);
+
   return true;
 }
 
@@ -814,15 +969,27 @@ _copy_op_controller_add_property (RigEngineOpCopyContext *ctx,
                                   Rig__Operation *src_pb_op,
                                   Rig__Operation *pb_op)
 {
-
+  pb_op->controller_add_property =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerAddProperty,
+                rig__operation__controller_add_property__init,
+                src_pb_op->controller_add_property);
 }
-
 
 static bool
 _map_op_controller_add_property (RigEngineOpMapContext *ctx,
                                  Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_add_property->object_id,
+      &pb_op->controller_add_property->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  return true;
 }
 
 void
@@ -850,7 +1017,19 @@ static bool
 _apply_op_controller_remove_property (RigEngineOpApplyContext *ctx,
                                       Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerRemoveProperty *remove_property =
+    pb_op->controller_remove_property;
+  RigController *controller = (void *)(intptr_t)remove_property->controller_id;
+  RutObject *object = (void *)(intptr_t)remove_property->object_id;
+  RutProperty *property;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, remove_property->property_id);
+
+  rig_controller_remove_property (controller, property);
+
   return true;
 }
 
@@ -859,15 +1038,27 @@ _copy_op_controller_remove_property (RigEngineOpCopyContext *ctx,
                                      Rig__Operation *src_pb_op,
                                      Rig__Operation *pb_op)
 {
-
+  pb_op->controller_remove_property =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerRemoveProperty,
+                rig__operation__controller_remove_property__init,
+                src_pb_op->controller_remove_property);
 }
-
 
 static bool
 _map_op_controller_remove_property (RigEngineOpMapContext *ctx,
                                     Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_remove_property->object_id,
+      &pb_op->controller_remove_property->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  return true;
 }
 
 void
@@ -897,7 +1088,33 @@ static bool
 _apply_op_controller_property_set_method (RigEngineOpApplyContext *ctx,
                                           Rig__Operation *pb_op)
 {
-  g_warn_if_reached ();
+  Rig__Operation__ControllerPropertySetMethod *set_method =
+    pb_op->controller_property_set_method;
+  RigController *controller = (void *)(intptr_t)set_method->controller_id;
+  RutObject *object = (void *)(intptr_t)set_method->object_id;
+  RutProperty *property;
+  RigControllerMethod method;
+
+  if (!controller || !object)
+    return false;
+
+  property = rut_introspectable_get_property (object, set_method->property_id);
+
+  switch (set_method->method)
+    {
+    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__CONSTANT:
+      method = RIG_CONTROLLER_METHOD_CONSTANT;
+      break;
+    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__PATH:
+      method = RIG_CONTROLLER_METHOD_PATH;
+      break;
+    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__BINDING:
+      method = RIG_CONTROLLER_METHOD_BINDING;
+      break;
+    }
+
+  rig_controller_set_property_method (controller, property, method);
+
   return true;
 }
 
@@ -906,14 +1123,27 @@ _copy_op_controller_property_set_method (RigEngineOpCopyContext *ctx,
                                          Rig__Operation *src_pb_op,
                                          Rig__Operation *pb_op)
 {
-
+  pb_op->controller_property_set_method =
+    rig_pb_dup (ctx->serializer,
+                Rig__Operation__ControllerPropertySetMethod,
+                rig__operation__controller_property_set_method__init,
+                src_pb_op->controller_property_set_method);
 }
 
 static bool
 _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
                                         Rig__Operation *pb_op)
 {
+  int64_t *id_ptrs[] = {
+      &pb_op->controller_property_set_method->object_id,
+      &pb_op->controller_property_set_method->controller_id,
+      NULL
+  };
 
+  if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  return true;
 }
 
 typedef struct _RigEngineOperation
@@ -1025,7 +1255,8 @@ rig_engine_op_copy_context_destroy (RigEngineOpCopyContext *copy_ctx)
   rig_pb_serializer_destroy (copy_ctx->serializer);
 }
 
-/* Deep copys a list of edit operations
+/* Shallow copys a list of edit operations so that it's safe to
+ * be able to map IDs
  *
  * All the operations will be allocated on the engine->frame_stack
  * so there is nothing to explicitly free.
@@ -1173,6 +1404,22 @@ void
 rig_engine_op_apply_context_destroy (RigEngineOpApplyContext *ctx)
 {
   rig_pb_unserializer_destroy (ctx->unserializer);
+}
+
+void
+rig_engine_op_apply_context_set_ui (RigEngineOpApplyContext *ctx,
+                                    RigUI *ui)
+{
+  if (ctx->ui == ui)
+    return;
+
+  if (ctx->ui)
+    rut_object_unref (ctx->ui);
+
+  ctx->ui = ui;
+
+  if (ui)
+    rut_object_ref (ui);
 }
 
 bool

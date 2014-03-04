@@ -593,7 +593,6 @@ rig_undo_journal_log_add_controller (RigUndoJournal *journal,
   add_controller->controller = rut_object_ref (controller);
 
   g_warn_if_fail (rig_controller_get_active (controller) == false);
-  add_controller->active_state = false;
 
   /* We assume there are no controller references to this controller
    * currently */
@@ -692,7 +691,6 @@ undo_redo_set_property_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
   rig_engine_op_set_property (engine,
                               set_property->property,
                               &set_property->value1);
-  //rig_editor_apply_last_op (engine->editor);
 }
 
 static UndoRedo *
@@ -734,7 +732,6 @@ undo_redo_set_controller_const_apply (RigUndoJournal *journal, UndoRedo *undo_re
                                       set_controller_const->controller,
                                       set_controller_const->property,
                                       &set_controller_const->value1);
-  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (journal->engine,
                                  set_controller_const->property);
@@ -787,7 +784,6 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
                                           add_remove->property,
                                           add_remove->t,
                                           &add_remove->value);
-  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -832,7 +828,6 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
                                              add_remove->controller,
                                              add_remove->property,
                                              add_remove->t);
-  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, add_remove->property);
 }
@@ -880,7 +875,6 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
                                           modify->property,
                                           modify->t,
                                           &modify->value1);
-  //rig_editor_apply_last_op (engine->editor);
 
   rig_reload_inspector_property (engine, modify->property);
 }
@@ -919,11 +913,13 @@ undo_redo_set_controlled_apply (RigUndoJournal *journal,
   RigEngine *engine = journal->engine;
 
   if (set_controlled->value)
-    rig_controller_add_property (set_controlled->controller,
-                                 set_controlled->property);
+    rig_engine_op_controller_add_property (engine,
+                                           set_controlled->controller,
+                                           set_controlled->property);
   else
-    rig_controller_remove_property (set_controlled->controller,
-                                    set_controlled->property);
+    rig_engine_op_controller_remove_property (engine,
+                                              set_controlled->controller,
+                                              set_controlled->property);
 
   rig_reload_inspector_property (engine, set_controlled->property);
 }
@@ -958,9 +954,10 @@ undo_redo_set_control_method_apply (RigUndoJournal *journal,
     &undo_redo->d.set_control_method;
   RigEngine *engine = journal->engine;
 
-  rig_controller_set_property_method (set_control_method->controller,
-                                      set_control_method->property,
-                                      set_control_method->method);
+  rig_engine_op_controller_property_set_method (engine,
+                                                set_control_method->controller,
+                                                set_control_method->property,
+                                                set_control_method->method);
 
   rig_reload_inspector_property (engine, set_control_method->property);
 }
@@ -1137,16 +1134,17 @@ undo_redo_delete_entity_apply (RigUndoJournal *journal,
 {
   UndoRedoAddDeleteEntity *delete_entity = &undo_redo->d.add_delete_entity;
   UndoRedoControllerState *controller_state;
+  RigEngine *engine = journal->engine;
 
   if (!delete_entity->saved_controller_properties)
     {
-      save_controller_properties (journal->engine,
+      save_controller_properties (engine,
                                   delete_entity->deleted_entity,
                                   &delete_entity->controller_properties);
       delete_entity->saved_controller_properties = true;
     }
 
-  rut_graphable_remove_child (delete_entity->deleted_entity);
+  rig_engine_op_delete_entity (engine, delete_entity->deleted_entity);
 
   rut_list_for_each (controller_state,
                      &delete_entity->controller_properties, link)
@@ -1154,8 +1152,11 @@ undo_redo_delete_entity_apply (RigUndoJournal *journal,
       UndoRedoPropData *prop_data;
 
       rut_list_for_each (prop_data, &controller_state->properties, link)
-        rig_controller_remove_property (controller_state->controller,
-                                        prop_data->property);
+        {
+          rig_engine_op_controller_remove_property (engine,
+                                                    controller_state->controller,
+                                                    prop_data->property);
+        }
     }
 }
 
@@ -1169,30 +1170,57 @@ undo_redo_delete_entity_invert (UndoRedo *undo_redo_src)
   return inverse;
 }
 
+typedef struct _AddNodesState
+{
+  RigEngine *engine;
+  RigController *controller;
+  RutProperty *property;
+} AddNodesState;
+
 static void
-add_controller_properties (RigController *controller, RutList *properties)
+add_path_node_callback (RigNode *node, void *user_data)
+{
+  AddNodesState *state = user_data;
+
+  rig_engine_op_controller_path_add_node (state->engine,
+                                          state->controller,
+                                          state->property,
+                                          node->t,
+                                          &node->boxed);
+}
+
+static void
+add_controller_properties (RigEngine *engine,
+                           RigController *controller,
+                           RutList *properties)
 {
   UndoRedoPropData *undo_prop_data;
 
   rut_list_for_each (undo_prop_data, properties, link)
     {
-      rig_controller_add_property (controller, undo_prop_data->property);
+      rig_engine_op_controller_add_property (engine, controller,
+                                             undo_prop_data->property);
 
       if (undo_prop_data->path)
         {
-          RigPath *path;
-          path = rig_path_copy (undo_prop_data->path);
-          rig_controller_set_property_path (controller,
-                                            undo_prop_data->property, path);
-          rut_object_unref (path);
+          AddNodesState state;
+
+          state.engine = engine;
+          state.controller = controller;
+          state.property = undo_prop_data->property;
+
+          rut_path_foreach_node (undo_prop_data->path,
+                                 add_path_node_callback,
+                                 &state);
         }
 
-      rig_controller_set_property_constant (controller, undo_prop_data->property,
-                                            &undo_prop_data->constant_value);
-
-      rig_controller_set_property_method (controller,
+      rig_engine_op_controller_set_const (engine, controller,
                                           undo_prop_data->property,
-                                          undo_prop_data->method);
+                                          &undo_prop_data->constant_value);
+
+      rig_engine_op_controller_property_set_method (engine, controller,
+                                                    undo_prop_data->property,
+                                                    undo_prop_data->method);
     }
 }
 
@@ -1202,13 +1230,17 @@ undo_redo_add_entity_apply (RigUndoJournal *journal,
 {
   UndoRedoAddDeleteEntity *add_entity = &undo_redo->d.add_delete_entity;
   UndoRedoControllerState *controller_state;
+  RigEngine *engine = journal->engine;
 
-  rut_graphable_add_child (add_entity->parent_entity,
-                           add_entity->deleted_entity);
+  rig_engine_op_add_entity (engine,
+                            add_entity->parent_entity,
+                            add_entity->deleted_entity);
+
   rut_list_for_each (controller_state,
                      &add_entity->controller_properties, link)
     {
-      add_controller_properties (controller_state->controller,
+      add_controller_properties (engine,
+                                 controller_state->controller,
                                  &controller_state->properties);
     }
 
@@ -1282,10 +1314,11 @@ undo_redo_delete_component_apply (RigUndoJournal *journal,
 {
   UndoRedoAddDeleteComponent *delete_component = &undo_redo->d.add_delete_component;
   UndoRedoControllerState *controller_state;
+  RigEngine *engine = journal->engine;
 
   if (!delete_component->saved_controller_properties)
     {
-      save_controller_properties (journal->engine,
+      save_controller_properties (engine,
                                   delete_component->deleted_component,
                                   &delete_component->controller_properties);
       delete_component->saved_controller_properties = true;
@@ -1297,12 +1330,14 @@ undo_redo_delete_component_apply (RigUndoJournal *journal,
       UndoRedoPropData *prop_data;
 
       rut_list_for_each (prop_data, &controller_state->properties, link)
-        rig_controller_remove_property (controller_state->controller,
-                                        prop_data->property);
+        {
+          rig_engine_op_controller_remove_property (engine,
+                                                    controller_state->controller,
+                                                    prop_data->property);
+        }
     }
 
-  rig_entity_remove_component (delete_component->parent_entity,
-                               delete_component->deleted_component);
+  rig_engine_op_delete_component (engine, delete_component->deleted_component);
 
   _rig_engine_update_inspector (journal->engine);
 }
@@ -1323,14 +1358,17 @@ undo_redo_add_component_apply (RigUndoJournal *journal,
 {
   UndoRedoAddDeleteComponent *add_component = &undo_redo->d.add_delete_component;
   UndoRedoControllerState *controller_state;
+  RigEngine *engine = journal->engine;
 
-  rig_entity_add_component (add_component->parent_entity,
-                            add_component->deleted_component);
+  rig_engine_op_add_component (engine,
+                               add_component->parent_entity,
+                               add_component->deleted_component);
 
   rut_list_for_each (controller_state,
                      &add_component->controller_properties, link)
     {
-      add_controller_properties (controller_state->controller,
+      add_controller_properties (engine,
+                                 controller_state->controller,
                                  &controller_state->properties);
     }
 
@@ -1385,50 +1423,15 @@ undo_redo_add_controller_apply (RigUndoJournal *journal,
   UndoRedoControllerState *controller_state;
   RigEngine *engine = journal->engine;
 
-  engine->edit_mode_ui->controllers =
-    g_list_prepend (engine->edit_mode_ui->controllers,
-                    add_controller->controller);
-  rut_object_ref (add_controller->controller);
+  rig_engine_op_add_controller (engine, add_controller->controller);
 
   rut_list_for_each (controller_state,
                      &add_controller->controller_properties, link)
     {
-      add_controller_properties (controller_state->controller,
+      add_controller_properties (engine,
+                                 controller_state->controller,
                                  &controller_state->properties);
     }
-
-#warning "xxx: It's possible that redoing a controller-add for an active controller might result in conflicting bindings if the side effects of other controller timelines has resulted in enabling another controller that conflicts with this one"
-  /* XXX: not sure a.t.m how to make this a reliable operation,
-   * considering that other active controllers could lead to a conflict.
-   *
-   * We could potentially save the active/running/offset etc state of
-   * all controllers so we can revert to this state before applying
-   * the undo-redo operation. Assuming all controllers are
-   * deterministic this would reset everything to how it was when
-   * first applied.
-   *
-   * This will be fragile though and since we want to support
-   * non-deterministic controllers we need a better solution.
-   *
-   * A solution that would work, but be rather expensive is to take a
-   * snapshot of everything whenever anything is changed by the user
-   * so that whenever we need to undo something we can revert
-   * everything to the exact state is was in at the time it was
-   * changed. It's expected that this would become prohibitively
-   * expensive as UIs become more complex though.
-   *
-   * As a speed optimization we could have another mirror of the scene
-   * graph, a bit like we do for the simulator process except this
-   * mirror is only updated at each edit operation. In addition we can
-   * then snoop on the stream of property changes sent by the
-   * simulator and using this mirrored graph as a reference point we
-   * can keep a log of all property changes that happen as a
-   * side-effect between user edits. To reduce the size of logged
-   * side-effect property changes we could make sure to disable
-   * timelines when in edit mode.
-   */
-  rig_controller_set_active (add_controller->controller,
-                             add_controller->active_state);
 
   rig_controller_view_update_controller_list (engine->controller_view);
 
@@ -1464,9 +1467,7 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
       remove_controller->saved_controller_properties = true;
     }
 
-  remove_controller->active_state =
-    rig_controller_get_active (remove_controller->controller);
-  rig_controller_set_active (remove_controller->controller, false);
+  rig_controller_set_suspended (remove_controller->controller, true);
 
   rut_list_for_each (controller_state,
                      &remove_controller->controller_properties, link)
@@ -1474,14 +1475,14 @@ undo_redo_remove_controller_apply (RigUndoJournal *journal,
       UndoRedoPropData *prop_data;
 
       rut_list_for_each (prop_data, &controller_state->properties, link)
-        rig_controller_remove_property (controller_state->controller,
-                                        prop_data->property);
+        {
+          rig_engine_op_controller_remove_property (engine,
+                                                    controller_state->controller,
+                                                    prop_data->property);
+        }
     }
 
-  edit_mode_ui->controllers =
-    g_list_remove (edit_mode_ui->controllers,
-                   remove_controller->controller);
-  rut_object_unref (remove_controller->controller);
+  rig_engine_op_delete_controller (engine, remove_controller->controller);
 
   rig_controller_view_update_controller_list (engine->controller_view);
 
@@ -1681,25 +1682,14 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   if (apply)
     {
-#if 0
       UndoRedo *inverse;
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
        * alway verifying our ability to invert operations correctly...
        */
-#endif
       undo_redo_apply (journal, undo_redo);
 
-      /* XXX: For now we have stopped exercising the inversion code
-       * for each undo-redo entry because it raises simulator
-       * synchronization difficulties (for operations that can't
-       * be inverted until they have been applied at least once we
-       * would need to wait until the simulator has responded to
-       * each operation before moving on)
-       */
-#warning "TODO: improve how we synchronize making scene edits with the simulator"
-#if 0
       /* XXX: Some operations can't be inverted until they have been
        * applied once. For example the UndoRedoPathAddRemove operation
        * will save the value of a path node when it is removed so the
@@ -1714,7 +1704,6 @@ rig_undo_journal_insert (RigUndoJournal *journal,
           undo_redo_apply (journal, undo_redo);
           undo_redo_free (inverse);
         }
-#endif
     }
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);

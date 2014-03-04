@@ -139,6 +139,8 @@ typedef struct _RigEngineOpApplyContext
   void (*register_id_cb) (void *object, uint64_t id, void *user_data);
   void (*unregister_id_cb) (uint64_t id, void *user_data);
   void *user_data;
+
+  RigUI *ui;
 } RigEngineOpApplyContext;
 
 void
@@ -153,6 +155,10 @@ rig_engine_op_apply_context_init (RigEngineOpApplyContext *ctx,
 
 void
 rig_engine_op_apply_context_destroy (RigEngineOpApplyContext *ctx);
+
+void
+rig_engine_op_apply_context_set_ui (RigEngineOpApplyContext *ctx,
+                                    RigUI *ui);
 
 bool
 rig_engine_pb_op_apply (RigEngineOpApplyContext *ctx,
@@ -175,6 +181,8 @@ rig_engine_op_copy_context_init (RigEngineOpCopyContext *copy_ctx,
 void
 rig_engine_op_copy_context_destroy (RigEngineOpCopyContext *copy_ctx);
 
+/* XXX: Note: that this performs a *shallow* copy; only enough to be
+ * able to map object ids. */
 Rig__UIEdit *
 rig_engine_copy_pb_ui_edit (RigEngineOpCopyContext *copy_ctx,
                             Rig__UIEdit *pb_ui_edit);

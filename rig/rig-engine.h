@@ -313,6 +313,10 @@ struct _RigEngine
                              void *user_data);
   void *apply_op_data;
 
+  void (*play_mode_callback) (bool play_mode,
+                              void *user_data);
+  void *play_mode_data;
+
   void (*ui_load_callback) (void *user_data);
   void *ui_load_data;
 
@@ -439,6 +443,12 @@ void
 rig_engine_set_ui_load_callback (RigEngine *engine,
                                  void (*callback) (void *user_data),
                                  void *user_data);
+
+void
+rig_engine_set_play_mode_callback (RigEngine *engine,
+                                   void (*callback) (bool play_mode,
+                                                     void *user_data),
+                                   void *user_data);
 
 void
 rig_engine_queue_delete (RigEngine *engine,

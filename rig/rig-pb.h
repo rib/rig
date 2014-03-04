@@ -324,4 +324,14 @@ RigEntity *
 rig_pb_unserialize_entity (RigPBUnSerializer *unserializer,
                            Rig__Entity *pb_entity);
 
+RigController *
+rig_pb_unserialize_controller_bare (RigPBUnSerializer *unserializer,
+                                    Rig__Controller *pb_controller);
+
+void
+rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
+                                          RigController *controller,
+                                          int n_properties,
+                                          Rig__Controller__Property **properties);
+
 #endif /* __RIG_PB_H__ */

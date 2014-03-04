@@ -274,6 +274,9 @@ reset_play_mode_ui (RigEditor *editor)
   rig_engine_set_play_mode_ui (engine, play_mode_ui);
   rut_object_unref (play_mode_ui);
 
+  rig_engine_op_apply_context_set_ui (&editor->play_apply_op_ctx,
+                                      play_mode_ui);
+
   rig_frontend_reload_simulator_ui (engine->frontend,
                                     engine->play_mode_ui,
                                     true); /* play mode */
@@ -1648,6 +1651,9 @@ on_ui_load_cb (void *user_data)
 
   add_light_handle (engine, ui);
   add_play_camera_handle (engine, ui);
+
+  rig_engine_op_apply_context_set_ui (&editor->apply_op_ctx,
+                                      ui);
 
   /* Whenever we replace the edit mode graph that implies we need
    * to scrap and update the play mode graph, with a snapshot of

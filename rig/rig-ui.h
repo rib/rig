@@ -80,4 +80,12 @@ rig_ui_find_entity (RigUI *ui, const char *label);
 void
 rig_ui_reap (RigUI *ui);
 
+void
+rig_ui_add_controller (RigUI *ui,
+                       RigController *controller);
+
+void
+rig_ui_remove_controller (RigUI *ui,
+                          RigController *controller);
+
 #endif /* _RIG_UI_H_ */

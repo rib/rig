@@ -379,6 +379,8 @@ rig_frontend_reload_simulator_ui (RigFrontend *frontend,
   rig_pb_serialized_ui_destroy (pb_ui);
 
   rig_pb_serializer_destroy (serializer);
+
+  rig_engine_op_apply_context_set_ui (&frontend->apply_op_ctx, ui);
 }
 
 static void

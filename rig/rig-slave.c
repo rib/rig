@@ -199,6 +199,8 @@ load_ui (RigSlave *slave)
 
   rig_engine_set_onscreen_size (engine, width, height);
 
+  rig_engine_op_apply_context_set_ui (&slave->apply_op_ctx, ui);
+
   slave->pending_ui_load_closure (&result, slave->pending_ui_load_closure_data);
 
   slave->pending_ui_load = NULL;

@@ -2882,11 +2882,11 @@ unserialize_path_nodes (RigPBUnSerializer *unserializer,
     }
 }
 
-static void
-unserialize_controller_properties (RigPBUnSerializer *unserializer,
-                                   RigController *controller,
-                                   int n_properties,
-                                   Rig__Controller__Property **properties)
+void
+rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
+                                          RigController *controller,
+                                          int n_properties,
+                                          Rig__Controller__Property **properties)
 {
   int i;
 
@@ -3103,6 +3103,43 @@ have_boxed_pb_property (Rig__Boxed **properties,
   return false;
 }
 
+RigController *
+rig_pb_unserialize_controller_bare (RigPBUnSerializer *unserializer,
+                                    Rig__Controller *pb_controller)
+{
+  const char *name;
+  RigController *controller;
+
+  if (pb_controller->name)
+    name = pb_controller->name;
+  else
+    name = "Controller 0";
+
+  controller = rig_controller_new (unserializer->engine, name);
+
+  rig_controller_set_suspended (controller, true);
+
+  if (strcmp (name, "Controller 0"))
+    rig_controller_set_active (controller, true);
+
+  /* Properties of the RigController itself */
+  set_properties_from_pb_boxed_values (unserializer,
+                                       controller,
+                                       pb_controller->n_controller_properties,
+                                       pb_controller->controller_properties);
+
+  if (!have_boxed_pb_property (pb_controller->controller_properties,
+                               pb_controller->n_controller_properties,
+                               "length"))
+    {
+      /* XXX: for compatibility we set a default controller length of 20
+       * seconds */
+      rig_controller_set_length (controller, 20);
+    }
+
+  return controller;
+}
+
 static void
 unserialize_controllers (RigPBUnSerializer *unserializer,
                          int n_controllers,
@@ -3119,7 +3156,6 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
     {
       Rig__Controller *pb_controller = controllers[i];
       RigController *controller;
-      const char *name;
       uint64_t id;
 
       if (!pb_controller->has_id)
@@ -3127,31 +3163,8 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
 
       id = pb_controller->id;
 
-      if (pb_controller->name)
-        name = pb_controller->name;
-      else
-        name = "Controller 0";
-
-      controller = rig_controller_new (unserializer->engine, name);
-      rig_controller_set_suspended (controller, true);
-
-      if (strcmp (name, "Controller 0"))
-        rig_controller_set_active (controller, true);
-
-      /* Properties of the RigController itself */
-      set_properties_from_pb_boxed_values (unserializer,
-                                           controller,
-                                           pb_controller->n_controller_properties,
-                                           pb_controller->controller_properties);
-
-      if (!have_boxed_pb_property (pb_controller->controller_properties,
-                                   pb_controller->n_controller_properties,
-                                   "length"))
-        {
-          /* XXX: for compatibility we set a default controller length of 20
-           * seconds */
-          rig_controller_set_length (controller, 20);
-        }
+      controller = rig_pb_unserialize_controller_bare (unserializer,
+                                                       pb_controller);
 
       unserializer->controllers =
         g_list_prepend (unserializer->controllers, controller);
@@ -3176,10 +3189,10 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
         }
 
       /* Properties controlled by the RigController... */
-      unserialize_controller_properties (unserializer,
-                                         controller,
-                                         pb_controller->n_properties,
-                                         pb_controller->properties);
+      rig_pb_unserialize_controller_properties (unserializer,
+                                                controller,
+                                                pb_controller->n_properties,
+                                                pb_controller->properties);
     }
 }
 

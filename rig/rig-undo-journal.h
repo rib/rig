@@ -143,7 +143,6 @@ typedef struct _UndoRedoAddDeleteComponent
 typedef struct _UndoRedoAddRemoveController
 {
   RigController *controller;
-  bool active_state;
   bool saved_controller_properties;
   RutList controller_properties;
 } UndoRedoAddRemoveController;

@@ -99,16 +99,9 @@ rig_ui_reap (RigUI *ui)
     {
       RigController *controller = l->data;
 
-      /* We want to defer garbage collection until the end of a frame
-       * so we take a reference on the entity before removing it from
-       * the scenegraph... */
-      rut_object_claim (controller, engine);
+      rig_controller_reap (controller, engine);
 
       rut_object_release (controller, ui);
-
-      rig_engine_queue_delete (engine, controller);
-
-      rig_controller_reap (controller, engine);
     }
 
   /* We could potentially leave these to be freed in _free() but it
@@ -441,4 +434,25 @@ rig_ui_print (RigUI *ui)
       g_print ("  %s\n", name);
       g_free (name);
     }
+}
+
+void
+rig_ui_add_controller (RigUI *ui,
+                       RigController *controller)
+{
+  ui->controllers = g_list_prepend (ui->controllers, controller);
+  rut_object_ref (controller);
+
+  if (!ui->suspended)
+    rig_controller_set_suspended (controller, false);
+}
+
+void
+rig_ui_remove_controller (RigUI *ui,
+                          RigController *controller)
+{
+  rig_controller_set_suspended (controller, true);
+
+  ui->controllers = g_list_remove (ui->controllers, controller);
+  rut_object_unref (controller);
 }

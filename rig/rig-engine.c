@@ -1842,6 +1842,9 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled)
       if (engine->play_mode_ui)
         rig_ui_suspend (engine->play_mode_ui);
     }
+
+  if (engine->play_mode_callback)
+    engine->play_mode_callback (enabled, engine->play_mode_data);
 }
 
 char *
@@ -1863,3 +1866,14 @@ rig_engine_get_object_debug_name (RutObject *object)
   else
     return g_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));
 }
+
+void
+rig_engine_set_play_mode_callback (RigEngine *engine,
+                                   void (*callback) (bool play_mode,
+                                                     void *user_data),
+                                   void *user_data)
+{
+  engine->play_mode_callback = callback;
+  engine->play_mode_data = user_data;
+}
+

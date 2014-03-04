@@ -218,6 +218,8 @@ simulator__load (Rig__Simulator_Service *service,
 
   rut_object_unref (ui);
 
+  rig_engine_op_apply_context_set_ui (&simulator->apply_op_ctx, ui);
+
   closure (&result, closure_data);
 }
 
