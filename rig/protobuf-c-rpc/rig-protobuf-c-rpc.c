@@ -122,6 +122,7 @@ struct _ServerRequest
   uint32_t method_index;                /* in native-endian */
   PB_RPC_ServerConnection *conn;
   PB_RPC_Server *server;
+  ProtobufCMessage *message;
   union {
     /* if conn != NULL, then the request is alive: */
     struct { ServerRequest *prev, *next; } alive;
@@ -1130,7 +1131,8 @@ server_connection_failed (PB_RPC_ServerConnection *conn,
 static ServerRequest *
 create_server_request (PB_RPC_ServerConnection *conn,
                        uint32_t request_id,
-                       uint32_t method_index)
+                       uint32_t method_index,
+                       ProtobufCMessage *message)
 {
   ServerRequest *rv;
   if (conn->server->recycled_requests != NULL)
@@ -1147,6 +1149,7 @@ create_server_request (PB_RPC_ServerConnection *conn,
   rv->conn = conn;
   rv->request_id = request_id;
   rv->method_index = method_index;
+  rv->message = message;
   conn->n_pending_requests++;
   GSK_LIST_APPEND (GET_PENDING_REQUEST_LIST (conn), rv);
   return rv;
@@ -1154,8 +1157,10 @@ create_server_request (PB_RPC_ServerConnection *conn,
 
 static void
 free_server_request (PB_RPC_Server *server,
-                     ServerRequest        *request)
+                     ServerRequest *request)
 {
+  protobuf_c_message_free_unpacked (request->message, server->allocator);
+
 #if RECYCLE_REQUESTS
   /* recycle request */
   request->info.recycled.next = server->recycled_requests;
@@ -1234,7 +1239,6 @@ retry_write:
   else if (request->conn == NULL)
     {
       /* defunct request */
-      allocator->free (allocator, request);
       free_server_request (server, request);
     }
   else
@@ -1354,10 +1358,9 @@ read_server_request (PB_RPC_ServerConnection *conn,
 
   /* Invoke service (note that it may call back immediately) */
   server_request =
-    create_server_request (conn, request_id, method_index);
+    create_server_request (conn, request_id, method_index, message);
   service->invoke (service, method_index, message,
                    server_connection_response_closure, server_request);
-  protobuf_c_message_free_unpacked (message, allocator);
 }
 
 static void
