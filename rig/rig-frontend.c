@@ -653,7 +653,7 @@ spawn_simulator (RigFrontend *frontend)
       if (getenv ("RIG_SIMULATOR"))
         path = getenv ("RIG_SIMULATOR");
 
-      if (execlp ("libtool", "libtool", "e", "./rig-simulator", NULL))
+      if (execlp ("libtool", "libtool", "e", path, NULL) < 0)
         g_error ("Failed to run simulator process via libtool");
 
 #if 0
