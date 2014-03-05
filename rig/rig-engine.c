@@ -1754,15 +1754,6 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 }
 
 void
-rig_engine_sync_slaves (RigEngine *engine)
-{
-  GList *l;
-
-  for (l = engine->slave_masters; l; l = l->next)
-    rig_slave_master_reload_ui (l->data);
-}
-
-void
 rig_engine_push_undo_subjournal (RigEngine *engine)
 {
   RigUndoJournal *subjournal = rig_undo_journal_new (engine);

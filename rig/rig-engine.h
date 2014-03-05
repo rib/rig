@@ -391,9 +391,6 @@ rig_reload_position_inspector (RigEngine *engine,
                                RigEntity *entity);
 
 void
-rig_engine_sync_slaves (RigEngine *engine);
-
-void
 rig_engine_dirty_properties_menu (RigImageSource *source,
                                   void *user_data);
 
