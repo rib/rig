@@ -515,10 +515,7 @@ message Operation
     required sint64 controller_id=1; //XXX ID
     required sint64 object_id=2; //XXX ID
     required int32 property_id=3;
-
-    enum Method { CONSTANT=1; PATH=2; BINDING=3; }
-
-    required Method method=4;
+    required int32 method=4; //See native RigControllerMethod enum
   }
   optional ControllerPropertySetMethod controller_property_set_method=16;
 

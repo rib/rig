@@ -1093,27 +1093,13 @@ _apply_op_controller_property_set_method (RigEngineOpApplyContext *ctx,
   RigController *controller = (void *)(intptr_t)set_method->controller_id;
   RutObject *object = (void *)(intptr_t)set_method->object_id;
   RutProperty *property;
-  RigControllerMethod method;
 
   if (!controller || !object)
     return false;
 
   property = rut_introspectable_get_property (object, set_method->property_id);
 
-  switch (set_method->method)
-    {
-    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__CONSTANT:
-      method = RIG_CONTROLLER_METHOD_CONSTANT;
-      break;
-    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__PATH:
-      method = RIG_CONTROLLER_METHOD_PATH;
-      break;
-    case RIG__OPERATION__CONTROLLER_PROPERTY_SET_METHOD__METHOD__BINDING:
-      method = RIG_CONTROLLER_METHOD_BINDING;
-      break;
-    }
-
-  rig_controller_set_property_method (controller, property, method);
+  rig_controller_set_property_method (controller, property, set_method->method);
 
   return true;
 }
