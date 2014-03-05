@@ -41,8 +41,6 @@ typedef struct _RigSlaveMaster
   bool connected;
   GHashTable *registry;
 
-  GList *required_assets;
-
 } RigSlaveMaster;
 
 void

@@ -152,9 +152,9 @@ rig_slave_master_reload_ui (RigSlaveMaster *master)
   if (!master->connected)
     return;
 
-  g_warn_if_fail (master->required_assets == NULL);
-
   serializer = rig_pb_serializer_new (engine);
+
+  rig_pb_serializer_set_use_pointer_ids_enabled (serializer, true);
 
   /* NB: We always use the edit-mode-ui as the basis for any ui sent
    * to a slave device so that the slave device can maintain a mapping
