@@ -39,6 +39,20 @@ main (int argc, char **argv)
   const char *frontend = getenv ("_RIG_FRONTEND");
   RigFrontendID frontend_id;
 
+#ifdef unix
+  sigset_t set;
+
+  sigemptyset (&set);
+  sigaddset (&set, SIGINT);
+
+  /* Block SIGINT from terminating the simulator, otherwise it's a
+   * pain to debug the frontend in gdb because when we press Ctrl-C to
+   * interrupt the frontend, gdb only blocks SIGINT from being passed
+   * to the frontend and so we end up terminating the simulator.
+   */
+  pthread_sigmask (SIG_BLOCK, &set, NULL);
+#endif
+
 #if 0
   GOptionContext *context = g_option_context_new (NULL);
 
