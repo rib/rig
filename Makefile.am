@@ -1,7 +1,3 @@
-SUBDIRS = rut tools data
-
-if !HAVE_ANDROID
-SUBDIRS += rig
-endif
+SUBDIRS = rut tools data rig
 
 ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}

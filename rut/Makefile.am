@@ -158,6 +158,8 @@ librut_la_SOURCES = \
     rut-poll.c \
     rut-glib-source.h \
     rut-glib-source.c \
+    rut-sdl-keysyms.c \
+    rut-sdl-keysyms.h \
     $(source_h)
 
 if USE_GSTREAMER
@@ -170,12 +172,6 @@ if NEED_FMEMOPEN
 librut_la_SOURCES += \
     fmemopen.h \
     fmemopen.c
-endif
-
-if !HAVE_ANDROID
-librut_la_SOURCES += \
-    rut-sdl-keysyms.c \
-    rut-sdl-keysyms.h
 endif
 
 librut_la_LIBADD = \

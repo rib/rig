@@ -1,0 +1,28 @@
+From 501d2e821a78eb32822f7dacceebaf11273505af Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Thu, 6 Mar 2014 20:26:34 +0000
+Subject: [PATCH] use %lu specifier to print stat.st_uid/st_gid
+
+---
+ gio/gdbusmessage.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/gio/gdbusmessage.c b/gio/gdbusmessage.c
+index 5464cef..7ba5ff9 100644
+--- a/gio/gdbusmessage.c
++++ b/gio/gdbusmessage.c
+@@ -3468,9 +3468,9 @@ g_dbus_message_print (GDBusMessage *message,
+                                           statbuf.st_mode);
+                   g_string_append_printf (fs, "%s" "ino=%" G_GUINT64_FORMAT, fs->len > 0 ? "," : "",
+                                           (guint64) statbuf.st_ino);
+-                  g_string_append_printf (fs, "%s" "uid=%d", fs->len > 0 ? "," : "",
++                  g_string_append_printf (fs, "%s" "uid=%lu", fs->len > 0 ? "," : "",
+                                           statbuf.st_uid);
+-                  g_string_append_printf (fs, "%s" "gid=%d", fs->len > 0 ? "," : "",
++                  g_string_append_printf (fs, "%s" "gid=%lu", fs->len > 0 ? "," : "",
+                                           statbuf.st_gid);
+                   g_string_append_printf (fs, "%s" "rdev=%d:%d", fs->len > 0 ? "," : "",
+                                           major (statbuf.st_rdev), minor (statbuf.st_rdev));
+-- 
+1.9.0
+

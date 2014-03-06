@@ -1,0 +1,25 @@
+From 5981bad09ff632a9caaf130a5758b1b1cb387cde Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Tue, 11 Mar 2014 16:05:14 +0000
+Subject: [PATCH] build: skip, test examples, po, build dirs
+
+---
+ Makefile.am | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index ff229dd..1a0a649 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -16,8 +16,6 @@ if BUILD_COGL_PATH
+ SUBDIRS += cogl-path
+ endif
+ 
+-SUBDIRS += tests examples po build
+-
+ ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
+ 
+ EXTRA_DIST = \
+-- 
+1.9.0
+

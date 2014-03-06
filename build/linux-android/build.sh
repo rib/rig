@@ -192,6 +192,7 @@ function apply_patches ()
 
     if test -d "$patches_dir"; then
         for patch in "$patches_dir/"*.patch; do
+	    echo "Applying patch $patch"
             patch -p1 < "$patch"
             if grep -q '^+++ .*/\(Makefile\.am\|configure\.ac\)\b' "$patch" ; then
                 retool=yes;
@@ -202,19 +203,32 @@ function apply_patches ()
 
 function git_clone ()
 {
-    local name="$1"; shift
-    local url="$1"; shift
-    local commit="$1"; shift
+    local name
+    local url
+    local branch
+    local commit
+    local build_dir="$BUILD_DIR"
 
-    pushd $BUILD_DIR 1>/dev/null
+    while true; do
+        case "$1" in
+            -url) shift; url="$1"; shift ;;
+            -name) shift; name="$1"; shift ;;
+            -branch) shift; branch="$1"; shift ;;
+            -commit) shift; commit="$1"; shift ;;
+            -build_dir) shift; build_dir="$1"; shift ;;
+            -*) echo "Unknown option $1"; exit 1 ;;
+            *) break ;;
+        esac
+    done
+
+    cd $build_dir
 
     if test -d $name; then
-	pushd $name 1>/dev/null
+	cd $name
 	if ! `git log|grep -q "commit $commit"`; then
 	    echo "Found existing $name clone not based on $commit"
 	    exit 1
 	fi
-	popd 1>/dev/null
     else
 	git clone $url $name
 	if [ $? -ne 0 ]; then
@@ -222,34 +236,42 @@ function git_clone ()
 	    exit 1
 	fi
 
-	pushd $name 1>/dev/null
-	git checkout -b rig-build $commit
+	if test -n "$commit"; then
+	    start_point="$commit"
+	else
+	    start_point="$branch"
+	fi
+
+	cd $name
+	git checkout -b rig-build $start_point
 	if [ $? -ne 0 ]; then
 	    echo "Checking out $commit failed"
 	    exit 1
 	fi
 
-        apply_patches "$PATCHES_DIR/$name" "$BUILD_DIR/$name"
+        apply_patches "$PATCHES_DIR/$name" "$build_dir/$name"
     fi
-
-    popd 1>/dev/null
 }
 
 function build_source ()
 {
     local project_dir
     local prefix
+    local branch
     local commit
     local config_name="configure"
     local jobs=4
+    local onlybuild
 
     while true; do
         case "$1" in
             -p) shift; prefix="$1"; shift ;;
             -d) shift; project_dir="$1"; shift ;;
-            -c) shift; commit="$1"; shift ;;
-            -C) shift; config_name="$1"; shift ;;
+            -branch) shift; branch="$1"; shift ;;
+            -commit) shift; commit="$1"; shift ;;
+            -configure) shift; config_name="$1"; shift ;;
 	    -j) shift; jobs="$1"; shift ;;
+	    -onlybuild) shift; onlybuild=1 ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
         esac
@@ -262,7 +284,7 @@ function build_source ()
         project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
     fi;
 
-    local project_name=`echo "$project_dir" | sed 's/-[0-9\.]*$//'`
+    local project_name=`echo "$project_dir" | sed 's/-[0-9][0-9a-z\.]*$//'`
     local retool=no
     local patch
 
@@ -272,15 +294,17 @@ function build_source ()
         return
     fi
 
-    if echo "$source" | grep -q "git$"; then
-        git_clone "$project_name" "$source" "$commit"
-        retool=yes
-    else
-        download_file "$source" "$tarfile"
+    if test -z "$onlybuild"; then
+	if echo "$source" | grep -q "git$"; then
+	    git_clone -name "$project_name" -url "$source" -branch "$branch" -commit "$commit"
+	    retool=yes
+	else
+	    download_file "$source" "$tarfile"
 
-        do_untar_source "$DOWNLOAD_DIR/$tarfile"
+	    do_untar_source "$DOWNLOAD_DIR/$tarfile"
 
-        apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
+	    apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
+	fi
     fi
 
     cd "$BUILD_DIR/$project_dir"
@@ -289,6 +313,8 @@ function build_source ()
         NOCONFIGURE=1 ./autogen.sh
     fi
 
+    echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
     #Note we have to pass $@ first since we need to pass a special
     #Linux option as the first argument to the icu configure script
     ./"$config_name" "$@" --prefix="$prefix"
@@ -340,10 +366,6 @@ function build_tool ()
 {
     build_source -p "$TOOLS_PREFIX" "$@"
 }
-
-if test "$1"; then
-    RIG_COMMIT=$1; shift
-fi
 
 unset "${UNSET_VARS[@]}"
 
@@ -425,38 +447,39 @@ done
 
 export "${EXPORT_VARS[@]}"
 
-build_tool "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
+build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
 build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
 
-build_dep -C Configure -j 1 \
-    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1c.tar.gz" \
+build_dep -configure Configure -j 1 \
+    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1f.tar.gz" \
     linux-elf \
     no-shared
 
 build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
 
 build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
-build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.2.1.tar.gz"
+build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.3.2.tar.gz"
+
 export CFLAGS="-g3 -O0"
 build_dep \
-    "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.34/glib-2.34.2.tar.xz"
+    "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz" \
+    --with-libiconv=gnu
 unset CFLAGS
 
 # The makefile for this package seems to choke on paralell builds
 build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
 
-build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz" \
-    --without-x --without-apple-opengl-framework
+build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz"
 build_dep -d jpeg-8d "http://www.ijg.org/files/jpegsrc.v8d.tar.gz"
 build_dep \
-    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.3/libpng-1.6.3.tar.xz"
+    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.9/libpng-1.6.9.tar.gz"
 #build_dep \
 #    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
 
 export CFLAGS="-g3 -O0"
 export CPPFLAGS="-I$STAGING_PREFIX/include"
 build_dep \
-    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.26/gdk-pixbuf-2.26.5.tar.xz" \
+    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.28/gdk-pixbuf-2.28.2.tar.xz" \
     --disable-modules \
     --with-included-loaders=png,jpeg,tiff \
     --disable-glibtest \
@@ -465,28 +488,28 @@ unset CFLAGS
 unset CPPFLAGS
 
 #export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
-#build_dep -d icu -C source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
+#build_dep -d icu -configure source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
 #unset CFLAGS
 
-build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
-build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.92.tar.bz2" \
+build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
+build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.95.tar.bz2" \
     --disable-docs \
     --enable-libxml2
-build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.16.tar.bz2"
+build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.26.tar.bz2"
 
-build_dep "http://www.cairographics.org/releases/pixman-0.28.0.tar.gz" \
+build_dep "http://www.cairographics.org/releases/pixman-0.32.4.tar.gz" \
     --disable-gtk
 
 #NB: we make sure to build cairo after freetype/fontconfig so we have support for these backends
-build_dep "http://www.cairographics.org/releases/cairo-1.12.8.tar.xz" \
+build_dep "http://www.cairographics.org/releases/cairo-1.12.16.tar.xz" \
     --enable-xlib
 
-build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.34/pango-1.34.1.tar.xz" \
+build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.36.2.tar.xz" \
     --disable-introspection \
     --with-included-modules=yes \
     --without-dynamic-modules
 
-build_dep -d SDL2-2.0.0 "http://www.libsdl.org/release/SDL2-2.0.0.tar.gz"
+build_dep -branch origin/rig "https://github.com/rig-project/sdl.git"
 
 build_dep "http://ftp.gnu.org/gnu/gdbm/gdbm-1.10.tar.gz"
 
@@ -508,16 +531,17 @@ unset CPPFLAGS
 build_dep "http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz"
 
 export CXXFLAGS="-I$STAGING_PREFIX/include"
-build_dep "http://protobuf-c.googlecode.com/files/protobuf-c-0.15.tar.gz"
+build_dep -branch origin/rig "https://github.com/rig-project/protobuf-c.git"
 unset CXXFLAGS
 
-build_dep "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.0.7.tar.xz"
-build_dep "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.0.7.tar.xz"
+build_dep "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.2.3.tar.xz"
+build_dep "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.2.3.tar.xz"
 
 export CFLAGS="-g3 -O0"
 
 build_dep \
-    "git://git.gnome.org/cogl.git" \
+    -branch origin/rig \
+    "https://github.com/rig-project/cogl.git" \
     --enable-cairo \
     --disable-profile \
     --enable-gdk-pixbuf \
@@ -537,11 +561,19 @@ build_dep \
     --disable-introspection \
     --enable-debug
 
-if test -z $RIG_COMMIT; then
-    build_dep -d rig "$RIG_GITDIR"
-else
-    build_dep -d rig -c "$RIG_COMMIT" "$RIG_GITDIR"
-fi
+git_clone -name llvm -url "https://github.com/rig-project/llvm.git" -branch origin/rig
+git_clone -name clang -url "https://github.com/rig-project/clang.git" -branch origin/rig -build_dir "$BUILD_DIR/llvm/tools"
+build_dep -onlybuild "llvm" \
+    --enable-debug-runtime --enable-debug-symbols --enable-shared --enable-keep-symbols --with-python=`which python2`
+
+#mclinker needs bison >= 2.5.4 and < 3.0.1
+build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.tar.xz"
+
+build_dep -branch origin/rig \
+    "https://github.com/rig-project/mclinker.git" \
+    --with-llvm-config=$STAGING_PREFIX/bin/llvm-config
+
+build_dep -d rig -j 1 "$RIG_GITDIR" CFLAGS="-g3 -O0"
 
 mkdir -p "$PKG_RELEASEDIR"
 

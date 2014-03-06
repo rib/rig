@@ -322,9 +322,6 @@ AS_IF([test "x$have_android" = "xyes"],
                            [glib-android])
       CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS $GLIB_ANDROID_CFLAGS"])
 
-AC_SUBST(RIG_PKG_REQUIRES)
-PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
-
 PKG_CHECK_MODULES([LIBCRYPTO],
                   [libcrypto],
                   [have_libcrypto=yes],
@@ -347,6 +344,9 @@ CheckForGtk()
           [no], [],
           [AC_MSG_ERROR([Invalid value for --enable-gtk])])
 }
+
+dnl SDL is currently used on all platform...
+AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
 
 case "$host" in
   *-linux-android*)
@@ -372,6 +372,9 @@ esac
 AM_CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
 AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
 AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
+
+AC_SUBST(RIG_PKG_REQUIRES)
+PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
 PKG_CHECK_MODULES(RIG_CLANG, ["mclinker"])
 dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"

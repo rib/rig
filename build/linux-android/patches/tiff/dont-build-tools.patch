@@ -1,0 +1,12 @@
+diff -r -u tiff-4.0.3/Makefile.am tiff-new/Makefile.am
+--- tiff-4.0.3/Makefile.am	2012-09-20 14:22:47.000000000 +0100
++++ tiff-new/Makefile.am	2012-11-12 16:14:37.827601305 +0000
+@@ -48,7 +48,7 @@
+ 
+ dist_doc_DATA = $(docfiles)
+ 
+-SUBDIRS = port libtiff tools build contrib test man html
++SUBDIRS = port libtiff build contrib
+ 
+ release:
+ 	(rm -f $(top_srcdir)/RELEASE-DATE && echo $(LIBTIFF_RELEASE_DATE) > $(top_srcdir)/RELEASE-DATE)

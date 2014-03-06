@@ -1,0 +1,25 @@
+From dde9690c893fc1f8b89c3d8b9944c300378b3d22 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Thu, 6 Mar 2014 22:13:27 +0000
+Subject: [PATCH] disable tests and docs
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 15ccbf8..3df282a 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -4,7 +4,7 @@ NULL =
+ 
+ ACLOCAL_AMFLAGS = -I m4
+ 
+-SUBDIRS = src util test docs
++SUBDIRS = src util
+ 
+ EXTRA_DIST = \
+ 	autogen.sh \
+-- 
+1.9.0
+

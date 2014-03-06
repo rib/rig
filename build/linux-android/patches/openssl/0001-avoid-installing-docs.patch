@@ -1,0 +1,25 @@
+From 230d2b55707964d2f9fc28460c5395f0dc576eae Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Thu, 6 Mar 2014 18:08:13 +0000
+Subject: [PATCH] avoid installing docs
+
+---
+ Makefile.org | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.org b/Makefile.org
+index a9e2727..f8a3001 100644
+--- a/Makefile.org
++++ b/Makefile.org
+@@ -538,7 +538,7 @@ dist:
+ dist_pem_h:
+ 	(cd crypto/pem; $(MAKE) -e $(BUILDENV) pem.h; $(MAKE) clean)
+ 
+-install: all install_docs install_sw
++install: all install_sw
+ 
+ install_sw:
+ 	@$(PERL) $(TOP)/util/mkdir-p.pl $(INSTALL_PREFIX)$(INSTALLTOP)/bin \
+-- 
+1.9.0
+

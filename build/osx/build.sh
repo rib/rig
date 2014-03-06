@@ -2,6 +2,17 @@
 
 set -e
 
+UNSET_VARS=(
+    LD_LIBRARY_PATH
+    PKG_CONFIG_PATH
+    PKG_CONFIG
+    GI_TYPELIB_PATH
+    XDG_DATA_DIRS
+    CMAKE_PREFIX_PATH
+    GIO_EXTRA_MODULES
+    GST_PLUGIN_PATH
+)
+
 EXPORT_VARS=(
     LD_LIBRARY_PATH
     PATH
@@ -172,29 +183,73 @@ function do_untar_source_d ()
     fi;
 }
 
-function get_git_source ()
+function apply_patches ()
 {
-    local url="$1"; shift
-    local commit="$1"; shift
-    local project_name=`basename "$source"`;
+    local patches_dir="$1"; shift
+    local project_dir="$1"; shift
 
-    project_name="${project_name%.git}"
+    cd "$project_dir"
 
-    local bare_dir="$DOWNLOAD_DIR/$project_name.git"
-
-    if ! test -d "$bare_dir"; then
-        git clone --bare --mirror "$url" "$bare_dir"
+    if test -d "$patches_dir"; then
+        for patch in "$patches_dir/"*.patch; do
+	    echo "Applying patch $patch"
+            patch -p1 < "$patch"
+            if grep -q '^+++ .*/\(Makefile\.am\|configure\.ac\)\b' "$patch" ; then
+                retool=yes;
+            fi
+        done
     fi
+}
 
-    local build_dir="$BUILD_DIR/$project_name"
+function git_clone ()
+{
+    local name
+    local url
+    local branch
+    local commit
+    local build_dir="$BUILD_DIR"
 
-    if ! test -d "$build_dir"; then
-        git clone "$bare_dir" "$build_dir"
-        if test -n "$commit"; then
-            pushd "$build_dir"
-            git checkout "$commit"
-            popd
-        fi
+    while true; do
+        case "$1" in
+            -url) shift; url="$1"; shift ;;
+            -name) shift; name="$1"; shift ;;
+            -branch) shift; branch="$1"; shift ;;
+            -commit) shift; commit="$1"; shift ;;
+            -build_dir) shift; build_dir="$1"; shift ;;
+            -*) echo "Unknown option $1"; exit 1 ;;
+            *) break ;;
+        esac
+    done
+
+    cd $build_dir
+
+    if test -d $name; then
+	cd $name
+	if ! `git log|grep -q "commit $commit"`; then
+	    echo "Found existing $name clone not based on $commit"
+	    exit 1
+	fi
+    else
+	git clone $url $name
+	if [ $? -ne 0 ]; then
+	    echo "Cloning ${url} failed."
+	    exit 1
+	fi
+
+	if test -n "$commit"; then
+	    start_point="$commit"
+	else
+	    start_point="$branch"
+	fi
+
+	cd $name
+	git checkout -b rig-build $start_point
+	if [ $? -ne 0 ]; then
+	    echo "Checking out $commit failed"
+	    exit 1
+	fi
+
+        apply_patches "$PATCHES_DIR/$name" "$build_dir/$name"
     fi
 }
 
@@ -202,17 +257,21 @@ function build_source ()
 {
     local project_dir
     local prefix
+    local branch
     local commit
     local config_name="configure"
     local jobs=4
+    local onlybuild
 
     while true; do
         case "$1" in
             -p) shift; prefix="$1"; shift ;;
             -d) shift; project_dir="$1"; shift ;;
-            -c) shift; commit="$1"; shift ;;
-            -C) shift; config_name="$1"; shift ;;
+            -branch) shift; branch="$1"; shift ;;
+            -commit) shift; commit="$1"; shift ;;
+            -configure) shift; config_name="$1"; shift ;;
 	    -j) shift; jobs="$1"; shift ;;
+	    -onlybuild) shift; onlybuild=1 ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
         esac
@@ -222,10 +281,10 @@ function build_source ()
     local tarfile=`basename "$source"`
 
     if test -z "$project_dir"; then
-        project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.git$//'`
+        project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
     fi;
 
-    local project_name=`echo "$project_dir" | sed 's/-[0-9\.]*$//'`
+    local project_name=`echo "$project_dir" | sed 's/-[0-9][0-9a-z\.]*$//'`
     local retool=no
     local patch
 
@@ -233,48 +292,82 @@ function build_source ()
         grep -q -F "$project_dir" "$BUILD_DIR/installed-projects.txt"; then
         echo "Skipping $project_dir as it is already installed"
         return
-    fi        
+    fi
 
-    if echo "$source" | grep -q "^git"; then
-        get_git_source "$source" "$commit"
-        retool=yes
-    else
-        download_file "$source" "$tarfile"
+    if test -z "$onlybuild"; then
+	if echo "$source" | grep -q "git$"; then
+	    git_clone -name "$project_name" -url "$source" -branch "$branch" -commit "$commit"
+	    retool=yes
+	else
+	    download_file "$source" "$tarfile"
 
-        do_untar_source "$DOWNLOAD_DIR/$tarfile"
+	    do_untar_source "$DOWNLOAD_DIR/$tarfile"
+
+	    apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
+	fi
     fi
 
     cd "$BUILD_DIR/$project_dir"
-
-    if test -d "$PATCHES_DIR/$project_name"; then
-        for patch in "$PATCHES_DIR/$project_name/"*.patch; do
-            patch -p1 < "$patch"
-            if grep -q '^+++ .*/Makefile\.am\b' "$patch"; then
-                retool=yes;
-            fi
-        done
-    fi
 
     if test "x$retool" = "xyes"; then
         NOCONFIGURE=1 ./autogen.sh
     fi
 
-    ./"$config_name" --prefix="$prefix" "$@"
+    echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
+    #Note we have to pass $@ first since we need to pass a special
+    #Linux option as the first argument to the icu configure script
+    ./"$config_name" "$@" --prefix="$prefix"
     make -j"$jobs"
     make install
 
     echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
 }
 
+function build_bzip2 ()
+{
+    local prefix="$STAGING_PREFIX"
+    local source="$1"; shift;
+    local tarfile=`basename "$source"`
+
+    if test -z "$project_dir"; then
+      project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
+    fi;
+
+    local project_name=bzip2
+
+    if test -e "$BUILD_DIR/installed-projects.txt" && \
+               grep -q -F "$project_dir" "$BUILD_DIR/installed-projects.txt"; then
+        echo "Skipping $project_dir as it is already installed"
+        return
+    fi
+
+    download_file "$source" "$tarfile"
+
+    do_untar_source "$DOWNLOAD_DIR/$tarfile"
+
+    apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
+
+    cd "$BUILD_DIR/$project_dir"
+
+    make -f Makefile-libbz2_so
+    ln -sf libbz2.so.1.0.6 libbz2.so
+    cp -av libbz2.so* "$prefix/lib/"
+
+    echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
+}
+
 function build_dep ()
 {
-    build_source -p "$ROOT_DIR" "$@"
+    build_source -p "$STAGING_PREFIX" "$@"
 }
 
 function build_tool ()
 {
-    build_source -p "$TOOLS_DIR" "$@"
+    build_source -p "$TOOLS_PREFIX" "$@"
 }
+
+unset "${UNSET_VARS[@]}"
 
 guess_dir PKG_DIR "rig.app" \
     "the directory to store the resulting application bundle" "Bundle dir"
@@ -282,7 +375,12 @@ PKG_PREFIX="$PKG_DIR/Contents/Resources"
 PKG_LIBDIR="$PKG_PREFIX/lib"
 PKG_DATADIR="$PKG_PREFIX/share"
 
-PATCHES_DIR=`dirname "$0"`/patches
+cd `dirname "$0"`
+BUILD_DATA_DIR=$PWD
+
+RIG_GITDIR=`cd $BUILD_DATA_DIR/../../.git && pwd`
+
+PATCHES_DIR=$BUILD_DATA_DIR/patches
 PATCHES_DIR=`cd $PATCHES_DIR && pwd`
 
 # If a download directory hasn't been specified then try to guess one
@@ -292,11 +390,11 @@ guess_dir DOWNLOAD_DIR "downloads" \
 
 DOWNLOAD_PROG=curl
 
-guess_dir ROOT_DIR "local" \
-    "the root prefix for the build environment" "Root dir";
+guess_dir STAGING_PREFIX "local" \
+    "the staging prefix for installing package dependencies" "Staging dir";
 
-guess_dir TOOLS_DIR "tools" \
-    "the root prefix for internal build dependencies" "Tools dir";
+guess_dir TOOLS_PREFIX "tools" \
+    "the install prefix for internal build dependencies" "Tools dir";
 
 # If a build directory hasn't been specified then try to guess one
 # but ask for confirmation first
@@ -309,11 +407,11 @@ for dep in "${GL_HEADER_URLS[@]}"; do
 done;
 
 echo "Copying GL headers...";
-if ! test -d "$TOOLS_DIR/include/OpenGL"; then
-    mkdir -p "$TOOLS_DIR/include/OpenGL"
+if ! test -d "$TOOLS_PREFIX/include/OpenGL"; then
+    mkdir -p "$TOOLS_PREFIX/include/OpenGL"
 fi;
 for header in "${GL_HEADERS[@]}"; do
-    cp "$DOWNLOAD_DIR/$header" "$TOOLS_DIR/include/OpenGL/"
+    cp "$DOWNLOAD_DIR/$header" "$TOOLS_PREFIX/include/OpenGL/"
 done;
 
 RUN_PKG_CONFIG="$BUILD_DIR/run-pkg-config.sh";
@@ -329,15 +427,15 @@ cat > "$RUN_PKG_CONFIG" <<EOF
 # it also unsets PKG_CONFIG_PATH. This breaks any attempts to add a
 # local search path so we need to avoid using that script.
 
-export PKG_CONFIG_LIBDIR="$ROOT_DIR/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="$STAGING_PREFIX/lib/pkgconfig"
 
 exec pkg-config "\$@"
 EOF
 
 chmod a+x "$RUN_PKG_CONFIG";
 
-add_prefix "$ROOT_DIR"
-add_prefix "$TOOLS_DIR"
+add_prefix "$STAGING_PREFIX"
+add_prefix "$TOOLS_PREFIX"
 
 PKG_CONFIG="$RUN_PKG_CONFIG"
 
@@ -355,46 +453,66 @@ build_tool "http://ftp.gnu.org/gnu/automake/automake-1.12.tar.gz"
 build_tool "http://ftp.gnu.org/gnu/libtool/libtool-2.4.2.tar.gz"
 build_tool "http://pkgconfig.freedesktop.org/releases/pkg-config-0.27.1.tar.gz" \
     --with-internal-glib
+build_tool "http://ftp.gnome.org/pub/gnome/sources/intltool/0.40/intltool-0.40.6.tar.bz2"
+
 # Libxml2 is only needed to build the mime database so it's not a
 # depedency of Rig
 build_tool "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
-build_tool "http://ftp.gnome.org/pub/gnome/sources/intltool/0.40/intltool-0.40.6.tar.bz2"
 
 build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
 
 build_tool "ftp://ftp.gnome.org/pub/gnome/sources/gnome-common/3.6/gnome-common-3.6.0.tar.xz"
 
-build_dep -C Configure -j 1 \
-    "https://www.openssl.org/source/openssl-1.0.1c.tar.gz" \
+build_dep -configure Configure -j 1 \
+    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1f.tar.gz" \
     darwin64-x86_64-cc \
     no-shared
 
 # At least on OSX, ld seems to prefer to load .dylib files instead of .a files
 # regardless of the load path. As a bodge to work around this, we'll rename the
 # library file it installs and hack the .pc file
-if test -f "$ROOT_DIR"/lib/libcrypto.a; then
- mv -v "$ROOT_DIR"/lib/libcrypto{,-static}.a 
- sed -i .tmp s/-lcrypto/-lcrypto-static/g "$ROOT_DIR"/lib/pkgconfig/libcrypto.pc
+if test -f "$STAGING_PREFIX"/lib/libcrypto.a; then
+ mv -v "$STAGING_PREFIX"/lib/libcrypto{,-static}.a 
+ sed -i .tmp s/-lcrypto/-lcrypto-static/g "$STAGING_PREFIX"/lib/pkgconfig/libcrypto.pc
 fi
 
+build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
+
 build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
-build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.1.1.tar.gz"
+build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.3.2.tar.gz"
+
+export CFLAGS="-g3 -O0"
 build_dep \
-    "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.34/glib-2.34.2.tar.xz"
+    "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz"
+unset CFLAGS
 
 # The makefile for this package seems to choke on paralell builds
 build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
 
-build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz" \
-    --without-x --without-apple-opengl-framework
+build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz"
 build_dep -d jpeg-8d "http://www.ijg.org/files/jpegsrc.v8d.tar.gz"
 build_dep \
-    "http://downloads.sourceforge.net/project/libpng/libpng15/1.5.13/libpng-1.5.13.tar.xz"
+    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.9/libpng-1.6.9.tar.gz"
+#build_dep \
+#    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
+
+export CFLAGS="-g3 -O0"
+export CPPFLAGS="-I$STAGING_PREFIX/include"
 build_dep \
-    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.26/gdk-pixbuf-2.26.5.tar.xz" \
+    "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.28/gdk-pixbuf-2.28.2.tar.xz" \
     --disable-modules \
     --with-included-loaders=png,jpeg,tiff \
-    --disable-glibtest
+    --disable-glibtest \
+    --disable-introspection
+unset CFLAGS
+unset CPPFLAGS
+
+#export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
+#build_dep -d icu -configure source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
+#unset CFLAGS
+
+build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
+build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.16.tar.bz2"
 
 build_dep "http://www.cairographics.org/releases/pixman-0.28.0.tar.gz" \
     --disable-gtk
@@ -407,10 +525,14 @@ build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.1
 build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.32/pango-1.32.1.tar.xz" \
     --without-x --with-included-modules=yes --without-dynamic-modules
 
-build_dep -d SDL-2.0.0-6673 "http://www.libsdl.org/tmp/SDL-2.0.tar.gz"
+build_dep -branch origin/rig "https://github.com/rig-project/sdl.git"
 
-build_dep -c 2c0cfdefbb9d1ac5097d98887d3581b67a324fae \
-    "git://git.gnome.org/cogl.git" \
+
+export CFLAGS="-g3 -O0"
+
+build_dep \
+    -branch origin/rig \
+    "https://github.com/rig-project/cogl.git" \
     --enable-cairo \
     --disable-profile \
     --enable-gdk-pixbuf \
@@ -426,13 +548,27 @@ build_dep -c 2c0cfdefbb9d1ac5097d98887d3581b67a324fae \
     --disable-gtk-doc \
     --enable-glib \
     --enable-cogl-pango \
-    --disable-introspection
+    --enable-cogl-gst \
+    --disable-introspection \
+    --enable-debug
 
-build_dep -c 2 "git://github.com/01org/rig.git"
+git_clone -name llvm -url "https://github.com/rig-project/llvm.git" -branch origin/rig
+git_clone -name clang -url "https://github.com/rig-project/clang.git" -branch origin/rig -build_dir "$BUILD_DIR/llvm/tools"
+build_dep -onlybuild "llvm" \
+    --enable-debug-runtime --enable-debug-symbols --enable-shared --enable-keep-symbols --with-python=`which python2`
+
+#mclinker needs bison >= 2.5.4 and < 3.0.1
+build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.tar.xz"
+
+build_dep -branch origin/rig \
+    "https://github.com/rig-project/mclinker.git" \
+    --with-llvm-config=$STAGING_PREFIX/bin/llvm-config
+
+build_dep -d rig -j 1 "$RIG_GITDIR" CFLAGS="-g3 -O0"
 
 mkdir -p "$PKG_DIR/Contents/MacOS"
 
-cp -v "$ROOT_DIR/bin/rig" "$PKG_DIR/Contents/MacOS/rig-bin"
+cp -v "$STAGING_PREFIX/bin/rig" "$PKG_DIR/Contents/MacOS/rig-bin"
 
 mkdir -p "$PKG_LIBDIR"
 
@@ -458,7 +594,7 @@ for lib in \
     libglib-2.0.0.dylib \
     libintl.8.dylib
 do
-    cp -v "$ROOT_DIR/lib/$lib" "$PKG_LIBDIR"
+    cp -v "$STAGING_PREFIX/lib/$lib" "$PKG_LIBDIR"
 done
 
 mkdir -p "$PKG_DIR"
@@ -469,9 +605,9 @@ cp -vR "$BUILD_DIR/rig/build/osx/rig.app/Contents/MacOS/"{auto-update.sh,rig} \
 
 mkdir -p "$PKG_DATADIR/rig"
 
-cp -v "$ROOT_DIR/share/rig"/* "$PKG_DATADIR/rig"
+cp -v "$STAGING_PREFIX/share/rig"/* "$PKG_DATADIR/rig"
 cp -v "$BUILD_DIR/rig/data/Info.plist" "$PKG_DIR/Contents/Info.plist"
 
 mkdir -p "$PKG_DATADIR/mime"
 
-cp -vR "$ROOT_DIR/share/mime"/* "$PKG_DATADIR/mime"
+cp -vR "$STAGING_PREFIX/share/mime"/* "$PKG_DATADIR/mime"

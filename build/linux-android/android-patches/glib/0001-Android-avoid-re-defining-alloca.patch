@@ -1,0 +1,37 @@
+From e2854ad35ff36b1a88377556549295a9c25fd261 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Tue, 11 Mar 2014 23:16:54 +0000
+Subject: [PATCH] Android: avoid re-defining alloca()
+
+---
+ glib/galloca.h | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/glib/galloca.h b/glib/galloca.h
+index 63c080f..567c84b 100644
+--- a/glib/galloca.h
++++ b/glib/galloca.h
+@@ -33,13 +33,16 @@
+ 
+ #include <glib/gtypes.h>
+ 
+-#ifdef  __GNUC__
++#if defined (GLIB_HAVE_ALLOCA_H)
++/* a native and working alloca.h is there */ 
++/* Note: This case comes before the __GNUC__ case since __GNUC__ may be defined
++ * if building for Android but Android's alloca.h doesn't undef alloca before
++ * defining it which leads to re-definition build errors. */
++# include <alloca.h>
++#elif defined(__GNUC__)
+ /* GCC does the right thing */
+ # undef alloca
+ # define alloca(size)   __builtin_alloca (size)
+-#elif defined (GLIB_HAVE_ALLOCA_H)
+-/* a native and working alloca.h is there */ 
+-# include <alloca.h>
+ #else /* !__GNUC__ && !GLIB_HAVE_ALLOCA_H */
+ # if defined(_MSC_VER) || defined(__DMC__)
+ #  include <malloc.h>
+-- 
+1.9.0
+

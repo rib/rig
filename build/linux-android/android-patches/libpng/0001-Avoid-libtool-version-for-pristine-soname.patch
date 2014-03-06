@@ -1,0 +1,25 @@
+From 7f8850d618c31c355c4770835dcabe8c5211af6e Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 12:41:18 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index e69519d..95fdc17 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -88,7 +88,7 @@ endif
+ nodist_libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_SOURCES = pnglibconf.h
+ 
+ libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@_la_LDFLAGS = -no-undefined -export-dynamic \
+-	-version-number @PNGLIB_MAJOR@@PNGLIB_MINOR@:@PNGLIB_RELEASE@:0
++    	-shared -avoid-version
+ 
+ if HAVE_LD_VERSION_SCRIPT
+ #   Versioned symbols and restricted exports
+-- 
+1.9.0
+

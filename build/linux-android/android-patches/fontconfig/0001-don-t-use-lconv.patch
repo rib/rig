@@ -1,0 +1,33 @@
+From 57de411d5b346afae7a2978c8e44fe44e70e6785 Mon Sep 17 00:00:00 2001
+From: Lionel Landwerlin <llandwerlin@gmail.com>
+Date: Wed, 23 May 2012 16:47:03 +0100
+Subject: [PATCH] don't use lconv
+
+---
+ src/fcxml.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/fcxml.c b/src/fcxml.c
+index f027270..eba51ad 100644
+--- a/src/fcxml.c
++++ b/src/fcxml.c
+@@ -1212,6 +1212,7 @@ FcParseInt (FcConfigParse *parse)
+ static double
+ FcStrtod (char *s, char **end)
+ {
++#ifndef __ANDROID__
+     struct lconv    *locale_data;
+     char	    *dot;
+     double	    v;
+@@ -1258,6 +1259,9 @@ FcStrtod (char *s, char **end)
+     else
+	v = strtod (s, end);
+     return v;
++#else
++    return strtod (s, end);
++#endif
+ }
+
+ static void
+--
+1.7.10

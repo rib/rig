@@ -1,0 +1,29 @@
+From cbc3e67396a80c79aebde8183f2407ea0cedf7d9 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 22:02:38 +0000
+Subject: [PATCH] Skip doc/ util/ boilerplate/ test/ and perf/
+
+---
+ Makefile.am | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 03fa352..8c7690c 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -17,10 +17,10 @@ EXTRA_DIST += \
+ ACLOCAL_AMFLAGS = -I build ${ACLOCAL_FLAGS}
+ 
+ DIST_SUBDIRS = src doc util boilerplate test perf
+-SUBDIRS = src doc util
++SUBDIRS = src #doc util
+ # libpng is required for our test programs
+ if CAIRO_HAS_PNG_FUNCTIONS
+-SUBDIRS += boilerplate test perf
++#SUBDIRS += boilerplate test perf
+ endif
+ 
+ configure: cairo-version.h
+-- 
+1.9.0
+

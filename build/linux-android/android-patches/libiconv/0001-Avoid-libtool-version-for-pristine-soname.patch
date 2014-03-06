@@ -1,0 +1,53 @@
+From 8de0a870d90995c1ca9aab94d0cbdb9911aae4d6 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Fri, 21 Mar 2014 17:50:24 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ lib/Makefile.in            | 2 +-
+ libcharset/lib/Makefile.in | 2 +-
+ preload/Makefile.in        | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/lib/Makefile.in b/lib/Makefile.in
+index a538cce..31c35f3 100644
+--- a/lib/Makefile.in
++++ b/lib/Makefile.in
+@@ -68,7 +68,7 @@ OBJECTS_RES_no =
+ all : libiconv.la
+ 
+ libiconv.la : $(OBJECTS)
+-	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libiconv.la -rpath $(libdir) -version-info $(LIBICONV_VERSION_INFO) -no-undefined $(OBJECTS)
++	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libiconv.la -rpath $(libdir) -shared -avoid-version -no-undefined $(OBJECTS)
+ 
+ iconv.lo : $(srcdir)/iconv.c $(srcdir)/converters.h \
+            $(srcdir)/encodings.def $(srcdir)/encodings_aix.def $(srcdir)/encodings_osf1.def $(srcdir)/encodings_dos.def $(srcdir)/encodings_local.def \
+diff --git a/libcharset/lib/Makefile.in b/libcharset/lib/Makefile.in
+index 1707ac9..5bb3622 100644
+--- a/libcharset/lib/Makefile.in
++++ b/libcharset/lib/Makefile.in
+@@ -56,7 +56,7 @@ OBJECTS = localcharset.lo relocatable.lo
+ all : libcharset.la charset.alias ref-add.sed ref-del.sed
+ 
+ libcharset.la : $(OBJECTS)
+-	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libcharset.la -rpath $(libdir) -version-info $(LIBCHARSET_VERSION_INFO) -no-undefined $(OBJECTS)
++	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libcharset.la -rpath $(libdir) -shared -avoid-version -no-undefined $(OBJECTS)
+ 
+ localcharset.lo : $(srcdir)/localcharset.c
+ 	$(LIBTOOL_COMPILE) $(CC) $(INCLUDES) $(CFLAGS) $(CPPFLAGS) $(DEFS) -c $(srcdir)/localcharset.c
+diff --git a/preload/Makefile.in b/preload/Makefile.in
+index c2035d8..5984363 100644
+--- a/preload/Makefile.in
++++ b/preload/Makefile.in
+@@ -52,7 +52,7 @@ preloadable_libiconv.so : $(SOURCES)
+ 	for f in $(SOURCES); do \
+ 	  $(LIBTOOL_COMPILE) $(CC) $(INCLUDES) $(CPPFLAGS) $(CFLAGS) $(DEFS) -DLIBICONV_PLUG -c $$f -o objects/`basename $$f | sed -e 's,\.c$$,.o,'` || exit 1; \
+ 	done && \
+-	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libiconv.la -rpath $(libdir) -no-undefined objects/*.lo && \
++	$(LIBTOOL_LINK) $(CC) $(LDFLAGS) $(CFLAGS) -o libiconv.la -avoid-version -rpath $(libdir) -no-undefined objects/*.lo && \
+ 	$(RM) -r objects
+ 	cp .libs/libiconv.so preloadable_libiconv.so
+ 
+-- 
+1.9.0
+
