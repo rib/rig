@@ -2427,9 +2427,9 @@ compare_objects_cb (RigControllerObjectView *object_a,
   g_return_val_if_fail (rut_object_get_type (object_a) ==
                         &rig_controller_object_view_type, 0);
 
-  if (*label_a == 0)
+  if (label_a && label_a[0] == '\0')
     label_a = NULL;
-  if (*label_b == 0)
+  if (label_b && label_b[0] == '\0')
     label_b = NULL;
 
   if (label_a && label_b)
