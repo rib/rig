@@ -17,6 +17,12 @@
  * License along with this library. If not, see
  * <http://www.gnu.org/licenses/>.
  *
+ *
+ * Note: Part of the allocate_cb code was initially based on gtkbox.c,
+ * although the final implementation did end up being quite different.
+ * We should re-write allocate_cb() without using
+ * rut_util_distribute_natural_allocation() before re-licensing this
+ * file under the MIT license.
  */
 
 #include <config.h>
