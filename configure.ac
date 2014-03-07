@@ -1047,13 +1047,13 @@ AC_ARG_ENABLE(
 AS_IF([test "x$enable_sdl2" = "xyes"],
       [
         PKG_CHECK_MODULES([SDL2],
-                          [sdl2],
+                          [sdl2-rig],
                           [],
                           [AC_MSG_ERROR([SDL2 support requested but SDL2 not found])])
 
         SUPPORT_SDL2=yes
         GL_WINSYS_APIS="$GL_WINSYS_APIS sdl2"
-        COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES sdl2"
+        COGL_PKG_REQUIRES="$COGL_PKG_REQUIRES sdl2-rig"
 
         COGL_DEFINES_SYMBOLS="$COGL_DEFINES_SYMBOLS COGL_HAS_SDL_SUPPORT"
       ],
