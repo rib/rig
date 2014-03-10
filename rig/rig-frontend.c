@@ -657,10 +657,10 @@ spawn_simulator (RigFrontend *frontend)
           break;
         }
 
-#ifdef RIG_ENABLE_DEBUG
       if (getenv ("RIG_SIMULATOR"))
         path = getenv ("RIG_SIMULATOR");
 
+#ifdef RIG_ENABLE_DEBUG
       if (execlp ("libtool", "libtool", "e", path, NULL) < 0)
         g_error ("Failed to run simulator process via libtool");
 
