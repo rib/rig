@@ -55,58 +55,6 @@ pkgconfig_DATA = $(pc_files)
 EXTRA_DIST += cogl2.pc.in
 DISTCLEANFILES += $(pc_files)
 
-# public api headers
-cogl_public_h = \
-	$(srcdir)/cogl-attribute-buffer.h 	\
-	$(srcdir)/cogl-attribute.h 		\
-	$(srcdir)/cogl-bitmap.h 		\
-	$(srcdir)/cogl-buffer.h 		\
-	$(srcdir)/cogl-clutter.h       		\
-	$(srcdir)/cogl-color.h 			\
-	$(srcdir)/cogl-context.h 		\
-	$(srcdir)/cogl-depth-state.h 		\
-	$(srcdir)/cogl-display.h 		\
-	$(srcdir)/cogl-error.h			\
-	$(srcdir)/cogl-euler.h 			\
-	$(srcdir)/cogl-framebuffer.h		\
-	$(srcdir)/cogl-gles2-types.h		\
-	$(srcdir)/cogl-gles2.h			\
-	$(srcdir)/cogl-index-buffer.h 		\
-	$(srcdir)/cogl-indices.h 		\
-	$(srcdir)/cogl-matrix.h 		\
-	$(srcdir)/cogl-meta-texture.h		\
-	$(srcdir)/cogl-object.h 		\
-	$(srcdir)/cogl-offscreen.h 		\
-	$(srcdir)/cogl-onscreen-template.h 	\
-	$(srcdir)/cogl-frame-info.h		\
-	$(srcdir)/cogl-onscreen.h		\
-	$(srcdir)/cogl-pipeline-layer-state.h 	\
-	$(srcdir)/cogl-pipeline-state.h 	\
-	$(srcdir)/cogl-pipeline.h 		\
-	$(srcdir)/cogl-pixel-buffer.h		\
-	$(srcdir)/cogl-poll.h			\
-	$(srcdir)/cogl-primitive-texture.h	\
-	$(srcdir)/cogl-primitive.h 		\
-	$(srcdir)/cogl-output.h			\
-	$(srcdir)/cogl-quaternion.h 		\
-	$(srcdir)/cogl-matrix-stack.h		\
-	$(srcdir)/cogl-renderer.h 		\
-	$(srcdir)/cogl-snippet.h		\
-	$(srcdir)/cogl-sub-texture.h            \
-	$(srcdir)/cogl-atlas-texture.h          \
-	$(srcdir)/cogl-texture-2d-gl.h 		\
-	$(srcdir)/cogl-texture-2d-sliced.h      \
-	$(srcdir)/cogl-texture-2d.h             \
-	$(srcdir)/cogl-texture-3d.h             \
-	$(srcdir)/cogl-texture-rectangle.h      \
-	$(srcdir)/cogl-texture.h 		\
-	$(srcdir)/cogl-types.h 			\
-	$(srcdir)/cogl-vector.h 		\
-	$(srcdir)/cogl-fence.h       		\
-	$(srcdir)/cogl-version.h		\
-	$(srcdir)/cogl.h			\
-	$(NULL)
-
 # experimental api headers
 # Note: we don't run glib-mkenums or gobject introspection over these headers
 cogl_experimental_h = \
@@ -115,359 +63,71 @@ cogl_experimental_h = \
 cogl_nodist_experimental_h = \
 	$(NULL)
 
-# nop driver
-cogl_driver_sources = \
-	$(srcdir)/driver/nop/cogl-driver-nop.c \
-	$(srcdir)/driver/nop/cogl-framebuffer-nop-private.h \
-	$(srcdir)/driver/nop/cogl-framebuffer-nop.c \
-	$(srcdir)/driver/nop/cogl-attribute-nop-private.h \
-	$(srcdir)/driver/nop/cogl-attribute-nop.c \
-	$(srcdir)/driver/nop/cogl-clip-stack-nop-private.h \
-	$(srcdir)/driver/nop/cogl-clip-stack-nop.c \
-	$(srcdir)/driver/nop/cogl-texture-2d-nop-private.h \
-	$(srcdir)/driver/nop/cogl-texture-2d-nop.c \
-	$(NULL)
 
-# gl driver sources
-cogl_gl_prototypes_h = \
-	$(srcdir)/gl-prototypes/cogl-gles2-functions.h		\
-	$(srcdir)/gl-prototypes/cogl-core-functions.h		\
-	$(srcdir)/gl-prototypes/cogl-in-gles-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-in-gles2-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-glsl-functions.h		\
-	$(NULL)
-
-cogl_driver_sources += \
-	$(srcdir)/driver/gl/cogl-util-gl-private.h \
-	$(srcdir)/driver/gl/cogl-util-gl.c \
-	$(srcdir)/driver/gl/cogl-framebuffer-gl-private.h \
-	$(srcdir)/driver/gl/cogl-framebuffer-gl.c \
-	$(srcdir)/driver/gl/cogl-texture-gl-private.h \
-	$(srcdir)/driver/gl/cogl-texture-gl.c \
-	$(srcdir)/driver/gl/cogl-texture-2d-gl-private.h \
-	$(srcdir)/driver/gl/cogl-texture-2d-gl.c \
-	$(srcdir)/driver/gl/cogl-attribute-gl-private.h \
-	$(srcdir)/driver/gl/cogl-attribute-gl.c \
-	$(srcdir)/driver/gl/cogl-clip-stack-gl-private.h \
-	$(srcdir)/driver/gl/cogl-clip-stack-gl.c \
-	$(srcdir)/driver/gl/cogl-buffer-gl-private.h \
-	$(srcdir)/driver/gl/cogl-buffer-gl.c \
-	$(srcdir)/driver/gl/cogl-pipeline-opengl.c \
-	$(srcdir)/driver/gl/cogl-pipeline-opengl-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-fragend-glsl.c \
-	$(srcdir)/driver/gl/cogl-pipeline-fragend-glsl-private.h \
-	$(srcdir)/driver/gl/gl/cogl-pipeline-fragend-arbfp.c \
-	$(srcdir)/driver/gl/gl/cogl-pipeline-fragend-arbfp-private.h \
-	$(srcdir)/driver/gl/gl/cogl-pipeline-progend-fixed-arbfp.c \
-	$(srcdir)/driver/gl/gl/cogl-pipeline-progend-fixed-arbfp-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-fragend-fixed.c \
-	$(srcdir)/driver/gl/cogl-pipeline-fragend-fixed-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-vertend-glsl.c \
-	$(srcdir)/driver/gl/cogl-pipeline-vertend-glsl-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-vertend-fixed.c \
-	$(srcdir)/driver/gl/cogl-pipeline-vertend-fixed-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-progend-fixed.c \
-	$(srcdir)/driver/gl/cogl-pipeline-progend-fixed-private.h \
-	$(srcdir)/driver/gl/cogl-pipeline-progend-glsl.c \
-	$(srcdir)/driver/gl/cogl-pipeline-progend-glsl-private.h \
-	$(NULL)
+include $(srcdir)/Makefile.sources
 
 if COGL_DRIVER_GL_SUPPORTED
-cogl_driver_sources += \
-	$(srcdir)/driver/gl/gl/cogl-driver-gl.c \
-	$(srcdir)/driver/gl/gl/cogl-texture-driver-gl.c \
-	$(NULL)
+cogl_sources_c += $(cogl_driver_gl_sources)
 endif
 
 if COGL_DRIVER_GLES_SUPPORTED
-cogl_driver_sources += \
-	$(srcdir)/driver/gl/gles/cogl-driver-gles.c \
-	$(srcdir)/driver/gl/gles/cogl-texture-driver-gles.c	\
-	$(NULL)
+cogl_sources_c += $(cogl_driver_gles_sources)
 endif
 
-# winsys sources, common to all backends
-cogl_winsys_common_sources = \
-	$(srcdir)/winsys/cogl-winsys-private.h \
-	$(srcdir)/winsys/cogl-winsys.c \
-	$(NULL)
-
-# sources
-cogl_sources_c = \
-	$(cogl_driver_sources)				\
-	$(cogl_winsys_common_sources)			\
-	$(srcdir)/cogl-private.h			\
-	$(srcdir)/cogl-i18n-private.h 			\
-	$(srcdir)/cogl-debug.h 				\
-	$(srcdir)/cogl-debug-options.h			\
-	$(srcdir)/cogl-gpu-info.c			\
-	$(srcdir)/cogl-gpu-info-private.h		\
-	$(srcdir)/cogl-context-private.h		\
-	$(srcdir)/cogl-context.c			\
-	$(srcdir)/cogl-renderer-private.h		\
-	$(srcdir)/cogl-renderer.h			\
-	$(srcdir)/cogl-renderer.c			\
-	$(srcdir)/cogl-onscreen-template-private.h 	\
-	$(srcdir)/cogl-onscreen-template.h 		\
-	$(srcdir)/cogl-onscreen-template.c 		\
-	$(srcdir)/cogl-display-private.h		\
-	$(srcdir)/cogl-display.h			\
-	$(srcdir)/cogl-display.c			\
-	$(srcdir)/cogl-driver.h				\
-	$(srcdir)/cogl.c				\
-	$(srcdir)/cogl-object-private.h			\
-	$(srcdir)/cogl-object.h				\
-	$(srcdir)/cogl-object.c				\
-	$(srcdir)/cogl-util.h 				\
-	$(srcdir)/cogl-util.c 				\
-	$(srcdir)/cogl-bitmap-private.h 		\
-	$(srcdir)/cogl-bitmap.c 			\
-	$(srcdir)/cogl-bitmap-conversion.c 		\
-	$(srcdir)/cogl-bitmap-packing.h			\
-	$(srcdir)/cogl-primitives-private.h 		\
-	$(srcdir)/cogl-primitives.c 			\
-	$(srcdir)/cogl-bitmap-pixbuf.c 			\
-	$(srcdir)/cogl-clip-stack.h 			\
-	$(srcdir)/cogl-clip-stack.c			\
-	$(srcdir)/cogl-feature-private.h                \
-	$(srcdir)/cogl-feature-private.c                \
-	$(srcdir)/cogl-color-private.h    		\
-	$(srcdir)/cogl-color.c				\
-	$(srcdir)/cogl-buffer-private.h 		\
-	$(srcdir)/cogl-buffer.c				\
-	$(srcdir)/cogl-pixel-buffer-private.h		\
-	$(srcdir)/cogl-pixel-buffer.c			\
-	$(srcdir)/cogl-index-buffer-private.h		\
-	$(srcdir)/cogl-index-buffer.c			\
-	$(srcdir)/cogl-attribute-buffer-private.h	\
-	$(srcdir)/cogl-attribute-buffer.c		\
-	$(srcdir)/cogl-indices-private.h		\
-	$(srcdir)/cogl-indices.c			\
-	$(srcdir)/cogl-attribute-private.h		\
-	$(srcdir)/cogl-attribute.c			\
-	$(srcdir)/cogl-primitive-private.h		\
-	$(srcdir)/cogl-primitive.c			\
-	$(srcdir)/cogl-matrix.c				\
-	$(srcdir)/cogl-vector.c				\
-	$(srcdir)/cogl-euler.c				\
-	$(srcdir)/cogl-quaternion-private.h 		\
-	$(srcdir)/cogl-quaternion.c			\
-	$(srcdir)/cogl-matrix-private.h			\
-	$(srcdir)/cogl-matrix-stack.c			\
-	$(srcdir)/cogl-matrix-stack-private.h		\
-	$(srcdir)/cogl-depth-state.c			\
-	$(srcdir)/cogl-depth-state-private.h		\
-	$(srcdir)/cogl-node.c				\
-	$(srcdir)/cogl-node-private.h			\
-	$(srcdir)/cogl-pipeline.c			\
-	$(srcdir)/cogl-pipeline-private.h		\
-	$(srcdir)/cogl-pipeline-layer.c			\
-	$(srcdir)/cogl-pipeline-layer-private.h		\
-	$(srcdir)/cogl-pipeline-state.c			\
-	$(srcdir)/cogl-pipeline-layer-state-private.h	\
-	$(srcdir)/cogl-pipeline-layer-state.c		\
-	$(srcdir)/cogl-pipeline-state-private.h		\
-	$(srcdir)/cogl-pipeline-debug.c			\
-	$(srcdir)/cogl-glsl-shader.c			\
-	$(srcdir)/cogl-glsl-shader-private.h		\
-	$(srcdir)/cogl-glsl-shader-boilerplate.h	\
-	$(srcdir)/cogl-pipeline-snippet-private.h	\
-	$(srcdir)/cogl-pipeline-snippet.c		\
-	$(srcdir)/cogl-pipeline-cache.h			\
-	$(srcdir)/cogl-pipeline-cache.c			\
-	$(srcdir)/cogl-pipeline-hash-table.h		\
-	$(srcdir)/cogl-pipeline-hash-table.c		\
-	$(srcdir)/cogl-sampler-cache.c			\
-	$(srcdir)/cogl-sampler-cache-private.h		\
-	$(srcdir)/cogl-blend-string.c			\
-	$(srcdir)/cogl-blend-string.h			\
-	$(srcdir)/cogl-debug.c				\
-	$(srcdir)/cogl-sub-texture-private.h            \
-	$(srcdir)/cogl-texture-private.h		\
-	$(srcdir)/cogl-texture-2d-private.h             \
-	$(srcdir)/cogl-texture-2d-sliced-private.h 	\
-	$(srcdir)/cogl-texture-3d-private.h             \
-	$(srcdir)/cogl-texture-driver.h			\
-	$(srcdir)/cogl-sub-texture.c                    \
-	$(srcdir)/cogl-texture.c			\
-	$(srcdir)/cogl-texture-2d.c                     \
-	$(srcdir)/cogl-texture-2d-sliced.c		\
-	$(srcdir)/cogl-texture-3d.c                     \
-	$(srcdir)/cogl-texture-rectangle-private.h      \
-	$(srcdir)/cogl-texture-rectangle.c              \
-	$(srcdir)/cogl-rectangle-map.h                  \
-	$(srcdir)/cogl-rectangle-map.c                  \
-	$(srcdir)/cogl-atlas.h                          \
-	$(srcdir)/cogl-atlas.c                          \
-	$(srcdir)/cogl-atlas-texture-private.h          \
-	$(srcdir)/cogl-atlas-texture.c                  \
-	$(srcdir)/cogl-meta-texture.c			\
-	$(srcdir)/cogl-primitive-texture.c		\
-	$(srcdir)/cogl-blit.h				\
-	$(srcdir)/cogl-blit.c				\
-	$(srcdir)/cogl-spans.h				\
-	$(srcdir)/cogl-spans.c				\
-	$(srcdir)/cogl-journal-private.h		\
-	$(srcdir)/cogl-journal.c			\
-	$(srcdir)/cogl-frame-info-private.h		\
-	$(srcdir)/cogl-frame-info.c			\
-	$(srcdir)/cogl-framebuffer-private.h		\
-	$(srcdir)/cogl-framebuffer.c 			\
-	$(srcdir)/cogl-onscreen-private.h		\
-	$(srcdir)/cogl-onscreen.c 			\
-	$(srcdir)/cogl-output-private.h			\
-	$(srcdir)/cogl-output.c				\
-	$(srcdir)/cogl-profile.h 			\
-	$(srcdir)/cogl-profile.c 			\
-	$(srcdir)/cogl-flags.h				\
-	$(srcdir)/cogl-bitmask.h                        \
-	$(srcdir)/cogl-bitmask.c                        \
-	$(srcdir)/cogl-gtype-private.h                  \
-	$(srcdir)/cogl-point-in-poly-private.h       	\
-	$(srcdir)/cogl-point-in-poly.c       		\
-	$(srcdir)/cogl-clutter.c       			\
-	$(srcdir)/cogl-list.c				\
-	$(srcdir)/cogl-list.h				\
-	$(srcdir)/winsys/cogl-winsys-stub-private.h	\
-	$(srcdir)/winsys/cogl-winsys-stub.c		\
-	$(srcdir)/cogl-config-private.h			\
-	$(srcdir)/cogl-config.c				\
-	$(srcdir)/cogl-boxed-value.h			\
-	$(srcdir)/cogl-boxed-value.c			\
-	$(srcdir)/cogl-snippet-private.h		\
-	$(srcdir)/cogl-snippet.c			\
-	$(srcdir)/cogl-poll-private.h			\
-	$(srcdir)/cogl-poll.c				\
-	$(srcdir)/gl-prototypes/cogl-all-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-gles1-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-gles2-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-in-gles-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-in-gles1-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-in-gles2-core-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-fixed-functions.h	\
-	$(srcdir)/gl-prototypes/cogl-glsl-functions.h	\
-	$(srcdir)/cogl-memory-stack-private.h		\
-	$(srcdir)/cogl-memory-stack.c			\
-	$(srcdir)/cogl-magazine-private.h		\
-	$(srcdir)/cogl-magazine.c			\
-	$(srcdir)/cogl-gles2-context-private.h		\
-	$(srcdir)/cogl-gles2-context.c			\
-	$(srcdir)/cogl-error-private.h			\
-	$(srcdir)/cogl-error.c				\
-	$(srcdir)/cogl-closure-list-private.h		\
-	$(srcdir)/cogl-closure-list.c			\
-	$(srcdir)/cogl-fence.c				\
-	$(srcdir)/cogl-fence-private.h			\
-	$(NULL)
-
 if USE_GLIB
-cogl_public_h += \
-	$(srcdir)/cogl-glib-source.h
-cogl_sources_c += \
-	$(srcdir)/cogl-glib-source.c
+cogl_public_h += $(cogl_glib_sources_h)
+cogl_sources_c += $(cogl_glib_sources_c)
 endif
 
 if SUPPORT_XLIB
-cogl_public_h += \
-	$(srcdir)/cogl-clutter-xlib.h \
-	$(srcdir)/cogl-xlib-renderer.h
-
-cogl_public_h += \
-       $(srcdir)/winsys/cogl-texture-pixmap-x11.h \
-       $(srcdir)/cogl-xlib.h
-
-cogl_sources_c += \
-	$(srcdir)/cogl-x11-renderer-private.h \
-	$(srcdir)/cogl-xlib-renderer-private.h \
-	$(srcdir)/cogl-xlib-renderer.c \
-	$(srcdir)/cogl-xlib.c \
-	$(srcdir)/cogl-xlib-private.h \
-	$(srcdir)/winsys/cogl-texture-pixmap-x11.c \
-	$(srcdir)/winsys/cogl-texture-pixmap-x11-private.h
+cogl_public_h += $(cogl_xlib_sources_h)
+cogl_sources_c += $(cogl_xlib_sources_c)
 endif
+
 if SUPPORT_GLX
-cogl_sources_c += \
-	$(srcdir)/cogl-glx-renderer-private.h \
-	$(srcdir)/cogl-glx-display-private.h \
-	$(srcdir)/winsys/cogl-winsys-glx-feature-functions.h \
-	$(srcdir)/winsys/cogl-winsys-glx-private.h \
-	$(srcdir)/winsys/cogl-winsys-glx.c
+cogl_sources_c += $(cogl_glx_sources_c)
 endif
-if SUPPORT_WGL
-cogl_public_h += \
-	$(srcdir)/cogl-win32-renderer.h
 
-cogl_sources_c += \
-	$(srcdir)/cogl-win32-renderer.c \
-	$(srcdir)/winsys/cogl-winsys-wgl-private.h \
-	$(srcdir)/winsys/cogl-winsys-wgl.c \
-	$(srcdir)/winsys/cogl-winsys-wgl-feature-functions.h
+if SUPPORT_WGL
+cogl_public_h += $(cogl_wgl_sources_h)
+cogl_sources_c += $(cogl_wgl_sources_c)
 endif
+
 if SUPPORT_WAYLAND_EGL_SERVER
-cogl_experimental_h += \
-	$(srcdir)/cogl-wayland-server.h
+cogl_experimental_h += $(cogl_egl_wayland_server_sources_h)
 endif
 if SUPPORT_EGL_PLATFORM_WAYLAND
-cogl_experimental_h += \
-	$(srcdir)/cogl-wayland-renderer.h \
-	$(srcdir)/cogl-wayland-client.h
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-wayland.c \
-	$(srcdir)/winsys/cogl-winsys-egl-wayland-private.h
+cogl_experimental_h += $(cogl_egl_wayland_sources_h)
+cogl_sources_c += $(cogl_egl_wayland_sources_c)
 endif
 if SUPPORT_EGL_PLATFORM_KMS
-cogl_experimental_h += \
-	$(srcdir)/cogl-kms-renderer.h \
-	$(srcdir)/cogl-kms-display.h
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-kms.c \
-	$(srcdir)/winsys/cogl-winsys-egl-kms-private.h
+cogl_experimental_h += $(cogl_egl_kms_sources_h)
+cogl_sources_c += $(cogl_egl_kms_sources_c)
 endif
 if SUPPORT_EGL_PLATFORM_XLIB
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-x11.c \
-	$(srcdir)/winsys/cogl-winsys-egl-x11-private.h
+cogl_sources_c += $(cogl_egl_xlib_sources_c)
 endif
 if SUPPORT_EGL_PLATFORM_POWERVR_NULL
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-null.c \
-	$(srcdir)/winsys/cogl-winsys-egl-null-private.h
+cogl_sources_c += $(cogl_egl_powervr_null_sources_c)
 endif
 if SUPPORT_EGL_PLATFORM_GDL
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-gdl.c \
-	$(srcdir)/winsys/cogl-winsys-egl-gdl-private.h
+cogl_sources_c += $(cogl_egl_gdl_sources_c)
 endif
 if SUPPORT_EGL_PLATFORM_ANDROID
-cogl_sources_c += \
-	$(srcdir)/winsys/cogl-winsys-egl-android.c \
-	$(srcdir)/winsys/cogl-winsys-egl-android-private.h
+cogl_sources_c += $(cogl_egl_android_sources_c)
 endif
 if SUPPORT_EGL
-cogl_public_h += \
-       $(srcdir)/cogl-egl.h
-cogl_nodist_experimental_h += \
-       $(builddir)/cogl-egl-defines.h
-
-cogl_sources_c += \
-       $(srcdir)/winsys/cogl-winsys-egl.c \
-       $(srcdir)/winsys/cogl-winsys-egl-feature-functions.h \
-       $(srcdir)/winsys/cogl-winsys-egl-private.h
+cogl_public_h += $(cogl_egl_sources_h)
+cogl_nodist_experimental_h += $(builddir)/cogl-egl-defines.h
+cogl_sources_c += $(cogl_egl_sources_c)
 endif
 if SUPPORT_SDL
-cogl_public_h += $(srcdir)/cogl-sdl.h
-cogl_sources_c += \
-       $(srcdir)/winsys/cogl-winsys-sdl-private.h \
-       $(srcdir)/winsys/cogl-winsys-sdl.c \
-       $(srcdir)/cogl-sdl.c
+cogl_public_h += $(cogl_sdl_sources_h)
+cogl_sources_c += $(cogl_sdl_sources_c)
 endif
 if SUPPORT_SDL2
-cogl_experimental_h += $(srcdir)/cogl-sdl.h
-cogl_sources_c += \
-       $(srcdir)/winsys/cogl-winsys-sdl-private.h \
-       $(srcdir)/winsys/cogl-winsys-sdl2.c \
-       $(srcdir)/cogl-sdl.c
+cogl_experimental_h += $(cogl_sdl2_sources_h)
+cogl_sources_c += $(cogl_sdl2_sources_c)
 endif
 
 EXTRA_DIST += stb_image.c
