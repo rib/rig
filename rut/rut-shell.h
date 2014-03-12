@@ -39,10 +39,6 @@
 #include "rut-types.h"
 #include "rut-closure.h"
 
-#ifdef __ANDROID__
-#include <android_native_app_glue.h>
-#endif
-
 typedef void (*RutShellInitCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellFiniCallback) (RutShell *shell, void *user_data);
 typedef void (*RutShellPaintCallback) (RutShell *shell, void *user_data);
@@ -190,15 +186,6 @@ rut_shell_get_headless (RutShell *shell);
  */
 void
 rut_shell_set_window_camera (RutShell *shell, RutObject *window_camera);
-
-#ifdef __ANDROID__
-RutShell *
-rut_android_shell_new (struct android_app* application,
-                       RutShellInitCallback init,
-                       RutShellFiniCallback fini,
-                       RutShellPaintCallback paint,
-                       void *user_data);
-#endif
 
 /* PRIVATE */
 void

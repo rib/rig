@@ -74,10 +74,7 @@
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
 
-#ifdef __ANDROID__
-#include <android_native_app_glue.h>
-#include <glib-android/glib-android.h>
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
 #include "rut-sdl-keysyms.h"
 #include "SDL_syswm.h"
 #endif
@@ -147,15 +144,7 @@ struct _RutShell
   RutList signal_cb_list;
 #endif
 
-#ifdef __ANDROID__
-  CoglBool quit;
-#else
   GMainLoop *main_loop;
-#endif
-
-#ifdef __ANDROID__
-  struct android_app* app;
-#endif
 
   RutInputQueue *input_queue;
   int input_queue_len;
@@ -471,8 +460,7 @@ rut_key_event_get_keysym (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -503,23 +491,7 @@ rut_key_event_get_action (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-  switch (AKeyEvent_getAction (event->native))
-    {
-    case AKEY_EVENT_ACTION_DOWN:
-      return RUT_KEY_EVENT_ACTION_DOWN;
-    case AKEY_EVENT_ACTION_UP:
-      return RUT_KEY_EVENT_ACTION_UP;
-    case AKEY_EVENT_ACTION_MULTIPLE:
-      g_warn_if_reached ();
-      /* TODO: Expand these out in android_handle_event into multiple distinct events,
-       * it seems odd to require app developers to have to have special code for this
-       * and key events are surely always low frequency enough that we don't need
-       * this for optimization purposes.
-       */
-      return RUT_KEY_EVENT_ACTION_UP;
-    }
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -561,18 +533,7 @@ rut_motion_event_get_action (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-  switch (AMotionEvent_getAction (event->native) &
-          AMOTION_EVENT_ACTION_MASK)
-    {
-    case AMOTION_EVENT_ACTION_DOWN:
-      return RUT_MOTION_EVENT_ACTION_DOWN;
-    case AMOTION_EVENT_ACTION_UP:
-      return RUT_MOTION_EVENT_ACTION_UP;
-    case AMOTION_EVENT_ACTION_MOVE:
-      return RUT_MOTION_EVENT_ACTION_MOVE;
-    }
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -614,23 +575,7 @@ rut_motion_event_get_button (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-  int pointer_index;
-
-  /* We currently just assume this api is used for handling
-   * mouse input... */
-  if (AInputEvent_getSource (event->native) !=
-      AINPUT_SOURCE_MOUSE)
-    return RUT_BUTTON_STATE_1;
-
-  pointer_index = ((AMotionEvent_getAction (event->native) &
-                    AMOTION_EVENT_ACTION_POINTER_INDEX_MASK) >>
-                   AMOTION_EVENT_ACTION_POINTER_INDEX_SHIFT);
-
-#warning "fixme: figure out how a pointer_index can be mapped to a mouse button"
-  return RUT_BUTTON_STATE_1 + pointer_index;
-
-#elif defined(USE_SDL)
+#if defined(USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -695,9 +640,7 @@ rut_motion_event_get_button_state (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-  return 0;
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -739,26 +682,6 @@ rut_motion_event_get_button_state (RutInputEvent *event)
 #error "Unknown input system"
 #endif
 }
-
-#ifdef __ANDROID__
-RutModifierState
-rut_modifier_state_for_android_meta (int32_t meta)
-{
-  RutModifierState rut_state = 0;
-
-  if (meta & AMETA_ALT_LEFT_ON)
-    rut_state |= RUT_MODIFIER_LEFT_ALT_ON;
-  if (meta & AMETA_ALT_RIGHT_ON)
-    rut_state |= RUT_MODIFIER_RIGHT_ALT_ON;
-
-  if (meta & AMETA_SHIFT_LEFT_ON)
-    rut_state |= RUT_MODIFIER_LEFT_SHIFT_ON;
-  if (meta & AMETA_SHIFT_RIGHT_ON)
-    rut_state |= RUT_MODIFIER_RIGHT_SHIFT_ON;
-
-  return rut_state;
-}
-#endif
 
 #ifdef USE_SDL
 static RutModifierState
@@ -806,10 +729,7 @@ rut_key_event_get_modifier_state (RutInputEvent *event)
         }
     }
 
-#ifdef __ANDROID__
-  int32_t meta = AKeyEvent_getMetaState (event->native);
-  return rut_modifier_state_for_android_meta (meta);
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     return rut_modifier_state_for_sdl_state (rut_sdl_event->mod_state);
@@ -823,10 +743,7 @@ rut_key_event_get_modifier_state (RutInputEvent *event)
 RutModifierState
 rut_motion_event_get_modifier_state (RutInputEvent *event)
 {
-#ifdef __ANDROID__
-  int32_t meta = AMotionEvent_getMetaState (event->native);
-  return rut_modifier_state_for_android_meta (meta);
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
   {
     RutSDLEvent *rut_sdl_event = event->native;
     return rut_modifier_state_for_sdl_state (rut_sdl_event->mod_state);
@@ -865,10 +782,7 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
     }
   else
     {
-#ifdef __ANDROID__
-      *x = AMotionEvent_getX (event->native, 0);
-      *y = AMotionEvent_getY (event->native, 0);
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
       {
         RutSDLEvent *rut_sdl_event = event->native;
         SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -956,11 +870,7 @@ rut_drop_offer_event_get_payload (RutInputEvent *event)
 const char *
 rut_text_event_get_text (RutInputEvent *event)
 {
-#ifdef __ANDROID__
-
-  return "";
-
-#elif defined (USE_SDL)
+#if defined (USE_SDL)
 
   RutSDLEvent *rut_sdl_event = event->native;
   SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
@@ -1317,92 +1227,6 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
   return status;
 }
 
-
-#ifdef __ANDROID__
-
-/**
- * Process the next input event.
- */
-static int32_t
-android_handle_input (struct android_app* app, AInputEvent *event)
-{
-  RutInputEvent rut_event;
-  RutShell *shell = (RutShell *)app->userData;
-
-  rut_event.native = event;
-  rut_event.shell = shell;
-  rut_event.input_transform = NULL;
-
-  switch (AInputEvent_getType (event))
-    {
-    case AINPUT_EVENT_TYPE_MOTION:
-      rut_event.type = RUT_INPUT_EVENT_TYPE_MOTION;
-      break;
-
-    case AINPUT_EVENT_TYPE_KEY:
-      rut_event.type = RUT_INPUT_EVENT_TYPE_KEY;
-      break;
-
-    default:
-      return 0;
-    }
-
-  if (rut_shell_dispatch_input_event (shell, &rut_event) ==
-      RUT_INPUT_EVENT_STATUS_HANDLED)
-    return 1;
-
-  return 0;
-}
-
-static int
-android_init (RutShell *shell)
-{
-  cogl_android_set_native_window (shell->app->window);
-
-  if (shell->init_cb)
-    shell->init_cb (shell, shell->user_data);
-  return 0;
-}
-
-/**
- * Process the next main command.
- */
-static void
-android_handle_cmd (struct android_app *app,
-                    int32_t cmd)
-{
-  RutShell *shell = (RutShell *) app->userData;
-
-  switch (cmd)
-    {
-    case APP_CMD_INIT_WINDOW:
-      /* The window is being shown, get it ready */
-      g_message ("command: INIT_WINDOW");
-      if (shell->app->window != NULL)
-        {
-          android_init (shell);
-          _rut_shell_paint (shell);
-        }
-      break;
-
-    case APP_CMD_TERM_WINDOW:
-      /* The window is being hidden or closed, clean it up */
-      g_message ("command: TERM_WINDOW");
-      _rut_shell_fini (shell);
-      break;
-
-    case APP_CMD_GAINED_FOCUS:
-      g_message ("command: GAINED_FOCUS");
-      break;
-
-    case APP_CMD_LOST_FOCUS:
-      g_message ("command: LOST_FOCUS");
-      _rut_shell_paint (shell);
-      break;
-    }
-}
-#endif
-
 static void
 _rut_shell_remove_grab_link (RutShell *shell,
                              RutShellGrab *grab)
@@ -1664,25 +1488,6 @@ rut_shell_set_window_camera (RutShell *shell, RutObject *window_camera)
   shell->window_camera = window_camera;
 }
 
-#ifdef __ANDROID__
-
-RutShell *
-rut_android_shell_new (struct android_app* application,
-                       RutShellInitCallback init,
-                       RutShellFiniCallback fini,
-                       RutShellPaintCallback paint,
-                       void *user_data)
-{
-  RutShell *shell = rut_shell_new (init, fini, paint, user_data);
-
-  shell->app = application;
-  application->userData = shell;
-  application->onAppCmd = android_handle_cmd;
-  application->onInputEvent = android_handle_input;
-}
-
-#endif
-
 void
 rut_shell_grab_key_focus (RutShell *shell,
                           RutObject *inputable,
@@ -1878,10 +1683,8 @@ rut_shell_start_redraw (RutShell *shell)
   g_return_if_fail (shell->redraw_queued == true);
 
   shell->redraw_queued = false;
-#ifndef __ANDROID__
   g_source_remove (shell->glib_paint_idle);
   shell->glib_paint_idle = 0;
-#endif
 }
 
 void
@@ -2365,51 +2168,6 @@ rut_shell_add_onscreen (RutShell *shell,
 void
 rut_shell_main (RutShell *shell)
 {
-#ifdef __ANDROID__
-  while (!shell->quit)
-    {
-      int events;
-      struct android_poll_source* source;
-
-      while (!shell->quit)
-        {
-          int status;
-
-          status = ALooper_pollAll (0, NULL, &events, (void**)&source);
-          if (status == ALOOPER_POLL_TIMEOUT)
-            {
-              if (shell->redraw_queued)
-                break;
-
-              /* Idle now
-               * FIXME: cogl_android_idle (shell->ctx)
-               */
-
-              status = ALooper_pollAll (-1, NULL, &events, (void**)&source);
-            }
-
-          if (status == ALOOPER_POLL_ERROR)
-            {
-              g_error ("Error waiting for polling for events");
-              return;
-            }
-
-          if (shell->app->destroyRequested != 0)
-            {
-              if (shell->fini_cb)
-                shell->fini_cb (shell, shell->user_data);
-              return;
-            }
-
-          if (source != NULL)
-            source->process (shell->app, source);
-        }
-
-      _rut_shell_paint (shell);
-    }
-
-#else
-
   GSource *cogl_source;
 
   if (shell->init_cb)
@@ -2461,8 +2219,6 @@ rut_shell_main (RutShell *shell)
   g_main_context_set_poll_func (g_main_context_default (),
                                 rut_sdl_original_poll);
 #endif /* USE_SDL */
-
-#endif
 }
 
 void
@@ -2605,10 +2361,8 @@ rut_shell_queue_redraw_real (RutShell *shell)
 {
   shell->redraw_queued = true;
 
-#ifndef __ANDROID__
   if (shell->glib_paint_idle <= 0)
     shell->glib_paint_idle = g_idle_add (glib_paint_cb, shell);
-#endif
 }
 
 void
@@ -3085,20 +2839,14 @@ rut_shell_add_frame_callback (RutShell *shell,
 void
 rut_shell_quit (RutShell *shell)
 {
-#ifdef __ANDROID__
-  shell->quit = TRUE;
-#else
-  {
-    GApplication *application = g_application_get_default ();
+  GApplication *application = g_application_get_default ();
 
-    /* If the application has created a GApplication then we'll quit
-     * that instead of the mainloop */
-    if (application)
-      g_application_quit (application);
-    else
-      g_main_loop_quit (shell->main_loop);
-  }
-#endif
+  /* If the application has created a GApplication then we'll quit
+   * that instead of the mainloop */
+  if (application)
+    g_application_quit (application);
+  else
+    g_main_loop_quit (shell->main_loop);
 }
 
 static void
