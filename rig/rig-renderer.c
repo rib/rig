@@ -1415,7 +1415,7 @@ image_source_ready_cb (RigImageSource *source,
   RigImageSource *color_src;
   RutObject *geometry;
   RigMaterial *material;
-  int width, height;
+  float width, height;
 
   geometry = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
   material = rig_entity_get_component (entity, RUT_COMPONENT_TYPE_MATERIAL);
@@ -1432,18 +1432,7 @@ image_source_ready_cb (RigImageSource *source,
   if (source != color_src)
     return;
 
-  if (rig_image_source_get_is_video (source))
-    {
-      width = 640;
-      height = cogl_gst_video_sink_get_height_for_width (
-                 rig_image_source_get_sink (source), width);
-    }
-  else
-    {
-      CoglTexture *texture = rig_image_source_get_texture (source);
-      width = cogl_texture_get_width (texture);
-      height = cogl_texture_get_height (texture);
-    }
+  rig_image_source_get_natural_size (source, &width, &height);
 
   /* TODO: make shape/diamond/pointalism image-size-dependant */
   if (rut_object_is (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT))

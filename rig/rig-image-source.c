@@ -425,3 +425,26 @@ rig_image_source_attach_frame (RigImageSource *source,
 #endif
     }
 }
+
+void
+rig_image_source_get_natural_size (RigImageSource *source,
+                                   float *width,
+                                   float *height)
+{
+  if (rig_image_source_get_is_video (source))
+    {
+#ifdef USE_GSTREAMER
+      /* FIXME: add cogl_gst_video_source_get_natural_size() api */
+      *width = 640;
+      *height = cogl_gst_video_sink_get_height_for_width (source->sink, width);
+#else
+      g_error ("FIXME: missing video support for this platform");
+#endif
+    }
+  else
+    {
+      CoglTexture *texture = rig_image_source_get_texture (source);
+      *width = cogl_texture_get_width (texture);
+      *height = cogl_texture_get_height (texture);
+    }
+}

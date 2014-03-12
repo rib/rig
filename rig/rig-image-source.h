@@ -99,4 +99,9 @@ _rig_init_image_source_wrappers_cache (RigEngine *engine);
 void
 _rig_destroy_image_source_wrappers (RigEngine *engine);
 
+void
+rig_image_source_get_natural_size (RigImageSource *source,
+                                   float *width,
+                                   float *height);
+
 #endif
