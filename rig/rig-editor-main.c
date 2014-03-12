@@ -32,7 +32,9 @@
 #include <glib.h>
 
 #include <rut.h>
+#ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
+#endif
 
 #include "rig-editor.h"
 
@@ -52,7 +54,9 @@ main (int argc, char **argv)
   RigEditor *editor;
   GError *error = NULL;
 
+#ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
+#endif
 
   g_option_context_add_main_entries (context, _rig_editor_entries, NULL);
 

@@ -29,7 +29,9 @@
 #ifndef __RIG_IMAGE_SOURCE_H__
 #define __RIG_IMAGE_SOURCE_H__
 
+#ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
+#endif
 
 #include <rut.h>
 
@@ -49,10 +51,12 @@ rig_image_source_new (RigEngine *engine,
 CoglTexture *
 rig_image_source_get_texture (RigImageSource *source);
 
+#ifdef USE_GSTREAMER
 CoglGstVideoSink *
 rig_image_source_get_sink (RigImageSource *source);
+#endif
 
-CoglBool
+bool
 rig_image_source_get_is_video (RigImageSource *source);
 
 typedef void (*RigImageSourceReadyCallback) (RigImageSource *source,

@@ -32,7 +32,6 @@
 
 #include <stdbool.h>
 #include <gio/gio.h>
-#include <cogl-gst/cogl-gst.h>
 
 #include <rut.h>
 

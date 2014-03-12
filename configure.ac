@@ -280,7 +280,24 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path avahi-glib avahi-client avahi-core libprotobuf-c cogl-gst gdk-pixbuf-2.0 sdl2-rig"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path avahi-glib avahi-client avahi-core libprotobuf-c gdk-pixbuf-2.0 sdl2-rig"
+
+have_cogl_gst=no
+PKG_CHECK_EXISTS([cogl-gst], [have_cogl_gst=yes])
+AC_ARG_ENABLE(
+  [gstreamer],
+  [AC_HELP_STRING([--enable-gstreamer=@<:@no/yes@:>@],
+                  [Enable gstreamer support @<:@default=]default[@:>@])],
+  [enable_gstreamer="$enableval"],
+  [enable_gstreamer="$have_cogl_gst"]
+)
+AS_IF([test "x$enable_gstreamer" = "xyes"],
+      [
+       RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES cogl-gst"
+       AC_DEFINE([USE_GSTREAMER], [1], [Enable gstreamer integration])
+       EXTRA_FEATURES="$EXTRA_FEATURES gstreamer"
+      ])
+AM_CONDITIONAL([USE_GSTREAMER], [test "x$enable_gstreamer" = "xyes"])
 
 dnl Check whether we are building for Android
 AC_CHECK_DECL([__ANDROID__],
@@ -410,6 +427,12 @@ echo "Rig - $RIG_VERSION ($RIG_RELEASE_STATUS)"
 echo ""
 echo " • Editor: $enable_editor"
 echo ""
+
+if test -n "$EXTRA_FEATURES"; then
+echo " • Optional Features: $EXTRA_FEATURES"
+echo ""
+fi
+
 echo " • Compiler options:"
 echo "        Rig debug: ${enable_debug}"
 echo "        Refcount debugging: ${enable_refcount_debug}"

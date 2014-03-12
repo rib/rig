@@ -32,6 +32,11 @@
 #include <glib.h>
 
 #include <cogl/cogl.h>
+
+#ifdef USE_GSTREAMER
+#include <cogl-gst/cogl-gst.h>
+#endif
+
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <math.h>
 
@@ -231,6 +236,8 @@ static RutPLYAttribute ply_attributes[] =
   }
 };
 
+#ifdef USE_GSTREAMER
+
 typedef struct _RigThumbnailGenerator
 {
   CoglContext *ctx;
@@ -343,6 +350,8 @@ generate_video_thumbnail (RigAsset *asset)
 
   g_free (uri);
 }
+
+#endif /* USE_GSTREAMER */
 
 static CoglTexture *
 generate_mesh_thumbnail (RigAsset *asset)
@@ -1123,6 +1132,7 @@ rig_asset_thumbnail (RigAsset *asset,
                      void *user_data,
                      RutClosureDestroyCallback destroy_cb)
 {
+#ifdef USE_GSTREAMER
   RutClosure *closure;
 
   g_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
@@ -1131,7 +1141,6 @@ rig_asset_thumbnail (RigAsset *asset,
                                   ready_callback,
                                   user_data,
                                   destroy_cb);
-
   generate_video_thumbnail (asset);
 
   /* Make sure the thumnail wasn't simply generated synchronously to
@@ -1139,6 +1148,10 @@ rig_asset_thumbnail (RigAsset *asset,
   g_warn_if_fail (!rut_list_empty (&asset->thumbnail_cb_list));
 
   return closure;
+#else
+  g_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
+  g_error ("FIXME: add non gstreamer based video thumbnailing support");
+#endif
 }
 
 void *

@@ -152,11 +152,15 @@ librut_la_SOURCES = \
     rut-rotation-inspector.c \
     rut-input-region.h \
     rut-input-region.c \
-    gstmemsrc.h \
-    gstmemsrc.c \
     rut-camera.h \
     rut-camera.c \
     $(source_h)
+
+if USE_GSTREAMER
+librut_la_SOURCES += \
+    gstmemsrc.h \
+    gstmemsrc.c
+endif
 
 if !HAVE_ANDROID
 librut_la_SOURCES += \

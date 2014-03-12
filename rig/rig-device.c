@@ -34,7 +34,9 @@
 #include <glib.h>
 
 #include <rut.h>
+#ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
+#endif
 
 #include "rig-frontend.h"
 #include "rig-engine.h"
@@ -219,7 +221,9 @@ main (int argc, char **argv)
   RigDevice *device;
   GError *error = NULL;
 
+#ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
+#endif
 
   g_option_context_add_main_entries (context, _rig_device_entries, NULL);
 

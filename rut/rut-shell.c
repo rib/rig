@@ -82,7 +82,9 @@
 #include "SDL_syswm.h"
 #endif
 
+#ifdef USE_GSTREAMER
 #include "gstmemsrc.h"
+#endif
 
 typedef struct
 {
@@ -1468,6 +1470,7 @@ rut_shell_new (bool headless,
 
   if (G_UNLIKELY (initialized == false))
     {
+#ifdef USE_GSTREAMER
       if (!headless)
         {
           gst_element_register (NULL,
@@ -1475,6 +1478,7 @@ rut_shell_new (bool headless,
                                 0,
                                 gst_mem_src_get_type());
         }
+#endif
       initialized = true;
     }
 

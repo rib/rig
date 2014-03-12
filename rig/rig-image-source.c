@@ -38,10 +38,13 @@ struct _RigImageSource
 
   CoglTexture *texture;
 
+#ifdef USE_GSTREAMER
   CoglGstVideoSink *sink;
   GstElement *pipeline;
   GstElement *bin;
-  CoglBool is_video;
+#endif
+
+  bool is_video;
 
   int first_layer;
   bool default_sample;
@@ -146,7 +149,8 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   return wrappers;
 }
 
-static CoglBool
+#ifdef USE_GSTREAMER
+static gboolean
 _rig_image_source_video_loop (GstBus *bus,
                               GstMessage *msg,
                               void *data)
@@ -215,13 +219,16 @@ _rig_image_source_video_play (RigImageSource *source,
     g_free (filename);
   gst_object_unref (bus);
 }
+#endif /* USE_GSTREAMER */
 
 static void
 _rig_image_source_free (void *object)
 {
+#ifdef USE_GSTREAMER
   RigImageSource *source = object;
 
   _rig_image_source_video_stop (source);
+#endif
 }
 
 RutType rig_image_source_type;
@@ -229,15 +236,10 @@ RutType rig_image_source_type;
 void
 _rig_image_source_init_type (void)
 {
-
-  RutType *type = &rig_image_source_type;
-#define TYPE RigImageSource
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_image_source_free);
-
-#undef TYPE
+  rut_type_init (&rig_image_source_type, "RigImageSource", _rig_image_source_free);
 }
 
+#ifdef USE_GSTREAMER
 static void
 pipeline_ready_cb (gpointer instance,
                    gpointer user_data)
@@ -261,6 +263,7 @@ new_frame_cb (gpointer instance,
                            RigImageSourceChangedCallback,
                            source);
 }
+#endif /* USE_GSTREAMER */
 
 RigImageSource *
 rig_image_source_new (RigEngine *engine,
@@ -271,10 +274,6 @@ rig_image_source_new (RigEngine *engine,
                                               _rig_image_source_init_type);
 
   source->engine = engine;
-  source->sink = NULL;
-  source->texture = NULL;
-  source->is_video = FALSE;
-  source->first_layer = 0;
   source->default_sample = TRUE;
 
   rut_list_init (&source->changed_cb_list);
@@ -282,6 +281,7 @@ rig_image_source_new (RigEngine *engine,
 
   if (rig_asset_get_is_video (asset))
     {
+#ifdef USE_GSTREAMER
       _rig_image_source_video_play (source, engine,
                                     rig_asset_get_path (asset),
                                     rig_asset_get_data (asset),
@@ -292,6 +292,9 @@ rig_image_source_new (RigEngine *engine,
        g_signal_connect (source->sink, "new_frame",
                          (GCallback) new_frame_cb,
                          source);
+#else
+       g_error ("FIXME: missing video support on this platform");
+#endif
     }
   else if (rig_asset_get_texture (asset))
     source->texture = rig_asset_get_texture (asset);
@@ -321,13 +324,15 @@ rig_image_source_get_texture (RigImageSource *source)
   return source->texture;
 }
 
+#ifdef USE_GSTREAMER
 CoglGstVideoSink*
 rig_image_source_get_sink (RigImageSource *source)
 {
   return source->sink;
 }
+#endif
 
-CoglBool
+bool
 rig_image_source_get_is_video (RigImageSource *source)
 {
   return source->is_video;
@@ -383,6 +388,7 @@ rig_image_source_setup_pipeline (RigImageSource *source,
     }
   else
     {
+#ifdef USE_GSTREAMER
       CoglGstVideoSink *sink = rig_image_source_get_sink (source);
 
       cogl_gst_video_sink_set_first_layer (sink, source->first_layer);
@@ -391,6 +397,9 @@ rig_image_source_setup_pipeline (RigImageSource *source,
 
       vertex_snippet = wrappers->video_source_vertex_wrapper;
       fragment_snippet = wrappers->video_source_fragment_wrapper;
+#else
+      g_error ("FIXME: missing video support for this platform");
+#endif
     }
 
   cogl_pipeline_add_snippet (pipeline, vertex_snippet);
@@ -408,7 +417,11 @@ rig_image_source_attach_frame (RigImageSource *source,
 
   if (rig_image_source_get_is_video (source))
     {
+#ifdef USE_GSTREAMER
       cogl_gst_video_sink_attach_frame (
         rig_image_source_get_sink (source), pipeline);
+#else
+      g_error ("FIXME: missing video support for this platform");
+#endif
     }
 }

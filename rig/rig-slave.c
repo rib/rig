@@ -37,7 +37,9 @@
 #include <rig-engine.h>
 #include <rig-avahi.h>
 #include <rig-rpc-network.h>
+#ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
+#endif
 
 #include "rig-pb.h"
 
@@ -684,7 +686,9 @@ android_main (struct android_app *application)
                                        &slave);
 
   slave.ctx = rut_context_new (engine.shell);
+#ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
+#endif
 
   rut_context_init (slave.ctx);
 
@@ -700,7 +704,9 @@ main (int argc, char **argv)
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
+#ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
+#endif
 
   g_option_context_add_main_entries (context, rig_slave_entries, NULL);
 
