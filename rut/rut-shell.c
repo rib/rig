@@ -83,6 +83,10 @@
 #include "gstmemsrc.h"
 #endif
 
+#ifdef USE_XLIB
+#include <X11/Xlib.h>
+#endif
+
 typedef struct
 {
   RutList list_node;
@@ -2285,7 +2289,7 @@ pointer_grab_cb (RutInputEvent *event, void *user_data)
                                   pointer_grab_cb,
                                   user_data);
 
-
+#ifdef USE_XLIB
           /* X11 doesn't implicitly grab the mouse on pointer-down events
            * so we have to do it explicitly... */
           if (grab->x11_grabbed)
@@ -2301,6 +2305,7 @@ pointer_grab_cb (RutInputEvent *event, void *user_data)
                   shell->x11_grabbed = false;
                 }
             }
+#endif
         }
     }
 
@@ -2326,6 +2331,7 @@ rut_shell_grab_pointer (RutShell *shell,
                         pointer_grab_cb,
                         grab);
 
+#ifdef USE_XLIB
   /* X11 doesn't implicitly grab the mouse on pointer-down events
    * so we have to do it explicitly... */
   if (shell->sdl_subsystem == SDL_SYSWM_X11)
@@ -2354,6 +2360,7 @@ rut_shell_grab_pointer (RutShell *shell,
                     GrabModeAsync,
                     CurrentTime);
     }
+#endif
 }
 
 void

@@ -299,6 +299,12 @@ AS_IF([test "x$enable_gstreamer" = "xyes"],
       ])
 AM_CONDITIONAL([USE_GSTREAMER], [test "x$enable_gstreamer" = "xyes"])
 
+PKG_CHECK_EXISTS([x11],
+                 [
+                   RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES x11"
+                   AC_DEFINE([USE_XLIB], [1], [Enable x11 integration])
+                 ])
+
 dnl Check whether we are building for Android
 AC_CHECK_DECL([__ANDROID__],
               [have_android=yes],
