@@ -105,9 +105,6 @@
 #ifdef COGL_HAS_GLIB_SUPPORT
 #include <cogl/cogl-glib-source.h>
 #endif
-/* XXX: This will definitly go away once all the Clutter winsys
- * code has been migrated down into Cogl! */
-#include <cogl/cogl-clutter.h>
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we

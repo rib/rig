@@ -91,14 +91,6 @@ cogl_clip_stack_restore
 cogl_clip_stack_save
 #endif
 
-#ifndef COGL_WINSYS_INTEGRATED
-cogl_clutter_check_extension_CLUTTER
-cogl_clutter_winsys_has_feature_CLUTTER
-#ifdef COGL_HAS_XLIB
-cogl_clutter_winsys_xlib_get_visual_info_CLUTTER
-#endif
-#endif
-
 cogl_color_copy
 cogl_color_equal
 cogl_color_free
@@ -344,9 +336,6 @@ cogl_object_unref
 cogl_offscreen_new_with_texture
 
 cogl_onscreen_add_swap_buffers_callback
-#ifndef COGL_WINSYS_INTEGRATED
-cogl_onscreen_clutter_backend_set_size_CLUTTER
-#endif
 cogl_onscreen_hide
 cogl_onscreen_new
 cogl_onscreen_set_swap_throttled
@@ -632,7 +621,7 @@ cogl_x11_onscreen_set_foreign_window_xid
 
 #ifndef COGL_NO_EXPORT_UNDERSCORE
 /* probably these should not be exported at all, but anyways, for now... */
-/* eventually, this section should disappear (or cogl, cogl-pango, clutter et al */
+/* eventually, this section should disappear (or cogl, cogl-pango et al */
 /* will link without the following) */
 _cogl_atlas_add_reorganize_callback
 _cogl_atlas_copy_rectangle

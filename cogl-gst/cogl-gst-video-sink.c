@@ -1229,7 +1229,7 @@ unknown_format:
 
 unhandled_format:
   {
-    GST_ERROR_OBJECT (sink, "Provided caps aren't supported by clutter-gst");
+    GST_ERROR_OBJECT (sink, "Provided caps aren't supported by cogl-gst");
     return FALSE;
   }
 

@@ -4,7 +4,6 @@ cogl_public_h = \
 	cogl-attribute.h 		\
 	cogl-bitmap.h 		\
 	cogl-buffer.h 		\
-	cogl-clutter.h       		\
 	cogl-color.h 			\
 	cogl-context.h 		\
 	cogl-depth-state.h 		\
@@ -253,7 +252,6 @@ cogl_sources_c = \
 	cogl-gtype-private.h                  \
 	cogl-point-in-poly-private.h       	\
 	cogl-point-in-poly.c       		\
-	cogl-clutter.c       			\
 	cogl-list.c				\
 	cogl-list.h				\
 	winsys/cogl-winsys-stub-private.h	\
@@ -292,7 +290,6 @@ cogl_glib_sources_h = cogl-glib-source.h
 cogl_glib_sources_c = cogl-glib-source.c
 
 cogl_xlib_sources_h = \
-	cogl-clutter-xlib.h \
 	cogl-xlib-renderer.h \
 	winsys/cogl-texture-pixmap-x11.h \
 	cogl-xlib.h
