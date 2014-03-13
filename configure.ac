@@ -305,6 +305,13 @@ PKG_CHECK_EXISTS([x11],
                    AC_DEFINE([USE_XLIB], [1], [Enable x11 integration])
                  ])
 
+AC_CHECK_FUNC(fmemopen,
+              [
+                have_fmemopen=yes
+                AC_DEFINE([HAVE_FMEMOPEN], [1], [Have fmemopen(3) implementation])
+              ], [have_fmemopen=no])
+AM_CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
+
 dnl Check whether we are building for Android
 AC_CHECK_DECL([__ANDROID__],
               [have_android=yes],

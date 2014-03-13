@@ -162,6 +162,12 @@ librut_la_SOURCES += \
     gstmemsrc.c
 endif
 
+if NEED_FMEMOPEN
+librut_la_SOURCES += \
+    fmemopen.h \
+    fmemopen.c
+endif
+
 if !HAVE_ANDROID
 librut_la_SOURCES += \
     rut-sdl-keysyms.c \

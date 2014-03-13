@@ -22,6 +22,10 @@
 #include <stdlib.h>
 #include <stddef.h>
 
+#ifndef HAVE_FMEMOPEN
+#include "fmemopen.h"
+#endif
+
 #include "rply.h"
 
 /* ----------------------------------------------------------------------
