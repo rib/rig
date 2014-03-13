@@ -280,7 +280,7 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path avahi-glib avahi-client avahi-core libprotobuf-c gdk-pixbuf-2.0 sdl2-rig"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path libprotobuf-c gdk-pixbuf-2.0 sdl2-rig"
 
 have_cogl_gst=no
 PKG_CHECK_EXISTS([cogl-gst], [have_cogl_gst=yes])
@@ -312,16 +312,6 @@ AC_CHECK_FUNC(fmemopen,
               ], [have_fmemopen=no])
 AM_CONDITIONAL([NEED_FMEMOPEN], [test "x$have_fmemopen" = "xno"])
 
-dnl Check whether we are building for Android
-AC_CHECK_DECL([__ANDROID__],
-              [have_android=yes],
-              [
-                have_android=no
-                AC_DEFINE([USE_SDL], [1],
-                          [On all platforms besides Android we currently use SDL])
-               ])
-AM_CONDITIONAL([HAVE_ANDROID], [test "x$have_android" = "xyes"])
-
 dnl Add the build flags for android_native_app_glue
 AS_IF([test "x$have_android" = "xyes"],
       [ANDROID_CHECK_MODULE([ANDROID_NATIVE_APP_GLUE],
@@ -332,33 +322,6 @@ AS_IF([test "x$have_android" = "xyes"],
                            [glib-android])
       CFLAGS="$CFLAGS $ANDROID_NATIVE_APP_GLUE_CFLAGS $GLIB_ANDROID_CFLAGS"])
 
-dnl Check whether we are building for OSX
-AC_CHECK_DECL([__APPLE__], [have_osx=yes], [have_osx=no])
-AM_CONDITIONAL([HAVE_OSX], [test "x$have_osx" = "xyes"])
-AS_IF([test "x$have_osx" = "xyes"],
-      [RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"])
-
-AC_ARG_ENABLE([gtk],
-              AS_HELP_STRING([--enable-gtk],
-                             [Use GTK/X11 for menus and dialog boxes]),
-              [enable_gtk="$enableval"],
-              [enable_gtk="auto"])
-AS_IF([test "x$enable_gtk" = "xauto"],
-      AS_IF([test "x$have_android" = "xno" -a "x$have_osx" = "xno"],
-            [PKG_CHECK_MODULES([GTK],
-                               [gtk+-x11-3.0],
-                               [enable_gtk=yes],
-                               [enable_gtk=no])],
-            [enable_gtk=no]))
-AS_CASE([$enable_gtk],
-        [yes],
-        [RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gtk+-x11-3.0"
-         AC_DEFINE([USE_GTK], [1], [Defined if GTK should be used])
-        ],
-        [no], [],
-        [AC_MSG_ERROR([Invalid value for --enable-gtk])])
-AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
-
 AC_SUBST(RIG_PKG_REQUIRES)
 PKG_CHECK_MODULES(RIG_DEP, [$RIG_PKG_REQUIRES])
 
@@ -367,6 +330,48 @@ PKG_CHECK_MODULES([LIBCRYPTO],
                   [have_libcrypto=yes],
                   [have_libcrypto=no])
 AM_CONDITIONAL([HAVE_LIBCRYPTO], [test "x$have_libcrypto" = "xyes"])
+
+CheckForGtk()
+{
+  PKG_CHECK_EXISTS([gtk], [have_gtk=yes], [have_gtk=no])
+  AC_ARG_ENABLE([gtk],
+                AS_HELP_STRING([--enable-gtk],
+                               [Use GTK/X11 for menus and dialog boxes]),
+                [enable_gtk="$enableval"],
+                [enable_gtk="$have_gtk"])
+  AS_CASE([$enable_gtk],
+          [yes],
+          [RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES gtk+-x11-3.0"
+           AC_DEFINE([USE_GTK], [1], [Defined if GTK should be used])
+          ],
+          [no], [],
+          [AC_MSG_ERROR([Invalid value for --enable-gtk])])
+}
+
+case "$host" in
+  *-linux-android*)
+    AC_MSG_ERROR([Use build/android/project when building for Android])
+    ;;
+  *-linux*)
+    CheckForGtk
+    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES avahi-glib avahi-client avahi-core"
+    AC_DEFINE([USE_AVAHI], [1], [Defined if Avahi should be used])
+    avahi_enabled=yes
+    ;;
+  *-darwin*)
+    RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lobjc -Wl,-framework,Cocoa"
+    platform=osx
+    ;;
+  *-*-cygwin* | *-*-mingw32*)
+    ;;
+  *)
+    AC_MSG_ERROR([Unsupported host: Please add to configure.ac])
+    ;;
+esac
+
+AM_CONDITIONAL([HAVE_OSX], [test "x$platform" = "xosx"])
+AM_CONDITIONAL([HAVE_GTK], [test "x$enable_gtk" = "xyes"])
+AM_CONDITIONAL([HAVE_AVAHI], [test "x$avahi_enabled" = "xyes"])
 
 PKG_CHECK_MODULES(RIG_CLANG, ["mclinker"])
 dnl LLVM_COMPONENTS="jit interpreter nativecodegen bitreader bitwriter ipo selectiondag asmparser"

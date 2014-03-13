@@ -123,8 +123,6 @@ librig_la_SOURCES = \
 	rig-renderer.c \
 	rig-engine.h \
 	rig-osx.h \
-	rig-avahi.h \
-	rig-avahi.c \
 	rig-rpc-network.h \
 	rig-rpc-network.c \
 	rig-slave-address.h \
@@ -140,6 +138,12 @@ librig_la_SOURCES = \
 	rig-ui.c \
 	rig-binding.h \
 	rig-binding.c
+
+if HAVE_AVAHI
+librig_la_SOURCES += \
+	rig-avahi.h \
+	rig-avahi.c
+endif
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \

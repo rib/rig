@@ -29,9 +29,11 @@
 #ifndef _RIG_ENGINE_H_
 #define _RIG_ENGINE_H_
 
+#ifdef USE_AVAHI
 #include <avahi-client/client.h>
 #include <avahi-client/publish.h>
 #include <avahi-client/lookup.h>
+#endif
 
 #include <gmodule.h>
 #include <gio/gio.h>
@@ -301,11 +303,13 @@ struct _RigEngine
 
   RigRPCServer *slave_service;
 
+#ifdef USE_AVAHI
   const AvahiPoll *avahi_poll_api;
   char *avahi_service_name;
   AvahiClient *avahi_client;
   AvahiEntryGroup *avahi_group;
   AvahiServiceBrowser *avahi_browser;
+#endif
 
   GList *slave_addresses;
 
