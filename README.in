@@ -9,20 +9,32 @@ DESCRIPTION
 -------------------------------------------------------------------------------
 
 Cogl is a small open source library for using 3D graphics hardware for
-rendering. The API departs from the flat state machine style of OpenGL and is
-designed to make it easy to write orthogonal components that can render without
-stepping on each others toes.
+rendering. The API departs from the flat state machine style of OpenGL
+and is designed to make it easy to write orthogonal components that
+can render without stepping on each others toes.
 
-As well as aiming for a nice API, we think having a single library as opposed
-to an API specification like OpenGL has a few advantages too; like being
-able to paper over the inconsistencies/bugs of different OpenGL
-implementations in a centralized place, not to mention the myriad of OpenGL
-extensions. It also means we are in a better position to provide utility
-APIs that help software developers since they only need to be implemented
-once and there is no risk of inconsistency between implementations.
+To understand its relationship to OpenGL it's important to understand
+that OpenGL is a collection of API specifications, with different
+profiles (E.g. Full OpenGL 2/3/4, Embedded OpenGL ES 1/2/3 and WebGL 1/2)
+as well as an unbounded set of vendor specific extension
+specifications. It should also be understood that OpenGL can't be used
+directly without some platform specific code to initialize it, create
+a context and handle presentation. Modern OpenGL is strictly only
+concerned with standardising apis for submitting work to a GPU and
+avoids specifying any utility apis, such as math utilities, a matrix
+stack api or format conversion apis which almost all real-time graphics
+software needs in practice.
 
-Having other backends, besides OpenGL, such as drm, Gallium or D3D are
-options we are interested in for the future.
+Cogl provides a single concrete library as opposed to an API
+specification. This distinction makes it possible for us to provide an
+api that works consistently across multiple OpenGL profiles and
+versions; allows us to tame the myriad of vendor extensions (There is
+is a lot of redundancy between OpenGL extensions); and enables us to
+work around some inconsistencies between different implementations in
+one place.
+
+Cogl is designed foremost as a library to support practical real-time
+graphics rendering with a GPU.
 
 --
 REQUIREMENTS
