@@ -800,7 +800,7 @@ rig_renderer_init (RigEngine *engine)
                       /* post */
                       "vec4 texel10 = texture2D (cogl_sampler10,\n"
                       "                         shadow_coords.xy);\n"
-                      "float distance_from_light = texel10.z + 0.0005;\n"
+                      "float distance_from_light = texel10.r + 0.0005;\n"
                       "float shadow = 1.0;\n"
                       "if (distance_from_light < shadow_coords.z)\n"
                       "  shadow = 0.5;\n"
