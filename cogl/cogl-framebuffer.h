@@ -882,13 +882,22 @@ cogl_framebuffer_get_depth_texture_enabled (CoglFramebuffer *framebuffer);
  * cogl_framebuffer_get_depth_texture:
  * @framebuffer: A #CoglFramebuffer
  *
- * Retrieves the depth buffer of @framebuffer as a #CoglTexture. You need to
- * call cogl_framebuffer_get_depth_texture(fb, TRUE); before using this
- * function.
+ * Retrieves the depth buffer of @framebuffer as a #CoglTexture. You
+ * must have called cogl_framebuffer_set_depth_texture(fb, TRUE);
+ * before using this function.
  *
- * <note>Calling this function implicitely allocates the framebuffer.</note>
- * <note>The texture returned stays valid as long as the framebuffer stays
- * valid.</note>
+ * If the returned texture is subsequently added to a pipeline layer
+ * and sampled from, then depth values should be read from the red
+ * component of the texture. The values of other components are
+ * undefined.
+ *
+ * <note>Calling this function implicitly allocates the
+ * framebuffer.</note>
+ *
+ * <note>The returned texture pointer is only guaranteed to remain
+ * valid as long as @framebuffer stays valid, but it's safe to keep
+ * the texture alive for longer by taking a reference on the returned
+ * texture.</note>
  *
  * Returns: (transfer none): the depth texture
  *
