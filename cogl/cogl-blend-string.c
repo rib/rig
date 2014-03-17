@@ -31,14 +31,14 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <stdlib.h>
 #include <string.h>
 
 #include <ulib.h>
+
+#include <test-fixtures/test-unit.h>
 
 #include "cogl-context-private.h"
 #include "cogl-debug.h"
@@ -287,7 +287,7 @@ validate_statements_for_context (CoglBlendStringStatement *statements,
     {
       if (statements[0].mask == COGL_BLEND_STRING_CHANNEL_MASK_ALPHA)
         {
-          error_string = "You need to also give a blend statement for the RGB"
+          error_string = "You need to also give a blend statement for the RGB "
                          "channels";
           goto error;
         }
@@ -919,7 +919,8 @@ error:
       _cogl_set_error (error,
                        COGL_BLEND_STRING_ERROR,
                        COGL_BLEND_STRING_ERROR_PARSE_ERROR,
-                       "Syntax error at offset %d: %s",
+                       "Syntax error for string \"%s\" at offset %d: %s",
+                       string,
                        offset,
                        error_string);
 
@@ -932,72 +933,95 @@ error:
     }
 }
 
-/*
- * INTERNAL TESTING CODE ...
- */
-
-struct _TestString
+UNIT_TEST (blend_string_parsing,
+           0 /* no requirements */,
+           0 /* no known failures */)
 {
-  const char *string;
-  CoglBlendStringContext context;
-};
-
-/* FIXME: this should probably be moved to a unit test */
-int
-_cogl_blend_string_test (void);
-
-int
-_cogl_blend_string_test (void)
-{
-  struct _TestString strings[] = {
+  struct _TestString
+    {
+      const char *string;
+      CoglBlendStringContext context;
+      CoglBool should_pass;
+    } tests[] = {
         {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE },
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          FALSE, /* to many arguments */
+        },
+        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          FALSE, /* Must specify an RGB blend string too */
+        },
         {"  RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE },
-        {"A=ADD(TEXTURE[A],PREVIOUS[RGB])",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE },
-        {"A=ADD(TEXTURE[A],PREVIOUS[RGB])",
-          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE },
-
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          FALSE, /* Must specify an alpha component blend string too */
+        },
+        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )"
+         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          TRUE,
+        },
+        {"  A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] ) "
+         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          TRUE,
+        },
+        {"A = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )\n "
+         "RGB = MODULATE ( TEXTURE[RGB], PREVIOUS[A] )  ",
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          TRUE,
+        },
+        {"A=ADD(TEXTURE[A],PREVIOUS[RGB])\n"
+         "RGB=MODULATE(TEXTURE[RGB], PREVIOUS[A])",
+          COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
+          TRUE,
+        },
         {"RGBA = ADD(SRC_COLOR*(SRC_COLOR[A]), DST_COLOR*(1-SRC_COLOR[A]))",
-          COGL_BLEND_STRING_CONTEXT_BLENDING },
-        {"RGB = ADD(SRC_COLOR, DST_COLOR*(0))",
-          COGL_BLEND_STRING_CONTEXT_BLENDING },
-        {"RGB = ADD(SRC_COLOR, 0)",
-          COGL_BLEND_STRING_CONTEXT_BLENDING },
-        {"RGB = ADD()",
-          COGL_BLEND_STRING_CONTEXT_BLENDING },
-        {"RGB = ADD(SRC_COLOR, 0, DST_COLOR)",
-          COGL_BLEND_STRING_CONTEXT_BLENDING },
+          COGL_BLEND_STRING_CONTEXT_BLENDING,
+          TRUE,
+        },
+        {"RGBA = ADD(SRC_COLOR,\nDST_COLOR*(0))",
+          COGL_BLEND_STRING_CONTEXT_BLENDING,
+          TRUE,
+        },
+        {"RGBA = ADD(SRC_COLOR, 0)",
+          COGL_BLEND_STRING_CONTEXT_BLENDING,
+          TRUE,
+        },
+        {"RGBA = ADD()",
+          COGL_BLEND_STRING_CONTEXT_BLENDING,
+          FALSE, /* missing arguments */
+        },
+        {"RGBA = ADD(SRC_COLOR, DST_COLOR)",
+          COGL_BLEND_STRING_CONTEXT_BLENDING,
+          TRUE,
+        },
         {NULL}
   };
   int i;
 
   CoglError *error = NULL;
-  for (i = 0; strings[i].string; i++)
+  for (i = 0; tests[i].string; i++)
     {
       CoglBlendStringStatement statements[2];
-      int count = _cogl_blend_string_compile (strings[i].string,
-                                              strings[i].context,
-                                              statements,
-                                              &error);
-      if (!count)
+      _cogl_blend_string_compile (tests[i].string,
+                                  tests[i].context,
+                                  statements,
+                                  &error);
+      if (tests[i].should_pass)
         {
-          u_print ("Failed to parse string:\n%s\n%s\n",
-                   strings[i].string,
-                   error->message);
+          if (error)
+            {
+              u_debug ("Unexpected parse error for string \"%s\"",
+                       tests[i].string);
+              u_assert_cmpstr ("", ==, error->message);
+            }
+        }
+      else
+        {
+          u_assert (error);
           cogl_error_free (error);
           error = NULL;
-          continue;
         }
-      u_print ("Original:\n");
-      u_print ("%s\n", strings[i].string);
-      if (count > 0)
-        print_statement (0, &statements[0]);
-      if (count > 1)
-        print_statement (1, &statements[1]);
     }
-
-  return 0;
 }
 
