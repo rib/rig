@@ -130,7 +130,8 @@ typedef struct _CoglBlendStringStatement
 
 
 CoglBool
-_cogl_blend_string_compile (const char *string,
+_cogl_blend_string_compile (CoglContext *ctx,
+                            const char *string,
                             CoglBlendStringContext context,
                             CoglBlendStringStatement *statements,
                             CoglError **error);

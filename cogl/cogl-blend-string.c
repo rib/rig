@@ -212,15 +212,14 @@ error:
 }
 
 static CoglBool
-validate_blend_statements (CoglBlendStringStatement *statements,
+validate_blend_statements (CoglContext *ctx,
+                           CoglBlendStringStatement *statements,
                            int n_statements,
                            CoglError **error)
 {
   int i, j;
   const char *error_string;
   CoglBlendStringError detail = COGL_BLEND_STRING_ERROR_INVALID_ERROR;
-
-  _COGL_GET_CONTEXT (ctx, 0);
 
   if (n_statements == 2 &&
       !ctx->glBlendEquationSeparate &&
@@ -276,7 +275,8 @@ error:
 }
 
 static CoglBool
-validate_statements_for_context (CoglBlendStringStatement *statements,
+validate_statements_for_context (CoglContext *ctx,
+                                 CoglBlendStringStatement *statements,
                                  int n_statements,
                                  CoglBlendStringContext context,
                                  CoglError **error)
@@ -300,7 +300,7 @@ validate_statements_for_context (CoglBlendStringStatement *statements,
     }
 
   if (context == COGL_BLEND_STRING_CONTEXT_BLENDING)
-    return validate_blend_statements (statements, n_statements, error);
+    return validate_blend_statements (ctx, statements, n_statements, error);
   else
     return validate_tex_combine_statements (statements, n_statements, error);
 
@@ -753,7 +753,8 @@ error:
 }
 
 int
-_cogl_blend_string_compile (const char *string,
+_cogl_blend_string_compile (CoglContext *ctx,
+                            const char *string,
                             CoglBlendStringContext context,
                             CoglBlendStringStatement *statements,
                             CoglError **error)
@@ -905,7 +906,8 @@ finished:
         print_statement (1, &statements[1]);
     }
 
-  if (!validate_statements_for_context (statements,
+  if (!validate_statements_for_context (ctx,
+                                        statements,
                                         current_statement,
                                         context,
                                         error))
@@ -1003,7 +1005,8 @@ UNIT_TEST (blend_string_parsing,
   for (i = 0; tests[i].string; i++)
     {
       CoglBlendStringStatement statements[2];
-      _cogl_blend_string_compile (tests[i].string,
+      _cogl_blend_string_compile (test_ctx,
+                                  tests[i].string,
                                   tests[i].context,
                                   statements,
                                   &error);

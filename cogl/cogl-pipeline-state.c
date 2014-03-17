@@ -643,11 +643,11 @@ cogl_pipeline_set_blend (CoglPipeline *pipeline,
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
 
-  count =
-    _cogl_blend_string_compile (blend_description,
-                                COGL_BLEND_STRING_CONTEXT_BLENDING,
-                                statements,
-                                error);
+  count = _cogl_blend_string_compile (ctx,
+                                      blend_description,
+                                      COGL_BLEND_STRING_CONTEXT_BLENDING,
+                                      statements,
+                                      error);
   if (!count)
     return FALSE;
 

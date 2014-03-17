@@ -1175,6 +1175,8 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
   CoglBlendStringStatement *a;
   int count;
 
+  _COGL_GET_CONTEXT (ctx, FALSE);
+
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_pipeline (pipeline), FALSE);
 
   /* Note: this will ensure that the layer exists, creating one if it
@@ -1190,7 +1192,8 @@ cogl_pipeline_set_layer_combine (CoglPipeline *pipeline,
   authority = _cogl_pipeline_layer_get_authority (layer, state);
 
   count =
-    _cogl_blend_string_compile (combine_description,
+    _cogl_blend_string_compile (ctx,
+                                combine_description,
                                 COGL_BLEND_STRING_CONTEXT_TEXTURE_COMBINE,
                                 statements,
                                 error);
