@@ -88,8 +88,8 @@ struct _CoglBitmap
  */
 CoglBitmap *
 _cogl_bitmap_new_with_malloc_buffer (CoglContext *context,
-                                     unsigned int width,
-                                     unsigned int height,
+                                     int width,
+                                     int height,
                                      CoglPixelFormat format,
                                      CoglError **error);
 

@@ -206,8 +206,8 @@ cogl_bitmap_new_for_data (CoglContext *context,
 
 CoglBitmap *
 _cogl_bitmap_new_with_malloc_buffer (CoglContext *context,
-                                     unsigned int width,
-                                     unsigned int height,
+                                     int width,
+                                     int height,
                                      CoglPixelFormat format,
                                      CoglError **error)
 {
@@ -296,13 +296,13 @@ cogl_bitmap_new_from_buffer (CoglBuffer *buffer,
 
 CoglBitmap *
 cogl_bitmap_new_with_size (CoglContext *context,
-                           unsigned int width,
-                           unsigned int height,
+                           int width,
+                           int height,
                            CoglPixelFormat format)
 {
   CoglPixelBuffer *pixel_buffer;
   CoglBitmap *bitmap;
-  unsigned int rowstride;
+  int rowstride;
 
   /* creating a buffer to store "any" format does not make sense */
   _COGL_RETURN_VAL_IF_FAIL (format != COGL_PIXEL_FORMAT_ANY, NULL);

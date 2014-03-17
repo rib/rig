@@ -160,8 +160,8 @@ cogl_bitmap_new_from_buffer (CoglBuffer *buffer,
  */
 CoglBitmap *
 cogl_bitmap_new_with_size (CoglContext *context,
-                           unsigned int width,
-                           unsigned int height,
+                           int width,
+                           int height,
                            CoglPixelFormat format);
 
 /**
