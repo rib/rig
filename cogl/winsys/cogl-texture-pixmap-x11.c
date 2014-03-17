@@ -122,9 +122,8 @@ cogl_damage_rectangle_is_whole (const CoglDamageRectangle *damage_rect,
 static const CoglWinsysVtable *
 _cogl_texture_pixmap_x11_get_winsys (CoglTexturePixmapX11 *tex_pixmap)
 {
-  /* FIXME: A CoglContext should be reachable from a CoglTexture
-   * pointer */
-  _COGL_GET_CONTEXT (ctx, NULL);
+  CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
 
   return ctx->display->renderer->winsys_vtable;
 }
@@ -134,13 +133,12 @@ process_damage_event (CoglTexturePixmapX11 *tex_pixmap,
                       XDamageNotifyEvent *damage_event)
 {
   CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   Display *display;
   enum { DO_NOTHING, NEEDS_SUBTRACT, NEED_BOUNDING_BOX } handle_mode;
   const CoglWinsysVtable *winsys;
 
-  _COGL_GET_CONTEXT (ctxt, NO_RETVAL);
-
-  display = cogl_xlib_renderer_get_display (ctxt->display->renderer);
+  display = cogl_xlib_renderer_get_display (ctx->display->renderer);
 
   COGL_NOTE (TEXTURE_PIXMAP, "Damage event received for %p", tex_pixmap);
 
@@ -236,11 +234,11 @@ static CoglFilterReturn
 _cogl_texture_pixmap_x11_filter (XEvent *event, void *data)
 {
   CoglTexturePixmapX11 *tex_pixmap = data;
+  CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   int damage_base;
 
-  _COGL_GET_CONTEXT (ctxt, COGL_FILTER_CONTINUE);
-
-  damage_base = _cogl_xlib_get_damage_base ();
+  damage_base = _cogl_xlib_renderer_get_damage_base (ctx->display->renderer);
   if (event->type == damage_base + XDamageNotify)
     {
       XDamageNotifyEvent *damage_event = (XDamageNotifyEvent *) event;
@@ -283,13 +281,13 @@ set_damage_object_internal (CoglContext *ctx,
 }
 
 CoglTexturePixmapX11 *
-cogl_texture_pixmap_x11_new (CoglContext *ctxt,
+cogl_texture_pixmap_x11_new (CoglContext *ctx,
                              uint32_t pixmap,
                              CoglBool automatic_updates,
                              CoglError **error)
 {
   CoglTexturePixmapX11 *tex_pixmap = u_new (CoglTexturePixmapX11, 1);
-  Display *display = cogl_xlib_renderer_get_display (ctxt->display->renderer);
+  Display *display = cogl_xlib_renderer_get_display (ctx->display->renderer);
   Window pixmap_root_window;
   int pixmap_x, pixmap_y;
   unsigned int pixmap_width, pixmap_height;
@@ -319,7 +317,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctxt,
                      ? COGL_PIXEL_FORMAT_RGBA_8888_PRE
                      : COGL_PIXEL_FORMAT_RGB_888);
 
-  _cogl_texture_init (tex, ctxt, pixmap_width, pixmap_height,
+  _cogl_texture_init (tex, ctx, pixmap_width, pixmap_height,
                       internal_format,
                       NULL, /* no loader */
                       &cogl_texture_pixmap_x11_vtable);
@@ -348,13 +346,13 @@ cogl_texture_pixmap_x11_new (CoglContext *ctxt,
   /* If automatic updates are requested and the Xlib connection
      supports damage events then we'll register a damage object on the
      pixmap */
-  damage_base = _cogl_xlib_get_damage_base ();
+  damage_base = _cogl_xlib_renderer_get_damage_base (ctx->display->renderer);
   if (automatic_updates && damage_base >= 0)
     {
       Damage damage = XDamageCreate (display,
                                      pixmap,
                                      XDamageReportBoundingBox);
-      set_damage_object_internal (ctxt,
+      set_damage_object_internal (ctx,
                                   tex_pixmap,
                                   damage,
                                   COGL_TEXTURE_PIXMAP_X11_DAMAGE_BOUNDING_BOX);
@@ -398,10 +396,9 @@ static void
 try_alloc_shm (CoglTexturePixmapX11 *tex_pixmap)
 {
   CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   XImage *dummy_image;
   Display *display;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   display = cogl_xlib_renderer_get_display (ctx->display->renderer);
 
@@ -499,13 +496,13 @@ cogl_texture_pixmap_x11_set_damage_object (CoglTexturePixmapX11 *tex_pixmap,
                                            CoglTexturePixmapX11ReportLevel
                                                                   report_level)
 {
+  CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   int damage_base;
 
-  _COGL_GET_CONTEXT (ctxt, NO_RETVAL);
-
-  damage_base = _cogl_xlib_get_damage_base ();
+  damage_base = _cogl_xlib_renderer_get_damage_base (ctx->display->renderer);
   if (damage_base >= 0)
-    set_damage_object_internal (ctxt, tex_pixmap, damage, report_level);
+    set_damage_object_internal (ctx, tex_pixmap, damage, report_level);
 }
 
 static CoglTexture *
@@ -560,6 +557,7 @@ static void
 _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
 {
   CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   Display *display;
   Visual *visual;
   CoglPixelFormat image_format;
@@ -569,8 +567,6 @@ _cogl_texture_pixmap_x11_update_image_texture (CoglTexturePixmapX11 *tex_pixmap)
   int bpp;
   int offset;
   CoglError *ignore = NULL;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   display = cogl_xlib_renderer_get_display (ctx->display->renderer);
   visual = tex_pixmap->visual;
@@ -1033,13 +1029,13 @@ _cogl_texture_pixmap_x11_get_type (CoglTexture *tex)
 static void
 _cogl_texture_pixmap_x11_free (CoglTexturePixmapX11 *tex_pixmap)
 {
+  CoglTexture *tex = COGL_TEXTURE (tex_pixmap);
+  CoglContext *ctx = tex->context;
   Display *display;
 
-  _COGL_GET_CONTEXT (ctxt, NO_RETVAL);
+  display = cogl_xlib_renderer_get_display (ctx->display->renderer);
 
-  display = cogl_xlib_renderer_get_display (ctxt->display->renderer);
-
-  set_damage_object_internal (ctxt, tex_pixmap, 0, 0);
+  set_damage_object_internal (ctx, tex_pixmap, 0, 0);
 
   if (tex_pixmap->image)
     XDestroyImage (tex_pixmap->image);

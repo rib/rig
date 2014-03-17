@@ -47,6 +47,7 @@
 #include <X11/extensions/Xdamage.h>
 
 #include "cogl-xlib.h"
+#include "cogl-xlib-private.h"
 
 /* These three functions are wrappers around the equivalent renderer
    functions. They can be removed once all xlib-based backends in

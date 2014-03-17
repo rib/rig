@@ -33,18 +33,6 @@
 
 #include <X11/Xlib.h>
 
-typedef struct _CoglXlibTrapState CoglXlibTrapState;
-
-struct _CoglXlibTrapState
-{
-  /* These values are intended to be internal to
-   * _cogl_xlib_{un,}trap_errors but they need to be in the header so
-   * that the struct can be allocated on the stack */
-  int (* old_error_handler) (Display *, XErrorEvent *);
-  int trapped_error_code;
-  CoglXlibTrapState *old_state;
-};
-
 void
 _cogl_xlib_query_damage_extension (void);
 

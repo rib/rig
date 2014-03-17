@@ -658,3 +658,11 @@ _cogl_xlib_renderer_output_for_rectangle (CoglRenderer *renderer,
 
   return max_overlapped;
 }
+
+int
+_cogl_xlib_renderer_get_damage_base (CoglRenderer *renderer)
+{
+  CoglX11Renderer *x11_renderer =
+    (CoglX11Renderer *)_cogl_xlib_renderer_get_data (renderer);
+  return x11_renderer->damage_base;
+}

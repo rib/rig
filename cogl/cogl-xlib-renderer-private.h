@@ -32,10 +32,21 @@
 #define __COGL_RENDERER_XLIB_PRIVATE_H
 
 #include "cogl-object-private.h"
-#include "cogl-xlib-private.h"
 #include "cogl-x11-renderer-private.h"
 #include "cogl-context.h"
 #include "cogl-output.h"
+
+typedef struct _CoglXlibTrapState CoglXlibTrapState;
+
+struct _CoglXlibTrapState
+{
+  /* These values are intended to be internal to
+   * _cogl_xlib_{un,}trap_errors but they need to be in the header so
+   * that the struct can be allocated on the stack */
+  int (* old_error_handler) (Display *, XErrorEvent *);
+  int trapped_error_code;
+  CoglXlibTrapState *old_state;
+};
 
 typedef struct _CoglXlibRenderer
 {
@@ -97,5 +108,8 @@ _cogl_xlib_renderer_output_for_rectangle (CoglRenderer *renderer,
                                           int y,
                                           int width,
                                           int height);
+
+int
+_cogl_xlib_renderer_get_damage_base (CoglRenderer *renderer);
 
 #endif /* __COGL_RENDERER_XLIB_PRIVATE_H */

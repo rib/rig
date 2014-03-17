@@ -36,7 +36,7 @@
 #include "cogl-flags.h"
 
 #ifdef COGL_HAS_XLIB_SUPPORT
-#include "cogl-xlib-private.h"
+#include "cogl-xlib-renderer-private.h"
 #endif
 
 #include "cogl-display-private.h"
