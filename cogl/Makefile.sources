@@ -297,8 +297,6 @@ cogl_xlib_sources_c = \
 	cogl-x11-renderer-private.h \
 	cogl-xlib-renderer-private.h \
 	cogl-xlib-renderer.c \
-	cogl-xlib.c \
-	cogl-xlib-private.h \
 	winsys/cogl-texture-pixmap-x11.c \
 	winsys/cogl-texture-pixmap-x11-private.h
 

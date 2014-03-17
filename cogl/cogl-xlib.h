@@ -31,55 +31,20 @@
 
 #include <X11/Xlib.h>
 
-/* NB: this is a top-level header that can be included directly but we
- * want to be careful not to define __COGL_H_INSIDE__ when this is
- * included internally while building Cogl itself since
- * __COGL_H_INSIDE__ is used in headers to guard public vs private api
- * definitions
- */
-#ifndef COGL_COMPILATION
+#ifdef COGL_COMPILATION
+#error "<cogl/cogl-xlib.h> shouldn't be included internally"
+#endif
 
 /* Note: When building Cogl .gir we explicitly define
  * __COGL_XLIB_H_INSIDE__ */
 #ifndef __COGL_XLIB_H_INSIDE__
 #define __COGL_XLIB_H_INSIDE__
-#endif
-
-/* Note: When building Cogl .gir we explicitly define
- * __COGL_H_INSIDE__ */
-#ifndef __COGL_H_INSIDE__
 #define __COGL_H_INSIDE__
 #define __COGL_MUST_UNDEF_COGL_H_INSIDE__
 #endif
 
-#endif /* COGL_COMPILATION */
-
 #include <cogl/cogl-types.h>
 #include <cogl/cogl-xlib-renderer.h>
-
-COGL_BEGIN_DECLS
-
-/*
- * cogl_xlib_handle_event:
- * @xevent: pointer to XEvent structure
- *
- * This function processes a single X event; it can be used to hook
- * into external X event retrieval (for example that done by Clutter
- * or GDK).
- *
- * Return value: #CoglFilterReturn. %COGL_FILTER_REMOVE indicates
- * that Cogl has internally handled the event and the caller should
- * do no further processing.  %COGL_FILTER_CONTINUE indicates that
- * Cogl is either not interested in the event, or has used the event
- * to update internal state without taking any exclusive action.
- *
- * Stability: Unstable
- */
-CoglFilterReturn
-cogl_xlib_handle_event (XEvent *xevent);
-
-COGL_END_DECLS
-
 
 /* The gobject introspection scanner seems to parse public headers in
  * isolation which means we need to be extra careful about how we

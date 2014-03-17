@@ -53,7 +53,7 @@
 #include "cogl-object-private.h"
 #include "cogl-winsys-private.h"
 #include "cogl-pipeline-opengl-private.h"
-#include "cogl-xlib.h"
+#include "cogl-xlib-renderer.h"
 #include "cogl-error-private.h"
 #include "cogl-texture-gl-private.h"
 #include "cogl-private.h"
