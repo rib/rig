@@ -44,7 +44,7 @@
 
 typedef struct _CoglTextureVtable     CoglTextureVtable;
 
-/* Encodes three possibiloities result of transforming a quad */
+/* Encodes three possible result of transforming a quad */
 typedef enum {
   /* quad doesn't cross the boundaries of a texture */
   COGL_TRANSFORM_NO_REPEAT,

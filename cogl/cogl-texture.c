@@ -279,7 +279,11 @@ cogl_texture_is_sliced (CoglTexture *texture)
 {
   if (!texture->allocated)
     cogl_texture_allocate (texture, NULL);
-  return texture->vtable->is_sliced (texture);
+
+  if (texture->vtable->is_sliced)
+    return texture->vtable->is_sliced (texture);
+  else
+    return FALSE;
 }
 
 /* If this returns FALSE, that implies _foreach_sub_texture_in_region
@@ -291,7 +295,10 @@ _cogl_texture_can_hardware_repeat (CoglTexture *texture)
 {
   if (!texture->allocated)
     cogl_texture_allocate (texture, NULL);
-  return texture->vtable->can_hardware_repeat (texture);
+  if (texture->vtable->can_hardware_repeat)
+    return texture->vtable->can_hardware_repeat (texture);
+  else
+    return TRUE;
 }
 
 /* NB: You can't use this with textures comprised of multiple sub textures (use
@@ -302,7 +309,8 @@ _cogl_texture_transform_coords_to_gl (CoglTexture *texture,
                                       float *s,
                                       float *t)
 {
-  texture->vtable->transform_coords_to_gl (texture, s, t);
+  if (texture->vtable->transform_coords_to_gl)
+    texture->vtable->transform_coords_to_gl (texture, s, t);
 }
 
 CoglTransformResult
@@ -353,7 +361,8 @@ _cogl_texture_pre_paint (CoglTexture *texture, CoglTexturePrePaintFlags flags)
 void
 _cogl_texture_ensure_non_quad_rendering (CoglTexture *texture)
 {
-  texture->vtable->ensure_non_quad_rendering (texture);
+  if (texture->vtable->ensure_non_quad_rendering)
+    texture->vtable->ensure_non_quad_rendering (texture);
 }
 
 CoglBool
