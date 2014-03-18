@@ -434,9 +434,7 @@ rig_image_source_get_natural_size (RigImageSource *source,
   if (rig_image_source_get_is_video (source))
     {
 #ifdef USE_GSTREAMER
-      /* FIXME: add cogl_gst_video_source_get_natural_size() api */
-      *width = 640;
-      *height = cogl_gst_video_sink_get_height_for_width (source->sink, width);
+      cogl_gst_video_sink_get_natural_size (source->sink, width, height);
 #else
       g_error ("FIXME: missing video support for this platform");
 #endif
