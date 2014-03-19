@@ -60,11 +60,13 @@
    required when building for drivers missing some fixed function
    state that we use */
 
-typedef void (* UpdateUniformFunc) (CoglPipeline *pipeline,
+typedef void (* UpdateUniformFunc) (CoglContext *ctx,
+                                    CoglPipeline *pipeline,
                                     int uniform_location,
                                     void *getter_func);
 
-static void update_float_uniform (CoglPipeline *pipeline,
+static void update_float_uniform (CoglContext *ctx,
+                                  CoglPipeline *pipeline,
                                   int uniform_location,
                                   void *getter_func);
 
@@ -89,7 +91,8 @@ static BuiltinUniformData builtin_uniforms[] =
     { "_cogl_alpha_test_ref",
       cogl_pipeline_get_alpha_test_reference, update_float_uniform,
       COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE,
-      COGL_PRIVATE_FEATURE_ALPHA_TEST }
+      COGL_N_PRIVATE_FEATURES } /* XXX: used as a non-existent "feature"
+                                 * that will never be found. */
   };
 
 const CoglPipelineProgend _cogl_pipeline_glsl_progend;
@@ -103,6 +106,8 @@ typedef struct _UnitState
 
 typedef struct
 {
+  CoglContext *ctx;
+
   unsigned int ref_count;
 
   GLuint program;
@@ -228,12 +233,14 @@ clear_flushed_matrix_stacks (CoglPipelineProgramState *program_state)
 }
 
 static CoglPipelineProgramState *
-program_state_new (int n_layers,
+program_state_new (CoglContext *ctx,
+                   int n_layers,
                    CoglPipelineCacheEntry *cache_entry)
 {
   CoglPipelineProgramState *program_state;
 
   program_state = u_slice_new (CoglPipelineProgramState);
+  program_state->ctx = ctx;
   program_state->ref_count = 1;
   program_state->program = 0;
   program_state->unit_state = u_new (UnitState, n_layers);
@@ -252,8 +259,6 @@ destroy_program_state (void *user_data,
 {
   CoglPipelineProgramState *program_state = user_data;
 
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
   /* If the program state was last used for this pipeline then clear
      it so that if same address gets used again for a new pipeline
      then we won't think it's the same pipeline and avoid updating the
@@ -267,6 +272,8 @@ destroy_program_state (void *user_data,
 
   if (--program_state->ref_count == 0)
     {
+      CoglContext *ctx = program_state->ctx;
+
       clear_attribute_cache (program_state);
 
       _cogl_matrix_entry_cache_destroy (&program_state->projection_cache);
@@ -315,11 +322,9 @@ dirty_program_state (CoglPipeline *pipeline)
 }
 
 static void
-link_program (GLint gl_program)
+link_program (CoglContext *ctx, GLint gl_program)
 {
   GLint link_status;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   GE( ctx, glLinkProgram (gl_program) );
 
@@ -347,6 +352,7 @@ link_program (GLint gl_program)
 
 typedef struct
 {
+  CoglContext *ctx;
   int unit;
   GLuint gl_program;
   CoglBool update_all;
@@ -359,11 +365,10 @@ get_uniform_cb (CoglPipeline *pipeline,
                 void *user_data)
 {
   UpdateUniformsState *state = user_data;
+  CoglContext *ctx = state->ctx;
   CoglPipelineProgramState *program_state = state->program_state;
   UnitState *unit_state = &program_state->unit_state[state->unit];
   GLint uniform_location;
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
 
   /* We can reuse the source buffer to create the uniform name because
      the program has now been linked */
@@ -403,10 +408,9 @@ update_constants_cb (CoglPipeline *pipeline,
                      void *user_data)
 {
   UpdateUniformsState *state = user_data;
+  CoglContext *ctx = state->ctx;
   CoglPipelineProgramState *program_state = state->program_state;
   UnitState *unit_state = &program_state->unit_state[state->unit++];
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
 
   if (unit_state->combine_constant_uniform != -1 &&
       (state->update_all || unit_state->dirty_combine_constant))
@@ -435,14 +439,19 @@ update_builtin_uniforms (CoglContext *context,
     return;
 
   for (i = 0; i < U_N_ELEMENTS (builtin_uniforms); i++)
-    if (!_cogl_has_private_feature (context,
-                                    builtin_uniforms[i].feature_replacement) &&
-        (program_state->dirty_builtin_uniforms & (1 << i)) &&
-        program_state->builtin_uniform_locations[i] != -1)
-      builtin_uniforms[i].update_func (pipeline,
-                                       program_state
-                                       ->builtin_uniform_locations[i],
-                                       builtin_uniforms[i].getter_func);
+    {
+      if (!_cogl_has_private_feature (context,
+                                      builtin_uniforms[i].feature_replacement) &&
+          (program_state->dirty_builtin_uniforms & (1 << i)) &&
+          program_state->builtin_uniform_locations[i] != -1)
+        {
+          builtin_uniforms[i].update_func (context,
+                                           pipeline,
+                                           program_state
+                                           ->builtin_uniform_locations[i],
+                                           builtin_uniforms[i].getter_func);
+        }
+    }
 
   program_state->dirty_builtin_uniforms = 0;
 }
@@ -516,7 +525,8 @@ flush_uniform_cb (int uniform_num, void *user_data)
 }
 
 static void
-_cogl_pipeline_progend_glsl_flush_uniforms (CoglPipeline *pipeline,
+_cogl_pipeline_progend_glsl_flush_uniforms (CoglContext *ctx,
+                                            CoglPipeline *pipeline,
                                             CoglPipelineProgramState *
                                                                   program_state,
                                             GLuint gl_program,
@@ -525,8 +535,6 @@ _cogl_pipeline_progend_glsl_flush_uniforms (CoglPipeline *pipeline,
   CoglPipelineUniformsState *uniforms_state;
   FlushUniformsClosure data;
   int n_uniform_longs;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   if (pipeline->differences & COGL_PIPELINE_STATE_UNIFORMS)
     uniforms_state = &pipeline->big_state->uniforms_state;
@@ -668,7 +676,8 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
             program_state->ref_count++;
           else
             program_state
-              = program_state_new (cogl_pipeline_get_n_layers (authority),
+              = program_state_new (ctx,
+                                   cogl_pipeline_get_n_layers (authority),
                                    cache_entry);
 
           set_program_state (authority, program_state);
@@ -702,16 +711,16 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
       GE( ctx, glBindAttribLocation (program_state->program,
                                      0, "cogl_position_in"));
 
-      link_program (program_state->program);
+      link_program (ctx, program_state->program);
 
       program_changed = TRUE;
     }
 
   gl_program = program_state->program;
 
-  _cogl_use_fragment_program (gl_program, COGL_PIPELINE_PROGRAM_TYPE_GLSL);
-  _cogl_use_vertex_program (gl_program, COGL_PIPELINE_PROGRAM_TYPE_GLSL);
+  _cogl_gl_use_program (ctx, gl_program);
 
+  state.ctx = ctx;
   state.unit = 0;
   state.gl_program = gl_program;
   state.program_state = program_state;
@@ -768,7 +777,8 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
 
   update_builtin_uniforms (ctx, pipeline, gl_program, program_state);
 
-  _cogl_pipeline_progend_glsl_flush_uniforms (pipeline,
+  _cogl_pipeline_progend_glsl_flush_uniforms (ctx,
+                                              pipeline,
                                               program_state,
                                               gl_program,
                                               program_changed);
@@ -964,14 +974,13 @@ _cogl_pipeline_progend_glsl_pre_paint (CoglPipeline *pipeline,
 }
 
 static void
-update_float_uniform (CoglPipeline *pipeline,
+update_float_uniform (CoglContext *ctx,
+                      CoglPipeline *pipeline,
                       int uniform_location,
                       void *getter_func)
 {
   float (* float_getter_func) (CoglPipeline *) = getter_func;
   float value;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   value = float_getter_func (pipeline);
   GE( ctx, glUniform1f (uniform_location, value) );

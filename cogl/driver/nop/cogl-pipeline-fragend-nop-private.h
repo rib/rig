@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2010 Intel Corporation.
+ * Copyright (C) 2014 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,18 +25,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- *
- * Authors:
- *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_VERTEND_FIXED_PRIVATE_H
-#define __COGL_PIPELINE_VERTEND_FIXED_PRIVATE_H
+#ifndef __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H
+#define __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H
 
 #include "cogl-pipeline-private.h"
 
-extern const CoglPipelineVertend _cogl_pipeline_fixed_vertend;
+extern const CoglPipelineFragend _cogl_pipeline_nop_fragend;
 
-#endif /* __COGL_PIPELINE_VERTEND_FIXED_PRIVATE_H */
+#endif /* __COGL_PIPELINE_FRAGEND_NOP_PRIVATE_H */
 

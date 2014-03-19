@@ -49,39 +49,17 @@
 
 #include <ulib.h>
 
-#ifdef HAVE_COGL_GL
+#define COGL_PIPELINE_PROGEND_GLSL  0
+#define COGL_PIPELINE_PROGEND_NOP   1
+#define COGL_PIPELINE_N_PROGENDS    2
 
-#define COGL_PIPELINE_PROGEND_FIXED       0
-#define COGL_PIPELINE_PROGEND_GLSL        1
-#define COGL_PIPELINE_N_PROGENDS          2
-
-#define COGL_PIPELINE_VERTEND_FIXED 0
-#define COGL_PIPELINE_VERTEND_GLSL  1
+#define COGL_PIPELINE_VERTEND_GLSL  0
+#define COGL_PIPELINE_VERTEND_NOP   1
 #define COGL_PIPELINE_N_VERTENDS    2
 
-#define COGL_PIPELINE_FRAGEND_FIXED 0
-#define COGL_PIPELINE_FRAGEND_GLSL  1
+#define COGL_PIPELINE_FRAGEND_GLSL  0
+#define COGL_PIPELINE_FRAGEND_NOP   1
 #define COGL_PIPELINE_N_FRAGENDS    2
-
-#else /* HAVE_COGL_GL */
-
-#ifdef HAVE_COGL_GLES2
-
-#define COGL_PIPELINE_PROGEND_GLSL 0
-#define COGL_PIPELINE_VERTEND_GLSL 0
-#define COGL_PIPELINE_FRAGEND_GLSL 0
-
-#define COGL_PIPELINE_N_PROGENDS    1
-#define COGL_PIPELINE_N_VERTENDS    1
-#define COGL_PIPELINE_N_FRAGENDS    1
-
-#else /* HAVE_COGL_GLES2 */
-
-#error No drivers defined
-
-#endif /* HAVE_COGL_GLES2 */
-
-#endif /* HAVE_COGL_GL */
 
 #define COGL_PIPELINE_PROGEND_DEFAULT    0
 #define COGL_PIPELINE_PROGEND_UNDEFINED  3
@@ -501,7 +479,7 @@ typedef struct
 typedef enum
 {
   COGL_PIPELINE_PROGRAM_TYPE_GLSL = 1,
-  COGL_PIPELINE_PROGRAM_TYPE_FIXED
+  COGL_PIPELINE_PROGRAM_TYPE_NOP
 } CoglPipelineProgramType;
 
 extern const CoglPipelineFragend *
@@ -634,12 +612,6 @@ typedef struct _CoglPipelineFlushOptions
   uint32_t disable_layers;
   CoglTexture *layer0_override_texture;
 } CoglPipelineFlushOptions;
-
-void
-_cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type);
-
-void
-_cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type);
 
 unsigned int
 _cogl_get_n_args_for_combine_func (CoglPipelineCombineFunc func);

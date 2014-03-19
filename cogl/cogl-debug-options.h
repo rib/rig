@@ -130,11 +130,6 @@ OPT (DISABLE_TEXTURING,
      "disable-texturing",
      N_("Disable texturing"),
      N_("Disable texturing any primitives"))
-OPT (DISABLE_FIXED,
-     N_("Root Cause"),
-     "disable-fixed",
-     N_("Disable fixed"),
-     N_("Disable use of the fixed function pipeline backend"))
 OPT (DISABLE_GLSL,
      N_("Root Cause"),
      "disable-glsl",

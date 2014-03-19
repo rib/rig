@@ -634,32 +634,6 @@ _cogl_texture_3d_pre_paint (CoglTexture *tex, CoglTexturePrePaintFlags flags)
          GL_GENERATE_MIPMAP and reuploading the first pixel */
       if (cogl_has_feature (ctx, COGL_FEATURE_ID_OFFSCREEN))
         _cogl_texture_gl_generate_mipmaps (tex);
-#if defined (HAVE_COGL_GL)
-      else if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_FIXED))
-        {
-          _cogl_bind_gl_texture_transient (GL_TEXTURE_3D,
-                                           tex_3d->gl_texture,
-                                           FALSE);
-
-          GE( ctx, glTexParameteri (GL_TEXTURE_3D,
-                                    GL_GENERATE_MIPMAP,
-                                    GL_TRUE) );
-          GE( ctx, glTexSubImage3D (GL_TEXTURE_3D,
-                                    0, /* level */
-                                    0, /* xoffset */
-                                    0, /* yoffset */
-                                    0, /* zoffset */
-                                    1, /* width */
-                                    1, /* height */
-                                    1, /* depth */
-                                    tex_3d->first_pixel.gl_format,
-                                    tex_3d->first_pixel.gl_type,
-                                    tex_3d->first_pixel.data) );
-          GE( ctx, glTexParameteri (GL_TEXTURE_3D,
-                                    GL_GENERATE_MIPMAP,
-                                    GL_FALSE) );
-        }
-#endif
 
       tex_3d->mipmaps_dirty = FALSE;
     }

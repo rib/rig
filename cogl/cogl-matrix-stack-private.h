@@ -173,19 +173,6 @@ typedef struct _CoglMatrixEntryCache
 void
 _cogl_matrix_entry_identity_init (CoglMatrixEntry *entry);
 
-typedef enum {
-  COGL_MATRIX_MODELVIEW,
-  COGL_MATRIX_PROJECTION,
-  COGL_MATRIX_TEXTURE
-} CoglMatrixMode;
-
-void
-_cogl_matrix_entry_flush_to_gl_builtins (CoglContext *ctx,
-                                         CoglMatrixEntry *entry,
-                                         CoglMatrixMode mode,
-                                         CoglFramebuffer *framebuffer,
-                                         CoglBool disable_flip);
-
 void
 _cogl_matrix_entry_cache_init (CoglMatrixEntryCache *cache);
 

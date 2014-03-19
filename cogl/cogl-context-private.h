@@ -112,25 +112,16 @@ struct _CoglContext
   UArray *attribute_name_index_map;
   int n_attribute_names;
 
-  CoglBitmask       enabled_builtin_attributes;
-  CoglBitmask       enabled_texcoord_attributes;
   CoglBitmask       enabled_custom_attributes;
 
-  /* These are temporary bitmasks that are used when disabling
-   * builtin,texcoord and custom attribute arrays. They are here just
-   * to avoid allocating new ones each time */
-  CoglBitmask       enable_builtin_attributes_tmp;
-  CoglBitmask       enable_texcoord_attributes_tmp;
+  /* A temporary bitmask that is used when enabling/disabling
+   * custom attribute arrays */
   CoglBitmask       enable_custom_attributes_tmp;
   CoglBitmask       changed_bits_tmp;
 
   /* A few handy matrix constants */
   CoglMatrix        identity_matrix;
   CoglMatrix        y_flip_matrix;
-
-  /* Value that was last used when calling glMatrixMode to avoid
-     calling it multiple times */
-  CoglMatrixMode    flushed_matrix_mode;
 
   /* The matrix stack entries that should be flushed during the next
    * pipeline state flush */
@@ -225,9 +216,7 @@ struct _CoglContext
   GLint             max_texture_units;
   GLint             max_activateable_texture_units;
 
-  CoglPipelineProgramType current_fragment_program_type;
-  CoglPipelineProgramType current_vertex_program_type;
-  GLuint                  current_gl_program;
+  GLuint current_gl_program;
 
   CoglBool current_gl_dither_enabled;
   CoglColorMask current_gl_color_mask;

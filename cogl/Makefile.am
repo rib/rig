@@ -19,6 +19,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)				\
 	-I$(top_builddir)			\
 	-I$(srcdir)/winsys 			\
+	-I$(srcdir)/driver/nop 			\
 	-I$(srcdir)/driver/gl 			\
 	-I$(srcdir)/driver/gl/gl 		\
 	-I$(srcdir)/driver/gl/gles 		\

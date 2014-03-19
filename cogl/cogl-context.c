@@ -268,8 +268,6 @@ cogl_context_new (CoglDisplay *display,
   cogl_matrix_init_identity (&context->y_flip_matrix);
   cogl_matrix_scale (&context->y_flip_matrix, 1, -1, 1);
 
-  context->flushed_matrix_mode = COGL_MATRIX_MODELVIEW;
-
   context->texture_units =
     u_array_new (FALSE, FALSE, sizeof (CoglTextureUnit));
 
@@ -308,10 +306,6 @@ cogl_context_new (CoglDisplay *display,
   context->current_pipeline_changes_since_flush = 0;
   context->current_pipeline_with_color_attrib = FALSE;
 
-  _cogl_bitmask_init (&context->enabled_builtin_attributes);
-  _cogl_bitmask_init (&context->enable_builtin_attributes_tmp);
-  _cogl_bitmask_init (&context->enabled_texcoord_attributes);
-  _cogl_bitmask_init (&context->enable_texcoord_attributes_tmp);
   _cogl_bitmask_init (&context->enabled_custom_attributes);
   _cogl_bitmask_init (&context->enable_custom_attributes_tmp);
   _cogl_bitmask_init (&context->changed_bits_tmp);
@@ -319,8 +313,6 @@ cogl_context_new (CoglDisplay *display,
   context->max_texture_units = -1;
   context->max_activateable_texture_units = -1;
 
-  context->current_fragment_program_type = COGL_PIPELINE_PROGRAM_TYPE_FIXED;
-  context->current_vertex_program_type = COGL_PIPELINE_PROGRAM_TYPE_FIXED;
   context->current_gl_program = 0;
 
   context->current_gl_dither_enabled = TRUE;
@@ -349,17 +341,6 @@ cogl_context_new (CoglDisplay *display,
   context->blit_texture_pipeline = NULL;
 
 #if defined (HAVE_COGL_GL)
-  if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ALPHA_TEST))
-    {
-      /* The default for GL_ALPHA_TEST is to always pass which is equivalent to
-       * the test being disabled therefore we assume that for all drivers there
-       * will be no performance impact if we always leave the test enabled which
-       * makes things a bit simpler for us. Under GLES2 the alpha test is
-       * implemented in the fragment shader so there is no enable for it
-       */
-      GE (context, glEnable (GL_ALPHA_TEST));
-    }
-
   if ((context->driver == COGL_DRIVER_GL3))
     {
       GLuint vertex_array;
@@ -428,17 +409,6 @@ cogl_context_new (CoglDisplay *display,
   context->buffer_map_fallback_array = u_byte_array_new ();
   context->buffer_map_fallback_in_use = FALSE;
 
-  /* As far as I can tell, GL_POINT_SPRITE doesn't have any effect
-     unless GL_COORD_REPLACE is enabled for an individual layer.
-     Therefore it seems like it should be ok to just leave it enabled
-     all the time instead of having to have a set property on each
-     pipeline to track whether any layers have point sprite coords
-     enabled. We don't need to do this for GL3 or GLES2 because point
-     sprites are handled using a builtin varying in the shader. */
-  if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_GL_FIXED) &&
-      cogl_has_feature (context, COGL_FEATURE_ID_POINT_SPRITE))
-    GE (context, glEnable (GL_POINT_SPRITE));
-
   _cogl_list_init (&context->fences);
 
   context->atlas_set = cogl_atlas_set_new (context);
@@ -500,10 +470,6 @@ _cogl_context_free (CoglContext *context)
   if (context->current_clip_stack_valid)
     _cogl_clip_stack_unref (context->current_clip_stack);
 
-  _cogl_bitmask_destroy (&context->enabled_builtin_attributes);
-  _cogl_bitmask_destroy (&context->enable_builtin_attributes_tmp);
-  _cogl_bitmask_destroy (&context->enabled_texcoord_attributes);
-  _cogl_bitmask_destroy (&context->enable_texcoord_attributes_tmp);
   _cogl_bitmask_destroy (&context->enabled_custom_attributes);
   _cogl_bitmask_destroy (&context->enable_custom_attributes_tmp);
   _cogl_bitmask_destroy (&context->changed_bits_tmp);

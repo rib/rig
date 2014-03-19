@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2010 Intel Corporation.
+ * Copyright (C) 2014 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,18 +25,33 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- *
- * Authors:
- *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifndef __COGL_PIPELINE_FRAGEND_FIXED_PRIVATE_H
-#define __COGL_PIPELINE_FRAGEND_FIXED_PRIVATE_H
+#include <config.h>
 
 #include "cogl-pipeline-private.h"
+#include "cogl-framebuffer-private.h"
 
-extern const CoglPipelineFragend _cogl_pipeline_fixed_fragend;
+static CoglBool
+_cogl_pipeline_progend_nop_start (CoglPipeline *pipeline)
+{
+  return TRUE;
+}
 
-#endif /* __COGL_PIPELINE_FRAGEND_FIXED_PRIVATE_H */
+static void
+_cogl_pipeline_progend_nop_pre_paint (CoglPipeline *pipeline,
+                                      CoglFramebuffer *framebuffer)
+{
+}
+
+const CoglPipelineProgend _cogl_pipeline_nop_progend =
+  {
+    COGL_PIPELINE_VERTEND_NOP,
+    COGL_PIPELINE_FRAGEND_NOP,
+    _cogl_pipeline_progend_nop_start,
+    NULL, /* end */
+    NULL, /* pre_change_notify */
+    NULL, /* layer_pre_change_notify */
+    _cogl_pipeline_progend_nop_pre_paint
+  };
 

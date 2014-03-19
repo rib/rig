@@ -154,5 +154,8 @@ _cogl_pipeline_flush_gl_state (CoglContext *context,
                                CoglBool skip_gl_state,
                                CoglBool unknown_color_alpha);
 
+void
+_cogl_gl_use_program (CoglContext *context, GLuint gl_program);
+
 #endif /* __COGL_PIPELINE_OPENGL_PRIVATE_H */
 

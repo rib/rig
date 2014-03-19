@@ -246,11 +246,9 @@ _cogl_pipeline_texture_storage_change_notify (CoglTexture *texture)
     }
 }
 
-static void
-set_glsl_program (GLuint gl_program)
+void
+_cogl_gl_use_program (CoglContext *ctx, GLuint gl_program)
 {
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
   if (ctx->current_gl_program != gl_program)
     {
       GLenum gl_error;
@@ -266,104 +264,6 @@ set_glsl_program (GLuint gl_program)
           ctx->current_gl_program = 0;
         }
     }
-}
-
-void
-_cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  /* If we're changing program type... */
-  if (type != ctx->current_fragment_program_type)
-    {
-      /* ... disable the old type */
-      switch (ctx->current_fragment_program_type)
-        {
-        case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
-          /* If the program contains a vertex shader then we shouldn't
-             disable it */
-          if (ctx->current_vertex_program_type !=
-              COGL_PIPELINE_PROGRAM_TYPE_GLSL)
-            set_glsl_program (0);
-          break;
-
-        case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
-          /* don't need to to anything */
-          break;
-        }
-
-      /* ... and enable the new type */
-      switch (type)
-        {
-        case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
-        case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
-          /* don't need to to anything */
-          break;
-        }
-    }
-
-  if (type == COGL_PIPELINE_PROGRAM_TYPE_GLSL)
-    {
-#ifdef COGL_PIPELINE_FRAGEND_GLSL
-      set_glsl_program (gl_program);
-
-#else
-
-      u_warning ("Unexpected use of GLSL fragend!");
-
-#endif /* COGL_PIPELINE_FRAGEND_GLSL */
-    }
-
-  ctx->current_fragment_program_type = type;
-}
-
-void
-_cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
-{
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  /* If we're changing program type... */
-  if (type != ctx->current_vertex_program_type)
-    {
-      /* ... disable the old type */
-      switch (ctx->current_vertex_program_type)
-        {
-        case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
-          /* If the program contains a fragment shader then we shouldn't
-             disable it */
-          if (ctx->current_fragment_program_type !=
-              COGL_PIPELINE_PROGRAM_TYPE_GLSL)
-            set_glsl_program (0);
-          break;
-
-        case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
-          /* don't need to to anything */
-          break;
-        }
-
-      /* ... and enable the new type */
-      switch (type)
-        {
-        case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
-        case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
-          /* don't need to to anything */
-          break;
-        }
-    }
-
-  if (type == COGL_PIPELINE_PROGRAM_TYPE_GLSL)
-    {
-#ifdef COGL_PIPELINE_VERTEND_GLSL
-      set_glsl_program (gl_program);
-
-#else
-
-      u_warning ("Unexpected use of GLSL vertend!");
-
-#endif /* COGL_PIPELINE_VERTEND_GLSL */
-    }
-
-  ctx->current_vertex_program_type = type;
 }
 
 #if defined(HAVE_COGL_GLES2) || defined(HAVE_COGL_GL)
@@ -458,31 +358,196 @@ UNIT_TEST (check_gl_blend_enable,
   u_assert_cmpint (test_ctx->gl_blend_enable_cache, ==, 0);
 }
 
-static void
-_cogl_pipeline_flush_color_blend_alpha_depth_state (
-                                            CoglPipeline *pipeline,
-                                            unsigned long pipelines_difference,
-                                            CoglBool      with_color_attrib)
+static int
+get_max_activateable_texture_units (CoglContext *ctx)
 {
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  /* On GLES2 we'll flush the color later */
-  if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_FIXED) &&
-      !with_color_attrib)
+  if (U_UNLIKELY (ctx->max_activateable_texture_units == -1))
     {
-      if ((pipelines_difference & COGL_PIPELINE_STATE_COLOR) ||
-          /* Assume if we were previously told to skip the color, then
-           * the current color needs updating... */
-          ctx->current_pipeline_with_color_attrib)
+      GLint values[3];
+      int n_values = 0;
+      int i;
+
+#ifdef HAVE_COGL_GL
+      if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED))
         {
-          CoglPipeline *authority =
-            _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_COLOR);
-          GE (ctx, glColor4ub (cogl_color_get_red_byte (&authority->color),
-                               cogl_color_get_green_byte (&authority->color),
-                               cogl_color_get_blue_byte (&authority->color),
-                               cogl_color_get_alpha_byte (&authority->color)));
+          /* GL_MAX_TEXTURE_COORDS is provided for GLSL. It defines
+           * the number of texture coordinates that can be uploaded
+           * (but doesn't necessarily relate to how many texture
+           *  images can be sampled) */
+          if (cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
+            {
+              /* Previously this code subtracted the value by one but there
+                 was no explanation for why it did this and it doesn't seem
+                 to make sense so it has been removed */
+              GE (ctx, glGetIntegerv (GL_MAX_TEXTURE_COORDS,
+                                      values + n_values++));
+
+              /* GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS is defined for GLSL */
+              GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+                                      values + n_values++));
+            }
         }
+#endif /* HAVE_COGL_GL */
+
+#ifdef HAVE_COGL_GLES2
+      if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED))
+        {
+          GE (ctx, glGetIntegerv (GL_MAX_VERTEX_ATTRIBS, values + n_values));
+          /* Two of the vertex attribs need to be used for the position
+             and color */
+          values[n_values++] -= 2;
+
+          GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+                                  values + n_values++));
+        }
+#endif
+
+      u_assert (n_values <= U_N_ELEMENTS (values) &&
+                n_values > 0);
+
+      /* Use the maximum value */
+      ctx->max_activateable_texture_units = values[0];
+      for (i = 1; i < n_values; i++)
+        ctx->max_activateable_texture_units =
+          MAX (values[i], ctx->max_activateable_texture_units);
     }
+
+  return ctx->max_activateable_texture_units;
+}
+
+typedef struct
+{
+  CoglContext *ctx;
+  int i;
+  unsigned long *layer_differences;
+} CoglPipelineFlushLayerState;
+
+static CoglBool
+flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
+{
+  CoglPipelineFlushLayerState *flush_state = user_data;
+  CoglContext *ctx = flush_state->ctx;
+  int unit_index = flush_state->i;
+  CoglTextureUnit *unit = _cogl_get_texture_unit (unit_index);
+  unsigned long layers_difference =
+    flush_state->layer_differences[unit_index];
+
+  /* There may not be enough texture units so we can bail out if
+   * that's the case...
+   */
+  if (U_UNLIKELY (unit_index >= get_max_activateable_texture_units (ctx)))
+    {
+      static CoglBool shown_warning = FALSE;
+
+      if (!shown_warning)
+        {
+          u_warning ("Your hardware does not have enough texture units"
+                     "to handle this many texture layers");
+          shown_warning = TRUE;
+        }
+      return FALSE;
+    }
+
+  if (layers_difference & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
+    {
+      CoglTexture *texture = _cogl_pipeline_layer_get_texture_real (layer);
+      GLuint gl_texture;
+      GLenum gl_target;
+
+      if (texture == NULL)
+        switch (_cogl_pipeline_layer_get_texture_type (layer))
+          {
+          case COGL_TEXTURE_TYPE_2D:
+            texture = COGL_TEXTURE (ctx->default_gl_texture_2d_tex);
+            break;
+          case COGL_TEXTURE_TYPE_3D:
+            texture = COGL_TEXTURE (ctx->default_gl_texture_3d_tex);
+            break;
+          case COGL_TEXTURE_TYPE_RECTANGLE:
+            texture = COGL_TEXTURE (ctx->default_gl_texture_rect_tex);
+            break;
+          }
+
+      cogl_texture_get_gl_texture (texture,
+                                   &gl_texture,
+                                   &gl_target);
+
+      _cogl_set_active_texture_unit (unit_index);
+
+      /* NB: There are several Cogl components and some code in
+       * Clutter that will temporarily bind arbitrary GL textures to
+       * query and modify texture object parameters. If you look at
+       * _cogl_bind_gl_texture_transient() you can see we make sure
+       * that such code always binds to texture unit 1 which means we
+       * can't rely on the unit->gl_texture state if unit->index == 1.
+       *
+       * Because texture unit 1 is a bit special we actually defer any
+       * necessary glBindTexture for it until the end of
+       * _cogl_pipeline_flush_gl_state().
+       *
+       * NB: we get notified whenever glDeleteTextures is used (see
+       * _cogl_delete_gl_texture()) where we invalidate
+       * unit->gl_texture references to deleted textures so it's safe
+       * to compare unit->gl_texture with gl_texture.  (Without the
+       * hook it would be possible to delete a GL texture and create a
+       * new one with the same name and comparing unit->gl_texture and
+       * gl_texture wouldn't detect that.)
+       *
+       * NB: for foreign textures we don't know how the deletion of
+       * the GL texture objects correspond to the deletion of the
+       * CoglTextures so if there was previously a foreign texture
+       * associated with the texture unit then we can't assume that we
+       * aren't seeing a recycled texture name so we have to bind.
+       */
+      if (unit->gl_texture != gl_texture || unit->is_foreign)
+        {
+          if (unit_index == 1)
+            unit->dirty_gl_texture = TRUE;
+          else
+            GE (ctx, glBindTexture (gl_target, gl_texture));
+          unit->gl_texture = gl_texture;
+          unit->gl_target = gl_target;
+        }
+
+      unit->is_foreign = _cogl_texture_is_foreign (texture);
+
+      /* The texture_storage_changed boolean indicates if the
+       * CoglTexture's underlying GL texture storage has changed since
+       * it was flushed to the texture unit. We've just flushed the
+       * latest state so we can reset this. */
+      unit->texture_storage_changed = FALSE;
+    }
+
+  if ((layers_difference & COGL_PIPELINE_LAYER_STATE_SAMPLER) &&
+      _cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_SAMPLER_OBJECTS))
+    {
+      const CoglSamplerCacheEntry *sampler_state;
+
+      sampler_state = _cogl_pipeline_layer_get_sampler_state (layer);
+
+      GE( ctx, glBindSampler (unit_index, sampler_state->sampler_object) );
+    }
+
+  cogl_object_ref (layer);
+  if (unit->layer != NULL)
+    cogl_object_unref (unit->layer);
+
+  unit->layer = layer;
+  unit->layer_changes_since_flush = 0;
+
+  flush_state->i++;
+
+  return TRUE;
+}
+
+static void
+_cogl_pipeline_flush_common_gl_state (CoglContext *ctx,
+                                      CoglPipeline *pipeline,
+                                      unsigned long pipelines_difference,
+                                      unsigned long *layer_differences,
+                                      CoglBool with_color_attrib)
+{
+  CoglPipelineFlushLayerState state;
 
   if (pipelines_difference & COGL_PIPELINE_STATE_BLEND)
     {
@@ -532,29 +597,6 @@ _cogl_pipeline_flush_color_blend_alpha_depth_state (
         GE (ctx, glBlendFunc (blend_state->blend_src_factor_rgb,
                               blend_state->blend_dst_factor_rgb));
     }
-
-#if defined (HAVE_COGL_GL)
-
-  if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_ALPHA_TEST))
-    {
-      /* Under GLES2 the alpha function is implemented as part of the
-         fragment shader */
-      if (pipelines_difference & (COGL_PIPELINE_STATE_ALPHA_FUNC |
-                                  COGL_PIPELINE_STATE_ALPHA_FUNC_REFERENCE))
-        {
-          CoglPipeline *authority =
-            _cogl_pipeline_get_authority (pipeline,
-                                          COGL_PIPELINE_STATE_ALPHA_FUNC);
-          CoglPipelineAlphaFuncState *alpha_state =
-            &authority->big_state->alpha_state;
-
-          /* NB: Currently the Cogl defines are compatible with the GL ones: */
-          GE (ctx, glAlphaFunc (alpha_state->alpha_func,
-                                alpha_state->alpha_func_reference));
-        }
-    }
-
-#endif
 
   if (pipelines_difference & COGL_PIPELINE_STATE_DEPTH)
     {
@@ -658,242 +700,8 @@ _cogl_pipeline_flush_color_blend_alpha_depth_state (
        * is disabled! */
       ctx->gl_blend_enable_cache = pipeline->real_blend_enable;
     }
-}
 
-static int
-get_max_activateable_texture_units (void)
-{
-  _COGL_GET_CONTEXT (ctx, 0);
-
-  if (U_UNLIKELY (ctx->max_activateable_texture_units == -1))
-    {
-      GLint values[3];
-      int n_values = 0;
-      int i;
-
-#ifdef HAVE_COGL_GL
-      if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED))
-        {
-          /* GL_MAX_TEXTURE_COORDS is provided for GLSL. It defines
-           * the number of texture coordinates that can be uploaded
-           * (but doesn't necessarily relate to how many texture
-           *  images can be sampled) */
-          if (cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-            {
-              /* Previously this code subtracted the value by one but there
-                 was no explanation for why it did this and it doesn't seem
-                 to make sense so it has been removed */
-              GE (ctx, glGetIntegerv (GL_MAX_TEXTURE_COORDS,
-                                      values + n_values++));
-
-              /* GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS is defined for GLSL */
-              GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
-                                      values + n_values++));
-            }
-        }
-#endif /* HAVE_COGL_GL */
-
-#ifdef HAVE_COGL_GLES2
-      if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED) &&
-          _cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_PROGRAMMABLE))
-        {
-          GE (ctx, glGetIntegerv (GL_MAX_VERTEX_ATTRIBS, values + n_values));
-          /* Two of the vertex attribs need to be used for the position
-             and color */
-          values[n_values++] -= 2;
-
-          GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
-                                  values + n_values++));
-        }
-#endif
-
-#if defined (HAVE_COGL_GL)
-      if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_FIXED))
-        {
-          /* GL_MAX_TEXTURE_UNITS defines the number of units that are
-             usable from the fixed function pipeline, therefore it isn't
-             available in GLES2. These are also tied to the number of
-             texture coordinates that can be uploaded so it should be less
-             than that available from the shader extensions */
-          GE (ctx, glGetIntegerv (GL_MAX_TEXTURE_UNITS,
-                                  values + n_values++));
-
-        }
-#endif
-
-      u_assert (n_values <= U_N_ELEMENTS (values) &&
-                n_values > 0);
-
-      /* Use the maximum value */
-      ctx->max_activateable_texture_units = values[0];
-      for (i = 1; i < n_values; i++)
-        ctx->max_activateable_texture_units =
-          MAX (values[i], ctx->max_activateable_texture_units);
-    }
-
-  return ctx->max_activateable_texture_units;
-}
-
-typedef struct
-{
-  int i;
-  unsigned long *layer_differences;
-} CoglPipelineFlushLayerState;
-
-static CoglBool
-flush_layers_common_gl_state_cb (CoglPipelineLayer *layer, void *user_data)
-{
-  CoglPipelineFlushLayerState *flush_state = user_data;
-  int                          unit_index = flush_state->i;
-  CoglTextureUnit             *unit = _cogl_get_texture_unit (unit_index);
-  unsigned long                layers_difference =
-    flush_state->layer_differences[unit_index];
-
-  _COGL_GET_CONTEXT (ctx, FALSE);
-
-  /* There may not be enough texture units so we can bail out if
-   * that's the case...
-   */
-  if (U_UNLIKELY (unit_index >= get_max_activateable_texture_units ()))
-    {
-      static CoglBool shown_warning = FALSE;
-
-      if (!shown_warning)
-        {
-          u_warning ("Your hardware does not have enough texture units"
-                     "to handle this many texture layers");
-          shown_warning = TRUE;
-        }
-      return FALSE;
-    }
-
-  if (layers_difference & COGL_PIPELINE_LAYER_STATE_TEXTURE_DATA)
-    {
-      CoglTexture *texture = _cogl_pipeline_layer_get_texture_real (layer);
-      GLuint gl_texture;
-      GLenum gl_target;
-
-      if (texture == NULL)
-        switch (_cogl_pipeline_layer_get_texture_type (layer))
-          {
-          case COGL_TEXTURE_TYPE_2D:
-            texture = COGL_TEXTURE (ctx->default_gl_texture_2d_tex);
-            break;
-          case COGL_TEXTURE_TYPE_3D:
-            texture = COGL_TEXTURE (ctx->default_gl_texture_3d_tex);
-            break;
-          case COGL_TEXTURE_TYPE_RECTANGLE:
-            texture = COGL_TEXTURE (ctx->default_gl_texture_rect_tex);
-            break;
-          }
-
-      cogl_texture_get_gl_texture (texture,
-                                   &gl_texture,
-                                   &gl_target);
-
-      _cogl_set_active_texture_unit (unit_index);
-
-      /* NB: There are several Cogl components and some code in
-       * Clutter that will temporarily bind arbitrary GL textures to
-       * query and modify texture object parameters. If you look at
-       * _cogl_bind_gl_texture_transient() you can see we make sure
-       * that such code always binds to texture unit 1 which means we
-       * can't rely on the unit->gl_texture state if unit->index == 1.
-       *
-       * Because texture unit 1 is a bit special we actually defer any
-       * necessary glBindTexture for it until the end of
-       * _cogl_pipeline_flush_gl_state().
-       *
-       * NB: we get notified whenever glDeleteTextures is used (see
-       * _cogl_delete_gl_texture()) where we invalidate
-       * unit->gl_texture references to deleted textures so it's safe
-       * to compare unit->gl_texture with gl_texture.  (Without the
-       * hook it would be possible to delete a GL texture and create a
-       * new one with the same name and comparing unit->gl_texture and
-       * gl_texture wouldn't detect that.)
-       *
-       * NB: for foreign textures we don't know how the deletion of
-       * the GL texture objects correspond to the deletion of the
-       * CoglTextures so if there was previously a foreign texture
-       * associated with the texture unit then we can't assume that we
-       * aren't seeing a recycled texture name so we have to bind.
-       */
-      if (unit->gl_texture != gl_texture || unit->is_foreign)
-        {
-          if (unit_index == 1)
-            unit->dirty_gl_texture = TRUE;
-          else
-            GE (ctx, glBindTexture (gl_target, gl_texture));
-          unit->gl_texture = gl_texture;
-          unit->gl_target = gl_target;
-        }
-
-      unit->is_foreign = _cogl_texture_is_foreign (texture);
-
-      /* The texture_storage_changed boolean indicates if the
-       * CoglTexture's underlying GL texture storage has changed since
-       * it was flushed to the texture unit. We've just flushed the
-       * latest state so we can reset this. */
-      unit->texture_storage_changed = FALSE;
-    }
-
-  if ((layers_difference & COGL_PIPELINE_LAYER_STATE_SAMPLER) &&
-      _cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_SAMPLER_OBJECTS))
-    {
-      const CoglSamplerCacheEntry *sampler_state;
-
-      sampler_state = _cogl_pipeline_layer_get_sampler_state (layer);
-
-      GE( ctx, glBindSampler (unit_index, sampler_state->sampler_object) );
-    }
-
-  /* FIXME: If using GLSL the progend we will use gl_PointCoord
-   * instead of us needing to replace the texture coordinates but at
-   * this point we can't currently tell if we are using the fixed or
-   * glsl progend.
-   */
-#if defined (HAVE_COGL_GL)
-  if (_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_FIXED) &&
-      (layers_difference & COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS))
-    {
-      CoglPipelineState change = COGL_PIPELINE_LAYER_STATE_POINT_SPRITE_COORDS;
-      CoglPipelineLayer *authority =
-        _cogl_pipeline_layer_get_authority (layer, change);
-      CoglPipelineLayerBigState *big_state = authority->big_state;
-
-      _cogl_set_active_texture_unit (unit_index);
-
-      GE (ctx, glTexEnvi (GL_POINT_SPRITE, GL_COORD_REPLACE,
-                          big_state->point_sprite_coords));
-    }
-#endif
-
-  cogl_object_ref (layer);
-  if (unit->layer != NULL)
-    cogl_object_unref (unit->layer);
-
-  unit->layer = layer;
-  unit->layer_changes_since_flush = 0;
-
-  flush_state->i++;
-
-  return TRUE;
-}
-
-static void
-_cogl_pipeline_flush_common_gl_state (CoglPipeline  *pipeline,
-                                      unsigned long  pipelines_difference,
-                                      unsigned long *layer_differences,
-                                      CoglBool       with_color_attrib)
-{
-  CoglPipelineFlushLayerState state;
-
-  _COGL_GET_CONTEXT (ctx, NO_RETVAL);
-
-  _cogl_pipeline_flush_color_blend_alpha_depth_state (pipeline,
-                                                      pipelines_difference,
-                                                      with_color_attrib);
-
+  state.ctx = ctx;
   state.i = 0;
   state.layer_differences = layer_differences;
   _cogl_pipeline_foreach_layer_internal (pipeline,
@@ -1252,7 +1060,8 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
    *  all state of the layers corresponding texture unit to be
    *  updated.
    */
-  _cogl_pipeline_flush_common_gl_state (pipeline,
+  _cogl_pipeline_flush_common_gl_state (ctx,
+                                        pipeline,
                                         pipelines_difference,
                                         layer_differences,
                                         with_color_attrib);
@@ -1344,12 +1153,9 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
       break;
     }
 
-#ifdef COGL_ENABLE_DEBUG
-  /* XXX: Since the GLSL progend should be able to handle all features
-   * we should only hit this case if glsl was disabled for debugging
-   * and we tried to flush a pipeline that requires GLSL. */
+  /* Since the NOP progend will claim to handle anything we should
+   * never fall through without finding a suitable progend */
   g_assert (i != COGL_PIPELINE_N_PROGENDS);
-#endif
 
   /* FIXME: This reference is actually resulting in lots of
    * copy-on-write reparenting because one-shot pipelines end up

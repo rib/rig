@@ -3,7 +3,7 @@
  *
  * A Low-Level GPU Graphics and Utilities API
  *
- * Copyright (C) 2008,2009,2010 Intel Corporation.
+ * Copyright (C) 2014 Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,73 +25,49 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  *
- *
- *
- * Authors:
- *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-context-private.h"
-#include "cogl-util-gl-private.h"
 #include "cogl-pipeline-private.h"
 #include "cogl-pipeline-state-private.h"
-#include "cogl-pipeline-opengl-private.h"
 #include "cogl-framebuffer-private.h"
-
-#ifdef COGL_PIPELINE_VERTEND_FIXED
 
 #include "cogl-context-private.h"
 #include "cogl-object-private.h"
 
-const CoglPipelineVertend _cogl_pipeline_fixed_vertend;
+const CoglPipelineVertend _cogl_pipeline_nop_vertend;
 
 static void
-_cogl_pipeline_vertend_fixed_start (CoglPipeline *pipeline,
-                                    int n_layers,
-                                    unsigned long pipelines_difference)
-{
-  _cogl_use_vertex_program (0, COGL_PIPELINE_PROGRAM_TYPE_FIXED);
-}
-
-static CoglBool
-_cogl_pipeline_vertend_fixed_add_layer (CoglPipeline *pipeline,
-                                        CoglPipelineLayer *layer,
-                                        unsigned long layers_difference,
-                                        CoglFramebuffer *framebuffer)
-{
-  return TRUE;
-}
-
-static CoglBool
-_cogl_pipeline_vertend_fixed_end (CoglPipeline *pipeline,
+_cogl_pipeline_vertend_nop_start (CoglPipeline *pipeline,
+                                  int n_layers,
                                   unsigned long pipelines_difference)
 {
-  _COGL_GET_CONTEXT (ctx, FALSE);
+}
 
-  if (pipelines_difference & COGL_PIPELINE_STATE_POINT_SIZE)
-    {
-      CoglPipeline *authority =
-        _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_POINT_SIZE);
-
-      if (authority->big_state->point_size > 0.0f)
-        GE( ctx, glPointSize (authority->big_state->point_size) );
-    }
-
+static CoglBool
+_cogl_pipeline_vertend_nop_add_layer (CoglPipeline *pipeline,
+                                      CoglPipelineLayer *layer,
+                                      unsigned long layers_difference,
+                                      CoglFramebuffer *framebuffer)
+{
   return TRUE;
 }
 
-const CoglPipelineVertend _cogl_pipeline_fixed_vertend =
+static CoglBool
+_cogl_pipeline_vertend_nop_end (CoglPipeline *pipeline,
+                                unsigned long pipelines_difference)
 {
-  _cogl_pipeline_vertend_fixed_start,
-  _cogl_pipeline_vertend_fixed_add_layer,
-  _cogl_pipeline_vertend_fixed_end,
+  return TRUE;
+}
+
+const CoglPipelineVertend _cogl_pipeline_nop_vertend =
+{
+  _cogl_pipeline_vertend_nop_start,
+  _cogl_pipeline_vertend_nop_add_layer,
+  _cogl_pipeline_vertend_nop_end,
   NULL, /* pipeline_change_notify */
   NULL /* layer_change_notify */
 };
-
-#endif /* COGL_PIPELINE_VERTEND_FIXED */
 

@@ -130,7 +130,6 @@ static CoglDriverDescription _cogl_drivers[] =
     "gl",
     0,
     { COGL_PRIVATE_FEATURE_ANY_GL,
-      COGL_PRIVATE_FEATURE_GL_FIXED,
       COGL_PRIVATE_FEATURE_GL_PROGRAMMABLE,
       -1 },
     &_cogl_driver_gl,

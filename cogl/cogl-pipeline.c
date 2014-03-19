@@ -31,9 +31,7 @@
  *   Robert Bragg <robert@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include "cogl-debug.h"
 #include "cogl-context-private.h"
@@ -66,25 +64,25 @@ const CoglPipelineVertend *_cogl_pipeline_vertends[COGL_PIPELINE_N_VERTENDS];
 const CoglPipelineProgend *
 _cogl_pipeline_progends[MAX (COGL_PIPELINE_N_PROGENDS, 1)];
 
-#ifdef COGL_PIPELINE_FRAGEND_GLSL
-#include "cogl-pipeline-fragend-glsl-private.h"
+#ifdef COGL_PIPELINE_PROGEND_GLSL
+#include "cogl-pipeline-progend-glsl-private.h"
 #endif
-#ifdef COGL_PIPELINE_FRAGEND_FIXED
-#include "cogl-pipeline-fragend-fixed-private.h"
+#ifdef COGL_PIPELINE_PROGEND_NOP
+#include "cogl-pipeline-progend-nop-private.h"
 #endif
 
 #ifdef COGL_PIPELINE_VERTEND_GLSL
 #include "cogl-pipeline-vertend-glsl-private.h"
 #endif
-#ifdef COGL_PIPELINE_VERTEND_FIXED
-#include "cogl-pipeline-vertend-fixed-private.h"
+#ifdef COGL_PIPELINE_VERTEND_NOP
+#include "cogl-pipeline-vertend-nop-private.h"
 #endif
 
-#ifdef COGL_PIPELINE_PROGEND_FIXED
-#include "cogl-pipeline-progend-fixed-private.h"
+#ifdef COGL_PIPELINE_FRAGEND_GLSL
+#include "cogl-pipeline-fragend-glsl-private.h"
 #endif
-#ifdef COGL_PIPELINE_PROGEND_GLSL
-#include "cogl-pipeline-progend-glsl-private.h"
+#ifdef COGL_PIPELINE_FRAGEND_NOP
+#include "cogl-pipeline-fragend-nop-private.h"
 #endif
 
 COGL_OBJECT_DEFINE (Pipeline, pipeline);
@@ -113,30 +111,31 @@ _cogl_pipeline_init_default_pipeline (void)
   _COGL_GET_CONTEXT (ctx, NO_RETVAL);
 
   /* Take this opportunity to setup the backends... */
-#ifdef COGL_PIPELINE_FRAGEND_GLSL
-  _cogl_pipeline_fragends[COGL_PIPELINE_FRAGEND_GLSL] =
-    &_cogl_pipeline_glsl_fragend;
-#endif
-#ifdef COGL_PIPELINE_FRAGEND_FIXED
-  _cogl_pipeline_fragends[COGL_PIPELINE_FRAGEND_FIXED] =
-    &_cogl_pipeline_fixed_fragend;
-#endif
-#ifdef COGL_PIPELINE_PROGEND_FIXED
-  _cogl_pipeline_progends[COGL_PIPELINE_PROGEND_FIXED] =
-    &_cogl_pipeline_fixed_progend;
-#endif
 #ifdef COGL_PIPELINE_PROGEND_GLSL
   _cogl_pipeline_progends[COGL_PIPELINE_PROGEND_GLSL] =
     &_cogl_pipeline_glsl_progend;
+#endif
+#ifdef COGL_PIPELINE_PROGEND_NOP
+  _cogl_pipeline_progends[COGL_PIPELINE_PROGEND_NOP] =
+    &_cogl_pipeline_nop_progend;
 #endif
 
 #ifdef COGL_PIPELINE_VERTEND_GLSL
   _cogl_pipeline_vertends[COGL_PIPELINE_VERTEND_GLSL] =
     &_cogl_pipeline_glsl_vertend;
 #endif
-#ifdef COGL_PIPELINE_VERTEND_FIXED
-  _cogl_pipeline_vertends[COGL_PIPELINE_VERTEND_FIXED] =
-    &_cogl_pipeline_fixed_vertend;
+#ifdef COGL_PIPELINE_VERTEND_NOP
+  _cogl_pipeline_vertends[COGL_PIPELINE_VERTEND_NOP] =
+    &_cogl_pipeline_nop_vertend;
+#endif
+
+#ifdef COGL_PIPELINE_FRAGEND_GLSL
+  _cogl_pipeline_fragends[COGL_PIPELINE_FRAGEND_GLSL] =
+    &_cogl_pipeline_glsl_fragend;
+#endif
+#ifdef COGL_PIPELINE_FRAGEND_NOP
+  _cogl_pipeline_fragends[COGL_PIPELINE_FRAGEND_NOP] =
+    &_cogl_pipeline_nop_fragend;
 #endif
 
   _cogl_pipeline_node_init (COGL_NODE (pipeline));
@@ -2864,13 +2863,9 @@ _cogl_pipeline_get_layer_state_for_fragment_codegen (CoglContext *context)
 CoglPipelineState
 _cogl_pipeline_get_state_for_fragment_codegen (CoglContext *context)
 {
-  CoglPipelineState state = (COGL_PIPELINE_STATE_LAYERS |
-                             COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS);
-
-  if (!_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ALPHA_TEST))
-    state |= COGL_PIPELINE_STATE_ALPHA_FUNC;
-
-  return state;
+  return (COGL_PIPELINE_STATE_LAYERS |
+          COGL_PIPELINE_STATE_FRAGMENT_SNIPPETS |
+          COGL_PIPELINE_STATE_ALPHA_FUNC);
 }
 
 int

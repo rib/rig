@@ -88,7 +88,7 @@ printf $TITLE_FORMAT "Test"
 
 if test $HAVE_GL -eq 1; then
   GL_FORMAT=" %6s %8s %7s %6s %6s"
-  printf "$GL_FORMAT" "GL+FF" "GL+GLSL" "GL-NPT" "GL3"
+  printf "$GL_FORMAT" "GL" "GL-NPT" "GL3"
 fi
 if test $HAVE_GLES2 -eq 1; then
   GLES2_FORMAT=" %6s %7s"
@@ -104,12 +104,8 @@ do
 
   if test $HAVE_GL -eq 1; then
     export COGL_DRIVER=gl
-    export COGL_DEBUG=disable-glsl
-    run_test $test gl_ff
-
-    export COGL_DRIVER=gl
-    export COGL_DEBUG=disable-fixed
-    run_test $test gl_glsl
+    export COGL_DEBUG=
+    run_test $test gl
 
     export COGL_DRIVER=gl
     export COGL_DEBUG=disable-npot-textures
@@ -133,8 +129,7 @@ do
   printf $TITLE_FORMAT "$test:"
   if test $HAVE_GL -eq 1; then
     printf "$GL_FORMAT" \
-      "`get_status $gl_ff_result`" \
-      "`get_status $gl_glsl_result`" \
+      "`get_status $gl_result`" \
       "`get_status $gl_npot_result`" \
       "`get_status $gl3_result`"
   fi
