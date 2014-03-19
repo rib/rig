@@ -51,19 +51,17 @@
 
 #ifdef HAVE_COGL_GL
 
-#define COGL_PIPELINE_PROGEND_FIXED_ARBFP 0
-#define COGL_PIPELINE_PROGEND_FIXED       1
-#define COGL_PIPELINE_PROGEND_GLSL        2
-#define COGL_PIPELINE_N_PROGENDS          3
+#define COGL_PIPELINE_PROGEND_FIXED       0
+#define COGL_PIPELINE_PROGEND_GLSL        1
+#define COGL_PIPELINE_N_PROGENDS          2
 
 #define COGL_PIPELINE_VERTEND_FIXED 0
 #define COGL_PIPELINE_VERTEND_GLSL  1
 #define COGL_PIPELINE_N_VERTENDS    2
 
-#define COGL_PIPELINE_FRAGEND_ARBFP 0
-#define COGL_PIPELINE_FRAGEND_FIXED 1
-#define COGL_PIPELINE_FRAGEND_GLSL  2
-#define COGL_PIPELINE_N_FRAGENDS    3
+#define COGL_PIPELINE_FRAGEND_FIXED 0
+#define COGL_PIPELINE_FRAGEND_GLSL  1
+#define COGL_PIPELINE_N_FRAGENDS    2
 
 #else /* HAVE_COGL_GL */
 
@@ -435,9 +433,8 @@ struct _CoglPipeline
 #endif
 
   /* There are multiple fragment and vertex processing backends for
-   * CoglPipeline, glsl, arbfp and fixed that are bundled under a
-   * "progend". This identifies the backend being used for the
-   * pipeline. */
+   * CoglPipeline that are bundled under a "progend". This identifies
+   * the backend being used for the pipeline. */
   unsigned int          progend:3;
 };
 
@@ -504,7 +501,6 @@ typedef struct
 typedef enum
 {
   COGL_PIPELINE_PROGRAM_TYPE_GLSL = 1,
-  COGL_PIPELINE_PROGRAM_TYPE_ARBFP,
   COGL_PIPELINE_PROGRAM_TYPE_FIXED
 } CoglPipelineProgramType;
 

@@ -138,7 +138,7 @@ _cogl_blit_texture_render_end (CoglBlitData *data)
      atlas code. It may be better in future to keep around a set of
      dummy 1x1 textures for each texture target that we could bind
      instead. This would also be useful when using a pipeline as a
-     hash table key such as for the ARBfp program cache. */
+     hash table key such as for the GLSL program cache. */
   cogl_pipeline_set_layer_texture (ctx->blit_texture_pipeline, 0,
                                    data->dst_tex);
 

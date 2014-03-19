@@ -287,12 +287,6 @@ _cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type)
             set_glsl_program (0);
           break;
 
-        case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
-#ifdef HAVE_COGL_GL
-          GE( ctx, glDisable (GL_FRAGMENT_PROGRAM_ARB) );
-#endif
-          break;
-
         case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
           /* don't need to to anything */
           break;
@@ -301,12 +295,6 @@ _cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type)
       /* ... and enable the new type */
       switch (type)
         {
-        case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
-#ifdef HAVE_COGL_GL
-          GE( ctx, glEnable (GL_FRAGMENT_PROGRAM_ARB) );
-#endif
-          break;
-
         case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
         case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
           /* don't need to to anything */
@@ -325,10 +313,6 @@ _cogl_use_fragment_program (GLuint gl_program, CoglPipelineProgramType type)
 
 #endif /* COGL_PIPELINE_FRAGEND_GLSL */
     }
-#ifndef COGL_PIPELINE_FRAGEND_ARBFP
-  else if (type == COGL_PIPELINE_PROGRAM_TYPE_ARBFP)
-    u_warning ("Unexpected use of ARBFP fragend!");
-#endif /* COGL_PIPELINE_FRAGEND_ARBFP */
 
   ctx->current_fragment_program_type = type;
 }
@@ -352,11 +336,6 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
             set_glsl_program (0);
           break;
 
-        case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
-          /* It doesn't make sense to enable ARBfp for the vertex program */
-          u_assert_not_reached ();
-          break;
-
         case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
           /* don't need to to anything */
           break;
@@ -365,11 +344,6 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
       /* ... and enable the new type */
       switch (type)
         {
-        case COGL_PIPELINE_PROGRAM_TYPE_ARBFP:
-          /* It doesn't make sense to enable ARBfp for the vertex program */
-          u_assert_not_reached ();
-          break;
-
         case COGL_PIPELINE_PROGRAM_TYPE_GLSL:
         case COGL_PIPELINE_PROGRAM_TYPE_FIXED:
           /* don't need to to anything */
@@ -388,10 +362,6 @@ _cogl_use_vertex_program (GLuint gl_program, CoglPipelineProgramType type)
 
 #endif /* COGL_PIPELINE_VERTEND_GLSL */
     }
-#ifndef COGL_PIPELINE_VERTEND_ARBFP
-  else if (type == COGL_PIPELINE_PROGRAM_TYPE_ARBFP)
-    u_warning ("Unexpected use of ARBFP vertend!");
-#endif /* COGL_PIPELINE_VERTEND_ARBFP */
 
   ctx->current_vertex_program_type = type;
 }
@@ -704,23 +674,22 @@ get_max_activateable_texture_units (void)
 #ifdef HAVE_COGL_GL
       if (!_cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_GL_EMBEDDED))
         {
-          /* GL_MAX_TEXTURE_COORDS is provided for both GLSL and ARBfp. It
-             defines the number of texture coordinates that can be
-             uploaded (but doesn't necessarily relate to how many texture
-             images can be sampled) */
-          if (cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL) ||
-              _cogl_has_private_feature (ctx, COGL_PRIVATE_FEATURE_ARBFP))
-            /* Previously this code subtracted the value by one but there
-               was no explanation for why it did this and it doesn't seem
-               to make sense so it has been removed */
-            GE (ctx, glGetIntegerv (GL_MAX_TEXTURE_COORDS,
-                                    values + n_values++));
-
-          /* GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS is defined for GLSL but
-             not ARBfp */
+          /* GL_MAX_TEXTURE_COORDS is provided for GLSL. It defines
+           * the number of texture coordinates that can be uploaded
+           * (but doesn't necessarily relate to how many texture
+           *  images can be sampled) */
           if (cogl_has_feature (ctx, COGL_FEATURE_ID_GLSL))
-            GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
-                                    values + n_values++));
+            {
+              /* Previously this code subtracted the value by one but there
+                 was no explanation for why it did this and it doesn't seem
+                 to make sense so it has been removed */
+              GE (ctx, glGetIntegerv (GL_MAX_TEXTURE_COORDS,
+                                      values + n_values++));
+
+              /* GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS is defined for GLSL */
+              GE (ctx, glGetIntegerv (GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,
+                                      values + n_values++));
+            }
         }
 #endif /* HAVE_COGL_GL */
 
@@ -1374,6 +1343,13 @@ _cogl_pipeline_flush_gl_state (CoglContext *ctx,
         progend->end (pipeline, pipelines_difference);
       break;
     }
+
+#ifdef COGL_ENABLE_DEBUG
+  /* XXX: Since the GLSL progend should be able to handle all features
+   * we should only hit this case if glsl was disabled for debugging
+   * and we tried to flush a pipeline that requires GLSL. */
+  g_assert (i != COGL_PIPELINE_N_PROGENDS);
+#endif
 
   /* FIXME: This reference is actually resulting in lots of
    * copy-on-write reparenting because one-shot pipelines end up
