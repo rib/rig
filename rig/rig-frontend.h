@@ -66,6 +66,9 @@ struct _RigFrontend
 
   pid_t simulator_pid;
 
+#ifdef linux
+  int listen_fd;
+#endif
   int fd;
   RigRPCPeer *frontend_peer;
   bool connected;

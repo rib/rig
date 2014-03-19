@@ -31,6 +31,13 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#ifdef linux
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <errno.h>
+#include <fcntl.h>
+#endif
+
 #include <rut.h>
 
 #include "rig-engine.h"
@@ -625,8 +632,7 @@ _rig_frontend_init_type (void)
   rut_type_init (&rig_frontend_type, "RigFrontend", _rig_frontend_free);
 }
 
-#ifdef unix
-
+#if !defined (__ANDROID__) && defined (unix)
 static void
 simulator_sigchild_cb (GPid pid,
                        int status,
@@ -720,8 +726,30 @@ fork_simulator (RutShell *shell, RigFrontend *frontend)
 
   frontend_start_service (shell, frontend);
 }
+#endif /* !__ANDROID__ && unix */
 
-#elif defined (__ANDROID__)
+#ifdef linux
+static void
+handle_simulator_connect_cb (void *user_data,
+                             int revents)
+{
+  RigFrontend *frontend = user_data;
+  struct sockaddr addr;
+  socklen_t addr_len = sizeof (addr);
+
+  g_return_if_fail (revents & RUT_POLL_FD_EVENT_IN);
+
+  g_message ("Simulator connect request received!");
+
+  frontend->fd = accept (frontend->listen_fd, &addr, &addr_len);
+  if (frontend->fd != -1)
+    {
+      g_message ("Simulator connected!");
+      frontend_start_service (frontend->engine->shell, frontend);
+    }
+  else
+    g_message ("Failed to accept simulator connection: %s!", strerror (errno));
+}
 
 static bool
 bind_to_abstract_socket (RutShell *shell, RigFrontend *frontend)
@@ -781,26 +809,35 @@ bind_to_abstract_socket (RutShell *shell, RigFrontend *frontend)
 
   frontend->listen_fd = fd;
 
-#warning "TODO: add listen_fd to mainloop"
-  /* TODO: Add listen_fd to mainloop! */
+  rut_poll_shell_add_fd (shell, frontend->listen_fd,
+                         RUT_POLL_FD_EVENT_IN,
+                         NULL, /* prepare */
+                         handle_simulator_connect_cb, /* dispatch */
+                         frontend);
+
+  g_message ("Waiting for simulator to connect...");
 
   return true;
 }
-
-#endif
+#endif /* linux */
 
 static void
 spawn_simulator (RutShell *shell, RigFrontend *frontend)
 {
-  /* XXX: On Android the simulator is a Service that bind to that we
-   * communicate with via an abstract socket. */
 #ifdef __ANDROID__
+  /* XXX: On Android the simulator is a Service that we bind to and
+   * communicate with via an abstract socket. */
   bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);
+#elif defined (linux)
+  if (getenv ("_RIG_USE_ABSTRACT_SOCKET"))
+    bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);
+  else
+    fork_simulator (shell, frontend);
 #elif defined (unix)
   fork_simulator (shell, frontend);
 #else
-#error "Can't spawn simulator on this platform!"
-#endif /* !__ANDROID__ */
+#error "Platform needs some way of connecting to a simulator"
+#endif
 }
 
 static uint64_t

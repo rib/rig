@@ -46,6 +46,7 @@ main (int argc, char **argv)
   const char *ipc_fd_str = getenv ("_RIG_IPC_FD");
   const char *frontend = getenv ("_RIG_FRONTEND");
   RigFrontendID frontend_id;
+  int fd;
 
 #ifdef unix
   sigset_t set;
@@ -73,13 +74,6 @@ main (int argc, char **argv)
     }
 #endif
 
-  if (!ipc_fd_str)
-    {
-      g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "
-               "environment variable");
-      return EXIT_FAILURE;
-    }
-
   if (!frontend)
     {
       g_error ("Failed to determine frontend via _RIG_FRONTEND "
@@ -99,8 +93,33 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
-  simulator = rig_simulator_new (frontend_id,
-                                 strtol (ipc_fd_str, NULL, 10));
+  if (getenv ("_RIG_USE_ABSTRACT_SOCKET"))
+    {
+      /* FIXME: the name should incorporate the application name! */
+      while ((fd = rut_os_connect_to_abstract_socket ("rig-simulator")) == -1)
+        {
+          static bool seen = false;
+          if (seen)
+            g_print ("Waiting for frontend...");
+          else
+            seen = true;
+
+          sleep (2);
+        }
+    }
+  else
+    {
+      if (!ipc_fd_str)
+        {
+          g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "
+                   "environment variable");
+          return EXIT_FAILURE;
+        }
+
+      fd = strtol (ipc_fd_str, NULL, 10);
+    }
+
+  simulator = rig_simulator_new (frontend_id, fd);
 
   rig_simulator_run (simulator);
 
