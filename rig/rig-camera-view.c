@@ -50,7 +50,7 @@ typedef void (*EntityTranslateCallback) (RigEntity *entity,
                                          void *user_data);
 
 typedef void (*EntityTranslateDoneCallback) (RigEntity *entity,
-                                             CoglBool moved,
+                                             bool moved,
                                              float start[3],
                                              float rel[3],
                                              void *user_data);
@@ -69,7 +69,7 @@ struct _EntityTranslateGrabClosure
 
   /* set as soon as a move event is encountered so that we can detect
    * situations where a grab is started but nothing actually moves */
-  CoglBool moved;
+  bool moved;
 
   float x_vec[3];
   float y_vec[3];
@@ -135,9 +135,9 @@ paint_overlays (RigCameraView *view,
 {
   RigEngine *engine = view->engine;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
-  CoglBool need_camera_flush = FALSE;
-  CoglBool draw_pick_ray = FALSE;
-  CoglBool draw_tools = FALSE;
+  bool need_camera_flush = FALSE;
+  bool draw_pick_ray = FALSE;
+  bool draw_tools = FALSE;
   RutObject *suspended_camera = paint_ctx->camera;
 
   if (view->debug_pick_ray && view->picking_ray)
@@ -305,7 +305,7 @@ _rut_camera_view_paint (RutObject *object,
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
   RigEntity *camera;
   RutObject *camera_component;
-  CoglBool need_play_camera_reset = FALSE;
+  bool need_play_camera_reset = FALSE;
   RigUI *ui;
 
   if (view->ui == NULL)
@@ -816,7 +816,7 @@ scene_translate_cb (RigEntity *entity,
 
 static void
 entity_translate_done_cb (RigEntity *entity,
-                          CoglBool moved,
+                          bool moved,
                           float start[3],
                           float rel[3],
                           void *user_data)
@@ -1137,7 +1137,7 @@ translate_grab_entity (RigCameraView *view,
   return closure;
 }
 
-static CoglBool
+static bool
 translate_grab_entities (RigCameraView *view,
                          GList *entities,
                          float grab_x,

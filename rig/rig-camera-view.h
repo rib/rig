@@ -125,7 +125,7 @@ struct _RigCameraView
 
   float last_viewport_x;
   float last_viewport_y;
-  CoglBool dirty_viewport_size;
+  bool dirty_viewport_size;
 
 #ifdef RIG_EDITOR_ENABLED
   RutGraph *tool_overlay;
