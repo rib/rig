@@ -107,6 +107,7 @@ find_dependency (RigBinding *binding,
   return NULL;
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
 get_property_codegen_info (RutProperty *property,
                            const char **type_name,
@@ -209,7 +210,7 @@ get_property_codegen_info (RutProperty *property,
 }
 
 static void
-update_function_node (RigBinding *binding)
+codegen_function_node (RigBinding *binding)
 {
   RigEngine *engine = binding->engine;
   const char *pre;
@@ -283,6 +284,7 @@ update_function_node (RigBinding *binding)
   rig_code_node_set_post (binding->function_node,
                           engine->codegen_string1->str);
 }
+#endif /* RIG_EDITOR_ENABLED */
 
 void
 rig_binding_activate (RigBinding *binding)
@@ -371,8 +373,10 @@ generate_function_node (RigBinding *binding)
                                    binding,
                                    NULL); /* destroy */
 
+#ifdef RIG_EDITOR_ENABLED
   if (!engine->simulator)
-    update_function_node (binding);
+    codegen_function_node (binding);
+#endif
 }
 
 void
@@ -386,7 +390,10 @@ rig_binding_remove_dependency (RigBinding *binding,
   g_free (dependency->variable_name);
   g_slice_free (Dependency, dependency);
 
-  update_function_node (binding);
+#ifdef RIG_EDITOR_ENABLED
+  if (!binding->engine->simulator)
+    codegen_function_node (binding);
+#endif
 }
 
 void
@@ -407,7 +414,10 @@ rig_binding_add_dependency (RigBinding *binding,
   binding->dependencies =
     g_list_prepend (binding->dependencies, dependency);
 
-  update_function_node (binding);
+#ifdef RIG_EDITOR_ENABLED
+  if (!binding->engine->simulator)
+    codegen_function_node (binding);
+#endif
 }
 
 char *
@@ -440,7 +450,10 @@ rig_binding_set_expression (RigBinding *binding,
                            binding->expression_node);
   rut_object_unref (binding->expression_node);
 
-  update_function_node (binding);
+#ifdef RIG_EDITOR_ENABLED
+  if (!binding->engine->simulator)
+    codegen_function_node (binding);
+#endif
 }
 
 void
@@ -456,7 +469,10 @@ rig_binding_set_dependency_name (RigBinding *binding,
 
   dependency->variable_name = g_strdup (name);
 
-  update_function_node (binding);
+#ifdef RIG_EDITOR_ENABLED
+  if (!binding->engine->simulator)
+    codegen_function_node (binding);
+#endif
 }
 
 RigBinding *
