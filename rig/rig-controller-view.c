@@ -1670,18 +1670,16 @@ path_view_input_region_cb (RutInputRegion *region,
 }
 
 static RigPathView *
-rig_path_view_new (RigControllerPropertyView *prop_view)
+rig_path_view_new (RigControllerPropertyView *prop_view,
+                   RigPath *path)
 {
   RigPathView *path_view = rut_object_alloc0 (RigPathView,
                                               &rig_path_view_type,
                                               _rig_path_view_init_type);
   RigControllerView *view= prop_view->object->view;
-  RutProperty *property = prop_view->prop_data->property;
   RutProperty *offset_prop;
   RutProperty *scale_prop;
   RutProperty *len_prop;
-  RigPath *path;
-
 
   rut_graphable_init (path_view);
   rut_paintable_init (path_view);
@@ -1706,8 +1704,6 @@ rig_path_view_new (RigControllerPropertyView *prop_view)
   rut_graphable_add_child (path_view->ui_viewport, path_view->markers);
   rut_object_unref (path_view->markers);
 
-  path = rig_controller_get_path_for_property (view->controller,
-                                               property);
   path_view->path = rut_object_ref (path);
 
   rut_path_foreach_node (path,
@@ -2095,12 +2091,24 @@ update_method_control (RigControllerPropertyView *prop_view)
                                                 view);
       break;
     case RIG_CONTROLLER_METHOD_PATH:
-      column->control = rig_path_view_new (prop_view);
-      break;
+      {
+        RigPath *path =
+          rig_controller_get_path_for_prop_data (view->controller,
+                                                 prop_view->prop_data);
+        column->control = rig_path_view_new (prop_view, path);
+        break;
+      }
     case RIG_CONTROLLER_METHOD_BINDING:
-      column->control = rig_binding_view_new (view->engine,
-                                              prop_view->prop_data->property);
-      break;
+      {
+        RigBinding *binding =
+          rig_controller_get_binding_for_prop_data (view->controller,
+                                                    prop_view->prop_data);
+
+        column->control = rig_binding_view_new (view->engine,
+                                                prop_view->prop_data->property,
+                                                binding);
+        break;
+      }
     }
 
   column->control_preferred_size_closure =

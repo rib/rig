@@ -143,16 +143,17 @@ struct _RigEngine
 
   RutList tool_changed_cb_list;
 
+  GString *codegen_string0;
+  GString *codegen_string1;
+  int next_code_id;
+
   GString *code_string;
-  RigCodeNode *code_graph;
-  GModule *code_dso_module;
   char *code_dso_filename;
   bool need_recompile;
 #endif
 
-  GString *codegen_string0;
-  GString *codegen_string1;
-  int next_code_id;
+  RigCodeNode *code_graph;
+  GModule *code_dso_module;
 
   RutObject *renderer;
 

@@ -781,6 +781,36 @@ _rig_entitygraph_pre_serialize_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
+typedef struct _DepsState
+{
+  int i;
+  RigPBSerializer *serializer;
+  Rig__Controller__Property__Dependency *pb_dependencies;
+} DepsState;
+
+static void
+serialize_binding_dep_cb (RigBinding *binding,
+                          RutProperty *dependency,
+                          void *user_data)
+{
+  DepsState *state = user_data;
+  Rig__Controller__Property__Dependency *pb_dependency =
+    &state->pb_dependencies[state->i++];
+  uint64_t id =
+    rig_pb_serializer_lookup_object_id (state->serializer,
+                                        dependency->object);
+
+  g_warn_if_fail (id != 0);
+
+  rig__controller__property__dependency__init (pb_dependency);
+
+  pb_dependency->has_object_id = true;
+  pb_dependency->object_id = id;
+
+  pb_dependency->name =
+    (char *)rig_pb_strdup (state->serializer, dependency->spec->name);
+}
+
 static void
 serialize_controller_property_cb (RigControllerPropData *prop_data,
                                   void *user_data)
@@ -822,50 +852,43 @@ serialize_controller_property_cb (RigControllerPropData *prop_data,
       break;
     }
 
-  if (prop_data->c_expression)
+  if (prop_data->binding)
     {
+      int n_deps;
       int i;
+      DepsState state;
+
+      pb_property->has_binding_id = true;
+      pb_property->binding_id = rig_binding_get_id (prop_data->binding);
 
       pb_property->c_expression =
-        (char *)rig_pb_strdup (serializer, prop_data->c_expression);
+        (char *)rig_pb_strdup (serializer,
+                               rig_binding_get_expression (prop_data->binding));
 
-      pb_property->n_dependencies = prop_data->n_dependencies;
+      n_deps = rig_binding_get_n_dependencies (prop_data->binding);
+      pb_property->n_dependencies = n_deps;
       if (pb_property->n_dependencies)
         {
           Rig__Controller__Property__Dependency *pb_dependencies =
             rut_memory_stack_memalign (
                      serializer->stack,
-                     (sizeof (Rig__Controller__Property__Dependency)
-                      * prop_data->n_dependencies),
+                     (sizeof (Rig__Controller__Property__Dependency) * n_deps),
                      RUT_UTIL_ALIGNOF (Rig__Controller__Property__Dependency));
           pb_property->dependencies =
             rut_memory_stack_memalign (
                      serializer->stack,
-                     (sizeof (void *) * prop_data->n_dependencies),
+                     (sizeof (void *) * n_deps),
                      RUT_UTIL_ALIGNOF (void *));
 
-          for (i = 0; i < prop_data->n_dependencies; i++)
+          for (i = 0; i < n_deps; i++)
             pb_property->dependencies[i] = &pb_dependencies[i];
 
-          for (i = 0; i < prop_data->n_dependencies; i++)
-            {
-              RutProperty *dependency = prop_data->dependencies[i];
-              Rig__Controller__Property__Dependency *pb_dependency =
-                &pb_dependencies[i];
-              uint64_t id =
-                rig_pb_serializer_lookup_object_id (serializer,
-                                                    dependency->object);
-
-              g_warn_if_fail (id != 0);
-
-              rig__controller__property__dependency__init (pb_dependency);
-
-              pb_dependency->has_object_id = true;
-              pb_dependency->object_id = id;
-
-              pb_dependency->name =
-                (char *)rig_pb_strdup (serializer, dependency->spec->name);
-            }
+          state.i = 0;
+          state.serializer = serializer;
+          state.pb_dependencies = pb_dependencies;
+          rig_binding_foreach_dependency (prop_data->binding,
+                                          serialize_binding_dep_cb,
+                                          &state);
         }
     }
 
@@ -3017,20 +3040,19 @@ rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
           rut_object_unref (path);
         }
 
-      if (pb_property->c_expression)
+      if (pb_property->has_binding_id)
         {
           int j;
-          RutProperty **dependencies;
-          RutProperty *dependency;
+          RigBinding *binding =
+            rig_binding_new (unserializer->engine,
+                             property,
+                             pb_property->binding_id);
 
-          if (pb_property->n_dependencies)
-            dependencies = alloca (sizeof (void *) *
-                                   pb_property->n_dependencies);
-          else
-            dependencies = NULL;
+          rig_binding_set_expression (binding, pb_property->c_expression);
 
           for (j = 0; j < pb_property->n_dependencies; j++)
             {
+              RutProperty *dependency;
               RutObject *dependency_object;
               Rig__Controller__Property__Dependency *pb_dependency =
                 pb_property->dependencies[j];
@@ -3074,11 +3096,13 @@ rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
                   break;
                 }
 
-              dependencies[j] = dependency;
+              rig_binding_add_dependency (binding, dependency,
+                                          pb_dependency->name);
             }
 
           if (j != pb_property->n_dependencies)
             {
+              rut_object_unref (binding);
               rig_pb_unserializer_collect_error (unserializer,
                                                  "Not able to resolve all "
                                                  "dependencies for "
@@ -3087,11 +3111,7 @@ rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
               continue;
             }
 
-          rig_controller_set_property_binding (controller,
-                                               property,
-                                               pb_property->c_expression,
-                                               dependencies,
-                                               pb_property->n_dependencies);
+          rig_controller_set_property_binding (controller, property, binding);
         }
     }
 }

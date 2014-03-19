@@ -340,6 +340,7 @@ message Controller
       //one of those dependencies changes
       repeated Dependency dependencies=8;
       optional string c_expression=9;
+      optional int32 binding_id=10;
     }
 
   optional sint64 id=1; //XXX ID

@@ -39,7 +39,10 @@ typedef struct _RigBinding RigBinding;
 RigBinding *
 rig_binding_new (RigEngine *engine,
                  RutProperty *property,
-                 int id);
+                 int binding_id);
+
+int
+rig_binding_get_id (RigBinding *binding);
 
 void
 rig_binding_add_dependency (RigBinding *binding,
@@ -50,6 +53,9 @@ void
 rig_binding_remove_dependency (RigBinding *binding,
                                RutProperty *property);
 
+char *
+rig_binding_get_expression (RigBinding *binding);
+
 void
 rig_binding_set_expression (RigBinding *binding,
                             const char *expression);
@@ -58,5 +64,21 @@ void
 rig_binding_set_dependency_name (RigBinding *binding,
                                  RutProperty *property,
                                  const char *name);
+
+void
+rig_binding_activate (RigBinding *binding);
+
+void
+rig_binding_deactivate (RigBinding *binding);
+
+int
+rig_binding_get_n_dependencies (RigBinding *binding);
+
+void
+rig_binding_foreach_dependency (RigBinding *binding,
+                                void (*callback) (RigBinding *binding,
+                                                  RutProperty *dependency,
+                                                  void *user_data),
+                                void *user_data);
 
 #endif /* _RIG_BINDING_H_ */

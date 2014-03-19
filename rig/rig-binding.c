@@ -54,6 +54,8 @@ struct _RigBinding
 
   RutProperty *property;
 
+  int binding_id;
+
   char *expression;
 
   char *function_name;
@@ -62,6 +64,8 @@ struct _RigBinding
   RigCodeNode *expression_node;
 
   GList *dependencies;
+
+  unsigned int active: 1;
 };
 
 static void
@@ -280,17 +284,17 @@ update_function_node (RigBinding *binding)
                           engine->codegen_string1->str);
 }
 
-static void
-binding_relink_cb (RigCodeNode *node,
-                   void *user_data)
+void
+rig_binding_activate (RigBinding *binding)
 {
-  RigBinding *binding = user_data;
   RigEngine *engine = binding->engine;
   RutProperty **dependencies;
   RutBindingCallback callback;
   int n_dependencies;
   GList *l;
   int i;
+
+  g_return_if_fail (!binding->active);
 
   /* XXX: maybe we should only explicitly remove the binding if we know
    * we've previously set a binding. If we didn't previously set a binding
@@ -324,6 +328,29 @@ binding_relink_cb (RigCodeNode *node,
                                         NULL, /* destroy */
                                         dependencies,
                                         n_dependencies);
+  binding->active = true;
+}
+
+void
+rig_binding_deactivate (RigBinding *binding)
+{
+  g_return_if_fail (binding->active);
+
+  rut_property_remove_binding (binding->property);
+
+  binding->active = false;
+}
+
+static void
+binding_relink_cb (RigCodeNode *node, void *user_data)
+{
+  RigBinding *binding = user_data;
+
+  if (binding->active)
+    {
+      rig_binding_deactivate (binding);
+      rig_binding_activate (binding);
+    }
 }
 
 static void
@@ -383,6 +410,12 @@ rig_binding_add_dependency (RigBinding *binding,
   update_function_node (binding);
 }
 
+char *
+rig_binding_get_expression (RigBinding *binding)
+{
+  return binding->expression;
+}
+
 void
 rig_binding_set_expression (RigBinding *binding,
                             const char *expression)
@@ -429,18 +462,44 @@ rig_binding_set_dependency_name (RigBinding *binding,
 RigBinding *
 rig_binding_new (RigEngine *engine,
                  RutProperty *property,
-                 int id)
+                 int binding_id)
 {
-  RigBinding *binding =
-    rut_object_alloc0 (RigBinding,
-                       &rig_binding_type,
-                       _rig_binding_init_type);
+  RigBinding *binding = rut_object_alloc0 (RigBinding,
+                                           &rig_binding_type,
+                                           _rig_binding_init_type);
 
   binding->engine = engine;
   binding->property = property;
-  binding->function_name = g_strdup_printf ("_binding%d", id);
+  binding->function_name = g_strdup_printf ("_binding%d", binding_id);
+  binding->binding_id = binding_id;
 
   generate_function_node (binding);
 
   return binding;
 }
+
+int
+rig_binding_get_id (RigBinding *binding)
+{
+  return binding->binding_id;
+}
+
+int
+rig_binding_get_n_dependencies (RigBinding *binding)
+{
+  return g_list_length (binding->dependencies);
+}
+
+void
+rig_binding_foreach_dependency (RigBinding *binding,
+                                void (*callback) (RigBinding *binding,
+                                                  RutProperty *dependency,
+                                                  void *user_data),
+                                void *user_data)
+{
+  GList *l;
+
+  for (l = binding->dependencies; l; l = l->next)
+    callback (binding, l->data, user_data);
+}
+

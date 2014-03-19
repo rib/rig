@@ -185,6 +185,9 @@ free_prop_data_cb (void *user_data)
   if (prop_data->path)
     rut_object_unref (prop_data->path);
 
+  if (prop_data->binding)
+    rut_object_unref (prop_data->binding);
+
   rut_boxed_destroy (&prop_data->constant_value);
 
   g_slice_free (RigControllerPropData, prop_data);
@@ -337,16 +340,34 @@ activate_property_binding (RigControllerPropData *prop_data,
         break;
       }
     case RIG_CONTROLLER_METHOD_BINDING:
-      /* TODO */
+      if (prop_data->binding)
+        rig_binding_activate (prop_data->binding);
       break;
     }
+
+  prop_data->active = true;
 }
 
 static void
 deactivate_property_binding (RigControllerPropData *prop_data,
                              void *user_data)
 {
-  rut_property_remove_binding (prop_data->property);
+  if (!prop_data->active)
+    return;
+
+  switch (prop_data->method)
+    {
+    case RIG_CONTROLLER_METHOD_CONSTANT:
+    case RIG_CONTROLLER_METHOD_PATH:
+      rut_property_remove_binding (prop_data->property);
+      break;
+    case RIG_CONTROLLER_METHOD_BINDING:
+      if (prop_data->binding)
+        rig_binding_deactivate (prop_data->binding);
+      break;
+    }
+
+  prop_data->active = false;
 }
 
 static bool
@@ -616,6 +637,24 @@ rig_controller_get_path_for_property (RigController *controller,
   return rig_controller_get_path_for_prop_data (controller, prop_data);
 }
 
+RigBinding *
+rig_controller_get_binding_for_prop_data (RigController *controller,
+                                          RigControllerPropData *prop_data)
+{
+  if (prop_data->binding == NULL)
+    {
+      RigEngine *engine = controller->engine;
+      RigBinding *binding = rig_binding_new (engine,
+                                             prop_data->property,
+                                             engine->next_code_id++);
+      rig_controller_set_property_binding (controller,
+                                           prop_data->property,
+                                           binding);
+    }
+
+  return prop_data->binding;
+}
+
 RigControllerPropData *
 rig_controller_find_prop_data (RigController *controller,
                                RutObject *object,
@@ -754,13 +793,17 @@ rig_controller_set_property_method (RigController *controller,
   if (prop_data->method == method)
     return;
 
-  prop_data->method = method;
-
   if (effective_active (controller))
     {
       deactivate_property_binding (prop_data, controller);
+
+      /* XXX: only update the method after deactivating the current
+       * binding */
+      prop_data->method = method;
       activate_property_binding (prop_data, controller);
     }
+  else
+    prop_data->method = method;
 
   rut_closure_list_invoke (&controller->operation_cb_list,
                            RigControllerOperationCallback,
@@ -819,19 +862,28 @@ rig_controller_set_property_path (RigController *controller,
 void
 rig_controller_set_property_binding (RigController *controller,
                                      RutProperty *property,
-                                     const char *c_expression,
-                                     RutProperty **dependencies,
-                                     int n_dependencies)
+                                     RigBinding *binding)
 {
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
+  bool need_activate;
 
   g_return_if_fail (prop_data != NULL);
 
-  prop_data->dependencies = g_slice_copy (sizeof (void *) * n_dependencies,
-                                          dependencies);
-  prop_data->n_dependencies = n_dependencies;
-  prop_data->c_expression = g_strdup (c_expression);
+  if (effective_active (controller) &&
+      prop_data->method == RIG_CONTROLLER_METHOD_BINDING)
+    {
+      need_activate = true;
+      deactivate_property_binding (prop_data, controller);
+    }
+
+  if (prop_data->binding)
+    rut_object_unref (prop_data->binding);
+
+  prop_data->binding = rut_object_ref (binding);
+
+  if (need_activate)
+    activate_property_binding (prop_data, controller);
 }
 
 typedef struct _ForeachNodeState

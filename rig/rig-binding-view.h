@@ -38,6 +38,7 @@ typedef struct _RigBindingView RigBindingView;
 
 RigBindingView *
 rig_binding_view_new (RigEngine *engine,
-                      RutProperty *property);
+                      RutProperty *property,
+                      RigBinding *binding);
 
 #endif /* _RIG_BINDING_VIEW_H_ */

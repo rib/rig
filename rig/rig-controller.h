@@ -30,9 +30,10 @@
 #define _RUT_CONTROLLER_H_
 
 #include <rut.h>
+
 #include "rig-path.h"
 #include "rig-types.h"
-#include "rut-list.h"
+#include "rig-binding.h"
 
 extern RutType rig_controller_type;
 
@@ -83,9 +84,9 @@ typedef struct
   RutBoxed constant_value;
 
   /* depenencies and c_expression may be NULL */
-  RutProperty **dependencies;
-  int n_dependencies;
-  char *c_expression;
+  RigBinding *binding;
+
+  unsigned int active:1;
 } RigControllerPropData;
 
 struct _RigController
@@ -146,6 +147,10 @@ RigPath *
 rig_controller_get_path (RigController *controller,
                          RutObject *object,
                          const char *property_name);
+
+RigBinding *
+rig_controller_get_binding_for_prop_data (RigController *controller,
+                                          RigControllerPropData *prop_data);
 
 RigController *
 rig_controller_new (RigEngine *engine, const char *name);
@@ -255,13 +260,10 @@ void
 rig_controller_set_property_method (RigController *controller,
                                     RutProperty *property,
                                     RigControllerMethod method);
-
 void
 rig_controller_set_property_binding (RigController *controller,
                                      RutProperty *property,
-                                     const char *c_expression,
-                                     RutProperty **dependencies,
-                                     int n_dependencies);
+                                     RigBinding *binding);
 
 typedef void (*RigControllerNodeCallback) (RigNode *node, void *user_data);
 

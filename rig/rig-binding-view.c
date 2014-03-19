@@ -368,7 +368,8 @@ text_changed_cb (RutText *text,
 
 RigBindingView *
 rig_binding_view_new (RigEngine *engine,
-                      RutProperty *property)
+                      RutProperty *property,
+                      RigBinding *binding)
 {
   RutContext *ctx = engine->ctx;
   RigBindingView *binding_view =
@@ -383,8 +384,7 @@ rig_binding_view_new (RigEngine *engine,
 
   rut_graphable_init (binding_view);
 
-  binding_view->binding = rig_binding_new (engine, property,
-                                           engine->next_code_id++);
+  binding_view->binding = rut_object_ref (binding);
 
   binding_view->top_stack = rut_stack_new (ctx, 1, 1);
   rut_graphable_add_child (binding_view, binding_view->top_stack);
