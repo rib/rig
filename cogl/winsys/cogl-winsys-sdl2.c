@@ -166,14 +166,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   set_gl_attribs_from_framebuffer_config (&display->onscreen_template->config);
 
-  if (display->renderer->driver == COGL_DRIVER_GLES1)
-    {
-      SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK,
-                           SDL_GL_CONTEXT_PROFILE_ES);
-      SDL_GL_SetAttribute (SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-      SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 1);
-    }
-  else if (display->renderer->driver == COGL_DRIVER_GLES2)
+  if (display->renderer->driver == COGL_DRIVER_GLES2)
     {
       SDL_GL_SetAttribute (SDL_GL_CONTEXT_PROFILE_MASK,
                            SDL_GL_CONTEXT_PROFILE_ES);
@@ -257,17 +250,6 @@ _cogl_winsys_display_setup (CoglDisplay *display,
                            COGL_WINSYS_ERROR_INIT,
                            "The GLES2 driver was requested but SDL is "
                            "not using GLES2 or GLES3");
-          goto error;
-        }
-      break;
-
-    case COGL_DRIVER_GLES1:
-      if (!u_str_has_prefix (gl_version, "OpenGL ES 1"))
-        {
-          _cogl_set_error (error, COGL_WINSYS_ERROR,
-                           COGL_WINSYS_ERROR_INIT,
-                           "The GLES1 driver was requested but SDL is "
-                           "not using GLES1");
           goto error;
         }
       break;

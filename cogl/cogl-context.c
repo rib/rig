@@ -355,18 +355,18 @@ cogl_context_new (CoglDisplay *display,
   context->texture_download_pipeline = NULL;
   context->blit_texture_pipeline = NULL;
 
-#if defined (HAVE_COGL_GL) || defined (HAVE_COGL_GLES)
-  if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ALPHA_TEST))
-    /* The default for GL_ALPHA_TEST is to always pass which is equivalent to
-     * the test being disabled therefore we assume that for all drivers there
-     * will be no performance impact if we always leave the test enabled which
-     * makes things a bit simpler for us. Under GLES2 the alpha test is
-     * implemented in the fragment shader so there is no enable for it
-     */
-    GE (context, glEnable (GL_ALPHA_TEST));
-#endif
-
 #if defined (HAVE_COGL_GL)
+  if (_cogl_has_private_feature (context, COGL_PRIVATE_FEATURE_ALPHA_TEST))
+    {
+      /* The default for GL_ALPHA_TEST is to always pass which is equivalent to
+       * the test being disabled therefore we assume that for all drivers there
+       * will be no performance impact if we always leave the test enabled which
+       * makes things a bit simpler for us. Under GLES2 the alpha test is
+       * implemented in the fragment shader so there is no enable for it
+       */
+      GE (context, glEnable (GL_ALPHA_TEST));
+    }
+
   if ((context->driver == COGL_DRIVER_GL3))
     {
       GLuint vertex_array;

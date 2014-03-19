@@ -43,8 +43,9 @@
  * any version.
  *
  * @gles_availability: flags to specify which versions of GLES the
- * functions are available in. Should be a combination of
- * COGL_EXT_IN_GLES and COGL_EXT_IN_GLES2.
+ * functions are available in. This is a leftover from when we
+ * supported GLES1 and currently the only value that can go here is
+ * COGL_EXT_IN_GLES2.
  *
  * @extension_suffixes: A zero-separated list of suffixes in a
  * string. These are appended to the extension name to get a complete
@@ -169,6 +170,87 @@ COGL_EXT_FUNCTION (void, glShaderBinary,
                     GLenum binaryformat,
                     const GLvoid* binary,
                     GLsizei length))
+COGL_EXT_FUNCTION (void, glDepthRangef,
+                   (GLfloat near_val, GLfloat far_val))
+COGL_EXT_FUNCTION (void, glClearDepthf,
+                   (GLclampf depth))
+COGL_EXT_END ()
+
+/* GL 1.3 and GLES 2.0 apis */
+COGL_EXT_BEGIN (only_in_gles2_and_gl_1_3,
+                1, 3,
+                COGL_EXT_IN_GLES2,
+                "\0",
+                "\0")
+COGL_EXT_FUNCTION (void, glCompressedTexImage2D,
+                   (GLenum target,
+                    GLint level,
+                    GLenum internalformat,
+                    GLsizei width,
+                    GLsizei height,
+                    GLint border,
+                    GLsizei imageSize,
+                    const GLvoid* data))
+COGL_EXT_FUNCTION (void, glCompressedTexSubImage2D,
+                   (GLenum target,
+                    GLint level,
+                    GLint xoffset,
+                    GLint yoffset,
+                    GLsizei width,
+                    GLsizei height,
+                    GLenum format,
+                    GLsizei imageSize,
+                    const GLvoid* data))
+COGL_EXT_FUNCTION (void, glSampleCoverage,
+                   (GLclampf value, GLboolean invert))
+COGL_EXT_END ()
+
+/* Available in GL 1.3, the multitexture extension or GLES2.
+ * Note: this api is a hard requirement for Cogl. */
+COGL_EXT_BEGIN (multitexture_part0, 1, 3,
+                COGL_EXT_IN_GLES2,
+                "ARB\0",
+                "multitexture\0")
+COGL_EXT_FUNCTION (void, glActiveTexture,
+                   (GLenum texture))
+COGL_EXT_END ()
+
+/* GL 1.5 and GLES 2.0 apis */
+COGL_EXT_BEGIN (only_in_gles2_and_gl_1_5,
+                1, 5,
+                COGL_EXT_IN_GLES2,
+                "\0",
+                "\0")
+COGL_EXT_FUNCTION (void, glGetBufferParameteriv,
+                   (GLenum target, GLenum pname, GLint* params))
+COGL_EXT_END ()
+
+
+COGL_EXT_BEGIN (vbos, 1, 5,
+                COGL_EXT_IN_GLES2,
+                "ARB\0",
+                "vertex_buffer_object\0")
+COGL_EXT_FUNCTION (void, glGenBuffers,
+                   (GLsizei		 n,
+                    GLuint		*buffers))
+COGL_EXT_FUNCTION (void, glBindBuffer,
+                   (GLenum		 target,
+                    GLuint		 buffer))
+COGL_EXT_FUNCTION (void, glBufferData,
+                   (GLenum		 target,
+                    GLsizeiptr		 size,
+                    const GLvoid		*data,
+                    GLenum		 usage))
+COGL_EXT_FUNCTION (void, glBufferSubData,
+                   (GLenum		 target,
+                    GLintptr		 offset,
+                    GLsizeiptr		 size,
+                    const GLvoid		*data))
+COGL_EXT_FUNCTION (void, glDeleteBuffers,
+                   (GLsizei		 n,
+                    const GLuint		*buffers))
+COGL_EXT_FUNCTION (GLboolean, glIsBuffer,
+                   (GLuint               buffer))
 COGL_EXT_END ()
 
 /* GL and GLES 2.0 apis */
@@ -184,3 +266,4 @@ COGL_EXT_FUNCTION (void, glStencilMaskSeparate,
 COGL_EXT_FUNCTION (void, glStencilOpSeparate,
                    (GLenum face, GLenum fail, GLenum zfail, GLenum zpass))
 COGL_EXT_END ()
+

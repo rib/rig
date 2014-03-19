@@ -61,8 +61,6 @@ _cogl_feature_check (CoglRenderer *renderer,
         driver == COGL_DRIVER_GL3) &&
        COGL_CHECK_GL_VERSION (gl_major, gl_minor,
                               data->min_gl_major, data->min_gl_minor)) ||
-      (driver == COGL_DRIVER_GLES1 &&
-       (data->gles_availability & COGL_EXT_IN_GLES)) ||
       (driver == COGL_DRIVER_GLES2 &&
        (data->gles_availability & COGL_EXT_IN_GLES2)))
     {

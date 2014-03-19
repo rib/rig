@@ -43,8 +43,9 @@
  * any version.
  *
  * @gles_availability: flags to specify which versions of GLES the
- * functions are available in. Should be a combination of
- * COGL_EXT_IN_GLES and COGL_EXT_IN_GLES2.
+ * functions are available in. This is a leftover from when we
+ * supported GLES1 and currently the only value that can go here is
+ * COGL_EXT_IN_GLES2.
  *
  * @extension_suffixes: A zero-separated list of suffixes in a
  * string. These are appended to the extension name to get a complete

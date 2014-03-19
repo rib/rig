@@ -261,17 +261,6 @@ _cogl_driver_update_features (CoglContext *context,
                                      -1 /* GL minor version */,
                                      gl_extensions);
 
-#ifdef HAVE_COGL_GLES
-  if (context->driver == COGL_DRIVER_GLES1)
-    {
-      int max_clip_planes;
-      GE( context, glGetIntegerv (GL_MAX_CLIP_PLANES, &max_clip_planes) );
-      if (max_clip_planes >= 4)
-        COGL_FLAGS_SET (private_features,
-                        COGL_PRIVATE_FEATURE_FOUR_CLIP_PLANES, TRUE);
-    }
-#endif
-
   if (context->driver == COGL_DRIVER_GLES2)
     {
       /* Note GLES 2 core doesn't support mipmaps for npot textures or
@@ -289,19 +278,12 @@ _cogl_driver_update_features (CoglContext *context,
       COGL_FLAGS_SET (private_features,
                       COGL_PRIVATE_FEATURE_BLEND_CONSTANT, TRUE);
     }
-  else if (context->driver == COGL_DRIVER_GLES1)
-    {
-      COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_GL_FIXED, TRUE);
-      COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ALPHA_TEST, TRUE);
-      COGL_FLAGS_SET (private_features,
-                      COGL_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM, TRUE);
-    }
 
   COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_VBOS, TRUE);
   COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ANY_GL, TRUE);
   COGL_FLAGS_SET (private_features, COGL_PRIVATE_FEATURE_ALPHA_TEXTURES, TRUE);
 
-  /* Both GLES 1.1 and GLES 2.0 support point sprites in core */
+  /* GLES 2.0 supports point sprites in core */
   COGL_FLAGS_SET (context->features, COGL_FEATURE_ID_POINT_SPRITE, TRUE);
 
   if (context->glGenRenderbuffers)

@@ -43,8 +43,9 @@
  * any version.
  *
  * @gles_availability: flags to specify which versions of GLES the
- * functions are available in. Should be a combination of
- * COGL_EXT_IN_GLES and COGL_EXT_IN_GLES2.
+ * functions are available in. This is a leftover from when we
+ * supported GLES1 and currently the only value that can go here is
+ * COGL_EXT_IN_GLES2.
  *
  * @extension_suffixes: A zero-separated list of suffixes in a
  * string. These are appended to the extension name to get a complete
@@ -56,11 +57,11 @@
  * extensions match then it will be used.
  */
 
-/* These are the core GL functions which are available when the API
-   supports fixed-function (ie, GL and GLES1.1) */
+/* These are the core GL functions which are available with the GL
+ * compatibility profile */
 COGL_EXT_BEGIN (fixed_function_core,
                 0, 0,
-                COGL_EXT_IN_GLES,
+                0, /* Not in GLES */
                 "\0",
                 "\0")
 COGL_EXT_FUNCTION (void, glAlphaFunc,

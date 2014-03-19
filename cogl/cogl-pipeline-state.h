@@ -208,10 +208,9 @@ cogl_pipeline_get_alpha_test_reference (CoglPipeline *pipeline);
  *   describing the desired blend function.
  * @error: return location for a #CoglError that may report lack of driver
  *   support if you give separate blend string statements for the alpha
- *   channel and RGB channels since some drivers, or backends such as
- *   GLES 1.1, don't support this feature. May be %NULL, in which case a
- *   warning will be printed out using GLib's logging facilities if an
- *   error is encountered.
+ *   channel and RGB channels since some drivers. May be %NULL, in which case
+ *   an error will cause the program to terminate with an error
+ *   message.
  *
  * If not already familiar; please refer <link linkend="cogl-Blend-Strings">here</link>
  * for an overview of what blend strings are, and their syntax.

@@ -61,8 +61,7 @@
 #define GL_MAX_3D_TEXTURE_SIZE_OES 0x8073
 #endif
 
-/* This extension isn't available for GLES 1.1 so these won't be
-   defined */
+/* These may not be defined for drivers without GL_EXT_unpack_subimage */
 #ifndef GL_UNPACK_ROW_LENGTH
 #define GL_UNPACK_ROW_LENGTH 0x0CF2
 #endif

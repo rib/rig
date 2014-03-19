@@ -152,20 +152,6 @@ static CoglDriverDescription _cogl_drivers[] =
     COGL_GLES2_LIBNAME,
   },
 #endif
-#ifdef HAVE_COGL_GLES
-  {
-    COGL_DRIVER_GLES1,
-    "gles1",
-    0,
-    { COGL_PRIVATE_FEATURE_ANY_GL,
-      COGL_PRIVATE_FEATURE_GL_EMBEDDED,
-      COGL_PRIVATE_FEATURE_GL_FIXED,
-      -1 },
-    &_cogl_driver_gles,
-    &_cogl_texture_driver_gles,
-    COGL_GLES1_LIBNAME,
-  },
-#endif
 #ifdef USING_EMSCRIPTEN
   {
     COGL_DRIVER_WEBGL,
@@ -450,8 +436,6 @@ driver_id_to_name (CoglDriver id)
         return "gl";
       case COGL_DRIVER_GL3:
         return "gl3";
-      case COGL_DRIVER_GLES1:
-        return "gles1";
       case COGL_DRIVER_GLES2:
         return "gles2";
       case COGL_DRIVER_WEBGL:
