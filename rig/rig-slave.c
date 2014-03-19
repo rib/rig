@@ -662,41 +662,6 @@ rig_slave_paint (RutShell *shell, void *user_data)
     }
 }
 
-#ifdef __ANDROID__
-
-void
-android_main (struct android_app *application)
-{
-  RigSlave slave;
-
-  /* Make sure glue isn't stripped */
-  app_dummy ();
-
-  g_android_init ();
-
-  memset (&slave, 0, sizeof (RigSlave));
-  slave.engine = &engine;
-
-  slave.app = application;
-
-  slave.shell = rut_android_shell_new (application,
-                                       rig_slave_init,
-                                       rig_slave_fini,
-                                       rig_slave_paint,
-                                       &slave);
-
-  slave.ctx = rut_context_new (engine.shell);
-#ifdef USE_GSTREAMER
-  gst_init (&argc, &argv);
-#endif
-
-  rut_context_init (slave.ctx);
-
-  rut_shell_main (slave.shell);
-}
-
-#else
-
 int
 main (int argc, char **argv)
 {
@@ -735,5 +700,3 @@ main (int argc, char **argv)
 
   return 0;
 }
-
-#endif
