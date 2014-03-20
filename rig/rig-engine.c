@@ -730,8 +730,10 @@ rig_select_object (RigEngine *engine,
   if (object && rut_object_get_type (object) != &rig_entity_type)
     action = RUT_SELECT_ACTION_REPLACE;
 
+#if RIG_EDITOR_ENABLED
   if (object == engine->light_handle)
     object = engine->edit_mode_ui->light;
+#endif
 
 #if 0
   else if (entity == engine->play_camera_handle)
@@ -1025,6 +1027,9 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
   if (engine->edit_mode_ui == ui)
     return;
 
+  g_return_if_fail (engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
+
+#if RIG_EDITOR_ENABLED
   /* Updating the edit mode ui implies we need to also replace
    * any play mode ui too... */
   rig_engine_set_play_mode_ui (engine, NULL);
@@ -1074,6 +1079,8 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
 
   //if (first_ui)
   //  setup_shared_ui_state (engine);
+
+#endif /* RIG_EDITOR_ENABLED */
 }
 
 void
