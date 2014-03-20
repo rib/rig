@@ -106,7 +106,7 @@ rig_code_node_new (RigEngine *engine,
   rut_list_init (&node->link_closures);
 
   /* Note: in device mode and in the simulator we avoid
-   * tracing any source code. */
+   * tracking any source code. */
 
   if (pre)
     node->pre = g_strdup (pre);
@@ -209,6 +209,7 @@ rig_code_update_dso (RigEngine *engine, uint8_t *data, int len)
                           NULL);
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
 recompile (RigEngine *engine)
 {
@@ -243,33 +244,21 @@ recompile (RigEngine *engine)
     }
 }
 
-void *
-rig_code_resolve_symbol (RigEngine *engine, const char *name)
-{
-  if (engine->code_dso_module)
-    {
-      void *sym;
-      if (g_module_symbol (engine->code_dso_module, name, &sym))
-        return sym;
-      else
-        return NULL;
-    }
-  else
-    return NULL;
-}
-
 static void
 recompile_pre_paint_callback (RutObject *_null_graphable,
                               void *user_data)
 {
   recompile (user_data);
 }
+#endif /* RIG_EDITOR_ENABLED */
 
 static void
 queue_recompile (RigEngine *engine)
 {
-  g_return_if_fail (!engine->simulator);
+  g_return_if_fail (engine->frontend &&
+                    engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
 
+#ifdef RIG_EDITOR_ENABLED
   if (engine->need_recompile)
     return;
 
@@ -281,6 +270,7 @@ queue_recompile (RigEngine *engine)
                                     engine);
 
   rut_shell_queue_redraw (engine->shell);
+#endif
 }
 
 void
@@ -336,24 +326,42 @@ rig_code_node_add_link_callback (RigCodeNode *node,
                                destroy);
 }
 
+void *
+rig_code_resolve_symbol (RigEngine *engine, const char *name)
+{
+  if (engine->code_dso_module)
+    {
+      void *sym;
+      if (g_module_symbol (engine->code_dso_module, name, &sym))
+        return sym;
+      else
+        return NULL;
+    }
+  else
+    return NULL;
+}
+
 void
 _rig_code_init (RigEngine *engine)
 {
+#ifdef RIG_EDITOR_ENABLED
   engine->code_string = g_string_new ("");
   engine->codegen_string0 = g_string_new ("");
   engine->codegen_string1 = g_string_new ("");
 
+  engine->next_code_id = 1;
+  engine->need_recompile = false;
+#endif
+
   engine->code_graph = rig_code_node_new (engine,
                                           "typedef struct _RutProperty RutProperty;\n",
                                           "");
-
-  engine->next_code_id = 1;
-  engine->need_recompile = false;
 }
 
 void
 _rig_code_fini (RigEngine *engine)
 {
+#ifdef RIG_EDITOR_ENABLED
   g_string_free (engine->code_string, TRUE);
   engine->code_string = NULL;
 
@@ -363,15 +371,16 @@ _rig_code_fini (RigEngine *engine)
   g_string_free (engine->codegen_string1, TRUE);
   engine->codegen_string1 = NULL;
 
-  rut_object_unref (engine->code_graph);
-  engine->code_graph = NULL;
-
   if (engine->code_dso_filename)
     g_free (engine->code_dso_filename);
 
   rut_shell_remove_pre_paint_callback (engine->shell,
                                        recompile_pre_paint_callback,
                                        engine);
+#endif
+
+  rut_object_unref (engine->code_graph);
+  engine->code_graph = NULL;
 
   if (engine->code_dso_module)
     g_module_close (engine->code_dso_module);
