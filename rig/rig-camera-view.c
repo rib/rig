@@ -123,8 +123,12 @@ _rig_camera_view_free (void *object)
   if (view->dof)
     rig_dof_effect_free (view->dof);
 
-  rig_selection_tool_destroy (view->selection_tool);
-  rig_rotation_tool_destroy (view->rotation_tool);
+#ifdef RIG_EDITOR_ENABLED
+  if (view->selection_tool)
+    rig_selection_tool_destroy (view->selection_tool);
+  if (view->rotation_tool)
+    rig_rotation_tool_destroy (view->rotation_tool);
+#endif
 
   rut_object_free (RigCameraView, view);
 }
@@ -2204,6 +2208,7 @@ init_device_transforms (RutContext *ctx,
   rig_entity_set_label (transforms->screen_pos, "rig:camera_screen_pos");
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
 tool_changed_cb (RigEngine *engine,
                  RigToolID tool_id,
@@ -2224,6 +2229,7 @@ tool_changed_cb (RigEngine *engine,
     }
   view->tool_id = tool_id;
 }
+#endif /* RIG_EDITOR_ENABLED */
 
 RigCameraView *
 rig_camera_view_new (RigEngine *engine)
