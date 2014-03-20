@@ -644,12 +644,19 @@ rig_controller_get_binding_for_prop_data (RigController *controller,
   if (prop_data->binding == NULL)
     {
       RigEngine *engine = controller->engine;
-      RigBinding *binding = rig_binding_new (engine,
-                                             prop_data->property,
-                                             engine->next_code_id++);
+      RigBinding *binding;
+
+      g_return_val_if_fail (engine->frontend &&
+                            engine->frontend_id == RIG_FRONTEND_ID_EDITOR,
+                            NULL);
+#ifdef RIG_EDITOR_ENABLED
+      binding = rig_binding_new (engine,
+                                 prop_data->property,
+                                 engine->next_code_id++);
       rig_controller_set_property_binding (controller,
                                            prop_data->property,
                                            binding);
+#endif
     }
 
   return prop_data->binding;
