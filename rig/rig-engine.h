@@ -134,10 +134,10 @@ struct _RigEngine
   RutMemoryStack *sim_frame_stack;
   RutMagazine *object_id_magazine;
 
-  /* XXX: Move to RigEditor */
-#ifdef RIG_EDITOR_ENABLED
   RutInputQueue *simulator_input_queue;
 
+  /* XXX: Move to RigEditor */
+#ifdef RIG_EDITOR_ENABLED
   RutText *search_text;
   GList *required_search_tags;
 
