@@ -186,7 +186,9 @@ rig_SOURCES = \
 rig_LDADD = $(common_ldadd)
 
 rig_slave_SOURCES = \
-	rig-slave.c
+	rig-slave.h \
+	rig-slave.c \
+	rig-slave-main.c
 rig_slave_LDADD = $(common_ldadd)
 
 rig_device_SOURCES = \

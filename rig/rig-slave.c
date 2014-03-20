@@ -32,67 +32,19 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include <rut.h>
-#include <rig-engine.h>
-#include <rig-engine.h>
-#include <rig-avahi.h>
-#include <rig-rpc-network.h>
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
 #endif
 
+#include <rut.h>
+
+#include "rig-slave.h"
+#include "rig-engine.h"
+#include "rig-avahi.h"
+#include "rig-rpc-network.h"
 #include "rig-pb.h"
 
 #include "rig.pb-c.h"
-
-static int option_width;
-static int option_height;
-static double option_scale;
-
-static const GOptionEntry rig_slave_entries[] =
-{
-  {
-    "width", 'w', 0, G_OPTION_ARG_INT, &option_width,
-    "Width of slave window", NULL
-  },
-  {
-    "height", 'h', 0, G_OPTION_ARG_INT, &option_width,
-    "Height of slave window", NULL
-  },
-  {
-    "scale", 's', 0, G_OPTION_ARG_DOUBLE, &option_scale,
-    "Scale factor for slave window based on default device dimensions", NULL
-  },
-
-  { 0 }
-};
-
-
-typedef struct _RigSlave
-{
-  RutShell *shell;
-  RutContext *ctx;
-
-  RigFrontend *frontend;
-  RigEngine *engine;
-
-  GHashTable *edit_id_to_play_object_map;
-  GHashTable *play_object_to_edit_id_map;
-
-  RigPBUnSerializer *ui_unserializer;
-
-  RigEngineOpMapContext map_op_ctx;
-  RigEngineOpApplyContext apply_op_ctx;
-
-  RutClosure *ui_update_closure;
-  RutQueue *pending_edits;
-
-  RutClosure *ui_load_closure;
-  const Rig__UI *pending_ui_load;
-  Rig__LoadResult_Closure pending_ui_load_closure;
-  void *pending_ui_load_closure_data;
-
-} RigSlave;
 
 static void
 slave__test (Rig__Slave_Service *service,
@@ -210,15 +162,15 @@ load_ui (RigSlave *slave)
 
   rig_frontend_reload_simulator_ui (slave->frontend, ui, true /* play mode */);
 
-  if (option_width > 0 && option_height > 0)
+  if (slave->request_width > 0 && slave->request_height > 0)
     {
-      width = option_width;
-      height = option_height;
+      width = slave->request_width;
+      height = slave->request_height;
     }
-  else if (option_scale)
+  else if (slave->request_scale)
     {
-      width = engine->device_width * option_scale;
-      height = engine->device_height * option_scale;
+      width = engine->device_width * slave->request_scale;
+      height = engine->device_height * slave->request_scale;
     }
   else
     {
@@ -411,7 +363,9 @@ server_error_handler (PB_RPC_Error_Code code,
 
   g_warning ("Server error: %s", message);
 
+#ifdef USE_AVAHI
   rig_avahi_unregister_service (engine);
+#endif
 
   rig_rpc_server_shutdown (engine->slave_service);
 
@@ -427,7 +381,7 @@ map_edit_id_to_play_object_cb (uint64_t edit_id,
   return (uint64_t)(uintptr_t)play_object;
 }
 
-void
+static void
 rig_slave_init (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
@@ -464,14 +418,16 @@ rig_slave_init (RutShell *shell, void *user_data)
                                               new_client_handler,
                                               slave);
 
+#ifdef USE_AVAHI
   rig_avahi_register_service (engine);
+#endif
 
   rut_shell_add_input_callback (slave->shell,
                                 rig_engine_input_handler,
                                 engine, NULL);
 }
 
-void
+static void
 rig_slave_fini (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
@@ -491,8 +447,11 @@ rig_slave_fini (RutShell *shell, void *user_data)
   rig_engine_op_map_context_destroy (&slave->map_op_ctx);
   rig_engine_op_apply_context_destroy (&slave->apply_op_ctx);
 
+#ifdef USE_AVAHI
   /* TODO: move to frontend */
   rig_avahi_unregister_service (engine);
+#endif
+
   rig_rpc_server_shutdown (engine->slave_service);
 
   slave->engine = NULL;
@@ -662,41 +621,54 @@ rig_slave_paint (RutShell *shell, void *user_data)
     }
 }
 
-int
-main (int argc, char **argv)
+static void
+_rig_slave_free (void *object)
 {
-  RigSlave slave;
-  GOptionContext *context = g_option_context_new (NULL);
-  GError *error = NULL;
+  RigSlave *slave = object;
 
-#ifdef USE_GSTREAMER
-  gst_init (&argc, &argv);
-#endif
+  if (slave->frontend)
+    rut_object_unref (slave->frontend);
 
-  g_option_context_add_main_entries (context, rig_slave_entries, NULL);
+  rut_object_unref (slave->ctx);
+  rut_object_unref (slave->shell);
 
-  if (!g_option_context_parse (context, &argc, &argv, &error))
-    {
-      fprintf (stderr, "option parsing failed: %s\n", error->message);
-      exit (EXIT_FAILURE);
-    }
+  rut_object_free (RigSlave, slave);
+}
 
-  memset (&slave, 0, sizeof (RigSlave));
+static RutType rig_slave_type;
 
-  slave.shell = rut_shell_new (false, /* not headless */
-                               rig_slave_init,
-                               rig_slave_fini,
-                               rig_slave_paint,
-                               &slave);
+static void
+_rig_slave_init_type (void)
+{
+  rut_type_init (&rig_slave_type, "RigSlave", _rig_slave_free);
+}
 
-  slave.ctx = rut_context_new (slave.shell);
+RigSlave *
+rig_slave_new (int width, int height, int scale)
+{
+  RigSlave *slave = rut_object_alloc0 (RigSlave,
+                                       &rig_slave_type,
+                                       _rig_slave_init_type);
 
-  rut_context_init (slave.ctx);
+  slave->request_width = width;
+  slave->request_height = height;
+  slave->request_scale = scale;
 
-  rut_shell_main (slave.shell);
+  slave->shell = rut_shell_new (false, /* not headless */
+                                rig_slave_init,
+                                rig_slave_fini,
+                                rig_slave_paint,
+                                slave);
 
-  rut_object_unref (slave.ctx);
-  rut_object_unref (slave.shell);
+  slave->ctx = rut_context_new (slave->shell);
 
-  return 0;
+  rut_context_init (slave->ctx);
+
+  return slave;
+}
+
+void
+rig_slave_run (RigSlave *slave)
+{
+  rut_shell_main (slave->shell);
 }
