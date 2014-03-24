@@ -31,14 +31,13 @@
  *   Neil Roberts <neil@linux.intel.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <config.h>
 
 #include <glib.h>
 #include "cogl-pango-pipeline-cache.h"
 
 #include "cogl/cogl-context-private.h"
+#include "cogl/cogl-texture-private.h"
 
 typedef struct _CoglPangoPipelineCacheEntry CoglPangoPipelineCacheEntry;
 
