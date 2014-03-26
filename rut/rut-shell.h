@@ -32,6 +32,11 @@
 
 #include <stdbool.h>
 
+#if defined (USE_SDL)
+#include "rut-sdl-keysyms.h"
+#include "SDL_syswm.h"
+#endif
+
 #include <cogl/cogl.h>
 
 #include "rut-keysyms.h"
@@ -166,6 +171,196 @@ typedef struct _RutStreamEvent
 typedef RutInputEventStatus (*RutInputCallback) (RutInputEvent *event,
                                                  void *user_data);
 
+typedef struct
+{
+  RutList list_node;
+  RutInputCallback callback;
+  RutObject *camera;
+  void *user_data;
+} RutShellGrab;
+
+typedef void
+(* RutPrePaintCallback) (RutObject *graphable,
+                         void *user_data);
+
+typedef struct
+{
+  RutList list_node;
+
+  int depth;
+  RutObject *graphable;
+
+  RutPrePaintCallback callback;
+  void *user_data;
+} RutShellPrePaintEntry;
+
+#ifdef USE_SDL
+typedef struct _RutSDLEvent
+{
+  SDL_Event sdl_event;
+
+  /* SDL uses global state to report keyboard modifier and button states
+   * which is a pain if events are being batched before processing them
+   * on a per-frame basis since we want to be able to track how this
+   * state changes relative to events. */
+  SDL_Keymod mod_state;
+
+  /* It could be nice if SDL_MouseButtonEvents had a buttons member
+   * that had the full state of buttons as returned by
+   * SDL_GetMouseState () */
+  uint32_t buttons;
+} RutSDLEvent;
+
+typedef void (*RutSDLEventHandler) (RutShell *shell,
+                                    SDL_Event *event,
+                                    void *user_data);
+#endif
+
+typedef struct _RutInputQueue
+{
+  RutShell *shell;
+  RutList events;
+  int n_events;
+} RutInputQueue;
+
+struct _RutShell
+{
+  RutObjectBase _base;
+
+
+  /* If true then this process does not handle input events directly
+   * or output graphics directly. */
+  bool headless;
+#ifdef USE_SDL
+  SDL_SYSWM_TYPE sdl_subsystem;
+  SDL_Keymod sdl_keymod;
+  uint32_t sdl_buttons;
+  bool x11_grabbed;
+
+  /* Note we can't use SDL_WaitEvent() to block for events given
+   * that we also care about non-SDL based events.
+   *
+   * This lets us to use poll() to block until an SDL event
+   * is recieved instead of busy waiting...
+   */
+  SDL_mutex *event_pipe_mutex;
+  int event_pipe_read;
+  int event_pipe_write;
+  bool wake_queued;
+
+  GArray *cogl_poll_fds;
+  int cogl_poll_fds_age;
+#endif
+
+  GArray *poll_fds;
+  int poll_sources_age;
+  GList *poll_sources;
+
+  RutList idle_closures;
+
+#if 0
+  int signal_read_fd;
+  RutList signal_cb_list;
+#endif
+
+  GMainLoop *main_loop;
+
+  RutInputQueue *input_queue;
+  int input_queue_len;
+
+  RutContext *rut_ctx;
+
+  RutShellInitCallback init_cb;
+  RutShellFiniCallback fini_cb;
+  RutShellPaintCallback paint_cb;
+  void *user_data;
+
+  RutList input_cb_list;
+  GList *input_cameras;
+
+  /* Used to handle input events in window coordinates */
+  RutObject *window_camera;
+
+  /* Last known position of the mouse */
+  float mouse_x;
+  float mouse_y;
+
+  RutObject *drag_payload;
+  RutObject *drop_offer_taker;
+
+  /* List of grabs that are currently in place. This are in order from
+   * highest to lowest priority. */
+  RutList grabs;
+  /* A pointer to the next grab to process. This is only used while
+   * invoking the grab callbacks so that we can cope with multiple
+   * grabs being removed from the list while one is being processed */
+  RutShellGrab *next_grab;
+
+  RutObject *keyboard_focus_object;
+  GDestroyNotify keyboard_ungrab_cb;
+
+  RutObject *clipboard;
+
+  int glib_paint_idle;
+  bool redraw_queued;
+
+  void (*queue_redraw_callback) (RutShell *shell,
+                                 void *user_data);
+  void *queue_redraw_data;
+
+  /* Queue of callbacks to be invoked before painting. If
+   * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
+   * sorted order. Otherwise it is kept in no particular order and it
+   * will be sorted once prepaint flushing starts. That way it doesn't
+   * need to keep track of hierarchy changes that occur after the
+   * pre-paint was queued. This assumes that the depths won't change
+   * will the queue is being flushed */
+  RutList pre_paint_callbacks;
+  CoglBool flushing_pre_paints;
+
+  RutList start_paint_callbacks;
+  RutList post_paint_callbacks;
+
+  int frame;
+  RutList frame_infos;
+
+  /* A list of onscreen windows that the shell is manipulating */
+  RutList onscreens;
+
+  RutObject *selection;
+};
+
+typedef enum _RutInputTransformType
+{
+  RUT_INPUT_TRANSFORM_TYPE_NONE,
+  RUT_INPUT_TRANSFORM_TYPE_MATRIX,
+  RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE
+} RutInputTransformType;
+
+typedef struct _RutInputTransformAny
+{
+  RutInputTransformType type;
+} RutInputTransformAny;
+
+typedef struct _RutInputTransformMatrix
+{
+  RutInputTransformType type;
+  CoglMatrix *matrix;
+} RutInputTransformMatrix;
+
+typedef struct _RutInputTransformGraphable
+{
+  RutInputTransformType type;
+} RutInputTransformGraphable;
+
+typedef union _RutInputTransform
+{
+  RutInputTransformAny any;
+  RutInputTransformMatrix matrix;
+  RutInputTransformGraphable graphable;
+} RutInputTransform;
+
+
 RutShell *
 rut_shell_new (bool headless,
                RutShellInitCallback init,
@@ -227,13 +422,6 @@ rut_shell_dispatch_input_events (RutShell *shell);
 /* Dispatch a single event as rut_shell_dispatch_input_events would */
 RutInputEventStatus
 rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event);
-
-typedef struct _RutInputQueue
-{
-  RutShell *shell;
-  RutList events;
-  int n_events;
-} RutInputQueue;
 
 RutInputQueue *
 rut_input_queue_new (RutShell *shell);
@@ -485,10 +673,6 @@ rut_shell_add_input_callback (RutShell *shell,
                               RutInputCallback callback,
                               void *user_data,
                               RutClosureDestroyCallback destroy_cb);
-
-typedef void
-(* RutPrePaintCallback) (RutObject *graphable,
-                         void *user_data);
 
 /**
  * rut_shell_add_pre_paint_callback:

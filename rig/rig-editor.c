@@ -1660,8 +1660,7 @@ on_ui_load_cb (void *user_data)
   add_light_handle (engine, ui);
   add_play_camera_handle (engine, ui);
 
-  rig_engine_op_apply_context_set_ui (&editor->apply_op_ctx,
-                                      ui);
+  rig_engine_op_apply_context_set_ui (&editor->apply_op_ctx, ui);
 
   /* Whenever we replace the edit mode graph that implies we need
    * to scrap and update the play mode graph, with a snapshot of
@@ -1687,14 +1686,11 @@ simulator_connected_cb (void *user_data)
                                     engine->edit_mode_ui,
                                     false);
 
-  /* XXX: we should have a more consistent way to register this
-   * ui load callback. Currently it's not possible to set the
-   * callback until after we have created a RigFrontend which
-   * creates our RigEngine, but since we pass a filename in
-   * when creating the engine we can actually load a UI before
-   * we register our callback.
+  /* Whenever we connect to the simulator that implies we need to
+   * update the play mode graph, with a snapshot of the edit mode
+   * graph.
    */
-  on_ui_load_cb (editor);
+  reset_play_mode_ui (editor);
 }
 
 static RigNineSlice *
@@ -2658,6 +2654,14 @@ rig_editor_new (const char *filename)
                                                  editor);
 
   rig_engine_set_apply_op_callback (engine, apply_edit_op_cb, editor);
+
+  /* XXX: we should have a better way of handling this ui load
+   * callback. Currently it's not possible to set the callback until
+   * after we have created a RigFrontend which creates our RigEngine,
+   * but since we pass a filename in when creating the engine we can
+   * actually load a UI before we register our callback.
+   */
+  on_ui_load_cb (editor);
   rig_engine_set_ui_load_callback (engine, on_ui_load_cb, editor);
 
   rig_engine_op_apply_context_init (&editor->apply_op_ctx,

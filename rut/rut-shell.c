@@ -73,6 +73,8 @@
 #include "rut-introspectable.h"
 #include "rut-nine-slice.h"
 #include "rut-camera.h"
+#include "rut-poll.h"
+#include "rut-glib-source.h"
 
 #if defined (USE_SDL)
 #include "rut-sdl-keysyms.h"
@@ -86,164 +88,6 @@
 #ifdef USE_XLIB
 #include <X11/Xlib.h>
 #endif
-
-typedef struct
-{
-  RutList list_node;
-  RutInputCallback callback;
-  RutObject *camera;
-  void *user_data;
-} RutShellGrab;
-
-typedef struct
-{
-  RutList list_node;
-
-  int depth;
-  RutObject *graphable;
-
-  RutPrePaintCallback callback;
-  void *user_data;
-} RutShellPrePaintEntry;
-
-#ifdef USE_SDL
-typedef struct _RutSDLEvent
-{
-  SDL_Event sdl_event;
-
-  /* SDL uses global state to report keyboard modifier and button states
-   * which is a pain if events are being batched before processing them
-   * on a per-frame basis since we want to be able to track how this
-   * state changes relative to events. */
-  SDL_Keymod mod_state;
-
-  /* It could be nice if SDL_MouseButtonEvents had a buttons member
-   * that had the full state of buttons as returned by
-   * SDL_GetMouseState () */
-  uint32_t buttons;
-} RutSDLEvent;
-
-typedef void (*RutSDLEventHandler) (RutShell *shell,
-                                    SDL_Event *event,
-                                    void *user_data);
-#endif
-
-struct _RutShell
-{
-  RutObjectBase _base;
-
-
-  /* If true then this process does not handle input events directly
-   * or output graphics directly. */
-  bool headless;
-#ifdef USE_SDL
-  SDL_SYSWM_TYPE sdl_subsystem;
-  SDL_Keymod sdl_keymod;
-  uint32_t sdl_buttons;
-  bool x11_grabbed;
-#endif
-
-#if 0
-  int signal_read_fd;
-  RutList signal_cb_list;
-#endif
-
-  GMainLoop *main_loop;
-
-  RutInputQueue *input_queue;
-  int input_queue_len;
-
-  RutContext *rut_ctx;
-
-  RutShellInitCallback init_cb;
-  RutShellFiniCallback fini_cb;
-  RutShellPaintCallback paint_cb;
-  void *user_data;
-
-  RutList input_cb_list;
-  GList *input_cameras;
-
-  /* Used to handle input events in window coordinates */
-  RutObject *window_camera;
-
-  /* Last known position of the mouse */
-  float mouse_x;
-  float mouse_y;
-
-  RutObject *drag_payload;
-  RutObject *drop_offer_taker;
-
-  /* List of grabs that are currently in place. This are in order from
-   * highest to lowest priority. */
-  RutList grabs;
-  /* A pointer to the next grab to process. This is only used while
-   * invoking the grab callbacks so that we can cope with multiple
-   * grabs being removed from the list while one is being processed */
-  RutShellGrab *next_grab;
-
-  RutObject *keyboard_focus_object;
-  GDestroyNotify keyboard_ungrab_cb;
-
-  RutObject *clipboard;
-
-  int glib_paint_idle;
-  bool redraw_queued;
-
-  void (*queue_redraw_callback) (RutShell *shell,
-                                 void *user_data);
-  void *queue_redraw_data;
-
-  /* Queue of callbacks to be invoked before painting. If
-   * ‘flushing_pre_paints‘ is TRUE then this will be maintained in
-   * sorted order. Otherwise it is kept in no particular order and it
-   * will be sorted once prepaint flushing starts. That way it doesn't
-   * need to keep track of hierarchy changes that occur after the
-   * pre-paint was queued. This assumes that the depths won't change
-   * will the queue is being flushed */
-  RutList pre_paint_callbacks;
-  CoglBool flushing_pre_paints;
-
-  RutList start_paint_callbacks;
-  RutList post_paint_callbacks;
-
-  int frame;
-  RutList frame_infos;
-
-  /* A list of onscreen windows that the shell is manipulating */
-  RutList onscreens;
-
-  RutObject *selection;
-};
-
-typedef enum _RutInputTransformType
-{
-  RUT_INPUT_TRANSFORM_TYPE_NONE,
-  RUT_INPUT_TRANSFORM_TYPE_MATRIX,
-  RUT_INPUT_TRANSFORM_TYPE_GRAPHABLE
-} RutInputTransformType;
-
-typedef struct _RutInputTransformAny
-{
-  RutInputTransformType type;
-} RutInputTransformAny;
-
-typedef struct _RutInputTransformMatrix
-{
-  RutInputTransformType type;
-  CoglMatrix *matrix;
-} RutInputTransformMatrix;
-
-typedef struct _RutInputTransformGraphable
-{
-  RutInputTransformType type;
-} RutInputTransformGraphable;
-
-typedef union _RutInputTransform
-{
-  RutInputTransformAny any;
-  RutInputTransformMatrix matrix;
-  RutInputTransformGraphable graphable;
-} RutInputTransform;
 
 typedef struct
 {
@@ -1484,6 +1328,8 @@ _rut_shell_init (RutShell *shell)
       }
   }
 #endif
+
+  rut_poll_init (shell);
 }
 
 void
@@ -2061,7 +1907,26 @@ sdl_glib_source_prepare (GSource *source, int *timeout)
   if (SDL_PollEvent (NULL))
     return TRUE;
 
+  /* XXX: SDL doesn't give us a portable way of blocking for events
+   * that is compatible with us polling for other file descriptor
+   * events outside of SDL which means we normally resort to busily
+   * polling SDL for events.
+   *
+   * Luckily on Android though we know that events are delivered to
+   * SDL in a separate thread which we can monitor and using a pipe we
+   * are able to wake up our own polling mainloop. This means we can
+   * allow the Glib mainloop to block on Android...
+   *
+   * TODO: On X11 use XConnectionNumber(sdl_info.info.x11.display)
+   * so we can also poll for events on X. One caveat would probably
+   * be that we'd subvert SDL being able to specify a timeout for
+   * polling.
+   */
+#ifdef __ANDROID__
+  *timeout = -1;
+#else
   *timeout = 8;
+#endif
 
   return FALSE;
 }
@@ -2127,7 +1992,7 @@ sdl_poll_wrapper (GPollFD *ufds,
 }
 #endif
 
-static CoglBool
+static gboolean
 glib_paint_cb (void *user_data)
 {
   _rut_shell_paint (user_data);
@@ -2172,30 +2037,27 @@ rut_shell_add_onscreen (RutShell *shell,
 void
 rut_shell_main (RutShell *shell)
 {
-  GSource *cogl_source;
+  GSource *rut_source;
 
   if (shell->init_cb)
     shell->init_cb (shell, shell->user_data);
 
-  if (!shell->headless)
-    {
-      cogl_source = cogl_glib_source_new (shell->rut_ctx->cogl_context,
-                                          G_PRIORITY_DEFAULT);
-      g_source_attach (cogl_source, NULL);
+  rut_source = rut_glib_shell_source_new (shell, G_PRIORITY_DEFAULT);
+  g_source_attach (rut_source, NULL);
 
 #ifdef USE_SDL
-      {
-        GSource *sdl_source;
+  if (!shell->headless)
+    {
+      GSource *sdl_source;
 
-        rut_sdl_original_poll =
-          g_main_context_get_poll_func (g_main_context_default ());
-        g_main_context_set_poll_func (g_main_context_default (),
-                                      sdl_poll_wrapper);
-        sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
-        g_source_attach (sdl_source, NULL);
-      }
-#endif
+      rut_sdl_original_poll =
+        g_main_context_get_poll_func (g_main_context_default ());
+      g_main_context_set_poll_func (g_main_context_default (),
+                                    sdl_poll_wrapper);
+      sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
+      g_source_attach (sdl_source, NULL);
     }
+#endif
 
   {
     GApplication *application = NULL;

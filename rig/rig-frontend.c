@@ -40,7 +40,7 @@
 #include "rig.pb-c.h"
 
 static void
-spawn_simulator (RigFrontend *frontend);
+spawn_simulator (RutShell *shell, RigFrontend *frontend);
 
 static void
 frontend__test (Rig__Frontend_Service *service,
@@ -416,6 +416,39 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
   //g_print ("Frontend peer connected\n");
 }
 
+static void
+frontend_stop_service (RigFrontend *frontend)
+{
+  rut_object_unref (frontend->frontend_peer);
+  frontend->frontend_peer = NULL;
+  frontend->connected = false;
+}
+
+static void
+frontend_peer_error_handler (PB_RPC_Error_Code code,
+                             const char *message,
+                             void *user_data)
+{
+  RigFrontend *frontend = user_data;
+
+  g_warning ("Frontend peer error: %s", message);
+
+  frontend_stop_service (frontend);
+}
+
+static void
+frontend_start_service (RutShell *shell, RigFrontend *frontend)
+{
+  frontend->frontend_peer =
+    rig_rpc_peer_new (shell,
+                      frontend->fd,
+                      &rig_frontend_service.base,
+                      (ProtobufCServiceDescriptor *)&rig__simulator__descriptor,
+                      frontend_peer_error_handler,
+                      frontend_peer_connected,
+                      frontend);
+}
+
 void
 rig_frontend_set_simulator_connected_callback (RigFrontend *frontend,
                                                void (*callback) (void *user_data),
@@ -575,7 +608,7 @@ _rig_frontend_free (void *object)
 
   rut_closure_list_disconnect_all (&frontend->ui_update_cb_list);
 
-  rig_frontend_stop_service (frontend);
+  frontend_stop_service (frontend);
 
   rut_object_unref (frontend->engine);
 
@@ -592,6 +625,8 @@ _rig_frontend_init_type (void)
   rut_type_init (&rig_frontend_type, "RigFrontend", _rig_frontend_free);
 }
 
+#ifdef unix
+
 static void
 simulator_sigchild_cb (GPid pid,
                        int status,
@@ -600,7 +635,7 @@ simulator_sigchild_cb (GPid pid,
   RigFrontend *frontend = user_data;
   RigEngine *engine = frontend->engine;
 
-  rig_frontend_stop_service (frontend);
+  frontend_stop_service (frontend);
 
   g_print ("SIGCHLD received: Simulator Gone!");
 
@@ -611,12 +646,12 @@ simulator_sigchild_cb (GPid pid,
           rig_engine_set_play_mode_enabled (engine, false);
           frontend->pending_play_mode_enabled = false;
         }
-      spawn_simulator (frontend);
+      spawn_simulator (engine->shell, frontend);
     }
 }
 
 static void
-spawn_simulator (RigFrontend *frontend)
+fork_simulator (RutShell *shell, RigFrontend *frontend)
 {
   pid_t pid;
   int sp[2];
@@ -683,7 +718,89 @@ spawn_simulator (RigFrontend *frontend)
   if (frontend->id == RIG_FRONTEND_ID_EDITOR)
     g_child_watch_add (pid, simulator_sigchild_cb, frontend);
 
-  rig_frontend_start_service (frontend);
+  frontend_start_service (shell, frontend);
+}
+
+#elif defined (__ANDROID__)
+
+static bool
+bind_to_abstract_socket (RutShell *shell, RigFrontend *frontend)
+{
+  struct sockaddr_un addr;
+  socklen_t size, name_size;
+  int fd;
+  int flags;
+
+  fd = socket (PF_LOCAL, SOCK_STREAM, 0);
+  if (fd < 0)
+    {
+      g_critical ("Failed to create socket for listening: %s",
+                  strerror (errno));
+      return false;
+    }
+
+  /* XXX: Android doesn't seem to support SOCK_CLOEXEC so we use
+   * fcntl() instead */
+  flags = fcntl (fd, F_GETFD);
+  if (flags == -1)
+    {
+      g_critical ("Failed to get fd flags for setting O_CLOEXEC: %s\n",
+                  strerror (errno));
+      return false;
+    }
+
+  if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1)
+    {
+      g_critical ("Failed to set O_CLOEXEC on abstract socket: %s\n",
+                  strerror (errno));
+      return false;
+    }
+
+  /* FIXME: Use a more unique name otherwise multiple Rig based
+   * applications won't run at the same time! */
+  memset (&addr, 0, sizeof addr);
+  addr.sun_family = AF_UNIX;
+  name_size = snprintf (addr.sun_path, sizeof addr.sun_path,
+                        "%crig-simulator", '\0');
+  size = offsetof (struct sockaddr_un, sun_path) + name_size;
+  if (bind (fd, (struct sockaddr *) &addr, size) < 0)
+    {
+      g_critical ("failed to bind to @%s: %s\n",
+                  addr.sun_path + 1, strerror (errno));
+      close (fd);
+      return false;
+    }
+
+  if (listen (fd, 1) < 0)
+    {
+      g_critical ("Failed to start listening on socket: %s\n",
+                  strerror (errno));
+      close (fd);
+      return false;
+    }
+
+  frontend->listen_fd = fd;
+
+#warning "TODO: add listen_fd to mainloop"
+  /* TODO: Add listen_fd to mainloop! */
+
+  return true;
+}
+
+#endif
+
+static void
+spawn_simulator (RutShell *shell, RigFrontend *frontend)
+{
+  /* XXX: On Android the simulator is a Service that bind to that we
+   * communicate with via an abstract socket. */
+#ifdef __ANDROID__
+  bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);
+#elif defined (unix)
+  fork_simulator (shell, frontend);
+#else
+#error "Can't spawn simulator on this platform!"
+#endif /* !__ANDROID__ */
 }
 
 static uint64_t
@@ -711,7 +828,7 @@ rig_frontend_new (RutShell *shell,
 
   rut_list_init (&frontend->ui_update_cb_list);
 
-  spawn_simulator (frontend);
+  spawn_simulator (shell, frontend);
 
   frontend->engine =
     rig_engine_new_for_frontend (shell, frontend, ui_filename, play_mode);
@@ -737,38 +854,6 @@ rig_frontend_new (RutShell *shell,
   frontend->prop_change_unserializer = unserializer;
 
   return frontend;
-}
-
-static void
-frontend_peer_error_handler (PB_RPC_Error_Code code,
-                             const char *message,
-                             void *user_data)
-{
-  RigFrontend *frontend = user_data;
-
-  g_warning ("Frontend peer error: %s", message);
-
-  rig_frontend_stop_service (frontend);
-}
-
-void
-rig_frontend_start_service (RigFrontend *frontend)
-{
-  frontend->frontend_peer =
-    rig_rpc_peer_new (frontend->fd,
-                      &rig_frontend_service.base,
-                      (ProtobufCServiceDescriptor *)&rig__simulator__descriptor,
-                      frontend_peer_error_handler,
-                      frontend_peer_connected,
-                      frontend);
-}
-
-void
-rig_frontend_stop_service (RigFrontend *frontend)
-{
-  rut_object_unref (frontend->frontend_peer);
-  frontend->frontend_peer = NULL;
-  frontend->connected = false;
 }
 
 RutClosure *

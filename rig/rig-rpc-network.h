@@ -47,14 +47,11 @@ struct _RigRPCServer
   int port;
 
   PB_RPC_Server *pb_rpc_server;
-
-  GSource *protobuf_source;
-  int source_id;
-
 };
 
 RigRPCServer *
-rig_rpc_server_new (ProtobufCService *service,
+rig_rpc_server_new (RutShell *shell,
+                    ProtobufCService *service,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data);
@@ -70,14 +67,11 @@ typedef struct _RigRPCClient
   int port;
 
   PB_RPC_Client *pb_rpc_client;
-
-  GSource *protobuf_source;
-  int source_id;
-
 } RigRPCClient;
 
 RigRPCClient *
-rig_rpc_client_new (const char *hostname,
+rig_rpc_client_new (RutShell *shell,
+                    const char *hostname,
                     int port,
                     ProtobufCServiceDescriptor *descriptor,
                     PB_RPC_Error_Func client_error_handler,
@@ -96,14 +90,11 @@ struct _RigRPCPeer
   PB_RPC_Peer *pb_rpc_peer;
   PB_RPC_Server *pb_rpc_server;
   PB_RPC_Client *pb_rpc_client;
-
-  GSource *protobuf_source;
-  int source_id;
-
 };
 
 RigRPCPeer *
-rig_rpc_peer_new (int fd,
+rig_rpc_peer_new (RutShell *shell,
+                  int fd,
                   ProtobufCService *server_service,
                   ProtobufCServiceDescriptor *client_service,
                   PB_RPC_Error_Func peer_error_handler,

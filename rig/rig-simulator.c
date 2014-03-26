@@ -499,6 +499,17 @@ simulator_peer_connected (PB_RPC_Client *pb_client,
 }
 
 static void
+simulator_stop_service (RigSimulator *simulator)
+{
+  rut_object_unref (simulator->simulator_peer);
+  simulator->simulator_peer = NULL;
+
+  /* For now we assume we would only stop the service due to an RPC
+   * error and so we should quit this process... */
+  exit (1);
+}
+
+static void
 simulator_peer_error_handler (PB_RPC_Error_Code code,
                               const char *message,
                               void *user_data)
@@ -507,30 +518,20 @@ simulator_peer_error_handler (PB_RPC_Error_Code code,
 
   g_warning ("Simulator peer error: %s", message);
 
-  rig_simulator_stop_service (simulator);
+  simulator_stop_service (simulator);
 }
 
-void
-rig_simulator_start_service (RigSimulator *simulator)
+static void
+simulator_start_service (RutShell *shell, RigSimulator *simulator)
 {
   simulator->simulator_peer =
-    rig_rpc_peer_new (simulator->fd,
+    rig_rpc_peer_new (shell,
+                      simulator->fd,
                       &rig_simulator_service.base,
                       (ProtobufCServiceDescriptor *)&rig__frontend__descriptor,
                       simulator_peer_error_handler,
                       simulator_peer_connected,
                       simulator);
-}
-
-void
-rig_simulator_stop_service (RigSimulator *simulator)
-{
-  rut_object_unref (simulator->simulator_peer);
-  simulator->simulator_peer = NULL;
-
-  /* For now we assume we would only stop the service due to an RPC
-   * error and so we should quit this process... */
-  exit (1);
 }
 
 static void
@@ -663,7 +664,7 @@ map_id_to_frontend_id_cb (uint64_t id, void *user_data)
 {
   RigSimulator *simulator = user_data;
   void *object = (void *)(uintptr_t)id;
-  lookup_object_id (simulator, object);
+  return lookup_object_id (simulator, object);
 }
 
 static uint64_t
@@ -745,7 +746,7 @@ rig_simulator_new (RigFrontendID frontend_id,
 
   rut_list_init (&simulator->actions);
 
-  rig_simulator_start_service (simulator);
+  simulator_start_service (simulator->shell, simulator);
 
   simulator->engine =
     rig_engine_new_for_simulator (simulator->shell, simulator, false);

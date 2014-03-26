@@ -154,6 +154,10 @@ librut_la_SOURCES = \
     rut-input-region.c \
     rut-camera.h \
     rut-camera.c \
+    rut-poll.h \
+    rut-poll.c \
+    rut-glib-source.h \
+    rut-glib-source.c \
     $(source_h)
 
 if USE_GSTREAMER

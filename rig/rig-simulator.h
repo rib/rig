@@ -113,12 +113,6 @@ void
 rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data);
 
 void
-rig_simulator_stop_service (RigSimulator *simulator);
-
-void
-rig_simulator_stop_service (RigSimulator *simulator);
-
-void
 rig_simulator_action_select_object (RigSimulator *simulator,
                                     RutObject *object,
                                     RutSelectAction action);

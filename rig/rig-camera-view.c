@@ -197,7 +197,8 @@ paint_overlays (RigCameraView *view,
 #ifdef RIG_EDITOR_ENABLED
   if (draw_tools)
     {
-      rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
+      if (engine->grid_prim)
+        rut_util_draw_jittered_primitive3f (fb, engine->grid_prim, 0.5, 0.5, 0.5);
 
       switch (view->tool_id)
         {

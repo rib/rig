@@ -413,7 +413,8 @@ rig_slave_init (RutShell *shell, void *user_data)
   slave->pending_edits = rut_queue_new ();
 
   /* TODO: move from engine to slave */
-  engine->slave_service = rig_rpc_server_new (&rig_slave_service.base,
+  engine->slave_service = rig_rpc_server_new (engine->shell,
+                                              &rig_slave_service.base,
                                               server_error_handler,
                                               new_client_handler,
                                               slave);

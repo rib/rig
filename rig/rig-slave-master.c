@@ -128,7 +128,8 @@ rig_slave_master_new (RigEngine *engine,
   master->slave_address = rut_object_ref (slave_address);
 
   master->rpc_client =
-    rig_rpc_client_new (slave_address->hostname,
+    rig_rpc_client_new (engine->shell,
+                        slave_address->hostname,
                         slave_address->port,
                         (ProtobufCServiceDescriptor *)&rig__slave__descriptor,
                         client_error_handler,

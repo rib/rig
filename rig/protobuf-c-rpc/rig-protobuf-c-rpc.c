@@ -885,10 +885,8 @@ PB_RPC_Client *
 rig_pb_rpc_client_new (PB_RPC_AddressType type,
                        const char *name,
                        const ProtobufCServiceDescriptor *descriptor,
-                       RigProtobufCDispatch *orig_dispatch)
+                       RigProtobufCDispatch *dispatch)
 {
-  RigProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   Stream *stream = stream_new (dispatch, -1);
   PB_RPC_Client *client = client_new (descriptor, dispatch, stream);
 
@@ -1650,10 +1648,8 @@ server_new_from_listening_fd (ProtobufC_FD listening_fd,
                               PB_RPC_AddressType address_type,
                               const char *bind_name,
                               ProtobufCService *service,
-                              RigProtobufCDispatch *orig_dispatch)
+                              RigProtobufCDispatch *dispatch)
 {
-  RigProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   PB_RPC_Server *server = server_new (service, dispatch);
   ProtobufCAllocator *allocator = server->allocator;
 
@@ -1730,7 +1726,7 @@ PB_RPC_Server *
 rig_pb_rpc_server_new (PB_RPC_AddressType type,
                        const char *name,
                        ProtobufCService *service,
-                       RigProtobufCDispatch *orig_dispatch)
+                       RigProtobufCDispatch *dispatch)
 {
   int fd = -1;
   int protocol_family;
@@ -1791,8 +1787,7 @@ rig_pb_rpc_server_new (PB_RPC_AddressType type,
       return NULL;
     }
 
-  return server_new_from_listening_fd (fd, type, name,
-                                       service, orig_dispatch);
+  return server_new_from_listening_fd (fd, type, name, service, dispatch);
 }
 
 int
@@ -1982,10 +1977,8 @@ PB_RPC_Peer *
 rig_pb_rpc_peer_new (int fd,
                      ProtobufCService *server_service,
                      const ProtobufCServiceDescriptor *client_descriptor,
-                     RigProtobufCDispatch *orig_dispatch)
+                     RigProtobufCDispatch *dispatch)
 {
-  RigProtobufCDispatch *dispatch =
-    orig_dispatch ? orig_dispatch : rig_protobuf_c_dispatch_default ();
   PB_RPC_Peer *peer = rut_object_alloc0 (PB_RPC_Peer,
                                          &rig_pb_rpc_peer_type,
                                          _rig_pb_rpc_peer_init_type);

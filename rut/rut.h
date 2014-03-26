@@ -94,5 +94,6 @@
 #include "rut-vec3-slider.h"
 #include "rut-number-slider.h"
 #include "rut-color-button.h"
+#include "rut-poll.h"
 
 #endif /* _RUT_H_ */

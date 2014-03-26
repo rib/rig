@@ -125,12 +125,6 @@ rig_frontend_run_simulator_frame (RigFrontend *frontend,
                                   Rig__FrameSetup *setup);
 
 void
-rig_frontend_start_service (RigFrontend *frontend);
-
-void
-rig_frontend_stop_service (RigFrontend *frontend);
-
-void
 rig_frontend_set_simulator_connected_callback (RigFrontend *frontend,
                                                void (*callback) (void *user_data),
                                                void *user_data);

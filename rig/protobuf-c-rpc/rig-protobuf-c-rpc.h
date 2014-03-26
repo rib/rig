@@ -51,8 +51,7 @@ PB_RPC_Client *
 rig_pb_rpc_client_new (PB_RPC_AddressType type,
                        const char *name,
                        const ProtobufCServiceDescriptor *descriptor,
-                       RigProtobufCDispatch *dispatch /* or NULL */
-                       );
+                       RigProtobufCDispatch *dispatch);
 
 ProtobufCService *
 rig_pb_rpc_client_get_service (PB_RPC_Client *client);
@@ -113,7 +112,7 @@ PB_RPC_Server *
 rig_pb_rpc_server_new (PB_RPC_AddressType type,
                        const char *name,
                        ProtobufCService *service,
-                       RigProtobufCDispatch *dispatch /* or NULL */);
+                       RigProtobufCDispatch *dispatch);
 
 /* May return -1 if not listening */
 int
@@ -204,7 +203,7 @@ PB_RPC_Peer *
 rig_pb_rpc_peer_new (int fd,
                      ProtobufCService *server_service,
                      const ProtobufCServiceDescriptor *client_descriptor,
-                     RigProtobufCDispatch *orig_dispatch);
+                     RigProtobufCDispatch *dispatch);
 
 PB_RPC_Server *
 rig_pb_rpc_peer_get_server (PB_RPC_Peer *peer);
