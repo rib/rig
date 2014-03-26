@@ -60,8 +60,6 @@ rig_common_sources = \
 	rig-pb.c \
 	rig-load-save.h \
 	rig-load-save.c \
-	rig-controller-view.c \
-	rig-controller-view.h \
     	rig-split-view.h \
     	rig-split-view.c \
     	rig-view.h \
@@ -87,7 +85,9 @@ rig_common_sources = \
 	rig-frontend.c \
 	rig-frontend.h \
 	rig-ui.h \
-	rig-ui.c
+	rig-ui.c \
+	rig-code.h \
+	rig-code.c
 
 rig_avahi_sources = \
 	rig-avahi.h \
@@ -102,10 +102,10 @@ rig_editor_sources = \
 	rig-rotation-tool.c \
 	rig-selection-tool.h \
 	rig-selection-tool.c \
+	rig-controller-view.c \
+	rig-controller-view.h \
 	rig-binding-view.h \
-	rig-binding-view.c \
-	rig-code.h \
-	rig-code.c
+	rig-binding-view.c
 
 rig_slave_sources = \
 	rig-slave.h \
