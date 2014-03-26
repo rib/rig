@@ -1750,8 +1750,8 @@ _rut_shell_paint (RutShell *shell)
 
 #ifdef USE_SDL
 
-static void
-sdl_handle_event (RutShell *shell, SDL_Event *sdl_event)
+void
+rut_shell_handle_sdl_event (RutShell *shell, SDL_Event *sdl_event)
 {
   RutInputEvent *event = NULL;
   RutSDLEvent *rut_sdl_event;
@@ -1953,7 +1953,7 @@ sdl_glib_source_dispatch (GSource *source,
       cogl_sdl_handle_event (sdl_source->shell->rut_ctx->cogl_context,
                              &event);
 
-      sdl_handle_event (sdl_source->shell, &event);
+      rut_shell_handle_sdl_event (sdl_source->shell, &event);
     }
 
   return TRUE;

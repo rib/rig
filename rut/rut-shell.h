@@ -855,4 +855,9 @@ rut_shell_add_signal_callback (RutShell *shell,
                                RutClosureDestroyCallback destroy_cb);
 #endif
 
+#ifdef USE_SDL
+void
+rut_shell_handle_sdl_event (RutShell *shell, SDL_Event *sdl_event);
+#endif
+
 #endif /* _RUT_SHELL_H_ */
