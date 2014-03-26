@@ -640,14 +640,6 @@ message SimulatorAction
   //}
   //optional SetPlayMode set_play_mode=2;
 
-  message SelectObject
-  {
-    required sint64 object_id=1; //XXX ID
-    //See RutSelectAction
-    required uint32 action=2;
-  }
-  optional SelectObject select_object=2;
-
   message ReportEditFailure
   {
   }

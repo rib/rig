@@ -85,24 +85,6 @@ simulator__test (Rig__Simulator_Service *service,
   closure (&result, closure_data);
 }
 
-void
-rig_simulator_action_select_object (RigSimulator *simulator,
-                                    RutObject *object,
-                                    RutSelectAction select_action)
-{
-  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
-
-  action->type = RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT;
-  if (object)
-    action->select_object.object = rut_object_ref (object);
-  else
-    action->select_object.object = NULL;
-  action->select_object.action = select_action;
-
-  rut_list_insert (simulator->actions.prev, &action->list_node);
-  simulator->n_actions++;
-}
-
 static void
 rig_simulator_action_report_edit_failure (RigSimulator *simulator)
 {
@@ -127,10 +109,6 @@ clear_actions (RigSimulator *simulator)
         case RIG_SIMULATOR_ACTION_TYPE_SET_PLAY_MODE:
           break;
 #endif
-        case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
-          if (action->select_object.object)
-            rut_object_unref (action->select_object.object);
-          break;
         case RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE:
           break;
         }
@@ -1015,20 +993,6 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
                 rig_pb_new (serializer,
                             Rig__SimulatorAction__ReportEditFailure,
                             rig__simulator_action__report_edit_failure__init);
-              break;
-            case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
-              pb_action->select_object =
-                rig_pb_new (serializer,
-                            Rig__SimulatorAction__SelectObject,
-                            rig__simulator_action__select_object__init);
-              if (action->select_object.object)
-                {
-                  pb_action->select_object->object_id =
-                    lookup_object_id (simulator, action->select_object.object);
-                }
-              else
-                pb_action->select_object->object_id = 0;
-              pb_action->select_object->action = action->select_object.action;
               break;
             }
 

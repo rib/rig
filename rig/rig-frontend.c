@@ -264,21 +264,6 @@ frontend__update_ui (Rig__Frontend_Service *service,
                                                  pb_action->set_play_mode->enabled);
           break;
 #endif
-        case RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT:
-          {
-            Rig__SimulatorAction__SelectObject *pb_select_object =
-              pb_action->select_object;
-
-            RutObject *object = (void *)(intptr_t)pb_select_object->object_id;
-            rig_select_object (engine,
-                               object,
-                               pb_select_object->action);
-#ifdef RIG_EDITOR_ENABLED
-            if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
-              rig_editor_update_inspector (engine);
-#endif
-            break;
-          }
         }
     }
 

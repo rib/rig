@@ -42,8 +42,7 @@ typedef struct _RigSimulator RigSimulator;
  */
 typedef enum _RigSimulatorActionType
 {
-  RIG_SIMULATOR_ACTION_TYPE_SELECT_OBJECT = 1,
-  RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE,
+  RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE=1,
 } RigSimulatorActionType;
 
 /* The "simulator" is the process responsible for updating object
@@ -111,10 +110,5 @@ rig_simulator_run_frame (RutShell *shell, void *user_data);
 
 void
 rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data);
-
-void
-rig_simulator_action_select_object (RigSimulator *simulator,
-                                    RutObject *object,
-                                    RutSelectAction action);
 
 #endif /* _RIG_SIMULATOR_H_ */

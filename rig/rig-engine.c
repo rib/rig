@@ -402,13 +402,6 @@ rig_select_object (RigEngine *engine,
 {
   RigObjectsSelection *selection = engine->objects_selection;
 
-  /* From the simulator we forward select actions to the frontend
-   * editor, but also do our own state tracking of what entities are
-   * selected.
-   */
-  if (engine->simulator)
-    rig_simulator_action_select_object (engine->simulator, object, action);
-
   /* For now we only support selecting multiple entities... */
   if (object && rut_object_get_type (object) != &rig_entity_type)
     action = RUT_SELECT_ACTION_REPLACE;
