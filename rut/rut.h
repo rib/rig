@@ -29,7 +29,9 @@
 #ifndef _RUT_H_
 #define _RUT_H_
 
+#ifndef RIG_SIMULATOR_ONLY
 #include <cogl/cogl.h>
+#endif
 
 #include <glib.h>
 

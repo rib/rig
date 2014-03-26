@@ -30,6 +30,9 @@
 #define __RUT_GLOBAL_H__
 
 #include <glib.h>
+
+#ifndef RIG_SIMULATOR_ONLY
+
 #include <cogl/cogl.h>
 
 G_BEGIN_DECLS
@@ -37,5 +40,7 @@ G_BEGIN_DECLS
 extern CoglContext *rut_cogl_context;
 
 G_END_DECLS
+
+#endif /* RIG_SIMULATOR_ONLY */
 
 #endif /* __RUT_GLOBAL_H__ */
