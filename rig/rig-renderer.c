@@ -1518,9 +1518,6 @@ get_entity_pipeline (RigEngine *engine,
       rig_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_COLOR],
-                                           rig_engine_dirty_properties_menu,
-                                           engine, NULL);
       rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_COLOR],
                                                 image_source_changed_cb,
                                                 engine,
@@ -1540,9 +1537,6 @@ get_entity_pipeline (RigEngine *engine,
       rig_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_ALPHA_MASK],
-                                           rig_engine_dirty_properties_menu,
-                                           engine, NULL);
       rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_ALPHA_MASK],
                                                 image_source_changed_cb,
                                                 engine,
@@ -1564,9 +1558,6 @@ get_entity_pipeline (RigEngine *engine,
       rig_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                            image_source_ready_cb,
                                            entity, NULL);
-      rig_image_source_add_ready_callback (sources[SOURCE_TYPE_NORMAL_MAP],
-                                           rig_engine_dirty_properties_menu,
-                                           engine, NULL);
       rig_image_source_add_on_changed_callback (sources[SOURCE_TYPE_NORMAL_MAP],
                                                 image_source_changed_cb,
                                                 engine,

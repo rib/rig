@@ -1347,7 +1347,7 @@ undo_redo_delete_component_apply (RigUndoJournal *journal,
 
   rig_engine_op_delete_component (engine, delete_component->deleted_component);
 
-  _rig_engine_update_inspector (journal->engine);
+  rig_editor_update_inspector (journal->engine);
 }
 
 static UndoRedo *
@@ -1380,7 +1380,7 @@ undo_redo_add_component_apply (RigUndoJournal *journal,
                                  &controller_state->properties);
     }
 
-  _rig_engine_update_inspector (journal->engine);
+  rig_editor_update_inspector (journal->engine);
 }
 
 static UndoRedo *

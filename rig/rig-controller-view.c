@@ -4058,7 +4058,7 @@ rig_controller_view_set_controller (RigControllerView *view,
                                      view);
     }
 
-  _rig_engine_update_inspector (view->engine);
+  rig_editor_update_inspector (view->engine);
 }
 
 static void

@@ -396,21 +396,6 @@ rig_select_object (RigEngine *engine,
                    RutSelectAction action);
 
 void
-rig_reload_inspector_property (RigEngine *engine,
-                               RutProperty *property);
-
-void
-rig_reload_position_inspector (RigEngine *engine,
-                               RigEntity *entity);
-
-void
-rig_engine_dirty_properties_menu (RigImageSource *source,
-                                  void *user_data);
-
-void
-_rig_engine_update_inspector (RigEngine *engine);
-
-void
 rig_engine_push_undo_subjournal (RigEngine *engine);
 
 RigUndoJournal *

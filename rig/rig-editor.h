@@ -32,6 +32,7 @@
 #include <rut.h>
 
 #include "rig-types.h"
+#include "rig-entity.h"
 
 #include "rig.pb-c.h"
 
@@ -76,5 +77,18 @@ rig_editor_clear_search_results (RigEngine *engine);
 
 void
 rig_editor_free_result_input_closures (RigEngine *engine);
+
+void
+rig_reload_inspector_property (RigEngine *engine,
+                               RutProperty *property);
+
+void
+rig_reload_position_inspector (RigEngine *engine,
+                               RigEntity *entity);
+
+/* TODO: Update to take a RigEditor */
+void
+rig_editor_update_inspector (RigEngine *engine);
+
 
 #endif /* _RIG_EDITOR_H_ */

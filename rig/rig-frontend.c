@@ -273,7 +273,10 @@ frontend__update_ui (Rig__Frontend_Service *service,
             rig_select_object (engine,
                                object,
                                pb_select_object->action);
-            _rig_engine_update_inspector (engine);
+#ifdef RIG_EDITOR_ENABLED
+            if (engine->frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
+              rig_editor_update_inspector (engine);
+#endif
             break;
           }
         }
