@@ -79,6 +79,7 @@ struct _EntityTranslateGrabClosure
   void *user_data;
 };
 
+#ifdef RIG_EDITOR_ENABLED
 struct _EntitiesTranslateGrabClosure
 {
   RigCameraView *view;
@@ -87,6 +88,7 @@ struct _EntitiesTranslateGrabClosure
 
 static void
 update_grab_closure_vectors (EntityTranslateGrabClosure *closure);
+#endif
 
 static void
 unref_device_transforms (RigCameraViewDeviceTransforms *transforms)
@@ -638,6 +640,12 @@ allocate_cb (RutObject *graphable,
 
   update_device_transforms (view);
 
+  if (view->input_region)
+    {
+      rut_input_region_set_rectangle (view->input_region,
+                                      0, 0, view->width, view->height);
+    }
+
 #ifdef RIG_EDITOR_ENABLED
   if (engine->frontend &&
       engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
@@ -649,29 +657,23 @@ allocate_cb (RutObject *graphable,
                                view->width +
                                view->height *
                                view->height) / 2);
+
+      if (view->entities_translate_grab_closure)
+        {
+          GList *l;
+
+          update_camera_viewport (view,
+                                  engine->camera_2d,
+                                  view->view_camera_component);
+
+          rig_camera_update_view (engine, view->view_camera, FALSE);
+
+          for (l = view->entities_translate_grab_closure->entity_closures;
+               l; l = l->next)
+            update_grab_closure_vectors (l->data);
+        }
     }
 #endif /* RIG_EDITOR_ENABLED */
-
-  if (view->input_region)
-    {
-      rut_input_region_set_rectangle (view->input_region,
-                                      0, 0, view->width, view->height);
-    }
-
-  if (view->entities_translate_grab_closure)
-    {
-      GList *l;
-
-      update_camera_viewport (view,
-                              engine->camera_2d,
-                              view->view_camera_component);
-
-      rig_camera_update_view (engine, view->view_camera, FALSE);
-
-      for (l = view->entities_translate_grab_closure->entity_closures;
-           l; l = l->next)
-        update_grab_closure_vectors (l->data);
-    }
 }
 
 static void
@@ -804,6 +806,7 @@ update_camera_position (RigCameraView *view)
   rut_shell_queue_redraw (view->context->shell);
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
 scene_translate_cb (RigEntity *entity,
                     float start[3],
@@ -1240,6 +1243,28 @@ create_line_primitive (RigEngine *engine, float a[3], float b[3])
   return primitive;
 }
 
+static CoglPrimitive *
+create_picking_ray (RigEngine *engine,
+                    float ray_position[3],
+                    float ray_direction[3],
+                    float length)
+{
+  CoglPrimitive *line;
+  float points[6];
+
+  points[0] = ray_position[0];
+  points[1] = ray_position[1];
+  points[2] = ray_position[2];
+  points[3] = ray_position[0] + length * ray_direction[0];
+  points[4] = ray_position[1] + length * ray_direction[1];
+  points[5] = ray_position[2] + length * ray_direction[2];
+
+  line = create_line_primitive (engine, points, points + 3);
+
+  return line;
+}
+#endif /* RIG_EDITOR_ENABLED */
+
 static void
 transform_ray (CoglMatrix *transform,
                bool        inverse_transform,
@@ -1270,27 +1295,6 @@ transform_ray (CoglMatrix *transform,
                              &ray_direction[0],
                              &ray_direction[1],
                              &ray_direction[2]);
-}
-
-static CoglPrimitive *
-create_picking_ray (RigEngine *engine,
-                    float ray_position[3],
-                    float ray_direction[3],
-                    float length)
-{
-  CoglPrimitive *line;
-  float points[6];
-
-  points[0] = ray_position[0];
-  points[1] = ray_position[1];
-  points[2] = ray_position[2];
-  points[3] = ray_position[0] + length * ray_direction[0];
-  points[4] = ray_position[1] + length * ray_direction[1];
-  points[5] = ray_position[2] + length * ray_direction[2];
-
-  line = create_line_primitive (engine, points, points + 3);
-
-  return line;
 }
 
 typedef struct _PickContext
@@ -1469,6 +1473,7 @@ entitygraph_post_pick_cb (RutObject *object,
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static void
 move_entity_to_camera (RigCameraView *view,
                        RigEntity *entity)
@@ -1541,6 +1546,7 @@ move_entity_to_camera (RigCameraView *view,
   sub_journal = rig_editor_pop_undo_subjournal (engine);
   rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal);
 }
+#endif /* RIG_EDITOR_ENABLED */
 
 static RigEntity *
 pick (RigCameraView *view,
@@ -1633,6 +1639,7 @@ rig_camera_view_set_play_mode_enabled (RigCameraView *view,
     }
 }
 
+#ifdef RIG_EDITOR_ENABLED
 static RutInputEventStatus
 input_cb (RutInputEvent *event,
           void *user_data)
@@ -1658,7 +1665,7 @@ input_cb (RutInputEvent *event,
       RutObject *camera_component;
       bool need_play_camera_reset = false;
 
-#ifdef RIG_EDITOR_ENABLED
+      /* XXX: Simplify since this api is now never used in play mode */
       if (!view->play_mode)
         {
           camera = view->view_camera;
@@ -1670,7 +1677,6 @@ input_cb (RutInputEvent *event,
                                                   &x, &y);
         }
       else
-#endif /* RIG_EDITOR_ENABLED */
         {
           prepare_play_camera_for_view (view);
 
@@ -1952,7 +1958,6 @@ input_cb (RutInputEvent *event,
         }
 
     }
-#ifdef RIG_EDITOR_ENABLED
   else if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
       if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_KEY &&
@@ -2027,10 +2032,10 @@ input_cb (RutInputEvent *event,
             }
         }
     }
-#endif /* RIG_EDITOR_ENABLED */
 
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
+#endif /* RIG_EDITOR_ENABLED */
 
 static RutInputEventStatus
 device_mode_grab_input_cb (RutInputEvent *event, void *user_data)
@@ -2163,6 +2168,7 @@ input_region_cb (RutInputRegion *region,
 
           rut_input_queue_append (engine->simulator_input_queue, event);
         }
+#ifdef RIG_EDITOR_ENABLED
       else
         {
           /* While editing we do picking in the editor itself since its
@@ -2171,6 +2177,7 @@ input_region_cb (RutInputRegion *region,
            * UI description. */
           return input_cb (event, user_data);
         }
+#endif /* RIG_EDITOR_ENABLED */
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
