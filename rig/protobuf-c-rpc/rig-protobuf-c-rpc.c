@@ -474,10 +474,10 @@ update_stream_fd_watch (Stream *stream)
     events |= PROTOBUF_C_EVENT_WRITABLE;
 
   rig_protobuf_c_dispatch_watch_fd (dispatch,
-                                stream->fd,
-                                events,
-                                handle_stream_fd_events,
-                                stream);
+                                    stream->fd,
+                                    events,
+                                    handle_stream_fd_events,
+                                    stream);
 }
 
 static void
@@ -901,7 +901,8 @@ rig_pb_rpc_client_new (PB_RPC_AddressType type,
   client->autoreconnect = true;
 
   client->info.init.idle =
-    rig_protobuf_c_dispatch_add_idle (client->dispatch, handle_init_idle, client);
+    rig_protobuf_c_dispatch_add_idle (client->dispatch,
+                                      handle_init_idle, client);
 
   return client;
 }
@@ -966,6 +967,10 @@ server_connection_close (PB_RPC_ServerConnection *conn)
 {
   ProtobufCAllocator *allocator = conn->server->allocator;
 
+  /* Check if already closed... */
+  if (!conn->stream)
+    return;
+
   if (conn->server->client_close_handler)
     {
       conn->server->client_close_handler (conn->server,
@@ -981,6 +986,7 @@ server_connection_close (PB_RPC_ServerConnection *conn)
   conn->stream->conn = NULL; /* disassociate server connection
                               * from stream state */
   rut_object_unref (conn->stream);
+  conn->stream = NULL;
 
   /* remove this connection from the server's list */
   GSK_LIST_REMOVE (GET_CONNECTION_LIST (conn->server), conn);
@@ -993,9 +999,6 @@ server_connection_close (PB_RPC_ServerConnection *conn)
       req->conn = NULL;
       req->info.defunct.allocator = allocator;
     }
-
-  /* free the connection itself */
-  allocator->free (allocator, conn);
 }
 
 static void
@@ -1008,7 +1011,10 @@ _rig_pb_rpc_server_free (void *object)
   g_warn_if_fail (server->service->destroy == NULL);
 
   while (server->first_connection != NULL)
-    server_connection_close (server->first_connection);
+    {
+      server_connection_close (server->first_connection);
+      rut_object_unref (server->first_connection);
+    }
 
   if (server->address_type == PROTOBUF_C_RPC_ADDRESS_LOCAL)
     unlink (server->bind_name);
@@ -1093,6 +1099,7 @@ server_connection_failed (PB_RPC_ServerConnection *conn,
                           const char *format,
                           ...)
 {
+  PB_RPC_Server *server = conn->server;
   char remote_addr_name[64];
   char msg[MAX_FAILED_MSG_LENGTH];
   char *msg_end = msg + sizeof (msg);
@@ -1119,13 +1126,26 @@ server_connection_failed (PB_RPC_ServerConnection *conn,
   va_end (args);
   msg[sizeof(msg)-1] = 0;
 
+  /* In case the connection's error handler tries to clean up the
+   * connection we take a reference on the server and connection
+   * until we are done... */
+  rut_object_ref (server);
+  rut_object_ref (conn);
+
+  /* Note: This could end up freeing the connection */
   if (conn->error_handler)
     conn->error_handler (conn, code, msg, conn->error_handler_data);
 
   /* invoke server error hook */
-  server_failed_literal (conn->server, code, msg);
+  server_failed_literal (server, code, msg);
 
+  /* Explicitly disconnect, in case the above error handler didn't already */
   server_connection_close (conn);
+  rut_object_unref (conn);
+
+  /* Drop our transient references (see above) */
+  rut_object_ref (conn);
+  rut_object_unref (server);
 }
 
 static ServerRequest *
@@ -1422,6 +1442,8 @@ handle_stream_fd_events (int fd,
                 {
 #warning "fixme: in the peer to peer case this is an error"
                   server_connection_close (conn);
+                  rut_object_unref (conn);
+                  conn = NULL;
                 }
             }
           else
@@ -1517,19 +1539,47 @@ handle_stream_fd_events (int fd,
     }
 }
 
-static PB_RPC_ServerConnection *
-server_add_connection_with_stream (PB_RPC_Server *server,
-                                   Stream *stream)
+static void
+_server_connection_free (void *object)
 {
-  ProtobufCAllocator *allocator = server->allocator;
-  PB_RPC_ServerConnection *conn = allocator->alloc (allocator, sizeof (*conn));
+  PB_RPC_ServerConnection *conn = object;
 
-  memset (conn, 0, sizeof (*conn));
+  server_connection_close (conn);
+
+  rut_object_free (PB_RPC_ServerConnection, conn);
+}
+
+static RutType _server_connection_type;
+
+static void
+_server_connection_init_type (void)
+{
+  rut_type_init (&_server_connection_type,
+                 "PB_RPC_ServerConnection", _server_connection_free);
+}
+
+static PB_RPC_ServerConnection *
+server_connection_new (PB_RPC_Server *server,
+                       Stream *stream)
+{
+  PB_RPC_ServerConnection *conn =
+    rut_object_alloc0 (PB_RPC_ServerConnection,
+                       &_server_connection_type,
+                       _server_connection_init_type);
 
   conn->stream = rut_object_ref (stream);
   stream->conn = conn;
 
   conn->server = server;
+
+  return conn;
+}
+
+static PB_RPC_ServerConnection *
+server_add_connection_with_stream (PB_RPC_Server *server,
+                                   Stream *stream)
+{
+  PB_RPC_ServerConnection *conn = server_connection_new (server, stream);
 
   GSK_LIST_APPEND (GET_CONNECTION_LIST (server), conn);
 
@@ -1900,7 +1950,7 @@ _rig_pb_rpc_peer_free (void *object)
 
   rut_object_unref (peer->stream);
 
-  g_slice_free (PB_RPC_Peer, peer);
+  rut_object_free (PB_RPC_Peer, peer);
 }
 
 static RutType rig_pb_rpc_peer_type;
@@ -1908,12 +1958,7 @@ static RutType rig_pb_rpc_peer_type;
 static void
 _rig_pb_rpc_peer_init_type (void)
 {
-  RutType *type = &rig_pb_rpc_peer_type;
-#define TYPE PB_RPC_Peer
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_peer_free);
-
-#undef TYPE
+  rut_type_init (&rig_pb_rpc_peer_type, "PB_RPC_Peer", _rig_pb_rpc_peer_free);
 }
 
 static void
@@ -1958,7 +2003,7 @@ rig_pb_rpc_peer_new (int fd,
 
   peer->idle =
     rig_protobuf_c_dispatch_add_idle (dispatch,
-                                  handle_peer_connect_idle, peer);
+                                      handle_peer_connect_idle, peer);
 
   return peer;
 }
