@@ -99,4 +99,15 @@ rut_closure_list_add (RutList *list,
       }                                                         \
   } G_STMT_END
 
+#define rut_closure_list_invoke_no_args(list)             \
+  G_STMT_START {                                          \
+    RutClosure *_c, *_tmp;                                \
+                                                          \
+    rut_list_for_each_safe (_c, _tmp, (list), list_node)  \
+      {                                                   \
+        void (*_cb)(void *) = _c->function;               \
+        _cb (_c->user_data);                              \
+      }                                                   \
+  } G_STMT_END
+
 #endif /* _RUT_CLOSURE_LIST_H_ */
