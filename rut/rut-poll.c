@@ -45,6 +45,7 @@ struct _RutPollSource
   void *user_data;
 };
 
+#ifndef RIG_SIMULATOR_ONLY
 static void
 on_cogl_event_cb (void *user_data,
                   int revents)
@@ -99,6 +100,7 @@ get_cogl_info (RutShell *shell)
 
   return cogl_timeout;
 }
+#endif /* RIG_SIMULATOR_ONLY */
 
 int
 rut_poll_shell_get_info (RutShell *shell,
@@ -114,8 +116,10 @@ rut_poll_shell_get_info (RutShell *shell,
 
   *timeout = -1;
 
+#ifndef RIG_SIMULATOR_ONLY
   if (shell->rut_ctx->cogl_context)
     *timeout = get_cogl_info (shell);
+#endif
 
   if (!rut_list_empty (&shell->idle_closures))
     *timeout = 0;
@@ -366,7 +370,7 @@ dispatch_sdl_events (RutPollFDEvent events,
       rut_shell_handle_sdl_event (shell, &event);
     }
 }
-#endif
+#endif /* __ANDROID__ */
 
 void
 rut_poll_init (RutShell *shell)
