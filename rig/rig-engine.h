@@ -159,6 +159,7 @@ struct _RigEngine
 
   RutObject *renderer;
 
+  /* XXX: Move to RigEditor */
   GList *undo_journal_stack;
   RigUndoJournal *undo_journal;
 
@@ -385,12 +386,6 @@ rig_lookup_asset (RigEngine *engine,
 
 RigAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
-
-void
-rig_engine_push_undo_subjournal (RigEngine *engine);
-
-RigUndoJournal *
-rig_engine_pop_undo_subjournal (RigEngine *engine);
 
 typedef void (*RigToolChangedCallback) (RigEngine *engine,
                                         RigToolID tool_id,

@@ -658,7 +658,7 @@ apply_node_translations (RigControllerView *view,
                                      copy_nodes_cb,
                                      &state);
 
-  rig_engine_push_undo_subjournal (engine);
+  rig_editor_push_undo_subjournal (engine);
 
   /* Remove original nodes */
 
@@ -691,7 +691,7 @@ apply_node_translations (RigControllerView *view,
                                                        prop_data->property);
     }
 
-  subjournal = rig_engine_pop_undo_subjournal (engine);
+  subjournal = rig_editor_pop_undo_subjournal (engine);
   rig_undo_journal_log_subjournal (engine->undo_journal, subjournal);
 
   /* NB: Adding nodes may have changed the length of the controller... */
@@ -1041,7 +1041,7 @@ _rig_nodes_selection_delete (RutObject *object)
       RigUndoJournal *subjournal;
       float length = rig_controller_get_length (controller);
 
-      rig_engine_push_undo_subjournal (engine);
+      rig_editor_push_undo_subjournal (engine);
 
       for (l = selection->node_groups; l; l = next)
         {
@@ -1072,7 +1072,7 @@ _rig_nodes_selection_delete (RutObject *object)
           g_warn_if_fail (n_nodes == g_list_length (node_group->nodes));
         }
 
-      subjournal = rig_engine_pop_undo_subjournal (engine);
+      subjournal = rig_editor_pop_undo_subjournal (engine);
       rig_undo_journal_log_subjournal (engine->undo_journal, subjournal);
 
       /* NB: that rig_undo_journal_delete_component () will

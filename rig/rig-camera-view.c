@@ -1538,7 +1538,7 @@ move_entity_to_camera (RigCameraView *view,
                                      rotation_property,
                                      &boxed_rotation);
 
-  sub_journal = rig_engine_pop_undo_subjournal (engine);
+  sub_journal = rig_editor_pop_undo_subjournal (engine);
   rig_undo_journal_log_subjournal (engine->undo_journal, sub_journal);
 }
 

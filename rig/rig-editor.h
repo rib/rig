@@ -36,6 +36,7 @@ typedef struct _RigEditor RigEditor;
 #include "rig-types.h"
 #include "rig-entity.h"
 #include "rig-engine.h"
+#include "rig-undo-journal.h"
 
 #include "rig.pb-c.h"
 
@@ -115,5 +116,11 @@ rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
                                           RigObjectsSelectionEventCallback callback,
                                           void *user_data,
                                           RutClosureDestroyCallback destroy_cb);
+/* TODO: Update to take a RigEditor */
+void
+rig_editor_push_undo_subjournal (RigEngine *engine);
+
+RigUndoJournal *
+rig_editor_pop_undo_subjournal (RigEngine *engine);
 
 #endif /* _RIG_EDITOR_H_ */

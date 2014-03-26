@@ -883,7 +883,7 @@ _rig_engine_new_full (RutShell *shell,
 
       rut_list_init (&engine->tool_changed_cb_list);
 
-      rig_engine_push_undo_subjournal (engine);
+      rig_editor_push_undo_subjournal (engine);
 
       /* NB: in device mode we assume all inputs need to got to the
        * simulator and we don't need a separate queue. */
@@ -1189,32 +1189,6 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   g_free (path);
 
   return asset;
-}
-
-void
-rig_engine_push_undo_subjournal (RigEngine *engine)
-{
-  RigUndoJournal *subjournal = rig_undo_journal_new (engine);
-
-  rig_undo_journal_set_apply_on_insert (subjournal, true);
-
-  engine->undo_journal_stack = g_list_prepend (engine->undo_journal_stack,
-                                               subjournal);
-  engine->undo_journal = subjournal;
-}
-
-RigUndoJournal *
-rig_engine_pop_undo_subjournal (RigEngine *engine)
-{
-  RigUndoJournal *head_journal = engine->undo_journal;
-
-  engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
-                                                   engine->undo_journal_stack);
-  g_return_if_fail (engine->undo_journal_stack);
-
-  engine->undo_journal = engine->undo_journal_stack->data;
-
-  return head_journal;
 }
 
 void

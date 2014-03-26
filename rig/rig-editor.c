@@ -318,7 +318,7 @@ apply_asset_input_with_entity (RigEngine *engine,
   RigMaterial *material;
   RutObject *geom;
 
-  rig_engine_push_undo_subjournal (engine);
+  rig_editor_push_undo_subjournal (engine);
 
   switch (type)
     {
@@ -676,7 +676,7 @@ apply_asset_input_with_entity (RigEngine *engine,
       break;
     }
 
-  sub_journal = rig_engine_pop_undo_subjournal (engine);
+  sub_journal = rig_editor_pop_undo_subjournal (engine);
 
   if (rig_undo_journal_is_empty (sub_journal))
     rig_undo_journal_free (sub_journal);
@@ -3280,4 +3280,28 @@ rig_select_object (RigEngine *engine,
     rig_editor_update_inspector (engine);
 }
 
+void
+rig_editor_push_undo_subjournal (RigEngine *engine)
+{
+  RigUndoJournal *subjournal = rig_undo_journal_new (engine);
 
+  rig_undo_journal_set_apply_on_insert (subjournal, true);
+
+  engine->undo_journal_stack = g_list_prepend (engine->undo_journal_stack,
+                                               subjournal);
+  engine->undo_journal = subjournal;
+}
+
+RigUndoJournal *
+rig_editor_pop_undo_subjournal (RigEngine *engine)
+{
+  RigUndoJournal *head_journal = engine->undo_journal;
+
+  engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
+                                                   engine->undo_journal_stack);
+  g_return_if_fail (engine->undo_journal_stack);
+
+  engine->undo_journal = engine->undo_journal_stack->data;
+
+  return head_journal;
+}
