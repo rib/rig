@@ -305,6 +305,9 @@ _rut_drop_down_free (void *object)
   rut_object_unref (drop->input_region);
 
   rut_introspectable_destroy (drop);
+
+  rut_shell_remove_pre_paint_callback_by_graphable (drop->context->shell,
+                                                    drop);
   rut_graphable_destroy (drop);
 
   pango_font_description_free (drop->font_description);
@@ -511,14 +514,17 @@ rut_drop_down_paint_button (RutDropDown *drop,
 
   cogl_color_init_from_4ub (&font_color, 0, 0, 0, 255);
 
-  layout = drop->layouts + drop->value_index;
-  cogl_pango_show_layout (fb,
-                          layout->layout,
-                          drop->width / 2 -
-                          layout->logical_rect.width / 2,
-                          drop->height / 2 -
-                          layout->logical_rect.height / 2,
-                          &font_color);
+  if (drop->n_values)
+    {
+      layout = drop->layouts + drop->value_index;
+      cogl_pango_show_layout (fb,
+                              layout->layout,
+                              drop->width / 2 -
+                              layout->logical_rect.width / 2,
+                              drop->height / 2 -
+                              layout->logical_rect.height / 2,
+                              &font_color);
+    }
 }
 
 static void
