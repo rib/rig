@@ -44,6 +44,7 @@
 
 #include "components/rig-model.h"
 #include "rig-asset.h"
+#include "rig-engine.h"
 
 #if 0
 enum {
