@@ -33,7 +33,6 @@
 
 #include "rut-object.h"
 #include "rut-shell.h"
-#include "rut-display-list.h"
 #include "rut-property.h"
 #include "rut-closure.h"
 #include "rut-matrix-stack.h"
