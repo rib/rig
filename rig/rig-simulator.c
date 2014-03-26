@@ -136,7 +136,7 @@ register_object_cb (void *object,
   RigSimulator *simulator = user_data;
   void *id_ptr;
 
-  g_return_val_if_fail (id != 0, true);
+  g_return_if_fail (id != 0);
 
   /* Assets can be shared between edit and play mode UIs so we
    * don't want to complain if we detect them being registered
