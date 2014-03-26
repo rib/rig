@@ -33,12 +33,6 @@ rig_common_sources = \
 	rig-entity.c \
 	rig-asset.h \
 	rig-asset.c \
-	rig-asset-inspector.h \
-	rig-asset-inspector.c \
-	rig-prop-inspector.h \
-	rig-prop-inspector.c \
-	rig-inspector.h \
-	rig-inspector.c \
 	rig-image-source.h \
 	rig-image-source.c \
 	rig-downsampler.h \
@@ -72,13 +66,10 @@ rig_common_sources = \
 	rig-renderer.h \
 	rig-renderer.c \
 	rig-engine.h \
-	rig-osx.h \
 	rig-rpc-network.h \
 	rig-rpc-network.c \
 	rig-slave-address.h \
 	rig-slave-address.c \
-	rig-slave-master.h \
-	rig-slave-master.c \
 	rig.pb-c.c \
 	rig-simulator.h \
 	rig-simulator.c \
@@ -96,12 +87,20 @@ rig_avahi_sources = \
 rig_editor_sources = \
 	rig-editor.h \
 	rig-editor.c \
+	rig-slave-master.h \
+	rig-slave-master.c \
 	rig-undo-journal.h \
 	rig-undo-journal.c \
 	rig-rotation-tool.h \
 	rig-rotation-tool.c \
 	rig-selection-tool.h \
 	rig-selection-tool.c \
+	rig-asset-inspector.h \
+	rig-asset-inspector.c \
+	rig-prop-inspector.h \
+	rig-prop-inspector.c \
+	rig-inspector.h \
+	rig-inspector.c \
 	rig-controller-view.c \
 	rig-controller-view.h \
 	rig-binding-view.h \

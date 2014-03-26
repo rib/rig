@@ -66,6 +66,7 @@ endif
 
 if HAVE_OSX
 librig_la_SOURCES += \
+	rig-osx.h \
 	rig-osx.m
 endif
 
