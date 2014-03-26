@@ -50,4 +50,7 @@ rut_os_read (int fd, uint8_t *data, int len, RutException **e);
 bool
 rut_os_write (int fd, uint8_t *data, int len, RutException **e);
 
+int
+rut_os_connect_to_abstract_socket (const char *socket_name);
+
 #endif /* _RUT_OS_H_ */

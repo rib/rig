@@ -39,6 +39,15 @@
 #include <unistd.h>
 #endif
 
+#ifdef linux
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#endif
+
+
 #include "rut-os.h"
 
 int
@@ -112,4 +121,62 @@ rut_os_write (int fd, uint8_t *data, int len, RutException **e)
   } while (remaining);
 
   return true;
+}
+
+int
+rut_os_connect_to_abstract_socket (const char *socket_name)
+{
+  int fd;
+  struct sockaddr_un addr;
+  socklen_t size;
+  int name_size;
+  int flags;
+
+
+  fd = socket (AF_UNIX, SOCK_STREAM, 0);
+  if (fd == -1)
+    {
+      g_warning ("Failed to create PF_LOCAL socket fd");
+      return -1;
+    }
+
+  /* XXX: Android doesn't seem to support SOCK_CLOEXEC so we use
+   * fcntl() instead */
+  flags = fcntl (fd, F_GETFD);
+  if (flags == -1)
+    {
+      g_warning ("Failed to get fd flags for setting O_CLOEXEC on socket\n");
+      return 1;
+    }
+
+  if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1)
+    {
+      g_warning ("Failed to set O_CLOEXEC on abstract socket\n");
+      return 1;
+    }
+
+  memset (&addr, 0, sizeof addr);
+  addr.sun_family = AF_UNIX;
+  name_size = snprintf (addr.sun_path, sizeof addr.sun_path,
+                        "%c%s", '\0', socket_name);
+
+  if (name_size > (int)sizeof addr.sun_path)
+    {
+      g_warning ("socket path \"%crig-simulator\" plus null terminator"
+                 " exceeds 108 bytes\n", '\0');
+      close (fd);
+      return -1;
+    };
+
+  size = offsetof (struct sockaddr_un, sun_path) + name_size;
+
+  if (connect (fd, (struct sockaddr *) &addr, size) < 0)
+    {
+      const char *msg = strerror (errno);
+      g_warning ("Failed to connect to abstract socket: %s\n", msg);
+      close (fd);
+      return -1;
+    }
+
+  return fd;
 }
