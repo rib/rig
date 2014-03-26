@@ -38,8 +38,7 @@
 #include <gmodule.h>
 #include <gio/gio.h>
 
-#include "rig-editor.h"
-#include "rig-image-source.h"
+#include <rut.h>
 
 /* Forward declare since there is a circular dependency between this
  * header and rig-camera-view.h which depends on this typedef... */
@@ -57,14 +56,25 @@ typedef enum _RutSelectAction
   RUT_SELECT_ACTION_TOGGLE,
 } RutSelectAction;
 
+#include "rig-types.h"
 
+typedef struct _RigEntitesSelection
+{
+  RutObjectBase _base;
+  RigEngine *engine;
+  GList *objects;
+  RutList selection_events_cb_list;
+} RigObjectsSelection;
+
+
+#include "rig-editor.h"
+#include "rig-image-source.h"
 
 #include "rig-protobuf-c-rpc.h"
 #include "rig-rpc-network.h"
 
 #include "rig-controller.h"
 #include "rig-controller-view.h"
-#include "rig-types.h"
 #include "rig-undo-journal.h"
 #include "rut-box-layout.h"
 #include "rig-osx.h"
@@ -83,14 +93,6 @@ enum {
 
   RIG_ENGINE_N_PROPS
 };
-
-typedef struct _RigEntitesSelection
-{
-  RutObjectBase _base;
-  RigEngine *engine;
-  GList *objects;
-  RutList selection_events_cb_list;
-} RigObjectsSelection;
 
 extern RutType rig_engine_type;
 
@@ -243,6 +245,9 @@ struct _RigEngine
 #ifdef RIG_EDITOR_ENABLED
   RigEntity *light_handle;
   RigEntity *play_camera_handle;
+  RigObjectsSelection *objects_selection;
+  /* The transparency grid widget that is displayed behind the assets list */
+  RutImage *transparency_grid;
 #endif
 
   float grab_x;
@@ -254,16 +259,7 @@ struct _RigEngine
   RigController *selected_controller;
   RutPropertyClosure *controller_progress_closure;
 
-  RigObjectsSelection *objects_selection;
-
-  /* The transparency grid widget that is displayed behind the assets list */
-  RutImage *transparency_grid;
-
   RutTransform *resize_handle_transform;
-
-  //Path *path;
-  //float path_t;
-  //RutProperty path_property;
 
 #ifdef __APPLE__
   RigOSXData *osx_data;
@@ -391,32 +387,10 @@ RigAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file);
 
 void
-rig_select_object (RigEngine *engine,
-                   RutObject *object,
-                   RutSelectAction action);
-
-void
 rig_engine_push_undo_subjournal (RigEngine *engine);
 
 RigUndoJournal *
 rig_engine_pop_undo_subjournal (RigEngine *engine);
-
-typedef enum _RigObjectsSelectionEvent
-{
-  RIG_OBJECTS_SELECTION_ADD_EVENT,
-  RIG_OBJECTS_SELECTION_REMOVE_EVENT
-} RigObjectsSelectionEvent;
-
-typedef void (*RigObjectsSelectionEventCallback) (RigObjectsSelection *selection,
-                                                  RigObjectsSelectionEvent event,
-                                                  RutObject *object,
-                                                  void *user_data);
-
-RutClosure *
-rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
-                                          RigObjectsSelectionEventCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb);
 
 typedef void (*RigToolChangedCallback) (RigEngine *engine,
                                         RigToolID tool_id,

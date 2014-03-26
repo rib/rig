@@ -31,12 +31,13 @@
 
 #include <rut.h>
 
+typedef struct _RigEditor RigEditor;
+
 #include "rig-types.h"
 #include "rig-entity.h"
+#include "rig-engine.h"
 
 #include "rig.pb-c.h"
-
-typedef struct _RigEditor RigEditor;
 
 extern RutType rig_editor_type;
 
@@ -90,5 +91,29 @@ rig_reload_position_inspector (RigEngine *engine,
 void
 rig_editor_update_inspector (RigEngine *engine);
 
+void
+rig_select_object (RigEngine *engine,
+                   RutObject *object,
+                   RutSelectAction action);
+
+RigObjectsSelection *
+_rig_objects_selection_new (RigEngine *engine);
+
+typedef enum _RigObjectsSelectionEvent
+{
+  RIG_OBJECTS_SELECTION_ADD_EVENT,
+  RIG_OBJECTS_SELECTION_REMOVE_EVENT
+} RigObjectsSelectionEvent;
+
+typedef void (*RigObjectsSelectionEventCallback) (RigObjectsSelection *selection,
+                                                  RigObjectsSelectionEvent event,
+                                                  RutObject *object,
+                                                  void *user_data);
+
+RutClosure *
+rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
+                                          RigObjectsSelectionEventCallback callback,
+                                          void *user_data,
+                                          RutClosureDestroyCallback destroy_cb);
 
 #endif /* _RIG_EDITOR_H_ */

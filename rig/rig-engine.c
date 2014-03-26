@@ -66,6 +66,7 @@
 #include "rig-frontend.h"
 #include "rig-simulator.h"
 #include "rig-image-source.h"
+#include "rig-editor.h"
 
 #include "components/rig-camera.h"
 
@@ -101,9 +102,6 @@ static RutPropertySpec _rig_engine_prop_specs[] = {
   },
   { 0 }
 };
-
-static RigObjectsSelection *
-_rig_objects_selection_new (RigEngine *engine);
 
 static RutTraverseVisitFlags
 scenegraph_pre_paint_cb (RutObject *object,
@@ -231,255 +229,6 @@ rig_engine_set_current_ui (RigEngine *engine,
   rig_camera_view_set_ui (engine->main_camera_view, ui);
   engine->current_ui = ui;
   rut_shell_queue_redraw (engine->ctx->shell);
-}
-
-static void
-_rig_objects_selection_cancel (RutObject *object)
-{
-  RigObjectsSelection *selection = object;
-  g_list_free_full (selection->objects, (GDestroyNotify)rut_object_unref);
-  selection->objects = NULL;
-}
-
-static RutObject *
-_rig_objects_selection_copy (RutObject *object)
-{
-  RigObjectsSelection *selection = object;
-  RigObjectsSelection *copy = _rig_objects_selection_new (selection->engine);
-  GList *l;
-
-  for (l = selection->objects; l; l = l->next)
-    {
-      if (rut_object_get_type (l->data) == &rig_entity_type)
-        {
-          copy->objects =
-            g_list_prepend (copy->objects, rig_entity_copy (l->data));
-        }
-      else
-        {
-#warning "todo: Create a copyable interface for anything that can be selected for copy and paste"
-          g_warn_if_reached ();
-        }
-    }
-
-  return copy;
-}
-
-static void
-_rig_objects_selection_delete (RutObject *object)
-{
-  RigObjectsSelection *selection = object;
-
-  if (selection->objects)
-    {
-      RigEngine *engine = selection->engine;
-
-      /* XXX: It's assumed that a selection either corresponds to
-       * engine->objects_selection or to a derived selection due to
-       * the selectable::copy vfunc.
-       *
-       * A copy should contain deep-copied entities that don't need to
-       * be directly deleted with
-       * rig_undo_journal_delete_entity() because they won't
-       * be part of the scenegraph.
-       */
-
-      if (selection == engine->objects_selection)
-        {
-          GList *l, *next;
-          int len = g_list_length (selection->objects);
-
-          for (l = selection->objects; l; l = next)
-            {
-              next = l->next;
-              rig_undo_journal_delete_entity (engine->undo_journal,
-                                              l->data);
-            }
-
-          /* NB: that rig_undo_journal_delete_component() will
-           * remove the entity from the scenegraph*/
-
-          /* XXX: make sure that
-           * rig_undo_journal_delete_entity () doesn't change
-           * the selection, since it used to. */
-          g_warn_if_fail (len == g_list_length (selection->objects));
-        }
-
-      g_list_free_full (selection->objects,
-                        (GDestroyNotify)rut_object_unref);
-      selection->objects = NULL;
-
-      g_warn_if_fail (selection->objects == NULL);
-    }
-}
-
-static void
-_rig_objects_selection_free (void *object)
-{
-  RigObjectsSelection *selection = object;
-
-  _rig_objects_selection_cancel (selection);
-
-  rut_closure_list_disconnect_all (&selection->selection_events_cb_list);
-
-  rut_object_free (RigObjectsSelection, selection);
-}
-
-RutType rig_objects_selection_type;
-
-static void
-_rig_objects_selection_init_type (void)
-{
-  static RutSelectableVTable selectable_vtable = {
-      .cancel = _rig_objects_selection_cancel,
-      .copy = _rig_objects_selection_copy,
-      .del = _rig_objects_selection_delete,
-  };
-  static RutMimableVTable mimable_vtable = {
-      .copy = _rig_objects_selection_copy
-  };
-
-  RutType *type = &rig_objects_selection_type;
-#define TYPE RigObjectsSelection
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_objects_selection_free);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_SELECTABLE,
-                      0, /* no associated properties */
-                      &selectable_vtable);
-  rut_type_add_trait (type,
-                      RUT_TRAIT_ID_MIMABLE,
-                      0, /* no associated properties */
-                      &mimable_vtable);
-
-#undef TYPE
-}
-
-static RigObjectsSelection *
-_rig_objects_selection_new (RigEngine *engine)
-{
-  RigObjectsSelection *selection =
-    rut_object_alloc0 (RigObjectsSelection,
-                       &rig_objects_selection_type,
-                       _rig_objects_selection_init_type);
-
-  selection->engine = engine;
-  selection->objects = NULL;
-
-  rut_list_init (&selection->selection_events_cb_list);
-
-  return selection;
-}
-
-RutClosure *
-rig_objects_selection_add_event_callback (RigObjectsSelection *selection,
-                                          RigObjectsSelectionEventCallback callback,
-                                          void *user_data,
-                                          RutClosureDestroyCallback destroy_cb)
-{
-  return rut_closure_list_add (&selection->selection_events_cb_list,
-                               callback,
-                               user_data,
-                               destroy_cb);
-}
-
-static void
-remove_selection_cb (RutObject *object,
-                     RigObjectsSelection *selection)
-{
-  rut_closure_list_invoke (&selection->selection_events_cb_list,
-                           RigObjectsSelectionEventCallback,
-                           selection,
-                           RIG_OBJECTS_SELECTION_REMOVE_EVENT,
-                           object);
-  rut_object_unref (object);
-}
-
-void
-rig_select_object (RigEngine *engine,
-                   RutObject *object,
-                   RutSelectAction action)
-{
-  RigObjectsSelection *selection = engine->objects_selection;
-
-  /* For now we only support selecting multiple entities... */
-  if (object && rut_object_get_type (object) != &rig_entity_type)
-    action = RUT_SELECT_ACTION_REPLACE;
-
-#if RIG_EDITOR_ENABLED
-  if (object == engine->light_handle)
-    object = engine->edit_mode_ui->light;
-#endif
-
-#if 0
-  else if (entity == engine->play_camera_handle)
-    entity = engine->play_camera;
-#endif
-
-  switch (action)
-    {
-    case RUT_SELECT_ACTION_REPLACE:
-      {
-        GList *old = selection->objects;
-
-        selection->objects = NULL;
-
-        g_list_foreach (old,
-                        (GFunc)remove_selection_cb,
-                        selection);
-        g_list_free (old);
-
-        if (object)
-          {
-            selection->objects = g_list_prepend (selection->objects,
-                                                 rut_object_ref (object));
-            rut_closure_list_invoke (&selection->selection_events_cb_list,
-                                     RigObjectsSelectionEventCallback,
-                                     selection,
-                                     RIG_OBJECTS_SELECTION_ADD_EVENT,
-                                     object);
-          }
-        break;
-      }
-    case RUT_SELECT_ACTION_TOGGLE:
-      {
-        GList *link = g_list_find (selection->objects, object);
-
-        if (link)
-          {
-            selection->objects =
-              g_list_remove_link (selection->objects, link);
-
-            rut_closure_list_invoke (&selection->selection_events_cb_list,
-                                     RigObjectsSelectionEventCallback,
-                                     selection,
-                                     RIG_OBJECTS_SELECTION_REMOVE_EVENT,
-                                     link->data);
-            rut_object_unref (link->data);
-          }
-        else if (object)
-          {
-            rut_closure_list_invoke (&selection->selection_events_cb_list,
-                                     RigObjectsSelectionEventCallback,
-                                     selection,
-                                     RIG_OBJECTS_SELECTION_ADD_EVENT,
-                                     object);
-
-            rut_object_ref (object);
-            selection->objects =
-              g_list_prepend (selection->objects, object);
-          }
-      }
-      break;
-    }
-
-  if (selection->objects)
-    rut_shell_set_selection (engine->shell, engine->objects_selection);
-
-  rut_shell_queue_redraw (engine->ctx->shell);
-
-  if (engine->frontend)
-    rig_editor_update_inspector (engine);
 }
 
 static void
@@ -776,8 +525,8 @@ rig_engine_set_onscreen_size (RigEngine *engine,
   if (engine->window_width == width && engine->window_height == height)
     return;
 
+#ifdef USE_SDL
   /* FIXME: This should probably be rut_shell api instead */
-#if defined (COGL_HAS_SDL_SUPPORT) && (SDL_MAJOR_VERSION >= 2)
   {
     SDL_Window *sdl_window = cogl_sdl_onscreen_get_window (engine->onscreen);
     SDL_SetWindowSize (sdl_window, width, height);
@@ -873,6 +622,8 @@ _rig_engine_free (void *object)
             rut_object_unref (engine->transparency_grid);
 
           rut_closure_list_disconnect_all (&engine->tool_changed_cb_list);
+
+          rut_object_unref (engine->objects_selection);
         }
 #endif
       _rig_code_fini (engine);
@@ -900,8 +651,6 @@ _rig_engine_free (void *object)
       }
 #endif /* USE_GTK */
     }
-
-  rut_object_unref (engine->objects_selection);
 
   rig_engine_set_edit_mode_ui (engine, NULL);
 
@@ -1128,12 +877,10 @@ _rig_engine_new_full (RutShell *shell,
   _rig_code_init (engine);
 
 #ifdef RIG_EDITOR_ENABLED
-  /* NB: The simulator also needs to track selections when in support
-   * of an editor. */
-  engine->objects_selection = _rig_objects_selection_new (engine);
-
   if (frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     {
+      engine->objects_selection = _rig_objects_selection_new (engine);
+
       rut_list_init (&engine->tool_changed_cb_list);
 
       rig_engine_push_undo_subjournal (engine);
@@ -1350,7 +1097,7 @@ rig_engine_input_handler (RutInputEvent *event, void *user_data)
 #endif
             }
         }
-#endif
+#endif /* RIG_EDITOR_ENABLED */
       break;
 
     case RUT_INPUT_EVENT_TYPE_MOTION:
