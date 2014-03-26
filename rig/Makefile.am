@@ -1,5 +1,7 @@
 include $(top_srcdir)/build/autotools/Makefile.am.silent
 
+include Makefile.sources
+
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/rut \
@@ -31,14 +33,6 @@ BUILT_SOURCES = $(PROTOBUF_C_FILES)
 DISTCLEANFILES = $(PROTOBUF_C_FILES)
 EXTRA_DIST = $(PROTOBUF_C_FILES)
 
-rig_protobuf_c_rpc_sources = \
-	protobuf-c-rpc/rig-protobuf-c-dispatch.h \
-	protobuf-c-rpc/rig-protobuf-c-dispatch.c \
-	protobuf-c-rpc/rig-protobuf-c-data-buffer.h \
-	protobuf-c-rpc/rig-protobuf-c-data-buffer.c \
-	protobuf-c-rpc/rig-protobuf-c-rpc.h \
-	protobuf-c-rpc/rig-protobuf-c-rpc.c \
-	protobuf-c-rpc/gsklistmacros.h
 EXTRA_DIST += protobuf-c-rpc/README
 
 # Headers that will need to be available for compiling code at runtime
@@ -56,88 +50,8 @@ librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0 -Wl,--unresolved-s
 
 
 librig_la_SOURCES = \
-	$(rig_protobuf_c_rpc_sources) \
-	components/rig-hair.h \
-	components/rig-hair.c \
-	components/rig-camera.h \
-	components/rig-camera.c \
-	components/rig-light.h \
-	components/rig-light.c \
-	components/rig-model.h \
-	components/rig-model.c \
-	components/rig-material.h \
-	components/rig-material.c \
-	components/rig-diamond.h \
-	components/rig-diamond.c \
-	components/rig-shape.h \
-	components/rig-shape.c \
-	components/rig-nine-slice.h \
-	components/rig-nine-slice.c \
-	components/rig-pointalism-grid.h \
-	components/rig-pointalism-grid.c \
-	components/rig-button-input.h \
-	components/rig-button-input.c \
-	rig-entity.h \
-	rig-entity.c \
-	rig-asset.h \
-	rig-asset.c \
-	rig-asset-inspector.h \
-	rig-asset-inspector.c \
-	rig-prop-inspector.h \
-	rig-prop-inspector.c \
-	rig-inspector.h \
-	rig-inspector.c \
-	rig-image-source.h \
-	rig-image-source.c \
-	rig-downsampler.h \
-	rig-downsampler.c \
-	rig-dof-effect.h \
-	rig-dof-effect.c \
-	rig-engine.c \
-	rig-engine-op.h \
-	rig-engine-op.c \
-	rig-node.c \
-	rig-node.h \
-	rig-path.c \
-	rig-path.h \
-	rig-controller.c \
-	rig-controller.h \
-	rig-binding.h \
-	rig-binding.c \
-	rig-pb.h \
-	rig-pb.c \
-	rig-load-save.h \
-	rig-load-save.c \
-	rig-controller-view.c \
-	rig-controller-view.h \
-    	rig-split-view.h \
-    	rig-split-view.c \
-    	rig-view.h \
-    	rig-view.c \
-    	rig-camera-view.h \
-    	rig-camera-view.c \
-	rig-types.h \
-	rut-renderer.h \
-	rut-renderer.c \
-	rig-renderer.h \
-	rig-renderer.c \
-	rig-engine.h \
-	rig-osx.h \
-	rig-rpc-network.h \
-	rig-rpc-network.c \
-	rig-slave-address.h \
-	rig-slave-address.c \
-	rig-slave-master.h \
-	rig-slave-master.c \
-	rig.pb-c.c \
-	rig-simulator.h \
-	rig-simulator.c \
-	rig-frontend.c \
-	rig-frontend.h \
-	rig-ui.h \
-	rig-ui.c \
-	rig-binding.h \
-	rig-binding.c
+	$(rig_common_sources)
+
 
 if HAVE_AVAHI
 librig_la_SOURCES += \
@@ -147,18 +61,7 @@ endif
 
 if EDITOR_ENABLED
 librig_la_SOURCES += \
-	rig-editor.h \
-	rig-editor.c \
-	rig-undo-journal.h \
-	rig-undo-journal.c \
-	rig-rotation-tool.h \
-	rig-rotation-tool.c \
-	rig-selection-tool.h \
-	rig-selection-tool.c \
-	rig-binding-view.h \
-	rig-binding-view.c \
-	rig-code.h \
-	rig-code.c
+	$(rig_editor_sources)
 endif
 
 if HAVE_OSX
@@ -186,8 +89,7 @@ rig_SOURCES = \
 rig_LDADD = $(common_ldadd)
 
 rig_slave_SOURCES = \
-	rig-slave.h \
-	rig-slave.c \
+	$(rig_slave_sources) \
 	rig-slave-main.c
 rig_slave_LDADD = $(common_ldadd)
 
