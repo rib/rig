@@ -53,7 +53,20 @@ _cogl_feature_check (CoglRenderer *renderer,
 {
   const char *suffix = NULL;
   int func_num;
+  CoglExtGlesAvailability gles_availability;
   CoglBool in_core;
+
+  if (driver == COGL_DRIVER_GLES2)
+    {
+      gles_availability = COGL_EXT_IN_GLES2;
+
+      if (COGL_CHECK_GL_VERSION (gl_major, gl_minor, 3, 0))
+        gles_availability |= COGL_EXT_IN_GLES3;
+    }
+  else
+    {
+      gles_availability = 0;
+    }
 
   /* First check whether the functions should be directly provided by
      GL */
@@ -61,8 +74,7 @@ _cogl_feature_check (CoglRenderer *renderer,
         driver == COGL_DRIVER_GL3) &&
        COGL_CHECK_GL_VERSION (gl_major, gl_minor,
                               data->min_gl_major, data->min_gl_minor)) ||
-      (driver == COGL_DRIVER_GLES2 &&
-       (data->gles_availability & COGL_EXT_IN_GLES2)))
+      (data->gles_availability & gles_availability))
     {
       suffix = "";
       in_core = TRUE;

@@ -39,11 +39,10 @@
   ((driver_major) > (target_major) || \
    ((driver_major) == (target_major) && (driver_minor) >= (target_minor)))
 
-/* This is a leftover from when we used to support GLES 1.1, though
- * we may want to use this to differentiate WebGL later */
 typedef enum
 {
-  COGL_EXT_IN_GLES2 = (1 << 0)
+  COGL_EXT_IN_GLES2 = (1 << 0),
+  COGL_EXT_IN_GLES3 = (1 << 1)
 } CoglExtGlesAvailability;
 
 typedef struct _CoglFeatureFunction CoglFeatureFunction;
