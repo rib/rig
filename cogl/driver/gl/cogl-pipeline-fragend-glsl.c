@@ -106,7 +106,8 @@ typedef struct
 static CoglUserDataKey shader_state_key;
 
 static void
-ensure_layer_generated (CoglPipeline *pipeline,
+ensure_layer_generated (CoglPipelineShaderState *shader_state,
+                        CoglPipeline *pipeline,
                         int layer_num);
 
 static CoglPipelineShaderState *
@@ -609,7 +610,7 @@ ensure_arg_generated (CoglPipeline *pipeline,
 
     case COGL_PIPELINE_COMBINE_SOURCE_PREVIOUS:
       if (previous_layer_index >= 0)
-        ensure_layer_generated (pipeline, previous_layer_index);
+        ensure_layer_generated (shader_state, pipeline, previous_layer_index);
       break;
 
     case COGL_PIPELINE_COMBINE_SOURCE_TEXTURE:
@@ -752,30 +753,15 @@ append_masked_combine (CoglPipeline *pipeline,
 }
 
 static void
-ensure_layer_generated (CoglPipeline *pipeline,
-                        int layer_index)
+generate_layer (CoglPipelineShaderState *shader_state,
+                CoglPipeline *pipeline,
+                LayerData *layer_data)
 {
-  CoglPipelineShaderState *shader_state = get_shader_state (pipeline);
   CoglPipelineLayer *combine_authority;
   CoglPipelineLayerBigState *big_state;
-  CoglPipelineLayer *layer;
+  CoglPipelineLayer *layer = layer_data->layer;
+  int layer_index = layer->index;
   CoglPipelineSnippetData snippet_data;
-  LayerData *layer_data;
-
-  /* Find the layer that corresponds to this layer_num */
-  _cogl_list_for_each (layer_data, &shader_state->layers, link)
-    {
-      layer = layer_data->layer;
-
-      if (layer->index == layer_index)
-        goto found;
-    }
-
-  /* If we didn't find it then we can assume the layer has already
-     been generated */
-  return;
-
- found:
 
   /* Remove the layer from the list so we don't generate it again */
   _cogl_list_remove (&layer_data->link);
@@ -878,6 +864,31 @@ ensure_layer_generated (CoglPipeline *pipeline,
                           layer_index);
 
   u_slice_free (LayerData, layer_data);
+}
+
+static void
+ensure_layer_generated (CoglPipelineShaderState *shader_state,
+                        CoglPipeline *pipeline,
+                        int layer_index)
+{
+  LayerData *layer_data;
+
+  /* Find the layer that corresponds to this layer_num */
+  _cogl_list_for_each (layer_data, &shader_state->layers, link)
+    {
+      CoglPipelineLayer *layer = layer_data->layer;
+
+      if (layer->index == layer_index)
+        goto found;
+    }
+
+  /* If we didn't find it then we can assume the layer has already
+     been generated */
+  return;
+
+found:
+
+  generate_layer (shader_state, pipeline, layer_data);
 }
 
 static CoglBool
@@ -1001,10 +1012,6 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
                            0 /* no application private data */);
       COGL_COUNTER_INC (_cogl_uprof_context, fragend_glsl_compile_counter);
 
-      /* We only need to generate code to calculate the fragment value
-         for the last layer. If the value of this layer depends on any
-         previous layers then it will recursively generate the code
-         for those layers */
       if (!_cogl_list_empty (&shader_state->layers))
         {
           CoglPipelineLayer *last_layer;
@@ -1015,13 +1022,26 @@ _cogl_pipeline_fragend_glsl_end (CoglPipeline *pipeline,
                                            link);
           last_layer = layer_data->layer;
 
-          ensure_layer_generated (pipeline, last_layer->index);
+          /* Note: generate_layer() works recursively, so if the value
+           * of this layer depends on any previous layers then it will
+           * also generate the code for those layers.
+           */
+          generate_layer (shader_state, pipeline, layer_data);
+
           u_string_append_printf (shader_state->source,
                                   "  cogl_color_out = cogl_layer%i;\n",
                                   last_layer->index);
 
-          _cogl_list_for_each_safe (layer_data,
-                                    tmp,
+          /* We now ensure we have code for all remaining layers that may
+           * only be referenced by user snippets... */
+          _cogl_list_for_each_safe (layer_data, tmp,
+                                    &shader_state->layers,
+                                    link)
+            {
+              generate_layer (shader_state, pipeline, layer_data);
+            }
+
+          _cogl_list_for_each_safe (layer_data, tmp,
                                     &shader_state->layers,
                                     link)
             u_slice_free (LayerData, layer_data);
