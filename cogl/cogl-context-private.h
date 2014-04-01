@@ -191,6 +191,11 @@ struct _CoglContext
   CoglGLES2Context *current_gles2_context;
   CQueue gles2_context_stack;
 
+  /* This becomes TRUE the first time the context is bound to an
+   * onscreen buffer. This is used by cogl-framebuffer-gl to determine
+   * when to initialise the glDrawBuffer state */
+  CoglBool was_bound_to_onscreen;
+
   /* Primitives */
   CoglPipeline     *stencil_pipeline;
 
