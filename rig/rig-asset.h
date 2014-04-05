@@ -167,4 +167,9 @@ rig_asset_get_mesh_has_normals (RigAsset *asset);
 void
 rig_asset_reap (RigAsset *asset, RigEngine *engine);
 
+void
+rig_asset_get_image_size (RigAsset *asset,
+                          int *width,
+                          int *height);
+
 #endif /* _RIG_ASSET_H_ */

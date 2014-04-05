@@ -957,6 +957,28 @@ rig_asset_get_is_video (RigAsset *asset)
   return asset->is_video;
 }
 
+void
+rig_asset_get_image_size (RigAsset *asset,
+                          int *width,
+                          int *height)
+{
+  if (rig_asset_get_is_video (asset))
+    {
+#warning "FIXME: rig_asset_get_image_size() should return the correct size of videos"
+      *width = 640;
+      *height = 480;
+    }
+  else
+    {
+      CoglTexture *texture = rig_asset_get_texture (asset);
+
+      g_return_if_fail (texture);
+
+      *width = cogl_texture_get_width (texture);
+      *height = cogl_texture_get_height (texture);
+    }
+}
+
 static GList *
 copy_tags (const GList *tags)
 {
