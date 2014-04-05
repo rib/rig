@@ -122,7 +122,10 @@ typedef struct _RigRendererPriv
 
   RutClosure *pointalism_grid_update_closure;
   RutClosure *preferred_size_closure;
+
+  /* FIXME: these are mutually exclusive, so collapse into one pointer */
   RutClosure *nine_slice_closure;
+  RutClosure *diamond_closure;
   RutClosure *reshaped_closure;
 } RigRendererPriv;
 
@@ -273,6 +276,9 @@ _rig_renderer_free_priv (RigEntity *entity)
   if (priv->nine_slice_closure)
     rut_closure_disconnect (priv->nine_slice_closure);
 
+  if (priv->diamond_closure)
+    rut_closure_disconnect (priv->diamond_closure);
+
   if (priv->reshaped_closure)
     rut_closure_disconnect (priv->reshaped_closure);
 
@@ -363,6 +369,16 @@ nine_slice_changed_cb (RigNineSlice *nine_slice, void *user_data)
 {
   RutComponentableProps *componentable =
     rut_object_get_properties (nine_slice, RUT_TRAIT_ID_COMPONENTABLE);
+  RigEntity *entity = componentable->entity;
+  _rig_renderer_notify_entity_changed (entity);
+  dirty_entity_geometry (entity);
+}
+
+static void
+diamond_changed_cb (RigDiamond *diamond, void *user_data)
+{
+  RutComponentableProps *componentable =
+    rut_object_get_properties (diamond, RUT_TRAIT_ID_COMPONENTABLE);
   RigEntity *entity = componentable->entity;
   _rig_renderer_notify_entity_changed (entity);
   dirty_entity_geometry (entity);
@@ -1227,8 +1243,17 @@ get_entity_color_pipeline (RigEngine *engine,
                                              NULL);
         }
     }
-  else if (rut_object_get_type (geometry) == &rig_diamond_type)
-    rig_diamond_apply_mask (geometry, pipeline);
+  else if (rut_object_get_type (geometry) == &rig_diamond_type &&
+           !priv->diamond_closure)
+    {
+      rig_diamond_apply_mask (geometry, pipeline);
+
+      priv->diamond_closure =
+        rig_diamond_add_update_callback ((RigDiamond *)geometry,
+                                         diamond_changed_cb,
+                                         NULL,
+                                         NULL);
+    }
   else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type &&
            sources[SOURCE_TYPE_COLOR])
     {
@@ -1443,15 +1468,6 @@ image_source_ready_cb (RigImageSource *source,
     }
   else if (rut_object_get_type (geometry) == &rig_shape_type)
     rig_shape_set_texture_size (geometry, width, height);
-  else if (rut_object_get_type (geometry) == &rig_diamond_type)
-    {
-      RigDiamond *diamond = geometry;
-      float size = rig_diamond_get_size (diamond);
-
-      rig_entity_remove_component (entity, geometry);
-      diamond = rig_diamond_new (ctx, size, width, height);
-      rig_entity_add_component (entity, diamond);
-    }
   else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type)
     {
       RigPointalismGrid *grid = geometry;

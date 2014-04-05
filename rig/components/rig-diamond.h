@@ -44,43 +44,51 @@ struct _RigDiamondSlice
   float size;
 
   RutMesh *mesh;
-
+  RutMesh *pick_mesh;
 };
 
 void
 _rig_diamond_slice_init_type (void);
 
 typedef struct _RigDiamond RigDiamond;
-#define RIG_DIAMOND(p) ((RigDiamond *)(p))
 extern RutType rig_diamond_type;
+
+enum {
+  RIG_DIAMOND_PROP_SIZE,
+  RIG_DIAMOND_N_PROPS
+};
 
 struct _RigDiamond
 {
   RutObjectBase _base;
 
-
   RutComponentableProps component;
 
   RutContext *ctx;
 
+  RutList updated_cb_list;
+
   RigDiamondSlice *slice;
 
-  RutMesh *pick_mesh;
+  int tex_width;
+  int tex_height;
+  float size;
 
-  int size;
+  RutIntrospectableProps introspectable;
+  RutProperty properties[RIG_DIAMOND_N_PROPS];
 };
 
 void
 _rig_diamond_init_type (void);
 
 RigDiamond *
-rig_diamond_new (RutContext *ctx,
-                 float size,
-                 int tex_width,
-                 int tex_height);
+rig_diamond_new (RutContext *ctx, float size);
 
 float
 rig_diamond_get_size (RigDiamond *diamond);
+
+void
+rig_diamond_set_size (RutObject *object, float size);
 
 CoglPrimitive *
 rig_diamond_get_primitive (RutObject *object);
@@ -91,5 +99,19 @@ rig_diamond_apply_mask (RigDiamond *diamond,
 
 RutMesh *
 rig_diamond_get_pick_mesh (RutObject *self);
+
+typedef void (* RigDiamondUpdateCallback) (RigDiamond *diamond,
+                                           void *user_data);
+
+RutClosure *
+rig_diamond_add_update_callback (RigDiamond *diamond,
+                                 RigDiamondUpdateCallback callback,
+                                 void *user_data,
+                                 RutClosureDestroyCallback destroy_cb);
+
+void
+rig_diamond_set_image_size (RutObject *self,
+                            int width,
+                            int height);
 
 #endif /* __RIG_DIAMOND_H__ */

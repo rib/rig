@@ -486,7 +486,6 @@ apply_asset_input_with_entity (RigEngine *engine,
       else if (asset == engine->diamond_builtin_asset)
         {
           RigDiamond *diamond;
-          int tex_width = 200, tex_height = 200;
 
           geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -496,41 +495,10 @@ apply_asset_input_with_entity (RigEngine *engine,
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
-          material =
-            rig_entity_get_component (entity,
-                                      RUT_COMPONENT_TYPE_MATERIAL);
-
-          if (material)
-            {
-              RigAsset *texture_asset =
-                rig_material_get_color_source_asset (material);
-              if (texture_asset)
-                {
-                  if (rig_asset_get_is_video (texture_asset))
-                    {
-                      /* XXX: until we start decoding the
-                       * video we don't know the size of the
-                       * video so for now we just assume a
-                       * default size. Maybe we should just
-                       * decode a single frame to find out the
-                       * size? */
-                      tex_width = 640;
-                      tex_height = 480;
-                    }
-                  else
-                    {
-                      CoglTexture *texture =
-                        rig_asset_get_texture (texture_asset);
-                      tex_width = cogl_texture_get_width (texture);
-                      tex_height = cogl_texture_get_height (texture);
-                    }
-                }
-            }
-
-          diamond = rig_diamond_new (engine->ctx, 200, tex_width,
-                                     tex_height);
+          diamond = rig_diamond_new (engine->ctx, 200);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, diamond);
+          rut_object_unref (diamond);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }

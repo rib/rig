@@ -34,28 +34,32 @@
 #include "rut-global.h"
 #include "rut-meshable.h"
 
-#define MESA_CONST_ATTRIB_BUG_WORKAROUND
-
 static RigDiamond *
 _rig_diamond_new_with_slice (RutContext *ctx,
                              float size,
+                             int tex_width,
+                             int tex_height,
                              RigDiamondSlice *slice);
 
+static RutPropertySpec _rig_diamond_prop_specs[] = {
+  {
+    .name = "size",
+    .nick = "Size",
+    .type = RUT_PROPERTY_TYPE_FLOAT,
+    .data_offset = G_STRUCT_OFFSET (RigDiamond, size),
+    .setter.float_type = rig_diamond_set_size,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+  },
+  { NULL }
+};
 
 static void
 _rig_diamond_slice_free (void *object)
 {
   RigDiamondSlice *diamond_slice = object;
 
-#ifdef RIG_ENABLE_DEBUG
-  {
-    RutComponentableProps *component =
-      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
-  }
-#endif
-
   rut_object_unref (diamond_slice->mesh);
+  rut_object_unref (diamond_slice->pick_mesh);
 
   rut_object_free (RigDiamondSlice, object);
 }
@@ -176,8 +180,8 @@ diamond_slice_new (float size,
 #define DIAMOND_SLICE_CORNER_RADIUS 20
   CoglMatrix matrix;
   float tex_aspect;
-
-
+  RutBuffer *pick_mesh_buffer;
+  CoglVertexP3 *pick_vertices;
 
   diamond_slice->size = size;
 
@@ -312,6 +316,32 @@ diamond_slice_new (float size,
 
     }
 
+  pick_mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  diamond_slice->pick_mesh =
+    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+                                 6,
+                                 pick_mesh_buffer);
+  pick_vertices = (CoglVertexP3 *)pick_mesh_buffer->data;
+
+  pick_vertices[0].x = 0;
+  pick_vertices[0].y = 0;
+  pick_vertices[1].x = 0;
+  pick_vertices[1].y = size;
+  pick_vertices[2].x = size;
+  pick_vertices[2].y = size;
+  pick_vertices[3] = pick_vertices[0];
+  pick_vertices[4] = pick_vertices[2];
+  pick_vertices[5].x = size;
+  pick_vertices[5].y = 0;
+
+  cogl_matrix_transform_points (&diamond_slice->rotate_matrix,
+                                2,
+                                sizeof (CoglVertexP3),
+                                pick_vertices,
+                                sizeof (CoglVertexP3),
+                                pick_vertices,
+                                6);
+
   return diamond_slice;
 }
 
@@ -320,8 +350,19 @@ _rig_diamond_free (void *object)
 {
   RigDiamond *diamond = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
+  rut_closure_list_disconnect_all (&diamond->updated_cb_list);
+
   rut_object_unref (diamond->slice);
-  rut_object_unref (diamond->pick_mesh);
+
+  rut_introspectable_destroy (diamond);
 
   rut_object_free (RigDiamond, diamond);
 }
@@ -332,6 +373,8 @@ _rig_diamond_copy (RutObject *object)
   RigDiamond *diamond = object;
   return _rig_diamond_new_with_slice (diamond->ctx,
                                       diamond->size,
+                                      diamond->tex_width,
+                                      diamond->tex_height,
                                       diamond->slice);
 }
 
@@ -353,6 +396,11 @@ _rig_diamond_init_type (void)
     .get_mesh = rig_diamond_get_pick_mesh
   };
 
+  static RutImageSizeDependantVTable image_dependant_vtable = {
+    .set_image_size = rig_diamond_set_image_size
+  };
+
+
   RutType *type = &rig_diamond_type;
 #define TYPE RigDiamond
 
@@ -362,6 +410,10 @@ _rig_diamond_init_type (void)
                       offsetof (TYPE, component),
                       &componentable_vtable);
   rut_type_add_trait (type,
+                      RUT_TRAIT_ID_INTROSPECTABLE,
+                      offsetof (TYPE, introspectable),
+                      NULL); /* no implied vtable */
+  rut_type_add_trait (type,
                       RUT_TRAIT_ID_PRIMABLE,
                       0, /* no associated properties */
                       &primable_vtable);
@@ -369,6 +421,10 @@ _rig_diamond_init_type (void)
                       RUT_TRAIT_ID_MESHABLE,
                       0, /* no associated properties */
                       &meshable_vtable);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT,
+                      0, /* no implied properties */
+                      &image_dependant_vtable);
 
 #undef TYPE
 }
@@ -376,60 +432,41 @@ _rig_diamond_init_type (void)
 static RigDiamond *
 _rig_diamond_new_with_slice (RutContext *ctx,
                              float size,
+                             int tex_width,
+                             int tex_height,
                              RigDiamondSlice *slice)
 {
   RigDiamond *diamond =
     rut_object_alloc0 (RigDiamond, &rig_diamond_type, _rig_diamond_init_type);
-  RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
-  RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
-                                                    6,
-                                                    buffer);
-  CoglVertexP3 *pick_vertices = (CoglVertexP3 *)buffer->data;
+
+  rut_list_init (&diamond->updated_cb_list);
 
   diamond->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
-  diamond->ctx = rut_object_ref (ctx);
+  diamond->ctx = ctx;
 
   diamond->size = size;
+  diamond->tex_width = tex_width;
+  diamond->tex_height = tex_height;
 
-  diamond->slice = rut_object_ref (slice);
+  if (slice)
+    diamond->slice = rut_object_ref (slice);
 
-  pick_vertices[0].x = 0;
-  pick_vertices[0].y = 0;
-  pick_vertices[1].x = 0;
-  pick_vertices[1].y = size;
-  pick_vertices[2].x = size;
-  pick_vertices[2].y = size;
-  pick_vertices[3] = pick_vertices[0];
-  pick_vertices[4] = pick_vertices[2];
-  pick_vertices[5].x = size;
-  pick_vertices[5].y = 0;
-
-  cogl_matrix_transform_points (&diamond->slice->rotate_matrix,
-                                2,
-                                sizeof (CoglVertexP3),
-                                pick_vertices,
-                                sizeof (CoglVertexP3),
-                                pick_vertices,
-                                6);
-
-  diamond->pick_mesh = pick_mesh;
+  rut_introspectable_init (diamond,
+                           _rig_diamond_prop_specs,
+                           diamond->properties);
 
   return diamond;
 }
 
 RigDiamond *
-rig_diamond_new (RutContext *ctx,
-                 float size,
-                 int tex_width,
-                 int tex_height)
+rig_diamond_new (RutContext *ctx, float size)
 {
-  /* XXX: It could be worth maintaining a cache of diamond slices
-   * indexed by the <size, tex_width, tex_height> tuple... */
-  RigDiamondSlice *slice = diamond_slice_new (size, tex_width, tex_height);
-  RigDiamond *diamond = _rig_diamond_new_with_slice (ctx, size, slice);
-
-  rut_object_unref (slice);
+  /* Initially we just specify an arbitrary texture width/height
+   * which should be updated by the time we create the
+   * diamond_slice geometry */
+  RigDiamond *diamond =
+    _rig_diamond_new_with_slice (ctx, size, 640, 480, NULL);
 
   return diamond;
 }
@@ -440,13 +477,39 @@ rig_diamond_get_size (RigDiamond *diamond)
   return diamond->size;
 }
 
+void
+rig_diamond_set_size (RutObject *object, float size)
+{
+  RigDiamond *diamond = object;
+
+  if (diamond->size == size)
+    return;
+
+  if (diamond->slice)
+    rut_object_unref (diamond->slice);
+
+  diamond->size = size;
+
+  rut_property_dirty (&diamond->ctx->property_ctx,
+                      &diamond->properties[RIG_DIAMOND_PROP_SIZE]);
+
+  rut_closure_list_invoke (&diamond->updated_cb_list,
+                           RigDiamondUpdateCallback,
+                           diamond);
+}
+
 CoglPrimitive *
 rig_diamond_get_primitive (RutObject *object)
 {
   RigDiamond *diamond = object;
-  CoglPrimitive *primitive = rut_mesh_create_primitive (diamond->ctx,
-                                                        diamond->slice->mesh);
-  return primitive;
+
+  /* XXX: It could be worth maintaining a cache of diamond slices
+   * indexed by the <size, tex_width, tex_height> tuple... */
+  if (!diamond->slice)
+    diamond->slice = diamond_slice_new (diamond->size,
+                                        diamond->tex_width, diamond->tex_height);
+
+  return rut_mesh_create_primitive (diamond->ctx, diamond->slice->mesh);
 }
 
 void
@@ -463,5 +526,43 @@ RutMesh *
 rig_diamond_get_pick_mesh (RutObject *self)
 {
   RigDiamond *diamond = self;
-  return diamond->pick_mesh;
+
+  /* XXX: It could be worth maintaining a cache of diamond slices
+   * indexed by the <size, tex_width, tex_height> tuple... */
+  if (!diamond->slice)
+    diamond->slice = diamond_slice_new (diamond->size,
+                                        diamond->tex_width, diamond->tex_height);
+
+  return diamond->slice->pick_mesh;
+}
+
+RutClosure *
+rig_diamond_add_update_callback (RigDiamond *diamond,
+                                 RigDiamondUpdateCallback callback,
+                                 void *user_data,
+                                 RutClosureDestroyCallback destroy_cb)
+{
+  g_return_val_if_fail (callback != NULL, NULL);
+  return rut_closure_list_add (&diamond->updated_cb_list,
+                               callback,
+                               user_data,
+                               destroy_cb);
+}
+
+void
+rig_diamond_set_image_size (RutObject *self,
+                            int width,
+                            int height)
+{
+  RigDiamond *diamond = self;
+
+  if (diamond->tex_width == width && diamond->tex_height == height)
+    return;
+
+  if (diamond->slice)
+    rut_object_unref (diamond->slice);
+
+  rut_closure_list_invoke (&diamond->updated_cb_list,
+                           RigDiamondUpdateCallback,
+                           diamond);
 }

@@ -503,8 +503,11 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
       pb_component->diamond = rig_pb_new (serializer,
                                           Rig__Entity__Component__Diamond,
                                           rig__entity__component__diamond__init);
-      pb_component->diamond->has_size = true;
-      pb_component->diamond->size = rig_diamond_get_size (RIG_DIAMOND (component));
+
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
   else if (type == &rig_pointalism_grid_type)
     {
@@ -2371,47 +2374,20 @@ ERROR_SHAPE:
       {
         Rig__Entity__Component__Diamond *pb_diamond = pb_component->diamond;
         float diamond_size = 100;
-        RigMaterial *material;
-        RigAsset *asset = NULL;
-        CoglTexture *texture = NULL;
         RigDiamond *diamond;
-        float tex_width = 200;
-        float tex_height = 200;
 
         if (pb_diamond->has_size)
           diamond_size = pb_diamond->size;
 
-        material = rig_entity_get_component (entity,
-                                             RUT_COMPONENT_TYPE_MATERIAL);
-
-        /* We need to know the size of the texture before we can create
-         * a diamond component */
-        if (material)
-          asset = rig_material_get_color_source_asset (material);
-
-        if (asset)
-          {
-            if (rig_asset_get_is_video (asset))
-              {
-                tex_width = 640;
-                tex_height = 480;
-              }
-            else
-              {
-                texture = rig_asset_get_texture (asset);
-                if (texture)
-                  {
-                    tex_width = cogl_texture_get_width (texture);
-                    tex_height = cogl_texture_get_height (texture);
-                  }
-              }
-          }
-
-        diamond = rig_diamond_new (unserializer->engine->ctx,
-                                   diamond_size, tex_width, tex_height);
+        diamond = rig_diamond_new (unserializer->engine->ctx, diamond_size);
 
         rig_entity_add_component (entity, diamond);
         rut_object_unref (diamond);
+
+        set_properties_from_pb_boxed_values (unserializer,
+                                             diamond,
+                                             pb_component->n_properties,
+                                             pb_component->properties);
 
         rig_pb_unserializer_register_object (unserializer,
                                              diamond, component_id);
