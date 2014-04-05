@@ -1690,14 +1690,21 @@ rig_undo_journal_insert (RigUndoJournal *journal,
 
   if (apply)
     {
-      UndoRedo *inverse;
+      //UndoRedo *inverse;
+
+      undo_redo_apply (journal, undo_redo);
 
       /* Purely for testing purposes we now redundantly apply the
        * operation followed by the inverse of the operation so we are
        * alway verifying our ability to invert operations correctly...
+       *
+       * XXX: This is disabled for now, because it causes problems in
+       * cases where we add + register new objects, then delete them
+       * and then add + register them again. Since objects are garbage
+       * collected lazily they won't have been unregistered before we
+       * try and re-register them and so we hit various assertions.
        */
-      undo_redo_apply (journal, undo_redo);
-
+#if 0
       /* XXX: Some operations can't be inverted until they have been
        * applied once. For example the UndoRedoPathAddRemove operation
        * will save the value of a path node when it is removed so the
@@ -1712,6 +1719,7 @@ rig_undo_journal_insert (RigUndoJournal *journal,
           undo_redo_apply (journal, undo_redo);
           undo_redo_free (inverse);
         }
+#endif
     }
 
   rut_list_insert (journal->undo_ops.prev, &undo_redo->list_node);
