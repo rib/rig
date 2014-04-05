@@ -349,9 +349,13 @@ apply_asset_input_with_entity (RigEngine *engine,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
           if (!geom)
             {
-              RigShape *shape = rig_shape_new (engine->ctx, TRUE, 0, 0);
+              int width, height;
+              RigShape *shape;
+              rig_asset_get_image_size (asset, &width, &height);
+              shape = rig_shape_new (engine->ctx, true, width, height);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, shape);
+              rut_object_unref (shape);
               geom = shape;
             }
 
@@ -454,32 +458,15 @@ apply_asset_input_with_entity (RigEngine *engine,
               RigAsset *texture_asset =
                 rig_material_get_color_source_asset (material);
               if (texture_asset)
-                {
-                  if (rig_asset_get_is_video (texture_asset))
-                    {
-                      /* XXX: until we start decoding the
-                       * video we don't know the size of the
-                       * video so for now we just assume a
-                       * default size. Maybe we should just
-                       * decode a single frame to find out the
-                       * size? */
-                      tex_width = 640;
-                      tex_height = 480;
-                    }
-                  else
-                    {
-                      CoglTexture *texture =
-                        rig_asset_get_texture (texture_asset);
-                      tex_width = cogl_texture_get_width (texture);
-                      tex_height = cogl_texture_get_height (texture);
-                    }
-                }
+                rig_asset_get_image_size (texture_asset,
+                                          &tex_width, &tex_height);
             }
 
-          shape = rig_shape_new (engine->ctx, TRUE, tex_width,
-                                 tex_height);
+          shape = rig_shape_new (engine->ctx, true,
+                                 tex_width, tex_height);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, shape);
+          rut_object_unref (shape);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }

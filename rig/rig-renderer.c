@@ -1459,15 +1459,12 @@ image_source_ready_cb (RigImageSource *source,
 
   rig_image_source_get_natural_size (source, &width, &height);
 
-  /* TODO: make shape/diamond/pointalism image-size-dependant */
   if (rut_object_is (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT))
     {
       RutImageSizeDependantVTable *dependant =
         rut_object_get_vtable (geometry, RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT);
       dependant->set_image_size (geometry, width, height);
     }
-  else if (rut_object_get_type (geometry) == &rig_shape_type)
-    rig_shape_set_texture_size (geometry, width, height);
 }
 
 static CoglPipeline *

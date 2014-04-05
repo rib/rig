@@ -59,13 +59,13 @@ enum {
   RIG_SHAPE_PROP_SHAPED,
   RIG_SHAPE_PROP_WIDTH,
   RIG_SHAPE_PROP_HEIGHT,
+  RIG_SHAPE_PROP_SHAPE_ASSET,
   RIG_SHAPE_N_PROPS
 };
 
 struct _RigShape
 {
   RutObjectBase _base;
-
 
   RutComponentableProps component;
 
@@ -76,6 +76,8 @@ struct _RigShape
   bool shaped;
 
   RigShapeModel *model;
+
+  RigAsset *shape_asset;
 
   RutList reshaped_cb_list;
 
@@ -129,11 +131,6 @@ void
 rig_shape_set_height (RutObject *obj, float height);
 
 void
-rig_shape_set_texture_size (RigShape *shape,
-                            int width,
-                            int height);
-
-void
 rig_shape_set_size (RutObject *self,
                     float width,
                     float height);
@@ -142,5 +139,11 @@ void
 rig_shape_get_size (RutObject *self,
                     float *width,
                     float *height);
+
+void
+rig_shape_set_shape_mask (RutObject *object, RigAsset *asset);
+
+RigAsset *
+rig_shape_get_shape_mask (RutObject *object);
 
 #endif /* __RIG_SHAPE_H__ */

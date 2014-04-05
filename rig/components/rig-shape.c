@@ -61,6 +61,16 @@ static RutPropertySpec _rig_shape_prop_specs[] = {
     .setter.float_type = rig_shape_set_height,
     .flags = RUT_PROPERTY_FLAG_READWRITE,
   },
+  {
+    .name = "shape_mask",
+    .nick = "Shape Mask",
+    .type = RUT_PROPERTY_TYPE_ASSET,
+    .validation = { .asset.type = RIG_ASSET_TYPE_ALPHA_MASK },
+    .getter.asset_type = rig_shape_get_shape_mask,
+    .setter.asset_type = rig_shape_set_shape_mask,
+    .flags = RUT_PROPERTY_FLAG_READWRITE,
+    .animatable = FALSE
+  },
 
   { NULL }
 };
@@ -198,8 +208,6 @@ shape_model_new (RutContext *ctx,
   float half_geom_size_x;
   float half_geom_size_y;
 
-
-
   if (shaped)
     {
       /* In this case we are using a shape mask texture which is has a
@@ -329,6 +337,9 @@ _rig_shape_free (void *object)
   if (shape->model)
     rut_object_unref (shape->model);
 
+  if (shape->shape_asset)
+    rut_object_unref (shape->shape_asset);
+
   rut_introspectable_destroy (shape);
 
   rut_closure_list_disconnect_all (&shape->reshaped_cb_list);
@@ -369,7 +380,6 @@ _rig_shape_init_type (void)
     .get_mesh = rig_shape_get_pick_mesh
   };
 
-
   static RutSizableVTable sizable_vtable = {
       rig_shape_set_size,
       rig_shape_get_size,
@@ -404,7 +414,6 @@ _rig_shape_init_type (void)
                       0, /* no implied properties */
                       &sizable_vtable);
 
-
 #undef TYPE
 }
 
@@ -416,8 +425,6 @@ rig_shape_new (RutContext *ctx,
 {
   RigShape *shape =
     rut_object_alloc0 (RigShape, &rig_shape_type, _rig_shape_init_type);
-
-
 
   shape->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
@@ -529,20 +536,6 @@ rig_shape_add_reshaped_callback (RigShape *shape,
 }
 
 void
-rig_shape_set_texture_size (RigShape *shape,
-                            int width,
-                            int height)
-{
-  if (shape->width == width &&
-      shape->height == height)
-    return;
-
-  shape->width = width;
-  shape->height = height;
-
-}
-
-void
 rig_shape_set_size (RutObject *self,
                     float width,
                     float height)
@@ -604,4 +597,35 @@ rig_shape_set_height (RutObject *obj, float height)
   rut_closure_list_invoke (&shape->reshaped_cb_list,
                            RigShapeReShapedCallback,
                            shape);
+}
+
+void
+rig_shape_set_shape_mask (RutObject *object, RigAsset *asset)
+{
+  RigShape *shape = object;
+
+  if (shape->shape_asset == asset)
+    return;
+
+  if (shape->shape_asset)
+    {
+      rut_object_unref (shape->shape_asset);
+      shape->shape_asset = NULL;
+    }
+
+  shape->shape_asset = asset;
+
+  if (asset)
+    rut_object_ref (asset);
+
+  if (shape->component.entity)
+    rig_entity_notify_changed (shape->component.entity);
+}
+
+RigAsset *
+rig_shape_get_shape_mask (RutObject *object)
+{
+  RigShape *shape = object;
+
+  return shape->shape_asset;
 }

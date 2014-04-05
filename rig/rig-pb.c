@@ -2292,29 +2292,8 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
             if (material)
               asset = rig_material_get_color_source_asset (material);
 
-            if (asset)
-              {
-                if (rig_asset_get_is_video (asset))
-                  {
-                    width = 640;
-                    height = 480;
-                  }
-                else
-                  {
-                    texture = rig_asset_get_texture (asset);
-                    if (texture)
-                      {
-                        width = cogl_texture_get_width (texture);
-                        height = cogl_texture_get_height (texture);
-                      }
-                    else
-                      goto ERROR_SHAPE;
-                  }
-              }
-            else
-              goto ERROR_SHAPE;
+            rig_asset_get_image_size (asset, &width, &height);
           }
-
 
         shape = rig_shape_new (unserializer->engine->ctx,
                                shaped,
@@ -2331,16 +2310,6 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         rig_pb_unserializer_register_object (unserializer,
                                              shape, component_id);
 
-ERROR_SHAPE:
-        {
-          if (!shape)
-            {
-              rig_pb_unserializer_collect_error (unserializer,
-                                                 "Can't add shape "
-                                                 "component without "
-                                                 "an image source");
-            }
-        }
         return shape;
       }
     case RIG__ENTITY__COMPONENT__TYPE__NINE_SLICE:
