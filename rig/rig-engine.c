@@ -1260,11 +1260,16 @@ rig_engine_get_object_debug_name (RutObject *object)
       RutComponentableProps *component_props =
         rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
       RigEntity *entity = component_props->entity;
-      const char *entity_label;
+
       if (entity)
-        entity_label = entity ? rig_entity_get_label (entity) : "";
-      return g_strdup_printf ("%p(label=\"%s\"::%s)", entity, entity_label,
-                              rut_object_get_type_name (object));
+        {
+          const char *entity_label = entity ? rig_entity_get_label (entity) : "";
+          return g_strdup_printf ("%p(label=\"%s\"::%s)", object, entity_label,
+                                  rut_object_get_type_name (object));
+        }
+      else
+        return g_strdup_printf ("%p(<orphaned>::%s)", object,
+                                rut_object_get_type_name (object));
     }
   else
     return g_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));
