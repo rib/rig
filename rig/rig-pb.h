@@ -68,6 +68,8 @@ struct _RigPBSerializer
   bool only_asset_ids;
   GList *required_assets;
 
+  bool skip_image_data;
+
   int n_pb_entities;
   GList *pb_entities;
 
@@ -172,6 +174,10 @@ void
 rig_pb_serializer_set_object_to_id_callback (RigPBSerializer *serializer,
                                      RigPBSerializerObjecToIDCallback callback,
                                      void *user_data);
+
+void
+rig_pb_serializer_set_skip_image_data (RigPBSerializer *serializer,
+                                       bool skip);
 
 uint64_t
 rig_pb_serializer_register_object (RigPBSerializer *serializer,

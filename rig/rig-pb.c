@@ -1067,6 +1067,13 @@ rig_pb_serializer_set_object_to_id_callback (RigPBSerializer *serializer,
 }
 
 void
+rig_pb_serializer_set_skip_image_data (RigPBSerializer *serializer,
+                                       bool skip)
+{
+  serializer->skip_image_data = skip;
+}
+
+void
 rig_pb_serializer_destroy (RigPBSerializer *serializer)
 {
   if (serializer->required_assets)
@@ -1275,17 +1282,10 @@ serialize_mesh_asset (RigPBSerializer *serializer, RigAsset *asset)
 static Rig__Asset *
 serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
 {
-#ifdef __ANDROID__
-  g_warn_if_reached ();
-  return NULL;
-#else
   RutContext *ctx = rig_asset_get_context (asset);
-  const char *path = rig_asset_get_path (asset);
-  char *full_path;
   Rig__Asset *pb_asset;
   GError *error = NULL;
-  char *contents;
-  size_t len;
+  RigAssetType type;
 
   if (serializer->only_asset_ids)
     {
@@ -1297,43 +1297,73 @@ serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
       return pb_asset;
     }
 
-  /* XXX: This should be renamed to _TYPE_MESH */
-  if (rig_asset_get_type (asset) == RIG_ASSET_TYPE_MESH)
-    return serialize_mesh_asset (serializer, asset);
+  type = rig_asset_get_type (asset);
 
-  full_path = g_build_filename (ctx->assets_location, path, NULL);
-  if (!g_file_get_contents (full_path,
-                            &contents,
-                            &len,
-                            &error))
+  switch (type)
     {
-      g_warning ("Failed to read contents of asset: %s", error->message);
-      g_error_free (error);
-      g_free (full_path);
+    case RIG_ASSET_TYPE_MESH:
+      return serialize_mesh_asset (serializer, asset);
+    case RIG_ASSET_TYPE_TEXTURE:
+    case RIG_ASSET_TYPE_NORMAL_MAP:
+    case RIG_ASSET_TYPE_ALPHA_MASK:
+      pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+      pb_asset->has_id = true;
+      pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
+
+      pb_asset->has_type = true;
+      pb_asset->type = rig_asset_get_type (asset);
+
+      pb_asset->has_is_video = true;
+      pb_asset->is_video = rig_asset_get_is_video (asset);
+
+      pb_asset->has_width = true;
+      pb_asset->has_height = true;
+      rig_asset_get_image_size (asset, &pb_asset->width, &pb_asset->height);
+
+      if (!serializer->skip_image_data)
+        {
+          const char *path = rig_asset_get_path (asset);
+          char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+          char *contents;
+          size_t len;
+
+          if (!g_file_get_contents (full_path,
+                                    &contents,
+                                    &len,
+                                    &error))
+            {
+              g_warning ("Failed to read contents of asset: %s",
+                         error->message);
+              g_error_free (error);
+              g_free (full_path);
+              return NULL;
+            }
+
+          g_free (full_path);
+
+          pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+          pb_asset->has_id = true;
+          pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
+
+          pb_asset->path = (char *)path;
+
+          pb_asset->has_data = true;
+          pb_asset->data.data = (uint8_t *)contents;
+          pb_asset->data.len = len;
+        }
+      break;
+    case RIG_ASSET_TYPE_BUILTIN:
+      /* XXX: We should be aiming to remove the "builtin" asset type
+       * and instead making the editor handle builtins specially
+       * in how it lists search results.
+       */
+      g_warning ("Can't serialize \"builtin\" asset type");
       return NULL;
     }
 
-  g_free (full_path);
-
-  pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
-
-  pb_asset->has_id = true;
-  pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
-
-  pb_asset->path = (char *)path;
-
-  pb_asset->has_type = TRUE;
-  pb_asset->type = rig_asset_get_type (asset);
-
-  pb_asset->has_is_video = true;
-  pb_asset->is_video = rig_asset_get_is_video (asset);
-
-  pb_asset->has_data = true;
-  pb_asset->data.data = (uint8_t *)contents;
-  pb_asset->data.len = len;
-
   return pb_asset;
-#endif
 }
 
 static void

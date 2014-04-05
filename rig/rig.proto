@@ -77,6 +77,11 @@ message Asset
   optional bytes data=4;
   optional bool is_video=5;
 
+  //Sometimes we skip serializing the real data of an asset
+  //but still need to know some meta data about it...
+  optional int32 width=7;
+  optional int32 height=8;
+
   optional Mesh mesh=6;
 }
 
