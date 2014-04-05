@@ -389,13 +389,21 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   slave->ui_update_closure = NULL;
 
-  slave->frontend = rig_frontend_new (shell,
-                                      RIG_FRONTEND_ID_SLAVE,
-                                      NULL,
-                                      true); /* start in play mode */
+  slave->frontend = rig_frontend_new (shell, RIG_FRONTEND_ID_SLAVE,
+                                      true /* start in play mode */);
 
   engine = slave->frontend->engine;
   slave->engine = engine;
+
+  /* Finish the slave specific engine setup...
+   */
+  engine->main_camera_view = rig_camera_view_new (engine);
+  rut_stack_add (engine->top_stack, engine->main_camera_view);
+
+  /* Initialize the current mode */
+  rig_engine_set_play_mode_enabled (engine, true /* start in play mode */);
+
+  rig_frontend_post_init_engine (slave->frontend, NULL /* no ui to load */);
 
   _rig_slave_object_id_magazine = engine->object_id_magazine;
 

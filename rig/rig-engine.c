@@ -231,8 +231,8 @@ rig_engine_set_current_ui (RigEngine *engine,
   rut_shell_queue_redraw (engine->ctx->shell);
 }
 
-static void
-allocate (RigEngine *engine)
+void
+rig_engine_allocate (RigEngine *engine)
 {
   //engine->main_width = engine->window_width - engine->left_bar_width - engine->right_bar_width;
   //engine->main_height = engine->window_height - engine->top_bar_height - engine->bottom_bar_height;
@@ -276,120 +276,7 @@ rig_engine_resize (RigEngine *engine,
   rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_WIDTH]);
   rut_property_dirty (&engine->ctx->property_ctx, &engine->properties[RIG_ENGINE_PROP_HEIGHT]);
 
-  allocate (engine);
-}
-
-static void
-engine_onscreen_resize (CoglOnscreen *onscreen,
-                        int width,
-                        int height,
-                        void *user_data)
-{
-  RigEngine *engine = user_data;
-
-  g_return_if_fail (engine->simulator == NULL);
-
-  rig_engine_resize (engine, width, height);
-}
-
-static void
-load_builtin_assets (RigEngine *engine)
-{
-
-  engine->nine_slice_builtin_asset = rig_asset_new_builtin (engine->ctx, "nine-slice.png");
-  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "nine-slice");
-  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geom");
-  rig_asset_add_inferred_tag (engine->nine_slice_builtin_asset, "geometry");
-
-  engine->diamond_builtin_asset = rig_asset_new_builtin (engine->ctx, "diamond.png");
-  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "diamond");
-  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "geom");
-  rig_asset_add_inferred_tag (engine->diamond_builtin_asset, "geometry");
-
-  engine->circle_builtin_asset = rig_asset_new_builtin (engine->ctx, "circle.png");
-  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "shape");
-  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "circle");
-  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "geom");
-  rig_asset_add_inferred_tag (engine->circle_builtin_asset, "geometry");
-
-  engine->pointalism_grid_builtin_asset = rig_asset_new_builtin (engine->ctx,
-                                            "pointalism.png");
-  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "grid");
-  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
-                              "pointalism");
-  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset, "geom");
-  rig_asset_add_inferred_tag (engine->pointalism_grid_builtin_asset,
-                              "geometry");
-
-  engine->text_builtin_asset = rig_asset_new_builtin (engine->ctx, "fonts.png");
-  rig_asset_add_inferred_tag (engine->text_builtin_asset, "text");
-  rig_asset_add_inferred_tag (engine->text_builtin_asset, "label");
-  rig_asset_add_inferred_tag (engine->text_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->text_builtin_asset, "geom");
-  rig_asset_add_inferred_tag (engine->text_builtin_asset, "geometry");
-
-  engine->hair_builtin_asset = rig_asset_new_builtin (engine->ctx, "hair.png");
-  rig_asset_add_inferred_tag (engine->hair_builtin_asset, "hair");
-  rig_asset_add_inferred_tag (engine->hair_builtin_asset, "builtin");
-
-  engine->button_input_builtin_asset = rig_asset_new_builtin (engine->ctx,
-                                                               "button.png");
-  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "button");
-  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "builtin");
-  rig_asset_add_inferred_tag (engine->button_input_builtin_asset, "input");
-}
-
-static void
-free_builtin_assets (RigEngine *engine)
-{
-  rut_object_unref (engine->nine_slice_builtin_asset);
-  rut_object_unref (engine->diamond_builtin_asset);
-  rut_object_unref (engine->circle_builtin_asset);
-  rut_object_unref (engine->pointalism_grid_builtin_asset);
-  rut_object_unref (engine->text_builtin_asset);
-  rut_object_unref (engine->hair_builtin_asset);
-  rut_object_unref (engine->button_input_builtin_asset);
-}
-
-static void
-create_debug_gradient (RigEngine *engine)
-{
-  CoglVertexP2C4 quad[] = {
-        { 0, 0, 0xff, 0x00, 0x00, 0xff },
-        { 0, 200, 0x00, 0xff, 0x00, 0xff },
-        { 200, 200, 0x00, 0x00, 0xff, 0xff },
-        { 200, 0, 0xff, 0xff, 0xff, 0xff }
-  };
-  CoglOffscreen *offscreen;
-  CoglPrimitive *prim =
-    cogl_primitive_new_p2c4 (engine->ctx->cogl_context,
-                             COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
-  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-  engine->gradient =
-    cogl_texture_2d_new_with_size (engine->ctx->cogl_context, 200, 200);
-
-  offscreen = cogl_offscreen_new_with_texture (engine->gradient);
-
-  cogl_framebuffer_orthographic (offscreen,
-                                 0, 0,
-                                 200,
-                                 200,
-                                 -1,
-                                 100);
-  cogl_framebuffer_clear4f (offscreen,
-                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
-                            0, 0, 0, 1);
-  cogl_primitive_draw (prim,
-                       offscreen,
-                       pipeline);
-
-  cogl_object_unref (prim);
-  cogl_object_unref (offscreen);
+  rig_engine_allocate (engine);
 }
 
 void
@@ -464,8 +351,8 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
       rig_controller_view_set_controller (engine->controller_view,
                                           NULL);
 
-      rig_editor_clear_search_results (engine);
-      rig_editor_free_result_input_closures (engine);
+      rig_editor_clear_search_results (engine->editor);
+      rig_editor_free_result_input_closures (engine->editor);
 
       if (engine->grid_prim)
         {
@@ -608,8 +495,6 @@ _rig_engine_free (void *object)
         {
           int i;
 
-          free_builtin_assets (engine);
-
           for (i = 0; i < G_N_ELEMENTS (engine->splits); i++)
             rut_object_unref (engine->splits[i]);
 
@@ -706,9 +591,8 @@ free_object_id (void *id)
 }
 #endif
 
-static void
-finish_ui_load (RigEngine *engine,
-                RigUI *ui)
+void
+finish_ui_load (RigEngine *engine, RigUI *ui)
 {
   if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
     rig_engine_set_edit_mode_ui (engine, ui);
@@ -771,17 +655,21 @@ rig_engine_load_file (RigEngine *engine,
     }
 }
 
+void
+rig_engine_load_empty_ui (RigEngine *engine)
+{
+  RigUI *ui = rig_ui_new (engine);
+  rig_ui_prepare (ui);
+  finish_ui_load (engine, ui);
+}
+
 static RigEngine *
 _rig_engine_new_full (RutShell *shell,
-                      const char *ui_filename,
                       RigFrontend *frontend,
-                      RigSimulator *simulator,
-                      bool play_mode)
+                      RigSimulator *simulator)
 {
   RigEngine *engine = rut_object_alloc0 (RigEngine, &rig_engine_type,
                                          _rig_engine_init_type);
-  CoglFramebuffer *fb;
-
 
   engine->shell = shell;
   engine->ctx = rut_shell_get_context (shell);
@@ -798,7 +686,6 @@ _rig_engine_new_full (RutShell *shell,
       engine->frontend_id = simulator->frontend_id;
       engine->simulator = simulator;
     }
-
 
   cogl_matrix_init_identity (&engine->identity);
 
@@ -840,11 +727,6 @@ _rig_engine_new_full (RutShell *shell,
 
   engine->queued_deletes = rut_queue_new ();
 
-  engine->assets_registry = g_hash_table_new_full (g_str_hash,
-                                                   g_str_equal,
-                                                   g_free,
-                                                   rut_object_unref);
-
   engine->device_width = DEVICE_WIDTH;
   engine->device_height = DEVICE_HEIGHT;
 
@@ -876,155 +758,21 @@ _rig_engine_new_full (RutShell *shell,
 
   _rig_code_init (engine);
 
-#ifdef RIG_EDITOR_ENABLED
-  if (frontend && engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
-    {
-      engine->objects_selection = _rig_objects_selection_new (engine);
-
-      rut_list_init (&engine->tool_changed_cb_list);
-
-      rig_editor_push_undo_subjournal (engine);
-
-      /* NB: in device mode we assume all inputs need to got to the
-       * simulator and we don't need a separate queue. */
-      engine->simulator_input_queue = rut_input_queue_new (engine->shell);
-
-      /* Create a color gradient texture that can be used for debugging
-       * shadow mapping.
-       *
-       * XXX: This should probably simply be #ifdef DEBUG code.
-       */
-      create_debug_gradient (engine);
-
-      load_builtin_assets (engine);
-
-      rig_editor_create_ui (engine);
-    }
-  else
-#endif
-    {
-      engine->main_camera_view = rig_camera_view_new (engine);
-      rut_stack_add (engine->top_stack, engine->main_camera_view);
-    }
-
-  /* Initialize the current mode */
-  rig_engine_set_play_mode_enabled (engine, play_mode);
-
-  if (frontend)
-    {
-      engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
-
-      engine->circle_node_attribute =
-        rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
-
-      _rig_init_image_source_wrappers_cache (engine);
-
-      engine->renderer = rig_renderer_new (engine);
-      rig_renderer_init (engine);
-
-#ifndef __ANDROID__
-      if (ui_filename)
-        {
-          struct stat st;
-
-          stat (ui_filename, &st);
-          if (S_ISREG (st.st_mode))
-            rig_engine_load_file (engine, ui_filename);
-          else
-            {
-              RigUI *ui = rig_ui_new (engine);
-              rig_ui_prepare (ui);
-              finish_ui_load (engine, ui);
-            }
-        }
-#endif
-
-#ifdef RIG_EDITOR_ENABLED
-      if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
-        {
-          engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
-                                                1000, 700);
-          cogl_onscreen_set_resizable (engine->onscreen, TRUE);
-        }
-      else
-#endif
-        engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
-                                              engine->device_width / 2,
-                                              engine->device_height / 2);
-
-      cogl_onscreen_add_resize_callback (engine->onscreen,
-                                         engine_onscreen_resize,
-                                         engine,
-                                         NULL);
-
-      cogl_framebuffer_allocate (engine->onscreen, NULL);
-
-      fb = engine->onscreen;
-      engine->window_width = cogl_framebuffer_get_width (fb);
-      engine->window_height = cogl_framebuffer_get_height (fb);
-
-      /* FIXME: avoid poking into engine->frontend here... */
-      engine->frontend->has_resized = true;
-      engine->frontend->pending_width = engine->window_width;
-      engine->frontend->pending_height = engine->window_height;
-
-      rut_shell_add_onscreen (engine->shell, engine->onscreen);
-
-#ifdef USE_GTK
-        {
-          RigApplication *application = rig_application_new (engine);
-
-          gtk_init (NULL, NULL);
-
-          /* We need to register the application before showing the onscreen
-           * because we need to set the dbus paths before the window is
-           * mapped. FIXME: Eventually it might be nice to delay creating
-           * the windows until the ‘activate’ or ‘open’ signal is emitted so
-           * that we can support the single process properly. In that case
-           * we could let g_application_run handle the registration
-           * itself */
-          if (!g_application_register (G_APPLICATION (application),
-                                       NULL, /* cancellable */
-                                       NULL /* error */))
-            /* Another instance of the application is already running */
-            rut_shell_quit (shell);
-
-          rig_application_add_onscreen (application, engine->onscreen);
-        }
-#endif
-
-#ifdef __APPLE__
-      rig_osx_init (engine);
-#endif
-
-      rut_shell_set_title (engine->shell,
-                           engine->onscreen,
-                           "Rig " G_STRINGIFY (RIG_VERSION));
-
-      cogl_onscreen_show (engine->onscreen);
-
-#warning "FIXME: rely on simulator to handle allocate()"
-      allocate (engine);
-    }
-
   return engine;
 }
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
-                              RigSimulator *simulator,
-                              bool play_mode)
+                              RigSimulator *simulator)
 {
-  return _rig_engine_new_full (shell, NULL, NULL, simulator, play_mode);
+  return _rig_engine_new_full (shell, NULL, simulator);
 }
 
 RigEngine *
 rig_engine_new_for_frontend (RutShell *shell,
-                             RigFrontend *frontend,
-                             const char *ui_filename,
-                             bool play_mode)
+                             RigFrontend *frontend)
 {
-  return _rig_engine_new_full (shell, ui_filename, frontend, NULL, play_mode);
+  return _rig_engine_new_full (shell, frontend, NULL);
 }
 
 RutInputEventStatus
@@ -1129,24 +877,6 @@ add_light_cb (RutInputRegion *region,
   return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 }
 #endif
-
-void
-rig_register_asset (RigEngine *engine,
-                    RigAsset *asset)
-{
-  char *key = g_strdup (rig_asset_get_path (asset));
-
-  g_hash_table_insert (engine->assets_registry,
-                       key,
-                       rut_object_ref (asset));
-}
-
-RigAsset *
-rig_lookup_asset (RigEngine *engine,
-                  const char *path)
-{
-  return g_hash_table_lookup (engine->assets_registry, path);
-}
 
 RigAsset *
 rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)

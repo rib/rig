@@ -72,6 +72,8 @@ struct _RigEditor
   RigFrontend *frontend;
   RigEngine *engine;
 
+  GList *assets;
+
   char *ui_filename;
 
   /* The edit_to_play_object_map hash table lets us map an edit-mode
@@ -87,6 +89,26 @@ struct _RigEditor
   RigEngineOpCopyContext copy_op_ctx;
   RigEngineOpMapContext map_op_ctx;
   RigEngineOpApplyContext play_apply_op_ctx;
+
+  RutUIViewport *search_vp;
+  RutFold *search_results_fold;
+  RutBoxLayout *search_results_vbox;
+  RutFlowLayout *entity_results;
+  RutFlowLayout *controller_results;
+  RutFlowLayout *assets_geometry_results;
+  RutFlowLayout *assets_image_results;
+  RutFlowLayout *assets_video_results;
+  RutFlowLayout *assets_other_results;
+
+  RigAsset *text_builtin_asset;
+  RigAsset *circle_builtin_asset;
+  RigAsset *nine_slice_builtin_asset;
+  RigAsset *diamond_builtin_asset;
+  RigAsset *pointalism_grid_builtin_asset;
+  RigAsset *hair_builtin_asset;
+  RigAsset *button_input_builtin_asset;
+  GList *result_input_closures;
+  GList *asset_enumerators;
 };
 
 static void
@@ -283,14 +305,14 @@ typedef struct _ResultInputClosure
 } ResultInputClosure;
 
 void
-rig_editor_free_result_input_closures (RigEngine *engine)
+rig_editor_free_result_input_closures (RigEditor *editor)
 {
   GList *l;
 
-  for (l = engine->result_input_closures; l; l = l->next)
+  for (l = editor->result_input_closures; l; l = l->next)
     g_slice_free (ResultInputClosure, l->data);
-  g_list_free (engine->result_input_closures);
-  engine->result_input_closures = NULL;
+  g_list_free (editor->result_input_closures);
+  editor->result_input_closures = NULL;
 }
 
 static void
@@ -298,6 +320,7 @@ apply_asset_input_with_entity (RigEngine *engine,
                                RigAsset *asset,
                                RigEntity *entity)
 {
+  RigEditor *editor = engine->editor;
   RigUndoJournal *sub_journal;
   RigAssetType type = rig_asset_get_type (asset);
   RigMaterial *material;
@@ -319,6 +342,7 @@ apply_asset_input_with_entity (RigEngine *engine,
               material = rig_material_new (engine->ctx, asset);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, material);
+              rut_object_unref (material);
             }
 
           if (type == RIG_ASSET_TYPE_TEXTURE)
@@ -359,6 +383,7 @@ apply_asset_input_with_entity (RigEngine *engine,
               material = rig_material_new (engine->ctx, asset);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, material);
+              rut_object_unref (material);
             }
 
           geom = rig_entity_get_component (entity,
@@ -377,6 +402,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           model = rig_model_new_from_asset (engine->ctx, asset);
           rig_undo_journal_add_component (engine->undo_journal, entity, model);
+          rut_object_unref (model);
 
           x_range = model->max_x - model->min_x;
           y_range = model->max_y - model->min_y;
@@ -395,7 +421,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           break;
         }
     case RIG_ASSET_TYPE_BUILTIN:
-      if (asset == engine->text_builtin_asset)
+      if (asset == editor->text_builtin_asset)
         {
           RutText *text;
           CoglColor color;
@@ -419,10 +445,11 @@ apply_asset_input_with_entity (RigEngine *engine,
           cogl_color_init_from_4f (&color, 1, 1, 1, 1);
           rut_text_set_color (text, &color);
           rig_undo_journal_add_component (engine->undo_journal, entity, text);
+          rut_object_unref (text);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->circle_builtin_asset)
+      else if (asset == editor->circle_builtin_asset)
         {
           RigShape *shape;
           int tex_width = 200, tex_height = 200;
@@ -455,7 +482,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->diamond_builtin_asset)
+      else if (asset == editor->diamond_builtin_asset)
         {
           RigDiamond *diamond;
 
@@ -474,7 +501,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->nine_slice_builtin_asset)
+      else if (asset == editor->nine_slice_builtin_asset)
         {
           RigNineSlice *nine_slice;
           int tex_width = 200, tex_height = 200;
@@ -507,10 +534,11 @@ apply_asset_input_with_entity (RigEngine *engine,
                                            tex_width, tex_height);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, nine_slice);
+          rut_object_unref (nine_slice);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->pointalism_grid_builtin_asset)
+      else if (asset == editor->pointalism_grid_builtin_asset)
         {
           RigPointalismGrid *grid;
 
@@ -532,7 +560,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->hair_builtin_asset)
+      else if (asset == editor->hair_builtin_asset)
         {
           RigHair *hair = rig_entity_get_component (entity,
                                                     RUT_COMPONENT_TYPE_HAIR);
@@ -541,6 +569,7 @@ apply_asset_input_with_entity (RigEngine *engine,
 
           hair = rig_hair_new (engine->ctx);
           rig_undo_journal_add_component (engine->undo_journal, entity, hair);
+          rut_object_unref (hair);
           geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
 
@@ -554,11 +583,12 @@ apply_asset_input_with_entity (RigEngine *engine,
               rig_undo_journal_delete_component (engine->undo_journal, geom);
               rig_undo_journal_add_component (engine->undo_journal,
                                               entity, hair_geom);
+              rut_object_unref (hair_geom);
             }
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
-      else if (asset == engine->button_input_builtin_asset)
+      else if (asset == editor->button_input_builtin_asset)
         {
           RigButtonInput *button_input =
             rig_entity_get_component (entity, RUT_COMPONENT_TYPE_INPUT);
@@ -568,6 +598,7 @@ apply_asset_input_with_entity (RigEngine *engine,
           button_input = rig_button_input_new (engine->ctx);
           rig_undo_journal_add_component (engine->undo_journal,
                                           entity, button_input);
+          rut_object_unref (button_input);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
@@ -638,13 +669,14 @@ result_input_cb (RutInputRegion *region,
 
   return status;
 }
+
 void
-rig_editor_clear_search_results (RigEngine *engine)
+rig_editor_clear_search_results (RigEditor *editor)
 {
-  if (engine->search_results_vbox)
+  if (editor->search_results_vbox)
     {
-      rut_fold_set_child (engine->search_results_fold, NULL);
-      rig_editor_free_result_input_closures (engine);
+      rut_fold_set_child (editor->search_results_fold, NULL);
+      rig_editor_free_result_input_closures (editor);
 
       /* NB: We don't maintain any additional references on asset
        * result widgets beyond the references for them being in the
@@ -652,14 +684,14 @@ rig_editor_clear_search_results (RigEngine *engine)
        * everything underneath...
        */
 
-      engine->search_results_vbox = NULL;
+      editor->search_results_vbox = NULL;
 
-      engine->entity_results = NULL;
-      engine->controller_results = NULL;
-      engine->assets_geometry_results = NULL;
-      engine->assets_image_results = NULL;
-      engine->assets_video_results = NULL;
-      engine->assets_other_results = NULL;
+      editor->entity_results = NULL;
+      editor->controller_results = NULL;
+      editor->assets_geometry_results = NULL;
+      editor->assets_image_results = NULL;
+      editor->assets_video_results = NULL;
+      editor->assets_other_results = NULL;
     }
 }
 
@@ -705,6 +737,7 @@ static void
 add_search_result (RigEngine *engine,
                    RutObject *result)
 {
+  RigEditor *editor = engine->editor;
   ResultInputClosure *closure;
   RutStack *stack;
   RutBin *bin;
@@ -811,89 +844,89 @@ add_search_result (RigEngine *engine,
 
       if (rig_asset_has_tag (asset, "geometry"))
         {
-          if (!engine->assets_geometry_results)
+          if (!editor->assets_geometry_results)
             {
-              engine->assets_geometry_results =
+              editor->assets_geometry_results =
                 add_results_flow (engine->ctx,
                                   "Geometry",
-                                  engine->search_results_vbox);
+                                  editor->search_results_vbox);
             }
 
-          rut_flow_layout_add (engine->assets_geometry_results, bin);
+          rut_flow_layout_add (editor->assets_geometry_results, bin);
           rut_object_unref (bin);
         }
       else if (rig_asset_has_tag (asset, "image"))
         {
-          if (!engine->assets_image_results)
+          if (!editor->assets_image_results)
             {
-              engine->assets_image_results =
+              editor->assets_image_results =
                 add_results_flow (engine->ctx,
                                   "Images",
-                                  engine->search_results_vbox);
+                                  editor->search_results_vbox);
             }
 
-          rut_flow_layout_add (engine->assets_image_results, bin);
+          rut_flow_layout_add (editor->assets_image_results, bin);
           rut_object_unref (bin);
         }
       else if (rig_asset_has_tag (asset, "video"))
         {
-          if (!engine->assets_video_results)
+          if (!editor->assets_video_results)
             {
-              engine->assets_video_results =
+              editor->assets_video_results =
                 add_results_flow (engine->ctx,
                                   "Video",
-                                  engine->search_results_vbox);
+                                  editor->search_results_vbox);
             }
 
-          rut_flow_layout_add (engine->assets_video_results, bin);
+          rut_flow_layout_add (editor->assets_video_results, bin);
           rut_object_unref (bin);
         }
       else
         {
-          if (!engine->assets_other_results)
+          if (!editor->assets_other_results)
             {
-              engine->assets_other_results =
+              editor->assets_other_results =
                 add_results_flow (engine->ctx,
                                   "Other",
-                                  engine->search_results_vbox);
+                                  editor->search_results_vbox);
             }
 
-          rut_flow_layout_add (engine->assets_other_results, bin);
+          rut_flow_layout_add (editor->assets_other_results, bin);
           rut_object_unref (bin);
         }
     }
   else if (rut_object_get_type (result) == &rig_entity_type)
     {
-      if (!engine->entity_results)
+      if (!editor->entity_results)
         {
-          engine->entity_results =
+          editor->entity_results =
             add_results_flow (engine->ctx,
                               "Entity",
-                              engine->search_results_vbox);
+                              editor->search_results_vbox);
         }
 
-      rut_flow_layout_add (engine->entity_results, bin);
+      rut_flow_layout_add (editor->entity_results, bin);
       rut_object_unref (bin);
     }
   else if (rut_object_get_type (result) == &rig_controller_type)
     {
-      if (!engine->controller_results)
+      if (!editor->controller_results)
         {
-          engine->controller_results =
+          editor->controller_results =
             add_results_flow (engine->ctx,
                               "Controllers",
-                              engine->search_results_vbox);
+                              editor->search_results_vbox);
         }
 
-      rut_flow_layout_add (engine->controller_results, bin);
+      rut_flow_layout_add (editor->controller_results, bin);
       rut_object_unref (bin);
     }
 
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
-  engine->result_input_closures = g_list_prepend (engine->result_input_closures,
-                                               closure);
+  editor->result_input_closures = g_list_prepend (editor->result_input_closures,
+                                                  closure);
 }
 
 typedef struct _SearchState
@@ -1018,6 +1051,7 @@ asset_matches_search (RigEngine *engine,
 static bool
 rig_search_with_text (RigEngine *engine, const char *user_search)
 {
+  RigEditor *editor = engine->editor;
   GList *l;
   int i;
   CoglBool found = FALSE;
@@ -1030,15 +1064,15 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
     search = NULL;
 #warning "FIXME: handle non-ascii searches!"
 
-  rig_editor_clear_search_results (engine);
+  rig_editor_clear_search_results (editor);
 
-  engine->search_results_vbox =
+  editor->search_results_vbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
-  rut_fold_set_child (engine->search_results_fold,
-                      engine->search_results_vbox);
-  rut_object_unref (engine->search_results_vbox);
+  rut_fold_set_child (editor->search_results_fold,
+                      editor->search_results_vbox);
+  rut_object_unref (editor->search_results_vbox);
 
-  for (l = engine->edit_mode_ui->assets, i= 0; l; l = l->next, i++)
+  for (l = editor->assets, i= 0; l; l = l->next, i++)
     {
       RigAsset *asset = l->data;
 
@@ -1109,13 +1143,14 @@ asset_search_update_cb (RutText *text,
 static void
 add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 {
+  RigEditor *editor = engine->editor;
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *l;
   RigAsset *asset = NULL;
 
   /* Avoid loading duplicate assets... */
-  for (l = engine->edit_mode_ui->assets; l; l = l->next)
+  for (l = editor->assets; l; l = l->next)
     {
       RigAsset *existing = l->data;
 
@@ -1125,8 +1160,8 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 
   asset = rig_load_asset (engine, info, asset_file);
   if (asset)
-    engine->edit_mode_ui->assets =
-      g_list_prepend (engine->edit_mode_ui->assets, asset);
+    editor->assets =
+      g_list_prepend (editor->assets, asset);
 }
 
 #if 0
@@ -1320,46 +1355,40 @@ enumerate_dir_for_assets (RigEngine *engine,
 #endif /* USE_ASYNC_IO */
 
 static void
-rig_load_asset_list (RigEngine *engine)
+load_asset_list (RigEditor *editor)
 {
+  RigEngine *engine = editor->engine;
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
 
   enumerate_dir_for_assets (engine, assets_dir);
 
-  rut_object_ref (engine->nine_slice_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->nine_slice_builtin_asset);
+  rut_object_ref (editor->nine_slice_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->nine_slice_builtin_asset);
 
-  rut_object_ref (engine->diamond_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->diamond_builtin_asset);
+  rut_object_ref (editor->diamond_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->diamond_builtin_asset);
 
-  rut_object_ref (engine->circle_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->circle_builtin_asset);
+  rut_object_ref (editor->circle_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->circle_builtin_asset);
 
-  rut_object_ref (engine->pointalism_grid_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->pointalism_grid_builtin_asset);
+  rut_object_ref (editor->pointalism_grid_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->pointalism_grid_builtin_asset);
 
-  rut_object_ref (engine->text_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->text_builtin_asset);
+  rut_object_ref (editor->text_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->text_builtin_asset);
 
-  rut_object_ref (engine->hair_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->hair_builtin_asset);
+  rut_object_ref (editor->hair_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->hair_builtin_asset);
 
-  rut_object_ref (engine->button_input_builtin_asset);
-  engine->edit_mode_ui->assets =
-    g_list_prepend (engine->edit_mode_ui->assets,
-                    engine->button_input_builtin_asset);
+  rut_object_ref (editor->button_input_builtin_asset);
+  editor->assets = g_list_prepend (editor->assets,
+                                   editor->button_input_builtin_asset);
 
   g_object_unref (assets_dir);
 
@@ -1554,7 +1583,7 @@ on_ui_load_cb (void *user_data)
                                               100,
                                               100);
 
-  rig_load_asset_list (engine);
+  load_asset_list (editor);
 
   add_light_handle (engine, ui);
   add_play_camera_handle (engine, ui);
@@ -2000,6 +2029,7 @@ create_asset_selectors (RigEngine *engine,
 static void
 create_assets_view (RigEngine *engine)
 {
+  RigEditor *editor = engine->editor;
   RutBoxLayout *vbox =
     rut_box_layout_new (engine->ctx, RUT_BOX_LAYOUT_PACKING_TOP_TO_BOTTOM);
   RutStack *search_stack = rut_stack_new (engine->ctx, 0, 0);
@@ -2060,21 +2090,20 @@ create_assets_view (RigEngine *engine)
   rut_stack_add (stack, gradient);
   rut_object_unref (gradient);
 
+  editor->search_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
+  rut_stack_add (stack, editor->search_vp);
 
-  engine->search_vp = rut_ui_viewport_new (engine->ctx, 0, 0);
-  rut_stack_add (stack, engine->search_vp);
-
-  engine->search_results_fold = rut_fold_new (engine->ctx, "Results");
+  editor->search_results_fold = rut_fold_new (engine->ctx, "Results");
 
   rut_color_init_from_uint32 (&color, 0x79b8b0ff);
-  rut_fold_set_label_color (engine->search_results_fold, &color);
+  rut_fold_set_label_color (editor->search_results_fold, &color);
 
-  rut_fold_set_font_name (engine->search_results_fold, "Bold Sans 20px");
+  rut_fold_set_font_name (editor->search_results_fold, "Bold Sans 20px");
 
-  rut_ui_viewport_add (engine->search_vp, engine->search_results_fold);
-  rut_ui_viewport_set_sync_widget (engine->search_vp, engine->search_results_fold);
+  rut_ui_viewport_add (editor->search_vp, editor->search_results_fold);
+  rut_ui_viewport_set_sync_widget (editor->search_vp, editor->search_results_fold);
 
-  rut_ui_viewport_set_x_pannable (engine->search_vp, FALSE);
+  rut_ui_viewport_set_x_pannable (editor->search_vp, FALSE);
 
   rut_box_layout_add (engine->asset_panel_hbox, FALSE, vbox);
   rut_object_unref (vbox);
@@ -2220,9 +2249,11 @@ load_transparency_grid (RutContext *ctx)
   return ret;
 }
 
-void
-rig_editor_create_ui (RigEngine *engine)
+static void
+create_ui (RigEditor *editor)
 {
+  RigEngine *engine = editor->engine;
+
   engine->properties_hbox = rut_box_layout_new (engine->ctx,
                                                 RUT_BOX_LAYOUT_PACKING_LEFT_TO_RIGHT);
 
@@ -2485,6 +2516,8 @@ _rig_editor_free (RutObject *object)
 {
   RigEditor *editor = object;
 
+  rig_editor_free_builtin_assets (editor);
+
   rig_engine_op_apply_context_destroy (&editor->apply_op_ctx);
   rig_engine_op_copy_context_destroy (&editor->copy_op_ctx);
   rig_engine_op_map_context_destroy (&editor->map_op_ctx);
@@ -2508,6 +2541,136 @@ static void
 _rig_editor_init_type (void)
 {
   rut_type_init (&rig_editor_type, "RigEditor", _rig_editor_free);
+}
+
+static void
+create_debug_gradient (RigEngine *engine)
+{
+  CoglVertexP2C4 quad[] = {
+        { 0, 0, 0xff, 0x00, 0x00, 0xff },
+        { 0, 200, 0x00, 0xff, 0x00, 0xff },
+        { 200, 200, 0x00, 0x00, 0xff, 0xff },
+        { 200, 0, 0xff, 0xff, 0xff, 0xff }
+  };
+  CoglOffscreen *offscreen;
+  CoglPrimitive *prim =
+    cogl_primitive_new_p2c4 (engine->ctx->cogl_context,
+                             COGL_VERTICES_MODE_TRIANGLE_FAN, 4, quad);
+  CoglPipeline *pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+  engine->gradient =
+    cogl_texture_2d_new_with_size (engine->ctx->cogl_context, 200, 200);
+
+  offscreen = cogl_offscreen_new_with_texture (engine->gradient);
+
+  cogl_framebuffer_orthographic (offscreen,
+                                 0, 0,
+                                 200,
+                                 200,
+                                 -1,
+                                 100);
+  cogl_framebuffer_clear4f (offscreen,
+                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
+                            0, 0, 0, 1);
+  cogl_primitive_draw (prim,
+                       offscreen,
+                       pipeline);
+
+  cogl_object_unref (prim);
+  cogl_object_unref (offscreen);
+}
+
+static void
+load_builtin_assets (RigEditor *editor)
+{
+  editor->nine_slice_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "nine-slice.png");
+  rig_asset_add_inferred_tag (editor->nine_slice_builtin_asset, "nine-slice");
+  rig_asset_add_inferred_tag (editor->nine_slice_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->nine_slice_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (editor->nine_slice_builtin_asset, "geometry");
+
+  editor->diamond_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "diamond.png");
+  rig_asset_add_inferred_tag (editor->diamond_builtin_asset, "diamond");
+  rig_asset_add_inferred_tag (editor->diamond_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->diamond_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (editor->diamond_builtin_asset, "geometry");
+
+  editor->circle_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "circle.png");
+  rig_asset_add_inferred_tag (editor->circle_builtin_asset, "shape");
+  rig_asset_add_inferred_tag (editor->circle_builtin_asset, "circle");
+  rig_asset_add_inferred_tag (editor->circle_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->circle_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (editor->circle_builtin_asset, "geometry");
+
+  editor->pointalism_grid_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "pointalism.png");
+  rig_asset_add_inferred_tag (editor->pointalism_grid_builtin_asset, "grid");
+  rig_asset_add_inferred_tag (editor->pointalism_grid_builtin_asset,
+                              "pointalism");
+  rig_asset_add_inferred_tag (editor->pointalism_grid_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->pointalism_grid_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (editor->pointalism_grid_builtin_asset, "geometry");
+
+  editor->text_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "fonts.png");
+  rig_asset_add_inferred_tag (editor->text_builtin_asset, "text");
+  rig_asset_add_inferred_tag (editor->text_builtin_asset, "label");
+  rig_asset_add_inferred_tag (editor->text_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->text_builtin_asset, "geom");
+  rig_asset_add_inferred_tag (editor->text_builtin_asset, "geometry");
+
+  editor->hair_builtin_asset = rig_asset_new_builtin (editor->ctx, "hair.png");
+  rig_asset_add_inferred_tag (editor->hair_builtin_asset, "hair");
+  rig_asset_add_inferred_tag (editor->hair_builtin_asset, "builtin");
+
+  editor->button_input_builtin_asset =
+    rig_asset_new_builtin (editor->ctx, "button.png");
+  rig_asset_add_inferred_tag (editor->button_input_builtin_asset, "button");
+  rig_asset_add_inferred_tag (editor->button_input_builtin_asset, "builtin");
+  rig_asset_add_inferred_tag (editor->button_input_builtin_asset, "input");
+}
+
+void
+rig_editor_free_builtin_assets (RigEditor *editor)
+{
+  rut_object_unref (editor->nine_slice_builtin_asset);
+  rut_object_unref (editor->diamond_builtin_asset);
+  rut_object_unref (editor->circle_builtin_asset);
+  rut_object_unref (editor->pointalism_grid_builtin_asset);
+  rut_object_unref (editor->text_builtin_asset);
+  rut_object_unref (editor->hair_builtin_asset);
+  rut_object_unref (editor->button_input_builtin_asset);
+}
+
+/* TODO: move corresponding state into RigEditor */
+static void
+init_editor_engine (RigEditor *editor)
+{
+  RigEngine *engine = editor->engine;
+
+  engine->objects_selection = _rig_objects_selection_new (engine);
+
+  rut_list_init (&engine->tool_changed_cb_list);
+
+  rig_editor_push_undo_subjournal (engine);
+
+  /* NB: in device mode we assume all inputs need to got to the
+   * simulator and we don't need a separate queue. */
+  engine->simulator_input_queue = rut_input_queue_new (engine->shell);
+
+  /* Create a color gradient texture that can be used for debugging
+   * shadow mapping.
+   *
+   * XXX: This should probably simply be #ifdef DEBUG code.
+   */
+  create_debug_gradient (engine);
+
+  load_builtin_assets (editor);
+
+  create_ui (editor);
 }
 
 RigEditor *
@@ -2539,14 +2702,20 @@ rig_editor_new (const char *filename)
   /* TODO: RigFrontend should be a trait of the engine */
   editor->frontend = rig_frontend_new (editor->shell,
                                        RIG_FRONTEND_ID_EDITOR,
-                                       editor->ui_filename,
-                                       false); /* start in edit mode */
+                                       false /* start in edit mode */);
 
   engine = editor->frontend->engine;
   editor->engine = engine;
 
   /* TODO: RigEditor should be a trait of the engine */
   engine->editor = editor;
+
+  init_editor_engine (editor);
+
+  /* Initialize the current mode */
+  rig_engine_set_play_mode_enabled (engine, false /* start in edit mode */);
+
+  rig_frontend_post_init_engine (editor->frontend, editor->ui_filename);
 
   rig_frontend_set_simulator_connected_callback (editor->frontend,
                                                  simulator_connected_cb,

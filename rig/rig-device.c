@@ -197,11 +197,20 @@ rig_device_new (const char *filename)
 
   device->frontend = rig_frontend_new (device->shell,
                                        RIG_FRONTEND_ID_DEVICE,
-                                       device->ui_filename,
-                                       true); /* start in play mode */
+                                       true /* start in play mode */);
 
   engine = device->frontend->engine;
   device->engine = engine;
+
+  /* Finish the slave specific engine setup...
+   */
+  engine->main_camera_view = rig_camera_view_new (engine);
+  rut_stack_add (engine->top_stack, engine->main_camera_view);
+
+  /* Initialize the current mode */
+  rig_engine_set_play_mode_enabled (engine, true /* start in play mode */);
+
+  rig_frontend_post_init_engine (engine->frontend, device->ui_filename);
 
   rig_frontend_set_simulator_connected_callback (device->frontend,
                                                  simulator_connected_cb,

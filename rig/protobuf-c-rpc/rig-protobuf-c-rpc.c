@@ -1440,7 +1440,6 @@ handle_stream_fd_events (int fd,
                 {
 #warning "fixme: in the peer to peer case this is an error"
                   server_connection_close (conn);
-                  rut_object_unref (conn);
                   conn = NULL;
                 }
             }

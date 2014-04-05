@@ -48,20 +48,6 @@ main (int argc, char **argv)
   RigFrontendID frontend_id;
   int fd;
 
-#ifdef unix
-  sigset_t set;
-
-  sigemptyset (&set);
-  sigaddset (&set, SIGINT);
-
-  /* Block SIGINT from terminating the simulator, otherwise it's a
-   * pain to debug the frontend in gdb because when we press Ctrl-C to
-   * interrupt the frontend, gdb only blocks SIGINT from being passed
-   * to the frontend and so we end up terminating the simulator.
-   */
-  pthread_sigmask (SIG_BLOCK, &set, NULL);
-#endif
-
 #if 0
   GOptionContext *context = g_option_context_new (NULL);
 
@@ -109,6 +95,25 @@ main (int argc, char **argv)
     }
   else
     {
+#ifdef unix
+      /* Block SIGINT so that when we are interactively debugging the
+       * frontend process with gdb, we don't kill the simulator
+       * whenever we interupt the frontend process.
+       */
+      sigset_t set;
+
+      sigemptyset (&set);
+      sigaddset (&set, SIGINT);
+
+      /* Block SIGINT from terminating the simulator, otherwise it's a
+       * pain to debug the frontend in gdb because when we press Ctrl-C to
+       * interrupt the frontend, gdb only blocks SIGINT from being passed
+       * to the frontend and so we end up terminating the simulator.
+       */
+      pthread_sigmask (SIG_BLOCK, &set, NULL);
+#endif
+
+
       if (!ipc_fd_str)
         {
           g_error ("Failed to find ipc file descriptor via _RIG_IPC_FD "

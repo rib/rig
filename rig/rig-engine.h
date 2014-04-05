@@ -113,15 +113,19 @@ struct _RigEngine
 
   CoglMatrix identity;
 
+  /* TODO: Move to RigFrontend */
   CoglTexture *gradient;
 
+  /* TODO: Move to RigFrontend */
   GHashTable *image_source_wrappers;
 
+  /* TODO: Move to RigFrontend */
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
 
   CoglPipeline *default_pipeline;
 
+  /* TODO: Move to RigFrontend */
   CoglPipeline *dof_pipeline_template;
   CoglPipeline *dof_pipeline;
   CoglPipeline *dof_diamond_pipeline;
@@ -129,12 +133,16 @@ struct _RigEngine
 
   RutShell *shell;
   RutContext *ctx;
+
+  /* TODO: Move to RigFrontend */
   CoglOnscreen *onscreen;
 
   RigPBSerializer *ops_serializer;
   RutMemoryStack *frame_stack;
-  RutMemoryStack *sim_frame_stack;
   RutMagazine *object_id_magazine;
+
+  /* TODO: Move to RigFrontend */
+  RutMemoryStack *sim_frame_stack;
 
   RutInputQueue *simulator_input_queue;
 
@@ -207,28 +215,6 @@ struct _RigEngine
   float device_height;
 
   /* XXX: Move to RigEditor */
-  RutUIViewport *search_vp;
-  RutFold *search_results_fold;
-  RutBoxLayout *search_results_vbox;
-  RutFlowLayout *entity_results;
-  RutFlowLayout *controller_results;
-  RutFlowLayout *assets_geometry_results;
-  RutFlowLayout *assets_image_results;
-  RutFlowLayout *assets_video_results;
-  RutFlowLayout *assets_other_results;
-
-  /* XXX: Move to RigEditor */
-  RigAsset *text_builtin_asset;
-  RigAsset *circle_builtin_asset;
-  RigAsset *nine_slice_builtin_asset;
-  RigAsset *diamond_builtin_asset;
-  RigAsset *pointalism_grid_builtin_asset;
-  RigAsset *hair_builtin_asset;
-  RigAsset *button_input_builtin_asset;
-  GList *result_input_closures;
-  GList *asset_enumerators;
-
-  /* XXX: Move to RigEditor */
   RutUIViewport *tool_vp;
   RutUIViewport *properties_vp;
   RutBin *inspector_bin;
@@ -290,8 +276,6 @@ struct _RigEngine
   CoglSnippet *hair_vertex_snippet;
   CoglSnippet *hair_fin_snippet;
 
-  GHashTable *assets_registry;
-
   /* TODO: The frontend, editor and simulator should be accessed as
    * traits of the engine.
    */
@@ -345,18 +329,18 @@ extern RutType rig_objects_selection_type;
 
 RigEngine *
 rig_engine_new_for_frontend (RutShell *shell,
-                             RigFrontend *frontend,
-                             const char *ui_filename,
-                             bool play_mode);
+                             RigFrontend *frontend);
 
 RigEngine *
 rig_engine_new_for_simulator (RutShell *shell,
-                              RigSimulator *simulator,
-                              bool play_mode);
+                              RigSimulator *simulator);
 
 void
 rig_engine_load_file (RigEngine *engine,
                       const char *filename);
+
+void
+rig_engine_load_empty_ui (RigEngine *engine);
 
 RutInputEventStatus
 rig_engine_input_handler (RutInputEvent *event, void *user_data);
@@ -438,5 +422,8 @@ rig_engine_get_object_debug_name (RutObject *object);
 void
 rig_engine_set_apply_op_context (RigEngine *engine,
                                  RigEngineOpApplyContext *ctx);
+
+void
+rig_engine_allocate (RigEngine *engine);
 
 #endif /* _RIG_ENGINE_H_ */

@@ -38,10 +38,15 @@
 #include <fcntl.h>
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <rut.h>
 
 #include "rig-engine.h"
 #include "rig-frontend.h"
+#include "rig-renderer.h"
 #include "rig-pb.h"
 
 #include "rig.pb-c.h"
@@ -417,6 +422,7 @@ frontend_stop_service (RigFrontend *frontend)
   rut_object_unref (frontend->frontend_peer);
   frontend->frontend_peer = NULL;
   frontend->connected = false;
+  frontend->ui_update_pending = false;
 }
 
 static void
@@ -834,11 +840,119 @@ map_id_cb (uint64_t simulator_id, void *user_data)
   return (uint64_t)(uintptr_t)lookup_object (user_data, simulator_id);
 }
 
+static void
+on_onscreen_resize (CoglOnscreen *onscreen,
+                    int width,
+                    int height,
+                    void *user_data)
+{
+  RigEngine *engine = user_data;
+
+  g_return_if_fail (engine->simulator == NULL);
+
+  rig_engine_resize (engine, width, height);
+}
+
+/* TODO: move this state into RigFrontend */
+void
+rig_frontend_post_init_engine (RigFrontend *frontend,
+                               const char *ui_filename)
+{
+  RigEngine *engine = frontend->engine;
+  CoglFramebuffer *fb;
+
+  engine->default_pipeline = cogl_pipeline_new (engine->ctx->cogl_context);
+
+  engine->circle_node_attribute =
+    rut_create_circle_fan_p2 (engine->ctx, 20, &engine->circle_node_n_verts);
+
+  _rig_init_image_source_wrappers_cache (engine);
+
+  engine->renderer = rig_renderer_new (engine);
+  rig_renderer_init (engine);
+
+#ifndef __ANDROID__
+  if (ui_filename)
+    {
+      struct stat st;
+
+      stat (ui_filename, &st);
+      if (S_ISREG (st.st_mode))
+        rig_engine_load_file (engine, ui_filename);
+      else
+        rig_engine_load_empty_ui (engine);
+    }
+#endif
+
+#ifdef RIG_EDITOR_ENABLED
+  if (engine->frontend_id == RIG_FRONTEND_ID_EDITOR)
+    {
+      engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                            1000, 700);
+      cogl_onscreen_set_resizable (engine->onscreen, TRUE);
+    }
+  else
+#endif
+    engine->onscreen = cogl_onscreen_new (engine->ctx->cogl_context,
+                                          engine->device_width / 2,
+                                          engine->device_height / 2);
+
+  cogl_onscreen_add_resize_callback (engine->onscreen,
+                                     on_onscreen_resize,
+                                     engine,
+                                     NULL);
+
+  cogl_framebuffer_allocate (engine->onscreen, NULL);
+
+  fb = engine->onscreen;
+  engine->window_width = cogl_framebuffer_get_width (fb);
+  engine->window_height = cogl_framebuffer_get_height (fb);
+
+  /* FIXME: avoid poking into engine->frontend here... */
+  engine->frontend->has_resized = true;
+  engine->frontend->pending_width = engine->window_width;
+  engine->frontend->pending_height = engine->window_height;
+
+  rut_shell_add_onscreen (engine->shell, engine->onscreen);
+
+#ifdef USE_GTK
+    {
+      RigApplication *application = rig_application_new (engine);
+
+      gtk_init (NULL, NULL);
+
+      /* We need to register the application before showing the onscreen
+       * because we need to set the dbus paths before the window is
+       * mapped. FIXME: Eventually it might be nice to delay creating
+       * the windows until the ‘activate’ or ‘open’ signal is emitted so
+       * that we can support the single process properly. In that case
+       * we could let g_application_run handle the registration
+       * itself */
+      if (!g_application_register (G_APPLICATION (application),
+                                   NULL, /* cancellable */
+                                   NULL /* error */))
+        /* Another instance of the application is already running */
+        rut_shell_quit (shell);
+
+      rig_application_add_onscreen (application, engine->onscreen);
+    }
+#endif
+
+#ifdef __APPLE__
+  rig_osx_init (engine);
+#endif
+
+  rut_shell_set_title (engine->shell,
+                       engine->onscreen,
+                       "Rig " G_STRINGIFY (RIG_VERSION));
+
+  cogl_onscreen_show (engine->onscreen);
+
+  rig_engine_allocate (engine);
+}
+
 RigFrontend *
-rig_frontend_new (RutShell *shell,
-                  RigFrontendID id,
-                  const char *ui_filename,
-                  bool play_mode)
+rig_frontend_new (RutShell *shell, RigFrontendID id, bool play_mode)
 {
   RigFrontend *frontend = rut_object_alloc0 (RigFrontend,
                                              &rig_frontend_type,
@@ -855,8 +969,7 @@ rig_frontend_new (RutShell *shell,
 
   spawn_simulator (shell, frontend);
 
-  frontend->engine =
-    rig_engine_new_for_frontend (shell, frontend, ui_filename, play_mode);
+  frontend->engine = rig_engine_new_for_frontend (shell, frontend);
 
   rig_engine_op_map_context_init (&frontend->map_op_ctx,
                                   frontend->engine,

@@ -52,11 +52,6 @@ void
 rig_editor_load_file (RigEditor *editor,
                       const char *filename);
 
-/* FIXME: move necessary state to RigEditor and update this
- * api to take a RigEditor pointer */
-void
-rig_editor_create_ui (RigEngine *engine);
-
 void
 rig_editor_apply_last_op (RigEngine *engine);
 
@@ -72,13 +67,11 @@ rig_editor_apply_last_op (RigEngine *engine);
 void
 rig_editor_refresh_thumbnails (RigAsset *video, void *user_data);
 
-/* FIXME: move necessary state to RigEditor and update this
- * api to take a RigEditor pointer */
 void
-rig_editor_clear_search_results (RigEngine *engine);
+rig_editor_clear_search_results (RigEditor *editor);
 
 void
-rig_editor_free_result_input_closures (RigEngine *engine);
+rig_editor_free_result_input_closures (RigEditor *editor);
 
 void
 rig_reload_inspector_property (RigEngine *engine,
@@ -122,5 +115,8 @@ rig_editor_push_undo_subjournal (RigEngine *engine);
 
 RigUndoJournal *
 rig_editor_pop_undo_subjournal (RigEngine *engine);
+
+void
+rig_editor_free_builtin_assets (RigEditor *editor);
 
 #endif /* _RIG_EDITOR_H_ */

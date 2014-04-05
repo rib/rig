@@ -571,25 +571,6 @@ lookup_object_id (RigSimulator *simulator, void *object)
     return (uint64_t)(uintptr_t)id_ptr;
 }
 
-static uint64_t
-lookup_object_id_cb (void *object, void *user_data)
-{
-  RigSimulator *simulator = user_data;
-  return lookup_object_id (simulator, object);
-
-#if 0
-  void *id_ptr = g_hash_table_lookup (simulator->object_to_id_map, object);
-  if (id_ptr)
-    return (uint64_t)(intptr_t)id_ptr;
-
-  /* If we didn't find an id in object_to_id_map that implies the
-   * object is currently associated with a temporary id... */
-
-  id_ptr = g_hash_table_lookup (simulator->object_to_tmp_id_map, object);
-  return (uint64_t)(intptr_t)id_ptr;
-#endif
-}
-
 static void
 _rig_simulator_free (void *object)
 {
@@ -723,8 +704,16 @@ rig_simulator_new (RigFrontendID frontend_id,
   simulator_start_service (simulator->shell, simulator);
 
   simulator->engine =
-    rig_engine_new_for_simulator (simulator->shell, simulator, false);
+    rig_engine_new_for_simulator (simulator->shell, simulator);
   engine = simulator->engine;
+
+  /* Finish the simulator specific engine setup...
+   */
+  engine->main_camera_view = rig_camera_view_new (engine);
+  rut_stack_add (engine->top_stack, engine->main_camera_view);
+
+  /* Initialize the current mode */
+  rig_engine_set_play_mode_enabled (engine, false);
 
   /*
    * This unserializer is used to unserialize UIs in simulator__load

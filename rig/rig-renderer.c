@@ -1451,7 +1451,6 @@ image_source_ready_cb (RigImageSource *source,
                        void *user_data)
 {
   RigEntity *entity = user_data;
-  RutContext *ctx = rig_entity_get_context (entity);
   RigImageSource *color_src;
   RutObject *geometry;
   RigMaterial *material;

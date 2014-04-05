@@ -403,6 +403,16 @@ rig_ui_resume (RigUI *ui)
   ui->suspended = false;
 }
 
+static void
+print_component_cb (RutComponent *component,
+                    void *user_data)
+{
+  int depth = *(int *)user_data;
+  char *name = rig_engine_get_object_debug_name (component);
+  g_print ("%*s%s\n", depth + 2, " ", name);
+  g_free (name);
+}
+
 static RutTraverseVisitFlags
 print_entity_cb (RutObject *object,
                  int depth,
@@ -410,6 +420,14 @@ print_entity_cb (RutObject *object,
 {
   char *name = rig_engine_get_object_debug_name (object);
   g_print ("%*s%s\n", depth, " ", name);
+
+  if (rut_object_get_type (object) == &rig_entity_type)
+    {
+      rig_entity_foreach_component_safe (object,
+                                         print_component_cb,
+                                         &depth);
+    }
+
   g_free (name);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;

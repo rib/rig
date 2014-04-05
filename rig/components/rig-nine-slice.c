@@ -589,9 +589,7 @@ rig_nine_slice_new (RutContext *ctx,
   RigNineSlice *nine_slice =
     rut_object_alloc0 (RigNineSlice, &rig_nine_slice_type, _rig_nine_slice_init_type);
 
-
   nine_slice->ctx = ctx;
-
 
   nine_slice->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 

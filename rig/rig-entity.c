@@ -179,9 +179,14 @@ rig_entity_remove_component (RigEntity *entity,
 {
   RutComponentableProps *component =
     rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+  bool status;
+
   component->entity = NULL;
   rut_object_release (object, entity);
-  g_warn_if_fail (g_ptr_array_remove_fast (entity->components, object));
+
+  status = g_ptr_array_remove_fast (entity->components, object);
+
+  g_warn_if_fail (status);
 }
 
 void

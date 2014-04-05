@@ -1342,11 +1342,6 @@ serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
 
           g_free (full_path);
 
-          pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
-
-          pb_asset->has_id = true;
-          pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
-
           pb_asset->path = (char *)path;
 
           pb_asset->has_data = true;
@@ -1724,16 +1719,23 @@ pb_init_boxed_vec4 (RutBoxed *boxed,
 static RutObject *
 unserializer_find_object (RigPBUnSerializer *unserializer, uint64_t id)
 {
+  RutObject *ret;
+
   if (unserializer->id_to_object_callback)
     {
       void *user_data = unserializer->id_to_object_data;
-      return unserializer->id_to_object_callback (id, user_data);
+      ret = unserializer->id_to_object_callback (id, user_data);
     }
-
-  if (unserializer->id_to_object_map)
-    return g_hash_table_lookup (unserializer->id_to_object_map, &id);
+  else if (unserializer->id_to_object_map)
+    ret = g_hash_table_lookup (unserializer->id_to_object_map, &id);
   else
-    return NULL;
+    ret = NULL;
+
+  if (id && !ret)
+    rig_pb_unserializer_collect_error (unserializer,
+                                       "Invalid object id=%llu", id);
+
+  return ret;
 }
 
 void
@@ -2303,7 +2305,6 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         Rig__Entity__Component__Shape *pb_shape = pb_component->shape;
         RigMaterial *material;
         RigAsset *asset = NULL;
-        CoglTexture *texture = NULL;
         RigShape *shape;
         bool shaped = false;
         int width, height;
