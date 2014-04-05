@@ -1468,25 +1468,6 @@ image_source_ready_cb (RigImageSource *source,
     }
   else if (rut_object_get_type (geometry) == &rig_shape_type)
     rig_shape_set_texture_size (geometry, width, height);
-  else if (rut_object_get_type (geometry) == &rig_pointalism_grid_type)
-    {
-      RigPointalismGrid *grid = geometry;
-      float cell_size, scale, z;
-      CoglBool lighter;
-
-      cell_size = rig_pointalism_grid_get_cell_size (grid);
-      scale = rig_pointalism_grid_get_scale (grid);
-      z = rig_pointalism_grid_get_z (grid);
-      lighter = rig_pointalism_grid_get_lighter (grid);
-
-      rig_entity_remove_component (entity, geometry);
-      grid = rig_pointalism_grid_new (ctx, cell_size, width, height);
-
-      rig_entity_add_component (entity, grid);
-      grid->pointalism_scale = scale;
-      grid->pointalism_z = z;
-      grid->pointalism_lighter = lighter;
-    }
 }
 
 static CoglPipeline *

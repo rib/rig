@@ -83,39 +83,6 @@ static RutPropertySpec _rig_pointalism_grid_prop_specs[] = {
   { NULL }
 };
 
-static void
-_rig_pointalism_grid_slice_free (void *object)
-{
-  RigPointalismGridSlice *pointalism_grid_slice = object;
-
-#ifdef RIG_ENABLE_DEBUG
-  {
-    RutComponentableProps *component =
-      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
-  }
-#endif
-
-  rut_object_unref (pointalism_grid_slice->mesh);
-
-  rut_object_free (RigPointalismGridSlice, object);
-}
-
-RutType rig_pointalism_grid_slice_type;
-
-void
-_rig_pointalism_grid_slice_init_type (void)
-{
-
-  RutType *type = &rig_pointalism_grid_slice_type;
-
-#define TYPE RigPointalismGridSlice
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pointalism_grid_slice_free);
-
-#undef TYPE
-}
-
 typedef struct _GridVertex
 {
   float x0, y0;
@@ -230,11 +197,11 @@ mesh_new_grid (CoglVerticesMode mode,
 }
 
 void
-pointalism_generate_grid (RigPointalismGridSlice *slice,
-                          int tex_width,
-                          int tex_height,
-                          float size)
+create_meshes (RigPointalismGrid *grid)
 {
+  int tex_width = grid->tex_width;
+  int tex_height = grid->tex_height;
+  float size = grid->cell_size;
   int columns = abs (tex_width / size);
   int rows = abs (tex_height / size);
   int i, j, k, l;
@@ -244,6 +211,10 @@ pointalism_generate_grid (RigPointalismGridSlice *slice,
   float start_y = -1.0 * ((size * rows) / 2.0);
   GridVertex *vertices = g_new (GridVertex, (columns * rows) * 4);
   unsigned int *indices = g_new (unsigned int, (columns * rows) * 6);
+  RutBuffer *pick_mesh_buffer;
+  CoglVertexP3 *pick_vertices;
+  float half_tex_width;
+  float half_tex_height;
 
   k = 0;
   l = 0;
@@ -349,29 +320,42 @@ pointalism_generate_grid (RigPointalismGridSlice *slice,
     start_y += size;
   }
 
-  if (slice->mesh)
-    rut_object_unref (slice->mesh);
+  grid->mesh = mesh_new_grid (COGL_VERTICES_MODE_TRIANGLES,
+                              (columns * rows) * 4,
+                              (columns * rows) * 6,
+                              vertices, indices);
+  pick_mesh_buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
+  grid->pick_mesh =
+    rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
+                                 6, pick_mesh_buffer);
+  pick_vertices = (CoglVertexP3 *)pick_mesh_buffer->data;
 
-  slice->mesh = mesh_new_grid (COGL_VERTICES_MODE_TRIANGLES,
-                               (columns * rows) * 4,
-                               (columns * rows) * 6,
-                               vertices, indices);
+  half_tex_width = tex_width / 2.0f;
+  half_tex_height = tex_height / 2.0f;
+
+  pick_vertices[0].x = -half_tex_width;
+  pick_vertices[0].y = -half_tex_height;
+  pick_vertices[1].x = -half_tex_width;
+  pick_vertices[1].y = half_tex_height;
+  pick_vertices[2].x = half_tex_width;
+  pick_vertices[2].y = half_tex_height;
+  pick_vertices[3] = pick_vertices[0];
+  pick_vertices[4] = pick_vertices[2];
+  pick_vertices[5].x = half_tex_width;
+  pick_vertices[5].y = -half_tex_height;
 }
 
-static RigPointalismGridSlice *
-pointalism_grid_slice_new (int tex_width,
-                           int tex_height,
-                           float size)
+static void
+free_meshes (RigPointalismGrid *grid)
 {
-  RigPointalismGridSlice *grid_slice =
-    rut_object_alloc0 (RigPointalismGridSlice, &rig_pointalism_grid_slice_type, _rig_pointalism_grid_slice_init_type);
+  if (grid->mesh)
+    {
+      rut_object_unref (grid->mesh);
+      grid->mesh = NULL;
 
-
-  grid_slice->mesh = NULL;
-
-  pointalism_generate_grid (grid_slice, tex_width, tex_height, size);
-
-  return grid_slice;
+      rut_object_unref (grid->pick_mesh);
+      grid->pick_mesh = NULL;
+    }
 }
 
 static void
@@ -379,10 +363,17 @@ _rig_pointalism_grid_free (void *object)
 {
   RigPointalismGrid *grid = object;
 
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    g_return_if_fail (component->entity == NULL);
+  }
+#endif
+
   rut_closure_list_disconnect_all (&grid->updated_cb_list);
 
-  rut_object_unref (grid->slice);
-  rut_object_unref (grid->pick_mesh);
+  free_meshes (grid);
 
   rut_introspectable_destroy (grid);
 
@@ -393,12 +384,10 @@ static RutObject *
 _rig_pointalism_grid_copy (RutObject *object)
 {
   RigPointalismGrid *grid = object;
-  RigPointalismGrid *copy = rig_pointalism_grid_new (grid->ctx,
-                                                     grid->cell_size,
-                                                     grid->tex_width,
-                                                     grid->tex_height);
+  RigPointalismGrid *copy =
+    rig_pointalism_grid_new (grid->ctx, grid->cell_size);
+  rig_pointalism_grid_set_image_size (copy, grid->tex_width, grid->tex_height);
 
-#warning "FIXME: make sure the pointalism grid mesh is generated lazily"
   rut_introspectable_copy_properties (&grid->ctx->property_ctx,
                                       grid,
                                       copy);
@@ -424,6 +413,10 @@ _rig_pointalism_grid_init_type (void)
     .get_mesh = rig_pointalism_grid_get_pick_mesh
   };
 
+  static RutImageSizeDependantVTable image_dependant_vtable = {
+      .set_image_size = rig_pointalism_grid_set_image_size
+  };
+
 
   RutType *type = &rig_pointalism_grid_type;
 
@@ -442,33 +435,24 @@ _rig_pointalism_grid_init_type (void)
                       RUT_TRAIT_ID_MESHABLE,
                       0, /* no associated properties */
                       &meshable_vtable);
-
-
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
                       NULL);
+  rut_type_add_trait (type,
+                      RUT_TRAIT_ID_IMAGE_SIZE_DEPENDENT,
+                      0, /* no implied properties */
+                      &image_dependant_vtable);
 
 #undef TYPE
 }
 
 RigPointalismGrid *
-rig_pointalism_grid_new (RutContext *ctx,
-                         float size,
-                         int tex_width,
-                         int tex_height)
+rig_pointalism_grid_new (RutContext *ctx, float size)
 {
-  RigPointalismGrid *grid =
-    rut_object_alloc0 (RigPointalismGrid, &rig_pointalism_grid_type, _rig_pointalism_grid_init_type);
-  RutBuffer *buffer = rut_buffer_new (sizeof (CoglVertexP3) * 6);
-  RutMesh *pick_mesh = rut_mesh_new_from_buffer_p3 (COGL_VERTICES_MODE_TRIANGLES,
-                                                    6,
-                                                    buffer);
-  CoglVertexP3 *pick_vertices = (CoglVertexP3 *)buffer->data;
-  float half_tex_width;
-  float half_tex_height;
-
-
+  RigPointalismGrid *grid = rut_object_alloc0 (RigPointalismGrid,
+                                               &rig_pointalism_grid_type,
+                                               _rig_pointalism_grid_init_type);
 
   grid->component.type = RUT_COMPONENT_TYPE_GEOMETRY;
 
@@ -476,30 +460,15 @@ rig_pointalism_grid_new (RutContext *ctx,
 
   rut_list_init (&grid->updated_cb_list);
 
-  grid->slice = pointalism_grid_slice_new (tex_width, tex_height,
-                                           size);
-
-  half_tex_width = tex_width / 2.0f;
-  half_tex_height = tex_height / 2.0f;
-
-  pick_vertices[0].x = -half_tex_width;
-  pick_vertices[0].y = -half_tex_height;
-  pick_vertices[1].x = -half_tex_width;
-  pick_vertices[1].y = half_tex_height;
-  pick_vertices[2].x = half_tex_width;
-  pick_vertices[2].y = half_tex_height;
-  pick_vertices[3] = pick_vertices[0];
-  pick_vertices[4] = pick_vertices[2];
-  pick_vertices[5].x = half_tex_width;
-  pick_vertices[5].y = -half_tex_height;
-
-  grid->pick_mesh = pick_mesh;
   grid->pointalism_scale = 1;
   grid->pointalism_z = 1;
   grid->pointalism_lighter = TRUE;
   grid->cell_size = size;
-  grid->tex_width = tex_width;
-  grid->tex_height = tex_height;
+
+  /* We just specify an arbitrary size initially and expect this to be
+   * updated before we call create_meshes() */
+  grid->tex_width = 640;
+  grid->tex_height = 480;
 
   rut_introspectable_init (grid, _rig_pointalism_grid_prop_specs,
                            grid->properties);
@@ -511,15 +480,21 @@ CoglPrimitive *
 rig_pointalism_grid_get_primitive (RutObject *object)
 {
   RigPointalismGrid *grid = object;
-  CoglPrimitive *primitive = rut_mesh_create_primitive (grid->ctx,
-                                                        grid->slice->mesh);
-  return primitive;
+
+  if (!grid->mesh)
+    create_meshes (grid);
+
+  return rut_mesh_create_primitive (grid->ctx, grid->mesh);
 }
 
 RutMesh *
 rig_pointalism_grid_get_pick_mesh (RutObject *self)
 {
   RigPointalismGrid *grid = self;
+
+  if (!grid->pick_mesh)
+    create_meshes (grid);
+
   return grid->pick_mesh;
 }
 
@@ -547,7 +522,7 @@ rig_pointalism_grid_set_scale (RutObject *obj,
   entity = grid->component.entity;
   ctx = rig_entity_get_context (entity);
   rut_property_dirty (&ctx->property_ctx,
-                     &grid->properties[RIG_POINTALISM_GRID_PROP_SCALE]);
+                      &grid->properties[RIG_POINTALISM_GRID_PROP_SCALE]);
 }
 
 float
@@ -557,8 +532,6 @@ rig_pointalism_grid_get_z (RutObject *obj)
 
   return grid->pointalism_z;
 }
-
-
 
 void
 rig_pointalism_grid_set_z (RutObject *obj,
@@ -630,8 +603,7 @@ rig_pointalism_grid_set_cell_size (RutObject *obj,
   entity = grid->component.entity;
   ctx = rig_entity_get_context (entity);
 
-  pointalism_generate_grid (grid->slice, grid->tex_width,
-                            grid->tex_height, grid->cell_size);
+  free_meshes (grid);
 
   rut_property_dirty (&ctx->property_ctx,
                       &grid->properties[RIG_POINTALISM_GRID_PROP_CELL_SIZE]);
@@ -653,3 +625,25 @@ rig_pointalism_grid_add_update_callback (RigPointalismGrid *grid,
                                user_data,
                                destroy_cb);
 }
+
+void
+rig_pointalism_grid_set_image_size (RutObject *self,
+                                    int width,
+                                    int height)
+{
+  RigPointalismGrid *grid = self;
+
+  if (grid->tex_width == width && grid->tex_height == height)
+    return;
+
+  free_meshes (grid);
+
+  grid->tex_width = width;
+  grid->tex_height = height;
+
+  rut_closure_list_invoke (&grid->updated_cb_list,
+                           RigPointalismGridUpdateCallback,
+                           grid);
+}
+
+

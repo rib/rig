@@ -517,17 +517,10 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
                     Rig__Entity__Component__PointalismGrid,
                     rig__entity__component__pointalism_grid__init);
 
-      pb_component->grid->has_scale = true;
-      pb_component->grid->scale = rig_pointalism_grid_get_scale (RIG_POINTALISM_GRID (component));
-
-      pb_component->grid->has_z = true;
-      pb_component->grid->z = rig_pointalism_grid_get_z (RIG_POINTALISM_GRID (component));
-
-      pb_component->grid->has_cell_size = true;
-      pb_component->grid->cell_size = rig_pointalism_grid_get_cell_size (RIG_POINTALISM_GRID (component));
-
-      pb_component->grid->has_lighter = true;
-      pb_component->grid->lighter = rig_pointalism_grid_get_lighter (RIG_POINTALISM_GRID (component));
+      serialize_instrospectable_properties (component,
+                                            &pb_component->n_properties,
+                                            (void **)&pb_component->properties,
+                                            serializer);
     }
   else if (type == &rig_model_type)
     {
@@ -2397,11 +2390,7 @@ ERROR_SHAPE:
     case RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID:
       {
         Rig__Entity__Component__PointalismGrid *pb_grid = pb_component->grid;
-        RigMaterial *material;
-        RigAsset *asset = NULL;
-        CoglTexture *texture = NULL;
         RigPointalismGrid *grid;
-        float width, height;
         float cell_size;
 
         if (pb_grid->has_cell_size)
@@ -2409,64 +2398,33 @@ ERROR_SHAPE:
         else
           cell_size = 20;
 
-        material = rig_entity_get_component (entity,
-                                             RUT_COMPONENT_TYPE_MATERIAL);
-
-        if (material)
-          asset = rig_material_get_color_source_asset (material);
-
-        if (asset)
-          {
-            if (rig_asset_get_is_video (asset))
-              {
-                width = 640;
-                height = 480;
-              }
-            else
-              {
-                texture = rig_asset_get_texture (asset);
-                if (texture)
-                  {
-                    width = cogl_texture_get_width (texture);
-                    height = cogl_texture_get_height (texture);
-                  }
-                else
-                  goto ERROR_POINTALISM;
-              }
-          }
-        else
-          goto ERROR_POINTALISM;
-
-        grid = rig_pointalism_grid_new (unserializer->engine->ctx, cell_size,
-                                        width, height);
+        grid = rig_pointalism_grid_new (unserializer->engine->ctx, cell_size);
 
         rig_entity_add_component (entity, grid);
         rut_object_unref (grid);
 
+        /* XXX: Just for compatability... */
         if (pb_grid->has_scale)
-          rig_pointalism_grid_set_scale (grid, pb_grid->scale);
+          {
+            rig_pointalism_grid_set_scale (grid, pb_grid->scale);
 
-        if (pb_grid->has_z)
-          rig_pointalism_grid_set_z (grid, pb_grid->z);
+            if (pb_grid->has_z)
+              rig_pointalism_grid_set_z (grid, pb_grid->z);
 
-        if (pb_grid->has_lighter)
-          rig_pointalism_grid_set_lighter (grid, pb_grid->lighter);
+            if (pb_grid->has_lighter)
+              rig_pointalism_grid_set_lighter (grid, pb_grid->lighter);
+          }
+        else
+          {
+            set_properties_from_pb_boxed_values (unserializer,
+                                                 grid,
+                                                 pb_component->n_properties,
+                                                 pb_component->properties);
+          }
 
         rig_pb_unserializer_register_object (unserializer,
                                              grid, component_id);
 
-ERROR_POINTALISM:
-        {
-          if (!grid)
-            {
-              rig_pb_unserializer_collect_error (unserializer,
-                                                 "Can't add pointalism "
-                                                 "grid component without "
-                                                 "an image source");
-
-              rut_object_unref (material);
-            }
-        }
         return grid;
       }
     case RIG__ENTITY__COMPONENT__TYPE__HAIR:

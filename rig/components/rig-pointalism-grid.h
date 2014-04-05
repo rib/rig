@@ -60,16 +60,14 @@ struct _RigPointalismGrid
 {
   RutObjectBase _base;
 
-
   RutComponentableProps component;
 
   RutContext *ctx;
 
   RutList updated_cb_list;
 
-  RigPointalismGridSlice *slice;
-
   RutMesh *pick_mesh;
+  RutMesh *mesh;
 
   float pointalism_scale;
   float pointalism_z;
@@ -86,10 +84,7 @@ void
 _rig_pointalism_grid_init_type (void);
 
 RigPointalismGrid *
-rig_pointalism_grid_new (RutContext *ctx,
-                         float size,
-                         int tex_width,
-                         int tex_height);
+rig_pointalism_grid_new (RutContext *ctx, float size);
 
 CoglPrimitive *
 rig_pointalism_grid_get_primitive (RutObject *object);
@@ -132,5 +127,10 @@ rig_pointalism_grid_add_update_callback (RigPointalismGrid *grid,
                                          RigPointalismGridUpdateCallback callback,
                                          void *user_data,
                                          RutClosureDestroyCallback destroy_cb);
+
+void
+rig_pointalism_grid_set_image_size (RutObject *self,
+                                    int width,
+                                    int height);
 
 #endif /* __RIG_POINTALISM_GRID_H__ */

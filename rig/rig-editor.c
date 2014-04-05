@@ -557,7 +557,6 @@ apply_asset_input_with_entity (RigEngine *engine,
       else if (asset == engine->pointalism_grid_builtin_asset)
         {
           RigPointalismGrid *grid;
-          int tex_width = 200, tex_height = 200;
 
           geom = rig_entity_get_component (entity,
                                            RUT_COMPONENT_TYPE_GEOMETRY);
@@ -570,35 +569,10 @@ apply_asset_input_with_entity (RigEngine *engine,
           else if (geom)
             rig_undo_journal_delete_component (engine->undo_journal, geom);
 
-          material =
-            rig_entity_get_component (entity,
-                                      RUT_COMPONENT_TYPE_MATERIAL);
-
-          if (material)
-            {
-              RigAsset *texture_asset =
-                rig_material_get_color_source_asset (material);
-              if (texture_asset)
-                {
-                  if (rig_asset_get_is_video (texture_asset))
-                    {
-                      tex_width = 640;
-                      tex_height = 480;
-                    }
-                  else
-                    {
-                      CoglTexture *texture =
-                        rig_asset_get_texture (texture_asset);
-                      tex_width = cogl_texture_get_width (texture);
-                      tex_height = cogl_texture_get_height (texture);
-                    }
-                }
-            }
-
-          grid = rig_pointalism_grid_new (engine->ctx, 20, tex_width,
-                                          tex_height);
+          grid = rig_pointalism_grid_new (engine->ctx, 20);
 
           rig_undo_journal_add_component (engine->undo_journal, entity, grid);
+          rut_object_unref (grid);
 
           rut_renderer_notify_entity_changed (engine->renderer, entity);
         }
