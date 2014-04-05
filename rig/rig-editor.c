@@ -497,24 +497,8 @@ apply_asset_input_with_entity (RigEngine *engine,
                 rig_material_get_color_source_asset (material);
               if (color_source_asset)
                 {
-                  if (rig_asset_get_is_video (color_source_asset))
-                    {
-                      /* XXX: until we start decoding the
-                       * video we don't know the size of the
-                       * video so for now we just assume a
-                       * default size. Maybe we should just
-                       * decode a single frame to find out the
-                       * size? */
-                      tex_width = 640;
-                      tex_height = 480;
-                    }
-                  else
-                    {
-                      CoglTexture *texture =
-                        rig_asset_get_texture (color_source_asset);
-                      tex_width = cogl_texture_get_width (texture);
-                      tex_height = cogl_texture_get_height (texture);
-                    }
+                  rig_asset_get_image_size (color_source_asset,
+                                            &tex_width, &tex_height);
                 }
             }
 
