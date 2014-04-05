@@ -1192,13 +1192,13 @@ rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
 }
 
 void
-rig_engine_set_apply_op_callback (RigEngine *engine,
-                                  void (*callback) (Rig__Operation *pb_op,
-                                                    void *user_data),
-                                  void *user_data)
+rig_engine_set_log_op_callback (RigEngine *engine,
+                                void (*callback) (Rig__Operation *pb_op,
+                                                  void *user_data),
+                                void *user_data)
 {
-  engine->apply_op_callback = callback;
-  engine->apply_op_data = user_data;
+  engine->log_op_callback = callback;
+  engine->log_op_data = user_data;
 }
 
 void
@@ -1280,3 +1280,9 @@ rig_engine_set_play_mode_callback (RigEngine *engine,
   engine->play_mode_data = user_data;
 }
 
+void
+rig_engine_set_apply_op_context (RigEngine *engine,
+                                 RigEngineOpApplyContext *ctx)
+{
+  engine->apply_op_ctx = ctx;
+}

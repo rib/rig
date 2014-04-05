@@ -319,9 +319,14 @@ struct _RigEngine
 
   RutQueue *queued_deletes;
 
-  void (*apply_op_callback) (Rig__Operation *pb_op,
-                             void *user_data);
-  void *apply_op_data;
+  /* Note: this is only referenced by the rig_engine_op_XYZ operation
+   * functions, and when calling apis like rig_engine_pb_op_apply()
+   * that take an explicit apply_op_ctx argument then this isn't
+   * referenced. */
+  RigEngineOpApplyContext *apply_op_ctx;
+  void (*log_op_callback) (Rig__Operation *pb_op,
+                           void *user_data);
+  void *log_op_data;
 
   void (*play_mode_callback) (bool play_mode,
                               void *user_data);
@@ -398,10 +403,10 @@ rig_add_tool_changed_callback (RigEngine *engine,
                                RutClosureDestroyCallback destroy_notify);
 
 void
-rig_engine_set_apply_op_callback (RigEngine *engine,
-                                  void (*callback) (Rig__Operation *pb_op,
-                                                    void *user_data),
-                                  void *user_data);
+rig_engine_set_log_op_callback (RigEngine *engine,
+                                void (*callback) (Rig__Operation *pb_op,
+                                                  void *user_data),
+                                void *user_data);
 
 void
 rig_engine_set_ui_load_callback (RigEngine *engine,
@@ -429,5 +434,9 @@ rig_engine_set_play_mode_enabled (RigEngine *engine, bool enabled);
 
 char *
 rig_engine_get_object_debug_name (RutObject *object);
+
+void
+rig_engine_set_apply_op_context (RigEngine *engine,
+                                 RigEngineOpApplyContext *ctx);
 
 #endif /* _RIG_ENGINE_H_ */

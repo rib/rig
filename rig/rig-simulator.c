@@ -513,11 +513,10 @@ simulator_start_service (RutShell *shell, RigSimulator *simulator)
 }
 
 static void
-apply_op_cb (Rig__Operation *pb_op, void *user_data)
+log_op_cb (Rig__Operation *pb_op, void *user_data)
 {
   RigSimulator *simulator = user_data;
   RutPropertyContext *prop_ctx = &simulator->engine->ctx->property_ctx;
-  bool status;
 
   /* We sequence all operations relative to the property updates that
    * are being logged, so that the frontend will be able to replay
@@ -525,9 +524,6 @@ apply_op_cb (Rig__Operation *pb_op, void *user_data)
    */
   pb_op->has_sequence = true;
   pb_op->sequence = prop_ctx->log_len;
-
-  status = rig_engine_pb_op_apply (&simulator->apply_op_ctx, pb_op);
-  g_warn_if_fail (status);
 
   rut_queue_push_tail (simulator->ops, pb_op);
 }
@@ -750,8 +746,9 @@ rig_simulator_new (RigFrontendID frontend_id,
                                     register_object_cb,
                                     NULL, /* unregister id */
                                     simulator); /* user data */
+  rig_engine_set_apply_op_context (engine, &simulator->apply_op_ctx);
 
-  rig_engine_set_apply_op_callback (engine, apply_op_cb, simulator);
+  rig_engine_set_log_op_callback (engine, log_op_cb, simulator);
 
   rig_engine_op_map_context_init (&simulator->map_to_sim_objects_op_ctx,
                                   engine,

@@ -100,6 +100,15 @@ maybe_map_property_value (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+set_property_apply_real (RigEngineOpApplyContext *ctx,
+                         RutProperty *property,
+                         RutBoxed *value)
+{
+  rut_property_set_boxed (&ctx->engine->ctx->property_ctx,
+                          property, value);
+}
+
 void
 rig_engine_op_set_property (RigEngine *engine,
                             RutProperty *property,
@@ -119,7 +128,8 @@ rig_engine_op_set_property (RigEngine *engine,
   pb_op->set_property->property_id = property->id;
   pb_op->set_property->value = pb_property_value_new (serializer, value);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  set_property_apply_real (engine->apply_op_ctx, property, value);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -148,8 +158,7 @@ _apply_op_set_property (RigEngineOpApplyContext *ctx,
   /* Note: at this point the logging of property changes
    * should be disabled in the simulator, so this shouldn't
    * redundantly feed-back to the frontend process. */
-  rut_property_set_boxed (&ctx->engine->ctx->property_ctx,
-                          property, &boxed);
+  set_property_apply_real (ctx, property, &boxed);
 
   return true;
 }
@@ -185,6 +194,18 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+add_entity_apply_real (RigEngineOpApplyContext *ctx,
+                       RigEntity *parent,
+                       RigEntity *entity,
+                       uint64_t entity_id)
+{
+  ctx->register_id_cb (entity, entity_id, ctx->user_data);
+
+  if (parent)
+    rut_graphable_add_child (parent, entity);
+}
+
 void
 rig_engine_op_add_entity (RigEngine *engine,
                           RigEntity *parent,
@@ -192,6 +213,7 @@ rig_engine_op_add_entity (RigEngine *engine,
 {
   RigPBSerializer *serializer = engine->ops_serializer;
   Rig__Operation *pb_op;
+  uint64_t entity_id;
 
   g_return_if_fail (rut_graphable_get_parent (entity) == NULL);
 
@@ -207,7 +229,10 @@ rig_engine_op_add_entity (RigEngine *engine,
                                                        NULL,
                                                        entity);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  entity_id = pb_op->add_entity->entity->id;
+  add_entity_apply_real (engine->apply_op_ctx, parent, entity, entity_id);
+
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -233,10 +258,8 @@ _apply_op_add_entity (RigEngineOpApplyContext *ctx,
   if (!entity)
     return false;
 
-  ctx->register_id_cb (entity, add_entity->entity->id, ctx->user_data);
-
-  if (parent)
-    rut_graphable_add_child (parent, entity);
+  add_entity_apply_real (ctx, parent, entity, add_entity->entity->id);
+  rut_object_unref (entity);
 
   return true;
 }
@@ -285,6 +308,18 @@ _map_op_add_entity (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+delete_entity_apply_real (RigEngineOpApplyContext *ctx,
+                          RigEntity *entity,
+                          uint64_t entity_id)
+{
+  rig_entity_reap (entity, ctx->engine);
+
+  rut_graphable_remove_child (entity);
+
+  ctx->unregister_id_cb (entity_id, ctx->user_data);
+}
+
 void
 rig_engine_op_delete_entity (RigEngine *engine,
                              RigEntity *entity)
@@ -300,20 +335,20 @@ rig_engine_op_delete_entity (RigEngine *engine,
 
   pb_op->delete_entity->entity_id = (intptr_t)entity;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  delete_entity_apply_real (engine->apply_op_ctx,
+                            entity, pb_op->delete_entity->entity_id);
+
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
 _apply_op_delete_entity (RigEngineOpApplyContext *ctx,
                          Rig__Operation *pb_op)
 {
-  RigEntity *entity = (void *)(intptr_t)pb_op->delete_entity->entity_id;
+  uint64_t entity_id = pb_op->delete_entity->entity_id;
+  RigEntity *entity = (void *)(uintptr_t)entity_id;
 
-  rig_entity_reap (entity, ctx->engine);
-
-  rut_graphable_remove_child (entity);
-
-  ctx->unregister_id_cb (pb_op->delete_entity->entity_id, ctx->user_data);
+  delete_entity_apply_real (ctx, entity, entity_id);
 
   return true;
 }
@@ -339,6 +374,17 @@ _map_op_delete_entity (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+add_component_apply_real (RigEngineOpApplyContext *ctx,
+                          RigEntity *entity,
+                          RutComponent *component,
+                          uint64_t component_id)
+{
+  ctx->register_id_cb (component, component_id, ctx->user_data);
+
+  rig_entity_add_component (entity, component);
+}
+
 void
 rig_engine_op_add_component (RigEngine *engine,
                              RigEntity *entity,
@@ -357,7 +403,10 @@ rig_engine_op_add_component (RigEngine *engine,
   pb_op->add_component->component =
     rig_pb_serialize_component (serializer, component);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  add_component_apply_real (engine->apply_op_ctx, entity, component,
+                            pb_op->add_component->component->id);
+
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -372,7 +421,8 @@ _apply_op_add_component (RigEngineOpApplyContext *ctx,
 
   /* XXX: Note: this will also add the component to the entity
    * since some components can't be configured before being
-   * added to an entity.
+   * added to an entity; therefore we don't call
+   * add_component_apply_real() here.
    */
   component = rig_pb_unserialize_component (ctx->unserializer,
                                             entity,
@@ -380,6 +430,9 @@ _apply_op_add_component (RigEngineOpApplyContext *ctx,
 
   if (!component)
     return false;
+
+  ctx->register_id_cb (component, pb_op->add_component->component->id,
+                       ctx->user_data);
 
   return true;
 }
@@ -394,10 +447,11 @@ _copy_op_add_component (RigEngineOpCopyContext *ctx,
                                      rig__operation__add_component__init,
                                      src_pb_op->add_component);
 
-  pb_op->add_component->component = rig_pb_dup (ctx->serializer,
-                                     Rig__Entity__Component,
-                                     rig__entity__component__init,
-                                     src_pb_op->add_component->component);
+  pb_op->add_component->component =
+    rig_pb_dup (ctx->serializer,
+                Rig__Entity__Component,
+                rig__entity__component__init,
+                src_pb_op->add_component->component);
 }
 
 static bool
@@ -410,6 +464,19 @@ _map_op_add_component (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+delete_component_apply_real (RigEngineOpApplyContext *ctx,
+                             RigEntity *entity,
+                             RutComponent *component,
+                             uint64_t component_id)
+{
+  rig_component_reap (component, ctx->engine);
+
+  rig_entity_remove_component (entity, component);
+
+  ctx->unregister_id_cb (component_id, ctx->user_data);
+}
+
 void
 rig_engine_op_delete_component (RigEngine *engine,
                                 RutComponent *component)
@@ -417,6 +484,11 @@ rig_engine_op_delete_component (RigEngine *engine,
   RigPBSerializer *serializer = engine->ops_serializer;
   Rig__Operation *pb_op = rig_pb_new (serializer, Rig__Operation,
                                       rig__operation__init);
+  RutComponentableProps *props =
+    rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
+  RigEntity *entity = props->entity;
+
+  g_return_if_fail (entity);
 
   pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_COMPONENT;
 
@@ -425,7 +497,10 @@ rig_engine_op_delete_component (RigEngine *engine,
                 rig__operation__delete_component__init);
   pb_op->delete_component->component_id = (intptr_t)component;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  delete_component_apply_real (engine->apply_op_ctx, entity, component,
+                               pb_op->delete_component->component_id);
+
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -445,11 +520,8 @@ _apply_op_delete_component (RigEngineOpApplyContext *ctx,
   if (!entity)
     return false;
 
-  rig_component_reap (component, ctx->engine);
-
-  rig_entity_remove_component (entity, component);
-
-  ctx->unregister_id_cb (pb_op->delete_component->component_id, ctx->user_data);
+  delete_component_apply_real (ctx, entity, component,
+                               pb_op->delete_component->component_id);
 
   return true;
 }
@@ -476,6 +548,16 @@ _map_op_delete_component (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+add_controller_apply_real (RigEngineOpApplyContext *ctx,
+                           RigController *controller,
+                           uint64_t controller_id)
+{
+  ctx->register_id_cb (controller, controller_id, ctx->user_data);
+
+  rig_ui_add_controller (ctx->ui, controller);
+}
+
 void
 rig_engine_op_add_controller (RigEngine *engine,
                               RigController *controller)
@@ -491,7 +573,10 @@ rig_engine_op_add_controller (RigEngine *engine,
   pb_op->add_controller->controller =
     rig_pb_serialize_controller (serializer, controller);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  add_controller_apply_real (engine->apply_op_ctx, controller,
+                             pb_op->add_controller->controller->id);
+
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -508,7 +593,7 @@ _apply_op_add_controller (RigEngineOpApplyContext *ctx,
                                             pb_controller->n_properties,
                                             pb_controller->properties);
 
-  rig_ui_add_controller (ctx->ui, controller);
+  add_controller_apply_real (ctx, controller, pb_controller->id);
   rut_object_unref (controller);
 
   return true;
@@ -533,6 +618,18 @@ _map_op_add_controller (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+delete_controller_apply_real (RigEngineOpApplyContext *ctx,
+                              RigController *controller,
+                              uint64_t controller_id)
+{
+  rig_controller_reap (controller, ctx->engine);
+
+  rig_ui_remove_controller (ctx->ui, controller);
+
+  ctx->unregister_id_cb (controller_id, ctx->user_data);
+}
+
 void
 rig_engine_op_delete_controller (RigEngine *engine,
                                  RigController *controller)
@@ -548,7 +645,9 @@ rig_engine_op_delete_controller (RigEngine *engine,
                 rig__operation__delete_controller__init);
   pb_op->delete_controller->controller_id = (intptr_t)controller;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  delete_controller_apply_real (engine->apply_op_ctx, controller,
+                                pb_op->delete_controller->controller_id);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -561,13 +660,8 @@ _apply_op_delete_controller (RigEngineOpApplyContext *ctx,
   if (!controller)
     return false;
 
-  rig_controller_reap (controller, ctx->engine);
-
-  rig_ui_remove_controller (ctx->ui, controller);
-
-  ctx->unregister_id_cb (pb_op->delete_controller->controller_id,
-                         ctx->user_data);
-
+  delete_controller_apply_real (ctx, controller,
+                                pb_op->delete_controller->controller_id);
   return true;
 }
 
@@ -593,6 +687,17 @@ _map_op_delete_controller (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_set_const_apply_real (RigEngineOpApplyContext *ctx,
+                                 RigController *controller,
+                                 RutProperty *property,
+                                 RutBoxed *value)
+{
+  rig_controller_set_property_constant (controller,
+                                        property,
+                                        value);
+}
+
 void
 rig_engine_op_controller_set_const (RigEngine *engine,
                                     RigController *controller,
@@ -615,7 +720,9 @@ rig_engine_op_controller_set_const (RigEngine *engine,
   pb_op->controller_set_const->value =
     pb_property_value_new (serializer, value);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_set_const_apply_real (engine->apply_op_ctx,
+                                   controller, property, value);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -638,9 +745,7 @@ _apply_op_controller_set_const (RigEngineOpApplyContext *ctx,
                            property->spec->type,
                            set_const->value);
 
-  rig_controller_set_property_constant (controller,
-                                        property,
-                                        &boxed);
+  controller_set_const_apply_real (ctx, controller, property, &boxed);
   return true;
 }
 
@@ -678,6 +783,19 @@ _map_op_controller_set_const (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_path_add_node_apply_real (RigEngineOpApplyContext *ctx,
+                                     RigController *controller,
+                                     RutProperty *property,
+                                     float t,
+                                     RutBoxed *value)
+{
+  rig_controller_insert_path_value (controller,
+                                    property,
+                                    t,
+                                    value);
+}
+
 void
 rig_engine_op_controller_path_add_node (RigEngine *engine,
                                         RigController *controller,
@@ -701,7 +819,9 @@ rig_engine_op_controller_path_add_node (RigEngine *engine,
   pb_op->controller_path_add_node->value =
     pb_property_value_new (serializer, value);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_path_add_node_apply_real (engine->apply_op_ctx,
+                                       controller, property, t, value);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -725,10 +845,8 @@ _apply_op_controller_path_add_node (RigEngineOpApplyContext *ctx,
                            property->spec->type,
                            add_node->value);
 
-  rig_controller_insert_path_value (controller,
-                                    property,
-                                    add_node->t,
-                                    &boxed);
+  controller_path_add_node_apply_real (ctx, controller,
+                                       property, add_node->t, &boxed);
 
   return true;
 }
@@ -767,6 +885,17 @@ _map_op_controller_path_add_node (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_path_delete_node_apply_real (RigEngineOpApplyContext *ctx,
+                                        RigController *controller,
+                                        RutProperty *property,
+                                        float t)
+{
+  rig_controller_remove_path_value (controller,
+                                    property,
+                                    t);
+}
+
 void
 rig_engine_op_controller_path_delete_node (RigEngine *engine,
                                            RigController *controller,
@@ -787,7 +916,9 @@ rig_engine_op_controller_path_delete_node (RigEngine *engine,
   pb_op->controller_path_delete_node->property_id = property->id;
   pb_op->controller_path_delete_node->t = t;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_path_delete_node_apply_real (engine->apply_op_ctx,
+                                          controller, property, t);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -805,9 +936,8 @@ _apply_op_controller_path_delete_node (RigEngineOpApplyContext *ctx,
 
   property = rut_introspectable_get_property (object, delete_node->property_id);
 
-  rig_controller_remove_path_value (controller,
-                                    property,
-                                    delete_node->t);
+  controller_path_delete_node_apply_real (ctx, controller, property,
+                                          delete_node->t);
   return true;
 }
 
@@ -839,6 +969,19 @@ _map_op_controller_path_delete_node (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_path_set_node_apply_real (RigEngineOpApplyContext *ctx,
+                                     RigController *controller,
+                                     RutProperty *property,
+                                     float t,
+                                     RutBoxed *value)
+{
+  rig_controller_insert_path_value (controller,
+                                    property,
+                                    t,
+                                    value);
+}
+
 void
 rig_engine_op_controller_path_set_node (RigEngine *engine,
                                         RigController *controller,
@@ -862,7 +1005,9 @@ rig_engine_op_controller_path_set_node (RigEngine *engine,
   pb_op->controller_path_set_node->value =
     pb_property_value_new (serializer, value);
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_path_set_node_apply_real (engine->apply_op_ctx, controller,
+                                       property, t, value);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 /* XXX: This is equivalent to _add_path_node so should be redundant! */
@@ -887,11 +1032,8 @@ _apply_op_controller_path_set_node (RigEngineOpApplyContext *ctx,
                            property->spec->type,
                            set_node->value);
 
-  rig_controller_insert_path_value (controller,
-                                    property,
-                                    set_node->t,
-                                    &boxed);
-
+  controller_path_set_node_apply_real (ctx, controller, property, set_node->t,
+                                       &boxed);
   return true;
 }
 
@@ -931,6 +1073,14 @@ _map_op_controller_path_set_node (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_add_property_apply_real (RigEngineOpApplyContext *ctx,
+                                    RigController *controller,
+                                    RutProperty *property)
+{
+  rig_controller_add_property (controller, property);
+}
+
 void
 rig_engine_op_controller_add_property (RigEngine *engine,
                                        RigController *controller,
@@ -949,7 +1099,9 @@ rig_engine_op_controller_add_property (RigEngine *engine,
   pb_op->controller_add_property->object_id = (intptr_t)property->object;
   pb_op->controller_add_property->property_id = property->id;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_add_property_apply_real (engine->apply_op_ctx,
+                                      controller, property);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -967,7 +1119,7 @@ _apply_op_controller_add_property (RigEngineOpApplyContext *ctx,
 
   property = rut_introspectable_get_property (object, add_property->property_id);
 
-  rig_controller_add_property (controller, property);
+  controller_add_property_apply_real (ctx, controller, property);
 
   return true;
 }
@@ -1000,6 +1152,14 @@ _map_op_controller_add_property (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_remove_property_apply_real (RigEngineOpApplyContext *ctx,
+                                       RigController *controller,
+                                       RutProperty *property)
+{
+  rig_controller_remove_property (controller, property);
+}
+
 void
 rig_engine_op_controller_remove_property (RigEngine *engine,
                                           RigController *controller,
@@ -1018,7 +1178,9 @@ rig_engine_op_controller_remove_property (RigEngine *engine,
   pb_op->controller_remove_property->object_id = (intptr_t)property->object;
   pb_op->controller_remove_property->property_id = property->id;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_remove_property_apply_real (engine->apply_op_ctx,
+                                         controller, property);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -1036,7 +1198,7 @@ _apply_op_controller_remove_property (RigEngineOpApplyContext *ctx,
 
   property = rut_introspectable_get_property (object, remove_property->property_id);
 
-  rig_controller_remove_property (controller, property);
+  controller_remove_property_apply_real (ctx, controller, property);
 
   return true;
 }
@@ -1069,6 +1231,15 @@ _map_op_controller_remove_property (RigEngineOpMapContext *ctx,
   return true;
 }
 
+static void
+controller_property_set_method_apply_real (RigEngineOpApplyContext *ctx,
+                                           RigController *controller,
+                                           RutProperty *property,
+                                           RigControllerMethod method)
+{
+  rig_controller_set_property_method (controller, property, method);
+}
+
 void
 rig_engine_op_controller_property_set_method (RigEngine *engine,
                                               RigController *controller,
@@ -1089,7 +1260,9 @@ rig_engine_op_controller_property_set_method (RigEngine *engine,
   pb_op->controller_property_set_method->property_id = property->id;
   pb_op->controller_property_set_method->method = method;
 
-  engine->apply_op_callback (pb_op, engine->apply_op_data);
+  controller_property_set_method_apply_real (engine->apply_op_ctx,
+                                             controller, property, method);
+  engine->log_op_callback (pb_op, engine->log_op_data);
 }
 
 static bool
@@ -1107,7 +1280,8 @@ _apply_op_controller_property_set_method (RigEngineOpApplyContext *ctx,
 
   property = rut_introspectable_get_property (object, set_method->property_id);
 
-  rig_controller_set_property_method (controller, property, set_method->method);
+  controller_property_set_method_apply_real (ctx, controller, property,
+                                             set_method->method);
 
   return true;
 }
@@ -1353,6 +1527,8 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
         {
           status = false;
 
+          g_warning ("Failed to map operation");
+
           /* Note: all of the operations are allocated on the
            * frame-stack so we don't need to explicitly free anything.
            */
@@ -1362,7 +1538,10 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
       if (apply_ctx)
         {
           if (!_rig_engine_ops [pb_op->type].apply_op (apply_ctx, pb_op))
-            status = false;
+            {
+              g_warning ("Failed to apply operation");
+              status = false;
+            }
         }
     }
 

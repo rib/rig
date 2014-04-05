@@ -112,27 +112,12 @@ nop_unregister_id_cb (uint64_t id, void *user_data)
 #endif
 
 static void
-apply_edit_op_cb (Rig__Operation *pb_op,
-                  void *user_data)
+log_edit_op_cb (Rig__Operation *pb_op,
+                void *user_data)
 {
   RigEditor *editor = user_data;
 
-  bool status = rig_engine_pb_op_apply (&editor->apply_op_ctx, pb_op);
-  g_warn_if_fail (status);
-
   rut_queue_push_tail (editor->edit_ops, pb_op);
-
-#if 0
-  switch (pb_op->type)
-    {
-    case RIG_ENGINE_OP_TYPE_SET_PLAY_MODE:
-      break;
-    default:
-      play_mode_op = rig_engine_pb_op_map ();
-      rut_queue_push_tail (editor->play_ops, play_mode_op);
-      break;
-    }
-#endif
 }
 
 static void *
@@ -2583,7 +2568,7 @@ rig_editor_new (const char *filename)
                                                  simulator_connected_cb,
                                                  editor);
 
-  rig_engine_set_apply_op_callback (engine, apply_edit_op_cb, editor);
+  rig_engine_set_log_op_callback (engine, log_edit_op_cb, editor);
 
   /* XXX: we should have a better way of handling this ui load
    * callback. Currently it's not possible to set the callback until
@@ -2599,6 +2584,7 @@ rig_editor_new (const char *filename)
                                     nop_register_id_cb,
                                     NULL, /* unregister id */
                                     editor); /* user data */
+  rig_engine_set_apply_op_context (engine, &editor->apply_op_ctx);
 
   rig_engine_op_copy_context_init (&editor->copy_op_ctx,
                                    engine);
