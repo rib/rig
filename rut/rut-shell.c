@@ -2205,7 +2205,7 @@ pointer_grab_cb (RutInputEvent *event, void *user_data)
                                   pointer_grab_cb,
                                   user_data);
 
-#ifdef USE_XLIB
+#if 0 //USE_XLIB
           /* X11 doesn't implicitly grab the mouse on pointer-down events
            * so we have to do it explicitly... */
           if (grab->x11_grabbed)
@@ -2247,7 +2247,7 @@ rut_shell_grab_pointer (RutShell *shell,
                         pointer_grab_cb,
                         grab);
 
-#ifdef USE_XLIB
+#if 0 //USE_XLIB
   /* X11 doesn't implicitly grab the mouse on pointer-down events
    * so we have to do it explicitly... */
   if (shell->sdl_subsystem == SDL_SYSWM_X11)
