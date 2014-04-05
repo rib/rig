@@ -814,14 +814,13 @@ rig_renderer_init (RigEngine *engine)
                       /* declarations */
                       "varying vec4 shadow_coords;\n",
                       /* post */
-                      "vec4 texel10 = texture2D (cogl_sampler10,\n"
-                      "                         shadow_coords.xy);\n"
-                      "float distance_from_light = texel10.r + 0.0005;\n"
-                      "float shadow = 1.0;\n"
-                      "if (distance_from_light < shadow_coords.z)\n"
-                      "  shadow = 0.5;\n"
-
-                      "cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n");
+                      "  vec4 texel10 =\n"
+                      "    texture2D (cogl_sampler10, shadow_coords.xy);\n"
+                      "  float distance_from_light = texel10.r + 0.0005;\n"
+                      "  float shadow = 1.0;\n"
+                      "  if (distance_from_light < shadow_coords.z)\n"
+                      "    shadow = 0.5;\n"
+                      "  cogl_color_out.rgb = shadow * cogl_color_out.rgb;\n");
 
   engine->pointalism_halo_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -829,10 +828,11 @@ rig_renderer_init (RigEngine *engine)
          "varying vec4 av_color;\n",
 
          /* post */
-         "cogl_color_out = av_color;\n"
-         "cogl_color_out *= texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
-         "if (cogl_color_out.a > 0.90 || cogl_color_out.a <= 0.0)\n"
-         "  discard;\n");
+         "  cogl_color_out = av_color;\n"
+         "  cogl_color_out *=\n"
+         "    texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+         "  if (cogl_color_out.a > 0.90 || cogl_color_out.a <= 0.0)\n"
+         "    discard;\n");
 
   engine->pointalism_opaque_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -840,10 +840,12 @@ rig_renderer_init (RigEngine *engine)
          "varying vec4 av_color;\n",
 
          /* post */
-         "cogl_color_out = av_color;\n"
-         "cogl_color_out *= texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
-         "if (cogl_color_out.a < 0.90)\n"
-         "  discard;\n");
+         "  cogl_color_out = av_color;\n"
+         "  cogl_color_out *=\n"
+         "    cogl_texture_lookup0 (cogl_sampler0,\n"
+         "                          vec4(cogl_tex_coord0_in.st, 0.0, 1.0));\n"
+         "  if (cogl_color_out.a < 0.90)\n"
+         "    discard;\n");
 
   engine->hair_simple_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
@@ -853,27 +855,31 @@ rig_renderer_init (RigEngine *engine)
                       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
                       "uniform vec3 light0_direction_norm;\n",
                       /* post */
-                      "vec4 texel = texture2D (cogl_sampler11,\n"
-                      "                        cogl_tex_coord11_in.st);\n"
-                      "cogl_color_out *= texel;\n"
-                      "if (cogl_color_out.a < 0.9) discard;\n"
-                      "vec3 E = normalize(eye_direction);\n"
-                      "vec3 L = normalize (light0_direction_norm);\n"
-                      "vec3 H = normalize (L + E);\n"
-                      "vec3 N = normalize (normal);\n"
-                      "vec3 Ka = light0_ambient.rgb;\n"
-                      "vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-                      "vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-                      "float Pd = max (0.0, dot (N, L));\n"
-                      "float Ps = max (0.0, dot (N, H));\n"
-                      "float u = max (0.0, dot (N, L));\n"
-                      "float v = max (0.0, dot (N, H));\n"
-                      "if (Pd > 0.0)\n"
-                      "  Kd = light0_diffuse.rgb * pow (1.0 - (u * u), Pd / 2.0);\n"
-                      "if (Ps > 0.0)\n"
-                      "  Ks = light0_specular.rgb * pow (1.0 - (v * v), Ps / 2.0);\n"
-                      "vec3 color = Ka + Kd + Ks;\n"
-                      "cogl_color_out.rgb *= color;\n"
+                      "  vec4 texel =\n"
+                      "    texture2D (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "  cogl_color_out *= texel;\n"
+                      "  if (cogl_color_out.a < 0.9)\n"
+                      "    discard;\n"
+                      "\n"
+                      "  vec3 E = normalize (eye_direction);\n"
+                      "  vec3 L = normalize (light0_direction_norm);\n"
+                      "  vec3 H = normalize (L + E);\n"
+                      "  vec3 N = normalize (normal);\n"
+                      "  vec3 Ka = light0_ambient.rgb;\n"
+                      "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
+                      "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
+                      "  float Pd = max (0.0, dot (N, L));\n"
+                      "  float Ps = max (0.0, dot (N, H));\n"
+                      "  float u = max (0.0, dot (N, L));\n"
+                      "  float v = max (0.0, dot (N, H));\n"
+                      "\n"
+                      "  if (Pd > 0.0)\n"
+                      "    Kd = light0_diffuse.rgb * pow (1.0 - (u * u), Pd / 2.0);\n"
+                      "  if (Ps > 0.0)\n"
+                      "    Ks = light0_specular.rgb * pow (1.0 - (v * v), Ps / 2.0);\n"
+                      "\n"
+                      "  vec3 color = Ka + Kd + Ks;\n"
+                      "  cogl_color_out.rgb *= color;\n"
                       );
 
   engine->hair_material_snippet =
@@ -886,27 +892,36 @@ rig_renderer_init (RigEngine *engine)
                       "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
                       "uniform float material_shininess;\n",
                       /* post */
-                      "vec4 texel = texture2D (cogl_sampler11,\n"
-                      "                        cogl_tex_coord11_in.st);\n"
-                      "cogl_color_out *= texel;\n"
-                      "if (cogl_color_out.a < 0.9) discard;\n"
-                      "vec3 E = normalize(eye_direction);\n"
-                      "vec3 L = normalize (light0_direction_norm);\n"
-                      "vec3 H = normalize (L + E);\n"
-                      "vec3 N = normalize (normal);\n"
-                      "vec3 Ka = light0_ambient.rgb * material_ambient.rgb;\n"
-                      "vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
-                      "vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
-                      "float Pd = max (0.0, dot (N, L));\n"
-                      "float Ps = max (0.0, dot (N, H));\n"
-                      "float u = max (0.0, dot (N, L));\n"
-                      "float v = max (0.0, dot (N, H));\n"
-                      "if (Pd > 0.0)\n"
-                      "  Kd = (light0_diffuse.rgb * material_diffuse.rgb) * pow (1.0 - (u * u), Pd / 2.0);\n"
-                      "if (Ps > 0.0)\n"
-                      "  Ks = (light0_specular.rgb * material_specular.rgb) * pow (1.0 - (v * v), Ps / 2.0);\n"
-                      "vec3 color = Ka + Kd + Ks;\n"
-                      "cogl_color_out.rgb *= color;\n"
+                      "  vec4 texel =\n"
+                      "    texture2D (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "\n"
+                      "  cogl_color_out *= texel;\n"
+                      "  if (cogl_color_out.a < 0.9)\n"
+                      "    discard;\n"
+                      "\n"
+                      "  vec3 E = normalize(eye_direction);\n"
+                      "  vec3 L = normalize (light0_direction_norm);\n"
+                      "  vec3 H = normalize (L + E);\n"
+                      "  vec3 N = normalize (normal);\n"
+                      "  vec3 Ka = light0_ambient.rgb * material_ambient.rgb;\n"
+                      "  vec3 Kd = vec3 (0.0, 0.0, 0.0);\n"
+                      "  vec3 Ks = vec3 (0.0, 0.0, 0.0);\n"
+                      "  float Pd = max (0.0, dot (N, L));\n"
+                      "  float Ps = max (0.0, dot (N, H));\n"
+                      "  float u = max (0.0, dot (N, L));\n"
+                      "  float v = max (0.0, dot (N, H));\n"
+                      "\n"
+                      "  if (Pd > 0.0) {\n"
+                      "    Kd = (light0_diffuse.rgb * material_diffuse.rgb) *\n"
+                      "         pow (1.0 - (u * u), Pd / 2.0);\n"
+                      "  }\n"
+                      "  if (Ps > 0.0) {\n"
+                      "    Ks = (light0_specular.rgb * material_specular.rgb) *\n"
+                      "         pow (1.0 - (v * v), Ps / 2.0);\n"
+                      "  }\n"
+                      "\n"
+                      "  vec3 color = Ka + Kd + Ks;\n"
+                      "  cogl_color_out.rgb *= color;\n"
                       );
 
   engine->hair_vertex_snippet =
