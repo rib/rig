@@ -508,11 +508,6 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
   else if (type == &rig_pointalism_grid_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__POINTALISM_GRID;
-      pb_component->grid =
-        rig_pb_new (serializer,
-                    Rig__Entity__Component__PointalismGrid,
-                    rig__entity__component__pointalism_grid__init);
-
       serialize_instrospectable_properties (component,
                                             &pb_component->n_properties,
                                             (void **)&pb_component->properties,
@@ -2387,12 +2382,10 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
       {
         Rig__Entity__Component__PointalismGrid *pb_grid = pb_component->grid;
         RigPointalismGrid *grid;
-        float cell_size;
+        float cell_size = 20;
 
-        if (pb_grid->has_cell_size)
+        if (pb_grid && pb_grid->has_cell_size)
           cell_size = pb_grid->cell_size;
-        else
-          cell_size = 20;
 
         grid = rig_pointalism_grid_new (unserializer->engine->ctx, cell_size);
 
