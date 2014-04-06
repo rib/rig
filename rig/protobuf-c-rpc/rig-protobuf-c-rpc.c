@@ -1786,6 +1786,27 @@ rig_pb_rpc_server_new (PB_RPC_AddressType type,
       return NULL;
     }
 
+#ifdef RIG_ENABLE_DEBUG
+  if (type == PROTOBUF_C_RPC_ADDRESS_TCP)
+    {
+      struct sockaddr addr;
+      socklen_t len = sizeof (addr);
+      if (getsockname (fd, &addr, &len) < 0)
+        {
+          g_warning ("Failed to query back the address of the listening "
+                     "socket: %s", strerror (errno));
+        }
+      else
+        {
+          struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
+          int port = ntohs (addr_in->sin_port);
+          const uint8_t *ip = (const uint8_t *) &(addr_in->sin_addr);
+          g_message ("Listening on socket: %u.%u.%u.%u:%d",
+                     ip[0], ip[1], ip[2], ip[3], port);
+        }
+    }
+#endif
+
   return server_new_from_listening_fd (fd, type, name, service, dispatch);
 }
 
