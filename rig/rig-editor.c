@@ -2782,6 +2782,22 @@ rig_editor_new (const char *filename)
   /* TODO move into editor */
   rig_avahi_run_browser (engine);
 
+  if (getenv ("RIG_SLAVE_ADDRESS"))
+    {
+      const char *slave_addr = getenv ("RIG_SLAVE_ADDRESS");
+      char **slave_addrv = g_strsplit (slave_addr, ":", 2);
+      if (slave_addrv[0] && slave_addrv[1])
+        {
+          RigSlaveAddress *slave_address =
+            rig_slave_address_new (slave_addrv[0], /* name */
+                                   slave_addrv[0], /* address */
+                                   g_ascii_strtoull(slave_addrv[1], NULL, 10)); /* port */
+          engine->slave_addresses =
+            g_list_prepend (engine->slave_addresses, slave_address);
+        }
+      g_strfreev (slave_addrv);
+    }
+
   rut_shell_add_input_callback (editor->shell,
                                 rig_engine_input_handler,
                                 engine, NULL);
