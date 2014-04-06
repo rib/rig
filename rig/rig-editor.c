@@ -215,8 +215,10 @@ derive_play_mode_ui (RigEditor *editor)
 
   rig_engine_set_play_mode_ui (engine, NULL);
 
-  g_warn_if_fail (editor->edit_to_play_object_map == NULL);
-  g_warn_if_fail (editor->play_to_edit_object_map == NULL);
+  g_warn_if_fail (editor->edit_to_play_object_map == NULL ||
+                  g_hash_table_size (editor->edit_to_play_object_map) == 0);
+  g_warn_if_fail (editor->play_to_edit_object_map == NULL ||
+                  g_hash_table_size (editor->play_to_edit_object_map) == 0);
 
   editor->edit_to_play_object_map =
     g_hash_table_new (NULL, /* direct hash */
@@ -273,18 +275,67 @@ derive_play_mode_ui (RigEditor *editor)
 }
 
 static void
+delete_object_cb (RutObject *object, void *user_data)
+{
+  RigEditor *editor = user_data;
+  void *edit_mode_object;
+  void *play_mode_object;
+
+  edit_mode_object =
+    g_hash_table_lookup (editor->play_to_edit_object_map, object);
+  if (edit_mode_object)
+    play_mode_object = object;
+  else
+    {
+      play_mode_object =
+        g_hash_table_lookup (editor->edit_to_play_object_map, object);
+
+      g_warn_if_fail (play_mode_object);
+
+      edit_mode_object = object;
+    }
+
+  g_hash_table_remove (editor->edit_to_play_object_map, edit_mode_object);
+  g_hash_table_remove (editor->play_to_edit_object_map, play_mode_object);
+}
+
+#ifdef RIG_ENABLE_DEBUG
+static void
+dump_left_over_object_cb (gpointer key,
+                          gpointer value,
+                          gpointer user_data)
+{
+  g_warning ("  %s", rig_engine_get_object_debug_name (value));
+}
+#endif /* RIG_ENABLE_DEBUG */
+
+static void
 reset_play_mode_ui (RigEditor *editor)
 {
   RigEngine *engine = editor->engine;
   RigUI *play_mode_ui;
 
-  if (editor->edit_to_play_object_map)
+  /* First make sure to cleanup the current ui  */
+  rig_engine_set_play_mode_ui (engine, NULL);
+
+  /* Kick garbage collection now so that all the objects being
+   * replaced are unregistered before before we load the new UI.
+   */
+  rig_engine_garbage_collect (engine,
+                              delete_object_cb,
+                              editor);
+
+#ifdef RIG_ENABLE_DEBUG
+  if (editor->edit_to_play_object_map &&
+      G_UNLIKELY (g_hash_table_size (editor->edit_to_play_object_map)))
     {
-      g_hash_table_destroy (editor->edit_to_play_object_map);
-      g_hash_table_destroy (editor->play_to_edit_object_map);
-      editor->edit_to_play_object_map = NULL;
-      editor->play_to_edit_object_map = NULL;
+      g_warning ("BUG: The following objects weren't properly unregistered "
+                 "by reset_play_mode_ui():");
+      g_hash_table_foreach (editor->edit_to_play_object_map,
+                            dump_left_over_object_cb,
+                            NULL);
     }
+#endif
 
   play_mode_ui = derive_play_mode_ui (editor);
   rig_engine_set_play_mode_ui (engine, play_mode_ui);
@@ -2382,31 +2433,6 @@ handle_edit_operations (RigEditor *editor,
     rig_slave_master_forward_pb_ui_edit (l->data, pb_frame_setup->edit);
 
   rut_queue_clear (editor->edit_ops);
-}
-
-static void
-delete_object_cb (RutObject *object, void *user_data)
-{
-  RigEditor *editor = user_data;
-  void *edit_mode_object;
-  void *play_mode_object;
-
-  edit_mode_object =
-    g_hash_table_lookup (editor->play_to_edit_object_map, object);
-  if (edit_mode_object)
-    play_mode_object = object;
-  else
-    {
-      play_mode_object =
-        g_hash_table_lookup (editor->edit_to_play_object_map, object);
-
-      g_warn_if_fail (play_mode_object);
-
-      edit_mode_object = object;
-    }
-
-  g_hash_table_remove (editor->edit_to_play_object_map, edit_mode_object);
-  g_hash_table_remove (editor->play_to_edit_object_map, play_mode_object);
 }
 
 static void

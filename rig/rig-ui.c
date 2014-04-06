@@ -106,9 +106,7 @@ rig_ui_reap (RigUI *ui)
   for (l = ui->controllers; l; l = l->next)
     {
       RigController *controller = l->data;
-
       rig_controller_reap (controller, engine);
-
       rut_object_release (controller, ui);
     }
 
@@ -118,7 +116,22 @@ rig_ui_reap (RigUI *ui)
   g_list_free (ui->controllers);
   ui->controllers = NULL;
 
-  rig_engine_queue_delete (engine, ui);
+  for (l = ui->assets; l; l = l->next)
+    {
+      RigAsset *asset = l->data;
+      rig_asset_reap (asset, engine);
+      rut_object_release (asset, ui);
+    }
+
+  /* We could potentially leave these to be freed in _free() but it
+   * seems a bit ugly to keep the list containing pointers to
+   * assets no longer owned by the ui. */
+  g_list_free (ui->assets);
+  ui->assets = NULL;
+
+  /* XXX: The ui itself is just a normal ref-counted object that
+   * doesn't need to be unregistered so we don't call
+   * rig_engine_queue_delete() for it */
 }
 
 RutType rig_ui_type;
