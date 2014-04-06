@@ -486,7 +486,10 @@ rig_diamond_set_size (RutObject *object, float size)
     return;
 
   if (diamond->slice)
-    rut_object_unref (diamond->slice);
+    {
+      rut_object_unref (diamond->slice);
+      diamond->slice = NULL;
+    }
 
   diamond->size = size;
 
@@ -560,7 +563,13 @@ rig_diamond_set_image_size (RutObject *self,
     return;
 
   if (diamond->slice)
-    rut_object_unref (diamond->slice);
+    {
+      rut_object_unref (diamond->slice);
+      diamond->slice = NULL;
+    }
+
+  diamond->tex_width = width;
+  diamond->tex_height = height;
 
   rut_closure_list_invoke (&diamond->updated_cb_list,
                            RigDiamondUpdateCallback,
