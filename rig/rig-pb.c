@@ -500,10 +500,6 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
   else if (type == &rig_diamond_type)
     {
       pb_component->type = RIG__ENTITY__COMPONENT__TYPE__DIAMOND;
-      pb_component->diamond = rig_pb_new (serializer,
-                                          Rig__Entity__Component__Diamond,
-                                          rig__entity__component__diamond__init);
-
       serialize_instrospectable_properties (component,
                                             &pb_component->n_properties,
                                             (void **)&pb_component->properties,
@@ -2369,7 +2365,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         float diamond_size = 100;
         RigDiamond *diamond;
 
-        if (pb_diamond->has_size)
+        if (pb_diamond && pb_diamond->has_size)
           diamond_size = pb_diamond->size;
 
         diamond = rig_diamond_new (unserializer->engine->ctx, diamond_size);
