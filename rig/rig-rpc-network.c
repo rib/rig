@@ -120,10 +120,14 @@ rig_rpc_server_new (RutShell *shell,
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof (addr);
   int listening_fd;
+  char *port;
+
+  if (!(port = getenv ("_RIG_SERVER_PORT")))
+    port = "0";
 
   server->pb_rpc_server =
     rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                           "0",
+                           port,
                            service,
                            dispatch);
 
