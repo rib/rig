@@ -127,6 +127,38 @@ rig_slave_master_new (RigEngine *engine,
 
   master->slave_address = rut_object_ref (slave_address);
 
+  if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL)
+    {
+      RutException *catch = NULL;
+      struct timespec spec;
+
+      if (!rut_adb_run_shell_cmd (slave_address->serial,
+                                  &catch,
+                                  "shell:am force-stop org.rig.app"))
+        {
+          g_warning ("Failed to force stop of Rig slave application on Android "
+                     "device %s", slave_address->serial);
+          rut_exception_free (catch);
+          catch = NULL;
+        }
+
+      if (!rut_adb_run_shell_cmd (slave_address->serial,
+                                  &catch,
+                                  "shell:am start -n "
+                                  "org.rig.app/org.rig.app.RigSlave"))
+        {
+          g_warning ("Failed to start Rig slave application on Android "
+                     "device %s", slave_address->serial);
+          rut_exception_free (catch);
+          catch = NULL;
+        }
+
+      /* Give the app a bit of time to start before trying to connect... */
+      spec.tv_sec = 0;
+      spec.tv_nsec = 500000000;
+      nanosleep (&spec, NULL);
+    }
+
   master->rpc_client =
     rig_rpc_client_new (engine->shell,
                         slave_address->hostname,
