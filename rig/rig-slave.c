@@ -386,6 +386,7 @@ rig_slave_init (RutShell *shell, void *user_data)
 {
   RigSlave *slave = user_data;
   RigEngine *engine;
+  int port;
 
   slave->ui_update_closure = NULL;
 
@@ -420,9 +421,16 @@ rig_slave_init (RutShell *shell, void *user_data)
 
   slave->pending_edits = rut_queue_new ();
 
+#ifdef __ANDROID__
+  port = 64872;
+#else
+  port = -1;
+#endif
+
   /* TODO: move from engine to slave */
   engine->slave_service = rig_rpc_server_new (engine->shell,
                                               &rig_slave_service.base,
+                                              port,
                                               server_error_handler,
                                               new_client_handler,
                                               slave);

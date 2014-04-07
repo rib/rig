@@ -97,5 +97,6 @@
 #include "rut-number-slider.h"
 #include "rut-color-button.h"
 #include "rut-poll.h"
+#include "rut-adb.h"
 
 #endif /* _RUT_H_ */

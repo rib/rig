@@ -109,6 +109,9 @@ struct _RigEditor
   RigAsset *button_input_builtin_asset;
   GList *result_input_closures;
   GList *asset_enumerators;
+
+  RutAdbDeviceTracker *adb_tracker;
+  int next_forward_port;
 };
 
 static void
@@ -2385,10 +2388,12 @@ handle_edit_operations (RigEditor *editor,
   Rig__UIEdit *play_edits;
   GList *l;
 
+  if (!editor->edit_ops->len)
+    return;
+
   pb_frame_setup->edit = rig_pb_new (serializer, Rig__UIEdit, rig__uiedit__init);
   pb_frame_setup->edit->n_ops = editor->edit_ops->len;
-  if (pb_frame_setup->edit->n_ops)
-    pb_frame_setup->edit->ops = serialize_ops (editor, serializer);
+  pb_frame_setup->edit->ops = serialize_ops (editor, serializer);
 
   pb_frame_setup->play_edit = NULL;
 
@@ -2699,6 +2704,71 @@ init_editor_engine (RigEditor *editor)
   create_ui (editor);
 }
 
+static void
+adb_devices_cb (const char **serials,
+                int n_devices,
+                void *user_data)
+{
+  RigEditor *editor = user_data;
+  RigEngine *engine = editor->engine;
+  RutException *catch = NULL;
+  int i;
+  GList *l, *next;
+
+  for (l = engine->slave_addresses; l; l = next)
+    {
+      RigSlaveAddress *slave_address = l->data;
+
+      next = l->next;
+
+      if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL)
+        {
+          engine->slave_addresses =
+            g_list_delete_link (engine->slave_addresses, l);
+          rut_object_unref (slave_address);
+        }
+    }
+
+  /* FIXME: first use :list-forward and only remove the forwards we own */
+  if (!rut_adb_command (NULL, &catch, "host:killforward-all"))
+    {
+      g_warning ("Failed to clear ADB daemon port forwards");
+      rut_exception_free (catch);
+      return;
+    }
+
+  editor->next_forward_port = 64872;
+
+  g_message ("ADB devices update:");
+  for (i = 0; i < n_devices; i++)
+    {
+      RigSlaveAddress *slave_address;
+      char *model = rut_adb_getprop (serials[i], "ro.product.model", &catch);
+      char *abi = rut_adb_getprop (serials[i], "ro.product.cpu.abi", &catch);
+      char *abi2 = rut_adb_getprop (serials[i], "ro.product.cpu.abi2", &catch);
+      int forward_port = editor->next_forward_port++;
+
+      if (!rut_adb_command (serials[i], &catch,
+                            "host:forward:tcp:%d;tcp:64872",
+                            forward_port))
+        {
+          g_warning ("Failed to forward port 64872 for device %s via ADB daemon: %s",
+                     serials[i], catch->message);
+          rut_exception_free (catch);
+          catch = NULL;
+          continue;
+        }
+
+      slave_address =
+        rig_slave_address_new_adb (model, serials[i], forward_port);
+      engine->slave_addresses =
+        g_list_prepend (engine->slave_addresses, slave_address);
+
+      g_message ("  serial=%s model=\"%s\" abi=%s/%s local port=%d",
+                 serials[i], model, abi, abi2, forward_port);
+    }
+}
+
 RigEditor *
 rig_editor_new (const char *filename)
 {
@@ -2782,6 +2852,10 @@ rig_editor_new (const char *filename)
   /* TODO move into editor */
   rig_avahi_run_browser (engine);
 
+  editor->adb_tracker = rut_adb_device_tracker_new (editor->shell,
+                                                    adb_devices_cb,
+                                                    editor);
+
   if (getenv ("RIG_SLAVE_ADDRESS"))
     {
       const char *slave_addr = getenv ("RIG_SLAVE_ADDRESS");
@@ -2789,9 +2863,10 @@ rig_editor_new (const char *filename)
       if (slave_addrv[0] && slave_addrv[1])
         {
           RigSlaveAddress *slave_address =
-            rig_slave_address_new (slave_addrv[0], /* name */
-                                   slave_addrv[0], /* address */
-                                   g_ascii_strtoull(slave_addrv[1], NULL, 10)); /* port */
+            rig_slave_address_new_tcp (slave_addrv[0], /* name */
+                                       slave_addrv[0], /* address */
+                                       g_ascii_strtoull (slave_addrv[1],
+                                                         NULL, 10)); /* port */
           engine->slave_addresses =
             g_list_prepend (engine->slave_addresses, slave_address);
         }

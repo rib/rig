@@ -40,8 +40,12 @@ _rig_slave_address_free (void *object)
 {
   RigSlaveAddress *slave_address = object;
 
+  if (slave_address->serial)
+    g_free (slave_address->serial);
+
   g_free (slave_address->name);
   g_free (slave_address->hostname);
+
   rut_object_free (RigSlaveAddress, slave_address);
 }
 
@@ -50,27 +54,40 @@ static RutType rig_slave_address_type;
 static void
 _rig_slave_address_init_type (void)
 {
-
-  RutType *type = &rig_slave_address_type;
-#define TYPE RigSlaveAddress
-
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_slave_address_free);
-
-#undef TYPE
+  rut_type_init (&rig_slave_address_type,
+                 "RigSlaveAddress", _rig_slave_address_free);
 }
 
 RigSlaveAddress *
-rig_slave_address_new (const char *name,
-                       const char *hostname,
-                       int port)
+rig_slave_address_new_tcp (const char *name,
+                           const char *hostname,
+                           int port)
 {
   RigSlaveAddress *slave_address =
     rut_object_alloc0 (RigSlaveAddress, &rig_slave_address_type, _rig_slave_address_init_type);
 
-
+  slave_address->type = RIG_SLAVE_ADDRESS_TYPE_TCP;
 
   slave_address->name = g_strdup (name);
   slave_address->hostname = g_strdup (hostname);
+  slave_address->port = port;
+
+  return slave_address;
+}
+
+RigSlaveAddress *
+rig_slave_address_new_adb (const char *name,
+                           const char *serial,
+                           int port)
+{
+  RigSlaveAddress *slave_address =
+    rut_object_alloc0 (RigSlaveAddress, &rig_slave_address_type, _rig_slave_address_init_type);
+
+  slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL;
+
+  slave_address->name = g_strdup (name);
+  slave_address->serial = g_strdup (serial);
+  slave_address->hostname = g_strdup ("127.0.0.1");
   slave_address->port = port;
 
   return slave_address;

@@ -108,6 +108,7 @@ _rig_rpc_server_init_type (void)
 RigRPCServer *
 rig_rpc_server_new (RutShell *shell,
                     ProtobufCService *service,
+                    int port,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data)
@@ -120,14 +121,19 @@ rig_rpc_server_new (RutShell *shell,
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof (addr);
   int listening_fd;
-  char *port;
+  char *port_str;
 
-  if (!(port = getenv ("_RIG_SERVER_PORT")))
-    port = "0";
+  port_str = getenv ("_RIG_SERVER_PORT");
+  if (port_str)
+    port_str = g_strdup (port_str);
+  else if (!port_str && port > 0)
+    port_str = g_strdup_printf ("%d", port);
+  else
+    port_str = g_strdup ("0");
 
   server->pb_rpc_server =
     rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                           port,
+                           port_str,
                            service,
                            dispatch);
 

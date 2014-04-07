@@ -35,8 +35,6 @@
 
 #include "rut-exception.h"
 
-#define RUT_IO_EXCEPTION 1
-
 typedef enum _RutIOException
 {
   RUT_IO_EXCEPTION_BAD_VALUE = 1,
@@ -45,10 +43,14 @@ typedef enum _RutIOException
 } RutIOException;
 
 bool
-rut_os_read (int fd, uint8_t *data, int len, RutException **e);
+rut_os_read (int fd, void *data, int *len, RutException **e);
+
+/* Doesn't give up until it's read the expected amount of data... */
+bool
+rut_os_read_len (int fd, void *data, int len, RutException **e);
 
 bool
-rut_os_write (int fd, uint8_t *data, int len, RutException **e);
+rut_os_write (int fd, void *data, int len, RutException **e);
 
 int
 rut_os_connect_to_abstract_socket (const char *socket_name);

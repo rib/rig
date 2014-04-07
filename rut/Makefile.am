@@ -160,6 +160,8 @@ librut_la_SOURCES = \
     rut-glib-source.c \
     rut-sdl-keysyms.c \
     rut-sdl-keysyms.h \
+    rut-adb.h \
+    rut-adb.c \
     $(source_h)
 
 if USE_GSTREAMER

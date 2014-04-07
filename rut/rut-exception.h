@@ -34,6 +34,14 @@
 
 #include <glib.h>
 
+/* XXX: hack; these aren't GQuarks and aren't extensible... */
+typedef enum _RutExceptionDomain
+{
+  RUT_IO_EXCEPTION = 1,
+  RUT_ADB_EXCEPTION,
+  RUT_N_EXCEPTION_DOMAINS
+} RutExceptionDomain;
+
 typedef struct _RutException
 {
   GQuark domain;

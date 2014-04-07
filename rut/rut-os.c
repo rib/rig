@@ -72,12 +72,39 @@ read_write_errno_to_exception_code (int err)
 }
 
 bool
-rut_os_read (int fd, uint8_t *data, int len, RutException **e)
+rut_os_read (int fd, void *data, int *len, RutException **e)
 {
-  int remaining = len;
+  uint8_t *buffer = data;
 
   do {
-    int ret = read (fd, data, len);
+    int ret = read (fd, buffer, *len);
+    if (ret < 0)
+      {
+        if (ret == EAGAIN || ret == EINTR)
+          continue;
+
+        rut_throw (e,
+                   RUT_IO_EXCEPTION,
+                   read_write_errno_to_exception_code (errno),
+                   "Failed to read file: %s",
+                   strerror (errno));
+        return false;
+      }
+    *len = ret;
+    break;
+  } while (1);
+
+  return true;
+}
+
+bool
+rut_os_read_len (int fd, void *data, int len, RutException **e)
+{
+  int remaining = len;
+  uint8_t *buffer = data;
+
+  do {
+    int ret = read (fd, buffer, len);
     if (ret < 0)
       {
         if (ret == EAGAIN || ret == EINTR)
@@ -91,19 +118,20 @@ rut_os_read (int fd, uint8_t *data, int len, RutException **e)
         return false;
       }
     remaining -= ret;
-    data += ret;
+    buffer += ret;
   } while (remaining);
 
   return true;
 }
 
 bool
-rut_os_write (int fd, uint8_t *data, int len, RutException **e)
+rut_os_write (int fd, void *data, int len, RutException **e)
 {
   int remaining = len;
+  uint8_t *buffer = data;
 
   do {
-    int ret = write (fd, data, len);
+    int ret = write (fd, buffer, len);
     if (ret < 0)
       {
         if (ret == EAGAIN || ret == EINTR)
@@ -117,7 +145,7 @@ rut_os_write (int fd, uint8_t *data, int len, RutException **e)
         return false;
       }
     remaining -= ret;
-    data += ret;
+    buffer += ret;
   } while (remaining);
 
   return true;

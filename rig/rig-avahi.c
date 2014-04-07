@@ -362,7 +362,7 @@ resolve_callback(AvahiServiceResolver *resolver,
 
         avahi_free (t);
 
-        slave_address = rig_slave_address_new (name, host_name, port);
+        slave_address = rig_slave_address_new_tcp (name, host_name, port);
 
         engine->slave_addresses =
           g_list_prepend (engine->slave_addresses, slave_address);
