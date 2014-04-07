@@ -896,7 +896,6 @@ rig_pb_rpc_client_new (PB_RPC_AddressType type,
 
   client->address_type = type;
   client->name = g_strdup (name);
-  client->autoreconnect = true;
 
   client->info.init.idle =
     rig_protobuf_c_dispatch_add_idle (client->dispatch,
