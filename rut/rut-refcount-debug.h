@@ -37,6 +37,9 @@ G_BEGIN_DECLS
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 
 void
+rut_refcount_debug_init (void);
+
+void
 _rut_refcount_debug_object_created (void *object);
 
 void

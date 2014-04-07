@@ -54,6 +54,8 @@ main (int argc, char **argv)
   RigEditor *editor;
   GError *error = NULL;
 
+  rut_init_tls_state ();
+
 #ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
 #endif

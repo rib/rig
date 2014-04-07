@@ -230,6 +230,8 @@ main (int argc, char **argv)
   RigDevice *device;
   GError *error = NULL;
 
+  rut_init_tls_state ();
+
 #ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
 #endif

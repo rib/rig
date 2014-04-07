@@ -722,6 +722,53 @@ fork_simulator (RutShell *shell, RigFrontend *frontend)
 }
 #endif /* !__ANDROID__ && unix */
 
+typedef struct _ThreadSetup
+{
+  RigFrontend *frontend;
+  int fd;
+} ThreadSetup;
+
+static int
+run_simulator (void *user_data)
+{
+  ThreadSetup *setup = user_data;
+  RigFrontend *frontend = setup->frontend;
+  int fd = setup->fd;
+  RigSimulator *simulator;
+
+  g_main_context_push_thread_default (g_main_context_new ());
+
+  simulator = rig_simulator_new (frontend->id, fd);
+
+  rig_simulator_run (simulator);
+
+  rut_object_unref (simulator);
+
+  return 0;
+}
+
+static void
+create_simulator_thread (RutShell *shell,
+                         RigFrontend *frontend)
+{
+  ThreadSetup setup;
+  int sp[2];
+
+  g_return_if_fail (frontend->connected == false);
+
+  if (socketpair (AF_UNIX, SOCK_STREAM, 0, sp) < 0)
+    g_error ("Failed to open simulator ipc socketpair");
+
+  setup.frontend = frontend;
+  setup.fd = sp[1];
+
+  SDL_CreateThread (run_simulator, "Simulator", &setup);
+
+  frontend->fd = sp[0];
+
+  frontend_start_service (shell, frontend);
+}
+
 #ifdef linux
 static void
 handle_simulator_connect_cb (void *user_data,
@@ -825,6 +872,8 @@ spawn_simulator (RutShell *shell, RigFrontend *frontend)
 #elif defined (linux)
   if (getenv ("_RIG_USE_ABSTRACT_SOCKET"))
     bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);
+  else if (getenv ("_RIG_USE_SIMULATOR_THREAD"))
+    create_simulator_thread (shell, frontend);
   else
     fork_simulator (shell, frontend);
 #elif defined (unix)

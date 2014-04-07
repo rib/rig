@@ -91,7 +91,7 @@ typedef struct
 } RutRefcountDebugAction;
 
 static void
-atexit_cb (void);
+destroy_tls_state_cb (void *tls_data);
 
 static void
 object_data_unref (RutRefcountDebugObject *object_data);
@@ -177,10 +177,18 @@ object_data_destroy_cb (void *data)
   object_data_unref (data);
 }
 
+static SDL_TLSID tls;
+
+void
+rut_refcount_debug_init (void)
+{
+  tls = SDL_TLSCreate ();
+}
+
 static RutRefcountDebugState *
 get_state (void)
 {
-  static RutRefcountDebugState *state = NULL;
+  RutRefcountDebugState *state = SDL_TLSGet (tls);
 
   if (state == NULL)
     {
@@ -212,7 +220,7 @@ get_state (void)
       }
 #endif /* RUT_ENABLE_BACKTRACE */
 
-      atexit (atexit_cb);
+      SDL_TLSSet (tls, state, destroy_tls_state_cb);
     }
 
   return state;
@@ -495,21 +503,24 @@ dump_hash_object_cb (void *key,
 }
 
 static void
-atexit_cb (void)
+destroy_tls_state_cb (void *tls_data)
 {
-  RutRefcountDebugState *state = get_state ();
+  RutRefcountDebugState *state = tls_data;
   int size = g_hash_table_size (state->hash);
 
   if (size > 0)
     {
+      //char *thread_name = SDL_GetThreadName ();
+      char *thread_name = g_strdup_printf ("thread-%lu", SDL_ThreadID ());
+      char *filename = g_strconcat ("rut-object-log-", thread_name, ".txt", NULL);
       char *out_name =
-        g_build_filename (g_get_tmp_dir (), "rut-object-log.txt", NULL);
+        g_build_filename (g_get_tmp_dir (), filename, NULL);
       DumpObjectCallbackData data;
 
       if (size == 1)
-        g_warning ("One object was leaked");
+        g_warning ("%s: One object was leaked", thread_name);
       else
-        g_warning ("%i objects were leaked", size);
+        g_warning ("%s: %i objects were leaked", thread_name, size);
 
       data.state = state;
       data.out_file = fopen (out_name, "w");

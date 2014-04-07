@@ -76,6 +76,8 @@ main (int argc, char **argv)
   GOptionContext *context = g_option_context_new (NULL);
   GError *error = NULL;
 
+  rut_init_tls_state ();
+
 #ifdef USE_GSTREAMER
   gst_init (&argc, &argv);
 #endif

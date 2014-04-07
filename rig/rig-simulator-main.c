@@ -48,6 +48,8 @@ main (int argc, char **argv)
   RigFrontendID frontend_id;
   int fd;
 
+  rut_init_tls_state ();
+
 #if 0
   GOptionContext *context = g_option_context_new (NULL);
 

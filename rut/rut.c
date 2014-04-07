@@ -403,3 +403,11 @@ rut_set_assets_location (RutContext *context,
 {
   context->assets_location = g_strdup (assets_location);
 }
+
+void
+rut_init_tls_state (void)
+{
+#ifdef RUT_ENABLE_REFCOUNT_DEBUG
+  rut_refcount_debug_init ();
+#endif
+}

@@ -153,6 +153,9 @@ rut_find_data_file (const char *base_filename);
 CoglTexture *
 _rut_load_texture (RutContext *ctx, const char *filename, CoglError **error);
 
+void
+rut_init_tls_state (void);
+
 G_END_DECLS
 
 #endif /* _RUT_CONTEXT_H_ */

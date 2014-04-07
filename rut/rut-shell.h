@@ -301,7 +301,7 @@ struct _RutShell
 
   RutObject *clipboard;
 
-  int glib_paint_idle;
+  GSource *glib_paint_idle;
   bool redraw_queued;
 
   void (*queue_redraw_callback) (RutShell *shell,

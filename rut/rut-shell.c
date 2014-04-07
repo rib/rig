@@ -1375,7 +1375,7 @@ _rut_shell_init (RutShell *shell)
         /* Actually we don't care about the callback, we just want to
          * pass some data to the dispatch callback... */
         g_source_set_callback (source, NULL, shell, NULL);
-        g_source_attach (source, NULL);
+        g_source_attach (source, g_main_context_get_thread_default ());
 
         rut_list_init (&shell->signal_cb_list);
       }
@@ -1586,8 +1586,8 @@ rut_shell_start_redraw (RutShell *shell)
   g_return_if_fail (shell->redraw_queued == true);
 
   shell->redraw_queued = false;
-  g_source_remove (shell->glib_paint_idle);
-  shell->glib_paint_idle = 0;
+  g_source_destroy (shell->glib_paint_idle);
+  shell->glib_paint_idle = NULL;
 }
 
 void
@@ -2096,7 +2096,7 @@ rut_shell_main (RutShell *shell)
     shell->init_cb (shell, shell->user_data);
 
   rut_source = rut_glib_shell_source_new (shell, G_PRIORITY_DEFAULT);
-  g_source_attach (rut_source, NULL);
+  g_source_attach (rut_source, g_main_context_get_thread_default ());
 
 #ifdef USE_SDL
   if (!shell->headless)
@@ -2108,7 +2108,7 @@ rut_shell_main (RutShell *shell)
       g_main_context_set_poll_func (g_main_context_default (),
                                     sdl_poll_wrapper);
       sdl_source = sdl_glib_source_new (shell, G_PRIORITY_DEFAULT);
-      g_source_attach (sdl_source, NULL);
+      g_source_attach (sdl_source, g_main_context_get_thread_default ());
     }
 #endif
 
@@ -2125,7 +2125,8 @@ rut_shell_main (RutShell *shell)
       g_application_run (application, 0, NULL);
     else
       {
-        shell->main_loop = g_main_loop_new (NULL, TRUE);
+        shell->main_loop =
+          g_main_loop_new (g_main_context_get_thread_default(), TRUE);
         g_main_loop_run (shell->main_loop);
         g_main_loop_unref (shell->main_loop);
       }
@@ -2278,13 +2279,25 @@ rut_shell_grab_pointer (RutShell *shell,
 #endif
 }
 
+static GSource *
+add_glib_thread_idle (GSourceFunc function,
+                      void *user_data)
+{
+  GSource *source = g_idle_source_new ();
+
+  g_source_set_callback (source, function, user_data, NULL);
+  g_source_attach (source, g_main_context_get_thread_default ());
+
+  return source;
+}
+
 void
 rut_shell_queue_redraw_real (RutShell *shell)
 {
   shell->redraw_queued = true;
 
-  if (shell->glib_paint_idle <= 0)
-    shell->glib_paint_idle = g_idle_add (glib_paint_cb, shell);
+  if (!shell->glib_paint_idle)
+    shell->glib_paint_idle = add_glib_thread_idle (glib_paint_cb, shell);
 }
 
 void
