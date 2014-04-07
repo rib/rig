@@ -356,8 +356,8 @@ prepare_sdl_events (void *user_data)
 }
 
 void
-dispatch_sdl_events (RutPollFDEvent events,
-                     void *user_data)
+dispatch_sdl_events (void *user_data,
+                     int revents)
 {
   RutShell *shell = user_data;
   SDL_Event event;
@@ -388,7 +388,8 @@ rut_poll_init (RutShell *shell)
   shell->event_pipe_mutex = SDL_CreateMutex ();
   if (!shell->event_pipe_mutex)
     {
-      g_warning ("Failed to create event pipe mutex");
+      g_warning ("Failed to create event pipe mutex: %s",
+                 SDL_GetError ());
       return;
     }
 
