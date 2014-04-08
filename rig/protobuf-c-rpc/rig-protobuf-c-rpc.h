@@ -109,8 +109,8 @@ rig_pb_rpc_client_is_connected (PB_RPC_Client *client);
 /* --- Server API --- */
 typedef struct _PB_RPC_Server PB_RPC_Server;
 PB_RPC_Server *
-rig_pb_rpc_server_new (PB_RPC_AddressType type,
-                       const char *name,
+rig_pb_rpc_server_new (const char *bind_name,
+                       ProtobufC_FD listening_fd,
                        ProtobufCService *service,
                        RigProtobufCDispatch *dispatch);
 

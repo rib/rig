@@ -795,56 +795,13 @@ handle_simulator_connect_cb (void *user_data,
 static bool
 bind_to_abstract_socket (RutShell *shell, RigFrontend *frontend)
 {
-  struct sockaddr_un addr;
-  socklen_t size, name_size;
-  int fd;
-  int flags;
+  RutException *catch = NULL;
+  int fd = rut_os_listen_on_abstract_socket ("rig-simulator", &catch);
 
-  fd = socket (PF_LOCAL, SOCK_STREAM, 0);
   if (fd < 0)
     {
-      g_critical ("Failed to create socket for listening: %s",
-                  strerror (errno));
-      return false;
-    }
-
-  /* XXX: Android doesn't seem to support SOCK_CLOEXEC so we use
-   * fcntl() instead */
-  flags = fcntl (fd, F_GETFD);
-  if (flags == -1)
-    {
-      g_critical ("Failed to get fd flags for setting O_CLOEXEC: %s\n",
-                  strerror (errno));
-      return false;
-    }
-
-  if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1)
-    {
-      g_critical ("Failed to set O_CLOEXEC on abstract socket: %s\n",
-                  strerror (errno));
-      return false;
-    }
-
-  /* FIXME: Use a more unique name otherwise multiple Rig based
-   * applications won't run at the same time! */
-  memset (&addr, 0, sizeof addr);
-  addr.sun_family = AF_UNIX;
-  name_size = snprintf (addr.sun_path, sizeof addr.sun_path,
-                        "%crig-simulator", '\0');
-  size = offsetof (struct sockaddr_un, sun_path) + name_size;
-  if (bind (fd, (struct sockaddr *) &addr, size) < 0)
-    {
-      g_critical ("failed to bind to @%s: %s\n",
-                  addr.sun_path + 1, strerror (errno));
-      close (fd);
-      return false;
-    }
-
-  if (listen (fd, 1) < 0)
-    {
-      g_critical ("Failed to start listening on socket: %s\n",
-                  strerror (errno));
-      close (fd);
+      g_critical ("Failed to listen on abstract \"rig-simulator\" socket: %s",
+                  catch->message);
       return false;
     }
 

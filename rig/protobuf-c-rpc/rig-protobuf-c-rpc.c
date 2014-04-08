@@ -174,7 +174,6 @@ struct _PB_RPC_Server
   RigProtobufCDispatch *dispatch;
   ProtobufCAllocator *allocator;
   ProtobufCService *service;
-  PB_RPC_AddressType address_type;
   char *bind_name;
   PB_RPC_ServerConnection *first_connection, *last_connection;
   ProtobufC_FD listening_fd;
@@ -1013,8 +1012,6 @@ _rig_pb_rpc_server_free (void *object)
       rut_object_unref (server->first_connection);
     }
 
-  if (server->address_type == PROTOBUF_C_RPC_ADDRESS_LOCAL)
-    unlink (server->bind_name);
   server->allocator->free (server->allocator, server->bind_name);
 
   while (server->recycled_requests != NULL)
@@ -1641,17 +1638,14 @@ server_new (ProtobufCService *service,
   return server;
 }
 
-static PB_RPC_Server *
-server_new_from_listening_fd (ProtobufC_FD listening_fd,
-                              PB_RPC_AddressType address_type,
-                              const char *bind_name,
-                              ProtobufCService *service,
-                              RigProtobufCDispatch *dispatch)
+PB_RPC_Server *
+rig_pb_rpc_server_new (const char *bind_name,
+                       ProtobufC_FD listening_fd,
+                       ProtobufCService *service,
+                       RigProtobufCDispatch *dispatch)
 {
   PB_RPC_Server *server = server_new (service, dispatch);
   ProtobufCAllocator *allocator = server->allocator;
-
-  server->address_type = address_type;
 
   server->bind_name = allocator->alloc (allocator, strlen (bind_name) + 1);
   strcpy (server->bind_name, bind_name);
@@ -1663,150 +1657,6 @@ server_new_from_listening_fd (ProtobufC_FD listening_fd,
                                 PROTOBUF_C_EVENT_READABLE,
                                 handle_server_listener_readable, server);
   return server;
-}
-
-/* this function is for handling the common problem
-   that we bind over-and-over again to the same
-   unix path.
-
-   ideally, you'd think the OS's SO_REUSEADDR flag would
-   cause this to happen, but it doesn't,
-   at least on my linux 2.6 box.
-
-   in fact, we really need a way to test without
-   actually connecting to the remote server,
-   which might annoy it.
-
-   XXX: we should survey what others do here... like x-windows...
- */
-/* NOTE: stolen from gsk, obviously */
-static void
-_gsk_socket_address_local_maybe_delete_stale_socket (const char *path,
-                                                     struct sockaddr *addr,
-                                                     unsigned addr_len)
-{
-  int fd;
-  struct stat statbuf;
-  if (stat (path, &statbuf) < 0)
-    return;
-  if (!S_ISSOCK (statbuf.st_mode))
-    {
-      fprintf (stderr, "%s existed but was not a socket\n", path);
-      return;
-    }
-
-  fd = socket (PF_UNIX, SOCK_STREAM, 0);
-  if (fd < 0)
-    return;
-  set_fd_nonblocking (fd);
-  if (connect (fd, addr, addr_len) < 0)
-    {
-      if (errno == EINPROGRESS)
-        {
-          close (fd);
-          return;
-        }
-    }
-  else
-    {
-      close (fd);
-      return;
-    }
-
-  /* ok, we should delete the stale socket */
-  close (fd);
-  if (unlink (path) < 0)
-    fprintf (stderr, "unable to delete %s: %s\n",
-             path, strerror(errno));
-}
-
-PB_RPC_Server *
-rig_pb_rpc_server_new (PB_RPC_AddressType type,
-                       const char *name,
-                       ProtobufCService *service,
-                       RigProtobufCDispatch *dispatch)
-{
-  int fd = -1;
-  int protocol_family;
-  struct sockaddr *address;
-  socklen_t address_len;
-  struct sockaddr_un addr_un;
-  struct sockaddr_in addr_in;
-  bool need_bind = true;
-
-  switch (type)
-    {
-    case PROTOBUF_C_RPC_ADDRESS_LOCAL:
-      protocol_family = PF_UNIX;
-      memset (&addr_un, 0, sizeof (addr_un));
-      addr_un.sun_family = AF_LOCAL;
-      strncpy (addr_un.sun_path, name, sizeof (addr_un.sun_path));
-      address_len = sizeof (addr_un);
-      address = (struct sockaddr *) (&addr_un);
-      _gsk_socket_address_local_maybe_delete_stale_socket (name,
-                                                           address,
-                                                           address_len);
-      break;
-    case PROTOBUF_C_RPC_ADDRESS_TCP:
-      protocol_family = PF_INET;
-      memset (&addr_in, 0, sizeof (addr_in));
-      addr_in.sin_family = AF_INET;
-      {
-        unsigned port = atoi (name);
-        addr_in.sin_port = htons (port);
-      }
-      address_len = sizeof (addr_in);
-      address = (struct sockaddr *) (&addr_in);
-      if (addr_in.sin_port == 0)
-        need_bind = false;
-      break;
-    default:
-      g_warn_if_reached ();
-    }
-
-  fd = socket (protocol_family, SOCK_STREAM, 0);
-  if (fd < 0)
-    {
-      fprintf (stderr, "pb_rpc_server_new: socket() failed: %s\n",
-               strerror (errno));
-      return NULL;
-    }
-  if (need_bind &&
-      bind (fd, address, address_len) < 0)
-    {
-      fprintf (stderr, "pb_rpc_server_new: error binding to port: %s\n",
-               strerror (errno));
-      return NULL;
-    }
-  if (listen (fd, 255) < 0)
-    {
-      fprintf (stderr, "pb_rpc_server_new: listen() failed: %s\n",
-               strerror (errno));
-      return NULL;
-    }
-
-#ifdef RIG_ENABLE_DEBUG
-  if (type == PROTOBUF_C_RPC_ADDRESS_TCP)
-    {
-      struct sockaddr addr;
-      socklen_t len = sizeof (addr);
-      if (getsockname (fd, &addr, &len) < 0)
-        {
-          g_warning ("Failed to query back the address of the listening "
-                     "socket: %s", strerror (errno));
-        }
-      else
-        {
-          struct sockaddr_in *addr_in = (struct sockaddr_in *)&addr;
-          int port = ntohs (addr_in->sin_port);
-          const uint8_t *ip = (const uint8_t *) &(addr_in->sin_addr);
-          g_message ("Listening on socket: %u.%u.%u.%u:%d",
-                     ip[0], ip[1], ip[2], ip[3], port);
-        }
-    }
-#endif
-
-  return server_new_from_listening_fd (fd, type, name, service, dispatch);
 }
 
 int

@@ -107,8 +107,9 @@ _rig_rpc_server_init_type (void)
 
 RigRPCServer *
 rig_rpc_server_new (RutShell *shell,
+                    const char *name,
+                    int listening_fd,
                     ProtobufCService *service,
-                    int port,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data)
@@ -120,24 +121,13 @@ rig_rpc_server_new (RutShell *shell,
     rig_protobuf_c_dispatch_new (shell, &protobuf_c_default_allocator);
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof (addr);
-  int listening_fd;
-  char *port_str;
-
-  port_str = getenv ("_RIG_SERVER_PORT");
-  if (port_str)
-    port_str = g_strdup (port_str);
-  else if (!port_str && port > 0)
-    port_str = g_strdup_printf ("%d", port);
-  else
-    port_str = g_strdup ("0");
 
   server->pb_rpc_server =
-    rig_pb_rpc_server_new (PROTOBUF_C_RPC_ADDRESS_TCP,
-                           port_str,
+    rig_pb_rpc_server_new (name,
+                           listening_fd,
                            service,
                            dispatch);
 
-  listening_fd = rig_pb_rpc_server_get_listening_fd (server->pb_rpc_server);
   getsockname (listening_fd, (struct sockaddr *)&addr, &addr_len);
 
   if (addr.sin_family == AF_INET)

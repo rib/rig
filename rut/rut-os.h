@@ -53,6 +53,14 @@ bool
 rut_os_write (int fd, void *data, int len, RutException **e);
 
 int
+rut_os_listen_on_abstract_socket (const char *socket_name,
+                                  RutException **e);
+
+int
 rut_os_connect_to_abstract_socket (const char *socket_name);
+
+int
+rut_os_listen_on_tcp_socket (int port,
+                             RutException **e);
 
 #endif /* _RUT_OS_H_ */

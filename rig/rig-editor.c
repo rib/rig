@@ -2749,7 +2749,7 @@ adb_devices_cb (const char **serials,
       int forward_port = editor->next_forward_port++;
 
       if (!rut_adb_command (serials[i], &catch,
-                            "host:forward:tcp:%d;tcp:64872",
+                            "host:forward:tcp:%d;localabstract:rig-slave",
                             forward_port))
         {
           g_warning ("Failed to forward port 64872 for device %s via ADB daemon: %s",

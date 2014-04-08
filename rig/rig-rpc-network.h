@@ -51,8 +51,9 @@ struct _RigRPCServer
 
 RigRPCServer *
 rig_rpc_server_new (RutShell *shell,
+                    const char *name,
+                    int listening_fd,
                     ProtobufCService *service,
-                    int port,
                     PB_RPC_Error_Func server_error_handler,
                     PB_RPC_Client_Connect_Func new_client_handler,
                     void *user_data);
