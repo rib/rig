@@ -48,30 +48,6 @@ LOCAL_LDLIBS := -ldl -lGLESv2 -llog -landroid
 include $(BUILD_SHARED_LIBRARY)
 
 
-# Simulator
-include $(CLEAR_VARS)
-
-RIG_PATH := $(LOCAL_PATH)/../../../../..
-
-LOCAL_MODULE := rig-simulator
-LOCAL_C_INCLUDES := $(RIG_PATH)/rut $(RIG_PATH)/rig $(RIG_PATH)/rig/protobuf-c-rpc
-LOCAL_CFLAGS := -DRIG_SIMULATOR_ONLY -DRIG_ENABLE_DEBUG
-LOCAL_SRC_FILES := \
-	$(filter-out %.h, \
-    	$(subst $(LOCAL_PATH)/,, \
-	  		$(addprefix $(RIG_PATH)/rig/,$(rig_common_sources)) \
-     	 ) \
-	  ) \
-	 rig-simulator-android.c
-LOCAL_SHARED_LIBRARIES := rut cogl-includes protobuf-c \
-	glib pango pangocairo cogl cogl-pango2 cogl-path glib gmodule gobject gio gdk-pixbuf #TODO remove these deps
-
-
-LOCAL_LDLIBS := -llog
-
-include $(BUILD_SHARED_LIBRARY)
-
-
 $(call import-module, glib)
 $(call import-module, gdk-pixbuf)
 $(call import-module, pango)

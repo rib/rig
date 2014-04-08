@@ -59,7 +59,7 @@ on_cogl_event_cb (void *user_data,
                                shell->poll_fds->len);
 }
 
-int64_t
+static int64_t
 get_cogl_info (RutShell *shell)
 {
   CoglRenderer *renderer =
@@ -117,7 +117,7 @@ rut_poll_shell_get_info (RutShell *shell,
   *timeout = -1;
 
 #ifndef RIG_SIMULATOR_ONLY
-  if (shell->rut_ctx->cogl_context)
+  if (!shell->headless && shell->rut_ctx->cogl_context)
     *timeout = get_cogl_info (shell);
 #endif
 
@@ -332,7 +332,7 @@ sdl_android_event_filter_cb (void *user_data,
 {
   RutShell *shell = user_data;
 
-  if (!SDL_LockMutex (shell->event_pipe_mutex))
+  if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
     {
       g_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
       return 1; /* ignored */
@@ -361,6 +361,18 @@ dispatch_sdl_events (void *user_data,
 {
   RutShell *shell = user_data;
   SDL_Event event;
+  char buf;
+
+  if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
+    {
+      g_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
+      return;
+    }
+
+  rut_os_read_len (shell->event_pipe_read, &buf, 1, NULL);
+  shell->wake_queued = false;
+
+  SDL_UnlockMutex (shell->event_pipe_mutex);
 
   while (SDL_PollEvent (&event))
     {
@@ -370,19 +382,10 @@ dispatch_sdl_events (void *user_data,
       rut_shell_handle_sdl_event (shell, &event);
     }
 }
-#endif /* __ANDROID__ */
 
-void
-rut_poll_init (RutShell *shell)
+static void
+integrate_sdl_events (RutShell *shell)
 {
-  rut_list_init (&shell->idle_closures);
-
-  shell->poll_fds = g_array_new (FALSE, FALSE, sizeof (RutPollFD));
-
-  /* XXX: On Android we know that SDL events are queued up from a
-   * separate thread so we can use an event watch as a means to wake
-   * up the mainloop... */
-#ifdef __ANDROID__
   int fds[2];
 
   shell->event_pipe_mutex = SDL_CreateMutex ();
@@ -411,5 +414,21 @@ rut_poll_init (RutShell *shell)
                          shell);
 
   SDL_AddEventWatch (sdl_android_event_filter_cb, shell);
+}
+#endif /* __ANDROID__ */
+
+void
+rut_poll_init (RutShell *shell)
+{
+  rut_list_init (&shell->idle_closures);
+
+  shell->poll_fds = g_array_new (FALSE, FALSE, sizeof (RutPollFD));
+
+  /* XXX: On Android we know that SDL events are queued up from a
+   * separate thread so we can use an event watch as a means to wake
+   * up the mainloop... */
+#ifdef __ANDROID__
+  if (!shell->headless)
+    integrate_sdl_events (shell);
 #endif /* __ANDROID__ */
 }

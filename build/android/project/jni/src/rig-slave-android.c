@@ -40,6 +40,8 @@ main (int argc, char **argv)
   RigSlave *slave;
   GError *error = NULL;
 
+  rut_init_tls_state ();
+
   slave = rig_slave_new (0, 0, 1);
 
   rig_slave_run (slave);

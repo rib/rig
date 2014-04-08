@@ -866,9 +866,7 @@ static void
 spawn_simulator (RutShell *shell, RigFrontend *frontend)
 {
 #ifdef __ANDROID__
-  /* XXX: On Android the simulator is a Service that we bind to and
-   * communicate with via an abstract socket. */
-  bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);
+  create_simulator_thread (shell, frontend);
 #elif defined (linux)
   if (getenv ("_RIG_USE_ABSTRACT_SOCKET"))
     bind_to_abstract_socket (shell, frontend /* FIXME: give application name */);

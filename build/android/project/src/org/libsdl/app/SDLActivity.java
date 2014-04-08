@@ -1,7 +1,5 @@
 package org.libsdl.app;
 
-import org.rig.app.RigSimulator;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -73,44 +71,6 @@ public class SDLActivity extends Activity {
         //System.loadLibrary("SDL2_ttf");
     }
 
-    Messenger mService = null;
-    boolean mBound;
-
-    public void sayHello() {
-        if (!mBound) return;
-        // Create and send a message to the service, using a supported 'what' value
-        Message msg = Message.obtain(null, 1, 0, 0);
-        try {
-            mService.send(msg);
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private ServiceConnection mConnection = new ServiceConnection() {
-        public void onServiceConnected(ComponentName className, IBinder service) {
-            // This is called when the connection with the service has been
-            // established, giving us the object we can use to
-            // interact with the service.  We are communicating with the
-            // service using a Messenger, so here we get a client-side
-            // representation of that from the raw IBinder object.
-            mService = new Messenger(service);
-            mBound = true;
-            Log.v("SDL", "Simulator service connected");
-            sayHello ();
-        }
-
-        public void onServiceDisconnected(ComponentName className) {
-            // This is called when the connection with the service has been
-            // unexpectedly disconnected -- that is, its process crashed.
-            mService = null;
-            mBound = false;
-            unbindService(mConnection);
-            Log.v("SDL", "Simulator service disconnected");
-            recreate();
-        }
-    };
-
     // Setup
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,10 +97,6 @@ public class SDLActivity extends Activity {
         mLayout.addView(mSurface);
 
         setContentView(mLayout);
-
-        Intent intent = new Intent(this, RigSimulator.class);
-        bindService(intent, mConnection, BIND_AUTO_CREATE|BIND_IMPORTANT);
-        Log.v("SDL", "startService() ABC");
     }
 
     // Events

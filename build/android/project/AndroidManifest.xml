@@ -20,13 +20,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <service android:exported="false"
-                 android:name="RigSimulator"
-                 android:label="@string/simulator_name"
-                 android:process=":simulator"
-                 >
-        </service>
     </application>
 
     <uses-sdk android:minSdkVersion="15" android:targetSdkVersion="15" />
