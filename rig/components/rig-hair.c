@@ -637,6 +637,9 @@ rig_hair_set_length (RutObject *obj,
   RigEntity *entity;
   RutContext *ctx;
 
+  if (length < 0)
+    length = 0;
+
   if (length == hair->length)
     return;
 
@@ -666,6 +669,9 @@ rig_hair_set_n_shells (RutObject *obj,
   RigHair *hair = obj;
   RigEntity *entity;
   RutContext *ctx;
+
+  if (n_shells < 0)
+    n_shells = 0;
 
   if (n_shells == hair->n_shells)
     return;
@@ -726,6 +732,9 @@ rig_hair_set_thickness (RutObject *obj,
   RigHair *hair = obj;
   RigEntity *entity;
   RutContext *ctx;
+
+  if (thickness < 0)
+    thickness = 0;
 
   if (thickness == hair->thickness)
     return;
