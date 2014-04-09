@@ -62,7 +62,6 @@ struct _RigInspector
   RutContext *context;
   GList *objects;
 
-  RutPaintableProps paintable;
   RutGraphableProps graphable;
 
   RutBoxLayout *vbox;
