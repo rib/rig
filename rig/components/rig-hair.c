@@ -565,8 +565,6 @@ rig_hair_new (RutContext *ctx)
   RigHair *hair =
     rut_object_alloc0 (RigHair, &rig_hair_type, _rig_hair_init_type);
 
-
-
   hair->component.type = RUT_COMPONENT_TYPE_HAIR;
 
   hair->ctx = rut_object_ref (ctx);
@@ -581,10 +579,13 @@ rig_hair_new (RutContext *ctx)
   hair->particles = g_array_new (FALSE, FALSE, sizeof (HairParticle));
   hair->shell_positions = NULL;
 
-  hair->circle = (CoglTexture*)
-    cogl_texture_2d_new_from_file (hair->ctx->cogl_context,
-                                   rut_find_data_file ("circle1.png"),
-                                   NULL);
+  if (!ctx->headless)
+    {
+      hair->circle = (CoglTexture*)
+        cogl_texture_2d_new_from_file (hair->ctx->cogl_context,
+                                       rut_find_data_file ("circle1.png"),
+                                       NULL);
+    }
 
   rut_introspectable_init (hair, _rig_hair_prop_specs,
                            hair->properties);
