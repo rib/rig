@@ -2393,7 +2393,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         rut_object_unref (grid);
 
         /* XXX: Just for compatability... */
-        if (pb_grid->has_scale)
+        if (pb_grid && pb_grid->has_scale)
           {
             rig_pointalism_grid_set_scale (grid, pb_grid->scale);
 
