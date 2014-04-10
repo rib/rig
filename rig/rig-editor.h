@@ -119,4 +119,7 @@ rig_editor_pop_undo_subjournal (RigEngine *engine);
 void
 rig_editor_free_builtin_assets (RigEditor *editor);
 
+void
+rig_editor_print_mappings (RigEditor *editor);
+
 #endif /* _RIG_EDITOR_H_ */

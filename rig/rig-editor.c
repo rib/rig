@@ -3490,3 +3490,32 @@ rig_editor_pop_undo_subjournal (RigEngine *engine)
 
   return head_journal;
 }
+
+static void
+print_mapping_cb (gpointer key,
+                  gpointer value,
+                  gpointer user_data)
+{
+  char *a = rig_engine_get_object_debug_name (key);
+  char *b = rig_engine_get_object_debug_name (value);
+
+  g_print ("  [%50s] -> [%50s]\n", a, b);
+
+  g_free (a);
+  g_free (b);
+}
+
+void
+rig_editor_print_mappings (RigEditor *editor)
+{
+  g_print ("Edit to play mode mappings:\n");
+  g_hash_table_foreach (editor->edit_to_play_object_map,
+                        print_mapping_cb,
+                        NULL);
+
+  g_print ("\n\n");
+  g_print ("Play to edit mode mappings:\n");
+  g_hash_table_foreach (editor->play_to_edit_object_map,
+                        print_mapping_cb,
+                        NULL);
+}
