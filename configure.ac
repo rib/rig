@@ -136,6 +136,10 @@ AS_CASE(
   [
     test "$cflags_set" = set || CFLAGS="$CFLAGS -g -O0"
     RIG_EXTRA_CPPFLAGS="$RIG_EXTRA_CPPFLAGS -DRIG_ENABLE_DEBUG"
+
+    # We can use libprotobuf for pretty printing protocol buffer streams
+    RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES protobuf"
+    RIG_EXTRA_LDFLAGS="$RIG_EXTRA_LDFLAGS -lstdc++"
   ],
   [no],
   [
@@ -143,6 +147,7 @@ AS_CASE(
   ],
   [AC_MSG_ERROR([Unknown argument for --enable-debug])]
 )
+AM_CONDITIONAL(RIG_DEBUG, [test "$enable_debug" = "yes"])
 
 AC_ARG_ENABLE(
   [refcount_debug],

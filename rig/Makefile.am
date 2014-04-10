@@ -27,7 +27,13 @@ bin_PROGRAMS = rig rig-slave rig-device rig-simulator
 %.pb-c.c %.pb-c.h: %.proto
 	protoc-c --c_out=$(top_builddir)/rig $(srcdir)/$(*).proto
 
+%.pb.cc %.pb.h: %.proto
+	protoc --cpp_out=$(top_builddir)/rig --proto_path=$(srcdir)/ $(srcdir)/$(*).proto
+
 PROTOBUF_C_FILES = rig.pb-c.c rig.pb-c.h
+if RIG_DEBUG
+PROTOBUF_C_FILES += rig.pb.cc rig.pb.h
+endif
 
 BUILT_SOURCES = $(PROTOBUF_C_FILES)
 DISTCLEANFILES = $(PROTOBUF_C_FILES)
