@@ -360,7 +360,8 @@ _rig_diamond_free (void *object)
 
   rut_closure_list_disconnect_all (&diamond->updated_cb_list);
 
-  rut_object_unref (diamond->slice);
+  if (diamond->slice)
+    rut_object_unref (diamond->slice);
 
   rut_introspectable_destroy (diamond);
 
