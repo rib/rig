@@ -169,6 +169,12 @@ rig_entity_add_component (RigEntity *entity,
 
   rut_object_claim (object, entity);
   g_ptr_array_add (entity->components, object);
+
+  if (entity->renderer_priv)
+    {
+      RutObject *renderer = *(RutObject **)entity->renderer_priv;
+      rut_renderer_notify_entity_changed (renderer, entity);
+    }
 }
 
 /* XXX: any changes made here should be consistent with how
@@ -187,6 +193,12 @@ rig_entity_remove_component (RigEntity *entity,
   status = g_ptr_array_remove_fast (entity->components, object);
 
   g_warn_if_fail (status);
+
+  if (entity->renderer_priv)
+    {
+      RutObject *renderer = *(RutObject **)entity->renderer_priv;
+      rut_renderer_notify_entity_changed (renderer, entity);
+    }
 }
 
 void
