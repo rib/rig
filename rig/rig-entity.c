@@ -644,28 +644,32 @@ rig_entity_get_component (RigEntity *entity,
 
 void
 rig_entity_foreach_component_safe (RigEntity *entity,
-                                   RutComponentCallback callback,
+                                   bool (*callback)(RutObject *component,
+                                                    void *user_data),
                                    void *user_data)
 {
   int i;
   int n_components = entity->components->len;
   size_t size = sizeof (void *) * n_components;
   void **components = g_alloca (size);
+  bool cont = true;
 
   memcpy (components, entity->components->pdata, size);
 
-  for (i = 0; i < n_components; i++)
-    callback (components[i], user_data);
+  for (i = 0; cont && i < n_components; i++)
+    cont = callback (components[i], user_data);
 }
 
 void
 rig_entity_foreach_component (RigEntity *entity,
-                              RutComponentCallback callback,
+                              bool (*callback)(RutObject *component,
+                                               void *user_data),
                               void *user_data)
 {
   int i;
-  for (i = 0; i < entity->components->len; i++)
-    callback (g_ptr_array_index (entity->components, i), user_data);
+  bool cont = true;
+  for (i = 0; cont && i < entity->components->len; i++)
+    cont = callback (g_ptr_array_index (entity->components, i), user_data);
 }
 
 RigEntity *

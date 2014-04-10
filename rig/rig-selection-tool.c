@@ -54,6 +54,8 @@ struct _EntityState
   RigSelectionTool *tool;
   RigEntity *entity;
 
+  RutObject *sizeable;
+
   GList *control_points;
 };
 
@@ -218,6 +220,55 @@ create_dummy_control_points (EntityState *entity_state)
 }
 
 static void
+create_box_control (EntityState *entity_state,
+                    float x,
+                    float y,
+                    float z)
+{
+  RigSelectionTool *tool = entity_state->tool;
+  CoglTexture *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
+  ControlPoint *point;
+
+  point = g_slice_new0 (ControlPoint);
+  point->entity_state = entity_state;
+  point->x = x;
+  point->y = y;
+  point->z = z;
+
+  point->transform = rut_transform_new (tool->ctx);
+  rut_graphable_add_child (tool->tool_overlay, point->transform);
+  rut_object_unref (point->transform);
+
+  point->marker = rut_nine_slice_new (tool->ctx, tex, 0, 0, 0, 0, 10, 10);
+  rut_graphable_add_child (point->transform, point->marker);
+  rut_object_unref (point->marker);
+
+  point->input_region =
+    rut_input_region_new_circle (0, 0, 5,
+                                 control_point_input_cb,
+                                 point);
+  rut_graphable_add_child (tool->tool_overlay, point->input_region);
+  rut_object_unref (point->input_region);
+  entity_state->control_points =
+    g_list_prepend (entity_state->control_points, point);
+
+  cogl_object_unref (tex);
+}
+
+static void
+create_sizeable_control_points (EntityState *entity_state)
+{
+  float width, height;
+
+  rut_sizable_get_size (entity_state->sizeable, &width, &height);
+
+  create_box_control (entity_state, 0, 0, 0);
+  create_box_control (entity_state, 0, height, 0);
+  create_box_control (entity_state, width, height, 0);
+  create_box_control (entity_state, width, 0, 0);
+}
+
+static void
 entity_state_destroy (EntityState *entity_state)
 {
   GList *l;
@@ -232,6 +283,30 @@ entity_state_destroy (EntityState *entity_state)
   rut_object_unref (entity_state->entity);
 
   g_slice_free (EntityState, entity_state);
+}
+
+static bool
+match_component_sizeable (RutObject *component,
+                          void *user_data)
+{
+  if (rut_object_is (component, RUT_TRAIT_ID_SIZABLE))
+    {
+      RutObject **sizeable = user_data;
+      *sizeable = component;
+      return false; /* break */
+    }
+
+  return true; /* continue */
+}
+
+static RutObject *
+find_sizeable_component (RigEntity *entity)
+{
+  RutObject *sizeable = NULL;
+  rig_entity_foreach_component (entity,
+                                match_component_sizeable,
+                                &sizeable);
+  return sizeable;
 }
 
 static void
@@ -273,8 +348,11 @@ objects_selection_event_cb (RigObjectsSelection *selection,
         tool->selected_entities = g_list_prepend (tool->selected_entities,
                                                   entity_state);
 
-#warning "TODO: create meaningful control points!"
-        create_dummy_control_points (entity_state);
+        entity_state->sizeable = find_sizeable_component (entity_state->entity);
+        if (entity_state->sizeable)
+          create_sizeable_control_points (entity_state);
+        else
+          create_dummy_control_points (entity_state);
 
         break;
       }

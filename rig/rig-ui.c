@@ -416,14 +416,16 @@ rig_ui_resume (RigUI *ui)
   ui->suspended = false;
 }
 
-static void
-print_component_cb (RutComponent *component,
+static bool
+print_component_cb (RutObject *component,
                     void *user_data)
 {
   int depth = *(int *)user_data;
   char *name = rig_engine_get_object_debug_name (component);
   g_print ("%*s%s\n", depth + 2, " ", name);
   g_free (name);
+
+  return true; /* continue */
 }
 
 static RutTraverseVisitFlags

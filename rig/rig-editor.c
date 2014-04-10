@@ -3107,8 +3107,8 @@ typedef struct _MatchAndListState
   GList *entities;
 } MatchAndListState;
 
-static void
-match_and_create_components_inspector_cb (RutComponent *reference_component,
+static bool
+match_and_create_components_inspector_cb (RutObject *reference_component,
                                           void *user_data)
 {
   MatchAndListState *state = user_data;
@@ -3145,6 +3145,8 @@ match_and_create_components_inspector_cb (RutComponent *reference_component,
 EXIT:
 
   g_list_free (components);
+
+  return true; /* continue */
 }
 
 /* TODO: Update to take a RigEditor */

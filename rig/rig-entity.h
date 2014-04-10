@@ -226,17 +226,16 @@ RutObject *
 rig_entity_get_component (RigEntity *entity,
                           RutComponentType type);
 
-typedef void (*RutComponentCallback) (RutComponent *component,
-                                      void *user_data);
-
 void
 rig_entity_foreach_component (RigEntity *entity,
-                              RutComponentCallback callback,
+                              bool (*callback)(RutObject *component,
+                                               void *user_data),
                               void *user_data);
 
 void
 rig_entity_foreach_component_safe (RigEntity *entity,
-                                   RutComponentCallback callback,
+                                   bool (*callback)(RutObject *component,
+                                                    void *user_data),
                                    void *user_data);
 
 void

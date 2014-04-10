@@ -656,8 +656,8 @@ rig_pb_serialize_component (RigPBSerializer *serializer,
   return pb_component;
 }
 
-void
-serialize_component_cb (RutComponent *component,
+static bool
+serialize_component_cb (RutObject *component,
                         void *user_data)
 {
   RigPBSerializer *serializer = user_data;
@@ -666,6 +666,8 @@ serialize_component_cb (RutComponent *component,
 
   serializer->n_pb_components++;
   serializer->pb_components = g_list_prepend (serializer->pb_components, pb_component);
+
+  return true; /* continue */
 }
 
 Rig__Entity *

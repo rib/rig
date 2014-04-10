@@ -500,12 +500,14 @@ rig_undo_journal_add_entity (RigUndoJournal *journal,
   rig_undo_journal_insert (journal, undo_redo);
 }
 
-static void
+static bool
 delete_entity_component_cb (RutComponent *component,
                             void *user_data)
 {
   RigUndoJournal *journal = user_data;
   rig_undo_journal_delete_component (journal, component);
+
+  return true; /* continue */
 }
 
 void

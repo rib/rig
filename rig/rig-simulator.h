@@ -111,4 +111,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data);
 void
 rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data);
 
+void
+rig_simulator_print_mappings (RigSimulator *simulator);
+
 #endif /* _RIG_SIMULATOR_H_ */
