@@ -289,13 +289,6 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
                              RutProperty *property, \
                              CTYPE value) \
 { \
-  CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
-                          property->spec->data_offset); \
- \
-  g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
- \
-  if (property->spec->getter.any_type == NULL && *data == value) \
-    return; \
  \
   if (property->spec->setter.any_type) \
     { \
@@ -303,9 +296,17 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
     } \
   else \
     { \
+      CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
+                              property->spec->data_offset); \
+      \
+      g_return_if_fail (property->spec->data_offset == 0); \
+      g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
+      \
+      if (property->spec->getter.any_type == NULL && *data == value) \
+        return; \
+      \
       *data = value; \
-      if (property->dependants) \
-        rut_property_dirty (ctx, property); \
+      rut_property_dirty (ctx, property); \
     } \
 } \
  \
@@ -334,10 +335,6 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
                              RutProperty *property, \
                              const CTYPE *value) \
 { \
-  CTYPE *data = \
-    (CTYPE *)((uint8_t *)property->object + \
-                         property->spec->data_offset); \
- \
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
   if (property->spec->setter.any_type) \
@@ -346,9 +343,10 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
     } \
   else \
     { \
+      CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
+                              property->spec->data_offset); \
       *data = *value; \
-      if (property->dependants) \
-        rut_property_dirty (ctx, property); \
+      rut_property_dirty (ctx, property); \
     } \
 } \
  \
@@ -375,8 +373,6 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
                              RutProperty *property, \
                              const CTYPE value[LEN]) \
 { \
-  CTYPE *data = (CTYPE *) ((uint8_t *) property->object + \
-                           property->spec->data_offset); \
  \
   g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
@@ -386,9 +382,10 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
     } \
   else \
     { \
+      CTYPE *data = (CTYPE *) ((uint8_t *) property->object + \
+                               property->spec->data_offset); \
       memcpy (data, value, sizeof (CTYPE) * LEN); \
-      if (property->dependants) \
-        rut_property_dirty (ctx, property); \
+      rut_property_dirty (ctx, property); \
     } \
 } \
  \
@@ -435,8 +432,7 @@ rut_property_set_text (RutPropertyContext *ctx,
       if (*data)
         g_free (*data);
       *data = g_strdup (value);
-      if (property->dependants)
-        rut_property_dirty (ctx, property);
+      rut_property_dirty (ctx, property);
     }
 }
 
