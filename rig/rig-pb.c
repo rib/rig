@@ -2020,7 +2020,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
         light = rig_light_new (unserializer->engine->ctx);
 
         /* XXX: This is only for backwards compatibility... */
-        if (!pb_component->properties)
+        if (pb_light)
           {
             CoglColor ambient;
             CoglColor diffuse;
