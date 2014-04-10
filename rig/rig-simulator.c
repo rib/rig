@@ -1035,3 +1035,44 @@ rig_simulator_queue_redraw_hook (RutShell *shell, void *user_data)
 
   simulator->redraw_queued = true;
 }
+
+static void
+print_id_to_obj_mapping_cb (gpointer key,
+                            gpointer value,
+                            gpointer user_data)
+{
+  void *id_ptr = (void *)(uintptr_t)key;
+  char *obj = rig_engine_get_object_debug_name (value);
+
+  g_print ("  [%p] -> [%50s]\n", id_ptr, obj);
+
+  g_free (obj);
+}
+
+static void
+print_obj_to_id_mapping_cb (gpointer key,
+                            gpointer value,
+                            gpointer user_data)
+{
+  char *obj = rig_engine_get_object_debug_name (key);
+  void *id_ptr = (void *)(uintptr_t)value;
+
+  g_print ("  [%50s] -> [%p]\n", obj, id_ptr);
+
+  g_free (obj);
+}
+
+void
+rig_simulator_print_mappings (RigSimulator *simulator)
+{
+  g_print ("ID to object map:\n");
+  g_hash_table_foreach (simulator->id_to_object_map,
+                        print_id_to_obj_mapping_cb,
+                        NULL);
+
+  g_print ("\n\n");
+  g_print ("Object to ID map:\n");
+  g_hash_table_foreach (simulator->object_to_id_map,
+                        print_obj_to_id_mapping_cb,
+                        NULL);
+}
