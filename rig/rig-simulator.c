@@ -860,6 +860,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 
   if (engine->play_mode)
     {
+#if 0
       static int counter = 0;
 
       if (counter++ > 100)
@@ -885,6 +886,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
         }
 
       g_print ("Frame = %d\n", counter);
+#endif
     }
 
 
