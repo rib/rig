@@ -82,6 +82,7 @@
 #include "rut-icon.h"
 #include "rut-flow-layout.h"
 #include "rut-button.h"
+#include "rut-slider.h"
 #include "rut-fixed.h"
 #include "rut-fold.h"
 #include "rut-icon-button.h"

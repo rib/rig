@@ -33,6 +33,7 @@
 #include <cogl/cogl.h>
 
 #include <rut-context.h>
+#include <rut-mesh.h>
 
 typedef struct _RutNineSlice RutNineSlice;
 extern RutType rut_nine_slice_type;

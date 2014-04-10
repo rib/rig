@@ -645,29 +645,6 @@ rut_text_event_get_text (RutInputEvent *event);
 RutObject *
 rut_drop_event_get_data (RutInputEvent *drop_event);
 
-typedef struct _RutSlider RutSlider;
-#define RUT_SLIDER(X) ((RutSlider *)X)
-
-extern RutType rut_slider_type;
-
-RutSlider *
-rut_slider_new (RutContext *ctx,
-                RutAxis axis,
-                float min,
-                float max,
-                float length);
-
-void
-rut_slider_set_range (RutSlider *slider,
-                      float min, float max);
-
-void
-rut_slider_set_length (RutSlider *slider,
-                       float length);
-
-void
-rut_slider_set_progress (RutObject *slider,
-                         float progress);
 RutClosure *
 rut_shell_add_input_callback (RutShell *shell,
                               RutInputCallback callback,
