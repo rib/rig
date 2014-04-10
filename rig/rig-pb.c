@@ -409,8 +409,13 @@ static void
 count_instrospectables_cb (RutProperty *property,
                            void *user_data)
 {
-  RigPBSerializer *serializer = user_data;
-  serializer->n_properties++;
+  if (!(property->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
+    return;
+  else
+    {
+      RigPBSerializer *serializer = user_data;
+      serializer->n_properties++;
+    }
 }
 
 static void
@@ -420,6 +425,9 @@ serialize_instrospectables_cb (RutProperty *property,
   RigPBSerializer *serializer = user_data;
   void **properties_out = serializer->properties_out;
   RutBoxed boxed;
+
+  if (!(property->spec->flags & RUT_PROPERTY_FLAG_WRITABLE))
+    return;
 
   rut_property_box (property, &boxed);
 
