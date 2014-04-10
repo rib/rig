@@ -689,3 +689,42 @@ rig_slave_run (RigSlave *slave)
 {
   rut_shell_main (slave->shell);
 }
+
+static void
+print_id_to_obj_mapping_cb (gpointer key,
+                            gpointer value,
+                            gpointer user_data)
+{
+  char *obj = rig_engine_get_object_debug_name (value);
+
+  g_print ("  [%llx] -> [%50s]\n", *(uint64_t *)key, obj);
+
+  g_free (obj);
+}
+
+static void
+print_obj_to_id_mapping_cb (gpointer key,
+                            gpointer value,
+                            gpointer user_data)
+{
+  char *obj = rig_engine_get_object_debug_name (key);
+
+  g_print ("  [%50s] -> [%llx]\n", obj, *(uint64_t *)key);
+
+  g_free (obj);
+}
+
+void
+rig_slave_print_mappings (RigSlave *slave)
+{
+  g_print ("Edit ID to play object mappings:\n");
+  g_hash_table_foreach (slave->edit_id_to_play_object_map,
+                        print_id_to_obj_mapping_cb,
+                        NULL);
+
+  g_print ("\n\n");
+  g_print ("Play object to edit ID mappings:\n");
+  g_hash_table_foreach (slave->play_object_to_edit_id_map,
+                        print_obj_to_id_mapping_cb,
+                        NULL);
+}

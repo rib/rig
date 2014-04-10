@@ -73,4 +73,7 @@ rig_slave_new (int width, int height, int scale);
 void
 rig_slave_run (RigSlave *slave);
 
+void
+rig_slave_print_mappings (RigSlave *slave);
+
 #endif /* _RIG_SLAVE_H */
