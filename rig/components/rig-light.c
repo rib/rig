@@ -152,10 +152,9 @@ _rig_light_copy (RutObject *object)
 
 RutType rig_light_type;
 
-void
+static void
 _rig_light_init_type (void)
 {
-
   static RutComponentableVTable componentable_vtable = {
     .copy = _rig_light_copy
   };
@@ -213,7 +212,7 @@ void
 rig_light_set_ambient (RutObject *obj,
                        const CoglColor *ambient)
 {
-  RigLight *light = RIG_LIGHT (obj);
+  RigLight *light = obj;
 
   light->ambient = *ambient;
 
@@ -224,7 +223,7 @@ rig_light_set_ambient (RutObject *obj,
 const CoglColor *
 rig_light_get_ambient (RutObject *obj)
 {
-  RigLight *light = RIG_LIGHT (obj);
+  RigLight *light = obj;
 
   return &light->ambient;
 }
@@ -233,7 +232,7 @@ void
 rig_light_set_diffuse (RutObject *obj,
                        const CoglColor *diffuse)
 {
-  RigLight *light = RIG_LIGHT (obj);
+  RigLight *light = obj;
 
   light->diffuse = *diffuse;
 
@@ -251,7 +250,7 @@ void
 rig_light_set_specular (RutObject *obj,
                         const CoglColor *specular)
 {
-  RigLight *light = RIG_LIGHT (obj);
+  RigLight *light = obj;
 
   light->specular = *specular;
 

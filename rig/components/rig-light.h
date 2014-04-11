@@ -33,7 +33,6 @@
 
 typedef struct _RigLight RigLight;
 extern RutType rig_light_type;
-#define RIG_LIGHT(p) ((RigLight *)(p))
 
 enum {
   RIG_LIGHT_PROP_AMBIENT,
@@ -56,9 +55,6 @@ struct _RigLight
   RutIntrospectableProps introspectable;
   RutProperty properties[RIG_LIGHT_N_PROPS];
 };
-
-void
-_rig_light_init_type (void);
 
 RigLight *
 rig_light_new (RutContext *context);
