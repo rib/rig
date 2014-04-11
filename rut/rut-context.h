@@ -29,6 +29,10 @@
 #ifndef _RUT_CONTEXT_H_
 #define _RUT_CONTEXT_H_
 
+#include <fontconfig/fontconfig.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include <cogl-pango/cogl-pango.h>
 
 #include "rut-object.h"
@@ -81,6 +85,9 @@ struct _RutContext
   RutMatrixEntry identity_entry;
 
   CoglContext *cogl_context;
+
+  FcConfig *fc_config;
+  FT_Library ft_library;
 
   CoglMatrix identity_matrix;
 

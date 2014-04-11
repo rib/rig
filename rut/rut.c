@@ -29,6 +29,10 @@
 
 #include <config.h>
 
+#include <fontconfig/fontconfig.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include <glib.h>
 
 #include <cogl/cogl.h>
@@ -377,6 +381,12 @@ rut_context_new (RutShell *shell)
       context->pango_font_desc = pango_font_description_new ();
       pango_font_description_set_family (context->pango_font_desc, "Sans");
       pango_font_description_set_size (context->pango_font_desc, 14 * PANGO_SCALE);
+
+      context->fc_config = FcInitLoadConfigAndFonts ();
+      if (FT_Init_FreeType (&context->ft_library))
+        {
+          g_critical ("Failed to initialize freetype");
+        }
     }
 
   _rut_shell_associate_context (shell, context);
