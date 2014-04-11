@@ -58,6 +58,13 @@ librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0 -Wl,--unresolved-s
 librig_la_SOURCES = \
 	$(rig_common_sources)
 
+if RIG_DEBUG
+librig_la_SOURCES += \
+	rig.pb.h \
+	rig.pb.cc \
+	rig-pb-debug.h \
+	rig-pb-debug.cpp
+endif
 
 if HAVE_AVAHI
 librig_la_SOURCES += \
