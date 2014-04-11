@@ -322,6 +322,8 @@ rut_context_new (RutShell *shell)
 
   context->headless = rut_shell_get_headless (shell);
 
+  context->settings = rut_settings_new ();
+
   if (!context->headless)
     {
 #ifdef USE_SDL
@@ -339,8 +341,6 @@ rut_context_new (RutShell *shell)
       /* We set up the first created RutContext as a global default context */
       if (rut_cogl_context == NULL)
         rut_cogl_context = cogl_object_ref (context->cogl_context);
-
-      context->settings = rut_settings_new ();
 
       context->texture_cache =
         g_hash_table_new_full (g_direct_hash, g_direct_equal,
