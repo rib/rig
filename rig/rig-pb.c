@@ -1280,12 +1280,44 @@ serialize_mesh_asset (RigPBSerializer *serializer, RigAsset *asset)
   return pb_asset;
 }
 
+static bool
+serialize_asset_file (Rig__Asset *pb_asset,
+                      RigAsset *asset)
+{
+  RutContext *ctx = rig_asset_get_context (asset);
+  const char *path = rig_asset_get_path (asset);
+  char *full_path = g_build_filename (ctx->assets_location, path, NULL);
+  GError *error = NULL;
+  char *contents;
+  size_t len;
+
+  if (!g_file_get_contents (full_path,
+                            &contents,
+                            &len,
+                            &error))
+    {
+      g_warning ("Failed to read contents of asset: %s",
+                 error->message);
+      g_error_free (error);
+      g_free (full_path);
+      return false;
+    }
+
+  g_free (full_path);
+
+  pb_asset->path = (char *)path;
+
+  pb_asset->has_data = true;
+  pb_asset->data.data = (uint8_t *)contents;
+  pb_asset->data.len = len;
+
+  return true;
+}
+
 static Rig__Asset *
 serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
 {
-  RutContext *ctx = rig_asset_get_context (asset);
   Rig__Asset *pb_asset;
-  GError *error = NULL;
   RigAssetType type;
 
   if (serializer->only_asset_ids)
@@ -1324,31 +1356,23 @@ serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
 
       if (!serializer->skip_image_data)
         {
-          const char *path = rig_asset_get_path (asset);
-          char *full_path = g_build_filename (ctx->assets_location, path, NULL);
-          char *contents;
-          size_t len;
-
-          if (!g_file_get_contents (full_path,
-                                    &contents,
-                                    &len,
-                                    &error))
-            {
-              g_warning ("Failed to read contents of asset: %s",
-                         error->message);
-              g_error_free (error);
-              g_free (full_path);
-              return NULL;
-            }
-
-          g_free (full_path);
-
-          pb_asset->path = (char *)path;
-
-          pb_asset->has_data = true;
-          pb_asset->data.data = (uint8_t *)contents;
-          pb_asset->data.len = len;
+          if (!serialize_asset_file (pb_asset, asset))
+            return NULL;
         }
+      break;
+    case RIG_ASSET_TYPE_FONT:
+      {
+        pb_asset = rig_pb_new (serializer, Rig__Asset, rig__asset__init);
+
+        pb_asset->has_id = true;
+        pb_asset->id = rig_pb_serializer_lookup_object_id (serializer, asset);
+
+        pb_asset->has_type = true;
+        pb_asset->type = rig_asset_get_type (asset);
+
+        if (!serialize_asset_file (pb_asset, asset))
+          return NULL;
+      }
       break;
     case RIG_ASSET_TYPE_BUILTIN:
       /* XXX: We should be aiming to remove the "builtin" asset type
@@ -2672,7 +2696,6 @@ unserialize_assets (RigPBUnSerializer *unserializer,
                     int n_assets,
                     Rig__Asset **assets)
 {
-  RigEngine *engine = unserializer->engine;
   int i;
 
   for (i = 0; i < n_assets; i++)
@@ -2699,53 +2722,18 @@ unserialize_assets (RigPBUnSerializer *unserializer,
                                              "Duplicate asset id %d", (int)id);
           continue;
         }
-      else if (pb_asset->path &&
-               pb_asset->has_type &&
-               pb_asset->has_is_video &&
-               pb_asset->has_data)
+      else
         {
-          asset = rig_asset_new_from_data (engine->ctx,
-                                           pb_asset->path,
-                                           pb_asset->type,
-                                           pb_asset->is_video,
-                                           pb_asset->data.data,
-                                           pb_asset->data.len);
-        }
-      else if (pb_asset->mesh)
-        {
-          RutMesh *mesh =
-            rig_pb_unserialize_mesh (unserializer, pb_asset->mesh);
-          if (!mesh)
+          RutException *catch = NULL;
+          asset = rig_asset_new_from_pb_asset (unserializer, pb_asset, &catch);
+          if (!asset)
             {
               rig_pb_unserializer_collect_error (unserializer,
-                                                 "Error unserializing mesh for "
-                                                 "asset id %d",
-                                                 (int)id);
-              continue;
+                                                 "Error unserializing asset id %d: %s",
+                                                 (int)id,
+                                                 catch->message);
+              rut_exception_free (catch);
             }
-          asset = rig_asset_new_from_mesh (engine->ctx, mesh);
-          rut_object_unref (mesh);
-        }
-      else if (pb_asset->path &&
-               unserializer->engine->ctx->assets_location)
-        {
-          char *full_path =
-            g_build_filename (unserializer->engine->ctx->assets_location,
-                              pb_asset->path, NULL);
-          GFile *asset_file = g_file_new_for_path (full_path);
-          GFileInfo *info = g_file_query_info (asset_file,
-                                               "standard::*",
-                                               G_FILE_QUERY_INFO_NONE,
-                                               NULL,
-                                               NULL);
-          if (info)
-            {
-              asset = rig_load_asset (unserializer->engine, info, asset_file);
-              g_object_unref (info);
-            }
-
-          g_object_unref (asset_file);
-          g_free (full_path);
         }
 
       if (asset)

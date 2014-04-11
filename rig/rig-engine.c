@@ -878,49 +878,6 @@ add_light_cb (RutInputRegion *region,
 }
 #endif
 
-RigAsset *
-rig_load_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
-{
-  GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
-  GFile *dir = g_file_get_parent (asset_file);
-  char *path = g_file_get_relative_path (assets_dir, asset_file);
-  GList *inferred_tags = NULL;
-  RigAsset *asset = NULL;
-
-  inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
-
-  if (rut_util_find_tag (inferred_tags, "image") ||
-      rut_util_find_tag (inferred_tags, "video"))
-    {
-      if (rut_util_find_tag (inferred_tags, "normal-maps"))
-        asset = rig_asset_new_normal_map (engine->ctx, path, inferred_tags);
-      else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
-        asset = rig_asset_new_alpha_mask (engine->ctx, path, inferred_tags);
-      else
-        asset = rig_asset_new_texture (engine->ctx, path, inferred_tags);
-    }
-  else if (rut_util_find_tag (inferred_tags, "ply"))
-    asset = rig_asset_new_ply_model (engine->ctx, path, inferred_tags);
-
-#ifdef RIG_EDITOR_ENABLED
-  if (engine->frontend &&
-      engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
-      asset &&
-      rig_asset_needs_thumbnail (asset))
-    {
-      rig_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
-    }
-#endif
-
-  g_list_free (inferred_tags);
-
-  g_object_unref (assets_dir);
-  g_object_unref (dir);
-  g_free (path);
-
-  return asset;
-}
-
 void
 rig_engine_set_log_op_callback (RigEngine *engine,
                                 void (*callback) (Rig__Operation *pb_op,

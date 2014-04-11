@@ -106,6 +106,7 @@ typedef enum _RigAssetType {
   RIG_ASSET_TYPE_NORMAL_MAP,
   RIG_ASSET_TYPE_ALPHA_MASK,
   RIG_ASSET_TYPE_MESH,
+  RIG_ASSET_TYPE_FONT,
 } RigAssetType;
 
 typedef struct _RutPreferredSize

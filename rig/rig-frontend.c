@@ -322,6 +322,7 @@ asset_filter_cb (RigAsset *asset,
     case RIG_ASSET_TYPE_TEXTURE:
     case RIG_ASSET_TYPE_NORMAL_MAP:
     case RIG_ASSET_TYPE_ALPHA_MASK:
+    case RIG_ASSET_TYPE_FONT:
       return false; /* these assets aren't needed in the simulator */
     case RIG_ASSET_TYPE_MESH:
       return true; /* keep mesh assets for picking */

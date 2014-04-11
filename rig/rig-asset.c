@@ -29,6 +29,7 @@
 #include <config.h>
 
 #include <stdlib.h>
+
 #include <glib.h>
 
 #include <cogl/cogl.h>
@@ -52,6 +53,10 @@ enum {
 };
 #endif
 
+/* TODO: Make a RUT_TRAIT_ID_ASSET and split
+ * this api into separate objects for different
+ * data types.
+ */
 struct _RigAsset
 {
   RutObjectBase _base;
@@ -566,8 +571,6 @@ rig_asset_new_full (RutContext *ctx,
   real_path = path;
 #endif
 
-
-
   asset->ctx = ctx;
 
   asset->type = type;
@@ -636,6 +639,22 @@ rig_asset_new_full (RutContext *ctx,
           asset->has_tex_coords = true;
 
         asset->texture = generate_mesh_thumbnail (asset);
+
+        break;
+      }
+    case RIG_ASSET_TYPE_FONT:
+      {
+        CoglError *error = NULL;
+        asset->texture =
+          rut_load_texture (ctx, rut_find_data_file ("fonts.png"), &error);
+        if (!asset->texture)
+          {
+            rut_object_free (RigAsset, asset);
+            asset = NULL;
+            g_warning ("Failed to load font icon: %s", error->message);
+            cogl_error_free (error);
+            goto DONE;
+          }
 
         break;
       }
@@ -715,23 +734,22 @@ bitmap_new_from_pixbuf (CoglContext *ctx,
 }
 
 RigAsset *
-rig_asset_new_from_data (RutContext *ctx,
-                         const char *name,
-                         RigAssetType type,
-                         bool is_video,
-                         const uint8_t *data,
-                         size_t len)
+rig_asset_new_from_image_data (RutContext *ctx,
+                               const char *path,
+                               RigAssetType type,
+                               bool is_video,
+                               const uint8_t *data,
+                               size_t len,
+                               RutException **e)
 {
   RigAsset *asset =
     rut_object_alloc0 (RigAsset, &rig_asset_type, _rig_asset_init_type);
-
-
 
   asset->ctx = ctx;
 
   asset->type = type;
 
-  asset->path = g_strdup (name);
+  asset->path = g_strdup (path);
 
   asset->is_video = is_video;
   if (is_video)
@@ -741,95 +759,228 @@ rig_asset_new_from_data (RutContext *ctx,
     }
   else
     {
-      asset->data = NULL;
+      GInputStream *istream =
+        g_memory_input_stream_new_from_data (data, len, NULL);
+      GError *error = NULL;
+      GdkPixbuf *pixbuf =
+        gdk_pixbuf_new_from_stream (istream, NULL, &error);
+      CoglBitmap *bitmap;
+      CoglError *cogl_error = NULL;
+      bool allocated;
 
-      switch (type)
+      if (!pixbuf)
         {
-        case RIG_ASSET_TYPE_BUILTIN:
-        case RIG_ASSET_TYPE_TEXTURE:
-        case RIG_ASSET_TYPE_NORMAL_MAP:
-        case RIG_ASSET_TYPE_ALPHA_MASK:
-            {
-              GInputStream *istream =
-                g_memory_input_stream_new_from_data (data, len, NULL);
-              GError *error = NULL;
-              GdkPixbuf *pixbuf =
-                gdk_pixbuf_new_from_stream (istream, NULL, &error);
-              CoglBitmap *bitmap;
-              CoglError *cogl_error = NULL;
+          rut_object_free (RigAsset, asset);
+          rut_throw (e,
+                     RUT_IO_EXCEPTION,
+                     RUT_IO_EXCEPTION_IO,
+                     "Failed to load pixbuf from data: %s", error->message);
+          g_error_free (error);
+          return NULL;
+        }
 
-              if (!pixbuf)
-                {
-                  rut_object_free (RigAsset, asset);
-                  g_warning ("Failed to load asset texture: %s", error->message);
-                  g_error_free (error);
-                  return NULL;
-                }
+      g_object_unref (istream);
 
-              g_object_unref (istream);
+      bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
 
-              bitmap = bitmap_new_from_pixbuf (ctx->cogl_context, pixbuf);
+      asset->texture = cogl_texture_2d_new_from_bitmap (bitmap);
 
-              asset->texture = cogl_texture_2d_new_from_bitmap (bitmap);
+      /* Allocate now so we can simply free the data
+       * TODO: allow asynchronous upload. */
+      allocated = cogl_texture_allocate (asset->texture, &cogl_error);
 
-              /* Allocate now so we can simply free the data
-               * TODO: allow asynchronous upload. */
-              cogl_texture_allocate (asset->texture, NULL);
+      cogl_object_unref (bitmap);
+      g_object_unref (pixbuf);
 
-              cogl_object_unref (bitmap);
-              g_object_unref (pixbuf);
-
-              if (!asset->texture)
-                {
-                  rut_object_free (RigAsset, asset);
-                  g_warning ("Failed to load asset texture: %s",
-                             cogl_error->message);
-                  cogl_error_free (cogl_error);
-                  return NULL;
-                }
-
-              break;
-            }
-        case RIG_ASSET_TYPE_MESH:
-            {
-              RutPLYAttributeStatus padding_status[G_N_ELEMENTS (ply_attributes)];
-              GError *error = NULL;
-
-              asset->mesh =
-                rut_mesh_new_from_ply_data (ctx,
-                                            data,
-                                            len,
-                                            ply_attributes,
-                                            G_N_ELEMENTS (ply_attributes),
-                                            padding_status,
-                                            &error);
-              if (!asset->mesh)
-                {
-                  rut_object_free (RigAsset, asset);
-                  g_warning ("could not load model %s: %s",
-                             name, error->message);
-                  g_error_free (error);
-                  return NULL;
-                }
-
-              if (padding_status[1] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-                asset->has_normals = false;
-              else
-                asset->has_normals = true;
-
-              if (padding_status[2] == RUT_PLY_ATTRIBUTE_STATUS_PADDED)
-                asset->has_tex_coords = false;
-              else
-                asset->has_tex_coords = true;
-
-              asset->texture = generate_mesh_thumbnail (asset);
-
-              break;
-            }
+      if (!allocated)
+        {
+          cogl_object_unref (asset->texture);
+          rut_throw (e,
+                     RUT_IO_EXCEPTION,
+                     RUT_IO_EXCEPTION_IO,
+                     "Failed to load Cogl texture: %s", cogl_error->message);
+          cogl_error_free (cogl_error);
+          return NULL;
         }
     }
 
   return asset;
+}
+
+RigAsset *
+rig_asset_new_from_font_data (RutContext *ctx,
+                              const uint8_t *data,
+                              size_t len,
+                              RutException **e)
+{
+  RigAsset *asset =
+    rut_object_alloc0 (RigAsset, &rig_asset_type, _rig_asset_init_type);
+
+  asset->ctx = ctx;
+
+  asset->type = RIG_ASSET_TYPE_FONT;
+
+  asset->data = g_memdup (data, len);
+  asset->data_len = len;
+
+  return asset;
+}
+
+RigAsset *
+rig_asset_new_from_file (RigEngine *engine,
+                         GFileInfo *info,
+                         GFile *asset_file,
+                         RutException **e)
+{
+  GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
+  GFile *dir = g_file_get_parent (asset_file);
+  char *path = g_file_get_relative_path (assets_dir, asset_file);
+  GList *inferred_tags = NULL;
+  RigAsset *asset = NULL;
+
+  inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
+
+  if (rut_util_find_tag (inferred_tags, "image") ||
+      rut_util_find_tag (inferred_tags, "video"))
+    {
+      if (rut_util_find_tag (inferred_tags, "normal-maps"))
+        asset = rig_asset_new_normal_map (engine->ctx, path, inferred_tags);
+      else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
+        asset = rig_asset_new_alpha_mask (engine->ctx, path, inferred_tags);
+      else
+        asset = rig_asset_new_texture (engine->ctx, path, inferred_tags);
+    }
+  else if (rut_util_find_tag (inferred_tags, "ply"))
+    asset = rig_asset_new_ply_model (engine->ctx, path, inferred_tags);
+  else if (rut_util_find_tag (inferred_tags, "font"))
+    asset = rig_asset_new_font (engine->ctx, path, inferred_tags);
+
+#ifdef RIG_EDITOR_ENABLED
+  if (engine->frontend &&
+      engine->frontend_id == RIG_FRONTEND_ID_EDITOR &&
+      asset &&
+      rig_asset_needs_thumbnail (asset))
+    {
+      rig_asset_thumbnail (asset, rig_editor_refresh_thumbnails, engine, NULL);
+    }
+#endif
+
+  g_list_free (inferred_tags);
+
+  g_object_unref (assets_dir);
+  g_object_unref (dir);
+  g_free (path);
+
+  if (!asset)
+    {
+      /* TODO: make the constructors above handle throwing exceptions */
+      rut_throw (e,
+                 RUT_IO_EXCEPTION,
+                 RUT_IO_EXCEPTION_IO,
+                 "Failed to instantiate asset");
+    }
+
+  return asset;
+}
+
+RigAsset *
+rig_asset_new_from_pb_asset (RigPBUnSerializer *unserializer,
+                             Rig__Asset *pb_asset,
+                             RutException **e)
+{
+  RigEngine *engine = unserializer->engine;
+  RutContext *ctx = engine->ctx;
+  RigAsset *asset = NULL;
+
+  if (pb_asset->has_data)
+    {
+      switch (pb_asset->type)
+        {
+        case RIG_ASSET_TYPE_TEXTURE:
+        case RIG_ASSET_TYPE_NORMAL_MAP:
+        case RIG_ASSET_TYPE_ALPHA_MASK:
+          {
+            bool is_video = pb_asset->has_is_video ? pb_asset->is_video : false;
+            asset = rig_asset_new_from_image_data (ctx,
+                                                   pb_asset->path,
+                                                   pb_asset->type,
+                                                   is_video,
+                                                   pb_asset->data.data,
+                                                   pb_asset->data.len,
+                                                   e);
+            return asset;
+          }
+        case RIG_ASSET_TYPE_FONT:
+          {
+            asset = rig_asset_new_from_font_data (ctx,
+                                                  pb_asset->data.data,
+                                                  pb_asset->data.len,
+                                                  e);
+            return asset;
+          }
+        case RIG_ASSET_TYPE_BUILTIN:
+          rut_throw (e,
+                     RUT_IO_EXCEPTION,
+                     RUT_IO_EXCEPTION_IO,
+                     "Can't instantiate a builtin asset from data");
+          return NULL;
+        }
+    }
+  else if (pb_asset->mesh)
+    {
+      RutMesh *mesh = rig_pb_unserialize_mesh (unserializer, pb_asset->mesh);
+      if (!mesh)
+        {
+          rut_throw (e,
+                     RUT_IO_EXCEPTION,
+                     RUT_IO_EXCEPTION_IO,
+                     "Error unserializing mesh");
+          return NULL;
+        }
+      asset = rig_asset_new_from_mesh (engine->ctx, mesh);
+      rut_object_unref (mesh);
+      return asset;
+    }
+  else if (pb_asset->path &&
+           unserializer->engine->ctx->assets_location)
+    {
+      char *full_path =
+        g_build_filename (unserializer->engine->ctx->assets_location,
+                          pb_asset->path, NULL);
+      GFile *asset_file = g_file_new_for_path (full_path);
+      GFileInfo *info = g_file_query_info (asset_file,
+                                           "standard::*",
+                                           G_FILE_QUERY_INFO_NONE,
+                                           NULL,
+                                           NULL);
+      if (info)
+        {
+          asset = rig_asset_new_from_file (unserializer->engine,
+                                           info,
+                                           asset_file,
+                                           e);
+          g_object_unref (info);
+        }
+      else
+        {
+          rut_throw (e,
+                     RUT_IO_EXCEPTION,
+                     RUT_IO_EXCEPTION_IO,
+                     "Failed to query file info");
+        }
+
+      g_object_unref (asset_file);
+      g_free (full_path);
+
+      return asset;
+    }
+
+  rut_throw (e,
+             RUT_IO_EXCEPTION,
+             RUT_IO_EXCEPTION_IO,
+             "Missing asset data");
+
+  return NULL;
 }
 
 RigAsset *
@@ -920,6 +1071,16 @@ rig_asset_new_ply_model (RutContext *ctx,
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_MESH);
 }
+
+RigAsset *
+rig_asset_new_font (RutContext *ctx,
+                    const char *path,
+                    const GList *inferred_tags)
+{
+  return rig_asset_new_full (ctx, path, inferred_tags,
+                             RIG_ASSET_TYPE_FONT);
+}
+
 
 RigAssetType
 rig_asset_get_type (RigAsset *asset)
@@ -1042,6 +1203,11 @@ rut_file_info_is_asset (GFileInfo *info, const char *name)
           g_free (mime_type);
           return TRUE;
         }
+      else if (strcmp (mime_type, "application/x-font-ttf") == 0)
+        {
+          g_free (mime_type);
+          return TRUE;
+        }
       g_free (mime_type);
     }
 
@@ -1077,13 +1243,25 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
       if (strncmp (mime_type, "image/", 6) == 0)
         inferred_tags =
           g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
-
-      if (strncmp (mime_type, "video/", 6) == 0)
+      else if (strncmp (mime_type, "video/", 6) == 0)
         inferred_tags =
           g_list_prepend (inferred_tags, (char*) g_intern_string ("video"));
+      else if (strcmp (mime_type, "application/x-font-ttf") == 0)
+        inferred_tags =
+          g_list_prepend (inferred_tags, (char*) g_intern_string ("font"));
+    }
 
+  if (rut_util_find_tag (inferred_tags, "image"))
+    {
       inferred_tags =
         g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
+    }
+
+  if (rut_util_find_tag (inferred_tags, "image") ||
+      rut_util_find_tag (inferred_tags, "video"))
+    {
+      inferred_tags =
+        g_list_prepend (inferred_tags, (char *)g_intern_string ("texture"));
 
       if (rut_util_find_tag (inferred_tags, "normal-maps"))
         {
@@ -1105,13 +1283,6 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
           inferred_tags =
             g_list_prepend (inferred_tags,
                             (char *)g_intern_string ("mask"));
-        }
-      else if (rut_util_find_tag (inferred_tags, "image") ||
-               rut_util_find_tag (inferred_tags, "video"))
-        {
-          inferred_tags =
-            g_list_prepend (inferred_tags,
-                           (char *)g_intern_string ("texture"));
         }
     }
 

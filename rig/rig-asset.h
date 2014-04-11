@@ -36,6 +36,7 @@
 #include <rut.h>
 
 #include "rig-types.h"
+#include "rig-pb.h"
 
 /* XXX: The definition of an "asset" is getting a big confusing.
  * Initially it used to represent things created in third party
@@ -96,6 +97,17 @@ rig_asset_new_ply_model (RutContext *ctx,
                          const GList *inferred_tags);
 
 RigAsset *
+rig_asset_new_font (RutContext *ctx,
+                    const char *path,
+                    const GList *inferred_tags);
+
+RigAsset *
+rig_asset_new_from_file (RigEngine *engine,
+                         GFileInfo *info,
+                         GFile *asset_file,
+                         RutException **e);
+
+RigAsset *
 rig_asset_new_from_data (RutContext *ctx,
                          const char *path,
                          RigAssetType type,
@@ -106,6 +118,11 @@ rig_asset_new_from_data (RutContext *ctx,
 RigAsset *
 rig_asset_new_from_mesh (RutContext *ctx,
                          RutMesh *mesh);
+
+RigAsset *
+rig_asset_new_from_pb_asset (RigPBUnSerializer *unserializer,
+                             Rig__Asset *pb_asset,
+                             RutException **e);
 
 RigAssetType
 rig_asset_get_type (RigAsset *asset);

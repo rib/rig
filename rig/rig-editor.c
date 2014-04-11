@@ -1202,6 +1202,7 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   char *path = g_file_get_relative_path (assets_dir, asset_file);
   GList *l;
   RigAsset *asset = NULL;
+  RutException *catch = NULL;
 
   /* Avoid loading duplicate assets... */
   for (l = editor->assets; l; l = l->next)
@@ -1212,10 +1213,18 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
         return;
     }
 
-  asset = rig_load_asset (engine, info, asset_file);
-  if (asset)
-    editor->assets =
-      g_list_prepend (editor->assets, asset);
+  asset = rig_asset_new_from_file (engine, info, asset_file, &catch);
+  if (!asset)
+    {
+      g_warning ("Failed to load asset from file %s: %s",
+                 path, catch->message);
+      rut_exception_free (catch);
+    }
+  else
+    {
+      editor->assets =
+        g_list_prepend (editor->assets, asset);
+    }
 }
 
 #if 0
