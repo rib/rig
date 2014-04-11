@@ -237,15 +237,9 @@ frontend__update_ui (Rig__Frontend_Service *service,
               apply_property_change (frontend, unserializer, pb_change);
             }
 
-          if (!rig_engine_pb_op_map (map_op_ctx, pb_op))
+          if (!rig_engine_pb_op_map (map_op_ctx, apply_op_ctx, pb_op))
             {
               g_warning ("Frontend: Failed to ID map simulator operation");
-              continue;
-            }
-
-          if (!rig_engine_pb_op_apply (apply_op_ctx, pb_op))
-            {
-              g_warning ("Frontend: Failed to apply simulator operation");
               continue;
             }
         }

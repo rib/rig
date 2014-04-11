@@ -3,7 +3,7 @@
  *
  * UI Engine & Editor
  *
- * Copyright (C) 2012,2013  Intel Corporation.
+ * Copyright (C) 2012,2013,2014  Intel Corporation.
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -180,6 +180,7 @@ _copy_op_set_property (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_set_property (RigEngineOpMapContext *ctx,
+                      RigEngineOpApplyContext *apply_ctx,
                       Rig__Operation *pb_op)
 {
   Rig__Operation__SetProperty *set_property = pb_op->set_property;
@@ -189,6 +190,9 @@ _map_op_set_property (RigEngineOpMapContext *ctx,
     return false;
 
   if (!maybe_map_property_value (ctx, value))
+    return false;
+
+  if (apply_ctx && !_apply_op_set_property (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -273,12 +277,11 @@ _copy_op_add_entity (RigEngineOpCopyContext *ctx,
                                   Rig__Operation__AddEntity,
                                   rig__operation__add_entity__init,
                                   src_pb_op->add_entity);
-#if 0
+
   pb_op->add_entity->entity = rig_pb_dup (ctx->serializer,
                                           Rig__Entity,
                                           rig__entity__init,
                                           src_pb_op->add_entity->entity);
-#endif
 
   /* FIXME: This is currently only a shallow copy.
    *
@@ -290,6 +293,7 @@ _copy_op_add_entity (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_add_entity (RigEngineOpMapContext *ctx,
+                    RigEngineOpApplyContext *apply_ctx,
                     Rig__Operation *pb_op)
 {
   if (!map_id (ctx, &pb_op->add_entity->parent_entity_id))
@@ -304,6 +308,12 @@ _map_op_add_entity (RigEngineOpMapContext *ctx,
    * create a mapping from the new edit-mode entity and the
    * new play-mode entity
    */
+
+  if (apply_ctx && !_apply_op_add_entity (apply_ctx, pb_op))
+    return false;
+
+  if (!map_id (ctx, &pb_op->add_entity->entity->id))
+    return false;
 
   return true;
 }
@@ -366,9 +376,13 @@ _copy_op_delete_entity (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_delete_entity (RigEngineOpMapContext *ctx,
+                       RigEngineOpApplyContext *apply_ctx,
                        Rig__Operation *pb_op)
 {
   if (!map_id (ctx, &pb_op->delete_entity->entity_id))
+    return false;
+
+  if (apply_ctx && !_apply_op_delete_entity (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -456,9 +470,16 @@ _copy_op_add_component (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_add_component (RigEngineOpMapContext *ctx,
+                       RigEngineOpApplyContext *apply_ctx,
                        Rig__Operation *pb_op)
 {
   if (!map_id (ctx, &pb_op->add_component->parent_entity_id))
+    return false;
+
+  if (apply_ctx && !_apply_op_add_component (apply_ctx, pb_op))
+    return false;
+
+  if (!map_id (ctx, &pb_op->add_component->component->id))
     return false;
 
   return true;
@@ -540,9 +561,13 @@ _copy_op_delete_component (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_delete_component (RigEngineOpMapContext *ctx,
+                          RigEngineOpApplyContext *apply_ctx,
                           Rig__Operation *pb_op)
 {
   if (!map_id (ctx, &pb_op->delete_component->component_id))
+    return false;
+
+  if (apply_ctx && !_apply_op_delete_component (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -604,17 +629,32 @@ _copy_op_add_controller (RigEngineOpCopyContext *ctx,
                          Rig__Operation *src_pb_op,
                          Rig__Operation *pb_op)
 {
-  /* XXX: Nothing needs to be mapped for this operation */
-  pb_op->add_controller->controller = src_pb_op->add_controller->controller;
+  pb_op->add_controller = rig_pb_dup (ctx->serializer,
+                                      Rig__Operation__AddController,
+                                      rig__operation__add_controller__init,
+                                      src_pb_op->add_controller);
+
+  pb_op->add_controller->controller =
+    rig_pb_dup (ctx->serializer,
+                Rig__Controller,
+                rig__controller__init,
+                src_pb_op->add_controller->controller);
+
   return;
 }
 
 
 static bool
 _map_op_add_controller (RigEngineOpMapContext *ctx,
+                        RigEngineOpApplyContext *apply_ctx,
                         Rig__Operation *pb_op)
 {
-  /* XXX: Nothing needs to be mapped for this operation */
+  if (apply_ctx && !_apply_op_add_controller (apply_ctx, pb_op))
+    return false;
+
+  if (!map_id (ctx, &pb_op->add_controller->controller->id))
+    return false;
+
   return true;
 }
 
@@ -679,9 +719,13 @@ _copy_op_delete_controller (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_delete_controller (RigEngineOpMapContext *ctx,
+                           RigEngineOpApplyContext *apply_ctx,
                            Rig__Operation *pb_op)
 {
   if (!map_id (ctx, &pb_op->delete_controller->controller_id))
+    return false;
+
+  if (apply_ctx && !_apply_op_delete_controller (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -766,6 +810,7 @@ _copy_op_controller_set_const (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_set_const (RigEngineOpMapContext *ctx,
+                              RigEngineOpApplyContext *apply_ctx,
                               Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -778,6 +823,9 @@ _map_op_controller_set_const (RigEngineOpMapContext *ctx,
     return false;
 
   if (!maybe_map_property_value (ctx, pb_op->controller_set_const->value))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_set_const (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -868,6 +916,7 @@ _copy_op_controller_path_add_node (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_path_add_node (RigEngineOpMapContext *ctx,
+                                  RigEngineOpApplyContext *apply_ctx,
                                   Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -880,6 +929,9 @@ _map_op_controller_path_add_node (RigEngineOpMapContext *ctx,
     return false;
 
   if (!maybe_map_property_value (ctx, pb_op->controller_path_add_node->value))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_path_add_node (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -955,6 +1007,7 @@ _copy_op_controller_path_delete_node (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_path_delete_node (RigEngineOpMapContext *ctx,
+                                     RigEngineOpApplyContext *apply_ctx,
                                      Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -964,6 +1017,9 @@ _map_op_controller_path_delete_node (RigEngineOpMapContext *ctx,
   };
 
   if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_path_delete_node (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -1056,6 +1112,7 @@ _copy_op_controller_path_set_node (RigEngineOpCopyContext *ctx,
 /* XXX: This is equivalent to _add_path_node so should be redundant! */
 static bool
 _map_op_controller_path_set_node (RigEngineOpMapContext *ctx,
+                                  RigEngineOpApplyContext *apply_ctx,
                                   Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -1068,6 +1125,9 @@ _map_op_controller_path_set_node (RigEngineOpMapContext *ctx,
     return false;
 
   if (!maybe_map_property_value (ctx, pb_op->controller_path_set_node->value))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_path_set_node (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -1138,6 +1198,7 @@ _copy_op_controller_add_property (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_add_property (RigEngineOpMapContext *ctx,
+                                 RigEngineOpApplyContext *apply_ctx,
                                  Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -1147,6 +1208,9 @@ _map_op_controller_add_property (RigEngineOpMapContext *ctx,
   };
 
   if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_add_property (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -1217,6 +1281,7 @@ _copy_op_controller_remove_property (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_remove_property (RigEngineOpMapContext *ctx,
+                                    RigEngineOpApplyContext *apply_ctx,
                                     Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -1226,6 +1291,9 @@ _map_op_controller_remove_property (RigEngineOpMapContext *ctx,
   };
 
   if (!map_ids (ctx, id_ptrs))
+    return false;
+
+  if (apply_ctx && !_apply_op_controller_remove_property (apply_ctx, pb_op))
     return false;
 
   return true;
@@ -1300,6 +1368,7 @@ _copy_op_controller_property_set_method (RigEngineOpCopyContext *ctx,
 
 static bool
 _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
+                                        RigEngineOpApplyContext *apply_ctx,
                                         Rig__Operation *pb_op)
 {
   int64_t *id_ptrs[] = {
@@ -1311,6 +1380,9 @@ _map_op_controller_property_set_method (RigEngineOpMapContext *ctx,
   if (!map_ids (ctx, id_ptrs))
     return false;
 
+  if (apply_ctx && !_apply_op_controller_property_set_method (apply_ctx, pb_op))
+    return false;
+
   return true;
 }
 
@@ -1319,7 +1391,8 @@ typedef struct _RigEngineOperation
   bool (*apply_op) (RigEngineOpApplyContext *ctx,
                     Rig__Operation *pb_op);
 
-  bool (*map_op) (RigEngineOpMapContext *ctx,
+  bool (*map_op) (RigEngineOpMapContext *map_ctx,
+                  RigEngineOpApplyContext *apply_ctx,
                   Rig__Operation *pb_op);
 
   void (*copy_op) (RigEngineOpCopyContext *ctx,
@@ -1494,22 +1567,34 @@ rig_engine_op_map_context_destroy (RigEngineOpMapContext *map_ctx)
 
 bool
 rig_engine_pb_op_map (RigEngineOpMapContext *ctx,
+                      RigEngineOpApplyContext *apply_ctx,
                       Rig__Operation *pb_op)
 {
-  return _rig_engine_ops[pb_op->type].map_op (ctx, pb_op);
+  return _rig_engine_ops[pb_op->type].map_op (ctx, apply_ctx, pb_op);
 }
 
 /* This function maps Rig__UIEdit operations from one ID space to
- * another. Operations can optionally also be applied at the same
- * time as being mapped.
+ * another. Operations are also be applied at the same time as being
+ * mapped.
  *
  * This function won't apply any operations that weren't successfully
  * mapped.
  *
- * Note: it may be necessary to map at the same time as applying
+ * Note: this api applies operations at the sampe time as mapping
  * considering that applying ops can create new objects which may need
  * to registered to be able to perform the mapping of subsequent
  * operations.
+ *
+ * Also consider that mapping is tightly coupled with applying
+ * operations for operations that create new objects because those
+ * objects will be registered with an ID that is mapped after
+ * registration. This is important for example in the editor which
+ * maps edit mode ui operations onto the the play mode ui and then
+ * forwards those play mode operations to the simulator. When mapping
+ * from edit mode to play mode then the IDs of new objects correspond
+ * to edit mode objects so when registered we can track their
+ * association.  When forwarding to the simulator though those IDs
+ * should end up corresponding to the new play mode objects.
  */
 bool
 rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
@@ -1523,25 +1608,16 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
     {
       Rig__Operation *pb_op = pb_ui_edit->ops[i];
 
-      if (!_rig_engine_ops [pb_op->type].map_op (map_ctx, pb_op))
+      if (!_rig_engine_ops [pb_op->type].map_op (map_ctx, apply_ctx, pb_op))
         {
           status = false;
 
-          g_warning ("Failed to map operation");
+          g_warning ("Failed to map and apply operation");
 
           /* Note: all of the operations are allocated on the
            * frame-stack so we don't need to explicitly free anything.
            */
           continue;
-        }
-
-      if (apply_ctx)
-        {
-          if (!_rig_engine_ops [pb_op->type].apply_op (apply_ctx, pb_op))
-            {
-              g_warning ("Failed to apply operation");
-              status = false;
-            }
         }
     }
 

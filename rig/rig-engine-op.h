@@ -215,6 +215,7 @@ rig_engine_op_map_context_destroy (RigEngineOpMapContext *ctx);
 
 bool
 rig_engine_pb_op_map (RigEngineOpMapContext *ctx,
+                      RigEngineOpApplyContext *apply_ctx,
                       Rig__Operation *pb_op);
 
 bool
