@@ -1691,7 +1691,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
         }
 
       if (!rut_object_is (geometry, RUT_TRAIT_ID_PRIMABLE))
-        return;
+        continue;
 
       /*
        * Setup Pipelines...
