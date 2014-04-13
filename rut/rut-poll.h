@@ -58,7 +58,7 @@ G_BEGIN_DECLS
  * Since: 1.10
  * Stability: unstable
  */
-#ifdef unix
+#if defined (linux) || defined (__APPLE__)
 #include <poll.h>
 typedef enum
 {

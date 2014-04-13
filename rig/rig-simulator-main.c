@@ -81,6 +81,7 @@ main (int argc, char **argv)
       return EXIT_FAILURE;
     }
 
+#ifdef linux
   if (getenv ("_RIG_USE_ABSTRACT_SOCKET"))
     {
       /* FIXME: the name should incorporate the application name! */
@@ -96,8 +97,9 @@ main (int argc, char **argv)
         }
     }
   else
+#endif /* linux */
     {
-#ifdef unix
+#if defined (linux) || defined (__APPLE__)
       /* Block SIGINT so that when we are interactively debugging the
        * frontend process with gdb, we don't kill the simulator
        * whenever we interupt the frontend process.

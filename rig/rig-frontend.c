@@ -621,7 +621,7 @@ _rig_frontend_init_type (void)
   rut_type_init (&rig_frontend_type, "RigFrontend", _rig_frontend_free);
 }
 
-#if !defined (__ANDROID__) && defined (unix)
+#if !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__))
 static void
 simulator_sigchild_cb (GPid pid,
                        int status,
@@ -715,7 +715,7 @@ fork_simulator (RutShell *shell, RigFrontend *frontend)
 
   frontend_start_service (shell, frontend);
 }
-#endif /* !__ANDROID__ && unix */
+#endif /* !defined (__ANDROID__) && (defined (linux) || defined (__APPLE__)) */
 
 typedef struct _ThreadSetup
 {
@@ -826,7 +826,7 @@ spawn_simulator (RutShell *shell, RigFrontend *frontend)
     create_simulator_thread (shell, frontend);
   else
     fork_simulator (shell, frontend);
-#elif defined (unix)
+#elif defined (__APPLE__)
   fork_simulator (shell, frontend);
 #else
 #error "Platform needs some way of connecting to a simulator"

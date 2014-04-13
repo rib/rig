@@ -1493,7 +1493,7 @@ get_entity_pipeline (RigEngine *engine,
   GetPipelineFlags flags = 0;
   RigAsset *asset;
 
-  g_return_if_fail (material != NULL);
+  g_return_val_if_fail (material != NULL, NULL);
 
   /* FIXME: Instead of having rig_entity apis for caching image
    * sources, we should allow the renderer to track arbitrary

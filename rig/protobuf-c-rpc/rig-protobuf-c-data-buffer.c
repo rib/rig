@@ -26,7 +26,9 @@
 #include <string.h>
 #include <errno.h>
 #include <alloca.h>
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
+#endif
 #include <stdlib.h>
 #include "rig-protobuf-c-data-buffer.h"
 

@@ -2273,7 +2273,7 @@ init_resize_handle (RigEngine *engine)
       resize_handle = rut_image_new (engine->ctx, resize_handle_texture);
 
       engine->resize_handle_transform =
-        rut_transform_new (engine->ctx, resize_handle);
+        rut_transform_new (engine->ctx);
 
       rut_graphable_add_child (engine->root, engine->resize_handle_transform);
 
@@ -2857,9 +2857,10 @@ rig_editor_new (const char *filename)
                                     register_play_mode_object_cb,
                                     NULL, /* unregister id */
                                     editor); /* user data */
-
+#ifdef linux
   /* TODO move into editor */
   rig_avahi_run_browser (engine);
+#endif
 
   editor->adb_tracker = rut_adb_device_tracker_new (editor->shell,
                                                     adb_devices_cb,
@@ -3495,7 +3496,7 @@ rig_editor_pop_undo_subjournal (RigEngine *engine)
 
   engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
                                                    engine->undo_journal_stack);
-  g_return_if_fail (engine->undo_journal_stack);
+  g_return_val_if_fail (engine->undo_journal_stack, NULL);
 
   engine->undo_journal = engine->undo_journal_stack->data;
 

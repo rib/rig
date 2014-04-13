@@ -137,7 +137,8 @@ control_point_input_cb (RutInputRegion *region,
   EntityState *entity_state = point->entity_state;
   RigSelectionTool *tool = entity_state->tool;
 
-  g_return_if_fail (tool->selected_entities != NULL);
+  g_return_val_if_fail (tool->selected_entities != NULL,
+                        RUT_INPUT_EVENT_STATUS_UNHANDLED);
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&

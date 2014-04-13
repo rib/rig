@@ -147,7 +147,7 @@ rig_load (RigEngine *engine, const char *file)
     };
 
   /* Simulators shouldn't be trying to load UIs directly */
-  g_return_if_fail (engine->frontend);
+  g_return_val_if_fail (engine->frontend, NULL);
 
   if (g_str_has_suffix (file, ".xml"))
     {

@@ -147,7 +147,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   RigRotationTool *tool = user_data;
 
-  g_return_if_fail (tool->selected_entity != NULL);
+  g_return_val_if_fail (tool->selected_entity != NULL, status);
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&

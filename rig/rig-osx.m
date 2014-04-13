@@ -37,7 +37,7 @@
 #include <glib.h>
 
 #include "rig-osx.h"
-#include "rig-data.h"
+#include "rig-engine.h"
 #include "rig-load-save.h"
 
 @interface Controller : NSObject
