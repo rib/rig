@@ -52,12 +52,14 @@ rut_os_read_len (int fd, void *data, int len, RutException **e);
 bool
 rut_os_write (int fd, void *data, int len, RutException **e);
 
+#ifdef linux
 int
 rut_os_listen_on_abstract_socket (const char *socket_name,
                                   RutException **e);
 
 int
 rut_os_connect_to_abstract_socket (const char *socket_name);
+#endif /* linux */
 
 int
 rut_os_listen_on_tcp_socket (int port,

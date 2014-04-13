@@ -152,6 +152,7 @@ rut_os_write (int fd, void *data, int len, RutException **e)
   return true;
 }
 
+#ifdef linux
 int
 rut_os_connect_to_abstract_socket (const char *socket_name)
 {
@@ -284,6 +285,7 @@ rut_os_listen_on_abstract_socket (const char *name,
 
   return fd;
 }
+#endif /* linux */
 
 int
 rut_os_listen_on_tcp_socket (int port,
