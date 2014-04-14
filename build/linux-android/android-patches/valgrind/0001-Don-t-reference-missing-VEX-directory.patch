@@ -1,0 +1,24 @@
+From 15876638df1df45afa4410c53df0dc7001a0818e Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Tue, 25 Mar 2014 00:37:28 +0000
+Subject: [PATCH] Don't reference missing VEX directory
+
+---
+ Makefile.am | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 2426b5c..167526b 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -20,7 +20,6 @@ EXP_TOOLS = 	exp-sgcheck \
+ # everything else working before we try it.
+ SUBDIRS = \
+ 	include \
+-	VEX \
+ 	coregrind \
+ 	. \
+ 	$(TOOLS) \
+-- 
+1.9.0
+

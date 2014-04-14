@@ -1,0 +1,25 @@
+From bd0abdf3f7bb8e88443cfa3faf72d7eda8890c37 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Fri, 21 Mar 2014 23:51:44 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ pixman/Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pixman/Makefile.am b/pixman/Makefile.am
+index b376d9a..e3928d3 100644
+--- a/pixman/Makefile.am
++++ b/pixman/Makefile.am
+@@ -2,7 +2,7 @@ include $(top_srcdir)/pixman/Makefile.sources
+ 
+ lib_LTLIBRARIES = libpixman-1.la
+ 
+-libpixman_1_la_LDFLAGS = -version-info $(LT_VERSION_INFO) -no-undefined @PTHREAD_LDFLAGS@ 
++libpixman_1_la_LDFLAGS = -shared -avoid-version -no-undefined @PTHREAD_LDFLAGS@ 
+ libpixman_1_la_LIBADD = @PTHREAD_LIBS@ -lm
+ libpixman_1_la_SOURCES = $(libpixman_sources) $(libpixman_headers)
+ 
+-- 
+1.9.0
+

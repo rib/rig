@@ -1,0 +1,25 @@
+From 9639cafeb3b3534de31f4a7f887ca5b6a2a2a1cb Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 12:15:29 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ builds/unix/unix-cc.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/builds/unix/unix-cc.in b/builds/unix/unix-cc.in
+index b84bc5d..80b1d6e 100644
+--- a/builds/unix/unix-cc.in
++++ b/builds/unix/unix-cc.in
+@@ -107,7 +107,7 @@ CCexe        := $(CCraw_build)	# used to compile `apinames' only
+ # Library linking
+ #
+ LINK_LIBRARY = $(LIBTOOL) --mode=link $(CCraw) -o $@ $(OBJECTS_LIST) \
+-                          -rpath $(libdir) -version-info $(version_info) \
++                          -rpath $(libdir) -shared -avoid-version \
+                           $(LDFLAGS) -no-undefined \
+                           # -export-symbols $(EXPORTS_LIST)
+ 
+-- 
+1.9.0
+

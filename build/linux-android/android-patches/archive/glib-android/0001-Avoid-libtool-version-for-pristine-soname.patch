@@ -1,0 +1,25 @@
+From 0ea73e1ed05ac6d11eb9258346aa5e4835cd39fd Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 14:21:22 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index c973378..472000c 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -5,7 +5,7 @@ lib_LTLIBRARIES = libglib-android-1.0.la
+ headersdir = $(includedir)/glib-android-1.0/glib-android
+ headers_HEADERS = glib-android.h
+ 
+-LDADD = $(GA_LT_LDFLAGS) -export-symbol-regex "^g_android.*"
++libglib_android_1_0_la_LDFLAGS = -shared -avoid-version -export-symbol-regex "^g_android.*"
+ libglib_android_1_0_la_SOURCES = glib-android.c glib-android.h
+ libglib_android_1_0_la_CFLAGS =		\
+ 	$(GLIB_CFLAGS)			\
+-- 
+1.9.0
+

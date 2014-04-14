@@ -1,0 +1,26 @@
+From d9a33899f5da15139bc8b8d0053ff20b385f957f Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 14 Apr 2014 16:03:21 +0100
+Subject: [PATCH] Avoid pkgdata -r versioning option
+
+---
+ source/data/Makefile.in | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/source/data/Makefile.in b/source/data/Makefile.in
+index df97376..675760d 100644
+--- a/source/data/Makefile.in
++++ b/source/data/Makefile.in
+@@ -24,9 +24,6 @@ LIB_STATIC_ICUDATA_NAME=$(LIBSICU)$(DATA_STUBNAME)$(ICULIBSUFFIX)
+ ifeq ($(PKGDATA_OPTS),)
+ PKGDATA_OPTS = -O $(top_builddir)/data/icupkg.inc
+ endif
+-ifeq ($(PKGDATA_VERSIONING),)
+-PKGDATA_VERSIONING = -r $(SO_TARGET_VERSION)
+-endif
+ 
+ # This allows all the data to be in one directory
+ ifeq ($(PKGDATA_MODE),dll)
+-- 
+1.9.0
+

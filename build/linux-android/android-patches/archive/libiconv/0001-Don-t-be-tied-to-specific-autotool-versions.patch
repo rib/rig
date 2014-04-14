@@ -1,0 +1,49 @@
+From 7da315a2397e14559d0a93a01c6c9b0041ddc108 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 16:32:52 +0000
+Subject: [PATCH] Don't be tied to specific autotool versions
+
+---
+ Makefile.devel            | 8 ++++----
+ libcharset/Makefile.devel | 6 +++---
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/Makefile.devel b/Makefile.devel
+index 8f6399c..2c1ce59 100644
+--- a/Makefile.devel
++++ b/Makefile.devel
+@@ -4,10 +4,10 @@
+ 
+ SHELL = /bin/sh
+ MAKE = make
+-AUTOCONF = autoconf-2.68
+-AUTOHEADER = autoheader-2.68
+-AUTOMAKE = automake-1.11
+-ACLOCAL = aclocal-1.11
++AUTOCONF = autoconf
++AUTOHEADER = autoheader
++AUTOMAKE = automake
++ACLOCAL = aclocal
+ GPERF = gperf
+ CC = gcc
+ CFLAGS = -O
+diff --git a/libcharset/Makefile.devel b/libcharset/Makefile.devel
+index 174cd15..9a6fa60 100644
+--- a/libcharset/Makefile.devel
++++ b/libcharset/Makefile.devel
+@@ -3,9 +3,9 @@
+ 
+ SHELL = /bin/sh
+ MAKE = make
+-AUTOCONF = autoconf-2.68
+-AUTOHEADER = autoheader-2.68
+-ACLOCAL = aclocal-1.11
++AUTOCONF = autoconf
++AUTOHEADER = autoheader
++ACLOCAL = aclocal
+ CP = cp
+ RM = rm -f
+ 
+-- 
+1.9.0
+

@@ -1,0 +1,25 @@
+From 24f2c9b039756f0c00a8ddb54239ee0906533cab Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 15:04:02 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index bf0156f..1f93dd3 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -218,7 +218,7 @@ nodist_libffi_convenience_la_SOURCES = $(nodist_libffi_la_SOURCES)
+ 
+ LTLDFLAGS = $(shell $(SHELL) $(top_srcdir)/libtool-ldflags $(LDFLAGS))
+ 
+-libffi_la_LDFLAGS = -no-undefined -version-info `grep -v '^\#' $(srcdir)/libtool-version` $(LTLDFLAGS) $(AM_LTLDFLAGS)
++libffi_la_LDFLAGS = -no-undefined -shared -avoid-version $(LTLDFLAGS) $(AM_LTLDFLAGS)
+ 
+ AM_CPPFLAGS = -I. -I$(top_srcdir)/include -Iinclude -I$(top_srcdir)/src
+ AM_CCASFLAGS = $(AM_CPPFLAGS)
+-- 
+1.9.0
+

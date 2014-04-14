@@ -1,0 +1,25 @@
+From 992df3635543f142ed61fb898156105bde1704b7 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 24 Mar 2014 15:22:02 +0000
+Subject: [PATCH] Avoid libtool version for pristine soname
+
+---
+ Makefile.am | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 42cff57..19a2780 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -69,7 +69,7 @@ libjpeg_la_SOURCES = $(LIBSOURCES)
+ 
+ # LDFLAGS for libjpeg.la
+ libjpeg_la_LDFLAGS = -no-undefined \
+-        -version-info $(JPEG_LIB_VERSION)
++	-shared -avoid-version
+ 
+ if HAVE_LD_VERSION_SCRIPT
+   libjpeg_la_LDFLAGS += -Wl,--version-script=$(srcdir)/libjpeg.map
+-- 
+1.9.0
+
