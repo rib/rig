@@ -1,0 +1,25 @@
+From 3b6a1b6be90aa856d26c1593e91e208e1b57cfac Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert.bragg@intel.com>
+Date: Sun, 13 Apr 2014 23:03:45 +0100
+Subject: [PATCH] Don't try and use glibtoolize
+
+---
+ autogen.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/autogen.sh b/autogen.sh
+index b365e4a..aaec0aa 100755
+--- a/autogen.sh
++++ b/autogen.sh
+@@ -8,7 +8,7 @@ LIBTOOLIZE=libtoolize
+ my_uname=`uname`
+ 
+ if [ ${my_uname} = "Darwin" ]; then
+-  LIBTOOLIZE=glibtoolize
++  LIBTOOLIZE=libtoolize
+ fi
+ root=`dirname $0`
+ cd $root
+-- 
+1.8.5.2 (Apple Git-48)
+

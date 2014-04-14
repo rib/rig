@@ -350,9 +350,8 @@ function build_bzip2 ()
 
     cd "$BUILD_DIR/$project_dir"
 
-    make -f Makefile-libbz2_so
-    ln -sf libbz2.so.1.0.6 libbz2.so
-    cp -av libbz2.so* "$prefix/lib/"
+    make
+    cp -av libbz2.a "$prefix/lib/"
 
     echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
 }
@@ -478,13 +477,15 @@ fi
 
 build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
 
+#build_dep "http://ftp.gnu.org/gnu/libiconv/libiconv-1.14.tar.gz"
 build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
 build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.3.2.tar.gz"
 
-export CFLAGS="-g3 -O0"
+#export CFLAGS="-g3 -O0"
 build_dep \
     "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz"
-unset CFLAGS
+#    --with-libiconv=gnu
+#unset CFLAGS
 
 # The makefile for this package seems to choke on paralell builds
 build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
@@ -496,36 +497,45 @@ build_dep \
 #build_dep \
 #    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
 
-export CFLAGS="-g3 -O0"
-export CPPFLAGS="-I$STAGING_PREFIX/include"
+#old_CFLAGS="$CFLAGS"
+#old_CPPFLAGS="$CPPFLAGS"
+#export CFLAGS="$CFLAGS -g3 -O0"
+#export CPPFLAGS="$CPPFLAGS -I$STAGING_PREFIX/include"
 build_dep \
     "http://ftp.gnome.org/pub/GNOME/sources/gdk-pixbuf/2.28/gdk-pixbuf-2.28.2.tar.xz" \
     --disable-modules \
     --with-included-loaders=png,jpeg,tiff \
     --disable-glibtest \
     --disable-introspection
-unset CFLAGS
-unset CPPFLAGS
+#CFLAGS="$old_CFLAGS"
+#CPPFLAGS="$old_CPPFLAGS"
 
 #export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
 #build_dep -d icu -configure source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
 #unset CFLAGS
 
-build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
-build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.16.tar.bz2"
+build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
+build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.26.tar.bz2"
 
-build_dep "http://www.cairographics.org/releases/pixman-0.28.0.tar.gz" \
+build_dep "http://www.cairographics.org/releases/pixman-0.32.4.tar.gz" \
     --disable-gtk
-build_dep "http://www.cairographics.org/releases/cairo-1.12.8.tar.xz" \
-    --enable-quartz --disable-xlib --without-x
+build_dep "http://www.cairographics.org/releases/cairo-1.12.16.tar.xz" \
+    --disable-xlib --without-x
+#    --enable-quartz --disable-xlib --without-x
 
-build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
-build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.1.tar.bz2" \
+#build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
+build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.95.tar.bz2" \
     --disable-docs
-build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.32/pango-1.32.1.tar.xz" \
+build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.36.2.tar.xz" \
     --without-x --with-included-modules=yes --without-dynamic-modules
 
 build_dep -branch origin/rig "https://github.com/rig-project/sdl.git"
+
+build_dep "http://protobuf.googlecode.com/files/protobuf-2.5.0.tar.gz"
+
+export CXXFLAGS="-I$STAGING_PREFIX/include"
+build_dep -branch origin/rig "https://github.com/rig-project/protobuf-c.git"
+unset CXXFLAGS
 
 
 export CFLAGS="-g3 -O0"
@@ -548,7 +558,7 @@ build_dep \
     --disable-gtk-doc \
     --enable-glib \
     --enable-cogl-pango \
-    --enable-cogl-gst \
+    --disable-cogl-gst \
     --disable-introspection \
     --enable-debug
 
@@ -558,7 +568,11 @@ build_dep -onlybuild "llvm" \
     --enable-debug-runtime --enable-debug-symbols --enable-shared --enable-keep-symbols --with-python=`which python2`
 
 #mclinker needs bison >= 2.5.4 and < 3.0.1
-build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.tar.xz"
+build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.1.tar.xz"
+
+#the flex that comes with xcode generates incompatible prototypes so we have to build our own
+build_tool "http://downloads.sourceforge.net/project/flex/flex-2.5.37.tar.bz2" \
+    --disable-dependency-tracking
 
 build_dep -branch origin/rig \
     "https://github.com/rig-project/mclinker.git" \
