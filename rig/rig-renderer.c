@@ -447,8 +447,8 @@ init_dof_pipeline_template (RigEngine *engine)
                               "uniform float dof_focal_distance;\n"
                               "uniform float dof_depth_of_field;\n"
 
-                              "varying float dof_blur;\n",
-                              //"varying vec4 world_pos;\n",
+                              "out float dof_blur;\n",
+                              //"out vec4 world_pos;\n",
 
                               /* compute the amount of bluriness we want */
                               "vec4 world_pos = cogl_modelview_matrix * pos;\n"
@@ -466,8 +466,8 @@ init_dof_pipeline_template (RigEngine *engine)
 #if 0
   cogl_pipeline_set_color_mask (pipeline, COGL_COLOR_MASK_ALL);
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              "varying vec4 world_pos;\n"
-                              "varying float dof_blur;",
+                              "in vec4 world_pos;\n"
+                              "in float dof_blur;",
 
                               "cogl_color_out = vec4(dof_blur,0,0,1);\n"
                               //"cogl_color_out = vec4(1.0, 0.0, 0.0, 1.0);\n"
@@ -497,7 +497,7 @@ init_dof_diamond_pipeline (RigEngine *engine)
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                               /* declarations */
-                              "varying float dof_blur;",
+                              "in float dof_blur;",
 
                               /* post */
                               "if (cogl_color_out.a <= 0.0)\n"
@@ -520,7 +520,7 @@ init_dof_unshaped_pipeline (RigEngine *engine)
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                               /* declarations */
-                              "varying float dof_blur;",
+                              "in float dof_blur;",
 
                               /* post */
                               "if (cogl_color_out.a < 0.25)\n"
@@ -543,7 +543,7 @@ init_dof_pipeline (RigEngine *engine)
 
   /* store the bluriness in the alpha channel */
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
-                              "varying float dof_blur;",
+                              "in float dof_blur;",
 
                               "cogl_color_out.a = dof_blur;\n"
   );
@@ -576,8 +576,8 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform mat3 normal_matrix;\n"
-                      "attribute vec3 tangent_in;\n"
-                      "varying vec3 normal, eye_direction;\n",
+                      "in vec3 tangent_in;\n"
+                      "out vec3 normal, eye_direction;\n",
                       /* post */
                       "normal = normalize(normal_matrix * cogl_normal_in);\n"
                       "eye_direction = -vec3(cogl_modelview_matrix *\n"
@@ -588,7 +588,7 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
                       /* definitions */
                       "uniform vec3 light0_direction_norm;\n"
-                      "varying vec3 light_direction;\n",
+                      "out vec3 light_direction;\n",
 
                       /* post */
                       "vec3 tangent = normalize(normal_matrix * tangent_in);\n"
@@ -609,17 +609,17 @@ rig_renderer_init (RigEngine *engine)
 
   engine->cache_position_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
-                      "varying vec4 pos;\n",
+                      "out vec4 pos;\n",
                       "pos = cogl_position_in;\n");
 
   engine->pointalism_vertex_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX_TRANSFORM,
-    "attribute vec2 cell_xy;\n"
-    "attribute vec4 cell_st;\n"
+    "in vec2 cell_xy;\n"
+    "in vec4 cell_st;\n"
     "uniform float scale_factor;\n"
     "uniform float z_trans;\n"
     "uniform int anti_scale;\n"
-    "varying vec4 av_color;\n",
+    "out vec4 av_color;\n",
 
     "float grey;\n"
 
@@ -650,7 +650,7 @@ rig_renderer_init (RigEngine *engine)
 
                       /* definitions */
                       "uniform mat4 light_shadow_matrix;\n"
-                      "varying vec4 shadow_coords;\n",
+                      "out vec4 shadow_coords;\n",
 
                       /* post */
                       "shadow_coords = light_shadow_matrix *\n"
@@ -708,7 +708,7 @@ rig_renderer_init (RigEngine *engine)
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
          "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
          "uniform float material_shininess;\n"
-         "varying vec3 light_direction, eye_direction;\n",
+         "in vec3 light_direction, eye_direction;\n",
 
          /* post */
          "vec4 final_color;\n"
@@ -744,7 +744,7 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
          "/* material lighting declarations */\n"
-         "varying vec3 normal, eye_direction;\n"
+         "in vec3 normal, eye_direction;\n"
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
          "uniform vec3 light0_direction_norm;\n"
          "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
@@ -781,7 +781,7 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* definitions */
          "/* simple lighting declarations */\n"
-         "varying vec3 normal, eye_direction;\n"
+         "in vec3 normal, eye_direction;\n"
          "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
          "uniform vec3 light0_direction_norm;\n",
 
@@ -812,10 +812,15 @@ rig_renderer_init (RigEngine *engine)
   engine->shadow_mapping_fragment_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
-                      "varying vec4 shadow_coords;\n",
+                      "in vec4 shadow_coords;\n",
                       /* post */
+                      "#if __VERSION__ >= 130\n"
+                      "  vec4 texel10 =\n"
+                      "    texture (cogl_sampler10, shadow_coords.xy);\n"
+                      "#else\n"
                       "  vec4 texel10 =\n"
                       "    texture2D (cogl_sampler10, shadow_coords.xy);\n"
+                      "#endif\n"
                       "  float distance_from_light = texel10.r + 0.0005;\n"
                       "  float shadow = 1.0;\n"
                       "  if (distance_from_light < shadow_coords.z)\n"
@@ -825,19 +830,24 @@ rig_renderer_init (RigEngine *engine)
   engine->pointalism_halo_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* declarations */
-         "varying vec4 av_color;\n",
+         "in vec4 av_color;\n",
 
          /* post */
          "  cogl_color_out = av_color;\n"
+         "#if __VERSION__ >= 130\n"
+         "  cogl_color_out *=\n"
+         "    texture (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+         "#else\n"
          "  cogl_color_out *=\n"
          "    texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+         "#endif\n"
          "  if (cogl_color_out.a > 0.90 || cogl_color_out.a <= 0.0)\n"
          "    discard;\n");
 
   engine->pointalism_opaque_snippet =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
          /* declarations */
-         "varying vec4 av_color;\n",
+         "in vec4 av_color;\n",
 
          /* post */
          "  cogl_color_out = av_color;\n"
@@ -851,12 +861,17 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
                       "/* hair simple declarations */\n"
-                      "varying vec3 normal, eye_direction;\n"
+                      "in vec3 normal, eye_direction;\n"
                       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
                       "uniform vec3 light0_direction_norm;\n",
                       /* post */
+                      "#if __VERSION__ >= 130\n"
+                      "  vec4 texel =\n"
+                      "    texture (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "#else\n"
                       "  vec4 texel =\n"
                       "    texture2D (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "#endif\n"
                       "  cogl_color_out *= texel;\n"
                       "  if (cogl_color_out.a < 0.9)\n"
                       "    discard;\n"
@@ -886,14 +901,19 @@ rig_renderer_init (RigEngine *engine)
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                       /* declarations */
                       "/* hair material declarations */\n"
-                      "varying vec3 normal, eye_direction;\n"
+                      "in vec3 normal, eye_direction;\n"
                       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
                       "uniform vec3 light0_direction_norm;\n"
                       "uniform vec4 material_ambient, material_diffuse, material_specular;\n"
                       "uniform float material_shininess;\n",
                       /* post */
+                      "#if __VERSION__ >= 130\n"
+                      "  vec4 texel =\n"
+                      "    texture (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "#else\n"
                       "  vec4 texel =\n"
                       "    texture2D (cogl_sampler11, cogl_tex_coord11_in.st);\n"
+                      "#endif\n"
                       "\n"
                       "  cogl_color_out *= texel;\n"
                       "  if (cogl_color_out.a < 0.9)\n"

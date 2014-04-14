@@ -87,9 +87,15 @@ rig_dof_effect_new (RigEngine *engine)
                               NULL  /* post */);
 
   cogl_snippet_set_replace (snippet,
+      "#if __VERSION__ >= 130\n"
+      "cogl_texel0 = texture (cogl_sampler0, cogl_tex_coord0_in.st);\n"
+      "cogl_texel1 = texture (cogl_sampler1, cogl_tex_coord1_in.st);\n"
+      "cogl_texel2 = texture (cogl_sampler2, cogl_tex_coord2_in.st);\n"
+      "#else\n"
       "cogl_texel0 = texture2D (cogl_sampler0, cogl_tex_coord0_in.st);\n"
       "cogl_texel1 = texture2D (cogl_sampler1, cogl_tex_coord1_in.st);\n"
       "cogl_texel2 = texture2D (cogl_sampler2, cogl_tex_coord2_in.st);\n"
+      "#endif\n"
       "cogl_color_out = mix (cogl_texel1, cogl_texel2, cogl_texel0.a);\n"
       "cogl_color_out.a = 1.0;\n");
 

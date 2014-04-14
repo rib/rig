@@ -420,11 +420,11 @@ generate_mesh_thumbnail (RigAsset *asset)
   pipeline = cogl_pipeline_new (ctx->cogl_context);
 
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-           "attribute vec3 tangent_in;\n"
-           "attribute vec2 cogl_tex_coord0_in;\n"
-           "attribute vec2 cogl_tex_coord1_in;\n"
-           "attribute vec2 cogl_tex_coord2_in;\n"
-           "attribute vec2 cogl_tex_coord5_in;\n"
+           "in vec3 tangent_in;\n"
+           "in vec2 cogl_tex_coord0_in;\n"
+           "in vec2 cogl_tex_coord1_in;\n"
+           "in vec2 cogl_tex_coord2_in;\n"
+           "in vec2 cogl_tex_coord5_in;\n"
            "uniform vec3 light_pos;\n"
            "uniform vec4 light_amb;\n"
            "uniform vec4 light_diff;\n"
@@ -432,9 +432,9 @@ generate_mesh_thumbnail (RigAsset *asset)
            "uniform vec4 mat_amb;\n"
            "uniform vec4 mat_diff;\n"
            "uniform vec4 mat_spec;\n"
-           "varying vec3 trans_light;\n"
-           "varying vec3 eye;\n"
-           "varying vec3 normal;\n",
+           "out vec3 trans_light;\n"
+           "out vec3 eye;\n"
+           "out vec3 normal;\n",
            "normal = vec3 (normalize (cogl_modelview_matrix * \
                                       vec4 (cogl_normal_in.x, cogl_normal_in.y,\
                                       cogl_normal_in.z, 1.0)));\n"
@@ -455,9 +455,9 @@ generate_mesh_thumbnail (RigAsset *asset)
                               "uniform vec4 mat_amb;\n"
                               "uniform vec4 mat_diff;\n"
                               "uniform vec4 mat_spec;\n"
-                              "varying vec3 trans_light;\n"
-                              "varying vec3 eye;\n"
-                              "varying vec3 normal;\n",
+                              "in vec3 trans_light;\n"
+                              "in vec3 eye;\n"
+                              "in vec3 normal;\n",
                               "vec4 final_color;\n"
                               "vec3 L = normalize (trans_light);\n"
                               "vec3 N = normalize (normal);\n"

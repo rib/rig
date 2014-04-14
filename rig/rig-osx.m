@@ -31,6 +31,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <cogl/cogl.h>
+#include <cogl/cogl-sdl.h>
 #include <Cocoa/Cocoa.h>
 #include <mach-o/dyld.h>
 #include <unistd.h>

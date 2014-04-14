@@ -115,7 +115,11 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   wrapper = g_strdup_printf ("vec4\n"
                              "rig_image_source_sample%d (vec2 UV)\n"
                              "{\n"
+                             "#if __VERSION__ >= 130\n"
+                             "  return texture (cogl_sampler%d, UV);\n"
+                             "#else\n"
                              "  return texture2D (cogl_sampler%d, UV);\n"
+                             "#endif\n"
                              "}\n",
                              layer_index,
                              layer_index);
