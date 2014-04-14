@@ -285,7 +285,7 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path libprotobuf-c gdk-pixbuf-2.0 sdl2-rig"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
 
 have_cogl_gst=no
 PKG_CHECK_EXISTS([cogl-gst], [have_cogl_gst=yes])
