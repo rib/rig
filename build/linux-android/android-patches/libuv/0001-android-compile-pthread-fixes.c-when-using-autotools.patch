@@ -1,0 +1,26 @@
+From 26d1e20347306ad26d23a6950e3915307fdf187f Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert.bragg@intel.com>
+Date: Fri, 25 Apr 2014 20:27:26 +0100
+Subject: [PATCH] android: compile pthread-fixes.c when using autotools
+
+---
+ Makefile.am | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 0236851..e528bf7 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -237,7 +237,8 @@ endif
+ 
+ if ANDROID
+ include_HEADERS += include/android-ifaddrs.h
+-libuv_la_SOURCES += src/unix/android-ifaddrs.c
++libuv_la_SOURCES += src/unix/android-ifaddrs.c \
++		    src/unix/pthread-fixes.c
+ endif
+ 
+ if DARWIN
+-- 
+1.9.0
+

@@ -1,6 +1,9 @@
 #!/bin/bash
 
+# Please read the README before running this script!
+
 set -e
+set -x
 
 UNSET_VARS=(
     LD_LIBRARY_PATH
@@ -88,8 +91,11 @@ function add_prefix()
     add_to_path GST_PLUGIN_PATH "$prefix/lib/gstreamer-0.10"
     add_to_path PYTHONPATH "$prefix/lib64/python2.7/site-packages"
     add_flag CFLAGS I "$prefix/include"
+    add_flag CXXFLAGS I "$prefix/include"
     add_flag LDFLAGS L "$prefix/lib"
-    add_flag ACLOCAL_FLAGS I "$prefix/share/aclocal"
+    if test -d $prefix/share/aclocal; then
+        add_flag ACLOCAL_FLAGS I "$prefix/share/aclocal"
+    fi
 }
 
 function download_file ()
@@ -132,9 +138,12 @@ function guess_dir ()
 	if [ -n "$REPLY" ]; then
 	    dir="$REPLY";
 	fi;
+    else
+	echo "$prompt = [$dir]"
     fi;
 
     eval $var="\"$dir\"";
+    guess_saves="$guess_saves\n$var=\"$dir\""
 
     if [ ! -d "$dir" ]; then
 	if ! mkdir -p "$dir"; then
@@ -161,20 +170,14 @@ function y_or_n ()
 
 function do_untar_source ()
 {
-    do_untar_source_d "$BUILD_DIR" "$@";
-}
-
-function do_untar_source_d ()
-{
-    local exdir="$1"; shift;
     local tarfile="$1"; shift;
 
     if echo "$tarfile" | grep -q '\.xz$'; then
-        unxz -d -c "$tarfile" | tar -C "$exdir" -xvf - "$@"
+        unxz -d -c "$tarfile" | tar -C "$BUILD_DIR" -xvf - "$@"
     elif echo "$tarfile" | grep -q '\.bz2$'; then
-        bzip2 -d -c "$tarfile" | tar -C "$exdir" -xvf - "$@"
+        bzip2 -d -c "$tarfile" | tar -C "$BUILD_DIR" -xvf - "$@"
     else
-        tar -C "$exdir" -zxvf "$tarfile" "$@"
+        tar -C "$BUILD_DIR" -zxvf "$tarfile" "$@"
     fi
 
     if [ "$?" -ne 0 ]; then
@@ -192,7 +195,6 @@ function apply_patches ()
 
     if test -d "$patches_dir"; then
         for patch in "$patches_dir/"*.patch; do
-	    echo "Applying patch $patch"
             patch -p1 < "$patch"
             if grep -q '^+++ .*/\(Makefile\.am\|configure\.ac\)\b' "$patch" ; then
                 retool=yes;
@@ -206,15 +208,13 @@ function git_clone ()
     local name
     local url
     local branch
-    local commit
     local build_dir="$BUILD_DIR"
 
     while true; do
         case "$1" in
-            -url) shift; url="$1"; shift ;;
+	    -url) shift; url="$1"; shift ;;
             -name) shift; name="$1"; shift ;;
-            -branch) shift; branch="$1"; shift ;;
-            -commit) shift; commit="$1"; shift ;;
+	    -branch) shift; branch="$1"; shift ;;
             -build_dir) shift; build_dir="$1"; shift ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
@@ -223,55 +223,63 @@ function git_clone ()
 
     cd $build_dir
 
-    if test -d $name; then
-	cd $name
-	if ! `git log|grep -q "commit $commit"`; then
-	    echo "Found existing $name clone not based on $commit"
-	    exit 1
-	fi
-    else
-	git clone $url $name
-	if [ $? -ne 0 ]; then
-	    echo "Cloning ${url} failed."
-	    exit 1
-	fi
+    if ! test -d $name; then
+        git clone $url $name
+        if [ $? -ne 0 ]; then
+            echo "Cloning ${url} failed."
+            exit 1
+        fi
 
-	if test -n "$commit"; then
-	    start_point="$commit"
-	else
-	    start_point="$branch"
-	fi
-
-	cd $name
-	git checkout -b rig-build $start_point
-	if [ $? -ne 0 ]; then
-	    echo "Checking out $commit failed"
-	    exit 1
-	fi
-
-        apply_patches "$PATCHES_DIR/$name" "$build_dir/$name"
+        cd $name
+        git checkout -b rig-build $branch
+        if [ $? -ne 0 ]; then
+            echo "Checking out $branch failed"
+            exit 1
+        fi
     fi
 }
 
 function build_source ()
 {
-    local project_dir
+    local unpack_dir
+    local module
+    local project_name
+    local build_dir
     local prefix
     local branch
-    local commit
     local config_name="configure"
+    local is_autotools=1
+    local is_cmake
+    local cmake_args=""
     local jobs=4
+    local config_guess_dirs="."
+    local deps
+    local make_args=""
+    local install_target=install
+    local retool=no
+    local retool_cmd
+    local is_tool
     local onlybuild
 
     while true; do
         case "$1" in
-            -p) shift; prefix="$1"; shift ;;
-            -d) shift; project_dir="$1"; shift ;;
-            -branch) shift; branch="$1"; shift ;;
-            -commit) shift; commit="$1"; shift ;;
-            -configure) shift; config_name="$1"; shift ;;
+	    -module) shift; prefix="$MODULES_DIR/$1"; module="$1"; shift ;;
+	    -dep) shift; deps="$deps $1"; shift ;;
+	    -prefix) shift; prefix="$1"; shift ;;
+	    -unpackdir) shift; unpack_dir="$1"; shift ;;
+	    -branch) shift; branch="$1"; shift ;;
+	    -configure) shift; config_name="$1"; shift ;;
+            -not_autotools) shift; unset is_autotools ;;
+            -cmake) shift; unset is_autotools; is_cmake=1 ;;
+            -cmake_arg) shift; cmake_args="$cmake_args $1"; shift ;;
+	    -make_arg) shift; make_args="$make_args $1"; shift ;;
+            -install_target) shift; install_target="$1"; shift ;;
+	    -retool) shift; retool=yes ;;
+	    -retool_cmd) shift; retool_cmd=$1; shift ;;
 	    -j) shift; jobs="$1"; shift ;;
+	    -autotools_dir) shift; config_guess_dirs="$config_guess_dirs $1"; shift ;;
 	    -onlybuild) shift; onlybuild=1 ;;
+	    -tool) shift; is_tool=1 ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
         esac
@@ -280,48 +288,109 @@ function build_source ()
     local source="$1"; shift;
     local tarfile=`basename "$source"`
 
-    if test -z "$project_dir"; then
-        project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
+    if test -z "$unpack_dir"; then
+        unpack_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
     fi;
 
-    local project_name=`echo "$project_dir" | sed 's/-[0-9][0-9a-z\.]*$//'`
-    local retool=no
-    local patch
+    if test -n "$module"; then
+      project_name="$module"
+      build_dir="$unpack_dir"
+    elif test -z "$is_tool"; then
+      project_name=`echo "$unpack_dir" | sed 's/-[0-9\.]*$//'`
+      build_dir="$unpack_dir"
+    else
+      project_name=`echo "$unpack_dir" | sed 's/-[0-9\.]*$//'`
+      build_dir="tool-$unpack_dir"
+    fi
+
+    #add_to_path LD_LIBRARY_PATH "$prefix/lib"
+    add_to_path PKG_CONFIG_PATH "$prefix/lib/pkgconfig"
+    add_to_path PKG_CONFIG_PATH "$prefix/share/pkgconfig"
+
+    if test -n "$module"; then
+        mkdir -p $MODULES_DIR/$module
+        cp $RIG_BUILD_META_DIR/makefiles/$module-Android.mk $MODULES_DIR/$module/Android.mk
+    fi
 
     if test -e "$BUILD_DIR/installed-projects.txt" && \
-        grep -q -F "$project_dir" "$BUILD_DIR/installed-projects.txt"; then
-        echo "Skipping $project_dir as it is already installed"
+        grep -q "^$build_dir$" "$BUILD_DIR/installed-projects.txt"; then
+        echo "Skipping $project_name ($build_dir) as it is already installed"
         return
     fi
 
-    if test -z "$onlybuild"; then
-	if echo "$source" | grep -q "git$"; then
-	    git_clone -name "$project_name" -url "$source" -branch "$branch" -commit "$commit"
-	    retool=yes
-	else
-	    download_file "$source" "$tarfile"
+    if test -z "$onlybuild" -a ! -d $BUILD_DIR/$build_dir; then
+        if echo "$source" | grep -q "git$"; then
+            git_clone -url "$source" -branch "$branch" -name "$build_dir"
+            retool=yes
+        else
+            download_file "$source" "$tarfile"
 
-	    do_untar_source "$DOWNLOAD_DIR/$tarfile"
-
-	    apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
-	fi
+            do_untar_source "$DOWNLOAD_DIR/$tarfile"
+	    if test "$BUILD_DIR/$unpack_dir" != "$BUILD_DIR/$build_dir"; then
+		mv "$BUILD_DIR/$unpack_dir" "$BUILD_DIR/$build_dir"
+	    fi
+        fi
+        apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$build_dir"
     fi
 
-    cd "$BUILD_DIR/$project_dir"
+    cd "$BUILD_DIR/$build_dir"
 
-    if test "x$retool" = "xyes"; then
-        NOCONFIGURE=1 ./autogen.sh
+    for i in $config_guess_dirs
+    do
+	cp $DOWNLOAD_DIR/config.{sub,guess} $i/
+    done
+
+    save_CPPFLAGS=$CPPFLAGS
+    save_CFLAGS=$CFLAGS
+    save_LDFLAGS=$LDFLAGS
+
+    if ! test -e ./"$config_name"; then
+        retool=yes
+    fi
+
+    if test "x$retool" = "xyes" -a -z "$is_cmake"; then
+        if test -z "$retool_cmd"; then
+            if test -f ./autogen.sh; then
+                retool_cmd="./autogen.sh"
+            else
+                retool_cmd="autoreconf -fvi"
+            fi
+        fi
+        export NOCONFIGURE=1
+        eval "$retool_cmd"
+        unset NOCONFIGURE
     fi
 
     echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
     echo "PKG_CONFIG_PATH=$PKG_CONFIG_PATH"
     #Note we have to pass $@ first since we need to pass a special
     #Linux option as the first argument to the icu configure script
-    ./"$config_name" "$@" --prefix="$prefix"
-    make -j"$jobs"
-    make install
+    if test -n "$is_autotools"; then
+        ./"$config_name" "$@" \
+            --prefix="$prefix" \
+            CFLAGS="$CFLAGS" \
+            CXXFLAGS="$CXXFLAGS" \
+            LDFLAGS="$LDFLAGS"
+    elif test -n "$is_cmake"; then
+        if test -d cross-android; then
+            rm -fr cross-android
+        fi
+        mkdir cross-android && cd cross-android
+        cmake $cmake_args \
+              -D CMAKE_INSTALL_PREFIX="$prefix" ..
+    else
+        ./"$config_name" "$@" --prefix="$prefix"
+    fi
+    make $make_args -j"$jobs"
+    make $make_args $install_target
 
-    echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
+    CPPFLAGS=$save_CPPFLAGS
+    CFLAGS=$save_CFLAGS
+    LDFLAGS=$save_LDFLAGS
+
+    find $prefix -iname '*.la' -exec rm {} \;
+
+    echo "$build_dir" >> "$BUILD_DIR/installed-projects.txt"
 }
 
 function build_bzip2 ()
@@ -329,16 +398,11 @@ function build_bzip2 ()
     local prefix="$STAGING_PREFIX"
     local source="$1"; shift;
     local tarfile=`basename "$source"`
-
-    if test -z "$project_dir"; then
-      project_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
-    fi;
-
-    local project_name=bzip2
+    local unpack_dir=`echo "$tarfile" | sed -e 's/\.tar\.[0-9a-z]*$//' -e 's/\.tgz$//' -e 's/\.git$//'`
 
     if test -e "$BUILD_DIR/installed-projects.txt" && \
-               grep -q -F "$project_dir" "$BUILD_DIR/installed-projects.txt"; then
-        echo "Skipping $project_dir as it is already installed"
+               grep -q "^$unpack_dir$" "$BUILD_DIR/installed-projects.txt"; then
+        echo "Skipping bzip2 as it is already installed"
         return
     fi
 
@@ -346,26 +410,53 @@ function build_bzip2 ()
 
     do_untar_source "$DOWNLOAD_DIR/$tarfile"
 
-    apply_patches "$PATCHES_DIR/$project_name" "$BUILD_DIR/$project_dir"
+    apply_patches "$PATCHES_DIR/bzip2" "$BUILD_DIR/$unpack_dir"
 
-    cd "$BUILD_DIR/$project_dir"
+    cd "$BUILD_DIR/$unpack_dir"
 
     make -f Makefile-libbz2_so
     ln -sf libbz2.so.1.0.6 libbz2.so
+    mkdir -p "$prefix/lib/"
     cp -av libbz2.so* "$prefix/lib/"
 
-    echo "$project_dir" >> "$BUILD_DIR/installed-projects.txt"
+    echo "$unpack_dir" >> "$BUILD_DIR/installed-projects.txt"
 }
 
 function build_dep ()
 {
-    build_source -p "$STAGING_PREFIX" "$@"
+    build_source -prefix "$STAGING_PREFIX" "$@"
 }
 
 function build_tool ()
 {
-    build_source -p "$TOOLS_PREFIX" "$@"
+    build_source -tool -prefix "$TOOLS_PREFIX" "$@"
 }
+
+function usage ()
+{
+    echo "Usage:"
+    echo "$0 <rig-src-dir> <build-bashrc>"
+    exit 1
+}
+
+if test $# -ne 2; then
+    usage
+fi
+
+RIG_SRC_DIR=`realpath $1`
+RIG_BUILD_META_DIR=$RIG_SRC_DIR/build/linux-android
+
+if ! test -f $RIG_BUILD_META_DIR/makefiles/cogl-Android.mk; then
+    echo "Could not find Rig source at $1"
+    usage
+fi
+
+if ! test -f $2; then
+    echo "Couldn't find bashrc file $2"
+    usage
+fi
+
+source $2
 
 unset "${UNSET_VARS[@]}"
 
@@ -423,11 +514,7 @@ cat > "$RUN_PKG_CONFIG" <<EOF
 # PKG_CONFIG_LIBDIR variable so that it won't pick up the local system
 # .pc files.
 
-# The MinGW compiler on Fedora tries to do a similar thing except that
-# it also unsets PKG_CONFIG_PATH. This breaks any attempts to add a
-# local search path so we need to avoid using that script.
-
-export PKG_CONFIG_LIBDIR="$STAGING_PREFIX/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="/invalid/foo/path"
 
 exec pkg-config "\$@"
 EOF
@@ -439,43 +526,60 @@ add_prefix "$TOOLS_PREFIX"
 
 PKG_CONFIG="$RUN_PKG_CONFIG"
 
-ENV_SCRIPT="$BUILD_DIR/env.sh"
-echo > "$ENV_SCRIPT"
-for x in "${EXPORT_VARS[@]}"; do
-    printf "export %q=%q\n" "$x" "${!x}" >> "$ENV_SCRIPT"
-done
-
 export "${EXPORT_VARS[@]}"
 
-build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
-build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
+download_file "http://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/config.guess" "config.guess";
+download_file "http://git.savannah.gnu.org/gitweb/?p=automake.git;a=blob_plain;f=lib/config.sub" "config.sub";
 
-build_dep -configure Configure -j 1 \
-    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1f.tar.gz" \
+#build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
+#build_tool "http://tukaani.org/xz/xz-5.0.4.tar.gz"
+
+build_tool -configure Configure -not_autotools -j 1 -install_target install_sw \
+    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1g.tar.gz" \
     linux-elf \
     no-shared
 
 build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
 
-build_dep "ftp://sourceware.org/pub/libffi/libffi-3.0.11.tar.gz"
-build_dep "http://ftp.gnu.org/pub/gnu/gettext/gettext-0.18.3.2.tar.gz"
+build_dep -autotools_dir ./build-aux -autotools_dir ./libcharset/build-aux \
+    "http://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.14.tar.gz"
 
-export CFLAGS="-g3 -O0"
-build_dep \
+build_dep -retool_cmd "autoreconf -fvi" -retool \
+    "ftp://sourceware.org/pub/libffi/libffi-3.0.13.tar.gz"
+
+build_dep -dep libiconv -autotools_dir ./build-aux \
+    -make_arg -C -make_arg gettext-tools/intl \
+    "http://ftp.gnu.org/gnu/gettext/gettext-0.18.3.2.tar.gz" \
+    --without-included-regex --disable-java --disable-openmp --without-libiconv-prefix --without-libintl-prefix --without-libglib-2.0-prefix --without-libcroco-0.6-prefix --with-included-libxml --without-libncurses-prefix --without-libtermcap-prefix --without-libcurses-prefix --without-libexpat-prefix --without-emacs
+
+prev_CFLAGS="$CFLAGS"
+export CFLAGS="$prev_CFLAGS -g3 -O0"
+build_dep -dep libiconv -dep gettext -retool \
     "ftp://ftp.gnome.org/pub/gnome/sources/glib/2.38/glib-2.38.2.tar.xz" \
     --with-libiconv=gnu
-unset CFLAGS
+CFLAGS=$prev_CFLAGS
+
+build_dep "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
 
 # The makefile for this package seems to choke on paralell builds
 build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
 
-build_dep "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz"
-build_dep -d jpeg-8d "http://www.ijg.org/files/jpegsrc.v8d.tar.gz"
-build_dep \
+build_dep -retool -retool_cmd "autoreconf -v" \
     "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.9/libpng-1.6.9.tar.gz"
-#build_dep \
-#    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
+export LIBPNG_CFLAGS="-I$MODULES_DIR/libpng/include"
+export LIBPNG_LDFLAGS="-L$MODULES_DIR/libpng/lib -lpng16"
 
+build_dep -autotools_dir ./config -retool \
+    "http://download.osgeo.org/libtiff/tiff-4.0.3.tar.gz"
+build_dep -retool \
+    -unpackdir jpeg-9a "http://www.ijg.org/files/jpegsrc.v9a.tar.gz"
+
+build_dep -retool \
+    "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
+
+
+prev_CFLAGS=$CFLAGS
+prev_CPPFLAGS=$CPPFLAGS
 export CFLAGS="-g3 -O0"
 export CPPFLAGS="-I$STAGING_PREFIX/include"
 build_dep \
@@ -484,17 +588,29 @@ build_dep \
     --with-included-loaders=png,jpeg,tiff \
     --disable-glibtest \
     --disable-introspection
-unset CFLAGS
-unset CPPFLAGS
+CFLAGS=$prev_CFLAGS
+CPPFLAGS=$prev_CPPFLAGS
 
 #export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
 #build_dep -d icu -configure source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
 #unset CFLAGS
 
-build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
-build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.95.tar.bz2" \
+build_dep -retool \
+    "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.95.tar.bz2" \
     --disable-docs \
     --enable-libxml2
+
+prev_CFLAGS="$CFLAGS"
+export CFLAGS="\
+ -DU_USING_ICU_NAMESPACE=0 \
+ -DU_CHARSET_IS_UTF8=1 \
+ -DUNISTR_FROM_CHAR_EXPLICIT=explicit \
+ -DUNISTR_FROM_STRING_EXPLICIT=explicit \
+ -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS"
+build_dep -unpackdir icu -configure source/configure \
+  "http://download.icu-project.org/files/icu4c/53.1/icu4c-53_1-src.tgz"
+CFLAGS=$prev_CFLAGS
+
 build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.26.tar.bz2"
 
 build_dep "http://www.cairographics.org/releases/pixman-0.32.4.tar.gz" \
@@ -510,6 +626,10 @@ build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.36/pango-1.36.2.tar.xz
     --without-dynamic-modules
 
 build_dep -branch origin/rig "https://github.com/rig-project/sdl.git"
+
+build_dep "https://github.com/joyent/libuv.git"
+
+build_dep -cmake "https://github.com/Itseez/opencv.git"
 
 build_dep "http://ftp.gnu.org/gnu/gdbm/gdbm-1.10.tar.gz"
 
@@ -537,6 +657,7 @@ unset CXXFLAGS
 build_dep "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.2.3.tar.xz"
 build_dep "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.2.3.tar.xz"
 
+prev_CFLAGS=$CFLAGS
 export CFLAGS="-g3 -O0"
 
 build_dep \
@@ -560,14 +681,20 @@ build_dep \
     --enable-cogl-gst \
     --disable-introspection \
     --enable-debug
+CFLAGS=$prev_CFLAGS
 
 git_clone -name llvm -url "https://github.com/rig-project/llvm.git" -branch origin/rig
 git_clone -name clang -url "https://github.com/rig-project/clang.git" -branch origin/rig -build_dir "$BUILD_DIR/llvm/tools"
 build_dep -onlybuild "llvm" \
-    --enable-debug-runtime --enable-debug-symbols --enable-shared --enable-keep-symbols --with-python=`which python2`
+    --enable-targets=x86,x86_64,arm \
+    --enable-debug-runtime \
+    --enable-debug-symbols \
+    --enable-shared \
+    --enable-keep-symbols \
+    --with-python=`which python2`
 
 #mclinker needs bison >= 2.5.4 and < 3.0.1
-build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.tar.xz"
+build_tool "http://ftp.gnu.org/gnu/bison/bison-2.7.1.tar.xz"
 
 build_dep -branch origin/rig \
     "https://github.com/rig-project/mclinker.git" \

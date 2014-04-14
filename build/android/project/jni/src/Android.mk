@@ -18,7 +18,7 @@ LOCAL_SRC_FILES := \
 		$(RIG_PATH)/rut/rply.c \
      )
 
-LOCAL_SHARED_LIBRARIES += rut sdl2 pango pangocairo cogl cogl-pango2 cogl-path glib gmodule gobject gio gdk-pixbuf
+LOCAL_SHARED_LIBRARIES += rut sdl2 pango pangocairo cogl cogl-pango2 cogl-path glib gmodule gobject gio gdk-pixbuf libuv fontconfig freetype
 
 LOCAL_LDLIBS := -ldl -lGLESv2 -llog -landroid
 
@@ -41,7 +41,7 @@ LOCAL_SRC_FILES := \
 	  ) \
 	SDL_android_main.c \
 	rig-slave-android.c
-LOCAL_SHARED_LIBRARIES += rut sdl2 pango pangocairo cogl cogl-pango2 cogl-path glib gmodule gobject gio gdk-pixbuf protobuf-c
+LOCAL_SHARED_LIBRARIES += rut sdl2 pango pangocairo cogl cogl-pango2 cogl-path glib gmodule gobject gio gdk-pixbuf protobuf-c icudata icuuc fontconfig freetype harfbuzz harfbuzz-icu
 
 LOCAL_LDLIBS := -ldl -lGLESv2 -llog -landroid
 
@@ -54,3 +54,8 @@ $(call import-module, pango)
 $(call import-module, cogl)
 $(call import-module, sdl2)
 $(call import-module, protobuf-c)
+$(call import-module, icu)
+$(call import-module, libuv)
+$(call import-module, fontconfig)
+$(call import-module, freetype)
+$(call import-module, harfbuzz)

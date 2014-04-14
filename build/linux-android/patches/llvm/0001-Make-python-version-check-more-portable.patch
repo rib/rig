@@ -1,0 +1,25 @@
+From 7025906df510ef690852f091dd5c68d9da2002a4 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Sat, 8 Mar 2014 00:11:19 +0000
+Subject: [PATCH] Make python version check more portable
+
+---
+ configure | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index 7fe4105..9056561 100755
+--- a/configure
++++ b/configure
+@@ -12392,7 +12392,7 @@ fi
+ 
+ { echo "$as_me:$LINENO: checking for python >= 2.5" >&5
+ echo $ECHO_N "checking for python >= 2.5... $ECHO_C" >&6; }
+-ac_python_version=`$PYTHON -c 'import sys; print sys.version.split()[0]'`
++ac_python_version=`$PYTHON -c 'import sys; sys.stdout.write(sys.version.split()[0])'`
+ ac_python_version_major=`echo $ac_python_version | cut -d'.' -f1`
+ ac_python_version_minor=`echo $ac_python_version | cut -d'.' -f2`
+ ac_python_version_patch=`echo $ac_python_version | cut -d'.' -f3`
+-- 
+1.9.0
+

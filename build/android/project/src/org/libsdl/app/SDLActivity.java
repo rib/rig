@@ -54,8 +54,12 @@ public class SDLActivity extends Activity {
         System.loadLibrary("png16");
         System.loadLibrary("freetype");
         System.loadLibrary("fontconfig");
+        System.loadLibrary("icudata");
+        System.loadLibrary("icuuc");
         System.loadLibrary("harfbuzz");
+        System.loadLibrary("harfbuzz-icu");
         System.loadLibrary("pango-1.0");
+        System.loadLibrary("pangoft2-1.0");
         System.loadLibrary("cairo");
         System.loadLibrary("pangocairo-1.0");
         System.loadLibrary("gdk_pixbuf-2.0");
@@ -64,6 +68,7 @@ public class SDLActivity extends Activity {
         System.loadLibrary("cogl-path");
         System.loadLibrary("cogl-pango2");
         System.loadLibrary("protobuf-c");
+        System.loadLibrary("uv");
         System.loadLibrary("rig-slave");
         //System.loadLibrary("SDL2_image");
         //System.loadLibrary("SDL2_mixer");

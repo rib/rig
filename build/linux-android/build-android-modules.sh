@@ -1,7 +1,9 @@
 #!/bin/bash
 
+# Please read the README before running this script!
+
 set -e
-#set -x
+set -x
 
 UNSET_VARS=(
     LD_LIBRARY_PATH
@@ -91,7 +93,9 @@ function add_prefix()
     add_flag CFLAGS I "$prefix/include"
     add_flag CXXFLAGS I "$prefix/include"
     add_flag LDFLAGS L "$prefix/lib"
-    #add_flag ACLOCAL_FLAGS I "$prefix/share/aclocal"
+    if test -d $prefix/share/aclocal; then
+        add_flag ACLOCAL_FLAGS I "$prefix/share/aclocal"
+    fi
 }
 
 function download_file ()
@@ -201,33 +205,37 @@ function apply_patches ()
 
 function git_clone ()
 {
+    local name
     local url
     local branch
-    local dir
+    local build_dir="$BUILD_DIR"
 
     while true; do
         case "$1" in
 	    -url) shift; url="$1"; shift ;;
+            -name) shift; name="$1"; shift ;;
 	    -branch) shift; branch="$1"; shift ;;
-            -dir) shift; dir="$1"; shift ;;
+            -build_dir) shift; build_dir="$1"; shift ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
         esac
     done
 
-    cd $BUILD_DIR
+    cd $build_dir
 
-    git clone $url $dir
-    if [ $? -ne 0 ]; then
-        echo "Cloning ${url} failed."
-        exit 1
-    fi
+    if ! test -d $name; then
+        git clone $url $name
+        if [ $? -ne 0 ]; then
+            echo "Cloning ${url} failed."
+            exit 1
+        fi
 
-    cd $dir
-    git checkout -b rig-build $branch
-    if [ $? -ne 0 ]; then
-        echo "Checking out $branch failed"
-        exit 1
+        cd $name
+        git checkout -b rig-build $branch
+        if [ $? -ne 0 ]; then
+            echo "Checking out $branch failed"
+            exit 1
+        fi
     fi
 }
 
@@ -240,26 +248,38 @@ function build_source ()
     local prefix
     local branch
     local config_name="configure"
+    local is_autotools=1
+    local is_cmake
+    local cmake_args=""
     local jobs=4
     local config_guess_dirs="."
     local deps
     local make_args=""
+    local install_target=install
     local retool=no
     local retool_cmd
+    local is_tool
+    local onlybuild
 
     while true; do
         case "$1" in
 	    -module) shift; prefix="$MODULES_DIR/$1"; module="$1"; shift ;;
 	    -dep) shift; deps="$deps $1"; shift ;;
-            -prefix) shift; prefix="$1"; shift ;;
-            -unpackdir) shift; unpack_dir="$1"; shift ;;
-            -branch) shift; branch="$1"; shift ;;
-            -configure) shift; config_name="$1"; shift ;;
+	    -prefix) shift; prefix="$1"; shift ;;
+	    -unpackdir) shift; unpack_dir="$1"; shift ;;
+	    -branch) shift; branch="$1"; shift ;;
+	    -configure) shift; config_name="$1"; shift ;;
+            -not_autotools) shift; unset is_autotools ;;
+            -cmake) shift; unset is_autotools; is_cmake=1 ;;
+            -cmake_arg) shift; cmake_args="$cmake_args $1"; shift ;;
 	    -make_arg) shift; make_args="$make_args $1"; shift ;;
+            -install_target) shift; install_target="$1"; shift ;;
 	    -retool) shift; retool=yes ;;
 	    -retool_cmd) shift; retool_cmd=$1; shift ;;
 	    -j) shift; jobs="$1"; shift ;;
 	    -autotools_dir) shift; config_guess_dirs="$config_guess_dirs $1"; shift ;;
+	    -onlybuild) shift; onlybuild=1 ;;
+	    -tool) shift; is_tool=1 ;;
             -*) echo "Unknown option $1"; exit 1 ;;
             *) break ;;
         esac
@@ -274,6 +294,9 @@ function build_source ()
 
     if test -n "$module"; then
       project_name="$module"
+      build_dir="$unpack_dir"
+    elif test -z "$is_tool"; then
+      project_name=`echo "$unpack_dir" | sed 's/-[0-9\.]*$//'`
       build_dir="$unpack_dir"
     else
       project_name=`echo "$unpack_dir" | sed 's/-[0-9\.]*$//'`
@@ -295,9 +318,9 @@ function build_source ()
         return
     fi
 
-    if ! test -d $BUILD_DIR/$build_dir; then
+    if test -z "$onlybuild" -a ! -d $BUILD_DIR/$build_dir; then
         if echo "$source" | grep -q "git$"; then
-            git_clone -url "$source" -branch "$branch" -dir "$build_dir"
+            git_clone -url "$source" -branch "$branch" -name "$build_dir"
             retool=yes
         else
             download_file "$source" "$tarfile"
@@ -337,26 +360,39 @@ function build_source ()
         retool=yes
     fi
 
-    if test "x$retool" = "xyes"; then
-	if test -z "$retool_cmd"; then
-	    if test -f ./autogen.sh; then
-		retool_cmd="./autogen.sh"
-	    else
-		retool_cmd="autoreconf -fvi"
-	    fi
-	fi
-	NOCONFIGURE=1 eval "$retool_cmd"
+    if test "x$retool" = "xyes" -a -z "$is_cmake"; then
+        if test -z "$retool_cmd"; then
+            if test -f ./autogen.sh; then
+                retool_cmd="./autogen.sh"
+            else
+                retool_cmd="autoreconf -fvi"
+            fi
+        fi
+        export NOCONFIGURE=1
+        eval "$retool_cmd"
+        unset NOCONFIGURE
     fi
 
     #Note we have to pass $@ first since we need to pass a special
     #Linux option as the first argument to the icu configure script
-    ./"$config_name" "$@" \
-        --prefix="$prefix" \
-        CFLAGS="$CFLAGS" \
-        CXXFLAGS="$CXXFLAGS" \
-        LDFLAGS="$LDFLAGS"
+    if test -n "$is_autotools"; then
+        ./"$config_name" "$@" \
+            --prefix="$prefix" \
+            CFLAGS="$CFLAGS" \
+            CXXFLAGS="$CXXFLAGS" \
+            LDFLAGS="$LDFLAGS"
+    elif test -n "$is_cmake"; then
+        if test -d cross-android; then
+            rm -fr cross-android
+        fi
+        mkdir cross-android && cd cross-android
+        cmake $cmake_args \
+              -D CMAKE_INSTALL_PREFIX="$prefix" ..
+    else
+        ./"$config_name" "$@" --prefix="$prefix"
+    fi
     make $make_args -j"$jobs"
-    make $make_args install
+    make $make_args $install_target
 
     CPPFLAGS=$save_CPPFLAGS
     CFLAGS=$save_CFLAGS
@@ -402,29 +438,36 @@ function build_dep ()
 
 function build_tool ()
 {
-    build_source -prefix "$TOOLS_PREFIX" "$@"
+    build_source -tool -prefix "$TOOLS_PREFIX" "$@"
 }
 
-if test "$1"; then
-    RIG_COMMIT=$1; shift
-fi
-
-# Please read the README before running this script!
-
-if test -z "$RIG_BUILD_META_DIR"; then
-    RIG_BUILD_META_DIR=$PWD
-fi
-if ! test -f $RIG_BUILD_META_DIR/makefiles/cogl-Android.mk; then
-    echo "build-android-modules.sh must be run in Rig's build/ directory"
+function usage ()
+{
+    echo "Usage:"
+    echo "$0 <rig-src-dir> <build-bashrc>"
     exit 1
+}
+
+if test $# -ne 2; then
+    usage
 fi
+
+RIG_SRC_DIR=`realpath $1`
+RIG_BUILD_META_DIR=$RIG_SRC_DIR/build/linux-android
+
+if ! test -f $RIG_BUILD_META_DIR/makefiles/cogl-Android.mk; then
+    echo "Could not find Rig source at $1"
+    usage
+fi
+
+if ! test -f $2; then
+    echo "Couldn't find bashrc file $2"
+    usage
+fi
+
+source $2
 
 unset "${UNSET_VARS[@]}"
-
-if test -f .last_directories; then
-    echo "Reading previous directory names from .last_directories:"
-    . .last_directories
-fi
 
 guess_dir PKG_DIR "pkg" \
     "the directory to store the resulting package" "Package dir"
@@ -460,8 +503,6 @@ guess_dir TOOLS_PREFIX "android-tools" \
 guess_dir BUILD_DIR "android-build" \
     "the directory to build source dependencies in" "Build directory";
 
-echo -e $guess_saves>.last_directories
-
 for dep in "${GL_HEADER_URLS[@]}"; do
     bn="${dep##*/}";
     download_file "$dep" "$bn";
@@ -484,13 +525,22 @@ cat > "$RUN_PKG_CONFIG" <<EOF
 # PKG_CONFIG_LIBDIR variable so that it won't pick up the local system
 # .pc files.
 
-# The MinGW compiler on Fedora tries to do a similar thing except that
-# it also unsets PKG_CONFIG_PATH. This breaks any attempts to add a
-# local search path so we need to avoid using that script.
-
-export PKG_CONFIG_LIBDIR="$TOOLS_PREFIX/lib/pkgconfig"
+export PKG_CONFIG_LIBDIR="/invalid/too/path"
 
 exec pkg-config "\$@"
+EOF
+
+CMAKE_TOOLCHAIN_SCRIPT="$BUILD_DIR/cmake-toolchain-script"
+
+echo "Generating $CMAKE_TOOLCHAIN_SCRIPT"
+
+cat > "$CMAKE_TOOLCHAIN_SCRIPT" <<EOF
+SET(CMAKE_SYSTEM_NAME Linux)  # Tell CMake we're cross-compiling
+include(CMakeForceCompiler)
+# Prefix detection only works with compiler id "GNU"
+# CMake will look for prefixed g++, cpp, ld, etc. automatically
+CMAKE_FORCE_C_COMPILER($ANDROID_HOST_TRIPPLE-gcc GNU)
+SET(ANDROID TRUE)
 EOF
 
 chmod a+x "$RUN_PKG_CONFIG";
@@ -498,12 +548,6 @@ chmod a+x "$RUN_PKG_CONFIG";
 add_prefix "$TOOLS_PREFIX"
 
 PKG_CONFIG="$RUN_PKG_CONFIG"
-
-ENV_SCRIPT="$BUILD_DIR/env.sh"
-echo > "$ENV_SCRIPT"
-for x in "${EXPORT_VARS[@]}"; do
-    printf "export %q=%q\n" "$x" "${!x}" >> "$ENV_SCRIPT"
-done
 
 export "${EXPORT_VARS[@]}"
 
@@ -565,7 +609,10 @@ export ac_cv_func_posix_getgrgid_r=no
 #export ACLOCAL_INCLUDES="-I $MODULES_DIR/glib/share/aclocal $ACLOCAL_INCLUDES"
 prev_CFLAGS="$CFLAGS"
 export CFLAGS="$prev_CFLAGS -g3 -O0"
-build_dep -module glib -dep libiconv -dep gettext -branch origin/android -retool \
+build_dep -module glib \
+    -dep libiconv -dep gettext -dep libffi \
+    -branch origin/android \
+    -retool \
     "https://github.com/djdeath/glib.git" \
     --with-libiconv=gnu \
     --disable-modular-tests
@@ -586,7 +633,6 @@ build_dep -module libjpeg -retool \
 
 build_dep -module freetype -retool \
     "http://download.savannah.gnu.org/releases/freetype/freetype-2.5.2.tar.bz2"
-#    --without-png #XXX: this will disable color emoji support :-(
 
 prev_CFLAGS="$CFLAGS"
 export CFLAGS="$prev_CFLAGS -I$BUILD_DIR/cpufeatures/jni"
@@ -614,9 +660,35 @@ build_dep -module cairo -dep freetype -dep gettext -make_arg V=1 -retool \
     --disable-xlib \
     --disable-trace
 
-build_dep -module harfbuzz -dep gettext -retool \
+prev_CFLAGS="$CFLAGS"
+export CFLAGS="\
+ -DU_USING_ICU_NAMESPACE=0 \
+ -DU_CHARSET_IS_UTF8=1 \
+ -DUNISTR_FROM_CHAR_EXPLICIT=explicit \
+ -DUNISTR_FROM_STRING_EXPLICIT=explicit \
+ -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS"
+build_tool -unpackdir icu -configure source/configure \
+  "http://download.icu-project.org/files/icu4c/53.1/icu4c-53_1-src.tgz"
+CFLAGS=$prev_CFLAGS
+
+prev_CFLAGS="$CFLAGS"
+export CFLAGS="\
+ -DU_USING_ICU_NAMESPACE=0 \
+ -DU_CHARSET_IS_UTF8=1 \
+ -DUNISTR_FROM_CHAR_EXPLICIT=explicit \
+ -DUNISTR_FROM_STRING_EXPLICIT=explicit \
+ -DU_NO_DEFAULT_INCLUDE_UTF_HEADERS"
+build_dep -module icu -unpackdir icu -configure source/configure \
+  "http://download.icu-project.org/files/icu4c/53.1/icu4c-53_1-src.tgz" \
+  --with-cross-build=$BUILD_DIR/tool-icu
+CFLAGS=$prev_CFLAGS
+
+#We don't want modules picking up the native build of ICU
+rm -f $TOOLS_PREFIX/lib/pkg-config/icu*
+
+build_dep -module harfbuzz -dep gettext -dep icu -dep freetype -retool \
     "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.26.tar.bz2" \
-    --with-icu=no
+    --with-icu=yes
 
 #XXX: the freetype check is blocked by the fontconfig check, is blocked by the harfbuzz check!
 build_dep -module pango -dep glib -dep harfbuzz -dep fontconfig -dep freetype -dep cairo -dep gettext -retool \
@@ -643,6 +715,17 @@ export CFLAGS="$prev_CFLAGS -g3 -O0"
 build_dep -module sdl2 -branch origin/android -retool -retool_cmd "libtoolize; ./autogen.sh" \
     "https://github.com/rig-project/sdl.git"
 CFLAGS=$prev_CFLAGS
+
+build_dep -module libuv \
+    "https://github.com/joyent/libuv.git"
+
+#save_ANDROID_NDK=$ANDROID_NDK
+#unset ANDROID_NDK
+#export ANDROID_STANDALONE_TOOLCHAIN=$ANDROID_NDK_TOOLCHAIN
+#build_dep -module opencv -cmake \
+#    -cmake_arg -D -cmake_arg CMAKE_TOOLCHAIN_FILE=$BUILD_DIR/opencv/platforms/android/android.toolchain.cmake \
+#    "https://github.com/Itseez/opencv.git"
+#ANDROID_NDK=$save_ANDROID_NDK
 
 prev_CFLAGS="$CFLAGS"
 export CFLAGS="$prev_CFLAGS -g3 -O0"
@@ -690,92 +773,6 @@ fi
 
 exit 0
 
-build_tool "ftp://xmlsoft.org/libxml2/libxml2-2.9.0.tar.gz"
-build_dep "http://tukaani.org/xz/xz-5.0.4.tar.gz"
-
-build_dep -C Configure -j 1 \
-    "http://mirrors.ibiblio.org/openssl/source/openssl-1.0.1c.tar.gz" \
-    linux-elf \
-    no-shared
-
-build_bzip2 "http://www.bzip.org/1.0.6/bzip2-1.0.6.tar.gz"
-
-# The makefile for this package seems to choke on paralell builds
-build_dep -j 1 "http://freedesktop.org/~hadess/shared-mime-info-1.0.tar.xz"
-
-build_dep \
-    "http://downloads.sourceforge.net/project/libpng/libpng16/1.6.3/libpng-1.6.3.tar.xz"
-#build_dep \
-#    "mirrorservice.org/sites/dl.sourceforge.net/pub/sourceforge/l/li/libjpeg/6b/jpegsr6.tar.gz"
-
-
-#export CFLAGS="-DUNISTR_FROM_CHAR_EXPLICIT -DUNISTR_FROM_STRING_EXPLICIT=explicit"
-#build_dep -unpackdir icu -C source/runConfigureICU "http://download.icu-project.org/files/icu4c/51.1/icu4c-51_1-src.tgz" Linux
-#unset CFLAGS
-
-build_dep "http://download.savannah.gnu.org/releases/freetype/freetype-2.4.10.tar.bz2"
-build_dep "http://www.freedesktop.org/software/fontconfig/release/fontconfig-2.10.92.tar.bz2" \
-    --disable-docs \
-    --enable-libxml2
-build_dep "http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-0.9.16.tar.bz2"
-
-build_dep "http://www.cairographics.org/releases/pixman-0.28.0.tar.gz" \
-    --disable-gtk
-
-#NB: we make sure to build cairo after freetype/fontconfig so we have support for these backends
-build_dep "http://www.cairographics.org/releases/cairo-1.12.8.tar.xz" \
-    --enable-xlib
-
-build_dep "http://ftp.gnome.org/pub/GNOME/sources/pango/1.34/pango-1.34.1.tar.xz" \
-    --disable-introspection \
-    --with-included-modules=yes \
-    --without-dynamic-modules
-
-build_dep -b rig "https://github.com/rig-project/sdl.git"
-
-build_dep "http://ftp.gnu.org/gnu/gdbm/gdbm-1.10.tar.gz"
-
-build_dep "http://dbus.freedesktop.org/releases/dbus/dbus-1.7.2.tar.gz"
-
-build_dep "http://0pointer.de/lennart/projects/libdaemon/libdaemon-0.14.tar.gz"
-
-export CPPFLAGS="-I$STAGING_PREFIX/include"
-build_dep "http://avahi.org/download/avahi-0.6.31.tar.gz" \
-  --disable-qt3 \
-  --disable-qt4 \
-  --disable-gtk \
-  --disable-gtk3 \
-  --disable-python \
-  --disable-mono \
-  --disable-introspection
-unset CPPFLAGS
-
-build_dep "http://gstreamer.freedesktop.org/src/gstreamer/gstreamer-1.0.7.tar.xz"
-build_dep "http://gstreamer.freedesktop.org/src/gst-plugins-base/gst-plugins-base-1.0.7.tar.xz"
-
-export CFLAGS="-g3 -O0"
-
-build_dep \
-    -b rig \
-    "https://github.com/rig-project/cogl.git" \
-    --enable-cairo \
-    --disable-profile \
-    --enable-gdk-pixbuf \
-    --enable-quartz-image \
-    --disable-examples-install \
-    --disable-gles1 \
-    --disable-gles2 \
-    --enable-gl \
-    --disable-cogl-gles2 \
-    --disable-glx \
-    --disable-wgl \
-    --enable-sdl2 \
-    --disable-gtk-doc \
-    --enable-glib \
-    --enable-cogl-pango \
-    --enable-cogl-gst \
-    --disable-introspection \
-    --enable-debug
 
 if test -z $RIG_COMMIT; then
     build_dep -d rig "$RIG_GITDIR"

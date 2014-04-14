@@ -1,0 +1,27 @@
+From 47093eeab5798e037c5197f5c4ccd03b14e9b848 Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Mon, 14 Apr 2014 23:26:18 +0100
+Subject: [PATCH] Remove gets warning; broken for c99
+
+---
+ srclib/stdio.in.h | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/srclib/stdio.in.h b/srclib/stdio.in.h
+index 473c84c..ae520ed 100644
+--- a/srclib/stdio.in.h
++++ b/srclib/stdio.in.h
+@@ -692,10 +692,6 @@ _GL_CXXALIAS_SYS (gets, char *, (char *s));
+ #  undef gets
+ # endif
+ _GL_CXXALIASWARN (gets);
+-/* It is very rare that the developer ever has full control of stdin,
+-   so any use of gets warrants an unconditional warning.  Assume it is
+-   always declared, since it is required by C89.  */
+-_GL_WARN_ON_USE (gets, "gets is a security hole - use fgets instead");
+ #endif
+ 
+ 
+-- 
+1.9.0
+

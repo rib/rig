@@ -1,0 +1,26 @@
+From ad20929de7102aebbf62966bd4c135d3f7f6c56c Mon Sep 17 00:00:00 2001
+From: Robert Bragg <robert@linux.intel.com>
+Date: Tue, 15 Apr 2014 21:00:27 +0100
+Subject: [PATCH] Don't try to reference stat->st_atim on Android
+
+---
+ src/unix/fs.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/unix/fs.c b/src/unix/fs.c
+index 8a4edcb..6a93eaf 100644
+--- a/src/unix/fs.c
++++ b/src/unix/fs.c
+@@ -683,7 +683,8 @@ static void uv__to_stat(struct stat* src, uv_stat_t* dst) {
+   dst->st_birthtim.tv_nsec = src->st_birthtimespec.tv_nsec;
+   dst->st_flags = src->st_flags;
+   dst->st_gen = src->st_gen;
+-#elif defined(_BSD_SOURCE) || defined(_SVID_SOURCE) || defined(_XOPEN_SOURCE)
++#elif !defined(__ANDROID__) && \
++      (defined(_BSD_SOURCE) || defined(_SVID_SOURCE) || defined(_XOPEN_SOURCE))
+   dst->st_atim.tv_sec = src->st_atim.tv_sec;
+   dst->st_atim.tv_nsec = src->st_atim.tv_nsec;
+   dst->st_mtim.tv_sec = src->st_mtim.tv_sec;
+-- 
+1.9.0
+
