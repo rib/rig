@@ -233,7 +233,7 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
    * be used internally... */
   pipeline2 = cogl_pipeline_new (test_ctx);
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-                              "attribute vec4 color;",
+                              "in vec4 color;",
                               "cogl_color_out = vec4 (0.0, 1.0, 0.0, 1.0);");
   cogl_pipeline_add_snippet (pipeline2, snippet);
 
@@ -287,7 +287,7 @@ test_custom_attributes (void)
 
   state.pipeline = cogl_pipeline_new (test_ctx);
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
-                              "attribute vec4 color;",
+                              "in vec4 color;",
                               "cogl_color_out = color;");
   cogl_pipeline_add_snippet (state.pipeline, snippet);
 

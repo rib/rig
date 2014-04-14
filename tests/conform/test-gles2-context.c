@@ -634,7 +634,7 @@ void
 test_gles2_context_fbo (void)
 {
   static const char vertex_shader_source[] =
-    "attribute vec2 pos;\n"
+    "in vec2 pos;\n"
     "\n"
     "void\n"
     "main ()\n"
@@ -766,9 +766,9 @@ void
 test_gles2_context_copy_tex_image (void)
 {
   static const char vertex_shader_source[] =
-    "attribute vec2 pos;\n"
-    "attribute vec2 tex_coord_attrib;\n"
-    "varying vec2 tex_coord_varying;\n"
+    "in vec2 pos;\n"
+    "in vec2 tex_coord_attrib;\n"
+    "out vec2 tex_coord_varying;\n"
     "\n"
     "void\n"
     "main ()\n"
@@ -778,7 +778,7 @@ test_gles2_context_copy_tex_image (void)
     "}\n";
   static const char fragment_shader_source[] =
     "precision mediump float;\n"
-    "varying vec2 tex_coord_varying;\n"
+    "in vec2 tex_coord_varying;\n"
     "uniform sampler2D tex;\n"
     "\n"
     "void\n"

@@ -177,8 +177,8 @@ add_layer_declaration_cb (CoglPipelineLayer *layer,
   _cogl_gl_util_get_texture_target_string (texture_type, &target_string, NULL);
 
   u_string_append_printf (shader_state->header,
-                          "attribute vec4 cogl_tex_coord%i_in;\n"
-                          "varying vec4 _cogl_tex_coord%i;\n"
+                          "in vec4 cogl_tex_coord%i_in;\n"
+                          "out vec4 _cogl_tex_coord%i;\n"
                           "#define cogl_tex_coord%i_out _cogl_tex_coord%i\n"
                           "uniform sampler%s cogl_sampler%i;\n",
                           layer->index,
@@ -303,7 +303,7 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
 
   if (cogl_pipeline_get_per_vertex_point_size (pipeline))
     u_string_append (shader_state->header,
-                     "attribute float cogl_point_size_in;\n");
+                     "in float cogl_point_size_in;\n");
   else if (!_cogl_has_private_feature
            (ctx, COGL_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
     {

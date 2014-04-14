@@ -195,7 +195,7 @@ cogl_attribute_new_const_1f (CoglContext *context,
  * code like:
  *
  * [|
- * attribute vec2 name;
+ * in vec2 name;
  * |]
  *
  * Return value: (transfer full): A newly allocated #CoglAttribute
@@ -224,7 +224,7 @@ cogl_attribute_new_const_2f (CoglContext *context,
  * declaration in GLSL code like:
  *
  * [|
- * attribute vec3 name;
+ * in vec3 name;
  * |]
  *
  * unless the built in name "cogl_normal_in" is being used where no
@@ -258,7 +258,7 @@ cogl_attribute_new_const_3f (CoglContext *context,
  * corresponding declaration in GLSL code like:
  *
  * [|
- * attribute vec4 name;
+ * in vec4 name;
  * |]
  *
  * unless one of the built in names "cogl_color_in",
@@ -291,7 +291,7 @@ cogl_attribute_new_const_4f (CoglContext *context,
  * like:
  *
  * [|
- * attribute vec2 name;
+ * in vec2 name;
  * |]
  *
  * Return value: (transfer full): A newly allocated #CoglAttribute
@@ -317,7 +317,7 @@ cogl_attribute_new_const_2fv (CoglContext *context,
  * declaration in GLSL code like:
  *
  * [|
- * attribute vec3 name;
+ * in vec3 name;
  * |]
  *
  * unless the built in name "cogl_normal_in" is being used where no
@@ -346,7 +346,7 @@ cogl_attribute_new_const_3fv (CoglContext *context,
  * declaration in GLSL code like:
  *
  * [|
- * attribute vec4 name;
+ * in vec4 name;
  * |]
  *
  * unless one of the built in names "cogl_color_in",

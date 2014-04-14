@@ -154,21 +154,21 @@ COGL_BEGIN_DECLS
  *
  * <glosslist>
  *  <glossentry>
- *   <glossterm>attribute vec4
+ *   <glossterm>in vec4
  *         <emphasis>cogl_position_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The incoming vertex position. This is equivalent to #gl_Vertex.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>attribute vec4
+ *   <glossterm>in vec4
  *         <emphasis>cogl_color_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The incoming vertex color. This is equivalent to #gl_Color.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>attribute vec4
+ *   <glossterm>in vec4
  *         <emphasis>cogl_tex_coord_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for layer 0. This is an alternative name
@@ -176,7 +176,7 @@ COGL_BEGIN_DECLS
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>attribute vec4
+ *   <glossterm>in vec4
  *         <emphasis>cogl_tex_coord0_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for the layer 0. This is equivalent to
@@ -185,7 +185,7 @@ COGL_BEGIN_DECLS
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>attribute vec3
+ *   <glossterm>in vec3
  *         <emphasis>cogl_normal_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The normal of the vertex. This is equivalent to #gl_Normal.
@@ -217,14 +217,14 @@ COGL_BEGIN_DECLS
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>varying vec4
+ *   <glossterm>out vec4
  *         <emphasis>cogl_color_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated color of a vertex. This is equivalent to #gl_FrontColor.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>varying vec4
+ *   <glossterm>out vec4
  *         <emphasis>cogl_tex_coord0_out</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated texture coordinate for layer 0 of the pipeline.
@@ -240,13 +240,13 @@ COGL_BEGIN_DECLS
  *
  * <glosslist>
  *  <glossentry>
- *   <glossterm>varying vec4 <emphasis>cogl_color_in</emphasis></glossterm>
+ *   <glossterm>in vec4 <emphasis>cogl_color_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The calculated color of a vertex. This is equivalent to #gl_FrontColor.
  *   </para></glossdef>
  *  </glossentry>
  *  <glossentry>
- *   <glossterm>varying vec4
+ *   <glossterm>in vec4
  *              <emphasis>cogl_tex_coord0_in</emphasis></glossterm>
  *   <glossdef><para>
  *    The texture coordinate for layer 0. This is equivalent to

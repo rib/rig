@@ -241,7 +241,7 @@ add_layer_declaration_cb (CoglPipelineLayer *layer,
   _cogl_gl_util_get_texture_target_string (texture_type, &target_string, NULL);
 
   u_string_append_printf (shader_state->header,
-                          "varying vec4 _cogl_tex_coord%i;\n"
+                          "in vec4 _cogl_tex_coord%i;\n"
                           "#define cogl_tex_coord%i_in _cogl_tex_coord%i\n"
                           "uniform sampler%s cogl_sampler%i;\n",
                           layer->index,
@@ -456,9 +456,20 @@ ensure_texture_lookup_generated (CoglPipelineShaderState *shader_state,
         u_string_append (shader_state->header,
                          "vec4 (1.0, 1.0, 1.0, 1.0);\n");
       else
-        u_string_append_printf (shader_state->header,
-                                "texture%s (tex, coords.%s);\n",
-                                target_string, tex_coord_swizzle);
+        {
+          if (ctx->glsl_version_to_use >= 130)
+            {
+              u_string_append_printf (shader_state->header,
+                                      "texture (tex, coords.%s);\n",
+                                      tex_coord_swizzle);
+            }
+          else
+            {
+              u_string_append_printf (shader_state->header,
+                                      "texture%s (tex, coords.%s);\n",
+                                      target_string, tex_coord_swizzle);
+            }
+        }
 
       u_string_append (shader_state->header, "}\n");
     }

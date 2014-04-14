@@ -48,14 +48,14 @@
 #define _COGL_VERTEX_SHADER_BOILERPLATE \
   _COGL_COMMON_SHADER_BOILERPLATE \
   "#define cogl_color_out _cogl_color\n" \
-  "varying vec4 _cogl_color;\n" \
+  "out vec4 _cogl_color;\n" \
   "#define cogl_position_out gl_Position\n" \
   "#define cogl_point_size_out gl_PointSize\n" \
   "\n" \
-  "attribute vec4 cogl_color_in;\n" \
-  "attribute vec4 cogl_position_in;\n" \
+  "in vec4 cogl_color_in;\n" \
+  "in vec4 cogl_position_in;\n" \
   "#define cogl_tex_coord_in cogl_tex_coord0_in;\n" \
-  "attribute vec3 cogl_normal_in;\n"
+  "in vec3 cogl_normal_in;\n"
 
 #define _COGL_FRAGMENT_SHADER_BOILERPLATE \
   "#ifdef GL_ES\n" \
@@ -63,12 +63,9 @@
   "#endif\n" \
   _COGL_COMMON_SHADER_BOILERPLATE \
   "\n" \
-  "varying vec4 _cogl_color;\n" \
+  "in vec4 _cogl_color;\n" \
   "\n" \
   "#define cogl_color_in _cogl_color\n" \
-  "\n" \
-  "#define cogl_color_out gl_FragColor\n" \
-  "#define cogl_depth_out gl_FragDepth\n" \
   "\n" \
   "#define cogl_front_facing gl_FrontFacing\n" \
   "\n" \

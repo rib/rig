@@ -56,8 +56,8 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
   const char *vertex_boilerplate;
   const char *fragment_boilerplate;
 
-  const char **strings = u_alloca (sizeof (char *) * (count_in + 4));
-  GLint *lengths = u_alloca (sizeof (GLint) * (count_in + 4));
+  const char **strings = u_alloca (sizeof (char *) * (count_in + 6));
+  GLint *lengths = u_alloca (sizeof (GLint) * (count_in + 6));
   char *version_string;
   int count = 0;
 
@@ -66,6 +66,7 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   version_string = u_strdup_printf ("#version %i\n\n",
                                     ctx->glsl_version_to_use);
+
   strings[count] = version_string;
   lengths[count++] = -1;
 
@@ -80,13 +81,61 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
 
   if (shader_gl_type == GL_VERTEX_SHADER)
     {
+      if (ctx->glsl_version_to_use < 130)
+        {
+          strings[count] =
+            "#define in attribute\n"
+            "#define out varying\n";
+          lengths[count++] = -1;
+        }
+      else
+        {
+          /* To support source compatibility with glsl >= 1.3 which has replaced
+           * all of the texture sampler functions with one polymorphic texture()
+           * function we use the preprocessor to map the old names onto the new
+           * name...
+           */
+          strings[count] =
+            "#define texture2D texture\n"
+            "#define texture3D texture\n"
+            "#define textureRect texture\n";
+          lengths[count++] = -1;
+        }
+
       strings[count] = vertex_boilerplate;
       lengths[count++] = strlen (vertex_boilerplate);
     }
   else if (shader_gl_type == GL_FRAGMENT_SHADER)
     {
+      if (ctx->glsl_version_to_use < 130)
+        {
+          strings[count] = "#define in varying\n" \
+                            "\n" \
+                            "#define cogl_color_out gl_FragColor\n" \
+                            "#define cogl_depth_out gl_FragDepth\n";
+          lengths[count++] = -1;
+        }
+
       strings[count] = fragment_boilerplate;
       lengths[count++] = strlen (fragment_boilerplate);
+
+      if (ctx->glsl_version_to_use >= 130)
+        {
+          /* FIXME: Support cogl_depth_out. */
+          /* To support source compatibility with glsl >= 1.3 which has replaced
+           * all of the texture sampler functions with one polymorphic texture()
+           * function we use the preprocessor to map the old names onto the new
+           * name...
+           */
+          strings[count] =
+            "#define texture2D texture\n"
+            "#define texture3D texture\n"
+            "#define textureRect texture\n"
+            "\n"
+            "out vec4 cogl_color_out;\n";
+            //"out vec4 cogl_depth_out\n";
+          lengths[count++] = -1;
+        }
     }
 
   memcpy (strings + count, strings_in, sizeof (char *) * count_in);
