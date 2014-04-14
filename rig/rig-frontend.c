@@ -827,7 +827,10 @@ spawn_simulator (RutShell *shell, RigFrontend *frontend)
   else
     fork_simulator (shell, frontend);
 #elif defined (__APPLE__)
-  fork_simulator (shell, frontend);
+  if (getenv ("_RIG_USE_SIMULATOR_THREAD"))
+    create_simulator_thread (shell, frontend);
+  else
+    fork_simulator (shell, frontend);
 #else
 #error "Platform needs some way of connecting to a simulator"
 #endif
