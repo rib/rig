@@ -379,6 +379,7 @@ _cogl_driver_update_features (CoglContext *ctx,
     [COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_N_PRIVATE_FEATURES)] = { 0 };
   char **gl_extensions;
   int gl_major = 0, gl_minor = 0;
+  int min_glsl_major = 0, min_glsl_minor = 0;
   int i;
 
   /* We have to special case getting the pointer to the glGetString*
@@ -434,12 +435,28 @@ _cogl_driver_update_features (CoglContext *ctx,
       parse_gl_version (glsl_version, &ctx->glsl_major, &ctx->glsl_minor);
     }
 
-  if (COGL_CHECK_GL_VERSION (ctx->glsl_major, ctx->glsl_minor, 1, 2))
-    /* We want to use version 120 if it is available so that the
-     * gl_PointCoord can be used. */
-    ctx->glsl_version_to_use = 120;
+  if (gl_major < 3)
+    {
+      min_glsl_major = 1;
+      min_glsl_minor = 1;
+
+      if (COGL_CHECK_GL_VERSION (ctx->glsl_major, ctx->glsl_minor, 1, 2))
+        {
+          /* We want to use version 120 if it is available so that the
+           * gl_PointCoord can be used. */
+          min_glsl_major = 1;
+          min_glsl_minor = 2;
+        }
+    }
   else
-    ctx->glsl_version_to_use = 110;
+    {
+      /* When we're using GL 3 we always ask for a 3.1 core profile
+       * context which corresponds to supporting glsl >= 1.3 */
+      min_glsl_major = 1;
+      min_glsl_minor = 3;
+    }
+
+  ctx->glsl_version_to_use = min_glsl_major * 100 + min_glsl_minor * 10;
 
   COGL_FLAGS_SET (ctx->features,
                   COGL_FEATURE_ID_UNSIGNED_INT_INDICES, TRUE);
