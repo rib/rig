@@ -68,14 +68,14 @@ libulib_static_la_SOURCES=$(libulib_la_SOURCES)
 libulib_static_la_CFLAGS = $(libulib_la_CFLAGS)
 
 if HOST_WIN32
-libulib_la_LIBADD = -lm $(LIBICONV) -lpsapi
+libulib_la_LIBADD = -lm $(LTLIBICONV) -lpsapi
 else
 if PLATFORM_ANDROID
 libulib_la_LIBADD = -llog
 endif
 endif
 
-libulib_static_la_LIBADD = $(libulib_la_LIBADD) $(LIBICONV)
+libulib_static_la_LIBADD = $(libulib_la_LIBADD) $(LTLIBICONV)
 libulib_static_la_LDFLAGS = -static
 
 MAINTAINERCLEANFILES = Makefile.in

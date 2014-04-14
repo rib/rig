@@ -37,7 +37,7 @@ AM_CPPFLAGS =			\
 test_ulib_SOURCES = $(SOURCES)
 
 test_ulib_CFLAGS = -DULIB_TESTS=1 -I$(srcdir)/../src -I../src -DDRIVER_NAME=\"EGlib\"
-test_ulib_LDADD = ../src/libulib.la $(LIBICONV)
+test_ulib_LDADD = ../src/libulib.la $(LTLIBICONV)
 
 run-ulib: all
 	srcdir=`readlink -f $(srcdir)` ./test-ulib

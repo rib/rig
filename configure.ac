@@ -1356,15 +1356,15 @@ AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h sys/typ
 AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
 AC_SUBST(HAVE_ALLOCA_H)
 
-AC_CHECK_FUNC(iconv_open,
-              [
-                AC_CHECK_HEADER(localcharset.h, AC_DEFINE([HAVE_LOCALCHARSET_H], [1], [localcharset.h]))
-              ],
-              [
-                COGL_DEP_LIBS="$COGL_DEP_LIBS -liconv"
-                AC_CHECK_LIB([iconv], [locale_charset],
-                             [AC_CHECK_HEADER(localcharset.h, AC_DEFINE([HAVE_LOCALCHARSET_H], [1], [localcharset.h]))])
-              ])
+dnl Note we don't simply use AC_CHECK_HEADERS() to check for
+dnl localcharset.h since we want to take into account which
+dnl libiconv AM_ICONV() found...
+save_LDFLAGS="$LDFLAGS"
+LDFLAGS=$LIBICONV
+AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <localcharset.h>],
+                                [locale_charset();])],
+                  [AC_DEFINE([HAVE_LOCALCHARSET_H], [1],[localcharset.h])])
+LDFLAGS=$save_LDFLAGS
 
 dnl ================================================================
 dnl Platform values
