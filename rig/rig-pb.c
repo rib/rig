@@ -1453,6 +1453,9 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
   for (l = ui->assets; l; l = l->next)
     rig_pb_serializer_register_object (serializer, l->data);
 
+  pb_ui->has_scene_root_id = true;
+  pb_ui->scene_root_id = rig_pb_serializer_register_object (serializer, ui->scene);
+
   serializer->n_pb_entities = 0;
   rut_graphable_traverse (ui->scene,
                           RUT_TRAVERSE_DEPTH_FIRST,
@@ -3239,6 +3242,14 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
                            pb_ui->controllers);
 
   ui->scene = rut_graph_new (engine->ctx);
+
+  if (pb_ui->has_scene_root_id)
+    {
+      rig_pb_unserializer_register_object (unserializer,
+                                           ui->scene,
+                                           pb_ui->scene_root_id);
+    }
+
   for (l = unserializer->entities; l; l = l->next)
     {
       //g_print ("unserialized entiy %p\n", l->data);

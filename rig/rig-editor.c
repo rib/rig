@@ -344,6 +344,12 @@ reset_play_mode_ui (RigEditor *editor)
   rig_engine_set_play_mode_ui (engine, play_mode_ui);
   rut_object_unref (play_mode_ui);
 
+  /* As a special case; register an object id mapping for the root
+   * of the scenegraph... */
+  register_play_mode_object (editor,
+                             (uint64_t)(uintptr_t)engine->edit_mode_ui->scene,
+                             play_mode_ui->scene);
+
   rig_engine_op_apply_context_set_ui (&editor->play_apply_op_ctx,
                                       play_mode_ui);
 

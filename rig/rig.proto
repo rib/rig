@@ -365,7 +365,10 @@ message UI
   optional Device device=1;
 
   repeated Asset assets=2;
+
+  optional sint64 scene_root_id=7;
   repeated Entity entities=3;
+
   repeated Controller controllers=4;
 
   optional bytes dso=6;
