@@ -930,3 +930,19 @@ u_strnfill (size_t length, char fill_char)
 	ret [length] = 0;
 	return ret;
 }
+
+int
+u_strcmp0 (const char *str1, const char *str2)
+{
+  if (!str1)
+    {
+      if (!str2)
+        return 0;
+      return -1;
+    }
+
+  if (!str2)
+    return 1;
+
+  return strcmp (str1, str2);
+}

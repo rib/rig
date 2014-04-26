@@ -209,6 +209,7 @@ void * u_memdup (const void * mem, unsigned int byte_size);
 
 static inline char   *u_strdup (const char *str) { if (str) {return strdup (str);} return NULL; }
 char **u_strdupv (char **str_array);
+int u_strcmp0 (const char *str1, const char *str2);
 
 typedef struct {
 	void * (*malloc)      (size_t    n_bytes);
