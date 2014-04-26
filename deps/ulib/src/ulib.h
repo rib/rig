@@ -629,14 +629,15 @@ struct _UArray {
 	int len;
 };
 
-UArray *u_array_new               (uboolean zero_terminated, uboolean clear_, unsigned int element_size);
-UArray *u_array_sized_new         (uboolean zero_terminated, uboolean clear_, unsigned int element_size, unsigned int reserved_size);
-char*  u_array_free              (UArray *array, uboolean free_segment);
-UArray *u_array_append_vals       (UArray *array, const void * data, unsigned int len);
-UArray* u_array_insert_vals       (UArray *array, unsigned int index_, const void * data, unsigned int len);
-UArray* u_array_remove_index      (UArray *array, unsigned int index_);
-UArray* u_array_remove_index_fast (UArray *array, unsigned int index_);
-UArray *u_array_set_size          (UArray *array, int length);
+UArray *u_array_new                   (uboolean zero_terminated, uboolean clear_, unsigned int element_size);
+UArray *u_array_sized_new             (uboolean zero_terminated, uboolean clear_, unsigned int element_size, unsigned int reserved_size);
+char*  u_array_free                   (UArray *array, uboolean free_segment);
+UArray *u_array_append_vals           (UArray *array, const void * data, unsigned int len);
+UArray* u_array_insert_vals           (UArray *array, unsigned int index_, const void * data, unsigned int len);
+UArray* u_array_remove_index          (UArray *array, unsigned int index_);
+UArray* u_array_remove_index_fast     (UArray *array, unsigned int index_);
+unsigned int u_array_get_element_size (UArray *array);
+UArray *u_array_set_size              (UArray *array, int length);
 
 #define u_array_append_val(a,v)   (u_array_append_vals((a),&(v),1))
 #define u_array_insert_val(a,i,v) (u_array_insert_vals((a),(i),&(v),1))

@@ -240,3 +240,10 @@ u_array_set_size (UArray *array, int length)
 
         return array;
 }
+
+unsigned int
+u_array_get_element_size (UArray *array)
+{
+  UArrayPriv *priv = (UArrayPriv*)array;
+  return priv->element_size;
+}
