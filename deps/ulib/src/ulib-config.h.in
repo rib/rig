@@ -1,0 +1,19 @@
+#ifndef __ULIB_CONFIG_H
+#define __ULIB_CONFIG_H
+
+/*
+ * System-dependent settings
+ */
+#define U_SEARCHPATH_SEPARATOR_S "@SEARCHSEP@"
+#define U_SEARCHPATH_SEPARATOR   '@SEARCHSEP@'
+#define U_DIR_SEPARATOR          '@PATHSEP@'
+#define U_DIR_SEPARATOR_S        "@PATHSEP@"
+#define U_OS_@OS@
+
+#if @HAVE_ALLOCA_H@ == 1
+#define U_HAVE_ALLOCA_H
+#endif
+
+typedef @PIDTYPE@ UPid;
+
+#endif
