@@ -501,7 +501,7 @@ rig_undo_journal_add_entity (RigUndoJournal *journal,
 }
 
 static bool
-delete_entity_component_cb (RutComponent *component,
+delete_entity_component_cb (RutObject *component,
                             void *user_data)
 {
   RigUndoJournal *journal = user_data;
