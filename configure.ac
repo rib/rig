@@ -486,7 +486,7 @@ AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(putenv strdup)
 
 dnl ================================================================
-dnl ulib checks.
+dnl clib checks.
 dnl ================================================================
 
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
@@ -549,9 +549,9 @@ dnl ================================================================
 AC_OUTPUT(
 Makefile
 deps/Makefile
-deps/ulib/Makefile
-deps/ulib/src/Makefile
-deps/ulib/src/ulib-config.h
+deps/clib/Makefile
+deps/clib/src/Makefile
+deps/clib/src/clib-config.h
 rut/Makefile
 data/Makefile
 data/Info.plist
