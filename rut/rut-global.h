@@ -29,7 +29,7 @@
 #ifndef __RUT_GLOBAL_H__
 #define __RUT_GLOBAL_H__
 
-#include <glib.h>
+#include <clib.h>
 
 #ifndef RIG_SIMULATOR_ONLY
 

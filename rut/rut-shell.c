@@ -52,7 +52,7 @@
 #include <signal.h>
 #endif
 
-#include <glib.h>
+#include <clib.h>
 #include <gio/gio.h>
 
 #include <cogl/cogl.h>
@@ -147,7 +147,7 @@ rut_shell_add_input_camera (RutShell *shell,
                             RutObject *camera,
                             RutObject *scenegraph)
 {
-  InputCamera *input_camera = g_slice_new (InputCamera);
+  InputCamera *input_camera = c_slice_new (InputCamera);
 
   input_camera->camera = rut_object_ref (camera);
 
@@ -156,7 +156,7 @@ rut_shell_add_input_camera (RutShell *shell,
   else
     input_camera->scenegraph = NULL;
 
-  shell->input_cameras = g_list_prepend (shell->input_cameras, input_camera);
+  shell->input_cameras = c_list_prepend (shell->input_cameras, input_camera);
 }
 
 static void
@@ -165,7 +165,7 @@ input_camera_free (InputCamera *input_camera)
   rut_object_unref (input_camera->camera);
   if (input_camera->scenegraph)
     rut_object_unref (input_camera->scenegraph);
-  g_slice_free (InputCamera, input_camera);
+  c_slice_free (InputCamera, input_camera);
 }
 
 void
@@ -173,7 +173,7 @@ rut_shell_remove_input_camera (RutShell *shell,
                                RutObject *camera,
                                RutObject *scenegraph)
 {
-  GList *l;
+  CList *l;
 
   for (l = shell->input_cameras; l; l = l->next)
     {
@@ -182,22 +182,22 @@ rut_shell_remove_input_camera (RutShell *shell,
           input_camera->scenegraph == scenegraph)
         {
           input_camera_free (input_camera);
-          shell->input_cameras = g_list_delete_link (shell->input_cameras, l);
+          shell->input_cameras = c_list_delete_link (shell->input_cameras, l);
           return;
         }
     }
 
-  g_warning ("Failed to find input camera to remove from shell");
+  c_warning ("Failed to find input camera to remove from shell");
 }
 
 static void
 _rut_shell_remove_all_input_cameras (RutShell *shell)
 {
-  GList *l;
+  CList *l;
 
   for (l = shell->input_cameras; l; l = l->next)
     input_camera_free (l->data);
-  g_list_free (shell->input_cameras);
+  c_list_free (shell->input_cameras);
   shell->input_cameras = NULL;
 }
 
@@ -305,7 +305,7 @@ rut_key_event_get_keysym (RutInputEvent *event)
         case RUT_STREAM_EVENT_KEY_DOWN:
           return stream_event->key.keysym;
         default:
-          g_return_val_if_fail (0, RUT_KEY_Escape);
+          c_return_val_if_fail (0, RUT_KEY_Escape);
         }
     }
 
@@ -336,7 +336,7 @@ rut_key_event_get_action (RutInputEvent *event)
         case RUT_STREAM_EVENT_KEY_UP:
           return RUT_KEY_EVENT_ACTION_UP;
         default:
-          g_return_val_if_fail (0, RUT_KEY_EVENT_ACTION_DOWN);
+          c_return_val_if_fail (0, RUT_KEY_EVENT_ACTION_DOWN);
         }
     }
 
@@ -351,7 +351,7 @@ rut_key_event_get_action (RutInputEvent *event)
       case SDL_KEYDOWN:
         return RUT_KEY_EVENT_ACTION_DOWN;
       default:
-        g_warn_if_reached ();
+        c_warn_if_reached ();
         return RUT_KEY_EVENT_ACTION_UP;
       }
   }
@@ -377,7 +377,7 @@ rut_motion_event_get_action (RutInputEvent *event)
         case RUT_STREAM_EVENT_POINTER_MOVE:
           return RUT_MOTION_EVENT_ACTION_MOVE;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           return RUT_KEY_EVENT_ACTION_UP;
         }
     }
@@ -395,7 +395,7 @@ rut_motion_event_get_action (RutInputEvent *event)
       case SDL_MOUSEMOTION:
         return RUT_MOTION_EVENT_ACTION_MOVE;
       default:
-        g_warn_if_reached (); /* Not a motion event */
+        c_warn_if_reached (); /* Not a motion event */
         return RUT_MOTION_EVENT_ACTION_MOVE;
       }
   }
@@ -419,7 +419,7 @@ rut_motion_event_get_button (RutInputEvent *event)
         case RUT_STREAM_EVENT_POINTER_UP:
           return stream_event->pointer_button.button;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           return RUT_BUTTON_STATE_1;
         }
     }
@@ -429,7 +429,7 @@ rut_motion_event_get_button (RutInputEvent *event)
     RutSDLEvent *rut_sdl_event = event->native;
     SDL_Event *sdl_event = &rut_sdl_event->sdl_event;
 
-    g_return_val_if_fail ((sdl_event->type == SDL_MOUSEBUTTONUP ||
+    c_return_val_if_fail ((sdl_event->type == SDL_MOUSEBUTTONUP ||
                            sdl_event->type == SDL_MOUSEBUTTONDOWN),
                           RUT_BUTTON_STATE_1);
 
@@ -442,7 +442,7 @@ rut_motion_event_get_button (RutInputEvent *event)
       case SDL_BUTTON_RIGHT:
         return RUT_BUTTON_STATE_3;
       default:
-        g_warn_if_reached ();
+        c_warn_if_reached ();
         return RUT_BUTTON_STATE_1;
       }
   }
@@ -484,7 +484,7 @@ rut_motion_event_get_button_state (RutInputEvent *event)
         case RUT_STREAM_EVENT_POINTER_UP:
           return stream_event->pointer_button.state;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           return 0;
         }
     }
@@ -517,13 +517,13 @@ rut_motion_event_get_button_state (RutInputEvent *event)
         case 3:
           return RUT_BUTTON_STATE_3;
         default:
-          g_warning ("Out of range SDL button number");
+          c_warning ("Out of range SDL button number");
           return 0;
         }
     case SDL_MOUSEMOTION:
       return rut_button_state_for_sdl_state (sdl_event->button.state);
     default:
-      g_warn_if_reached (); /* Not a motion event */
+      c_warn_if_reached (); /* Not a motion event */
       return 0;
     }
 #endif
@@ -573,7 +573,7 @@ rut_key_event_get_modifier_state (RutInputEvent *event)
         case RUT_STREAM_EVENT_KEY_UP:
           return stream_event->key.mod_state;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           return 0;
         }
     }
@@ -626,7 +626,7 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
           *y = stream_event->pointer_button.y;
           break;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
   else
@@ -647,7 +647,7 @@ rut_motion_event_get_transformed_xy (RutInputEvent *event,
             *y = sdl_event->motion.y;
             break;
           default:
-            g_warn_if_reached (); /* Not a motion event */
+            c_warn_if_reached (); /* Not a motion event */
             return;
           }
       }
@@ -842,7 +842,7 @@ _rut_shell_get_scenegraph_event_target (RutShell *shell,
 {
   RutObject *picked_object = NULL;
   RutObject *picked_camera = NULL;
-  GList *l;
+  CList *l;
 
   /* Key events by default go to the object that has key focus. If
    * there is no object with key focus then we will let them go to
@@ -936,7 +936,7 @@ RutInputEventStatus
 rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
 {
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
-  GList *l;
+  CList *l;
   RutClosure *c, *tmp;
   RutObject *target;
   RutShellGrab *grab;
@@ -1016,8 +1016,8 @@ rut_shell_dispatch_input_event (RutShell *shell, RutInputEvent *event)
     {
       InputCamera *input_camera = l->data;
       RutObject *camera = input_camera->camera;
-      GList *input_regions = rut_camera_get_input_regions (camera);
-      GList *l2;
+      CList *input_regions = rut_camera_get_input_regions (camera);
+      CList *l2;
 
       event->camera = camera;
       event->input_transform = rut_camera_get_input_transform (camera);
@@ -1093,7 +1093,7 @@ _rut_shell_remove_grab_link (RutShell *shell,
 
   rut_list_remove (&grab->list_node);
 
-  g_slice_free (RutShellGrab, grab);
+  c_slice_free (RutShellGrab, grab);
 }
 
 static void
@@ -1176,7 +1176,7 @@ rut_shell_new (bool headless,
 
   rut_list_init (&shell->frame_infos);
 
-  frame_info = g_slice_new0 (RutFrameInfo);
+  frame_info = c_slice_new0 (RutFrameInfo);
   rut_list_init (&frame_info->frame_callbacks);
   rut_list_insert (shell->frame_infos.prev, &frame_info->list_node);
 
@@ -1194,7 +1194,7 @@ rut_shell_get_frame_info (RutShell *shell)
 void
 rut_shell_end_redraw (RutShell *shell)
 {
-  RutFrameInfo *frame_info = g_slice_new0 (RutFrameInfo);
+  RutFrameInfo *frame_info = c_slice_new0 (RutFrameInfo);
 
   shell->frame++;
 
@@ -1218,7 +1218,7 @@ rut_shell_finish_frame (RutShell *shell)
 
   rut_closure_list_disconnect_all (&info->frame_callbacks);
 
-  g_slice_free (RutFrameInfo, info);
+  c_slice_free (RutFrameInfo, info);
 }
 
 bool
@@ -1268,12 +1268,12 @@ dispatch_signal_source (GSource *source,
           continue;
         else
           {
-            g_warning ("Error reading signal fd: %s", strerror (errno));
+            c_warning ("Error reading signal fd: %s", strerror (errno));
             return FALSE;
           }
       }
 
-    g_print ("Signal received: %d\n", sig);
+    c_print ("Signal received: %d\n", sig);
 
     rut_closure_list_invoke (&shell->signal_cb_list,
                              RutShellSignalCallback,
@@ -1393,7 +1393,7 @@ rut_shell_grab_key_focus (RutShell *shell,
                           RutObject *inputable,
                           GDestroyNotify ungrab_callback)
 {
-  g_return_if_fail (rut_object_is (inputable, RUT_TRAIT_ID_INPUTABLE));
+  c_return_if_fail (rut_object_is (inputable, RUT_TRAIT_ID_INPUTABLE));
 
   /* If something tries to set the keyboard focus to the same object
    * then we probably do still want to call the keyboard ungrab
@@ -1551,7 +1551,7 @@ static void
 flush_pre_paint_callbacks (RutShell *shell)
 {
   /* This doesn't support recursive flushing */
-  g_return_if_fail (!shell->flushing_pre_paints);
+  c_return_if_fail (!shell->flushing_pre_paints);
 
   sort_pre_paint_callbacks (shell);
 
@@ -1570,7 +1570,7 @@ flush_pre_paint_callbacks (RutShell *shell)
 
       entry->callback (entry->graphable, entry->user_data);
 
-      g_slice_free (RutShellPrePaintEntry, entry);
+      c_slice_free (RutShellPrePaintEntry, entry);
     }
 
   shell->flushing_pre_paints = FALSE;
@@ -1580,7 +1580,7 @@ flush_pre_paint_callbacks (RutShell *shell)
 void
 rut_shell_start_redraw (RutShell *shell)
 {
-  g_return_if_fail (shell->redraw_queued == true);
+  c_return_if_fail (shell->redraw_queued == true);
 
   shell->redraw_queued = false;
   g_source_destroy (shell->glib_paint_idle);
@@ -1601,15 +1601,15 @@ free_input_event (RutShell *shell, RutInputEvent *event)
 {
   if (shell->headless)
     {
-      g_slice_free (RutStreamEvent, event->native);
-      g_slice_free (RutInputEvent, event);
+      c_slice_free (RutStreamEvent, event->native);
+      c_slice_free (RutInputEvent, event);
     }
   else
     {
 #ifdef USE_SDL
-      g_slice_free1 (sizeof (RutInputEvent) + sizeof (RutSDLEvent), event);
+      c_slice_free1 (sizeof (RutInputEvent) + sizeof (RutSDLEvent), event);
 #else
-      g_slice_free (RutInputEvent, event);
+      c_slice_free (RutInputEvent, event);
 #endif
     }
 }
@@ -1652,7 +1652,7 @@ rut_shell_get_input_queue (RutShell *shell)
 RutInputQueue *
 rut_input_queue_new (RutShell *shell)
 {
-  RutInputQueue *queue = g_slice_new0 (RutInputQueue);
+  RutInputQueue *queue = c_slice_new0 (RutInputQueue);
 
   queue->shell = shell;
   rut_list_init (&queue->events);
@@ -1668,11 +1668,11 @@ rut_input_queue_append (RutInputQueue *queue,
   if (queue->shell->headless)
     {
 #if 0
-      g_print ("input_queue_append %p %d\n", event, event->type);
+      c_print ("input_queue_append %p %d\n", event, event->type);
       if (event->type == RUT_INPUT_EVENT_TYPE_KEY)
-        g_print ("> is key\n");
+        c_print ("> is key\n");
       else
-        g_print ("> not key\n");
+        c_print ("> not key\n");
 #endif
     }
   rut_list_insert (queue->events.prev, &event->list_node);
@@ -1692,7 +1692,7 @@ rut_input_queue_destroy (RutInputQueue *queue)
 {
   rut_input_queue_clear (queue);
 
-  g_slice_free (RutInputQueue, queue);
+  c_slice_free (RutInputQueue, queue);
 }
 
 void
@@ -1719,7 +1719,7 @@ rut_shell_handle_stream_event (RutShell *shell,
    * are effectively the native events.
    */
 
-  RutInputEvent *event = g_slice_alloc (sizeof (RutInputEvent));
+  RutInputEvent *event = c_slice_alloc (sizeof (RutInputEvent));
   event->native = stream_event;
 
   event->type = 0;
@@ -1744,9 +1744,9 @@ rut_shell_handle_stream_event (RutShell *shell,
    * enum */
   if (!event->type)
     {
-      g_warning ("Shell: Spurious stream event type %d\n",
+      c_warning ("Shell: Spurious stream event type %d\n",
                  stream_event->type);
-      g_slice_free (RutInputEvent, event);
+      c_slice_free (RutInputEvent, event);
       return;
     }
 
@@ -1832,7 +1832,7 @@ rut_shell_handle_sdl_event (RutShell *shell, SDL_Event *sdl_event)
        * basis instead of dispatching them immediately...
        */
 
-      event = g_slice_alloc (sizeof (RutInputEvent) + sizeof (RutSDLEvent));
+      event = c_slice_alloc (sizeof (RutInputEvent) + sizeof (RutSDLEvent));
       rut_sdl_event = (void *)event->data;
       rut_sdl_event->sdl_event = *sdl_event;
 
@@ -2061,7 +2061,7 @@ void
 rut_shell_add_onscreen (RutShell *shell,
                         CoglOnscreen *onscreen)
 {
-  RutShellOnscreen *shell_onscreen = g_slice_new0 (RutShellOnscreen);
+  RutShellOnscreen *shell_onscreen = c_slice_new0 (RutShellOnscreen);
   static CoglUserDataKey data_key;
 
   shell_onscreen->onscreen = onscreen;
@@ -2144,7 +2144,7 @@ rut_shell_grab_input (RutShell *shell,
                       RutInputCallback callback,
                       void *user_data)
 {
-  RutShellGrab *grab = g_slice_new (RutShellGrab);
+  RutShellGrab *grab = c_slice_new (RutShellGrab);
 
   grab->callback = callback;
   grab->user_data = user_data;
@@ -2197,7 +2197,7 @@ pointer_grab_cb (RutInputEvent *event, void *user_data)
           ((rut_motion_event_get_button_state (event) & last_button) == 0))
         {
           RutShell *shell = grab->shell;
-          g_slice_free (PointerGrab, grab);
+          c_slice_free (PointerGrab, grab);
           rut_shell_ungrab_input (shell,
                                   pointer_grab_cb,
                                   user_data);
@@ -2233,7 +2233,7 @@ rut_shell_grab_pointer (RutShell *shell,
                         void *user_data)
 {
 
-  PointerGrab *grab = g_slice_new0 (PointerGrab);
+  PointerGrab *grab = c_slice_new0 (PointerGrab);
 
   grab->shell = shell;
   grab->callback = callback;
@@ -2339,7 +2339,7 @@ rut_shell_add_pre_paint_callback (RutShell *shell,
         }
     }
 
-  entry = g_slice_new (RutShellPrePaintEntry);
+  entry = c_slice_new (RutShellPrePaintEntry);
   entry->graphable = graphable;
   entry->callback = callback;
   entry->user_data = user_data;
@@ -2381,7 +2381,7 @@ rut_shell_remove_pre_paint_callback_by_graphable (RutShell *shell,
       if (entry->graphable == graphable)
         {
           rut_list_remove (&entry->list_node);
-          g_slice_free (RutShellPrePaintEntry, entry);
+          c_slice_free (RutShellPrePaintEntry, entry);
           break;
         }
     }
@@ -2400,7 +2400,7 @@ rut_shell_remove_pre_paint_callback (RutShell *shell,
           entry->user_data == user_data)
         {
           rut_list_remove (&entry->list_node);
-          g_slice_free (RutShellPrePaintEntry, entry);
+          c_slice_free (RutShellPrePaintEntry, entry);
           break;
         }
     }
@@ -2542,7 +2542,7 @@ _rut_text_blob_free (void *object)
 {
   RutTextBlob *blob = object;
 
-  g_free (blob->text);
+  c_free (blob->text);
 
   rut_object_free (RutTextBlob, object);
 }
@@ -2561,7 +2561,7 @@ _rut_text_blob_init_type (void)
   RutType *type = &rut_text_blob_type;
 #define TYPE RutTextBlob
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_text_blob_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_text_blob_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_MIMABLE,
                       0, /* no associated properties */
@@ -2578,7 +2578,7 @@ rut_text_blob_new (const char *text)
 
 
 
-  blob->text = g_strdup (text);
+  blob->text = c_strdup (text);
 
   return blob;
 }
@@ -2743,7 +2743,7 @@ rut_shell_get_selection (RutShell *shell)
 void
 rut_shell_start_drag (RutShell *shell, RutObject *payload)
 {
-  g_return_if_fail (shell->drag_payload == NULL);
+  c_return_if_fail (shell->drag_payload == NULL);
 
   if (payload)
     shell->drag_payload = rut_object_ref (payload);
@@ -2763,14 +2763,14 @@ rut_shell_cancel_drag (RutShell *shell)
 void
 rut_shell_take_drop_offer (RutShell *shell, RutObject *taker)
 {
-  g_return_if_fail (rut_object_is (taker, RUT_TRAIT_ID_INPUTABLE));
+  c_return_if_fail (rut_object_is (taker, RUT_TRAIT_ID_INPUTABLE));
 
   /* shell->drop_offer_taker is always canceled at the start of
    * _rut_shell_handle_input() so it should always be NULL at
    * this point. */
-  g_return_if_fail (shell->drop_offer_taker == NULL);
+  c_return_if_fail (shell->drop_offer_taker == NULL);
 
-  g_return_if_fail (taker);
+  c_return_if_fail (taker);
 
   shell->drop_offer_taker = rut_object_ref (taker);
 }

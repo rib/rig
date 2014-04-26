@@ -97,7 +97,7 @@ _rig_shape_model_init_type (void)
 
 #define TYPE RigShapeModel
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_shape_model_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_shape_model_free);
 
 #undef TYPE
 }
@@ -330,7 +330,7 @@ _rig_shape_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -392,7 +392,7 @@ _rig_shape_init_type (void)
 
 #define TYPE RigShape
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_shape_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_shape_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -528,7 +528,7 @@ rig_shape_add_reshaped_callback (RigShape *shape,
                                  void *user_data,
                                  RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&shape->reshaped_cb_list,
                                callback,
                                user_data,

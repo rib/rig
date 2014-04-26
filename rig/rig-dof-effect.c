@@ -66,7 +66,7 @@ struct _RigDepthOfField
 RigDepthOfField *
 rig_dof_effect_new (RigEngine *engine)
 {
-  RigDepthOfField *dof = g_slice_new0 (RigDepthOfField);
+  RigDepthOfField *dof = c_slice_new0 (RigDepthOfField);
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
 
@@ -115,7 +115,7 @@ rig_dof_effect_free (RigDepthOfField *dof)
   rut_gaussian_blurrer_free (dof->blurrer);
   cogl_object_unref (dof->pipeline);
 
-  g_slice_free (RigDepthOfField, dof);
+  c_slice_free (RigDepthOfField, dof);
 }
 
 void

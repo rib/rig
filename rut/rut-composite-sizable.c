@@ -73,7 +73,7 @@ typedef struct _ForwardingClosure
 static void
 forwarding_closure_destroy_cb (void *user_data)
 {
-  g_slice_free (ForwardingClosure, user_data);
+  c_slice_free (ForwardingClosure, user_data);
 }
 
 static void
@@ -93,7 +93,7 @@ rut_composite_sizable_add_preferred_size_callback (
 {
   RutObject **container =
     rut_object_get_properties (object, RUT_TRAIT_ID_COMPOSITE_SIZABLE);
-  ForwardingClosure *closure = g_slice_new (ForwardingClosure);
+  ForwardingClosure *closure = c_slice_new (ForwardingClosure);
 
   closure->composite_sizable = object;
   closure->cb = cb;

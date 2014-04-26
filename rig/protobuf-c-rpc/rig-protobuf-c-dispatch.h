@@ -107,7 +107,7 @@ struct _RigProtobufCDispatch
 {
   RutShell *shell;
   ProtobufCAllocator *allocator;
-  GList *dispatch_closures;
+  CList *dispatch_closures;
 };
 
 #endif /* _RIG_PROTOBUF_C_DISPATCH_H_ */

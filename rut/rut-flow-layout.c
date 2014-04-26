@@ -251,7 +251,7 @@ rut_flow_layout_remove_child (RutFlowLayout *flow,
   rut_graphable_remove_child (child->transform);
 
   rut_list_remove (&child->link);
-  g_slice_free (RutFlowLayoutChild, child);
+  c_slice_free (RutFlowLayoutChild, child);
 
   flow->n_children--;
 }
@@ -706,7 +706,7 @@ _rut_flow_layout_init_type (void)
   RutType *type = &rut_flow_layout_type;
 #define TYPE RutFlowLayout
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_flow_layout_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_flow_layout_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -779,7 +779,7 @@ void
 rut_flow_layout_add (RutFlowLayout *flow,
                      RutObject *child_widget)
 {
-  RutFlowLayoutChild *child = g_slice_new (RutFlowLayoutChild);
+  RutFlowLayoutChild *child = c_slice_new (RutFlowLayoutChild);
 
   child->transform = rut_transform_new (flow->ctx);
   rut_graphable_add_child (flow, child->transform);
@@ -807,7 +807,7 @@ rut_flow_layout_remove (RutFlowLayout *flow,
 {
   RutFlowLayoutChild *child;
 
-  g_return_if_fail (flow->n_children > 0);
+  c_return_if_fail (flow->n_children > 0);
 
   rut_list_for_each (child, &flow->children, link)
     {

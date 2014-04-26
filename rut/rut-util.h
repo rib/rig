@@ -44,8 +44,8 @@
 #define RUT_UTIL_NEARBYINT(x) ((int) ((x) < 0.0f ? (x) - 0.5f : (x) + 0.5f))
 
 #ifdef RUT_HAS_GLIB_SUPPORT
-#define _RUT_RETURN_IF_FAIL(EXPR) g_return_if_fail(EXPR)
-#define _RUT_RETURN_VAL_IF_FAIL(EXPR, VAL) g_return_val_if_fail(EXPR, VAL)
+#define _RUT_RETURN_IF_FAIL(EXPR) c_return_if_fail(EXPR)
+#define _RUT_RETURN_VAL_IF_FAIL(EXPR, VAL) c_return_val_if_fail(EXPR, VAL)
 #else
 #define _RUT_RETURN_IF_FAIL(EXPR) do {                             \
    if (!(EXPR))                                                     \
@@ -143,7 +143,7 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
                                     float blue);
 
 bool
-rut_util_find_tag (const GList *tags,
+rut_util_find_tag (const CList *tags,
                    const char *tag);
 
 bool

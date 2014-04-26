@@ -30,7 +30,7 @@
 #include <config.h>
 
 #include <math.h>
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -64,13 +64,13 @@ _rut_scale_free (void *object)
 
   for (i = 0; i < scale->labels->len; i++)
     {
-      Label *label = &g_array_index (scale->labels, Label, i);
+      Label *label = &c_array_index (scale->labels, Label, i);
 
       rut_graphable_remove_child (label->transform);
       rut_object_unref (label->transform);
     }
 
-  g_array_free (scale->labels, TRUE);
+  c_array_free (scale->labels, TRUE);
 
   rut_graphable_remove_child (scale->select_transform);
   rut_object_unref (scale->select_transform);
@@ -200,7 +200,7 @@ update_labels (RutScale *scale)
           rut_graphable_add_child (label.transform, label.text);
           rut_object_unref (label.text);
 
-          g_array_append_val (scale->labels, label);
+          c_array_append_val (scale->labels, label);
         }
     }
 
@@ -208,7 +208,7 @@ update_labels (RutScale *scale)
     {
       for (i = 0; i < scale->labels->len; i++)
         {
-          Label *label = &g_array_index (scale->labels, Label, i);
+          Label *label = &c_array_index (scale->labels, Label, i);
           if (i < n_labels)
             rut_graphable_add_child (scale, label->transform);
           else
@@ -232,8 +232,8 @@ update_labels (RutScale *scale)
            i < n_labels;
            i++, offset += step)
         {
-          Label *label = &g_array_index (scale->labels, Label, i);
-          char *str = g_strdup_printf ("%.*f", precision, offset);
+          Label *label = &c_array_index (scale->labels, Label, i);
+          char *str = c_strdup_printf ("%.*f", precision, offset);
           float width, height;
 
           rut_text_set_text (label->text, str);
@@ -249,7 +249,7 @@ update_labels (RutScale *scale)
 
           rut_sizable_set_size (label->text, width, height);
 
-          g_free (str);
+          c_free (str);
         }
     }
 
@@ -261,7 +261,7 @@ update_labels (RutScale *scale)
 
   for (i = 0, offset = first_label; i < n_labels; i++, offset += step)
     {
-      Label *label = &g_array_index (scale->labels, Label, i);
+      Label *label = &c_array_index (scale->labels, Label, i);
       float pixel_offset = offset * scale->pixel_scale - start_pixel_offset;
 
       rut_transform_init_identity (label->transform);
@@ -357,7 +357,7 @@ _rut_scale_get_preferred_height (void *sizable,
   if (scale->labels->len == 0)
     update_labels (scale);
 
-  label = &g_array_index (scale->labels, Label, 0);
+  label = &c_array_index (scale->labels, Label, 0);
 
   if (label)
     rut_sizable_get_size (label->text, &text_width, &text_height);
@@ -411,7 +411,7 @@ _rut_scale_init_type (void)
   RutType *type = &rut_scale_type;
 #define TYPE RutScale
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_scale_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_scale_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -622,7 +622,7 @@ _rut_scale_grab_input_cb (RutInputEvent *event,
           rut_shell_queue_redraw (scale->ctx->shell);
 
           rut_shell_ungrab_input (shell, _rut_scale_grab_input_cb, user_data);
-          g_slice_free (GrabState, state);
+          c_slice_free (GrabState, state);
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
       else if (rut_motion_event_get_action (event) ==
@@ -727,7 +727,7 @@ _rut_scale_input_cb (RutInputRegion *region,
   if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {
-      GrabState *state = g_slice_new0 (GrabState);
+      GrabState *state = c_slice_new0 (GrabState);
       const CoglMatrix *view;
       float x = rut_motion_event_get_x (event);
       float y = rut_motion_event_get_y (event);
@@ -740,8 +740,8 @@ _rut_scale_input_cb (RutInputRegion *region,
       if (!cogl_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
-          g_warning ("Failed to calculate inverse of widget transform\n");
-          g_slice_free (GrabState, state);
+          c_warning ("Failed to calculate inverse of widget transform\n");
+          c_slice_free (GrabState, state);
           return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
@@ -832,7 +832,7 @@ rut_scale_new (RutContext *ctx,
   scale->pixel_scale = 1;
   scale->initial_view = true;
 
-  scale->labels = g_array_new (FALSE, FALSE, sizeof (Label));
+  scale->labels = c_array_new (FALSE, FALSE, sizeof (Label));
 
   scale->bg = rut_rectangle_new4f (ctx, 1, 1, 0.8, 0.8, 0.8, 1);
   rut_graphable_add_child (scale, scale->bg);
@@ -869,7 +869,7 @@ rut_scale_add_select_callback (RutScale *scale,
                                void *user_data,
                                RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&scale->select_cb_list,
                                callback,

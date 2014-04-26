@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-glib-source.h"
 #include "rut-poll.h"
@@ -39,7 +39,7 @@ typedef struct _RutGLibSource
 
   RutShell *shell;
 
-  GArray *poll_fds;
+  CArray *poll_fds;
   int poll_fds_age;
 
   int64_t expiration_time;
@@ -69,15 +69,15 @@ rut_glib_source_prepare (GSource *source, int *timeout)
       /* Remove any existing polls before adding the new ones */
       for (i = 0; i < rut_source->poll_fds->len; i++)
         {
-          GPollFD *poll_fd = &g_array_index (rut_source->poll_fds, GPollFD, i);
+          GPollFD *poll_fd = &c_array_index (rut_source->poll_fds, GPollFD, i);
           g_source_remove_poll (source, poll_fd);
         }
 
-      g_array_set_size (rut_source->poll_fds, n_poll_fds);
+      c_array_set_size (rut_source->poll_fds, n_poll_fds);
 
       for (i = 0; i < n_poll_fds; i++)
         {
-          GPollFD *poll_fd = &g_array_index (rut_source->poll_fds, GPollFD, i);
+          GPollFD *poll_fd = &c_array_index (rut_source->poll_fds, GPollFD, i);
           poll_fd->fd = poll_fds[i].fd;
           g_source_add_poll (source, poll_fd);
         }
@@ -88,7 +88,7 @@ rut_glib_source_prepare (GSource *source, int *timeout)
   /* Update the events */
   for (i = 0; i < n_poll_fds; i++)
     {
-      GPollFD *poll_fd = &g_array_index (rut_source->poll_fds, GPollFD, i);
+      GPollFD *poll_fd = &c_array_index (rut_source->poll_fds, GPollFD, i);
       poll_fd->events = poll_fds[i].events;
       poll_fd->revents = 0;
     }
@@ -106,7 +106,7 @@ rut_glib_source_check (GSource *source)
 
   for (i = 0; i < rut_source->poll_fds->len; i++)
     {
-      GPollFD *poll_fd = &g_array_index (rut_source->poll_fds, GPollFD, i);
+      GPollFD *poll_fd = &c_array_index (rut_source->poll_fds, GPollFD, i);
       if (poll_fd->revents != 0)
         return TRUE;
     }
@@ -121,7 +121,7 @@ rut_glib_source_dispatch (GSource *source,
 {
   RutGLibSource *rut_source = (RutGLibSource *) source;
   RutPollFD *poll_fds =
-    (RutPollFD *) &g_array_index (rut_source->poll_fds, GPollFD, 0);
+    (RutPollFD *) &c_array_index (rut_source->poll_fds, GPollFD, 0);
 
   rut_poll_shell_dispatch (rut_source->shell,
                            poll_fds,
@@ -135,7 +135,7 @@ rut_glib_source_finalize (GSource *source)
 {
   RutGLibSource *rut_source = (RutGLibSource *) source;
 
-  g_array_free (rut_source->poll_fds, TRUE);
+  c_array_free (rut_source->poll_fds, TRUE);
 }
 
 static GSourceFuncs
@@ -159,7 +159,7 @@ rut_glib_shell_source_new (RutShell *shell,
   rut_source = (RutGLibSource *) source;
 
   rut_source->shell = shell;
-  rut_source->poll_fds = g_array_new (FALSE, FALSE, sizeof (GPollFD));
+  rut_source->poll_fds = c_array_new (FALSE, FALSE, sizeof (GPollFD));
 
   if (priority != G_PRIORITY_DEFAULT)
     g_source_set_priority (source, priority);

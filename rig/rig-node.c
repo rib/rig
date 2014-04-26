@@ -326,7 +326,7 @@ rig_node_box (RutPropertyType type,
 
     case RUT_PROPERTY_TYPE_TEXT:
       value->type = RUT_PROPERTY_TYPE_TEXT;
-      value->d.text_val = g_strdup (node->boxed.d.text_val);
+      value->d.text_val = c_strdup (node->boxed.d.text_val);
       return TRUE;
 
     case RUT_PROPERTY_TYPE_ASSET:
@@ -345,7 +345,7 @@ rig_node_box (RutPropertyType type,
       return TRUE;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 
   return FALSE;
 }
@@ -353,13 +353,13 @@ rig_node_box (RutPropertyType type,
 void
 rig_node_free (RigNode *node)
 {
-  g_slice_free (RigNode, node);
+  c_slice_free (RigNode, node);
 }
 
 RigNode *
 rig_node_new_for_integer (float t, int value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_INTEGER;
   node->boxed.d.integer_val = value;
@@ -369,7 +369,7 @@ rig_node_new_for_integer (float t, int value)
 RigNode *
 rig_node_new_for_uint32 (float t, uint32_t value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_UINT32;
   node->boxed.d.uint32_val = value;
@@ -379,7 +379,7 @@ rig_node_new_for_uint32 (float t, uint32_t value)
 RigNode *
 rig_node_new_for_float (float t, float value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_FLOAT;
   node->boxed.d.float_val = value;
@@ -389,7 +389,7 @@ rig_node_new_for_float (float t, float value)
 RigNode *
 rig_node_new_for_double (float t, double value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_DOUBLE;
   node->boxed.d.double_val = value;
@@ -399,7 +399,7 @@ rig_node_new_for_double (float t, double value)
 RigNode *
 rig_node_new_for_vec3 (float t, const float value[3])
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_VEC3;
   memcpy (node->boxed.d.vec3_val, value, sizeof (float) * 3);
@@ -409,7 +409,7 @@ rig_node_new_for_vec3 (float t, const float value[3])
 RigNode *
 rig_node_new_for_vec4 (float t, const float value[4])
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_VEC4;
   memcpy (node->boxed.d.vec4_val, value, sizeof (float) * 4);
@@ -419,7 +419,7 @@ rig_node_new_for_vec4 (float t, const float value[4])
 RigNode *
 rig_node_new_for_quaternion (float t, const CoglQuaternion *value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_QUATERNION;
   node->boxed.d.quaternion_val = *value;
@@ -430,7 +430,7 @@ rig_node_new_for_quaternion (float t, const CoglQuaternion *value)
 RigNode *
 rig_node_new_for_color (float t, const CoglColor *value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_COLOR;
   node->boxed.d.color_val = *value;
@@ -441,7 +441,7 @@ rig_node_new_for_color (float t, const CoglColor *value)
 RigNode *
 rig_node_new_for_boolean (float t, bool value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_BOOLEAN;
   node->boxed.d.boolean_val = value;
@@ -452,7 +452,7 @@ rig_node_new_for_boolean (float t, bool value)
 RigNode *
 rig_node_new_for_enum (float t, int value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_ENUM;
   node->boxed.d.enum_val = value;
@@ -463,10 +463,10 @@ rig_node_new_for_enum (float t, int value)
 RigNode *
 rig_node_new_for_text (float t, const char *value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_TEXT;
-  node->boxed.d.text_val = g_strdup (value);
+  node->boxed.d.text_val = c_strdup (value);
 
   return node;
 }
@@ -474,7 +474,7 @@ rig_node_new_for_text (float t, const char *value)
 RigNode *
 rig_node_new_for_asset (float t, RigAsset *value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_ASSET;
   node->boxed.d.asset_val = rut_object_ref (value);
@@ -485,7 +485,7 @@ rig_node_new_for_asset (float t, RigAsset *value)
 RigNode *
 rig_node_new_for_object (float t, RutObject *value)
 {
-  RigNode *node = g_slice_new (RigNode);
+  RigNode *node = c_slice_new (RigNode);
   node->t = t;
   node->boxed.type = RUT_PROPERTY_TYPE_OBJECT;
   node->boxed.d.object_val = rut_object_ref (value);
@@ -496,7 +496,7 @@ rig_node_new_for_object (float t, RutObject *value)
 RigNode *
 rig_node_copy (RigNode *node)
 {
-  return g_slice_dup (RigNode, node);
+  return c_slice_dup (RigNode, node);
 }
 
 RigNode *

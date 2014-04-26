@@ -130,7 +130,7 @@ _rig_light_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -163,7 +163,7 @@ _rig_light_init_type (void)
   RutType *type = &rig_light_type;
 #define TYPE RigLight
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_light_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_light_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),

@@ -162,7 +162,7 @@ _rut_drag_bin_init_type (void)
   RutType *type = &rut_drag_bin_type;
 #define TYPE RutDragBin
 
-  rut_type_init (&rut_drag_bin_type, G_STRINGIFY (TYPE), _rut_drag_bin_free);
+  rut_type_init (&rut_drag_bin_type, C_STRINGIFY (TYPE), _rut_drag_bin_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (RutDragBin, graphable),
@@ -242,7 +242,7 @@ _rut_drag_bin_grab_input_cb (RutInputEvent *event,
                                   _rut_drag_bin_grab_input_cb,
                                   state);
 
-          g_slice_free (DragState, state);
+          c_slice_free (DragState, state);
 
           if (bin->in_drag)
             {
@@ -296,7 +296,7 @@ _rut_drag_bin_input_cb (RutInputRegion *region,
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
           rut_motion_event_get_button_state (event) == RUT_BUTTON_STATE_1)
         {
-          DragState *state = g_slice_new (DragState);
+          DragState *state = c_slice_new (DragState);
 
           state->bin = bin;
           state->camera = rut_input_event_get_camera (event);
@@ -361,8 +361,8 @@ void
 rut_drag_bin_set_child (RutDragBin *bin,
                         RutObject *child_widget)
 {
-  g_return_if_fail (rut_object_get_type (bin) == &rut_drag_bin_type);
-  g_return_if_fail (bin->in_drag == FALSE);
+  c_return_if_fail (rut_object_get_type (bin) == &rut_drag_bin_type);
+  c_return_if_fail (bin->in_drag == FALSE);
 
   if (bin->child == child_widget)
     return;

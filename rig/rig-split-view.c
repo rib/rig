@@ -401,7 +401,7 @@ _rig_split_view_init_type (void)
   RutType *type = &rig_split_view_type;
 #define TYPE RigSplitView
 
-  rut_type_init (&rig_split_view_type, G_STRINGIFY (TYPE), _rig_split_view_free);
+  rut_type_init (&rig_split_view_type, C_STRINGIFY (TYPE), _rig_split_view_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -454,7 +454,7 @@ void
 rig_split_view_set_split_fraction (RigSplitView *split_view,
                                    float fraction)
 {
-  g_return_if_fail (fraction != 0);
+  c_return_if_fail (fraction != 0);
 
   split_view->split_fraction = fraction;
 

@@ -45,7 +45,7 @@ _rig_path_free (void *object)
     rig_node_free (node);
 
   rut_object_unref (path->ctx);
-  g_slice_free (RigPath, path);
+  c_slice_free (RigPath, path);
 }
 
 RutType rig_path_type;
@@ -204,7 +204,7 @@ path_find_control_points4 (RigPath *path,
                            RigNode **n2,
                            RigNode **n3)
 {
-  GList *l1, *l2;
+  CList *l1, *l2;
 
   if (!path_find_control_links2 (path, t, direction, &l1, &l2))
     return FALSE;
@@ -239,14 +239,14 @@ rig_path_print (RigPath *path)
   RutPropertyType type = path->type;
   RigNode *node;
 
-  g_print ("path=%p\n", path);
+  c_print ("path=%p\n", path);
   rut_list_for_each (node, &path->nodes, list_node)
     {
       switch (type)
         {
         case RUT_PROPERTY_TYPE_FLOAT:
           {
-            g_print (" t = %f value = %f\n",
+            c_print (" t = %f value = %f\n",
                      node->t,
                      node->boxed.d.float_val);
             break;
@@ -254,7 +254,7 @@ rig_path_print (RigPath *path)
 
         case RUT_PROPERTY_TYPE_VEC3:
           {
-            g_print (" t = %f value.x = %f .y = %f .z = %f\n",
+            c_print (" t = %f value.x = %f .y = %f .z = %f\n",
                      node->t,
                      node->boxed.d.vec3_val[0],
                      node->boxed.d.vec3_val[1],
@@ -265,14 +265,14 @@ rig_path_print (RigPath *path)
         case RUT_PROPERTY_TYPE_QUATERNION:
           {
             const CoglQuaternion *q = &node->boxed.d.quaternion_val;
-            g_print (" t = %f [%f (%f, %f, %f)]\n",
+            c_print (" t = %f [%f (%f, %f, %f)]\n",
                      node->t,
                      q->w, q->x, q->y, q->z);
             break;
           }
 
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 }
@@ -358,7 +358,7 @@ void
 rig_path_insert_node (RigPath *path,
                       RigNode *node)
 {
-  g_return_if_fail (rig_path_find_node (path, node->t) == NULL);
+  c_return_if_fail (rig_path_find_node (path, node->t) == NULL);
 
   insert_sorted_node (path, node);
   notify_node_added (path, node);
@@ -578,8 +578,8 @@ rig_path_insert_text (RigPath *path,
   if (node)
     {
       if (node->boxed.d.text_val)
-        g_free (node->boxed.d.text_val);
-      node->boxed.d.text_val = g_strdup (value);
+        c_free (node->boxed.d.text_val);
+      node->boxed.d.text_val = c_strdup (value);
       notify_node_modified (path, node);
     }
   else
@@ -641,7 +641,7 @@ rig_path_lerp_property (RigPath *path,
 {
   RigNode *n0, *n1;
 
-  g_return_val_if_fail (property->spec->type == path->type, FALSE);
+  c_return_val_if_fail (property->spec->type == path->type, FALSE);
 
   if (!rig_path_find_control_points2 (path, t,
                                       RIG_PATH_DIRECTION_FORWARDS,
@@ -755,7 +755,7 @@ rig_path_lerp_property (RigPath *path,
         break;
       }
     case RUT_PROPERTY_TYPE_POINTER:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       break;
     }
 
@@ -782,7 +782,7 @@ rig_path_insert_boxed (RigPath *path,
                        float t,
                        const RutBoxed *value)
 {
-  g_return_if_fail (value->type == path->type);
+  c_return_if_fail (value->type == path->type);
 
   switch (path->type)
     {
@@ -842,7 +842,7 @@ rig_path_insert_boxed (RigPath *path,
       break;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 void

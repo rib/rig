@@ -156,7 +156,7 @@ _rig_material_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -216,7 +216,7 @@ _rig_material_init_type (void)
   RutType *type = &rig_material_type;
 #define TYPE RigMaterial
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_material_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_material_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -273,7 +273,7 @@ rig_material_new (RutContext *ctx,
           material->alpha_mask_asset = rut_object_ref (asset);
           break;
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 

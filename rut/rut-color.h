@@ -29,7 +29,7 @@
 #ifndef _RUT_COLOR_H_
 #define _RUT_COLOR_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 

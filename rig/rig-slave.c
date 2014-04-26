@@ -30,7 +30,7 @@
 #include <config.h>
 
 #include <stdlib.h>
-#include <glib.h>
+#include <clib.h>
 
 #ifdef USE_GSTREAMER
 #include <cogl-gst/cogl-gst.h>
@@ -55,9 +55,9 @@ slave__test (Rig__Slave_Service *service,
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
   //RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
 
-  g_return_if_fail (query != NULL);
+  c_return_if_fail (query != NULL);
 
-  g_print ("Test Query\n");
+  c_print ("Test Query\n");
 
   closure (&result, closure_data);
 }
@@ -119,7 +119,7 @@ load_ui (RigSlave *slave)
   const Rig__UI *pb_ui = slave->pending_ui_load;
   RigUI *ui;
 
-  g_return_if_fail (pb_ui != NULL);
+  c_return_if_fail (pb_ui != NULL);
 
   if (slave->edit_id_to_play_object_map)
     {
@@ -227,7 +227,7 @@ slave__load (Rig__Slave_Service *service,
   RigFrontend *frontend = slave->frontend;
   RutQueueItem *item;
 
-  g_print ("Slave: UI Load Request\n");
+  c_print ("Slave: UI Load Request\n");
 
   /* Discard any previous pending ui load, since it's now redundant */
   if (slave->pending_ui_load)
@@ -249,7 +249,7 @@ slave__load (Rig__Slave_Service *service,
 
       pending_edit->closure (&result, pending_edit->closure_data);
 
-      g_slice_free (PendingEdit, pending_edit);
+      c_slice_free (PendingEdit, pending_edit);
     }
 
   /* XXX: If the simulator is busy we need to synchonize with it
@@ -295,10 +295,10 @@ slave__edit (Rig__Slave_Service *service,
              void *closure_data)
 {
   RigSlave *slave = rig_pb_rpc_closure_get_connection_data (closure_data);
-  PendingEdit *pending_edit = g_slice_new0 (PendingEdit);
+  PendingEdit *pending_edit = c_slice_new0 (PendingEdit);
   RigFrontend *frontend = slave->frontend;
 
-  g_print ("Slave: UI Edit Request\n");
+  c_print ("Slave: UI Edit Request\n");
 
   pending_edit->slave = slave;
   pending_edit->edit = (Rig__UIEdit *)pb_ui_edit;
@@ -333,7 +333,7 @@ static void
 client_close_handler (PB_RPC_ServerConnection *conn,
                       void *user_data)
 {
-  g_warning ("slave master disconnected %p", conn);
+  c_warning ("slave master disconnected %p", conn);
 }
 
 static void
@@ -361,7 +361,7 @@ server_error_handler (PB_RPC_Error_Code code,
   RigSlave *slave = user_data;
   RigEngine *engine = slave->engine;
 
-  g_warning ("Server error: %s", message);
+  c_warning ("Server error: %s", message);
 
 #ifdef USE_AVAHI
   rig_avahi_unregister_service (engine);
@@ -458,7 +458,7 @@ rig_slave_fini (RutShell *shell, void *user_data)
     }
 
   rut_list_for_each (item, &slave->pending_edits->items, list_node)
-    g_slice_free (PendingEdit, item->data);
+    c_slice_free (PendingEdit, item->data);
   rut_queue_free (slave->pending_edits);
 
   rig_engine_op_map_context_destroy (&slave->map_op_ctx);
@@ -599,7 +599,7 @@ rig_slave_paint (RutShell *shell, void *user_data)
 
           pending_edit->closure (&result, pending_edit->closure_data);
 
-          g_slice_free (PendingEdit, pending_edit);
+          c_slice_free (PendingEdit, pending_edit);
         }
 
       rig_pb_serializer_destroy (serializer);
@@ -697,9 +697,9 @@ print_id_to_obj_mapping_cb (gpointer key,
 {
   char *obj = rig_engine_get_object_debug_name (value);
 
-  g_print ("  [%llx] -> [%50s]\n", *(uint64_t *)key, obj);
+  c_print ("  [%llx] -> [%50s]\n", *(uint64_t *)key, obj);
 
-  g_free (obj);
+  c_free (obj);
 }
 
 static void
@@ -709,21 +709,21 @@ print_obj_to_id_mapping_cb (gpointer key,
 {
   char *obj = rig_engine_get_object_debug_name (key);
 
-  g_print ("  [%50s] -> [%llx]\n", obj, *(uint64_t *)key);
+  c_print ("  [%50s] -> [%llx]\n", obj, *(uint64_t *)key);
 
-  g_free (obj);
+  c_free (obj);
 }
 
 void
 rig_slave_print_mappings (RigSlave *slave)
 {
-  g_print ("Edit ID to play object mappings:\n");
+  c_print ("Edit ID to play object mappings:\n");
   g_hash_table_foreach (slave->edit_id_to_play_object_map,
                         print_id_to_obj_mapping_cb,
                         NULL);
 
-  g_print ("\n\n");
-  g_print ("Play object to edit ID mappings:\n");
+  c_print ("\n\n");
+  c_print ("Play object to edit ID mappings:\n");
   g_hash_table_foreach (slave->play_object_to_edit_id_map,
                         print_obj_to_id_mapping_cb,
                         NULL);

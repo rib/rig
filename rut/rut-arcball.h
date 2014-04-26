@@ -29,7 +29,7 @@
 #ifndef __RUT_ARCBALL_H__
 #define __RUT_ARCBALL_H__
 
-#include <glib.h>
+#include <clib.h>
 #include <cogl/cogl.h>
 
 G_BEGIN_DECLS

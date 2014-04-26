@@ -393,7 +393,7 @@ _rut_image_init_type (void)
   RutType *type = &rut_image_type;
 #define TYPE RutImage
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_image_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_image_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_PAINTABLE,
                       offsetof (TYPE, paintable),

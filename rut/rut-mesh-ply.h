@@ -31,7 +31,7 @@
 
 #include <cogl/cogl.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-mesh.h"
 

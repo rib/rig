@@ -299,7 +299,7 @@ _rut_entry_init_type (void)
   RutType *type = &rut_entry_type;
 #define TYPE RutEntry
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_entry_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_entry_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

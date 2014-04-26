@@ -31,7 +31,7 @@
 
 #include <stdlib.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 #ifdef USE_GSTREAMER
@@ -179,7 +179,7 @@ rig_device_new (const char *filename)
   RigEngine *engine;
   char *assets_location;
 
-  device->ui_filename = g_strdup (filename);
+  device->ui_filename = c_strdup (filename);
 
   device->shell = rut_shell_new (false, /* not headless */
                                  NULL, /* no init func */
@@ -193,7 +193,7 @@ rig_device_new (const char *filename)
 
   assets_location = g_path_get_dirname (device->ui_filename);
   rut_set_assets_location (device->ctx, assets_location);
-  g_free (assets_location);
+  c_free (assets_location);
 
   device->frontend = rig_frontend_new (device->shell,
                                        RIG_FRONTEND_ID_DEVICE,

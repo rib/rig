@@ -29,7 +29,7 @@
 #ifndef _RUT_DISPLAY_LIST_H_
 #define _RUT_DISPLAY_LIST_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 #include <cogl-pango/cogl-pango.h>
@@ -87,25 +87,25 @@ typedef struct _RutRectangleCmd
 typedef struct _RutDisplayList
 {
   /* PRIVATE */
-  GList *head;
-  GList *tail;
+  CList *head;
+  CList *tail;
 } RutDisplayList;
 
 void
 rut_display_list_unsplice (RutDisplayList *list);
 
 void
-rut_display_list_splice (GList *after, RutDisplayList *sub_list);
+rut_display_list_splice (CList *after, RutDisplayList *sub_list);
 
 void
 rut_display_list_append (RutDisplayList *list, void *data);
 
-GList *
-rut_display_list_insert_before (GList *sibling,
+CList *
+rut_display_list_insert_before (CList *sibling,
                                  void *data);
 
 void
-rut_display_list_delete_link (GList *link);
+rut_display_list_delete_link (CList *link);
 
 void
 rut_display_list_init (RutDisplayList *list);

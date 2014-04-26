@@ -465,7 +465,7 @@ rut_text_set_buffer (RutObject *text,
  * actor.
  *
  * If you need a copy of the contents for manipulating, either
- * use g_strdup() on the returned string, or use:
+ * use c_strdup() on the returned string, or use:
  *
  * |[
  *    copy = rut_text_get_chars (text, 0, -1);
@@ -913,7 +913,7 @@ rut_text_delete_text (RutText *text,
  * The positions are specified in characters, not in bytes.
  *
  * Return value: a newly allocated string with the contents of
- *   the text actor between the specified positions. Use g_free()
+ *   the text actor between the specified positions. Use c_free()
  *   to free the resources when done
  */
 char *
@@ -1161,7 +1161,7 @@ rut_text_set_selection (RutText *text,
  * Retrieves the currently selected text.
  *
  * Return value: a newly allocated string containing the currently
- *   selected text, or %NULL. Use g_free() to free the returned
+ *   selected text, or %NULL. Use c_free() to free the returned
  *   string.
  */
 char *

@@ -9,7 +9,7 @@
  * at the end of this file.
  * ---------------------------------------------------------------------- */
 
-#include <glib.h>
+#include <clib.h>
 
 #ifdef __cplusplus
 extern "C" {

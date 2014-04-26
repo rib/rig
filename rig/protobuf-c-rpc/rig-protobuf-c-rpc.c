@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <glib.h>
+#include <clib.h>
 #include "rig-protobuf-c-rpc.h"
 #include "rig-protobuf-c-data-buffer.h"
 #include "gsklistmacros.h"
@@ -266,7 +266,7 @@ _rig_pb_rpc_client_free (void *object)
                                client->info.failed.error_message);
       break;
     case PB_RPC_CLIENT_STATE_DESTROYED:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       break;
     }
 
@@ -277,7 +277,7 @@ _rig_pb_rpc_client_free (void *object)
   rig_protobuf_c_data_buffer_clear (&client->stream->outgoing);
   client->state = PB_RPC_CLIENT_STATE_DESTROYED;
 
-  g_free (client->name);
+  c_free (client->name);
 
   /* free closures only once we are in the destroyed state */
   for (i = 0; i < n_closures; i++)
@@ -286,7 +286,7 @@ _rig_pb_rpc_client_free (void *object)
   if (closures)
     client->allocator->free (client->allocator, closures);
 
-  g_slice_free (PB_RPC_Client, client);
+  c_slice_free (PB_RPC_Client, client);
 }
 
 static RutType rig_pb_rpc_client_type;
@@ -297,7 +297,7 @@ _rig_pb_rpc_client_init_type (void)
   RutType *type = &rig_pb_rpc_client_type;
 #define TYPE PB_RPC_Client
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_client_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_pb_rpc_client_free);
 
 #undef TYPE
 }
@@ -307,7 +307,7 @@ error_handler (PB_RPC_Error_Code code,
                const char *message,
                void *error_func_data)
 {
-  g_warning ("PB RPC: %s: %s\n", (char*) error_func_data, message);
+  c_warning ("PB RPC: %s: %s\n", (char*) error_func_data, message);
 }
 
 static void
@@ -315,7 +315,7 @@ set_fd_nonblocking (int fd)
 {
   int flags = fcntl (fd, F_GETFL);
 
-  g_return_if_fail (flags >= 0);
+  c_return_if_fail (flags >= 0);
 
   fcntl (fd, F_SETFL, flags | O_NONBLOCK);
 }
@@ -326,7 +326,7 @@ handle_autoreconnect_timeout (RigProtobufCDispatch *dispatch,
 {
   PB_RPC_Client *client = func_data;
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_FAILED_WAITING);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_FAILED_WAITING);
 
   client->allocator->free (client->allocator,
                            client->info.failed_waiting.error_message);
@@ -361,7 +361,7 @@ client_failed (PB_RPC_Client *client,
     case PB_RPC_CLIENT_STATE_FAILED_WAITING:
     case PB_RPC_CLIENT_STATE_FAILED:
     case PB_RPC_CLIENT_STATE_DESTROYED:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       break;
     }
 
@@ -467,7 +467,7 @@ update_stream_fd_watch (Stream *stream)
   unsigned events = PROTOBUF_C_EVENT_READABLE;
   RigProtobufCDispatch *dispatch = stream_get_dispatch (stream);
 
-  g_return_if_fail (stream->fd >= 0);
+  c_return_if_fail (stream->fd >= 0);
 
   if (stream->outgoing.size > 0)
     events |= PROTOBUF_C_EVENT_WRITABLE;
@@ -530,7 +530,7 @@ begin_connecting (PB_RPC_Client *client,
                   struct sockaddr *address,
                   size_t addr_len)
 {
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
 
   client->state = PB_RPC_CLIENT_STATE_CONNECTING;
   client->stream->fd = socket (address->sa_family, SOCK_STREAM, 0);
@@ -572,7 +572,7 @@ handle_name_lookup_success (const uint8_t *address,
   PB_RPC_Client *client = callback_data;
   struct sockaddr_in addr;
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
 
   memset (&addr, 0, sizeof (addr));
   addr.sin_family = AF_INET;
@@ -587,7 +587,7 @@ handle_name_lookup_failure (const char *error_message,
 {
   PB_RPC_Client *client = callback_data;
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_NAME_LOOKUP);
 
   client_failed (client,
                  PB_RPC_ERROR_CODE_CONNECTION_FAILED,
@@ -598,7 +598,7 @@ handle_name_lookup_failure (const char *error_message,
 static void
 begin_name_lookup (PB_RPC_Client *client)
 {
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_INIT
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_INIT
                  ||  client->state == PB_RPC_CLIENT_STATE_FAILED_WAITING
                  ||  client->state == PB_RPC_CLIENT_STATE_FAILED);
 
@@ -659,7 +659,7 @@ handle_init_idle (RigProtobufCDispatch *dispatch,
 {
   PB_RPC_Client *client = data;
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_INIT);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_INIT);
 
   begin_name_lookup (client);
 }
@@ -715,8 +715,8 @@ enqueue_request (PB_RPC_Client *client,
   const ProtobufCMethodDescriptor *method = desc->methods + method_index;
   int had_outgoing = (client->stream->outgoing.size > 0);
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_CONNECTED);
-  g_return_if_fail (method_index < desc->n_methods);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_CONNECTED);
+  c_return_if_fail (method_index < desc->n_methods);
 
   /* Allocate request_id */
   if (client->info.connected.first_free_request_id == 0)
@@ -766,7 +766,7 @@ invoke_client_rpc (ProtobufCService *service,
 {
   PB_RPC_Client *client = rut_container_of (service, client, service);
 
-  g_return_if_fail (service->invoke == invoke_client_rpc);
+  c_return_if_fail (service->invoke == invoke_client_rpc);
 
   switch (client->state)
     {
@@ -841,7 +841,7 @@ _stream_free (void *object)
   rig_protobuf_c_data_buffer_clear (&stream->incoming);
   rig_protobuf_c_data_buffer_clear (&stream->outgoing);
 
-  g_slice_free (Stream, stream);
+  c_slice_free (Stream, stream);
 }
 
 static RutType stream_type;
@@ -852,7 +852,7 @@ _stream_init_type (void)
   RutType *type = &stream_type;
 #define TYPE Stream
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _stream_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _stream_free);
 
 #undef TYPE
 }
@@ -894,7 +894,7 @@ rig_pb_rpc_client_new (PB_RPC_AddressType type,
   rut_object_unref (stream);
 
   client->address_type = type;
-  client->name = g_strdup (name);
+  client->name = c_strdup (name);
 
   client->info.init.idle =
     rig_protobuf_c_dispatch_add_idle (client->dispatch,
@@ -1024,7 +1024,7 @@ _rig_pb_rpc_server_free (void *object)
   if (server->listening_fd >= 0)
     rig_protobuf_c_dispatch_close_fd (server->dispatch, server->listening_fd);
 
-  g_slice_free (PB_RPC_Server, server);
+  c_slice_free (PB_RPC_Server, server);
 }
 
 static RutType rig_pb_rpc_server_type;
@@ -1035,7 +1035,7 @@ _rig_pb_rpc_server_init_type (void)
   RutType *type = &rig_pb_rpc_server_type;
 #define TYPE PB_RPC_Server
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pb_rpc_server_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_pb_rpc_server_free);
 
 #undef TYPE
 }
@@ -1200,7 +1200,7 @@ server_connection_response_closure (const ProtobufCMessage *message,
 
   /* XXX: we removed the ability to return an error status so we now
    * assert that the response points to a valid message... */
-  g_return_if_fail (message != NULL);
+  c_return_if_fail (message != NULL);
 
   if (server->is_rpc_thread_func != NULL)
     {
@@ -1281,7 +1281,7 @@ read_client_reply (PB_RPC_Client *client,
   uint8_t *packed_data;
   ProtobufCMessage *msg;
 
-  g_return_if_fail (client->state == PB_RPC_CLIENT_STATE_CONNECTED);
+  c_return_if_fail (client->state == PB_RPC_CLIENT_STATE_CONNECTED);
 
   /* lookup request by id */
   if (request_id > client->info.connected.closures_alloced

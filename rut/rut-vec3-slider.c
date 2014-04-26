@@ -114,7 +114,7 @@ _rut_vec3_slider_init_type (void)
   RutType *type = &rut_vec3_slider_type;
 #define TYPE RutVec3Slider
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_vec3_slider_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_vec3_slider_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

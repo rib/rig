@@ -63,9 +63,9 @@ frontend__test (Rig__Frontend_Service *service,
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
   //RigFrontend *frontend = rig_pb_rpc_closure_get_connection_data (closure_data);
 
-  g_return_if_fail (query != NULL);
+  c_return_if_fail (query != NULL);
 
-  //g_print ("Frontend Service: Test Query\n");
+  //c_print ("Frontend Service: Test Query\n");
 
   closure (&result, closure_data);
 }
@@ -121,14 +121,14 @@ apply_property_change (RigFrontend *frontend,
       !pb_change->has_property_id ||
       !pb_change->value)
     {
-      g_warning ("Frontend: Invalid property change received");
+      c_warning ("Frontend: Invalid property change received");
       return;
     }
 
   object = lookup_object (frontend, pb_change->object_id);
 
 #if 0
-  g_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
+  c_print ("Frontend: PropertyChange: %p(%s) prop_id=%d\n",
            object,
            rut_object_get_type_name (object),
            pb_change->property_id);
@@ -138,7 +138,7 @@ apply_property_change (RigFrontend *frontend,
     rut_introspectable_get_property (object, pb_change->property_id);
   if (!property)
     {
-      g_warning ("Frontend: Failed to find object property by id");
+      c_warning ("Frontend: Failed to find object property by id");
       return;
     }
 
@@ -203,11 +203,11 @@ frontend__update_ui (Rig__Frontend_Service *service,
                            frontend);
   return;
 #endif
-  //g_print ("Frontend: Update UI Request\n");
+  //c_print ("Frontend: Update UI Request\n");
 
   frontend->ui_update_pending = false;
 
-  g_return_if_fail (pb_ui_diff != NULL);
+  c_return_if_fail (pb_ui_diff != NULL);
 
   n_property_changes = pb_ui_diff->n_property_changes;
 
@@ -239,7 +239,7 @@ frontend__update_ui (Rig__Frontend_Service *service,
 
           if (!rig_engine_pb_op_map (map_op_ctx, apply_op_ctx, pb_op))
             {
-              g_warning ("Frontend: Failed to ID map simulator operation");
+              c_warning ("Frontend: Failed to ID map simulator operation");
               continue;
             }
         }
@@ -289,13 +289,13 @@ static void
 handle_simulator_test_response (const Rig__TestResult *result,
                                 void *closure_data)
 {
-  g_print ("Simulator test response received\n");
+  c_print ("Simulator test response received\n");
 }
 #endif
 
 typedef struct _LoadState
 {
-  GList *required_assets;
+  CList *required_assets;
 } LoadState;
 
 bool
@@ -320,12 +320,12 @@ asset_filter_cb (RigAsset *asset,
       return false; /* these assets aren't needed in the simulator */
     case RIG_ASSET_TYPE_MESH:
       return true; /* keep mesh assets for picking */
-      //g_print ("Serialization requires asset %s\n",
+      //c_print ("Serialization requires asset %s\n",
       //         rig_asset_get_path (asset));
       break;
     }
 
-   g_warn_if_reached ();
+   c_warn_if_reached ();
    return false;
 }
 
@@ -333,7 +333,7 @@ static void
 handle_load_response (const Rig__LoadResult *result,
                       void *closure_data)
 {
-  //g_print ("Frontend: UI loaded response received from simulator\n");
+  //c_print ("Frontend: UI loaded response received from simulator\n");
 }
 
 void
@@ -408,7 +408,7 @@ frontend_peer_connected (PB_RPC_Client *pb_client,
                         handle_simulator_test_response, NULL);
 #endif
 
-  //g_print ("Frontend peer connected\n");
+  //c_print ("Frontend peer connected\n");
 }
 
 static void
@@ -427,7 +427,7 @@ frontend_peer_error_handler (PB_RPC_Error_Code code,
 {
   RigFrontend *frontend = user_data;
 
-  g_warning ("Frontend peer error: %s", message);
+  c_warning ("Frontend peer error: %s", message);
 
   frontend_stop_service (frontend);
 }
@@ -492,7 +492,7 @@ frame_running_ack (const Rig__RunFrameAck *ack,
                                         frontend->pending_play_mode_enabled);
     }
 
-  //g_print ("Frontend: Run Frame ACK received from simulator\n");
+  //c_print ("Frontend: Run Frame ACK received from simulator\n");
 }
 
 typedef struct _RegistrationState
@@ -585,7 +585,7 @@ rig_frontend_run_simulator_frame (RigFrontend *frontend,
 
   if (frontend->pending_dso_data)
     {
-      g_free (frontend->pending_dso_data);
+      c_free (frontend->pending_dso_data);
       frontend->pending_dso_data = NULL;
     }
 }
@@ -596,7 +596,7 @@ _rig_frontend_free (void *object)
   RigFrontend *frontend = object;
 
   if (frontend->pending_dso_data)
-    g_free (frontend->pending_dso_data);
+    c_free (frontend->pending_dso_data);
 
   rig_engine_op_apply_context_destroy (&frontend->apply_op_ctx);
   rig_engine_op_map_context_destroy (&frontend->map_op_ctx);
@@ -632,7 +632,7 @@ simulator_sigchild_cb (GPid pid,
 
   frontend_stop_service (frontend);
 
-  g_print ("SIGCHLD received: Simulator Gone!");
+  c_print ("SIGCHLD received: Simulator Gone!");
 
   if (frontend->id == RIG_FRONTEND_ID_EDITOR)
     {
@@ -651,7 +651,7 @@ fork_simulator (RutShell *shell, RigFrontend *frontend)
   pid_t pid;
   int sp[2];
 
-  g_return_if_fail (frontend->connected == false);
+  c_return_if_fail (frontend->connected == false);
 
   /*
    * Spawn a simulator process...
@@ -749,7 +749,7 @@ create_simulator_thread (RutShell *shell,
   ThreadSetup setup;
   int sp[2];
 
-  g_return_if_fail (frontend->connected == false);
+  c_return_if_fail (frontend->connected == false);
 
   if (socketpair (AF_UNIX, SOCK_STREAM, 0, sp) < 0)
     g_error ("Failed to open simulator ipc socketpair");
@@ -773,7 +773,7 @@ handle_simulator_connect_cb (void *user_data,
   struct sockaddr addr;
   socklen_t addr_len = sizeof (addr);
 
-  g_return_if_fail (revents & RUT_POLL_FD_EVENT_IN);
+  c_return_if_fail (revents & RUT_POLL_FD_EVENT_IN);
 
   g_message ("Simulator connect request received!");
 
@@ -850,7 +850,7 @@ on_onscreen_resize (CoglOnscreen *onscreen,
 {
   RigEngine *engine = user_data;
 
-  g_return_if_fail (engine->simulator == NULL);
+  c_return_if_fail (engine->simulator == NULL);
 
   rig_engine_resize (engine, width, height);
 }
@@ -946,7 +946,7 @@ rig_frontend_post_init_engine (RigFrontend *frontend,
 
   rut_shell_set_title (engine->shell,
                        engine->onscreen,
-                       "Rig " G_STRINGIFY (RIG_VERSION));
+                       "Rig " C_STRINGIFY (RIG_VERSION));
 
   cogl_onscreen_show (engine->onscreen);
 
@@ -1051,7 +1051,7 @@ rig_frontend_update_simulator_dso (RigFrontend *frontend,
                                    int len)
 {
   if (frontend->pending_dso_data)
-    g_free (frontend->pending_dso_data);
+    c_free (frontend->pending_dso_data);
 
   frontend->pending_dso_data = dso;
   frontend->pending_dso_len = len;

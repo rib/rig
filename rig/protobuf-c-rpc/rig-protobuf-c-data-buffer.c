@@ -78,7 +78,7 @@ new_native_fragment(ProtobufCAllocator *allocator)
     }
   else
     {
-      frag = (ProtobufCDataBufferFragment *) g_malloc (BUF_CHUNK_SIZE);
+      frag = (ProtobufCDataBufferFragment *) c_malloc (BUF_CHUNK_SIZE);
     }
 #endif	/* !GSK_DEBUG_BUFFER_ALLOCATIONS */
   frag->buf_start = frag->buf_length = 0;
@@ -115,7 +115,7 @@ rig_protobuf_c_data_buffer_cleanup_recycling_bin ()
     {
       ProtobufCDataBufferFragment *next;
       next = recycling_stack->next;
-      g_free (recycling_stack);
+      c_free (recycling_stack);
       recycling_stack = next;
     }
   num_recycled = 0;
@@ -976,7 +976,7 @@ void     rig_protobuf_c_data_buffer_vprintf             (ProtobufCDataBuffer    
 					 const char   *format,
 					 va_list       args)
 {
-  gsize size = g_printf_string_upper_bound (format, args);
+  gsize size = c_printf_string_upper_bound (format, args);
   if (size < 1024)
     {
       char buf[1024];
@@ -985,8 +985,8 @@ void     rig_protobuf_c_data_buffer_vprintf             (ProtobufCDataBuffer    
     }
   else
     {
-      char *buf = g_strdup_vprintf (format, args);
-      rig_protobuf_c_data_buffer_append_foreign (buffer, buf, strlen (buf), g_free, buf);
+      char *buf = c_strdup_vprintf (format, args);
+      rig_protobuf_c_data_buffer_append_foreign (buffer, buf, strlen (buf), c_free, buf);
     }
 }
 

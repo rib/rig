@@ -70,7 +70,7 @@ _rig_view_free (void *object)
   rut_graphable_remove_child (view->hbox);
   rut_graphable_remove_child (view->vbox);
 
-  g_slice_free (RigView, view);
+  c_slice_free (RigView, view);
 }
 
 static void
@@ -181,7 +181,7 @@ _rig_view_init_type (void)
   RutType *type = &rig_view_type;
 #define TYPE RigView
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_view_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_view_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

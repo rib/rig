@@ -30,7 +30,7 @@
 
 #include <stdlib.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -84,7 +84,7 @@ struct _RigAsset
 
   bool is_video;
 
-  GList *inferred_tags;
+  CList *inferred_tags;
 
   RutList thumbnail_cb_list;
 };
@@ -107,7 +107,7 @@ _rig_asset_free (void *object)
     cogl_object_unref (asset->texture);
 
   if (asset->path)
-    g_free (asset->path);
+    c_free (asset->path);
 
   //rut_introspectable_destroy (asset);
 
@@ -162,7 +162,7 @@ _rig_asset_init_type (void)
   RutType *type = &rig_asset_type;
 #define TYPE RigAsset
 
-  rut_type_init (&rig_asset_type, G_STRINGIFY (TYPE), _rig_asset_free);
+  rut_type_init (&rig_asset_type, C_STRINGIFY (TYPE), _rig_asset_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_MIMABLE,
                       0, /* no associated properties */
@@ -295,7 +295,7 @@ video_thumbnailer_grab (void *instance, void *user_data)
                            RutThumbnailCallback,
                            generator->video);
 
-  g_free (generator);
+  c_free (generator);
 }
 
 static gboolean
@@ -324,7 +324,7 @@ video_thumbnailer_seek (GstBus *bus,
 static void
 generate_video_thumbnail (RigAsset *asset)
 {
-  RigThumbnailGenerator *generator = g_new (RigThumbnailGenerator, 1);
+  RigThumbnailGenerator *generator = c_new (RigThumbnailGenerator, 1);
   RutContext *ctx = asset->ctx;
   char *filename;
   char *uri;
@@ -339,7 +339,7 @@ generate_video_thumbnail (RigAsset *asset)
 
   filename = g_build_filename (ctx->assets_location, asset->path, NULL);
   uri = gst_filename_to_uri (filename, NULL);
-  g_free (filename);
+  c_free (filename);
 
   g_object_set (G_OBJECT (generator->bin), "video-sink",
                 GST_ELEMENT (generator->sink),NULL);
@@ -354,7 +354,7 @@ generate_video_thumbnail (RigAsset *asset)
   g_signal_connect (generator->sink, "new-frame",
                     G_CALLBACK (video_thumbnailer_grab), generator);
 
-  g_free (uri);
+  c_free (uri);
 }
 
 #endif /* USE_GSTREAMER */
@@ -549,7 +549,7 @@ generate_mesh_thumbnail (RigAsset *asset)
 static RigAsset *
 rig_asset_new_full (RutContext *ctx,
                     const char *path,
-                    const GList *inferred_tags,
+                    const CList *inferred_tags,
                     RigAssetType type)
 {
   RigAsset *asset =
@@ -562,7 +562,7 @@ rig_asset_new_full (RutContext *ctx,
     {
       full_path = rut_find_data_file (path);
       if (full_path == NULL)
-        full_path = g_strdup (path);
+        full_path = c_strdup (path);
     }
   else
     full_path = g_build_filename (ctx->assets_location, path, NULL);
@@ -599,7 +599,7 @@ rig_asset_new_full (RutContext *ctx,
         if (!asset->texture)
           {
             rut_object_free (RigAsset, asset);
-            g_warning ("Failed to load asset texture: %s", error->message);
+            c_warning ("Failed to load asset texture: %s", error->message);
             cogl_error_free (error);
             asset = NULL;
             goto DONE;
@@ -622,7 +622,7 @@ rig_asset_new_full (RutContext *ctx,
         if (!asset->mesh)
           {
             rut_object_free (RigAsset, asset);
-            g_warning ("could not load model %s: %s", path, error->message);
+            c_warning ("could not load model %s: %s", path, error->message);
             g_error_free (error);
             asset = NULL;
             goto DONE;
@@ -651,7 +651,7 @@ rig_asset_new_full (RutContext *ctx,
           {
             rut_object_free (RigAsset, asset);
             asset = NULL;
-            g_warning ("Failed to load font icon: %s", error->message);
+            c_warning ("Failed to load font icon: %s", error->message);
             cogl_error_free (error);
             goto DONE;
           }
@@ -659,14 +659,14 @@ rig_asset_new_full (RutContext *ctx,
         break;
       }
     }
-  asset->path = g_strdup (path);
+  asset->path = c_strdup (path);
 
   //rut_introspectable_init (asset);
 
 DONE:
 
 #ifndef __ANDROID__
-  g_free (full_path);
+  c_free (full_path);
 #endif
 
   return asset;
@@ -749,7 +749,7 @@ rig_asset_new_from_image_data (RutContext *ctx,
 
   asset->type = type;
 
-  asset->path = g_strdup (path);
+  asset->path = c_strdup (path);
 
   asset->is_video = is_video;
   if (is_video)
@@ -835,7 +835,7 @@ rig_asset_new_from_file (RigEngine *engine,
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   GFile *dir = g_file_get_parent (asset_file);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  GList *inferred_tags = NULL;
+  CList *inferred_tags = NULL;
   RigAsset *asset = NULL;
 
   inferred_tags = rut_infer_asset_tags (engine->ctx, info, asset_file);
@@ -865,11 +865,11 @@ rig_asset_new_from_file (RigEngine *engine,
     }
 #endif
 
-  g_list_free (inferred_tags);
+  c_list_free (inferred_tags);
 
   g_object_unref (assets_dir);
   g_object_unref (dir);
-  g_free (path);
+  c_free (path);
 
   if (!asset)
     {
@@ -970,7 +970,7 @@ rig_asset_new_from_pb_asset (RigPBUnSerializer *unserializer,
         }
 
       g_object_unref (asset_file);
-      g_free (full_path);
+      c_free (full_path);
 
       return asset;
     }
@@ -1036,7 +1036,7 @@ rig_asset_new_builtin (RutContext *ctx,
 RigAsset *
 rig_asset_new_texture (RutContext *ctx,
                        const char *path,
-                       const GList *inferred_tags)
+                       const CList *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags, RIG_ASSET_TYPE_TEXTURE);
 }
@@ -1046,7 +1046,7 @@ rig_asset_new_texture (RutContext *ctx,
 RigAsset *
 rig_asset_new_normal_map (RutContext *ctx,
                           const char *path,
-                          const GList *inferred_tags)
+                          const CList *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_NORMAL_MAP);
@@ -1057,7 +1057,7 @@ rig_asset_new_normal_map (RutContext *ctx,
 RigAsset *
 rig_asset_new_alpha_mask (RutContext *ctx,
                           const char *path,
-                          const GList *inferred_tags)
+                          const CList *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_ALPHA_MASK);
@@ -1066,7 +1066,7 @@ rig_asset_new_alpha_mask (RutContext *ctx,
 RigAsset *
 rig_asset_new_ply_model (RutContext *ctx,
                          const char *path,
-                         const GList *inferred_tags)
+                         const CList *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_MESH);
@@ -1075,7 +1075,7 @@ rig_asset_new_ply_model (RutContext *ctx,
 RigAsset *
 rig_asset_new_font (RutContext *ctx,
                     const char *path,
-                    const GList *inferred_tags)
+                    const CList *inferred_tags)
 {
   return rig_asset_new_full (ctx, path, inferred_tags,
                              RIG_ASSET_TYPE_FONT);
@@ -1133,35 +1133,35 @@ rig_asset_get_image_size (RigAsset *asset,
     {
       CoglTexture *texture = rig_asset_get_texture (asset);
 
-      g_return_if_fail (texture);
+      c_return_if_fail (texture);
 
       *width = cogl_texture_get_width (texture);
       *height = cogl_texture_get_height (texture);
     }
 }
 
-static GList *
-copy_tags (const GList *tags)
+static CList *
+copy_tags (const CList *tags)
 {
-  const GList *l;
-  GList *copy = NULL;
+  const CList *l;
+  CList *copy = NULL;
   for (l = tags; l; l = l->next)
     {
       const char *tag = g_intern_string (l->data);
-      copy = g_list_prepend (copy, (char *)tag);
+      copy = c_list_prepend (copy, (char *)tag);
     }
   return copy;
 }
 
 void
 rig_asset_set_inferred_tags (RigAsset *asset,
-                             const GList *inferred_tags)
+                             const CList *inferred_tags)
 {
-  asset->inferred_tags = g_list_concat (asset->inferred_tags,
+  asset->inferred_tags = c_list_concat (asset->inferred_tags,
                                         copy_tags (inferred_tags));
 }
 
-const GList *
+const CList *
 rig_asset_get_inferred_tags (RigAsset *asset)
 {
   return asset->inferred_tags;
@@ -1170,7 +1170,7 @@ rig_asset_get_inferred_tags (RigAsset *asset)
 bool
 rig_asset_has_tag (RigAsset *asset, const char *tag)
 {
-  GList *l;
+  CList *l;
 
   for (l = asset->inferred_tags; l; l = l->next)
     if (strcmp (tag, l->data) == 0)
@@ -1195,20 +1195,20 @@ rut_file_info_is_asset (GFileInfo *info, const char *name)
     {
       if (strncmp (mime_type, "image/", 6) == 0)
         {
-          g_free (mime_type);
+          c_free (mime_type);
           return TRUE;
         }
       else if (strncmp (mime_type, "video/", 6) == 0)
         {
-          g_free (mime_type);
+          c_free (mime_type);
           return TRUE;
         }
       else if (strcmp (mime_type, "application/x-font-ttf") == 0)
         {
-          g_free (mime_type);
+          c_free (mime_type);
           return TRUE;
         }
-      g_free (mime_type);
+      c_free (mime_type);
     }
 
   ext = get_extension (name);
@@ -1218,7 +1218,7 @@ rut_file_info_is_asset (GFileInfo *info, const char *name)
   return FALSE;
 }
 
-GList *
+CList *
 rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
 {
   GFile *assets_dir = g_file_new_for_path (ctx->assets_location);
@@ -1227,14 +1227,14 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
   const char *content_type = g_file_info_get_content_type (info);
   char *mime_type = g_content_type_get_mime_type (content_type);
   const char *ext;
-  GList *inferred_tags = NULL;
+  CList *inferred_tags = NULL;
 
   while (dir && !g_file_equal (assets_dir, dir))
     {
       basename = g_file_get_basename (dir);
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string (basename));
-      g_free (basename);
+        c_list_prepend (inferred_tags, (char *)g_intern_string (basename));
+      c_free (basename);
       dir = g_file_get_parent (dir);
     }
 
@@ -1242,46 +1242,46 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
     {
       if (strncmp (mime_type, "image/", 6) == 0)
         inferred_tags =
-          g_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
+          c_list_prepend (inferred_tags, (char *)g_intern_string ("image"));
       else if (strncmp (mime_type, "video/", 6) == 0)
         inferred_tags =
-          g_list_prepend (inferred_tags, (char*) g_intern_string ("video"));
+          c_list_prepend (inferred_tags, (char*) g_intern_string ("video"));
       else if (strcmp (mime_type, "application/x-font-ttf") == 0)
         inferred_tags =
-          g_list_prepend (inferred_tags, (char*) g_intern_string ("font"));
+          c_list_prepend (inferred_tags, (char*) g_intern_string ("font"));
     }
 
   if (rut_util_find_tag (inferred_tags, "image"))
     {
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("img"));
     }
 
   if (rut_util_find_tag (inferred_tags, "image") ||
       rut_util_find_tag (inferred_tags, "video"))
     {
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("texture"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("texture"));
 
       if (rut_util_find_tag (inferred_tags, "normal-maps"))
         {
           inferred_tags =
-            g_list_prepend (inferred_tags,
+            c_list_prepend (inferred_tags,
                             (char *)g_intern_string ("map"));
           inferred_tags =
-            g_list_prepend (inferred_tags,
+            c_list_prepend (inferred_tags,
                             (char *)g_intern_string ("normal-map"));
           inferred_tags =
-            g_list_prepend (inferred_tags,
+            c_list_prepend (inferred_tags,
                             (char *)g_intern_string ("bump-map"));
         }
       else if (rut_util_find_tag (inferred_tags, "alpha-masks"))
         {
           inferred_tags =
-            g_list_prepend (inferred_tags,
+            c_list_prepend (inferred_tags,
                             (char *)g_intern_string ("alpha-mask"));
           inferred_tags =
-            g_list_prepend (inferred_tags,
+            c_list_prepend (inferred_tags,
                             (char *)g_intern_string ("mask"));
         }
     }
@@ -1291,17 +1291,17 @@ rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file)
   if (ext && strcmp (ext, "ply") == 0)
     {
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("ply"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("ply"));
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("mesh"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("mesh"));
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("model"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("model"));
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("geometry"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("geometry"));
       inferred_tags =
-        g_list_prepend (inferred_tags, (char *)g_intern_string ("geom"));
+        c_list_prepend (inferred_tags, (char *)g_intern_string ("geom"));
     }
-  g_free (basename);
+  c_free (basename);
 
   return inferred_tags;
 }
@@ -1311,7 +1311,7 @@ rig_asset_add_inferred_tag (RigAsset *asset,
                             const char *tag)
 {
   asset->inferred_tags =
-    g_list_prepend (asset->inferred_tags, (char *)g_intern_string (tag));
+    c_list_prepend (asset->inferred_tags, (char *)g_intern_string (tag));
 }
 
 bool
@@ -1329,7 +1329,7 @@ rig_asset_thumbnail (RigAsset *asset,
 #ifdef USE_GSTREAMER
   RutClosure *closure;
 
-  g_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
+  c_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
 
   closure = rut_closure_list_add (&asset->thumbnail_cb_list,
                                   ready_callback,
@@ -1343,7 +1343,7 @@ rig_asset_thumbnail (RigAsset *asset,
 
   return closure;
 #else
-  g_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
+  c_return_val_if_fail (rig_asset_needs_thumbnail (asset), NULL);
   g_error ("FIXME: add non gstreamer based video thumbnailing support");
 #endif
 }

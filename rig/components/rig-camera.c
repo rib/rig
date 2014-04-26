@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 #include <math.h>
@@ -69,7 +69,7 @@ static void
 free_camera_flush_state (void *user_data)
 {
   CameraFlushState *state = user_data;
-  g_slice_free (CameraFlushState, state);
+  c_slice_free (CameraFlushState, state);
 }
 
 static RutObject *
@@ -326,7 +326,7 @@ rig_camera_get_projection (RutObject *object)
                                               camera->props.far,
                                               camera->props.zoom);
 #if 0
-          g_print ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
+          c_print ("fov=%f, aspect=%f, near=%f, far=%f, zoom=%f\n",
                    camera->props.fov,
                    aspect_ratio,
                    camera->props.near,
@@ -542,11 +542,11 @@ rig_camera_add_input_region (RutObject *object,
                              RutInputRegion *region)
 {
   RigCamera *camera = object;
-  if (g_list_find (camera->props.input_regions, region))
+  if (c_list_find (camera->props.input_regions, region))
     return;
 
   rut_object_ref (region);
-  camera->props.input_regions = g_list_prepend (camera->props.input_regions, region);
+  camera->props.input_regions = c_list_prepend (camera->props.input_regions, region);
 }
 
 void
@@ -554,12 +554,12 @@ rig_camera_remove_input_region (RutObject *object,
                                 RutInputRegion *region)
 {
   RigCamera *camera = object;
-  GList *link = g_list_find (camera->props.input_regions, region);
+  CList *link = c_list_find (camera->props.input_regions, region);
   if (link)
     {
       rut_object_unref (region);
       camera->props.input_regions =
-        g_list_delete_link (camera->props.input_regions, link);
+        c_list_delete_link (camera->props.input_regions, link);
     }
 }
 
@@ -648,12 +648,12 @@ _rig_camera_flush_transforms (RigCamera *camera)
 
   /* While a camera is in a suspended state then we don't expect to
    * _flush() and use that camera before it is restored. */
-  g_return_if_fail (camera->props.suspended == FALSE);
+  c_return_if_fail (camera->props.suspended == FALSE);
 
   state = cogl_object_get_user_data (fb, &fb_camera_key);
   if (!state)
     {
-      state = g_slice_new (CameraFlushState);
+      state = c_slice_new (CameraFlushState);
       cogl_object_set_user_data (fb,
                                  &fb_camera_key,
                                  state,
@@ -665,7 +665,7 @@ _rig_camera_flush_transforms (RigCamera *camera)
 
   if (camera->props.in_frame)
     {
-      g_warning ("Un-balanced rig_camera_flush/_end calls: "
+      c_warning ("Un-balanced rig_camera_flush/_end calls: "
                  "repeat _flush() calls before _end()");
     }
 
@@ -711,7 +711,7 @@ rig_camera_end_frame (RutObject *object)
 {
   RigCamera *camera = object;
   if (G_UNLIKELY (camera->props.in_frame != TRUE))
-    g_warning ("Un-balanced rig_camera_flush/end frame calls. "
+    c_warning ("Un-balanced rig_camera_flush/end frame calls. "
                "_end before _flush");
   camera->props.in_frame = FALSE;
 }
@@ -773,14 +773,14 @@ rig_camera_suspend (RutObject *object)
   CameraFlushState *state;
 
   /* There's not point suspending a frame that hasn't been flushed */
-  g_return_if_fail (camera->props.in_frame == TRUE);
+  c_return_if_fail (camera->props.in_frame == TRUE);
 
-  g_return_if_fail (camera->props.suspended == FALSE);
+  c_return_if_fail (camera->props.suspended == FALSE);
 
   state = cogl_object_get_user_data (camera->props.fb, &fb_camera_key);
 
   /* We only expect to be saving a camera that has been flushed */
-  g_return_if_fail (state != NULL);
+  c_return_if_fail (state != NULL);
 
   /* While the camera is in a suspended state we aren't expecting the
    * camera to be touched but we want to double check that at least
@@ -805,18 +805,18 @@ rig_camera_resume (RutObject *object)
   CameraFlushState *state;
   CoglFramebuffer *fb = camera->props.fb;
 
-  g_return_if_fail (camera->props.in_frame == FALSE);
-  g_return_if_fail (camera->props.suspended == TRUE);
+  c_return_if_fail (camera->props.in_frame == FALSE);
+  c_return_if_fail (camera->props.suspended == TRUE);
 
   /* While a camera is in a suspended state we don't expect the camera
    * to be touched so its transforms shouldn't have changed... */
-  g_return_if_fail (camera->props.at_suspend_transform_age == camera->props.transform_age);
+  c_return_if_fail (camera->props.at_suspend_transform_age == camera->props.transform_age);
 
   state = cogl_object_get_user_data (fb, &fb_camera_key);
 
   /* We only expect to be restoring a camera that has been flushed
    * before */
-  g_return_if_fail (state != NULL);
+  c_return_if_fail (state != NULL);
 
   cogl_framebuffer_pop_matrix (fb);
 
@@ -957,7 +957,7 @@ _rig_camera_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -1138,7 +1138,7 @@ _rig_camera_init_type (void)
   RutType *type = &rig_camera_type;
 #define TYPE RigCamera
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_camera_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_camera_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),

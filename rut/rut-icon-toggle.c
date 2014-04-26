@@ -139,7 +139,7 @@ _rut_icon_toggle_init_type (void)
   RutType *type = &rut_icon_toggle_type;
 #define TYPE RutIconToggle
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_toggle_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_icon_toggle_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -216,7 +216,7 @@ _rut_icon_toggle_grab_input_cb (RutInputEvent *event,
                                    toggle,
                                    toggle->real_state);
 
-          g_slice_free (IconToggleGrabState, state);
+          c_slice_free (IconToggleGrabState, state);
 
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
@@ -262,7 +262,7 @@ _rut_icon_toggle_input_cb (RutInputRegion *region,
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {
       RutShell *shell = toggle->ctx->shell;
-      IconToggleGrabState *state = g_slice_new (IconToggleGrabState);
+      IconToggleGrabState *state = c_slice_new (IconToggleGrabState);
       const CoglMatrix *view;
 
       state->toggle = toggle;
@@ -273,8 +273,8 @@ _rut_icon_toggle_input_cb (RutInputRegion *region,
       if (!cogl_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
-          g_warning ("Failed to calculate inverse of toggle transform\n");
-          g_slice_free (IconToggleGrabState, state);
+          c_warning ("Failed to calculate inverse of toggle transform\n");
+          c_slice_free (IconToggleGrabState, state);
           return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
@@ -347,7 +347,7 @@ rut_icon_toggle_add_on_toggle_callback (RutIconToggle *toggle,
                                   void *user_data,
                                   RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&toggle->on_toggle_cb_list,
                                callback,

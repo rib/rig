@@ -56,7 +56,7 @@ struct _EntityState
 
   RutObject *sizeable;
 
-  GList *control_points;
+  CList *control_points;
 };
 
 typedef struct _GrabState
@@ -84,7 +84,7 @@ control_point_grab_cb (RutInputEvent *event,
                               control_point_grab_cb,
                               state);
 
-      g_slice_free (GrabState, state);
+      c_slice_free (GrabState, state);
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
     }
@@ -113,7 +113,7 @@ control_point_grab_cb (RutInputEvent *event,
                                         control_point_grab_cb,
                                         state);
 
-                g_slice_free (GrabState, state);
+                c_slice_free (GrabState, state);
               }
           }
         else
@@ -137,7 +137,7 @@ control_point_input_cb (RutInputRegion *region,
   EntityState *entity_state = point->entity_state;
   RigSelectionTool *tool = entity_state->tool;
 
-  g_return_val_if_fail (tool->selected_entities != NULL,
+  c_return_val_if_fail (tool->selected_entities != NULL,
                         RUT_INPUT_EVENT_STATUS_UNHANDLED);
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
@@ -146,7 +146,7 @@ control_point_input_cb (RutInputRegion *region,
     {
       //float x = rut_motion_event_get_x (event);
       //float y = rut_motion_event_get_y (event);
-      GrabState *state = g_slice_new0 (GrabState);
+      GrabState *state = c_slice_new0 (GrabState);
 
       state->tool = tool;
       state->entity_state = entity_state;
@@ -170,7 +170,7 @@ create_dummy_control_points (EntityState *entity_state)
   CoglTexture *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
   ControlPoint *point;
 
-  point = g_slice_new0 (ControlPoint);
+  point = c_slice_new0 (ControlPoint);
   point->entity_state = entity_state;
   point->x = 0;
   point->y = 0;
@@ -191,10 +191,10 @@ create_dummy_control_points (EntityState *entity_state)
   rut_graphable_add_child (tool->tool_overlay, point->input_region);
   rut_object_unref (point->input_region);
   entity_state->control_points =
-    g_list_prepend (entity_state->control_points, point);
+    c_list_prepend (entity_state->control_points, point);
 
 
-  point = g_slice_new0 (ControlPoint);
+  point = c_slice_new0 (ControlPoint);
   point->entity_state = entity_state;
   point->x = 100;
   point->y = 0;
@@ -215,7 +215,7 @@ create_dummy_control_points (EntityState *entity_state)
   rut_graphable_add_child (tool->tool_overlay, point->input_region);
   rut_object_unref (point->input_region);
   entity_state->control_points =
-    g_list_prepend (entity_state->control_points, point);
+    c_list_prepend (entity_state->control_points, point);
 
   cogl_object_unref (tex);
 }
@@ -230,7 +230,7 @@ create_box_control (EntityState *entity_state,
   CoglTexture *tex = rut_load_texture_from_data_file (tool->ctx, "dot.png", NULL);
   ControlPoint *point;
 
-  point = g_slice_new0 (ControlPoint);
+  point = c_slice_new0 (ControlPoint);
   point->entity_state = entity_state;
   point->x = x;
   point->y = y;
@@ -251,7 +251,7 @@ create_box_control (EntityState *entity_state,
   rut_graphable_add_child (tool->tool_overlay, point->input_region);
   rut_object_unref (point->input_region);
   entity_state->control_points =
-    g_list_prepend (entity_state->control_points, point);
+    c_list_prepend (entity_state->control_points, point);
 
   cogl_object_unref (tex);
 }
@@ -272,7 +272,7 @@ create_sizeable_control_points (EntityState *entity_state)
 static void
 entity_state_destroy (EntityState *entity_state)
 {
-  GList *l;
+  CList *l;
 
   for (l = entity_state->control_points; l; l = l->next)
     {
@@ -283,7 +283,7 @@ entity_state_destroy (EntityState *entity_state)
 
   rut_object_unref (entity_state->entity);
 
-  g_slice_free (EntityState, entity_state);
+  c_slice_free (EntityState, entity_state);
 }
 
 static bool
@@ -318,7 +318,7 @@ objects_selection_event_cb (RigObjectsSelection *selection,
 {
   RigSelectionTool *tool = user_data;
   EntityState *entity_state;
-  GList *l;
+  CList *l;
 
   if (!tool->active && event == RIG_OBJECTS_SELECTION_ADD_EVENT)
     return;
@@ -339,14 +339,14 @@ objects_selection_event_cb (RigObjectsSelection *selection,
     {
     case RIG_OBJECTS_SELECTION_ADD_EVENT:
       {
-        g_return_if_fail (entity_state == NULL);
+        c_return_if_fail (entity_state == NULL);
 
-        entity_state = g_slice_new0 (EntityState);
+        entity_state = c_slice_new0 (EntityState);
         entity_state->tool = tool;
         entity_state->entity = rut_object_ref (object);
         entity_state->control_points = NULL;
 
-        tool->selected_entities = g_list_prepend (tool->selected_entities,
+        tool->selected_entities = c_list_prepend (tool->selected_entities,
                                                   entity_state);
 
         entity_state->sizeable = find_sizeable_component (entity_state->entity);
@@ -359,9 +359,9 @@ objects_selection_event_cb (RigObjectsSelection *selection,
       }
 
     case RIG_OBJECTS_SELECTION_REMOVE_EVENT:
-      g_return_if_fail (entity_state != NULL);
+      c_return_if_fail (entity_state != NULL);
 
-      tool->selected_entities = g_list_remove (tool->selected_entities, entity_state);
+      tool->selected_entities = c_list_remove (tool->selected_entities, entity_state);
       entity_state_destroy (entity_state);
       break;
     }
@@ -371,7 +371,7 @@ RigSelectionTool *
 rig_selection_tool_new (RigCameraView *view,
                         RutObject *overlay)
 {
-  RigSelectionTool *tool = g_slice_new0 (RigSelectionTool);
+  RigSelectionTool *tool = c_slice_new0 (RigSelectionTool);
   RutContext *ctx = view->context;
 
   tool->view = view;
@@ -398,7 +398,7 @@ rig_selection_tool_set_active (RigSelectionTool *tool,
                                bool active)
 {
   RigObjectsSelection *selection = tool->view->engine->objects_selection;
-  GList *l;
+  CList *l;
 
   if (tool->active == active)
     return;
@@ -489,7 +489,7 @@ update_control_point_positions (RigSelectionTool *tool,
                                 RutObject *paint_camera) /* 2d ui camera */
 {
   RutObject *camera = tool->camera_component;
-  GList *l;
+  CList *l;
 
   for (l = tool->selected_entities; l; l = l->next)
     {
@@ -498,7 +498,7 @@ update_control_point_positions (RigSelectionTool *tool,
       const CoglMatrix *projection;
       float screen_space[4], x, y;
       const float *viewport;
-      GList *l2;
+      CList *l2;
 
       get_modelview_matrix (tool->camera,
                             entity_state->entity,
@@ -563,7 +563,7 @@ void
 rig_selection_tool_update (RigSelectionTool *tool,
                            RutObject *paint_camera)
 {
-  g_return_if_fail (tool->active);
+  c_return_if_fail (tool->active);
 
   if (!tool->selected_entities)
     return;
@@ -586,7 +586,7 @@ rig_selection_tool_add_event_callback (RigSelectionTool *tool,
 void
 rig_selection_tool_destroy (RigSelectionTool *tool)
 {
-  GList *l;
+  CList *l;
 
   rut_closure_list_disconnect_all (&tool->selection_event_cb_list);
 
@@ -594,7 +594,7 @@ rig_selection_tool_destroy (RigSelectionTool *tool)
 
   for (l = tool->selected_entities; l; l = l->next)
     entity_state_destroy (l->data);
-  g_list_free (tool->selected_entities);
+  c_list_free (tool->selected_entities);
 
-  g_slice_free (RigSelectionTool, tool);
+  c_slice_free (RigSelectionTool, tool);
 }

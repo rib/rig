@@ -122,7 +122,7 @@ _rig_prop_inspector_init_type (void)
   RutType *type = &rig_prop_inspector_type;
 #define TYPE RigPropInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_prop_inspector_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_prop_inspector_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -242,7 +242,7 @@ create_widget_for_property (RutContext *context,
         char *label = g_strconcat (name, ": ", NULL);
 
         rut_number_slider_set_markup_label (slider, label);
-        g_free (label);
+        c_free (label);
 
         if (spec->type == RUT_PROPERTY_TYPE_INTEGER)
           {

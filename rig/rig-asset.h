@@ -79,27 +79,27 @@ rig_asset_new_builtin (RutContext *ctx,
 RigAsset *
 rig_asset_new_texture (RutContext *ctx,
                        const char *path,
-                       const GList *inferred_tags);
+                       const CList *inferred_tags);
 
 RigAsset *
 rig_asset_new_normal_map (RutContext *ctx,
                           const char *path,
-                          const GList *inferred_tags);
+                          const CList *inferred_tags);
 
 RigAsset *
 rig_asset_new_alpha_mask (RutContext *ctx,
                           const char *path,
-                          const GList *inferred_tags);
+                          const CList *inferred_tags);
 
 RigAsset *
 rig_asset_new_ply_model (RutContext *ctx,
                          const char *path,
-                         const GList *inferred_tags);
+                         const CList *inferred_tags);
 
 RigAsset *
 rig_asset_new_font (RutContext *ctx,
                     const char *path,
-                    const GList *inferred_tags);
+                    const CList *inferred_tags);
 
 RigAsset *
 rig_asset_new_from_file (RigEngine *engine,
@@ -144,15 +144,15 @@ rig_asset_get_is_video (RigAsset *asset);
 
 void
 rig_asset_set_inferred_tags (RigAsset *asset,
-                             const GList *inferred_tags);
+                             const CList *inferred_tags);
 
-const GList *
+const CList *
 rig_asset_get_inferred_tags (RigAsset *asset);
 
 bool
 rig_asset_has_tag (RigAsset *asset, const char *tag);
 
-GList *
+CList *
 rut_infer_asset_tags (RutContext *ctx, GFileInfo *info, GFile *asset_file);
 
 void

@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-fixed.h"
 #include "rut-stack.h"
@@ -86,7 +86,7 @@ _rut_fold_init_type (void)
   RutType *type = &rut_fold_type;
 #define TYPE RutFold
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_fold_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_fold_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -230,7 +230,7 @@ rut_fold_new (RutContext *ctx,
 void
 rut_fold_set_child (RutFold *fold, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
+  c_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
 
   if (child)
     rut_object_claim (child, fold);
@@ -250,7 +250,7 @@ rut_fold_set_child (RutFold *fold, RutObject *child)
 void
 rut_fold_set_header_child (RutFold *fold, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
+  c_return_if_fail (rut_object_get_type (fold) == &rut_fold_type);
 
   if (child)
     rut_object_claim (child, fold);

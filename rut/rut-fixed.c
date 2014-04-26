@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-interfaces.h"
 #include "rut-fixed.h"
@@ -111,7 +111,7 @@ _rut_fixed_init_type (void)
   RutType *type = &rut_fixed_type;
 #define TYPE RutFixed
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_fixed_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_fixed_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -189,13 +189,13 @@ rut_fixed_get_size (RutObject *self,
 void
 rut_fixed_add_child (RutFixed *fixed, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (fixed) == &rut_fixed_type);
+  c_return_if_fail (rut_object_get_type (fixed) == &rut_fixed_type);
   rut_graphable_add_child (fixed, child);
 }
 
 void
 rut_fixed_remove_child (RutFixed *fixed, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (fixed) == &rut_fixed_type);
+  c_return_if_fail (rut_object_get_type (fixed) == &rut_fixed_type);
   rut_graphable_remove_child (child);
 }

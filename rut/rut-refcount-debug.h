@@ -30,7 +30,7 @@
 #ifndef _RUT_REFCOUNT_DEBUG_H_
 #define _RUT_REFCOUNT_DEBUG_H_
 
-#include <glib.h>
+#include <clib.h>
 
 G_BEGIN_DECLS
 

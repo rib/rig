@@ -51,8 +51,7 @@ struct _RigRenderer
 {
   RutObjectBase _base;
 
-
-  GArray *journal;
+  CArray *journal;
 };
 
 typedef enum _CacheSlot
@@ -134,7 +133,7 @@ _rig_renderer_free (void *object)
 {
   RigRenderer *renderer = object;
 
-  g_array_free (renderer->journal, TRUE);
+  c_array_free (renderer->journal, TRUE);
   renderer->journal = NULL;
 
   rut_object_free (RigRenderer, object);
@@ -282,7 +281,7 @@ _rig_renderer_free_priv (RigEntity *entity)
   if (priv->reshaped_closure)
     rut_closure_disconnect (priv->reshaped_closure);
 
-  g_slice_free (RigRendererPriv, priv);
+  c_slice_free (RigRendererPriv, priv);
   entity->renderer_priv = NULL;
 }
 
@@ -300,7 +299,7 @@ _rig_renderer_init_type (void)
   RutType *type = &rig_renderer_type;
 #define TYPE RigRenderer
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_renderer_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_renderer_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_RENDERER,
                       0, /* no implied properties */
@@ -317,13 +316,13 @@ rig_renderer_new (RigEngine *engine)
                                              _rig_renderer_init_type);
 
 
-  renderer->journal = g_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
+  renderer->journal = c_array_new (FALSE, FALSE, sizeof (RigJournalEntry));
 
   return renderer;
 }
 
 static void
-rig_journal_log (GArray *journal,
+rig_journal_log (CArray *journal,
                  RigPaintContext *paint_ctx,
                  RigEntity *entity,
                  const CoglMatrix *matrix)
@@ -331,8 +330,8 @@ rig_journal_log (GArray *journal,
 
   RigJournalEntry *entry;
 
-  g_array_set_size (journal, journal->len + 1);
-  entry = &g_array_index (journal, RigJournalEntry, journal->len - 1);
+  c_array_set_size (journal, journal->len + 1);
+  entry = &c_array_index (journal, RigJournalEntry, journal->len - 1);
 
   entry->entity = rut_object_ref (entity);
   entry->matrix = *matrix;
@@ -664,7 +663,7 @@ rig_renderer_init (RigEngine *engine)
                       /* post */
                       "if (cogl_color_out.a <= 0.0 ||\n"
                       "    cogl_color_out.a >= "
-                      G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
+                      C_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
   engine->unblended_discard_snippet =
@@ -674,7 +673,7 @@ rig_renderer_init (RigEngine *engine)
 
                       /* post */
                       "if (cogl_color_out.a < "
-                      G_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
+                      C_STRINGIFY (OPAQUE_THRESHOLD) ")\n"
                       "  discard;\n");
 
   engine->premultiply_snippet =
@@ -1513,7 +1512,7 @@ get_entity_pipeline (RigEngine *engine,
   GetPipelineFlags flags = 0;
   RigAsset *asset;
 
-  g_return_val_if_fail (material != NULL, NULL);
+  c_return_val_if_fail (material != NULL, NULL);
 
   /* FIXME: Instead of having rig_entity apis for caching image
    * sources, we should allow the renderer to track arbitrary
@@ -1606,7 +1605,7 @@ get_entity_pipeline (RigEngine *engine,
     return get_entity_mask_pipeline (engine, entity,
                                      geometry, material, sources, flags);
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return NULL;
 }
 static void
@@ -1647,7 +1646,7 @@ ensure_renderer_priv (RigEntity *entity, RigRenderer *renderer)
 
   if (!entity->renderer_priv)
     {
-      RigRendererPriv *priv = g_slice_new0 (RigRendererPriv);
+      RigRendererPriv *priv = c_slice_new0 (RigRendererPriv);
 
       priv->renderer = renderer;
       entity->renderer_priv = priv;
@@ -1658,7 +1657,7 @@ static void
 rig_renderer_flush_journal (RigRenderer *renderer,
                             RigPaintContext *paint_ctx)
 {
-  GArray *journal = renderer->journal;
+  CArray *journal = renderer->journal;
   RutPaintContext *rut_paint_ctx = &paint_ctx->_parent;
   RutObject *camera = rut_paint_ctx->camera;
   CoglFramebuffer *fb = rut_camera_get_framebuffer (camera);
@@ -1666,7 +1665,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
   int i;
 
   /* TODO: use an inline qsort implementation */
-  g_array_sort (journal, (void *)sort_entry_cb);
+  c_array_sort (journal, (void *)sort_entry_cb);
 
   /* We draw opaque geometry front-to-back so we are more likely to be
    * able to discard later fragments earlier by depth testing.
@@ -1691,7 +1690,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
   for (i = start; i != end; i += dir)
     {
-      RigJournalEntry *entry = &g_array_index (journal, RigJournalEntry, i);
+      RigJournalEntry *entry = &c_array_index (journal, RigJournalEntry, i);
       RigEntity *entity = entry->entity;
       RutObject *geometry =
         rig_entity_get_component (entity, RUT_COMPONENT_TYPE_GEOMETRY);
@@ -1846,7 +1845,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
           /* FIXME: avoid needing to query the uniform locations by
            * name for each primitive! */
 
-          texture = g_array_index (hair->shell_textures, CoglTexture *, 0);
+          texture = c_array_index (hair->shell_textures, CoglTexture *, 0);
 
           cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
@@ -1867,7 +1866,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
             {
               float hair_pos = hair->shell_positions[i];
 
-              texture = g_array_index (hair->shell_textures, CoglTexture *, i);
+              texture = c_array_index (hair->shell_textures, CoglTexture *, i);
               cogl_pipeline_set_layer_texture (pipeline, 11, texture);
 
               rig_hair_set_uniform_float_value (hair, pipeline, uniform,
@@ -1886,7 +1885,7 @@ rig_renderer_flush_journal (RigRenderer *renderer,
 
   cogl_framebuffer_pop_matrix (fb);
 
-  g_array_set_size (journal, 0);
+  c_array_set_size (journal, 0);
 }
 
 void

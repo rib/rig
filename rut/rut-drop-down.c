@@ -145,11 +145,11 @@ rut_drop_down_get_context_data (RutContext *context)
 
   if (context_data == NULL)
     {
-      context_data = g_new0 (RutDropDownContextData, 1);
+      context_data = c_new0 (RutDropDownContextData, 1);
       cogl_object_set_user_data (COGL_OBJECT (context->cogl_context),
                                  &context_data_key,
                                  context_data,
-                                 g_free);
+                                 c_free);
     }
 
   return context_data;
@@ -191,7 +191,7 @@ rut_drop_down_create_bg_pipeline (RutContext *context)
         }
       else
         {
-          g_warning ("Failed to load drop-down-background.png: %s",
+          c_warning ("Failed to load drop-down-background.png: %s",
                      error->message);
           g_error_free (error);
         }
@@ -268,7 +268,7 @@ rut_drop_down_clear_layouts (RutDropDown *drop)
       for (i = 0; i < drop->n_values; i++)
         g_object_unref (drop->layouts[i].layout);
 
-      g_free (drop->layouts);
+      c_free (drop->layouts);
       drop->layouts = NULL;
     }
 }
@@ -281,9 +281,9 @@ rut_drop_down_free_values (RutDropDown *drop)
       int i = 0;
 
       for (i = 0; i < drop->n_values; i++)
-        g_free ((char *) drop->values[i].name);
+        c_free ((char *) drop->values[i].name);
 
-      g_free (drop->values);
+      c_free (drop->values);
       drop->values = NULL;
     }
 }
@@ -345,7 +345,7 @@ rut_drop_down_ensure_layouts (RutDropDown *drop)
     {
       int i;
 
-      drop->layouts = g_new (RutDropDownLayout, drop->n_values);
+      drop->layouts = c_new (RutDropDownLayout, drop->n_values);
 
       for (i = 0; i < drop->n_values; i++)
         {
@@ -916,7 +916,7 @@ _rut_drop_down_init_type (void)
   RutType *type = &rut_drop_down_type;
 #define TYPE RutDropDown
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_drop_down_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_drop_down_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -947,8 +947,8 @@ rut_drop_down_new (RutContext *context)
 
   /* Set a dummy value so we can assume that value_index is always a
    * valid index */
-  drop->values = g_new (RutDropDownValue, 1);
-  drop->values->name = g_strdup ("");
+  drop->values = c_new (RutDropDownValue, 1);
+  drop->values->name = c_strdup ("");
   drop->values->value = 0;
 
   drop->font_description = rut_drop_down_create_font_description ();
@@ -999,7 +999,7 @@ rut_drop_down_set_value (RutObject *obj,
         return;
       }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 int
@@ -1052,17 +1052,17 @@ rut_drop_down_set_values_array (RutDropDown *drop,
   int old_value_index = 0;
   int i;
 
-  g_return_if_fail (n_values >= 0);
+  c_return_if_fail (n_values >= 0);
 
   old_value = rut_drop_down_get_value (drop);
 
   rut_drop_down_free_values (drop);
   rut_drop_down_clear_layouts (drop);
 
-  drop->values = g_malloc (sizeof (RutDropDownValue) * n_values);
+  drop->values = c_malloc (sizeof (RutDropDownValue) * n_values);
   for (i = 0; i < n_values; i++)
     {
-      drop->values[i].name = g_strdup (values[i].name);
+      drop->values[i].name = c_strdup (values[i].name);
       drop->values[i].value = values[i].value;
 
       if (values[i].value == old_value)

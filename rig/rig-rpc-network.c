@@ -64,7 +64,7 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 
@@ -74,7 +74,7 @@
 void
 rig_rpc_server_shutdown (RigRPCServer *server)
 {
-  g_warning ("Stopping RPC server");
+  c_warning ("Stopping RPC server");
 
 #warning "todo: explicitly shutdown via new rig_pb_rpc_server_shutdown() api"
   rut_object_unref (server->pb_rpc_server);
@@ -100,7 +100,7 @@ _rig_rpc_server_init_type (void)
   RutType *type = &rig_rpc_server_type;
 #define TYPE RigRPCServer
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_server_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_rpc_server_free);
 
 #undef TYPE
 }
@@ -153,7 +153,7 @@ _rig_rpc_client_free (void *object)
 
   rig_rpc_client_disconnect (rpc_client);
 
-  g_free (rpc_client->hostname);
+  c_free (rpc_client->hostname);
 
   rut_object_free (RigRPCClient, rpc_client);
 }
@@ -167,7 +167,7 @@ _rig_rpc_client_init_type (void)
   RutType *type = &rig_rpc_client_type;
 #define TYPE RigRPCClient
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_client_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_rpc_client_free);
 
 #undef TYPE
 }
@@ -184,11 +184,11 @@ rig_rpc_client_new (RutShell *shell,
   RigRPCClient *rpc_client = rut_object_alloc0 (RigRPCClient,
                                                 &rig_rpc_client_type,
                                                 _rig_rpc_client_init_type);
-  char *addr_str = g_strdup_printf ("%s:%d", hostname, port);
+  char *addr_str = c_strdup_printf ("%s:%d", hostname, port);
   RigProtobufCDispatch *dispatch;
   PB_RPC_Client *pb_client;
 
-  rpc_client->hostname = g_strdup (hostname);
+  rpc_client->hostname = c_strdup (hostname);
   rpc_client->port = port;
 
   dispatch = rig_protobuf_c_dispatch_new (shell, &protobuf_c_default_allocator);
@@ -203,7 +203,7 @@ rig_rpc_client_new (RutShell *shell,
                                          connect_handler,
                                          user_data);
 
-  g_free (addr_str);
+  c_free (addr_str);
 
   rig_pb_rpc_client_set_error_handler (pb_client,
                                        client_error_handler, user_data);
@@ -243,7 +243,7 @@ _rig_rpc_peer_init_type (void)
   RutType *type = &rig_rpc_peer_type;
 #define TYPE RigRPCPeer
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_rpc_peer_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_rpc_peer_free);
 
 #undef TYPE
 }

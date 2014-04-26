@@ -134,7 +134,7 @@ _rut_icon_init_type (void)
   RutType *type = &rut_icon_type;
 #define TYPE RutIcon
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_icon_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -171,7 +171,7 @@ rut_icon_new (RutContext *ctx,
     }
   else
     {
-      g_warning ("Failed to load icon %s: %s", filename, error->message);
+      c_warning ("Failed to load icon %s: %s", filename, error->message);
       g_error_free (error);
       rut_icon_set_size (icon, 100, 100);
     }

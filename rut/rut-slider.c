@@ -151,7 +151,7 @@ _rut_slider_init_type (void)
   RutType *type = &rut_slider_type;
 #define TYPE RutSlider
 
-  rut_type_init (&rut_slider_type, G_STRINGIFY (TYPE), _rut_slider_free);
+  rut_type_init (&rut_slider_type, C_STRINGIFY (TYPE), _rut_slider_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -212,7 +212,7 @@ _rut_slider_input_cb (RutInputRegion *region,
 {
   RutSlider *slider = user_data;
 
-  //g_print ("Slider input\n");
+  //c_print ("Slider input\n");
 
   if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
@@ -264,7 +264,7 @@ rut_slider_new (RutContext *ctx,
     rut_load_texture_from_data_file (ctx, "slider-background.png", &error);
   if (!bg_texture)
     {
-      g_warning ("Failed to load slider-background.png: %s", error->message);
+      c_warning ("Failed to load slider-background.png: %s", error->message);
       g_error_free (error);
     }
 
@@ -272,7 +272,7 @@ rut_slider_new (RutContext *ctx,
     rut_load_texture_from_data_file (ctx, "slider-handle.png", &error);
   if (!handle_texture)
     {
-      g_warning ("Failed to load slider-handle.png: %s", error->message);
+      c_warning ("Failed to load slider-handle.png: %s", error->message);
       g_error_free (error);
     }
 
@@ -358,7 +358,7 @@ rut_slider_set_progress (RutObject *obj,
 
   rut_shell_queue_redraw (slider->ctx->shell);
 
-  //g_print ("progress = %f\n", slider->progress);
+  //c_print ("progress = %f\n", slider->progress);
 }
 
 

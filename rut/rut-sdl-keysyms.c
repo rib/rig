@@ -30,7 +30,7 @@
 
 #include "rut-sdl-keysyms.h"
 
-#include <glib.h>
+#include <clib.h>
 
 int32_t
 _rut_keysym_from_sdl_keysym (RutSDLKeycode sdl_keysym)
@@ -303,6 +303,6 @@ _rut_keysym_from_sdl_keysym (RutSDLKeycode sdl_keysym)
 #endif /* SDL_MAJOR_VERSION < 2 */
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return RUT_KEY_VoidSymbol;
 }

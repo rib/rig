@@ -388,7 +388,7 @@ rut_camera_remove_input_region (RutObject *object,
   vtable->remove_input_region (object, region);
 }
 
-GList *
+CList *
 rut_camera_get_input_regions (RutObject *object)
 {
   RutCameraProps *camera =

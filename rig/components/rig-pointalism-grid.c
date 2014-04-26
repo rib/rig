@@ -190,8 +190,8 @@ mesh_new_grid (CoglVerticesMode mode,
                         index_buffer,
                         n_indices);
 
-  g_free (vertices);
-  g_free (indices);
+  c_free (vertices);
+  c_free (indices);
 
   return mesh;
 }
@@ -209,8 +209,8 @@ create_meshes (RigPointalismGrid *grid)
   float cell_t = 1.0 / rows;
   float start_x = -1.0 * ((size * columns) / 2.0);
   float start_y = -1.0 * ((size * rows) / 2.0);
-  GridVertex *vertices = g_new (GridVertex, (columns * rows) * 4);
-  unsigned int *indices = g_new (unsigned int, (columns * rows) * 6);
+  GridVertex *vertices = c_new (GridVertex, (columns * rows) * 4);
+  unsigned int *indices = c_new (unsigned int, (columns * rows) * 6);
   RutBuffer *pick_mesh_buffer;
   CoglVertexP3 *pick_vertices;
   float half_tex_width;
@@ -367,7 +367,7 @@ _rig_pointalism_grid_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -422,7 +422,7 @@ _rig_pointalism_grid_init_type (void)
 
 #define TYPE RigPointalismGrid
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_pointalism_grid_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_pointalism_grid_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -619,7 +619,7 @@ rig_pointalism_grid_add_update_callback (RigPointalismGrid *grid,
                                          void *user_data,
                                          RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&grid->updated_cb_list,
                                callback,
                                user_data,

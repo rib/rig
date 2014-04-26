@@ -73,7 +73,7 @@ _rig_diamond_slice_init_type (void)
   RutType *type = &rig_diamond_slice_type;
 #define TYPE RigDiamondSlice
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_diamond_slice_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_diamond_slice_free);
 
 #undef TYPE
 }
@@ -354,7 +354,7 @@ _rig_diamond_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -405,7 +405,7 @@ _rig_diamond_init_type (void)
   RutType *type = &rig_diamond_type;
 #define TYPE RigDiamond
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_diamond_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_diamond_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -546,7 +546,7 @@ rig_diamond_add_update_callback (RigDiamond *diamond,
                                  void *user_data,
                                  RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&diamond->updated_cb_list,
                                callback,
                                user_data,

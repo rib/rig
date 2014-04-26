@@ -63,20 +63,20 @@ struct _RigBinding
   RigCodeNode *function_node;
   RigCodeNode *expression_node;
 
-  GList *dependencies;
+  CList *dependencies;
 
   unsigned int active: 1;
 };
 
 static void
-_rig_binding_free (void *object)
+_rig_bindinc_free (void *object)
 {
   RigBinding *binding = object;
 
   if (binding->expression)
-    g_free (binding->expression);
+    c_free (binding->expression);
 
-  g_free (binding->function_name);
+  c_free (binding->function_name);
 
   rut_graphable_remove_child (binding->function_node);
 
@@ -88,14 +88,14 @@ RutType rig_binding_type;
 static void
 _rig_binding_init_type (void)
 {
-  rut_type_init (&rig_binding_type, "RigBinding", _rig_binding_free);
+  rut_type_init (&rig_binding_type, "RigBinding", _rig_bindinc_free);
 }
 
 static Dependency *
 find_dependency (RigBinding *binding,
                  RutProperty *property)
 {
-  GList *l;
+  CList *l;
 
   for (l = binding->dependencies; l; l = l->next)
     {
@@ -219,7 +219,7 @@ codegen_function_node (RigBinding *binding)
   const char *out_var_decl_pre;
   const char *out_var_decl_post;
   const char *out_var_get_pre;
-  GList *l;
+  CList *l;
   int i;
 
   get_property_codegen_info (binding->property,
@@ -228,8 +228,8 @@ codegen_function_node (RigBinding *binding)
                              &out_var_decl_post,
                              &out_var_get_pre);
 
-  g_string_set_size (engine->codegen_string0, 0);
-  g_string_set_size (engine->codegen_string1, 0);
+  c_string_set_size (engine->codegen_string0, 0);
+  c_string_set_size (engine->codegen_string1, 0);
 
   pre =
     "\nvoid\n"
@@ -239,7 +239,7 @@ codegen_function_node (RigBinding *binding)
     "  RutProperty **deps = _property->binding->dependencies;\n"
     "  %sout%s;\n";
 
-  g_string_append_printf (engine->codegen_string0, pre,
+  c_string_append_printf (engine->codegen_string0, pre,
                           binding->function_name,
                           out_var_decl_pre,
                           out_var_decl_post);
@@ -258,7 +258,7 @@ codegen_function_node (RigBinding *binding)
                                  &dep_var_decl_post,
                                  &dep_get_var_pre);
 
-      g_string_append_printf (engine->codegen_string0,
+      c_string_append_printf (engine->codegen_string0,
                               "  %s %s = rut_property_get_%s (deps[%d]);\n",
                               dep_get_var_pre,
                               dependency->variable_name,
@@ -266,9 +266,9 @@ codegen_function_node (RigBinding *binding)
                               i);
     }
 
-  g_string_append (engine->codegen_string0, "  {\n");
+  c_string_append (engine->codegen_string0, "  {\n");
 
-  g_string_set_size (engine->codegen_string1, 0);
+  c_string_set_size (engine->codegen_string1, 0);
 
   post =
     "\n"
@@ -276,7 +276,7 @@ codegen_function_node (RigBinding *binding)
     "  rut_property_set_%s (_property_ctx, _property, out);\n"
     "}\n";
 
-  g_string_append_printf (engine->codegen_string1, post,
+  c_string_append_printf (engine->codegen_string1, post,
                           out_type_name);
 
   rig_code_node_set_pre (binding->function_node,
@@ -293,10 +293,10 @@ rig_binding_activate (RigBinding *binding)
   RutProperty **dependencies;
   RutBindingCallback callback;
   int n_dependencies;
-  GList *l;
+  CList *l;
   int i;
 
-  g_return_if_fail (!binding->active);
+  c_return_if_fail (!binding->active);
 
   /* XXX: maybe we should only explicitly remove the binding if we know
    * we've previously set a binding. If we didn't previously set a binding
@@ -308,12 +308,12 @@ rig_binding_activate (RigBinding *binding)
   callback = rig_code_resolve_symbol (engine, binding->function_name);
   if (!callback)
     {
-      g_warning ("Failed to lookup binding function symbol \"%s\"",
+      c_warning ("Failed to lookup binding function symbol \"%s\"",
                  binding->function_name);
       return;
     }
 
-  n_dependencies = g_list_length (binding->dependencies);
+  n_dependencies = c_list_length (binding->dependencies);
   dependencies = g_alloca (sizeof (RutProperty *) * n_dependencies);
 
   for (l = binding->dependencies, i = 0;
@@ -336,7 +336,7 @@ rig_binding_activate (RigBinding *binding)
 void
 rig_binding_deactivate (RigBinding *binding)
 {
-  g_return_if_fail (binding->active);
+  c_return_if_fail (binding->active);
 
   rut_property_remove_binding (binding->property);
 
@@ -385,10 +385,10 @@ rig_binding_remove_dependency (RigBinding *binding,
 {
   Dependency *dependency = find_dependency (binding, property);
 
-  g_return_if_fail (dependency);
+  c_return_if_fail (dependency);
 
-  g_free (dependency->variable_name);
-  g_slice_free (Dependency, dependency);
+  c_free (dependency->variable_name);
+  c_slice_free (Dependency, dependency);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!binding->engine->simulator)
@@ -401,7 +401,7 @@ rig_binding_add_dependency (RigBinding *binding,
                             RutProperty *property,
                             const char *name)
 {
-  Dependency *dependency = g_slice_new0 (Dependency);
+  Dependency *dependency = c_slice_new0 (Dependency);
   RutObject *object = property->object;
 
   dependency->object = rut_object_ref (object);
@@ -409,10 +409,10 @@ rig_binding_add_dependency (RigBinding *binding,
 
   dependency->property = property;
 
-  dependency->variable_name = g_strdup (name);
+  dependency->variable_name = c_strdup (name);
 
   binding->dependencies =
-    g_list_prepend (binding->dependencies, dependency);
+    c_list_prepend (binding->dependencies, dependency);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!binding->engine->simulator)
@@ -430,7 +430,7 @@ void
 rig_binding_set_expression (RigBinding *binding,
                             const char *expression)
 {
-  g_return_if_fail (expression);
+  c_return_if_fail (expression);
 
   if ((binding->expression &&
        strcmp (binding->expression, expression) == 0))
@@ -463,11 +463,11 @@ rig_binding_set_dependency_name (RigBinding *binding,
 {
   Dependency *dependency = find_dependency (binding, property);
 
-  g_return_if_fail (dependency);
+  c_return_if_fail (dependency);
 
-  g_free (dependency->variable_name);
+  c_free (dependency->variable_name);
 
-  dependency->variable_name = g_strdup (name);
+  dependency->variable_name = c_strdup (name);
 
 #ifdef RIG_EDITOR_ENABLED
   if (!binding->engine->simulator)
@@ -486,7 +486,7 @@ rig_binding_new (RigEngine *engine,
 
   binding->engine = engine;
   binding->property = property;
-  binding->function_name = g_strdup_printf ("_binding%d", binding_id);
+  binding->function_name = c_strdup_printf ("_binding%d", binding_id);
   binding->binding_id = binding_id;
 
   generate_function_node (binding);
@@ -503,7 +503,7 @@ rig_binding_get_id (RigBinding *binding)
 int
 rig_binding_get_n_dependencies (RigBinding *binding)
 {
-  return g_list_length (binding->dependencies);
+  return c_list_length (binding->dependencies);
 }
 
 void
@@ -513,7 +513,7 @@ rig_binding_foreach_dependency (RigBinding *binding,
                                                   void *user_data),
                                 void *user_data)
 {
-  GList *l;
+  CList *l;
 
   for (l = binding->dependencies; l; l = l->next)
     callback (binding, l->data, user_data);

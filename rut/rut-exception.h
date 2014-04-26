@@ -32,7 +32,7 @@
 
 #include <stdbool.h>
 
-#include <glib.h>
+#include <clib.h>
 
 /* XXX: hack; these aren't GQuarks and aren't extensible... */
 typedef enum _RutExceptionDomain

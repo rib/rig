@@ -31,7 +31,7 @@
 #endif
 
 #include <cogl/cogl.h>
-#include <glib.h>
+#include <clib.h>
 #include <string.h>
 
 #include "rut-planes.h"

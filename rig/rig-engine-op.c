@@ -219,7 +219,7 @@ rig_engine_op_add_entity (RigEngine *engine,
   Rig__Operation *pb_op;
   uint64_t entity_id;
 
-  g_return_if_fail (rut_graphable_get_parent (entity) == NULL);
+  c_return_if_fail (rut_graphable_get_parent (entity) == NULL);
 
   pb_op = rig_pb_new (serializer, Rig__Operation, rig__operation__init);
 
@@ -509,7 +509,7 @@ rig_engine_op_delete_component (RigEngine *engine,
     rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
   RigEntity *entity = props->entity;
 
-  g_return_if_fail (entity);
+  c_return_if_fail (entity);
 
   pb_op->type = RIG_ENGINE_OP_TYPE_DELETE_COMPONENT;
 
@@ -1612,7 +1612,7 @@ rig_engine_map_pb_ui_edit (RigEngineOpMapContext *map_ctx,
         {
           status = false;
 
-          g_warning ("Failed to map and apply operation");
+          c_warning ("Failed to map and apply operation");
 
           /* Note: all of the operations are allocated on the
            * frame-stack so we don't need to explicitly free anything.

@@ -87,14 +87,14 @@ dump_op (UndoRedo *op, int indent)
           rut_boxed_to_string (&op->d.set_property.value1,
                                op->d.set_property.property->spec);
 
-        g_print ("%*sproperty (\"%s\") change: %s → %s\n",
+        c_print ("%*sproperty (\"%s\") change: %s → %s\n",
                  indent, "",
                  op->d.set_property.property->spec->name,
                  v0_string,
                  v1_string);
 
-        g_free (v0_string);
-        g_free (v1_string);
+        c_free (v0_string);
+        c_free (v1_string);
         break;
       }
     case UNDO_REDO_CONST_PROPERTY_CHANGE_OP:
@@ -106,7 +106,7 @@ dump_op (UndoRedo *op, int indent)
           rut_boxed_to_string (&op->d.set_controller_const.value1,
                                op->d.set_controller_const.property->spec);
 
-        g_print ("%*scontroller (\"%s\") const property (\"%s\") change: %s → %s\n",
+        c_print ("%*scontroller (\"%s\") const property (\"%s\") change: %s → %s\n",
                  indent, "",
                  op->d.set_controller_const.controller->label,
                  op->d.set_controller_const.property->spec->name,
@@ -115,41 +115,41 @@ dump_op (UndoRedo *op, int indent)
         break;
       }
     case UNDO_REDO_SET_CONTROLLED_OP:
-      g_print ("%*scontrolled=%s\n",
+      c_print ("%*scontrolled=%s\n",
                indent, "",
                op->d.set_controlled.value ? "yes" : "no");
       break;
 
     case UNDO_REDO_PATH_ADD_OP:
-      g_print ("%*spath add\n", indent, "");
+      c_print ("%*spath add\n", indent, "");
       break;
     case UNDO_REDO_PATH_MODIFY_OP:
-      g_print ("%*spath modify\n", indent, "");
+      c_print ("%*spath modify\n", indent, "");
       break;
     case UNDO_REDO_PATH_REMOVE_OP:
-      g_print ("%*sremove path\n", indent, "");
+      c_print ("%*sremove path\n", indent, "");
       break;
     case UNDO_REDO_SET_CONTROL_METHOD_OP:
-      g_print ("%*sset control method\n", indent, "");
+      c_print ("%*sset control method\n", indent, "");
       break;
     case UNDO_REDO_ADD_ENTITY_OP:
-      g_print ("%*sadd entity\n", indent, "");
+      c_print ("%*sadd entity\n", indent, "");
       break;
     case UNDO_REDO_DELETE_ENTITY_OP:
-      g_print ("%*sdelete entity\n", indent, "");
+      c_print ("%*sdelete entity\n", indent, "");
       break;
     case UNDO_REDO_ADD_COMPONENT_OP:
-      g_print ("%*sadd component\n", indent, "");
+      c_print ("%*sadd component\n", indent, "");
       break;
     case UNDO_REDO_DELETE_COMPONENT_OP:
-      g_print ("%*sdelete component\n", indent, "");
+      c_print ("%*sdelete component\n", indent, "");
       break;
     case UNDO_REDO_SUBJOURNAL_OP:
-      g_print ("%*ssub-journal %p\n", indent, "", op->d.subjournal);
+      c_print ("%*ssub-journal %p\n", indent, "", op->d.subjournal);
       dump_journal (op->d.subjournal, indent + 5);
       break;
     default:
-      g_print ("%*sTODO\n", indent, "");
+      c_print ("%*sTODO\n", indent, "");
       break;
     }
 }
@@ -159,7 +159,7 @@ dump_journal (RigUndoJournal *journal, int indent)
 {
   UndoRedo *undo_redo;
 
-  g_print ("\n\n%*sJournal %p\n", indent, "", journal);
+  c_print ("\n\n%*sJournal %p\n", indent, "", journal);
   indent += 2;
 
   if (!rut_list_empty (&journal->redo_ops))
@@ -167,9 +167,9 @@ dump_journal (RigUndoJournal *journal, int indent)
       rut_list_for_each (undo_redo, &journal->redo_ops, list_node)
         dump_op (undo_redo, indent);
 
-      g_print ("%*s %25s REDO OPS\n", indent, "", "");
-      g_print ("%*s %25s <-----\n", indent, "", "");
-      g_print ("%*s %25s UNDO OPS\n", indent, "", "");
+      c_print ("%*s %25s REDO OPS\n", indent, "", "");
+      c_print ("%*s %25s <-----\n", indent, "", "");
+      c_print ("%*s %25s UNDO OPS\n", indent, "", "");
     }
 
   rut_list_for_each_reverse (undo_redo, &journal->undo_ops, list_node)
@@ -210,7 +210,7 @@ rig_undo_journal_set_controller_constant (RigUndoJournal *journal,
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   /* If we have a mergable entry then we can just update the final value */
   if (mergable &&
@@ -224,7 +224,7 @@ rig_undo_journal_set_controller_constant (RigUndoJournal *journal,
     }
   else
     {
-      undo_redo = g_slice_new (UndoRedo);
+      undo_redo = c_slice_new (UndoRedo);
 
       undo_redo->op = UNDO_REDO_CONST_PROPERTY_CHANGE_OP;
       undo_redo->mergable = mergable;
@@ -313,7 +313,7 @@ rig_undo_journal_set_controller_path_node_value (RigUndoJournal *journal,
       RutBoxed old_value;
       float normalized_t = t / rig_controller_get_length (controller);
 
-      undo_redo = g_slice_new (UndoRedo);
+      undo_redo = c_slice_new (UndoRedo);
 
       if (rig_path_get_boxed (path, normalized_t, &old_value))
         {
@@ -353,7 +353,7 @@ rig_undo_journal_remove_controller_path_node (RigUndoJournal *journal,
                                               float t)
 {
   UndoRedoPathAddRemove *add_remove;
-  UndoRedo *undo_redo = g_slice_new (UndoRedo);
+  UndoRedo *undo_redo = c_slice_new (UndoRedo);
 
   add_remove = &undo_redo->d.path_add_remove;
 
@@ -377,7 +377,7 @@ rig_undo_journal_set_controlled (RigUndoJournal *journal,
   UndoRedo *undo_redo;
   UndoRedoSetControlled *set_controlled;
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SET_CONTROLLED_OP;
   undo_redo->mergable = FALSE;
 
@@ -402,9 +402,9 @@ rig_undo_journal_set_control_method (RigUndoJournal *journal,
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SET_CONTROL_METHOD_OP;
   undo_redo->mergable = FALSE;
 
@@ -458,7 +458,7 @@ rig_undo_journal_set_property (RigUndoJournal *journal,
     }
   else
     {
-      undo_redo = g_slice_new (UndoRedo);
+      undo_redo = c_slice_new (UndoRedo);
 
       undo_redo->op = UNDO_REDO_SET_PROPERTY_OP;
       undo_redo->mergable = mergable;
@@ -483,7 +483,7 @@ rig_undo_journal_add_entity (RigUndoJournal *journal,
   UndoRedo *undo_redo;
   UndoRedoAddDeleteEntity *add_entity;
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_ADD_ENTITY_OP;
   undo_redo->mergable = FALSE;
 
@@ -523,7 +523,7 @@ rig_undo_journal_delete_entity (RigUndoJournal *journal,
                                      delete_entity_component_cb,
                                      sub_journal);
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_ENTITY_OP;
   undo_redo->mergable = FALSE;
 
@@ -546,7 +546,7 @@ rig_undo_journal_add_component (RigUndoJournal *journal,
   UndoRedo *undo_redo;
   UndoRedoAddDeleteComponent *add_component;
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_ADD_COMPONENT_OP;
   undo_redo->mergable = FALSE;
 
@@ -573,7 +573,7 @@ rig_undo_journal_delete_component (RigUndoJournal *journal,
     rut_object_get_properties (component, RUT_TRAIT_ID_COMPONENTABLE);
   RigEntity *entity = componentable->entity;
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_DELETE_COMPONENT_OP;
   undo_redo->mergable = FALSE;
 
@@ -591,7 +591,7 @@ void
 rig_undo_journal_log_add_controller (RigUndoJournal *journal,
                                      RigController *controller)
 {
-  UndoRedo *undo_redo = g_slice_new0 (UndoRedo);
+  UndoRedo *undo_redo = c_slice_new0 (UndoRedo);
   UndoRedoAddRemoveController *add_controller =
     &undo_redo->d.add_remove_controller;
 
@@ -616,7 +616,7 @@ void
 rig_undo_journal_log_remove_controller (RigUndoJournal *journal,
                                         RigController *controller)
 {
-  UndoRedo *undo_redo = g_slice_new0 (UndoRedo);
+  UndoRedo *undo_redo = c_slice_new0 (UndoRedo);
   UndoRedoAddRemoveController *remove_controller =
     &undo_redo->d.add_remove_controller;
 
@@ -640,10 +640,10 @@ rig_undo_journal_log_subjournal (RigUndoJournal *journal,
    * ::apply_on_insert enabled into a journal with ::apply_on_insert
    * disabled. */
 
-  g_return_if_fail (journal->apply_on_insert == true ||
+  c_return_if_fail (journal->apply_on_insert == true ||
                     subjournal->apply_on_insert == false);
 
-  undo_redo = g_slice_new (UndoRedo);
+  undo_redo = c_slice_new (UndoRedo);
   undo_redo->op = UNDO_REDO_SUBJOURNAL_OP;
   undo_redo->mergable = FALSE;
 
@@ -679,7 +679,7 @@ undo_redo_subjournal_invert (UndoRedo *undo_redo_src)
       rut_list_insert (&subjournal_dst->undo_ops, &subinverse->list_node);
     }
 
-  inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  inverse = c_slice_dup (UndoRedo, undo_redo_src);
   inverse->d.subjournal= subjournal_dst;
 
   return inverse;
@@ -689,7 +689,7 @@ static void
 undo_redo_subjournal_free (UndoRedo *undo_redo)
 {
   rig_undo_journal_free (undo_redo->d.subjournal);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static void
@@ -707,7 +707,7 @@ static UndoRedo *
 undo_redo_set_property_invert (UndoRedo *undo_redo_src)
 {
   UndoRedoSetProperty *src = &undo_redo_src->d.set_property;
-  UndoRedo *undo_redo_inverse = g_slice_new (UndoRedo);
+  UndoRedo *undo_redo_inverse = c_slice_new (UndoRedo);
   UndoRedoSetProperty *inverse =
     &undo_redo_inverse->d.set_property;
 
@@ -730,7 +730,7 @@ undo_redo_set_property_free (UndoRedo *undo_redo)
   rut_object_unref (set_property->object);
   rut_boxed_destroy (&set_property->value0);
   rut_boxed_destroy (&set_property->value1);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static void
@@ -751,7 +751,7 @@ static UndoRedo *
 undo_redo_set_controller_const_invert (UndoRedo *undo_redo_src)
 {
   UndoRedoSetControllerConst *src = &undo_redo_src->d.set_controller_const;
-  UndoRedo *undo_redo_inverse = g_slice_new (UndoRedo);
+  UndoRedo *undo_redo_inverse = c_slice_new (UndoRedo);
   UndoRedoSetControllerConst *inverse =
     &undo_redo_inverse->d.set_controller_const;
 
@@ -776,7 +776,7 @@ undo_redo_set_controller_const_free (UndoRedo *undo_redo)
   rut_object_unref (set_controller_const->controller);
   rut_boxed_destroy (&set_controller_const->value0);
   rut_boxed_destroy (&set_controller_const->value1);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 
@@ -787,7 +787,7 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
   UndoRedoPathAddRemove *add_remove = &undo_redo->d.path_add_remove;
   RigEngine *engine = journal->engine;
 
-  g_return_if_fail (add_remove->have_value == true);
+  c_return_if_fail (add_remove->have_value == true);
 
   rig_engine_op_controller_path_add_node (engine,
                                           add_remove->controller,
@@ -801,7 +801,7 @@ undo_redo_path_add_apply (RigUndoJournal *journal,
 static UndoRedo *
 undo_redo_path_add_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedo *inverse = c_slice_dup (UndoRedo, undo_redo_src);
 
   inverse->op = UNDO_REDO_PATH_REMOVE_OP;
   inverse->d.path_add_remove.have_value =
@@ -845,7 +845,7 @@ undo_redo_path_remove_apply (RigUndoJournal *journal,
 static UndoRedo *
 undo_redo_path_remove_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedo *inverse = c_slice_dup (UndoRedo, undo_redo_src);
 
   inverse->op = UNDO_REDO_PATH_ADD_OP;
   inverse->d.path_add_remove.have_value =
@@ -869,7 +869,7 @@ undo_redo_path_add_remove_free (UndoRedo *undo_redo)
     rut_boxed_destroy (&add_remove->value);
   rut_object_unref (add_remove->object);
   rut_object_unref (add_remove->controller);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 
@@ -892,7 +892,7 @@ undo_redo_path_modify_apply (RigUndoJournal *journal,
 static UndoRedo *
 undo_redo_path_modify_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedo *inverse = c_slice_dup (UndoRedo, undo_redo_src);
 
   rut_boxed_copy (&inverse->d.path_modify.value0,
                   &undo_redo_src->d.path_modify.value1);
@@ -912,7 +912,7 @@ undo_redo_path_modify_free (UndoRedo *undo_redo)
   rut_boxed_destroy (&modify->value1);
   rut_object_unref (modify->object);
   rut_object_unref (modify->controller);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static void
@@ -937,7 +937,7 @@ undo_redo_set_controlled_apply (RigUndoJournal *journal,
 static UndoRedo *
 undo_redo_set_controlled_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedo *inverse = c_slice_dup (UndoRedo, undo_redo_src);
 
   inverse->d.set_controlled.value = !inverse->d.set_controlled.value;
 
@@ -953,7 +953,7 @@ undo_redo_set_controlled_free (UndoRedo *undo_redo)
   UndoRedoSetControlled *set_controlled = &undo_redo->d.set_controlled;
   rut_object_unref (set_controlled->object);
   rut_object_unref (set_controlled->controller);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static void
@@ -975,7 +975,7 @@ undo_redo_set_control_method_apply (RigUndoJournal *journal,
 static UndoRedo *
 undo_redo_set_control_method_invert (UndoRedo *undo_redo_src)
 {
-  UndoRedo *inverse = g_slice_dup (UndoRedo, undo_redo_src);
+  UndoRedo *inverse = c_slice_dup (UndoRedo, undo_redo_src);
   RigControllerMethod tmp;
 
   tmp = inverse->d.set_control_method.method;
@@ -995,7 +995,7 @@ undo_redo_set_control_method_free (UndoRedo *undo_redo)
   UndoRedoSetControlMethod *set_control_method = &undo_redo->d.set_control_method;
   rut_object_unref (set_control_method->object);
   rut_object_unref (set_control_method->controller);
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static void
@@ -1005,7 +1005,7 @@ copy_controller_property_list (RutList *src, RutList *dst)
 
   rut_list_for_each (prop_data, src, link)
     {
-      UndoRedoPropData *prop_data_copy = g_slice_new (UndoRedoPropData);
+      UndoRedoPropData *prop_data_copy = c_slice_new (UndoRedoPropData);
 
       prop_data_copy->property = prop_data->property;
       prop_data_copy->method = prop_data->method;
@@ -1037,7 +1037,7 @@ copy_controller_references (RutList *src_controller_properties,
   rut_list_for_each (src_controller_state, src_controller_properties, link)
     {
       UndoRedoControllerState *dst_controller_state =
-        g_slice_new (UndoRedoControllerState);
+        c_slice_new (UndoRedoControllerState);
 
       dst_controller_state->controller =
         rut_object_ref (src_controller_state->controller);
@@ -1055,7 +1055,7 @@ copy_controller_references (RutList *src_controller_properties,
 static UndoRedo *
 copy_add_delete_entity (UndoRedo *undo_redo)
 {
-  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedo *copy = c_slice_dup (UndoRedo, undo_redo);
   UndoRedoAddDeleteEntity *add_delete_entity = &copy->d.add_delete_entity;
 
   rut_object_ref (add_delete_entity->parent_entity);
@@ -1081,7 +1081,7 @@ copy_controller_property_cb (RigControllerPropData *prop_data,
 
   if (prop_data->property->object == data->object)
     {
-      UndoRedoPropData *undo_prop_data = g_slice_new (UndoRedoPropData);
+      UndoRedoPropData *undo_prop_data = c_slice_new (UndoRedoPropData);
 
       undo_prop_data->method = prop_data->method;
       rut_boxed_copy (&undo_prop_data->constant_value,
@@ -1105,7 +1105,7 @@ save_controller_properties (RigEngine *engine,
                             RutList *controller_properties)
 {
   CopyControllerPropertiesData copy_properties_data;
-  GList *l;
+  CList *l;
 
   rut_list_init (controller_properties);
 
@@ -1113,7 +1113,7 @@ save_controller_properties (RigEngine *engine,
     {
       RigController *controller = l->data;
       UndoRedoControllerState *controller_state =
-        g_slice_new (UndoRedoControllerState);
+        c_slice_new (UndoRedoControllerState);
 
       /* Grab a copy of the controller data for all the properties of the
        * entity */
@@ -1128,7 +1128,7 @@ save_controller_properties (RigEngine *engine,
 
       if (rut_list_empty (&controller_state->properties))
         {
-          g_slice_free (UndoRedoControllerState, controller_state);
+          c_slice_free (UndoRedoControllerState, controller_state);
           continue;
         }
 
@@ -1283,10 +1283,10 @@ free_controller_properties (RutList *controller_properties)
 
           rut_boxed_destroy (&prop_data->constant_value);
 
-          g_slice_free (UndoRedoPropData, prop_data);
+          c_slice_free (UndoRedoPropData, prop_data);
         }
 
-      g_slice_free (UndoRedoControllerState, controller_state);
+      c_slice_free (UndoRedoControllerState, controller_state);
     }
 }
 
@@ -1300,13 +1300,13 @@ undo_redo_add_delete_entity_free (UndoRedo *undo_redo)
 
   free_controller_properties (&add_delete_entity->controller_properties);
 
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static UndoRedo *
 copy_add_delete_component (UndoRedo *undo_redo)
 {
-  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedo *copy = c_slice_dup (UndoRedo, undo_redo);
   UndoRedoAddDeleteComponent *add_delete_component = &copy->d.add_delete_component;
 
   rut_object_ref (add_delete_component->parent_entity);
@@ -1406,13 +1406,13 @@ undo_redo_add_delete_component_free (UndoRedo *undo_redo)
 
   free_controller_properties (&add_delete_component->controller_properties);
 
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static UndoRedo *
 copy_add_remove_controller (UndoRedo *undo_redo)
 {
-  UndoRedo *copy = g_slice_dup (UndoRedo, undo_redo);
+  UndoRedo *copy = c_slice_dup (UndoRedo, undo_redo);
   UndoRedoAddRemoveController *add_remove_controller =
     &copy->d.add_remove_controller;
 
@@ -1524,7 +1524,7 @@ undo_redo_add_remove_controller_free (UndoRedo *undo_redo)
 
   free_controller_properties (&add_remove_controller->controller_properties);
 
-  g_slice_free (UndoRedo, undo_redo);
+  c_slice_free (UndoRedo, undo_redo);
 }
 
 static UndoRedoOpImpl undo_redo_ops[] =
@@ -1605,7 +1605,7 @@ static UndoRedoOpImpl undo_redo_ops[] =
 static void
 undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 {
-  g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
+  c_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
   undo_redo_ops[undo_redo->op].apply (journal, undo_redo);
 }
@@ -1613,7 +1613,7 @@ undo_redo_apply (RigUndoJournal *journal, UndoRedo *undo_redo)
 static UndoRedo *
 undo_redo_invert (UndoRedo *undo_redo)
 {
-  g_return_val_if_fail (undo_redo->op < UNDO_REDO_N_OPS, NULL);
+  c_return_val_if_fail (undo_redo->op < UNDO_REDO_N_OPS, NULL);
 
   return undo_redo_ops[undo_redo->op].invert (undo_redo);
 }
@@ -1621,7 +1621,7 @@ undo_redo_invert (UndoRedo *undo_redo)
 static void
 undo_redo_free (UndoRedo *undo_redo)
 {
-  g_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
+  c_return_if_fail (undo_redo->op < UNDO_REDO_N_OPS);
 
   undo_redo_ops[undo_redo->op].free (undo_redo);
 }
@@ -1665,12 +1665,12 @@ rig_undo_journal_insert (RigUndoJournal *journal,
   RigEngine *engine = journal->engine;
   bool apply;
 
-  g_return_if_fail (undo_redo != NULL);
-  g_return_if_fail (journal->inserting == FALSE);
+  c_return_if_fail (undo_redo != NULL);
+  c_return_if_fail (journal->inserting == FALSE);
 
   if (engine->play_mode)
     {
-      g_warning ("Ignoring attempt to edit UI while in play mode");
+      c_warning ("Ignoring attempt to edit UI while in play mode");
       undo_redo_free (undo_redo);
       return;
     }
@@ -1753,7 +1753,7 @@ rig_undo_journal_revert (RigUndoJournal *journal)
 
       if (!inverse)
         {
-          g_warning ("Not allowing undo of operation that can't be inverted");
+          c_warning ("Not allowing undo of operation that can't be inverted");
           return NULL;
         }
 
@@ -1771,7 +1771,7 @@ rig_undo_journal_undo (RigUndoJournal *journal)
 {
   if (journal->engine->play_mode)
     {
-      g_warning ("Ignoring attempt to edit UI while in play mode");
+      c_warning ("Ignoring attempt to edit UI while in play mode");
       return false;
     }
 
@@ -1800,7 +1800,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 
   if (journal->engine->play_mode)
     {
-      g_warning ("Ignoring attempt to edit UI while in play mode");
+      c_warning ("Ignoring attempt to edit UI while in play mode");
       return false;
     }
 
@@ -1823,7 +1823,7 @@ rig_undo_journal_redo (RigUndoJournal *journal)
 RigUndoJournal *
 rig_undo_journal_new (RigEngine *engine)
 {
-  RigUndoJournal *journal = g_slice_new0 (RigUndoJournal);
+  RigUndoJournal *journal = c_slice_new0 (RigUndoJournal);
 
   journal->engine = engine;
   rut_list_init (&journal->undo_ops);
@@ -1856,5 +1856,5 @@ rig_undo_journal_free (RigUndoJournal *journal)
   rut_list_for_each_safe (node, tmp, &journal->redo_ops, list_node)
     undo_redo_free (node);
 
-  g_slice_free (RigUndoJournal, journal);
+  c_slice_free (RigUndoJournal, journal);
 }

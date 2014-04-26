@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -41,10 +41,10 @@ _rig_slave_address_free (void *object)
   RigSlaveAddress *slave_address = object;
 
   if (slave_address->serial)
-    g_free (slave_address->serial);
+    c_free (slave_address->serial);
 
-  g_free (slave_address->name);
-  g_free (slave_address->hostname);
+  c_free (slave_address->name);
+  c_free (slave_address->hostname);
 
   rut_object_free (RigSlaveAddress, slave_address);
 }
@@ -68,8 +68,8 @@ rig_slave_address_new_tcp (const char *name,
 
   slave_address->type = RIG_SLAVE_ADDRESS_TYPE_TCP;
 
-  slave_address->name = g_strdup (name);
-  slave_address->hostname = g_strdup (hostname);
+  slave_address->name = c_strdup (name);
+  slave_address->hostname = c_strdup (hostname);
   slave_address->port = port;
 
   return slave_address;
@@ -85,9 +85,9 @@ rig_slave_address_new_adb (const char *name,
 
   slave_address->type = RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL;
 
-  slave_address->name = g_strdup (name);
-  slave_address->serial = g_strdup (serial);
-  slave_address->hostname = g_strdup ("127.0.0.1");
+  slave_address->name = c_strdup (name);
+  slave_address->serial = c_strdup (serial);
+  slave_address->hostname = c_strdup ("127.0.0.1");
   slave_address->port = port;
 
   return slave_address;

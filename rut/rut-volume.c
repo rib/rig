@@ -42,7 +42,7 @@
 RutVolume *
 rut_volume_new (void)
 {
-  RutVolume *volume = g_slice_new (RutVolume);
+  RutVolume *volume = c_slice_new (RutVolume);
 
   memset (volume->vertices, 0, 8 * sizeof (RutVector3));
 
@@ -87,7 +87,7 @@ void
 _rut_volume_copy_static (const RutVolume *src_volume, RutVolume *dst_volume)
 {
 
-  g_return_if_fail (src_volume != NULL && dst_volume != NULL);
+  c_return_if_fail (src_volume != NULL && dst_volume != NULL);
 
   memcpy (dst_volume, src_volume, sizeof (RutVolume));
   dst_volume->is_static = TRUE;
@@ -98,9 +98,9 @@ rut_volume_copy (const RutVolume *volume)
 {
   RutVolume *copy;
 
-  g_return_val_if_fail (volume != NULL, NULL);
+  c_return_val_if_fail (volume != NULL, NULL);
 
-  copy = g_slice_dup (RutVolume, volume);
+  copy = c_slice_dup (RutVolume, volume);
   copy->is_static = FALSE;
 
   return copy;
@@ -117,12 +117,12 @@ _rut_volume_set_from_volume (RutVolume *volume, const RutVolume *src)
 void
 rut_volume_free (RutVolume *volume)
 {
-  g_return_if_fail (volume != NULL);
+  c_return_if_fail (volume != NULL);
 
   if (G_LIKELY (volume->is_static))
     return;
 
-  g_slice_free (RutVolume, volume);
+  c_slice_free (RutVolume, volume);
 }
 
 void
@@ -132,7 +132,7 @@ rut_volume_set_origin (RutVolume *volume, const RutVector3 *origin)
   float dx, dy, dz;
   int i;
 
-  g_return_if_fail (volume != NULL);
+  c_return_if_fail (volume != NULL);
 
   dx = origin->x - volume->vertices[0].x;
   dy = origin->y - volume->vertices[0].y;
@@ -153,8 +153,8 @@ rut_volume_set_origin (RutVolume *volume, const RutVector3 *origin)
 void
 rut_volume_get_origin (const RutVolume *volume, RutVector3 *origin)
 {
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (origin != NULL);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (origin != NULL);
 
   *origin = volume->vertices[0];
 }
@@ -175,8 +175,8 @@ rut_volume_set_width (RutVolume *volume, float width)
 {
   float right_xpos;
 
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (width >= 0.0f);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (width >= 0.0f);
 
   /* If the volume is currently empty then only the origin is
    * currently valid */
@@ -203,7 +203,7 @@ rut_volume_set_width (RutVolume *volume, float width)
 float
 rut_volume_get_width (const RutVolume *volume)
 {
-  g_return_val_if_fail (volume != NULL, 0.0);
+  c_return_val_if_fail (volume != NULL, 0.0);
 
   if (volume->is_empty)
     return 0;
@@ -227,8 +227,8 @@ rut_volume_set_height (RutVolume *volume,
 {
   float height_ypos;
 
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (height >= 0.0f);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (height >= 0.0f);
 
   /* If the volume is currently empty then only the origin is
    * currently valid */
@@ -254,7 +254,7 @@ rut_volume_set_height (RutVolume *volume,
 float
 rut_volume_get_height (const RutVolume *volume)
 {
-  g_return_val_if_fail (volume != NULL, 0.0);
+  c_return_val_if_fail (volume != NULL, 0.0);
 
   if (volume->is_empty)
     return 0;
@@ -278,8 +278,8 @@ rut_volume_set_depth (RutVolume *volume,
 {
   float depth_zpos;
 
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (depth >= 0.0f);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (depth >= 0.0f);
 
   /* If the volume is currently empty then only the origin is
    * currently valid */
@@ -306,7 +306,7 @@ rut_volume_set_depth (RutVolume *volume,
 float
 rut_volume_get_depth (const RutVolume *volume)
 {
-  g_return_val_if_fail (volume != NULL, 0.0);
+  c_return_val_if_fail (volume != NULL, 0.0);
 
   if (volume->is_empty)
     return 0;
@@ -330,8 +330,8 @@ rut_volume_union (RutVolume *volume,
 {
   RutVolume aligned_volume;
 
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (another_volume != NULL);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (another_volume != NULL);
 
   /* NB: we only have to update vertices 0, 1, 3 and 4
    * (See the RutVolume typedef for more details) */
@@ -511,8 +511,8 @@ _rut_volume_get_bounding_box (RutVolume *volume,
   int count;
   int i;
 
-  g_return_if_fail (volume != NULL);
-  g_return_if_fail (box != NULL);
+  c_return_if_fail (volume != NULL);
+  c_return_if_fail (box != NULL);
 
   if (volume->is_empty)
     {
@@ -651,7 +651,7 @@ rut_volume_axis_align (RutVolume *volume)
   float max_y;
   float max_z;
 
-  g_return_if_fail (volume != NULL);
+  c_return_if_fail (volume != NULL);
 
   if (volume->is_empty)
     return;
@@ -732,7 +732,7 @@ rut_volume_cull (RutVolume *volume,
 
   /* We expect the volume to already be transformed into eye coordinates
    */
-  g_return_val_if_fail (volume->is_complete == TRUE, RUT_CULL_RESULT_IN);
+  c_return_val_if_fail (volume->is_complete == TRUE, RUT_CULL_RESULT_IN);
 
   /* Most actors are 2D so we only have to transform the front 4
    * vertices of the volume... */

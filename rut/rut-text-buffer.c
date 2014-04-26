@@ -202,10 +202,10 @@ _rut_simple_text_buffer_insert_text (RutTextBuffer *buffer,
         }
 
       /* Could be a password, so can't leave stuff in memory. */
-      et_new = g_malloc (buffer->simple_text_size);
+      et_new = c_malloc (buffer->simple_text_size);
       memcpy (et_new, buffer->simple_text, MIN (prev_size, buffer->simple_text_size));
       trash_area (buffer->simple_text, prev_size);
-      g_free (buffer->simple_text);
+      c_free (buffer->simple_text);
       buffer->simple_text = et_new;
     }
 
@@ -273,7 +273,7 @@ _rut_text_buffer_free (void *object)
   if (buffer->simple_text)
     {
       trash_area (buffer->simple_text, buffer->simple_text_size);
-      g_free (buffer->simple_text);
+      c_free (buffer->simple_text);
     }
 
   rut_introspectable_destroy (buffer);
@@ -292,7 +292,7 @@ _rut_text_buffer_init_type (void)
   RutType *type = &rut_text_buffer_type;
 #define TYPE RutTextBuffer
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_text_buffer_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_text_buffer_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
@@ -366,7 +366,7 @@ rut_text_buffer_set_text_with_length (RutTextBuffer *buffer,
                                       const char *chars,
                                       int n_chars)
 {
-  g_return_if_fail (chars != NULL);
+  c_return_if_fail (chars != NULL);
 
   rut_text_buffer_delete_text (buffer, 0, -1);
   rut_text_buffer_insert_text (buffer, 0, chars, n_chars);
@@ -455,7 +455,7 @@ rut_text_buffer_add_insert_text_callback (RutTextBuffer *buffer,
                                           void *user_data,
                                           RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&buffer->insert_text_cb_list,
                                callback,
@@ -469,7 +469,7 @@ rut_text_buffer_add_delete_text_callback (RutTextBuffer *buffer,
                                           void *user_data,
                                           RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&buffer->delete_text_cb_list,
                                callback,

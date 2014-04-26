@@ -61,15 +61,15 @@
 
 #include <stdint.h>
 
-#include <glib.h>
+#include <clib.h>
 
 
 static RutMemorySubStack *
 rut_memory_sub_stack_alloc (size_t bytes)
 {
-  RutMemorySubStack *sub_stack = g_slice_new (RutMemorySubStack);
+  RutMemorySubStack *sub_stack = c_slice_new (RutMemorySubStack);
   sub_stack->bytes = bytes;
-  sub_stack->data = g_malloc (bytes);
+  sub_stack->data = c_malloc (bytes);
   sub_stack->offset = 0;
   return sub_stack;
 }
@@ -87,7 +87,7 @@ rut_memory_stack_add_sub_stack (RutMemoryStack *stack,
 RutMemoryStack *
 rut_memory_stack_new (size_t initial_size_bytes)
 {
-  RutMemoryStack *stack = g_slice_new0 (RutMemoryStack);
+  RutMemoryStack *stack = c_slice_new0 (RutMemoryStack);
 
   rut_list_init (&stack->sub_stacks);
 
@@ -165,8 +165,8 @@ rut_memory_stack_foreach_region (RutMemoryStack *stack,
 static void
 rut_memory_sub_stack_free (RutMemorySubStack *sub_stack)
 {
-  g_free (sub_stack->data);
-  g_slice_free (RutMemorySubStack, sub_stack);
+  c_free (sub_stack->data);
+  c_slice_free (RutMemorySubStack, sub_stack);
 }
 
 void
@@ -201,5 +201,5 @@ rut_memory_stack_free (RutMemoryStack *stack)
   rut_list_for_each_safe (sub_stack, tmp, &stack->sub_stacks, list_node)
     rut_memory_sub_stack_free (sub_stack);
 
-  g_slice_free (RutMemoryStack, stack);
+  c_slice_free (RutMemoryStack, stack);
 }

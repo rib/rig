@@ -29,7 +29,7 @@
 #ifndef __RIG_PB_DEBUG_H__
 #define __RIG_PB_DEBUG_H__
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rig.pb-c.h"
 

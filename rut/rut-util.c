@@ -28,7 +28,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include <glib.h>
+#include <clib.h>
 #include <cogl/cogl.h>
 
 #include "rut-global.h"
@@ -118,7 +118,7 @@ rut_util_print_quaternion (const char           *prefix,
   cogl_quaternion_get_rotation_axis (quaternion, axis);
   angle = cogl_quaternion_get_rotation_angle (quaternion);
 
-  g_print ("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n", prefix, axis[0],
+  c_print ("%saxis: (%.2f,%.2f,%.2f) angle: %.2f\n", prefix, axis[0],
            axis[1], axis[2], angle);
 }
 
@@ -437,10 +437,10 @@ rut_util_draw_jittered_primitive3f (CoglFramebuffer *fb,
 }
 
 bool
-rut_util_find_tag (const GList *tags,
+rut_util_find_tag (const CList *tags,
                    const char *tag)
 {
-  const GList *l;
+  const CList *l;
 
   for (l = tags; l; l = l->next)
     {
@@ -483,9 +483,9 @@ rut_util_distribute_natural_allocation (int extra_space,
   unsigned int *spreading;
   int i;
 
-  g_return_val_if_fail (extra_space >= 0, 0);
+  c_return_val_if_fail (extra_space >= 0, 0);
 
-  spreading = g_newa (unsigned int, n_requested_sizes);
+  spreading = c_newa (unsigned int, n_requested_sizes);
 
   for (i = 0; i < n_requested_sizes; i++)
     spreading[i] = i;

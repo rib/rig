@@ -82,7 +82,7 @@ _rig_entity_free (void *object)
 {
   RigEntity *entity = object;
 
-  g_free (entity->label);
+  c_free (entity->label);
 
   while (entity->components->len)
     rig_entity_remove_component (entity,
@@ -150,7 +150,7 @@ rig_entity_add_component (RigEntity *entity,
   {
     int i;
 
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
 
     for (i = 0; i < entity->components->len; i++)
       {
@@ -159,8 +159,8 @@ rig_entity_add_component (RigEntity *entity,
         RutComponentableProps *existing_component =
           rut_object_get_properties (existing, RUT_TRAIT_ID_COMPONENTABLE);
 
-        g_return_if_fail (existing != object);
-        g_return_if_fail (existing_component->type != component->type);
+        c_return_if_fail (existing != object);
+        c_return_if_fail (existing_component->type != component->type);
       }
   }
 #endif
@@ -234,7 +234,7 @@ _rig_entity_init_type (void)
   RutType *type = &rig_entity_type;
 #define TYPE RigEntity
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_entity_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_entity_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -291,8 +291,8 @@ rig_entity_set_label (RutObject *obj,
 {
   RigEntity *entity = obj;
 
-  g_free (entity->label);
-  entity->label = g_strdup (label);
+  c_free (entity->label);
+  entity->label = c_strdup (label);
   rut_property_dirty (&entity->ctx->property_ctx,
                       &entity->properties[RUT_ENTITY_PROP_LABEL]);
 }

@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -512,7 +512,7 @@ _rut_nine_slice_init_type (void)
   RutType *type = &rut_nine_slice_type;
 #define TYPE RutNineSlice
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_nine_slice_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_nine_slice_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -720,7 +720,7 @@ rut_nine_slice_add_update_callback (RutNineSlice *nine_slice,
                                     void *user_data,
                                     RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&nine_slice->updated_cb_list,
                                callback,
                                user_data,

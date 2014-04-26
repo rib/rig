@@ -191,7 +191,7 @@ _rut_scroll_bar_init_type (void)
   RutType *type = &rut_scroll_bar_type;
 #define TYPE RutScrollBar
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_scroll_bar_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_scroll_bar_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -284,11 +284,11 @@ _rut_scroll_bar_input_cb (RutInputRegion *region,
         }
       else if (pos < scroll_bar->handle_pos)
         {
-          //g_print ("Scroll Bar: In front of handle\n");
+          //c_print ("Scroll Bar: In front of handle\n");
         }
       else
         {
-          //g_print ("Scroll Bar: After handle\n");
+          //c_print ("Scroll Bar: After handle\n");
         }
     }
 

@@ -141,7 +141,7 @@ _rig_controller_free (RutObject *object)
 
   rut_object_unref (controller->context);
 
-  g_free (controller->label);
+  c_free (controller->label);
 
   rut_object_unref (controller->timeline);
 
@@ -168,7 +168,7 @@ _rig_controller_type_init (void)
   RutType *type = &rig_controller_type;
 #define TYPE RigController
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_controller_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_controller_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
@@ -190,7 +190,7 @@ free_prop_data_cb (void *user_data)
 
   rut_boxed_destroy (&prop_data->constant_value);
 
-  g_slice_free (RigControllerPropData, prop_data);
+  c_slice_free (RigControllerPropData, prop_data);
 }
 
 RigController *
@@ -203,7 +203,7 @@ rig_controller_new (RigEngine *engine,
   RutTimeline *timeline;
 
 
-  controller->label = g_strdup (label);
+  controller->label = c_strdup (label);
 
   controller->engine = engine;
   controller->context = engine->ctx;
@@ -242,8 +242,8 @@ rig_controller_set_label (RutObject *object, const char *label)
       strcmp (controller->label, label) == 0)
     return;
 
-  g_free (controller->label);
-  controller->label = g_strdup (label);
+  c_free (controller->label);
+  controller->label = c_strdup (label);
   rut_property_dirty (&controller->context->property_ctx,
                       &controller->props[RIG_CONTROLLER_PROP_LABEL]);
 }
@@ -270,8 +270,8 @@ assert_path_value_cb (RutProperty *property, void *user_data)
   RutProperty *progress_prop = &controller->props[RIG_CONTROLLER_PROP_PROGRESS];
   float progress = rut_property_get_double (progress_prop);
 
-  g_return_if_fail (prop_data->method == RIG_CONTROLLER_METHOD_PATH);
-  g_return_if_fail (prop_data->path);
+  c_return_if_fail (prop_data->method == RIG_CONTROLLER_METHOD_PATH);
+  c_return_if_fail (prop_data->path);
 
   rig_path_lerp_property (prop_data->path,
                           prop_data->property,
@@ -291,10 +291,10 @@ activate_property_binding (RigControllerPropData *prop_data,
        * user when running in an editor!! */
       char *debug_name =
         rig_engine_get_object_debug_name (prop_data->property->object);
-      g_warning ("Controller collision for \"%s\" property on %s",
+      c_warning ("Controller collision for \"%s\" property on %s",
                  prop_data->property->spec->name,
                  debug_name);
-      g_free (debug_name);
+      c_free (debug_name);
 
       return;
     }
@@ -646,7 +646,7 @@ rig_controller_get_binding_for_prop_data (RigController *controller,
       RigEngine *engine = controller->engine;
       RigBinding *binding;
 
-      g_return_val_if_fail (engine->frontend &&
+      c_return_val_if_fail (engine->frontend &&
                             engine->frontend_id == RIG_FRONTEND_ID_EDITOR,
                             NULL);
 #ifdef RIG_EDITOR_ENABLED
@@ -744,7 +744,7 @@ rig_controller_add_property (RigController *controller,
   if (prop_data)
     return;
 
-  prop_data = g_slice_new0 (RigControllerPropData);
+  prop_data = c_slice_new0 (RigControllerPropData);
   prop_data->controller = controller;
   prop_data->method = RIG_CONTROLLER_METHOD_CONSTANT;
   prop_data->property = property;
@@ -795,7 +795,7 @@ rig_controller_set_property_method (RigController *controller,
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   if (prop_data->method == method)
     return;
@@ -827,7 +827,7 @@ rig_controller_set_property_constant (RigController *controller,
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   rut_boxed_destroy (&prop_data->constant_value);
   rut_boxed_copy (&prop_data->constant_value, boxed_value);
@@ -848,7 +848,7 @@ rig_controller_set_property_path (RigController *controller,
   RigControllerPropData *prop_data =
     rig_controller_find_prop_data_for_property (controller, property);
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   if (prop_data->path)
     {
@@ -875,7 +875,7 @@ rig_controller_set_property_binding (RigController *controller,
     rig_controller_find_prop_data_for_property (controller, property);
   bool need_activate;
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   if (effective_active (controller) &&
       prop_data->method == RIG_CONTROLLER_METHOD_BINDING)
@@ -987,12 +987,12 @@ rig_controller_insert_path_value (RigController *controller,
   float length;
   float normalized_t;
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   path = rig_controller_get_path_for_prop_data (controller, prop_data);
 
   /* Or should we create a path on demand here? */
-  g_return_if_fail (path != NULL);
+  c_return_if_fail (path != NULL);
 
   length = rig_controller_get_length (controller);
 
@@ -1027,17 +1027,17 @@ rig_controller_box_path_value (RigController *controller,
   RigNode *node;
   bool status;
 
-  g_return_if_fail (path != NULL);
+  c_return_if_fail (path != NULL);
 
   normalized_t = length ? t / length : 0;
 
   node = rig_path_find_nearest (path, normalized_t);
 
-  g_return_if_fail (node != NULL);
+  c_return_if_fail (node != NULL);
 
   status = rig_node_box (path->type, node, out);
 
-  g_return_if_fail (status);
+  c_return_if_fail (status);
 }
 
 void
@@ -1052,11 +1052,11 @@ rig_controller_remove_path_value (RigController *controller,
   float normalized_t;
   RigNode *node;
 
-  g_return_if_fail (prop_data != NULL);
+  c_return_if_fail (prop_data != NULL);
 
   path = rig_controller_get_path_for_prop_data (controller, prop_data);
 
-  g_return_if_fail (path != NULL);
+  c_return_if_fail (path != NULL);
 
   length = rig_controller_get_length (controller);
 
@@ -1064,7 +1064,7 @@ rig_controller_remove_path_value (RigController *controller,
 
   node = rig_path_find_nearest (path, normalized_t);
 
-  g_return_if_fail (node != NULL);
+  c_return_if_fail (node != NULL);
 
   normalized_t = node->t;
 

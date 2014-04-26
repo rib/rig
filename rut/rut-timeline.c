@@ -133,7 +133,7 @@ _rut_timeline_init_type (void)
   RutType *type = &rut_timeline_type;
 #define TYPE RutTimeline
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_timeline_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_timeline_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
@@ -413,7 +413,7 @@ _rut_timeline_update (RutTimeline *timeline)
                                             &should_stop,
                                             &should_restart_with_offset);
 
-  g_print ("elapsed = %f\n", elapsed);
+  c_print ("elapsed = %f\n", elapsed);
   if (should_stop)
     g_timer_stop (timeline->gtimer);
   else if (should_restart_with_offset)

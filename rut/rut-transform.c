@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-interfaces.h"
 #include "rut-transform-private.h"
@@ -64,7 +64,7 @@ _rut_transform_init_type (void)
   RutType *type = &rut_transform_type;
 #define TYPE RutTransform
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_transform_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_transform_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

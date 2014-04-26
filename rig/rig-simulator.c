@@ -33,7 +33,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -78,9 +78,9 @@ simulator__test (Rig__Simulator_Service *service,
   Rig__TestResult result = RIG__TEST_RESULT__INIT;
   //RigSimulator *simulator = rig_pb_rpc_closure_get_connection_data (closure_data);
 
-  g_return_if_fail (query != NULL);
+  c_return_if_fail (query != NULL);
 
-  g_print ("Simulator Service: Test Query\n");
+  c_print ("Simulator Service: Test Query\n");
 
   closure (&result, closure_data);
 }
@@ -88,7 +88,7 @@ simulator__test (Rig__Simulator_Service *service,
 static void
 rig_simulator_action_report_edit_failure (RigSimulator *simulator)
 {
-  RigSimulatorAction *action = g_slice_new (RigSimulatorAction);
+  RigSimulatorAction *action = c_slice_new (RigSimulatorAction);
 
   action->type = RIG_SIMULATOR_ACTION_TYPE_REPORT_EDIT_FAILURE;
 
@@ -114,7 +114,7 @@ clear_actions (RigSimulator *simulator)
         }
 
       rut_list_remove (&action->list_node);
-      g_slice_free (RigSimulatorAction, action);
+      c_slice_free (RigSimulatorAction, action);
     }
 
   simulator->n_actions = 0;
@@ -136,7 +136,7 @@ register_object_cb (void *object,
   RigSimulator *simulator = user_data;
   void *id_ptr;
 
-  g_return_if_fail (id != 0);
+  c_return_if_fail (id != 0);
 
   /* Assets can be shared between edit and play mode UIs so we
    * don't want to complain if we detect them being registered
@@ -198,9 +198,9 @@ simulator__load (Rig__Simulator_Service *service,
   RigEngine *engine = simulator->engine;
   RigUI *ui;
 
-  g_return_if_fail (pb_ui != NULL);
+  c_return_if_fail (pb_ui != NULL);
 
-  //g_print ("Simulator: UI Load Request\n");
+  //c_print ("Simulator: UI Load Request\n");
 
   /* First make sure to cleanup the current ui  */
   if (pb_ui->mode == RIG__UI__MODE__EDIT)
@@ -243,7 +243,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
   int n_object_registrations;
   int i;
 
-  g_return_if_fail (setup != NULL);
+  c_return_if_fail (setup != NULL);
 
   /* Update all of our temporary IDs to real IDs given to us by the
    * frontend. */
@@ -271,7 +271,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
       rig_code_update_dso (engine, setup->dso.data, setup->dso.len);
     }
 
-  //g_print ("Simulator: Run Frame Request: n_events = %d\n",
+  //c_print ("Simulator: Run Frame Request: n_events = %d\n",
   //         setup->n_events);
 
   if (setup->has_view_width && setup->has_view_height &&
@@ -296,11 +296,11 @@ simulator__run_frame (Rig__Simulator_Service *service,
 
       if (!pb_event->has_type)
         {
-          g_warning ("Event missing type");
+          c_warning ("Event missing type");
           continue;
         }
 
-      event = g_slice_new (RutStreamEvent);
+      event = c_slice_new (RutStreamEvent);
 
 
       switch (pb_event->type)
@@ -321,7 +321,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
             event->pointer_button.button = pb_event->pointer_button->button;
           else
             {
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               event->pointer_button.button = RUT_BUTTON_STATE_1;
             }
           break;
@@ -333,7 +333,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
             event->key.keysym = pb_event->key->keysym;
           else
             {
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               event->key.keysym = RUT_KEY_a;
             }
 
@@ -341,7 +341,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
             event->key.mod_state = pb_event->key->mod_state;
           else
             {
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               event->key.mod_state = 0;
             }
           break;
@@ -362,7 +362,7 @@ simulator__run_frame (Rig__Simulator_Service *service,
             }
           else
             {
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               event->pointer_move.x = 0;
             }
 
@@ -373,35 +373,35 @@ simulator__run_frame (Rig__Simulator_Service *service,
             }
           else
             {
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               event->pointer_move.y = 0;
             }
 
           simulator->last_pointer_x = event->pointer_move.x;
           simulator->last_pointer_y = event->pointer_move.y;
 
-          //g_print ("Simulator: Read Event: Pointer move (%f, %f)\n",
+          //c_print ("Simulator: Read Event: Pointer move (%f, %f)\n",
           //         event->pointer_move.x, event->pointer_move.y);
           break;
         case RIG__EVENT__TYPE__POINTER_DOWN:
           event->type = RUT_STREAM_EVENT_POINTER_DOWN;
           simulator->button_state |= event->pointer_button.button;
           event->pointer_button.state |= event->pointer_button.button;
-          //g_print ("Simulator: Read Event: Pointer down\n");
+          //c_print ("Simulator: Read Event: Pointer down\n");
           break;
         case RIG__EVENT__TYPE__POINTER_UP:
           event->type = RUT_STREAM_EVENT_POINTER_UP;
           simulator->button_state &= ~event->pointer_button.button;
           event->pointer_button.state &= ~event->pointer_button.button;
-          //g_print ("Simulator: Read Event: Pointer up\n");
+          //c_print ("Simulator: Read Event: Pointer up\n");
           break;
         case RIG__EVENT__TYPE__KEY_DOWN:
           event->type = RUT_STREAM_EVENT_KEY_DOWN;
-          //g_print ("Simulator: Read Event: Key down\n");
+          //c_print ("Simulator: Read Event: Key down\n");
           break;
         case RIG__EVENT__TYPE__KEY_UP:
           event->type = RUT_STREAM_EVENT_KEY_UP;
-          //g_print ("Simulator: Read Event: Key up\n");
+          //c_print ("Simulator: Read Event: Key up\n");
           break;
         }
 
@@ -460,7 +460,7 @@ static void
 handle_frontend_test_response (const Rig__TestResult *result,
                                 void *closure_data)
 {
-  //g_print ("Renderer test response received\n");
+  //c_print ("Renderer test response received\n");
 }
 
 static void
@@ -473,7 +473,7 @@ simulator_peer_connected (PB_RPC_Client *pb_client,
 
   rig__frontend__test (frontend_service, &query,
                        handle_frontend_test_response, NULL);
-  //g_print ("Simulator peer connected\n");
+  //c_print ("Simulator peer connected\n");
 }
 
 static void
@@ -494,7 +494,7 @@ simulator_peer_error_handler (PB_RPC_Error_Code code,
 {
   RigSimulator *simulator = user_data;
 
-  g_warning ("Simulator peer error: %s", message);
+  c_warning ("Simulator peer error: %s", message);
 
   simulator_stop_service (simulator);
 }
@@ -561,7 +561,7 @@ lookup_object_id (RigSimulator *simulator, void *object)
           if (label_prop)
             label = rut_property_get_text (label_prop);
         }
-      g_warning ("Can't find an ID for unregistered object %p(%s,label=\"%s\")",
+      c_warning ("Can't find an ID for unregistered object %p(%s,label=\"%s\")",
                  object,
                  rut_object_get_type_name (object),
                  label);
@@ -772,7 +772,7 @@ static void
 handle_update_ui_ack (const Rig__UpdateUIAck *result,
                       void *closure_data)
 {
-  //g_print ("Simulator: UI Update ACK received\n");
+  //c_print ("Simulator: UI Update ACK received\n");
 }
 
 typedef struct _SerializeChangesState
@@ -794,7 +794,7 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
   size_t offset;
   int i;
 
-  //g_print ("Properties changed log %d bytes:\n", bytes);
+  //c_print ("Properties changed log %d bytes:\n", bytes);
 
   for (i = state->i, offset = 0;
        i < state->n_changes && (offset + step) <= bytes;
@@ -815,7 +815,7 @@ stack_region_cb (uint8_t *data, size_t bytes, void *user_data)
       rig_pb_property_value_init (state->serializer, pb_value, &change->boxed);
 
 #if 1
-      g_print ("> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
+      c_print ("> %d: base = %p, offset = %d, obj id=%llu:%p:%s, prop id = %d\n",
                i,
                data,
                offset,
@@ -847,7 +847,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
    * can be sent back to the frontend process each frame. */
   simulator->ctx->property_ctx.log = true;
 
-  //g_print ("Simulator: Start Frame\n");
+  //c_print ("Simulator: Start Frame\n");
   rut_shell_start_redraw (shell);
 
   rut_shell_update_timelines (shell);
@@ -885,7 +885,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
 #endif
         }
 
-      g_print ("Frame = %d\n", counter);
+      c_print ("Frame = %d\n", counter);
 #endif
     }
 
@@ -893,7 +893,7 @@ rig_simulator_run_frame (RutShell *shell, void *user_data)
   if (rut_shell_check_timelines (shell))
     rut_shell_queue_redraw (shell);
 
-  //g_print ("Simulator: Sending UI Update\n");
+  //c_print ("Simulator: Sending UI Update\n");
 
   n_changes = prop_ctx->log_len;
   serializer = rig_pb_serializer_new (engine);
@@ -1044,9 +1044,9 @@ print_id_to_obj_mapping_cb (gpointer key,
   void *id_ptr = (void *)(uintptr_t)key;
   char *obj = rig_engine_get_object_debug_name (value);
 
-  g_print ("  [%p] -> [%50s]\n", id_ptr, obj);
+  c_print ("  [%p] -> [%50s]\n", id_ptr, obj);
 
-  g_free (obj);
+  c_free (obj);
 }
 
 static void
@@ -1057,21 +1057,21 @@ print_obj_to_id_mapping_cb (gpointer key,
   char *obj = rig_engine_get_object_debug_name (key);
   void *id_ptr = (void *)(uintptr_t)value;
 
-  g_print ("  [%50s] -> [%p]\n", obj, id_ptr);
+  c_print ("  [%50s] -> [%p]\n", obj, id_ptr);
 
-  g_free (obj);
+  c_free (obj);
 }
 
 void
 rig_simulator_print_mappings (RigSimulator *simulator)
 {
-  g_print ("ID to object map:\n");
+  c_print ("ID to object map:\n");
   g_hash_table_foreach (simulator->id_to_object_map,
                         print_id_to_obj_mapping_cb,
                         NULL);
 
-  g_print ("\n\n");
-  g_print ("Object to ID map:\n");
+  c_print ("\n\n");
+  c_print ("Object to ID map:\n");
   g_hash_table_foreach (simulator->object_to_id_map,
                         print_obj_to_id_mapping_cb,
                         NULL);

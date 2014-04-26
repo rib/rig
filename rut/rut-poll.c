@@ -81,7 +81,7 @@ get_cogl_info (RutShell *shell)
       /* Remove any existing Cogl fds before adding the new ones */
       for (i = 0; i < shell->cogl_poll_fds->len; i++)
         {
-          RutPollFD *poll_fd = &g_array_index (shell->poll_fds, RutPollFD, i);
+          RutPollFD *poll_fd = &c_array_index (shell->poll_fds, RutPollFD, i);
           rut_poll_shell_remove_fd (shell, poll_fd->fd);
         }
 
@@ -108,11 +108,11 @@ rut_poll_shell_get_info (RutShell *shell,
                          int *n_poll_fds,
                          int64_t *timeout)
 {
-  GList *l, *next;
+  CList *l, *next;
 
-  g_return_val_if_fail (poll_fds != NULL, 0);
-  g_return_val_if_fail (n_poll_fds != NULL, 0);
-  g_return_val_if_fail (timeout != NULL, 0);
+  c_return_val_if_fail (poll_fds != NULL, 0);
+  c_return_val_if_fail (n_poll_fds != NULL, 0);
+  c_return_val_if_fail (timeout != NULL, 0);
 
   *timeout = -1;
 
@@ -154,7 +154,7 @@ rut_poll_shell_dispatch (RutShell *shell,
                          const RutPollFD *poll_fds,
                          int n_poll_fds)
 {
-  GList *l, *next;
+  CList *l, *next;
 
   rut_closure_list_invoke_no_args (&shell->idle_closures);
 
@@ -193,7 +193,7 @@ find_pollfd (RutShell *shell, int fd)
 
   for (i = 0; i < shell->poll_fds->len; i++)
     {
-      RutPollFD *pollfd = &g_array_index (shell->poll_fds, RutPollFD, i);
+      RutPollFD *pollfd = &c_array_index (shell->poll_fds, RutPollFD, i);
 
       if (pollfd->fd == fd)
         return i;
@@ -206,12 +206,12 @@ void
 rut_poll_shell_remove_fd (RutShell *shell, int fd)
 {
   int i = find_pollfd (shell, fd);
-  GList *l;
+  CList *l;
 
   if (i < 0)
     return;
 
-  g_array_remove_index_fast (shell->poll_fds, i);
+  c_array_remove_index_fast (shell->poll_fds, i);
   shell->poll_sources_age++;
 
   for (l = shell->poll_sources; l; l = l->next)
@@ -220,8 +220,8 @@ rut_poll_shell_remove_fd (RutShell *shell, int fd)
       if (source->fd == fd)
         {
           shell->poll_sources =
-            g_list_delete_link (shell->poll_sources, l);
-          g_slice_free (RutPollSource, source);
+            c_list_delete_link (shell->poll_sources, l);
+          c_slice_free (RutPollSource, source);
           break;
         }
     }
@@ -235,11 +235,11 @@ rut_poll_shell_modify_fd (RutShell *shell,
   int fd_index = find_pollfd (shell, fd);
 
   if (fd_index == -1)
-    g_warn_if_reached ();
+    c_warn_if_reached ();
   else
     {
       RutPollFD *pollfd =
-        &g_array_index (shell->poll_sources, RutPollFD, fd_index);
+        &c_array_index (shell->poll_sources, RutPollFD, fd_index);
 
       pollfd->events = events;
       shell->poll_sources_age++;
@@ -263,15 +263,15 @@ rut_poll_shell_add_fd (RutShell *shell,
 
   rut_poll_shell_remove_fd (shell, fd);
 
-  source = g_slice_new0 (RutPollSource);
+  source = c_slice_new0 (RutPollSource);
   source->fd = fd;
   source->prepare = prepare;
   source->dispatch = dispatch;
   source->user_data = user_data;
 
-  shell->poll_sources = g_list_prepend (shell->poll_sources, source);
+  shell->poll_sources = c_list_prepend (shell->poll_sources, source);
 
-  g_array_append_val (shell->poll_fds, pollfd);
+  c_array_append_val (shell->poll_fds, pollfd);
   shell->poll_sources_age++;
 }
 
@@ -284,13 +284,13 @@ rut_poll_shell_add_source (RutShell *shell,
 {
   RutPollSource *source;
 
-  source = g_slice_new0 (RutPollSource);
+  source = c_slice_new0 (RutPollSource);
   source->fd = -1;
   source->prepare = prepare;
   source->dispatch = dispatch;
   source->user_data = user_data;
 
-  shell->poll_sources = g_list_prepend (shell->poll_sources, source);
+  shell->poll_sources = c_list_prepend (shell->poll_sources, source);
 
   return source;
 }
@@ -299,15 +299,15 @@ void
 rut_poll_shell_remove_source (RutShell *shell,
                               RutPollSource *source)
 {
-  GList *l;
+  CList *l;
 
   for (l = shell->poll_sources; l; l = l->next)
     {
       if (l->data == source)
         {
           shell->poll_sources =
-            g_list_delete_link (shell->poll_sources, l);
-          g_slice_free (RutPollSource, source);
+            c_list_delete_link (shell->poll_sources, l);
+          c_slice_free (RutPollSource, source);
           break;
         }
     }
@@ -334,7 +334,7 @@ sdl_android_event_filter_cb (void *user_data,
 
   if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
     {
-      g_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
+      c_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
       return 1; /* ignored */
     }
 
@@ -365,7 +365,7 @@ dispatch_sdl_events (void *user_data,
 
   if (SDL_LockMutex (shell->event_pipe_mutex) != 0)
     {
-      g_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
+      c_warning ("Spurious error locking event pipe mutex: %s", SDL_GetError ());
       return;
     }
 
@@ -391,14 +391,14 @@ integrate_sdl_events (RutShell *shell)
   shell->event_pipe_mutex = SDL_CreateMutex ();
   if (!shell->event_pipe_mutex)
     {
-      g_warning ("Failed to create event pipe mutex: %s",
+      c_warning ("Failed to create event pipe mutex: %s",
                  SDL_GetError ());
       return;
     }
 
   if (pipe (fds) < 0)
     {
-      g_warning ("Failed to create event pipe");
+      c_warning ("Failed to create event pipe");
       SDL_DestroyMutex (shell->event_pipe_mutex);
       return;
     }
@@ -422,7 +422,7 @@ rut_poll_init (RutShell *shell)
 {
   rut_list_init (&shell->idle_closures);
 
-  shell->poll_fds = g_array_new (FALSE, FALSE, sizeof (RutPollFD));
+  shell->poll_fds = c_array_new (FALSE, FALSE, sizeof (RutPollFD));
 
   /* XXX: On Android we know that SDL events are queued up from a
    * separate thread so we can use an event watch as a means to wake

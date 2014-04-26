@@ -66,7 +66,7 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   static GHashTable *pipeline_cache = NULL;
   CoglPipeline *pipeline;
   CoglSnippet *snippet;
-  GString *shader;
+  CString *shader;
   CoglDepthState depth_state;
   int i;
 
@@ -86,9 +86,9 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
   if (pipeline)
     return cogl_object_ref (pipeline);
 
-  shader = g_string_new (NULL);
+  shader = c_string_new (NULL);
 
-  g_string_append_printf (shader,
+  c_string_append_printf (shader,
                           "uniform vec2 pixel_step;\n"
                           "uniform float factors[%i];\n",
                           n_taps);
@@ -97,7 +97,7 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
                               shader->str,
                               NULL /* post */);
 
-  g_string_set_size (shader, 0);
+  c_string_set_size (shader, 0);
 
   pipeline = cogl_pipeline_new (ctx->cogl_context);
   cogl_pipeline_set_layer_null_texture (pipeline,
@@ -113,28 +113,28 @@ create_1d_gaussian_blur_pipeline (RutContext *ctx, int n_taps)
 
   for (i = 0; i < n_taps; i++)
     {
-      g_string_append (shader, "cogl_texel ");
+      c_string_append (shader, "cogl_texel ");
 
       if (i == 0)
-        g_string_append (shader, "=");
+        c_string_append (shader, "=");
       else
-        g_string_append (shader, "+=");
+        c_string_append (shader, "+=");
 
-      g_string_append_printf (shader,
+      c_string_append_printf (shader,
                               " texture2D (cogl_sampler, "
                               "cogl_tex_coord.st");
       if (i != (n_taps - 1) / 2)
-        g_string_append_printf (shader,
+        c_string_append_printf (shader,
                                 " + pixel_step * %f",
                                 (float) (i - ((n_taps - 1) / 2)));
-      g_string_append_printf (shader,
+      c_string_append_printf (shader,
                               ") * factors[%i];\n",
                               i);
     }
 
   cogl_snippet_set_replace (snippet, shader->str);
 
-  g_string_free (shader, TRUE);
+  c_string_free (shader, TRUE);
 
   cogl_pipeline_add_layer_snippet (pipeline, 0, snippet);
 
@@ -216,7 +216,7 @@ set_blurrer_pipeline_texture (CoglPipeline *pipeline,
 RutGaussianBlurrer *
 rut_gaussian_blurrer_new (RutContext *ctx, int n_taps)
 {
-  RutGaussianBlurrer *blurrer = g_slice_new0 (RutGaussianBlurrer);
+  RutGaussianBlurrer *blurrer = c_slice_new0 (RutGaussianBlurrer);
   CoglPipeline *base_pipeline;
 
   /* validation */
@@ -273,7 +273,7 @@ void
 rut_gaussian_blurrer_free (RutGaussianBlurrer *blurrer)
 {
   _rut_gaussian_blurrer_free_buffers (blurrer);
-  g_slice_free (RutGaussianBlurrer, blurrer);
+  c_slice_free (RutGaussianBlurrer, blurrer);
 }
 
 CoglTexture *
@@ -308,7 +308,7 @@ rut_gaussian_blurrer_blur (RutGaussianBlurrer *blurrer,
       cogl_texture_allocate (texture_2d, &error);
       if (error)
         {
-          g_warning ("blurrer: could not create x pass texture: %s",
+          c_warning ("blurrer: could not create x pass texture: %s",
                      error->message);
         }
       blurrer->x_pass = texture_2d;

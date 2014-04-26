@@ -32,7 +32,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -89,7 +89,7 @@ main (int argc, char **argv)
         {
           static bool seen = false;
           if (seen)
-            g_print ("Waiting for frontend...");
+            c_print ("Waiting for frontend...");
           else
             seen = true;
 

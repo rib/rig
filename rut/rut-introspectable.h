@@ -83,7 +83,7 @@ rut_introspectable_get_property (RutObject *object,
   RutIntrospectableProps *introspectable =
     rut_object_get_properties (object, RUT_TRAIT_ID_INTROSPECTABLE);
 
-  g_return_val_if_fail (id < introspectable->n_properties, NULL);
+  c_return_val_if_fail (id < introspectable->n_properties, NULL);
 
   return &introspectable->first_property[id];
 }

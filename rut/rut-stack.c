@@ -157,7 +157,7 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
       {
         rut_closure_disconnect (child_data->preferred_size_closure);
         rut_list_remove (&child_data->list_node);
-        g_slice_free (RutStackChild, child_data);
+        c_slice_free (RutStackChild, child_data);
         rut_object_release (child, parent);
 
         preferred_size_changed (stack);
@@ -166,7 +166,7 @@ _rut_stack_child_removed_cb (RutObject *parent, RutObject *child)
         return;
       }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 static void
@@ -190,7 +190,7 @@ _rut_stack_child_added_cb (RutObject *parent, RutObject *child)
   if (!rut_object_is (child, RUT_TRAIT_ID_SIZABLE))
     return;
 
-  child_data = g_slice_new (RutStackChild);
+  child_data = c_slice_new (RutStackChild);
   child_data->child = rut_object_claim (child, parent);
 
   child_data->preferred_size_closure =
@@ -306,7 +306,7 @@ _rut_stack_init_type (void)
   RutType *type = &rut_stack_type;
 #define TYPE RutStack
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_stack_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_stack_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

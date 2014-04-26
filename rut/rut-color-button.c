@@ -321,7 +321,7 @@ _rut_color_button_init_type (void)
   RutType *type = &rut_color_button_type;
 #define TYPE RutColorButton
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_color_button_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_color_button_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -448,7 +448,7 @@ show_picker (RutColorButton *button,
   float x1, y1, x2, y2;
   float picker_x, picker_y;
 
-  g_return_if_fail (button->picker == NULL);
+  c_return_if_fail (button->picker == NULL);
 
   button->picker = rut_color_picker_new (button->context);
 

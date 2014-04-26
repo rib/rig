@@ -29,7 +29,7 @@
 #ifndef _RUT_CAMERA_H_
 #define _RUT_CAMERA_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -76,7 +76,7 @@ typedef struct _RutCameraProps
   RutGraphableProps graphable;
 
   CoglMatrix input_transform;
-  GList *input_regions;
+  CList *input_regions;
 
   unsigned int orthographic:1;
   unsigned int in_frame:1;
@@ -166,7 +166,7 @@ typedef struct _RutCameraVTable
   void (*remove_input_region) (RutObject *camera,
                                RutInputRegion *region);
 
-  GList *(*get_input_regions) (RutObject *camera);
+  CList *(*get_input_regions) (RutObject *camera);
 
   bool (*transform_window_coordinate) (RutObject *camera,
                                            float *x,
@@ -331,7 +331,7 @@ void
 rut_camera_remove_input_region (RutObject *camera,
                                 RutInputRegion *region);
 
-GList *
+CList *
 rut_camera_get_input_regions (RutObject *object);
 
 bool

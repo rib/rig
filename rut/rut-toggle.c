@@ -341,7 +341,7 @@ _rut_toggle_init_type (void)
   RutType *type = &rut_toggle_type;
 #define TYPE RutToggle
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_toggle_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_toggle_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -398,9 +398,9 @@ _rut_toggle_grab_input_cb (RutInputEvent *event,
                                        toggle,
                                        toggle->state);
 
-              g_print ("Toggle click\n");
+              c_print ("Toggle click\n");
 
-              g_slice_free (ToggleGrabState, state);
+              c_slice_free (ToggleGrabState, state);
 
               rut_shell_queue_redraw (toggle->ctx->shell);
 
@@ -438,13 +438,13 @@ _rut_toggle_input_cb (RutInputRegion *region,
 {
   RutToggle *toggle = user_data;
 
-  g_print ("Toggle input\n");
+  c_print ("Toggle input\n");
 
   if(rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
      rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {
       RutShell *shell = toggle->ctx->shell;
-      ToggleGrabState *state = g_slice_new (ToggleGrabState);
+      ToggleGrabState *state = c_slice_new (ToggleGrabState);
 
       state->toggle = toggle;
       state->camera = rut_input_event_get_camera (event);
@@ -575,7 +575,7 @@ rut_toggle_new_with_icons (RutContext *ctx,
         }
       else
         {
-          g_warning ("Failed to load toggle icons %s and %s",
+          c_warning ("Failed to load toggle icons %s and %s",
                      selected_icon, unselected_icon);
           if (toggle->selected_icon)
             {
@@ -594,7 +594,7 @@ rut_toggle_new_with_icons (RutContext *ctx,
 
   font_name = rut_settings_get_font_name (ctx->settings); /* font_name is allocated */
   font_desc = pango_font_description_from_string (font_name);
-  g_free (font_name);
+  c_free (font_name);
 
   toggle->label = pango_layout_new (ctx->pango_context);
   pango_layout_set_font_description (toggle->label, font_desc);
@@ -640,7 +640,7 @@ rut_toggle_add_on_toggle_callback (RutToggle *toggle,
                                    void *user_data,
                                    RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&toggle->on_toggle_cb_list,
                                callback,

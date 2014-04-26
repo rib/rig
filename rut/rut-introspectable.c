@@ -45,7 +45,7 @@ copy_property_cb (RutProperty *property,
   RutProperty *dst_property =
     rut_introspectable_lookup_property (dst, property->spec->name);
 
-  g_return_if_fail (dst_property != NULL);
+  c_return_if_fail (dst_property != NULL);
 
   rut_property_copy_value (state->property_ctx, dst_property, property);
 }

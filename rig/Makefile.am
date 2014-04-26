@@ -4,8 +4,8 @@ include Makefile.sources
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/deps/ulib/src \
-	-I$(top_builddir)/deps/ulib/src \
+	-I$(top_srcdir)/deps/clib/src \
+	-I$(top_builddir)/deps/clib/src \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
 	-I$(top_builddir)/rig \
@@ -52,7 +52,7 @@ runtime_headersdir = $(prefix)/share/rig/codegen_includes
 runtime_headers_DATA = $(runtime_headers)
 
 librig_clang_la_SOURCES = rig-llvm.cpp rig-llvm.h
-librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/deps/ulib/src/libulib.la $(top_builddir)/rut/librut.la
+librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/deps/clib/src/libclib.la $(top_builddir)/rut/librut.la
 librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 if !HAVE_OSX
 librig_clang_la_LDFLAGS += -Wl,--unresolved-symbols=ignore-all

@@ -76,14 +76,14 @@ rig_save (RigEngine *engine, const char *path)
     FALSE
   };
 
-  rig_filename = g_strdup (path);
+  rig_filename = c_strdup (path);
 
   fp = fopen (rig_filename, "w");
-  g_free (rig_filename);
+  c_free (rig_filename);
 
   if (!fp)
     {
-      g_warning ("Failed to open %s for saving", rig_filename);
+      c_warning ("Failed to open %s for saving", rig_filename);
       return;
     }
 
@@ -147,11 +147,11 @@ rig_load (RigEngine *engine, const char *file)
     };
 
   /* Simulators shouldn't be trying to load UIs directly */
-  g_return_val_if_fail (engine->frontend, NULL);
+  c_return_val_if_fail (engine->frontend, NULL);
 
   if (g_str_has_suffix (file, ".xml"))
     {
-      g_warning ("Loading xml UI descriptions in Rig is no longer "
+      c_warning ("Loading xml UI descriptions in Rig is no longer "
                  "supported, only .rig files can be loaded");
       return NULL;
     }
@@ -169,7 +169,7 @@ rig_load (RigEngine *engine, const char *file)
                                  &len,
                                  &error))
     {
-      g_warning ("Failed to load ui description: %s", error->message);
+      c_warning ("Failed to load ui description: %s", error->message);
       return NULL;
     }
 
@@ -184,7 +184,7 @@ rig_load (RigEngine *engine, const char *file)
   if (needs_munmap)
     munmap (contents, len);
   else
-    g_free (contents);
+    c_free (contents);
 
   rig_pb_unserializer_destroy (unserializer);
 

@@ -573,7 +573,7 @@ _rut_color_picker_init_type (void)
   RutType *type = &rut_color_picker_type;
 #define TYPE RutColorPicker
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_color_picker_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_color_picker_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

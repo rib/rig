@@ -74,7 +74,7 @@ typedef struct _Loader
   CoglBool read_property;
 
   unsigned int first_vertex, last_vertex;
-  GArray *faces;
+  CArray *faces;
   CoglIndicesType indices_type;
 
 } Loader;
@@ -110,7 +110,7 @@ get_sizeof_attribute_type (RutAttributeType type)
       return 4;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return 0;
 }
 
@@ -168,19 +168,19 @@ rut_mesh_ply_loader_add_face_index (Loader *loader, unsigned int index)
     case COGL_INDICES_TYPE_UNSIGNED_BYTE:
       {
         uint8_t value = index;
-        g_array_append_val (loader->faces, value);
+        c_array_append_val (loader->faces, value);
       }
       break;
     case COGL_INDICES_TYPE_UNSIGNED_SHORT:
       {
         uint16_t value = index;
-        g_array_append_val (loader->faces, value);
+        c_array_append_val (loader->faces, value);
       }
       break;
     case COGL_INDICES_TYPE_UNSIGNED_INT:
       {
         uint32_t value = index;
-        g_array_append_val (loader->faces, value);
+        c_array_append_val (loader->faces, value);
       }
       break;
     }
@@ -244,11 +244,11 @@ get_attribute_type_for_ply_type (e_ply_type type)
     case PLY_DOUBLE:
       return RUT_ATTRIBUTE_TYPE_FLOAT;
     case PLY_LIST:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       return 0;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return 0;
 }
 
@@ -294,18 +294,18 @@ init_indices_array (Loader *loader,
   if (n_vertices <= 0x100)
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_BYTE;
-      loader->faces = g_array_new (FALSE, FALSE, sizeof (uint8_t));
+      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint8_t));
     }
   else if (n_vertices <= 0x10000)
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_SHORT;
-      loader->faces = g_array_new (FALSE, FALSE, sizeof (uint16_t));
+      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint16_t));
     }
   else if (cogl_has_feature (loader->ctx->cogl_context,
                              COGL_FEATURE_ID_UNSIGNED_INT_INDICES))
     {
       loader->indices_type = COGL_INDICES_TYPE_UNSIGNED_INT;
-      loader->faces = g_array_new (FALSE, FALSE, sizeof (uint32_t));
+      loader->faces = c_array_new (FALSE, FALSE, sizeof (uint32_t));
     }
   else
     {
@@ -569,7 +569,7 @@ _rut_mesh_new_from_p_ply (RutContext *ctx,
                        n_loader_attributes);
 
   indices_buffer = rut_buffer_new (loader->faces->len *
-                                   g_array_get_element_size (loader->faces));
+                                   c_array_get_element_size (loader->faces));
   memcpy (indices_buffer->data, loader->faces->data, indices_buffer->size);
 
   rut_mesh_set_indices (mesh,
@@ -592,7 +592,7 @@ EXIT:
       rut_object_unref (rut_attributes[i]);
 
   if (loader->faces)
-    g_array_free (loader->faces, TRUE);
+    c_array_free (loader->faces, TRUE);
 
   return mesh;
 }
@@ -628,7 +628,7 @@ rut_mesh_new_from_ply (RutContext *ctx,
                                    load_status,
                                    error);
 
-  g_free (display_name);
+  c_free (display_name);
 
   return mesh;
 }
@@ -654,7 +654,7 @@ rut_mesh_new_from_ply_data (RutContext *ctx,
   if (!ply)
     return NULL;
 
-  display_name = g_strdup_printf ("<serialized asset %p>", data);
+  display_name = c_strdup_printf ("<serialized asset %p>", data);
 
   mesh = _rut_mesh_new_from_p_ply (ctx,
                                    &loader,
@@ -665,7 +665,7 @@ rut_mesh_new_from_ply_data (RutContext *ctx,
                                    load_status,
                                    error);
 
-  g_free (display_name);
+  c_free (display_name);
 
   return mesh;
 }

@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -105,7 +105,7 @@ _rut_rectangle_init_type (void)
   RutType *type = &rut_rectangle_type;
 #define TYPE RutRectangle
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_rectangle_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_rectangle_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

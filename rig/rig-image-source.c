@@ -77,7 +77,7 @@ destroy_source_wrapper (gpointer data)
   if (wrapper->video_source_fragment_wrapper)
     cogl_object_unref (wrapper->video_source_fragment_wrapper);
 
-  g_slice_free (ImageSourceWrappers, wrapper);
+  c_slice_free (ImageSourceWrappers, wrapper);
 }
 
 void
@@ -107,12 +107,12 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   if (wrappers)
     return wrappers;
 
-  wrappers = g_slice_new0 (ImageSourceWrappers);
+  wrappers = c_slice_new0 (ImageSourceWrappers);
 
   /* XXX: Note: we use texture2D() instead of the
    * cogl_texture_lookup%i wrapper because the _GLOBALS hook comes
    * before the _lookup functions are emitted by Cogl */
-  wrapper = g_strdup_printf ("vec4\n"
+  wrapper = c_strdup_printf ("vec4\n"
                              "rig_image_source_sample%d (vec2 UV)\n"
                              "{\n"
                              "#if __VERSION__ >= 130\n"
@@ -129,9 +129,9 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   wrappers->image_source_fragment_wrapper =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
 
-  g_free (wrapper);
+  c_free (wrapper);
 
-  wrapper = g_strdup_printf ("vec4\n"
+  wrapper = c_strdup_printf ("vec4\n"
                              "rig_image_source_sample%d (vec2 UV)\n"
                              "{\n"
                              "  return cogl_gst_sample_video%d (UV);\n"
@@ -144,7 +144,7 @@ get_image_source_wrappers (RigEngine *engine, int layer_index)
   wrappers->video_source_fragment_wrapper =
     cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT_GLOBALS, wrapper, NULL);
 
-  g_free (wrapper);
+  c_free (wrapper);
 
   g_hash_table_insert (engine->image_source_wrappers,
                        GUINT_TO_POINTER (layer_index),
@@ -201,7 +201,7 @@ _rig_image_source_video_play (RigImageSource *source,
   source->bin = gst_element_factory_make ("playbin", NULL);
 
   if (data && len)
-    uri = g_strdup_printf ("mem://%p:%lu", data, (unsigned long)len);
+    uri = c_strdup_printf ("mem://%p:%lu", data, (unsigned long)len);
   else
     {
       filename = g_build_filename (engine->ctx->assets_location, path, NULL);
@@ -218,9 +218,9 @@ _rig_image_source_video_play (RigImageSource *source,
   gst_element_set_state (source->pipeline, GST_STATE_PLAYING);
   gst_bus_add_watch (bus, _rig_image_source_video_loop, source);
 
-  g_free (uri);
+  c_free (uri);
   if (filename)
-    g_free (filename);
+    c_free (filename);
   gst_object_unref (bus);
 }
 #endif /* USE_GSTREAMER */

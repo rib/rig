@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-adb.h"
 #include "rut-exception.h"
@@ -116,11 +116,11 @@ send_adb_vcommand (int fd,
       return false;
     }
 
-  command = g_strdup_vprintf (format, args);
-  request = g_strdup_printf ("%04x%s", strlen (command), command);
+  command = c_strdup_vprintf (format, args);
+  request = c_strdup_printf ("%04x%s", strlen (command), command);
   status = rut_os_write (fd, request, strlen (request), &catch);
-  g_free (request);
-  g_free (command);
+  c_free (request);
+  c_free (command);
 
   if (!status)
     {
@@ -195,7 +195,7 @@ read_reply (int fd, RutException **e)
       return NULL;
     }
 
-  buffer = g_malloc (len);
+  buffer = c_malloc (len);
 
   if (!rut_os_read_len (fd, buffer, len, &catch))
     {
@@ -204,7 +204,7 @@ read_reply (int fd, RutException **e)
                  "Failed to read reply from ADB daemon: %s",
                  catch->message);
       rut_exception_free (catch);
-      g_free (buffer);
+      c_free (buffer);
       return NULL;
     }
 
@@ -261,21 +261,21 @@ static char *
 read_until_eof (int fd, RutException **e)
 {
   char buffer[4096];
-  GString *data = g_string_new ("");
+  CString *data = c_string_new ("");
 
   do {
       int len = sizeof (buffer);
       if (!rut_os_read (fd, buffer, &len, e))
         {
-          g_string_free (data, TRUE);
+          c_string_free (data, TRUE);
           return NULL;
         }
-      g_string_append_len (data, buffer, len);
+      c_string_append_len (data, buffer, len);
       if (len < sizeof (buffer))
         break;
   } while (1);
 
-  return g_string_free (data, FALSE);
+  return c_string_free (data, FALSE);
 }
 
 char *
@@ -312,7 +312,7 @@ rut_adb_getprop (const char *serial,
 {
   char *command = g_strconcat ("shell:getprop ", property, NULL);
   char *result = rut_adb_run_shell_cmd (serial, e, command);
-  g_free (command);
+  c_free (command);
 
   if (!result)
     return NULL;
@@ -361,7 +361,7 @@ handle_devices_update_cb (void *user_data, int revents)
   /* XXX: We only rely on host:track-devices for notifications of
    * device changes, but since we want the device qualifier info
    * we follow up with a devices-l query... */
-  g_free (reply);
+  c_free (reply);
 }
 
 RutAdbDeviceTracker *
@@ -381,7 +381,7 @@ rut_adb_device_tracker_new (RutShell *shell,
   fd = connect_to_adb (&catch);
   if (fd == -1)
     {
-      g_warning ("%s", catch->message);
+      c_warning ("%s", catch->message);
       rut_exception_free (catch);
       goto error;
     }
@@ -391,7 +391,7 @@ rut_adb_device_tracker_new (RutShell *shell,
                          &catch,
                          "host:track-devices"))
     {
-      g_warning ("Failed to start tracking Android devices via ADB daemon: %s",
+      c_warning ("Failed to start tracking Android devices via ADB daemon: %s",
                  catch->message);
       rut_exception_free (catch);
       goto error;

@@ -121,7 +121,7 @@ _rut_rotation_inspector_init_type (void)
   RutType *type = &rut_rotation_inspector_type;
 #define TYPE RutRotationInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_rotation_inspector_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_rotation_inspector_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

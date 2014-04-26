@@ -299,8 +299,8 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
       CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
                               property->spec->data_offset); \
       \
-      g_return_if_fail (property->spec->data_offset == 0); \
-      g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
+      c_return_if_fail (property->spec->data_offset == 0); \
+      c_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
       \
       if (property->spec->getter.any_type == NULL && *data == value) \
         return; \
@@ -313,7 +313,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
 static inline CTYPE \
 rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
-  g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
+  c_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
   if (property->spec->getter.any_type) \
     { \
@@ -335,7 +335,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
                              RutProperty *property, \
                              const CTYPE *value) \
 { \
-  g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
+  c_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
   if (property->spec->setter.any_type) \
     { \
@@ -353,7 +353,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
 static inline const CTYPE * \
 rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
-  g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
+  c_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
   if (property->spec->getter.any_type) \
     { \
@@ -374,7 +374,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
                              const CTYPE value[LEN]) \
 { \
  \
-  g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
+  c_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
  \
   if (property->spec->setter.any_type) \
     { \
@@ -392,7 +392,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
 static inline const CTYPE * \
 rut_property_get_ ## SUFFIX (RutProperty *property) \
 { \
-  g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
+  c_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE, 0); \
  \
   if (property->spec->getter.any_type) \
     { \
@@ -421,7 +421,7 @@ rut_property_set_text (RutPropertyContext *ctx,
   char **data =
     (char **)(uint8_t *)property->object + property->spec->data_offset;
 
-  g_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT);
+  c_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT);
 
   if (property->spec->setter.any_type)
     {
@@ -430,8 +430,8 @@ rut_property_set_text (RutPropertyContext *ctx,
   else
     {
       if (*data)
-        g_free (*data);
-      *data = g_strdup (value);
+        c_free (*data);
+      *data = c_strdup (value);
       rut_property_dirty (ctx, property);
     }
 }
@@ -439,7 +439,7 @@ rut_property_set_text (RutPropertyContext *ctx,
 static inline const char *
 rut_property_get_text (RutProperty *property)
 {
-  g_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT, 0);
+  c_return_val_if_fail (property->spec->type == RUT_PROPERTY_TYPE_TEXT, 0);
 
   if (property->spec->getter.any_type)
     {

@@ -77,7 +77,7 @@ struct _RigBindingView
   RutText *code_view;
 
   RutProperty *preview_dependency_prop;
-  GList *dependencies;
+  CList *dependencies;
 
 };
 
@@ -112,7 +112,7 @@ _rig_binding_view_init_type (void)
   RutType *type = &rig_binding_view_type;
 #define TYPE RigBindingView
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_binding_view_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_binding_view_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -133,7 +133,7 @@ static void
 remove_dependency (RigBindingView *binding_view,
                    RutProperty *property)
 {
-  GList *l;
+  CList *l;
 
   for (l = binding_view->dependencies; l; l = l->next)
     {
@@ -145,13 +145,13 @@ remove_dependency (RigBindingView *binding_view,
 
           rut_box_layout_remove (binding_view->dependencies_vbox, dependency->hbox);
           rut_object_unref (dependency->object);
-          g_slice_free (Dependency, dependency);
+          c_slice_free (Dependency, dependency);
 
           return;
         }
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 static void
@@ -179,7 +179,7 @@ add_dependency (RigBindingView *binding_view,
                 RutProperty *property,
                 bool drag_preview)
 {
-  Dependency *dependency = g_slice_new0 (Dependency);
+  Dependency *dependency = c_slice_new0 (Dependency);
   RutProperty *label_prop;
   char *dependency_label;
   RutObject *object = property->object;
@@ -242,21 +242,21 @@ add_dependency (RigBindingView *binding_view,
 
   if (component_str)
     {
-      dependency_label = g_strdup_printf ("%s::%s::%s",
+      dependency_label = c_strdup_printf ("%s::%s::%s",
                                           label_str,
                                           component_str,
                                           property->spec->name);
     }
   else
     {
-      dependency_label = g_strdup_printf ("%s::%s",
+      dependency_label = c_strdup_printf ("%s::%s",
                                           label_str,
                                           property->spec->name);
     }
 
   dependency->label = rut_text_new_with_text (ctx, NULL,
                                               dependency_label);
-  g_free (dependency_label);
+  c_free (dependency_label);
   rut_box_layout_add (dependency->hbox, false, dependency->label);
   rut_object_unref (dependency->label);
 
@@ -279,7 +279,7 @@ add_dependency (RigBindingView *binding_view,
                                       NULL); /* destroy notify */
 
   binding_view->dependencies =
-    g_list_prepend (binding_view->dependencies, dependency);
+    c_list_prepend (binding_view->dependencies, dependency);
 
   rut_box_layout_add (binding_view->dependencies_vbox,
                       false, dependency->hbox);
@@ -311,7 +311,7 @@ drop_region_input_cb (RutInputRegion *region,
         {
           RutProperty *property = rig_prop_inspector_get_property (payload);
 
-          g_print ("Drop Offer\n");
+          c_print ("Drop Offer\n");
 
           binding_view->preview_dependency_prop = property;
           add_dependency (binding_view, property, true);

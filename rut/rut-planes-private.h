@@ -30,7 +30,7 @@
 #define __RUT_PLANES_PRIVATE_H__
 
 #include <cogl/cogl2-experimental.h>
-#include <glib.h>
+#include <clib.h>
 
 G_BEGIN_DECLS
 

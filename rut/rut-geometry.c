@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 #include <math.h>
 
 #include <cogl/cogl.h>
@@ -295,7 +295,7 @@ rut_create_create_grid (RutContext *ctx,
                         float x_space,
                         float y_space)
 {
-  GArray *lines = g_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
+  CArray *lines = c_array_new (FALSE, FALSE, sizeof (CoglVertexP2));
   float x, y;
   int n_lines = 0;
 
@@ -305,7 +305,7 @@ rut_create_create_grid (RutContext *ctx,
         { .x = x, .y = 0 },
         { .x = x, .y = height }
       };
-      g_array_append_vals (lines, p, 2);
+      c_array_append_vals (lines, p, 2);
       n_lines++;
     }
 
@@ -315,7 +315,7 @@ rut_create_create_grid (RutContext *ctx,
         { .x = 0, .y = y },
         { .x = width, .y = y }
       };
-      g_array_append_vals (lines, p, 2);
+      c_array_append_vals (lines, p, 2);
       n_lines++;
     }
 

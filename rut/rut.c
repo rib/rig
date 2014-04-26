@@ -33,7 +33,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 #include <cogl/cogl-sdl.h>
@@ -85,23 +85,23 @@ typedef struct _SettingsChangedCallbackState
 
 struct _RutSettings
 {
-  GList *changed_callbacks;
+  CList *changed_callbacks;
 };
 
 static void
 _rut_settings_free (RutSettings *settings)
 {
-  GList *l;
+  CList *l;
 
   for (l = settings->changed_callbacks; l; l = l->next)
-    g_slice_free (SettingsChangedCallbackState, l->data);
-  g_list_free (settings->changed_callbacks);
+    c_slice_free (SettingsChangedCallbackState, l->data);
+  c_list_free (settings->changed_callbacks);
 }
 
 RutSettings *
 rut_settings_new (void)
 {
-  return g_slice_new0 (RutSettings);
+  return c_slice_new0 (RutSettings);
 }
 
 void
@@ -110,7 +110,7 @@ rut_settings_add_changed_callback (RutSettings *settings,
                                    GDestroyNotify destroy_notify,
                                    void *user_data)
 {
-  GList *l;
+  CList *l;
   SettingsChangedCallbackState *state;
 
   for (l = settings->changed_callbacks; l; l = l->next)
@@ -125,12 +125,12 @@ rut_settings_add_changed_callback (RutSettings *settings,
         }
     }
 
-  state = g_slice_new (SettingsChangedCallbackState);
+  state = c_slice_new (SettingsChangedCallbackState);
   state->callback = callback;
   state->destroy_notify = destroy_notify;
   state->user_data = user_data;
 
-  settings->changed_callbacks = g_list_prepend (settings->changed_callbacks,
+  settings->changed_callbacks = c_list_prepend (settings->changed_callbacks,
                                                 state);
 }
 
@@ -138,7 +138,7 @@ void
 rut_settings_remove_changed_callback (RutSettings *settings,
                                       RutSettingsChangedCallback callback)
 {
-  GList *l;
+  CList *l;
 
   for (l = settings->changed_callbacks; l; l = l->next)
     {
@@ -147,8 +147,8 @@ rut_settings_remove_changed_callback (RutSettings *settings,
       if (state->callback == callback)
         {
           settings->changed_callbacks =
-            g_list_delete_link (settings->changed_callbacks, l);
-          g_slice_free (SettingsChangedCallbackState, state);
+            c_list_delete_link (settings->changed_callbacks, l);
+          c_slice_free (SettingsChangedCallbackState, state);
           return;
         }
     }
@@ -164,7 +164,7 @@ rut_settings_get_password_hint_time (RutSettings *settings)
 char *
 rut_settings_get_font_name (RutSettings *settings)
 {
-  return g_strdup ("Sans 12");
+  return c_strdup ("Sans 12");
 }
 
 static void
@@ -190,7 +190,7 @@ _rut_context_free (void *object)
 
   _rut_settings_free (ctx->settings);
 
-  g_slice_free (RutContext, ctx);
+  c_slice_free (RutContext, ctx);
 }
 
 RutType rut_context_type;
@@ -204,7 +204,7 @@ _rut_context_init_type (void)
 static void
 _rut_texture_cache_entry_free (RutTextureCacheEntry *entry)
 {
-  g_slice_free (RutTextureCacheEntry, entry);
+  c_slice_free (RutTextureCacheEntry, entry);
 }
 
 static void
@@ -236,7 +236,7 @@ rut_find_data_file (const char *base_filename)
       if (g_file_test (full_path, G_FILE_TEST_EXISTS))
         return full_path;
 
-      g_free (full_path);
+      c_free (full_path);
     }
 
   return NULL;
@@ -259,7 +259,7 @@ rut_load_texture (RutContext *ctx, const char *filename, CoglError **error)
   if (!texture)
     return NULL;
 
-  entry = g_slice_new0 (RutTextureCacheEntry);
+  entry = c_slice_new0 (RutTextureCacheEntry);
   entry->ctx = ctx;
   entry->filename_quark = filename_quark;
   /* Note: we don't take a reference on the texture. The aim of this
@@ -302,7 +302,7 @@ rut_load_texture_from_data_file (RutContext *ctx,
 #endif
   tex = rut_load_texture (ctx, full_path, (CoglError **) error);
 
-  g_free (full_path);
+  c_free (full_path);
 
   return tex;
 }
@@ -313,7 +313,7 @@ rut_context_new (RutShell *shell)
   RutContext *context;
   CoglError *error = NULL;
 
-  g_return_val_if_fail (shell != NULL, NULL);
+  c_return_val_if_fail (shell != NULL, NULL);
 
   context = rut_object_alloc0 (RutContext,
                                &rut_context_type,
@@ -337,8 +337,8 @@ rut_context_new (RutShell *shell)
 #endif
       if (!context->cogl_context)
         {
-          g_warning ("Failed to create Cogl Context: %s", error->message);
-          g_free (context);
+          c_warning ("Failed to create Cogl Context: %s", error->message);
+          c_free (context);
           return NULL;
         }
 
@@ -411,7 +411,7 @@ void
 rut_set_assets_location (RutContext *context,
                          const char *assets_location)
 {
-  context->assets_location = g_strdup (assets_location);
+  context->assets_location = c_strdup (assets_location);
 }
 
 void

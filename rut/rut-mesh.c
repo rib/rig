@@ -36,7 +36,7 @@ _rut_buffer_free (void *object)
 {
   RutBuffer *buffer = object;
 
-  g_free (buffer->data);
+  c_free (buffer->data);
   rut_object_free (RutBuffer, buffer);
 }
 
@@ -57,7 +57,7 @@ rut_buffer_new (size_t buffer_size)
 
 
   buffer->size = buffer_size;
-  buffer->data = g_malloc (buffer_size);
+  buffer->data = c_malloc (buffer_size);
 
   return buffer;
 }
@@ -91,7 +91,7 @@ rut_attribute_new (RutBuffer *buffer,
 
 
   attribute->buffer = rut_object_ref (buffer);
-  attribute->name = g_strdup (name);
+  attribute->name = c_strdup (name);
   attribute->stride = stride;
   attribute->offset = offset;
   attribute->n_components = n_components;
@@ -116,7 +116,7 @@ _rut_mesh_free (RutObject *object)
   for (i = 0; i < mesh->n_attributes; i++)
     rut_object_unref (mesh->attributes[i]);
 
-  g_slice_free1 (mesh->n_attributes * sizeof (void *), mesh->attributes);
+  c_slice_free1 (mesh->n_attributes * sizeof (void *), mesh->attributes);
   rut_object_free (RutMesh, mesh);
 }
 
@@ -154,7 +154,7 @@ rut_mesh_new_from_buffer_p3 (CoglVerticesMode mode,
   RutMesh *mesh =
     rut_object_alloc0 (RutMesh, &rut_mesh_type, _rut_mesh_init_type);
   int n_attributes = 1;
-  RutAttribute **attributes = g_slice_alloc (sizeof (void *) * n_attributes);
+  RutAttribute **attributes = c_slice_alloc (sizeof (void *) * n_attributes);
 
 
   attributes[0] = rut_attribute_new (buffer,
@@ -185,7 +185,7 @@ rut_mesh_new_from_buffer_p3n3 (CoglVerticesMode mode,
   RutMesh *mesh =
     rut_object_alloc0 (RutMesh, &rut_mesh_type, _rut_mesh_init_type);
   int n_attributes = 2;
-  RutAttribute **attributes = g_slice_alloc (sizeof (void *) * n_attributes);
+  RutAttribute **attributes = c_slice_alloc (sizeof (void *) * n_attributes);
 
 
   attributes[0] = rut_attribute_new (buffer,
@@ -217,7 +217,7 @@ rut_mesh_new_from_buffer_p3c4 (CoglVerticesMode mode,
   RutMesh *mesh =
     rut_object_alloc0 (RutMesh, &rut_mesh_type, _rut_mesh_init_type);
   int n_attributes = 2;
-  RutAttribute **attributes = g_slice_alloc (sizeof (void *) * n_attributes);
+  RutAttribute **attributes = c_slice_alloc (sizeof (void *) * n_attributes);
 
 
   attributes[0] = rut_attribute_new (buffer,
@@ -259,7 +259,7 @@ rut_mesh_set_attributes (RutMesh *mesh,
                          int n_attributes)
 {
   RutAttribute **attributes_real =
-    g_slice_copy (sizeof (void *) * n_attributes, attributes);
+    c_slice_copy (sizeof (void *) * n_attributes, attributes);
   int i;
 
   /* NB: some of the given attributes may be the same as
@@ -392,7 +392,7 @@ rut_mesh_foreach_vertex (RutMesh *mesh,
   ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
 
-  g_return_if_fail (ready);
+  c_return_if_fail (ready);
 
   foreach_vertex (mesh, callback, user_data, FALSE,
                   bases, strides, n_attributes);
@@ -424,7 +424,7 @@ rut_mesh_foreach_index (RutMesh *mesh,
   ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
 
-  g_return_if_fail (ready);
+  c_return_if_fail (ready);
 
   foreach_vertex (mesh, callback, user_data, TRUE,
                   bases, strides, n_attributes);
@@ -533,7 +533,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
   ready = collect_attribute_state (mesh, bases, strides, first_attribute, ap);
   va_end (ap);
 
-  g_return_if_fail (ready);
+  c_return_if_fail (ready);
 
 #define SWAP_TRIANGLE_VERTICES(V0, V1) \
   do { \
@@ -595,7 +595,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
               tri_i[2] = move_to_i (i++, &state, tri_v[2]);
               break;
             default:
-              g_warn_if_reached ();
+              c_warn_if_reached ();
             }
         }
     }
@@ -634,7 +634,7 @@ rut_mesh_foreach_triangle (RutMesh *mesh,
               tri_i[2] = move_to (i++, n_attributes, bases, strides, tri_v[2]);
               break;
             default:
-              g_warn_if_reached ();
+              c_warn_if_reached ();
             }
         }
     }
@@ -658,7 +658,7 @@ get_cogl_attribute_type (RutAttributeType type)
       return COGL_ATTRIBUTE_TYPE_FLOAT;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return 0;
 }
 

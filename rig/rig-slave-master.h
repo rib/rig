@@ -30,7 +30,7 @@
 #ifndef __RIG_SLAVE_MASTER__
 #define __RIG_SLAVE_MASTER__
 
-#include <glib.h>
+#include <clib.h>
 
 #include "protobuf-c-rpc/rig-protobuf-c-rpc.h"
 

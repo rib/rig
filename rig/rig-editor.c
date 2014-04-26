@@ -29,7 +29,7 @@
 #include <config.h>
 
 #include <stdlib.h>
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -72,7 +72,7 @@ struct _RigEditor
   RigFrontend *frontend;
   RigEngine *engine;
 
-  GList *assets;
+  CList *assets;
 
   char *ui_filename;
 
@@ -107,8 +107,8 @@ struct _RigEditor
   RigAsset *pointalism_grid_builtin_asset;
   RigAsset *hair_builtin_asset;
   RigAsset *button_input_builtin_asset;
-  GList *result_input_closures;
-  GList *asset_enumerators;
+  CList *result_input_closures;
+  CList *asset_enumerators;
 
   RutAdbDeviceTracker *adb_tracker;
   int next_forward_port;
@@ -308,7 +308,7 @@ dump_left_over_object_cb (gpointer key,
                           gpointer value,
                           gpointer user_data)
 {
-  g_warning ("  %s", rig_engine_get_object_debug_name (value));
+  c_warning ("  %s", rig_engine_get_object_debug_name (value));
 }
 #endif /* RIG_ENABLE_DEBUG */
 
@@ -332,7 +332,7 @@ reset_play_mode_ui (RigEditor *editor)
   if (editor->edit_to_play_object_map &&
       G_UNLIKELY (g_hash_table_size (editor->edit_to_play_object_map)))
     {
-      g_warning ("BUG: The following objects weren't properly unregistered "
+      c_warning ("BUG: The following objects weren't properly unregistered "
                  "by reset_play_mode_ui():");
       g_hash_table_foreach (editor->edit_to_play_object_map,
                             dump_left_over_object_cb,
@@ -367,11 +367,11 @@ typedef struct _ResultInputClosure
 void
 rig_editor_free_result_input_closures (RigEditor *editor)
 {
-  GList *l;
+  CList *l;
 
   for (l = editor->result_input_closures; l; l = l->next)
-    g_slice_free (ResultInputClosure, l->data);
-  g_list_free (editor->result_input_closures);
+    c_slice_free (ResultInputClosure, l->data);
+  c_list_free (editor->result_input_closures);
   editor->result_input_closures = NULL;
 }
 
@@ -707,7 +707,7 @@ result_input_cb (RutInputRegion *region,
 
           if (engine->objects_selection->objects)
             {
-              g_list_foreach (engine->objects_selection->objects,
+              c_list_foreach (engine->objects_selection->objects,
                               (GFunc) apply_result_input_with_entity,
                               closure);
             }
@@ -805,7 +805,7 @@ add_search_result (RigEngine *engine,
   RutInputRegion *region;
   RutDragBin *drag_bin;
 
-  closure = g_slice_new (ResultInputClosure);
+  closure = c_slice_new (ResultInputClosure);
   closure->result = result;
   closure->engine = engine;
 
@@ -844,7 +844,7 @@ add_search_result (RigEngine *engine,
           RutText *text = rut_text_new_with_text (engine->ctx, NULL, basename);
           rut_stack_add (stack, text);
           rut_object_unref (text);
-          g_free (basename);
+          c_free (basename);
         }
     }
   else if (rut_object_get_type (result) == &rig_entity_type)
@@ -985,7 +985,7 @@ add_search_result (RigEngine *engine,
 
   /* XXX: It could be nicer to have some form of weak pointer
    * mechanism to manage the lifetime of these closures... */
-  editor->result_input_closures = g_list_prepend (editor->result_input_closures,
+  editor->result_input_closures = c_list_prepend (editor->result_input_closures,
                                                   closure);
 }
 
@@ -1023,7 +1023,7 @@ add_matching_entity_cb (RutObject *object,
               add_search_result (state->engine, entity);
             }
 
-          g_free (entity_label);
+          c_free (entity_label);
         }
     }
   return RUT_TRAVERSE_VISIT_CONTINUE;
@@ -1043,7 +1043,7 @@ add_matching_controller (RigController *controller,
       add_search_result (state->engine, controller);
     }
 
-  g_free (controller_label);
+  c_free (controller_label);
 }
 
 static CoglBool
@@ -1051,9 +1051,9 @@ asset_matches_search (RigEngine *engine,
                       RigAsset *asset,
                       const char *search)
 {
-  GList *l;
+  CList *l;
   bool found = false;
-  const GList *inferred_tags;
+  const CList *inferred_tags;
   char **tags;
   const char *path;
   int i;
@@ -1085,7 +1085,7 @@ asset_matches_search (RigEngine *engine,
 
   for (i = 0; tags[i]; i++)
     {
-      const GList *l;
+      const CList *l;
       CoglBool found = FALSE;
 
       for (l = inferred_tags; l; l = l->next)
@@ -1112,7 +1112,7 @@ static bool
 rig_search_with_text (RigEngine *engine, const char *user_search)
 {
   RigEditor *editor = engine->editor;
-  GList *l;
+  CList *l;
   int i;
   CoglBool found = FALSE;
   SearchState state;
@@ -1164,7 +1164,7 @@ rig_search_with_text (RigEngine *engine, const char *user_search)
         add_matching_controller (l->data, &state);
     }
 
-  g_free (search);
+  c_free (search);
 
   if (!engine->required_search_tags)
     return found | state.found;
@@ -1206,7 +1206,7 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   RigEditor *editor = engine->editor;
   GFile *assets_dir = g_file_new_for_path (engine->ctx->assets_location);
   char *path = g_file_get_relative_path (assets_dir, asset_file);
-  GList *l;
+  CList *l;
   RigAsset *asset = NULL;
   RutException *catch = NULL;
 
@@ -1222,26 +1222,26 @@ add_asset (RigEngine *engine, GFileInfo *info, GFile *asset_file)
   asset = rig_asset_new_from_file (engine, info, asset_file, &catch);
   if (!asset)
     {
-      g_warning ("Failed to load asset from file %s: %s",
+      c_warning ("Failed to load asset from file %s: %s",
                  path, catch->message);
       rut_exception_free (catch);
     }
   else
     {
       editor->assets =
-        g_list_prepend (editor->assets, asset);
+        c_list_prepend (editor->assets, asset);
     }
 }
 
 #if 0
-static GList *
-copy_tags (GList *tags)
+static CList *
+copy_tags (CList *tags)
 {
-  GList *l, *copy = NULL;
+  CList *l, *copy = NULL;
   for (l = tags; l; l = l->next)
     {
       char *tag = g_intern_string (l->data);
-      copy = g_list_prepend (copy, tag);
+      copy = c_list_prepend (copy, tag);
     }
   return copy;
 }
@@ -1287,7 +1287,7 @@ typedef struct _AssetEnumeratorState
   GFile *directory;
   GFileEnumerator *enumerator;
   GCancellable *cancellable;
-  GList *tags;
+  CList *tags;
 } AssetEnumeratorState;
 
 static void
@@ -1298,12 +1298,12 @@ cleanup_assets_enumerator (AssetEnumeratorState *state)
 
   g_object_unref (state->cancellable);
   g_object_unref (state->directory);
-  g_list_free (state->tags);
+  c_list_free (state->tags);
 
   state->engine->asset_enumerators =
-    g_list_remove (state->engine->asset_enumerators, state);
+    c_list_remove (state->engine->asset_enumerators, state);
 
-  g_slice_free (AssetEnumeratorState, state);
+  c_slice_free (AssetEnumeratorState, state);
 }
 
 static void
@@ -1312,8 +1312,8 @@ assets_found_cb (GObject *source_object,
                  gpointer user_data)
 {
   AssetEnumeratorState *state = user_data;
-  GList *infos;
-  GList *l;
+  CList *infos;
+  CList *l;
 
   infos = g_file_enumerator_next_files_finish (state->enumerator,
                                                res,
@@ -1327,7 +1327,7 @@ assets_found_cb (GObject *source_object,
   for (l = infos; l; l = l->next)
     enumerate_file_info (state->engine, state->directory, l->data);
 
-  g_list_free (infos);
+  c_list_free (infos);
 
   g_file_enumerator_next_files_async (state->enumerator,
                                       5, /* what's a good number here? */
@@ -1349,7 +1349,7 @@ assets_enumerator_cb (GObject *source_object,
     g_file_enumerate_children_finish (state->directory, res, &error);
   if (!state->enumerator)
     {
-      g_warning ("Error while looking for assets: %s", error->message);
+      c_warning ("Error while looking for assets: %s", error->message);
       g_error_free (error);
       cleanup_assets_enumerator (state);
       return;
@@ -1367,7 +1367,7 @@ static void
 enumerate_dir_for_assets_async (RigEngine *engine,
                                 GFile *directory)
 {
-  AssetEnumeratorState *state = g_slice_new0 (AssetEnumeratorState);
+  AssetEnumeratorState *state = c_slice_new0 (AssetEnumeratorState);
 
   state->engine = engine;
   state->directory = g_object_ref (directory);
@@ -1384,7 +1384,7 @@ enumerate_dir_for_assets_async (RigEngine *engine,
                                    assets_enumerator_cb,
                                    engine);
 
-  engine->asset_enumerators = g_list_prepend (engine->asset_enumerators, state);
+  engine->asset_enumerators = c_list_prepend (engine->asset_enumerators, state);
 }
 
 #else /* USE_ASYNC_IO */
@@ -1405,9 +1405,9 @@ enumerate_dir_for_assets (RigEngine *engine,
   if (!enumerator)
     {
       char *path = g_file_get_path (file);
-      g_warning ("Failed to enumerator assets dir %s: %s",
+      c_warning ("Failed to enumerator assets dir %s: %s",
                  path, error->message);
-      g_free (path);
+      c_free (path);
       g_error_free (error);
       return;
     }
@@ -1432,31 +1432,31 @@ load_asset_list (RigEditor *editor)
   enumerate_dir_for_assets (engine, assets_dir);
 
   rut_object_ref (editor->nine_slice_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->nine_slice_builtin_asset);
 
   rut_object_ref (editor->diamond_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->diamond_builtin_asset);
 
   rut_object_ref (editor->circle_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->circle_builtin_asset);
 
   rut_object_ref (editor->pointalism_grid_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->pointalism_grid_builtin_asset);
 
   rut_object_ref (editor->text_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->text_builtin_asset);
 
   rut_object_ref (editor->hair_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->hair_builtin_asset);
 
   rut_object_ref (editor->button_input_builtin_asset);
-  editor->assets = g_list_prepend (editor->assets,
+  editor->assets = c_list_prepend (editor->assets,
                                    editor->button_input_builtin_asset);
 
   g_object_unref (assets_dir);
@@ -1570,7 +1570,7 @@ add_light_handle (RigEngine *engine, RigUI *ui)
   else
     g_critical ("could not load model %s: %s", full_path, error->message);
 
-  g_free (full_path);
+  c_free (full_path);
 }
 
 static void
@@ -1718,7 +1718,7 @@ connect_pressed_cb (RutIconButton *button,
                     void *user_data)
 {
   RigEngine *engine = user_data;
-  GList *l;
+  CList *l;
 
   for (l = engine->slave_addresses; l; l = l->next)
     rig_connect_to_slave (engine, l->data);
@@ -2001,13 +2001,13 @@ asset_search_toggle_cb (RutIconToggle *toggle,
   if (state)
     {
       engine->required_search_tags =
-        g_list_prepend (engine->required_search_tags,
+        c_list_prepend (engine->required_search_tags,
                         toggle_state->required_tag);
     }
   else
     {
       engine->required_search_tags =
-        g_list_remove (engine->required_search_tags,
+        c_list_remove (engine->required_search_tags,
                        toggle_state->required_tag);
     }
 
@@ -2020,11 +2020,11 @@ free_search_toggle_state (void *user_data)
   SearchToggleState *state = user_data;
 
   state->engine->required_search_tags =
-    g_list_remove (state->engine->required_search_tags, state->required_tag);
+    c_list_remove (state->engine->required_search_tags, state->required_tag);
 
-  g_free (state->required_tag);
+  c_free (state->required_tag);
 
-  g_slice_free (SearchToggleState, state);
+  c_slice_free (SearchToggleState, state);
 }
 
 static RutIconToggle *
@@ -2035,10 +2035,10 @@ create_search_toggle (RigEngine *engine,
 {
   RutIconToggle *toggle =
     rut_icon_toggle_new (engine->ctx, set_icon, unset_icon);
-  SearchToggleState *state = g_slice_new0 (SearchToggleState);
+  SearchToggleState *state = c_slice_new0 (SearchToggleState);
 
   state->engine = engine;
-  state->required_tag = g_strdup (required_tag);
+  state->required_tag = c_strdup (required_tag);
 
   rut_icon_toggle_add_on_toggle_callback (toggle,
                                           asset_search_toggle_cb,
@@ -2269,7 +2269,7 @@ init_resize_handle (RigEngine *engine)
 
   if (resize_handle_texture == NULL)
     {
-      g_warning ("Failed to load resize-handle.png: %s", error->message);
+      c_warning ("Failed to load resize-handle.png: %s", error->message);
       g_error_free (error);
     }
   else
@@ -2301,7 +2301,7 @@ load_transparency_grid (RutContext *ctx)
 
   if (texture == NULL)
     {
-      g_warning ("Failed to load transparency-grid.png: %s",
+      c_warning ("Failed to load transparency-grid.png: %s",
                  error->message);
       g_error_free (error);
     }
@@ -2401,7 +2401,7 @@ handle_edit_operations (RigEditor *editor,
 {
   RigEngine *engine = editor->engine;
   Rig__UIEdit *play_edits;
-  GList *l;
+  CList *l;
 
   if (!editor->edit_ops->len)
     return;
@@ -2728,7 +2728,7 @@ adb_devices_cb (const char **serials,
   RigEngine *engine = editor->engine;
   RutException *catch = NULL;
   int i;
-  GList *l, *next;
+  CList *l, *next;
 
   for (l = engine->slave_addresses; l; l = next)
     {
@@ -2739,7 +2739,7 @@ adb_devices_cb (const char **serials,
       if (slave_address->type == RIG_SLAVE_ADDRESS_TYPE_ADB_SERIAL)
         {
           engine->slave_addresses =
-            g_list_delete_link (engine->slave_addresses, l);
+            c_list_delete_link (engine->slave_addresses, l);
           rut_object_unref (slave_address);
         }
     }
@@ -2747,7 +2747,7 @@ adb_devices_cb (const char **serials,
   /* FIXME: first use :list-forward and only remove the forwards we own */
   if (!rut_adb_command (NULL, &catch, "host:killforward-all"))
     {
-      g_warning ("Failed to clear ADB daemon port forwards");
+      c_warning ("Failed to clear ADB daemon port forwards");
       rut_exception_free (catch);
       return;
     }
@@ -2767,7 +2767,7 @@ adb_devices_cb (const char **serials,
                             "host:forward:tcp:%d;localabstract:rig-slave",
                             forward_port))
         {
-          g_warning ("Failed to forward port 64872 for device %s via ADB daemon: %s",
+          c_warning ("Failed to forward port 64872 for device %s via ADB daemon: %s",
                      serials[i], catch->message);
           rut_exception_free (catch);
           catch = NULL;
@@ -2777,7 +2777,7 @@ adb_devices_cb (const char **serials,
       slave_address =
         rig_slave_address_new_adb (model, serials[i], forward_port);
       engine->slave_addresses =
-        g_list_prepend (engine->slave_addresses, slave_address);
+        c_list_prepend (engine->slave_addresses, slave_address);
 
       g_message ("  serial=%s model=\"%s\" abi=%s/%s local port=%d",
                  serials[i], model, abi, abi2, forward_port);
@@ -2802,11 +2802,11 @@ rig_editor_new (const char *filename)
   editor->ctx = rut_context_new (editor->shell);
   rut_context_init (editor->ctx);
 
-  editor->ui_filename = g_strdup (filename);
+  editor->ui_filename = c_strdup (filename);
 
   assets_location = g_path_get_dirname (editor->ui_filename);
   rut_set_assets_location (editor->ctx, assets_location);
-  g_free (assets_location);
+  c_free (assets_location);
 
   editor->edit_ops = rut_queue_new ();
 
@@ -2884,7 +2884,7 @@ rig_editor_new (const char *filename)
                                        g_ascii_strtoull (slave_addrv[1],
                                                          NULL, 10)); /* port */
           engine->slave_addresses =
-            g_list_prepend (engine->slave_addresses, slave_address);
+            c_list_prepend (engine->slave_addresses, slave_address);
         }
       g_strfreev (slave_addrv);
     }
@@ -2901,12 +2901,12 @@ rig_editor_load_file (RigEditor *editor,
                       const char *filename)
 {
   /* FIXME: report an error to the user! */
-  g_return_if_fail (editor->engine->play_mode == false);
+  c_return_if_fail (editor->engine->play_mode == false);
 
   if (editor->ui_filename)
-    g_free (editor->ui_filename);
+    c_free (editor->ui_filename);
 
-  editor->ui_filename = g_strdup (filename);
+  editor->ui_filename = c_strdup (filename);
   rig_engine_load_file (editor->engine, filename);
 }
 
@@ -2988,7 +2988,7 @@ init_property_controlled_state_cb (RutProperty *property,
 
 static RigInspector *
 create_inspector (RigEngine *engine,
-                  GList *objects)
+                  CList *objects)
 {
   RutObject *reference_object = objects->data;
   RigInspector *inspector =
@@ -3016,7 +3016,7 @@ create_inspector (RigEngine *engine,
 typedef struct _DeleteButtonState
 {
   RigEngine *engine;
-  GList *components;
+  CList *components;
 } DeleteButtonState;
 
 static void
@@ -3024,15 +3024,15 @@ free_delete_button_state (void *user_data)
 {
   DeleteButtonState *state = user_data;
 
-  g_list_free (state->components);
-  g_slice_free (DeleteButtonState, user_data);
+  c_list_free (state->components);
+  c_slice_free (DeleteButtonState, user_data);
 }
 
 static void
 delete_button_click_cb (RutIconButton *button, void *user_data)
 {
   DeleteButtonState *state = user_data;
-  GList *l;
+  CList *l;
 
   for (l = state->components; l; l = l->next)
     {
@@ -3045,7 +3045,7 @@ delete_button_click_cb (RutIconButton *button, void *user_data)
 
 static void
 create_components_inspector (RigEngine *engine,
-                             GList *components)
+                             CList *components)
 {
   RutComponent *reference_component = components->data;
   RigInspector *inspector = create_inspector (engine, components);
@@ -3063,7 +3063,7 @@ create_components_inspector (RigEngine *engine,
 
   fold = rut_fold_new (engine->ctx, label);
 
-  g_free (label);
+  c_free (label);
 
   rut_fold_set_child (fold, inspector);
   rut_object_unref (inspector);
@@ -3081,9 +3081,9 @@ create_components_inspector (RigEngine *engine,
                                        "component-delete.png", /* hover */
                                        "component-delete.png", /* active */
                                        "component-delete.png"); /* disabled */
-  button_state = g_slice_new (DeleteButtonState);
+  button_state = c_slice_new (DeleteButtonState);
   button_state->engine = engine;
-  button_state->components = g_list_copy (components);
+  button_state->components = c_list_copy (components);
   rut_icon_button_add_on_click_callback (delete_button,
                                          delete_button_click_cb,
                                          button_state,
@@ -3095,7 +3095,7 @@ create_components_inspector (RigEngine *engine,
   rut_object_unref (fold);
 
   engine->all_inspectors =
-    g_list_prepend (engine->all_inspectors, inspector);
+    c_list_prepend (engine->all_inspectors, inspector);
 }
 
 RutObject *
@@ -3120,7 +3120,7 @@ find_component (RigEntity *entity,
 typedef struct _MatchAndListState
 {
   RigEngine *engine;
-  GList *entities;
+  CList *entities;
 } MatchAndListState;
 
 static bool
@@ -3132,8 +3132,8 @@ match_and_create_components_inspector_cb (RutObject *reference_component,
     rut_object_get_properties (reference_component,
                                RUT_TRAIT_ID_COMPONENTABLE);
   RutComponentType type = component_props->type;
-  GList *l;
-  GList *components = NULL;
+  CList *l;
+  CList *components = NULL;
 
   for (l = state->entities; l; l = l->next)
     {
@@ -3152,7 +3152,7 @@ match_and_create_components_inspector_cb (RutObject *reference_component,
           rut_object_get_type (reference_component))
         goto EXIT;
 
-      components = g_list_prepend (components, component);
+      components = c_list_prepend (components, component);
     }
 
   if (components)
@@ -3160,7 +3160,7 @@ match_and_create_components_inspector_cb (RutObject *reference_component,
 
 EXIT:
 
-  g_list_free (components);
+  c_list_free (components);
 
   return true; /* continue */
 }
@@ -3169,7 +3169,7 @@ EXIT:
 void
 rig_editor_update_inspector (RigEngine *engine)
 {
-  GList *objects = engine->objects_selection->objects;
+  CList *objects = engine->objects_selection->objects;
 
   /* This will drop the last reference to any current
    * engine->inspector_box_layout and also any indirect references
@@ -3182,7 +3182,7 @@ rig_editor_update_inspector (RigEngine *engine)
   rut_bin_set_child (engine->inspector_bin, engine->inspector_box_layout);
 
   engine->inspector = NULL;
-  g_list_free (engine->all_inspectors);
+  c_list_free (engine->all_inspectors);
   engine->all_inspectors = NULL;
 
   if (objects)
@@ -3194,7 +3194,7 @@ rig_editor_update_inspector (RigEngine *engine)
 
       rut_box_layout_add (engine->inspector_box_layout, FALSE, engine->inspector);
       engine->all_inspectors =
-        g_list_prepend (engine->all_inspectors, engine->inspector);
+        c_list_prepend (engine->all_inspectors, engine->inspector);
 
       if (rut_object_get_type (reference_object) == &rig_entity_type)
         {
@@ -3214,7 +3214,7 @@ rig_reload_inspector_property (RigEngine *engine,
 {
   if (engine->inspector)
     {
-      GList *l;
+      CList *l;
 
       for (l = engine->all_inspectors; l; l = l->next)
         rig_inspector_reload_property (l->data, property);
@@ -3238,7 +3238,7 @@ static void
 _rig_objects_selection_cancel (RutObject *object)
 {
   RigObjectsSelection *selection = object;
-  g_list_free_full (selection->objects, (GDestroyNotify)rut_object_unref);
+  c_list_free_full (selection->objects, (GDestroyNotify)rut_object_unref);
   selection->objects = NULL;
 }
 
@@ -3247,19 +3247,19 @@ _rig_objects_selection_copy (RutObject *object)
 {
   RigObjectsSelection *selection = object;
   RigObjectsSelection *copy = _rig_objects_selection_new (selection->engine);
-  GList *l;
+  CList *l;
 
   for (l = selection->objects; l; l = l->next)
     {
       if (rut_object_get_type (l->data) == &rig_entity_type)
         {
           copy->objects =
-            g_list_prepend (copy->objects, rig_entity_copy (l->data));
+            c_list_prepend (copy->objects, rig_entity_copy (l->data));
         }
       else
         {
 #warning "todo: Create a copyable interface for anything that can be selected for copy and paste"
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 
@@ -3287,8 +3287,8 @@ _rig_objects_selection_delete (RutObject *object)
 
       if (selection == engine->objects_selection)
         {
-          GList *l, *next;
-          int len = g_list_length (selection->objects);
+          CList *l, *next;
+          int len = c_list_length (selection->objects);
 
           for (l = selection->objects; l; l = next)
             {
@@ -3303,10 +3303,10 @@ _rig_objects_selection_delete (RutObject *object)
           /* XXX: make sure that
            * rig_undo_journal_delete_entity () doesn't change
            * the selection, since it used to. */
-          g_warn_if_fail (len == g_list_length (selection->objects));
+          g_warn_if_fail (len == c_list_length (selection->objects));
         }
 
-      g_list_free_full (selection->objects,
+      c_list_free_full (selection->objects,
                         (GDestroyNotify)rut_object_unref);
       selection->objects = NULL;
 
@@ -3343,7 +3343,7 @@ _rig_objects_selection_init_type (void)
   RutType *type = &rig_objects_selection_type;
 #define TYPE RigObjectsSelection
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_objects_selection_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_objects_selection_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_SELECTABLE,
                       0, /* no associated properties */
@@ -3421,18 +3421,18 @@ rig_select_object (RigEngine *engine,
     {
     case RUT_SELECT_ACTION_REPLACE:
       {
-        GList *old = selection->objects;
+        CList *old = selection->objects;
 
         selection->objects = NULL;
 
-        g_list_foreach (old,
+        c_list_foreach (old,
                         (GFunc)remove_selection_cb,
                         selection);
-        g_list_free (old);
+        c_list_free (old);
 
         if (object)
           {
-            selection->objects = g_list_prepend (selection->objects,
+            selection->objects = c_list_prepend (selection->objects,
                                                  rut_object_ref (object));
             rut_closure_list_invoke (&selection->selection_events_cb_list,
                                      RigObjectsSelectionEventCallback,
@@ -3444,12 +3444,12 @@ rig_select_object (RigEngine *engine,
       }
     case RUT_SELECT_ACTION_TOGGLE:
       {
-        GList *link = g_list_find (selection->objects, object);
+        CList *link = c_list_find (selection->objects, object);
 
         if (link)
           {
             selection->objects =
-              g_list_remove_link (selection->objects, link);
+              c_list_remove_link (selection->objects, link);
 
             rut_closure_list_invoke (&selection->selection_events_cb_list,
                                      RigObjectsSelectionEventCallback,
@@ -3468,7 +3468,7 @@ rig_select_object (RigEngine *engine,
 
             rut_object_ref (object);
             selection->objects =
-              g_list_prepend (selection->objects, object);
+              c_list_prepend (selection->objects, object);
           }
       }
       break;
@@ -3490,7 +3490,7 @@ rig_editor_push_undo_subjournal (RigEngine *engine)
 
   rig_undo_journal_set_apply_on_insert (subjournal, true);
 
-  engine->undo_journal_stack = g_list_prepend (engine->undo_journal_stack,
+  engine->undo_journal_stack = c_list_prepend (engine->undo_journal_stack,
                                                subjournal);
   engine->undo_journal = subjournal;
 }
@@ -3500,9 +3500,9 @@ rig_editor_pop_undo_subjournal (RigEngine *engine)
 {
   RigUndoJournal *head_journal = engine->undo_journal;
 
-  engine->undo_journal_stack = g_list_delete_link (engine->undo_journal_stack,
+  engine->undo_journal_stack = c_list_delete_link (engine->undo_journal_stack,
                                                    engine->undo_journal_stack);
-  g_return_val_if_fail (engine->undo_journal_stack, NULL);
+  c_return_val_if_fail (engine->undo_journal_stack, NULL);
 
   engine->undo_journal = engine->undo_journal_stack->data;
 
@@ -3517,22 +3517,22 @@ print_mapping_cb (gpointer key,
   char *a = rig_engine_get_object_debug_name (key);
   char *b = rig_engine_get_object_debug_name (value);
 
-  g_print ("  [%50s] -> [%50s]\n", a, b);
+  c_print ("  [%50s] -> [%50s]\n", a, b);
 
-  g_free (a);
-  g_free (b);
+  c_free (a);
+  c_free (b);
 }
 
 void
 rig_editor_print_mappings (RigEditor *editor)
 {
-  g_print ("Edit to play mode mappings:\n");
+  c_print ("Edit to play mode mappings:\n");
   g_hash_table_foreach (editor->edit_to_play_object_map,
                         print_mapping_cb,
                         NULL);
 
-  g_print ("\n\n");
-  g_print ("Play to edit mode mappings:\n");
+  c_print ("\n\n");
+  c_print ("Play to edit mode mappings:\n");
   g_hash_table_foreach (editor->play_to_edit_object_map,
                         print_mapping_cb,
                         NULL);

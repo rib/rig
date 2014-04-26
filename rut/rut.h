@@ -33,7 +33,7 @@
 #include <cogl/cogl.h>
 #endif
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-global.h"
 #include "rut-type.h"

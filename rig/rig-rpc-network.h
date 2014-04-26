@@ -29,7 +29,7 @@
 #ifndef _RIG_RPC_NETWORK_H_
 #define _RIG_RPC_NETWORK_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 

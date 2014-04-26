@@ -191,14 +191,14 @@ _rut_input_region_pick (RutObject *inputable,
           poly_init_from_rectangle (poly, &region->shape.rectangle);
 
 #if 0
-        g_print ("transformed input region\n");
+        c_print ("transformed input region\n");
         for (i = 0; i < 4; i++)
           {
             float *p = poly + 4 * i;
-            g_print ("poly[].x=%f\n", p[0]);
-            g_print ("poly[].y=%f\n", p[1]);
+            c_print ("poly[].x=%f\n", p[0]);
+            c_print ("poly[].y=%f\n", p[1]);
           }
-        g_print ("x=%f y=%f\n", x, y);
+        c_print ("x=%f y=%f\n", x, y);
 #endif
         if (rut_util_point_in_screen_poly (x, y, poly, sizeof (float) * 4, 4))
           return TRUE;
@@ -234,7 +234,7 @@ _rut_input_region_pick (RutObject *inputable,
       }
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return FALSE;
 }
 
@@ -317,7 +317,7 @@ _rut_input_region_init_type (void)
   RutType *type = &rut_input_region_type;
 #define TYPE RutInputRegion
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_input_region_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_input_region_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),

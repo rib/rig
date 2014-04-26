@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 #include <gio/gio.h>
 #include <sys/stat.h>
 #include <math.h>
@@ -115,7 +115,7 @@ scenegraph_pre_paint_cb (RutObject *object,
 #if 0
   if (rut_object_get_type (object) == &rut_camera_type)
     {
-      g_print ("%*sCamera = %p\n", depth, "", object);
+      c_print ("%*sCamera = %p\n", depth, "", object);
       rut_camera_flush (RUT_CAMERA (object));
       return RUT_TRAVERSE_VISIT_CONTINUE;
     }
@@ -126,7 +126,7 @@ scenegraph_pre_paint_cb (RutObject *object,
     {
       RutUIViewport *ui_viewport = RUT_UI_VIEWPORT (object);
 #if 0
-      g_print ("%*sPushing clip = %f %f\n",
+      c_print ("%*sPushing clip = %f %f\n",
                depth, "",
                rut_ui_viewport_get_width (ui_viewport),
                rut_ui_viewport_get_height (ui_viewport));
@@ -139,7 +139,7 @@ scenegraph_pre_paint_cb (RutObject *object,
 
   if (rut_object_is (object, RUT_TRAIT_ID_TRANSFORMABLE))
     {
-      //g_print ("%*sTransformable = %p\n", depth, "", object);
+      //c_print ("%*sTransformable = %p\n", depth, "", object);
       const CoglMatrix *matrix = rut_transformable_get_matrix (object);
       //cogl_debug_matrix_print (matrix);
       cogl_framebuffer_push_matrix (fb);
@@ -284,7 +284,7 @@ rig_engine_set_play_mode_ui (RigEngine *engine,
                              RigUI *ui)
 {
   if (engine->frontend)
-    g_return_if_fail (engine->frontend->ui_update_pending == false);
+    c_return_if_fail (engine->frontend->ui_update_pending == false);
 
   //bool first_ui = (engine->edit_mode_ui == NULL &&
   //                 engine->play_mode_ui == NULL &&
@@ -328,9 +328,9 @@ void
 rig_engine_set_edit_mode_ui (RigEngine *engine,
                              RigUI *ui)
 {
-  g_return_if_fail (engine->simulator ||
+  c_return_if_fail (engine->simulator ||
                     engine->frontend->ui_update_pending == false);
-  g_return_if_fail (engine->play_mode == false);
+  c_return_if_fail (engine->play_mode == false);
 
   //bool first_ui = (engine->edit_mode_ui == NULL &&
   //                 engine->play_mode_ui == NULL &&
@@ -339,7 +339,7 @@ rig_engine_set_edit_mode_ui (RigEngine *engine,
   if (engine->edit_mode_ui == ui)
     return;
 
-  g_return_if_fail (engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
+  c_return_if_fail (engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
 
 #if RIG_EDITOR_ENABLED
   /* Updating the edit mode ui implies we need to also replace
@@ -547,7 +547,7 @@ _rig_engine_free (void *object)
 
   if (engine->queued_deletes->len)
     {
-      g_warning ("Leaking %d un-garbage-collected objects",
+      c_warning ("Leaking %d un-garbage-collected objects",
                  engine->queued_deletes->len);
     }
   rut_queue_free (engine->queued_deletes);
@@ -572,7 +572,7 @@ _rig_engine_init_type (void)
   RutType *type = &rig_engine_type;
 #define TYPE RigEngine
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_engine_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_engine_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_INTROSPECTABLE,
                       offsetof (TYPE, introspectable),
@@ -624,9 +624,9 @@ rig_engine_load_file (RigEngine *engine,
 {
   RigUI *ui;
 
-  g_return_if_fail (engine->frontend);
+  c_return_if_fail (engine->frontend);
 
-  engine->ui_filename = g_strdup (filename);
+  engine->ui_filename = c_strdup (filename);
 
   ui = rig_load (engine, filename);
 
@@ -869,7 +869,7 @@ add_light_cb (RutInputRegion *region,
     {
       if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
         {
-          g_print ("Add light!\n");
+          c_print ("Add light!\n");
           return RUT_INPUT_EVENT_STATUS_HANDLED;
         }
     }
@@ -941,7 +941,7 @@ char *
 rig_engine_get_object_debug_name (RutObject *object)
 {
   if (rut_object_get_type (object) == &rig_entity_type)
-    return g_strdup_printf ("%p(label=\"%s\")", object, rig_entity_get_label (object));
+    return c_strdup_printf ("%p(label=\"%s\")", object, rig_entity_get_label (object));
   else if (rut_object_is (object, RUT_TRAIT_ID_COMPONENTABLE))
     {
       RutComponentableProps *component_props =
@@ -951,15 +951,15 @@ rig_engine_get_object_debug_name (RutObject *object)
       if (entity)
         {
           const char *entity_label = entity ? rig_entity_get_label (entity) : "";
-          return g_strdup_printf ("%p(label=\"%s\"::%s)", object, entity_label,
+          return c_strdup_printf ("%p(label=\"%s\"::%s)", object, entity_label,
                                   rut_object_get_type_name (object));
         }
       else
-        return g_strdup_printf ("%p(<orphaned>::%s)", object,
+        return c_strdup_printf ("%p(<orphaned>::%s)", object,
                                 rut_object_get_type_name (object));
     }
   else
-    return g_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));
+    return c_strdup_printf ("%p(%s)", object, rut_object_get_type_name (object));
 }
 
 void

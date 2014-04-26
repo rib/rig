@@ -32,7 +32,7 @@
 #ifndef __RUT_FLAGS_H
 #define __RUT_FLAGS_H
 
-#include <glib.h>
+#include <clib.h>
 
 G_BEGIN_DECLS
 

@@ -49,7 +49,7 @@ RigProtobufCDispatch *
 rig_protobuf_c_dispatch_new (RutShell *shell,
                              ProtobufCAllocator *allocator)
 {
-  RigProtobufCDispatch *dispatch = g_new0 (RigProtobufCDispatch, 1);
+  RigProtobufCDispatch *dispatch = c_new0 (RigProtobufCDispatch, 1);
 
   dispatch->shell = shell;
   dispatch->allocator = allocator;
@@ -69,18 +69,18 @@ typedef struct _DispatchClosure
 void
 rig_protobuf_c_dispatch_free (RigProtobufCDispatch *dispatch)
 {
-  GList *l;
+  CList *l;
 
   for (l = dispatch->dispatch_closures; l; l = l->next)
     {
       DispatchClosure *closure = l->data;
       if (closure->rut_closure)
         rut_closure_disconnect (closure->rut_closure);
-      g_slice_free (DispatchClosure, closure);
+      c_slice_free (DispatchClosure, closure);
     }
-  g_list_free (dispatch->dispatch_closures);
+  c_list_free (dispatch->dispatch_closures);
 
-  g_free (dispatch);
+  c_free (dispatch);
 }
 
 ProtobufCAllocator *
@@ -124,7 +124,7 @@ rig_protobuf_c_dispatch_watch_fd (RigProtobufCDispatch *dispatch,
                                   RigProtobufCDispatchCallback callback,
                                   void *callback_data)
 {
-  DispatchClosure *closure = g_slice_new (DispatchClosure);
+  DispatchClosure *closure = c_slice_new (DispatchClosure);
 
   closure->fd = fd;
   closure->dispatch = dispatch;
@@ -142,7 +142,7 @@ rig_protobuf_c_dispatch_watch_fd (RigProtobufCDispatch *dispatch,
                          closure);
 
   dispatch->dispatch_closures =
-    g_list_prepend (dispatch->dispatch_closures, closure);
+    c_list_prepend (dispatch->dispatch_closures, closure);
 }
 
 void
@@ -157,9 +157,9 @@ void
 rig_protobuf_c_dispatch_fd_closed (RigProtobufCDispatch *dispatch,
                                    ProtobufC_FD fd)
 {
-  GList *l;
+  CList *l;
 
-  g_return_if_fail (fd != -1);
+  c_return_if_fail (fd != -1);
 
   for (l = dispatch->dispatch_closures; l; l = l->next)
     {
@@ -168,8 +168,8 @@ rig_protobuf_c_dispatch_fd_closed (RigProtobufCDispatch *dispatch,
         {
           rut_poll_shell_remove_fd (dispatch->shell, fd);
           dispatch->dispatch_closures =
-            g_list_delete_link (dispatch->dispatch_closures, l);
-          g_slice_free (DispatchClosure, closure);
+            c_list_delete_link (dispatch->dispatch_closures, l);
+          c_slice_free (DispatchClosure, closure);
           return;
         }
     }
@@ -208,7 +208,7 @@ rig_protobuf_c_dispatch_add_idle (RigProtobufCDispatch *dispatch,
                                   RigProtobufCDispatchIdleFunc func,
                                   void *func_data)
 {
-  DispatchClosure *closure = g_slice_new (DispatchClosure);
+  DispatchClosure *closure = c_slice_new (DispatchClosure);
 
   closure->fd = -1;
   closure->dispatch = dispatch;
@@ -221,7 +221,7 @@ rig_protobuf_c_dispatch_add_idle (RigProtobufCDispatch *dispatch,
                              NULL); /* destroy */
 
   dispatch->dispatch_closures =
-    g_list_prepend (dispatch->dispatch_closures, closure);
+    c_list_prepend (dispatch->dispatch_closures, closure);
 
   return (RigProtobufCDispatchIdle *)closure;
 }
@@ -231,7 +231,7 @@ rig_protobuf_c_dispatch_remove_idle (RigProtobufCDispatchIdle *idle)
 {
   DispatchClosure *closure = (DispatchClosure *)idle;
   RigProtobufCDispatch *dispatch = closure->dispatch;
-  GList *l;
+  CList *l;
 
   for (l = dispatch->dispatch_closures; l; l = l->next)
     {
@@ -239,8 +239,8 @@ rig_protobuf_c_dispatch_remove_idle (RigProtobufCDispatchIdle *idle)
         {
           rut_closure_disconnect (closure->rut_closure);
           dispatch->dispatch_closures =
-            g_list_delete_link (dispatch->dispatch_closures, l);
-          g_slice_free (DispatchClosure, closure);
+            c_list_delete_link (dispatch->dispatch_closures, l);
+          c_slice_free (DispatchClosure, closure);
           return;
         }
     }

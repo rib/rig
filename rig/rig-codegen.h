@@ -53,8 +53,8 @@ typedef struct _RutMemoryStack RutMemoryStack;
  */
 
 typedef struct _GSList GSList;
-#define g_return_if_fail(X)
-#define g_return_val_if_fail(X, Y)
+#define c_return_if_fail(X)
+#define c_return_val_if_fail(X, Y)
 
 typedef int CoglBool;
 

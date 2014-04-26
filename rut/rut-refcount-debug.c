@@ -31,7 +31,7 @@
 
 #ifdef RUT_ENABLE_REFCOUNT_DEBUG
 
-#include <glib.h>
+#include <clib.h>
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
@@ -51,7 +51,7 @@ typedef struct
 {
   bool enabled;
   GHashTable *hash;
-  GList *owners;
+  CList *owners;
   int backtrace_level;
 } RutRefcountDebugState;
 
@@ -111,7 +111,7 @@ free_action (RutRefcountDebugAction *action)
 {
   if (action->owner)
     object_data_unref (action->owner);
-  g_slice_free1 (get_sizeof_action (get_state ()), action);
+  c_slice_free1 (get_sizeof_action (get_state ()), action);
 }
 
 static void
@@ -137,7 +137,7 @@ object_data_unref (RutRefcountDebugObject *object_data)
     {
       free_action_log (object_data);
 
-      g_slice_free (RutRefcountDebugObject, object_data);
+      c_slice_free (RutRefcountDebugObject, object_data);
     }
 }
 
@@ -147,7 +147,7 @@ log_action (RutRefcountDebugObject *object_data,
             RutRefcountDebugObject *owner)
 {
   RutRefcountDebugState *state = get_state ();
-  RutRefcountDebugAction *action = g_slice_alloc (get_sizeof_action (state));
+  RutRefcountDebugAction *action = c_slice_alloc (get_sizeof_action (state));
 
   action->type = action_type;
 
@@ -192,7 +192,7 @@ get_state (void)
 
   if (state == NULL)
     {
-      state = g_new0 (RutRefcountDebugState, 1);
+      state = c_new0 (RutRefcountDebugState, 1);
 
       state->hash = g_hash_table_new_full (g_direct_hash,
                                            g_direct_equal,
@@ -235,12 +235,12 @@ readlink_alloc (const char *linkname)
 
   while (TRUE)
     {
-      char *buf = g_malloc (buf_size);
+      char *buf = c_malloc (buf_size);
       int got = readlink (linkname, buf, buf_size - 1);
 
       if (got < 0)
         {
-          g_free (buf);
+          c_free (buf);
           return NULL;
         }
       else if (got < buf_size - 1)
@@ -250,7 +250,7 @@ readlink_alloc (const char *linkname)
         }
       else
         {
-          g_free (buf);
+          c_free (buf);
           buf_size *= 2;
         }
     }
@@ -281,7 +281,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
   else
     {
       for (i = 0; i < n_addresses; i++)
-        argv[i + address_args] = g_strdup_printf ("%p", addresses[i]);
+        argv[i + address_args] = c_strdup_printf ("%p", addresses[i]);
       argv[address_args + n_addresses] = NULL;
 
       if (g_spawn_sync (NULL, /* working_directory */
@@ -305,7 +305,7 @@ resolve_addresses_addr2line (GHashTable *hash_table,
                line[0] && line[1];
                line += 2, addr_num++)
             {
-              char *result = g_strdup_printf ("%s (%s)", line[1], line[0]);
+              char *result = c_strdup_printf ("%s (%s)", line[1], line[0]);
               g_hash_table_insert (hash_table, addresses[addr_num], result);
             }
 
@@ -315,8 +315,8 @@ resolve_addresses_addr2line (GHashTable *hash_table,
         ret = FALSE;
 
       for (i = 0; i < n_addresses; i++)
-        g_free (argv[i + address_args]);
-      g_free (argv[extra_args]);
+        c_free (argv[i + address_args]);
+      c_free (argv[extra_args]);
     }
 
   return ret;
@@ -336,7 +336,7 @@ resolve_addresses_backtrace (GHashTable *hash_table,
   for (i = 0; i < n_addresses; i++)
     g_hash_table_insert (hash_table,
                          addresses[i],
-                         g_strdup (symbols[i]));
+                         c_strdup (symbols[i]));
 
   free (symbols);
 
@@ -380,7 +380,7 @@ resolve_addresses (RutRefcountDebugState *state)
   hash_table = g_hash_table_new_full (g_direct_hash,
                                       g_direct_equal,
                                       NULL, /* key destroy */
-                                      g_free /* value destroy */);
+                                      c_free /* value destroy */);
 
   g_hash_table_foreach (state->hash, add_addresses_cb, hash_table);
 
@@ -388,7 +388,7 @@ resolve_addresses (RutRefcountDebugState *state)
 
   if (n_addresses >= 1)
     {
-      void **addresses = g_malloc (sizeof (void *) * n_addresses);
+      void **addresses = c_malloc (sizeof (void *) * n_addresses);
       void **addr_p = addresses;
       bool resolve_ret;
 
@@ -401,7 +401,7 @@ resolve_addresses (RutRefcountDebugState *state)
                                                   n_addresses,
                                                   addresses));
 
-      g_free (addresses);
+      c_free (addresses);
 
       if (!resolve_ret)
         {
@@ -511,23 +511,23 @@ destroy_tls_state_cb (void *tls_data)
   if (size > 0)
     {
       //char *thread_name = SDL_GetThreadName ();
-      char *thread_name = g_strdup_printf ("thread-%lu", SDL_ThreadID ());
+      char *thread_name = c_strdup_printf ("thread-%lu", SDL_ThreadID ());
       char *filename = g_strconcat ("rut-object-log-", thread_name, ".txt", NULL);
       char *out_name =
         g_build_filename (g_get_tmp_dir (), filename, NULL);
       DumpObjectCallbackData data;
 
       if (size == 1)
-        g_warning ("%s: One object was leaked", thread_name);
+        c_warning ("%s: One object was leaked", thread_name);
       else
-        g_warning ("%s: %i objects were leaked", thread_name, size);
+        c_warning ("%s: %i objects were leaked", thread_name, size);
 
       data.state = state;
       data.out_file = fopen (out_name, "w");
 
       if (data.out_file == NULL)
         {
-          g_warning ("Error saving refcount log: %s", strerror (errno));
+          c_warning ("Error saving refcount log: %s", strerror (errno));
         }
       else
         {
@@ -539,33 +539,33 @@ destroy_tls_state_cb (void *tls_data)
             data.address_table = NULL;
 
           g_hash_table_foreach (state->hash, dump_hash_object_cb, &data);
-          g_list_foreach (state->owners, (GFunc)dump_object_cb, &data);
+          c_list_foreach (state->owners, (GFunc)dump_object_cb, &data);
 
           if (data.address_table)
             g_hash_table_destroy (data.address_table);
 
           if (ferror (data.out_file))
-            g_warning ("Error saving refcount log: %s", strerror (errno));
+            c_warning ("Error saving refcount log: %s", strerror (errno));
           else
             {
-              g_warning ("Refcount log saved to %s", out_name);
+              c_warning ("Refcount log saved to %s", out_name);
 
               if (state->backtrace_level <= 0)
-                g_warning ("Set RUT_BACKTRACE_LEVEL to a non-zero value "
+                c_warning ("Set RUT_BACKTRACE_LEVEL to a non-zero value "
                            "to include bactraces in the log");
             }
 
           fclose (data.out_file);
         }
 
-      g_free (out_name);
+      c_free (out_name);
     }
 
-  g_list_foreach (state->owners, (GFunc)object_data_unref, NULL);
-  g_list_free (state->owners);
+  c_list_foreach (state->owners, (GFunc)object_data_unref, NULL);
+  c_list_free (state->owners);
 
   g_hash_table_destroy (state->hash);
-  g_free (state);
+  c_free (state);
 }
 
 void
@@ -577,11 +577,11 @@ _rut_refcount_debug_object_created (void *object)
     return;
 
   if (g_hash_table_contains (state->hash, object))
-    g_warning ("Address of existing object reused for newly created object");
+    c_warning ("Address of existing object reused for newly created object");
   else
     {
       RutRefcountDebugObject *object_data =
-        g_slice_new (RutRefcountDebugObject);
+        c_slice_new (RutRefcountDebugObject);
 
       /* The object data might outlive the lifetime of the
        * object itself so lets find out the object type now
@@ -621,7 +621,7 @@ _rut_refcount_debug_claim (void *object, void *owner)
 
   if (object_data == NULL)
     {
-      g_warning ("Reference taken on object that does not exist");
+      c_warning ("Reference taken on object that does not exist");
       return;
     }
 
@@ -631,11 +631,11 @@ _rut_refcount_debug_claim (void *object, void *owner)
         g_hash_table_lookup (state->hash, owner);
 
       if (owner_data == NULL)
-        g_warning ("Reference claimed by object that does not exist");
+        c_warning ("Reference claimed by object that does not exist");
 
       if (owner_data->n_claims == 0)
         {
-          state->owners = g_list_prepend (state->owners, owner_data);
+          state->owners = c_list_prepend (state->owners, owner_data);
           object_data_ref (owner_data);
           owner_data->n_claims++;
         }
@@ -668,7 +668,7 @@ _rut_refcount_debug_release (void *object, void *owner)
 
   if (object_data == NULL)
     {
-      g_warning ("Reference removed on object that does not exist");
+      c_warning ("Reference removed on object that does not exist");
       return;
     }
 
@@ -676,7 +676,7 @@ _rut_refcount_debug_release (void *object, void *owner)
     {
       if (object_data->object_ref_count != 0)
         {
-          g_warning ("Reference less than zero but object still exists: "
+          c_warning ("Reference less than zero but object still exists: "
                      "corrupt ref_count for object %p", object);
         }
       log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_FREE, NULL);
@@ -695,12 +695,12 @@ _rut_refcount_debug_release (void *object, void *owner)
               owner_data->n_claims--;
               if (owner_data->n_claims == 0)
                 {
-                  state->owners = g_list_remove (state->owners, owner_data);
+                  state->owners = c_list_remove (state->owners, owner_data);
                   object_data_unref (owner_data);
                 }
             }
           else
-            g_warning ("Reference released by unknown owner");
+            c_warning ("Reference released by unknown owner");
 
           log_action (object_data, RUT_REFCOUNT_DEBUG_ACTION_TYPE_RELEASE,
                       owner_data);
@@ -733,7 +733,7 @@ rut_object_dump_refs (void *object)
   object_data = g_hash_table_lookup (state->hash, object);
   if (object_data == NULL)
     {
-      g_print ("No reference information tracked for object %p\n", object);
+      c_print ("No reference information tracked for object %p\n", object);
       return;
     }
 

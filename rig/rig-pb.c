@@ -219,7 +219,7 @@ pb_path_new (RigPBSerializer *serializer, RigPath *path)
         case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           break;
         }
 
@@ -331,7 +331,7 @@ rig_pb_property_value_init (RigPBSerializer *serializer,
       break;
 
     case RUT_PROPERTY_TYPE_POINTER:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       break;
     }
 }
@@ -381,11 +381,11 @@ rut_property_type_to_pb_type (RutPropertyType type)
       return RIG__PROPERTY_TYPE__ASSET;
 
     case RUT_PROPERTY_TYPE_POINTER:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       return RIG__PROPERTY_TYPE__OBJECT;
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
   return 0;
 }
 
@@ -665,7 +665,7 @@ serialize_component_cb (RutObject *component,
     rig_pb_serialize_component (serializer, component);
 
   serializer->n_pb_components++;
-  serializer->pb_components = g_list_prepend (serializer->pb_components, pb_component);
+  serializer->pb_components = c_list_prepend (serializer->pb_components, pb_component);
 
   return true; /* continue */
 }
@@ -681,7 +681,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
   const char *label;
   Rig__Vec3 *position;
   float scale;
-  GList *l;
+  CList *l;
   int i;
 
   pb_entity->has_id = true;
@@ -696,7 +696,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
           pb_entity->parent_id = id;
         }
       else
-        g_warning ("Failed to find id of parent entity\n");
+        c_warning ("Failed to find id of parent entity\n");
     }
 
   label = rig_entity_get_label (entity);
@@ -736,7 +736,7 @@ rig_pb_serialize_entity (RigPBSerializer *serializer,
 
   for (i = 0, l = serializer->pb_components; l; i++, l = l->next)
     pb_entity->components[i] = l->data;
-  g_list_free (serializer->pb_components);
+  c_list_free (serializer->pb_components);
   serializer->pb_components = NULL;
   serializer->n_pb_components = 0;
 
@@ -757,7 +757,7 @@ _rig_entitygraph_pre_serialize_cb (RutObject *object,
 
   if (type != &rig_entity_type)
     {
-      g_warning ("Can't save non-entity graphables\n");
+      c_warning ("Can't save non-entity graphables\n");
       return RUT_TRAVERSE_VISIT_CONTINUE;
     }
 
@@ -773,7 +773,7 @@ _rig_entitygraph_pre_serialize_cb (RutObject *object,
   pb_entity = rig_pb_serialize_entity (serializer, parent, entity);
 
   serializer->n_pb_entities++;
-  serializer->pb_entities = g_list_prepend (serializer->pb_entities, pb_entity);
+  serializer->pb_entities = c_list_prepend (serializer->pb_entities, pb_entity);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -822,13 +822,13 @@ serialize_controller_property_cb (RigControllerPropData *prop_data,
                 rig__controller__property__init);
 
   serializer->n_pb_properties++;
-  serializer->pb_properties = g_list_prepend (serializer->pb_properties, pb_property);
+  serializer->pb_properties = c_list_prepend (serializer->pb_properties, pb_property);
 
   object = prop_data->property->object;
 
   id = rig_pb_serializer_lookup_object_id (serializer, object);
   if (!id)
-    g_warning ("Failed to find id of object\n");
+    c_warning ("Failed to find id of object\n");
 
   pb_property->has_object_id = true;
   pb_property->object_id = id;
@@ -941,11 +941,11 @@ default_serializer_lookup_object_id_cb (void *object,
   RigPBSerializer *serializer = user_data;
   void *id_ptr;
 
-  g_return_val_if_fail (object, 0);
+  c_return_val_if_fail (object, 0);
 
   id_ptr = g_hash_table_lookup (serializer->object_to_id_map, object);
 
-  g_return_val_if_fail (id_ptr, 0);
+  c_return_val_if_fail (id_ptr, 0);
 
   return (uint64_t)(intptr_t)id_ptr;
 }
@@ -954,7 +954,7 @@ uint64_t
 serializer_lookup_pointer_object_id_cb (void *object,
                                         void *user_data)
 {
-  g_return_val_if_fail (object, 0);
+  c_return_val_if_fail (object, 0);
   return (uint64_t)(intptr_t)object;
 }
 
@@ -974,7 +974,7 @@ rig_pb_serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
       if (need_asset)
         {
           serializer->required_assets =
-            g_list_prepend (serializer->required_assets, object);
+            c_list_prepend (serializer->required_assets, object);
         }
     }
 
@@ -984,7 +984,7 @@ rig_pb_serializer_lookup_object_id (RigPBSerializer *serializer, void *object)
 RigPBSerializer *
 rig_pb_serializer_new (RigEngine *engine)
 {
-  RigPBSerializer *serializer = g_slice_new0 (RigPBSerializer);
+  RigPBSerializer *serializer = c_slice_new0 (RigPBSerializer);
 
   serializer->engine = engine;
   serializer->stack = engine->frame_stack;
@@ -1029,7 +1029,7 @@ rig_pb_serializer_set_use_pointer_ids_enabled (RigPBSerializer *serializer,
        * convenience for setting up the callbacks for the common case
        * where we want ids to simply correspond to pointers
        */
-      g_warn_if_reached ();
+      c_warn_if_reached ();
     }
 }
 
@@ -1078,12 +1078,12 @@ void
 rig_pb_serializer_destroy (RigPBSerializer *serializer)
 {
   if (serializer->required_assets)
-    g_list_free (serializer->required_assets);
+    c_list_free (serializer->required_assets);
 
   if (serializer->object_to_id_map)
     g_hash_table_destroy (serializer->object_to_id_map);
 
-  g_slice_free (RigPBSerializer, serializer);
+  c_slice_free (RigPBSerializer, serializer);
 }
 
 static Rig__Buffer *
@@ -1296,14 +1296,14 @@ serialize_asset_file (Rig__Asset *pb_asset,
                             &len,
                             &error))
     {
-      g_warning ("Failed to read contents of asset: %s",
+      c_warning ("Failed to read contents of asset: %s",
                  error->message);
       g_error_free (error);
-      g_free (full_path);
+      c_free (full_path);
       return false;
     }
 
-  g_free (full_path);
+  c_free (full_path);
 
   pb_asset->path = (char *)path;
 
@@ -1379,7 +1379,7 @@ serialize_asset (RigPBSerializer *serializer, RigAsset *asset)
        * and instead making the editor handle builtins specially
        * in how it lists search results.
        */
-      g_warning ("Can't serialize \"builtin\" asset type");
+      c_warning ("Can't serialize \"builtin\" asset type");
       return NULL;
     }
 
@@ -1390,7 +1390,7 @@ static void
 serialized_asset_destroy (Rig__Asset *serialized_asset)
 {
   if (serialized_asset->has_data)
-    g_free (serialized_asset->data.data);
+    c_free (serialized_asset->data.data);
 }
 
 Rig__Controller *
@@ -1399,7 +1399,7 @@ rig_pb_serialize_controller (RigPBSerializer *serializer,
 {
   Rig__Controller *pb_controller =
     rig_pb_new (serializer, Rig__Controller, rig__controller__init);
-  GList *l;
+  CList *l;
   int i;
 
   pb_controller->has_id = true;
@@ -1425,7 +1425,7 @@ rig_pb_serialize_controller (RigPBSerializer *serializer,
                                RUT_UTIL_ALIGNOF (void *));
   for (i = 0, l = serializer->pb_properties; l; i++, l = l->next)
     pb_controller->properties[i] = l->data;
-  g_list_free (serializer->pb_properties);
+  c_list_free (serializer->pb_properties);
   serializer->n_pb_properties = 0;
   serializer->pb_properties = NULL;
 
@@ -1437,7 +1437,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
                      bool play_mode,
                      RigUI *ui)
 {
-  GList *l;
+  CList *l;
   int i;
   Rig__UI *pb_ui;
 
@@ -1470,13 +1470,13 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
                                RUT_UTIL_ALIGNOF (void *));
   for (i = 0, l = serializer->pb_entities; l; i++, l = l->next)
     pb_ui->entities[i] = l->data;
-  g_list_free (serializer->pb_entities);
+  c_list_free (serializer->pb_entities);
   serializer->pb_entities = NULL;
 
   for (i = 0, l = ui->controllers; l; i++, l = l->next)
     rig_pb_serializer_register_object (serializer, l->data);
 
-  pb_ui->n_controllers = g_list_length (ui->controllers);
+  pb_ui->n_controllers = c_list_length (ui->controllers);
   if (pb_ui->n_controllers)
     {
       pb_ui->controllers =
@@ -1494,7 +1494,7 @@ rig_pb_serialize_ui (RigPBSerializer *serializer,
         }
     }
 
-  pb_ui->n_assets = g_list_length (serializer->required_assets);
+  pb_ui->n_assets = c_list_length (serializer->required_assets);
   if (pb_ui->n_assets)
     {
       RigPBAssetFilter save_filter = serializer->asset_filter;
@@ -1573,7 +1573,7 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_MOTION_EVENT_ACTION_MOVE:
-                g_print ("Serialize move\n");
+                c_print ("Serialize move\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_MOVE;
                 pb_event->pointer_move =
                   rig_pb_new (serializer, Rig__Event__PointerMove,
@@ -1585,11 +1585,11 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
                 pb_event->pointer_move->y = rut_motion_event_get_y (event);
                 break;
               case RUT_MOTION_EVENT_ACTION_DOWN:
-                g_print ("Serialize pointer down\n");
+                c_print ("Serialize pointer down\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_DOWN;
                 break;
               case RUT_MOTION_EVENT_ACTION_UP:
-                g_print ("Serialize pointer up\n");
+                c_print ("Serialize pointer up\n");
                 pb_event->type = RIG__EVENT__TYPE__POINTER_UP;
                 break;
               }
@@ -1617,11 +1617,11 @@ rig_pb_serialize_input_events (RigPBSerializer *serializer,
             switch (action)
               {
               case RUT_KEY_EVENT_ACTION_DOWN:
-                g_print ("Serialize key down\n");
+                c_print ("Serialize key down\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_DOWN;
                 break;
               case RUT_KEY_EVENT_ACTION_UP:
-                g_print ("Serialize key up\n");
+                c_print ("Serialize key up\n");
                 pb_event->type = RIG__EVENT__TYPE__KEY_UP;
                 break;
               }
@@ -1797,7 +1797,7 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
       break;
 
     case RUT_PROPERTY_TYPE_TEXT:
-      boxed->d.text_val = g_strdup (pb_value->text_value);
+      boxed->d.text_val = c_strdup (pb_value->text_value);
       break;
 
     case RUT_PROPERTY_TYPE_QUATERNION:
@@ -1834,7 +1834,7 @@ rig_pb_init_boxed_value (RigPBUnSerializer *unserializer,
       break;
 
     case RUT_PROPERTY_TYPE_POINTER:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       break;
     }
 }
@@ -1865,7 +1865,7 @@ default_unserializer_unregister_object_cb (uint64_t id,
 {
   RigPBUnSerializer *unserializer = user_data;
   if (!g_hash_table_remove (unserializer->id_to_object_map, &id))
-    g_warning ("Tried to unregister an id that wasn't previously registered");
+    c_warning ("Tried to unregister an id that wasn't previously registered");
 }
 
 void
@@ -1897,7 +1897,7 @@ default_unserializer_register_object_cb (void *object,
 
   *key = id;
 
-  g_return_if_fail (id != 0);
+  c_return_if_fail (id != 0);
 
   if (g_hash_table_lookup (unserializer->id_to_object_map, key))
     {
@@ -2498,7 +2498,7 @@ rig_pb_unserialize_component (RigPBUnSerializer *unserializer,
 
   rig_pb_unserializer_collect_error (unserializer,
                                      "Unknown component type");
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 
   return NULL;
 }
@@ -2690,7 +2690,7 @@ unserialize_entities (RigPBUnSerializer *unserializer,
                                            entity, entities[i]->id);
 
       unserializer->entities =
-        g_list_prepend (unserializer->entities, entity);
+        c_list_prepend (unserializer->entities, entity);
     }
 }
 
@@ -2742,12 +2742,12 @@ unserialize_assets (RigPBUnSerializer *unserializer,
       if (asset)
         {
           unserializer->assets =
-            g_list_prepend (unserializer->assets, asset);
+            c_list_prepend (unserializer->assets, asset);
           rig_pb_unserializer_register_object (unserializer, asset, id);
         }
       else
         {
-          g_warning ("Failed to load \"%s\" asset",
+          c_warning ("Failed to load \"%s\" asset",
                      pb_asset->path ? pb_asset->path : "");
         }
     }
@@ -2832,7 +2832,7 @@ unserialize_path_nodes (RigPBUnSerializer *unserializer,
         case RUT_PROPERTY_TYPE_ASSET:
         case RUT_PROPERTY_TYPE_OBJECT:
         case RUT_PROPERTY_TYPE_POINTER:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 }
@@ -2872,7 +2872,7 @@ rig_pb_unserialize_controller_properties (RigPBUnSerializer *unserializer,
               method = RIG_CONTROLLER_METHOD_BINDING;
               break;
             default:
-              g_warn_if_reached ();
+              c_warn_if_reached ();
               method = RIG_CONTROLLER_METHOD_CONSTANT;
             }
         }
@@ -3119,7 +3119,7 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
                                                        pb_controller);
 
       unserializer->controllers =
-        g_list_prepend (unserializer->controllers, controller);
+        c_list_prepend (unserializer->controllers, controller);
 
       if (id)
         rig_pb_unserializer_register_object (unserializer, controller, id);
@@ -3136,7 +3136,7 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
       controller = unserializer_find_object (unserializer, pb_controller->id);
       if (!controller)
         {
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           continue;
         }
 
@@ -3151,7 +3151,7 @@ unserialize_controllers (RigPBUnSerializer *unserializer,
 RigPBUnSerializer *
 rig_pb_unserializer_new (RigEngine *engine)
 {
-  RigPBUnSerializer *unserializer = g_slice_new0 (RigPBUnSerializer);
+  RigPBUnSerializer *unserializer = c_slice_new0 (RigPBUnSerializer);
 
   unserializer->engine = engine;
   unserializer->stack = engine->frame_stack;
@@ -3227,7 +3227,7 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
 {
   RigUI *ui = rig_ui_new (unserializer->engine);
   RigEngine *engine = unserializer->engine;
-  GList *l;
+  CList *l;
 
   unserialize_assets (unserializer,
                       pb_ui->n_assets,
@@ -3252,7 +3252,7 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
 
   for (l = unserializer->entities; l; l = l->next)
     {
-      //g_print ("unserialized entiy %p\n", l->data);
+      //c_print ("unserialized entiy %p\n", l->data);
       if (rut_graphable_get_parent (l->data) == NULL)
         {
           rut_graphable_add_child (ui->scene, l->data);
@@ -3260,7 +3260,7 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
           /* Now that the entity has a parent we can drop our
            * reference on it... */
           rut_object_unref (l->data);
-          //g_print ("%p added to scene %p\n", l->data, ui->scene);
+          //c_print ("%p added to scene %p\n", l->data, ui->scene);
         }
     }
   unserializer->entities = NULL;
@@ -3271,7 +3271,7 @@ rig_pb_unserialize_ui (RigPBUnSerializer *unserializer,
   ui->controllers = unserializer->controllers;
   unserializer->controllers = NULL;
 
-  g_print ("unserialized ui assets list  %p\n", unserializer->assets);
+  c_print ("unserialized ui assets list  %p\n", unserializer->assets);
   ui->assets = unserializer->assets;
   unserializer->assets = NULL;
 
@@ -3469,7 +3469,7 @@ rig_pb_unserialize_mesh (RigPBUnSerializer *unserializer,
 
 ERROR:
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 
   if (mesh)
     rut_object_unref (mesh);

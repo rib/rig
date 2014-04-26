@@ -48,7 +48,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-memory-stack.h"
 #include "rut-magazine.h"
@@ -58,7 +58,7 @@
 RutMagazine *
 rut_magazine_new (size_t chunk_size, int initial_chunk_count)
 {
-  RutMagazine *magazine = g_new0 (RutMagazine, 1);
+  RutMagazine *magazine = c_new0 (RutMagazine, 1);
 
   chunk_size = MAX (chunk_size, sizeof (RutMagazineChunk));
   chunk_size = ROUND_UP_8 (chunk_size);
@@ -74,5 +74,5 @@ void
 rut_magazine_free (RutMagazine *magazine)
 {
   rut_memory_stack_free (magazine->stack);
-  g_free (magazine);
+  c_free (magazine);
 }

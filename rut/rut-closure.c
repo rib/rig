@@ -31,7 +31,7 @@
 #include "config.h"
 #endif
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-closure.h"
 
@@ -43,7 +43,7 @@ rut_closure_disconnect (RutClosure *closure)
   if (closure->destroy_cb)
     closure->destroy_cb (closure->user_data);
 
-  g_slice_free (RutClosure, closure);
+  c_slice_free (RutClosure, closure);
 }
 
 void
@@ -62,7 +62,7 @@ rut_closure_list_add (RutList *list,
                       void *user_data,
                       RutClosureDestroyCallback destroy_cb)
 {
-  RutClosure *closure = g_slice_new (RutClosure);
+  RutClosure *closure = c_slice_new (RutClosure);
 
   closure->function = function;
   closure->user_data = user_data;

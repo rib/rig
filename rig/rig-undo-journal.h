@@ -29,7 +29,7 @@
 #ifndef _RUT_UNDO_JOURNAL_H_
 #define _RUT_UNDO_JOURNAL_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 

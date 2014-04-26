@@ -166,7 +166,7 @@ rut_os_connect_to_abstract_socket (const char *socket_name)
   fd = socket (AF_UNIX, SOCK_STREAM, 0);
   if (fd == -1)
     {
-      g_warning ("Failed to create PF_LOCAL socket fd");
+      c_warning ("Failed to create PF_LOCAL socket fd");
       return -1;
     }
 
@@ -175,13 +175,13 @@ rut_os_connect_to_abstract_socket (const char *socket_name)
   flags = fcntl (fd, F_GETFD);
   if (flags == -1)
     {
-      g_warning ("Failed to get fd flags for setting O_CLOEXEC on socket\n");
+      c_warning ("Failed to get fd flags for setting O_CLOEXEC on socket\n");
       return 1;
     }
 
   if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1)
     {
-      g_warning ("Failed to set O_CLOEXEC on abstract socket\n");
+      c_warning ("Failed to set O_CLOEXEC on abstract socket\n");
       return 1;
     }
 
@@ -192,7 +192,7 @@ rut_os_connect_to_abstract_socket (const char *socket_name)
 
   if (name_size > (int)sizeof addr.sun_path)
     {
-      g_warning ("socket path \"%crig-simulator\" plus null terminator"
+      c_warning ("socket path \"%crig-simulator\" plus null terminator"
                  " exceeds 108 bytes\n", '\0');
       close (fd);
       return -1;
@@ -203,7 +203,7 @@ rut_os_connect_to_abstract_socket (const char *socket_name)
   if (connect (fd, (struct sockaddr *) &addr, size) < 0)
     {
       const char *msg = strerror (errno);
-      g_warning ("Failed to connect to abstract socket: %s\n", msg);
+      c_warning ("Failed to connect to abstract socket: %s\n", msg);
       close (fd);
       return -1;
     }
@@ -341,7 +341,7 @@ rut_os_listen_on_tcp_socket (int port,
   {
     if (getsockname (fd, address, &address_len) < 0)
       {
-        g_warning ("Failed to query back the address of the listening "
+        c_warning ("Failed to query back the address of the listening "
                    "socket: %s", strerror (errno));
       }
     else

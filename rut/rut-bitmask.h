@@ -32,7 +32,7 @@
 #ifndef __COGL_BITMASK_H
 #define __COGL_BITMASK_H
 
-#include <glib.h>
+#include <clib.h>
 
 #include <stdbool.h>
 
@@ -48,8 +48,8 @@ G_BEGIN_DECLS
  *
  * Internally a RutBitmask is a pointer. If the least significant bit
  * of the pointer is 1 then the rest of the bits are directly used as
- * part of the bitmask, otherwise it is a pointer to a GArray of
- * unsigned ints. This relies on the fact the g_malloc will return a
+ * part of the bitmask, otherwise it is a pointer to a CArray of
+ * unsigned ints. This relies on the fact the c_malloc will return a
  * pointer aligned to at least two bytes (so that the least
  * significant bit of the address is always 0). It also assumes that
  * the size of a pointer is always greater than or equal to the size
@@ -73,7 +73,7 @@ typedef struct _RutBitmaskImaginaryType *RutBitmask;
   ((RutBitmask) ((((unsigned long) (bits)) << 1UL) | 1UL))
 
 /* Internal helper macro to determine whether this bitmask has a
-   GArray allocated or whether the pointer is just used directly */
+   CArray allocated or whether the pointer is just used directly */
 #define _rut_bitmask_has_array(bitmask) \
   (!(_rut_bitmask_to_number (bitmask) & 1UL))
 
@@ -250,7 +250,7 @@ static inline void
 _rut_bitmask_destroy (RutBitmask *bitmask)
 {
   if (_rut_bitmask_has_array (bitmask))
-    g_array_free ((GArray *) *bitmask, true);
+    c_array_free ((CArray *) *bitmask, true);
 }
 
 /*

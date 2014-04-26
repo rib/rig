@@ -147,7 +147,7 @@ on_rotation_tool_clicked (RutInputRegion *region,
   RutInputEventStatus status = RUT_INPUT_EVENT_STATUS_UNHANDLED;
   RigRotationTool *tool = user_data;
 
-  g_return_val_if_fail (tool->selected_entity != NULL, status);
+  c_return_val_if_fail (tool->selected_entity != NULL, status);
 
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION &&
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
@@ -192,7 +192,7 @@ update_selection_state (RigRotationTool *tool)
   RutObject *camera = tool->camera_component;
 
   if (tool->active &&
-      g_list_length (selection->objects) == 1 &&
+      c_list_length (selection->objects) == 1 &&
       rut_object_get_type (selection->objects->data) == &rig_entity_type)
     {
       if (!tool->selected_entity)
@@ -234,7 +234,7 @@ tool_event_cb (RigRotationTool *tool,
   RigEngine *engine = tool->view->engine;
   RigEntity *entity;
 
-  g_return_if_fail (engine->objects_selection->objects);
+  c_return_if_fail (engine->objects_selection->objects);
 
   /* XXX: For now we don't do anything clever to handle rotating a
    * set of entityies, since it's ambiguous what origin should be used
@@ -279,7 +279,7 @@ tool_event_cb (RigRotationTool *tool,
 RigRotationTool *
 rig_rotation_tool_new (RigCameraView *view)
 {
-  RigRotationTool *tool = g_slice_new0 (RigRotationTool);
+  RigRotationTool *tool = c_slice_new0 (RigRotationTool);
   RutContext *ctx = view->context;
 
   tool->view = view;
@@ -464,7 +464,7 @@ rig_rotation_tool_draw (RigRotationTool *tool,
   float zoom;
   float vp_width, vp_height;
 
-  g_return_if_fail (tool->active);
+  c_return_if_fail (tool->active);
 
   if (!tool->selected_entity)
     return;
@@ -558,5 +558,5 @@ rig_rotation_tool_destroy (RigRotationTool *tool)
                             rotation_tool_grab_cb,
                             tool);
 
-  g_slice_free (RigRotationTool, tool);
+  c_slice_free (RigRotationTool, tool);
 }

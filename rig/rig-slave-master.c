@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -46,7 +46,7 @@ static void
 handle_load_response (const Rig__LoadResult *result,
                       void *closure_data)
 {
-  g_print ("UI loaded by slave\n");
+  c_print ("UI loaded by slave\n");
 }
 
 void
@@ -59,7 +59,7 @@ slave_master_connected (PB_RPC_Client *pb_client,
 
   rig_slave_master_reload_ui (master);
 
-  g_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
+  c_print ("XXXXXXXXXXXX Slave Connected and serialized UI sent!");
 }
 
 static void
@@ -76,7 +76,7 @@ destroy_slave_master (RigSlaveMaster *master)
 
   master->connected = FALSE;
 
-  engine->slave_masters = g_list_remove (engine->slave_masters, master);
+  engine->slave_masters = c_list_remove (engine->slave_masters, master);
 
   rut_object_unref (master);
 }
@@ -88,9 +88,9 @@ client_error_handler (PB_RPC_Error_Code code,
 {
   RigSlaveMaster *master = user_data;
 
-  g_return_if_fail (master->rpc_client);
+  c_return_if_fail (master->rpc_client);
 
-  g_warning ("RPC Client error: %s", message);
+  c_warning ("RPC Client error: %s", message);
 
   destroy_slave_master (master);
 }
@@ -110,7 +110,7 @@ static RutType rig_slave_master_type;
 static void
 _rig_slave_master_init_type (void)
 {
-  rut_type_init (&rig_slave_master_type, G_STRINGIFY (TYPE),
+  rut_type_init (&rig_slave_master_type, C_STRINGIFY (TYPE),
                  _rig_slave_master_free);
 }
 
@@ -136,7 +136,7 @@ rig_slave_master_new (RigEngine *engine,
                                   &catch,
                                   "shell:am force-stop org.rig.app"))
         {
-          g_warning ("Failed to force stop of Rig slave application on Android "
+          c_warning ("Failed to force stop of Rig slave application on Android "
                      "device %s", slave_address->serial);
           rut_exception_free (catch);
           catch = NULL;
@@ -147,7 +147,7 @@ rig_slave_master_new (RigEngine *engine,
                                   "shell:am start -n "
                                   "org.rig.app/org.rig.app.RigSlave"))
         {
-          g_warning ("Failed to start Rig slave application on Android "
+          c_warning ("Failed to start Rig slave application on Android "
                      "device %s", slave_address->serial);
           rut_exception_free (catch);
           catch = NULL;
@@ -178,7 +178,7 @@ rig_connect_to_slave (RigEngine *engine, RigSlaveAddress *slave_address)
 {
   RigSlaveMaster *slave_master = rig_slave_master_new (engine, slave_address);
 
-  engine->slave_masters = g_list_prepend (engine->slave_masters, slave_master);
+  engine->slave_masters = c_list_prepend (engine->slave_masters, slave_master);
 }
 
 void
@@ -215,7 +215,7 @@ static void
 handle_edit_response (const Rig__UIEditResult *result,
                       void *closure_data)
 {
-  g_print ("UI edited by slave\n");
+  c_print ("UI edited by slave\n");
 }
 
 void

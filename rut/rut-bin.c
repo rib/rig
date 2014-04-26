@@ -315,7 +315,7 @@ _rut_bin_init_type (void)
   RutType *type = &rut_bin_type;
 #define TYPE RutBin
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_bin_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_bin_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -365,7 +365,7 @@ void
 rut_bin_set_child (RutBin *bin,
                    RutObject *child_widget)
 {
-  g_return_if_fail (rut_object_get_type (bin) == &rut_bin_type);
+  c_return_if_fail (rut_object_get_type (bin) == &rut_bin_type);
 
   if (bin->child == child_widget)
     return;

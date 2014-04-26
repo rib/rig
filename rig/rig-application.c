@@ -127,7 +127,7 @@ open_activated (GSimpleAction *action,
   RigEngine *engine = app->priv->engine;
   GtkWidget *dialog;
 
-  dialog = gtk_file_chooser_dialog_new ("Open",
+  dialog = gtk_file_chooser_dialoc_new ("Open",
                                         NULL, /* parent */
                                         GTK_FILE_CHOOSER_ACTION_OPEN,
                                         GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
@@ -301,7 +301,7 @@ rig_application_startup (GApplication *application)
 
           gtk_builder_add_from_file (builder, ui_file, NULL);
 
-          g_free (ui_file);
+          c_free (ui_file);
 
           menu_model =
             G_MENU_MODEL (gtk_builder_get_object (builder, "app-menu"));
@@ -320,7 +320,7 @@ rig_application_startup (GApplication *application)
                 priv->menu_model = g_object_ref (menu_model);
               else
                 {
-                  g_warning ("Failed to export GMenuModel: %s",
+                  c_warning ("Failed to export GMenuModel: %s",
                              error->message);
                   g_clear_error (&error);
                 }

@@ -11,7 +11,7 @@
 #include <config.h>
 #endif
 
-#include <glib.h>
+#include <clib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <assert.h>

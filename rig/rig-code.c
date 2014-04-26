@@ -30,7 +30,7 @@
 #include <config.h>
 
 #include <dlfcn.h>
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -58,9 +58,9 @@ _rig_code_node_free (void *object)
   RigCodeNode *node = object;
 
   if (node->pre)
-    g_free (node->pre);
+    c_free (node->pre);
   if (node->post)
-    g_free (node->post);
+    c_free (node->post);
 
   rut_graphable_destroy (node);
 
@@ -81,7 +81,7 @@ _rig_code_node_init_type (void)
   RutType *type = &rig_code_node_type;
 #define TYPE RigCodeNode
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_code_node_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_code_node_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -109,10 +109,10 @@ rig_code_node_new (RigEngine *engine,
    * tracking any source code. */
 
   if (pre)
-    node->pre = g_strdup (pre);
+    node->pre = c_strdup (pre);
 
   if (post)
-    node->post = g_strdup (post);
+    node->post = c_strdup (post);
 
   return node;
 }
@@ -123,10 +123,10 @@ code_generate_pre_cb (RutObject *object,
                       void *user_data)
 {
   RigCodeNode *node = object;
-  GString *code = user_data;
+  CString *code = user_data;
 
   if (node->pre)
-    g_string_append (code, node->pre);
+    c_string_append (code, node->pre);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -137,10 +137,10 @@ code_generate_post_cb (RutObject *object,
                        void *user_data)
 {
   RigCodeNode *node = object;
-  GString *code = user_data;
+  CString *code = user_data;
 
   if (node->post)
-    g_string_append (code, node->post);
+    c_string_append (code, node->post);
 
   return RUT_TRAVERSE_VISIT_CONTINUE;
 }
@@ -180,7 +180,7 @@ rig_code_update_dso (RigEngine *engine, uint8_t *data, int len)
   dso_fd = g_file_open_tmp (NULL, &tmp_filename, &error);
   if (dso_fd == -1)
     {
-      g_warning ("Failed to open a temporary file for shared object: %s",
+      c_warning ("Failed to open a temporary file for shared object: %s",
                  error->message);
       g_error_free (error);
       return;
@@ -188,7 +188,7 @@ rig_code_update_dso (RigEngine *engine, uint8_t *data, int len)
 
   if (!rut_os_write (dso_fd, data, len, &e))
     {
-      g_warning ("Failed to write shared object: %s", e->message);
+      c_warning ("Failed to write shared object: %s", e->message);
       rut_exception_free (e);
       return;
     }
@@ -197,7 +197,7 @@ rig_code_update_dso (RigEngine *engine, uint8_t *data, int len)
   if (!module)
     {
       g_module_close (module);
-      g_warning ("Failed to open shared object");
+      c_warning ("Failed to open shared object");
       return;
     }
   engine->code_dso_module = module;
@@ -217,11 +217,11 @@ recompile (RigEngine *engine)
   uint8_t *dso_data;
   size_t dso_len;
 
-  g_return_if_fail (engine->need_recompile);
+  c_return_if_fail (engine->need_recompile);
   engine->need_recompile = false;
 
   /* To avoid fragmentation we re-use one allocation for all codegen... */
-  g_string_set_size (engine->code_string, 0);
+  c_string_set_size (engine->code_string, 0);
 
   rut_graphable_traverse (engine->code_graph,
                           RUT_TRAVERSE_DEPTH_FIRST,
@@ -255,7 +255,7 @@ recompile_pre_paint_callback (RutObject *_null_graphable,
 static void
 queue_recompile (RigEngine *engine)
 {
-  g_return_if_fail (engine->frontend &&
+  c_return_if_fail (engine->frontend &&
                     engine->frontend_id == RIG_FRONTEND_ID_EDITOR);
 
 #ifdef RIG_EDITOR_ENABLED
@@ -278,9 +278,9 @@ rig_code_node_set_pre (RigCodeNode *node,
                        const char *pre)
 {
   if (node->pre)
-    g_free (node->pre);
+    c_free (node->pre);
 
-  node->pre = g_strdup (pre);
+  node->pre = c_strdup (pre);
 
   queue_recompile (node->engine);
 }
@@ -290,9 +290,9 @@ rig_code_node_set_post (RigCodeNode *node,
                         const char *post)
 {
   if (node->post)
-    g_free (node->post);
+    c_free (node->post);
 
-  node->post = g_strdup (post);
+  node->post = c_strdup (post);
 
   queue_recompile (node->engine);
 }
@@ -345,9 +345,9 @@ void
 _rig_code_init (RigEngine *engine)
 {
 #ifdef RIG_EDITOR_ENABLED
-  engine->code_string = g_string_new ("");
-  engine->codegen_string0 = g_string_new ("");
-  engine->codegen_string1 = g_string_new ("");
+  engine->code_string = c_string_new ("");
+  engine->codegen_string0 = c_string_new ("");
+  engine->codegen_string1 = c_string_new ("");
 
   engine->next_code_id = 1;
   engine->need_recompile = false;
@@ -362,17 +362,17 @@ void
 _rig_code_fini (RigEngine *engine)
 {
 #ifdef RIG_EDITOR_ENABLED
-  g_string_free (engine->code_string, TRUE);
+  c_string_free (engine->code_string, TRUE);
   engine->code_string = NULL;
 
-  g_string_free (engine->codegen_string0, TRUE);
+  c_string_free (engine->codegen_string0, TRUE);
   engine->codegen_string0 = NULL;
 
-  g_string_free (engine->codegen_string1, TRUE);
+  c_string_free (engine->codegen_string1, TRUE);
   engine->codegen_string1 = NULL;
 
   if (engine->code_dso_filename)
-    g_free (engine->code_dso_filename);
+    c_free (engine->code_dso_filename);
 
   rut_shell_remove_pre_paint_callback (engine->shell,
                                        recompile_pre_paint_callback,

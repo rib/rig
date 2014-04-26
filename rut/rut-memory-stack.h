@@ -28,7 +28,7 @@
  *
  */
 
-#include <glib.h>
+#include <clib.h>
 
 #include <stdint.h>
 

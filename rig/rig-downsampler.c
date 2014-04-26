@@ -38,7 +38,7 @@
 RigDownsampler *
 rig_downsampler_new (RigEngine *engine)
 {
-  RigDownsampler *downsampler = g_slice_new0 (RigDownsampler);
+  RigDownsampler *downsampler = c_slice_new0 (RigDownsampler);
   CoglPipeline *pipeline;
 
   downsampler->engine = engine;
@@ -78,7 +78,7 @@ void
 rig_downsampler_free (RigDownsampler *downsampler)
 {
   _rig_downsampler_reset (downsampler);
-  g_slice_free (RigDownsampler, downsampler);
+  c_slice_free (RigDownsampler, downsampler);
 }
 
 CoglTexture *
@@ -98,12 +98,12 @@ rig_downsampler_downsample (RigDownsampler *downsampler,
 
   if (src_w % scale_factor_x != 0)
     {
-      g_warning ("downsample: the width of the texture (%d) is not a "
+      c_warning ("downsample: the width of the texture (%d) is not a "
                  "multiple of the scale factor (%d)", src_w, scale_factor_x);
     }
   if (src_h % scale_factor_y != 0)
     {
-      g_warning ("downsample: the height of the texture (%d) is not a "
+      c_warning ("downsample: the height of the texture (%d) is not a "
                  "multiple of the scale factor (%d)", src_h, scale_factor_y);
     }
 

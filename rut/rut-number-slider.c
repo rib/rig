@@ -104,7 +104,7 @@ _rut_number_slider_free (void *object)
   rut_graphable_destroy (slider);
 
   if (slider->markup_label)
-    g_free (slider->markup_label);
+    c_free (slider->markup_label);
 
   rut_object_free (RutNumberSlider, slider);
 }
@@ -138,12 +138,12 @@ static void
 update_text (RutNumberSlider *slider)
 {
   char *label = slider->markup_label ? slider->markup_label : "";
-  char *text = g_strdup_printf ("%s%.*f",
+  char *text = c_strdup_printf ("%s%.*f",
                                 label,
                                 slider->decimal_places,
                                 slider->value);
   rut_text_set_markup (slider->text, text);
-  g_free (text);
+  c_free (text);
 }
 
 static void
@@ -163,7 +163,7 @@ end_text_edit (EditState *state)
                           rut_number_slider_text_grab_cb,
                           state);
 
-  g_slice_free (EditState, state);
+  c_slice_free (EditState, state);
 }
 
 static void
@@ -231,11 +231,11 @@ static void
 start_text_edit (EditState *state)
 {
   RutNumberSlider *slider = state->slider;
-  char *text = g_strdup_printf ("%.*f",
+  char *text = c_strdup_printf ("%.*f",
                                 slider->decimal_places,
                                 slider->value);
   rut_text_set_markup (slider->text, text);
-  g_free (text);
+  c_free (text);
 
   rut_text_set_editable (slider->text, true);
   rut_text_set_cursor_position (slider->text, 0);
@@ -292,7 +292,7 @@ rut_number_slider_grab_input_cb (RutInputEvent *event,
       if (!state->button_drag)
         start_text_edit (state);
       else
-        g_slice_free (EditState, state);
+        c_slice_free (EditState, state);
 
       rut_shell_queue_redraw (slider->context->shell);
     }
@@ -311,7 +311,7 @@ rut_number_slider_input_region_cb (RutInputRegion *region,
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN &&
       rut_motion_event_get_button_state (event) & RUT_BUTTON_STATE_1)
     {
-      EditState *state = g_slice_new0 (EditState);
+      EditState *state = c_slice_new0 (EditState);
 
       state->slider = slider;
       state->camera = rut_input_event_get_camera (event);
@@ -372,7 +372,7 @@ _rut_number_slider_init_type (void)
   RutType *type = &rut_number_slider_type;
 #define TYPE RutNumberSlider
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_number_slider_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_number_slider_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -436,11 +436,11 @@ void
 rut_number_slider_set_markup_label (RutNumberSlider *slider,
                                     const char *markup)
 {
-  g_free (slider->markup_label);
+  c_free (slider->markup_label);
   slider->markup_label = NULL;
 
   if (markup)
-    slider->markup_label = g_strdup (markup);
+    slider->markup_label = c_strdup (markup);
 }
 
 void

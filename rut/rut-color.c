@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -282,8 +282,8 @@ rut_color_init_from_string (RutContext *ctx,
 {
   void *color_index_ptr;
 
-  g_return_val_if_fail (color != NULL, FALSE);
-  g_return_val_if_fail (str != NULL, FALSE);
+  c_return_val_if_fail (color != NULL, FALSE);
+  c_return_val_if_fail (str != NULL, FALSE);
 
   if (strncmp (str, "rgb", 3) == 0)
     {
@@ -436,9 +436,9 @@ rut_color_add (const CoglColor *a,
                const CoglColor *b,
                CoglColor *result)
 {
-  g_return_if_fail (a != NULL);
-  g_return_if_fail (b != NULL);
-  g_return_if_fail (result != NULL);
+  c_return_if_fail (a != NULL);
+  c_return_if_fail (b != NULL);
+  c_return_if_fail (result != NULL);
 
   result->red   = CLAMP (a->red   + b->red,   0, 255);
   result->green = CLAMP (a->green + b->green, 0, 255);
@@ -452,9 +452,9 @@ rut_color_subtract (const CoglColor *a,
                     const CoglColor *b,
                     CoglColor *result)
 {
-  g_return_if_fail (a != NULL);
-  g_return_if_fail (b != NULL);
-  g_return_if_fail (result != NULL);
+  c_return_if_fail (a != NULL);
+  c_return_if_fail (b != NULL);
+  c_return_if_fail (result != NULL);
 
   result->red   = CLAMP (a->red   - b->red,   0, 255);
   result->green = CLAMP (a->green - b->green, 0, 255);
@@ -499,7 +499,7 @@ rut_color_to_hls (const CoglColor *color,
   float min, max, delta;
   float h, l, s;
 
-  g_return_if_fail (color != NULL);
+  c_return_if_fail (color != NULL);
 
   red   = color->red;
   green = color->green;
@@ -573,8 +573,8 @@ rut_color_shade (const CoglColor *color,
 {
   float h, l, s;
 
-  g_return_if_fail (color != NULL);
-  g_return_if_fail (result != NULL);
+  c_return_if_fail (color != NULL);
+  c_return_if_fail (result != NULL);
 
   rut_color_to_hls (color, &h, &l, &s);
 
@@ -598,9 +598,9 @@ rut_color_shade (const CoglColor *color,
 gchar *
 rut_color_to_string (const CoglColor *color)
 {
-  g_return_val_if_fail (color != NULL, NULL);
+  c_return_val_if_fail (color != NULL, NULL);
 
-  return g_strdup_printf ("#%02x%02x%02x%02x",
+  return c_strdup_printf ("#%02x%02x%02x%02x",
                           (uint8_t)(color->red * 255.0),
                           (uint8_t)(color->green * 255.0),
                           (uint8_t)(color->blue * 255.0),
@@ -613,9 +613,9 @@ rut_color_interpolate (const CoglColor *initial,
                        float progress,
                        CoglColor *result)
 {
-  g_return_if_fail (initial != NULL);
-  g_return_if_fail (final != NULL);
-  g_return_if_fail (result != NULL);
+  c_return_if_fail (initial != NULL);
+  c_return_if_fail (final != NULL);
+  c_return_if_fail (result != NULL);
 
   result->red   = initial->red   + (final->red   - initial->red)   * progress;
   result->green = initial->green + (final->green - initial->green) * progress;

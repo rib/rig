@@ -33,7 +33,7 @@
 #include "rut-types.h"
 
 #include <cogl/cogl.h>
-#include <glib.h>
+#include <clib.h>
 
 G_BEGIN_DECLS
 

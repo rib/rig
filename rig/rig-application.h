@@ -29,7 +29,7 @@
 #ifndef _RIG_APPLICATION_H_
 #define _RIG_APPLICATION_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rig-engine.h"
 

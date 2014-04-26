@@ -54,7 +54,7 @@ void
 rut_paint_context_queue_paint (RutPaintContext *paint_ctx,
                                RutObject *paintable)
 {
-  RutQueuedPaint *queue_entry = g_slice_new (RutQueuedPaint);
+  RutQueuedPaint *queue_entry = c_slice_new (RutQueuedPaint);
   CoglFramebuffer *fb = rut_camera_get_framebuffer (paint_ctx->camera);
 
   /* Get the modelview matrix that the widget was painted with so that
@@ -109,7 +109,7 @@ rut_paint_graph_with_layers (RutObject *root,
           cogl_framebuffer_set_modelview_matrix (fb, &node->modelview);
           before_children_cb (node->paintable, 0 /* depth */, paint_ctx);
           after_children_cb (node->paintable, 0 /* depth */, paint_ctx);
-          g_slice_free (RutQueuedPaint, node);
+          c_slice_free (RutQueuedPaint, node);
         }
 
       cogl_framebuffer_pop_matrix (fb);

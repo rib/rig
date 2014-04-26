@@ -83,7 +83,7 @@ struct _EntityTranslateGrabClosure
 struct _EntitiesTranslateGrabClosure
 {
   RigCameraView *view;
-  GList *entity_closures;
+  CList *entity_closures;
 };
 
 static void
@@ -660,7 +660,7 @@ allocate_cb (RutObject *graphable,
 
       if (view->entities_translate_grab_closure)
         {
-          GList *l;
+          CList *l;
 
           update_camera_viewport (view,
                                   engine->camera_2d,
@@ -779,7 +779,7 @@ _rig_camera_view_init_type (void)
   RutType *type = &rig_camera_view_type;
 #define TYPE RigCameraView
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_camera_view_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_camera_view_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -911,7 +911,7 @@ handle_entity_translate_grab_motion (RutInputEvent *event,
                                            rel,
                                            closure->user_data);
 
-      g_slice_free (EntityTranslateGrabClosure, closure);
+      c_slice_free (EntityTranslateGrabClosure, closure);
     }
   else if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
     {
@@ -932,7 +932,7 @@ entities_translate_grab_input_cb (RutInputEvent *event,
   if (rut_input_event_get_type (event) == RUT_INPUT_EVENT_TYPE_MOTION)
     {
       EntitiesTranslateGrabClosure *closure = user_data;
-      GList *l;
+      CList *l;
 
       for (l = closure->entity_closures; l; l = l->next)
         handle_entity_translate_grab_motion (event, l->data);
@@ -949,8 +949,8 @@ entities_translate_grab_input_cb (RutInputEvent *event,
           /* XXX: handle_entity_translate_grab_motion() will free the
            * entity-closures themselves on ACTION_UP so we just need
            * to free the list here. */
-          g_list_free (closure->entity_closures);
-          g_slice_free (EntitiesTranslateGrabClosure, closure);
+          c_list_free (closure->entity_closures);
+          c_slice_free (EntitiesTranslateGrabClosure, closure);
         }
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -1040,7 +1040,7 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
     {
       memset (closure->x_vec, 0, sizeof (float) * 3);
       memset (closure->y_vec, 0, sizeof (float) * 3);
-      g_warning ("Failed to get inverse transform of entity");
+      c_warning ("Failed to get inverse transform of entity");
       return;
     }
 
@@ -1052,7 +1052,7 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
   cogl_matrix_transform_point (&parent_transform,
                                &entity_x, &entity_y, &entity_z, &w);
 
-  //g_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
+  //c_print ("Entity origin in eye coords: %f %f %f\n", entity_x, entity_y, entity_z);
 
   /* Convert unit x and y vectors in screen coordinate
    * into points in eye coordinates with the same z depth
@@ -1062,19 +1062,19 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
                           &engine->identity, &engine->identity,
                           entity_z, &origin[0], &origin[1]);
   origin[2] = entity_z;
-  //g_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
+  //c_print ("eye origin: %f %f %f\n", origin[0], origin[1], origin[2]);
 
   unproject_window_coord (camera,
                           &engine->identity, &engine->identity,
                           entity_z, &unit_x[0], &unit_x[1]);
   unit_x[2] = entity_z;
-  //g_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
+  //c_print ("eye unit_x: %f %f %f\n", unit_x[0], unit_x[1], unit_x[2]);
 
   unproject_window_coord (camera,
                           &engine->identity, &engine->identity,
                           entity_z, &unit_y[0], &unit_y[1]);
   unit_y[2] = entity_z;
-  //g_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
+  //c_print ("eye unit_y: %f %f %f\n", unit_y[0], unit_y[1], unit_y[2]);
 
 
   /* Transform our points from eye coordinates into entity
@@ -1095,14 +1095,14 @@ update_grab_closure_vectors (EntityTranslateGrabClosure *closure)
   x_vec[1] = unit_x[1] - origin[1];
   x_vec[2] = unit_x[2] - origin[2];
 
-  //g_print (" =========================== Entity coords: x_vec = %f, %f, %f\n",
+  //c_print (" =========================== Entity coords: x_vec = %f, %f, %f\n",
   //         x_vec[0], x_vec[1], x_vec[2]);
 
   y_vec[0] = unit_y[0] - origin[0];
   y_vec[1] = unit_y[1] - origin[1];
   y_vec[2] = unit_y[2] - origin[2];
 
-  //g_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
+  //c_print (" =========================== Entity coords: y_vec = %f, %f, %f\n",
   //         y_vec[0], y_vec[1], y_vec[2]);
 
   memcpy (closure->x_vec, x_vec, sizeof (float) * 3);
@@ -1125,7 +1125,7 @@ translate_grab_entity (RigCameraView *view,
     return NULL;
 
 
-  closure = g_slice_new (EntityTranslateGrabClosure);
+  closure = c_slice_new (EntityTranslateGrabClosure);
   closure->view = view;
   closure->grab_x = grab_x;
   closure->grab_y = grab_y;
@@ -1147,7 +1147,7 @@ translate_grab_entity (RigCameraView *view,
 
 static bool
 translate_grab_entities (RigCameraView *view,
-                         GList *entities,
+                         CList *entities,
                          float grab_x,
                          float grab_y,
                          EntityTranslateCallback translate_cb,
@@ -1156,12 +1156,12 @@ translate_grab_entities (RigCameraView *view,
 {
   RutObject *camera = view->view_camera_component;
   EntitiesTranslateGrabClosure *closure;
-  GList *l;
+  CList *l;
 
   if (view->entities_translate_grab_closure)
     return FALSE;
 
-  closure = g_slice_new (EntitiesTranslateGrabClosure);
+  closure = c_slice_new (EntitiesTranslateGrabClosure);
   closure->view = view;
   closure->entity_closures = NULL;
 
@@ -1176,13 +1176,13 @@ translate_grab_entities (RigCameraView *view,
                                done_cb,
                                user_data);
       if (entity_closure)
-        closure->entity_closures = g_list_prepend (closure->entity_closures,
+        closure->entity_closures = c_list_prepend (closure->entity_closures,
                                                    entity_closure);
     }
 
   if (!closure->entity_closures)
     {
-      g_slice_free (EntitiesTranslateGrabClosure, closure);
+      c_slice_free (EntitiesTranslateGrabClosure, closure);
       return FALSE;
     }
 
@@ -1204,7 +1204,7 @@ print_quaternion (const CoglQuaternion *q,
   float angle = cogl_quaternion_get_rotation_angle (q);
   float axis[3];
   cogl_quaternion_get_rotation_axis (q, axis);
-  g_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
+  c_print ("%s: [%f (%f, %f, %f)]\n", label, angle, axis[0], axis[1], axis[2]);
 }
 #endif
 
@@ -1400,7 +1400,7 @@ entitygraph_pre_pick_cb (RutObject *object,
                      transformed_ray_direction);
 
 #if 0
-      g_print ("transformed ray %f,%f,%f %f,%f,%f\n",
+      c_print ("transformed ray %f,%f,%f %f,%f,%f\n",
                transformed_ray_origin[0],
                transformed_ray_origin[1],
                transformed_ray_origin[2],
@@ -1694,7 +1694,7 @@ input_cb (RutInputEvent *event,
       inverse_projection =
         rut_camera_get_inverse_projection (camera_component);
 
-      //g_print ("Camera inverse projection: %p\n", engine->simulator);
+      //c_print ("Camera inverse projection: %p\n", engine->simulator);
       //cogl_debug_matrix_print (inverse_projection);
 
 #if 0
@@ -1703,12 +1703,12 @@ input_cb (RutInputEvent *event,
       camera_view = rut_camera_get_view_transform (camera_component);
       cogl_matrix_get_inverse (camera_view, &camera_transform);
 #endif
-      //g_print ("Camera transform:\n");
+      //c_print ("Camera transform:\n");
       //cogl_debug_matrix_print (&camera_transform);
 
       screen_pos[0] = x;
       screen_pos[1] = y;
-      //g_print ("screen pos x=%f, y=%f\n", x, y);
+      //c_print ("screen pos x=%f, y=%f\n", x, y);
 
       rut_util_create_pick_ray (viewport,
                                 inverse_projection,
@@ -1718,7 +1718,7 @@ input_cb (RutInputEvent *event,
                                 ray_direction);
 
 #if 0
-      g_print ("ray pos %f,%f,%f dir %f,%f,%f\n",
+      c_print ("ray pos %f,%f,%f dir %f,%f,%f\n",
                ray_position[0],
                ray_position[1],
                ray_position[2],
@@ -1766,7 +1766,7 @@ input_cb (RutInputEvent *event,
           RutProperty *label =
             rut_introspectable_lookup_property (picked_entity, "label");
 
-          g_print ("Entity picked: %s\n", rut_property_get_text (label));
+          c_print ("Entity picked: %s\n", rut_property_get_text (label));
         }
 #endif
 
@@ -1782,7 +1782,7 @@ input_cb (RutInputEvent *event,
                                           RUT_COMPONENT_TYPE_INPUT);
               //RutProperty *label =
               //  rut_introspectable_lookup_property (picked_entity, "label");
-              //g_print ("Entity picked: %s\n", rut_property_get_text (label));
+              //c_print ("Entity picked: %s\n", rut_property_get_text (label));
 
               if (inputable)
                 return rut_inputable_handle_event (inputable, event);
@@ -1791,7 +1791,7 @@ input_cb (RutInputEvent *event,
             }
           else
             {
-              //g_print ("No entity picked\n");
+              //c_print ("No entity picked\n");
               return RUT_INPUT_EVENT_STATUS_UNHANDLED;
             }
         }
@@ -1836,7 +1836,7 @@ input_cb (RutInputEvent *event,
 
           //rut_arcball_mouse_down (&view->arcball, engine->width - x, y);
           rut_arcball_mouse_down (&view->arcball, view->width - x, view->height - y);
-          //g_print ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width - x), (int)(engine->height - y));
+          //c_print ("Arcball init, mouse = (%d, %d)\n", (int)(engine->width - x), (int)(engine->height - y));
 
           //print_quaternion (&view->saved_rotation, "Saved Quaternion");
           //print_quaternion (&view->arcball.q_drag, "Arcball Initial Quaternion");
@@ -1852,7 +1852,7 @@ input_cb (RutInputEvent *event,
                state == RUT_BUTTON_STATE_2 &&
                modifiers & RUT_MODIFIER_SHIFT_ON)
         {
-          GList link;
+          CList link;
           link.data = view->view_camera_to_origin;
           link.next = NULL;
 
@@ -1890,7 +1890,7 @@ input_cb (RutInputEvent *event,
               rut_graphable_get_transform (view->view_camera, &transform);
               cogl_debug_matrix_print (&transform);
             }
-          g_print (" =========================== x_vec = %f, %f, %f\n",
+          c_print (" =========================== x_vec = %f, %f, %f\n",
                    x_vec[0], x_vec[1], x_vec[2]);
 
           y_vec[0] = origin[0] - unit_y[0];
@@ -1916,7 +1916,7 @@ input_cb (RutInputEvent *event,
 
           update_camera_position (engine);
 
-          g_print ("Translate %f %f dx=%f, dy=%f\n",
+          c_print ("Translate %f %f dx=%f, dy=%f\n",
                    x - engine->grab_x,
                    y - engine->grab_y,
                    dx, dy);
@@ -1935,7 +1935,7 @@ input_cb (RutInputEvent *event,
           //rut_arcball_mouse_motion (&view->arcball, engine->width - x, y);
           rut_arcball_mouse_motion (&view->arcball, view->width - x, view->height - y);
 #if 0
-          g_print ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
+          c_print ("Arcball motion, center=%f,%f mouse = (%f, %f)\n",
                    view->arcball.center[0],
                    view->arcball.center[1],
                    x, y);
@@ -1997,7 +1997,7 @@ input_cb (RutInputEvent *event,
                    RUT_MODIFIER_CTRL_ON) &&
                   engine->objects_selection->objects)
                 {
-                  GList *l;
+                  CList *l;
                   for (l = engine->objects_selection->objects; l; l = l->next)
                     move_entity_to_camera (view, l->data);
                 }
@@ -2015,12 +2015,12 @@ input_cb (RutInputEvent *event,
               rut_object_get_type (data) == &rig_objects_selection_type)
             {
               RigObjectsSelection *selection = data;
-              int n_entities = g_list_length (selection->objects);
+              int n_entities = c_list_length (selection->objects);
 
               if (n_entities)
                 {
                   RigEntity *parent = (RigEntity *)view->ui->scene;
-                  GList *l;
+                  CList *l;
 
                   for (l = selection->objects; l; l = l->next)
                     {

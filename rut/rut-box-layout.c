@@ -158,7 +158,7 @@ allocate_cb (RutObject *graphable,
   if (!n_children)
     return;
 
-  sizes = g_newa (RutPreferredSize, n_children);
+  sizes = c_newa (RutPreferredSize, n_children);
 
   switch (packing)
     {
@@ -542,7 +542,7 @@ _rut_box_layout_init_type (void)
   RutType *type = &rut_box_layout_type;
 #define TYPE RutBoxLayout
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_box_layout_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_box_layout_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -599,9 +599,9 @@ rut_box_layout_add (RutBoxLayout *box,
                     bool expand,
                     RutObject *child_widget)
 {
-  RutBoxLayoutChild *child = g_slice_new (RutBoxLayoutChild);
+  RutBoxLayoutChild *child = c_slice_new (RutBoxLayoutChild);
 
-  g_return_if_fail (rut_object_get_type (box) == &rut_box_layout_type);
+  c_return_if_fail (rut_object_get_type (box) == &rut_box_layout_type);
 
   child->transform = rut_transform_new (box->ctx);
   rut_graphable_add_child (box, child->transform);
@@ -632,7 +632,7 @@ rut_box_layout_remove (RutBoxLayout *box,
 {
   RutBoxLayoutChild *child;
 
-  g_return_if_fail (box->n_children > 0);
+  c_return_if_fail (box->n_children > 0);
 
   rut_list_for_each (child, &box->children, link)
     {
@@ -644,7 +644,7 @@ rut_box_layout_remove (RutBoxLayout *box,
           rut_graphable_remove_child (child->transform);
 
           rut_list_remove (&child->link);
-          g_slice_free (RutBoxLayoutChild, child);
+          c_slice_free (RutBoxLayoutChild, child);
 
           preferred_size_changed (box);
           queue_allocation (box);

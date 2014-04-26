@@ -64,7 +64,7 @@ typedef struct _Polygon
 
 typedef struct _TexturePatch
 {
-  GList *polygons;
+  CList *polygons;
   Polygon *root;
   float tangent_angle;
   float width;
@@ -73,7 +73,7 @@ typedef struct _TexturePatch
 
 struct _RigModelPrivate
 {
-  GList *texture_patches;
+  CList *texture_patches;
   Polygon *fin_polygons;
   Vertex *fin_vertices;
   Polygon *polygons;
@@ -125,7 +125,7 @@ _rig_model_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -137,20 +137,20 @@ _rig_model_free (void *object)
 
   if (model->patched_mesh)
     {
-      g_free (model->priv->polygons);
-      g_free (model->priv->vertices);
+      c_free (model->priv->polygons);
+      c_free (model->priv->vertices);
       rut_object_unref (model->patched_mesh);
     }
 
   if (model->fin_mesh)
     {
       cogl_object_unref (model->fin_primitive);
-      g_free (model->priv->fin_polygons);
-      g_free (model->priv->fin_vertices);
+      c_free (model->priv->fin_polygons);
+      c_free (model->priv->fin_vertices);
       rut_object_unref (model->fin_mesh);
     }
 
-  g_free (model->priv);
+  c_free (model->priv);
   rut_object_free (RigModel, model);
 }
 
@@ -214,7 +214,7 @@ _rig_model_init_type (void)
   RutType *type = &rig_model_type;
 #define TYPE RigModel
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_model_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_model_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -1104,7 +1104,7 @@ static void
 grow_texture_patch (RigModel *model, TexturePatch *patch)
 {
   RigModelPrivate *priv = model->priv;
-  bool *visited = g_new (bool, priv->n_polygons);
+  bool *visited = c_new (bool, priv->n_polygons);
   RutQueue *stack = rut_queue_new ();
   int i;
 
@@ -1136,7 +1136,7 @@ grow_texture_patch (RigModel *model, TexturePatch *patch)
               extrude_new_vertex (parent, child);
               if (extract_texture_coordinates (patch, child))
                 {
-                  patch->polygons = g_list_prepend (patch->polygons, child);
+                  patch->polygons = c_list_prepend (patch->polygons, child);
                   rut_queue_push_tail (stack, child);
                   child->uncovered = FALSE;
                 }
@@ -1144,7 +1144,7 @@ grow_texture_patch (RigModel *model, TexturePatch *patch)
         }
     }
 
-  g_free (visited);
+  c_free (visited);
   rut_queue_free (stack);
 }
 
@@ -1159,7 +1159,7 @@ create_texture_patch (RigModel *model)
   if (!root)
     return NULL;
 
-  patch = g_new (TexturePatch, 1);
+  patch = c_new (TexturePatch, 1);
   patch->polygons = NULL;
   patch->root = root;
 
@@ -1177,11 +1177,11 @@ create_texture_patch (RigModel *model)
   extract_texture_coordinates (patch, root);
   patch->root->uncovered = FALSE;
 
-  patch->polygons = g_list_prepend (patch->polygons, root);
+  patch->polygons = c_list_prepend (patch->polygons, root);
   grow_texture_patch (model, patch);
 
   model->priv->texture_patches =
-    g_list_prepend (model->priv->texture_patches, patch);
+    c_list_prepend (model->priv->texture_patches, patch);
 
   return patch;
 }
@@ -1283,7 +1283,7 @@ static RutMesh *
 create_patched_mesh_from_model (RutObject *object)
 {
   RigModel *model = object;
-  GList *iter;
+  CList *iter;
 
   if (model->patched_mesh)
     return model->patched_mesh;
@@ -1293,9 +1293,9 @@ create_patched_mesh_from_model (RutObject *object)
   while (create_texture_patch (model));
 
   for (iter = model->priv->texture_patches; iter; iter = iter->next)
-    g_free (iter->data);
+    c_free (iter->data);
 
-  g_list_free (model->priv->texture_patches);
+  c_list_free (model->priv->texture_patches);
 
   model->patched_mesh =
     create_renderer_mesh_from_vertices (model->priv->vertices,
@@ -1316,7 +1316,7 @@ create_fin_mesh_from_model (RutObject *object)
   if (model->fin_mesh)
     return model->fin_mesh;
 
-  indices = g_new (unsigned int, model->priv->n_fin_polygons * 3);
+  indices = c_new (unsigned int, model->priv->n_fin_polygons * 3);
 
   j = 0;
   k = 0;
@@ -1340,7 +1340,7 @@ create_fin_mesh_from_model (RutObject *object)
                                         indices,
                                         model->priv->n_fin_polygons * 3);
 
-  g_free (indices);
+  c_free (indices);
 
   return model->fin_mesh;
 }
@@ -1370,11 +1370,11 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
    * completely missing.
    */
 #ifdef RIG_ENABLE_DEBUG
-  g_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
+  c_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
                                                  "cogl_normal_in"),
                         NULL);
 
-  g_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
+  c_return_val_if_fail (rut_mesh_find_attribute (model->mesh,
                                                  "cogl_tex_coord0_in"),
                         NULL);
 #endif
@@ -1442,7 +1442,7 @@ rig_model_new_from_asset_mesh (RutContext *ctx,
       attributes[i] = model->mesh->attributes[i];
     }
 
-  g_return_val_if_fail (tex_attrib != NULL, NULL);
+  c_return_val_if_fail (tex_attrib != NULL, NULL);
 
   attributes[i++] = rut_attribute_new (tex_attrib->buffer,
                                        "cogl_tex_coord1_in",
@@ -1508,7 +1508,7 @@ rig_model_new_for_hair (RigModel *base)
   int n_vertices;
   int i;
 
-  g_return_val_if_fail (!base->is_hair_model, NULL);
+  c_return_val_if_fail (!base->is_hair_model, NULL);
 
   if (model->primitive)
     {
@@ -1520,7 +1520,7 @@ rig_model_new_for_hair (RigModel *base)
   model->patched_mesh = NULL;
   model->fin_mesh = NULL;
 
-  model->priv = g_new (RigModelPrivate, 1);
+  model->priv = c_new (RigModelPrivate, 1);
 
   _rut_bitmask_init (&model->priv->adj_matrix);
 
@@ -1529,13 +1529,13 @@ rig_model_new_for_hair (RigModel *base)
   n_vertices = model->mesh->indices_buffer ?
     model->mesh->n_indices : model->mesh->n_vertices;
 
-  model->priv->polygons = g_new (Polygon, n_vertices / 3);
-  model->priv->vertices = g_new (Vertex, n_vertices);
+  model->priv->polygons = c_new (Polygon, n_vertices / 3);
+  model->priv->vertices = c_new (Vertex, n_vertices);
 
   model->priv->n_fin_polygons = 0;
   model->priv->n_fin_vertices = 0;
-  model->priv->fin_polygons = g_new (Polygon, (n_vertices / 3) * 6);
-  model->priv->fin_vertices = g_new (Vertex, n_vertices * 4);
+  model->priv->fin_polygons = c_new (Polygon, (n_vertices / 3) * 6);
+  model->priv->fin_vertices = c_new (Vertex, n_vertices * 4);
 
   model->priv->n_vertices = 0;
   model->priv->n_polygons = 0;

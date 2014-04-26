@@ -77,7 +77,7 @@ remove_toggle_state (RutIconToggleSetState *toggle_state)
 {
   rut_list_remove (&toggle_state->list_node);
   rut_object_unref (toggle_state->toggle);
-  g_slice_free (RutIconToggleSetState, toggle_state);
+  c_slice_free (RutIconToggleSetState, toggle_state);
 }
 
 static void
@@ -137,7 +137,7 @@ _rut_icon_toggle_set_init_type (void)
   RutType *type = &rut_icon_toggle_set_type;
 #define TYPE RutIconToggleSet
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_icon_toggle_set_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_icon_toggle_set_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -210,7 +210,7 @@ rut_icon_toggle_set_add_on_change_callback (RutIconToggleSet *toggle_set,
                                   void *user_data,
                                   RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
   return rut_closure_list_add (&toggle_set->on_change_cb_list,
                                callback,
@@ -269,13 +269,13 @@ rut_icon_toggle_set_add (RutIconToggleSet *toggle_set,
 {
   RutIconToggleSetState *toggle_state;
 
-  g_return_if_fail (rut_object_get_type (toggle_set) ==
+  c_return_if_fail (rut_object_get_type (toggle_set) ==
                     &rut_icon_toggle_set_type);
 
-  g_return_if_fail (find_state_for_toggle (toggle_set, toggle) == NULL);
-  g_return_if_fail (find_state_for_value (toggle_set, value) == NULL);
+  c_return_if_fail (find_state_for_toggle (toggle_set, toggle) == NULL);
+  c_return_if_fail (find_state_for_value (toggle_set, value) == NULL);
 
-  toggle_state = g_slice_new0 (RutIconToggleSetState);
+  toggle_state = c_slice_new0 (RutIconToggleSetState);
   toggle_state->toggle = rut_object_ref (toggle);
   toggle_state->on_toggle_closure =
     rut_icon_toggle_add_on_toggle_callback (toggle,
@@ -294,12 +294,12 @@ rut_icon_toggle_set_remove (RutIconToggleSet *toggle_set,
 {
   RutIconToggleSetState *toggle_state;
 
-  g_return_if_fail (rut_object_get_type (toggle_set) ==
+  c_return_if_fail (rut_object_get_type (toggle_set) ==
                     &rut_icon_toggle_set_type);
 
   toggle_state = find_state_for_toggle (toggle_set, toggle);
 
-  g_return_if_fail (toggle_state);
+  c_return_if_fail (toggle_state);
 
   if (toggle_set->current_toggle_state == toggle_state)
     toggle_set->current_toggle_state = NULL;
@@ -332,7 +332,7 @@ rut_icon_toggle_set_set_selection (RutObject *object,
   if (selection_value > 0)
     {
       toggle_state = find_state_for_value (toggle_set, selection_value);
-      g_return_if_fail (toggle_state);
+      c_return_if_fail (toggle_state);
     }
   else
     {

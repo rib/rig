@@ -55,7 +55,7 @@ free_item (RutQueueItem *item)
 RutQueue *
 rut_queue_new (void)
 {
-  RutQueue *queue = g_new (RutQueue, 1);
+  RutQueue *queue = c_new (RutQueue, 1);
   rut_list_init (&queue->items);
   queue->len = 0;
   return queue;
@@ -186,7 +186,7 @@ rut_queue_clear (RutQueue *queue)
 void
 rut_queue_free (RutQueue *queue)
 {
-  g_return_if_fail (queue->len == 0);
+  c_return_if_fail (queue->len == 0);
 
-  g_free (queue);
+  c_free (queue);
 }

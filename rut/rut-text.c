@@ -695,24 +695,24 @@ rut_text_get_display_text (RutText *text)
   buffer = get_buffer (text);
   text_str = rut_text_buffer_get_text (buffer);
 
-  /* simple short-circuit to avoid going through GString
+  /* simple short-circuit to avoid going through CString
    * with an empty text and a password char set
    */
   if (text_str[0] == '\0')
-    return g_strdup ("");
+    return c_strdup ("");
 
   if (G_LIKELY (text->password_char == 0))
-    return g_strdup (text_str);
+    return c_strdup (text_str);
   else
     {
-      GString *str;
+      CString *str;
       uint32_t invisible_char;
       char buf[7];
       int char_len, i;
       unsigned int n_chars;
 
       n_chars = rut_text_buffer_get_length (buffer);
-      str = g_string_sized_new (rut_text_buffer_get_bytes (buffer));
+      str = c_string_sized_new (rut_text_buffer_get_bytes (buffer));
       invisible_char = text->password_char;
 
       /* we need to convert the string built of invisible
@@ -727,18 +727,18 @@ rut_text_get_display_text (RutText *text)
           char *last_char;
 
           for (i = 0; i < n_chars - 1; i++)
-            g_string_append_len (str, buf, char_len);
+            c_string_append_len (str, buf, char_len);
 
           last_char = g_utf8_offset_to_pointer (text_str, n_chars - 1);
-          g_string_append (str, last_char);
+          c_string_append (str, last_char);
         }
       else
         {
           for (i = 0; i < n_chars; i++)
-            g_string_append_len (str, buf, char_len);
+            c_string_append_len (str, buf, char_len);
         }
 
-      return g_string_free (str, FALSE);
+      return c_string_free (str, FALSE);
     }
 }
 
@@ -838,7 +838,7 @@ rut_text_create_layout_no_cache (RutText  *text,
 
   if (text->editable && text->preedit_set)
     {
-      GString *tmp = g_string_new (contents);
+      CString *tmp = c_string_new (contents);
       PangoAttrList *tmp_attrs = pango_attr_list_new ();
       int cursor_index;
 
@@ -847,7 +847,7 @@ rut_text_create_layout_no_cache (RutText  *text,
       else
         cursor_index = offset_to_bytes (contents, text->position);
 
-      g_string_insert (tmp, cursor_index, text->preedit_str);
+      c_string_insert (tmp, cursor_index, text->preedit_str);
 
       pango_layout_set_text (layout, tmp->str, tmp->len);
 
@@ -860,7 +860,7 @@ rut_text_create_layout_no_cache (RutText  *text,
           pango_layout_set_attributes (layout, tmp_attrs);
         }
 
-      g_string_free (tmp, TRUE);
+      c_string_free (tmp, TRUE);
       pango_attr_list_unref (tmp_attrs);
     }
   else
@@ -885,7 +885,7 @@ rut_text_create_layout_no_cache (RutText  *text,
   pango_layout_set_width (layout, width);
   pango_layout_set_height (layout, height);
 
-  g_free (contents);
+  c_free (contents);
 
   RUT_TIMER_STOP (_rut_uprof_context, text_layout_timer);
 
@@ -944,7 +944,7 @@ rut_text_set_font_description_internal (RutText *text,
   text->font_desc = desc;
 
   /* update the font name string we use */
-  g_free (text->font_name);
+  c_free (text->font_name);
   text->font_name = pango_font_description_to_string (text->font_desc);
 
   rut_text_dirty_cache (text);
@@ -983,7 +983,7 @@ rut_text_settings_changed_cb (RutSettings *settings,
       font_desc = pango_font_description_from_string (font_name);
       rut_text_set_font_description_internal (text, font_desc);
 
-      g_free (font_name);
+      c_free (font_name);
     }
 
   rut_text_dirty_cache (text);
@@ -1254,21 +1254,21 @@ rut_text_position_to_coords (RutText *text,
   else
     {
       char *text_str = rut_text_get_display_text (text);
-      GString *tmp = g_string_new (text_str);
+      CString *tmp = c_string_new (text_str);
       int cursor_index;
 
       cursor_index = offset_to_bytes (text_str, text->position);
 
       if (text->preedit_str != NULL)
-        g_string_insert (tmp, cursor_index, text->preedit_str);
+        c_string_insert (tmp, cursor_index, text->preedit_str);
 
       if (text->password_char == 0)
         index_ = offset_to_bytes (tmp->str, position);
       else
         index_ = position * password_char_bytes;
 
-      g_free (text_str);
-      g_string_free (tmp, TRUE);
+      c_free (text_str);
+      c_string_free (tmp, TRUE);
     }
 
   pango_layout_get_cursor_pos (rut_text_get_layout (text),
@@ -1422,13 +1422,13 @@ rut_text_set_markup_internal (RutText *text,
     {
       if (G_LIKELY (error != NULL))
         {
-          g_warning ("Failed to set the markup of RutText object %p: %s",
+          c_warning ("Failed to set the markup of RutText object %p: %s",
                      text,
                      error->message);
           g_error_free (error);
         }
       else
-        g_warning ("Failed to set the markup of RutText object %p",
+        c_warning ("Failed to set the markup of RutText object %p",
                    text);
 
       return;
@@ -1437,7 +1437,7 @@ rut_text_set_markup_internal (RutText *text,
   if (stripped_text)
     {
       rut_text_buffer_set_text (get_buffer (text), stripped_text);
-      g_free (stripped_text);
+      c_free (stripped_text);
     }
 
   /* Store the new markup attributes */
@@ -1498,11 +1498,11 @@ _rut_text_free (void *object)
   if (text->preedit_attrs)
     pango_attr_list_unref (text->preedit_attrs);
 
-  g_free (text->hint_text);
+  c_free (text->hint_text);
   rut_text_dirty_hint_text_layout (text);
 
   rut_text_set_buffer (text, NULL);
-  g_free (text->font_name);
+  c_free (text->font_name);
 
   rut_object_unref (text->pick_mesh);
   rut_object_unref (text->input_region);
@@ -1598,10 +1598,10 @@ rut_text_foreach_selection_rectangle (RutText *text,
           func (text, &box, user_data);
         }
 
-      g_free (ranges);
+      c_free (ranges);
     }
 
-  g_free (utf8);
+  c_free (utf8);
 }
 
 static void
@@ -1730,7 +1730,7 @@ rut_text_move_word_backward (RutText *text,
       while (retval > 0 && !log_attrs[retval].is_word_start)
         retval -= 1;
 
-      g_free (log_attrs);
+      c_free (log_attrs);
     }
 
   return retval;
@@ -1756,7 +1756,7 @@ rut_text_move_word_forward (RutText *text,
       while (retval < n_chars && !log_attrs[retval].is_word_end)
         retval += 1;
 
-      g_free (log_attrs);
+      c_free (log_attrs);
     }
 
   return retval;
@@ -2226,12 +2226,12 @@ rut_text_motion_grab (RutInputEvent *event,
   CoglMatrix transform;
   CoglMatrix inverse_transform;
 
-  g_return_val_if_fail (text->in_select_drag, RUT_INPUT_EVENT_STATUS_UNHANDLED);
+  c_return_val_if_fail (text->in_select_drag, RUT_INPUT_EVENT_STATUS_UNHANDLED);
 
   if (rut_input_event_get_type (event) != RUT_INPUT_EVENT_TYPE_MOTION)
     return RUT_INPUT_EVENT_STATUS_UNHANDLED;
 
-  g_print ("Grab\n");
+  c_print ("Grab\n");
   if (rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_MOVE)
     {
       const CoglMatrix *view = rut_camera_get_view_transform (camera);
@@ -2242,7 +2242,7 @@ rut_text_motion_grab (RutInputEvent *event,
       if (!cogl_matrix_get_inverse (&transform,
                                     &inverse_transform))
         {
-          g_print ("Failed to get inverse\n");
+          c_print ("Failed to get inverse\n");
           return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 
@@ -2255,7 +2255,7 @@ rut_text_motion_grab (RutInputEvent *event,
                                   &x,
                                   &y);
 
-      g_print ("Grab x=%f y=%f\n", x, y);
+      c_print ("Grab x=%f y=%f\n", x, y);
 
       index_ = rut_text_coords_to_position (text, x, y);
       text_str = rut_text_buffer_get_text (get_buffer (text));
@@ -2306,7 +2306,7 @@ rut_text_button_press (RutText *text,
   CoglMatrix inverse_transform;
   RutObject *camera;
 
-  g_print ("RutText Button Press!\n");
+  c_print ("RutText Button Press!\n");
   /* we'll steal keyfocus if we need it */
   if (text->editable || text->selectable)
     rut_text_grab_key_focus (text);
@@ -2329,7 +2329,7 @@ rut_text_button_press (RutText *text,
        * to grab a scrollbar when typing then they would have to click
        * the scrollbar twice, once to drop the text entry grab and
        * then again to actually grab the scrollbar. */
-      g_print ("Ungrab\n");
+      c_print ("Ungrab\n");
       return RUT_INPUT_EVENT_STATUS_UNHANDLED;
     }
 
@@ -2417,7 +2417,7 @@ rut_text_input_cb (RutInputEvent *event,
           char *text_data = rut_mimable_get_text (data);
           rut_text_clear_selection (text);
           rut_text_insert_text (text, text_data, text->position);
-          g_free (text_data);
+          c_free (text_data);
         }
 
       return RUT_INPUT_EVENT_STATUS_HANDLED;
@@ -3125,7 +3125,7 @@ _rut_text_selectable_copy (RutObject *object)
   char *text_data = rut_text_get_selection (text);
   RutTextBlob *copy = rut_text_blob_new (text_data);
 
-  g_free (text_data);
+  c_free (text_data);
 
   return copy;
 }
@@ -3175,7 +3175,7 @@ _rut_text_init_type (void)
   RutType *type = &rut_text_type;
 #define TYPE RutText
 
-  rut_type_init (&rut_text_type, G_STRINGIFY (TYPE), _rut_text_free);
+  rut_type_init (&rut_text_type, C_STRINGIFY (TYPE), _rut_text_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -3268,7 +3268,7 @@ rut_text_new_full (RutContext *ctx,
    */
   password_hint_time = rut_settings_get_password_hint_time (text->ctx->settings);
 
-  text->font_name = font_name ? g_strdup (font_name) :
+  text->font_name = font_name ? c_strdup (font_name) :
     rut_settings_get_font_name (text->ctx->settings); /* font_name is allocated */
   text->font_desc = pango_font_description_from_string (text->font_name);
   text->is_default_font = TRUE;
@@ -3735,7 +3735,7 @@ rut_text_get_selection (RutText *text)
   end_index = text->selection_bound;
 
   if (end_index == start_index)
-    return g_strdup ("");
+    return c_strdup ("");
 
   if ((end_index != -1 && end_index < start_index) ||
       start_index == -1)
@@ -3750,7 +3750,7 @@ rut_text_get_selection (RutText *text)
   end_offset = offset_to_bytes (text_str, end_index);
   len = end_offset - start_offset;
 
-  str = g_malloc (len + 1);
+  str = c_malloc (len + 1);
   g_utf8_strncpy (str, text_str + start_offset, end_index - start_index);
 
   return str;
@@ -3926,7 +3926,7 @@ rut_text_set_font_name (RutObject *obj,
       else
         {
           /* last fallback */
-          default_font_name = g_strdup ("Sans 12");
+          default_font_name = c_strdup ("Sans 12");
         }
 
       is_default_font = TRUE;
@@ -3934,13 +3934,13 @@ rut_text_set_font_name (RutObject *obj,
   else
     is_default_font = FALSE;
 
-  if (g_strcmp0 (text->font_name, font_name) == 0)
+  if (c_strcmp0 (text->font_name, font_name) == 0)
     goto out;
 
   desc = pango_font_description_from_string (font_name);
   if (!desc)
     {
-      g_warning ("Attempting to create a PangoFontDescription for "
+      c_warning ("Attempting to create a PangoFontDescription for "
 		 "font name '%s', but failed.",
 		 font_name);
       goto out;
@@ -3955,7 +3955,7 @@ rut_text_set_font_name (RutObject *obj,
 
 out:
   if (is_default_font)
-    g_free ((char *) font_name);
+    c_free ((char *) font_name);
 }
 
 const char *
@@ -4031,8 +4031,8 @@ rut_text_set_hint_text (RutObject *obj,
 {
   RutText *text = obj;
 
-  g_free (text->hint_text);
-  text->hint_text = g_strdup (hint_str);
+  c_free (text->hint_text);
+  text->hint_text = c_strdup (hint_str);
 
   if (!text->has_focus &&
       (text->buffer == NULL ||
@@ -4073,7 +4073,7 @@ rut_text_set_color (RutObject *obj,
 {
   RutText *text = obj;
 
-  g_return_if_fail (color != NULL);
+  c_return_if_fail (color != NULL);
 
   text->text_color = *color;
 
@@ -4105,7 +4105,7 @@ void
 rut_text_set_ellipsize (RutText *text,
 			PangoEllipsizeMode mode)
 {
-  g_return_if_fail (mode >= PANGO_ELLIPSIZE_NONE &&
+  c_return_if_fail (mode >= PANGO_ELLIPSIZE_NONE &&
 		    mode <= PANGO_ELLIPSIZE_END);
 
   if ((PangoEllipsizeMode) text->ellipsize != mode)
@@ -4399,14 +4399,14 @@ void
 rut_text_insert_unichar (RutText *text,
                          uint32_t wc)
 {
-  GString *new;
+  CString *new;
 
-  new = g_string_new ("");
-  g_string_append_unichar (new, wc);
+  new = c_string_new ("");
+  c_string_append_unichar (new, wc);
 
   rut_text_buffer_insert_text (get_buffer (text), text->position, new->str, 1);
 
-  g_string_free (new, TRUE);
+  c_string_free (new, TRUE);
 }
 
 void
@@ -4414,7 +4414,7 @@ rut_text_insert_text (RutText *text,
                       const char *text_str,
                       int position)
 {
-  g_return_if_fail (text_str != NULL);
+  c_return_if_fail (text_str != NULL);
 
   rut_text_buffer_insert_text (get_buffer (text), position, text_str,
                                g_utf8_strlen (text_str, -1));
@@ -4503,7 +4503,7 @@ rut_text_set_preedit_string (RutText *text,
                              PangoAttrList *preedit_attrs,
                              unsigned int cursor_pos)
 {
-  g_free (text->preedit_str);
+  c_free (text->preedit_str);
   text->preedit_str = NULL;
 
   if (text->preedit_attrs != NULL)
@@ -4519,7 +4519,7 @@ rut_text_set_preedit_string (RutText *text,
     text->preedit_set = FALSE;
   else
     {
-      text->preedit_str = g_strdup (preedit_str);
+      text->preedit_str = c_strdup (preedit_str);
 
       if (text->preedit_str != NULL)
         text->preedit_n_chars = g_utf8_strlen (text->preedit_str, -1);
@@ -4557,7 +4557,7 @@ rut_text_add_text_inserted_callback (RutText *text,
                                      void *user_data,
                                      RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&text->text_inserted_cb_list,
                                callback,
                                user_data,
@@ -4570,7 +4570,7 @@ rut_text_add_text_deleted_callback (RutText *text,
                                     void *user_data,
                                     RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&text->text_deleted_cb_list,
                                callback,
                                user_data,
@@ -4583,7 +4583,7 @@ rut_text_add_text_changed_callback (RutText *text,
                                     void *user_data,
                                     RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&text->text_changed_cb_list,
                                callback,
                                user_data,
@@ -4596,7 +4596,7 @@ rut_text_add_activate_callback (RutText *text,
                                 void *user_data,
                                 RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&text->activate_cb_list,
                                callback,
                                user_data,
@@ -4609,7 +4609,7 @@ rut_text_add_cursor_event_callback (RutText *text,
                                     void *user_data,
                                     RutClosureDestroyCallback destroy_cb)
 {
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
   return rut_closure_list_add (&text->cursor_event_cb_list,
                                callback,
                                user_data,

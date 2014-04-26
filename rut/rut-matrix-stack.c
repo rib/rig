@@ -380,10 +380,10 @@ rut_matrix_stack_pop (RutMatrixStack *stack)
   RutMatrixEntry *old_top;
   RutMatrixEntry *new_top;
 
-  g_return_if_fail (stack != NULL);
+  c_return_if_fail (stack != NULL);
 
   old_top = stack->last_entry;
-  g_return_if_fail (old_top != NULL);
+  c_return_if_fail (old_top != NULL);
 
   /* To pop we are moving the top of the stack to the old top's parent
    * node. The stack always needs to have a reference to the top entry
@@ -498,14 +498,14 @@ initialized:
             return save->cache;
           }
         }
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       return NULL;
     }
 
 #ifdef RUT_ENABLE_DEBUG
   if (!current)
     {
-      g_warning ("Inconsistent matrix stack");
+      c_warning ("Inconsistent matrix stack");
       return NULL;
     }
 
@@ -602,7 +602,7 @@ initialized:
         case RUT_MATRIX_OP_LOAD_IDENTITY:
         case RUT_MATRIX_OP_LOAD:
         case RUT_MATRIX_OP_SAVE:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           continue;
         }
     }
@@ -920,7 +920,7 @@ rut_matrix_entry_equal (RutMatrixEntry *entry0,
           }
         case RUT_MATRIX_OP_SAVE:
           /* We skip over saves above so we shouldn't see save entries */
-          g_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 
@@ -947,7 +947,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
       children[i] = e;
     }
 
-  g_print ("MatrixEntry %p =\n", entry);
+  c_print ("MatrixEntry %p =\n", entry);
 
   for (i = 0; i < depth; i++)
     {
@@ -956,13 +956,13 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
       switch (entry->op)
         {
         case RUT_MATRIX_OP_LOAD_IDENTITY:
-          g_print ("  LOAD IDENTITY\n");
+          c_print ("  LOAD IDENTITY\n");
           continue;
         case RUT_MATRIX_OP_TRANSLATE:
           {
             RutMatrixEntryTranslate *translate =
               (RutMatrixEntryTranslate *)entry;
-            g_print ("  TRANSLATE X=%f Y=%f Z=%f\n",
+            c_print ("  TRANSLATE X=%f Y=%f Z=%f\n",
                      translate->x,
                      translate->y,
                      translate->z);
@@ -972,7 +972,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
           {
             RutMatrixEntryRotate *rotate =
               (RutMatrixEntryRotate *)entry;
-            g_print ("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
+            c_print ("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
                      rotate->angle,
                      rotate->x,
                      rotate->y,
@@ -983,7 +983,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
           {
             RutMatrixEntryRotateQuaternion *rotate =
               (RutMatrixEntryRotateQuaternion *)entry;
-            g_print ("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
+            c_print ("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
                      rotate->values[0],
                      rotate->values[1],
                      rotate->values[2],
@@ -994,7 +994,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
           {
             RutMatrixEntryRotateEuler *rotate =
               (RutMatrixEntryRotateEuler *)entry;
-            g_print ("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
+            c_print ("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
                      rotate->heading,
                      rotate->pitch,
                      rotate->roll);
@@ -1003,7 +1003,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
         case RUT_MATRIX_OP_SCALE:
           {
             RutMatrixEntryScale *scale = (RutMatrixEntryScale *)entry;
-            g_print ("  SCALE X=%f Y=%f Z=%f\n",
+            c_print ("  SCALE X=%f Y=%f Z=%f\n",
                      scale->x,
                      scale->y,
                      scale->z);
@@ -1012,7 +1012,7 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
         case RUT_MATRIX_OP_MULTIPLY:
           {
             RutMatrixEntryMultiply *mult = (RutMatrixEntryMultiply *)entry;
-            g_print ("  MULT:\n");
+            c_print ("  MULT:\n");
             cogl_debug_matrix_print (mult->matrix);
             //_cogl_matrix_prefix_print ("    ", mult->matrix);
             continue;
@@ -1020,13 +1020,13 @@ rut_debug_matrix_entry_print (RutMatrixEntry *entry)
         case RUT_MATRIX_OP_LOAD:
           {
             RutMatrixEntryLoad *load = (RutMatrixEntryLoad *)entry;
-            g_print ("  LOAD:\n");
+            c_print ("  LOAD:\n");
             cogl_debug_matrix_print (load->matrix);
             //_cogl_matrix_prefix_print ("    ", load->matrix);
             continue;
           }
         case RUT_MATRIX_OP_SAVE:
-          g_print ("  SAVE\n");
+          c_print ("  SAVE\n");
         }
     }
 }

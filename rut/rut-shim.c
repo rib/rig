@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-interfaces.h"
 #include "rut-shim.h"
@@ -170,7 +170,7 @@ _rut_shim_init_type (void)
   RutType *type = &rut_shim_type;
 #define TYPE RutShim
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_shim_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_shim_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -267,7 +267,7 @@ child_preferred_size_cb (RutObject *sizable,
 void
 rut_shim_set_child (RutShim *shim, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (shim) == &rut_shim_type);
+  c_return_if_fail (rut_object_get_type (shim) == &rut_shim_type);
 
   if (shim->child == child)
     return;
@@ -301,7 +301,7 @@ rut_shim_set_child (RutShim *shim, RutObject *child)
 void
 rut_shim_remove_child (RutShim *shim, RutObject *child)
 {
-  g_return_if_fail (rut_object_get_type (shim) == &rut_shim_type);
+  c_return_if_fail (rut_object_get_type (shim) == &rut_shim_type);
   rut_graphable_remove_child (child);
 }
 

@@ -52,7 +52,7 @@ _rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init)
   if (type->magazine)
     object = rut_magazine_chunk_alloc (type->magazine);
   else
-    object = g_slice_alloc (bytes);
+    object = c_slice_alloc (bytes);
 
   rut_object_init (object, type);
 
@@ -62,7 +62,7 @@ _rut_object_alloc (size_t bytes, RutType *type, RutTypeInit type_init)
 RutObject *
 _rut_object_alloc0 (size_t bytes, RutType *type, RutTypeInit type_init)
 {
-  RutObject *object = g_slice_alloc0 (bytes);
+  RutObject *object = c_slice_alloc0 (bytes);
 
   if (G_UNLIKELY (type->name == NULL))
     type_init ();
@@ -87,5 +87,5 @@ _rut_object_free (size_t bytes, void *object)
   if (type->magazine)
     rut_magazine_chunk_free (type->magazine, object);
   else
-    g_slice_free1 (bytes, object);
+    c_slice_free1 (bytes, object);
 }

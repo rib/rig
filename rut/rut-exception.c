@@ -33,19 +33,19 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-exception.h"
 
 static RutException *
 exception_new_valist (GQuark domain, int code, const char *format, va_list ap)
 {
-  RutException *err = g_new (RutException, 1);
+  RutException *err = c_new (RutException, 1);
 
   err->domain = domain;
   err->code = code;
 
-  err->message = g_strdup_vprintf (format, ap);
+  err->message = c_strdup_vprintf (format, ap);
 
   return err;
 }
@@ -95,16 +95,16 @@ rut_propagate_exception (RutException **dest, RutException *src)
 RutException *
 rut_exception_copy (const RutException *error)
 {
-  RutException *copy = g_new (RutException, 1);
+  RutException *copy = c_new (RutException, 1);
   copy->domain = error->domain;
   copy->code = error->code;
-  copy->message = g_strdup (error->message);
+  copy->message = c_strdup (error->message);
   return copy;
 }
 
 void
 rut_exception_free (RutException *error)
 {
-  g_free (error->message);
-  g_free (error);
+  c_free (error->message);
+  c_free (error);
 }

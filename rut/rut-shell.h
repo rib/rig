@@ -248,13 +248,13 @@ struct _RutShell
   int event_pipe_write;
   bool wake_queued;
 
-  GArray *cogl_poll_fds;
+  CArray *cogl_poll_fds;
   int cogl_poll_fds_age;
 #endif
 
-  GArray *poll_fds;
+  CArray *poll_fds;
   int poll_sources_age;
-  GList *poll_sources;
+  CList *poll_sources;
 
   RutList idle_closures;
 
@@ -276,7 +276,7 @@ struct _RutShell
   void *user_data;
 
   RutList input_cb_list;
-  GList *input_cameras;
+  CList *input_cameras;
 
   /* Used to handle input events in window coordinates */
   RutObject *window_camera;

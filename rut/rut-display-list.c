@@ -33,10 +33,10 @@
 /* Given the @head and @tail for a sub-list contained within another
  * @list this unlinks the sub-list from @list and returns the new
  * head of @list if it has changed. */
-static GList *
-list_unsplice (GList *list, GList *head, GList *tail)
+static CList *
+list_unsplice (CList *list, CList *head, CList *tail)
 {
-  GList *after;
+  CList *after;
 
   if (tail->next)
     {
@@ -59,7 +59,7 @@ list_unsplice (GList *list, GList *head, GList *tail)
     }
   else
     {
-      g_return_val_if_fail (head == list, list);
+      c_return_val_if_fail (head == list, list);
       return after;
     }
 }
@@ -69,7 +69,7 @@ list_unsplice (GList *list, GList *head, GList *tail)
  * if it has changed.
  *
  * If @after is NULL the sub-list will be linked in-front of @list. This
- * would have the same result as using g_list_concat (@head, @list)
+ * would have the same result as using c_list_concat (@head, @list)
  * although in this case there is no need to traverse the first list to
  * find its @tail. If @after is NULL then @list can also be NULL and
  * in that case the function will return @head.
@@ -79,15 +79,15 @@ list_unsplice (GList *list, GList *head, GList *tail)
  * if necessary and this function will assert that head->prev == NULL
  * and tail->next == NULL.
  */
-static GList *
-list_splice (GList *list, GList *after, GList *head, GList *tail)
+static CList *
+list_splice (CList *list, CList *after, CList *head, CList *tail)
 {
-  g_return_val_if_fail (head->prev == NULL, NULL);
-  g_return_val_if_fail (tail->next == NULL, NULL);
+  c_return_val_if_fail (head->prev == NULL, NULL);
+  c_return_val_if_fail (tail->next == NULL, NULL);
 
   if (after)
     {
-      GList *remainder = after->next;
+      CList *remainder = after->next;
       after->next = head;
       head->prev = after;
       if (remainder)
@@ -110,14 +110,14 @@ list_splice (GList *list, GList *after, GList *head, GList *tail)
 
 #if 0
 static void
-_assert_list_is (GList *list, unsigned int length, unsigned int value)
+_assert_list_is (CList *list, unsigned int length, unsigned int value)
 {
-  GList *l;
+  CList *l;
 
   g_assert (list->prev == NULL);
-  g_assert_cmpuint (g_list_length (list), ==, length);
+  g_assert_cmpuint (c_list_length (list), ==, length);
 
-  for (l = g_list_last (list); l; l = l->prev)
+  for (l = c_list_last (list); l; l = l->prev)
     {
       g_assert_cmpuint (GPOINTER_TO_UINT (l->data), ==, value % 10);
       value /= 10;
@@ -127,25 +127,25 @@ _assert_list_is (GList *list, unsigned int length, unsigned int value)
 static void
 _rut_test_list_splice (void)
 {
-  GList *l0 = NULL, *l1 = NULL, *l2 = NULL;
-  GList *l0_tail, *l1_tail, *l2_tail;
-  GList *list = NULL;
+  CList *l0 = NULL, *l1 = NULL, *l2 = NULL;
+  CList *l0_tail, *l1_tail, *l2_tail;
+  CList *list = NULL;
 
-  l0 = g_list_append (l0, GUINT_TO_POINTER (1));
-  l0 = g_list_append (l0, GUINT_TO_POINTER (2));
-  l0 = g_list_append (l0, GUINT_TO_POINTER (3));
-  l0_tail = g_list_last (l0);
+  l0 = c_list_append (l0, GUINT_TO_POINTER (1));
+  l0 = c_list_append (l0, GUINT_TO_POINTER (2));
+  l0 = c_list_append (l0, GUINT_TO_POINTER (3));
+  l0_tail = c_list_last (l0);
   _assert_list_is (l0, 3, 123);
 
-  l1 = g_list_append (l1, GUINT_TO_POINTER (4));
-  l1 = g_list_append (l1, GUINT_TO_POINTER (5));
-  l1 = g_list_append (l1, GUINT_TO_POINTER (6));
-  l1_tail = g_list_last (l1);
+  l1 = c_list_append (l1, GUINT_TO_POINTER (4));
+  l1 = c_list_append (l1, GUINT_TO_POINTER (5));
+  l1 = c_list_append (l1, GUINT_TO_POINTER (6));
+  l1_tail = c_list_last (l1);
   _assert_list_is (l1, 3, 456);
 
-  l2 = g_list_append (l2, GUINT_TO_POINTER (7));
-  l2 = g_list_append (l2, GUINT_TO_POINTER (8));
-  l2_tail = g_list_last (l2);
+  l2 = c_list_append (l2, GUINT_TO_POINTER (7));
+  l2 = c_list_append (l2, GUINT_TO_POINTER (8));
+  l2_tail = c_list_last (l2);
   _assert_list_is (l2, 2, 78);
 
   list = l0;
@@ -182,8 +182,8 @@ _rut_test_list_splice (void)
 /* A display-list is a list of sequential drawing commands including
  * transformation commands and primitive drawing commands.
  *
- * A display list is currently represented as a linked list of GList nodes
- * although the api we want is a cross between the g_list_ api and the
+ * A display list is currently represented as a linked list of CList nodes
+ * although the api we want is a cross between the c_list_ api and the
  * rut_queue_ api so we have a wrapper api instead to make display list
  * manipulation less confusing and error prone.
  *
@@ -216,11 +216,11 @@ rut_display_list_unsplice (RutDisplayList *list)
 {
   if (list->head->prev)
     g_assert (list_unsplice ((void *)0xDEADBEEF, list->head, list->tail)
-              == (GList *)0xDEADBEEF);
+              == (CList *)0xDEADBEEF);
 }
 
 void
-rut_display_list_splice (GList *after, RutDisplayList *sub_list)
+rut_display_list_splice (CList *after, RutDisplayList *sub_list)
 {
   rut_display_list_unsplice (sub_list);
   g_assert (list_splice (after, after, sub_list->head, sub_list->tail)
@@ -230,7 +230,7 @@ rut_display_list_splice (GList *after, RutDisplayList *sub_list)
 void
 rut_display_list_append (RutDisplayList *list, void *data)
 {
-  GList *link = g_list_alloc ();
+  CList *link = c_list_alloc ();
   link->data = data;
   link->prev = list->tail;
   link->next = NULL;
@@ -245,13 +245,13 @@ rut_display_list_append (RutDisplayList *list, void *data)
   list->tail = link;
 }
 
-/* Note: unlike the similar GList api this returns the newly inserted
+/* Note: unlike the similar CList api this returns the newly inserted
  * link not the head of the list. */
-GList *
-rut_display_list_insert_before (GList *sibling,
+CList *
+rut_display_list_insert_before (CList *sibling,
                                  void *data)
 {
-  GList *link = g_list_alloc ();
+  CList *link = c_list_alloc ();
   link->data = data;
   link->next = sibling;
   link->prev = sibling->prev;
@@ -262,11 +262,11 @@ rut_display_list_insert_before (GList *sibling,
 }
 
 void
-rut_display_list_delete_link (GList *link)
+rut_display_list_delete_link (CList *link)
 {
   link->prev->next = link->next;
   link->next->prev = link->prev;
-  g_list_free_1 (link);
+  c_list_free_1 (link);
 }
 
 void
@@ -280,7 +280,7 @@ void
 rut_display_list_destroy (RutDisplayList *list)
 {
   rut_display_list_unsplice (list);
-  g_list_free (list->head);
+  c_list_free (list->head);
   list->head = NULL;
   list->tail = NULL;
 }
@@ -289,7 +289,7 @@ void
 rut_display_list_paint (RutDisplayList *display_list,
                         CoglFramebuffer *fb)
 {
-  GList *l;
+  CList *l;
 
   for (l = display_list->head; l; l = l->next)
     {

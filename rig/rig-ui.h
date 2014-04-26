@@ -29,7 +29,7 @@
 #ifndef _RIG_UI_H_
 #define _RIG_UI_H_
 
-#include <glib.h>
+#include <clib.h>
 
 #include <rut.h>
 
@@ -51,10 +51,10 @@ struct _RigUI
 
   RigEngine *engine;
 
-  GList *assets;
+  CList *assets;
 
   RutObject *scene;
-  GList *controllers;
+  CList *controllers;
 
   RigEntity *light;
   RigEntity *play_camera;
@@ -63,7 +63,7 @@ struct _RigUI
   uint8_t *dso_data;
   int dso_len;
 
-  GList *suspended_controllers;
+  CList *suspended_controllers;
   bool suspended;
 };
 

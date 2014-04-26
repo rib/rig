@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 
 #include <cogl/cogl.h>
 
@@ -163,7 +163,7 @@ _rig_button_input_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
@@ -197,7 +197,7 @@ get_prop_for_state (ButtonState state)
       return RIG_BUTTON_INPUT_PROP_DISABLED;
     }
 
-  g_return_val_if_fail (0, 0);
+  c_return_val_if_fail (0, 0);
 }
 
 static void
@@ -243,7 +243,7 @@ _rig_button_input_grab_input_cb (RutInputEvent *event,
         {
           rut_shell_ungrab_input (shell, _rig_button_input_grab_input_cb,
                                   user_data);
-          g_slice_free (ButtonGrabState, state);
+          c_slice_free (ButtonGrabState, state);
 
           button_input->press_counter++;
           rut_property_dirty (&ctx->property_ctx,
@@ -258,7 +258,7 @@ _rig_button_input_grab_input_cb (RutInputEvent *event,
                RUT_MOTION_EVENT_ACTION_MOVE)
         {
 #warning "fixme: pick during button input grab to handle ACTIVE_CANCEL state"
-          g_print ("TODO: RigButtonInput - pick during motion to handle ACTIVE_CANCEL state\n");
+          c_print ("TODO: RigButtonInput - pick during motion to handle ACTIVE_CANCEL state\n");
 #if 0
           float x = rut_motion_event_get_x (event);
           float y = rut_motion_event_get_y (event);
@@ -296,7 +296,7 @@ _rig_button_input_handle_event (RutObject *inputable,
       rut_motion_event_get_action (event) == RUT_MOTION_EVENT_ACTION_DOWN)
     {
       RutShell *shell = button_input->ctx->shell;
-      ButtonGrabState *state = g_slice_new (ButtonGrabState);
+      ButtonGrabState *state = c_slice_new (ButtonGrabState);
       const CoglMatrix *view;
 
       state->button_input = button_input;
@@ -309,8 +309,8 @@ _rig_button_input_handle_event (RutObject *inputable,
       if (!cogl_matrix_get_inverse (&state->transform,
                                     &state->inverse_transform))
         {
-          g_warning ("Failed to calculate inverse of button transform\n");
-          g_slice_free (ButtonGrabState, state);
+          c_warning ("Failed to calculate inverse of button transform\n");
+          c_slice_free (ButtonGrabState, state);
           return RUT_INPUT_EVENT_STATUS_UNHANDLED;
         }
 #endif
@@ -349,7 +349,7 @@ _rig_button_input_init_type (void)
   RutType *type = &rig_button_input_type;
 #define TYPE RigButtonInput
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_button_input_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_button_input_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),

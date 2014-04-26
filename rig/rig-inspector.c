@@ -60,7 +60,7 @@ struct _RigInspector
   RutObjectBase _base;
 
   RutContext *context;
-  GList *objects;
+  CList *objects;
 
   RutGraphableProps graphable;
 
@@ -82,11 +82,11 @@ _rig_inspector_free (void *object)
 {
   RigInspector *inspector = object;
 
-  g_list_foreach (inspector->objects, (GFunc)rut_object_unref, NULL);
-  g_list_free (inspector->objects);
+  c_list_foreach (inspector->objects, (GFunc)rut_object_unref, NULL);
+  c_list_free (inspector->objects);
   inspector->objects = NULL;
 
-  g_free (inspector->prop_data);
+  c_free (inspector->prop_data);
 
   rut_graphable_destroy (inspector);
 
@@ -112,7 +112,7 @@ _rig_inspector_init_type (void)
   RutType *type = &rig_inspector_type;
 #define TYPE RigInspector
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_inspector_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_inspector_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -136,10 +136,10 @@ property_changed_cb (RutProperty *primary_target_prop,
 {
   RigInspectorPropertyData *prop_data = user_data;
   RigInspector *inspector = prop_data->inspector;
-  GList *l;
+  CList *l;
   bool mergable;
 
-  g_return_if_fail (primary_target_prop == prop_data->target_prop);
+  c_return_if_fail (primary_target_prop == prop_data->target_prop);
 
   switch (source_prop->spec->type)
     {
@@ -177,9 +177,9 @@ controlled_changed_cb (RutProperty *primary_property,
 {
   RigInspectorPropertyData *prop_data = user_data;
   RigInspector *inspector = prop_data->inspector;
-  GList *l;
+  CList *l;
 
-  g_return_if_fail (primary_property == prop_data->target_prop);
+  c_return_if_fail (primary_property == prop_data->target_prop);
 
   /* Forward the controlled state change to the corresponding property
    * of all objects being inspected... */
@@ -199,11 +199,11 @@ static void
 get_all_properties_cb (RutProperty *prop,
                        void *user_data)
 {
-  GArray *array = user_data;
+  CArray *array = user_data;
   RigInspectorPropertyData *prop_data;
 
-  g_array_set_size (array, array->len + 1);
-  prop_data = &g_array_index (array,
+  c_array_set_size (array, array->len + 1);
+  prop_data = &c_array_index (array,
                               RigInspectorPropertyData,
                               array->len - 1);
   prop_data->target_prop = prop;
@@ -213,10 +213,10 @@ static void
 create_property_controls (RigInspector *inspector)
 {
   RutObject *reference_object = inspector->objects->data;
-  GArray *props;
+  CArray *props;
   int i;
 
-  props = g_array_new (FALSE, /* not zero terminated */
+  props = c_array_new (FALSE, /* not zero terminated */
                        FALSE, /* don't clear */
                        sizeof (RigInspectorPropertyData));
 
@@ -228,7 +228,7 @@ create_property_controls (RigInspector *inspector)
   inspector->n_props = props->len;
 
   inspector->prop_data = ((RigInspectorPropertyData *)
-                          g_array_free (props, FALSE));
+                          c_array_free (props, FALSE));
 
   for (i = 0; i < inspector->n_props; i++)
     {
@@ -271,7 +271,7 @@ create_property_controls (RigInspector *inspector)
 
 RigInspector *
 rig_inspector_new (RutContext *context,
-                   GList *objects,
+                   CList *objects,
                    RigInspectorCallback user_property_changed_cb,
                    RigInspectorControlledCallback user_controlled_changed_cb,
                    void *user_data)
@@ -281,9 +281,9 @@ rig_inspector_new (RutContext *context,
                                                _rig_inspector_init_type);
 
   inspector->context = context;
-  inspector->objects = g_list_copy (objects);
+  inspector->objects = c_list_copy (objects);
 
-  g_list_foreach (objects, (GFunc)rut_object_ref, NULL);
+  c_list_foreach (objects, (GFunc)rut_object_ref, NULL);
 
   inspector->property_changed_cb = user_property_changed_cb;
   inspector->controlled_changed_cb = user_controlled_changed_cb;

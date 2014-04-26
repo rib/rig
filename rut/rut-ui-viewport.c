@@ -340,7 +340,7 @@ _rut_ui_viewport_init_type (void)
   RutType *type = &rut_ui_viewport_type;
 #define TYPE RutUIViewport
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rut_ui_viewport_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rut_ui_viewport_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_GRAPHABLE,
                       offsetof (TYPE, graphable),
@@ -1023,7 +1023,7 @@ rut_ui_viewport_set_sync_widget (RutObject *obj,
 
   if (widget)
     {
-      g_return_if_fail (rut_object_is (widget, RUT_TRAIT_ID_SIZABLE));
+      c_return_if_fail (rut_object_is (widget, RUT_TRAIT_ID_SIZABLE));
       rut_object_ref (widget);
       queue_allocation (ui_viewport);
       preferred_size_closure =

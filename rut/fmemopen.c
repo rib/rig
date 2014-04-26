@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include <glib.h>
+#include <clib.h>
 
 typedef struct _Cookie
 {
@@ -131,8 +131,8 @@ close_callback (void *cookie_)
   Cookie *cookie = cookie_;
 
   if (!cookie->user_buffer)
-    g_free (cookie->buffer);
-  g_free (cookie);
+    c_free (cookie->buffer);
+  c_free (cookie);
 
   return 0;
 }
@@ -150,7 +150,7 @@ fmemopen (void *buf, size_t size, const char *mode)
       return NULL;
     }
 
-  cookie = g_new (Cookie, 1);
+  cookie = c_new (Cookie, 1);
 
   if (buf)
     {
@@ -159,7 +159,7 @@ fmemopen (void *buf, size_t size, const char *mode)
     }
   else
     {
-      cookie->buffer = g_malloc (size);
+      cookie->buffer = c_malloc (size);
       cookie->user_buffer = FALSE;
       cookie->buffer[0] = '\0';
     }
@@ -187,7 +187,7 @@ fmemopen (void *buf, size_t size, const char *mode)
     }
   else
     {
-      g_free (cookie);
+      c_free (cookie);
       errno = EINVAL;
       return NULL;
     }
@@ -199,7 +199,7 @@ fmemopen (void *buf, size_t size, const char *mode)
                   close_callback);
 
   if (!file)
-    g_free (cookie);
+    c_free (cookie);
 
   return file;
 }

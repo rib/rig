@@ -26,7 +26,7 @@
 #ifndef __RUT_MAGAZINE_H__
 #define __RUT_MAGAZINE_H__
 
-#include <glib.h>
+#include <clib.h>
 
 #include "rut-memory-stack.h"
 

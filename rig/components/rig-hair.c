@@ -316,7 +316,7 @@ _rig_hair_get_fin_texture (RigHair *hair)
         {
           HairParticle updated_particle;
 
-          particle = &g_array_index (hair->particles, HairParticle, i);
+          particle = &c_array_index (hair->particles, HairParticle, i);
           particle->diameter = hair->thickness;
 
           if (calculate_updated_particle (&updated_particle, particle, pos))
@@ -381,7 +381,7 @@ _rig_hair_draw_shell_texture (RigHair *hair,
       HairParticle updated_particle;
       float current_y = (float) position / (float) hair->n_shells;
 
-      particle = &g_array_index (hair->particles, HairParticle, i);
+      particle = &c_array_index (hair->particles, HairParticle, i);
 
       particle->diameter = hair->thickness;
 
@@ -418,23 +418,23 @@ _rig_hair_generate_shell_textures (RigHair *hair)
 
   if (hair->density > num_particles)
     {
-      g_array_set_size (hair->particles, hair->density);
+      c_array_set_size (hair->particles, hair->density);
 
       for (i = num_particles; i < hair->density; i++)
         {
           HairParticle *particle =
-            &g_array_index (hair->particles, HairParticle, i);
+            &c_array_index (hair->particles, HairParticle, i);
           init_hair_particle (particle, rand, hair->thickness);
         }
      }
   else if (hair->density < num_particles)
-    g_array_set_size (hair->particles, hair->density);
+    c_array_set_size (hair->particles, hair->density);
 
   g_rand_free (rand);
 
   if (hair->n_shells > num_textures)
     {
-      g_array_set_size (hair->shell_textures, hair->n_shells);
+      c_array_set_size (hair->shell_textures, hair->n_shells);
 
       for (i = num_textures; i < hair->n_shells; i++)
         {
@@ -448,17 +448,17 @@ _rig_hair_generate_shell_textures (RigHair *hair)
       for (i = hair->n_shells; i < num_textures; i++)
         {
           CoglTexture *texture =
-            g_array_index (hair->shell_textures, CoglTexture *, i);
+            c_array_index (hair->shell_textures, CoglTexture *, i);
           cogl_object_unref (texture);
         }
 
-      g_array_set_size (hair->shell_textures, hair->n_shells);
+      c_array_set_size (hair->shell_textures, hair->n_shells);
     }
 
   for (i = 0; i < hair->n_shells; i++)
     {
       CoglTexture *texture =
-        g_array_index (hair->shell_textures, CoglTexture *, i);
+        c_array_index (hair->shell_textures, CoglTexture *, i);
       _rig_hair_draw_shell_texture (hair, texture, i);
     }
 
@@ -471,10 +471,10 @@ _rig_hair_generate_hair_positions (RigHair *hair)
   float *new_positions;
   int i;
 
-  new_positions = g_new (float, hair->n_shells + 1);
+  new_positions = c_new (float, hair->n_shells + 1);
 
   if (hair->shell_positions)
-    g_free (hair->shell_positions);
+    c_free (hair->shell_positions);
 
   for (i = 2; i < hair->n_shells + 1; i++)
     new_positions[i] = ((float) (i + 1) / (float) hair->n_shells) *
@@ -495,25 +495,25 @@ _rig_hair_free (void *object)
   {
     RutComponentableProps *component =
       rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    g_return_if_fail (component->entity == NULL);
+    c_return_if_fail (component->entity == NULL);
   }
 #endif
 
   for (i = 0; i < hair->n_shells; i++)
     {
-      CoglTexture *texture = g_array_index (hair->shell_textures, CoglTexture *, i);
+      CoglTexture *texture = c_array_index (hair->shell_textures, CoglTexture *, i);
       cogl_object_unref (texture);
     }
-  g_array_free (hair->shell_textures, TRUE);
+  c_array_free (hair->shell_textures, TRUE);
 
-  g_array_free (hair->particles, TRUE);
+  c_array_free (hair->particles, TRUE);
 
   rut_introspectable_destroy (hair);
 
   if (hair->fin_texture)
     cogl_object_unref (hair->fin_texture);
   cogl_object_unref (hair->circle);
-  g_free (hair->shell_positions);
+  c_free (hair->shell_positions);
   rut_object_free (RigHair, hair);
 }
 
@@ -546,7 +546,7 @@ _rig_hair_init_type (void)
   RutType *type = &rig_hair_type;
 #define TYPE RigHair
 
-  rut_type_init (type, G_STRINGIFY (TYPE), _rig_hair_free);
+  rut_type_init (type, C_STRINGIFY (TYPE), _rig_hair_free);
   rut_type_add_trait (type,
                       RUT_TRAIT_ID_COMPONENTABLE,
                       offsetof (TYPE, component),
@@ -574,9 +574,9 @@ rig_hair_new (RutContext *ctx)
   hair->n_textures = 0;
   hair->density = 20000;
   hair->thickness = 0.05;
-  hair->shell_textures = g_array_new (FALSE, FALSE, sizeof (CoglTexture *));
+  hair->shell_textures = c_array_new (FALSE, FALSE, sizeof (CoglTexture *));
   hair->fin_texture = NULL;
-  hair->particles = g_array_new (FALSE, FALSE, sizeof (HairParticle));
+  hair->particles = c_array_new (FALSE, FALSE, sizeof (HairParticle));
   hair->shell_positions = NULL;
 
   if (!ctx->headless)

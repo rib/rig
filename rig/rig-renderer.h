@@ -44,7 +44,7 @@ typedef struct _RigPaintContext
   RigEngine *engine;
   RutObject *renderer;
 
-  GList *camera_stack;
+  CList *camera_stack;
 
   RigPass pass;
 
@@ -57,7 +57,7 @@ extern RutType rig_renderer_type;
 RigRenderer *
 rig_renderer_new (RigEngine *engine);
 
-GArray *
+CArray *
 rig_journal_new (void);
 
 void

@@ -28,7 +28,7 @@
 
 #include <config.h>
 
-#include <glib.h>
+#include <clib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -104,7 +104,7 @@ _rut_property_destroy_binding (RutProperty *property)
             g_slist_remove (dependency->dependants, property);
         }
 
-      g_slice_free1 (sizeof (RutPropertyBinding) + sizeof (void *) * (i + 1),
+      c_slice_free1 (sizeof (RutPropertyBinding) + sizeof (void *) * (i + 1),
                      binding);
 
       property->binding = NULL;
@@ -134,7 +134,7 @@ rut_property_copy_value (RutPropertyContext *ctx,
                          RutProperty *dest,
                          RutProperty *src)
 {
-  g_return_if_fail (src->spec->type == dest->spec->type);
+  c_return_if_fail (src->spec->type == dest->spec->type);
 
   switch ((RutPropertyType) dest->spec->type)
     {
@@ -159,7 +159,7 @@ rut_property_copy_value (RutPropertyContext *ctx,
 #undef COPIER
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 void
@@ -186,7 +186,7 @@ rut_property_cast_scalar_value (RutPropertyContext *ctx,
 #undef POINTER_TYPE
 #undef SCALAR_TYPE
     default:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
     }
 
   switch ((RutPropertyType) dest->spec->type)
@@ -206,10 +206,10 @@ rut_property_cast_scalar_value (RutPropertyContext *ctx,
 #undef POINTER_TYPE
 #undef SCALAR_TYPE
     default:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 
@@ -231,7 +231,7 @@ _rut_property_set_binding_full_array (RutProperty *property,
 
   if (property->binding)
     {
-      g_return_if_fail (callback == NULL);
+      c_return_if_fail (callback == NULL);
 
       _rut_property_destroy_binding (property);
       return;
@@ -239,7 +239,7 @@ _rut_property_set_binding_full_array (RutProperty *property,
   else if (callback == NULL)
     return;
 
-  binding = g_slice_alloc (sizeof (RutPropertyBinding) +
+  binding = c_slice_alloc (sizeof (RutPropertyBinding) +
                            sizeof (void *) * (n_dependencies + 1));
   binding->callback = callback;
   binding->user_data = user_data;
@@ -352,7 +352,7 @@ rut_property_set_binding_by_name (RutObject *object,
   RutProperty *property = rut_introspectable_lookup_property (object, name);
   va_list ap;
 
-  g_return_if_fail (property);
+  c_return_if_fail (property);
 
   va_start (ap, user_data);
   _rut_property_set_binding_full_valist (property,
@@ -374,7 +374,7 @@ rut_property_set_binding_full_by_name (RutObject *object,
   RutProperty *property = rut_introspectable_lookup_property (object, name);
   va_list ap;
 
-  g_return_if_fail (property);
+  c_return_if_fail (property);
 
   va_start (ap, destroy_notify);
   _rut_property_set_binding_full_valist (property,
@@ -487,7 +487,7 @@ dummy_property_destroy_notify_cb (RutProperty *property,
   if (closure->destroy_notify)
     closure->destroy_notify (closure->user_data);
 
-  g_slice_free (RutPropertyClosure, closure);
+  c_slice_free (RutPropertyClosure, closure);
 }
 
 static void
@@ -508,9 +508,9 @@ rut_property_connect_callback_full (RutProperty *property,
 {
   RutPropertyClosure *closure;
 
-  g_return_val_if_fail (callback != NULL, NULL);
+  c_return_val_if_fail (callback != NULL, NULL);
 
-  closure = g_slice_new (RutPropertyClosure);
+  closure = c_slice_new (RutPropertyClosure);
   rut_property_init (&closure->dummy_prop,
                      &dummy_property_spec,
                      &dummy_object,
@@ -556,7 +556,7 @@ rut_property_dirty (RutPropertyContext *ctx,
         {
           RutPropertyChange *change;
 
-          g_print ("Log %d: base=%p, offset=%d: obj = %p(%s), prop id=%d(%s)\n",
+          c_print ("Log %d: base=%p, offset=%d: obj = %p(%s), prop id=%d(%s)\n",
                    ctx->log_len,
                    ctx->change_log_stack->sub_stack->data,
                    ctx->change_log_stack->sub_stack->offset,
@@ -648,7 +648,7 @@ rut_property_box (RutProperty *property,
         break; \
       }
     case RUT_PROPERTY_TYPE_TEXT:
-      boxed->d.text_val = g_strdup (rut_property_get_text (property));
+      boxed->d.text_val = c_strdup (rut_property_get_text (property));
       break;
 
 #include "rut-property-types.h"
@@ -705,7 +705,7 @@ rut_boxed_copy (RutBoxed *dst,
         return;                                               \
       }
     case RUT_PROPERTY_TYPE_TEXT:
-      dst->d.text_val = g_strdup (src->d.text_val);
+      dst->d.text_val = c_strdup (src->d.text_val);
       return;
 
 #include "rut-property-types.h"
@@ -733,7 +733,7 @@ rut_boxed_destroy (RutBoxed *boxed)
         rut_object_unref (boxed->d.asset_val);
       break;
     case RUT_PROPERTY_TYPE_POINTER:
-      g_free (boxed->d.text_val);
+      c_free (boxed->d.text_val);
       break;
     default:
       break;
@@ -760,7 +760,7 @@ boxed_to_double (const RutBoxed *boxed)
 #undef ARRAY_TYPE
 
     default:
-      g_warn_if_reached ();
+      c_warn_if_reached ();
       return 0;
     }
 }
@@ -793,7 +793,7 @@ rut_property_set_boxed (RutPropertyContext *ctx,
 #undef ARRAY_TYPE
 
         default:
-          g_warn_if_reached ();
+          c_warn_if_reached ();
           return;
         }
     }
@@ -822,7 +822,7 @@ rut_property_set_boxed (RutPropertyContext *ctx,
 #undef SET_FROM_BOXED
     }
 
-  g_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 char *
@@ -832,11 +832,11 @@ rut_boxed_to_string (const RutBoxed *boxed,
   switch (boxed->type)
     {
     case RUT_PROPERTY_TYPE_FLOAT:
-      return g_strdup_printf ("%f", boxed->d.float_val);
+      return c_strdup_printf ("%f", boxed->d.float_val);
     case RUT_PROPERTY_TYPE_DOUBLE:
-      return g_strdup_printf ("%f", boxed->d.double_val);
+      return c_strdup_printf ("%f", boxed->d.double_val);
     case RUT_PROPERTY_TYPE_INTEGER:
-      return g_strdup_printf ("%d", boxed->d.integer_val);
+      return c_strdup_printf ("%d", boxed->d.integer_val);
     case RUT_PROPERTY_TYPE_ENUM:
       {
         if (spec && spec->validation.ui_enum)
@@ -847,23 +847,23 @@ rut_boxed_to_string (const RutBoxed *boxed,
               {
                 const RutUIEnumValue *enum_value = &ui_enum->values[i];
                 if (enum_value->value == boxed->d.enum_val)
-                  return g_strdup_printf ("<%d:%s>",
+                  return c_strdup_printf ("<%d:%s>",
                                           boxed->d.enum_val,
                                           enum_value->nick);
               }
           }
 
-        return g_strdup_printf ("<%d:Enum>", boxed->d.enum_val);
+        return c_strdup_printf ("<%d:Enum>", boxed->d.enum_val);
       }
     case RUT_PROPERTY_TYPE_UINT32:
-      return g_strdup_printf ("%u", boxed->d.uint32_val);
+      return c_strdup_printf ("%u", boxed->d.uint32_val);
     case RUT_PROPERTY_TYPE_BOOLEAN:
       {
         const char *bool_strings[] = { "true", "false" };
-        return g_strdup (bool_strings[!!boxed->d.boolean_val]);
+        return c_strdup (bool_strings[!!boxed->d.boolean_val]);
       }
     case RUT_PROPERTY_TYPE_TEXT:
-      return g_strdup_printf ("%s", boxed->d.text_val);
+      return c_strdup_printf ("%s", boxed->d.text_val);
     case RUT_PROPERTY_TYPE_QUATERNION:
       {
         const CoglQuaternion *quaternion = &boxed->d.quaternion_val;
@@ -872,16 +872,16 @@ rut_boxed_to_string (const RutBoxed *boxed,
         cogl_quaternion_get_rotation_axis (quaternion, axis);
         angle = cogl_quaternion_get_rotation_angle (quaternion);
 
-        return g_strdup_printf ("axis: (%.2f,%.2f,%.2f) angle: %.2f\n",
+        return c_strdup_printf ("axis: (%.2f,%.2f,%.2f) angle: %.2f\n",
                                 axis[0], axis[1], axis[2], angle);
       }
     case RUT_PROPERTY_TYPE_VEC3:
-      return g_strdup_printf ("(%.1f, %.1f, %.1f)",
+      return c_strdup_printf ("(%.1f, %.1f, %.1f)",
                               boxed->d.vec3_val[0],
                               boxed->d.vec3_val[1],
                               boxed->d.vec3_val[2]);
     case RUT_PROPERTY_TYPE_VEC4:
-      return g_strdup_printf ("(%.1f, %.1f, %.1f, %.1f)",
+      return c_strdup_printf ("(%.1f, %.1f, %.1f, %.1f)",
                               boxed->d.vec3_val[0],
                               boxed->d.vec3_val[1],
                               boxed->d.vec3_val[2],
@@ -889,14 +889,14 @@ rut_boxed_to_string (const RutBoxed *boxed,
     case RUT_PROPERTY_TYPE_COLOR:
       return rut_color_to_string (&boxed->d.color_val);
     case RUT_PROPERTY_TYPE_OBJECT:
-      return g_strdup_printf ("<%p:%s>",
+      return c_strdup_printf ("<%p:%s>",
                               boxed->d.object_val,
                               rut_object_get_type_name (boxed->d.object_val));
     case RUT_PROPERTY_TYPE_ASSET:
-      return g_strdup_printf ("<%p:Asset>", boxed->d.asset_val);
+      return c_strdup_printf ("<%p:Asset>", boxed->d.asset_val);
     case RUT_PROPERTY_TYPE_POINTER:
-      return g_strdup_printf ("%p", boxed->d.pointer_val);
+      return c_strdup_printf ("%p", boxed->d.pointer_val);
     default:
-      return g_strdup ("<rut_boxed_dump:unknown property type>");
+      return c_strdup ("<rut_boxed_dump:unknown property type>");
     }
 }
