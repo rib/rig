@@ -637,6 +637,7 @@ UArray* u_array_insert_vals           (UArray *array, unsigned int index_, const
 UArray* u_array_remove_index          (UArray *array, unsigned int index_);
 UArray* u_array_remove_index_fast     (UArray *array, unsigned int index_);
 unsigned int u_array_get_element_size (UArray *array);
+void u_array_sort                     (UArray *array, UCompareFunc compare);
 UArray *u_array_set_size              (UArray *array, int length);
 
 #define u_array_append_val(a,v)   (u_array_append_vals((a),&(v),1))

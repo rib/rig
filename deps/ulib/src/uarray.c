@@ -247,3 +247,12 @@ u_array_get_element_size (UArray *array)
   UArrayPriv *priv = (UArrayPriv*)array;
   return priv->element_size;
 }
+
+void
+u_array_sort (UArray *array, UCompareFunc compare)
+{
+  UArrayPriv *priv = (UArrayPriv*)array;
+
+  qsort (array->data, array->len, priv->element_size, compare);
+}
+
