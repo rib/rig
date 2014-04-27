@@ -299,7 +299,7 @@ rut_property_set_ ## SUFFIX (RutPropertyContext *ctx, \
       CTYPE *data = (CTYPE *)((uint8_t *)property->object + \
                               property->spec->data_offset); \
       \
-      c_return_if_fail (property->spec->data_offset == 0); \
+      c_return_if_fail (property->spec->data_offset != 0); \
       c_return_if_fail (property->spec->type == RUT_PROPERTY_TYPE_ ## TYPE); \
       \
       if (property->spec->getter.any_type == NULL && *data == value) \

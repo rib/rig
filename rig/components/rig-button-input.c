@@ -72,114 +72,6 @@ struct _RigButtonInput
   RutProperty properties[RIG_BUTTON_INPUT_N_PROPS];
 };
 
-static bool
-_rig_button_input_get_normal_state (RutObject *object)
-{
-  RigButtonInput *input = object;
-  return input->state == BUTTON_STATE_NORMAL;
-}
-
-static bool
-_rig_button_input_get_hover_state (RutObject *object)
-{
-  RigButtonInput *input = object;
-  return input->state == BUTTON_STATE_HOVER;
-}
-
-static bool
-_rig_button_input_get_active_state (RutObject *object)
-{
-  RigButtonInput *input = object;
-  return input->state == BUTTON_STATE_ACTIVE;
-}
-
-static bool
-_rig_button_input_get_active_cancel_state (RutObject *object)
-{
-  RigButtonInput *input = object;
-  return input->state == BUTTON_STATE_ACTIVE_CANCEL;
-}
-
-static bool
-_rig_button_input_get_disabled_state (RutObject *object)
-{
-  RigButtonInput *input = object;
-  return input->state == BUTTON_STATE_DISABLED;
-}
-
-static RutPropertySpec _rig_button_input_prop_specs[] = {
-  {
-    .name = "press_counter",
-    .nick = "Press Counter",
-    .type = RUT_PROPERTY_TYPE_INTEGER,
-    .data_offset = G_STRUCT_OFFSET (RigButtonInput, press_counter),
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  {
-    .name = "normal",
-    .nick = "Normal",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = _rig_button_input_get_normal_state,
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  {
-    .name = "hover",
-    .nick = "Hover",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = _rig_button_input_get_hover_state,
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  {
-    .name = "active",
-    .nick = "Active",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = _rig_button_input_get_active_state,
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  {
-    .name = "active_cancel",
-    .nick = "Cancelling Activate",
-    .blurb = "Cancelling an activation",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = _rig_button_input_get_active_cancel_state,
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  {
-    .name = "disabled",
-    .nick = "Disabled",
-    .type = RUT_PROPERTY_TYPE_BOOLEAN,
-    .getter.boolean_type = _rig_button_input_get_disabled_state,
-    .flags = RUT_PROPERTY_FLAG_READABLE,
-  },
-  { NULL }
-};
-
-static void
-_rig_button_input_free (void *object)
-{
-  RigButtonInput *button_input = object;
-
-#ifdef RIG_ENABLE_DEBUG
-  {
-    RutComponentableProps *component =
-      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
-    c_return_if_fail (component->entity == NULL);
-  }
-#endif
-
-  rut_introspectable_destroy (button_input);
-
-  rut_object_free (RigButtonInput, object);
-}
-
-static RutObject *
-_rig_button_input_copy (RutObject *object)
-{
-  RigButtonInput *button_input = object;
-
-  return rig_button_input_new (button_input->ctx);
-}
-
 static int
 get_prop_for_state (ButtonState state)
 {
@@ -218,6 +110,174 @@ set_state (RigButtonInput *button_input, ButtonState state)
                       &button_input->properties[prev_prop]);
   rut_property_dirty (&ctx->property_ctx,
                       &button_input->properties[get_prop_for_state (state)]);
+}
+
+static bool
+_rig_button_input_get_normal_state (RutObject *object)
+{
+  RigButtonInput *input = object;
+  return input->state == BUTTON_STATE_NORMAL;
+}
+
+static void
+_rig_button_input_set_normal_state (RutObject *object, bool state)
+{
+  if (state)
+    set_state (object, BUTTON_STATE_NORMAL);
+
+  /* Note: We ignore the false state since the only meaningful way to
+   * disable a given button state is switch to another specific state,
+   * but we can't pick an arbitrary state to change to. */
+}
+
+static bool
+_rig_button_input_get_hover_state (RutObject *object)
+{
+  RigButtonInput *input = object;
+  return input->state == BUTTON_STATE_HOVER;
+}
+
+static void
+_rig_button_input_set_hover_state (RutObject *object, bool state)
+{
+  if (state)
+    set_state (object, BUTTON_STATE_HOVER);
+
+  /* Note: We ignore the false state since the only meaningful way to
+   * disable a given button state is switch to another specific state,
+   * but we can't pick an arbitrary state to change to. */
+}
+
+static bool
+_rig_button_input_get_active_state (RutObject *object)
+{
+  RigButtonInput *input = object;
+  return input->state == BUTTON_STATE_ACTIVE;
+}
+
+static void
+_rig_button_input_set_active_state (RutObject *object, bool state)
+{
+  if (state)
+    set_state (object, BUTTON_STATE_ACTIVE);
+
+  /* Note: We ignore the false state since the only meaningful way to
+   * disable a given button state is switch to another specific state,
+   * but we can't pick an arbitrary state to change to. */
+}
+
+static bool
+_rig_button_input_get_active_cancel_state (RutObject *object)
+{
+  RigButtonInput *input = object;
+  return input->state == BUTTON_STATE_ACTIVE_CANCEL;
+}
+
+static void
+_rig_button_input_set_active_cancel_state (RutObject *object, bool state)
+{
+  if (state)
+    set_state (object, BUTTON_STATE_ACTIVE_CANCEL);
+
+  /* Note: We ignore the false state since the only meaningful way to
+   * disable a given button state is switch to another specific state,
+   * but we can't pick an arbitrary state to change to. */
+}
+
+static bool
+_rig_button_input_get_disabled_state (RutObject *object)
+{
+  RigButtonInput *input = object;
+  return input->state == BUTTON_STATE_DISABLED;
+}
+
+static void
+_rig_button_input_set_disabled_state (RutObject *object, bool state)
+{
+  if (state)
+    set_state (object, BUTTON_STATE_DISABLED);
+
+  /* Note: We ignore the false state since the only meaningful way to
+   * disable a given button state is switch to another specific state,
+   * but we can't pick an arbitrary state to change to. */
+}
+
+static RutPropertySpec _rig_button_input_prop_specs[] = {
+  {
+    .name = "press_counter",
+    .nick = "Press Counter",
+    .type = RUT_PROPERTY_TYPE_INTEGER,
+    .data_offset = G_STRUCT_OFFSET (RigButtonInput, press_counter),
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  {
+    .name = "normal",
+    .nick = "Normal",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = _rig_button_input_get_normal_state,
+    .setter.boolean_type = _rig_button_input_set_normal_state,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  {
+    .name = "hover",
+    .nick = "Hover",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = _rig_button_input_get_hover_state,
+    .setter.boolean_type = _rig_button_input_set_hover_state,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  {
+    .name = "active",
+    .nick = "Active",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = _rig_button_input_get_active_state,
+    .setter.boolean_type = _rig_button_input_set_active_state,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  {
+    .name = "active_cancel",
+    .nick = "Cancelling Activate",
+    .blurb = "Cancelling an activation",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = _rig_button_input_get_active_cancel_state,
+    .setter.boolean_type = _rig_button_input_set_active_cancel_state,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  {
+    .name = "disabled",
+    .nick = "Disabled",
+    .type = RUT_PROPERTY_TYPE_BOOLEAN,
+    .getter.boolean_type = _rig_button_input_get_disabled_state,
+    .setter.boolean_type = _rig_button_input_set_disabled_state,
+    .flags = RUT_PROPERTY_FLAG_READABLE,
+  },
+  { NULL }
+};
+
+static void
+_rig_button_input_free (void *object)
+{
+  RigButtonInput *button_input = object;
+
+#ifdef RIG_ENABLE_DEBUG
+  {
+    RutComponentableProps *component =
+      rut_object_get_properties (object, RUT_TRAIT_ID_COMPONENTABLE);
+    c_return_if_fail (component->entity == NULL);
+  }
+#endif
+
+  rut_introspectable_destroy (button_input);
+
+  rut_object_free (RigButtonInput, object);
+}
+
+static RutObject *
+_rig_button_input_copy (RutObject *object)
+{
+  RigButtonInput *button_input = object;
+
+  return rig_button_input_new (button_input->ctx);
 }
 
 typedef struct _ButtonGrabState
