@@ -2184,8 +2184,8 @@ input_region_cb (RutInputRegion *region,
   else if (view->play_mode)
     {
       /* While in play mode then we do picking in the simulator */
-      //return input_cb (event, user_data);
-      return device_mode_input_cb (event, user_data);
+      return input_cb (event, user_data);
+      //return device_mode_input_cb (event, user_data);
     }
   //else
   //  return device_mode_input_cb (event, user_data);
