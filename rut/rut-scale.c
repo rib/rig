@@ -357,10 +357,13 @@ _rut_scale_get_preferred_height (void *sizable,
   if (scale->labels->len == 0)
     update_labels (scale);
 
-  label = &c_array_index (scale->labels, Label, 0);
+  if (scale->labels->len > 0)
+    {
+      label = &c_array_index (scale->labels, Label, 0);
 
-  if (label)
-    rut_sizable_get_size (label->text, &text_width, &text_height);
+      if (label)
+        rut_sizable_get_size (label->text, &text_width, &text_height);
+    }
 
   if (min_height_p)
     *min_height_p = text_height;
