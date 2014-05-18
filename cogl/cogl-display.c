@@ -79,14 +79,14 @@ _cogl_display_free (CoglDisplay *display)
       display->onscreen_template = NULL;
     }
 
-  u_slice_free (CoglDisplay, display);
+  c_slice_free (CoglDisplay, display);
 }
 
 CoglDisplay *
 cogl_display_new (CoglRenderer *renderer,
                   CoglOnscreenTemplate *onscreen_template)
 {
-  CoglDisplay *display = u_slice_new0 (CoglDisplay);
+  CoglDisplay *display = c_slice_new0 (CoglDisplay);
   CoglError *error = NULL;
 
   _cogl_init ();
@@ -98,7 +98,7 @@ cogl_display_new (CoglRenderer *renderer,
     display->renderer = cogl_renderer_new ();
 
   if (!cogl_renderer_connect (display->renderer, &error))
-    u_error ("Failed to connect to renderer: %s\n", error->message);
+    c_error ("Failed to connect to renderer: %s\n", error->message);
 
   display->setup = FALSE;
 

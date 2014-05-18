@@ -77,7 +77,7 @@ static const CoglTextureVtable cogl_texture_pixmap_x11_vtable;
 uint32_t
 cogl_texture_pixmap_x11_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-texture-pixmap-error-quark");
+  return c_quark_from_static_string ("cogl-texture-pixmap-error-quark");
 }
 
 static void
@@ -167,7 +167,7 @@ process_damage_event (CoglTexturePixmapX11 *tex_pixmap,
       break;
 
     default:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
     }
 
   /* If the damage already covers the whole rectangle then we don't
@@ -286,7 +286,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
                              CoglBool automatic_updates,
                              CoglError **error)
 {
-  CoglTexturePixmapX11 *tex_pixmap = u_new (CoglTexturePixmapX11, 1);
+  CoglTexturePixmapX11 *tex_pixmap = c_new (CoglTexturePixmapX11, 1);
   Display *display = cogl_xlib_renderer_get_display (ctx->display->renderer);
   Window pixmap_root_window;
   int pixmap_x, pixmap_y;
@@ -303,7 +303,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
                      &pixmap_width, &pixmap_height,
                      &pixmap_border_width, &tex_pixmap->depth))
     {
-      u_free (tex_pixmap);
+      c_free (tex_pixmap);
       _cogl_set_error (error,
                    COGL_TEXTURE_PIXMAP_X11_ERROR,
                    COGL_TEXTURE_PIXMAP_X11_ERROR_X11,
@@ -333,7 +333,7 @@ cogl_texture_pixmap_x11_new (CoglContext *ctx,
      it from the pixmap's root window */
   if (!XGetWindowAttributes (display, pixmap_root_window, &window_attributes))
     {
-      u_free (tex_pixmap);
+      c_free (tex_pixmap);
       _cogl_set_error (error,
                    COGL_TEXTURE_PIXMAP_X11_ERROR,
                    COGL_TEXTURE_PIXMAP_X11_ERROR_X11,
@@ -447,15 +447,15 @@ try_alloc_shm (CoglTexturePixmapX11 *tex_pixmap)
   return;
 
  failed_xshmattach:
-  u_warning ("XShmAttach failed");
+  c_warning ("XShmAttach failed");
   shmdt (tex_pixmap->shm_info.shmaddr);
 
  failed_shmat:
-  u_warning ("shmat failed");
+  c_warning ("shmat failed");
   shmctl (tex_pixmap->shm_info.shmid, IPC_RMID, 0);
 
  failed_shmget:
-  u_warning ("shmget failed");
+  c_warning ("shmget failed");
   XDestroyImage (dummy_image);
 
  failed_image_create:
@@ -763,7 +763,7 @@ _cogl_texture_pixmap_x11_get_texture (CoglTexturePixmapX11 *tex_pixmap)
       _cogl_texture_pixmap_x11_update (tex_pixmap, FALSE);
     }
 
-  u_assert_not_reached ();
+  c_assert_not_reached ();
 
   return NULL;
 }

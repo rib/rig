@@ -74,7 +74,7 @@
 uint32_t
 cogl_texture_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-texture-error-quark");
+  return c_quark_from_static_string ("cogl-texture-error-quark");
 }
 
 /* XXX:
@@ -83,19 +83,19 @@ cogl_texture_error_domain (void)
  * abstract class manually.
  */
 
-static USList *_cogl_texture_types;
+static CSList *_cogl_texture_types;
 
 void
 _cogl_texture_register_texture_type (const CoglObjectClass *klass)
 {
-  _cogl_texture_types = u_slist_prepend (_cogl_texture_types, (void *) klass);
+  _cogl_texture_types = c_slist_prepend (_cogl_texture_types, (void *) klass);
 }
 
 CoglBool
 cogl_is_texture (void *object)
 {
   CoglObject *obj = (CoglObject *)object;
-  USList *l;
+  CSList *l;
 
   if (object == NULL)
     return FALSE;
@@ -160,7 +160,7 @@ _cogl_texture_free_loader (CoglTexture *texture)
           cogl_object_unref (loader->src.bitmap.bitmap);
           break;
         }
-      u_slice_free (CoglTextureLoader, loader);
+      c_slice_free (CoglTextureLoader, loader);
       texture->loader = NULL;
     }
 }
@@ -168,7 +168,7 @@ _cogl_texture_free_loader (CoglTexture *texture)
 CoglTextureLoader *
 _cogl_texture_create_loader (void)
 {
-  return u_slice_new0 (CoglTextureLoader);
+  return c_slice_new0 (CoglTextureLoader);
 }
 
 void
@@ -176,7 +176,7 @@ _cogl_texture_free (CoglTexture *texture)
 {
   _cogl_texture_free_loader (texture);
 
-  u_free (texture);
+  c_free (texture);
 }
 
 CoglBool
@@ -836,7 +836,7 @@ get_texture_bits_via_copy (CoglTexture *texture,
   bpp = _cogl_pixel_format_get_bytes_per_pixel (dst_format);
 
   full_rowstride = bpp * full_tex_width;
-  full_bits = u_malloc (full_rowstride * full_tex_height);
+  full_bits = c_malloc (full_rowstride * full_tex_height);
 
   if (texture->vtable->get_data (texture,
                                  dst_format,
@@ -857,7 +857,7 @@ get_texture_bits_via_copy (CoglTexture *texture,
   else
     ret = FALSE;
 
-  u_free (full_bits);
+  c_free (full_bits);
 
   return ret;
 }
@@ -1125,7 +1125,7 @@ _cogl_texture_framebuffer_destroy_cb (void *user_data,
   CoglTexture *tex = user_data;
   CoglFramebuffer *framebuffer = instance;
 
-  tex->framebuffers = u_list_remove (tex->framebuffers, framebuffer);
+  tex->framebuffers = c_list_remove (tex->framebuffers, framebuffer);
 }
 
 void
@@ -1136,7 +1136,7 @@ _cogl_texture_associate_framebuffer (CoglTexture *texture,
 
   /* Note: we don't take a reference on the framebuffer here because
    * that would introduce a circular reference. */
-  texture->framebuffers = u_list_prepend (texture->framebuffers, framebuffer);
+  texture->framebuffers = c_list_prepend (texture->framebuffers, framebuffer);
 
   /* Since we haven't taken a reference on the framebuffer we setup
     * some private data so we will be notified if it is destroyed... */
@@ -1146,7 +1146,7 @@ _cogl_texture_associate_framebuffer (CoglTexture *texture,
                               _cogl_texture_framebuffer_destroy_cb);
 }
 
-const UList *
+const CList *
 _cogl_texture_get_associated_framebuffers (CoglTexture *texture)
 {
   return texture->framebuffers;
@@ -1155,7 +1155,7 @@ _cogl_texture_get_associated_framebuffers (CoglTexture *texture)
 void
 _cogl_texture_flush_journal_rendering (CoglTexture *texture)
 {
-  UList *l;
+  CList *l;
 
   /* It could be that a referenced texture is part of a framebuffer
    * which has an associated journal that must be flushed before it
@@ -1403,7 +1403,7 @@ _cogl_texture_derive_format (CoglContext *ctx,
       }
     }
 
-  u_return_val_if_reached (COGL_PIXEL_FORMAT_RGBA_8888_PRE);
+  c_return_val_if_reached (COGL_PIXEL_FORMAT_RGBA_8888_PRE);
 }
 
 CoglPixelFormat

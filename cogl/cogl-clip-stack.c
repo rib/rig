@@ -35,7 +35,7 @@
 #include <string.h>
 #include <math.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-clip-stack.h"
 #include "cogl-context-private.h"
@@ -58,7 +58,7 @@ _cogl_clip_stack_push_entry (CoglClipStack *clip_stack,
                              size_t size,
                              CoglClipStackType type)
 {
-  CoglClipStack *entry = u_slice_alloc (size);
+  CoglClipStack *entry = c_slice_alloc (size);
 
   /* The new entry starts with a ref count of 1 because the stack
      holds a reference to it as it is the top entry */
@@ -324,11 +324,11 @@ _cogl_clip_stack_unref (CoglClipStack *entry)
           {
             CoglClipStackRect *rect = (CoglClipStackRect *) entry;
             cogl_matrix_entry_unref (rect->matrix_entry);
-            u_slice_free1 (sizeof (CoglClipStackRect), entry);
+            c_slice_free1 (sizeof (CoglClipStackRect), entry);
             break;
           }
         case COGL_CLIP_STACK_WINDOW_RECT:
-          u_slice_free1 (sizeof (CoglClipStackWindowRect), entry);
+          c_slice_free1 (sizeof (CoglClipStackWindowRect), entry);
           break;
         case COGL_CLIP_STACK_PRIMITIVE:
           {
@@ -336,11 +336,11 @@ _cogl_clip_stack_unref (CoglClipStack *entry)
               (CoglClipStackPrimitive *) entry;
             cogl_matrix_entry_unref (primitive_entry->matrix_entry);
             cogl_object_unref (primitive_entry->primitive);
-            u_slice_free1 (sizeof (CoglClipStackPrimitive), entry);
+            c_slice_free1 (sizeof (CoglClipStackPrimitive), entry);
             break;
           }
         default:
-          u_assert_not_reached ();
+          c_assert_not_reached ();
         }
 
       entry = parent;

@@ -98,7 +98,7 @@ _cogl_texture_2d_create_base (CoglContext *ctx,
                               CoglPixelFormat internal_format,
                               CoglTextureLoader *loader)
 {
-  CoglTexture2D *tex_2d = u_new (CoglTexture2D, 1);
+  CoglTexture2D *tex_2d = c_new (CoglTexture2D, 1);
   CoglTexture *tex = COGL_TEXTURE (tex_2d);
 
   _cogl_texture_init (tex, ctx, width, height, internal_format, loader,
@@ -300,7 +300,7 @@ shm_buffer_get_cogl_pixel_format (struct wl_shm_buffer *shm_buffer,
       break;
 #endif
     default:
-      u_warn_if_reached ();
+      c_warn_if_reached ();
       format = COGL_PIXEL_FORMAT_ARGB_8888;
     }
 

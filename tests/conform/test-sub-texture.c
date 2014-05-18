@@ -29,7 +29,7 @@ static CoglTexture2D *
 create_source (TestState *state)
 {
   int dx, dy;
-  uint8_t *data = u_malloc (SOURCE_SIZE * SOURCE_SIZE * 4);
+  uint8_t *data = c_malloc (SOURCE_SIZE * SOURCE_SIZE * 4);
   CoglTexture2D *tex;
 
   /* Create a texture with a different coloured rectangle at each
@@ -67,7 +67,7 @@ static CoglTexture2D *
 create_test_texture (TestState *state)
 {
   CoglTexture2D *tex;
-  uint8_t *data = u_malloc (256 * 256 * 4), *p = data;
+  uint8_t *data = c_malloc (256 * 256 * 4), *p = data;
   int x, y;
 
   /* Create a texture that is 256x256 where the red component ranges
@@ -169,7 +169,7 @@ validate_part (int xpos, int ypos,
 static uint8_t *
 create_update_data (void)
 {
-  uint8_t *data = u_malloc (256 * 256 * 4), *p = data;
+  uint8_t *data = c_malloc (256 * 256 * 4), *p = data;
   int x, y;
 
   /* Create some image data that is 256x256 where the blue component
@@ -212,7 +212,7 @@ validate_result (TestState *state)
                      corner_colors[division_num]);
 
   /* Sub sub texture */
-  p = texture_data = u_malloc (10 * 10 * 4);
+  p = texture_data = c_malloc (10 * 10 * 4);
   cogl_framebuffer_read_pixels (test_fb,
                                 0, SOURCE_SIZE * 2, 10, 10,
                                 COGL_PIXEL_FORMAT_RGBA_8888,
@@ -235,7 +235,7 @@ validate_result (TestState *state)
                                       SOURCE_SIZE / 2);
   tex_width = cogl_texture_get_width (sub_texture);
   tex_height = cogl_texture_get_height (sub_texture);
-  p = texture_data = u_malloc (tex_width * tex_height * 4);
+  p = texture_data = c_malloc (tex_width * tex_height * 4);
   cogl_texture_get_data (sub_texture,
                          COGL_PIXEL_FORMAT_RGBA_8888,
                          tex_width * 4,
@@ -275,7 +275,7 @@ validate_result (TestState *state)
   g_free (texture_data);
   cogl_object_unref (sub_texture);
   /* Get the texture data */
-  p = texture_data = u_malloc (256 * 256 * 4);
+  p = texture_data = c_malloc (256 * 256 * 4);
   cogl_texture_get_data (test_tex,
                          COGL_PIXEL_FORMAT_RGBA_8888_PRE,
                          256 * 4, texture_data);
@@ -324,6 +324,6 @@ test_sub_texture (void)
   cogl_object_unref (state.tex);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

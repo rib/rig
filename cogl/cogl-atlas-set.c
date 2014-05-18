@@ -41,14 +41,14 @@ static CoglUserDataKey atlas_private_key;
 static void
 dissociate_atlases (CoglAtlasSet *set)
 {
-  USList *l;
+  CSList *l;
 
   /* NB: The set doesn't maintain a reference on the atlases since we don't
    * want to keep them alive if they become empty. */
   for (l = set->atlases; l; l = l->next)
     cogl_object_set_user_data (l->data, &atlas_private_key, NULL, NULL);
 
-  u_slist_free (set->atlases);
+  c_slist_free (set->atlases);
   set->atlases = NULL;
 }
 
@@ -59,7 +59,7 @@ _cogl_atlas_set_free (CoglAtlasSet *set)
 
   _cogl_closure_list_disconnect_all (&set->atlas_closures);
 
-  u_slice_free (CoglAtlasSet, set);
+  c_slice_free (CoglAtlasSet, set);
 }
 
 static void
@@ -74,7 +74,7 @@ _update_internal_format (CoglAtlasSet *set)
 CoglAtlasSet *
 cogl_atlas_set_new (CoglContext *context)
 {
-  CoglAtlasSet *set = u_slice_new0 (CoglAtlasSet);
+  CoglAtlasSet *set = c_slice_new0 (CoglAtlasSet);
 
   set->context = context;
   set->atlases = NULL;
@@ -95,7 +95,7 @@ void
 cogl_atlas_set_set_components (CoglAtlasSet *set,
                                CoglTextureComponents components)
 {
-  u_return_if_fail (set->atlases == NULL);
+  c_return_if_fail (set->atlases == NULL);
 
   set->components = components;
   _update_internal_format (set);
@@ -111,7 +111,7 @@ void
 cogl_atlas_set_set_premultiplied (CoglAtlasSet *set,
                                   CoglBool premultiplied)
 {
-  u_return_if_fail (set->atlases == NULL);
+  c_return_if_fail (set->atlases == NULL);
 
   set->premultiplied = premultiplied;
   _update_internal_format (set);
@@ -179,7 +179,7 @@ atlas_destroyed_cb (void *user_data, void *instance)
   CoglAtlasSet *set = user_data;
   CoglAtlas *atlas = instance;
 
-  set->atlases = u_slist_remove (set->atlases, atlas);
+  set->atlases = c_slist_remove (set->atlases, atlas);
 }
 
 CoglAtlas *
@@ -188,7 +188,7 @@ cogl_atlas_set_allocate_space (CoglAtlasSet *set,
                                int height,
                                void *allocation_data)
 {
-  USList *l;
+  CSList *l;
   CoglAtlasFlags flags = 0;
   CoglAtlas *atlas;
 
@@ -230,7 +230,7 @@ cogl_atlas_set_allocate_space (CoglAtlasSet *set,
       return NULL;
     }
 
-  set->atlases = u_slist_prepend (set->atlases, atlas);
+  set->atlases = c_slist_prepend (set->atlases, atlas);
 
   /* Set some data on the atlas so we can get notification when it is
      destroyed in order to remove it from the list. set->atlases
@@ -250,7 +250,7 @@ cogl_atlas_set_allocate_space (CoglAtlasSet *set,
    * the allocations within the atlas so we don't keep a reference
    * ourselves.
    */
-  u_warn_if_fail (atlas->_parent.ref_count != 1);
+  c_warn_if_fail (atlas->_parent.ref_count != 1);
 
   cogl_object_unref (atlas);
 
@@ -262,7 +262,7 @@ cogl_atlas_set_foreach (CoglAtlasSet *atlas_set,
                         CoglAtlasSetForeachCallback callback,
                         void *user_data)
 {
-  USList *l;
+  CSList *l;
 
   for (l = atlas_set->atlases; l; l = l->next)
     callback (l->data, user_data);

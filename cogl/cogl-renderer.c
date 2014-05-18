@@ -222,7 +222,7 @@ typedef struct _CoglNativeFilterClosure
 uint32_t
 cogl_renderer_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-renderer-error-quark");
+  return c_quark_from_static_string ("cogl-renderer-error-quark");
 }
 
 static const CoglWinsysVtable *
@@ -234,7 +234,7 @@ _cogl_renderer_get_winsys (CoglRenderer *renderer)
 static void
 native_filter_closure_free (CoglNativeFilterClosure *closure)
 {
-  u_slice_free (CoglNativeFilterClosure, closure);
+  c_slice_free (CoglNativeFilterClosure, closure);
 }
 
 static void
@@ -249,30 +249,30 @@ _cogl_renderer_free (CoglRenderer *renderer)
 
 #ifndef HAVE_DIRECTLY_LINKED_GL_LIBRARY
   if (renderer->libgl_module)
-    u_module_close (renderer->libgl_module);
+    c_module_close (renderer->libgl_module);
 #endif
 
-  u_slist_foreach (renderer->event_filters,
+  c_slist_foreach (renderer->event_filters,
                    (GFunc) native_filter_closure_free,
                    NULL);
-  u_slist_free (renderer->event_filters);
+  c_slist_free (renderer->event_filters);
 
-  u_array_free (renderer->poll_fds, TRUE);
+  c_array_free (renderer->poll_fds, TRUE);
 
-  u_free (renderer);
+  c_free (renderer);
 }
 
 CoglRenderer *
 cogl_renderer_new (void)
 {
-  CoglRenderer *renderer = u_new0 (CoglRenderer, 1);
+  CoglRenderer *renderer = c_new0 (CoglRenderer, 1);
 
   _cogl_init ();
 
   renderer->connected = FALSE;
   renderer->event_filters = NULL;
 
-  renderer->poll_fds = u_array_new (FALSE, TRUE, sizeof (CoglPollFD));
+  renderer->poll_fds = c_array_new (FALSE, TRUE, sizeof (CoglPollFD));
 
   _cogl_list_init (&renderer->idle_closures);
 
@@ -369,7 +369,7 @@ foreach_driver_description (CoglDriver driver_override,
 
   if (driver_override != COGL_DRIVER_ANY)
     {
-      for (i = 0; i < U_N_ELEMENTS (_cogl_drivers); i++)
+      for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
         {
           if (_cogl_drivers[i].id == driver_override)
             {
@@ -378,15 +378,15 @@ foreach_driver_description (CoglDriver driver_override,
             }
         }
 
-      u_warn_if_reached ();
+      c_warn_if_reached ();
       return;
     }
 
 #ifdef COGL_DEFAULT_DRIVER
-  for (i = 0; i < U_N_ELEMENTS (_cogl_drivers); i++)
+  for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
     {
       const CoglDriverDescription *desc = &_cogl_drivers[i];
-      if (u_ascii_strcasecmp (desc->name, COGL_DEFAULT_DRIVER) == 0)
+      if (c_ascii_strcasecmp (desc->name, COGL_DEFAULT_DRIVER) == 0)
         {
           default_driver = desc;
           break;
@@ -400,7 +400,7 @@ foreach_driver_description (CoglDriver driver_override,
     }
 #endif
 
-  for (i = 0; i < U_N_ELEMENTS (_cogl_drivers); i++)
+  for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
     {
 #ifdef COGL_DEFAULT_DRIVER
       if (&_cogl_drivers[i] == default_driver)
@@ -417,9 +417,9 @@ driver_name_to_id (const char *name)
 {
   int i;
 
-  for (i = 0; i < U_N_ELEMENTS (_cogl_drivers); i++)
+  for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
     {
-      if (u_ascii_strcasecmp (_cogl_drivers[i].name, name) == 0)
+      if (c_ascii_strcasecmp (_cogl_drivers[i].name, name) == 0)
         return _cogl_drivers[i].id;
     }
 
@@ -442,17 +442,17 @@ driver_id_to_name (CoglDriver id)
       case COGL_DRIVER_NOP:
         return "nop";
       case COGL_DRIVER_ANY:
-        u_warn_if_reached ();
+        c_warn_if_reached ();
         return "any";
     }
 
-  u_warn_if_reached ();
+  c_warn_if_reached ();
   return "unknown";
 }
 
 typedef struct _SatisfyConstraintsState
 {
-  UList *constraints;
+  CList *constraints;
   const CoglDriverDescription *driver_description;
 } SatisfyConstraintsState;
 
@@ -461,7 +461,7 @@ satisfy_constraints (CoglDriverDescription *description,
                      void *user_data)
 {
   SatisfyConstraintsState *state = user_data;
-  UList *l;
+  CList *l;
 
   for (l = state->constraints; l; l = l->next)
     {
@@ -487,7 +487,7 @@ static CoglBool
 _cogl_renderer_choose_driver (CoglRenderer *renderer,
                               CoglError **error)
 {
-  const char *driver_name = u_getenv ("COGL_DRIVER");
+  const char *driver_name = c_getenv ("COGL_DRIVER");
   CoglDriver driver_override = COGL_DRIVER_ANY;
   const char *invalid_override = NULL;
   const char *libgl_name;
@@ -526,7 +526,7 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
       CoglBool found = FALSE;
       int i;
 
-      for (i = 0; i < U_N_ELEMENTS (_cogl_drivers); i++)
+      for (i = 0; i < C_N_ELEMENTS (_cogl_drivers); i++)
         {
           if (_cogl_drivers[i].id == driver_override)
             {
@@ -580,8 +580,8 @@ _cogl_renderer_choose_driver (CoglRenderer *renderer,
   if (COGL_FLAGS_GET (renderer->private_features,
                       COGL_PRIVATE_FEATURE_ANY_GL))
     {
-      renderer->libgl_module = u_module_open (libgl_name,
-                                              U_MODULE_BIND_LAZY);
+      renderer->libgl_module = c_module_open (libgl_name,
+                                              C_MODULE_BIND_LAZY);
 
       if (renderer->libgl_module == NULL)
         {
@@ -604,7 +604,7 @@ CoglBool
 cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
 {
   int i;
-  UString *error_message;
+  CString *error_message;
   CoglBool constraints_failed = FALSE;
 
   if (renderer->connected)
@@ -616,12 +616,12 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
   if (!_cogl_renderer_choose_driver (renderer, error))
     return FALSE;
 
-  error_message = u_string_new ("");
-  for (i = 0; i < U_N_ELEMENTS (_cogl_winsys_vtable_getters); i++)
+  error_message = c_string_new ("");
+  for (i = 0; i < C_N_ELEMENTS (_cogl_winsys_vtable_getters); i++)
     {
       const CoglWinsysVtable *winsys = _cogl_winsys_vtable_getters[i]();
       CoglError *tmp_error = NULL;
-      UList *l;
+      CList *l;
       CoglBool skip_due_to_constraints = FALSE;
 
       if (renderer->winsys_id_override != COGL_WINSYS_ID_ANY)
@@ -635,7 +635,7 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
           if (!user_choice)
             user_choice = _cogl_config_renderer;
           if (user_choice &&
-              u_ascii_strcasecmp (winsys->name, user_choice) != 0)
+              c_ascii_strcasecmp (winsys->name, user_choice) != 0)
             continue;
         }
 
@@ -661,14 +661,14 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
 
       if (!winsys->renderer_connect (renderer, &tmp_error))
         {
-          u_string_append_c (error_message, '\n');
-          u_string_append (error_message, tmp_error->message);
+          c_string_append_c (error_message, '\n');
+          c_string_append (error_message, tmp_error->message);
           cogl_error_free (tmp_error);
         }
       else
         {
           renderer->connected = TRUE;
-          u_string_free (error_message, TRUE);
+          c_string_free (error_message, TRUE);
           return TRUE;
         }
     }
@@ -688,7 +688,7 @@ cogl_renderer_connect (CoglRenderer *renderer, CoglError **error)
                    COGL_WINSYS_ERROR_INIT,
                    "Failed to connected to any renderer: %s",
                    error_message->str);
-      u_string_free (error_message, TRUE);
+      c_string_free (error_message, TRUE);
       return FALSE;
     }
 
@@ -699,7 +699,7 @@ CoglFilterReturn
 _cogl_renderer_handle_native_event (CoglRenderer *renderer,
                                     void *event)
 {
-  USList *l, *next;
+  CSList *l, *next;
 
   /* Pass the event on to all of the registered filters in turn */
   for (l = renderer->event_filters; l; l = next)
@@ -727,11 +727,11 @@ _cogl_renderer_add_native_filter (CoglRenderer *renderer,
 {
   CoglNativeFilterClosure *closure;
 
-  closure = u_slice_new (CoglNativeFilterClosure);
+  closure = c_slice_new (CoglNativeFilterClosure);
   closure->func = func;
   closure->data = data;
 
-  renderer->event_filters = u_slist_prepend (renderer->event_filters, closure);
+  renderer->event_filters = c_slist_prepend (renderer->event_filters, closure);
 }
 
 void
@@ -739,7 +739,7 @@ _cogl_renderer_remove_native_filter (CoglRenderer *renderer,
                                      CoglNativeFilterFunc func,
                                      void *data)
 {
-  USList *l, *prev = NULL;
+  CSList *l, *prev = NULL;
 
   for (l = renderer->event_filters; l; prev = l, l = l->next)
     {
@@ -749,10 +749,10 @@ _cogl_renderer_remove_native_filter (CoglRenderer *renderer,
         {
           native_filter_closure_free (closure);
           if (prev)
-            prev->next = u_slist_delete_link (prev->next, l);
+            prev->next = c_slist_delete_link (prev->next, l);
           else
             renderer->event_filters =
-              u_slist_delete_link (renderer->event_filters, l);
+              c_slist_delete_link (renderer->event_filters, l);
           break;
         }
     }
@@ -804,8 +804,8 @@ void
 cogl_renderer_add_constraint (CoglRenderer *renderer,
                               CoglRendererConstraint constraint)
 {
-  u_return_if_fail (!renderer->connected);
-  renderer->constraints = u_list_prepend (renderer->constraints,
+  c_return_if_fail (!renderer->connected);
+  renderer->constraints = c_list_prepend (renderer->constraints,
                                           GUINT_TO_POINTER (constraint));
 }
 
@@ -813,8 +813,8 @@ void
 cogl_renderer_remove_constraint (CoglRenderer *renderer,
                                  CoglRendererConstraint constraint)
 {
-  u_return_if_fail (!renderer->connected);
-  renderer->constraints = u_list_remove (renderer->constraints,
+  c_return_if_fail (!renderer->connected);
+  renderer->constraints = c_list_remove (renderer->constraints,
                                          GUINT_TO_POINTER (constraint));
 }
 
@@ -839,7 +839,7 @@ cogl_renderer_foreach_output (CoglRenderer *renderer,
                               CoglOutputCallback callback,
                               void *user_data)
 {
-  UList *l;
+  CList *l;
 
   _COGL_RETURN_IF_FAIL (renderer->connected);
   _COGL_RETURN_IF_FAIL (callback != NULL);

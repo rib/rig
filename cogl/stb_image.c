@@ -970,8 +970,8 @@ typedef struct
 
 // sizes for components, interleaved MCUs
    int img_h_max, img_v_max;
-   int img_mcu_x, img_mcu_y;
-   int img_mcu_w, img_mcu_h;
+   int img_mcc_x, img_mcc_y;
+   int img_mcc_w, img_mcc_h;
 
 // definition of jpeg image component
    struct
@@ -1386,8 +1386,8 @@ static int parse_entropy_coded_data(jpeg *z)
    } else { // interleaved!
       int i,j,k,x,y;
       short data[64];
-      for (j=0; j < z->img_mcu_y; ++j) {
-         for (i=0; i < z->img_mcu_x; ++i) {
+      for (j=0; j < z->img_mcc_y; ++j) {
+         for (i=0; i < z->img_mcc_x; ++i) {
             // scan an interleaved mcu... process scan_n components in order
             for (k=0; k < z->scan_n; ++k) {
                int n = z->order[k];
@@ -1556,10 +1556,10 @@ static int process_frame_header(jpeg *z, int scan)
    // compute interleaved mcu info
    z->img_h_max = h_max;
    z->img_v_max = v_max;
-   z->img_mcu_w = h_max * 8;
-   z->img_mcu_h = v_max * 8;
-   z->img_mcu_x = (s->img_x + z->img_mcu_w-1) / z->img_mcu_w;
-   z->img_mcu_y = (s->img_y + z->img_mcu_h-1) / z->img_mcu_h;
+   z->img_mcc_w = h_max * 8;
+   z->img_mcc_h = v_max * 8;
+   z->img_mcc_x = (s->img_x + z->img_mcc_w-1) / z->img_mcc_w;
+   z->img_mcc_y = (s->img_y + z->img_mcc_h-1) / z->img_mcc_h;
 
    for (i=0; i < s->img_n; ++i) {
       // number of effective pixels (e.g. for non-interleaved MCU)
@@ -1569,8 +1569,8 @@ static int process_frame_header(jpeg *z, int scan)
       // the bogus oversized data from using interleaved MCUs and their
       // big blocks (e.g. a 16x16 iMCU on an image of width 33); we won't
       // discard the extra data until colorspace conversion
-      z->img_comp[i].w2 = z->img_mcu_x * z->img_comp[i].h * 8;
-      z->img_comp[i].h2 = z->img_mcu_y * z->img_comp[i].v * 8;
+      z->img_comp[i].w2 = z->img_mcc_x * z->img_comp[i].h * 8;
+      z->img_comp[i].h2 = z->img_mcc_y * z->img_comp[i].v * 8;
       z->img_comp[i].raw_data = malloc(z->img_comp[i].w2 * z->img_comp[i].h2+15);
       if (z->img_comp[i].raw_data == NULL) {
          for(--i; i >= 0; --i) {

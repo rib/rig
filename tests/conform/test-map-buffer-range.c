@@ -119,5 +119,5 @@ test_map_buffer_range (void)
   cogl_object_unref (tex);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

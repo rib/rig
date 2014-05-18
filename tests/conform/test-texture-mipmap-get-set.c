@@ -13,7 +13,7 @@ make_texture (void)
   CoglTexture *tex;
   int x, y;
 
-  p = tex_data = u_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
+  p = tex_data = c_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
   for (y = 0; y < TEXTURE_SIZE; y++)
     {
       for (x = 0; x < TEXTURE_SIZE; x++)
@@ -47,7 +47,7 @@ update_mipmap_levels (CoglTexture *tex)
   uint8_t *p, *tex_data;
   int x, y;
 
-  p = tex_data = u_malloc ((TEXTURE_SIZE / 2) * (TEXTURE_SIZE / 2) * 4);
+  p = tex_data = c_malloc ((TEXTURE_SIZE / 2) * (TEXTURE_SIZE / 2) * 4);
 
   for (y = 0; y < TEXTURE_SIZE / 2; y++)
     {
@@ -169,6 +169,6 @@ test_texture_mipmap_get_set (void)
   validate_results ();
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

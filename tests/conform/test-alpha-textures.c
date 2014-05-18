@@ -118,6 +118,6 @@ test_alpha_textures (void)
                           0xffffffff);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

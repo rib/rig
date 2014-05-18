@@ -50,7 +50,7 @@ COGL_BUFFER_DEFINE (IndexBuffer, index_buffer);
 CoglIndexBuffer *
 cogl_index_buffer_new (CoglContext *context, size_t bytes)
 {
-  CoglIndexBuffer *indices = u_slice_new (CoglIndexBuffer);
+  CoglIndexBuffer *indices = c_slice_new (CoglIndexBuffer);
 
   /* parent's constructor */
   _cogl_buffer_initialize (COGL_BUFFER (indices),
@@ -69,7 +69,7 @@ _cogl_index_buffer_free (CoglIndexBuffer *indices)
   /* parent's destructor */
   _cogl_buffer_fini (COGL_BUFFER (indices));
 
-  u_slice_free (CoglIndexBuffer, indices);
+  c_slice_free (CoglIndexBuffer, indices);
 }
 
 /* XXX: do we want a convenience function like this as an alternative
@@ -98,7 +98,7 @@ cogl_index_buffer_set_data (CoglIndexBuffer *indices,
                             void *user_indices,
                             int n_indices)
 {
-  UList *l;
+  CList *l;
 
   for (l = indices->ranges; l; l = l->next)
     {

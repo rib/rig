@@ -82,7 +82,7 @@
   static const CoglFeatureFunction                                      \
   cogl_egl_feature_ ## name ## _funcs[] = {
 #define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args)                   \
-  { G_STRINGIFY (name), U_STRUCT_OFFSET (CoglRendererEGL, pf_ ## name) },
+  { G_STRINGIFY (name), C_STRUCT_OFFSET (CoglRendererEGL, pf_ ## name) },
 #define COGL_WINSYS_FEATURE_END()               \
   { NULL, 0 },                                  \
     };
@@ -135,7 +135,7 @@ get_error_string (void)
   case EGL_BAD_SURFACE:
      return "Invalid surface";
   default:
-    u_assert_not_reached ();
+    c_assert_not_reached ();
   }
 }
 
@@ -152,7 +152,7 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
   /* eglGetProcAddress doesn't support fetching core API so we need to
      get that separately with UModule */
   if (ptr == NULL)
-    u_module_symbol (renderer->libgl_module, name, &ptr);
+    c_module_symbol (renderer->libgl_module, name, &ptr);
 
   return ptr;
 }
@@ -161,7 +161,7 @@ static void
 _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 {
   /* This function must be overridden by a platform winsys */
-  u_assert_not_reached ();
+  c_assert_not_reached ();
 }
 
 /* Updates all the function pointers */
@@ -174,12 +174,12 @@ check_egl_extensions (CoglRenderer *renderer)
   int i;
 
   egl_extensions = eglQueryString (egl_renderer->edpy, EGL_EXTENSIONS);
-  split_extensions = u_strsplit (egl_extensions, " ", 0 /* max_tokens */);
+  split_extensions = c_strsplit (egl_extensions, " ", 0 /* max_tokens */);
 
   COGL_NOTE (WINSYS, "  EGL Extensions: %s", egl_extensions);
 
   egl_renderer->private_features = 0;
-  for (i = 0; i < U_N_ELEMENTS (winsys_feature_data); i++)
+  for (i = 0; i < C_N_ELEMENTS (winsys_feature_data); i++)
     if (_cogl_feature_check (renderer,
                              "EGL", winsys_feature_data + i, 0, 0,
                              COGL_DRIVER_GL, /* the driver isn't used */
@@ -190,7 +190,7 @@ check_egl_extensions (CoglRenderer *renderer)
           winsys_feature_data[i].feature_flags_private;
       }
 
-  u_strfreev (split_extensions);
+  c_strfreev (split_extensions);
 }
 
 CoglBool
@@ -219,7 +219,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
   /* This function must be overridden by a platform winsys */
-  u_assert_not_reached ();
+  c_assert_not_reached ();
 }
 
 static void
@@ -278,7 +278,7 @@ egl_attributes_from_framebuffer_config (CoglDisplay *display,
 
   attributes[i++] = EGL_NONE;
 
-  u_assert (i < MAX_EGL_CONFIG_ATTRIBS);
+  c_assert (i < MAX_EGL_CONFIG_ATTRIBS);
 }
 
 EGLBoolean
@@ -436,7 +436,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
   if (egl_renderer->platform_vtable->display_destroy)
     egl_renderer->platform_vtable->display_destroy (display);
 
-  u_slice_free (CoglDisplayEGL, display->winsys);
+  c_slice_free (CoglDisplayEGL, display->winsys);
   display->winsys = NULL;
 }
 
@@ -450,7 +450,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
 
-  egl_display = u_slice_new0 (CoglDisplayEGL);
+  egl_display = c_slice_new0 (CoglDisplayEGL);
   display->winsys = egl_display;
 
 #ifdef COGL_HAS_WAYLAND_EGL_SERVER_SUPPORT
@@ -488,7 +488,7 @@ _cogl_winsys_context_init (CoglContext *context, CoglError **error)
   CoglDisplayEGL *egl_display = context->display->winsys;
   CoglRendererEGL *egl_renderer = renderer->winsys;
 
-  context->winsys = u_new0 (CoglContextEGL, 1);
+  context->winsys = c_new0 (CoglContextEGL, 1);
 
   _COGL_RETURN_VAL_IF_FAIL (egl_display->egl_context, FALSE);
 
@@ -540,7 +540,7 @@ _cogl_winsys_context_deinit (CoglContext *context)
   if (egl_renderer->platform_vtable->context_deinit)
     egl_renderer->platform_vtable->context_deinit (context);
 
-  u_free (context->winsys);
+  c_free (context->winsys);
 }
 
 typedef struct _CoglGLES2ContextEGL
@@ -632,18 +632,18 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       status = eglGetConfigAttrib (egl_renderer->edpy,
                                    egl_config,
                                    EGL_SAMPLES, &samples);
-      u_return_val_if_fail (status == EGL_TRUE, TRUE);
+      c_return_val_if_fail (status == EGL_TRUE, TRUE);
       framebuffer->samples_per_pixel = samples;
     }
 
-  onscreen->winsys = u_slice_new0 (CoglOnscreenEGL);
+  onscreen->winsys = c_slice_new0 (CoglOnscreenEGL);
 
   if (egl_renderer->platform_vtable->onscreen_init &&
       !egl_renderer->platform_vtable->onscreen_init (onscreen,
                                                      egl_config,
                                                      error))
     {
-      u_slice_free (CoglOnscreenEGL, onscreen->winsys);
+      c_slice_free (CoglOnscreenEGL, onscreen->winsys);
       return FALSE;
     }
 
@@ -681,14 +681,14 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
 
       if (eglDestroySurface (egl_renderer->edpy, egl_onscreen->egl_surface)
           == EGL_FALSE)
-        u_warning ("Failed to destroy EGL surface");
+        c_warning ("Failed to destroy EGL surface");
       egl_onscreen->egl_surface = EGL_NO_SURFACE;
     }
 
   if (egl_renderer->platform_vtable->onscreen_deinit)
     egl_renderer->platform_vtable->onscreen_deinit (onscreen);
 
-  u_slice_free (CoglOnscreenEGL, onscreen->winsys);
+  c_slice_free (CoglOnscreenEGL, onscreen->winsys);
   onscreen->winsys = NULL;
 }
 
@@ -767,7 +767,7 @@ _cogl_winsys_onscreen_swap_region (CoglOnscreen *onscreen,
   CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
   CoglFramebuffer *framebuffer = COGL_FRAMEBUFFER (onscreen);
   int framebuffer_height  = cogl_framebuffer_get_height (framebuffer);
-  int *rectangles = u_alloca (sizeof (int) * n_rectangles * 4);
+  int *rectangles = c_alloca (sizeof (int) * n_rectangles * 4);
   int i;
 
   /* eglSwapBuffersRegion expects rectangles relative to the
@@ -792,7 +792,7 @@ _cogl_winsys_onscreen_swap_region (CoglOnscreen *onscreen,
                                              egl_onscreen->egl_surface,
                                              n_rectangles,
                                              rectangles) == EGL_FALSE)
-    u_warning ("Error reported by eglSwapBuffersRegion");
+    c_warning ("Error reported by eglSwapBuffersRegion");
 }
 
 static void
@@ -833,7 +833,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
                                                      egl_onscreen->egl_surface,
                                                      flipped,
                                                      n_rectangles) == EGL_FALSE)
-        u_warning ("Error reported by eglSwapBuffersWithDamage");
+        c_warning ("Error reported by eglSwapBuffersWithDamage");
     }
   else
     eglSwapBuffers (egl_renderer->edpy, egl_onscreen->egl_surface);

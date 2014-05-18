@@ -52,7 +52,7 @@ struct _CoglPipelineCache
 CoglPipelineCache *
 _cogl_pipeline_cache_new (void)
 {
-  CoglPipelineCache *cache = u_new (CoglPipelineCache, 1);
+  CoglPipelineCache *cache = c_new (CoglPipelineCache, 1);
   unsigned long vertex_state;
   unsigned long layer_vertex_state;
   unsigned int fragment_state;
@@ -91,7 +91,7 @@ _cogl_pipeline_cache_free (CoglPipelineCache *cache)
   _cogl_pipeline_hash_table_destroy (&cache->fragment_hash);
   _cogl_pipeline_hash_table_destroy (&cache->vertex_hash);
   _cogl_pipeline_hash_table_destroy (&cache->combined_hash);
-  u_free (cache);
+  c_free (cache);
 }
 
 CoglPipelineCacheEntry *
@@ -128,7 +128,7 @@ create_pipelines (CoglPipeline **pipelines,
 
   for (i = 0; i < n_pipelines; i++)
     {
-      char *source = u_strdup_printf ("  cogl_color_out = "
+      char *source = c_strdup_printf ("  cogl_color_out = "
                                       "vec4 (%f, 0.0, 0.0, 1.0);\n",
                                       i / 255.0f);
       CoglSnippet *snippet =
@@ -136,7 +136,7 @@ create_pipelines (CoglPipeline **pipelines,
                           NULL, /* declarations */
                           source);
 
-      u_free (source);
+      c_free (source);
 
       pipelines[i] = cogl_pipeline_new (test_ctx);
       cogl_pipeline_add_snippet (pipelines[i], snippet);
@@ -187,10 +187,10 @@ UNIT_TEST (check_pipeline_pruning,
   /* These pipelines should all have unique entries in the cache. We
    * should have run the garbage collection once and at that point the
    * expected minimum size would have been 17 */
-  u_assert_cmpint (u_hash_table_size (fragment_hash->table), ==, 18);
-  u_assert_cmpint (u_hash_table_size (combined_hash->table), ==, 18);
-  u_assert_cmpint (fragment_hash->expected_min_size, ==, 17);
-  u_assert_cmpint (combined_hash->expected_min_size, ==, 17);
+  c_assert_cmpint (c_hash_table_size (fragment_hash->table), ==, 18);
+  c_assert_cmpint (c_hash_table_size (combined_hash->table), ==, 18);
+  c_assert_cmpint (fragment_hash->expected_min_size, ==, 17);
+  c_assert_cmpint (combined_hash->expected_min_size, ==, 17);
 
   /* Destroy the original pipelines and create some new ones. This
    * should run the garbage collector again but this time the
@@ -202,12 +202,12 @@ UNIT_TEST (check_pipeline_pruning,
 
   /* The garbage collection should have freed half of the original 18
    * pipelines which means there should now be 18*1.5 = 27 */
-  u_assert_cmpint (u_hash_table_size (fragment_hash->table), ==, 27);
-  u_assert_cmpint (u_hash_table_size (combined_hash->table), ==, 27);
+  c_assert_cmpint (c_hash_table_size (fragment_hash->table), ==, 27);
+  c_assert_cmpint (c_hash_table_size (combined_hash->table), ==, 27);
   /* The 35th pipeline would have caused the garbage collection. At
    * that point there would be 35-18=17 used unique pipelines. */
-  u_assert_cmpint (fragment_hash->expected_min_size, ==, 17);
-  u_assert_cmpint (combined_hash->expected_min_size, ==, 17);
+  c_assert_cmpint (fragment_hash->expected_min_size, ==, 17);
+  c_assert_cmpint (combined_hash->expected_min_size, ==, 17);
 
   for (i = 0; i < 18; i++)
     cogl_object_unref (pipelines[i]);

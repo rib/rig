@@ -29,7 +29,7 @@
 
 #include <config.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-closure-list-private.h"
 
@@ -41,7 +41,7 @@ _cogl_closure_disconnect (CoglClosure *closure)
   if (closure->destroy_cb)
     closure->destroy_cb (closure->user_data);
 
-  u_slice_free (CoglClosure, closure);
+  c_slice_free (CoglClosure, closure);
 }
 
 void
@@ -59,7 +59,7 @@ _cogl_closure_list_add (CoglList *list,
                         void *user_data,
                         CoglUserDataDestroyCallback destroy_cb)
 {
-  CoglClosure *closure = u_slice_new (CoglClosure);
+  CoglClosure *closure = c_slice_new (CoglClosure);
 
   closure->function = function;
   closure->user_data = user_data;

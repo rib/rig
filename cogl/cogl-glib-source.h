@@ -50,7 +50,7 @@ COGL_BEGIN_DECLS
  * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
- * u_source_attach().
+ * c_source_attach().
  *
  * Applications that manually connect to a #CoglRenderer before they
  * create a #CoglContext should instead use
@@ -81,7 +81,7 @@ cogl_glib_source_new (CoglContext *context,
  * cogl_poll_renderer_get_info() and cogl_poll_renderer_dispatch() in
  * applications that are already using the GLib main loop. After this
  * is called the #GSource should be attached to the main loop using
- * u_source_attach().
+ * c_source_attach().
  *
  * Return value: a new #GSource
  *

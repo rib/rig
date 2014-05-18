@@ -265,11 +265,11 @@ _cogl_pipeline_uniforms_state_equal (CoglPipeline *authority0,
   if (authority0 == authority1)
     return TRUE;
 
-  values0 = u_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
-  values1 = u_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
+  values0 = c_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
+  values1 = c_alloca (sizeof (const CoglBoxedValue *) * ctx->n_uniform_names);
 
   n_longs = COGL_FLAGS_N_LONGS_FOR_SIZE (ctx->n_uniform_names);
-  differences = u_alloca (n_longs * sizeof (unsigned long));
+  differences = c_alloca (n_longs * sizeof (unsigned long));
   memset (differences, 0, sizeof (unsigned long) * n_longs);
   _cogl_pipeline_compare_uniform_differences (differences,
                                               authority0,
@@ -601,7 +601,7 @@ arg_to_gl_blend_factor (CoglBlendStringArgument *arg)
     }
 #endif
 
-  u_warning ("Unable to determine valid blend factor from blend string\n");
+  c_warning ("Unable to determine valid blend factor from blend string\n");
   return GL_ONE;
 }
 
@@ -618,7 +618,7 @@ setup_blend_state (CoglBlendStringStatement *statement,
       break;
     /* TODO - add more */
     default:
-      u_warning ("Unsupported blend function given");
+      c_warning ("Unsupported blend function given");
       *blend_equation = GL_FUNC_ADD;
     }
 
@@ -1069,9 +1069,9 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
 
   _COGL_GET_CONTEXT (ctx, NULL);
 
-  u_return_val_if_fail (cogl_is_pipeline (pipeline), NULL);
-  u_return_val_if_fail (location >= 0, NULL);
-  u_return_val_if_fail (location < ctx->n_uniform_names, NULL);
+  c_return_val_if_fail (cogl_is_pipeline (pipeline), NULL);
+  c_return_val_if_fail (location >= 0, NULL);
+  c_return_val_if_fail (location < ctx->n_uniform_names, NULL);
 
   /* - Flush journal primitives referencing the current state.
    * - Make sure the pipeline has no dependants so it may be modified.
@@ -1102,8 +1102,8 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
 
   if (uniforms_state->override_values == NULL)
     {
-      u_assert (override_index == 0);
-      uniforms_state->override_values = u_new (CoglBoxedValue, 1);
+      c_assert (override_index == 0);
+      uniforms_state->override_values = c_new (CoglBoxedValue, 1);
     }
   else
     {
@@ -1111,7 +1111,7 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
       CoglBoxedValue *old_values = uniforms_state->override_values;
       int old_size = _cogl_bitmask_popcount (&uniforms_state->override_mask);
 
-      uniforms_state->override_values = u_new (CoglBoxedValue, old_size + 1);
+      uniforms_state->override_values = c_new (CoglBoxedValue, old_size + 1);
 
       /* Copy in the old values leaving a gap for the new value */
       memcpy (uniforms_state->override_values,
@@ -1121,7 +1121,7 @@ _cogl_pipeline_override_uniform (CoglPipeline *pipeline,
               old_values + override_index,
               sizeof (CoglBoxedValue) * (old_size - override_index));
 
-      u_free (old_values);
+      c_free (old_values);
     }
 
   _cogl_boxed_value_init (uniforms_state->override_values + override_index);
@@ -1240,9 +1240,9 @@ void
 cogl_pipeline_add_snippet (CoglPipeline *pipeline,
                            CoglSnippet *snippet)
 {
-  u_return_if_fail (cogl_is_pipeline (pipeline));
-  u_return_if_fail (cogl_is_snippet (snippet));
-  u_return_if_fail (snippet->hook < COGL_SNIPPET_FIRST_LAYER_HOOK);
+  c_return_if_fail (cogl_is_pipeline (pipeline));
+  c_return_if_fail (cogl_is_snippet (snippet));
+  c_return_if_fail (snippet->hook < COGL_SNIPPET_FIRST_LAYER_HOOK);
 
   if (snippet->hook < COGL_SNIPPET_FIRST_PIPELINE_FRAGMENT_HOOK)
     _cogl_pipeline_add_vertex_snippet (pipeline, snippet);
@@ -1516,7 +1516,7 @@ _cogl_pipeline_hash_uniforms_state (CoglPipeline *authority,
   /* This isn't used anywhere yet because the uniform state doesn't
      affect program generation. It's quite a hassle to implement so
      let's just leave it until something actually needs it */
-  u_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 void
@@ -1524,15 +1524,15 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
                                             CoglPipeline *pipeline0,
                                             CoglPipeline *pipeline1)
 {
-  USList *head0 = NULL;
-  USList *head1 = NULL;
+  CSList *head0 = NULL;
+  CSList *head1 = NULL;
   CoglPipeline *node0;
   CoglPipeline *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  USList *common_ancestor0;
-  USList *common_ancestor1;
+  CSList *common_ancestor0;
+  CSList *common_ancestor1;
 
   /* This algorithm is copied from
      _cogl_pipeline_compare_differences(). It might be nice to share
@@ -1540,7 +1540,7 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
 
   for (node0 = pipeline0; node0; node0 = _cogl_pipeline_get_parent (node0))
     {
-      USList *link = alloca (sizeof (USList));
+      CSList *link = alloca (sizeof (CSList));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -1548,7 +1548,7 @@ _cogl_pipeline_compare_uniform_differences (unsigned long *differences,
     }
   for (node1 = pipeline1; node1; node1 = _cogl_pipeline_get_parent (node1))
     {
-      USList *link = alloca (sizeof (USList));
+      CSList *link = alloca (sizeof (CSList));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -1641,7 +1641,7 @@ UNIT_TEST (check_blend_constant_ancestry,
   for (node = (CoglNode *) pipeline; node; node = node->parent)
     pipeline_length++;
 
-  u_assert_cmpint (pipeline_length, <=, 2);
+  c_assert_cmpint (pipeline_length, <=, 2);
 
   cogl_object_unref (pipeline);
 }
@@ -1676,7 +1676,7 @@ UNIT_TEST (check_uniform_ancestry,
   for (node = (CoglNode *) pipeline; node; node = node->parent)
     pipeline_length++;
 
-  u_assert_cmpint (pipeline_length, <=, 2);
+  c_assert_cmpint (pipeline_length, <=, 2);
 
   cogl_object_unref (pipeline);
 }

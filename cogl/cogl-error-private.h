@@ -40,7 +40,7 @@ _cogl_set_error (CoglError **error,
                  uint32_t domain,
                  int code,
                  const char *format,
-                 ...) U_GNUC_PRINTF (4, 5);
+                 ...) C_GNUC_PRINTF (4, 5);
 
 void
 _cogl_set_error_literal (CoglError **error,
@@ -58,6 +58,6 @@ _cogl_propagate_gerror (CoglError **dest,
                         GError *src);
 #endif /* COGL_HAS_GLIB_SUPPORT */
 
-#define _cogl_clear_error(X) u_clear_error ((GError **)X)
+#define _cogl_clear_error(X) c_clear_error ((GError **)X)
 
 #endif /* __COGL_ERROR_PRIVATE_H__ */

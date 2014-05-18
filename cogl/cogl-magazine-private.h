@@ -31,7 +31,7 @@
 #ifndef __COGL_MAGAZINE_PRIVATE_H__
 #define __COGL_MAGAZINE_PRIVATE_H__
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-memory-stack-private.h"
 
@@ -56,7 +56,7 @@ _cogl_magazine_new (size_t chunk_size, int initial_chunk_count);
 static inline void *
 _cogl_magazine_chunk_alloc (CoglMagazine *magazine)
 {
-  if (U_LIKELY (magazine->head))
+  if (C_LIKELY (magazine->head))
     {
       CoglMagazineChunk *chunk = magazine->head;
       magazine->head = chunk->next;

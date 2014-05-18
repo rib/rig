@@ -384,7 +384,7 @@ cogl_pango_show_layout (CoglFramebuffer *fb,
       g_object_set_qdata_full (G_OBJECT (layout),
                                cogl_pango_layout_get_qdata_key (),
                                qdata,
-                               (UDestroyNotify)
+                               (CDestroyNotify)
                                cogl_pango_render_qdata_destroy);
     }
 

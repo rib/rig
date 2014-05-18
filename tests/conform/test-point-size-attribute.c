@@ -75,13 +75,13 @@ create_primitive (const char *attribute_name)
   attributes[0] = cogl_attribute_new (buffer,
                                       "cogl_position_in",
                                       sizeof (PointVertex),
-                                      U_STRUCT_OFFSET (PointVertex, x),
+                                      C_STRUCT_OFFSET (PointVertex, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
   attributes[1] = cogl_attribute_new (buffer,
                                       attribute_name,
                                       sizeof (PointVertex),
-                                      U_STRUCT_OFFSET (PointVertex, point_size),
+                                      C_STRUCT_OFFSET (PointVertex, point_size),
                                       1, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
 
@@ -134,7 +134,7 @@ do_test (const char *attribute_name,
                        MAX_POINT_SIZE - i /* point size */);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 
 void

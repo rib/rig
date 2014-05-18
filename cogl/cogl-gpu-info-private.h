@@ -103,7 +103,7 @@ struct _CoglGpuInfo
 };
 
 /*
- * _cogl_gpu_info_init:
+ * _cogl_gpc_info_init:
  * @ctx: A #CoglContext
  * @gpu: A return location for the GPU information
  *
@@ -111,7 +111,7 @@ struct _CoglGpuInfo
  * context.
  */
 void
-_cogl_gpu_info_init (CoglContext *ctx,
+_cogl_gpc_info_init (CoglContext *ctx,
                      CoglGpuInfo *gpu);
 
 #endif /* __COGL_GPU_INFO_PRIVATE_H */

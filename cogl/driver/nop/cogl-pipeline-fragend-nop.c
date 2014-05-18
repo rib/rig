@@ -31,7 +31,7 @@
 
 #include "cogl-pipeline-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 const CoglPipelineFragend _cogl_pipeline_nop_fragend;
 

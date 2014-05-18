@@ -95,5 +95,5 @@ test_point_size (void)
                        point_size);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

@@ -131,8 +131,8 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
         wl_display_disconnect (wayland_renderer->wayland_display);
     }
 
-  u_slice_free (CoglRendererWayland, egl_renderer->platform);
-  u_slice_free (CoglRendererEGL, egl_renderer);
+  c_slice_free (CoglRendererWayland, egl_renderer->platform);
+  c_slice_free (CoglRendererEGL, egl_renderer);
 }
 
 static const struct wl_registry_listener registry_listener = {
@@ -235,9 +235,9 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   CoglRendererEGL *egl_renderer;
   CoglRendererWayland *wayland_renderer;
 
-  renderer->winsys = u_slice_new0 (CoglRendererEGL);
+  renderer->winsys = c_slice_new0 (CoglRendererEGL);
   egl_renderer = renderer->winsys;
-  wayland_renderer = u_slice_new0 (CoglRendererWayland);
+  wayland_renderer = c_slice_new0 (CoglRendererWayland);
   egl_renderer->platform = wayland_renderer;
 
   egl_renderer->platform_vtable = &_cogl_winsys_egl_vtable;
@@ -246,7 +246,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
    * platform when the driver can support multiple. Mesa allows
    * selection using an environment variable though so that's what
    * we're doing here... */
-  u_setenv ("EGL_PLATFORM", "wayland", 1);
+  c_setenv ("EGL_PLATFORM", "wayland", 1);
 
   if (renderer->foreign_wayland_display)
     {
@@ -315,7 +315,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   CoglDisplayEGL *egl_display = display->winsys;
   CoglDisplayWayland *wayland_display;
 
-  wayland_display = u_slice_new0 (CoglDisplayWayland);
+  wayland_display = c_slice_new0 (CoglDisplayWayland);
   egl_display->platform = wayland_display;
 
   return TRUE;
@@ -326,7 +326,7 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
 {
   CoglDisplayEGL *egl_display = display->winsys;
 
-  u_slice_free (CoglDisplayWayland, egl_display->platform);
+  c_slice_free (CoglDisplayWayland, egl_display->platform);
 }
 
 static CoglBool
@@ -456,7 +456,7 @@ _cogl_winsys_egl_onscreen_init (CoglOnscreen *onscreen,
   CoglRendererEGL *egl_renderer = renderer->winsys;
   CoglRendererWayland *wayland_renderer = egl_renderer->platform;
 
-  wayland_onscreen = u_slice_new0 (CoglOnscreenWayland);
+  wayland_onscreen = c_slice_new0 (CoglOnscreenWayland);
   egl_onscreen->platform = wayland_onscreen;
 
   _cogl_list_init (&wayland_onscreen->frame_callbacks);
@@ -509,7 +509,7 @@ free_frame_callback_data (FrameCallbackData *callback_data)
   cogl_object_unref (callback_data->frame_info);
   wl_callback_destroy (callback_data->callback);
   _cogl_list_remove (&callback_data->link);
-  u_slice_free (FrameCallbackData, callback_data);
+  c_slice_free (FrameCallbackData, callback_data);
 }
 
 static void
@@ -549,7 +549,7 @@ _cogl_winsys_egl_onscreen_deinit (CoglOnscreen *onscreen)
         }
     }
 
-  u_slice_free (CoglOnscreenWayland, wayland_onscreen);
+  c_slice_free (CoglOnscreenWayland, wayland_onscreen);
 }
 
 static void
@@ -587,7 +587,7 @@ frame_cb (void *data,
   CoglFrameInfo *info = callback_data->frame_info;
   CoglOnscreen *onscreen = callback_data->onscreen;
 
-  u_assert (callback_data->callback == callback);
+  c_assert (callback_data->callback == callback);
 
   _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_SYNC, info);
   _cogl_onscreen_queue_event (onscreen, COGL_FRAME_EVENT_COMPLETE, info);
@@ -608,7 +608,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
 {
   CoglOnscreenEGL *egl_onscreen = onscreen->winsys;
   CoglOnscreenWayland *wayland_onscreen = egl_onscreen->platform;
-  FrameCallbackData *frame_callback_data = u_slice_new (FrameCallbackData);
+  FrameCallbackData *frame_callback_data = c_slice_new (FrameCallbackData);
 
   flush_pending_resize (onscreen);
 
@@ -620,7 +620,7 @@ _cogl_winsys_onscreen_swap_buffers_with_damage (CoglOnscreen *onscreen,
    * frame that Wayland reports as completed. This will steal the
    * reference */
   frame_callback_data->frame_info =
-    u_queue_pop_tail (&onscreen->pending_frame_infos);
+    c_queue_pop_tail (&onscreen->pending_frame_infos);
   frame_callback_data->onscreen = onscreen;
 
   frame_callback_data->callback =

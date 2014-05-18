@@ -44,7 +44,7 @@
 /* NB: Only these options get enabled if COGL_DEBUG=all is
  * used since they don't affect the behaviour of Cogl they
  * simply print out verbose information */
-static const UDebugKey cogl_log_debug_keys[] = {
+static const CDebugKey cogl_log_debug_keys[] = {
   { "object", COGL_DEBUG_OBJECT },
   { "slicing", COGL_DEBUG_SLICING },
   { "atlas", COGL_DEBUG_ATLAS },
@@ -64,9 +64,9 @@ static const UDebugKey cogl_log_debug_keys[] = {
   { "performance", COGL_DEBUG_PERFORMANCE }
 };
 static const int n_cogl_log_debug_keys =
-  U_N_ELEMENTS (cogl_log_debug_keys);
+  C_N_ELEMENTS (cogl_log_debug_keys);
 
-static const UDebugKey cogl_behavioural_debug_keys[] = {
+static const CDebugKey cogl_behavioural_debug_keys[] = {
   { "rectangles", COGL_DEBUG_RECTANGLES },
   { "disable-batching", COGL_DEBUG_DISABLE_BATCHING },
   { "disable-vbos", COGL_DEBUG_DISABLE_VBOS },
@@ -85,20 +85,20 @@ static const UDebugKey cogl_behavioural_debug_keys[] = {
   { "disable-fast-read-pixel", COGL_DEBUG_DISABLE_FAST_READ_PIXEL}
 };
 static const int n_cogl_behavioural_debug_keys =
-  U_N_ELEMENTS (cogl_behavioural_debug_keys);
+  C_N_ELEMENTS (cogl_behavioural_debug_keys);
 
 unsigned long _cogl_debug_flags[COGL_DEBUG_N_LONGS];
-UHashTable *_cogl_debug_instances;
+CHashTable *_cogl_debug_instances;
 
 static void
 _cogl_parse_debug_string_for_keys (const char *value,
                                    CoglBool enable,
-                                   const UDebugKey *keys,
+                                   const CDebugKey *keys,
                                    unsigned int nkeys)
 {
   int long_num, key_num;
 
-  /* u_parse_debug_string expects the value field in UDebugKey to be a
+  /* c_parse_debug_string expects the value field in CDebugKey to be a
      mask in a guint but the flags is stored in an array of multiple
      longs so we need to build a separate array for each possible
      guint */
@@ -111,7 +111,7 @@ _cogl_parse_debug_string_for_keys (const char *value,
            int_num < sizeof (unsigned long) / sizeof (unsigned int);
            int_num++)
         {
-          UDebugKey keys_for_int[sizeof (unsigned int) * 8];
+          CDebugKey keys_for_int[sizeof (unsigned int) * 8];
           int nkeys_for_int = 0;
 
           for (key_num = 0; key_num < nkeys; key_num++)
@@ -134,7 +134,7 @@ _cogl_parse_debug_string_for_keys (const char *value,
           if (nkeys_for_int > 0)
             {
               unsigned long mask =
-                ((unsigned long) u_parse_debug_string (value,
+                ((unsigned long) c_parse_debug_string (value,
                                                        keys_for_int,
                                                        nkeys_for_int)) <<
                 (int_num * sizeof (unsigned int) * 8);
@@ -156,7 +156,7 @@ _cogl_parse_debug_string (const char *value,
   if (ignore_help && strcmp (value, "help") == 0)
     return;
 
-  /* We don't want to let u_parse_debug_string handle "all" because
+  /* We don't want to let c_parse_debug_string handle "all" because
    * literally enabling all the debug options wouldn't be useful to
    * anyone; instead the all option enables all non behavioural
    * options.
@@ -171,20 +171,20 @@ _cogl_parse_debug_string (const char *value,
         else
           COGL_DEBUG_CLEAR_FLAG (cogl_log_debug_keys[i].value);
     }
-  else if (u_ascii_strcasecmp (value, "help") == 0)
+  else if (c_ascii_strcasecmp (value, "help") == 0)
     {
-      u_printerr ("\n\n%28s\n", _("Supported debug values:"));
+      c_printerr ("\n\n%28s\n", _("Supported debug values:"));
 #define OPT(MASK_NAME, GROUP, NAME, NAME_FORMATTED, DESCRIPTION) \
-      u_printerr ("%28s %s\n", NAME ":", _(DESCRIPTION));
+      c_printerr ("%28s %s\n", NAME ":", _(DESCRIPTION));
 #include "cogl-debug-options.h"
-      u_printerr ("\n%28s\n", _("Special debug values:"));
+      c_printerr ("\n%28s\n", _("Special debug values:"));
       OPT (IGNORED, "ignored", "all", "ignored", \
            N_("Enables all non-behavioural debug options"));
       OPT (IGNORED, "ignored", "verbose", "ignored", \
            N_("Enables all non-behavioural debug options"));
 #undef OPT
 
-      u_printerr ("\n"
+      c_printerr ("\n"
                   "%28s\n"
                   " COGL_DISABLE_GL_EXTENSIONS: %s\n"
                   "   COGL_OVERRIDE_GL_VERSION: %s\n",
@@ -213,7 +213,7 @@ _cogl_debug_check_environment (void)
 {
   const char *env_string;
 
-  env_string = u_getenv ("COGL_DEBUG");
+  env_string = c_getenv ("COGL_DEBUG");
   if (env_string != NULL)
     {
       _cogl_parse_debug_string (env_string,
@@ -222,7 +222,7 @@ _cogl_debug_check_environment (void)
       env_string = NULL;
     }
 
-  env_string = u_getenv ("COGL_NO_DEBUG");
+  env_string = c_getenv ("COGL_NO_DEBUG");
   if (env_string != NULL)
     {
       _cogl_parse_debug_string (env_string,

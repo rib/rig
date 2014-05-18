@@ -43,7 +43,7 @@ struct _CoglAtlasSet
   CoglObject _parent;
 
   CoglContext *context;
-  USList *atlases;
+  CSList *atlases;
 
   CoglTextureComponents components;
   CoglPixelFormat internal_format;

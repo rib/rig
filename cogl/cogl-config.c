@@ -91,7 +91,7 @@ _cogl_config_process (GKeyFile *key_file)
       g_free (value);
     }
 
-  for (i = 0; i < U_N_ELEMENTS (cogl_config_string_options); i++)
+  for (i = 0; i < C_N_ELEMENTS (cogl_config_string_options); i++)
     {
       const char *conf_name = cogl_config_string_options[i].conf_name;
       char **variable = cogl_config_string_options[i].variable;

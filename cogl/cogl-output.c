@@ -45,8 +45,8 @@ _cogl_output_new (const char *name)
 {
   CoglOutput *output;
 
-  output = u_slice_new0 (CoglOutput);
-  output->name = u_strdup (name);
+  output = c_slice_new0 (CoglOutput);
+  output->name = c_strdup (name);
 
   return _cogl_output_object_new (output);
 }
@@ -54,18 +54,18 @@ _cogl_output_new (const char *name)
 static void
 _cogl_output_free (CoglOutput *output)
 {
-  u_free (output->name);
+  c_free (output->name);
 
-  u_slice_free (CoglOutput, output);
+  c_slice_free (CoglOutput, output);
 }
 
 CoglBool
 _cogl_output_values_equal (CoglOutput *output,
                            CoglOutput *other)
 {
-  return memcmp ((const char *)output + U_STRUCT_OFFSET (CoglOutput, x),
-                 (const char *)other + U_STRUCT_OFFSET (CoglOutput, x),
-                 sizeof (CoglOutput) - U_STRUCT_OFFSET (CoglOutput, x)) == 0;
+  return memcmp ((const char *)output + C_STRUCT_OFFSET (CoglOutput, x),
+                 (const char *)other + C_STRUCT_OFFSET (CoglOutput, x),
+                 sizeof (CoglOutput) - C_STRUCT_OFFSET (CoglOutput, x)) == 0;
 }
 
 int

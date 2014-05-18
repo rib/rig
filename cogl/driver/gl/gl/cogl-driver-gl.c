@@ -259,13 +259,13 @@ _cogl_driver_pixel_format_to_gl (CoglContext *context,
       break;
 
     case COGL_PIXEL_FORMAT_ANY:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
       break;
     }
 
   /* All of the pixel formats are handled above so if this hits then
      we've been given an invalid pixel format */
-  u_assert (glformat != 0);
+  c_assert (glformat != 0);
 
   if (out_glintformat != NULL)
     *out_glintformat = glintformat;
@@ -403,9 +403,9 @@ _cogl_driver_update_features (CoglContext *ctx,
   if (!check_gl_version (ctx, gl_extensions, error))
     return FALSE;
 
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WINSYS)))
     {
-      char *all_extensions = u_strjoinv (" ", gl_extensions);
+      char *all_extensions = c_strjoinv (" ", gl_extensions);
 
       COGL_NOTE (WINSYS,
                  "Checking features\n"
@@ -418,12 +418,12 @@ _cogl_driver_update_features (CoglContext *ctx,
                  _cogl_context_get_gl_version (ctx),
                  all_extensions);
 
-      u_free (all_extensions);
+      c_free (all_extensions);
     }
 
   _cogl_get_gl_version (ctx, &gl_major, &gl_minor);
 
-  _cogl_gpu_info_init (ctx, &ctx->gpu);
+  _cogl_gpc_info_init (ctx, &ctx->gpu);
 
   ctx->glsl_major = 1;
   ctx->glsl_minor = 1;
@@ -637,10 +637,10 @@ _cogl_driver_update_features (CoglContext *ctx,
                     TRUE);
 
   /* Cache features */
-  for (i = 0; i < U_N_ELEMENTS (private_features); i++)
+  for (i = 0; i < C_N_ELEMENTS (private_features); i++)
     ctx->private_features[i] |= private_features[i];
 
-  u_strfreev (gl_extensions);
+  c_strfreev (gl_extensions);
 
   if (!COGL_FLAGS_GET (private_features, COGL_PRIVATE_FEATURE_ALPHA_TEXTURES) &&
       !COGL_FLAGS_GET (private_features, COGL_PRIVATE_FEATURE_TEXTURE_SWIZZLE))

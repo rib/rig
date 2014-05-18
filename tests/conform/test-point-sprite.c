@@ -169,7 +169,7 @@ do_test (CoglBool check_orientation,
                            0x0000ffff);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 
 void

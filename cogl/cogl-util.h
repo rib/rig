@@ -31,7 +31,7 @@
 #ifndef __COGL_UTIL_H
 #define __COGL_UTIL_H
 
-#include <ulib.h>
+#include <clib.h>
 #include <math.h>
 
 #include <cogl/cogl-defines.h>
@@ -198,8 +198,8 @@ _cogl_util_popcountl (unsigned long num)
 #endif /* COGL_UTIL_HAVE_BUILTIN_POPCOUNTL */
 
 #ifdef COGL_HAS_GLIB_SUPPORT
-#define _COGL_RETURN_IF_FAIL(EXPR) u_return_if_fail(EXPR)
-#define _COGL_RETURN_VAL_IF_FAIL(EXPR, VAL) u_return_val_if_fail(EXPR, VAL)
+#define _COGL_RETURN_IF_FAIL(EXPR) c_return_if_fail(EXPR)
+#define _COGL_RETURN_VAL_IF_FAIL(EXPR, VAL) c_return_val_if_fail(EXPR, VAL)
 #else
 #ifdef COGL_ENABLE_DEBUG
 #define _COGL_RETURN_START do {
@@ -243,7 +243,7 @@ _cogl_util_popcountl (unsigned long num)
  */
 CoglPixelFormat
 _cogl_util_pixel_format_from_masks (unsigned long r_mask,
-                                    unsigned long u_mask,
+                                    unsigned long c_mask,
                                     unsigned long b_mask,
                                     int depth, int bpp,
                                     int byte_order);

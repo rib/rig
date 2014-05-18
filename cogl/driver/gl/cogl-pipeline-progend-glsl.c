@@ -113,7 +113,7 @@ typedef struct
   GLuint program;
 
   unsigned long dirty_builtin_uniforms;
-  GLint builtin_uniform_locations[U_N_ELEMENTS (builtin_uniforms)];
+  GLint builtin_uniform_locations[C_N_ELEMENTS (builtin_uniforms)];
 
   GLint modelview_uniform;
   GLint projection_uniform;
@@ -129,10 +129,10 @@ typedef struct
   /* Array of GL uniform locations indexed by Cogl's uniform
      location. We are careful only to allocated this array if a custom
      uniform is actually set */
-  UArray *uniform_locations;
+  CArray *uniform_locations;
 
   /* Array of attribute locations. */
-  UArray *attribute_locations;
+  CArray *attribute_locations;
 
   /* The 'flip' uniform is used to flip the geometry upside-down when
      the framebuffer requires it only when there are vertex
@@ -182,25 +182,25 @@ _cogl_pipeline_progend_glsl_get_attrib_location (CoglPipeline *pipeline,
   _COGL_RETURN_VAL_IF_FAIL (program_state != NULL, -1);
   _COGL_RETURN_VAL_IF_FAIL (program_state->program != 0, -1);
 
-  if (U_UNLIKELY (program_state->attribute_locations == NULL))
+  if (C_UNLIKELY (program_state->attribute_locations == NULL))
     program_state->attribute_locations =
-      u_array_new (FALSE, FALSE, sizeof (int));
+      c_array_new (FALSE, FALSE, sizeof (int));
 
-  if (U_UNLIKELY (program_state->attribute_locations->len <= name_index))
+  if (C_UNLIKELY (program_state->attribute_locations->len <= name_index))
     {
       int i = program_state->attribute_locations->len;
-      u_array_set_size (program_state->attribute_locations, name_index + 1);
+      c_array_set_size (program_state->attribute_locations, name_index + 1);
       for (; i < program_state->attribute_locations->len; i++)
-        u_array_index (program_state->attribute_locations, int, i)
+        c_array_index (program_state->attribute_locations, int, i)
           = ATTRIBUTE_LOCATION_UNKNOWN;
     }
 
-  locations = &u_array_index (program_state->attribute_locations, int, 0);
+  locations = &c_array_index (program_state->attribute_locations, int, 0);
 
   if (locations[name_index] == ATTRIBUTE_LOCATION_UNKNOWN)
     {
       CoglAttributeNameState *name_state =
-        u_array_index (ctx->attribute_name_index_map,
+        c_array_index (ctx->attribute_name_index_map,
                        CoglAttributeNameState *, name_index);
 
       _COGL_RETURN_VAL_IF_FAIL (name_state != NULL, 0);
@@ -218,7 +218,7 @@ clear_attribute_cache (CoglPipelineProgramState *program_state)
 {
   if (program_state->attribute_locations)
     {
-      u_array_free (program_state->attribute_locations, TRUE);
+      c_array_free (program_state->attribute_locations, TRUE);
       program_state->attribute_locations = NULL;
     }
 }
@@ -239,11 +239,11 @@ program_state_new (CoglContext *ctx,
 {
   CoglPipelineProgramState *program_state;
 
-  program_state = u_slice_new (CoglPipelineProgramState);
+  program_state = c_slice_new (CoglPipelineProgramState);
   program_state->ctx = ctx;
   program_state->ref_count = 1;
   program_state->program = 0;
-  program_state->unit_state = u_new (UnitState, n_layers);
+  program_state->unit_state = c_new (UnitState, n_layers);
   program_state->uniform_locations = NULL;
   program_state->attribute_locations = NULL;
   program_state->cache_entry = cache_entry;
@@ -282,12 +282,12 @@ destroy_program_state (void *user_data,
       if (program_state->program)
         GE( ctx, glDeleteProgram (program_state->program) );
 
-      u_free (program_state->unit_state);
+      c_free (program_state->unit_state);
 
       if (program_state->uniform_locations)
-        u_array_free (program_state->uniform_locations, TRUE);
+        c_array_free (program_state->uniform_locations, TRUE);
 
-      u_slice_free (CoglPipelineProgramState, program_state);
+      c_slice_free (CoglPipelineProgramState, program_state);
     }
 }
 
@@ -338,15 +338,15 @@ link_program (CoglContext *ctx, GLint gl_program)
 
       GE( ctx, glGetProgramiv (gl_program, GL_INFO_LOG_LENGTH, &log_length) );
 
-      log = u_malloc (log_length);
+      log = c_malloc (log_length);
 
       GE( ctx, glGetProgramInfoLog (gl_program, log_length,
                                     &out_log_length, log) );
 
-      u_warning ("Failed to link GLSL program:\n%.*s\n",
+      c_warning ("Failed to link GLSL program:\n%.*s\n",
                  log_length, log);
 
-      u_free (log);
+      c_free (log);
     }
 }
 
@@ -372,8 +372,8 @@ get_uniform_cb (CoglPipeline *pipeline,
 
   /* We can reuse the source buffer to create the uniform name because
      the program has now been linked */
-  u_string_set_size (ctx->codegen_source_buffer, 0);
-  u_string_append_printf (ctx->codegen_source_buffer,
+  c_string_set_size (ctx->codegen_source_buffer, 0);
+  c_string_append_printf (ctx->codegen_source_buffer,
                           "cogl_sampler%i", layer_index);
 
   GE_RET( uniform_location,
@@ -387,8 +387,8 @@ get_uniform_cb (CoglPipeline *pipeline,
   if (uniform_location != -1)
     GE( ctx, glUniform1i (uniform_location, state->unit) );
 
-  u_string_set_size (ctx->codegen_source_buffer, 0);
-  u_string_append_printf (ctx->codegen_source_buffer,
+  c_string_set_size (ctx->codegen_source_buffer, 0);
+  c_string_append_printf (ctx->codegen_source_buffer,
                           "_cogl_layer_constant_%i", layer_index);
 
   GE_RET( uniform_location,
@@ -438,7 +438,7 @@ update_builtin_uniforms (CoglContext *context,
   if (program_state->dirty_builtin_uniforms == 0)
     return;
 
-  for (i = 0; i < U_N_ELEMENTS (builtin_uniforms); i++)
+  for (i = 0; i < C_N_ELEMENTS (builtin_uniforms); i++)
     {
       if (!_cogl_has_private_feature (context,
                                       builtin_uniforms[i].feature_replacement) &&
@@ -473,12 +473,12 @@ flush_uniform_cb (int uniform_num, void *user_data)
 
   if (COGL_FLAGS_GET (data->uniform_differences, uniform_num))
     {
-      UArray *uniform_locations;
+      CArray *uniform_locations;
       GLint uniform_location;
 
       if (data->program_state->uniform_locations == NULL)
         data->program_state->uniform_locations =
-          u_array_new (FALSE, FALSE, sizeof (GLint));
+          c_array_new (FALSE, FALSE, sizeof (GLint));
 
       uniform_locations = data->program_state->uniform_locations;
 
@@ -486,27 +486,27 @@ flush_uniform_cb (int uniform_num, void *user_data)
         {
           unsigned int old_len = uniform_locations->len;
 
-          u_array_set_size (uniform_locations, uniform_num + 1);
+          c_array_set_size (uniform_locations, uniform_num + 1);
 
           while (old_len <= uniform_num)
             {
-              u_array_index (uniform_locations, GLint, old_len) =
+              c_array_index (uniform_locations, GLint, old_len) =
                 UNIFORM_LOCATION_UNKNOWN;
               old_len++;
             }
         }
 
-      uniform_location = u_array_index (uniform_locations, GLint, uniform_num);
+      uniform_location = c_array_index (uniform_locations, GLint, uniform_num);
 
       if (uniform_location == UNIFORM_LOCATION_UNKNOWN)
         {
           const char *uniform_name =
-            u_ptr_array_index (data->ctx->uniform_names, uniform_num);
+            c_ptr_array_index (data->ctx->uniform_names, uniform_num);
 
           uniform_location =
             data->ctx->glGetUniformLocation (data->program_state->program,
                                              uniform_name);
-          u_array_index (uniform_locations, GLint, uniform_num) =
+          c_array_index (uniform_locations, GLint, uniform_num) =
             uniform_location;
         }
 
@@ -546,7 +546,7 @@ _cogl_pipeline_progend_glsl_flush_uniforms (CoglContext *ctx,
 
   n_uniform_longs = COGL_FLAGS_N_LONGS_FOR_SIZE (ctx->n_uniform_names);
 
-  data.uniform_differences = u_newa (unsigned long, n_uniform_longs);
+  data.uniform_differences = c_newa (unsigned long, n_uniform_longs);
 
   /* Try to find a common ancestor for the values that were already
      flushed on the pipeline that this program state was last used for
@@ -559,7 +559,7 @@ _cogl_pipeline_progend_glsl_flush_uniforms (CoglContext *ctx,
           /* The program has changed so all of the uniform locations
              are invalid */
           if (program_state->uniform_locations)
-            u_array_set_size (program_state->uniform_locations, 0);
+            c_array_set_size (program_state->uniform_locations, 0);
         }
 
       /* We need to flush everything so mark all of the uniforms as
@@ -662,7 +662,7 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
         {
           /* Check if there is already a similar cached pipeline whose
              program state we can share */
-          if (U_LIKELY (!(COGL_DEBUG_ENABLED
+          if (C_LIKELY (!(COGL_DEBUG_ENABLED
                           (COGL_DEBUG_DISABLE_PROGRAM_CACHES))))
             {
               cache_entry =
@@ -751,7 +751,7 @@ _cogl_pipeline_progend_glsl_end (CoglPipeline *pipeline,
 
       clear_flushed_matrix_stacks (program_state);
 
-      for (i = 0; i < U_N_ELEMENTS (builtin_uniforms); i++)
+      for (i = 0; i < C_N_ELEMENTS (builtin_uniforms); i++)
         if (!_cogl_has_private_feature
             (ctx, builtin_uniforms[i].feature_replacement))
           GE_RET( program_state->builtin_uniform_locations[i], ctx,
@@ -804,7 +804,7 @@ _cogl_pipeline_progend_glsl_pre_change_notify (CoglPipeline *pipeline,
     {
       int i;
 
-      for (i = 0; i < U_N_ELEMENTS (builtin_uniforms); i++)
+      for (i = 0; i < C_N_ELEMENTS (builtin_uniforms); i++)
         if (!_cogl_has_private_feature
             (ctx, builtin_uniforms[i].feature_replacement) &&
             (change & builtin_uniforms[i].change))

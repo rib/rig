@@ -114,7 +114,7 @@ typedef struct _CoglTexturePixmapGLX
   static const CoglFeatureFunction                                      \
   cogl_glx_feature_ ## name ## _funcs[] = {
 #define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args)                   \
-  { G_STRINGIFY (name), U_STRUCT_OFFSET (CoglGLXRenderer, name) },
+  { G_STRINGIFY (name), C_STRUCT_OFFSET (CoglGLXRenderer, name) },
 #define COGL_WINSYS_FEATURE_END()               \
   { NULL, 0 },                                  \
     };
@@ -157,7 +157,7 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
 static CoglOnscreen *
 find_onscreen_for_xid (CoglContext *context, uint32_t xid)
 {
-  UList *l;
+  CList *l;
 
   for (l = context->framebuffers; l; l = l->next)
     {
@@ -247,7 +247,7 @@ ust_to_nanoseconds (CoglRenderer *renderer,
   switch (glx_renderer->ust_type)
     {
     case COGL_GLX_UST_IS_UNKNOWN:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
       break;
     case COGL_GLX_UST_IS_GETTIMEOFDAY:
     case COGL_GLX_UST_IS_MONOTONIC_TIME:
@@ -301,7 +301,7 @@ _cogl_winsys_get_clock_time (CoglContext *context)
       }
     }
 
-  u_assert_not_reached();
+  c_assert_not_reached();
   return 0;
 }
 
@@ -326,14 +326,14 @@ flush_pending_notifications_cb (void *data,
 
       if (pending_sync_notify)
         {
-          CoglFrameInfo *info = u_queue_peek_head (&onscreen->pending_frame_infos);
+          CoglFrameInfo *info = c_queue_peek_head (&onscreen->pending_frame_infos);
 
           _cogl_onscreen_notify_frame_sync (onscreen, info);
         }
 
       if (pending_complete_notify)
         {
-          CoglFrameInfo *info = u_queue_pop_head (&onscreen->pending_frame_infos);
+          CoglFrameInfo *info = c_queue_pop_head (&onscreen->pending_frame_infos);
 
           _cogl_onscreen_notify_complete (onscreen, info);
 
@@ -360,7 +360,7 @@ flush_pending_notifications_idle (void *user_data)
   _cogl_closure_disconnect (glx_renderer->flush_notifications_idle);
   glx_renderer->flush_notifications_idle = NULL;
 
-  u_list_foreach (context->framebuffers,
+  c_list_foreach (context->framebuffers,
                   flush_pending_notifications_cb,
                   NULL);
 }
@@ -428,7 +428,7 @@ notify_swap_buffers (CoglContext *context, GLXBufferSwapComplete *swap_event)
 
   if (swap_event->ust != 0)
     {
-      CoglFrameInfo *info = u_queue_peek_head (&onscreen->pending_frame_infos);
+      CoglFrameInfo *info = c_queue_peek_head (&onscreen->pending_frame_infos);
 
       info->presentation_time =
         ust_to_nanoseconds (context->display->renderer,
@@ -590,15 +590,15 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
   _cogl_xlib_renderer_disconnect (renderer);
 
   if (glx_renderer->libgl_module)
-    u_module_close (glx_renderer->libgl_module);
+    c_module_close (glx_renderer->libgl_module);
 
-  u_slice_free (CoglGLXRenderer, renderer->winsys);
+  c_slice_free (CoglGLXRenderer, renderer->winsys);
 }
 
 static CoglBool
 update_all_outputs (CoglRenderer *renderer)
 {
-  UList *l;
+  CList *l;
 
   _COGL_GET_CONTEXT (context, FALSE);
 
@@ -635,17 +635,17 @@ resolve_core_glx_functions (CoglRenderer *renderer,
 
   glx_renderer = renderer->winsys;
 
-  if (!u_module_symbol (glx_renderer->libgl_module, "glXQueryExtension",
+  if (!c_module_symbol (glx_renderer->libgl_module, "glXQueryExtension",
                         (void **) &glx_renderer->glXQueryExtension) ||
-      !u_module_symbol (glx_renderer->libgl_module, "glXQueryVersion",
+      !c_module_symbol (glx_renderer->libgl_module, "glXQueryVersion",
                         (void **) &glx_renderer->glXQueryVersion) ||
-      !u_module_symbol (glx_renderer->libgl_module, "glXQueryExtensionsString",
+      !c_module_symbol (glx_renderer->libgl_module, "glXQueryExtensionsString",
                         (void **) &glx_renderer->glXQueryExtensionsString) ||
-      (!u_module_symbol (glx_renderer->libgl_module, "glXGetProcAddress",
+      (!c_module_symbol (glx_renderer->libgl_module, "glXGetProcAddress",
                          (void **) &glx_renderer->glXGetProcAddress) &&
-       !u_module_symbol (glx_renderer->libgl_module, "glXGetProcAddressARB",
+       !c_module_symbol (glx_renderer->libgl_module, "glXGetProcAddressARB",
                          (void **) &glx_renderer->glXGetProcAddress)) ||
-       !u_module_symbol (glx_renderer->libgl_module, "glXQueryDrawable",
+       !c_module_symbol (glx_renderer->libgl_module, "glXQueryDrawable",
                          (void **) &glx_renderer->glXQueryDrawable))
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
@@ -675,9 +675,9 @@ update_base_winsys_features (CoglRenderer *renderer)
 
   COGL_NOTE (WINSYS, "  GLX Extensions: %s", glx_extensions);
 
-  split_extensions = u_strsplit (glx_extensions, " ", 0 /* max_tokens */);
+  split_extensions = c_strsplit (glx_extensions, " ", 0 /* max_tokens */);
 
-  for (i = 0; i < U_N_ELEMENTS (winsys_feature_data); i++)
+  for (i = 0; i < C_N_ELEMENTS (winsys_feature_data); i++)
     if (_cogl_feature_check (renderer,
                              "GLX", winsys_feature_data + i,
                              glx_renderer->glx_major,
@@ -692,7 +692,7 @@ update_base_winsys_features (CoglRenderer *renderer)
                           TRUE);
       }
 
-  u_strfreev (split_extensions);
+  c_strfreev (split_extensions);
 
   /* Note: the GLX_SGI_video_sync spec explicitly states this extension
    * only works for direct contexts. */
@@ -723,7 +723,7 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   CoglGLXRenderer *glx_renderer;
   CoglXlibRenderer *xlib_renderer;
 
-  renderer->winsys = u_slice_new0 (CoglGLXRenderer);
+  renderer->winsys = c_slice_new0 (CoglGLXRenderer);
 
   glx_renderer = renderer->winsys;
   xlib_renderer = _cogl_xlib_renderer_get_data (renderer);
@@ -740,8 +740,8 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
       goto error;
     }
 
-  glx_renderer->libgl_module = u_module_open (COGL_GL_LIBNAME,
-                                              U_MODULE_BIND_LAZY);
+  glx_renderer->libgl_module = c_module_open (COGL_GL_LIBNAME,
+                                              C_MODULE_BIND_LAZY);
 
   if (glx_renderer->libgl_module == NULL)
     {
@@ -901,7 +901,7 @@ glx_attributes_from_framebuffer_config (CoglDisplay *display,
 
   attributes[i++] = None;
 
-  u_assert (i < MAX_GLX_CONFIG_ATTRIBS);
+  c_assert (i < MAX_GLX_CONFIG_ATTRIBS);
 }
 
 /* It seems the GLX spec never defined an invalid GLXFBConfig that
@@ -1173,7 +1173,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
       glx_display->dummy_xwin = None;
     }
 
-  u_slice_free (CoglGLXDisplay, display->winsys);
+  c_slice_free (CoglGLXDisplay, display->winsys);
   display->winsys = NULL;
 }
 
@@ -1186,7 +1186,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
 
-  glx_display = u_slice_new0 (CoglGLXDisplay);
+  glx_display = c_slice_new0 (CoglGLXDisplay);
   display->winsys = glx_display;
 
   if (!create_context (display, error))
@@ -1205,7 +1205,7 @@ error:
 static CoglBool
 _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
-  context->winsys = u_new0 (CoglContextGLX, 1);
+  context->winsys = c_new0 (CoglContextGLX, 1);
 
   cogl_xlib_renderer_add_filter (context->display->renderer,
                                  glx_event_filter_cb,
@@ -1219,7 +1219,7 @@ _cogl_winsys_context_deinit (CoglContext *context)
   cogl_xlib_renderer_remove_filter (context->display->renderer,
                                     glx_event_filter_cb,
                                     context);
-  u_free (context->winsys);
+  c_free (context->winsys);
 }
 
 static CoglBool
@@ -1262,7 +1262,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
                                                        fbconfig,
                                                        GLX_SAMPLES,
                                                        &samples);
-      u_return_val_if_fail (status == Success, TRUE);
+      c_return_val_if_fail (status == Success, TRUE);
       framebuffer->samples_per_pixel = samples;
     }
 
@@ -1374,7 +1374,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
         }
     }
 
-  onscreen->winsys = u_slice_new0 (CoglOnscreenGLX);
+  onscreen->winsys = c_slice_new0 (CoglOnscreenGLX);
   xlib_onscreen = onscreen->winsys;
   glx_onscreen = onscreen->winsys;
 
@@ -1480,7 +1480,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
 
   _cogl_xlib_renderer_untrap_errors (context->display->renderer, &old_state);
 
-  u_slice_free (CoglOnscreenGLX, onscreen->winsys);
+  c_slice_free (CoglOnscreenGLX, onscreen->winsys);
   onscreen->winsys = NULL;
 }
 
@@ -1554,7 +1554,7 @@ _cogl_winsys_onscreen_bind (CoglOnscreen *onscreen)
   if (_cogl_xlib_renderer_untrap_errors (context->display->renderer,
                                          &old_state))
     {
-      u_warning ("X Error received while making drawable 0x%08lX current",
+      c_warning ("X Error received while making drawable 0x%08lX current",
                  drawable);
       return;
     }
@@ -1585,7 +1585,7 @@ _cogl_winsys_wait_for_vblank (CoglOnscreen *onscreen)
   if (glx_renderer->glXWaitForMsc ||
       glx_renderer->glXGetVideoSync)
     {
-      CoglFrameInfo *info = u_queue_peek_tail (&onscreen->pending_frame_infos);
+      CoglFrameInfo *info = c_queue_peek_tail (&onscreen->pending_frame_infos);
 
       if (glx_renderer->glXWaitForMsc)
         {
@@ -1662,7 +1662,7 @@ static void
 set_frame_info_output (CoglOnscreen *onscreen,
                        CoglOutput *output)
 {
-  CoglFrameInfo *info = u_queue_peek_tail (&onscreen->pending_frame_infos);
+  CoglFrameInfo *info = c_queue_peek_tail (&onscreen->pending_frame_infos);
 
   info->output = output;
 
@@ -1704,7 +1704,7 @@ _cogl_winsys_onscreen_swap_region (CoglOnscreen *onscreen,
 
   int framebuffer_width =  cogl_framebuffer_get_width (framebuffer);
   int framebuffer_height =  cogl_framebuffer_get_height (framebuffer);
-  int *rectangles = u_alloca (sizeof (int) * n_rectangles * 4);
+  int *rectangles = c_alloca (sizeof (int) * n_rectangles * 4);
   int i;
 
   /* glXCopySubBuffer expects rectangles relative to the bottom left corner but
@@ -2247,19 +2247,19 @@ should_use_rectangle (CoglContext *context)
             COGL_WINSYS_RECTANGLE_STATE_DISABLE :
             COGL_WINSYS_RECTANGLE_STATE_ENABLE;
 
-          if ((rect_env = u_getenv ("COGL_PIXMAP_TEXTURE_RECTANGLE")) ||
+          if ((rect_env = c_getenv ("COGL_PIXMAP_TEXTURE_RECTANGLE")) ||
               /* For compatibility, we'll also look at the old Clutter
                  environment variable */
-              (rect_env = u_getenv ("CLUTTER_PIXMAP_TEXTURE_RECTANGLE")))
+              (rect_env = c_getenv ("CLUTTER_PIXMAP_TEXTURE_RECTANGLE")))
             {
-              if (u_ascii_strcasecmp (rect_env, "force") == 0)
+              if (c_ascii_strcasecmp (rect_env, "force") == 0)
                 context->rectangle_state =
                   COGL_WINSYS_RECTANGLE_STATE_ENABLE;
-              else if (u_ascii_strcasecmp (rect_env, "disable") == 0)
+              else if (c_ascii_strcasecmp (rect_env, "disable") == 0)
                 context->rectangle_state =
                   COGL_WINSYS_RECTANGLE_STATE_DISABLE;
-              else if (u_ascii_strcasecmp (rect_env, "allow"))
-                u_warning ("Unknown value for COGL_PIXMAP_TEXTURE_RECTANGLE, "
+              else if (c_ascii_strcasecmp (rect_env, "allow"))
+                c_warning ("Unknown value for COGL_PIXMAP_TEXTURE_RECTANGLE, "
                            "should be 'force' or 'disable'");
             }
         }
@@ -2380,7 +2380,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
       return FALSE;
     }
 
-  glx_tex_pixmap = u_new0 (CoglTexturePixmapGLX, 1);
+  glx_tex_pixmap = c_new0 (CoglTexturePixmapGLX, 1);
 
   glx_tex_pixmap->glx_pixmap = None;
   glx_tex_pixmap->can_mipmap = FALSE;
@@ -2396,7 +2396,7 @@ _cogl_winsys_texture_pixmap_x11_create (CoglTexturePixmapX11 *tex_pixmap)
   if (!try_create_glx_pixmap (ctx, tex_pixmap, FALSE))
     {
       tex_pixmap->winsys = NULL;
-      u_free (glx_tex_pixmap);
+      c_free (glx_tex_pixmap);
       return FALSE;
     }
 
@@ -2463,7 +2463,7 @@ _cogl_winsys_texture_pixmap_x11_free (CoglTexturePixmapX11 *tex_pixmap)
     cogl_object_unref (glx_tex_pixmap->glx_tex);
 
   tex_pixmap->winsys = NULL;
-  u_free (glx_tex_pixmap);
+  c_free (glx_tex_pixmap);
 }
 
 static CoglBool

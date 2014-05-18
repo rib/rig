@@ -91,7 +91,7 @@ _cogl_bitmap_from_file (CoglContext *ctx,
       _cogl_set_error_literal (error,
                                COGL_BITMAP_ERROR,
                                COGL_BITMAP_ERROR_FAILED,
-                               u_strerror (save_errno));
+                               c_strerror (save_errno));
       return NULL;
     }
 
@@ -226,12 +226,12 @@ _cogl_bitmap_from_file (CoglContext *ctx,
 
   /* According to current docs this should be true and so
    * the translation to cogl pixel format below valid */
-  u_assert (bits_per_sample == 8);
+  c_assert (bits_per_sample == 8);
 
   if (has_alpha)
-    u_assert (n_channels == 4);
+    c_assert (n_channels == 4);
   else
-    u_assert (n_channels == 3);
+    c_assert (n_channels == 3);
 
   /* Translate to cogl pixel format */
   switch (color_space)
@@ -379,7 +379,7 @@ _cogl_bitmap_new_from_stb_pixels (CoglContext *ctx,
       break;
 
     default:
-      u_warn_if_reached ();
+      c_warn_if_reached ();
       return NULL;
     }
 

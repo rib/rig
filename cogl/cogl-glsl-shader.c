@@ -43,7 +43,7 @@
 
 #include <string.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 void
 _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
@@ -56,15 +56,15 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
   const char *vertex_boilerplate;
   const char *fragment_boilerplate;
 
-  const char **strings = u_alloca (sizeof (char *) * (count_in + 6));
-  GLint *lengths = u_alloca (sizeof (GLint) * (count_in + 6));
+  const char **strings = c_alloca (sizeof (char *) * (count_in + 6));
+  GLint *lengths = c_alloca (sizeof (GLint) * (count_in + 6));
   char *version_string;
   int count = 0;
 
   vertex_boilerplate = _COGL_VERTEX_SHADER_BOILERPLATE;
   fragment_boilerplate = _COGL_FRAGMENT_SHADER_BOILERPLATE;
 
-  version_string = u_strdup_printf ("#version %i\n\n",
+  version_string = c_strdup_printf ("#version %i\n\n",
                                     ctx->glsl_version_to_use);
 
   strings[count] = version_string;
@@ -150,28 +150,28 @@ _cogl_glsl_shader_set_source_with_boilerplate (CoglContext *ctx,
     }
   count += count_in;
 
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_SHOW_SOURCE)))
     {
-      UString *buf = u_string_new (NULL);
+      CString *buf = c_string_new (NULL);
       int i;
 
-      u_string_append_printf (buf,
+      c_string_append_printf (buf,
                               "%s shader:\n",
                               shader_gl_type == GL_VERTEX_SHADER ?
                               "vertex" : "fragment");
       for (i = 0; i < count; i++)
         if (lengths[i] != -1)
-          u_string_append_len (buf, strings[i], lengths[i]);
+          c_string_append_len (buf, strings[i], lengths[i]);
         else
-          u_string_append (buf, strings[i]);
+          c_string_append (buf, strings[i]);
 
-      u_message ("%s", buf->str);
+      c_message ("%s", buf->str);
 
-      u_string_free (buf, TRUE);
+      c_string_free (buf, TRUE);
     }
 
   GE( ctx, glShaderSource (shader_gl_handle, count,
                            (const char **) strings, lengths) );
 
-  u_free (version_string);
+  c_free (version_string);
 }

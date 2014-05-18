@@ -34,14 +34,14 @@
 #ifndef __COGL_MATRIX_PRIVATE_H
 #define __COGL_MATRIX_PRIVATE_H
 
-#include <ulib.h>
+#include <clib.h>
 
 COGL_BEGIN_DECLS
 
 #define _COGL_MATRIX_DEBUG_PRINT(MATRIX) \
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_MATRICES))) \
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_MATRICES))) \
     { \
-      u_print ("%s:\n", G_STRFUNC); \
+      c_print ("%s:\n", G_STRFUNC); \
       cogl_debug_matrix_print (MATRIX); \
     }
 

@@ -2,7 +2,7 @@
 
 #include <cogl/cogl.h>
 
-#include <ulib.h>
+#include <clib.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +11,7 @@
 
 /* A bit of sugar for adding new conformance tests */
 #define ADD_TEST(FUNC, REQUIREMENTS, KNOWN_FAIL_REQUIREMENTS)           \
-  U_STMT_START {                                                        \
+  C_STMT_START {                                                        \
     extern void FUNC (void);                                            \
     if (strcmp (#FUNC, argv[1]) == 0)                                   \
       {                                                                 \
@@ -20,7 +20,7 @@
         test_utils_fini ();                                             \
         exit (0);                                                       \
       }                                                                 \
-  } U_STMT_END
+  } C_STMT_END
 
 #define UNPORTED_TEST(FUNC)
 
@@ -31,7 +31,7 @@ main (int argc, char **argv)
 
   if (argc != 2)
     {
-      u_printerr ("usage %s UNIT_TEST\n", argv[0]);
+      c_printerr ("usage %s UNIT_TEST\n", argv[0]);
       exit (1);
     }
 
@@ -155,7 +155,7 @@ main (int argc, char **argv)
 
   ADD_TEST (test_texture_rg, TEST_REQUIREMENT_TEXTURE_RG, 0);
 
-  u_printerr ("Unknown test name \"%s\"\n", argv[1]);
+  c_printerr ("Unknown test name \"%s\"\n", argv[1]);
 
   return 1;
 }

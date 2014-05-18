@@ -38,7 +38,7 @@
 #include "cogl-object-private.h"
 #include "cogl-buffer-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 COGL_BEGIN_DECLS
 

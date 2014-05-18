@@ -207,6 +207,6 @@ test_path (void)
   validate_result ();
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

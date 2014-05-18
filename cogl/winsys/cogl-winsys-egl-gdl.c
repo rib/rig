@@ -67,7 +67,7 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
 
   eglTerminate (egl_renderer->edpy);
 
-  u_slice_free (CoglRendererEGL, egl_renderer);
+  c_slice_free (CoglRendererEGL, egl_renderer);
 }
 
 static CoglBool
@@ -79,10 +79,10 @@ _cogl_winsys_renderer_connect (CoglRenderer *renderer,
   gdl_ret_t rc = GDL_SUCCESS;
   gdl_display_info_t gdl_display_info;
 
-  renderer->winsys = u_slice_new0 (CoglRendererEGL);
+  renderer->winsys = c_slice_new0 (CoglRendererEGL);
   egl_renderer = renderer->winsys;
 
-  gdl_renderer = u_slice_new0 (CoglRendererGDL);
+  gdl_renderer = c_slice_new0 (CoglRendererGDL);
   egl_renderer->platform = gdl_renderer;
 
   egl_renderer->platform_vtable = &_cogl_winsys_egl_vtable;
@@ -255,7 +255,7 @@ _cogl_winsys_egl_display_setup (CoglDisplay *display,
   CoglDisplayEGL *egl_display = display->winsys;
   CoglDisplayGDL *gdl_display;
 
-  gdl_display = u_slice_new0 (CoglDisplayGDL);
+  gdl_display = c_slice_new0 (CoglDisplayGDL);
   egl_display->platform = gdl_display;
 
   if (!gdl_plane_init (display, error))
@@ -269,7 +269,7 @@ _cogl_winsys_egl_display_destroy (CoglDisplay *display)
 {
   CoglDisplayEGL *egl_display = display->winsys;
 
-  u_slice_free (CoglDisplayGDL, egl_display->platform);
+  c_slice_free (CoglDisplayGDL, egl_display->platform);
 }
 
 static void

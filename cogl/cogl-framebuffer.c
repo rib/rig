@@ -76,7 +76,7 @@ COGL_OBJECT_DEFINE_WITH_CODE (Offscreen, offscreen,
 uint32_t
 cogl_framebuffer_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-framebuffer-error-quark");
+  return c_quark_from_static_string ("cogl-framebuffer-error-quark");
 }
 
 CoglBool
@@ -159,7 +159,7 @@ _cogl_framebuffer_init (CoglFramebuffer *framebuffer,
    * we don't have to worry about retaining references to OpenGL
    * texture coordinates that may later become invalid.
    */
-  ctx->framebuffers = u_list_prepend (ctx->framebuffers, framebuffer);
+  ctx->framebuffers = c_list_prepend (ctx->framebuffers, framebuffer);
 }
 
 void
@@ -189,7 +189,7 @@ _cogl_framebuffer_free (CoglFramebuffer *framebuffer)
   if (ctx->viewport_scissor_workaround_framebuffer == framebuffer)
     ctx->viewport_scissor_workaround_framebuffer = NULL;
 
-  ctx->framebuffers = u_list_remove (ctx->framebuffers, framebuffer);
+  ctx->framebuffers = c_list_remove (ctx->framebuffers, framebuffer);
 
   if (ctx->current_draw_buffer == framebuffer)
     ctx->current_draw_buffer = NULL;
@@ -223,7 +223,7 @@ _cogl_framebuffer_clear_without_flush4f (CoglFramebuffer *framebuffer,
 
       if (!shown)
         {
-	  u_warning ("You should specify at least one auxiliary buffer "
+	  c_warning ("You should specify at least one auxiliary buffer "
                      "when calling cogl_framebuffer_clear");
         }
 
@@ -360,7 +360,7 @@ cogl_framebuffer_clear4f (CoglFramebuffer *framebuffer,
    * batches from the journal. It is reset here to increase the
    * chances of getting the same colours for each frame during an
    * animation */
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_RECTANGLES)) &&
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_RECTANGLES)) &&
       buffers & COGL_BUFFER_BIT_COLOR)
     {
       framebuffer->context->journal_rectangles_color = 1;
@@ -562,7 +562,7 @@ void
 _cogl_framebuffer_add_dependency (CoglFramebuffer *framebuffer,
                                   CoglFramebuffer *dependency)
 {
-  UList *l;
+  CList *l;
 
   for (l = framebuffer->deps; l; l = l->next)
     {
@@ -575,16 +575,16 @@ _cogl_framebuffer_add_dependency (CoglFramebuffer *framebuffer,
    * cogl_object_set_user_data or for pipeline children as a way to
    * avoid quite a lot of mid-scene micro allocations here... */
   framebuffer->deps =
-    u_list_prepend (framebuffer->deps, cogl_object_ref (dependency));
+    c_list_prepend (framebuffer->deps, cogl_object_ref (dependency));
 }
 
 void
 _cogl_framebuffer_remove_all_dependencies (CoglFramebuffer *framebuffer)
 {
-  UList *l;
+  CList *l;
   for (l = framebuffer->deps; l; l = l->next)
     cogl_object_unref (l->data);
-  u_list_free (framebuffer->deps);
+  c_list_free (framebuffer->deps);
   framebuffer->deps = NULL;
 }
 
@@ -603,7 +603,7 @@ _cogl_framebuffer_flush (CoglFramebuffer *framebuffer)
 void
 _cogl_framebuffer_flush_dependency_journals (CoglFramebuffer *framebuffer)
 {
-  UList *l;
+  CList *l;
   for (l = framebuffer->deps; l; l = l->next)
     _cogl_framebuffer_flush_journal (l->data);
   _cogl_framebuffer_remove_all_dependencies (framebuffer);
@@ -621,7 +621,7 @@ _cogl_offscreen_new_with_texture_full (CoglTexture *texture,
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_texture (texture), NULL);
 
-  offscreen = u_new0 (CoglOffscreen, 1);
+  offscreen = c_new0 (CoglOffscreen, 1);
   offscreen->texture = cogl_object_ref (texture);
   offscreen->texture_level = level;
   offscreen->create_flags = create_flags;
@@ -669,7 +669,7 @@ _cogl_offscreen_free (CoglOffscreen *offscreen)
   if (offscreen->depth_texture != NULL)
     cogl_object_unref (offscreen->depth_texture);
 
-  u_free (offscreen);
+  c_free (offscreen);
 }
 
 CoglBool
@@ -778,7 +778,7 @@ _cogl_framebuffer_compare_viewport_state (CoglFramebuffer *a,
        *
        * TODO: file a bug upstream!
        */
-      if (U_UNLIKELY (context->needs_viewport_scissor_workaround))
+      if (C_UNLIKELY (context->needs_viewport_scissor_workaround))
           differences |= COGL_FRAMEBUFFER_STATE_CLIP;
 
       return differences;
@@ -907,7 +907,7 @@ _cogl_framebuffer_compare (CoglFramebuffer *a,
             _cogl_framebuffer_compare_depth_write_state (a, b);
           break;
         default:
-          u_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
   COGL_FLAGS_FOREACH_END;
@@ -1169,7 +1169,7 @@ _cogl_framebuffer_try_fast_read_pixel (CoglFramebuffer *framebuffer,
   CoglBool found_intersection;
   CoglPixelFormat format;
 
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FAST_READ_PIXEL)))
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_FAST_READ_PIXEL)))
     return FALSE;
 
   if (source != COGL_READ_PIXELS_COLOR_BUFFER)
@@ -1782,7 +1782,7 @@ _cogl_framebuffer_unref (CoglFramebuffer *framebuffer)
       /* There should be at least two references - the one we are
          about to drop and the one held by the journal */
       if (ref_count < 2)
-        u_warning ("Inconsistent ref count on a framebuffer with journal "
+        c_warning ("Inconsistent ref count on a framebuffer with journal "
                    "entries.");
 
       if (ref_count == 2)
@@ -1812,7 +1812,7 @@ get_index (void *indices,
       return ((uint32_t *)indices)[_index];
     }
 
-  u_return_val_if_reached (0);
+  c_return_val_if_reached (0);
 }
 
 static void
@@ -1858,7 +1858,7 @@ get_line_count (CoglVerticesMode mode, int n_vertices)
     }
 #endif
 
-  u_return_val_if_reached (0);
+  c_return_val_if_reached (0);
 }
 
 static CoglIndices *
@@ -1897,7 +1897,7 @@ get_wire_line_indices (CoglContext *ctx,
   n_lines = get_line_count (mode, n_vertices_in);
 
   /* Note: we are using COGL_INDICES_TYPE_UNSIGNED_INT so 4 bytes per index. */
-  line_indices = u_malloc (4 * n_lines * 2);
+  line_indices = c_malloc (4 * n_lines * 2);
 
   pos = 0;
 
@@ -1966,7 +1966,7 @@ get_wire_line_indices (CoglContext *ctx,
                           line_indices,
                           *n_indices);
 
-  u_free (line_indices);
+  c_free (line_indices);
 
   return ret;
 }
@@ -2098,7 +2098,7 @@ _cogl_framebuffer_draw_attributes (CoglFramebuffer *framebuffer,
                                    CoglDrawFlags flags)
 {
 #ifdef COGL_ENABLE_DEBUG
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
                   (flags & COGL_DRAW_SKIP_DEBUG_WIREFRAME) == 0) &&
       mode != COGL_VERTICES_MODE_LINES &&
       mode != COGL_VERTICES_MODE_LINE_LOOP &&
@@ -2136,7 +2136,7 @@ _cogl_framebuffer_draw_indexed_attributes (CoglFramebuffer *framebuffer,
                                            CoglDrawFlags flags)
 {
 #ifdef COGL_ENABLE_DEBUG
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_WIREFRAME) &&
                   (flags & COGL_DRAW_SKIP_DEBUG_WIREFRAME) == 0) &&
       mode != COGL_VERTICES_MODE_LINES &&
       mode != COGL_VERTICES_MODE_LINE_LOOP &&
@@ -2262,7 +2262,7 @@ cogl_framebuffer_draw_rectangles (CoglFramebuffer *framebuffer,
    * _cogl_framebuffer_draw_multitextured_rectangles.
    */
 
-  rects = u_alloca (n_rectangles * sizeof (CoglMultiTexturedRect));
+  rects = c_alloca (n_rectangles * sizeof (CoglMultiTexturedRect));
 
   for (i = 0; i < n_rectangles; i++)
     {
@@ -2291,7 +2291,7 @@ cogl_framebuffer_draw_textured_rectangles (CoglFramebuffer *framebuffer,
    * _cogl_framebuffer_draw_multitextured_rectangles.
    */
 
-  rects = u_alloca (n_rectangles * sizeof (CoglMultiTexturedRect));
+  rects = c_alloca (n_rectangles * sizeof (CoglMultiTexturedRect));
 
   for (i = 0; i < n_rectangles; i++)
     {

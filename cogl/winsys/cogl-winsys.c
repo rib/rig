@@ -34,12 +34,12 @@
 
 #include "cogl-context-private.h"
 
-#include <umodule.h>
+#include <cmodule.h>
 
 uint32_t
 _cogl_winsys_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-winsys-error-quark");
+  return c_quark_from_static_string ("cogl-winsys-error-quark");
 }
 
 /* FIXME: we should distinguish renderer and context features */

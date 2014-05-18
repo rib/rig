@@ -1,1 +1,1 @@
-SUBDIRS = ulib
+SUBDIRS = clib

@@ -36,7 +36,7 @@
 #include <cogl-util.h>
 #include <cogl-vector.h>
 
-#include <ulib.h>
+#include <clib.h>
 #include <math.h>
 #include <string.h>
 
@@ -97,14 +97,14 @@ float *
 cogl_vector3_copy (const float *vector)
 {
   if (vector)
-    return u_slice_copy (sizeof (float) * 3, vector);
+    return c_slice_copy (sizeof (float) * 3, vector);
   return NULL;
 }
 
 void
 cogl_vector3_free (float *vector)
 {
-  u_slice_free1 (sizeof (float) * 3, vector);
+  c_slice_free1 (sizeof (float) * 3, vector);
 }
 
 void
@@ -239,14 +239,14 @@ float *
 cogl_vector4_copy (float *vector)
 {
   if (vector)
-    return u_slice_dup (CoglVector4, vector);
+    return c_slice_dup (CoglVector4, vector);
   return NULL;
 }
 
 void
 cogl_vector4_free (float *vector)
 {
-  u_slice_free (CoglVector4, vector);
+  c_slice_free (CoglVector4, vector);
 }
 
 void

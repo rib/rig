@@ -2,7 +2,7 @@
 #include <cogl/cogl.h>
 #include <math.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl/cogl-profile.h"
 
@@ -117,7 +117,7 @@ paint_cb (void *user_data)
   elapsed = g_timer_elapsed (data->timer, NULL);
   if (elapsed > 1.0)
     {
-      u_print ("fps = %f\n", data->frame / elapsed);
+      c_print ("fps = %f\n", data->frame / elapsed);
       g_timer_start (data->timer);
       data->frame = 0;
     }

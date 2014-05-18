@@ -52,7 +52,7 @@ print_exit_report (void)
       /* just bail out if the mainloop timer wasn't hit */
       if (!mainloop_timer)
         {
-          u_warning ("\n\n"
+          c_warning ("\n\n"
                      "No UProf \"Mainloop\" timer was setup by the "
                      "application therefore we\ncan't provide a meaningful "
                      "profile report.\n"
@@ -71,7 +71,7 @@ print_exit_report (void)
                      "And start/stop it around your mainloop like this:\n"
                      "\n"
                      "  UPROF_TIMER_START (uprof_get_mainloop_context (), mainloop_timer);\n"
-                     "  u_main_loop_run (loop);\n"
+                     "  c_main_loop_run (loop);\n"
                      "  UPROF_TIMER_STOP (uprof_get_mainloop_context (), mainloop_timer);\n");
           return;
         }
@@ -90,7 +90,7 @@ _cogl_uprof_init (void)
   _cogl_uprof_context = uprof_context_new ("Cogl");
   uprof_context_link (_cogl_uprof_context, uprof_get_mainloop_context ());
 #define OPT(MASK_NAME, GROUP, NAME, NAME_FORMATTED, DESCRIPTION) \
-  U_STMT_START { \
+  C_STMT_START { \
     int shift = COGL_DEBUG_ ## MASK_NAME; \
     uprof_context_add_boolean_option (_cogl_uprof_context, \
                                       _(GROUP), \
@@ -100,7 +100,7 @@ _cogl_uprof_init (void)
                                       debug_option_getter, \
                                       debug_option_setter, \
                                       GUINT_TO_POINTER (shift)); \
-  } U_STMT_END;
+  } C_STMT_END;
 
 #include "cogl-debug-options.h"
 #undef OPT
@@ -114,7 +114,7 @@ _cogl_profile_trace_message (const char *format, ...)
   va_list ap;
 
   va_start (ap, format);
-  u_logv (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, ap);
+  c_logv (G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, format, ap);
   va_end (ap);
 
   if (_cogl_uprof_context)

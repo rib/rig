@@ -126,7 +126,7 @@ _cogl_texture_3d_create_base (CoglContext *ctx,
                               CoglPixelFormat internal_format,
                               CoglTextureLoader *loader)
 {
-  CoglTexture3D *tex_3d = u_new (CoglTexture3D, 1);
+  CoglTexture3D *tex_3d = c_new (CoglTexture3D, 1);
   CoglTexture *tex = COGL_TEXTURE (tex_3d);
 
   _cogl_texture_init (tex, ctx, width, height,
@@ -477,7 +477,7 @@ allocate_from_bitmap (CoglTexture3D *tex_3d,
         }
       else
         {
-          u_warning ("Failed to read first pixel of bitmap for "
+          c_warning ("Failed to read first pixel of bitmap for "
                      "glGenerateMipmap fallback");
           cogl_error_free (ignore);
           memset (tex_3d->first_pixel.data, 0,
@@ -537,7 +537,7 @@ _cogl_texture_3d_allocate (CoglTexture *tex,
       break;
     }
 
-  u_return_val_if_reached (FALSE);
+  c_return_val_if_reached (FALSE);
 }
 
 static CoglBool

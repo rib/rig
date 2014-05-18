@@ -63,7 +63,7 @@
 
 #include <stdint.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 typedef struct _CoglMemorySubStack
 {
@@ -83,9 +83,9 @@ struct _CoglMemoryStack
 static CoglMemorySubStack *
 _cogl_memory_sub_stack_alloc (size_t bytes)
 {
-  CoglMemorySubStack *sub_stack = u_slice_new (CoglMemorySubStack);
+  CoglMemorySubStack *sub_stack = c_slice_new (CoglMemorySubStack);
   sub_stack->bytes = bytes;
-  sub_stack->data = u_malloc (bytes);
+  sub_stack->data = c_malloc (bytes);
   return sub_stack;
 }
 
@@ -103,7 +103,7 @@ _cogl_memory_stack_add_sub_stack (CoglMemoryStack *stack,
 CoglMemoryStack *
 _cogl_memory_stack_new (size_t initial_size_bytes)
 {
-  CoglMemoryStack *stack = u_slice_new0 (CoglMemoryStack);
+  CoglMemoryStack *stack = c_slice_new0 (CoglMemoryStack);
 
   _cogl_list_init (&stack->sub_stacks);
 
@@ -119,7 +119,7 @@ _cogl_memory_stack_alloc (CoglMemoryStack *stack, size_t bytes)
   void *ret;
 
   sub_stack = stack->sub_stack;
-  if (U_LIKELY (sub_stack->bytes - stack->sub_stack_offset >= bytes))
+  if (C_LIKELY (sub_stack->bytes - stack->sub_stack_offset >= bytes))
     {
       ret = sub_stack->data + stack->sub_stack_offset;
       stack->sub_stack_offset += bytes;
@@ -176,8 +176,8 @@ _cogl_memory_stack_rewind (CoglMemoryStack *stack)
 static void
 _cogl_memory_sub_stack_free (CoglMemorySubStack *sub_stack)
 {
-  u_free (sub_stack->data);
-  u_slice_free (CoglMemorySubStack, sub_stack);
+  c_free (sub_stack->data);
+  c_slice_free (CoglMemorySubStack, sub_stack);
 }
 
 void
@@ -192,5 +192,5 @@ _cogl_memory_stack_free (CoglMemoryStack *stack)
       _cogl_memory_sub_stack_free (sub_stack);
     }
 
-  u_slice_free (CoglMemoryStack, stack);
+  c_slice_free (CoglMemoryStack, stack);
 }

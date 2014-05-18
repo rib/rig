@@ -34,13 +34,13 @@
 #ifndef __COGL_PIPELINE_SNIPPET_PRIVATE_H
 #define __COGL_PIPELINE_SNIPPET_PRIVATE_H
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-snippet.h"
 
 typedef struct
 {
-  UList *entries;
+  CList *entries;
 } CoglPipelineSnippetList;
 
 /* Arguments to pass to _cogl_pipeline_snippet_generate_code() */
@@ -82,14 +82,14 @@ typedef struct
   const char *argument_declarations;
 
   /* The string to generate the source into */
-  UString *source_buf;
+  CString *source_buf;
 } CoglPipelineSnippetData;
 
 void
 _cogl_pipeline_snippet_generate_code (const CoglPipelineSnippetData *data);
 
 void
-_cogl_pipeline_snippet_generate_declarations (UString *declarations_buf,
+_cogl_pipeline_snippet_generate_declarations (CString *declarations_buf,
                                               CoglSnippetHook hook,
                                               CoglPipelineSnippetList *list);
 

@@ -51,8 +51,8 @@ COGL_OBJECT_DEFINE (Bitmap, bitmap);
 static void
 _cogl_bitmap_free (CoglBitmap *bmp)
 {
-  u_assert (!bmp->mapped);
-  u_assert (!bmp->bound);
+  c_assert (!bmp->mapped);
+  c_assert (!bmp->bound);
 
   if (bmp->shared_bmp)
     cogl_object_unref (bmp->shared_bmp);
@@ -60,7 +60,7 @@ _cogl_bitmap_free (CoglBitmap *bmp)
   if (bmp->buffer)
     cogl_object_unref (bmp->buffer);
 
-  u_slice_free (CoglBitmap, bmp);
+  c_slice_free (CoglBitmap, bmp);
 }
 
 CoglBool
@@ -183,13 +183,13 @@ cogl_bitmap_new_for_data (CoglContext *context,
 {
   CoglBitmap *bmp;
 
-  u_return_val_if_fail (cogl_is_context (context), NULL);
+  c_return_val_if_fail (cogl_is_context (context), NULL);
 
   /* Rowstride from width if not given */
   if (rowstride == 0)
     rowstride = width * _cogl_pixel_format_get_bytes_per_pixel (format);
 
-  bmp = u_slice_new (CoglBitmap);
+  bmp = c_slice_new (CoglBitmap);
   bmp->context = context;
   bmp->format = format;
   bmp->width = width;
@@ -214,7 +214,7 @@ _cogl_bitmap_new_with_malloc_buffer (CoglContext *context,
   static CoglUserDataKey bitmap_free_key;
   int bpp = _cogl_pixel_format_get_bytes_per_pixel (format);
   int rowstride = ((width * bpp) + 3) & ~3;
-  uint8_t *data = u_try_malloc (rowstride * height);
+  uint8_t *data = c_try_malloc (rowstride * height);
   CoglBitmap *bitmap;
 
   if (!data)
@@ -234,7 +234,7 @@ _cogl_bitmap_new_with_malloc_buffer (CoglContext *context,
   cogl_object_set_user_data (COGL_OBJECT (bitmap),
                              &bitmap_free_key,
                              data,
-                             u_free);
+                             c_free);
 
   return bitmap;
 }
@@ -389,7 +389,7 @@ cogl_bitmap_get_buffer (CoglBitmap *bitmap)
 uint32_t
 cogl_bitmap_error_domain (void)
 {
-  return u_quark_from_static_string ("cogl-bitmap-error-quark");
+  return c_quark_from_static_string ("cogl-bitmap-error-quark");
 }
 
 uint8_t *
@@ -402,7 +402,7 @@ _cogl_bitmap_map (CoglBitmap *bitmap,
   if (bitmap->shared_bmp)
     return _cogl_bitmap_map (bitmap->shared_bmp, access, hints, error);
 
-  u_assert (!bitmap->mapped);
+  c_assert (!bitmap->mapped);
 
   if (bitmap->buffer)
     {
@@ -442,7 +442,7 @@ _cogl_bitmap_unmap (CoglBitmap *bitmap)
       return;
     }
 
-  u_assert (bitmap->mapped);
+  c_assert (bitmap->mapped);
   bitmap->mapped = FALSE;
 
   if (bitmap->buffer)
@@ -458,7 +458,7 @@ _cogl_bitmap_gl_bind (CoglBitmap *bitmap,
   uint8_t *ptr;
   CoglError *internal_error = NULL;
 
-  u_return_val_if_fail (access & (COGL_BUFFER_ACCESS_READ |
+  c_return_val_if_fail (access & (COGL_BUFFER_ACCESS_READ |
                                   COGL_BUFFER_ACCESS_WRITE),
                         NULL);
 
@@ -489,7 +489,7 @@ _cogl_bitmap_gl_bind (CoglBitmap *bitmap,
   else
     {
       ptr = NULL;
-      u_assert_not_reached ();
+      c_assert_not_reached ();
       return NULL;
     }
 
@@ -518,7 +518,7 @@ _cogl_bitmap_gl_unbind (CoglBitmap *bitmap)
       return;
     }
 
-  u_assert (bitmap->bound);
+  c_assert (bitmap->bound);
   bitmap->bound = FALSE;
 
   /* If the bitmap wasn't created from a pixel array then the

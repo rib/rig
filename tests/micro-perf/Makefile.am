@@ -4,8 +4,8 @@ NULL =
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/deps/ulib/src \
-	-I$(top_builddir)/deps/ulib/src
+	-I$(top_srcdir)/deps/clib/src \
+	-I$(top_builddir)/deps/clib/src
 
 test_conformance_CPPFLAGS = \
 	-DCOGL_ENABLE_EXPERIMENTAL_API \
@@ -23,7 +23,7 @@ AM_CFLAGS = $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/deps/ulib/src/libulib.la \
+	$(top_builddir)/deps/clib/src/libclib.la \
 	$(top_builddir)/cogl/libcogl2.la \
 	$(LIBM)
 

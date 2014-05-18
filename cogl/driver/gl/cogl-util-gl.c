@@ -60,7 +60,7 @@ static const struct {
 #endif
 };
 
-static const unsigned int n_gl_errors = U_N_ELEMENTS (gl_errors);
+static const unsigned int n_gl_errors = C_N_ELEMENTS (gl_errors);
 
 const char *
 _cogl_gl_error_to_string (GLenum error_code)
@@ -90,7 +90,7 @@ _cogl_gl_util_catch_out_of_memory (CoglContext *ctx, CoglError **error)
 #ifdef COGL_GL_DEBUG
       else
         {
-          u_warning ("%s: GL error (%d): %s\n",
+          c_warning ("%s: GL error (%d): %s\n",
                      G_STRLOC,
                      gl_error,
                      _cogl_gl_error_to_string (gl_error));

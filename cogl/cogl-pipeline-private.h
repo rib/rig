@@ -47,7 +47,7 @@
 #include "cogl-framebuffer.h"
 #include "cogl-bitmask.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 #define COGL_PIPELINE_PROGEND_GLSL  0
 #define COGL_PIPELINE_PROGEND_NOP   1
@@ -336,7 +336,7 @@ struct _CoglPipeline
    *
    * This is sparse state, ref COGL_PIPELINE_STATE_LAYERS */
   unsigned int     n_layers;
-  UList	          *layer_differences;
+  CList	          *layer_differences;
 
   /* As a basic way to reduce memory usage we divide the pipeline
    * state into two groups; the minimal state modified in 90% of
@@ -688,7 +688,7 @@ _cogl_get_n_args_for_combine_func (CoglPipelineCombineFunc func);
  * static void
  * destroy_cache_cb (CoglObject *object, void *user_data)
  * {
- *   u_slice_free (MyValidatedMaterialCache, user_data);
+ *   c_slice_free (MyValidatedMaterialCache, user_data);
  * }
  *
  * static void
@@ -705,16 +705,16 @@ _cogl_get_n_args_for_combine_func (CoglPipelineCombineFunc func);
  *   MyValidatedMaterialCache *cache =
  *     cogl_object_get_user_data (COGL_OBJECT (source),
  *                                &_cogl_my_cache_key);
- *   if (U_UNLIKELY (cache == NULL))
+ *   if (C_UNLIKELY (cache == NULL))
  *     {
- *       cache = u_slice_new (MyValidatedMaterialCache);
+ *       cache = c_slice_new (MyValidatedMaterialCache);
  *       cogl_object_set_user_data (COGL_OBJECT (source),
  *                                  &_cogl_my_cache_key,
  *                                  cache, destroy_cache_cb);
  *       cache->validated_source = source;
  *     }
  *
- *   if (U_UNLIKELY (cache->validated_source == NULL))
+ *   if (C_UNLIKELY (cache->validated_source == NULL))
  *     {
  *       cache->validated_source = source;
  *

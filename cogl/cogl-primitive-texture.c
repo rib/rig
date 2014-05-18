@@ -54,7 +54,7 @@ cogl_primitive_texture_set_auto_mipmap (CoglPrimitiveTexture *primitive_texture,
 
   texture = COGL_TEXTURE (primitive_texture);
 
-  u_assert (texture->vtable->set_auto_mipmap != NULL);
+  c_assert (texture->vtable->set_auto_mipmap != NULL);
 
   texture->vtable->set_auto_mipmap (texture, value);
 }

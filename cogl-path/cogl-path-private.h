@@ -81,7 +81,7 @@ struct _CoglPathData
 
   CoglPathFillRule     fill_rule;
 
-  UArray              *path_nodes;
+  CArray              *path_nodes;
 
   floatVec2            path_start;
   floatVec2            path_pen;

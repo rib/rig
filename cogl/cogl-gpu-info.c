@@ -75,7 +75,7 @@ typedef struct
 } CoglGpuInfoDriverPackageDescription;
 
 static CoglBool
-_cogl_gpu_info_parse_version_string (const char *version_string,
+_cogl_gpc_info_parse_version_string (const char *version_string,
                                      int n_components,
                                      const char **tail,
                                      int *version_ret)
@@ -87,7 +87,7 @@ _cogl_gpu_info_parse_version_string (const char *version_string,
   for (i = 0; ; i++)
     {
       errno = 0;
-      part = u_ascii_strtoull (version_string,
+      part = c_ascii_strtoull (version_string,
                                (char **) &version_string,
                                10);
 
@@ -356,7 +356,7 @@ unknown_architectures[] =
   };
 
 static const CoglGpuInfoVendorDescription
-_cogl_gpu_info_vendors[] =
+_cogl_gpc_info_vendors[] =
   {
     {
       COGL_GPU_INFO_VENDOR_INTEL,
@@ -418,7 +418,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
 
   /* The version string should always begin a two-part GL version
      number */
-  if (!_cogl_gpu_info_parse_version_string (strings->version_string,
+  if (!_cogl_gpc_info_parse_version_string (strings->version_string,
                                             2, /* n_components */
                                             &v, /* tail */
                                             NULL /* version_ret */))
@@ -435,7 +435,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
   /* Next there will be a version string that is at least two
      components. On a git devel build the version will be something
      like "-devel<git hash>" instead */
-  if (!_cogl_gpu_info_parse_version_string (v,
+  if (!_cogl_gpc_info_parse_version_string (v,
                                             2, /* n_components */
                                             &v, /* tail */
                                             version_ret))
@@ -443,7 +443,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
 
   /* If it is a development build then we'll just leave the micro
      number as 0 */
-  if (u_str_has_prefix (v, "-devel"))
+  if (c_str_has_prefix (v, "-devel"))
     return TRUE;
 
   /* Otherwise there should be a micro version number */
@@ -451,7 +451,7 @@ check_mesa_driver_package (const CoglGpuInfoStrings *strings,
     return FALSE;
 
   errno = 0;
-  micro_part = u_ascii_strtoull (v + 1, NULL /* endptr */, 10 /* base */);
+  micro_part = c_ascii_strtoull (v + 1, NULL /* endptr */, 10 /* base */);
   if (errno || micro_part > COGL_VERSION_MAX_COMPONENT_VALUE)
     return FALSE;
 
@@ -474,10 +474,10 @@ UNIT_TEST (check_mesa_driver_package_parser,
   int i;
   int version;
 
-  for (i = 0; i < U_N_ELEMENTS (test_strings); i++)
+  for (i = 0; i < C_N_ELEMENTS (test_strings); i++)
     {
-      u_assert (check_mesa_driver_package (&test_strings[i], &version));
-      u_assert_cmpint (version, ==, COGL_VERSION_ENCODE (9, 2, 0));
+      c_assert (check_mesa_driver_package (&test_strings[i], &version));
+      c_assert_cmpint (version, ==, COGL_VERSION_ENCODE (9, 2, 0));
     }
 }
 
@@ -492,7 +492,7 @@ check_unknown_driver_package (const CoglGpuInfoStrings *strings,
 }
 
 static const CoglGpuInfoDriverPackageDescription
-_cogl_gpu_info_driver_packages[] =
+_cogl_gpc_info_driver_packages[] =
   {
     {
       COGL_GPU_INFO_DRIVER_PACKAGE_MESA,
@@ -508,7 +508,7 @@ _cogl_gpu_info_driver_packages[] =
   };
 
 void
-_cogl_gpu_info_init (CoglContext *ctx,
+_cogl_gpc_info_init (CoglContext *ctx,
                      CoglGpuInfo *gpu)
 {
   CoglGpuInfoStrings strings;
@@ -522,7 +522,7 @@ _cogl_gpu_info_init (CoglContext *ctx,
   for (i = 0; ; i++)
     {
       const CoglGpuInfoDriverPackageDescription *description =
-        _cogl_gpu_info_driver_packages + i;
+        _cogl_gpc_info_driver_packages + i;
 
       if (description->check_function (&strings, &gpu->driver_package_version))
         {
@@ -536,7 +536,7 @@ _cogl_gpu_info_init (CoglContext *ctx,
   for (i = 0; ; i++)
     {
       const CoglGpuInfoVendorDescription *description =
-        _cogl_gpu_info_vendors + i;
+        _cogl_gpc_info_vendors + i;
 
       if (description->check_function (&strings))
         {

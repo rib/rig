@@ -31,7 +31,7 @@
 #ifndef __COGL_RENDERER_GLX_PRIVATE_H
 #define __COGL_RENDERER_GLX_PRIVATE_H
 
-#include <umodule.h>
+#include <cmodule.h>
 #include "cogl-object-private.h"
 #include "cogl-xlib-renderer-private.h"
 

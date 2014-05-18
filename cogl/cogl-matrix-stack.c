@@ -511,21 +511,21 @@ initialized:
             return save->cache;
           }
         }
-      u_warn_if_reached ();
+      c_warn_if_reached ();
       return NULL;
     }
 
 #ifdef COGL_ENABLE_DEBUG
   if (!current)
     {
-      u_warning ("Inconsistent matrix stack");
+      c_warning ("Inconsistent matrix stack");
       return NULL;
     }
 
   entry->composite_gets++;
 #endif
 
-  children = u_alloca (sizeof (CoglMatrixEntry) * depth);
+  children = c_alloca (sizeof (CoglMatrixEntry) * depth);
 
   /* We need walk the list of entries from the init/load/save entry
    * back towards the leaf node but the nodes don't link to their
@@ -615,7 +615,7 @@ initialized:
         case COGL_MATRIX_OP_LOAD_IDENTITY:
         case COGL_MATRIX_OP_LOAD:
         case COGL_MATRIX_OP_SAVE:
-          u_warn_if_reached ();
+          c_warn_if_reached ();
           continue;
         }
     }
@@ -645,15 +645,15 @@ static void
 _cogl_matrix_stack_free (CoglMatrixStack *stack)
 {
   cogl_matrix_entry_unref (stack->last_entry);
-  u_slice_free (CoglMatrixStack, stack);
+  c_slice_free (CoglMatrixStack, stack);
 }
 
 CoglMatrixStack *
 cogl_matrix_stack_new (CoglContext *ctx)
 {
-  CoglMatrixStack *stack = u_slice_new (CoglMatrixStack);
+  CoglMatrixStack *stack = c_slice_new (CoglMatrixStack);
 
-  if (U_UNLIKELY (cogl_matrix_stack_magazine == NULL))
+  if (C_UNLIKELY (cogl_matrix_stack_magazine == NULL))
     {
       cogl_matrix_stack_magazine =
         _cogl_magazine_new (sizeof (CoglMatrixEntryFull), 20);
@@ -689,15 +689,15 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
                                          float *y,
                                          float *z)
 {
-  USList *head0 = NULL;
-  USList *head1 = NULL;
+  CSList *head0 = NULL;
+  CSList *head1 = NULL;
   CoglMatrixEntry *node0;
   CoglMatrixEntry *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  USList *common_ancestor0;
-  USList *common_ancestor1;
+  CSList *common_ancestor0;
+  CSList *common_ancestor1;
 
   /* Algorithm:
    *
@@ -722,12 +722,12 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
 
   for (node0 = entry0; node0; node0 = node0->parent)
     {
-      USList *link;
+      CSList *link;
 
       if (node0->op == COGL_MATRIX_OP_SAVE)
         continue;
 
-      link = alloca (sizeof (USList));
+      link = alloca (sizeof (CSList));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -738,12 +738,12 @@ cogl_matrix_entry_calculate_translation (CoglMatrixEntry *entry0,
     }
   for (node1 = entry1; node1; node1 = node1->parent)
     {
-      USList *link;
+      CSList *link;
 
       if (node1->op == COGL_MATRIX_OP_SAVE)
         continue;
 
-      link = alloca (sizeof (USList));
+      link = alloca (sizeof (CSList));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -918,7 +918,7 @@ cogl_matrix_entry_equal (CoglMatrixEntry *entry0,
           }
         case COGL_MATRIX_OP_SAVE:
           /* We skip over saves above so we shouldn't see save entries */
-          u_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
 
@@ -936,7 +936,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
   for (depth = 0, e = entry; e; e = e->parent)
     depth++;
 
-  children = u_alloca (sizeof (CoglMatrixEntry) * depth);
+  children = c_alloca (sizeof (CoglMatrixEntry) * depth);
 
   for (i = depth - 1, e = entry;
        i >= 0 && e;
@@ -945,7 +945,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
       children[i] = e;
     }
 
-  u_print ("MatrixEntry %p =\n", entry);
+  c_print ("MatrixEntry %p =\n", entry);
 
   for (i = 0; i < depth; i++)
     {
@@ -954,13 +954,13 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
       switch (entry->op)
         {
         case COGL_MATRIX_OP_LOAD_IDENTITY:
-          u_print ("  LOAD IDENTITY\n");
+          c_print ("  LOAD IDENTITY\n");
           continue;
         case COGL_MATRIX_OP_TRANSLATE:
           {
             CoglMatrixEntryTranslate *translate =
               (CoglMatrixEntryTranslate *)entry;
-            u_print ("  TRANSLATE X=%f Y=%f Z=%f\n",
+            c_print ("  TRANSLATE X=%f Y=%f Z=%f\n",
                      translate->x,
                      translate->y,
                      translate->z);
@@ -970,7 +970,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
           {
             CoglMatrixEntryRotate *rotate =
               (CoglMatrixEntryRotate *)entry;
-            u_print ("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
+            c_print ("  ROTATE ANGLE=%f X=%f Y=%f Z=%f\n",
                      rotate->angle,
                      rotate->x,
                      rotate->y,
@@ -981,7 +981,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
           {
             CoglMatrixEntryRotateQuaternion *rotate =
               (CoglMatrixEntryRotateQuaternion *)entry;
-            u_print ("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
+            c_print ("  ROTATE QUATERNION w=%f x=%f y=%f z=%f\n",
                      rotate->values[0],
                      rotate->values[1],
                      rotate->values[2],
@@ -992,7 +992,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
           {
             CoglMatrixEntryRotateEuler *rotate =
               (CoglMatrixEntryRotateEuler *)entry;
-            u_print ("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
+            c_print ("  ROTATE EULER heading=%f pitch=%f roll=%f\n",
                      rotate->heading,
                      rotate->pitch,
                      rotate->roll);
@@ -1001,7 +1001,7 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
         case COGL_MATRIX_OP_SCALE:
           {
             CoglMatrixEntryScale *scale = (CoglMatrixEntryScale *)entry;
-            u_print ("  SCALE X=%f Y=%f Z=%f\n",
+            c_print ("  SCALE X=%f Y=%f Z=%f\n",
                      scale->x,
                      scale->y,
                      scale->z);
@@ -1010,19 +1010,19 @@ cogl_debug_matrix_entry_print (CoglMatrixEntry *entry)
         case COGL_MATRIX_OP_MULTIPLY:
           {
             CoglMatrixEntryMultiply *mult = (CoglMatrixEntryMultiply *)entry;
-            u_print ("  MULT:\n");
+            c_print ("  MULT:\n");
             _cogl_matrix_prefix_print ("    ", mult->matrix);
             continue;
           }
         case COGL_MATRIX_OP_LOAD:
           {
             CoglMatrixEntryLoad *load = (CoglMatrixEntryLoad *)entry;
-            u_print ("  LOAD:\n");
+            c_print ("  LOAD:\n");
             _cogl_matrix_prefix_print ("    ", load->matrix);
             continue;
           }
         case COGL_MATRIX_OP_SAVE:
-          u_print ("  SAVE\n");
+          c_print ("  SAVE\n");
         }
     }
 }

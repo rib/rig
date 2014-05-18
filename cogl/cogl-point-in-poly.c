@@ -41,7 +41,7 @@
 #include "cogl-util.h"
 #include "cogl-point-in-poly-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 /* We've made a notable change to the original algorithm referenced
  * above to make sure we have reliable results for screen aligned

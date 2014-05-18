@@ -87,5 +87,5 @@ test_pipeline_cache_unrefs_texture (void)
   g_assert_cmpint (destroyed_texture_count, ==, N_TEXTURES);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

@@ -31,7 +31,7 @@ gen_tex_data (uint32_t color)
   uint8_t b = MASK_BLUE (color);
   uint8_t a = MASK_ALPHA (color);
 
-  tex_data = u_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
+  tex_data = c_malloc (QUAD_WIDTH * QUAD_WIDTH * 4);
 
   for (p = tex_data + QUAD_WIDTH * QUAD_WIDTH * 4; p > tex_data;)
     {
@@ -132,7 +132,7 @@ test_premult (void)
   /* If the user explicitly specifies an unmultiplied internal format then
    * Cogl shouldn't automatically premultiply the given texture data... */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xff00ff80, "
+    c_print ("make_texture (0xff00ff80, "
                             "src = RGBA_8888, internal = RGBA_8888)\n");
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
@@ -145,7 +145,7 @@ test_premult (void)
    * gives unmultiplied src data then Cogl should always premultiply that
    * for us */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xff00ff80, "
+    c_print ("make_texture (0xff00ff80, "
                             "src = RGBA_8888, internal = RGBA_8888_PRE)\n");
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
@@ -159,7 +159,7 @@ test_premult (void)
    * unpremultiplied texture data...
    */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xff00ff80, "
+    c_print ("make_texture (0xff00ff80, "
                             "src = RGBA_8888, internal = ANY)\n");
   tex = make_texture (0xff00ff80,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
@@ -172,7 +172,7 @@ test_premult (void)
    * premultiplied source data, Cogl should never modify that source data...
    */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0x80008080, "
+    c_print ("make_texture (0x80008080, "
                             "src = RGBA_8888_PRE, "
                             "internal = RGBA_8888_PRE)\n");
   tex = make_texture (0x80008080,
@@ -186,7 +186,7 @@ test_premult (void)
    * supplies premultiplied source data, then Cogl should always
    * un-premultiply the source data... */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0x80008080, "
+    c_print ("make_texture (0x80008080, "
                             "src = RGBA_8888_PRE, internal = RGBA_8888)\n");
   tex = make_texture (0x80008080,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
@@ -200,7 +200,7 @@ test_premult (void)
    * (In the future there will be additional Cogl API to control this
    *  behaviour) */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0x80008080, "
+    c_print ("make_texture (0x80008080, "
                             "src = RGBA_8888_PRE, internal = ANY)\n");
   tex = make_texture (0x80008080,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
@@ -214,13 +214,13 @@ test_premult (void)
    */
 
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xDEADBEEF, "
+    c_print ("make_texture (0xDEADBEEF, "
                             "src = RGBA_8888, internal = RGBA_8888)\n");
   tex = make_texture (0xDEADBEEF,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
                       TEXTURE_FLAG_SET_UNPREMULTIPLIED);
   if (cogl_test_verbose ())
-    u_print ("set_region (0xff00ff80, RGBA_8888)\n");
+    c_print ("set_region (0xff00ff80, RGBA_8888)\n");
   set_region (tex, 0xff00ff80, COGL_PIXEL_FORMAT_RGBA_8888);
   check_texture (pipeline, 6, 0, /* position */
 		 tex,
@@ -230,13 +230,13 @@ test_premult (void)
    * region data should result in Cogl unmultiplying the given region data...
    */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xDEADBEEF, "
+    c_print ("make_texture (0xDEADBEEF, "
                             "src = RGBA_8888, internal = RGBA_8888)\n");
   tex = make_texture (0xDEADBEEF,
                       COGL_PIXEL_FORMAT_RGBA_8888, /* src format */
                       TEXTURE_FLAG_SET_UNPREMULTIPLIED);
   if (cogl_test_verbose ())
-    u_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
+    c_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
   set_region (tex, 0x80008080, COGL_PIXEL_FORMAT_RGBA_8888_PRE);
   check_texture (pipeline, 7, 0, /* position */
 		 tex,
@@ -244,14 +244,14 @@ test_premult (void)
 
 
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xDEADBEEF, "
+    c_print ("make_texture (0xDEADBEEF, "
                             "src = RGBA_8888_PRE, "
                             "internal = RGBA_8888_PRE)\n");
   tex = make_texture (0xDEADBEEF,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
                       TEXTURE_FLAG_SET_PREMULTIPLIED);
   if (cogl_test_verbose ())
-    u_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
+    c_print ("set_region (0x80008080, RGBA_8888_PRE)\n");
   set_region (tex, 0x80008080, COGL_PIXEL_FORMAT_RGBA_8888_PRE);
   check_texture (pipeline, 8, 0, /* position */
 		 tex,
@@ -262,14 +262,14 @@ test_premult (void)
    * region data should result in Cogl premultiplying the given region data...
    */
   if (cogl_test_verbose ())
-    u_print ("make_texture (0xDEADBEEF, "
+    c_print ("make_texture (0xDEADBEEF, "
                             "src = RGBA_8888_PRE, "
                             "internal = RGBA_8888_PRE)\n");
   tex = make_texture (0xDEADBEEF,
                       COGL_PIXEL_FORMAT_RGBA_8888_PRE, /* src format */
                       TEXTURE_FLAG_SET_PREMULTIPLIED);
   if (cogl_test_verbose ())
-    u_print ("set_region (0xff00ff80, RGBA_8888)\n");
+    c_print ("set_region (0xff00ff80, RGBA_8888)\n");
   set_region (tex, 0xff00ff80, COGL_PIXEL_FORMAT_RGBA_8888);
   check_texture (pipeline, 9, 0, /* position */
 		 tex,
@@ -277,6 +277,6 @@ test_premult (void)
 
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

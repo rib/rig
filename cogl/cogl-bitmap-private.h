@@ -31,7 +31,7 @@
 #ifndef __COGL_BITMAP_H
 #define __COGL_BITMAP_H
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-object-private.h"
 #include "cogl-buffer.h"
@@ -77,7 +77,7 @@ struct _CoglBitmap
  * @error: A #CoglError for catching exceptional errors or %NULL
  *
  * This is equivalent to cogl_bitmap_new_with_size() except that it
- * allocated the buffer using u_malloc() instead of creating a
+ * allocated the buffer using c_malloc() instead of creating a
  * #CoglPixelBuffer. The buffer will be automatically destroyed when
  * the bitmap is freed.
  *

@@ -35,7 +35,7 @@
 #define COGL_BLEND_STRING_H
 
 #include <stdlib.h>
-#include <ulib.h>
+#include <clib.h>
 
 typedef enum _CoglBlendStringContext
 {

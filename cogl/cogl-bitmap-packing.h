@@ -376,7 +376,7 @@ G_PASTE (_cogl_unpack_, component_size) (CoglPixelFormat format,
     case COGL_PIXEL_FORMAT_DEPTH_32:
     case COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
     case COGL_PIXEL_FORMAT_ANY:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
     }
 }
 
@@ -715,6 +715,6 @@ G_PASTE (_cogl_pack_, component_size) (CoglPixelFormat format,
     case COGL_PIXEL_FORMAT_DEPTH_32:
     case COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8:
     case COGL_PIXEL_FORMAT_ANY:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
     }
 }

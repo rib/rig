@@ -60,14 +60,14 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
 
   /* this should find the right function if the program is linked against a
    * library providing it */
-  if (U_UNLIKELY (module == NULL))
-    module = u_module_open (NULL, 0);
+  if (C_UNLIKELY (module == NULL))
+    module = c_module_open (NULL, 0);
 
   if (module)
     {
       void *symbol;
 
-      if (u_module_symbol (module, name, &symbol))
+      if (c_module_symbol (module, name, &symbol))
         return symbol;
     }
 

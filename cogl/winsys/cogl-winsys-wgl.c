@@ -51,7 +51,7 @@
 #include "cogl-error-private.h"
 #include "cogl-poll-private.h"
 
-/* This magic handle will cause u_poll to wakeup when there is a
+/* This magic handle will cause c_poll to wakeup when there is a
  * pending message */
 #define WIN32_MSG_HANDLE 19981206
 
@@ -109,7 +109,7 @@ typedef struct _CoglOnscreenWgl
   static const CoglFeatureFunction                                      \
   cogl_wgl_feature_ ## name ## _funcs[] = {
 #define COGL_WINSYS_FEATURE_FUNCTION(ret, name, args)                   \
-  { G_STRINGIFY (name), U_STRUCT_OFFSET (CoglRendererWgl, pf_ ## name) },
+  { G_STRINGIFY (name), C_STRUCT_OFFSET (CoglRendererWgl, pf_ ## name) },
 #define COGL_WINSYS_FEATURE_END()               \
   { NULL, 0 },                                  \
     };
@@ -155,10 +155,10 @@ _cogl_winsys_renderer_get_proc_address (CoglRenderer *renderer,
   if (proc == NULL)
     {
       if (wgl_renderer->gl_module == NULL)
-        wgl_renderer->gl_module = u_module_open ("opengl32", 0);
+        wgl_renderer->gl_module = c_module_open ("opengl32", 0);
 
       if (wgl_renderer->gl_module)
-        u_module_symbol (wgl_renderer->gl_module, name, &proc);
+        c_module_symbol (wgl_renderer->gl_module, name, &proc);
     }
 
   return proc;
@@ -173,16 +173,16 @@ _cogl_winsys_renderer_disconnect (CoglRenderer *renderer)
     _cogl_poll_renderer_remove_fd (renderer, WIN32_MSG_HANDLE);
 
   if (wgl_renderer->gl_module)
-    u_module_close (wgl_renderer->gl_module);
+    c_module_close (wgl_renderer->gl_module);
 
-  u_slice_free (CoglRendererWgl, renderer->winsys);
+  c_slice_free (CoglRendererWgl, renderer->winsys);
 }
 
 static CoglOnscreen *
 find_onscreen_for_hwnd (CoglContext *context, HWND hwnd)
 {
   CoglDisplayWgl *display_wgl = context->display->winsys;
-  UList *l;
+  CList *l;
 
   /* If the hwnd has Cogl's window class then we can lookup the
      onscreen pointer directly by reading the extra window data */
@@ -288,7 +288,7 @@ static CoglBool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
-  renderer->winsys = u_slice_new0 (CoglRendererWgl);
+  renderer->winsys = c_slice_new0 (CoglRendererWgl);
 
   if (renderer->win32_enable_event_retrieval)
     {
@@ -454,11 +454,11 @@ create_window_class (CoglDisplay *display, CoglError **error)
      destroyed */
 
   /* Generate a unique name containing the address of the display */
-  class_name_ascii = u_strdup_printf ("CoglWindow0x%0*" G_GINTPTR_MODIFIER "x",
+  class_name_ascii = c_strdup_printf ("CoglWindow0x%0*" G_GINTPTR_MODIFIER "x",
                                       sizeof (guintptr) * 2,
                                       (guintptr) display);
   /* Convert it to WCHARs */
-  class_name_wchar = u_malloc ((strlen (class_name_ascii) + 1) *
+  class_name_wchar = c_malloc ((strlen (class_name_ascii) + 1) *
                                sizeof (WCHAR));
   for (src = class_name_ascii, dst = class_name_wchar;
        *src;
@@ -480,8 +480,8 @@ create_window_class (CoglDisplay *display, CoglError **error)
   wndclass.lpszClassName = class_name_wchar;
   wgl_display->window_class = RegisterClassW (&wndclass);
 
-  u_free (class_name_wchar);
-  u_free (class_name_ascii);
+  c_free (class_name_wchar);
+  c_free (class_name_ascii);
 
   if (wgl_display->window_class == 0)
     {
@@ -593,7 +593,7 @@ _cogl_winsys_display_destroy (CoglDisplay *display)
     UnregisterClassW ((LPWSTR) MAKEINTATOM (wgl_display->window_class),
                       GetModuleHandleW (NULL));
 
-  u_slice_free (CoglDisplayWgl, display->winsys);
+  c_slice_free (CoglDisplayWgl, display->winsys);
   display->winsys = NULL;
 }
 
@@ -605,7 +605,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
 
   _COGL_RETURN_VAL_IF_FAIL (display->winsys == NULL, FALSE);
 
-  wgl_display = u_slice_new0 (CoglDisplayWgl);
+  wgl_display = c_slice_new0 (CoglDisplayWgl);
   display->winsys = wgl_display;
 
   if (!create_window_class (display, error))
@@ -653,7 +653,7 @@ get_wgl_extensions_string (HDC dc)
     char **extensions = _cogl_context_get_gl_extensions (ctx);
     CoglBool have_ext = _cogl_check_extension ("WGL_EXT_swap_control",
                                                extensions);
-    u_strfreev (extensions);
+    c_strfreev (extensions);
     if (have_ext)
       return "WGL_EXT_swap_control";
   }
@@ -687,11 +687,11 @@ update_winsys_features (CoglContext *context, CoglError **error)
   if (wgl_extensions)
     {
       char **split_extensions =
-        u_strsplit (wgl_extensions, " ", 0 /* max_tokens */);
+        c_strsplit (wgl_extensions, " ", 0 /* max_tokens */);
 
       COGL_NOTE (WINSYS, "  WGL Extensions: %s", wgl_extensions);
 
-      for (i = 0; i < U_N_ELEMENTS (winsys_feature_data); i++)
+      for (i = 0; i < C_N_ELEMENTS (winsys_feature_data); i++)
         if (_cogl_feature_check (context->display->renderer,
                                  "WGL", winsys_feature_data + i, 0, 0,
                                  COGL_DRIVER_GL,
@@ -704,7 +704,7 @@ update_winsys_features (CoglContext *context, CoglError **error)
                               TRUE);
           }
 
-      u_strfreev (split_extensions);
+      c_strfreev (split_extensions);
     }
 
   /* We'll manually handle queueing dirty events in response to
@@ -719,7 +719,7 @@ update_winsys_features (CoglContext *context, CoglError **error)
 static CoglBool
 _cogl_winsys_context_init (CoglContext *context, CoglError **error)
 {
-  context->winsys = u_new0 (CoglContextWgl, 1);
+  context->winsys = c_new0 (CoglContextWgl, 1);
 
   cogl_win32_renderer_add_filter (context->display->renderer,
                                   win32_event_filter_cb,
@@ -735,7 +735,7 @@ _cogl_winsys_context_deinit (CoglContext *context)
                                      win32_event_filter_cb,
                                      context);
 
-  u_free (context->winsys);
+  c_free (context->winsys);
 }
 
 static void
@@ -809,7 +809,7 @@ _cogl_winsys_onscreen_deinit (CoglOnscreen *onscreen)
       DestroyWindow (win32_onscreen->hwnd);
     }
 
-  u_slice_free (CoglOnscreenWgl, onscreen->winsys);
+  c_slice_free (CoglOnscreenWgl, onscreen->winsys);
   onscreen->winsys = NULL;
 }
 
@@ -882,7 +882,7 @@ _cogl_winsys_onscreen_init (CoglOnscreen *onscreen,
       SetWindowLongPtrW (hwnd, 0, (LONG_PTR) onscreen);
     }
 
-  onscreen->winsys = u_slice_new0 (CoglOnscreenWgl);
+  onscreen->winsys = c_slice_new0 (CoglOnscreenWgl);
   win32_onscreen = onscreen->winsys;
   wgl_onscreen = onscreen->winsys;
 

@@ -158,7 +158,7 @@ _cogl_atlas_texture_post_reorganize_cb (CoglAtlas *atlas,
       CoglAtlasTextureGetAllocationsData data;
       int i;
 
-      data.textures = u_alloca (sizeof (CoglAtlasTexture *) * n_allocations);
+      data.textures = c_alloca (sizeof (CoglAtlasTexture *) * n_allocations);
       data.n_textures = 0;
 
       /* We need to remove all of the references that we took during
@@ -651,7 +651,7 @@ _cogl_atlas_texture_create_base (CoglContext *ctx,
 
   /* We need to allocate the texture now because we need the pointer
      to set as the data for the rectangle in the atlas */
-  atlas_tex = u_new0 (CoglAtlasTexture, 1);
+  atlas_tex = c_new0 (CoglAtlasTexture, 1);
   /* Mark it as having no atlas so we don't try to unref it in
      _cogl_atlas_texture_post_reorganize_cb */
   atlas_tex->atlas = NULL;
@@ -852,7 +852,7 @@ _cogl_atlas_texture_allocate (CoglTexture *tex,
       break;
     }
 
-  u_return_val_if_reached (FALSE);
+  c_return_val_if_reached (FALSE);
 }
 
 static CoglAtlasTexture *

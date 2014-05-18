@@ -59,5 +59,5 @@ test_fence (void)
   g_main_loop_run (loop);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

@@ -53,12 +53,12 @@
 #include <string.h>
 
 static char *_cogl_x11_display_name = NULL;
-static UList *_cogl_xlib_renderers = NULL;
+static CList *_cogl_xlib_renderers = NULL;
 
 static void
 destroy_xlib_renderer_data (void *user_data)
 {
-  u_slice_free (CoglXlibRenderer, user_data);
+  c_slice_free (CoglXlibRenderer, user_data);
 }
 
 CoglXlibRenderer *
@@ -77,7 +77,7 @@ _cogl_xlib_renderer_get_data (CoglRenderer *renderer)
 
   if (data == NULL)
     {
-      data = u_slice_new0 (CoglXlibRenderer);
+      data = c_slice_new0 (CoglXlibRenderer);
 
       cogl_object_set_user_data (COGL_OBJECT (renderer),
                                  &key,
@@ -91,25 +91,25 @@ _cogl_xlib_renderer_get_data (CoglRenderer *renderer)
 static void
 register_xlib_renderer (CoglRenderer *renderer)
 {
-  UList *l;
+  CList *l;
 
   for (l = _cogl_xlib_renderers; l; l = l->next)
     if (l->data == renderer)
       return;
 
-  _cogl_xlib_renderers = u_list_prepend (_cogl_xlib_renderers, renderer);
+  _cogl_xlib_renderers = c_list_prepend (_cogl_xlib_renderers, renderer);
 }
 
 static void
 unregister_xlib_renderer (CoglRenderer *renderer)
 {
-  _cogl_xlib_renderers = u_list_remove (_cogl_xlib_renderers, renderer);
+  _cogl_xlib_renderers = c_list_remove (_cogl_xlib_renderers, renderer);
 }
 
 static CoglRenderer *
 get_renderer_for_xdisplay (Display *xdpy)
 {
-  UList *l;
+  CList *l;
 
   for (l = _cogl_xlib_renderers; l; l = l->next)
     {
@@ -134,7 +134,7 @@ error_handler (Display *xdpy,
   renderer = get_renderer_for_xdisplay (xdpy);
 
   xlib_renderer = _cogl_xlib_renderer_get_data (renderer);
-  u_assert (xlib_renderer->trap_state);
+  c_assert (xlib_renderer->trap_state);
 
   xlib_renderer->trap_state->trapped_error_code = error->error_code;
 
@@ -163,7 +163,7 @@ _cogl_xlib_renderer_untrap_errors (CoglRenderer *renderer,
   CoglXlibRenderer *xlib_renderer;
 
   xlib_renderer = _cogl_xlib_renderer_get_data (renderer);
-  u_assert (state == xlib_renderer->trap_state);
+  c_assert (state == xlib_renderer->trap_state);
 
   XSetErrorHandler (state->old_error_handler);
 
@@ -232,8 +232,8 @@ update_outputs (CoglRenderer *renderer,
   XRRScreenResources *resources;
   CoglXlibTrapState state;
   CoglBool error = FALSE;
-  UList *new_outputs = NULL;
-  UList *l, *m;
+  CList *new_outputs = NULL;
+  CList *l, *m;
   CoglBool changed = FALSE;
   int i;
 
@@ -330,7 +330,7 @@ update_outputs (CoglRenderer *renderer,
             output->subpixel_order = subpixel_map[j][output->subpixel_order];
         }
 
-      new_outputs = u_list_prepend (new_outputs, output);
+      new_outputs = c_list_prepend (new_outputs, output);
 
     next:
       if (crtc_info != NULL)
@@ -344,7 +344,7 @@ update_outputs (CoglRenderer *renderer,
 
   if (!error)
     {
-      new_outputs = u_list_sort (new_outputs, (GCompareFunc)compare_outputs);
+      new_outputs = c_list_sort (new_outputs, (GCompareFunc)compare_outputs);
 
       l = new_outputs;
       m = renderer->outputs;
@@ -364,12 +364,12 @@ update_outputs (CoglRenderer *renderer,
 
           if (cmp == 0)
             {
-              UList *m_next = m->next;
+              CList *m_next = m->next;
 
               if (!_cogl_output_values_equal (output_l, output_m))
                 {
-                  renderer->outputs = u_list_remove_link (renderer->outputs, m);
-                  renderer->outputs = u_list_insert_before (renderer->outputs,
+                  renderer->outputs = c_list_remove_link (renderer->outputs, m);
+                  renderer->outputs = c_list_insert_before (renderer->outputs,
                                                             m_next, output_l);
                   cogl_object_ref (output_l);
 
@@ -382,22 +382,22 @@ update_outputs (CoglRenderer *renderer,
           else if (cmp < 0)
             {
               renderer->outputs =
-                u_list_insert_before (renderer->outputs, m, output_l);
+                c_list_insert_before (renderer->outputs, m, output_l);
               cogl_object_ref (output_l);
               changed = TRUE;
               l = l->next;
             }
           else
             {
-              UList *m_next = m->next;
-              renderer->outputs = u_list_remove_link (renderer->outputs, m);
+              CList *m_next = m->next;
+              renderer->outputs = c_list_remove_link (renderer->outputs, m);
               changed = TRUE;
               m = m_next;
             }
         }
     }
 
-  u_list_free_full (new_outputs, (UDestroyNotify)cogl_object_unref);
+  c_list_free_full (new_outputs, (CDestroyNotify)cogl_object_unref);
   _cogl_xlib_renderer_untrap_errors (renderer, &state);
 
   if (changed)
@@ -561,7 +561,7 @@ _cogl_xlib_renderer_disconnect (CoglRenderer *renderer)
   CoglXlibRenderer *xlib_renderer =
     _cogl_xlib_renderer_get_data (renderer);
 
-  u_list_free_full (renderer->outputs, (UDestroyNotify)cogl_object_unref);
+  c_list_free_full (renderer->outputs, (CDestroyNotify)cogl_object_unref);
   renderer->outputs = NULL;
 
   if (!renderer->foreign_xdpy && xlib_renderer->xdpy)
@@ -632,7 +632,7 @@ _cogl_xlib_renderer_output_for_rectangle (CoglRenderer *renderer,
 {
   int max_overlap = 0;
   CoglOutput *max_overlapped = NULL;
-  UList *l;
+  CList *l;
   int xa1 = x, xa2 = x + width;
   int ya1 = y, ya2 = y + height;
 

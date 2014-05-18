@@ -34,7 +34,7 @@
 
 #include <config.h>
 
-#include <ulib.h>
+#include <clib.h>
 
 #include <string.h>
 #include <math.h>
@@ -94,7 +94,7 @@ _cogl_path_data_clear_vbos (CoglPathData *data)
       for (i = 0; i < data->stroke_n_attributes; i++)
         cogl_object_unref (data->stroke_attributes[i]);
 
-      u_free (data->stroke_attributes);
+      c_free (data->stroke_attributes);
 
       data->stroke_attribute_buffer = NULL;
     }
@@ -107,9 +107,9 @@ _cogl_path_data_unref (CoglPathData *data)
     {
       _cogl_path_data_clear_vbos (data);
 
-      u_array_free (data->path_nodes, TRUE);
+      c_array_free (data->path_nodes, TRUE);
 
-      u_slice_free (CoglPathData, data);
+      c_slice_free (CoglPathData, data);
     }
 }
 
@@ -125,10 +125,10 @@ _cogl_path_modify (CoglPath *path)
     {
       CoglPathData *old_data = path->data;
 
-      path->data = u_slice_dup (CoglPathData, old_data);
-      path->data->path_nodes = u_array_new (FALSE, FALSE,
+      path->data = c_slice_dup (CoglPathData, old_data);
+      path->data->path_nodes = c_array_new (FALSE, FALSE,
                                             sizeof (CoglPathNode));
-      u_array_append_vals (path->data->path_nodes,
+      c_array_append_vals (path->data->path_nodes,
                            old_data->path_nodes->data,
                            old_data->path_nodes->len);
 
@@ -186,9 +186,9 @@ _cogl_path_add_node (CoglPath *path,
   if (new_sub_path || data->path_nodes->len == 0)
     data->last_path = data->path_nodes->len;
 
-  u_array_append_val (data->path_nodes, new_node);
+  c_array_append_val (data->path_nodes, new_node);
 
-  u_array_index (data->path_nodes, CoglPathNode, data->last_path).path_size++;
+  c_array_index (data->path_nodes, CoglPathNode, data->last_path).path_size++;
 
   if (data->path_nodes->len == 1)
     {
@@ -248,7 +248,7 @@ cogl_path_stroke (CoglPath *path,
     {
       CoglPrimitive *primitive;
 
-      node = &u_array_index (data->path_nodes, CoglPathNode, path_start);
+      node = &c_array_index (data->path_nodes, CoglPathNode, path_start);
 
       primitive =
         cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_LINE_STRIP,
@@ -302,7 +302,7 @@ _cogl_path_fill_nodes_with_clipped_rectangle (CoglPath *path,
 
       if (!seen_warning)
         {
-          u_warning ("Paths can not be filled using materials with "
+          c_warning ("Paths can not be filled using materials with "
                      "sliced textures unless there is a stencil "
                      "buffer");
           seen_warning = TRUE;
@@ -891,13 +891,13 @@ cogl_path_new (CoglContext *context)
   CoglPath *path;
   CoglPathData *data;
 
-  path = u_slice_new (CoglPath);
-  data = path->data = u_slice_new (CoglPathData);
+  path = c_slice_new (CoglPath);
+  data = path->data = c_slice_new (CoglPathData);
 
   data->ref_count = 1;
   data->context = context;
   data->fill_rule = COGL_PATH_FILL_RULE_EVEN_ODD;
-  data->path_nodes = u_array_new (FALSE, FALSE, sizeof (CoglPathNode));
+  data->path_nodes = c_array_new (FALSE, FALSE, sizeof (CoglPathNode));
   data->last_path = 0;
   data->fill_attribute_buffer = NULL;
   data->stroke_attribute_buffer = NULL;
@@ -914,7 +914,7 @@ cogl_path_copy (CoglPath *old_path)
 
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_path (old_path), NULL);
 
-  new_path = u_slice_new (CoglPath);
+  new_path = c_slice_new (CoglPath);
   new_path->data = old_path->data;
   new_path->data->ref_count++;
 
@@ -925,7 +925,7 @@ static void
 _cogl_path_free (CoglPath *path)
 {
   _cogl_path_data_unref (path->data);
-  u_slice_free (CoglPath, path);
+  c_slice_free (CoglPath, path);
 }
 
 /* If second order beziers were needed the following code could
@@ -1050,16 +1050,16 @@ typedef struct _CoglPathTesselatorVertex CoglPathTesselatorVertex;
 
 struct _CoglPathTesselator
 {
-  GLUtesselator *glu_tess;
+  GLUtesselator *glc_tess;
   GLenum primitive_type;
   int vertex_number;
   /* Array of CoglPathTesselatorVertex. This needs to grow when the
      combine callback is called */
-  UArray *vertices;
+  CArray *vertices;
   /* Array of integers for the indices into the vertices array. Each
      element will either be uint8_t, uint16_t or uint32_t depending on
      the number of vertices */
-  UArray *indices;
+  CArray *indices;
   CoglIndicesType indices_type;
   /* Indices used to split fans and strips */
   int index_a, index_b;
@@ -1074,7 +1074,7 @@ static void
 _cogl_path_tesselator_begin (GLenum type,
                              CoglPathTesselator *tess)
 {
-  u_assert (type == GL_TRIANGLES ||
+  c_assert (type == GL_TRIANGLES ||
             type == GL_TRIANGLE_FAN ||
             type == GL_TRIANGLE_STRIP);
 
@@ -1099,15 +1099,15 @@ _cogl_path_tesselator_allocate_indices_array (CoglPathTesselator *tess)
   switch (tess->indices_type)
     {
     case COGL_INDICES_TYPE_UNSIGNED_BYTE:
-      tess->indices = u_array_new (FALSE, FALSE, sizeof (uint8_t));
+      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint8_t));
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_SHORT:
-      tess->indices = u_array_new (FALSE, FALSE, sizeof (uint16_t));
+      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint16_t));
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_INT:
-      tess->indices = u_array_new (FALSE, FALSE, sizeof (uint32_t));
+      tess->indices = c_array_new (FALSE, FALSE, sizeof (uint32_t));
       break;
     }
 }
@@ -1120,21 +1120,21 @@ _cogl_path_tesselator_add_index (CoglPathTesselator *tess, int vertex_index)
     case COGL_INDICES_TYPE_UNSIGNED_BYTE:
       {
         uint8_t val = vertex_index;
-        u_array_append_val (tess->indices, val);
+        c_array_append_val (tess->indices, val);
       }
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_SHORT:
       {
         uint16_t val = vertex_index;
-        u_array_append_val (tess->indices, val);
+        c_array_append_val (tess->indices, val);
       }
       break;
 
     case COGL_INDICES_TYPE_UNSIGNED_INT:
       {
         uint32_t val = vertex_index;
-        u_array_append_val (tess->indices, val);
+        c_array_append_val (tess->indices, val);
       }
       break;
     }
@@ -1193,7 +1193,7 @@ _cogl_path_tesselator_vertex (void *vertex_data,
       break;
 
     default:
-      u_assert_not_reached ();
+      c_assert_not_reached ();
     }
 
   tess->vertex_number++;
@@ -1217,8 +1217,8 @@ _cogl_path_tesselator_combine (double coords[3],
   int i;
 
   /* Add a new vertex to the array */
-  u_array_set_size (tess->vertices, tess->vertices->len + 1);
-  vertex = &u_array_index (tess->vertices,
+  c_array_set_size (tess->vertices, tess->vertices->len + 1);
+  vertex = &c_array_index (tess->vertices,
                            CoglPathTesselatorVertex,
                            tess->vertices->len - 1);
   /* The data is just the index to the vertex */
@@ -1233,7 +1233,7 @@ _cogl_path_tesselator_combine (double coords[3],
   for (i = 0; i < 4; i++)
     {
       CoglPathTesselatorVertex *old_vertex =
-        &u_array_index (tess->vertices, CoglPathTesselatorVertex,
+        &c_array_index (tess->vertices, CoglPathTesselatorVertex,
                         GPOINTER_TO_INT (vertex_data[i]));
       vertex->s += old_vertex->s * weight[i];
       vertex->t += old_vertex->t * weight[i];
@@ -1245,7 +1245,7 @@ _cogl_path_tesselator_combine (double coords[3],
   if (new_indices_type != tess->indices_type)
     {
       CoglIndicesType old_indices_type = new_indices_type;
-      UArray *old_vertices = tess->indices;
+      CArray *old_vertices = tess->indices;
 
       /* Copy the indices to an array of the new type */
       tess->indices_type = new_indices_type;
@@ -1256,26 +1256,26 @@ _cogl_path_tesselator_combine (double coords[3],
         case COGL_INDICES_TYPE_UNSIGNED_BYTE:
           for (i = 0; i < old_vertices->len; i++)
             _cogl_path_tesselator_add_index (tess,
-                                             u_array_index (old_vertices,
+                                             c_array_index (old_vertices,
                                                             uint8_t, i));
           break;
 
         case COGL_INDICES_TYPE_UNSIGNED_SHORT:
           for (i = 0; i < old_vertices->len; i++)
             _cogl_path_tesselator_add_index (tess,
-                                             u_array_index (old_vertices,
+                                             c_array_index (old_vertices,
                                                             uint16_t, i));
           break;
 
         case COGL_INDICES_TYPE_UNSIGNED_INT:
           for (i = 0; i < old_vertices->len; i++)
             _cogl_path_tesselator_add_index (tess,
-                                             u_array_index (old_vertices,
+                                             c_array_index (old_vertices,
                                                             uint32_t, i));
           break;
         }
 
-      u_array_free (old_vertices, TRUE);
+      c_array_free (old_vertices, TRUE);
     }
 }
 
@@ -1294,14 +1294,14 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
   tess.primitive_type = FALSE;
 
   /* Generate a vertex for each point on the path */
-  tess.vertices = u_array_new (FALSE, FALSE, sizeof (CoglPathTesselatorVertex));
-  u_array_set_size (tess.vertices, data->path_nodes->len);
+  tess.vertices = c_array_new (FALSE, FALSE, sizeof (CoglPathTesselatorVertex));
+  c_array_set_size (tess.vertices, data->path_nodes->len);
   for (i = 0; i < data->path_nodes->len; i++)
     {
       CoglPathNode *node =
-        &u_array_index (data->path_nodes, CoglPathNode, i);
+        &c_array_index (data->path_nodes, CoglPathNode, i);
       CoglPathTesselatorVertex *vertex =
-        &u_array_index (tess.vertices, CoglPathTesselatorVertex, i);
+        &c_array_index (tess.vertices, CoglPathTesselatorVertex, i);
 
       vertex->x = node->x;
       vertex->y = node->y;
@@ -1325,58 +1325,58 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
     _cogl_path_tesselator_get_indices_type_for_size (data->path_nodes->len);
   _cogl_path_tesselator_allocate_indices_array (&tess);
 
-  tess.glu_tess = gluNewTess ();
+  tess.glc_tess = gluNewTess ();
 
   if (data->fill_rule == COGL_PATH_FILL_RULE_EVEN_ODD)
-    gluTessProperty (tess.glu_tess, GLU_TESS_WINDING_RULE,
+    gluTessProperty (tess.glc_tess, GLU_TESS_WINDING_RULE,
                      GLU_TESS_WINDING_ODD);
   else
-    gluTessProperty (tess.glu_tess, GLU_TESS_WINDING_RULE,
+    gluTessProperty (tess.glc_tess, GLU_TESS_WINDING_RULE,
                      GLU_TESS_WINDING_NONZERO);
 
   /* All vertices are on the xy-plane */
-  gluTessNormal (tess.glu_tess, 0.0, 0.0, 1.0);
+  gluTessNormal (tess.glc_tess, 0.0, 0.0, 1.0);
 
-  gluTessCallback (tess.glu_tess, GLU_TESS_BEGIN_DATA,
+  gluTessCallback (tess.glc_tess, GLU_TESS_BEGIN_DATA,
                    _cogl_path_tesselator_begin);
-  gluTessCallback (tess.glu_tess, GLU_TESS_VERTEX_DATA,
+  gluTessCallback (tess.glc_tess, GLU_TESS_VERTEX_DATA,
                    _cogl_path_tesselator_vertex);
-  gluTessCallback (tess.glu_tess, GLU_TESS_END_DATA,
+  gluTessCallback (tess.glc_tess, GLU_TESS_END_DATA,
                    _cogl_path_tesselator_end);
-  gluTessCallback (tess.glu_tess, GLU_TESS_COMBINE_DATA,
+  gluTessCallback (tess.glc_tess, GLU_TESS_COMBINE_DATA,
                    _cogl_path_tesselator_combine);
 
-  gluTessBeginPolygon (tess.glu_tess, &tess);
+  gluTessBeginPolygon (tess.glc_tess, &tess);
 
   while (path_start < data->path_nodes->len)
     {
       CoglPathNode *node =
-        &u_array_index (data->path_nodes, CoglPathNode, path_start);
+        &c_array_index (data->path_nodes, CoglPathNode, path_start);
 
-      gluTessBeginContour (tess.glu_tess);
+      gluTessBeginContour (tess.glc_tess);
 
       for (i = 0; i < node->path_size; i++)
         {
           double vertex[3] = { node[i].x, node[i].y, 0.0 };
-          gluTessVertex (tess.glu_tess, vertex,
+          gluTessVertex (tess.glc_tess, vertex,
                          GINT_TO_POINTER (i + path_start));
         }
 
-      gluTessEndContour (tess.glu_tess);
+      gluTessEndContour (tess.glc_tess);
 
       path_start += node->path_size;
     }
 
-  gluTessEndPolygon (tess.glu_tess);
+  gluTessEndPolygon (tess.glc_tess);
 
-  gluDeleteTess (tess.glu_tess);
+  gluDeleteTess (tess.glc_tess);
 
   data->fill_attribute_buffer =
     cogl_attribute_buffer_new (data->context,
                                sizeof (CoglPathTesselatorVertex) *
                                tess.vertices->len,
                                tess.vertices->data);
-  u_array_free (tess.vertices, TRUE);
+  c_array_free (tess.vertices, TRUE);
 
   data->fill_attributes[0] =
     cogl_attribute_new (data->fill_attribute_buffer,
@@ -1398,7 +1398,7 @@ _cogl_path_build_fill_attribute_buffer (CoglPath *path)
                                              tess.indices->data,
                                              tess.indices->len);
   data->fill_vbo_n_indices = tess.indices->len;
-  u_array_free (tess.indices, TRUE);
+  c_array_free (tess.indices, TRUE);
 }
 
 static CoglPrimitive *
@@ -1514,7 +1514,7 @@ _cogl_path_build_stroke_attribute_buffer (CoglPath *path)
        path_start < data->path_nodes->len;
        path_start += node->path_size)
     {
-      node = &u_array_index (data->path_nodes, CoglPathNode, path_start);
+      node = &c_array_index (data->path_nodes, CoglPathNode, path_start);
 
       for (i = 0; i < node->path_size; i++)
         {
@@ -1527,14 +1527,14 @@ _cogl_path_build_stroke_attribute_buffer (CoglPath *path)
 
   _cogl_buffer_unmap_for_fill_or_fallback (buffer);
 
-  data->stroke_attributes = u_new (CoglAttribute *, n_attributes);
+  data->stroke_attributes = c_new (CoglAttribute *, n_attributes);
 
   /* Now we can loop the sub paths again to create the attributes */
   for (i = 0, path_start = 0;
        path_start < data->path_nodes->len;
        i++, path_start += node->path_size)
     {
-      node = &u_array_index (data->path_nodes, CoglPathNode, path_start);
+      node = &c_array_index (data->path_nodes, CoglPathNode, path_start);
 
       data->stroke_attributes[i] =
         cogl_attribute_new (data->stroke_attribute_buffer,

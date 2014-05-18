@@ -55,12 +55,12 @@ _cogl_profile_trace_message (const char *format, ...);
 
 #define COGL_STATIC_TIMER(A,B,C,D,E) extern void _cogl_dummy_decl (void)
 #define COGL_STATIC_COUNTER(A,B,C,D) extern void _cogl_dummy_decl (void)
-#define COGL_COUNTER_INC(A,B) U_STMT_START{ (void)0; }U_STMT_END
-#define COGL_COUNTER_DEC(A,B) U_STMT_START{ (void)0; }U_STMT_END
-#define COGL_TIMER_START(A,B) U_STMT_START{ (void)0; }U_STMT_END
-#define COGL_TIMER_STOP(A,B) U_STMT_START{ (void)0; }U_STMT_END
+#define COGL_COUNTER_INC(A,B) C_STMT_START{ (void)0; }C_STMT_END
+#define COGL_COUNTER_DEC(A,B) C_STMT_START{ (void)0; }C_STMT_END
+#define COGL_TIMER_START(A,B) C_STMT_START{ (void)0; }C_STMT_END
+#define COGL_TIMER_STOP(A,B) C_STMT_START{ (void)0; }C_STMT_END
 
-#define _cogl_profile_trace_message u_message
+#define _cogl_profile_trace_message c_message
 
 #endif
 

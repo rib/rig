@@ -50,13 +50,13 @@ test_float_verts (TestState *state, int offset_x, int offset_y)
   attributes[0] = cogl_attribute_new (buffer,
                                       "cogl_position_in",
                                       sizeof (FloatVert),
-                                      U_STRUCT_OFFSET (FloatVert, x),
+                                      C_STRUCT_OFFSET (FloatVert, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_SHORT);
   attributes[1] = cogl_attribute_new (buffer,
                                       "color",
                                       sizeof (FloatVert),
-                                      U_STRUCT_OFFSET (FloatVert, r),
+                                      C_STRUCT_OFFSET (FloatVert, r),
                                       4, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
 
@@ -110,13 +110,13 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
   attributes[0] = cogl_attribute_new (buffer,
                                       "cogl_position_in",
                                       sizeof (ByteVert),
-                                      U_STRUCT_OFFSET (ByteVert, x),
+                                      C_STRUCT_OFFSET (ByteVert, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_SHORT);
   attributes[1] = cogl_attribute_new (buffer,
                                       "color",
                                       sizeof (ByteVert),
-                                      U_STRUCT_OFFSET (ByteVert, r),
+                                      C_STRUCT_OFFSET (ByteVert, r),
                                       4, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_UNSIGNED_BYTE);
   cogl_attribute_set_normalized (attributes[1], TRUE);
@@ -140,7 +140,7 @@ test_byte_verts (TestState *state, int offset_x, int offset_y)
   attributes[1] = cogl_attribute_new (unnorm_buffer,
                                       "color",
                                       sizeof (ByteVert),
-                                      U_STRUCT_OFFSET (ByteVert, r),
+                                      C_STRUCT_OFFSET (ByteVert, r),
                                       4, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_BYTE);
 
@@ -191,13 +191,13 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
   attributes[0] = cogl_attribute_new (buffer,
                                       "cogl_position_in",
                                       sizeof (ShortVert),
-                                      U_STRUCT_OFFSET (ShortVert, x),
+                                      C_STRUCT_OFFSET (ShortVert, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_SHORT);
   attributes[1] = cogl_attribute_new (buffer,
                                       "color",
                                       sizeof (ShortVert),
-                                      U_STRUCT_OFFSET (ShortVert, r),
+                                      C_STRUCT_OFFSET (ShortVert, r),
                                       4, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_UNSIGNED_SHORT);
   cogl_attribute_set_normalized (attributes[1], TRUE);
@@ -223,7 +223,7 @@ test_short_verts (TestState *state, int offset_x, int offset_y)
   attributes[0] = cogl_attribute_new (buffer,
                                       "cogl_position_in",
                                       sizeof (ShortVert),
-                                      U_STRUCT_OFFSET (ShortVert, x),
+                                      C_STRUCT_OFFSET (ShortVert, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_UNSIGNED_SHORT);
 
@@ -297,5 +297,5 @@ test_custom_attributes (void)
   cogl_object_unref (snippet);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

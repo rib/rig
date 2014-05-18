@@ -106,7 +106,7 @@ _cogl_boxed_value_equal (const CoglBoxedValue *bva,
                       sizeof (float) * bva->size * bva->size * bva->count);
     }
 
-  u_warn_if_reached ();
+  c_warn_if_reached ();
 
   return FALSE;
 }
@@ -141,7 +141,7 @@ _cogl_boxed_value_set_x (CoglBoxedValue *bv,
   if (count == 1)
     {
       if (bv->count > 1)
-        u_free (bv->v.array);
+        c_free (bv->v.array);
 
       if (transpose)
         _cogl_boxed_value_tranpose (bv->v.float_value,
@@ -158,12 +158,12 @@ _cogl_boxed_value_set_x (CoglBoxedValue *bv,
               bv->size != size ||
               bv->type != type)
             {
-              u_free (bv->v.array);
-              bv->v.array = u_malloc (count * value_size);
+              c_free (bv->v.array);
+              bv->v.array = c_malloc (count * value_size);
             }
         }
       else
-        bv->v.array = u_malloc (count * value_size);
+        bv->v.array = c_malloc (count * value_size);
 
       if (transpose)
         {
@@ -256,19 +256,19 @@ _cogl_boxed_value_copy (CoglBoxedValue *dst,
           break;
 
         case COGL_BOXED_INT:
-          dst->v.int_array = u_memdup (src->v.int_array,
+          dst->v.int_array = c_memdup (src->v.int_array,
                                        src->size * src->count * sizeof (int));
           break;
 
         case COGL_BOXED_FLOAT:
-          dst->v.float_array = u_memdup (src->v.float_array,
+          dst->v.float_array = c_memdup (src->v.float_array,
                                          src->size *
                                          src->count *
                                          sizeof (float));
           break;
 
         case COGL_BOXED_MATRIX:
-          dst->v.float_array = u_memdup (src->v.float_array,
+          dst->v.float_array = c_memdup (src->v.float_array,
                                          src->size * src->size *
                                          src->count * sizeof (float));
           break;
@@ -280,7 +280,7 @@ void
 _cogl_boxed_value_destroy (CoglBoxedValue *bv)
 {
   if (bv->count > 1)
-    u_free (bv->v.array);
+    c_free (bv->v.array);
 }
 
 void

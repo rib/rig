@@ -32,7 +32,7 @@
 #ifndef __COGL_QUATERNION_PRIVATE_H__
 #define __COGL_QUATERNION_PRIVATE_H__
 
-#include <ulib.h>
+#include <clib.h>
 
 /* squared length */
 #define _COGL_QUATERNION_NORM(Q) \

@@ -31,7 +31,7 @@
 #include <config.h>
 
 #include <glib.h>
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-glib-source.h"
 #include "cogl-poll.h"
@@ -42,7 +42,7 @@ typedef struct _CoglGLibSource
 
   CoglRenderer *renderer;
 
-  UArray *poll_fds;
+  CArray *poll_fds;
   int poll_fds_age;
 
   int64_t expiration_time;
@@ -72,15 +72,15 @@ cogl_glib_source_prepare (GSource *source, int *timeout)
       /* Remove any existing polls before adding the new ones */
       for (i = 0; i < cogl_source->poll_fds->len; i++)
         {
-          GPollFD *poll_fd = &u_array_index (cogl_source->poll_fds, GPollFD, i);
+          GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
           g_source_remove_poll (source, poll_fd);
         }
 
-      u_array_set_size (cogl_source->poll_fds, n_poll_fds);
+      c_array_set_size (cogl_source->poll_fds, n_poll_fds);
 
       for (i = 0; i < n_poll_fds; i++)
         {
-          GPollFD *poll_fd = &u_array_index (cogl_source->poll_fds, GPollFD, i);
+          GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
           poll_fd->fd = poll_fds[i].fd;
           g_source_add_poll (source, poll_fd);
         }
@@ -91,7 +91,7 @@ cogl_glib_source_prepare (GSource *source, int *timeout)
   /* Update the events */
   for (i = 0; i < n_poll_fds; i++)
     {
-      GPollFD *poll_fd = &u_array_index (cogl_source->poll_fds, GPollFD, i);
+      GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
       poll_fd->events = poll_fds[i].events;
       poll_fd->revents = 0;
     }
@@ -124,7 +124,7 @@ cogl_glib_source_check (GSource *source)
 
   for (i = 0; i < cogl_source->poll_fds->len; i++)
     {
-      GPollFD *poll_fd = &u_array_index (cogl_source->poll_fds, GPollFD, i);
+      GPollFD *poll_fd = &c_array_index (cogl_source->poll_fds, GPollFD, i);
       if (poll_fd->revents != 0)
         return TRUE;
     }
@@ -139,7 +139,7 @@ cogl_glib_source_dispatch (GSource *source,
 {
   CoglGLibSource *cogl_source = (CoglGLibSource *) source;
   CoglPollFD *poll_fds =
-    (CoglPollFD *) &u_array_index (cogl_source->poll_fds, GPollFD, 0);
+    (CoglPollFD *) &c_array_index (cogl_source->poll_fds, GPollFD, 0);
 
   cogl_poll_renderer_dispatch (cogl_source->renderer,
                                poll_fds,
@@ -153,7 +153,7 @@ cogl_glib_source_finalize (GSource *source)
 {
   CoglGLibSource *cogl_source = (CoglGLibSource *) source;
 
-  u_array_free (cogl_source->poll_fds, TRUE);
+  c_array_free (cogl_source->poll_fds, TRUE);
 }
 
 static GSourceFuncs
@@ -177,7 +177,7 @@ cogl_glib_renderer_source_new (CoglRenderer *renderer,
   cogl_source = (CoglGLibSource *) source;
 
   cogl_source->renderer = renderer;
-  cogl_source->poll_fds = u_array_new (FALSE, FALSE, sizeof (GPollFD));
+  cogl_source->poll_fds = c_array_new (FALSE, FALSE, sizeof (GPollFD));
 
   if (priority != G_PRIORITY_DEFAULT)
     g_source_set_priority (source, priority);

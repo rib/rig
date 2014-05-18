@@ -35,7 +35,7 @@
 #include "cogl-util.h"
 #include "cogl-error-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 #ifdef COGL_HAS_GLIB_SUPPORT
 #include <glib.h>
@@ -49,10 +49,10 @@
 #else
 
 #define _RealError              UError
-#define _real_error_free        u_error_free
-#define _real_error_copy        u_error_copy
-#define _real_error_matches     u_error_matches
-#define _real_error_new_valist  u_error_new_valist
+#define _real_error_free        c_error_free
+#define _real_error_copy        c_error_copy
+#define _real_error_matches     c_error_matches
+#define _real_error_new_valist  c_error_new_valist
 
 #endif
 
@@ -97,7 +97,7 @@ _cogl_set_error (CoglError **error,
 
   if (error == NULL)
     {
-      u_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
+      c_logv (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, format, args);
       va_end (args);
       return;
     }
@@ -108,7 +108,7 @@ _cogl_set_error (CoglError **error,
   if (*error == NULL)
     *error = (CoglError *)new;
   else
-    u_warning (ERROR_OVERWRITTEN_WARNING, new->message);
+    c_warning (ERROR_OVERWRITTEN_WARNING, new->message);
 }
 
 void
@@ -128,11 +128,11 @@ _cogl_propagate_error (CoglError **dest,
 
   if (dest == NULL)
     {
-      u_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
+      c_log (G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, "%s", src->message);
       cogl_error_free (src);
     }
   else if (*dest)
-    u_warning (ERROR_OVERWRITTEN_WARNING, src->message);
+    c_warning (ERROR_OVERWRITTEN_WARNING, src->message);
   else
     *dest = src;
 }

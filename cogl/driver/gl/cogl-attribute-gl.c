@@ -161,7 +161,7 @@ setup_generic_const_attribute (CoglContext *context,
                                         attribute->d.constant.boxed.v.matrix));
       break;
     default:
-      u_warn_if_reached ();
+      c_warn_if_reached ();
     }
 }
 
@@ -214,7 +214,7 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
         break;
       }
 
-  if (U_UNLIKELY (layers_state->options.flags))
+  if (C_UNLIKELY (layers_state->options.flags))
     {
       /* If we haven't already created a derived pipeline... */
       if (!copy)
@@ -237,13 +237,13 @@ _cogl_gl_flush_attributes_state (CoglFramebuffer *framebuffer,
        *                 sizeof (options) != 0)
        *       {
        *         cogl_object_unref (overrides->weak_pipeline);
-       *         u_slice_free (Overrides, overrides);
+       *         c_slice_free (Overrides, overrides);
        *         overrides = NULL;
        *       }
        *   }
        * if (!overrides)
        *   {
-       *     overrides = u_slice_new (Overrides);
+       *     overrides = c_slice_new (Overrides);
        *     overrides->weak_pipeline =
        *       cogl_pipeline_weak_copy (pipeline);
        *     _cogl_pipeline_apply_overrides (overrides->weak_pipeline,

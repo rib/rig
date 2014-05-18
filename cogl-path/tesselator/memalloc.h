@@ -34,11 +34,11 @@
 #ifndef __MEMALLOC_H__
 #define __MEMALLOC_H__
 
-#include <ulib.h>
+#include <clib.h>
 
-#define memRealloc u_realloc
-#define memAlloc   u_malloc
-#define memFree    u_free
+#define memRealloc c_realloc
+#define memAlloc   c_malloc
+#define memFree    c_free
 #define memInit(x) 1
 
 /* tess.c defines TRUE and FALSE itself unconditionally so we need to

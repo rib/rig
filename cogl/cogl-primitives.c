@@ -349,7 +349,7 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
             {
               static CoglBool warning_seen = FALSE;
               if (!warning_seen)
-                u_warning ("Skipping layers 1..n of your material since "
+                c_warning ("Skipping layers 1..n of your material since "
                            "the first layer doesn't support hardware "
                            "repeat (e.g. because of waste or use of "
                            "GL_TEXTURE_RECTANGLE_ARB) and you supplied "
@@ -368,7 +368,7 @@ validate_tex_coords_cb (CoglPipeline *pipeline,
         {
           static CoglBool warning_seen = FALSE;
           if (!warning_seen)
-            u_warning ("Skipping layer %d of your material "
+            c_warning ("Skipping layer %d of your material "
                        "since you have supplied texture coords "
                        "outside the range [0,1] but the texture "
                        "doesn't support hardware repeat (e.g. "
@@ -563,7 +563,7 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
               _cogl_pipeline_prune_to_n_layers (state->override_source, 1);
 
               if (!warning_seen)
-                u_warning ("Skipping layers 1..n of your pipeline since "
+                c_warning ("Skipping layers 1..n of your pipeline since "
                            "the first layer is sliced. We don't currently "
                            "support any multi-texturing with sliced "
                            "textures but assume layer 0 is the most "
@@ -581,7 +581,7 @@ _cogl_rectangles_validate_layer_cb (CoglPipeline *pipeline,
           CoglTexture2D *tex_2d;
 
           if (!warning_seen)
-            u_warning ("Skipping layer %d of your pipeline consisting of "
+            c_warning ("Skipping layer %d of your pipeline consisting of "
                        "a sliced texture (unsuported for multi texturing)",
                        state->i);
           warning_seen = TRUE;

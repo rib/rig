@@ -50,7 +50,7 @@
 #include "cogl-depth-state-private.h"
 #include "cogl-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 #include <string.h>
 
 static void _cogl_pipeline_free (CoglPipeline *tex);
@@ -98,10 +98,10 @@ void
 _cogl_pipeline_init_default_pipeline (void)
 {
   /* Create new - blank - pipeline */
-  CoglPipeline *pipeline = u_slice_new0 (CoglPipeline);
+  CoglPipeline *pipeline = c_slice_new0 (CoglPipeline);
   /* XXX: NB: It's important that we zero this to avoid polluting
    * pipeline hash values with un-initialized data */
-  CoglPipelineBigState *big_state = u_slice_new0 (CoglPipelineBigState);
+  CoglPipelineBigState *big_state = c_slice_new0 (CoglPipelineBigState);
   CoglPipelineAlphaFuncState *alpha_state = &big_state->alpha_state;
   CoglPipelineBlendState *blend_state = &big_state->blend_state;
   CoglPipelineLogicOpsState *logic_ops_state = &big_state->logic_ops_state;
@@ -223,8 +223,8 @@ recursively_free_layer_caches (CoglPipeline *pipeline)
   if (pipeline->layers_cache_dirty)
     return;
 
-  if (U_UNLIKELY (pipeline->layers_cache != pipeline->short_layers_cache))
-    u_slice_free1 (sizeof (CoglPipelineLayer *) * pipeline->n_layers,
+  if (C_UNLIKELY (pipeline->layers_cache != pipeline->short_layers_cache))
+    c_slice_free1 (sizeof (CoglPipelineLayer *) * pipeline->n_layers,
                    pipeline->layers_cache);
   pipeline->layers_cache_dirty = TRUE;
 
@@ -315,7 +315,7 @@ _cogl_pipeline_revert_weak_ancestors (CoglPipeline *strong)
 static CoglPipeline *
 _cogl_pipeline_copy (CoglPipeline *src, CoglBool is_weak)
 {
-  CoglPipeline *pipeline = u_slice_new (CoglPipeline);
+  CoglPipeline *pipeline = c_slice_new (CoglPipeline);
 
   _cogl_pipeline_node_init (COGL_NODE (pipeline));
 
@@ -423,7 +423,7 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
                                      destroy_weak_children_cb,
                                      NULL);
 
-  u_assert (_cogl_list_empty (&COGL_NODE (pipeline)->children));
+  c_assert (_cogl_list_empty (&COGL_NODE (pipeline)->children));
 
   _cogl_pipeline_unparent (COGL_NODE (pipeline));
 
@@ -436,7 +436,7 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
 
       for (i = 0; i < n_overrides; i++)
         _cogl_boxed_value_destroy (uniforms_state->override_values + i);
-      u_free (uniforms_state->override_values);
+      c_free (uniforms_state->override_values);
 
       _cogl_bitmask_destroy (&uniforms_state->override_mask);
       _cogl_bitmask_destroy (&uniforms_state->changed_mask);
@@ -444,9 +444,9 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
 
   if (pipeline->differences & COGL_PIPELINE_STATE_LAYERS)
     {
-      u_list_foreach (pipeline->layer_differences,
+      c_list_foreach (pipeline->layer_differences,
                       (GFunc)cogl_object_unref, NULL);
-      u_list_free (pipeline->layer_differences);
+      c_list_free (pipeline->layer_differences);
     }
 
   if (pipeline->differences & COGL_PIPELINE_STATE_VERTEX_SNIPPETS)
@@ -458,9 +458,9 @@ _cogl_pipeline_free (CoglPipeline *pipeline)
   recursively_free_layer_caches (pipeline);
 
   if (pipeline->differences & COGL_PIPELINE_STATE_NEEDS_BIG_STATE)
-    u_slice_free (CoglPipelineBigState, pipeline->big_state);
+    c_slice_free (CoglPipelineBigState, pipeline->big_state);
 
-  u_slice_free (CoglPipeline, pipeline);
+  c_slice_free (CoglPipeline, pipeline);
 }
 
 CoglBool
@@ -479,24 +479,24 @@ _cogl_pipeline_update_layers_cache (CoglPipeline *pipeline)
   CoglPipeline *current;
   int layers_found;
 
-  if (U_LIKELY (!pipeline->layers_cache_dirty) ||
+  if (C_LIKELY (!pipeline->layers_cache_dirty) ||
       pipeline->n_layers == 0)
     return;
 
   pipeline->layers_cache_dirty = FALSE;
 
   n_layers = pipeline->n_layers;
-  if (U_LIKELY (n_layers < U_N_ELEMENTS (pipeline->short_layers_cache)))
+  if (C_LIKELY (n_layers < C_N_ELEMENTS (pipeline->short_layers_cache)))
     {
       pipeline->layers_cache = pipeline->short_layers_cache;
       memset (pipeline->layers_cache, 0,
               sizeof (CoglPipelineLayer *) *
-              U_N_ELEMENTS (pipeline->short_layers_cache));
+              C_N_ELEMENTS (pipeline->short_layers_cache));
     }
   else
     {
       pipeline->layers_cache =
-        u_slice_alloc0 (sizeof (CoglPipelineLayer *) * n_layers);
+        c_slice_alloc0 (sizeof (CoglPipelineLayer *) * n_layers);
     }
 
   /* Notes:
@@ -527,7 +527,7 @@ _cogl_pipeline_update_layers_cache (CoglPipeline *pipeline)
        _cogl_pipeline_get_parent (current);
        current = _cogl_pipeline_get_parent (current))
     {
-      UList *l;
+      CList *l;
 
       if (!(current->differences & COGL_PIPELINE_STATE_LAYERS))
         continue;
@@ -547,7 +547,7 @@ _cogl_pipeline_update_layers_cache (CoglPipeline *pipeline)
         }
     }
 
-  u_warn_if_reached ();
+  c_warn_if_reached ();
 }
 
 /* XXX: Be carefull when using this API that the callback given doesn't result
@@ -638,7 +638,7 @@ cogl_pipeline_foreach_layer (CoglPipeline *pipeline,
    * user doesn't remove layers. */
 
   state.i = 0;
-  state.indices = u_alloca (authority->n_layers * sizeof (int));
+  state.indices = c_alloca (authority->n_layers * sizeof (int));
 
   _cogl_pipeline_foreach_layer_internal (pipeline,
                                          append_layer_index_cb,
@@ -738,7 +738,7 @@ _cogl_pipeline_needs_blending_enabled (CoglPipeline *pipeline,
   CoglPipelineBlendState *blend_state;
   CoglPipelineBlendEnable enabled;
 
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_BLENDING)))
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DISABLE_BLENDING)))
     return FALSE;
 
   /* We unconditionally check the _BLEND_ENABLE state first because
@@ -849,15 +849,15 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
 
   if (differences & COGL_PIPELINE_STATE_LAYERS)
     {
-      UList *l;
+      CList *l;
 
       if (dest->differences & COGL_PIPELINE_STATE_LAYERS &&
           dest->layer_differences)
         {
-          u_list_foreach (dest->layer_differences,
+          c_list_foreach (dest->layer_differences,
                           (GFunc)cogl_object_unref,
                           NULL);
-          u_list_free (dest->layer_differences);
+          c_list_free (dest->layer_differences);
         }
 
       for (l = src->layer_differences; l; l = l->next)
@@ -881,7 +881,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
     {
       if (!dest->has_big_state)
         {
-          dest->big_state = u_slice_new (CoglPipelineBigState);
+          dest->big_state = c_slice_new (CoglPipelineBigState);
           dest->has_big_state = TRUE;
         }
       big_state = dest->big_state;
@@ -941,7 +941,7 @@ _cogl_pipeline_copy_differences (CoglPipeline *dest,
       int i;
 
       big_state->uniforms_state.override_values =
-        u_malloc (n_overrides * sizeof (CoglBoxedValue));
+        c_malloc (n_overrides * sizeof (CoglBoxedValue));
 
       for (i = 0; i < n_overrides; i++)
         {
@@ -1005,7 +1005,7 @@ _cogl_pipeline_init_multi_property_sparse_state (CoglPipeline *pipeline,
     case COGL_PIPELINE_STATE_POINT_SIZE:
     case COGL_PIPELINE_STATE_PER_VERTEX_POINT_SIZE:
     case COGL_PIPELINE_STATE_REAL_BLEND_ENABLE:
-      u_return_if_reached ();
+      c_return_if_reached ();
 
     case COGL_PIPELINE_STATE_LAYERS:
       pipeline->n_layers = authority->n_layers;
@@ -1275,7 +1275,7 @@ _cogl_pipeline_pre_change_notify (CoglPipeline     *pipeline,
   if (change & COGL_PIPELINE_STATE_NEEDS_BIG_STATE &&
       !pipeline->has_big_state)
     {
-      pipeline->big_state = u_slice_new (CoglPipelineBigState);
+      pipeline->big_state = c_slice_new (CoglPipelineBigState);
       pipeline->has_big_state = TRUE;
     }
 
@@ -1344,7 +1344,7 @@ _cogl_pipeline_add_layer_difference (CoglPipeline *pipeline,
   pipeline->differences |= COGL_PIPELINE_STATE_LAYERS;
 
   pipeline->layer_differences =
-    u_list_prepend (pipeline->layer_differences, layer);
+    c_list_prepend (pipeline->layer_differences, layer);
 
   if (inc_n_layers)
     pipeline->n_layers++;
@@ -1388,7 +1388,7 @@ _cogl_pipeline_remove_layer_difference (CoglPipeline *pipeline,
       cogl_object_unref (layer);
 
       pipeline->layer_differences =
-        u_list_remove (pipeline->layer_differences, layer);
+        c_list_remove (pipeline->layer_differences, layer);
     }
 
   pipeline->differences |= COGL_PIPELINE_STATE_LAYERS;
@@ -1493,8 +1493,8 @@ _cogl_pipeline_prune_to_n_layers (CoglPipeline *pipeline, int n)
   CoglPipeline *authority =
     _cogl_pipeline_get_authority (pipeline, COGL_PIPELINE_STATE_LAYERS);
   CoglPipelinePruneLayersInfo state;
-  UList *l;
-  UList *next;
+  CList *l;
+  CList *next;
 
   if (authority->n_layers <= n)
     return;
@@ -1659,7 +1659,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
    * and bump up the texture unit for all layers with an index
    * > layer_index. */
   layer_info.layers_to_shift =
-    u_alloca (sizeof (CoglPipelineLayer *) * authority->n_layers);
+    c_alloca (sizeof (CoglPipelineLayer *) * authority->n_layers);
   layer_info.n_layers_to_shift = 0;
 
   /* If an exact match is found though we don't need a complete
@@ -1683,7 +1683,7 @@ _cogl_pipeline_get_layer_with_flags (CoglPipeline *pipeline,
       new = _cogl_pipeline_set_layer_unit (NULL, layer, unit_index);
       /* Since we passed a newly allocated layer we wouldn't expect
        * _set_layer_unit() to have to allocate *another* layer. */
-      u_assert (new == layer);
+      c_assert (new == layer);
     }
   layer->index = layer_index;
 
@@ -1710,8 +1710,8 @@ void
 _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
                                              CoglPipelineLayer *layer)
 {
-  /* Find the UList link that references the empty layer */
-  UList *link = u_list_find (layers_authority->layer_differences, layer);
+  /* Find the CList link that references the empty layer */
+  CList *link = c_list_find (layers_authority->layer_differences, layer);
   /* No pipeline directly owns the root node layer so this is safe... */
   CoglPipelineLayer *layer_parent = _cogl_pipeline_layer_get_parent (layer);
   CoglPipelineLayerInfo layer_info;
@@ -1751,7 +1751,7 @@ _cogl_pipeline_prune_empty_layer_difference (CoglPipeline *layers_authority,
    * and bump up the texture unit for all layers with an index
    * > layer_index. */
   layer_info.layers_to_shift =
-    u_alloca (sizeof (CoglPipelineLayer *) * layers_authority->n_layers);
+    c_alloca (sizeof (CoglPipelineLayer *) * layers_authority->n_layers);
   layer_info.n_layers_to_shift = 0;
 
   /* If an exact match is found though we don't need a complete
@@ -1828,7 +1828,7 @@ fallback_layer_cb (CoglPipelineLayer *layer, void *user_data)
 
   if (texture == NULL)
     {
-      u_warning ("We don't have a fallback texture we can use to fill "
+      c_warning ("We don't have a fallback texture we can use to fill "
                  "in for an invalid pipeline layer, since it was "
                  "using an unsupported texture target ");
       /* might get away with this... */
@@ -1945,15 +1945,15 @@ unsigned long
 _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
                                     CoglPipeline *pipeline1)
 {
-  USList *head0 = NULL;
-  USList *head1 = NULL;
+  CSList *head0 = NULL;
+  CSList *head1 = NULL;
   CoglPipeline *node0;
   CoglPipeline *node1;
   int len0 = 0;
   int len1 = 0;
   int count;
-  USList *common_ancestor0;
-  USList *common_ancestor1;
+  CSList *common_ancestor0;
+  CSList *common_ancestor1;
   unsigned long pipelines_difference = 0;
 
   /* Algorithm:
@@ -1971,7 +1971,7 @@ _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
 
   for (node0 = pipeline0; node0; node0 = _cogl_pipeline_get_parent (node0))
     {
-      USList *link = alloca (sizeof (USList));
+      CSList *link = alloca (sizeof (CSList));
       link->next = head0;
       link->data = node0;
       head0 = link;
@@ -1979,7 +1979,7 @@ _cogl_pipeline_compare_differences (CoglPipeline *pipeline0,
     }
   for (node1 = pipeline1; node1; node1 = _cogl_pipeline_get_parent (node1))
     {
-      USList *link = alloca (sizeof (USList));
+      CSList *link = alloca (sizeof (CSList));
       link->next = head1;
       link->data = node1;
       head1 = link;
@@ -2049,7 +2049,7 @@ _cogl_pipeline_resolve_authorities (CoglPipeline *pipeline,
     }
   while ((authority = _cogl_pipeline_get_parent (authority)));
 
-  u_assert (remaining == 0);
+  c_assert (remaining == 0);
 }
 
 /* Comparison of two arbitrary pipelines is done by:
@@ -2221,7 +2221,7 @@ _cogl_pipeline_equal (CoglPipeline *pipeline0,
         case COGL_PIPELINE_STATE_BLEND_ENABLE_INDEX:
         case COGL_PIPELINE_STATE_REAL_BLEND_ENABLE_INDEX:
         case COGL_PIPELINE_STATE_COUNT:
-          u_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
   COGL_FLAGS_FOREACH_END;
@@ -2254,7 +2254,7 @@ _cogl_pipeline_prune_redundant_ancestry (CoglPipeline *pipeline)
    */
   if (pipeline->differences & COGL_PIPELINE_STATE_LAYERS)
     {
-      if (pipeline->n_layers != u_list_length (pipeline->layer_differences))
+      if (pipeline->n_layers != c_list_length (pipeline->layer_differences))
         return;
     }
 
@@ -2332,7 +2332,7 @@ cogl_pipeline_remove_layer (CoglPipeline *pipeline, int layer_index)
    * dropped down to a lower texture unit to fill the gap of the
    * removed layer. */
   layer_info.layers_to_shift =
-    u_alloca (sizeof (CoglPipelineLayer *) * authority->n_layers);
+    c_alloca (sizeof (CoglPipelineLayer *) * authority->n_layers);
   layer_info.n_layers_to_shift = 0;
 
   /* Unlike when we query layer info when adding a layer we must
@@ -2776,7 +2776,7 @@ _cogl_pipeline_find_equivalent_parent (CoglPipeline *pipeline,
         return authority0;
 
       authority0_layers =
-        u_alloca (sizeof (CoglPipelineLayer *) * n_layers);
+        c_alloca (sizeof (CoglPipelineLayer *) * n_layers);
       state.i = 0;
       state.layers = authority0_layers;
       _cogl_pipeline_foreach_layer_internal (authority0,
@@ -2784,7 +2784,7 @@ _cogl_pipeline_find_equivalent_parent (CoglPipeline *pipeline,
                                              &state);
 
       authority1_layers =
-        u_alloca (sizeof (CoglPipelineLayer *) * n_layers);
+        c_alloca (sizeof (CoglPipelineLayer *) * n_layers);
       state.i = 0;
       state.layers = authority1_layers;
       _cogl_pipeline_foreach_layer_internal (authority1,
@@ -2885,15 +2885,15 @@ cogl_pipeline_get_uniform_location (CoglPipeline *pipeline,
      be. */
 
   /* Look for an existing uniform with this name */
-  if (u_hash_table_lookup_extended (ctx->uniform_name_hash,
+  if (c_hash_table_lookup_extended (ctx->uniform_name_hash,
                                     uniform_name,
                                     NULL,
                                     &location_ptr))
     return GPOINTER_TO_INT (location_ptr);
 
-  uniform_name_copy = u_strdup (uniform_name);
-  u_ptr_array_add (ctx->uniform_names, uniform_name_copy);
-  u_hash_table_insert (ctx->uniform_name_hash,
+  uniform_name_copy = c_strdup (uniform_name);
+  c_ptr_array_add (ctx->uniform_names, uniform_name_copy);
+  c_hash_table_insert (ctx->uniform_name_hash,
                        uniform_name_copy,
                        GINT_TO_POINTER (ctx->n_uniform_names));
 

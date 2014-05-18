@@ -29,7 +29,7 @@
 #ifndef __COGL_POINT_INT_POLYGON_PRIVATE_H
 #define __COGL_POINT_INT_POLYGON_PRIVATE_H
 
-#include <ulib.h>
+#include <clib.h>
 
 COGL_BEGIN_DECLS
 

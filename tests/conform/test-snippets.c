@@ -773,7 +773,7 @@ run_tests (TestState *state)
 {
   int i;
 
-  for (i = 0; i < U_N_ELEMENTS (tests); i++)
+  for (i = 0; i < C_N_ELEMENTS (tests); i++)
     {
       cogl_framebuffer_clear4f (test_fb,
                                 COGL_BUFFER_BIT_COLOR,
@@ -801,5 +801,5 @@ test_snippets (void)
   run_tests (&state);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

@@ -60,7 +60,7 @@ make_texture (void)
   CoglTexture *tex;
   int partx, party, width, height;
 
-  p = tex_data = u_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
+  p = tex_data = c_malloc (TEXTURE_SIZE * TEXTURE_SIZE * 4);
 
   /* Make a texture with a different color for each part */
   for (party = 0; party < PARTS; party++)
@@ -100,9 +100,9 @@ make_texture (void)
   if (cogl_test_verbose ())
     {
       if (cogl_texture_is_sliced (tex))
-        u_print ("Texture is sliced\n");
+        c_print ("Texture is sliced\n");
       else
-        u_print ("Texture is not sliced\n");
+        c_print ("Texture is not sliced\n");
     }
 
   /* The texture should be sliced unless NPOTs are supported */
@@ -149,9 +149,9 @@ test_npot_texture (void)
   if (cogl_test_verbose ())
     {
       if (cogl_has_feature (test_ctx, COGL_FEATURE_ID_TEXTURE_NPOT))
-        u_print ("NPOT textures are supported\n");
+        c_print ("NPOT textures are supported\n");
       else
-        u_print ("NPOT textures are not supported\n");
+        c_print ("NPOT textures are not supported\n");
     }
 
   cogl_framebuffer_orthographic (test_fb,
@@ -165,6 +165,6 @@ test_npot_texture (void)
   validate_result ();
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }
 

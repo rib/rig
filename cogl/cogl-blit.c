@@ -276,7 +276,7 @@ _cogl_blit_get_tex_data_begin (CoglBlitData *data)
   data->format = _cogl_texture_get_format (data->src_tex);
   data->bpp = _cogl_pixel_format_get_bytes_per_pixel (data->format);
 
-  data->image_data = u_malloc (data->bpp * data->src_width *
+  data->image_data = c_malloc (data->bpp * data->src_width *
                                data->src_height);
   cogl_texture_get_data (data->src_tex, data->format,
                          data->src_width * data->bpp, data->image_data);
@@ -311,7 +311,7 @@ _cogl_blit_get_tex_data_blit (CoglBlitData *data,
 static void
 _cogl_blit_get_tex_data_end (CoglBlitData *data)
 {
-  u_free (data->image_data);
+  c_free (data->image_data);
 }
 
 /* These should be specified in order of preference */
@@ -361,18 +361,18 @@ _cogl_blit_begin (CoglBlitData *data,
          variable is named to be specific to the atlas code. If we
          want to use the code in other places we should create another
          environment variable for each specific use case */
-      if ((default_mode_string = u_getenv ("COGL_ATLAS_DEFAULT_BLIT_MODE")))
+      if ((default_mode_string = c_getenv ("COGL_ATLAS_DEFAULT_BLIT_MODE")))
         {
-          for (i = 0; i < U_N_ELEMENTS (_cogl_blit_modes); i++)
+          for (i = 0; i < C_N_ELEMENTS (_cogl_blit_modes); i++)
             if (!strcmp (_cogl_blit_modes[i].name, default_mode_string))
               {
                 _cogl_blit_default_mode = _cogl_blit_modes + i;
                 break;
               }
 
-          if (i >= U_N_ELEMENTS (_cogl_blit_modes))
+          if (i >= C_N_ELEMENTS (_cogl_blit_modes))
             {
-              u_warning ("Unknown blit mode %s", default_mode_string);
+              c_warning ("Unknown blit mode %s", default_mode_string);
               _cogl_blit_default_mode = _cogl_blit_modes;
             }
         }
@@ -396,7 +396,7 @@ _cogl_blit_begin (CoglBlitData *data,
                  _cogl_blit_default_mode->name);
 
       /* Try all of the other modes in order */
-      for (i = 0; i < U_N_ELEMENTS (_cogl_blit_modes); i++)
+      for (i = 0; i < C_N_ELEMENTS (_cogl_blit_modes); i++)
         if (_cogl_blit_modes + i != _cogl_blit_default_mode &&
             _cogl_blit_modes[i].begin_func (data))
           {
@@ -410,7 +410,7 @@ _cogl_blit_begin (CoglBlitData *data,
                      _cogl_blit_modes[i].name);
 
       /* The last blit mode can't fail so this should never happen */
-      _COGL_RETURN_IF_FAIL (i < U_N_ELEMENTS (_cogl_blit_modes));
+      _COGL_RETURN_IF_FAIL (i < C_N_ELEMENTS (_cogl_blit_modes));
     }
 
   data->blit_mode = _cogl_blit_default_mode;

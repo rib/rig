@@ -175,9 +175,9 @@ cogl_euler_equal (const void *v1, const void *v2)
 CoglEuler *
 cogl_euler_copy (const CoglEuler *src)
 {
-  if (U_LIKELY (src))
+  if (C_LIKELY (src))
     {
-      CoglEuler *new = u_slice_new (CoglEuler);
+      CoglEuler *new = c_slice_new (CoglEuler);
       memcpy (new, src, sizeof (float) * 3);
       return new;
     }
@@ -188,6 +188,6 @@ cogl_euler_copy (const CoglEuler *src)
 void
 cogl_euler_free (CoglEuler *euler)
 {
-  u_slice_free (CoglEuler, euler);
+  c_slice_free (CoglEuler, euler);
 }
 

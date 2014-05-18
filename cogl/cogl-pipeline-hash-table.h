@@ -54,7 +54,7 @@ typedef struct
   unsigned int main_state;
   unsigned int layer_state;
 
-  UHashTable *table;
+  CHashTable *table;
 } CoglPipelineHashTable;
 
 void

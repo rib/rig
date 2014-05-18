@@ -33,7 +33,7 @@
 
 #include "cogl-texture-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 struct _CoglSubTexture
 {

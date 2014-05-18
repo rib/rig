@@ -43,7 +43,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-util.h"
 #include "cogl-context-private.h"
@@ -56,19 +56,19 @@
  * abstract class manually.
  */
 
-static USList *_cogl_buffer_types;
+static CSList *_cogl_buffer_types;
 
 void
 _cogl_buffer_register_buffer_type (const CoglObjectClass *klass)
 {
-  _cogl_buffer_types = u_slist_prepend (_cogl_buffer_types, (void *) klass);
+  _cogl_buffer_types = c_slist_prepend (_cogl_buffer_types, (void *) klass);
 }
 
 CoglBool
 cogl_is_buffer (void *object)
 {
   const CoglObject *obj = object;
-  USList *l;
+  CSList *l;
 
   if (object == NULL)
     return FALSE;
@@ -152,7 +152,7 @@ _cogl_buffer_initialize (CoglBuffer *buffer,
       buffer->vtable.unmap = malloc_unmap;
       buffer->vtable.set_data = malloc_set_data;
 
-      buffer->data = u_malloc (size);
+      buffer->data = c_malloc (size);
     }
   else
     {
@@ -175,7 +175,7 @@ _cogl_buffer_fini (CoglBuffer *buffer)
   if (buffer->flags & COGL_BUFFER_FLAG_BUFFER_OBJECT)
     buffer->context->driver_vtable->buffer_destroy (buffer);
   else
-    u_free (buffer->data);
+    c_free (buffer->data);
 }
 
 unsigned int
@@ -194,7 +194,7 @@ cogl_buffer_set_update_hint (CoglBuffer *buffer,
   if (!cogl_is_buffer (buffer))
     return;
 
-  if (U_UNLIKELY (hint > COGL_BUFFER_UPDATE_HINT_STREAM))
+  if (C_UNLIKELY (hint > COGL_BUFFER_UPDATE_HINT_STREAM))
     hint = COGL_BUFFER_UPDATE_HINT_STATIC;
 
   buffer->update_hint = hint;
@@ -215,7 +215,7 @@ warn_about_midscene_changes (void)
   static CoglBool seen = FALSE;
   if (!seen)
     {
-      u_warning ("Mid-scene modification of buffers has "
+      c_warning ("Mid-scene modification of buffers has "
                  "undefined results\n");
       seen = TRUE;
     }
@@ -243,7 +243,7 @@ cogl_buffer_map_range (CoglBuffer *buffer,
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_buffer (buffer), NULL);
   _COGL_RETURN_VAL_IF_FAIL (!(buffer->flags & COGL_BUFFER_FLAG_MAPPED), NULL);
 
-  if (U_UNLIKELY (buffer->immutable_ref))
+  if (C_UNLIKELY (buffer->immutable_ref))
     warn_about_midscene_changes ();
 
   buffer->data = buffer->vtable.map_range (buffer,
@@ -303,7 +303,7 @@ _cogl_buffer_map_range_for_fill_or_fallback (CoglBuffer *buffer,
      the data and then upload it using cogl_buffer_set_data when
      the buffer is unmapped. The temporary buffer is shared to
      avoid reallocating it every time */
-  u_byte_array_set_size (ctx->buffer_map_fallback_array, size);
+  c_byte_array_set_size (ctx->buffer_map_fallback_array, size);
   ctx->buffer_map_fallback_offset = offset;
 
   buffer->flags |= COGL_BUFFER_FLAG_MAPPED_FALLBACK;
@@ -357,7 +357,7 @@ cogl_buffer_set_data (CoglBuffer *buffer,
   _COGL_RETURN_VAL_IF_FAIL (cogl_is_buffer (buffer), FALSE);
   _COGL_RETURN_VAL_IF_FAIL ((offset + size) <= buffer->size, FALSE);
 
-  if (U_UNLIKELY (buffer->immutable_ref))
+  if (C_UNLIKELY (buffer->immutable_ref))
     warn_about_midscene_changes ();
 
   return buffer->vtable.set_data (buffer, offset, data, size, error);

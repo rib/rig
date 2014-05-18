@@ -21,7 +21,7 @@ static CoglTexture3D *
 create_texture_3d (CoglContext *context)
 {
   int x, y, z;
-  uint8_t *data = u_malloc (TEX_IMAGE_STRIDE * TEX_DEPTH);
+  uint8_t *data = c_malloc (TEX_IMAGE_STRIDE * TEX_DEPTH);
   uint8_t *p = data;
   CoglTexture3D *tex;
   CoglError *error = NULL;
@@ -136,13 +136,13 @@ draw_frame (TestState *state)
   attributes[0] = cogl_attribute_new (attribute_buffer,
                                       "cogl_position_in",
                                       sizeof (Vert),
-                                      U_STRUCT_OFFSET (Vert, x),
+                                      C_STRUCT_OFFSET (Vert, x),
                                       2, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
   attributes[1] = cogl_attribute_new (attribute_buffer,
                                       "cogl_tex_coord_in",
                                       sizeof (Vert),
-                                      U_STRUCT_OFFSET (Vert, s),
+                                      C_STRUCT_OFFSET (Vert, s),
                                       3, /* n_components */
                                       COGL_ATTRIBUTE_TYPE_FLOAT);
   primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
@@ -270,5 +270,5 @@ test_texture_3d (void)
   test_multi_texture (&state);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

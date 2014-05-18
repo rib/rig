@@ -32,7 +32,7 @@
 #ifndef __COGL_FLAGS_H
 #define __COGL_FLAGS_H
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-util.h"
 
@@ -76,14 +76,14 @@ COGL_BEGIN_DECLS
 /* The expectation here is that @value will be constant so the if
    statement will be optimised out */
 #define COGL_FLAGS_SET(array, flag, value)      \
-  U_STMT_START {                                \
+  C_STMT_START {                                \
     if (value)                                  \
       ((array)[COGL_FLAGS_GET_INDEX (flag)] |=  \
        COGL_FLAGS_GET_MASK (flag));             \
     else                                        \
       ((array)[COGL_FLAGS_GET_INDEX (flag)] &=  \
        ~COGL_FLAGS_GET_MASK (flag));            \
-  } U_STMT_END
+  } C_STMT_END
 
 /* Macros to help iterate an array of flags. It should be used like
  * this:
@@ -99,7 +99,7 @@ COGL_BEGIN_DECLS
  * COGL_FLAGS_FOREACH_END;
  */
 #define COGL_FLAGS_FOREACH_START(array, n_longs, bit)   \
-  U_STMT_START {                                        \
+  C_STMT_START {                                        \
   const unsigned long *_p = (array);                    \
   int _n_longs = (n_longs);                             \
   int _i;                                               \
@@ -122,7 +122,7 @@ COGL_BEGIN_DECLS
           _mask = (_mask >> (_next_bit - 1)) >> 1;      \
 
 #define COGL_FLAGS_FOREACH_END \
-  } } } U_STMT_END
+  } } } C_STMT_END
 
 COGL_END_DECLS
 

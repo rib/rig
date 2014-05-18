@@ -2,8 +2,8 @@ include $(top_srcdir)/build/autotools/Makefile.am.silent
 
 AM_CPPFLAGS = \
 	-I$(top_srcdir) \
-	-I$(top_srcdir)/deps/ulib/src \
-	-I$(top_builddir)/deps/ulib/src
+	-I$(top_srcdir)/deps/clib/src \
+	-I$(top_builddir)/deps/clib/src
 
 AM_CFLAGS = \
 	$(COGL_DEP_CFLAGS) \
@@ -18,7 +18,7 @@ endif
 common_ldadd = \
 	$(COGL_DEP_LIBS) \
 	$(top_builddir)/cogl/libcogl2.la \
-	$(top_builddir)/deps/ulib/src/libulib.la \
+	$(top_builddir)/deps/clib/src/libclib.la \
 	$(LIBM)
 
 programs = cogl-info
@@ -106,7 +106,7 @@ cogl_sdl2_hello_LDADD = $(common_ldadd)
 endif
 
 if USING_EMSCRIPTEN
-%.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/deps/ulib/src/.libs/libulib.a
+%.html: %.o $(top_builddir)/cogl/.libs/libcogl2.so $(top_builddir)/deps/clib/src/.libs/libclib.a
 	$(CC) $(AM_CFLAGS) $(CFLAGS) --js-library $(top_srcdir)/examples/emscripten-example-js-library.js -o $@ $^
 
 all-local: $(addsuffix .html, $(programs))

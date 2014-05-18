@@ -35,7 +35,7 @@
 #include "cogl-flags.h"
 #include "cogl-util.h"
 
-#include <ulib.h>
+#include <clib.h>
 
 COGL_BEGIN_DECLS
 
@@ -77,7 +77,7 @@ typedef enum {
   COGL_DEBUG_N_FLAGS
 } CoglDebugFlags;
 
-extern UHashTable *_cogl_debug_instances;
+extern CHashTable *_cogl_debug_instances;
 #define COGL_DEBUG_N_LONGS COGL_FLAGS_N_LONGS_FOR_SIZE (COGL_DEBUG_N_FLAGS)
 
 /* _cogl_debug_flags currently needs to exported outside of the shared
@@ -95,18 +95,18 @@ COGL_EXPORT extern unsigned long _cogl_debug_flags[COGL_DEBUG_N_LONGS];
   COGL_FLAGS_SET (_cogl_debug_flags, flag, FALSE)
 
 #ifdef __GNUC__
-#define COGL_NOTE(type,x,a...)                      U_STMT_START {            \
-        if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
+#define COGL_NOTE(type,x,a...)                      C_STMT_START {            \
+        if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
           _cogl_profile_trace_message ("[" #type "] " G_STRLOC " & " x, ##a); \
-        }                                           } U_STMT_END
+        }                                           } C_STMT_END
 
 #else
-#define COGL_NOTE(type,...)                         U_STMT_START {            \
-        if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
-          char *_fmt = u_strdup_printf (__VA_ARGS__);                         \
+#define COGL_NOTE(type,...)                         C_STMT_START {            \
+        if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_##type))) {            \
+          char *_fmt = c_strdup_printf (__VA_ARGS__);                         \
           _cogl_profile_trace_message ("[" #type "] " G_STRLOC " & %s", _fmt);\
-          u_free (_fmt);                                                      \
-        }                                           } U_STMT_END
+          c_free (_fmt);                                                      \
+        }                                           } C_STMT_END
 
 #endif /* __GNUC__ */
 

@@ -166,5 +166,5 @@ test_write_texture_formats (void)
                   -1);
 
   if (cogl_test_verbose ())
-    u_print ("OK\n");
+    c_print ("OK\n");
 }

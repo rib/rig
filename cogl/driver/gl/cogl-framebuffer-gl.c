@@ -41,7 +41,7 @@
 #include "cogl-texture-gl-private.h"
 #include "cogl-texture-private.h"
 
-#include <ulib.h>
+#include <clib.h>
 #include <string.h>
 
 #ifndef GL_FRAMEBUFFER
@@ -124,7 +124,7 @@ _cogl_framebuffer_gl_flush_viewport_state (CoglFramebuffer *framebuffer)
 {
   float gl_viewport_y;
 
-  u_assert (framebuffer->viewport_width >=0 &&
+  c_assert (framebuffer->viewport_width >=0 &&
             framebuffer->viewport_height >=0);
 
   /* Convert the Cogl viewport y offset to an OpenGL viewport y offset
@@ -315,9 +315,9 @@ _cogl_framebuffer_gl_flush_state (CoglFramebuffer *draw_buffer,
     return;
 
   /* Lazily ensure the framebuffers have been allocated */
-  if (U_UNLIKELY (!draw_buffer->allocated))
+  if (C_UNLIKELY (!draw_buffer->allocated))
     cogl_framebuffer_allocate (draw_buffer, NULL);
-  if (U_UNLIKELY (!read_buffer->allocated))
+  if (C_UNLIKELY (!read_buffer->allocated))
     cogl_framebuffer_allocate (read_buffer, NULL);
 
   /* We handle buffer binding separately since the method depends on whether
@@ -378,7 +378,7 @@ _cogl_framebuffer_gl_flush_state (CoglFramebuffer *draw_buffer,
            * be taken into account when flushing the pipeline's depth state. */
           break;
         default:
-          u_warn_if_reached ();
+          c_warn_if_reached ();
         }
     }
   COGL_FLAGS_FOREACH_END;
@@ -413,7 +413,7 @@ attach_depth_texture (CoglContext *ctx,
     {
       /* attach a GL_DEPTH_STENCIL texture to the GL_DEPTH_ATTACHMENT and
        * GL_STENCIL_ATTACHMENT attachement points */
-      u_assert (_cogl_texture_get_format (depth_texture) ==
+      c_assert (_cogl_texture_get_format (depth_texture) ==
                 COGL_PIXEL_FORMAT_DEPTH_24_STENCIL_8);
 
       cogl_texture_get_gl_texture (depth_texture,
@@ -432,7 +432,7 @@ attach_depth_texture (CoglContext *ctx,
     {
       /* attach a newly created GL_DEPTH_COMPONENT16 texture to the
        * GL_DEPTH_ATTACHMENT attachement point */
-      u_assert (_cogl_texture_get_format (depth_texture) ==
+      c_assert (_cogl_texture_get_format (depth_texture) ==
                 COGL_PIXEL_FORMAT_DEPTH_16);
 
       cogl_texture_get_gl_texture (COGL_TEXTURE (depth_texture),
@@ -447,14 +447,14 @@ attach_depth_texture (CoglContext *ctx,
   return COGL_TEXTURE (depth_texture);
 }
 
-static UList *
+static CList *
 try_creating_renderbuffers (CoglContext *ctx,
                             int width,
                             int height,
                             CoglOffscreenAllocateFlags flags,
                             int n_samples)
 {
-  UList *renderbuffers = NULL;
+  CList *renderbuffers = NULL;
   GLuint gl_depth_stencil_handle;
 
   if (flags & COGL_OFFSCREEN_ALLOCATE_FLAG_DEPTH_STENCIL)
@@ -514,7 +514,7 @@ try_creating_renderbuffers (CoglContext *ctx,
                                           gl_depth_stencil_handle));
 #endif
       renderbuffers =
-        u_list_prepend (renderbuffers,
+        c_list_prepend (renderbuffers,
                         GUINT_TO_POINTER (gl_depth_stencil_handle));
     }
 
@@ -539,7 +539,7 @@ try_creating_renderbuffers (CoglContext *ctx,
                                           GL_DEPTH_ATTACHMENT,
                                           GL_RENDERBUFFER, gl_depth_handle));
       renderbuffers =
-        u_list_prepend (renderbuffers, GUINT_TO_POINTER (gl_depth_handle));
+        c_list_prepend (renderbuffers, GUINT_TO_POINTER (gl_depth_handle));
     }
 
   if (flags & COGL_OFFSCREEN_ALLOCATE_FLAG_STENCIL)
@@ -561,16 +561,16 @@ try_creating_renderbuffers (CoglContext *ctx,
                                           GL_STENCIL_ATTACHMENT,
                                           GL_RENDERBUFFER, gl_stencil_handle));
       renderbuffers =
-        u_list_prepend (renderbuffers, GUINT_TO_POINTER (gl_stencil_handle));
+        c_list_prepend (renderbuffers, GUINT_TO_POINTER (gl_stencil_handle));
     }
 
   return renderbuffers;
 }
 
 static void
-delete_renderbuffers (CoglContext *ctx, UList *renderbuffers)
+delete_renderbuffers (CoglContext *ctx, CList *renderbuffers)
 {
-  UList *l;
+  CList *l;
 
   for (l = renderbuffers; l; l = l->next)
     {
@@ -578,7 +578,7 @@ delete_renderbuffers (CoglContext *ctx, UList *renderbuffers)
       GE (ctx, glDeleteRenderbuffers (1, &renderbuffer));
     }
 
-  u_list_free (renderbuffers);
+  c_list_free (renderbuffers);
 }
 
 /*
@@ -953,7 +953,7 @@ _cogl_framebuffer_init_bits (CoglFramebuffer *framebuffer)
 {
   CoglContext *ctx = framebuffer->context;
 
-  if (U_LIKELY (!framebuffer->dirty_bitmasks))
+  if (C_LIKELY (!framebuffer->dirty_bitmasks))
     return;
 
   cogl_framebuffer_allocate (framebuffer, NULL);
@@ -988,7 +988,7 @@ _cogl_framebuffer_init_bits (CoglFramebuffer *framebuffer)
           };
       int i;
 
-      for (i = 0; i < U_N_ELEMENTS (params); i++)
+      for (i = 0; i < C_N_ELEMENTS (params); i++)
         {
           int *value =
             (int *) ((uint8_t *) &framebuffer->bits + params[i].offset);
@@ -1118,7 +1118,7 @@ sizeof_index_type (CoglIndicesType type)
     case COGL_INDICES_TYPE_UNSIGNED_INT:
       return 4;
     }
-  u_return_val_if_reached (0);
+  c_return_val_if_reached (0);
 }
 
 void
@@ -1510,7 +1510,7 @@ _cogl_framebuffer_gl_read_pixels_into_bitmap (CoglFramebuffer *framebuffer,
       if (pixels == NULL)
         goto EXIT;
 
-      temprow = u_alloca (rowstride * sizeof (uint8_t));
+      temprow = c_alloca (rowstride * sizeof (uint8_t));
 
       /* vertically flip the buffer in-place */
       for (y = 0; y < height / 2; y++)

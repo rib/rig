@@ -14,7 +14,7 @@ main (int argc, char **argv)
 
   if (argc != 2)
     {
-      u_printerr ("usage %s UNIT_TEST\n", argv[0]);
+      c_printerr ("usage %s UNIT_TEST\n", argv[0]);
       exit (1);
     }
 
@@ -32,7 +32,7 @@ main (int argc, char **argv)
 
   if (!g_module_symbol (main_module, argv[1], (void **) &unit_test))
     {
-      u_printerr ("Unknown test name \"%s\"\n", argv[1]);
+      c_printerr ("Unknown test name \"%s\"\n", argv[1]);
       return 1;
     }
 

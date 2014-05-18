@@ -59,7 +59,7 @@ typedef struct
   unsigned int ref_count;
 
   GLuint gl_shader;
-  UString *header, *source;
+  CString *header, *source;
 
   CoglPipelineCacheEntry *cache_entry;
 } CoglPipelineShaderState;
@@ -71,7 +71,7 @@ shader_state_new (CoglPipelineCacheEntry *cache_entry)
 {
   CoglPipelineShaderState *shader_state;
 
-  shader_state = u_slice_new0 (CoglPipelineShaderState);
+  shader_state = c_slice_new0 (CoglPipelineShaderState);
   shader_state->ref_count = 1;
   shader_state->cache_entry = cache_entry;
 
@@ -101,7 +101,7 @@ destroy_shader_state (void *user_data,
       if (shader_state->gl_shader)
         GE( ctx, glDeleteShader (shader_state->gl_shader) );
 
-      u_slice_free (CoglPipelineShaderState, shader_state);
+      c_slice_free (CoglPipelineShaderState, shader_state);
     }
 }
 
@@ -176,7 +176,7 @@ add_layer_declaration_cb (CoglPipelineLayer *layer,
 
   _cogl_gl_util_get_texture_target_string (texture_type, &target_string, NULL);
 
-  u_string_append_printf (shader_state->header,
+  c_string_append_printf (shader_state->header,
                           "in vec4 cogl_tex_coord%i_in;\n"
                           "out vec4 _cogl_tex_coord%i;\n"
                           "#define cogl_tex_coord%i_out _cogl_tex_coord%i\n"
@@ -250,7 +250,7 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
         {
           /* Check if there is already a similar cached pipeline whose
              shader state we can share */
-          if (U_LIKELY (!(COGL_DEBUG_ENABLED
+          if (C_LIKELY (!(COGL_DEBUG_ENABLED
                           (COGL_DEBUG_DISABLE_PROGRAM_CACHES))))
             {
               cache_entry =
@@ -283,26 +283,26 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
   /* If we make it here then we have a shader_state struct without a gl_shader
      because this is the first time we've encountered it */
 
-  /* We reuse two grow-only UStrings for code-gen. One string
+  /* We reuse two grow-only CStrings for code-gen. One string
      contains the uniform and attribute declarations while the
      other contains the main function. We need two strings
      because we need to dynamically declare attributes as the
      add_layer callback is invoked */
-  u_string_set_size (ctx->codegen_header_buffer, 0);
-  u_string_set_size (ctx->codegen_source_buffer, 0);
+  c_string_set_size (ctx->codegen_header_buffer, 0);
+  c_string_set_size (ctx->codegen_source_buffer, 0);
   shader_state->header = ctx->codegen_header_buffer;
   shader_state->source = ctx->codegen_source_buffer;
 
   add_layer_declarations (pipeline, shader_state);
   add_global_declarations (pipeline, shader_state);
 
-  u_string_append (shader_state->source,
+  c_string_append (shader_state->source,
                    "void\n"
                    "cogl_generated_source ()\n"
                    "{\n");
 
   if (cogl_pipeline_get_per_vertex_point_size (pipeline))
-    u_string_append (shader_state->header,
+    c_string_append (shader_state->header,
                      "in float cogl_point_size_in;\n");
   else if (!_cogl_has_private_feature
            (ctx, COGL_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
@@ -315,9 +315,9 @@ _cogl_pipeline_vertend_glsl_start (CoglPipeline *pipeline,
          generates a new program */
       if (cogl_pipeline_get_point_size (pipeline) > 0.0f)
         {
-          u_string_append (shader_state->header,
+          c_string_append (shader_state->header,
                            "uniform float cogl_point_size_in;\n");
-          u_string_append (shader_state->source,
+          c_string_append (shader_state->source,
                            "  cogl_point_size_out = cogl_point_size_in;\n");
         }
     }
@@ -344,7 +344,7 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
    * directly uses the texture coordinates.
    */
 
-  u_string_append_printf (shader_state->header,
+  c_string_append_printf (shader_state->header,
                           "vec4\n"
                           "cogl_real_transform_layer%i (vec4 tex_coord)\n"
                           "{\n"
@@ -356,11 +356,11 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
   memset (&snippet_data, 0, sizeof (snippet_data));
   snippet_data.snippets = get_layer_vertex_snippets (layer);
   snippet_data.hook = COGL_SNIPPET_HOOK_TEXTURE_COORD_TRANSFORM;
-  snippet_data.chain_function = u_strdup_printf ("cogl_real_transform_layer%i",
+  snippet_data.chain_function = c_strdup_printf ("cogl_real_transform_layer%i",
                                                  layer_index);
-  snippet_data.final_name = u_strdup_printf ("cogl_transform_layer%i",
+  snippet_data.final_name = c_strdup_printf ("cogl_transform_layer%i",
                                              layer_index);
-  snippet_data.function_prefix = u_strdup_printf ("cogl_transform_layer%i",
+  snippet_data.function_prefix = c_strdup_printf ("cogl_transform_layer%i",
                                                   layer_index);
   snippet_data.return_type = "vec4";
   snippet_data.return_variable = "cogl_tex_coord";
@@ -371,11 +371,11 @@ _cogl_pipeline_vertend_glsl_add_layer (CoglPipeline *pipeline,
 
   _cogl_pipeline_snippet_generate_code (&snippet_data);
 
-  u_free ((char *) snippet_data.chain_function);
-  u_free ((char *) snippet_data.final_name);
-  u_free ((char *) snippet_data.function_prefix);
+  c_free ((char *) snippet_data.chain_function);
+  c_free ((char *) snippet_data.final_name);
+  c_free ((char *) snippet_data.function_prefix);
 
-  u_string_append_printf (shader_state->source,
+  c_string_append_printf (shader_state->source,
                           "  cogl_tex_coord%i_out = "
                           "cogl_transform_layer%i (cogl_tex_coord%i_in);\n",
                           layer_index,
@@ -413,7 +413,7 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
                            0 /* no application private data */);
       COGL_COUNTER_INC (_cogl_uprof_context, vertend_glsl_compile_counter);
 
-      u_string_append (shader_state->header,
+      c_string_append (shader_state->header,
                        "void\n"
                        "cogl_real_vertex_transform ()\n"
                        "{\n"
@@ -422,22 +422,22 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
                        "cogl_position_in;\n"
                        "}\n");
 
-      u_string_append (shader_state->source,
+      c_string_append (shader_state->source,
                        "  cogl_vertex_transform ();\n");
 
       if (has_per_vertex_point_size)
         {
-          u_string_append (shader_state->header,
+          c_string_append (shader_state->header,
                            "void\n"
                            "cogl_real_point_size_calculation ()\n"
                            "{\n"
                            "  cogl_point_size_out = cogl_point_size_in;\n"
                            "}\n");
-          u_string_append (shader_state->source,
+          c_string_append (shader_state->source,
                            "  cogl_point_size_calculation ();\n");
         }
 
-      u_string_append (shader_state->source,
+      c_string_append (shader_state->source,
                        "  cogl_color_out = cogl_color_in;\n"
                        "}\n");
 
@@ -476,7 +476,7 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
       snippet_data.source_buf = shader_state->source;
       _cogl_pipeline_snippet_generate_code (&snippet_data);
 
-      u_string_append (shader_state->source,
+      c_string_append (shader_state->source,
                        "void\n"
                        "main ()\n"
                        "{\n"
@@ -488,13 +488,13 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
          uniform */
       if (_cogl_pipeline_has_vertex_snippets (pipeline))
         {
-          u_string_append (shader_state->header,
+          c_string_append (shader_state->header,
                            "uniform vec4 _cogl_flip_vector;\n");
-          u_string_append (shader_state->source,
+          c_string_append (shader_state->source,
                            "  cogl_position_out *= _cogl_flip_vector;\n");
         }
 
-      u_string_append (shader_state->source,
+      c_string_append (shader_state->source,
                        "}\n");
 
       GE_RET( shader, ctx, glCreateShader (GL_VERTEX_SHADER) );
@@ -518,9 +518,9 @@ _cogl_pipeline_vertend_glsl_end (CoglPipeline *pipeline,
           char *shader_log;
 
           GE( ctx, glGetShaderiv (shader, GL_INFO_LOG_LENGTH, &len) );
-          shader_log = u_alloca (len);
+          shader_log = c_alloca (len);
           GE( ctx, glGetShaderInfoLog (shader, len, &len, shader_log) );
-          u_warning ("Shader compilation failed:\n%s", shader_log);
+          c_warning ("Shader compilation failed:\n%s", shader_log);
         }
 
       shader_state->header = NULL;
@@ -600,7 +600,7 @@ UNIT_TEST (check_point_size_shader,
            0 /* no failure cases */)
 {
   CoglPipeline *pipelines[4];
-  CoglPipelineShaderState *shader_states[U_N_ELEMENTS (pipelines)];
+  CoglPipelineShaderState *shader_states[C_N_ELEMENTS (pipelines)];
   int i;
 
   /* Default pipeline with zero point size */
@@ -621,7 +621,7 @@ UNIT_TEST (check_point_size_shader,
 
   /* Draw something with all of the pipelines to make sure their state
    * is flushed */
-  for (i = 0; i < U_N_ELEMENTS (pipelines); i++)
+  for (i = 0; i < C_N_ELEMENTS (pipelines); i++)
     cogl_framebuffer_draw_rectangle (test_fb,
                                      pipelines[i],
                                      0.0f, 0.0f,
@@ -630,7 +630,7 @@ UNIT_TEST (check_point_size_shader,
 
   /* Get all of the shader states. These might be NULL if the driver
    * is not using GLSL */
-  for (i = 0; i < U_N_ELEMENTS (pipelines); i++)
+  for (i = 0; i < C_N_ELEMENTS (pipelines); i++)
     shader_states[i] = get_shader_state (pipelines[i]);
 
   /* If the first two pipelines are using GLSL then they should have
@@ -640,18 +640,18 @@ UNIT_TEST (check_point_size_shader,
     {
       if (_cogl_has_private_feature
           (test_ctx, COGL_PRIVATE_FEATURE_BUILTIN_POINT_SIZE_UNIFORM))
-        u_assert (shader_states[0] == shader_states[1]);
+        c_assert (shader_states[0] == shader_states[1]);
       else
-        u_assert (shader_states[0] != shader_states[1]);
+        c_assert (shader_states[0] != shader_states[1]);
     }
 
   /* The second and third pipelines should always have the same shader
    * state because only toggling between zero and non-zero should
    * change the shader */
-  u_assert (shader_states[1] == shader_states[2]);
+  c_assert (shader_states[1] == shader_states[2]);
 
   /* The fourth pipeline should be exactly the same as the first */
-  u_assert (shader_states[0] == shader_states[3]);
+  c_assert (shader_states[0] == shader_states[3]);
 }
 
 #endif /* COGL_PIPELINE_VERTEND_GLSL */

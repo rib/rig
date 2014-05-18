@@ -61,7 +61,7 @@ sizeof_indices_type (CoglIndicesType type)
     case COGL_INDICES_TYPE_UNSIGNED_INT:
       return 4;
     }
-  u_return_val_if_reached (0);
+  c_return_val_if_reached (0);
 }
 
 CoglIndices *
@@ -69,7 +69,7 @@ cogl_indices_new_for_buffer (CoglIndicesType type,
                              CoglIndexBuffer *buffer,
                              size_t offset)
 {
-  CoglIndices *indices = u_slice_new (CoglIndices);
+  CoglIndices *indices = c_slice_new (CoglIndices);
 
   indices->buffer = cogl_object_ref (buffer);
   indices->offset = offset;
@@ -139,7 +139,7 @@ warn_about_midscene_changes (void)
   static CoglBool seen = FALSE;
   if (!seen)
     {
-      u_warning ("Mid-scene modification of indices has "
+      c_warning ("Mid-scene modification of indices has "
                  "undefined results\n");
       seen = TRUE;
     }
@@ -151,7 +151,7 @@ cogl_indices_set_offset (CoglIndices *indices,
 {
   _COGL_RETURN_IF_FAIL (cogl_is_indices (indices));
 
-  if (U_UNLIKELY (indices->immutable_ref))
+  if (C_UNLIKELY (indices->immutable_ref))
     warn_about_midscene_changes ();
 
   indices->offset = offset;
@@ -161,7 +161,7 @@ static void
 _cogl_indices_free (CoglIndices *indices)
 {
   cogl_object_unref (indices->buffer);
-  u_slice_free (CoglIndices, indices);
+  c_slice_free (CoglIndices, indices);
 }
 
 CoglIndices *
@@ -195,7 +195,7 @@ cogl_get_rectangle_indices (CoglContext *ctx, int n_rectangles)
       /* Generate the byte array if we haven't already */
       if (ctx->rectangle_byte_indices == NULL)
         {
-          uint8_t *byte_array = u_malloc (256 / 4 * 6 * sizeof (uint8_t));
+          uint8_t *byte_array = c_malloc (256 / 4 * 6 * sizeof (uint8_t));
           uint8_t *p = byte_array;
           int i, vert_num = 0;
 
@@ -216,7 +216,7 @@ cogl_get_rectangle_indices (CoglContext *ctx, int n_rectangles)
                                 byte_array,
                                 256 / 4 * 6);
 
-          u_free (byte_array);
+          c_free (byte_array);
         }
 
       return ctx->rectangle_byte_indices;
@@ -238,7 +238,7 @@ cogl_get_rectangle_indices (CoglContext *ctx, int n_rectangles)
             ctx->rectangle_short_indices_len *= 2;
 
           /* Over-allocate to generate a whole number of quads */
-          p = short_array = u_malloc ((ctx->rectangle_short_indices_len
+          p = short_array = c_malloc ((ctx->rectangle_short_indices_len
                                        + 5) / 6 * 6
                                       * sizeof (uint16_t));
 
@@ -260,7 +260,7 @@ cogl_get_rectangle_indices (CoglContext *ctx, int n_rectangles)
                                 short_array,
                                 ctx->rectangle_short_indices_len);
 
-          u_free (short_array);
+          c_free (short_array);
         }
 
       return ctx->rectangle_short_indices;

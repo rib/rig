@@ -94,7 +94,7 @@ _cogl_closure_list_add (CoglList *list,
  * manually iterate the list and invoke the callbacks yourself.
  */
 #define _cogl_closure_list_invoke(list, cb_type, ...)   \
-  U_STMT_START {                                        \
+  C_STMT_START {                                        \
     CoglClosure *_c, *_tmp;                             \
                                                         \
     _cogl_list_for_each_safe (_c, _tmp, (list), link)   \
@@ -102,10 +102,10 @@ _cogl_closure_list_add (CoglList *list,
         cb_type _cb = _c->function;                     \
         _cb (__VA_ARGS__, _c->user_data);               \
       }                                                 \
-  } U_STMT_END
+  } C_STMT_END
 
 #define _cogl_closure_list_invoke_no_args(list)         \
-  U_STMT_START {                                        \
+  C_STMT_START {                                        \
     CoglClosure *_c, *_tmp;                             \
                                                         \
     _cogl_list_for_each_safe (_c, _tmp, (list), link)   \
@@ -113,6 +113,6 @@ _cogl_closure_list_add (CoglList *list,
         void (*_cb)(void *) = _c->function;             \
         _cb (_c->user_data);                            \
       }                                                 \
-  } U_STMT_END
+  } C_STMT_END
 
 #endif /* _COGL_CLOSURE_LIST_PRIVATE_H_ */

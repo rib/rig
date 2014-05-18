@@ -55,7 +55,7 @@ _cogl_atlas_new (CoglContext *context,
                  CoglPixelFormat internal_format,
                  CoglAtlasFlags flags)
 {
-  CoglAtlas *atlas = u_new (CoglAtlas, 1);
+  CoglAtlas *atlas = c_new (CoglAtlas, 1);
 
   atlas->context = context;
   atlas->map = NULL;
@@ -105,7 +105,7 @@ _cogl_atlas_free (CoglAtlas *atlas)
   _cogl_closure_list_disconnect_all (&atlas->pre_reorganize_closures);
   _cogl_closure_list_disconnect_all (&atlas->post_reorganize_closures);
 
-  u_free (atlas);
+  c_free (atlas);
 }
 
 typedef struct _CoglAtlasRepositionData
@@ -330,7 +330,7 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
       int bpp = _cogl_pixel_format_get_bytes_per_pixel (atlas->internal_format);
 
       /* Create a buffer of zeroes to initially clear the texture */
-      clear_data = u_malloc0 (width * height * bpp);
+      clear_data = c_malloc0 (width * height * bpp);
       clear_bmp = cogl_bitmap_new_for_data (ctx,
                                             width,
                                             height,
@@ -352,7 +352,7 @@ _cogl_atlas_create_texture (CoglAtlas *atlas,
 
       cogl_object_unref (clear_bmp);
 
-      u_free (clear_data);
+      c_free (clear_data);
     }
   else
     {
@@ -436,12 +436,12 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
   /* Get an array of all the textures currently in the atlas. */
   data.n_textures = 0;
   if (atlas->map == NULL)
-    data.textures = u_malloc (sizeof (CoglAtlasRepositionData));
+    data.textures = c_malloc (sizeof (CoglAtlasRepositionData));
   else
     {
       int n_rectangles =
         _cogl_rectangle_map_get_n_rectangles (atlas->map);
-      data.textures = u_malloc (sizeof (CoglAtlasRepositionData) *
+      data.textures = c_malloc (sizeof (CoglAtlasRepositionData) *
                                 (n_rectangles + 1));
       _cogl_rectangle_map_foreach (atlas->map,
                                    _cogl_atlas_get_rectangles_cb,
@@ -562,7 +562,7 @@ _cogl_atlas_allocate_space (CoglAtlas *atlas,
       ret = TRUE;
     }
 
-  u_free (data.textures);
+  c_free (data.textures);
 
   _cogl_closure_list_invoke (&atlas->pre_reorganize_closures,
                              CoglAtlasReorganizeCallback,

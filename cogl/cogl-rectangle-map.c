@@ -35,7 +35,7 @@
 #include "config.h"
 #endif
 
-#include <ulib.h>
+#include <clib.h>
 
 #include "cogl-util.h"
 #include "cogl-rectangle-map.h"
@@ -79,12 +79,12 @@ struct _CoglRectangleMap
 
   unsigned int space_remaining;
 
-  UDestroyNotify value_destroy_func;
+  CDestroyNotify value_destroy_func;
 
   /* Stack used for walking the structure. This is only used during
      the lifetime of a single function call but it is kept here as an
      optimisation to avoid reallocating it every time it is needed */
-  UArray *stack;
+  CArray *stack;
 };
 
 struct _CoglRectangleMapNode
@@ -123,21 +123,21 @@ struct _CoglRectangleMapStackEntry
 static CoglRectangleMapNode *
 _cogl_rectangle_map_node_new (void)
 {
-  return u_slice_new (CoglRectangleMapNode);
+  return c_slice_new (CoglRectangleMapNode);
 }
 
 static void
 _cogl_rectangle_map_node_free (CoglRectangleMapNode *node)
 {
-  u_slice_free (CoglRectangleMapNode, node);
+  c_slice_free (CoglRectangleMapNode, node);
 }
 
 CoglRectangleMap *
 _cogl_rectangle_map_new (unsigned int width,
                          unsigned int height,
-                         UDestroyNotify value_destroy_func)
+                         CDestroyNotify value_destroy_func)
 {
-  CoglRectangleMap *map = u_new (CoglRectangleMap, 1);
+  CoglRectangleMap *map = c_new (CoglRectangleMap, 1);
   CoglRectangleMapNode *root = _cogl_rectangle_map_node_new ();
 
   root->type = COGL_RECTANGLE_MAP_EMPTY_LEAF;
@@ -153,21 +153,21 @@ _cogl_rectangle_map_new (unsigned int width,
   map->value_destroy_func = value_destroy_func;
   map->space_remaining = width * height;
 
-  map->stack = u_array_new (FALSE, FALSE, sizeof (CoglRectangleMapStackEntry));
+  map->stack = c_array_new (FALSE, FALSE, sizeof (CoglRectangleMapStackEntry));
 
   return map;
 }
 
 static void
-_cogl_rectangle_map_stack_push (UArray *stack,
+_cogl_rectangle_map_stack_push (CArray *stack,
                                 CoglRectangleMapNode *node,
                                 CoglBool next_index)
 {
   CoglRectangleMapStackEntry *new_entry;
 
-  u_array_set_size (stack, stack->len + 1);
+  c_array_set_size (stack, stack->len + 1);
 
-  new_entry = &u_array_index (stack, CoglRectangleMapStackEntry,
+  new_entry = &c_array_index (stack, CoglRectangleMapStackEntry,
                               stack->len - 1);
 
   new_entry->node = node;
@@ -175,15 +175,15 @@ _cogl_rectangle_map_stack_push (UArray *stack,
 }
 
 static void
-_cogl_rectangle_map_stack_pop (UArray *stack)
+_cogl_rectangle_map_stack_pop (CArray *stack)
 {
-  u_array_set_size (stack, stack->len - 1);
+  c_array_set_size (stack, stack->len - 1);
 }
 
 static CoglRectangleMapStackEntry *
-_cogl_rectangle_map_stack_get_top (UArray *stack)
+_cogl_rectangle_map_stack_get_top (CArray *stack)
 {
-  return &u_array_index (stack, CoglRectangleMapStackEntry,
+  return &c_array_index (stack, CoglRectangleMapStackEntry,
                          stack->len - 1);
 }
 
@@ -287,19 +287,19 @@ _cogl_rectangle_map_verify_recursive (CoglRectangleMapNode *node)
         int sum =
           _cogl_rectangle_map_verify_recursive (node->d.branch.left) +
           _cogl_rectangle_map_verify_recursive (node->d.branch.right);
-        u_assert (node->largest_gap ==
+        c_assert (node->largest_gap ==
                   MAX (node->d.branch.left->largest_gap,
                        node->d.branch.right->largest_gap));
         return sum;
       }
 
     case COGL_RECTANGLE_MAP_EMPTY_LEAF:
-      u_assert (node->largest_gap ==
+      c_assert (node->largest_gap ==
                 node->rectangle.width * node->rectangle.height);
       return 0;
 
     case COGL_RECTANGLE_MAP_FILLED_LEAF:
-      u_assert (node->largest_gap == 0);
+      c_assert (node->largest_gap == 0);
       return 1;
     }
 
@@ -342,8 +342,8 @@ _cogl_rectangle_map_verify (CoglRectangleMap *map)
   unsigned int actual_space_remaining =
     _cogl_rectangle_map_get_space_remaining_recursive (map->root);
 
-  u_assert_cmpuint (actual_n_rectangles, ==, map->n_rectangles);
-  u_assert_cmpuint (actual_space_remaining, ==, map->space_remaining);
+  c_assert_cmpuint (actual_n_rectangles, ==, map->n_rectangles);
+  c_assert_cmpuint (actual_space_remaining, ==, map->space_remaining);
 }
 
 #endif /* COGL_ENABLE_DEBUG */
@@ -357,7 +357,7 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
 {
   unsigned int rectangle_size = width * height;
   /* Stack of nodes to search in */
-  UArray *stack = map->stack;
+  CArray *stack = map->stack;
   CoglRectangleMapNode *found_node = NULL;
 
   /* Zero-sized rectangles break the algorithm for removing rectangles
@@ -365,7 +365,7 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
   _COGL_RETURN_VAL_IF_FAIL (width > 0 && height > 0, FALSE);
 
   /* Start with the root node */
-  u_array_set_size (stack, 0);
+  c_array_set_size (stack, 0);
   _cogl_rectangle_map_stack_push (stack, map->root, FALSE);
 
   /* Depth-first search for an empty node that is big enough */
@@ -450,7 +450,7 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
       for (node = found_node->parent; node; node = node->parent)
         {
           /* This node is a parent so it should always be a branch */
-          u_assert (node->type == COGL_RECTANGLE_MAP_BRANCH);
+          c_assert (node->type == COGL_RECTANGLE_MAP_BRANCH);
 
           node->largest_gap = MAX (node->d.branch.left->largest_gap,
                                    node->d.branch.right->largest_gap);
@@ -462,7 +462,7 @@ _cogl_rectangle_map_add (CoglRectangleMap *map,
       map->space_remaining -= rectangle_size;
 
 #ifdef COGL_ENABLE_DEBUG
-      if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DUMP_ATLAS_IMAGE)))
+      if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DUMP_ATLAS_IMAGE)))
         {
 #ifdef HAVE_CAIRO
           _cogl_rectangle_map_dump_image (map);
@@ -511,7 +511,7 @@ _cogl_rectangle_map_remove (CoglRectangleMap *map,
       node->rectangle.height != rectangle->height)
     /* This should only happen if someone tried to remove a rectangle
        that was not in the map so something has gone wrong */
-    u_return_if_reached ();
+    c_return_if_reached ();
   else
     {
       /* Convert the node back to an empty node */
@@ -525,7 +525,7 @@ _cogl_rectangle_map_remove (CoglRectangleMap *map,
       for (node = node->parent; node; node = node->parent)
         {
           /* This node is a parent so it should always be a branch */
-          u_assert (node->type == COGL_RECTANGLE_MAP_BRANCH);
+          c_assert (node->type == COGL_RECTANGLE_MAP_BRANCH);
 
           if (node->d.branch.left->type == COGL_RECTANGLE_MAP_EMPTY_LEAF &&
               node->d.branch.right->type == COGL_RECTANGLE_MAP_EMPTY_LEAF)
@@ -548,14 +548,14 @@ _cogl_rectangle_map_remove (CoglRectangleMap *map,
                                  node->d.branch.right->largest_gap);
 
       /* There is now one less rectangle */
-      u_assert (map->n_rectangles > 0);
+      c_assert (map->n_rectangles > 0);
       map->n_rectangles--;
       /* and more space */
       map->space_remaining += rectangle_size;
     }
 
 #ifdef COGL_ENABLE_DEBUG
-  if (U_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DUMP_ATLAS_IMAGE)))
+  if (C_UNLIKELY (COGL_DEBUG_ENABLED (COGL_DEBUG_DUMP_ATLAS_IMAGE)))
     {
 #ifdef HAVE_CAIRO
       _cogl_rectangle_map_dump_image (map);
@@ -597,10 +597,10 @@ _cogl_rectangle_map_internal_foreach (CoglRectangleMap *map,
                                       void *data)
 {
   /* Stack of nodes to search in */
-  UArray *stack = map->stack;
+  CArray *stack = map->stack;
 
   /* Start with the root node */
-  u_array_set_size (stack, 0);
+  c_array_set_size (stack, 0);
   _cogl_rectangle_map_stack_push (stack, map->root, 0);
 
   /* Iterate all nodes depth-first */
@@ -650,7 +650,7 @@ _cogl_rectangle_map_internal_foreach (CoglRectangleMap *map,
     }
 
   /* The stack should now be empty */
-  u_assert (stack->len == 0);
+  c_assert (stack->len == 0);
 }
 
 typedef struct _CoglRectangleMapForeachClosure
@@ -701,9 +701,9 @@ _cogl_rectangle_map_free (CoglRectangleMap *map)
                                         _cogl_rectangle_map_free_cb,
                                         map);
 
-  u_array_free (map->stack, TRUE);
+  c_array_free (map->stack, TRUE);
 
-  u_free (map);
+  c_free (map);
 }
 
 #if defined (COGL_ENABLE_DEBUG) && defined (HAVE_CAIRO)

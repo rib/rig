@@ -108,8 +108,8 @@ struct _CoglContext
   CoglPipelineLayer *default_layer_n;
   CoglPipelineLayer *dummy_layer_dependant;
 
-  UHashTable *attribute_name_states_hash;
-  UArray *attribute_name_index_map;
+  CHashTable *attribute_name_states_hash;
+  CArray *attribute_name_index_map;
   int n_attribute_names;
 
   CoglBitmask       enabled_custom_attributes;
@@ -135,13 +135,13 @@ struct _CoglContext
   CoglMatrixEntryCache builtin_flushed_projection;
   CoglMatrixEntryCache builtin_flushed_modelview;
 
-  UArray           *texture_units;
+  CArray           *texture_units;
   int               active_texture_unit;
 
   /* Pipelines */
   CoglPipeline     *opaque_color_pipeline; /* to check for simple pipelines */
-  UString          *codegen_header_buffer;
-  UString          *codegen_source_buffer;
+  CString          *codegen_header_buffer;
+  CString          *codegen_source_buffer;
 
   CoglPipelineCache *pipeline_cache;
 
@@ -152,11 +152,11 @@ struct _CoglContext
 
   /* Central list of all framebuffers so all journals can be flushed
    * at any time. */
-  UList            *framebuffers;
+  CList            *framebuffers;
 
   /* Global journal buffers */
-  UArray           *journal_flush_attributes_array;
-  UArray           *journal_clip_bounds;
+  CArray           *journal_flush_attributes_array;
+  CArray           *journal_clip_bounds;
 
   /* Some simple caching, to minimize state changes... */
   CoglPipeline     *current_pipeline;
@@ -189,7 +189,7 @@ struct _CoglContext
   CoglClosure *onscreen_dispatch_idle;
 
   CoglGLES2Context *current_gles2_context;
-  UQueue gles2_context_stack;
+  CQueue gles2_context_stack;
 
   /* Primitives */
   CoglPipeline     *stencil_pipeline;
@@ -241,7 +241,7 @@ struct _CoglContext
   /* This is used as a temporary buffer to fill a CoglBuffer when
      cogl_buffer_map fails and we only want to map to fill it with new
      data */
-  UByteArray       *buffer_map_fallback_array;
+  CByteArray       *buffer_map_fallback_array;
   CoglBool          buffer_map_fallback_in_use;
   size_t            buffer_map_fallback_offset;
 
@@ -256,7 +256,7 @@ struct _CoglContext
 #ifdef COGL_HAS_XLIB_SUPPORT
   int damage_base;
   /* List of callback functions that will be given every Xlib event */
-  USList *event_filters;
+  CSList *event_filters;
   /* Current top of the XError trap state stack. The actual memory for
      these is expected to be allocated on the stack by the caller */
   CoglXlibTrapState *trap_state;
@@ -275,7 +275,7 @@ struct _CoglContext
   /* A hash table to quickly get an index given an existing name. The
      name strings are owned by the uniform_names array. The values are
      the uniform location cast to a pointer. */
-  UHashTable *uniform_name_hash;
+  CHashTable *uniform_name_hash;
   int n_uniform_names;
 
   CoglPollSource *fences_poll_source;
@@ -340,7 +340,7 @@ _cogl_context_set_current_modelview_entry (CoglContext *context,
  *
  * Return value: a NULL-terminated array of strings representing the
  *   supported extensions by the current driver. This array is owned
- *   by the caller and should be freed with u_strfreev().
+ *   by the caller and should be freed with c_strfreev().
  */
 char **
 _cogl_context_get_gl_extensions (CoglContext *context);
