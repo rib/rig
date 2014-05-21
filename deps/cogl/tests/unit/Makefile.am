@@ -19,10 +19,10 @@ wrappers: stamp-test-unit
 	@true
 stamp-test-unit: Makefile test-unit$(EXEEXT)
 	@mkdir -p wrappers
-	source $(top_builddir)/cogl/libcogl2.la ; \
-	  $(NM) $(top_builddir)/cogl/.libs/"$$dlname"| \
+	source $(top_builddir)/deps/cogl/cogl/libcogl2.la ; \
+	  $(NM) $(top_builddir)/deps/cogl/cogl/.libs/"$$dlname"| \
 	  grep '[DR] _\?unit_test_'|sed 's/.\+ [DR] _\?//' > unit-tests
-	@chmod +x $(top_srcdir)/tests/test-launcher.sh
+	@chmod +x $(top_srcdir)/deps/cogl/tests/test-launcher.sh
 	@( echo "/stamp-test-unit" ; \
 	   echo "/test-unit$(EXEEXT)" ; \
 	   echo "*.o" ; \
@@ -32,7 +32,7 @@ stamp-test-unit: Makefile test-unit$(EXEEXT)
 	do \
 		unit=`echo $$i | sed -e s/_/-/g | sed s/unit-test-//`; \
 		echo "  GEN    $$unit"; \
-		( echo "#!/bin/sh" ; echo "$(top_srcdir)/tests/test-launcher.sh $(abs_builddir)/test-unit$(EXEEXT) 'unit_test_' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
+		( echo "#!/bin/sh" ; echo "$(top_srcdir)/deps/cogl/tests/test-launcher.sh $(abs_builddir)/test-unit$(EXEEXT) 'unit_test_' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
 		chmod +x $$unit$(SHEXT); \
 		echo "/$$unit$(SHEXT)" >> .gitignore; \
 	done \
@@ -60,17 +60,19 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/test-fixtures \
 	-I$(top_srcdir)/deps/clib/src \
 	-I$(top_builddir)/deps/clib/src	\
+	-I$(top_srcdir)/deps/cogl \
+	-I$(top_builddir)/deps/cogl \
 	-I$(top_builddir)/cogl
 
 AM_CPPFLAGS += \
 	-DCOGL_DISABLE_DEPRECATED \
-	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\" \
+	-DTESTS_DATADIR=\""$(top_srcdir)/deps/cogl/tests/data"\" \
 	-DCOGL_COMPILATION
 
 test_unit_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 test_unit_LDADD = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
 	$(LIBM)
 test_unit_LDADD += $(top_builddir)/deps/clib/src/libclib.la
 test_unit_LDFLAGS = -export-dynamic

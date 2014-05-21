@@ -151,7 +151,7 @@ static CoglDriverDescription _cogl_drivers[] =
     COGL_GLES2_LIBNAME,
   },
 #endif
-#ifdef USING_EMSCRIPTEN
+#ifdef EMSCRIPTEN
   {
     COGL_DRIVER_WEBGL,
     "webgl",

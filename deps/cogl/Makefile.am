@@ -1,11 +1,7 @@
-SUBDIRS = deps test-fixtures cogl
+SUBDIRS = test-fixtures cogl
 
 if BUILD_COGL_PANGO
 SUBDIRS += cogl-pango
-endif
-
-if BUILD_COGL_GLES2
-SUBDIRS += cogl-gles2
 endif
 
 if BUILD_COGL_GST
@@ -16,15 +12,11 @@ if BUILD_COGL_PATH
 SUBDIRS += cogl-path
 endif
 
-SUBDIRS += tests examples po build
-
-ACLOCAL_AMFLAGS = -I build/autotools ${ACLOCAL_FLAGS}
+SUBDIRS += tests examples
 
 EXTRA_DIST = \
 	README.in \
-	config-custom.h \
-	config.h.win32 \
-	config.h.win32.in
+	config-custom.h
 
 # .changelog expects these to be initializes
 CLEANFILES=
@@ -41,5 +33,3 @@ DISTCHECK_CONFIGURE_FLAGS = \
 	--enable-glx \
 	--enable-wayland-egl-server  \
 	--enable-cogl-gst
-
-include $(top_srcdir)/build/autotools/Makefile.am.release

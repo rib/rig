@@ -95,7 +95,7 @@ static CoglBool
 _cogl_winsys_renderer_connect (CoglRenderer *renderer,
                                CoglError **error)
 {
-#ifdef USING_EMSCRIPTEN
+#ifdef EMSCRIPTEN
   if (renderer->driver != COGL_DRIVER_GLES2)
     {
       _cogl_set_error (error, COGL_WINSYS_ERROR,
@@ -190,7 +190,7 @@ _cogl_winsys_display_setup (CoglDisplay *display,
       SDL_GL_SetAttribute (SDL_GL_CONTEXT_MINOR_VERSION, 0);
       break;
 
-#elif defined (USING_EMSCRIPTEN)
+#elif defined (EMSCRIPTEN)
     case COGL_DRIVER_GLES2:
       sdl_display->video_mode_flags = SDL_OPENGL;
       break;

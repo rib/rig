@@ -32,7 +32,7 @@
 #define __COGL_PROFILE_H__
 
 
-#ifdef COGL_ENABLE_PROFILE
+#ifdef ENABLE_PROFILE
 
 #include <uprof.h>
 

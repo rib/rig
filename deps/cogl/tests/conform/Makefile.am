@@ -69,7 +69,7 @@ test_sources = \
 	test-texture-rg.c \
 	$(NULL)
 
-if USE_GLIB
+if COGL_USE_GLIB
 # test-fence depends on the glib mainloop so it won't compile if using
 # emscripten which builds in standalone mode.
 test_sources += test-fence.c
@@ -97,7 +97,7 @@ wrappers: stamp-test-conformance
 stamp-test-conformance: Makefile $(srcdir)/test-conform-main.c
 	@mkdir -p wrappers
 	@sed -n -e 's/^ \{1,\}ADD_TEST *( *\([a-zA-Z0-9_]\{1,\}\).*/\1/p' $(srcdir)/test-conform-main.c > unit-tests
-	@chmod +x $(top_srcdir)/tests/test-launcher.sh
+	@chmod +x $(top_srcdir)/deps/cogl/tests/test-launcher.sh
 	@( echo "/stamp-test-conformance" ; \
 	   echo "/test-conformance$(EXEEXT)" ; \
 	   echo "*.o" ; \
@@ -107,7 +107,7 @@ stamp-test-conformance: Makefile $(srcdir)/test-conform-main.c
 	do \
 		unit=`basename $$i | sed -e s/_/-/g`; \
 		echo "  GEN    $$unit"; \
-		( echo "#!/bin/sh" ; echo "$(top_srcdir)/tests/test-launcher.sh $(abs_builddir)/test-conformance$(EXEEXT) '' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
+		( echo "#!/bin/sh" ; echo "$(top_srcdir)/deps/cogl/tests/test-launcher.sh $(abs_builddir)/test-conformance$(EXEEXT) '' '$$i' \"\$$@\"" ) > $$unit$(SHEXT) ; \
 		chmod +x $$unit$(SHEXT); \
 		echo "/$$unit$(SHEXT)" >> .gitignore; \
 	done \
@@ -131,26 +131,27 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/deps/clib/src \
 	-I$(top_builddir)/deps/clib/src	\
-	-I$(top_builddir)/cogl \
-	-I$(top_srcdir)/test-fixtures
+	-I$(top_builddir)/deps/cogl \
+	-I$(top_builddir)/deps/cogl/cogl \
+	-I$(top_srcdir)/deps/cogl/test-fixtures
 
 AM_CPPFLAGS += \
 	-DCOGL_DISABLE_DEPRECATED \
-	-DTESTS_DATADIR=\""$(top_srcdir)/tests/data"\"
+	-DTESTS_DATADIR=\""$(top_srcdir)/deps/cogl/tests/data"\"
 
 test_conformance_CFLAGS = -g3 -O0 $(COGL_DEP_CFLAGS) $(COGL_EXTRA_CFLAGS)
 test_conformance_LDADD = \
 	$(COGL_DEP_LIBS) \
-	$(top_builddir)/cogl/libcogl2.la \
+	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
 	$(LIBM)
 if BUILD_COGL_PATH
-test_conformance_LDADD += $(top_builddir)/cogl-path/libcogl-path.la
+test_conformance_LDADD += $(top_builddir)/deps/cogl/cogl-path/libcogl-path.la
 endif
 test_conformance_LDADD += $(top_builddir)/deps/clib/src/libclib.la
 test_conformance_LDFLAGS = -export-dynamic
 
 test: wrappers
-	@$(top_srcdir)/tests/run-tests.sh $(abs_builddir)/../config.env $(abs_builddir)/test-conformance$(EXEEXT)
+	@$(top_srcdir)/deps/cogl/tests/run-tests.sh $(abs_builddir)/../config.env $(abs_builddir)/test-conformance$(EXEEXT)
 
 # XXX: we could prevent the conformance test suite from running
 #      by simply defining this variable conditionally
@@ -160,65 +161,8 @@ TEST_PROGS = test-conformance
 
 DISTCLEANFILES = .gitignore
 
-dist-hook: ../../build/win32/vs9/test-conformance-cogl.vcproj ../../build/win32/vs10/test-conformance-cogl.vcxproj ../../build/win32/vs10/test-conformance-cogl.vcxproj.filters
-
-../../build/win32/vs9/test-conformance-cogl.vcproj: $(top_srcdir)/build/win32/vs9/test-conformance-cogl.vcprojin
-	for F in $(test_conformance_SOURCES); do \
-		case $$F in \
-		*.c)	echo '   <File RelativePath="..\..\..\tests\conform\'$$F'" />' \
-			;; \
-		esac; \
-	done >testconformance.sourcefiles
-	$(CPP) -P - <$(top_srcdir)/build/win32/vs9/test-conformance-cogl.vcprojin >$@
-	rm testconformance.sourcefiles
-
-../../build/win32/vs10/test-conformance-cogl.vcxproj: $(top_srcdir)/build/win32/vs10/test-conformance-cogl.vcxprojin
-	for F in $(test_conformance_SOURCES); do \
-		case $$F in \
-		*.c)	echo '    <ClCompile Include="..\..\..\tests\conform\'$$F'" />' \
-			;; \
-		esac; \
-	done >testconformance.vs10.sourcefiles
-	$(CPP) -P - <$(top_srcdir)/build/win32/vs10/test-conformance-cogl.vcxprojin >$@
-	rm testconformance.vs10.sourcefiles
-
-../../build/win32/vs10/test-conformance-cogl.vcxproj.filters: $(top_srcdir)/build/win32/vs10/test-conformance-cogl.vcxproj.filtersin
-	for F in $(test_conformance_SOURCES); do \
-		case $$F in \
-		*.c)	echo '    <ClCompile Include="..\..\..\tests\conform\'$$F'"><Filter>Sources</Filter></ClCompile>' \
-			;; \
-		esac; \
-	done >testconformance.vs10.sourcefiles.filters
-	$(CPP) -P - <$(top_srcdir)/build/win32/vs10/test-conformance-cogl.vcxproj.filtersin >$@
-	rm testconformance.vs10.sourcefiles.filters
-
-# Let the VS9/VS10 Project files be cleared out before they are re-expanded...
-DISTCLEANFILES += ../../build/win32/vs9/test-conformance-cogl.vcproj	\
-		  ../../build/win32/vs10/test-conformance-cogl.vcxproj	\
-		  ../../build/win32/vs10/test-conformance-cogl.vcxproj.filters
-
 # we override the clean-generic target to clean up the wrappers so
 # we cannot use CLEANFILES
 clean-generic: clean-wrappers
 	$(QUIET_RM)rm -f .log
 
-
-if ENABLE_INSTALLED_TESTS
-
-insttestdir = $(libexecdir)/installed-tests/$(PACKAGE)/conform
-insttest_PROGRAMS = test-conformance
-insttest_DATA = unit-tests
-
-testmetadir = $(datadir)/installed-tests/$(PACKAGE)
-testmeta_DATA = conform.test
-
-conform.test:
-	echo "  GEN      $@"; \
-	echo "[Test]" > $@.tmp; \
-	echo "Type=session" >> $@.tmp; \
-	echo "Exec=sh -c \"cd $(libexecdir)/installed-tests/$(PACKAGE)/conform; ../run-tests.sh ../config.env ./test-conformance\"" >> $@.tmp; \
-	mv $@.tmp $@
-
-CLEANFILES = conform.test
-
-endif

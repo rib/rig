@@ -50,7 +50,7 @@ dnl ================================================================
 # libtool version info we don't automatically derive this from the
 # pretty version number because we want to test the results of
 # updating the version number in advance of a release.
-m4_define([rig_release_status], [git])
+m4_define([release_status], [git])
 
 
 dnl ================================================================
@@ -78,6 +78,8 @@ AM_INIT_AUTOMAKE([1.11 foreign -Wno-portability no-define no-dist-gzip
                   dist-bzip2])
 AM_SILENT_RULES([yes])
 
+AH_BOTTOM([#include "config-custom.h"])
+
 dnl ================================================================
 dnl More version number stuff
 dnl ================================================================
@@ -102,95 +104,52 @@ AC_SUBST(RIG_LT_RELEASE)
 dnl ================================================================
 dnl Export the source code release status
 dnl ================================================================
-AC_SUBST([RIG_RELEASE_STATUS], [rig_release_status])
+AC_SUBST([RIG_RELEASE_STATUS], [release_status])
 
 
 dnl ================================================================
-dnl See what platform we are building for
+dnl Compiler stuff.
 dnl ================================================================
-AM_CONDITIONAL(CROSS_COMPILING, [test x$cross_compiling = xyes])
-AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
+AC_USE_SYSTEM_EXTENSIONS
+AC_PROG_CC
+AC_PROG_CPP
+AM_PROG_CC_C_O
+AC_ISC_POSIX
+AC_C_CONST
+AC_PROG_OBJC
+AC_PROG_CXX
 
-platform_linux=no
-platform_darwin=no
-platform_win32=no
-case $host in
-  *-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
-    PATHSEP='\\' # add ' to avoid syntax hightlighting getting confused by escaped quote
-    SEARCHSEP=';'
-    OS="WIN32"
-    PIDTYPE='void *'
-    COGL_EXTRA_LDFLAGS="$COGL_EXTRA_LDFLAGS -no-undefined"
-    platform_win32=yes
-    ;;
-  *-*darwin*)
-    platform_darwin=yes
-    PATHSEP='/'
-    SEARCHSEP=':'
-    OS="UNIX"
-    PIDTYPE='int'
-    ;;
-  *-*-linux-android*)
-    AC_MSG_ERROR([Use build/android/project when building for Android])
-    ;;
-  *-linux*)
-    platform_linux=yes
-    PATHSEP='/'
-    SEARCHSEP=':'
-    OS="UNIX"
-    PIDTYPE='int'
-    ;;
-  *)
-    AC_MSG_ERROR([Unsupported host: Please add to configure.ac])
-    ;;
-esac
-AM_CONDITIONAL(OS_LINUX, [test "$platform_linux" = "yes"])
-AM_CONDITIONAL(OS_DARWIN, [test "$platform_darwin" = "yes"])
-AM_CONDITIONAL(OS_WIN32, [test "$platform_win32" = "yes"])
 
-case $target in
-arm*-darwin*)
-    CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
-    ;;
-i*86-*-darwin*)
-    ORDER=G_LITTLE_ENDIAN
-    ;;
-esac
+dnl ================================================================
+dnl Libtool stuff.
+dnl ================================================================
+LT_PREREQ([2.2.6])
+LT_INIT([disable-static])
+dnl when using libtool 2.x create libtool early, because it's used in the
+dnl internal glib configure (as-glibconfig.m4)
+m4_ifdef([LT_OUTPUT], [LT_OUTPUT])
 
-target_osx=no
-target_ios=no
 
-if test "x$platform_darwin" = "xyes"; then
-        AC_TRY_COMPILE([#include "TargetConditionals.h"],[
-        #if TARGET_IPHONE_SIMULATOR == 1 || TARGET_OS_IPHONE == 1
-        #error fail this for ios
-        #endif
-        return 0;
-        ], [
-                AC_DEFINE(TARGET_OSX,1,[The JIT/AOT targets OSX])
-                target_osx=yes
-        ], [
-                AC_DEFINE(TARGET_IOS,1,[The JIT/AOT targets iOS])
-                target_ios=yes
-        ])
-   AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
-fi
-AM_CONDITIONAL(TARGET_IOS, [test "$target_ios" = "yes"])
-AM_CONDITIONAL(TARGET_OSX, [test "$target_osx" = "yes"])
+dnl ================================================================
+dnl I18n stuff.
+dnl ================================================================
+AM_GNU_GETTEXT_VERSION([0.17])
+AM_GNU_GETTEXT([external])
 
-AC_SUBST(ORDER)
-AC_SUBST(CFLAGS)
-AC_SUBST(PATHSEP)
-AC_SUBST(SEARCHSEP)
-AC_SUBST(OS)
-AC_SUBST(PIDTYPE)
+GETTEXT_PACKAGE="cogl"
+AC_SUBST(GETTEXT_PACKAGE)
+AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,
+                   "$GETTEXT_PACKAGE",
+                   [The prefix for our gettext translation domains.])
+AS_ALL_LINGUAS
+
 
 
 dnl ================================================================
 dnl Handle extra configure options
 dnl ================================================================
 
-m4_define([default], [m4_if(rig_release_status, [git], [yes], [no])])
+m4_define([default], [m4_if(release_status, [git], [yes], [no])])
 AC_ARG_ENABLE(
   [debug],
   [AC_HELP_STRING([--enable-debug=@<:@no/yes@:>@], [Control debugging level @<:@default=]default[@:>@])],
@@ -247,7 +206,7 @@ AS_IF([test "x$have_backtrace" = "xyes"],
 
 # use strict compiler flags only when building from git; the rules for
 # distcheck will take care of turning this on when making a release
-m4_define([default], [m4_if(rig_release_status, [git], [yes], [no])])
+m4_define([default], [m4_if(release_status, [git], [yes], [no])])
 AC_ARG_ENABLE(
   [maintainer-flags],
   [AC_HELP_STRING([--enable-maintainer-flags=@<:@no/yes/error@:>@], [Use strict compiler flags @<:@default=]default[@:>@])],
@@ -282,6 +241,41 @@ AS_CASE(
 # strip leading spaces
 RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS ${MAINTAINER_CFLAGS/#  }"
 
+
+AC_ARG_ENABLE(profile,
+              [AC_HELP_STRING([--enable-profile=@<:@no/yes@:>@],
+                              [Turn on uprof profiling support. yes; All UProf profiling probe points are compiled in and may be runtime enabled. no; No profiling support will built into cogl.  @<:@default=no@:>@])],
+              [],
+              [enable_profile=no])
+AS_IF([test "x$enable_profile" = "xyes"],
+      [
+        AS_IF([test "x$GCC" = "xyes"],
+              [
+                RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES uprof-0.3"
+                RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DENABLE_PROFILE"
+                AS_IF([test "x$enable_debug" = "xyes"], [RIG_EXTRA_CFLAGS="$RIG_EXTRA_CFLAGS -DUPROF_DEBUG"])
+              ],
+              [
+                AC_MSG_ERROR([--enable-profile is currently only supported if using GCC])
+              ])
+      ])
+AM_CONDITIONAL(PROFILE, test "x$enable_profile" != "xno")
+
+
+AC_ARG_ENABLE(
+  [unit-tests],
+  [AC_HELP_STRING([--enable-unit-tests=@<:@no/yes@:>@], [Build unit tests @<:@default=yes@:>@])],
+  [],
+  enable_unit_tests=yes
+)
+AS_IF([test "x$enable_unit_tests" = "xyes"],
+      [
+        AC_DEFINE([ENABLE_UNIT_TESTS], [1], [Whether to enable building unit tests])
+      ]
+)
+AM_CONDITIONAL(UNIT_TESTS, test "x$enable_unit_tests" = "xyes")
+
+
 AC_ARG_ENABLE(uninstalled-build,
               AC_HELP_STRING([--enable-uninstalled-build],
 			     [Search for files in build directory as well]),
@@ -302,17 +296,6 @@ AS_IF([test x"$enable_editor" = xyes],
       ])
 AM_CONDITIONAL(EDITOR_ENABLED, test "x$enable_editor" = "xyes")
 
-dnl ================================================================
-dnl Compiler stuff.
-dnl ================================================================
-AC_PROG_CC
-AC_PROG_CPP
-AM_PROG_CC_C_O
-AC_ISC_POSIX
-AC_C_CONST
-AC_PROG_OBJC
-AC_PROG_CXX
-
 AC_MSG_CHECKING([for alignof])
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([const int thing = alignof (int);],
                                    [(void) 0])],
@@ -332,13 +315,6 @@ AC_CHECK_HEADERS(alloca.h)
 AC_CHECK_HEADERS(sys/poll.h)
 AC_CHECK_HEADERS(sys/select.h)
 
-dnl ================================================================
-dnl Libtool stuff.
-dnl ================================================================
-dnl AC_PROG_LIBTOOL
-dnl LIBTOOL="$LIBTOOL --preserve-dup-deps"
-LT_PREREQ([2.2.6])
-LT_INIT([disable-static])
 
 dnl ================================================================
 dnl Check for dependency packages.
@@ -352,20 +328,20 @@ AM_PATH_GLIB_2_0([glib_req_version],
                  [gobject gthread gmodule-no-export])
 AS_IF([test "x$have_glib" = "xno"], AC_MSG_ERROR([glib-2.0 is required]))
 
-RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 glib-2.0 gio-2.0 cogl2 cogl-pango2 cogl-path libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
+RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES freetype2 pangocairo glib-2.0 gio-2.0 libprotobuf-c gdk-pixbuf-2.0 sdl2-rig libuv"
 
-have_cogl_gst=no
-PKG_CHECK_EXISTS([cogl-gst], [have_cogl_gst=yes])
+have_gstreamer=no
+PKG_CHECK_EXISTS([gstreamer], [have_gstreamer=yes])
 AC_ARG_ENABLE(
   [gstreamer],
   [AC_HELP_STRING([--enable-gstreamer=@<:@no/yes@:>@],
                   [Enable gstreamer support @<:@default=]default[@:>@])],
   [enable_gstreamer="$enableval"],
-  [enable_gstreamer="$have_cogl_gst"]
+  [enable_gstreamer="$have_gstreamer"]
 )
 AS_IF([test "x$enable_gstreamer" = "xyes"],
       [
-       RIG_PKG_REQUIRES="$RIG_PKG_REQUIRES cogl-gst"
+       enable_cogl_gst=yes
        AC_DEFINE([USE_GSTREAMER], [1], [Enable gstreamer integration])
        EXTRA_FEATURES="$EXTRA_FEATURES gstreamer"
       ])
@@ -416,6 +392,24 @@ CheckForGtk()
           [no], [],
           [AC_MSG_ERROR([Invalid value for --enable-gtk])])
 }
+
+
+dnl ================================================================
+dnl Check requirements for our C utility api
+dnl ================================================================
+AM_CLIB
+
+dnl ================================================================
+dnl Check requirements for our GPU utility api
+dnl ================================================================
+enable_glib=yes
+enable_cogl_path=yes
+enable_cogl_pango=yes
+enable_cogl_gst=yes
+enable_gl=yes
+enable_sdl2=yes
+AM_COGL
+
 
 dnl SDL is currently used on all platform...
 AC_DEFINE([USE_SDL], [1], [Defined if SDL should be used])
@@ -485,50 +479,6 @@ dnl ================================================================
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS(putenv strdup)
 
-dnl ================================================================
-dnl clib checks.
-dnl ================================================================
-
-AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf)
-
-#
-# iOS detection of strndup and getpwuid_r is faulty for some reason
-# so simply avoid it
-#
-if test x$target_ios = xno; then
-AC_CHECK_FUNCS(strndup getpwuid_r)
-fi
-
-AM_CONDITIONAL(NEED_VASPRINTF, test x$have_vasprintf = x )
-AM_ICONV()
-AC_SEARCH_LIBS(sqrtf, m)
-
-# nanosleep may not be part of libc, also search it in other libraries
-AC_SEARCH_LIBS(nanosleep, rt)
-
-AC_SEARCH_LIBS(dlopen, dl)
-old_ldflags="${LDFLAGS}"
-LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
-AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
-if test $found_export_dynamic = no; then
-        LDFLAGS="${old_ldflags}"
-fi
-
-AC_CHECK_HEADERS(getopt.h sys/time.h sys/wait.h pwd.h langinfo.h iconv.h sys/types.h)
-AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
-AC_SUBST(HAVE_ALLOCA_H)
-
-dnl Note we don't simply use AC_CHECK_HEADERS() to check for
-dnl localcharset.h since we want to take into account which
-dnl libiconv AM_ICONV() found...
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS=$LIBICONV
-AC_LINK_IFELSE([AC_LANG_PROGRAM([#include <localcharset.h>],
-                                [locale_charset();])],
-                  [AC_DEFINE([HAVE_LOCALCHARSET_H], [1],[localcharset.h])])
-LDFLAGS=$save_LDFLAGS
-
-
 
 dnl ================================================================
 dnl What needs to be substituted in other files
@@ -558,6 +508,7 @@ data/Info.plist
 rig/Makefile
 rig/rig-defines.h
 tools/Makefile
+po/Makefile.in
 )
 
 echo ""

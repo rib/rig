@@ -6,6 +6,8 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/deps/clib/src \
 	-I$(top_builddir)/deps/clib/src \
+	-I$(top_srcdir)/deps/cogl \
+	-I$(top_builddir)/deps/cogl \
 	-I$(top_srcdir)/rut \
 	-I$(top_builddir)/rut \
 	-I$(top_builddir)/rig \
@@ -52,7 +54,9 @@ runtime_headersdir = $(prefix)/share/rig/codegen_includes
 runtime_headers_DATA = $(runtime_headers)
 
 librig_clang_la_SOURCES = rig-llvm.cpp rig-llvm.h
-librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++ $(top_builddir)/deps/clib/src/libclib.la $(top_builddir)/rut/librut.la
+librig_clang_la_LIBADD = $(RIG_CLANG_LIBS) -lstdc++
+librig_clang_la_LIBADD += $(top_builddir)/deps/clib/src/libclib.la
+librig_clang_la_LIBADD += $(top_builddir)/rut/librut.la
 librig_clang_la_LDFLAGS = -export-dynamic -version-info 0:0:0
 if !HAVE_OSX
 librig_clang_la_LDFLAGS += -Wl,--unresolved-symbols=ignore-all
@@ -100,6 +104,9 @@ common_ldadd = \
 	librig.la \
 	-lrig_clang \
 	$(top_builddir)/rut/librut.la \
+	$(top_builddir)/deps/cogl/cogl/libcogl2.la \
+	$(top_builddir)/deps/cogl/cogl-path/libcogl-path.la \
+	$(top_builddir)/deps/cogl/cogl-pango/libcogl-pango2.la \
 	$(RIG_DEP_LIBS)
 
 librig_la_LIBS = $(common_ldadd)

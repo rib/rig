@@ -194,6 +194,8 @@ librut_la_CPPFLAGS = \
     -I$(top_srcdir) \
     -I$(top_srcdir)/deps/clib/src \
     -I$(top_builddir)/deps/clib/src \
+    -I$(top_srcdir)/deps/cogl \
+    -I$(top_builddir)/deps/cogl \
     -I$(top_srcdir)/rut
 
 # rut_headersdir =  $(includedir)/rut

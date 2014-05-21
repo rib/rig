@@ -134,7 +134,7 @@ cogl_context_new (CoglDisplay *display,
 
   _cogl_init ();
 
-#ifdef COGL_ENABLE_PROFILE
+#ifdef ENABLE_PROFILE
   /* We need to be absolutely sure that uprof has been initialized
    * before calling _cogl_uprof_init. uprof_init (NULL, NULL)
    * will be a NOP if it has been initialized but it will also

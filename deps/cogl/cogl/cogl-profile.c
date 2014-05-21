@@ -2,7 +2,7 @@
 #include "config.h"
 #endif
 
-#ifdef COGL_ENABLE_PROFILE
+#ifdef ENABLE_PROFILE
 
 #include "cogl-profile.h"
 #include "cogl-debug.h"
